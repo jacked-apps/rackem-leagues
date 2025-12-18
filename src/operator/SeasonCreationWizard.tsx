@@ -362,6 +362,8 @@ export const SeasonCreationWizard: React.FC = () => {
       const newStep = state.currentStep + 1;
       dispatch({ type: 'SET_CURRENT_STEP', payload: newStep });
       localStorage.setItem(`season-wizard-step-${leagueId}`, newStep.toString());
+      // Scroll to top so user sees the new question
+      window.scrollTo(0, 0);
     }
   };
 
@@ -371,6 +373,8 @@ export const SeasonCreationWizard: React.FC = () => {
       const newStep = state.currentStep - 1;
       dispatch({ type: 'SET_CURRENT_STEP', payload: newStep });
       localStorage.setItem(`season-wizard-step-${leagueId}`, newStep.toString());
+      // Scroll to top so user sees the question
+      window.scrollTo(0, 0);
     }
   };
 

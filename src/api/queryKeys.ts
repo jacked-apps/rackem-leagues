@@ -227,8 +227,8 @@ export const queryKeys = {
     /** Base key for all report queries */
     all: ['reports'] as const,
 
-    /** Pending reports count */
-    pending: () => [...queryKeys.reports.all, 'pending'] as const,
+    /** Pending reports count for an organization */
+    pending: (organizationId?: string) => [...queryKeys.reports.all, 'pending', organizationId] as const,
 
     /** Reports by operator */
     byOperator: (operatorId: string) => [...queryKeys.reports.all, 'operator', operatorId] as const,

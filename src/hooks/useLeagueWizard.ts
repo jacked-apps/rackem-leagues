@@ -197,6 +197,8 @@ export const useLeagueWizard = ({ onSubmit, orgPreferences }: UseLeagueWizardPar
       setCurrentStep(nextStep);
       setCurrentInput('');
       setError(undefined);
+      // Scroll to top so user sees the new question
+      window.scrollTo(0, 0);
     } else {
       onSubmit();
     }
@@ -210,6 +212,8 @@ export const useLeagueWizard = ({ onSubmit, orgPreferences }: UseLeagueWizardPar
       setCurrentStep(currentStep - 1);
       setCurrentInput('');
       setError(undefined);
+      // Scroll to top so user sees the question
+      window.scrollTo(0, 0);
     }
   }, [currentStep]);
 

@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2025-12-17 (added InviteStatusBadge.tsx, useInviteStatuses.ts for Phase 9 invite status indicators)
+> **Last Updated**: 2025-12-18 (added dev email confirmation migration, venue table counts migration)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -370,7 +370,6 @@
 #### Auth Pages (`/login/`)
 - `Login.tsx` - Login page
 - `Register.tsx` - Registration page
-- `RegisterExisting.tsx` - Find existing placeholder player during registration
 - `ClaimPlayer.tsx` - Claim placeholder player for existing authenticated users
 - `ForgotPassword.tsx` - Password recovery
 - `ResetPassword.tsx` - Password reset
@@ -845,9 +844,12 @@ Static assets served at root
 
 ### Supabase Config (`/supabase/`)
 
-Supabase local configuration
+Supabase local configuration and migrations
 
-*(Directory exists - inventory needed)*
+| File | Purpose |
+|------|---------|
+| `supabase/config.toml` | Supabase local configuration |
+| `supabase/migrations/20251218000000_venue_table_counts_optional.sql` | Fix venue total_tables computed column for array columns |
 
 ---
 

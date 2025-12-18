@@ -19,6 +19,14 @@ import { CardAction, CardFooter } from '@/components/ui/card';
 import { LoginCard } from './LoginCard';
 import { Mail, AlertTriangle, UserCheck, Users } from 'lucide-react';
 import { logger } from '@/utils/logger';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 /** Data about the placeholder being claimed */
 interface ClaimData {
@@ -190,6 +198,7 @@ export const Register: React.FC = () => {
 
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMessage, setResendMessage] = useState('');
+  const [showAlreadyOnTeamModal, setShowAlreadyOnTeamModal] = useState(false);
 
   const handleResendEmail = async () => {
     setResendLoading(true);
@@ -339,20 +348,52 @@ export const Register: React.FC = () => {
 
       {/* Prominent "Already on a team" button - only show when not claiming */}
       {!claimData?.isValid && (
-        <Link to="/register-existing" className="block mb-6">
+        <button
+          type="button"
+          onClick={() => setShowAlreadyOnTeamModal(true)}
+          className="block w-full mb-6 text-left"
+        >
           <div className="p-4 border-2 border-primary/50 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors">
             <div className="flex items-center gap-3">
               <Users className="h-6 w-6 text-primary" />
-              <div>
-                <p className="font-semibold text-primary">I'm already on a team</p>
-                <p className="text-sm text-muted-foreground">
-                  Your captain may have already added you to the system
-                </p>
-              </div>
+              <p className="font-semibold text-primary">I'm already on a team</p>
             </div>
           </div>
-        </Link>
+        </button>
       )}
+
+      {/* Already on a team info modal */}
+      <Dialog open={showAlreadyOnTeamModal} onOpenChange={setShowAlreadyOnTeamModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Claim Your Player Profile</DialogTitle>
+            <DialogDescription>
+              Your league operator or team captain can help you connect your account using our invite system.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm font-medium">Before you register, you have 4 options:</p>
+            <ol className="text-sm text-muted-foreground list-decimal list-inside space-y-1">
+              <li>They send you a link</li>
+              <li>They send you an email</li>
+              <li>In person: hand off - use their device for initial registration</li>
+              <li>In person: use the QR code</li>
+            </ol>
+            <p className="text-sm text-muted-foreground pt-2">
+              You may choose to register now and connect later by asking your league operator or captain to email you the invite. (Other methods will no longer work after registration.)
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="default"
+              loadingText="none"
+              onClick={() => setShowAlreadyOnTeamModal(false)}
+            >
+              Got it
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <form onSubmit={handleRegister}>
         <div className="mb-4">

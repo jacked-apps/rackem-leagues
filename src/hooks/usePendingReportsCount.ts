@@ -11,12 +11,13 @@
 import { usePendingReportsCount as usePendingReportsQuery } from '@/api/hooks/useReportQueries';
 
 /**
- * Hook to get count of pending reports for current operator
+ * Hook to get count of pending reports for a specific organization
  *
+ * @param organizationId - Organization ID to filter reports by
  * @returns Count of reports with status 'pending' or 'under_review'
  */
-export function usePendingReportsCount() {
-  const { data: count = 0, isLoading: loading } = usePendingReportsQuery();
+export function usePendingReportsCount(organizationId?: string) {
+  const { data: count = 0, isLoading: loading } = usePendingReportsQuery(organizationId);
 
   return { count, loading };
 }

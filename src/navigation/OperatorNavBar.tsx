@@ -23,7 +23,7 @@ interface OperatorNavBarProps {
  * This allows operators to switch between their operator and player views
  */
 export const OperatorNavBar: React.FC<OperatorNavBarProps> = ({ orgId }) => {
-  const { count: pendingReportsCount } = usePendingReportsCount();
+  const { count: pendingReportsCount } = usePendingReportsCount(orgId);
   return (
     <nav className="flex w-full py-2 border-b border-slate-300 px-6 justify-between items-center bg-blue-50">
       {/* Left side - operator navigation */}
@@ -50,7 +50,7 @@ export const OperatorNavBar: React.FC<OperatorNavBarProps> = ({ orgId }) => {
         </li>
         <li>
           <NavLink
-            to="/operator-reports"
+            to={`/operator-reports/${orgId}`}
             className={({ isActive }) =>
               `text-blue-600 hover:underline ${isActive ? 'font-semibold' : ''} flex items-center gap-2`
             }

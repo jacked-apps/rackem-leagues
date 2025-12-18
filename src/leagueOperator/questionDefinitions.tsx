@@ -151,34 +151,36 @@ export const getQuestionDefinitions = (
             Enter Organization Address:
           </h4>
           <div className="space-y-4">
-            <Input
-              id="org-address"
-              label="Street Address"
-              value={customAddress}
-              onChange={(value: string) => {
-                setCustomAddress(value);
-                dispatch({
-                  type: 'SET_ORGANIZATION_ADDRESS',
-                  payload: value,
-                });
-              }}
-              placeholder="123 Main Street"
-              titleCase
-            />
-            <Input
-              id="org-city"
-              label="City"
-              value={customCity}
-              onChange={(value: string) => {
-                setCustomCity(value);
-                dispatch({
-                  type: 'SET_ORGANIZATION_CITY',
-                  payload: value,
-                });
-              }}
-              placeholder="Springfield"
-              titleCase
-            />
+            <div>
+              <Label htmlFor="org-address">Street Address</Label>
+              <Input
+                id="org-address"
+                value={customAddress}
+                onChange={(e) => {
+                  setCustomAddress(e.target.value);
+                  dispatch({
+                    type: 'SET_ORGANIZATION_ADDRESS',
+                    payload: e.target.value,
+                  });
+                }}
+                placeholder="123 Main Street"
+              />
+            </div>
+            <div>
+              <Label htmlFor="org-city">City</Label>
+              <Input
+                id="org-city"
+                value={customCity}
+                onChange={(e) => {
+                  setCustomCity(e.target.value);
+                  dispatch({
+                    type: 'SET_ORGANIZATION_CITY',
+                    payload: e.target.value,
+                  });
+                }}
+                placeholder="Springfield"
+              />
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="org-state">State</Label>
@@ -204,20 +206,22 @@ export const getQuestionDefinitions = (
                   </SelectContent>
                 </Select>
               </div>
-              <Input
-                id="org-zip"
-                label="ZIP Code"
-                value={customZip}
-                onChange={(value: string) => {
-                  const formatted = formatZipCode(value);
-                  setCustomZip(formatted);
-                  dispatch({
-                    type: 'SET_ORGANIZATION_ZIP_CODE',
-                    payload: formatted,
-                  });
-                }}
-                placeholder="12345"
-              />
+              <div>
+                <Label htmlFor="org-zip">ZIP Code</Label>
+                <Input
+                  id="org-zip"
+                  value={customZip}
+                  onChange={(e) => {
+                    const formatted = formatZipCode(e.target.value);
+                    setCustomZip(formatted);
+                    dispatch({
+                      type: 'SET_ORGANIZATION_ZIP_CODE',
+                      payload: formatted,
+                    });
+                  }}
+                  placeholder="12345"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -631,19 +635,6 @@ export const getQuestionDefinitions = (
             paymentVerified: state.paymentVerified
           } : undefined}
         />
-
-        {/* Pricing Information */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h4 className="font-semibold text-blue-800 mb-2">💰 Simple, Fair Pricing</h4>
-          <div className="text-blue-700 text-sm space-y-1">
-            <p><strong>League Fee:</strong> $1 per team, per week</p>
-            <p><strong>Setup Fee:</strong> $0</p>
-            <p><strong>Example:</strong> 8 teams × 12 weeks = $96 per season</p>
-            <p className="text-xs text-blue-600 mt-2">
-              Payment due by week 3-4 of each season.
-            </p>
-          </div>
-        </div>
       </div>
     ),
     choices: [],

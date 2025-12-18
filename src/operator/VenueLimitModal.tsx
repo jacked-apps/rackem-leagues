@@ -5,9 +5,9 @@
  * league. Displays the venue's tables and allows operators to configure
  * which ones can be used for league play.
  */
-import React, { useState, useEffect } from 'react';
-import { supabase } from '@/supabaseClient';
+import React, { useState } from 'react';
 import { X } from 'lucide-react';
+import { useUpdateLeagueVenue } from '@/api/hooks/useLeagueVenueMutations';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { NumberInput } from '@/components/ui/number-input';
@@ -16,7 +16,6 @@ import { TableSizeLabel } from '@/components/TableSizeLabel';
 import { TableBadgePopover } from '@/components/operator/TableBadgePopover';
 import { TABLE_SIZES } from '@/constants/tables';
 import type { Venue, LeagueVenue, TableSizeKey } from '@/types/venue';
-import { logger } from '@/utils/logger';
 
 interface VenueLimitModalProps {
   /** The venue being configured */
@@ -44,8 +43,8 @@ export const VenueLimitModal: React.FC<VenueLimitModalProps> = ({
   onSuccess,
   onCancel
 }) => {
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Use TanStack mutation for saving
+  const updateLeagueVenueMutation = useUpdateLeagueVenue();
 
   // Table fill order: ascending, descending, or custom
   type FillOrder = 'ascending' | 'descending' | 'custom';
@@ -218,19 +217,15 @@ export const VenueLimitModal: React.FC<VenueLimitModalProps> = ({
   const availableTablesUnsorted = allTables.filter(t => enabledSizes[t.sizeKey] && !blockedTables.has(t.number));
   const unavailableTables = allTables.filter(t => !enabledSizes[t.sizeKey] || blockedTables.has(t.number));
 
-  // Auto-update capacity when available tables change
-  // Enforce the hard max for this venue (different for in-house vs traveling)
-  useEffect(() => {
-    // Recalculate max based on current available tables
-    const currentVenueTables = availableTablesUnsorted.length;
-    const newMaxForThisVenue = isInHouse
-      ? (currentVenueTables * 2) + 1  // In-house: 2 per table + 1 bye
-      : (totalTables * 2) - getOtherVenuesCapacity();  // Traveling: league-wide pool
+  // Compute max capacity for this venue (derived value, no useEffect needed)
+  // In-house (1 venue): 2 teams per table + 1 for optional bye team
+  // Traveling (multiple venues): league-wide pool, 2 teams per table total
+  const maxCapacityForThisVenue = isInHouse
+    ? (availableTablesUnsorted.length * 2) + 1  // In-house: 2 per table + 1 bye
+    : (totalTables * 2) - getOtherVenuesCapacity();  // Traveling: league-wide pool
 
-    if (capacity > newMaxForThisVenue) {
-      setCapacity(newMaxForThisVenue);
-    }
-  }, [availableTablesUnsorted.length, isInHouse, totalTables, capacity]);
+  // Clamp capacity to valid range (used for saving, not for display)
+  const clampedCapacity = Math.min(capacity, maxCapacityForThisVenue);
 
   /**
    * Handle fill order change
@@ -301,47 +296,25 @@ export const VenueLimitModal: React.FC<VenueLimitModalProps> = ({
 
   const availableTables = sortAvailableTables();
 
-  // Calculate max capacity for this venue based on league type
-  // Uses current edited table count (availableTables.length), not the original database value
-  // In-house (1 venue): 2 teams per table + 1 for optional bye team
-  // Traveling (multiple venues): league-wide pool, 2 teams per table total
-  const maxCapacityForThisVenue = isInHouse
-    ? (availableTables.length * 2) + 1  // In-house: 2 per table + 1 bye
-    : (totalTables * 2) - getOtherVenuesCapacity();  // Traveling: league-wide pool
-
   /**
-   * Save updated limits to database
-   * Saves the array of available table numbers
+   * Save updated limits using TanStack mutation
    */
-  const handleSave = async () => {
-    setSaving(true);
-    setError(null);
+  const handleSave = () => {
+    // Build the array of available table numbers (order matters for custom fill order)
+    const availableTableNumbers = availableTables.map(t => t.number);
 
-    try {
-      // Build the array of available table numbers (order matters for custom fill order)
-      const availableTableNumbers = availableTables.map(t => t.number);
-
-      const { data: updatedLeagueVenue, error: updateError } = await supabase
-        .from('league_venues')
-        .update({
-          available_table_numbers: availableTableNumbers,
-          capacity: capacity,
-        })
-        .eq('id', leagueVenue.id)
-        .select()
-        .single();
-
-      if (updateError) throw updateError;
-
-      onSuccess(updatedLeagueVenue);
-    } catch (err) {
-      // Supabase errors have a message property directly on the object
-      const errorMessage = (err as { message?: string })?.message || String(err);
-      logger.error('Error updating venue limits', { error: errorMessage, fullError: JSON.stringify(err) });
-      setError(errorMessage || 'Failed to update limits');
-    } finally {
-      setSaving(false);
-    }
+    updateLeagueVenueMutation.mutate(
+      {
+        leagueVenueId: leagueVenue.id,
+        availableTableNumbers,
+        capacity: clampedCapacity,
+      },
+      {
+        onSuccess: (updatedLeagueVenue) => {
+          onSuccess(updatedLeagueVenue);
+        },
+      }
+    );
   };
 
   /**
@@ -381,9 +354,13 @@ export const VenueLimitModal: React.FC<VenueLimitModalProps> = ({
         {/* Form */}
         <div className="p-6 space-y-6">
           {/* Error message */}
-          {error && (
+          {updateLeagueVenueMutation.error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <p className="text-red-800 text-sm">{error}</p>
+              <p className="text-red-800 text-sm">
+                {updateLeagueVenueMutation.error instanceof Error
+                  ? updateLeagueVenueMutation.error.message
+                  : 'Failed to update limits'}
+              </p>
             </div>
           )}
 
@@ -589,13 +566,13 @@ export const VenueLimitModal: React.FC<VenueLimitModalProps> = ({
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
-          <Button variant="outline" onClick={onCancel} disabled={saving}>
+          <Button variant="outline" onClick={onCancel} disabled={updateLeagueVenueMutation.isPending}>
             Cancel
           </Button>
           <Button
             onClick={handleSave}
-            disabled={saving}
-            isLoading={saving}
+            disabled={updateLeagueVenueMutation.isPending}
+            isLoading={updateLeagueVenueMutation.isPending}
             loadingText="Saving..."
           >
             Save Changes

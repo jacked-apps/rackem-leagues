@@ -11,6 +11,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useMemberId } from '@/api/hooks';
 import {
   getPendingReportsForOperator,
@@ -20,6 +21,7 @@ import {
   escalateReport,
   REPORT_CATEGORIES
 } from '@/utils/reportingQueries';
+import { PageHeader } from '@/components/PageHeader';
 import {
   Card,
   CardContent,
@@ -71,6 +73,8 @@ interface ReportDetails {
 }
 
 export function ReportsManagement() {
+  const { orgId } = useParams<{ orgId: string }>();
+  const navigate = useNavigate();
   const memberId = useMemberId();
   const [reports, setReports] = useState<Report[]>([]);
   const [selectedReport, setSelectedReport] = useState<ReportDetails | null>(null);
@@ -83,18 +87,24 @@ export function ReportsManagement() {
   const { confirm, ConfirmDialogComponent } = useConfirmDialog();
 
   /**
-   * Load pending reports on mount
+   * Load pending reports on mount and when orgId changes
    */
   useEffect(() => {
+    if (!orgId) {
+      // No org ID - redirect to dashboard
+      navigate('/dashboard');
+      return;
+    }
     loadReports();
-  }, []);
+  }, [orgId, navigate]);
 
   /**
-   * Fetch pending reports from database
+   * Fetch pending reports from database for this organization
    */
   const loadReports = async () => {
+    if (!orgId) return;
     setLoading(true);
-    const { data, error } = await getPendingReportsForOperator();
+    const { data, error } = await getPendingReportsForOperator(orgId);
     if (data && !error) {
       setReports(data as any);
     }
@@ -268,13 +278,16 @@ export function ReportsManagement() {
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Reports Management</h1>
-        <p className="text-muted-foreground">Review and manage user reports for your leagues</p>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <PageHeader
+        backTo={`/operator-dashboard/${orgId}`}
+        backLabel="Back to Organization"
+        title="Reports Management"
+        subtitle="Review and manage user reports for your leagues"
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="container mx-auto px-4 max-w-7xl py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Reports List */}
         <div className="lg:col-span-1">
           <Card>
@@ -526,6 +539,7 @@ export function ReportsManagement() {
       )}
 
       {ConfirmDialogComponent}
+      </div>
     </div>
   );
 }

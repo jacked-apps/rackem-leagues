@@ -19,7 +19,13 @@ import { PlayerCombobox } from '@/components/PlayerCombobox';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
 import { InfoButton } from '@/components/InfoButton';
 import { PlayerNameLink } from '@/components/PlayerNameLink';
 import { AuthorizeNewPlayersCard } from '@/components/operator/AuthorizeNewPlayersCard';
@@ -48,7 +54,8 @@ export const PlayerManagement: React.FC = () => {
   const isDeveloper = useIsDeveloper();
   const queryClient = useQueryClient();
 
-  const [impersonatedOperatorId, setImpersonatedOperatorId] = useState<string>('');
+  const [impersonatedOperatorId, setImpersonatedOperatorId] =
+    useState<string>('');
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>('');
   const [handicap3v3, setHandicap3v3] = useState<string>('0');
   const [handicap5v5, setHandicap5v5] = useState<string>('40');
@@ -84,13 +91,24 @@ export const PlayerManagement: React.FC = () => {
   const playerDetails = playerDetailsData?.data;
 
   // Check if player is authorized (has non-NULL starting handicaps)
-  const playerIsAuthorized = playerDetails ? isPlayerAuthorized(playerDetails) : true;
-  const isEstablishedPlayer = playerDetails ? playerDetails.gameCounts.total >= 15 : false;
+  const playerIsAuthorized = playerDetails
+    ? isPlayerAuthorized(playerDetails)
+    : true;
+  const isEstablishedPlayer = playerDetails
+    ? playerDetails.gameCounts.total >= 15
+    : false;
 
   // Update starting handicaps mutation
   const updateHandicapsMutation = useMutation({
-    mutationFn: ({ playerId, h3v3, h5v5 }: { playerId: string; h3v3: number; h5v5: number }) =>
-      updatePlayerStartingHandicaps(playerId, h3v3, h5v5),
+    mutationFn: ({
+      playerId,
+      h3v3,
+      h5v5,
+    }: {
+      playerId: string;
+      h3v3: number;
+      h5v5: number;
+    }) => updatePlayerStartingHandicaps(playerId, h3v3, h5v5),
     onSuccess: () => {
       // Invalidate player details query to refetch
       queryClient.invalidateQueries({
@@ -105,7 +123,9 @@ export const PlayerManagement: React.FC = () => {
       setIsHandicapOpen(false);
     },
     onError: (error) => {
-      logger.error('Error updating handicaps', { error: error instanceof Error ? error.message : String(error) });
+      logger.error('Error updating handicaps', {
+        error: error instanceof Error ? error.message : String(error),
+      });
       toast.error('Failed to update starting handicaps. Please try again.');
     },
   });
@@ -121,7 +141,9 @@ export const PlayerManagement: React.FC = () => {
       toast.success('Membership marked as paid!');
     },
     onError: (error) => {
-      logger.error('Error marking membership as paid', { error: error instanceof Error ? error.message : String(error) });
+      logger.error('Error marking membership as paid', {
+        error: error instanceof Error ? error.message : String(error),
+      });
       toast.error('Failed to update membership status. Please try again.');
     },
   });
@@ -137,7 +159,9 @@ export const PlayerManagement: React.FC = () => {
       toast.success('Membership reversed!');
     },
     onError: (error) => {
-      logger.error('Error reversing membership', { error: error instanceof Error ? error.message : String(error) });
+      logger.error('Error reversing membership', {
+        error: error instanceof Error ? error.message : String(error),
+      });
       toast.error('Failed to reverse membership. Please try again.');
     },
   });
@@ -181,7 +205,11 @@ export const PlayerManagement: React.FC = () => {
 
     const confirmed = await confirm({
       title: 'Mark Membership as Paid',
-      message: `Confirm that ${playerDetails.first_name} ${playerDetails.last_name} has paid their membership fee for ${new Date().getFullYear()}. Their membership will be valid through December 31, ${new Date().getFullYear()}. Do not accept payments for ${new Date().getFullYear() + 1} until next calendar year.`,
+      message: `Confirm that ${playerDetails.first_name} ${
+        playerDetails.last_name
+      } has paid their membership fee for ${new Date().getFullYear()}. Their membership will be valid through December 31, ${new Date().getFullYear()}. Do not accept payments for ${
+        new Date().getFullYear() + 1
+      } until next calendar year.`,
       confirmText: 'Confirm Payment',
       confirmVariant: 'default',
     });
@@ -197,7 +225,9 @@ export const PlayerManagement: React.FC = () => {
 
     const confirmed = await confirm({
       title: 'Reverse Membership Payment',
-      message: `Confirm that ${playerDetails.first_name} ${playerDetails.last_name} has not paid the membership fees for ${new Date().getFullYear()}. This will mark their membership as unpaid.`,
+      message: `Confirm that ${playerDetails.first_name} ${
+        playerDetails.last_name
+      } has not paid the membership fees for ${new Date().getFullYear()}. This will mark their membership as unpaid.`,
       confirmText: 'Reverse Payment',
       confirmVariant: 'destructive',
     });
@@ -216,18 +246,20 @@ export const PlayerManagement: React.FC = () => {
         label: 'Received Membership Fee',
         icon: <DollarSign className="h-4 w-4 text-green-600" />,
         onClick: handleMarkMembershipPaid,
-        className: "flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-100 transition-colors text-left text-green-600",
+        className:
+          'flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-100 transition-colors text-left text-green-600',
         buttonText: 'Received Membership Fee',
-        buttonClassName: 'text-sm text-blue-600 hover:text-blue-800 underline'
+        buttonClassName: 'text-sm text-blue-600 hover:text-blue-800 underline',
       };
     } else {
       return {
         label: 'Reverse Membership',
         icon: <DollarSign className="h-4 w-4 text-red-600" />,
         onClick: handleReverseMembership,
-        className: "flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-100 transition-colors text-left text-red-600",
+        className:
+          'flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-100 transition-colors text-left text-red-600',
         buttonText: 'Reverse Membership',
-        buttonClassName: 'text-sm text-red-600 hover:text-red-800 underline'
+        buttonClassName: 'text-sm text-red-600 hover:text-red-800 underline',
       };
     }
   };
@@ -238,7 +270,7 @@ export const PlayerManagement: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <PageHeader
         backTo={`/operator-dashboard/${operatorId}`}
-        backLabel="Back to Operator Dashboard"
+        backLabel="Back to Organization"
         title="Player Management"
         subtitle="View player information and manage starting handicaps"
       />
@@ -249,7 +281,10 @@ export const PlayerManagement: React.FC = () => {
           <Card className="rounded-none lg:rounded-xl bg-yellow-50 border-yellow-200">
             <CardContent className="p-4 lg:p-6">
               <div className="flex flex-col gap-2">
-                <Label htmlFor="impersonate-operator" className="text-sm font-semibold text-yellow-900">
+                <Label
+                  htmlFor="impersonate-operator"
+                  className="text-sm font-semibold text-yellow-900"
+                >
                   Developer Mode: Impersonate Operator
                 </Label>
                 <Select
@@ -286,14 +321,18 @@ export const PlayerManagement: React.FC = () => {
                   <div>
                     <p className="text-sm text-gray-600">Total Players</p>
                     <p className="text-3xl font-bold">{playerCount}</p>
-                    <p className="text-xs text-gray-500 mt-1">Use filters in dropdown to refine search</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Use filters in dropdown to refine search
+                    </p>
                   </div>
                 </div>
               </div>
 
               {/* Player Selection */}
               <div className="flex-1 flex flex-col justify-center">
-                <Label htmlFor="player-select" className="mb-2">Select Player</Label>
+                <Label htmlFor="player-select" className="mb-2">
+                  Select Player
+                </Label>
                 <PlayerCombobox
                   filters={{ myOrg: operatorId, active: operatorId }}
                   defaultFilter="myOrg"
@@ -335,18 +374,24 @@ export const PlayerManagement: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Name */}
                       <div>
-                        <p className="text-xs text-gray-500 uppercase mb-1">Name</p>
+                        <p className="text-xs text-gray-500 uppercase mb-1">
+                          Name
+                        </p>
                         <PlayerNameLink
                           playerId={playerDetails.id}
                           playerName={`${playerDetails.first_name} ${playerDetails.last_name}`}
                           className="font-medium"
-                          customActions={membershipAction ? [membershipAction] : []}
+                          customActions={
+                            membershipAction ? [membershipAction] : []
+                          }
                         />
                       </div>
 
                       {/* Nickname */}
                       <div>
-                        <p className="text-xs text-gray-500 uppercase mb-1">Nickname</p>
+                        <p className="text-xs text-gray-500 uppercase mb-1">
+                          Nickname
+                        </p>
                         <p className="font-medium text-gray-900">
                           {playerDetails.nickname || '-'}
                         </p>
@@ -354,7 +399,9 @@ export const PlayerManagement: React.FC = () => {
 
                       {/* Phone */}
                       <div>
-                        <p className="text-xs text-gray-500 uppercase mb-1">Phone</p>
+                        <p className="text-xs text-gray-500 uppercase mb-1">
+                          Phone
+                        </p>
                         <p className="font-medium text-gray-900">
                           {playerDetails.phone}
                         </p>
@@ -362,7 +409,9 @@ export const PlayerManagement: React.FC = () => {
 
                       {/* Email */}
                       <div>
-                        <p className="text-xs text-gray-500 uppercase mb-1">Email</p>
+                        <p className="text-xs text-gray-500 uppercase mb-1">
+                          Email
+                        </p>
                         <p className="font-medium text-gray-900 truncate">
                           {playerDetails.email}
                         </p>
@@ -370,7 +419,9 @@ export const PlayerManagement: React.FC = () => {
 
                       {/* Role */}
                       <div>
-                        <p className="text-xs text-gray-500 uppercase mb-1">Role</p>
+                        <p className="text-xs text-gray-500 uppercase mb-1">
+                          Role
+                        </p>
                         <p className="font-medium text-gray-900 capitalize">
                           {playerDetails.role}
                         </p>
@@ -378,7 +429,9 @@ export const PlayerManagement: React.FC = () => {
 
                       {/* System Player # */}
                       <div>
-                        <p className="text-xs text-gray-500 uppercase mb-1">System Player #</p>
+                        <p className="text-xs text-gray-500 uppercase mb-1">
+                          System Player #
+                        </p>
                         <p className="font-medium text-gray-900">
                           {playerDetails.system_player_number}
                         </p>
@@ -386,7 +439,9 @@ export const PlayerManagement: React.FC = () => {
 
                       {/* BCA Member # */}
                       <div>
-                        <p className="text-xs text-gray-500 uppercase mb-1">BCA Member #</p>
+                        <p className="text-xs text-gray-500 uppercase mb-1">
+                          BCA Member #
+                        </p>
                         <p className="font-medium text-gray-900">
                           {playerDetails.bca_member_number || '-'}
                         </p>
@@ -394,10 +449,14 @@ export const PlayerManagement: React.FC = () => {
 
                       {/* Membership Paid Date */}
                       <div>
-                        <p className="text-xs text-gray-500 uppercase mb-1">Membership Paid</p>
+                        <p className="text-xs text-gray-500 uppercase mb-1">
+                          Membership Paid
+                        </p>
                         <p className="font-medium text-gray-900">
                           {playerDetails.membership_paid_date
-                            ? new Date(playerDetails.membership_paid_date).toLocaleDateString()
+                            ? new Date(
+                                playerDetails.membership_paid_date
+                              ).toLocaleDateString()
                             : '-'}
                         </p>
                       </div>
@@ -427,7 +486,9 @@ export const PlayerManagement: React.FC = () => {
                       <div className="flex items-start gap-3">
                         <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
                         <div>
-                          <p className="font-medium text-amber-800">Player Not Established</p>
+                          <p className="font-medium text-amber-800">
+                            Player Not Established
+                          </p>
                           <p className="text-sm text-amber-700 mt-1">
                             {isEstablishedPlayer
                               ? 'This player has 15+ games and is established in the system. Set their starting handicaps below to authorize them.'
@@ -462,7 +523,9 @@ export const PlayerManagement: React.FC = () => {
                             </div>
                             {/* Team Name */}
                             <div>
-                              <p className="font-medium text-gray-900">{team.team_name}</p>
+                              <p className="font-medium text-gray-900">
+                                {team.team_name}
+                              </p>
                             </div>
                           </div>
                         ))}
@@ -491,16 +554,22 @@ export const PlayerManagement: React.FC = () => {
                       <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
                         <div className="flex justify-between items-center mb-2">
                           <p className="font-medium text-gray-900">8-Ball</p>
-                          <p className="text-sm text-gray-600">{playerDetails.gameCounts.eight_ball} games</p>
+                          <p className="text-sm text-gray-600">
+                            {playerDetails.gameCounts.eight_ball} games
+                          </p>
                         </div>
                         <div className="flex gap-4 text-sm">
                           <div>
                             <span className="text-gray-600">3v3:</span>{' '}
-                            <span className="font-semibold">{playerDetails.handicaps.eight_ball_3v3}</span>
+                            <span className="font-semibold">
+                              {playerDetails.handicaps.eight_ball_3v3}
+                            </span>
                           </div>
                           <div>
                             <span className="text-gray-600">5v5:</span>{' '}
-                            <span className="font-semibold">{playerDetails.handicaps.eight_ball_5v5}%</span>
+                            <span className="font-semibold">
+                              {playerDetails.handicaps.eight_ball_5v5}%
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -509,16 +578,22 @@ export const PlayerManagement: React.FC = () => {
                       <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
                         <div className="flex justify-between items-center mb-2">
                           <p className="font-medium text-gray-900">9-Ball</p>
-                          <p className="text-sm text-gray-600">{playerDetails.gameCounts.nine_ball} games</p>
+                          <p className="text-sm text-gray-600">
+                            {playerDetails.gameCounts.nine_ball} games
+                          </p>
                         </div>
                         <div className="flex gap-4 text-sm">
                           <div>
                             <span className="text-gray-600">3v3:</span>{' '}
-                            <span className="font-semibold">{playerDetails.handicaps.nine_ball_3v3}</span>
+                            <span className="font-semibold">
+                              {playerDetails.handicaps.nine_ball_3v3}
+                            </span>
                           </div>
                           <div>
                             <span className="text-gray-600">5v5:</span>{' '}
-                            <span className="font-semibold">{playerDetails.handicaps.nine_ball_5v5}%</span>
+                            <span className="font-semibold">
+                              {playerDetails.handicaps.nine_ball_5v5}%
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -527,16 +602,22 @@ export const PlayerManagement: React.FC = () => {
                       <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
                         <div className="flex justify-between items-center mb-2">
                           <p className="font-medium text-gray-900">10-Ball</p>
-                          <p className="text-sm text-gray-600">{playerDetails.gameCounts.ten_ball} games</p>
+                          <p className="text-sm text-gray-600">
+                            {playerDetails.gameCounts.ten_ball} games
+                          </p>
                         </div>
                         <div className="flex gap-4 text-sm">
                           <div>
                             <span className="text-gray-600">3v3:</span>{' '}
-                            <span className="font-semibold">{playerDetails.handicaps.ten_ball_3v3}</span>
+                            <span className="font-semibold">
+                              {playerDetails.handicaps.ten_ball_3v3}
+                            </span>
                           </div>
                           <div>
                             <span className="text-gray-600">5v5:</span>{' '}
-                            <span className="font-semibold">{playerDetails.handicaps.ten_ball_5v5}%</span>
+                            <span className="font-semibold">
+                              {playerDetails.handicaps.ten_ball_5v5}%
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -547,18 +628,36 @@ export const PlayerManagement: React.FC = () => {
 
                     {/* Current Starting Handicaps Display */}
                     <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
-                      <p className="text-sm font-medium text-gray-700 mb-2">Current Starting Handicaps</p>
+                      <p className="text-sm font-medium text-gray-700 mb-2">
+                        Current Starting Handicaps
+                      </p>
                       <div className="flex gap-4 text-sm">
                         <div>
                           <span className="text-gray-600">3v3:</span>{' '}
-                          <span className={`font-semibold ${playerDetails.starting_handicap_3v3 === null ? 'text-amber-600' : ''}`}>
-                            {playerDetails.starting_handicap_3v3 !== null ? playerDetails.starting_handicap_3v3 : 'Not Set'}
+                          <span
+                            className={`font-semibold ${
+                              playerDetails.starting_handicap_3v3 === null
+                                ? 'text-amber-600'
+                                : ''
+                            }`}
+                          >
+                            {playerDetails.starting_handicap_3v3 !== null
+                              ? playerDetails.starting_handicap_3v3
+                              : 'Not Set'}
                           </span>
                         </div>
                         <div>
                           <span className="text-gray-600">5v5:</span>{' '}
-                          <span className={`font-semibold ${playerDetails.starting_handicap_5v5 === null ? 'text-amber-600' : ''}`}>
-                            {playerDetails.starting_handicap_5v5 !== null ? `${playerDetails.starting_handicap_5v5}%` : 'Not Set'}
+                          <span
+                            className={`font-semibold ${
+                              playerDetails.starting_handicap_5v5 === null
+                                ? 'text-amber-600'
+                                : ''
+                            }`}
+                          >
+                            {playerDetails.starting_handicap_5v5 !== null
+                              ? `${playerDetails.starting_handicap_5v5}%`
+                              : 'Not Set'}
                           </span>
                         </div>
                       </div>
@@ -570,19 +669,23 @@ export const PlayerManagement: React.FC = () => {
                         onClick={() => setIsHandicapOpen(!isHandicapOpen)}
                         className="text-blue-600 hover:text-blue-800 font-medium"
                       >
-                        {isHandicapOpen ? 'Hide Form' : 'Set Starting Handicaps'}
+                        {isHandicapOpen
+                          ? 'Hide Form'
+                          : 'Set Starting Handicaps'}
                       </button>
-                      <InfoButton
-                        title="Starting Handicaps"
-                      >
-                        <p>Starting handicaps are used when a player has fewer than 15 games in a league. This allows known players to start with an appropriate handicap instead of the default.</p>
+                      <InfoButton title="Starting Handicaps">
+                        <p>
+                          Starting handicaps are used when a player has fewer
+                          than 15 games in a league. This allows known players
+                          to start with an appropriate handicap instead of the
+                          default.
+                        </p>
                       </InfoButton>
                     </div>
 
                     {/* Collapsible Content */}
                     {(isHandicapOpen || !playerIsAuthorized) && (
                       <div className="mt-4 space-y-4">
-
                         {/* 3v3 Handicap */}
                         <div>
                           <Label htmlFor="handicap3v3">
@@ -609,7 +712,9 @@ export const PlayerManagement: React.FC = () => {
                         <div>
                           <Label htmlFor="handicap5v5">
                             Starting Handicap (5v5)
-                            <span className="text-xs text-gray-500 ml-2">(Range: 0 to 100)</span>
+                            <span className="text-xs text-gray-500 ml-2">
+                              (Range: 0 to 100)
+                            </span>
                           </Label>
                           <Input
                             id="handicap5v5"
@@ -618,7 +723,9 @@ export const PlayerManagement: React.FC = () => {
                             min="0"
                             max="100"
                             value={handicap5v5}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setHandicap5v5(e.target.value)}
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>
+                            ) => setHandicap5v5(e.target.value)}
                             className="mt-1"
                           />
                         </div>

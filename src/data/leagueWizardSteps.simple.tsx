@@ -95,7 +95,7 @@ export const createWizardSteps = (params: WizardStepParams): WizardStep[] => {
     // Step 1: Game Type Selection
     {
       id: 'game_type',
-      title: 'What game will this league play?',
+      title: 'Pick the game',
       subtitle: 'This determines the game format for all matches',
       type: 'choice',
       choices: [

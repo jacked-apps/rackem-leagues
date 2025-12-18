@@ -22,6 +22,7 @@ import { useNavigate } from 'react-router-dom';
 import { QuestionStep } from '@/components/forms/QuestionStep';
 import { ChoiceStep } from '@/components/forms/ChoiceStep';
 import { ApplicationPreview } from '@/components/previews/ApplicationPreview';
+import { Button } from '@/components/ui/button';
 import { SecurityDisclaimerModal } from '@/components/modals/SecurityDisclaimerModal';
 import { SetupGuideModal } from '@/components/modals/SetupGuideModal';
 import { PageHeader } from '@/components/PageHeader';
@@ -30,7 +31,6 @@ import { useUserProfile } from '@/api/hooks';
 import { useCreateOrganization } from '@/api/hooks/useOrganizationMutations';
 import { useUpdateMemberRole } from '@/api/hooks/useMemberMutations';
 import { generateMockPaymentData } from '@/types/operator';
-import { leagueEmailSchema, leaguePhoneSchema } from '../schemas/leagueOperatorSchema';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
 
@@ -98,54 +98,6 @@ export const LeagueOperatorApplication: React.FC = () => {
     // Utility functions
     setCurrentInput,
   } = useApplicationForm();
-
-  /**
-   * Check if the application is complete (all required fields filled)
-   *
-   * This function validates all required fields in the current question flow:
-   * 1. Organization name
-   * 2. Address selection (profile or custom with all fields)
-   * 3. Contact disclaimer acknowledgment
-   * 4. Email setup (profile or custom with validation)
-   * 5. Phone setup (profile or custom with validation)
-   * 6. Payment verification
-   */
-  const isApplicationComplete = (): boolean => {
-    // Check if we have completed all questions
-    return (
-      // Organization name filled
-      !!state.leagueName &&
-      // Address choice made and filled
-      state.useProfileAddress !== undefined &&
-      (state.useProfileAddress ||
-        (!!state.organizationAddress && !!state.organizationCity && !!state.organizationState && !!state.organizationZipCode)
-      ) &&
-      // Contact disclaimer acknowledged
-      state.contactDisclaimerAcknowledged === true &&
-      // League email choice made and filled (with validation for custom email)
-      state.useProfileEmail !== undefined &&
-      (state.useProfileEmail || (!!state.leagueEmail && (() => {
-        try {
-          leagueEmailSchema.parse(state.leagueEmail);
-          return true;
-        } catch {
-          return false;
-        }
-      })())) &&
-      // League phone choice made and filled (with validation for custom phone)
-      state.useProfilePhone !== undefined &&
-      (state.useProfilePhone || (!!state.leaguePhone && (() => {
-        try {
-          leaguePhoneSchema.parse(state.leaguePhone);
-          return true;
-        } catch {
-          return false;
-        }
-      })())) &&
-      // Payment information verified
-      state.paymentVerified === true
-    );
-  };
 
   /**
    * Sync input field with current question's value when navigating
@@ -334,6 +286,7 @@ export const LeagueOperatorApplication: React.FC = () => {
                 additionalContent={currentQuestion.additionalContent}
                 error={error}
                 isSubmitting={isSubmitting}
+                hideNavigation={true}
               />
             ) : (
               <QuestionStep
@@ -352,6 +305,7 @@ export const LeagueOperatorApplication: React.FC = () => {
                 infoTitle={currentQuestion.infoTitle}
                 infoContent={currentQuestion.infoContent}
                 isSubmitting={isSubmitting}
+                hideNavigation={true}
               />
             )}
           </div>
@@ -360,9 +314,33 @@ export const LeagueOperatorApplication: React.FC = () => {
           <div className="lg:col-span-1">
             <ApplicationPreview
               applicationData={state}
-              isComplete={isApplicationComplete()}
             />
           </div>
+        </div>
+
+        {/* Navigation Buttons - Below the grid */}
+        <div className="flex justify-between items-center mt-8">
+          <Button
+            variant="outline"
+            onClick={handlePrevious}
+            disabled={!canGoBack}
+          >
+            Previous
+          </Button>
+
+          <Button
+            loadingText={isLastQuestion ? 'Creating...' : 'Loading...'}
+            isLoading={isSubmitting}
+            onClick={() => handleContinue()}
+            disabled={
+              isSubmitting ||
+              (currentQuestion.type === 'choice' && !currentQuestion.getValue()) ||
+              (currentQuestion.type !== 'choice' && !currentInput.trim())
+            }
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            {isLastQuestion ? 'Create Organization' : 'Next'}
+          </Button>
         </div>
       </div>
 

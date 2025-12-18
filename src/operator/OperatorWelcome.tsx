@@ -6,6 +6,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { useUserProfile } from '@/api/hooks';
+import { useOrganizations } from '@/api/hooks/useOrganizations';
 
 /**
  * OperatorWelcome Component
@@ -20,6 +22,12 @@ import { Button } from '@/components/ui/button';
  * will be redirected to the operator dashboard instead
  */
 export const OperatorWelcome: React.FC = () => {
+  // Get user's organization to build the correct dashboard link
+  const { member } = useUserProfile();
+  const { organizations, loading: orgsLoading } = useOrganizations(member?.id);
+
+  // Get the first organization (the one just created)
+  const primaryOrg = organizations[0];
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 py-12">
       <div className="container mx-auto px-4 max-w-4xl">
@@ -94,14 +102,33 @@ export const OperatorWelcome: React.FC = () => {
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/operator-dashboard">
+            {orgsLoading ? (
               <Button
                 loadingText="none"
-                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg font-semibold"
+                disabled
+                className="w-full sm:w-auto bg-blue-600 text-white px-8 py-3 text-lg font-semibold"
               >
-                Go to Operator Dashboard
+                Loading...
               </Button>
-            </Link>
+            ) : primaryOrg ? (
+              <Link to={`/operator-dashboard/${primaryOrg.id}`}>
+                <Button
+                  loadingText="none"
+                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg font-semibold"
+                >
+                  Go to Operator Dashboard
+                </Button>
+              </Link>
+            ) : (
+              <Link to="/dashboard">
+                <Button
+                  loadingText="none"
+                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg font-semibold"
+                >
+                  Go to Dashboard
+                </Button>
+              </Link>
+            )}
             <Link to="/dashboard">
               <Button
                 variant="outline"

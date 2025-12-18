@@ -145,11 +145,12 @@ export async function getMyReports(userId: string) {
 /**
  * Get pending reports for operator review
  *
- * Operators see reports for players in their leagues.
+ * Operators only see reports assigned to their organization.
  *
+ * @param organizationId - Organization ID to filter reports by
  * @returns Promise with array of pending reports and any error
  */
-export async function getPendingReportsForOperator() {
+export async function getPendingReportsForOperator(organizationId: string) {
   const { data, error } = await supabase
     .from('user_reports')
     .select(`
@@ -173,6 +174,7 @@ export async function getPendingReportsForOperator() {
         system_player_number
       )
     `)
+    .eq('assigned_organization_id', organizationId)
     .in('status', ['pending', 'under_review'])
     .order('severity', { ascending: false })
     .order('created_at', { ascending: true }); // Oldest first

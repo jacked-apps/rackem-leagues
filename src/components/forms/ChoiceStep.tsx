@@ -30,6 +30,8 @@ interface ChoiceStepProps {
   isSubmitting?: boolean;
   /** Shows loading state during navigation (for lazy loading feedback) */
   isNavigating?: boolean;
+  /** Hides the navigation buttons (Previous/Next) when true */
+  hideNavigation?: boolean;
 }
 
 /**
@@ -57,7 +59,8 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
   additionalContent,
   error,
   isSubmitting,
-  isNavigating
+  isNavigating,
+  hideNavigation = false
 }) => {
   return (
     <div className="bg-white rounded-xl shadow-lg p-8">
@@ -123,25 +126,27 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
             <p className="text-red-500 text-sm mt-2">{error}</p>
           )}
 
-          <div className="flex justify-between">
-            <Button
-              variant="outline"
-              onClick={onPrevious}
-              disabled={!canGoBack}
-            >
-              Previous
-            </Button>
+          {!hideNavigation && (
+            <div className="flex justify-between">
+              <Button
+                variant="outline"
+                onClick={onPrevious}
+                disabled={!canGoBack}
+              >
+                Previous
+              </Button>
 
-            <Button
-              loadingText={isLastQuestion ? 'Submitting...' : 'Loading...'}
-              isLoading={isSubmitting || isNavigating}
-              onClick={onNext}
-              disabled={!selectedValue || isSubmitting || isNavigating}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              {isLastQuestion ? 'Submit Application' : 'Next'}
-            </Button>
-          </div>
+              <Button
+                loadingText={isLastQuestion ? 'Submitting...' : 'Loading...'}
+                isLoading={isSubmitting || isNavigating}
+                onClick={onNext}
+                disabled={!selectedValue || isSubmitting || isNavigating}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {isLastQuestion ? 'Submit Application' : 'Next'}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>

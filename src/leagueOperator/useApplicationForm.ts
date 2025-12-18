@@ -88,6 +88,8 @@ export const useApplicationForm = () => {
       }
       setCurrentInput(''); // Clear input for next question
       setError(''); // Clear any previous errors
+      // Scroll to top so user sees the new question
+      window.scrollTo(0, 0);
     }
   };
 
@@ -106,6 +108,8 @@ export const useApplicationForm = () => {
       }
       setCurrentInput(''); // Clear input when going back
       setError(''); // Clear any errors
+      // Scroll to top so user sees the question
+      window.scrollTo(0, 0);
     }
   };
 

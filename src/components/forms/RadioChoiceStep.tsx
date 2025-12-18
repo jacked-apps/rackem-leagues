@@ -6,6 +6,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { SimpleRadioChoice } from './SimpleRadioChoice';
+import { InfoButton } from '../InfoButton';
 
 interface RadioChoiceOption {
   value: string;
@@ -70,9 +71,16 @@ export const RadioChoiceStep: React.FC<RadioChoiceStepProps> = ({
   return (
     <div className="bg-white rounded-xl shadow-lg p-4">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">
-          {title}
-        </h2>
+        <div className="flex items-center gap-3 mb-4">
+          <h2 className="text-2xl font-bold text-gray-900">
+            {title}
+          </h2>
+          {infoTitle && infoContent && (
+            <InfoButton title={infoTitle} label={infoLabel}>
+              {infoContent}
+            </InfoButton>
+          )}
+        </div>
 
         {/* Use the reusable SimpleRadioChoice component */}
         <SimpleRadioChoice
@@ -81,9 +89,6 @@ export const RadioChoiceStep: React.FC<RadioChoiceStepProps> = ({
           choices={choices}
           selectedValue={selectedValue}
           onSelect={onSelect}
-          infoTitle={infoTitle}
-          infoContent={infoContent}
-          infoLabel={infoLabel}
         />
 
         {/* Error message */}

@@ -18,13 +18,50 @@ export const formatPhoneNumber = (input: string): string => {
 };
 
 /**
+ * Known acronyms that should stay uppercase
+ */
+const ACRONYMS = ['BCA', 'CSI', 'APA', 'VNEA', 'TAP', 'UPA', 'WPBA', 'WPA'];
+
+/**
+ * Capitalize a single word with special handling for:
+ * - Acronyms (BCA, CSI, etc.) - kept uppercase
+ * - "Mc" names (McDonald, McCormick) - capitalize after Mc
+ * - "O'" names (O'Brien, O'Connor) - capitalize after O'
+ */
+const capitalizeWord = (word: string): string => {
+  const upper = word.toUpperCase();
+
+  // Check if it's a known acronym
+  if (ACRONYMS.includes(upper)) {
+    return upper;
+  }
+
+  // Handle "Mc" names (e.g., mcdonald -> McDonald)
+  if (upper.startsWith('MC') && word.length > 2) {
+    return 'Mc' + word.charAt(2).toUpperCase() + word.slice(3).toLowerCase();
+  }
+
+  // Handle "O'" names (e.g., o'brien -> O'Brien)
+  if (upper.startsWith("O'") && word.length > 2) {
+    return "O'" + word.charAt(2).toUpperCase() + word.slice(3).toLowerCase();
+  }
+
+  // Standard capitalization
+  return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+};
+
+/**
  * Capitalize words - shared utility for names, addresses, etc.
+ * Handles acronyms (BCA, CSI) and special names (McDonald, O'Brien)
  */
 export const capitalizeWords = (input: string): string => {
+  // Handle non-string values gracefully
+  if (typeof input !== 'string') return '';
+
   return input
     .trim()
     .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .map(capitalizeWord)
     .join(' ');
 };
 

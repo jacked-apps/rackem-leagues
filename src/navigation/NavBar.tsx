@@ -1,13 +1,18 @@
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useUserProfile, useMemberId, useUnreadMessageCount } from '@/api/hooks';
+import { useOrganizations } from '@/api/hooks/useOrganizations';
 import { Button } from '@/components/ui/button';
 import { Mail } from 'lucide-react';
 
 export const NavBar: React.FC = () => {
-  const { hasMemberRecord, canAccessLeagueOperatorFeatures } = useUserProfile();
+  const { member, hasMemberRecord, canAccessLeagueOperatorFeatures } = useUserProfile();
   const memberId = useMemberId();
   const { data: unreadCount = 0 } = useUnreadMessageCount(memberId);
   const location = useLocation();
+
+  // Get user's organizations for operator dashboard link
+  const { organizations } = useOrganizations(member?.id);
+  const primaryOrg = organizations[0];
 
   // Hide navbar on mobile when on Messages page
   const isMessagesPage = location.pathname === '/messages';
@@ -67,9 +72,9 @@ export const NavBar: React.FC = () => {
           </Link>
         )}
 
-        {canAccessLeagueOperatorFeatures() && (
+        {canAccessLeagueOperatorFeatures() && primaryOrg && (
           <Button asChild variant="outline" size="sm">
-            <Link to="/operator-dashboard">
+            <Link to={`/operator-dashboard/${primaryOrg.id}`}>
               🎱 League Admin
             </Link>
           </Button>

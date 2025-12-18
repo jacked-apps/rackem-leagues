@@ -442,7 +442,7 @@ export const TeamManagement: React.FC = () => {
             <Button
               onClick={() => {
                 setIsNavigating(true);
-                navigate(organizationId ? `/operator-dashboard/${organizationId}` : '/operator-dashboard');
+                navigate(organizationId ? `/operator-dashboard/${organizationId}` : '/dashboard');
               }}
               disabled={isNavigating}
               isLoading={isNavigating}

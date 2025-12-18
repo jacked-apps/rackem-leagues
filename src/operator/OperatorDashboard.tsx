@@ -34,7 +34,7 @@ import { usePendingReportsCount } from '@/hooks/usePendingReportsCount';
 export const OperatorDashboard: React.FC = () => {
   const { orgId } = useParams<{ orgId: string }>();
   const { member } = useUserProfile();
-  const { count: pendingReportsCount } = usePendingReportsCount();
+  const { count: pendingReportsCount } = usePendingReportsCount(orgId);
 
   // Fetch organization data
   const { organization, loading: orgLoading } = useOrganization(orgId!);
@@ -83,7 +83,7 @@ export const OperatorDashboard: React.FC = () => {
             title="Reports Management"
             description="Review and manage user reports"
             buttonText="View Reports"
-            linkTo="/operator-reports"
+            linkTo={`/operator-reports/${orgId}`}
             badgeCount={pendingReportsCount}
           />
 

@@ -5,6 +5,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { formatPhoneNumber } from '../utils/formatters';
 import type { Member } from '@/types';
 import type { ContactFormData, EditFormState } from './types';
@@ -61,27 +62,35 @@ export const ContactInfoSection: React.FC<ContactInfoSectionProps> = ({
         // Edit Mode
         <div className="space-y-4">
           {/* Email */}
-          <Input
-            id="email"
-            label="Email Address"
-            type="email"
-            value={form.formData.email}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handlers.updateForm('email', e.target.value)}
-            placeholder="your.email@example.com"
-            error={form.errors.email}
-          />
+          <div>
+            <Label htmlFor="email">Email Address</Label>
+            <Input
+              id="email"
+              type="email"
+              value={form.formData.email}
+              onChange={(e) => handlers.updateForm('email', e.target.value)}
+              placeholder="your.email@example.com"
+              className={form.errors.email ? 'border-red-500' : ''}
+            />
+            {form.errors.email && (
+              <p className="text-red-500 text-sm mt-1">{form.errors.email}</p>
+            )}
+          </div>
 
           {/* Phone */}
           <div>
+            <Label htmlFor="phone">Phone Number</Label>
             <Input
               id="phone"
-              label="Phone Number"
               type="tel"
               value={form.formData.phone}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handlePhoneChange(e.target.value)}
+              onChange={(e) => handlePhoneChange(e.target.value)}
               placeholder="(555) 123-4567"
-              error={form.errors.phone}
+              className={form.errors.phone ? 'border-red-500' : ''}
             />
+            {form.errors.phone && (
+              <p className="text-red-500 text-sm mt-1">{form.errors.phone}</p>
+            )}
             <p className="text-xs text-gray-500 mt-1">
               Phone number will be formatted automatically as you type
             </p>

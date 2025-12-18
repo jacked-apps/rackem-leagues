@@ -54,27 +54,6 @@
 - **Note**: This removes the file from git without deleting it locally
 - **Priority**: Should be done before pushing to any public/shared repository
 
-## 10. PP Manual Merge - Confidence Thresholds Review
-- **Context**: `/register-existing` page allows existing players (Placeholder Players) to find their record without a registration link
-- **Feature**: Users fill out optional fields (up to 16) and we search for matching PP records
-- **Proposed Grading System**:
-  - **Grade A (6+ matches)**: Auto-merge - redirect straight to `/register?claim={ppId}`
-  - **Grade B (4-5 matches)**: LO Review Required - create pending claim for operator approval
-  - **Grade C (<4 matches)**: No Match - tell user to get a registration link from captain/LO
-- **Fields being matched** (all optional):
-  - League Operator: First Name, Last Name, Player Number
-  - Captain: First Name, Last Name, Player Number
-  - User's System Info: First Name, Last Name, Player Number, Nickname
-  - Team/Location: Team Name, Play Night, City, State
-  - Security: Last Opponent First/Last Name OR "Haven't played yet" checkbox
-- **Questions for Jack**:
-  1. Are 6+/4-5/<4 the right thresholds?
-  2. Should some fields be weighted more heavily? (e.g., player number match = 2 points?)
-  3. For Grade B (LO Review), should we create a `claim_requests` table or just tell user to contact LO?
-  4. If multiple PP candidates match with similar scores, show a list or require more specificity?
-- **File**: `/src/login/RegisterExisting.tsx`
-- **Edge Function needed**: `search-placeholder-player` for multi-table confidence scoring
-
 ## 12. MemberCombobox Invite Status Badge Integration
 - **Context**: When operators edit teams, placeholder players (PPs) with pending/expired invites should show a status badge
 - **Current State**: Badge floats outside the combobox (between combobox and X clear button), looks awkward
@@ -91,6 +70,38 @@
 - **Note**: Captain view already works well (static row with PlayerNameLink + Badge + Manage button)
 - **Priority**: Low - visual polish only
 
+## 13. League Creation Wizard Step 4 - Radio Choice Styling
+- **Issue**: Selected radio button choice div is too busy and congested
+- **Context**: Step 4 "What team format will this league use?" has two choices (5-Man and 8-Man)
+- **Problem**: When a choice is selected, the expanded card with description becomes visually cluttered
+- **File**: `/src/components/forms/SimpleRadioChoice.tsx` (lines 91-149 handle selected state)
+- **Design Request**: Refine the look of the selected choice cards to be cleaner and less congested
+- **Priority**: Low - visual polish
+
+## 14. Complete Profile Page - Info Button Refinement
+- **Issue**: Info button on the "Complete Your Profile" page needs refinement
+- **Context**: Nickname field has an info button that shows explanation of how nicknames work
+- **File**: `/src/completeProfile/CompleteProfileForm.tsx` uses `nicknameInfo` from `/src/constants/infoContent/profileInfoContent.tsx`
+- **Request**: Review the info button styling/placement and make it look cleaner
+- **Priority**: Low - visual polish
+
+## 15. League Creation Wizard - Overall UX Refinement
+- **Issue**: Several UI/UX elements feel wonky and could use refinement
+- **Cancel/Clear Form redundancy**:
+  - "Cancel" button appears in the navigation buttons at each step (bottom of wizard)
+  - "Clear Form" link appears at the top of the page in the header
+  - Both essentially do the same thing (abandon wizard progress)
+  - Cancel: Shows confirmation dialog, clears localStorage, navigates to operator dashboard
+  - Clear Form: Shows confirmation dialog, clears localStorage, reloads the page
+  - **Request**: Decide on the best UX approach - keep one, combine them, or redesign how users exit the wizard
+- **General UI polish**: Some elements look a little wonky - walk through the wizard and refine as needed
+- **Files**:
+  - `/src/operator/LeagueCreationWizard.tsx` (main wizard component)
+  - `/src/components/forms/RadioChoiceStep.tsx` (renders Cancel button)
+  - `/src/components/forms/SimpleRadioChoice.tsx` (choice cards)
+  - `/src/components/forms/QuestionStep.tsx` (input steps)
+- **Priority**: Low - UX polish
+
 ## 11. Navbar Invite Indicator
 - **Context**: When navbar is implemented, add an invite notification indicator
 - **Design**: Similar to messages - icon with badge showing count of pending invites
@@ -105,4 +116,4 @@
 
 ---
 
-*Last Updated: 2025-12-17*
+*Last Updated: 2025-12-18*

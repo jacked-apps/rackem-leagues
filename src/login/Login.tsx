@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { useNavigate, Link } from 'react-router-dom';
-import { Input } from '@/components/ui/input'; // shadcn Input component
-import { PasswordInput } from '@/components/ui/password-input'; // Custom password input with toggle
-import { Label } from '@/components/ui/label'; // shadcn Label component
-import { Button } from '@/components/ui/button'; // shadcn Button component
+import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { CardAction, CardFooter } from '@/components/ui/card';
 import { LoginCard } from './LoginCard';
 
@@ -22,7 +22,7 @@ export const Login: React.FC = () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/`,
+        redirectTo: `${window.location.origin}/dashboard`,
       },
     });
     if (error) {
@@ -45,7 +45,7 @@ export const Login: React.FC = () => {
     } else {
       setMessage('Login successful!');
       setLoading(false);
-      navigate('/'); // Redirect Home
+      navigate('/dashboard');
     }
   };
 

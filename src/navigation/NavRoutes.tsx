@@ -16,7 +16,6 @@ import { createBrowserRouter, Outlet } from 'react-router-dom';
 import { Home } from '../home/Home';
 import { Login } from '../login/Login';
 import { Register } from '../login/Register';
-import { RegisterExisting } from '../login/RegisterExisting';
 import { ClaimPlayer } from '../login/ClaimPlayer';
 import { ForgotPassword } from '../login/ForgotPassword';
 import { ResetPassword } from '../login/ResetPassword';
@@ -141,7 +140,6 @@ export const router = createBrowserRouter([
       { path: 'pricing', element: <Pricing /> },
       { path: 'login', element: <Login /> },
       { path: 'register', element: <Register /> },
-      { path: 'register-existing', element: <RegisterExisting /> },
       { path: 'claim-player', element: <ClaimPlayer /> },
       { path: 'forgot-password', element: <ForgotPassword /> },
       { path: 'reset-password', element: <ResetPassword /> },
@@ -179,7 +177,7 @@ export const router = createBrowserRouter([
       // === Operator Routes (require league_operator role) ===
       { path: 'operator-welcome', element: withOperator(OperatorWelcome) },
       { path: 'operator-dashboard/:orgId', element: withOperator(OperatorDashboard) },
-      { path: 'operator-reports', element: withOperator(ReportsManagement) },
+      { path: 'operator-reports/:orgId', element: withOperator(ReportsManagement) },
       { path: 'manage-players/:orgId', element: withOperator(PlayerManagement) },
       { path: 'create-league/:orgId', element: withOperator(LeagueCreationWizard) },
       { path: 'operator-settings/:orgId', element: withOperator(OrganizationSettings) },
