@@ -4,21 +4,34 @@
  * Displays the complete season schedule with all matches organized by week.
  * Shows matchups, venues, dates, and match status.
  * Accessible to both operators and players.
+ *
+ * Operators can edit weeks to rearrange team matchups and change venues.
+ * Edit mode allows one week at a time to be edited, with save/cancel/revert.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/supabaseClient';
-import { Calendar, MapPin, Trash2 } from 'lucide-react';
+import { Calendar, MapPin, Trash2, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { parseLocalDate } from '@/utils/formatters';
 import { clearSchedule } from '@/utils/scheduleGenerator';
-import { useIsOperator, useSeasonById, useSeasonSchedule } from '@/api/hooks';
+import {
+  useIsOperator,
+  useSeasonById,
+  useSeasonSchedule,
+  useTeamsBySeason,
+  useLeagueVenuesWithDetails,
+} from '@/api/hooks';
 import type { MatchWithDetails } from '@/types';
 import { logger } from '@/utils/logger';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { WeekEditorView } from '@/components/schedule/WeekEditorView';
+import type { MatchEditState } from '@/components/schedule/useWeekEditor';
+import type { TeamOption } from '@/components/schedule/TeamSelect';
+import type { VenueOption } from '@/components/schedule/VenueSelect';
 
 /**
  * Calculate table numbers per venue within a week
@@ -99,14 +112,81 @@ export const SeasonSchedulePage: React.FC = () => {
   // Fetch schedule data with TanStack Query
   const { data: schedule = [], isLoading: scheduleLoading } = useSeasonSchedule(seasonId);
 
+  // Fetch teams for week editor dropdowns
+  const { data: teamsData = [] } = useTeamsBySeason(seasonId);
+
+  // Fetch league venues for week editor dropdowns
+  const { data: leagueVenuesData = [] } = useLeagueVenuesWithDetails(leagueId);
+
   const [clearing, setClearing] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [_error, setError] = useState<string | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
 
+  // Track which week is being edited (null = none)
+  const [editingWeekId, setEditingWeekId] = useState<string | null>(null);
+
   const loading = seasonLoading || scheduleLoading;
   const seasonName = season?.season_name || `Season ${season?.season_length || 0} Weeks`;
   const seasonStatus = season?.status || '';
+
+  // Transform teams data for dropdown
+  const teamOptions: TeamOption[] = useMemo(() => {
+    return teamsData.map(team => ({
+      id: team.id,
+      teamName: team.team_name,
+    }));
+  }, [teamsData]);
+
+  // Transform venues data for dropdown
+  const venueOptions: VenueOption[] = useMemo(() => {
+    return leagueVenuesData.map(lv => ({
+      id: lv.venue.id,
+      name: lv.venue.name,
+      city: lv.venue.city,
+      state: lv.venue.state,
+    }));
+  }, [leagueVenuesData]);
+
+  /**
+   * Check if editing is allowed for a week (has any editable matches)
+   */
+  const canEditWeek = (matches: MatchWithDetails[]): boolean => {
+    return matches.some(m => m.status === 'scheduled');
+  };
+
+  /**
+   * Convert matches to edit state format
+   */
+  const convertMatchesToEditState = (matches: MatchWithDetails[]): MatchEditState[] => {
+    return matches.map(match => ({
+      matchId: match.id,
+      homeTeamId: match.home_team_id,
+      awayTeamId: match.away_team_id,
+      venueId: match.scheduled_venue_id,
+      homeTeamName: match.home_team?.team_name || 'BYE',
+      awayTeamName: match.away_team?.team_name || 'BYE',
+      isEditable: match.status === 'scheduled',
+      matchNumber: match.match_number,
+    }));
+  };
+
+  /**
+   * Handle clicking edit on a week
+   */
+  const handleEditWeek = async (weekId: string) => {
+    // If already editing a different week, confirm discard
+    if (editingWeekId && editingWeekId !== weekId) {
+      const confirmed = await confirm({
+        title: 'Discard Changes?',
+        message: 'You have unsaved changes in another week. Discard them and edit this week instead?',
+        confirmText: 'Discard & Edit',
+        confirmVariant: 'destructive',
+      });
+      if (!confirmed) return;
+    }
+    setEditingWeekId(weekId);
+  };
 
   /**
    * Handle accepting the schedule
@@ -218,8 +298,27 @@ export const SeasonSchedulePage: React.FC = () => {
         {/* Schedule by Week */}
         <div className="space-y-6">
           {schedule.map(({ week, matches }) => {
+            // If this week is being edited, show the WeekEditorView
+            if (editingWeekId === week.id) {
+              return (
+                <WeekEditorView
+                  key={week.id}
+                  week={week}
+                  initialMatches={convertMatchesToEditState(matches)}
+                  teams={teamOptions}
+                  venues={venueOptions}
+                  seasonId={seasonId!}
+                  onCancel={() => setEditingWeekId(null)}
+                  onSaveSuccess={() => setEditingWeekId(null)}
+                />
+              );
+            }
+
+            // Otherwise show the display view
             const weekStyle = getWeekTypeStyle(week.week_type);
             const tableNumbers = calculateTableNumbers(matches);
+            const showEditButton = isOperator && canEditWeek(matches) && week.week_type === 'regular';
+
             return (
               <Card key={week.id}>
                 <CardHeader className={weekStyle.bgColor}>
@@ -234,24 +333,37 @@ export const SeasonSchedulePage: React.FC = () => {
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Calendar className="h-4 w-4" />
-                      <span className="hidden lg:block">
-                      {parseLocalDate(week.scheduled_date).toLocaleDateString('en-US', {
-                        weekday: 'long',
-                        month: 'long',
-                        day: 'numeric',
-                        year: 'numeric'
-                      })}
-                      </span>
-                      <span className="lg:hidden">
-                      {parseLocalDate(week.scheduled_date).toLocaleDateString('en-US', {
-                        weekday: 'short',
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric'
-                      })}
-                      </span>
+                    <div className="flex items-center gap-4">
+                      {/* Edit Week Button - only for operators and editable regular weeks */}
+                      {showEditButton && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditWeek(week.id)}
+                        >
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Edit Week
+                        </Button>
+                      )}
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Calendar className="h-4 w-4" />
+                        <span className="hidden lg:block">
+                        {parseLocalDate(week.scheduled_date).toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          month: 'long',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                        </span>
+                        <span className="lg:hidden">
+                        {parseLocalDate(week.scheduled_date).toLocaleDateString('en-US', {
+                          weekday: 'short',
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </CardHeader>
