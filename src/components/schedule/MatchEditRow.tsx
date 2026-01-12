@@ -9,9 +9,11 @@
  */
 
 import React from 'react';
+import { Link, Unlink } from 'lucide-react';
 import { TeamSelect, type TeamOption } from './TeamSelect';
 import { VenueSelect, type VenueOption } from './VenueSelect';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 
 /**
  * Props for MatchEditRow component
@@ -25,18 +27,24 @@ interface MatchEditRowProps {
   awayTeamId: string | null;
   /** Current venue ID */
   venueId: string | null;
+  /** Whether venue is manually overridden (not linked to home team) */
+  venueOverride: boolean;
   /** Whether this row is editable */
   isEditable: boolean;
   /** All teams available for selection */
   teams: TeamOption[];
   /** All venues available for selection */
   venues: VenueOption[];
+  /** Whether to show BYE option in team dropdowns (only for odd team count) */
+  showByeOption: boolean;
   /** Callback when home team changes */
   onHomeTeamChange: (teamId: string | null) => void;
   /** Callback when away team changes */
   onAwayTeamChange: (teamId: string | null) => void;
   /** Callback when venue changes */
   onVenueChange: (venueId: string | null) => void;
+  /** Callback to toggle venue override */
+  onVenueOverrideToggle: () => void;
 }
 
 /**
@@ -66,12 +74,15 @@ export const MatchEditRow: React.FC<MatchEditRowProps> = ({
   homeTeamId,
   awayTeamId,
   venueId,
+  venueOverride,
   isEditable,
   teams,
   venues,
+  showByeOption,
   onHomeTeamChange,
   onAwayTeamChange,
   onVenueChange,
+  onVenueOverrideToggle,
 }) => {
   return (
     <div
@@ -98,6 +109,7 @@ export const MatchEditRow: React.FC<MatchEditRowProps> = ({
           disabled={!isEditable}
           placeholder="Home team"
           label={`Match ${matchNumber} Home Team`}
+          showByeOption={showByeOption}
         />
       </div>
 
@@ -116,20 +128,43 @@ export const MatchEditRow: React.FC<MatchEditRowProps> = ({
           disabled={!isEditable}
           placeholder="Away team"
           label={`Match ${matchNumber} Away Team`}
+          showByeOption={showByeOption}
         />
       </div>
 
-      {/* Venue */}
-      <div className="col-span-4">
-        <Label className="sr-only">Venue</Label>
-        <VenueSelect
-          value={venueId}
-          onChange={onVenueChange}
-          venues={venues}
+      {/* Venue with link/unlink toggle */}
+      <div className="col-span-4 flex items-center gap-2">
+        <div className="flex-1">
+          <Label className="sr-only">Venue</Label>
+          <VenueSelect
+            value={venueId}
+            onChange={onVenueChange}
+            venues={venues}
+            disabled={!isEditable}
+            placeholder="Select venue"
+            label={`Match ${matchNumber} Venue`}
+          />
+        </div>
+        {/* Link/Unlink toggle - shows whether venue follows home team
+            Link icon (blue) = venue auto-updates with home team
+            Unlink icon (orange) = venue is manually overridden */}
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className={`p-2 h-9 w-9 ${venueOverride ? 'text-orange-600' : 'text-blue-600'}`}
+          onClick={onVenueOverrideToggle}
           disabled={!isEditable}
-          placeholder="Select venue"
-          label={`Match ${matchNumber} Venue`}
-        />
+          title={venueOverride
+            ? 'Venue is manually set. Click to link to home team.'
+            : 'Venue follows home team. Click to manually override.'}
+        >
+          {venueOverride ? (
+            <Unlink className="h-4 w-4" />
+          ) : (
+            <Link className="h-4 w-4" />
+          )}
+        </Button>
       </div>
 
       {/* Non-editable indicator */}

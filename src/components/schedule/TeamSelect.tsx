@@ -43,6 +43,8 @@ interface TeamSelectProps {
   placeholder?: string;
   /** Label for accessibility */
   label?: string;
+  /** Whether to show BYE option (only for seasons with odd team count) */
+  showByeOption?: boolean;
 }
 
 /**
@@ -66,6 +68,7 @@ export const TeamSelect: React.FC<TeamSelectProps> = ({
   disabled = false,
   placeholder = 'Select team',
   label,
+  showByeOption = false,
 }) => {
   // Handle the select change
   const handleValueChange = (newValue: string) => {
@@ -93,10 +96,12 @@ export const TeamSelect: React.FC<TeamSelectProps> = ({
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
-        {/* BYE option for matches with odd team count */}
-        <SelectItem value="__BYE__">
-          <span className="text-gray-500 italic">BYE</span>
-        </SelectItem>
+        {/* BYE option - only shown for seasons with odd team count */}
+        {showByeOption && (
+          <SelectItem value="__BYE__">
+            <span className="text-gray-500 italic">BYE</span>
+          </SelectItem>
+        )}
 
         {/* Team options */}
         {teams.map((team) => (

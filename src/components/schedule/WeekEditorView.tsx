@@ -22,7 +22,7 @@ import { useUpdateMatch } from '@/api/hooks';
 import { queryKeys } from '@/api/queryKeys';
 import { parseLocalDate } from '@/utils/formatters';
 import { logger } from '@/utils/logger';
-import { useWeekEditor, type MatchEditState } from './useWeekEditor';
+import { useWeekEditor, type MatchEditState, type TeamVenueMap } from './useWeekEditor';
 import { MatchEditRow } from './MatchEditRow';
 import type { TeamOption } from './TeamSelect';
 import type { VenueOption } from './VenueSelect';
@@ -49,8 +49,12 @@ interface WeekEditorViewProps {
   teams: TeamOption[];
   /** All venues for the league (for dropdowns) */
   venues: VenueOption[];
+  /** Map of team ID to their home venue ID (for auto-venue updates) */
+  teamHomeVenues: TeamVenueMap;
   /** Season ID (for cache invalidation) */
   seasonId: string;
+  /** Whether the season has a BYE team (odd number of teams) */
+  hasByeTeam: boolean;
   /** Called when user cancels (exit edit mode without saving) */
   onCancel: () => void;
   /** Called after successful save */
@@ -79,7 +83,9 @@ export const WeekEditorView: React.FC<WeekEditorViewProps> = ({
   initialMatches,
   teams,
   venues,
+  teamHomeVenues,
   seasonId,
+  hasByeTeam,
   onCancel,
   onSaveSuccess,
 }) => {
@@ -87,15 +93,19 @@ export const WeekEditorView: React.FC<WeekEditorViewProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Use the existing useUpdateMatch mutation (without auto-invalidation - we'll do it manually)
+  const updateMatchMutation = useUpdateMatch({ invalidate: false });
+
   // Use the week editor hook for state management
   const {
     editedMatches,
     handleTeamChange,
     handleVenueChange,
+    handleVenueOverrideToggle,
     handleRevert,
     hasChanges,
     getChangedMatches,
-  } = useWeekEditor({ initialMatches });
+  } = useWeekEditor({ initialMatches, teamHomeVenues });
 
   // Check if any matches are editable
   const hasEditableMatches = useMemo(
@@ -104,7 +114,8 @@ export const WeekEditorView: React.FC<WeekEditorViewProps> = ({
   );
 
   /**
-   * Save all changes using atomic RPC
+   * Save all changes by updating each match individually
+   * Uses the existing useUpdateMatch mutation for each changed match
    */
   const handleSave = async () => {
     const changedMatches = getChangedMatches();
@@ -119,29 +130,19 @@ export const WeekEditorView: React.FC<WeekEditorViewProps> = ({
     setError(null);
 
     try {
-      // Build the update payload
-      const matchUpdates = changedMatches.map(m => ({
-        match_id: m.matchId,
-        home_team_id: m.homeTeamId,
-        away_team_id: m.awayTeamId,
-        scheduled_venue_id: m.venueId,
-      }));
-
-      // Call the atomic RPC function
-      const { data, error: rpcError } = await supabase.rpc('update_week_matches', {
-        p_match_updates: matchUpdates,
-      });
-
-      if (rpcError) {
-        throw new Error(rpcError.message);
-      }
-
-      // Check the response
-      if (data && typeof data === 'object' && 'success' in data) {
-        if (!data.success) {
-          throw new Error(data.error || 'Failed to save changes');
-        }
-      }
+      // Update each changed match using the existing mutation
+      await Promise.all(
+        changedMatches.map(m =>
+          updateMatchMutation.mutateAsync({
+            matchId: m.matchId,
+            updates: {
+              home_team_id: m.homeTeamId,
+              away_team_id: m.awayTeamId,
+              scheduled_venue_id: m.venueId,
+            },
+          })
+        )
+      );
 
       logger.info('Week matches updated successfully', {
         weekId: week.id,
@@ -217,12 +218,15 @@ export const WeekEditorView: React.FC<WeekEditorViewProps> = ({
               homeTeamId={match.homeTeamId}
               awayTeamId={match.awayTeamId}
               venueId={match.venueId}
+              venueOverride={match.venueOverride}
               isEditable={match.isEditable}
               teams={teams}
               venues={venues}
+              showByeOption={hasByeTeam}
               onHomeTeamChange={(teamId) => handleTeamChange(match.matchId, 'home', teamId)}
               onAwayTeamChange={(teamId) => handleTeamChange(match.matchId, 'away', teamId)}
               onVenueChange={(venueId) => handleVenueChange(match.matchId, venueId)}
+              onVenueOverrideToggle={() => handleVenueOverrideToggle(match.matchId)}
             />
           ))}
         </div>

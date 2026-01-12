@@ -38,6 +38,8 @@ export interface MatchEditState {
   awayTeamId: string | null;
   /** Venue ID for the match */
   venueId: string | null;
+  /** Whether venue is manually overridden (not linked to home team) */
+  venueOverride: boolean;
   /** Original home team name (for display) */
   homeTeamName: string;
   /** Original away team name (for display) */
@@ -49,11 +51,20 @@ export interface MatchEditState {
 }
 
 /**
+ * Map of team ID to their home venue ID
+ */
+export interface TeamVenueMap {
+  [teamId: string]: string | null;
+}
+
+/**
  * Props for initializing the week editor
  */
 export interface UseWeekEditorProps {
   /** Initial match states from the database */
   initialMatches: MatchEditState[];
+  /** Map of team ID to home venue ID (for auto-venue updates) */
+  teamHomeVenues: TeamVenueMap;
 }
 
 /**
@@ -64,8 +75,10 @@ export interface UseWeekEditorReturn {
   editedMatches: MatchEditState[];
   /** Handle team selection with auto-swap logic */
   handleTeamChange: (matchId: string, position: 'home' | 'away', newTeamId: string | null) => void;
-  /** Handle venue change for a match */
+  /** Handle venue change for a match (sets venueOverride to true) */
   handleVenueChange: (matchId: string, venueId: string | null) => void;
+  /** Toggle venue override for a match (link/unlink from home team) */
+  handleVenueOverrideToggle: (matchId: string) => void;
   /** Reset all matches to original state */
   handleRevert: () => void;
   /** Whether any changes have been made */
@@ -98,12 +111,16 @@ export interface UseWeekEditorReturn {
  * // If Team D was in Match 2 away, they swap automatically
  * handleTeamChange('match-1', 'home', 'team-d-id');
  */
-export function useWeekEditor({ initialMatches }: UseWeekEditorProps): UseWeekEditorReturn {
+export function useWeekEditor({ initialMatches, teamHomeVenues }: UseWeekEditorProps): UseWeekEditorReturn {
   // Current edited state
   const [editedMatches, setEditedMatches] = useState<MatchEditState[]>(initialMatches);
 
   // Original state for comparison and revert (useRef to avoid re-renders)
   const originalMatches = useRef<MatchEditState[]>(initialMatches);
+
+  // Store team home venues ref for use in callbacks
+  const teamVenuesRef = useRef<TeamVenueMap>(teamHomeVenues);
+  teamVenuesRef.current = teamHomeVenues;
 
   /**
    * Handle team selection with automatic swap logic
@@ -159,6 +176,13 @@ export function useWeekEditor({ initialMatches }: UseWeekEditorProps): UseWeekEd
       // Put the new team in the target position
       if (position === 'home') {
         targetMatch.homeTeamId = newTeamId;
+        // Auto-update venue to new home team's venue (unless venue is overridden)
+        if (!targetMatch.venueOverride && newTeamId) {
+          const newVenue = teamVenuesRef.current[newTeamId];
+          if (newVenue !== undefined) {
+            targetMatch.venueId = newVenue;
+          }
+        }
       } else {
         targetMatch.awayTeamId = newTeamId;
       }
@@ -169,14 +193,41 @@ export function useWeekEditor({ initialMatches }: UseWeekEditorProps): UseWeekEd
 
   /**
    * Handle venue change for a match
+   * Setting the venue manually marks it as overridden (unlinked from home team)
    */
   const handleVenueChange = useCallback((matchId: string, venueId: string | null) => {
     setEditedMatches(prev =>
       prev.map(m =>
         m.matchId === matchId && m.isEditable
-          ? { ...m, venueId }
+          ? { ...m, venueId, venueOverride: true }
           : m
       )
+    );
+  }, []);
+
+  /**
+   * Toggle venue override for a match
+   * When turning off override, venue syncs back to home team's home venue
+   */
+  const handleVenueOverrideToggle = useCallback((matchId: string) => {
+    setEditedMatches(prev =>
+      prev.map(m => {
+        if (m.matchId !== matchId || !m.isEditable) return m;
+
+        const newOverride = !m.venueOverride;
+
+        // If turning off override, sync venue to home team's home venue
+        if (!newOverride && m.homeTeamId) {
+          const homeVenue = teamVenuesRef.current[m.homeTeamId];
+          return {
+            ...m,
+            venueOverride: false,
+            venueId: homeVenue !== undefined ? homeVenue : m.venueId,
+          };
+        }
+
+        return { ...m, venueOverride: newOverride };
+      })
     );
   }, []);
 
@@ -225,6 +276,7 @@ export function useWeekEditor({ initialMatches }: UseWeekEditorProps): UseWeekEd
     editedMatches,
     handleTeamChange,
     handleVenueChange,
+    handleVenueOverrideToggle,
     handleRevert,
     hasChanges,
     getChangedMatches,

@@ -29,7 +29,7 @@ import type { MatchWithDetails } from '@/types';
 import { logger } from '@/utils/logger';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { WeekEditorView } from '@/components/schedule/WeekEditorView';
-import type { MatchEditState } from '@/components/schedule/useWeekEditor';
+import type { MatchEditState, TeamVenueMap } from '@/components/schedule/useWeekEditor';
 import type { TeamOption } from '@/components/schedule/TeamSelect';
 import type { VenueOption } from '@/components/schedule/VenueSelect';
 
@@ -130,12 +130,32 @@ export const SeasonSchedulePage: React.FC = () => {
   const seasonName = season?.season_name || `Season ${season?.season_length || 0} Weeks`;
   const seasonStatus = season?.status || '';
 
-  // Transform teams data for dropdown
+  // Check if any matches have been played (in_progress or completed)
+  // Used to determine if "Clear Schedule" should be available
+  const hasPlayedMatches = useMemo(() => {
+    return schedule.some(({ matches }) =>
+      matches.some(m => m.status === 'in_progress' || m.status === 'completed')
+    );
+  }, [schedule]);
+
+  // Check if season has a BYE team (any REGULAR week match has null home or away team)
+  // This happens when there's an odd number of teams
+  // Note: Playoff matches also have null team IDs (TBD), so we exclude those
+  const hasByeTeam = useMemo(() => {
+    return schedule.some(({ week, matches }) =>
+      week.week_type === 'regular' &&
+      matches.some(m => m.home_team_id === null || m.away_team_id === null)
+    );
+  }, [schedule]);
+
+  // Transform teams data for dropdown (sorted alphabetically by team name)
   const teamOptions: TeamOption[] = useMemo(() => {
-    return teamsData.map(team => ({
-      id: team.id,
-      teamName: team.team_name,
-    }));
+    return teamsData
+      .map(team => ({
+        id: team.id,
+        teamName: team.team_name,
+      }))
+      .sort((a, b) => a.teamName.localeCompare(b.teamName));
   }, [teamsData]);
 
   // Transform venues data for dropdown
@@ -148,6 +168,15 @@ export const SeasonSchedulePage: React.FC = () => {
     }));
   }, [leagueVenuesData]);
 
+  // Build map of team ID to their home venue ID (for auto-venue updates in editor)
+  const teamHomeVenues: TeamVenueMap = useMemo(() => {
+    const map: TeamVenueMap = {};
+    for (const team of teamsData) {
+      map[team.id] = team.home_venue_id || null;
+    }
+    return map;
+  }, [teamsData]);
+
   /**
    * Check if editing is allowed for a week (has any editable matches)
    */
@@ -157,6 +186,7 @@ export const SeasonSchedulePage: React.FC = () => {
 
   /**
    * Convert matches to edit state format
+   * venueOverride starts as false - venue is linked to home team by default
    */
   const convertMatchesToEditState = (matches: MatchWithDetails[]): MatchEditState[] => {
     return matches.map(match => ({
@@ -164,6 +194,7 @@ export const SeasonSchedulePage: React.FC = () => {
       homeTeamId: match.home_team_id,
       awayTeamId: match.away_team_id,
       venueId: match.scheduled_venue_id,
+      venueOverride: false, // Default to linked to home team
       homeTeamName: match.home_team?.team_name || 'BYE',
       awayTeamName: match.away_team?.team_name || 'BYE',
       isEditable: match.status === 'scheduled',
@@ -270,18 +301,22 @@ export const SeasonSchedulePage: React.FC = () => {
         title="Season Schedule"
         subtitle={seasonName}
       >
+        {/* Action buttons for operators during setup (season status = 'upcoming') */}
         {isOperator && seasonStatus === 'upcoming' && schedule.length > 0 && (
           <div className="mt-2 flex gap-3">
-            <Button
-              variant="destructive"
-              onClick={handleClearSchedule}
-              disabled={clearing || accepting}
-              isLoading={clearing}
-              loadingText="Clearing..."
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Clear Schedule
-            </Button>
+            {/* Clear Schedule - only available if no matches have been played */}
+            {!hasPlayedMatches && (
+              <Button
+                variant="destructive"
+                onClick={handleClearSchedule}
+                disabled={clearing || accepting}
+                isLoading={clearing}
+                loadingText="Clearing..."
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Clear Schedule
+              </Button>
+            )}
             <Button
               onClick={handleAcceptSchedule}
               disabled={accepting || clearing}
@@ -307,7 +342,9 @@ export const SeasonSchedulePage: React.FC = () => {
                   initialMatches={convertMatchesToEditState(matches)}
                   teams={teamOptions}
                   venues={venueOptions}
+                  teamHomeVenues={teamHomeVenues}
                   seasonId={seasonId!}
+                  hasByeTeam={hasByeTeam}
                   onCancel={() => setEditingWeekId(null)}
                   onSaveSuccess={() => setEditingWeekId(null)}
                 />
