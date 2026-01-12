@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2025-12-18 (added dev email confirmation migration, venue table counts migration)
+> **Last Updated**: 2025-01-12 (added MatchListPage, MatchDataPage, match-list components for Phase 1 LO manual scoring)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -348,6 +348,8 @@
 - `ScheduleView.tsx` - Schedule view
 - `SeasonScheduleManager.tsx` - Season schedule manager
 - `SeasonSchedulePage.tsx` - Season schedule page
+- `MatchListPage.tsx` - Match list page (Phase 1: navigation to individual matches)
+- `MatchDataPage.tsx` - Match data page (Phase 1: placeholder, Phase 2: full editing)
 
 **Team & Venue Management**
 - `TeamManagement.tsx` - Team management interface
@@ -506,6 +508,10 @@ Reusable wizard/form step components
 - `MessageSettingsModal.tsx` - Settings modal
 - `BlockedUsersModal.tsx` - Blocked users modal
 - `UserListItem.tsx` - User list item
+
+#### Match List Components (`/components/operator/match-list/`)
+- `WeekAccordionHeader.tsx` - Week accordion header with status indicators
+- `MatchRow.tsx` - Clickable match row within week accordion
 
 #### Operator Components (`/components/operator/`)
 - `ActiveLeagues.tsx` - Active leagues overview (uses LeagueStatusCard)

@@ -52,11 +52,11 @@ export function StatsCard({ leagueId, seasonId }: StatsCardProps) {
             </div>
           </Button>
 
-          {/* Match Data Viewer */}
+          {/* Match Data / Match List */}
           <Button
             variant="outline"
             className="h-auto flex-col items-start p-4 hover:bg-orange-50 hover:border-orange-300"
-            onClick={() => navigate(`/league/${leagueId}/season/${seasonId}/match-data`)}
+            onClick={() => navigate(`/league/${leagueId}/season/${seasonId}/match-list`)}
           >
             <Database className="h-5 w-5 mb-2 text-orange-600" />
             <div className="text-left">
