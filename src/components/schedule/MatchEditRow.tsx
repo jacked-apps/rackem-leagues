@@ -14,6 +14,7 @@ import { TeamSelect, type TeamOption } from './TeamSelect';
 import { VenueSelect, type VenueOption } from './VenueSelect';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 /**
  * Props for MatchEditRow component
@@ -29,6 +30,8 @@ interface MatchEditRowProps {
   venueId: string | null;
   /** Whether venue is manually overridden (not linked to home team) */
   venueOverride: boolean;
+  /** Assigned table number (null for auto) */
+  tableNumber: number | null;
   /** Whether this row is editable */
   isEditable: boolean;
   /** All teams available for selection */
@@ -45,6 +48,8 @@ interface MatchEditRowProps {
   onVenueChange: (venueId: string | null) => void;
   /** Callback to toggle venue override */
   onVenueOverrideToggle: () => void;
+  /** Callback when table number changes */
+  onTableNumberChange: (tableNumber: number | null) => void;
 }
 
 /**
@@ -75,6 +80,7 @@ export const MatchEditRow: React.FC<MatchEditRowProps> = ({
   awayTeamId,
   venueId,
   venueOverride,
+  tableNumber,
   isEditable,
   teams,
   venues,
@@ -83,6 +89,7 @@ export const MatchEditRow: React.FC<MatchEditRowProps> = ({
   onAwayTeamChange,
   onVenueChange,
   onVenueOverrideToggle,
+  onTableNumberChange,
 }) => {
   return (
     <div
@@ -133,7 +140,7 @@ export const MatchEditRow: React.FC<MatchEditRowProps> = ({
       </div>
 
       {/* Venue with link/unlink toggle */}
-      <div className="col-span-4 flex items-center gap-2">
+      <div className="col-span-3 flex items-center gap-1">
         <div className="flex-1">
           <Label className="sr-only">Venue</Label>
           <VenueSelect
@@ -165,6 +172,24 @@ export const MatchEditRow: React.FC<MatchEditRowProps> = ({
             <Link className="h-4 w-4" />
           )}
         </Button>
+      </div>
+
+      {/* Table number */}
+      <div className="col-span-1">
+        <Label className="sr-only">Table</Label>
+        <Input
+          type="number"
+          min="1"
+          value={tableNumber ?? ''}
+          onChange={(e) => {
+            const val = e.target.value;
+            onTableNumberChange(val === '' ? null : parseInt(val, 10));
+          }}
+          disabled={!isEditable}
+          placeholder="#"
+          className="w-full text-center"
+          aria-label={`Match ${matchNumber} Table Number`}
+        />
       </div>
 
       {/* Non-editable indicator */}

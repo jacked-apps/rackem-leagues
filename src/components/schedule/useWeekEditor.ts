@@ -40,6 +40,8 @@ export interface MatchEditState {
   venueId: string | null;
   /** Whether venue is manually overridden (not linked to home team) */
   venueOverride: boolean;
+  /** Assigned table number (null for auto-calculated) */
+  tableNumber: number | null;
   /** Original home team name (for display) */
   homeTeamName: string;
   /** Original away team name (for display) */
@@ -79,6 +81,8 @@ export interface UseWeekEditorReturn {
   handleVenueChange: (matchId: string, venueId: string | null) => void;
   /** Toggle venue override for a match (link/unlink from home team) */
   handleVenueOverrideToggle: (matchId: string) => void;
+  /** Handle table number change for a match */
+  handleTableNumberChange: (matchId: string, tableNumber: number | null) => void;
   /** Reset all matches to original state */
   handleRevert: () => void;
   /** Whether any changes have been made */
@@ -232,6 +236,19 @@ export function useWeekEditor({ initialMatches, teamHomeVenues }: UseWeekEditorP
   }, []);
 
   /**
+   * Handle table number change for a match
+   */
+  const handleTableNumberChange = useCallback((matchId: string, tableNumber: number | null) => {
+    setEditedMatches(prev =>
+      prev.map(m =>
+        m.matchId === matchId && m.isEditable
+          ? { ...m, tableNumber }
+          : m
+      )
+    );
+  }, []);
+
+  /**
    * Reset all matches to original state
    */
   const handleRevert = useCallback(() => {
@@ -248,12 +265,14 @@ export function useWeekEditor({ initialMatches, teamHomeVenues }: UseWeekEditorP
         homeTeamId: m.homeTeamId,
         awayTeamId: m.awayTeamId,
         venueId: m.venueId,
+        tableNumber: m.tableNumber,
       })),
       originalMatches.current.map(m => ({
         matchId: m.matchId,
         homeTeamId: m.homeTeamId,
         awayTeamId: m.awayTeamId,
         venueId: m.venueId,
+        tableNumber: m.tableNumber,
       }))
     );
   }, [editedMatches]);
@@ -267,7 +286,8 @@ export function useWeekEditor({ initialMatches, teamHomeVenues }: UseWeekEditorP
       return (
         edited.homeTeamId !== original.homeTeamId ||
         edited.awayTeamId !== original.awayTeamId ||
-        edited.venueId !== original.venueId
+        edited.venueId !== original.venueId ||
+        edited.tableNumber !== original.tableNumber
       );
     });
   }, [editedMatches]);
@@ -277,6 +297,7 @@ export function useWeekEditor({ initialMatches, teamHomeVenues }: UseWeekEditorP
     handleTeamChange,
     handleVenueChange,
     handleVenueOverrideToggle,
+    handleTableNumberChange,
     handleRevert,
     hasChanges,
     getChangedMatches,

@@ -195,6 +195,7 @@ export const SeasonSchedulePage: React.FC = () => {
       awayTeamId: match.away_team_id,
       venueId: match.scheduled_venue_id,
       venueOverride: false, // Default to linked to home team
+      tableNumber: match.assigned_table_number ?? null,
       homeTeamName: match.home_team?.team_name || 'BYE',
       awayTeamName: match.away_team?.team_name || 'BYE',
       isEditable: match.status === 'scheduled',

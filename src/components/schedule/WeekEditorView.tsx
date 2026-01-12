@@ -102,6 +102,7 @@ export const WeekEditorView: React.FC<WeekEditorViewProps> = ({
     handleTeamChange,
     handleVenueChange,
     handleVenueOverrideToggle,
+    handleTableNumberChange,
     handleRevert,
     hasChanges,
     getChangedMatches,
@@ -139,6 +140,7 @@ export const WeekEditorView: React.FC<WeekEditorViewProps> = ({
               home_team_id: m.homeTeamId,
               away_team_id: m.awayTeamId,
               scheduled_venue_id: m.venueId,
+              assigned_table_number: m.tableNumber,
             },
           })
         )
@@ -219,6 +221,7 @@ export const WeekEditorView: React.FC<WeekEditorViewProps> = ({
               awayTeamId={match.awayTeamId}
               venueId={match.venueId}
               venueOverride={match.venueOverride}
+              tableNumber={match.tableNumber}
               isEditable={match.isEditable}
               teams={teams}
               venues={venues}
@@ -227,6 +230,7 @@ export const WeekEditorView: React.FC<WeekEditorViewProps> = ({
               onAwayTeamChange={(teamId) => handleTeamChange(match.matchId, 'away', teamId)}
               onVenueChange={(venueId) => handleVenueChange(match.matchId, venueId)}
               onVenueOverrideToggle={() => handleVenueOverrideToggle(match.matchId)}
+              onTableNumberChange={(tableNumber) => handleTableNumberChange(match.matchId, tableNumber)}
             />
           ))}
         </div>
