@@ -19,6 +19,7 @@ import {
   getMatchById,
   getMatchesBySeason,
   getMatchesByTeam,
+  getMatchesByWeek,
   getSeasonSchedule,
   getSeasonWeeks,
   getMatchWithLeagueSettings,
@@ -332,6 +333,32 @@ export function useNextMatchForTeam(teamId: string | null | undefined) {
     queryFn: () => getNextMatchForTeam(teamId!),
     enabled: !!teamId,
     staleTime: STALE_TIME.SHORT, // 5 minutes
+    retry: 1,
+  });
+}
+
+/**
+ * Hook to fetch all matches in a specific week
+ *
+ * Gets matches by season_week_id for navigation between sibling matches.
+ * Used by operator Match Data Page to show week match pills.
+ * Cached for 10 minutes.
+ *
+ * @param seasonWeekId - Season week's primary key ID
+ * @returns TanStack Query result with array of matches in the week
+ *
+ * @example
+ * const { data: weekMatches = [], isLoading } = useWeekMatches(seasonWeekId);
+ * return weekMatches.map(match => (
+ *   <MatchPill key={match.id} match={match} />
+ * ));
+ */
+export function useWeekMatches(seasonWeekId: string | null | undefined) {
+  return useQuery({
+    queryKey: [...queryKeys.matches.all, 'week', seasonWeekId],
+    queryFn: () => getMatchesByWeek(seasonWeekId!),
+    enabled: !!seasonWeekId,
+    staleTime: STALE_TIME.SCHEDULES, // 10 minutes
     retry: 1,
   });
 }

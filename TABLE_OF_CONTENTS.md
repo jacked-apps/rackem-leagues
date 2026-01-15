@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2025-01-12 (added MatchListPage, MatchDataPage, match-list components for Phase 1 LO manual scoring)
+> **Last Updated**: 2025-01-15 (added useMatchEditorState.ts hook for match editor state management)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -172,6 +172,13 @@
 | `futureFeatures.md` | Future feature ideas | Oct 15 |
 | `API-HOOKS-USAGE.md` | TanStack Query API hooks usage guide | Nov 7 ✨ |
 | `CENTRAL-DATABASE-IMPLEMENTATION.md` | TanStack Query patterns and migration approach | Nov 7 ✨ |
+
+### Planning Documents
+
+| File | Purpose | Status |
+|------|---------|--------|
+| `PLAN-lo-manual-scoring.md` | League Operator manual scoring feature plan | Phase 1 ✅, Phase 2 in progress |
+| `PLAN-league-format-configs.md` | League format configuration system (custom formats, thresholds, game generation) | 📋 Planning |
 
 ---
 
@@ -350,6 +357,7 @@
 - `SeasonSchedulePage.tsx` - Season schedule page
 - `MatchListPage.tsx` - Match list page (Phase 1: navigation to individual matches)
 - `MatchDataPage.tsx` - Match data page (Phase 1: placeholder, Phase 2: full editing)
+- `PointsThresholdChartPage.tsx` - Dedicated page for editing points-based threshold charts
 
 **Team & Venue Management**
 - `TeamManagement.tsx` - Team management interface
@@ -512,6 +520,20 @@ Reusable wizard/form step components
 #### Match List Components (`/components/operator/match-list/`)
 - `WeekAccordionHeader.tsx` - Week accordion header with status indicators
 - `MatchRow.tsx` - Clickable match row within week accordion
+
+#### Match Editor Components (`/components/operator/match-editor/`)
+- `index.ts` - Barrel export for all match editor components and hooks
+- `useMatchEditorState.ts` - **State management hook** (useReducer) for match editor - handles lineups, thresholds, games, results
+- `MatchNavigationBar.tsx` - Week match navigation pills for quick switching between matches
+- `LineupsSection.tsx` - Team lineups section with handicap system toggle
+- `ThresholdsSection.tsx` - Games-to-win thresholds section with chart preview and link to editor
+- `GamesSection.tsx` - Game results entry and editing section (placeholder)
+- `MatchResultSection.tsx` - Final match result and points section (placeholder)
+- `MatchEditorFooter.tsx` - Save/Complete action buttons footer
+
+#### Threshold Editor Components (`/components/operator/threshold-editor/`)
+- `index.ts` - Barrel export for threshold editor components
+- `PointsThresholdChartEditor.tsx` - Full-page editor for points-based threshold charts (exact diff lookup)
 
 #### Operator Components (`/components/operator/`)
 - `ActiveLeagues.tsx` - Active leagues overview (uses LeagueStatusCard)

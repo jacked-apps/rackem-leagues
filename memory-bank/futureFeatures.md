@@ -159,6 +159,22 @@ This document captures aspirational features that would enhance the app's desira
 
 ## League Operator Management Features
 
+### Scorekeeper Threshold Permissions
+**Status**: Future consideration - not yet designed
+
+**Concept**: Allow scorekeepers to set/adjust match thresholds when they have league operator permissions
+
+**Use Case**:
+- Scorekeepers often know the exact match situation and may need to adjust thresholds
+- Rather than contacting the LO for every adjustment, trusted scorekeepers could have permission to modify thresholds
+- This would require LO to grant explicit permission per scorekeeper or per team
+
+**Open Questions**:
+- Should this be a global setting or per-scorekeeper permission?
+- Should changes require LO approval or be immediate?
+- What audit trail is needed for threshold changes?
+- Should there be limits on how much thresholds can be adjusted?
+
 ### Assistant Operators System
 **Status**: Future consideration - not yet designed
 

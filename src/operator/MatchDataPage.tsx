@@ -1,29 +1,64 @@
 /**
  * @fileoverview Match Data Page for League Operators
  *
- * Individual match editing page where operators can view and modify
- * all match data including lineups, games, scores, and results.
+ * Full match editing page where operators can view and modify all match data
+ * including lineups, thresholds, games, and results. This is NOT the player
+ * scoring page - it's a simpler, more direct editing interface for operators.
  *
- * Phase 1: Placeholder page with basic match info
- * Phase 2: Full editing capability (coming soon)
+ * Key Features:
+ * - Match navigation bar for quick switching between week matches
+ * - Lineups section with flexible player counts (3-6) and handicap systems
+ * - Thresholds section with auto-generation for supported formats
+ * - Games section with round robin generation or custom game creation
+ * - Match result section with winner determination and points
+ * - Batch save (no auto-save, no real-time)
+ *
+ * State Management:
+ * - Uses useMatchEditorState hook for all page state (useReducer)
+ * - UI-first approach: state is local until save
+ * - Everything is editable - auto-calculated values can be overridden
  *
  * Route: /league/:leagueId/season/:seasonId/match/:matchId
  */
 
+import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { useMatchById } from '@/api/hooks/useMatches';
+import { useMatchById, useMatchLineups, useMatchGames, useMatchWithLeagueSettings } from '@/api/hooks/useMatches';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Construction } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { parseLocalDate } from '@/utils/formatters';
+import {
+  MatchNavigationBar,
+  LineupsSection,
+  ThresholdsSection,
+  GamesSection,
+  MatchResultSection,
+  useMatchEditorState,
+  type HandicapType,
+} from '@/components/operator/match-editor';
+
+/**
+ * Determine the default handicap type from league settings
+ */
+function getDefaultHandicapType(leagueHandicapVariant?: string): HandicapType {
+  if (leagueHandicapVariant === 'percentage') return 'percentage';
+  if (leagueHandicapVariant === 'points' || leagueHandicapVariant === 'standard') return 'points';
+  return 'custom';
+}
+
+/**
+ * Get default lineup size from team format
+ */
+function getDefaultLineupSize(teamFormat?: '5_man' | '8_man'): number {
+  // 5_man format = 3v3 matches, 8_man format = 5v5 matches
+  return teamFormat === '8_man' ? 5 : 3;
+}
 
 /**
  * Match Data Page Component
  *
- * Displays individual match details for operator review and editing.
- * Currently a placeholder showing basic match info - full editing
- * capability will be added in Phase 2.
+ * Orchestrates all match editing sections using the useMatchEditorState hook.
+ * Data flows: Fetch → Initialize State → Edit → Batch Save
  */
 export default function MatchDataPage() {
   const { leagueId, seasonId, matchId } = useParams<{
@@ -32,13 +67,129 @@ export default function MatchDataPage() {
     matchId: string;
   }>();
 
-  // Fetch match details
-  const { data: match, isLoading, error } = useMatchById(matchId);
+  // Fetch match details with league settings
+  const { data: match, isLoading: isMatchLoading, error: matchError } = useMatchById(matchId);
+  const { data: matchWithSettings, isLoading: isSettingsLoading } = useMatchWithLeagueSettings(matchId);
+
+  // Fetch lineups (don't require locked - operators can edit unlocked)
+  const { data: lineups, isLoading: isLineupsLoading } = useMatchLineups(
+    matchId,
+    match?.home_team_id,
+    match?.away_team_id,
+    false // Don't require locked
+  );
+
+  // Fetch games
+  const { data: games = [], isLoading: isGamesLoading } = useMatchGames(matchId);
+
+  // Combined loading state
+  const isLoading = isMatchLoading || isSettingsLoading || isLineupsLoading || isGamesLoading;
 
   // Get team names (fallback if loading)
   const homeTeamName = match?.home_team?.team_name || 'Home Team';
   const awayTeamName = match?.away_team?.team_name || 'Away Team';
   const matchTitle = match ? `${homeTeamName} vs ${awayTeamName}` : 'Loading...';
+
+  // Initialize the editor state hook
+  // Note: We initialize with defaults first, then sync from fetched data
+  const { state, actions, computed } = useMatchEditorState({
+    matchId: matchId || '',
+    homeTeamId: match?.home_team_id || '',
+    awayTeamId: match?.away_team_id || '',
+    homeTeamName,
+    awayTeamName,
+    defaultLineupSize: getDefaultLineupSize(matchWithSettings?.league?.team_format),
+    defaultHandicapType: getDefaultHandicapType(matchWithSettings?.league?.handicap_variant),
+    existingThresholds: {
+      homeWin: match?.home_games_to_win ?? null,
+      homeTie: match?.home_games_to_tie ?? null,
+      awayWin: match?.away_games_to_win ?? null,
+      awayTie: match?.away_games_to_tie ?? null,
+    },
+  });
+
+  // Sync existing thresholds when match data loads
+  useEffect(() => {
+    if (match && !state.isDirty) {
+      const existingThresholds = {
+        homeWin: match.home_games_to_win ?? null,
+        homeTie: match.home_games_to_tie ?? null,
+        awayWin: match.away_games_to_win ?? null,
+        awayTie: match.away_games_to_tie ?? null,
+      };
+
+      // Only update if thresholds are different
+      if (
+        existingThresholds.homeWin !== state.thresholds.homeWin ||
+        existingThresholds.homeTie !== state.thresholds.homeTie ||
+        existingThresholds.awayWin !== state.thresholds.awayWin ||
+        existingThresholds.awayTie !== state.thresholds.awayTie
+      ) {
+        actions.setThresholds(existingThresholds);
+        actions.markClean(); // Don't mark as dirty from initial sync
+      }
+    }
+  }, [match, state.isDirty, state.thresholds, actions]);
+
+  // Restore saved state from localStorage on mount (for mock save persistence)
+  useEffect(() => {
+    if (!matchId || state.isDirty) return;
+
+    const storageKey = `match_editor_${matchId}`;
+    const savedData = localStorage.getItem(storageKey);
+
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+
+        // Restore lineups if they have players
+        if (parsed.homeLineup?.players?.length > 0) {
+          actions.setLineupSize(parsed.formatConfig.lineupSize);
+          actions.setHandicapType(parsed.formatConfig.handicapType);
+
+          // Restore individual player data
+          parsed.homeLineup.players.forEach((player: any) => {
+            if (player.playerId) {
+              actions.setPlayer('home', player.position, player.playerId, player.playerName);
+              actions.setPlayerHandicap('home', player.position, player.handicap);
+            }
+          });
+          parsed.awayLineup.players.forEach((player: any) => {
+            if (player.playerId) {
+              actions.setPlayer('away', player.position, player.playerId, player.playerName);
+              actions.setPlayerHandicap('away', player.position, player.handicap);
+            }
+          });
+        }
+
+        // Restore thresholds
+        if (parsed.thresholds) {
+          actions.setThresholds(parsed.thresholds);
+        }
+
+        // Restore games
+        if (parsed.games?.length > 0) {
+          actions.addGames(parsed.games);
+        }
+
+        // Restore result
+        if (parsed.result) {
+          actions.setResult(parsed.result);
+        }
+
+        // Mark clean since this is restoration, not user edits
+        actions.markClean();
+
+        if (import.meta.env.DEV) {
+          console.log('Restored match data from localStorage:', storageKey, parsed);
+        }
+      } catch (error) {
+        console.warn('Failed to restore match data from localStorage:', error);
+      }
+    }
+  // Only run once on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matchId]);
 
   // Format date for display
   const formattedDate = match?.season_week?.scheduled_date
@@ -85,7 +236,7 @@ export default function MatchDataPage() {
   }
 
   // Error state
-  if (error || !match) {
+  if (matchError || !match) {
     return (
       <div className="min-h-screen bg-gray-50">
         <PageHeader
@@ -97,17 +248,8 @@ export default function MatchDataPage() {
           <Card>
             <CardContent className="py-12">
               <p className="text-center text-red-600">
-                {error ? `Error loading match: ${(error as Error).message}` : 'Match not found'}
+                {matchError ? `Error loading match: ${(matchError as Error).message}` : 'Match not found'}
               </p>
-              <div className="text-center mt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => window.history.back()}
-                  loadingText="none"
-                >
-                  Go Back
-                </Button>
-              </div>
             </CardContent>
           </Card>
         </div>
@@ -119,6 +261,7 @@ export default function MatchDataPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Page Header */}
       <PageHeader
         backTo={`/league/${leagueId}/season/${seasonId}/match-list`}
         backLabel="Back to Match List"
@@ -130,62 +273,99 @@ export default function MatchDataPage() {
         </span>
       </PageHeader>
 
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* Current score if available */}
-        {(match.home_games_won !== null || match.away_games_won !== null) && (
-          <Card className="mb-6">
-            <CardContent className="py-6">
-              <h3 className="text-sm font-medium text-gray-500 mb-2 text-center">Current Score</h3>
-              <div className="flex items-center justify-center gap-4 text-3xl font-bold">
-                <span className="text-gray-900">{match.home_games_won ?? 0}</span>
-                <span className="text-gray-400">-</span>
-                <span className="text-gray-900">{match.away_games_won ?? 0}</span>
-              </div>
+      <div className="container mx-auto px-4 py-4 max-w-4xl space-y-4">
+        {/* Match Navigation Bar */}
+        {match.season_week_id && leagueId && seasonId && (
+          <Card>
+            <CardContent className="py-2">
+              <MatchNavigationBar
+                seasonWeekId={match.season_week_id}
+                currentMatchId={matchId!}
+                leagueId={leagueId}
+                seasonId={seasonId}
+                hasUnsavedChanges={state.isDirty}
+              />
             </CardContent>
           </Card>
         )}
 
-        {/* Coming soon notice */}
-        <Card className="mb-6">
-          <CardContent className="py-8">
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-              <Construction className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                Match Editor Coming Soon
-              </h3>
-              <p className="text-gray-500 max-w-md mx-auto">
-                Full match editing capability will be available in Phase 2.
-                You will be able to edit lineups, enter game results, and
-                modify match outcomes.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Lineups Section */}
+        <LineupsSection
+          homeTeamId={match.home_team_id || ''}
+          awayTeamId={match.away_team_id || ''}
+          homeTeamName={homeTeamName}
+          awayTeamName={awayTeamName}
+          matchId={matchId}
+          homeLineup={lineups?.homeLineup}
+          awayLineup={lineups?.awayLineup}
+          leagueSettings={matchWithSettings?.league}
+          editorState={state}
+          editorActions={actions}
+        />
 
-        {/* Basic match info */}
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Card>
+        {/* Thresholds Section */}
+        <ThresholdsSection
+          leagueId={leagueId}
+          homeThresholds={{
+            win: state.thresholds.homeWin,
+            tie: state.thresholds.homeTie,
+          }}
+          awayThresholds={{
+            win: state.thresholds.awayWin,
+            tie: state.thresholds.awayTie,
+          }}
+          leagueSettings={matchWithSettings?.league}
+          playerCount={state.formatConfig.lineupSize}
+          editorState={state}
+          editorActions={actions}
+          homeTeamName={homeTeamName}
+          awayTeamName={awayTeamName}
+        />
+
+        {/* Games Section */}
+        <GamesSection
+          matchId={matchId!}
+          games={games}
+          homeLineup={lineups?.homeLineup}
+          awayLineup={lineups?.awayLineup}
+          homeTeamId={match.home_team_id || ''}
+          awayTeamId={match.away_team_id || ''}
+          editorState={state}
+          editorActions={actions}
+          homeTeamName={homeTeamName}
+          awayTeamName={awayTeamName}
+        />
+
+        {/* Match Result Section */}
+        <MatchResultSection
+          homeTeamName={homeTeamName}
+          awayTeamName={awayTeamName}
+          editorState={state}
+          editorActions={actions}
+        />
+
+        {/* Debug: Show current state (development only) */}
+        {import.meta.env.DEV && (
+          <Card className="bg-gray-100 border-dashed">
             <CardContent className="py-4">
-              <h4 className="text-sm font-medium text-gray-500 mb-1">Venue</h4>
-              <p className="text-gray-900">
-                {match.scheduled_venue?.name || 'Venue TBD'}
-              </p>
-              {match.scheduled_venue?.city && (
-                <p className="text-sm text-gray-600">
-                  {match.scheduled_venue.city}, {match.scheduled_venue.state}
-                </p>
-              )}
+              <details>
+                <summary className="cursor-pointer text-sm text-gray-500 font-medium">
+                  Debug: Editor State
+                </summary>
+                <pre className="mt-2 text-xs overflow-auto max-h-60 bg-white p-2 rounded">
+                  {JSON.stringify({
+                    formatConfig: state.formatConfig,
+                    thresholds: state.thresholds,
+                    result: state.result,
+                    gamesCount: state.games.length,
+                    isDirty: state.isDirty,
+                    computed,
+                  }, null, 2)}
+                </pre>
+              </details>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="py-4">
-              <h4 className="text-sm font-medium text-gray-500 mb-1">Match ID</h4>
-              <p className="text-gray-900 font-mono text-sm truncate">
-                {match.id}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+        )}
       </div>
     </div>
   );

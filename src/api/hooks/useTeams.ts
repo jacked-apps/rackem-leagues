@@ -25,6 +25,7 @@ import {
   getCaptainTeamEditData,
   getUserTeamInMatch,
   getTeamRoster,
+  getTeamRosterWithDetails,
 } from '../queries/teams';
 import { STALE_TIME } from '../client';
 
@@ -207,6 +208,29 @@ export function useTeamRoster(teamId: string | null | undefined) {
   return useQuery({
     queryKey: [...queryKeys.teams.detail(teamId || ''), 'roster'],
     queryFn: () => getTeamRoster(teamId!),
+    enabled: !!teamId,
+    staleTime: STALE_TIME.TEAMS,
+    refetchOnWindowFocus: false,
+  });
+}
+
+/**
+ * Fetch team roster with member details
+ *
+ * Returns team players with names for display in dropdowns.
+ * Used by match editor for lineup selection.
+ *
+ * @param teamId - Team ID to fetch roster for
+ * @returns Query result with array of TeamRosterMember objects
+ *
+ * @example
+ * const { data: roster, isLoading } = useTeamRosterWithDetails(teamId);
+ * roster?.map(m => `${m.firstName} ${m.lastName}`)
+ */
+export function useTeamRosterWithDetails(teamId: string | null | undefined) {
+  return useQuery({
+    queryKey: [...queryKeys.teams.detail(teamId || ''), 'rosterWithDetails'],
+    queryFn: () => getTeamRosterWithDetails(teamId!),
     enabled: !!teamId,
     staleTime: STALE_TIME.TEAMS,
     refetchOnWindowFocus: false,

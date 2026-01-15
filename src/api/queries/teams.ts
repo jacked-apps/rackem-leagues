@@ -319,6 +319,63 @@ export async function getTeamRoster(teamId: string) {
 }
 
 /**
+ * Team roster member with details
+ * Used for lineup selection dropdowns
+ */
+export interface TeamRosterMember {
+  memberId: string;
+  firstName: string;
+  lastName: string;
+  nickname: string | null;
+  isCaptain: boolean;
+  /** Player's skill level (1-9 BCA scale), used for handicap calculations */
+  skillLevel: number | null;
+}
+
+/**
+ * Fetch team roster with member details
+ *
+ * Returns team players with their names for display in dropdowns.
+ * Used by the match editor for lineup selection.
+ *
+ * @param teamId - Team's primary key ID
+ * @returns Array of team members with names and captain status
+ * @throws Error if query fails
+ *
+ * @example
+ * const roster = await getTeamRosterWithDetails(teamId);
+ * roster.forEach(member => console.log(`${member.firstName} ${member.lastName}`));
+ */
+export async function getTeamRosterWithDetails(teamId: string): Promise<TeamRosterMember[]> {
+  const { data, error } = await supabase
+    .from('team_players')
+    .select(`
+      is_captain,
+      skill_level,
+      members:members!team_players_member_id_fkey(
+        id,
+        first_name,
+        last_name,
+        nickname
+      )
+    `)
+    .eq('team_id', teamId)
+    .order('is_captain', { ascending: false });
+
+  if (error) throw error;
+
+  // Transform to clean interface
+  return (data || []).map((p: any) => ({
+    memberId: p.members.id,
+    firstName: p.members.first_name,
+    lastName: p.members.last_name,
+    nickname: p.members.nickname,
+    isCaptain: p.is_captain,
+    skillLevel: p.skill_level,
+  }));
+}
+
+/**
  * Fetch all data needed for captain to edit their team
  *
  * This includes:

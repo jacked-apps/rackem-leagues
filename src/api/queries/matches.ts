@@ -489,6 +489,42 @@ export async function getMatchGames(matchId: string) {
  *   matchResult: 'home_win'
  * });
  */
+/**
+ * Fetch all matches for a specific week
+ *
+ * Gets all matches in a season week for navigation between matches.
+ * Used by operator Match Data Page to navigate between sibling matches.
+ *
+ * @param seasonWeekId - Season week's primary key ID
+ * @returns Array of matches with team details, ordered by match number
+ * @throws Error if database query fails
+ *
+ * @example
+ * const matches = await getMatchesByWeek('week-uuid');
+ * matches.forEach(m => console.log(`Match ${m.match_number}: ${m.home_team.team_name} vs ${m.away_team.team_name}`));
+ */
+export async function getMatchesByWeek(seasonWeekId: string): Promise<MatchWithDetails[]> {
+  const { data, error } = await supabase
+    .from('matches')
+    .select(`
+      id,
+      match_number,
+      status,
+      home_games_won,
+      away_games_won,
+      home_team:teams!matches_home_team_id_fkey(id, team_name),
+      away_team:teams!matches_away_team_id_fkey(id, team_name)
+    `)
+    .eq('season_week_id', seasonWeekId)
+    .order('match_number', { ascending: true });
+
+  if (error) {
+    throw new Error(`Failed to fetch week matches: ${error.message}`);
+  }
+
+  return (data || []) as unknown as MatchWithDetails[];
+}
+
 export async function completeMatch(
   matchId: string,
   completionData: {
