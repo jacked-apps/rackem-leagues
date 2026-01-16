@@ -21,7 +21,7 @@
  * Route: /league/:leagueId/season/:seasonId/match/:matchId
  */
 
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useMatchById, useMatchLineups, useMatchGames, useMatchWithLeagueSettings } from '@/api/hooks/useMatches';
 import { Card, CardContent } from '@/components/ui/card';
@@ -34,7 +34,11 @@ import {
   GamesSection,
   MatchResultSection,
   useMatchEditorState,
+  SetupOptions,
   type HandicapType,
+  type SetupOptionsConfig,
+  type RoundRobinType,
+  type ThresholdMode,
 } from '@/components/operator/match-editor';
 
 /**
@@ -107,6 +111,91 @@ export default function MatchDataPage() {
       awayTie: match?.away_games_to_tie ?? null,
     },
   });
+
+  // Threshold mode state (team/player/off) - will be saved to DB later
+  const [thresholdMode, setThresholdMode] = useState<ThresholdMode>('team');
+  const [savedSetupOptions, setSavedSetupOptions] = useState<boolean>(false);
+  const [isSavingSetup, setIsSavingSetup] = useState(false);
+
+  /**
+   * Map editor gameGeneration to SetupOptions roundRobinType
+   */
+  const mapGameGenerationToRoundRobin = (gen: string): RoundRobinType => {
+    switch (gen) {
+      case 'double_rr': return 'double';
+      case 'single_rr': return 'single';
+      case 'manual': return 'custom';
+      default: return 'double';
+    }
+  };
+
+  /**
+   * Map SetupOptions roundRobinType to editor gameGeneration
+   */
+  const mapRoundRobinToGameGeneration = (rr: RoundRobinType): 'double_rr' | 'single_rr' | 'manual' => {
+    switch (rr) {
+      case 'double': return 'double_rr';
+      case 'single': return 'single_rr';
+      case 'custom': return 'manual';
+      default: return 'double_rr';
+    }
+  };
+
+  /**
+   * Derive SetupOptionsConfig from editor state
+   */
+  const setupConfig: SetupOptionsConfig = useMemo(() => ({
+    lineupSize: state.formatConfig.lineupSize,
+    handicapType: state.formatConfig.handicapType === 'custom' ? 'points' : state.formatConfig.handicapType,
+    thresholdMode: thresholdMode,
+    roundRobinType: mapGameGenerationToRoundRobin(state.formatConfig.gameGeneration),
+  }), [state.formatConfig.lineupSize, state.formatConfig.handicapType, state.formatConfig.gameGeneration, thresholdMode]);
+
+  /**
+   * Handle SetupOptions changes - sync back to editor state
+   */
+  const handleSetupChange = useCallback((newConfig: SetupOptionsConfig) => {
+    // Update lineup size if changed
+    if (newConfig.lineupSize !== state.formatConfig.lineupSize) {
+      actions.setLineupSize(newConfig.lineupSize);
+    }
+
+    // Update handicap type if changed
+    if (newConfig.handicapType !== state.formatConfig.handicapType) {
+      actions.setHandicapType(newConfig.handicapType);
+    }
+
+    // Update game generation if round robin type changed
+    const newGameGen = mapRoundRobinToGameGeneration(newConfig.roundRobinType);
+    if (newGameGen !== state.formatConfig.gameGeneration) {
+      actions.setGameGeneration(newGameGen);
+    }
+
+    // Update threshold mode (local state for now)
+    if (newConfig.thresholdMode !== thresholdMode) {
+      setThresholdMode(newConfig.thresholdMode);
+    }
+  }, [state.formatConfig, actions, thresholdMode]);
+
+  /**
+   * Handle saving setup options (mock for now - will save to DB later)
+   */
+  const handleSaveSetup = useCallback(async () => {
+    setIsSavingSetup(true);
+    try {
+      // Simulate save delay
+      await new Promise(resolve => setTimeout(resolve, 300));
+      setSavedSetupOptions(true);
+
+      if (import.meta.env.DEV) {
+        console.log('Saved setup options:', setupConfig);
+      }
+    } catch (error) {
+      console.error('Failed to save setup options:', error);
+    } finally {
+      setIsSavingSetup(false);
+    }
+  }, [setupConfig]);
 
   // Sync existing thresholds when match data loads
   useEffect(() => {
@@ -288,6 +377,16 @@ export default function MatchDataPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Setup Options - unified settings for lineup size, handicap type, etc. */}
+        <SetupOptions
+          config={setupConfig}
+          onChange={handleSetupChange}
+          onSave={handleSaveSetup}
+          isSaving={isSavingSetup}
+          hasSavedOptions={savedSetupOptions}
+          defaultExpanded={!savedSetupOptions}
+        />
 
         {/* Lineups Section */}
         <LineupsSection

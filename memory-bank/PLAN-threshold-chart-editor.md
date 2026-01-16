@@ -1,9 +1,58 @@
 # Plan: Threshold Chart Editor
 
 **Branch**: `lo-manual-scoring` (part of manual scoring feature)
-**Status**: IN PROGRESS - Points & Percentage Chart Editors Complete
+**Status**: IN PROGRESS - Needs Setup Options Consolidation
 **Created**: 2025-01-15
-**Last Updated**: 2026-01-15
+**Last Updated**: 2026-01-16
+
+---
+
+## Current Session Status (Resume Here)
+
+**Where we left off**: Chart editors functional, need architectural cleanup
+
+### Completed This Session:
+- Fixed number input clearing behavior (can now clear and retype values)
+- Fixed "Higher Wins + Lower Wins = Total Games + 1" math rule
+- Updated Chart Issues checkbox text: "I understand the issues and want to use this chart anyway"
+- Added InfoButton to Chart Issues with support contact (support@rackemleagues.com)
+- Removed Allow Ties checkbox from Points chart (ties always allowed for points - too likely to be exactly even)
+- Fixed Points chart default to 18 games (BCA standard)
+
+### Architectural Decision Needed: Setup Options Consolidation
+
+**Problem**: Settings are scattered across multiple places:
+- Lineup Options has handicap type
+- Threshold Options has handicap type (duplicate!)
+- Games section has round-robin type
+- Chart editors have their own local settings
+
+**Solution**: Create unified "Setup Options" component that appears on:
+- Match Data Page (MatchDataPage.tsx)
+- Threshold Chart Editor pages (both Points and Percentage)
+
+**Setup Options Fields**:
+1. **Players per Team** (3, 4, 5, etc.) - lineup size
+2. **Handicap Type** (points / percentage) - single source of truth, determines chart type
+3. **Thresholds For** (team / player / off) - the mode
+4. **Round Robin** (single / double / custom) - determines game multiplier
+
+**Derived Values**:
+- **Total Games** = `lineupSize² × multiplier` (or custom value)
+- **Chart Type** = matches handicap type automatically
+
+**What to Remove**:
+- Duplicate handicap type from current locations
+- Threshold System dropdown (redundant with handicap type)
+- Chart type navigation toggle (chart type follows handicap type)
+
+### Next Steps:
+1. Create SetupOptions component with the 4 fields above
+2. Add to Match Data Page (collapsible accordion at top)
+3. Add to threshold chart editor pages
+4. Remove redundant settings from other locations
+5. Connect total games calculation to round-robin setting
+6. Database integration for these settings (future)
 
 ---
 

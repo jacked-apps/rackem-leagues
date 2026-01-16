@@ -11,6 +11,9 @@
  * - Add/edit/remove rows
  * - Reset to default BCA chart
  * - Save custom chart configuration
+ *
+ * The SetupOptions component at the top shows the current configuration
+ * and allows adjustments that affect the chart (lineup size, handicap type, etc.)
  */
 
 import { useState } from 'react';
@@ -22,6 +25,11 @@ import {
   type PointsChartRow,
   type ChartType,
 } from '@/components/operator/threshold-editor';
+import {
+  SetupOptions,
+  getDefaultSetupOptions,
+  type SetupOptionsConfig,
+} from '@/components/operator/match-editor';
 
 /**
  * Points Threshold Chart Editor Page
@@ -38,6 +46,12 @@ export default function PointsThresholdChartPage() {
   const returnTo = searchParams.get('returnTo');
   const lineupSizeParam = searchParams.get('lineupSize');
   const lineupSize = lineupSizeParam ? parseInt(lineupSizeParam, 10) : 3;
+
+  // Setup options state - starts with defaults for points (3v3 double round robin)
+  const [setupConfig, setSetupConfig] = useState<SetupOptionsConfig>(() => ({
+    ...getDefaultSetupOptions('points'),
+    lineupSize: lineupSize,
+  }));
 
   // State for save operation
   const [isSaving, setIsSaving] = useState(false);
@@ -118,14 +132,23 @@ export default function PointsThresholdChartPage() {
         subtitle="Configure games-to-win thresholds based on handicap difference"
       />
 
-      <div className="max-w-3xl mx-auto px-4 py-6">
+      <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
+        {/* Setup Options - read-only context for chart editing */}
+        <SetupOptions
+          config={setupConfig}
+          onChange={setSetupConfig}
+          hasSavedOptions={true}
+          readOnly={false}
+          defaultExpanded={false}
+        />
+
         <PointsThresholdChartEditor
           initialData={savedChartData ?? getDefaultPointsChartRows()}
           onSave={handleSave}
           onCancel={handleCancel}
           isSaving={isSaving}
           onChartTypeChange={handleChartTypeChange}
-          initialLineupSize={lineupSize}
+          initialLineupSize={setupConfig.lineupSize}
         />
       </div>
     </div>

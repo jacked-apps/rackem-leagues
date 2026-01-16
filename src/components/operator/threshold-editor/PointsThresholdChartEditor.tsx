@@ -234,18 +234,13 @@ interface PointsThresholdChartEditorProps {
  * Allows adding, editing, and removing rows.
  */
 /**
- * Calculate the default total games based on lineup size for points chart
- * Points chart typically uses double round-robin: each player plays every opponent twice
- * Default = lineupSize * lineupSize * 2 = lineupSize^2 * 2
+ * Default total games for Points threshold chart
  *
- * Examples:
- * - 3 players: 3 * 3 * 2 = 18 games (default)
- * - 4 players: 4 * 4 * 2 = 32 games (default)
- * - 5 players: 5 * 5 * 2 = 50 games (default)
+ * Points charts use the BCA standard of 18 games (3v3 double round-robin).
+ * This is the standard format and matches the default chart rows.
+ * Users can adjust total games manually if using a different format.
  */
-function getDefaultTotalGames(lineupSize: number): number {
-  return lineupSize * lineupSize * 2;
-}
+const DEFAULT_TOTAL_GAMES = 18;
 
 /**
  * Calculate the maximum possible handicap difference based on lineup size
@@ -281,23 +276,25 @@ export function PointsThresholdChartEditor({
   // Lineup size (informs max diff range and default total games)
   const [lineupSize, setLineupSize] = useState(initialLineupSize);
 
-  // Total games is directly editable (default based on lineup but can be customized)
-  const [totalGames, setTotalGames] = useState(() => getDefaultTotalGames(initialLineupSize));
+  // Total games is directly editable (default is 18 for BCA standard)
+  const [totalGames, setTotalGames] = useState(DEFAULT_TOTAL_GAMES);
+
+  // String values for inputs to allow clearing/editing
+  const [totalGamesInput, setTotalGamesInput] = useState(String(DEFAULT_TOTAL_GAMES));
+  const [lineupSizeInput, setLineupSizeInput] = useState(() => String(initialLineupSize));
 
   // Max possible diff based on lineup size (informational)
   const maxPossibleDiff = getMaxPossibleDiff(lineupSize);
-
-  // Whether ties are allowed in this format
-  const [allowTies, setAllowTies] = useState(true);
 
   // Whether to ignore chart warnings and allow saving anyway
   const [ignoreWarnings, setIgnoreWarnings] = useState(false);
 
   // Calculate expected center point (diff = 0) values based on total games
+  // Points charts always allow ties (points are too likely to be exactly even)
   const expectedTie = totalGames / 2; // 18 games = 9 to tie
   const expectedWin = expectedTie + 1; // 18 games = 10 to win
   const isEvenGames = totalGames % 2 === 0;
-  const tiesPossible = isEvenGames && allowTies;
+  const tiesPossible = isEvenGames; // Always allow ties for points charts
 
   // Find the actual diff=0 row to check if it matches expected
   const zeroRow = rows.find((r) => r.diff === 0);
@@ -325,7 +322,7 @@ export function PointsThresholdChartEditor({
   // Generate what the chart SHOULD look like based on current settings
   const maxDiff = rows.length > 0 ? Math.max(...rows.map((r) => r.diff)) : 12;
   const minDiff = rows.length > 0 ? Math.min(...rows.map((r) => r.diff)) : -12;
-  const generatedChart = generateChartFromGames(totalGames, allowTies, minDiff, maxDiff);
+  const generatedChart = generateChartFromGames(totalGames, true, minDiff, maxDiff);
   const matchesGeneratedChart = JSON.stringify(rows) === JSON.stringify(generatedChart);
   const matchesDefaultChart = JSON.stringify(rows) === JSON.stringify(defaultRows);
   const hasManualEdits = !matchesGeneratedChart && !matchesDefaultChart;
@@ -495,24 +492,23 @@ export function PointsThresholdChartEditor({
                 type="number"
                 min="1"
                 max="100"
-                value={totalGames}
-                onChange={(e) => setTotalGames(parseInt(e.target.value, 10) || 18)}
+                value={totalGamesInput}
+                onChange={(e) => {
+                  setTotalGamesInput(e.target.value);
+                  const val = parseInt(e.target.value, 10);
+                  if (!isNaN(val) && val >= 1) setTotalGames(val);
+                }}
+                onBlur={() => {
+                  const val = parseInt(totalGamesInput, 10);
+                  if (isNaN(val) || val < 1) {
+                    setTotalGames(18);
+                    setTotalGamesInput('18');
+                  } else {
+                    setTotalGamesInput(String(val));
+                  }
+                }}
                 className="w-20 h-8 text-center"
               />
-            </div>
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="allowTies"
-                checked={allowTies}
-                onCheckedChange={(checked) => setAllowTies(checked === true)}
-                disabled={!isEvenGames}
-              />
-              <Label
-                htmlFor="allowTies"
-                className={`text-sm ${!isEvenGames ? 'text-gray-400' : ''}`}
-              >
-                Allow Ties
-              </Label>
             </div>
           </div>
 
@@ -527,12 +523,20 @@ export function PointsThresholdChartEditor({
                 type="number"
                 min="3"
                 max="8"
-                value={lineupSize}
+                value={lineupSizeInput}
                 onChange={(e) => {
-                  const newSize = parseInt(e.target.value, 10) || 3;
-                  setLineupSize(newSize);
-                  // Optionally update total games to default for new lineup size
-                  // (user can still override)
+                  setLineupSizeInput(e.target.value);
+                  const val = parseInt(e.target.value, 10);
+                  if (!isNaN(val) && val >= 3) setLineupSize(val);
+                }}
+                onBlur={() => {
+                  const val = parseInt(lineupSizeInput, 10);
+                  if (isNaN(val) || val < 3) {
+                    setLineupSize(3);
+                    setLineupSizeInput('3');
+                  } else {
+                    setLineupSizeInput(String(val));
+                  }
                 }}
                 className="w-16 h-8 text-center"
               />
@@ -548,13 +552,9 @@ export function PointsThresholdChartEditor({
                 At diff 0: <strong>{expectedTie}</strong> to tie,{' '}
                 <strong>{expectedWin}</strong> to win
               </span>
-            ) : !isEvenGames ? (
+            ) : (
               <span className="text-orange-600">
                 Odd games = no ties possible
-              </span>
-            ) : (
-              <span>
-                At diff 0: <strong>{expectedWin}</strong> to win (ties disabled)
               </span>
             )}
           </div>
@@ -569,7 +569,7 @@ export function PointsThresholdChartEditor({
                 // Get current range from existing rows
                 const maxDiff = rows.length > 0 ? Math.max(...rows.map((r) => r.diff)) : 12;
                 const minDiff = rows.length > 0 ? Math.min(...rows.map((r) => r.diff)) : -12;
-                setRows(generateChartFromGames(totalGames, allowTies, minDiff, maxDiff));
+                setRows(generateChartFromGames(totalGames, true, minDiff, maxDiff));
               }}
               className="h-8"
             >
@@ -577,7 +577,7 @@ export function PointsThresholdChartEditor({
               Regenerate Chart
             </Button>
             <p className="text-xs text-gray-500 mt-1">
-              Recalculates all values based on total games and tie settings
+              Recalculates all values based on total games
             </p>
           </div>
 
@@ -819,6 +819,25 @@ export function PointsThresholdChartEditor({
             <CardTitle className="flex items-center gap-2 text-base text-orange-800">
               <AlertTriangle className="h-5 w-5" />
               Chart Issues
+              <InfoButton title="Custom Handicap Integration" size="sm">
+                <p className="text-sm mb-2">
+                  Want your handicap system integrated with our scoring? Contact
+                  us at{' '}
+                  <a
+                    href="mailto:support@rackemleagues.com"
+                    className="text-blue-600 hover:underline"
+                  >
+                    support@rackemleagues.com
+                  </a>
+                  .
+                </p>
+                <p className="text-sm text-gray-600">
+                  While we aim to support all handicap systems, we prioritize
+                  those that are well-established, clearly documented with
+                  specific rules and formulas, and submitted by experienced
+                  league operators.
+                </p>
+              </InfoButton>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -872,7 +891,7 @@ export function PointsThresholdChartEditor({
                 onCheckedChange={(checked) => setIgnoreWarnings(checked === true)}
               />
               <Label htmlFor="ignoreWarnings" className="text-sm text-gray-700">
-                I understand the issues and want to save anyway
+                I understand the issues and want to use this chart anyway
               </Label>
             </div>
           </CardContent>

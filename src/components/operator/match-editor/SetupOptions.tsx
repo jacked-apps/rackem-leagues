@@ -1,0 +1,737 @@
+/**
+ * @fileoverview Setup Options Component
+ *
+ * Unified settings component for match format configuration.
+ * Consolidates settings that were previously scattered across:
+ * - Lineup Options (lineup size, handicap type)
+ * - Threshold Options (threshold system, mode)
+ * - Games section (round robin type)
+ *
+ * This component appears on:
+ * - Match Data Page (primary location)
+ * - Threshold Chart Editor pages (for reference/adjustment)
+ *
+ * From these 4 settings, we can derive:
+ * - Total Games = lineupSize² × roundRobinMultiplier
+ * - Chart Type = matches handicap type (points → points chart, percentage → % chart)
+ */
+
+import { useState } from 'react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import { Settings2, Check, Pencil, AlertTriangle } from 'lucide-react';
+import { InfoButton } from '@/components/InfoButton';
+
+/**
+ * Setup issue type for tracking configuration problems
+ */
+interface SetupIssue {
+  id: string;
+  severity: 'warning' | 'error';
+  title: string;
+  description: string;
+}
+
+/**
+ * Handicap type determines how player handicaps are calculated and compared
+ * - points: Integer-based handicaps (e.g., -5 to +10), used in 3v3 formats
+ * - percentage: Percentage-based handicaps (e.g., 45% to 78%), used in 5v5 formats
+ */
+export type HandicapType = 'points' | 'percentage';
+
+/**
+ * Threshold mode determines how match winners are calculated
+ * - team: Compare total team games won against threshold
+ * - player: Compare individual player matchup results (head-to-head)
+ * - off: No automatic threshold calculation, manual entry
+ */
+export type ThresholdMode = 'team' | 'player' | 'off';
+
+/**
+ * Round robin type determines how many games are played
+ * - single: Each player plays every opponent once (lineupSize²)
+ * - double: Each player plays every opponent twice (lineupSize² × 2)
+ * - custom: Manual total games entry
+ */
+export type RoundRobinType = 'single' | 'double' | 'custom';
+
+/**
+ * Setup options configuration
+ */
+export interface SetupOptionsConfig {
+  /** Number of players per team (3, 4, 5, etc.) */
+  lineupSize: number;
+  /** Handicap calculation method */
+  handicapType: HandicapType;
+  /** How thresholds are applied */
+  thresholdMode: ThresholdMode;
+  /** Round robin format */
+  roundRobinType: RoundRobinType;
+  /** Custom total games (only used when roundRobinType is 'custom') */
+  customTotalGames?: number;
+}
+
+/**
+ * Calculate total games based on lineup size and round robin type
+ */
+export function calculateTotalGames(config: SetupOptionsConfig): number {
+  const { lineupSize, roundRobinType, customTotalGames } = config;
+
+  switch (roundRobinType) {
+    case 'single':
+      return lineupSize * lineupSize;
+    case 'double':
+      return lineupSize * lineupSize * 2;
+    case 'custom':
+      return customTotalGames ?? lineupSize * lineupSize;
+    default:
+      return lineupSize * lineupSize;
+  }
+}
+
+/**
+ * Get default setup options based on common formats
+ */
+export function getDefaultSetupOptions(handicapType: HandicapType): SetupOptionsConfig {
+  if (handicapType === 'percentage') {
+    // 5v5 percentage format: 5 players, single round robin = 25 games
+    return {
+      lineupSize: 5,
+      handicapType: 'percentage',
+      thresholdMode: 'team',
+      roundRobinType: 'single',
+    };
+  } else {
+    // 3v3 points format: 3 players, single round robin = 9 games
+    // (Default to single to avoid overwhelming game counts for custom sizes)
+    return {
+      lineupSize: 3,
+      handicapType: 'points',
+      thresholdMode: 'team',
+      roundRobinType: 'single',
+    };
+  }
+}
+
+/** Standard lineup sizes that our system fully supports */
+const STANDARD_LINEUP_SIZES = [3, 4, 5] as const;
+
+/**
+ * Players Per Team Selector
+ *
+ * Shows buttons for standard sizes (3, 4, 5) plus a Custom option.
+ * Custom sizes > 5 show a warning about potential scoring issues.
+ */
+function PlayersPerTeamSelector({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (size: number) => void;
+}) {
+  // Track if we're in custom mode (showing input field)
+  const isStandardSize = STANDARD_LINEUP_SIZES.includes(value as 3 | 4 | 5);
+  const [isCustomMode, setIsCustomMode] = useState(!isStandardSize);
+  const [customInputValue, setCustomInputValue] = useState(
+    isStandardSize ? '' : String(value)
+  );
+
+  /**
+   * Handle selecting a standard size
+   */
+  const handleStandardSelect = (size: number) => {
+    setIsCustomMode(false);
+    setCustomInputValue('');
+    onChange(size);
+  };
+
+  /**
+   * Handle clicking the Custom button
+   */
+  const handleCustomClick = () => {
+    setIsCustomMode(true);
+    // If current value is standard, start with 6
+    if (isStandardSize) {
+      setCustomInputValue('6');
+      onChange(6);
+    }
+  };
+
+  /**
+   * Handle custom input change
+   */
+  const handleCustomInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputVal = e.target.value;
+    setCustomInputValue(inputVal);
+
+    const parsed = parseInt(inputVal, 10);
+    if (!isNaN(parsed) && parsed >= 1 && parsed <= 20) {
+      onChange(parsed);
+    }
+  };
+
+  /**
+   * Handle custom input blur - validate and clean up
+   */
+  const handleCustomInputBlur = () => {
+    const parsed = parseInt(customInputValue, 10);
+    if (isNaN(parsed) || parsed < 1) {
+      // Reset to 6 if invalid
+      setCustomInputValue('6');
+      onChange(6);
+    } else if (parsed > 20) {
+      // Cap at 20
+      setCustomInputValue('20');
+      onChange(20);
+    } else {
+      setCustomInputValue(String(parsed));
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <Label className="text-sm text-gray-600">Players per Team:</Label>
+        <span onClick={(e) => e.stopPropagation()}>
+          <InfoButton title="Players per Team" size="sm">
+            <p className="mb-2">
+              Number of players on each team lineup. Common formats:
+            </p>
+            <ul className="list-disc list-inside space-y-1 text-sm mb-2">
+              <li><strong>3v3:</strong> Typical for points-based handicap leagues</li>
+              <li><strong>4v4:</strong> Less common, works with both systems</li>
+              <li><strong>5v5:</strong> Typical for percentage-based (BCA) leagues</li>
+            </ul>
+            <p className="text-xs text-gray-500">
+              Custom sizes above 5 may require additional configuration and are not fully tested with player scoring.
+            </p>
+          </InfoButton>
+        </span>
+      </div>
+
+      <div className="flex items-center gap-2">
+        {/* Standard size buttons */}
+        <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
+          {STANDARD_LINEUP_SIZES.map((size) => (
+            <Button
+              key={size}
+              type="button"
+              variant={value === size && !isCustomMode ? 'secondary' : 'ghost'}
+              size="sm"
+              className={`px-3 py-1 h-7 text-xs ${
+                value === size && !isCustomMode
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-transparent hover:bg-gray-200'
+              }`}
+              onClick={() => handleStandardSelect(size)}
+            >
+              {size}
+            </Button>
+          ))}
+
+          {/* Custom button */}
+          <Button
+            type="button"
+            variant={isCustomMode ? 'secondary' : 'ghost'}
+            size="sm"
+            className={`px-3 py-1 h-7 text-xs ${
+              isCustomMode
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : 'bg-transparent hover:bg-gray-200'
+            }`}
+            onClick={handleCustomClick}
+          >
+            Custom
+          </Button>
+        </div>
+
+        {/* Custom input field */}
+        {isCustomMode && (
+          <Input
+            type="number"
+            min="1"
+            max="20"
+            value={customInputValue}
+            onChange={handleCustomInputChange}
+            onBlur={handleCustomInputBlur}
+            className="w-16 h-7 text-center text-sm"
+            placeholder="6"
+          />
+        )}
+      </div>
+      {/* Note: Warning for sizes > 5 is now shown in Setup Issues section */}
+    </div>
+  );
+}
+
+/**
+ * Get setup issues based on current configuration
+ */
+function getSetupIssues(config: SetupOptionsConfig): SetupIssue[] {
+  const issues: SetupIssue[] = [];
+
+  // Check for custom lineup size > 5
+  if (config.lineupSize > 5) {
+    issues.push({
+      id: 'large-lineup',
+      severity: 'warning',
+      title: 'Custom lineup size',
+      description: `Lineup sizes greater than 5 (currently ${config.lineupSize}v${config.lineupSize}) are not fully supported by player scoring. You may need to use manual scoring or contact support for assistance.`,
+    });
+  }
+
+  return issues;
+}
+
+interface SetupOptionsProps {
+  /** Current configuration */
+  config: SetupOptionsConfig;
+  /** Callback when configuration changes */
+  onChange: (config: SetupOptionsConfig) => void;
+  /** Callback when save is clicked */
+  onSave?: () => void;
+  /** Whether save is in progress */
+  isSaving?: boolean;
+  /** Whether there are saved options (affects default accordion state) */
+  hasSavedOptions?: boolean;
+  /** Whether the component is read-only (view mode only) */
+  readOnly?: boolean;
+  /** Default accordion state */
+  defaultExpanded?: boolean;
+}
+
+/**
+ * Setup Options Component
+ *
+ * Collapsible accordion containing all match format settings.
+ * Single source of truth for lineup size, handicap type, threshold mode, and round robin type.
+ */
+export function SetupOptions({
+  config,
+  onChange,
+  onSave,
+  isSaving = false,
+  hasSavedOptions = false,
+  readOnly = false,
+  defaultExpanded = false,
+}: SetupOptionsProps) {
+  const [isEditing, setIsEditing] = useState(!hasSavedOptions);
+  const [issuesAcknowledged, setIssuesAcknowledged] = useState(false);
+
+  const totalGames = calculateTotalGames(config);
+  const issues = getSetupIssues(config);
+  const hasIssues = issues.length > 0;
+
+  /**
+   * Update a single field in the config
+   */
+  const updateField = <K extends keyof SetupOptionsConfig>(
+    field: K,
+    value: SetupOptionsConfig[K]
+  ) => {
+    onChange({ ...config, [field]: value });
+  };
+
+  /**
+   * Handle handicap type change - also updates lineup size and round robin defaults
+   */
+  const handleHandicapTypeChange = (type: HandicapType) => {
+    if (type === 'percentage') {
+      onChange({
+        ...config,
+        handicapType: type,
+        lineupSize: 5,
+        roundRobinType: 'single',
+      });
+    } else {
+      onChange({
+        ...config,
+        handicapType: type,
+        lineupSize: 3,
+        roundRobinType: 'double',
+      });
+    }
+  };
+
+  const handleSave = () => {
+    onSave?.();
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+  };
+
+  // Labels for display
+  const getHandicapLabel = (type: HandicapType) =>
+    type === 'points' ? 'Points' : 'Percentage';
+
+  const getModeLabel = (mode: ThresholdMode) => {
+    switch (mode) {
+      case 'team':
+        return 'Team';
+      case 'player':
+        return 'Player';
+      case 'off':
+        return 'Off';
+    }
+  };
+
+  const getRoundRobinLabel = (type: RoundRobinType) => {
+    switch (type) {
+      case 'single':
+        return 'Single';
+      case 'double':
+        return 'Double';
+      case 'custom':
+        return 'Custom';
+    }
+  };
+
+  return (
+    <Card>
+      <Accordion
+        type="single"
+        collapsible
+        defaultValue={defaultExpanded || !hasSavedOptions ? 'setup' : ''}
+      >
+        <AccordionItem value="setup" className="border-b-0">
+          <AccordionTrigger className="px-6 py-4 hover:no-underline">
+            <div className="flex items-center gap-2 text-base font-semibold">
+              <Settings2 className="h-4 w-4" />
+              Setup Options
+              <span className="text-sm font-normal text-gray-500 ml-2">
+                ({config.lineupSize}v{config.lineupSize} • {getHandicapLabel(config.handicapType)} •{' '}
+                {totalGames} games)
+              </span>
+              <span onClick={(e) => e.stopPropagation()}>
+                <InfoButton title="Setup Options" size="sm">
+                  <p className="mb-2">
+                    These settings define the match format and determine how thresholds are
+                    calculated.
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-sm mb-2">
+                    <li>
+                      <strong>Players per Team:</strong> Number of players on each team lineup
+                    </li>
+                    <li>
+                      <strong>Handicap Type:</strong> Points (3v3 format) or Percentage (5v5 format)
+                    </li>
+                    <li>
+                      <strong>Thresholds For:</strong> Team-based, player-based, or off
+                    </li>
+                    <li>
+                      <strong>Round Robin:</strong> Single (n²) or Double (n²×2) round robin
+                    </li>
+                  </ul>
+                  <p className="text-xs text-gray-500">
+                    Total Games = Players² × Round Robin Multiplier
+                  </p>
+                </InfoButton>
+              </span>
+              {hasSavedOptions && !isEditing && (
+                <span className="text-xs font-normal text-green-600 ml-2">
+                  <Check className="h-3 w-3 inline mr-1" />
+                  Saved
+                </span>
+              )}
+            </div>
+          </AccordionTrigger>
+
+          <AccordionContent className="px-6 pb-4">
+            <div className="space-y-4">
+              {isEditing && !readOnly ? (
+                /* Edit Mode */
+                <>
+                  {/* Handicap Type */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm text-gray-600">Handicap Type:</Label>
+                      <span onClick={(e) => e.stopPropagation()}>
+                        <InfoButton title="Handicap Type" size="sm">
+                          <ul className="list-disc list-inside space-y-1 text-sm">
+                            <li>
+                              <strong>Points:</strong> Integer handicaps (e.g., -5 to +10). Used in
+                              3v3 formats with 18 games (double round robin).
+                            </li>
+                            <li>
+                              <strong>Percentage:</strong> Percentage handicaps (e.g., 45% to 78%).
+                              Used in 5v5 formats with 25 games (single round robin).
+                            </li>
+                          </ul>
+                        </InfoButton>
+                      </span>
+                    </div>
+                    <div className="flex gap-1 p-1 bg-gray-100 rounded-lg w-fit">
+                      {(['points', 'percentage'] as HandicapType[]).map((type) => (
+                        <Button
+                          key={type}
+                          type="button"
+                          variant={config.handicapType === type ? 'secondary' : 'ghost'}
+                          size="sm"
+                          className={`px-3 py-1 h-7 text-xs ${
+                            config.handicapType === type
+                              ? 'bg-blue-600 text-white hover:bg-blue-700'
+                              : 'bg-transparent hover:bg-gray-200'
+                          }`}
+                          onClick={() => handleHandicapTypeChange(type)}
+                        >
+                          {getHandicapLabel(type)}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Players per Team */}
+                  <PlayersPerTeamSelector
+                    value={config.lineupSize}
+                    onChange={(size) => updateField('lineupSize', size)}
+                  />
+
+                  {/* Threshold Mode */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm text-gray-600">Thresholds For:</Label>
+                      <span onClick={(e) => e.stopPropagation()}>
+                        <InfoButton title="Threshold Mode" size="sm">
+                          <ul className="list-disc list-inside space-y-1 text-sm">
+                            <li>
+                              <strong>Team:</strong> Thresholds apply to the team as a whole.
+                            </li>
+                            <li>
+                              <strong>Player:</strong> Thresholds apply per player matchup.
+                            </li>
+                            <li>
+                              <strong>Off:</strong> No automatic threshold calculation.
+                            </li>
+                          </ul>
+                        </InfoButton>
+                      </span>
+                    </div>
+                    <div className="flex gap-1 p-1 bg-gray-100 rounded-lg w-fit">
+                      {(['team', 'player', 'off'] as ThresholdMode[]).map((mode) => (
+                        <Button
+                          key={mode}
+                          type="button"
+                          variant={config.thresholdMode === mode ? 'secondary' : 'ghost'}
+                          size="sm"
+                          className={`px-3 py-1 h-7 text-xs ${
+                            config.thresholdMode === mode
+                              ? 'bg-blue-600 text-white hover:bg-blue-700'
+                              : 'bg-transparent hover:bg-gray-200'
+                          }`}
+                          onClick={() => updateField('thresholdMode', mode)}
+                        >
+                          {getModeLabel(mode)}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Round Robin Type */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm text-gray-600">Round Robin:</Label>
+                      <span onClick={(e) => e.stopPropagation()}>
+                        <InfoButton title="Round Robin Type" size="sm">
+                          <ul className="list-disc list-inside space-y-1 text-sm">
+                            <li>
+                              <strong>Single:</strong> Each player plays every opponent once.
+                              Total = {config.lineupSize}² = {config.lineupSize * config.lineupSize}{' '}
+                              games.
+                            </li>
+                            <li>
+                              <strong>Double:</strong> Each player plays every opponent twice.
+                              Total = {config.lineupSize}² × 2 ={' '}
+                              {config.lineupSize * config.lineupSize * 2} games.
+                            </li>
+                            <li>
+                              <strong>Custom:</strong> Manual total games entry.
+                            </li>
+                          </ul>
+                        </InfoButton>
+                      </span>
+                    </div>
+                    <div className="flex gap-1 p-1 bg-gray-100 rounded-lg w-fit">
+                      {(['single', 'double', 'custom'] as RoundRobinType[]).map((type) => (
+                        <Button
+                          key={type}
+                          type="button"
+                          variant={config.roundRobinType === type ? 'secondary' : 'ghost'}
+                          size="sm"
+                          className={`px-3 py-1 h-7 text-xs ${
+                            config.roundRobinType === type
+                              ? 'bg-blue-600 text-white hover:bg-blue-700'
+                              : 'bg-transparent hover:bg-gray-200'
+                          }`}
+                          onClick={() => updateField('roundRobinType', type)}
+                        >
+                          {getRoundRobinLabel(type)}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Total Games Display */}
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Total Games:</span>
+                      <span className="text-lg font-semibold">{totalGames}</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {config.lineupSize}² {config.roundRobinType === 'double' ? '× 2' : ''} ={' '}
+                      {totalGames} games per match
+                    </p>
+                  </div>
+
+                  {/* Setup Issues Section */}
+                  {hasIssues && (
+                    <div className="space-y-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 text-amber-600" />
+                        <span className="text-sm font-medium text-amber-800">
+                          Setup Issues
+                        </span>
+                        <span onClick={(e) => e.stopPropagation()}>
+                          <InfoButton title="Setup Issues" size="sm">
+                            <p className="mb-2">
+                              Some configuration options may cause issues with scoring or other features.
+                            </p>
+                            <p className="mb-2">
+                              While we want to support all formats, we must prioritize well-established
+                              systems with clear rules. Custom configurations may require manual intervention.
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              For assistance with custom formats, contact support@rackemleagues.com
+                            </p>
+                          </InfoButton>
+                        </span>
+                      </div>
+
+                      {/* Issue list */}
+                      <div className="space-y-2">
+                        {issues.map((issue) => (
+                          <div key={issue.id} className="text-xs text-amber-800">
+                            <p className="font-medium">{issue.title}</p>
+                            <p>{issue.description}</p>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Acknowledgement checkbox */}
+                      <div className="flex items-start gap-2 pt-2 border-t border-amber-200">
+                        <Checkbox
+                          id="acknowledge-issues"
+                          checked={issuesAcknowledged}
+                          onCheckedChange={(checked) => setIssuesAcknowledged(checked === true)}
+                        />
+                        <Label
+                          htmlFor="acknowledge-issues"
+                          className="text-xs text-amber-800 cursor-pointer leading-tight"
+                        >
+                          I understand the issues and want to use this configuration anyway
+                        </Label>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action buttons */}
+                  {onSave && (
+                    <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                      <Button
+                        type="button"
+                        size="sm"
+                        loadingText="Saving..."
+                        isLoading={isSaving}
+                        onClick={handleSave}
+                        disabled={hasIssues && !issuesAcknowledged}
+                        className="h-8"
+                      >
+                        Save Options
+                      </Button>
+                      {hasSavedOptions && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleCancel}
+                          disabled={isSaving}
+                          className="h-8"
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </>
+              ) : (
+                /* View Mode */
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm text-gray-600">Handicap Type:</Label>
+                      <span className="text-sm font-medium bg-gray-100 px-3 py-1 rounded">
+                        {getHandicapLabel(config.handicapType)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm text-gray-600">Players:</Label>
+                      <span className="text-sm font-medium bg-gray-100 px-3 py-1 rounded">
+                        {config.lineupSize}v{config.lineupSize}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm text-gray-600">Thresholds:</Label>
+                      <span className="text-sm font-medium bg-gray-100 px-3 py-1 rounded">
+                        {getModeLabel(config.thresholdMode)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm text-gray-600">Round Robin:</Label>
+                      <span className="text-sm font-medium bg-gray-100 px-3 py-1 rounded">
+                        {getRoundRobinLabel(config.roundRobinType)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Total Games Display */}
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Total Games:</span>
+                      <span className="text-lg font-semibold">{totalGames}</span>
+                    </div>
+                  </div>
+
+                  {/* Edit button */}
+                  {!readOnly && (
+                    <div className="pt-2 border-t border-gray-100">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsEditing(true)}
+                        className="h-8"
+                      >
+                        <Pencil className="h-3 w-3 mr-1" />
+                        Edit Options
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+    </Card>
+  );
+}

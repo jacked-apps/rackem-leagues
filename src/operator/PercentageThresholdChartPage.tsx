@@ -16,6 +16,9 @@
  * - Uses handicap difference RANGES (0-14, 15-40, etc.)
  * - Higher/Lower team values instead of Win/Tie/Lose
  * - No ties (25 games = odd number)
+ *
+ * The SetupOptions component at the top shows the current configuration
+ * and allows adjustments that affect the chart (lineup size, handicap type, etc.)
  */
 
 import { useState } from 'react';
@@ -27,6 +30,11 @@ import {
   type PercentageChartRow,
   type ChartType,
 } from '@/components/operator/threshold-editor';
+import {
+  SetupOptions,
+  getDefaultSetupOptions,
+  type SetupOptionsConfig,
+} from '@/components/operator/match-editor';
 
 /**
  * Percentage Threshold Chart Editor Page
@@ -43,6 +51,12 @@ export default function PercentageThresholdChartPage() {
   const returnTo = searchParams.get('returnTo');
   const lineupSizeParam = searchParams.get('lineupSize');
   const lineupSize = lineupSizeParam ? parseInt(lineupSizeParam, 10) : 5;
+
+  // Setup options state - starts with defaults for percentage (5v5 single round robin)
+  const [setupConfig, setSetupConfig] = useState<SetupOptionsConfig>(() => ({
+    ...getDefaultSetupOptions('percentage'),
+    lineupSize: lineupSize,
+  }));
 
   // State for save operation
   const [isSaving, setIsSaving] = useState(false);
@@ -126,14 +140,23 @@ export default function PercentageThresholdChartPage() {
         subtitle="Configure games-to-win thresholds based on handicap difference ranges"
       />
 
-      <div className="max-w-3xl mx-auto px-4 py-6">
+      <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
+        {/* Setup Options - context for chart editing */}
+        <SetupOptions
+          config={setupConfig}
+          onChange={setSetupConfig}
+          hasSavedOptions={true}
+          readOnly={false}
+          defaultExpanded={false}
+        />
+
         <PercentageThresholdChartEditor
           initialData={savedChartData ?? getDefaultPercentageChartRows()}
           onSave={handleSave}
           onCancel={handleCancel}
           isSaving={isSaving}
           onChartTypeChange={handleChartTypeChange}
-          initialLineupSize={lineupSize}
+          initialLineupSize={setupConfig.lineupSize}
         />
       </div>
     </div>

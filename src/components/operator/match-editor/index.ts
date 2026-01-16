@@ -24,6 +24,15 @@ export { LineupsSection } from './LineupsSection';
 export { ThresholdsSection } from './ThresholdsSection';
 export { GamesSection } from './GamesSection';
 export { MatchResultSection } from './MatchResultSection';
+export {
+  SetupOptions,
+  calculateTotalGames,
+  getDefaultSetupOptions,
+  type SetupOptionsConfig,
+  type HandicapType as SetupHandicapType,
+  type ThresholdMode,
+  type RoundRobinType,
+} from './SetupOptions';
 
 // State management
 export {

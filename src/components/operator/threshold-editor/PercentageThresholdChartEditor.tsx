@@ -55,9 +55,16 @@ export function getDefaultPercentageChartRows(): PercentageChartRow[] {
  * For percentage charts, we maintain the range structure but adjust
  * the higher/lower win values based on total games.
  *
+ * Key Rule: Higher Wins + Lower Wins = Total Games + 1
+ * This ensures there's always a clear winner (no ties in standard percentage format).
+ *
  * Pattern:
- * - At 0 diff range: both teams need ceil(totalGames/2) to win
+ * - At 0 diff range (equal teams): Higher needs ceil((totalGames+1)/2), Lower needs floor((totalGames+1)/2)
  * - Each subsequent range: higher +1, lower -1
+ *
+ * Examples:
+ * - 25 games: Higher 13, Lower 13 (13+13=26=25+1)
+ * - 18 games: Higher 10, Lower 9 (10+9=19=18+1)
  *
  * @param totalGames - Total games played in a match
  * @param existingRanges - Existing range boundaries to preserve
@@ -69,14 +76,17 @@ export function generateChartFromGames(
   // Use existing range boundaries or defaults
   const ranges = existingRanges ?? getDefaultPercentageChartRows();
 
-  // Calculate center point (even teams)
-  const centerWin = Math.ceil(totalGames / 2);
+  // Calculate center point values for 0 diff (equal teams)
+  // Rule: Higher Wins + Lower Wins = Total Games + 1
+  const baseHigherWins = Math.ceil((totalGames + 1) / 2);
+  const baseLowerWins = Math.floor((totalGames + 1) / 2);
 
   return ranges.map((range, index) => ({
     minDiff: range.minDiff,
     maxDiff: range.maxDiff,
-    higherWins: Math.min(totalGames, centerWin + index),
-    lowerWins: Math.max(1, centerWin - index),
+    // As diff increases, higher team needs more wins, lower team needs fewer
+    higherWins: Math.min(totalGames, baseHigherWins + index),
+    lowerWins: Math.max(1, baseLowerWins - index),
   }));
 }
 
@@ -147,10 +157,15 @@ export function PercentageThresholdChartEditor({
   );
 
   // Lineup size (informs default total games)
-  const [lineupSize, setLineupSize] = useState(initialLineupSize);
+  // Note: lineupSize numeric value tracked for potential future use, display via lineupSizeInput
+  const [_lineupSize, setLineupSize] = useState(initialLineupSize);
 
   // Total games is directly editable (default based on lineup but can be customized)
   const [totalGames, setTotalGames] = useState(() => getDefaultTotalGames(initialLineupSize));
+
+  // String values for inputs to allow clearing/editing
+  const [totalGamesInput, setTotalGamesInput] = useState(() => String(getDefaultTotalGames(initialLineupSize)));
+  const [lineupSizeInput, setLineupSizeInput] = useState(() => String(initialLineupSize));
 
   // Max possible diff (informational - percentage diffs max at 100)
   const maxPossibleDiff = getMaxPossibleDiff();
@@ -158,8 +173,12 @@ export function PercentageThresholdChartEditor({
   // Whether to ignore chart warnings and allow saving anyway
   const [ignoreWarnings, setIgnoreWarnings] = useState(false);
 
-  // Calculate expected center point values
-  const centerWin = Math.ceil(totalGames / 2);
+  // Calculate expected center point values for 0 diff (equal teams)
+  // Rule: Higher Wins + Lower Wins = Total Games + 1
+  // For equal teams, higher gets the slight advantage on even game counts
+  const higherWinsAt0Diff = Math.ceil((totalGames + 1) / 2);
+  const lowerWinsAt0Diff = Math.floor((totalGames + 1) / 2);
+  const isEvenGames = totalGames % 2 === 0;
 
   // Track if chart has been modified from default
   const defaultRows = getDefaultPercentageChartRows();
@@ -244,8 +263,8 @@ export function PercentageThresholdChartEditor({
     const newRow: PercentageChartRow = {
       minDiff: newMin,
       maxDiff: newMax,
-      higherWins: centerWin,
-      lowerWins: centerWin,
+      higherWins: higherWinsAt0Diff,
+      lowerWins: lowerWinsAt0Diff,
     };
 
     // Also update the first row's minDiff
@@ -265,8 +284,8 @@ export function PercentageThresholdChartEditor({
 
     // Calculate wins based on position
     const index = rows.length;
-    const higherWins = Math.min(totalGames, centerWin + index);
-    const lowerWins = Math.max(1, centerWin - index);
+    const higherWins = Math.min(totalGames, higherWinsAt0Diff + index);
+    const lowerWins = Math.max(1, lowerWinsAt0Diff - index);
 
     const newRow: PercentageChartRow = {
       minDiff: newMin,
@@ -398,13 +417,26 @@ export function PercentageThresholdChartEditor({
                 type="number"
                 min="1"
                 max="100"
-                value={totalGames}
-                onChange={(e) => setTotalGames(parseInt(e.target.value, 10) || 25)}
+                value={totalGamesInput}
+                onChange={(e) => {
+                  setTotalGamesInput(e.target.value);
+                  const val = parseInt(e.target.value, 10);
+                  if (!isNaN(val) && val >= 1) setTotalGames(val);
+                }}
+                onBlur={() => {
+                  const val = parseInt(totalGamesInput, 10);
+                  if (isNaN(val) || val < 1) {
+                    setTotalGames(25);
+                    setTotalGamesInput('25');
+                  } else {
+                    setTotalGamesInput(String(val));
+                  }
+                }}
                 className="w-20 h-8 text-center"
               />
             </div>
             <div className="text-sm text-gray-600">
-              At 0 diff: <strong>{centerWin}</strong> wins for both teams
+              At 0 diff: Higher needs <strong>{higherWinsAt0Diff}</strong>, Lower needs <strong>{lowerWinsAt0Diff}</strong>
             </div>
           </div>
 
@@ -419,8 +451,21 @@ export function PercentageThresholdChartEditor({
                 type="number"
                 min="3"
                 max="8"
-                value={lineupSize}
-                onChange={(e) => setLineupSize(parseInt(e.target.value, 10) || 5)}
+                value={lineupSizeInput}
+                onChange={(e) => {
+                  setLineupSizeInput(e.target.value);
+                  const val = parseInt(e.target.value, 10);
+                  if (!isNaN(val) && val >= 3) setLineupSize(val);
+                }}
+                onBlur={() => {
+                  const val = parseInt(lineupSizeInput, 10);
+                  if (isNaN(val) || val < 3) {
+                    setLineupSize(5);
+                    setLineupSizeInput('5');
+                  } else {
+                    setLineupSizeInput(String(val));
+                  }
+                }}
                 className="w-16 h-8 text-center"
               />
             </div>
@@ -431,8 +476,9 @@ export function PercentageThresholdChartEditor({
 
           {/* Note about ties */}
           <div className="text-sm text-gray-500">
-            Note: Odd game counts have no ties possible.
-            {totalGames % 2 === 0 && ' Even game counts allow ties.'}
+            {isEvenGames
+              ? 'Even games: Higher team gets advantage (needs fewer wins at 0 diff).'
+              : 'Odd games: Equal teams both need same wins to win.'}
           </div>
 
           {/* Regenerate button */}
@@ -691,6 +737,25 @@ export function PercentageThresholdChartEditor({
             <CardTitle className="flex items-center gap-2 text-base text-orange-800">
               <AlertTriangle className="h-5 w-5" />
               Chart Issues
+              <InfoButton title="Custom Handicap Integration" size="sm">
+                <p className="text-sm mb-2">
+                  Want your handicap system integrated with our scoring? Contact
+                  us at{' '}
+                  <a
+                    href="mailto:support@rackemleagues.com"
+                    className="text-blue-600 hover:underline"
+                  >
+                    support@rackemleagues.com
+                  </a>
+                  .
+                </p>
+                <p className="text-sm text-gray-600">
+                  While we aim to support all handicap systems, we prioritize
+                  those that are well-established, clearly documented with
+                  specific rules and formulas, and submitted by experienced
+                  league operators.
+                </p>
+              </InfoButton>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -761,7 +826,7 @@ export function PercentageThresholdChartEditor({
                 onCheckedChange={(checked) => setIgnoreWarnings(checked === true)}
               />
               <Label htmlFor="ignoreWarnings" className="text-sm text-gray-700">
-                I understand the issues and want to save anyway
+                I understand the issues and want to use this chart anyway
               </Label>
             </div>
           </CardContent>

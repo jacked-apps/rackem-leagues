@@ -25,7 +25,6 @@
  * />
  */
 
-import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,7 +36,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { Target, RefreshCw, Settings2, Pencil, Check, ExternalLink } from 'lucide-react';
+import { Target, RefreshCw, ExternalLink, BarChart3 } from 'lucide-react';
 import { InfoButton } from '@/components/InfoButton';
 import { get3v3GamesNeeded } from '@/utils/handicap/get3v3GamesNeeded';
 import { get5v5GamesNeeded } from '@/utils/handicap/get5v5GamesNeeded';
@@ -47,28 +46,12 @@ import type {
 } from './useMatchEditorState';
 
 /**
- * Threshold system type
+ * Threshold system type - derived from handicap type in SetupOptions
  * - points: Points-based handicapping (exact diff lookup)
  * - percentage: Percentage-based handicapping (range lookup)
  * - custom: Manual entry
  */
 type ThresholdSystem = 'points' | 'percentage' | 'custom';
-
-/**
- * Threshold mode - determines what level thresholds apply to
- * - team: Thresholds apply to the team as a whole (standard)
- * - player: Thresholds apply per player (head-to-head formats)
- * - off: No automatic threshold calculation
- */
-type ThresholdMode = 'team' | 'player' | 'off';
-
-/**
- * Saved threshold options from database
- */
-interface SavedThresholdOptions {
-  system: ThresholdSystem;
-  mode: ThresholdMode;
-}
 
 interface ThresholdsSectionProps {
   /** League ID for navigation to chart editor */
@@ -103,38 +86,6 @@ interface ThresholdsSectionProps {
   awayTeamName?: string;
   /** Callback when any value changes (legacy - deprecated with state hook) */
   onChange?: () => void;
-}
-
-/**
- * Get display label for threshold system
- */
-function getSystemLabel(system: ThresholdSystem): string {
-  switch (system) {
-    case 'points':
-      return 'Points (18 games)';
-    case 'percentage':
-      return 'Percentage (25 games)';
-    case 'custom':
-      return 'Custom (Manual)';
-    default:
-      return system;
-  }
-}
-
-/**
- * Get short label for threshold system
- */
-function getSystemShortLabel(system: ThresholdSystem): string {
-  switch (system) {
-    case 'points':
-      return 'Points';
-    case 'percentage':
-      return 'Percentage';
-    case 'custom':
-      return 'Custom';
-    default:
-      return system;
-  }
 }
 
 /**
@@ -322,284 +273,88 @@ function PercentageChartPreview({ highlightDiff }: { highlightDiff?: number }) {
   );
 }
 
-/**
- * Get display label for threshold mode
- */
-function getModeLabel(mode: ThresholdMode): string {
-  switch (mode) {
-    case 'team':
-      return 'Team';
-    case 'player':
-      return 'Player';
-    case 'off':
-      return 'Off';
-    default:
-      return mode;
-  }
-}
+// ThresholdOptionsCard has been removed - settings now in SetupOptions component
+// Chart previews are shown in an inline collapsible section below
 
 /**
- * Threshold Options Card
+ * Threshold Chart Preview Card
  *
- * Collapsible accordion showing the threshold system and chart preview.
- * Includes view/edit modes for system selection.
- * Chart editing links to dedicated page.
+ * Collapsible accordion showing the threshold chart preview.
+ * Settings (system/mode) are controlled by SetupOptions at page level.
+ * Links to dedicated chart editor page.
  */
-function ThresholdOptionsCard({
+function ThresholdChartPreviewCard({
   leagueId,
-  savedOptions,
   currentSystem,
-  currentMode,
   handicapDiff,
-  onSystemChange,
-  onModeChange,
-  onSave,
-  isSaving,
   lineupSize,
 }: {
   leagueId?: string;
-  lineupSize: number;
-  savedOptions: SavedThresholdOptions | null;
   currentSystem: ThresholdSystem;
-  currentMode: ThresholdMode;
   handicapDiff: number;
-  onSystemChange: (system: ThresholdSystem) => void;
-  onModeChange: (mode: ThresholdMode) => void;
-  onSave: () => void;
-  isSaving: boolean;
+  lineupSize: number;
 }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isEditing, setIsEditing] = useState(!savedOptions);
-
-  const hasChanges = savedOptions
-    ? currentSystem !== savedOptions.system || currentMode !== savedOptions.mode
-    : true;
-
-  const handleSave = () => {
-    onSave();
-    setIsEditing(false);
-  };
-
-  const handleCancel = () => {
-    if (savedOptions) {
-      onSystemChange(savedOptions.system);
-      onModeChange(savedOptions.mode);
-    }
-    setIsEditing(false);
-  };
 
   /**
    * Navigate to the threshold chart editor page
    */
   const handleEditChart = () => {
     if (!leagueId) return;
-
-    // Determine which chart type to edit based on current system
     const chartType = currentSystem === 'percentage' ? 'percentage' : 'points';
     const returnTo = encodeURIComponent(location.pathname);
-    // lineupSize is passed as a prop from the parent
     navigate(`/league/${leagueId}/threshold-chart/${chartType}?returnTo=${returnTo}&lineupSize=${lineupSize}`);
   };
 
+  // Don't show for custom system
+  if (currentSystem === 'custom') {
+    return null;
+  }
+
   return (
     <Card>
-      <Accordion type="single" collapsible defaultValue={savedOptions ? '' : 'options'}>
-        <AccordionItem value="options" className="border-b-0">
-          <AccordionTrigger className="px-6 py-4 hover:no-underline">
-            <div className="flex items-center gap-2 text-base font-semibold">
-              <Settings2 className="h-4 w-4" />
-              Threshold Options
-              <span className="text-sm font-normal text-gray-500 ml-2">
-                ({getSystemShortLabel(currentSystem)} • {getModeLabel(currentMode)})
+      <Accordion type="single" collapsible defaultValue="">
+        <AccordionItem value="chart" className="border-b-0">
+          <AccordionTrigger className="px-6 py-3 hover:no-underline">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <BarChart3 className="h-4 w-4" />
+              {currentSystem === 'points' ? 'Points Threshold Chart' : 'Percentage Threshold Chart'}
+              <span className="text-xs font-normal text-gray-500 ml-2">
+                (diff: {handicapDiff >= 0 ? '+' : ''}{handicapDiff.toFixed(1)})
               </span>
-              {/* Info button */}
-              <span onClick={(e) => e.stopPropagation()}>
-                <InfoButton title="Threshold Options" size="sm">
-                  <p className="mb-2">
-                    Thresholds determine how many games each team (or player in head-to-head formats) needs to win or tie a match.
-                  </p>
-                  <ul className="list-disc list-inside space-y-1 text-sm mb-2">
-                    <li><strong>Points:</strong> 18 games total, handicap range -12 to +12, ties possible</li>
-                    <li><strong>Percentage:</strong> 25 games total, percentage-based handicaps, no ties</li>
-                    <li><strong>Custom:</strong> Manual threshold entry for non-standard formats</li>
-                  </ul>
-                  <p className="text-xs text-gray-500">
-                    These settings apply to this league and all its seasons.
-                  </p>
-                </InfoButton>
-              </span>
-              {savedOptions && !isEditing && (
-                <span className="text-xs font-normal text-green-600 ml-2">
-                  <Check className="h-3 w-3 inline mr-1" />
-                  Saved
-                </span>
-              )}
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-6 pb-4">
-            <div className="space-y-4">
-              {isEditing ? (
-                /* Edit Mode */
-                <>
-                  {/* Mode selector (Team/Player/Off) */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Label className="text-sm text-gray-600">Thresholds for:</Label>
-                      <span onClick={(e) => e.stopPropagation()}>
-                        <InfoButton title="Threshold Mode" size="sm">
-                          <ul className="list-disc list-inside space-y-1 text-sm">
-                            <li><strong>Team:</strong> Thresholds apply to the team as a whole. Compare total team games won to determine match winner.</li>
-                            <li><strong>Player:</strong> Thresholds apply per player in head-to-head formats. Each player matchup determines individual wins.</li>
-                            <li><strong>Off:</strong> No automatic threshold calculation. Enter thresholds manually for each match.</li>
-                          </ul>
-                        </InfoButton>
-                      </span>
-                    </div>
-                    <div className="flex gap-1 p-1 bg-gray-100 rounded-lg w-fit">
-                      {(['team', 'player', 'off'] as ThresholdMode[]).map((mode) => (
-                        <Button
-                          key={mode}
-                          type="button"
-                          variant={currentMode === mode ? 'secondary' : 'ghost'}
-                          size="sm"
-                          className={`px-3 py-1 h-7 text-xs ${
-                            currentMode === mode
-                              ? 'bg-blue-600 text-white hover:bg-blue-700'
-                              : 'bg-transparent hover:bg-gray-200'
-                          }`}
-                          onClick={() => onModeChange(mode)}
-                        >
-                          {getModeLabel(mode)}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* System selector (only show if mode is not 'off') */}
-                  {currentMode !== 'off' && (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Label className="text-sm text-gray-600">Threshold System:</Label>
-                      </div>
-                      <div className="flex gap-1 p-1 bg-gray-100 rounded-lg w-fit">
-                        {(['points', 'percentage', 'custom'] as ThresholdSystem[]).map((sys) => (
-                          <Button
-                            key={sys}
-                            type="button"
-                            variant={currentSystem === sys ? 'secondary' : 'ghost'}
-                            size="sm"
-                            className={`px-3 py-1 h-7 text-xs ${
-                              currentSystem === sys
-                                ? 'bg-blue-600 text-white hover:bg-blue-700'
-                                : 'bg-transparent hover:bg-gray-200'
-                            }`}
-                            onClick={() => onSystemChange(sys)}
-                          >
-                            {getSystemShortLabel(sys)}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Action buttons */}
-                  <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
-                    <Button
-                      type="button"
-                      size="sm"
-                      loadingText="Saving..."
-                      isLoading={isSaving}
-                      onClick={handleSave}
-                      disabled={!hasChanges}
-                      className="h-8"
-                    >
-                      Save Options
-                    </Button>
-                    {savedOptions && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleCancel}
-                        disabled={isSaving}
-                        className="h-8"
-                      >
-                        Cancel
-                      </Button>
-                    )}
-                  </div>
-                </>
-              ) : (
-                /* View Mode */
-                <>
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <Label className="text-sm text-gray-600">Thresholds for:</Label>
-                      <span className="text-sm font-medium bg-gray-100 px-3 py-1 rounded">
-                        {getModeLabel(currentMode)}
-                      </span>
-                    </div>
-                    {currentMode !== 'off' && (
-                      <div className="flex items-center gap-2">
-                        <Label className="text-sm text-gray-600">Threshold System:</Label>
-                        <span className="text-sm font-medium bg-gray-100 px-3 py-1 rounded">
-                          {getSystemLabel(currentSystem)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Edit button */}
-                  <div className="pt-2 border-t border-gray-100">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsEditing(true)}
-                      className="h-8"
-                    >
-                      <Pencil className="h-3 w-3 mr-1" />
-                      Edit Options
-                    </Button>
-                  </div>
-                </>
-              )}
-
-              {/* Chart preview (shown if mode is not 'off' and system is not 'custom') */}
-              {currentMode !== 'off' && currentSystem !== 'custom' && (
-                <div className="pt-4 border-t border-gray-100">
-                  <div className="flex items-center justify-between mb-2">
-                    <Label className="text-sm font-medium text-gray-700">
-                      {currentSystem === 'points' ? 'Points Threshold Chart' : 'Percentage Threshold Chart'}
-                    </Label>
-                    {/* Edit Chart button - navigates to dedicated page */}
-                    {leagueId && (currentSystem === 'points' || currentSystem === 'percentage') && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleEditChart}
-                        className="h-7 text-xs"
-                      >
-                        <ExternalLink className="h-3 w-3 mr-1" />
-                        Edit Chart
-                      </Button>
-                    )}
-                  </div>
-                  <div className="max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-2">
-                    {currentSystem === 'points' ? (
-                      <PointsChartPreview highlightDiff={handicapDiff} />
-                    ) : (
-                      <PercentageChartPreview highlightDiff={handicapDiff} />
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Current handicap difference: <span className="font-medium">{handicapDiff >= 0 ? '+' : ''}{handicapDiff.toFixed(1)}</span>
-                    {' '}(highlighted row)
-                  </p>
+            <div className="space-y-3">
+              {/* Edit Chart button */}
+              {leagueId && (
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleEditChart}
+                    className="h-7 text-xs"
+                  >
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    Edit Chart
+                  </Button>
                 </div>
               )}
+
+              {/* Chart preview */}
+              <div className="max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-2">
+                {currentSystem === 'points' ? (
+                  <PointsChartPreview highlightDiff={handicapDiff} />
+                ) : (
+                  <PercentageChartPreview highlightDiff={handicapDiff} />
+                )}
+              </div>
+              <p className="text-xs text-gray-500">
+                Current handicap difference: <span className="font-medium">{handicapDiff >= 0 ? '+' : ''}{handicapDiff.toFixed(1)}</span>
+                {' '}(highlighted row)
+              </p>
             </div>
           </AccordionContent>
         </AccordionItem>
@@ -687,11 +442,8 @@ export function ThresholdsSection({
   homeTeamName = 'Home',
   awayTeamName = 'Away',
 }: ThresholdsSectionProps) {
-  // Local state for threshold options (will be replaced with DB fetch later)
-  const [savedThresholdOptions, setSavedThresholdOptions] = useState<SavedThresholdOptions | null>(null);
-  const [currentSystem, setCurrentSystem] = useState<ThresholdSystem>('points');
-  const [currentMode, setCurrentMode] = useState<ThresholdMode>('team');
-  const [isSavingOptions, setIsSavingOptions] = useState(false);
+  // Note: Threshold system/mode settings are now controlled by SetupOptions at MatchDataPage level
+  // This section just shows the threshold values and chart preview
 
   // If no state hook provided, show placeholder with legacy props
   if (!editorState || !editorActions) {
@@ -737,14 +489,13 @@ export function ThresholdsSection({
   const { formatConfig, homeLineup, awayLineup, thresholds } = editorState;
   const { setThresholds, generateThresholds } = editorActions;
 
-  // Determine current system based on format config (or use saved if available)
-  const effectiveSystem: ThresholdSystem = savedThresholdOptions?.system ?? (
+  // Determine current system based on format config from SetupOptions
+  const effectiveSystem: ThresholdSystem =
     formatConfig.handicapType === 'points'
       ? 'points'
       : formatConfig.handicapType === 'percentage'
         ? 'percentage'
-        : 'custom'
-  );
+        : 'custom';
 
   // Show tie threshold only for points system
   const showTie = effectiveSystem === 'points';
@@ -775,44 +526,16 @@ export function ThresholdsSection({
     generateThresholds(newThresholds);
   };
 
-  /**
-   * Handle saving threshold options
-   */
-  const handleSaveThresholdOptions = async () => {
-    setIsSavingOptions(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      setSavedThresholdOptions({ system: currentSystem, mode: currentMode });
-
-      if (import.meta.env.DEV) {
-        console.log('Saved threshold options:', { system: currentSystem, mode: currentMode });
-      }
-    } catch (error) {
-      console.error('Failed to save threshold options:', error);
-    } finally {
-      setIsSavingOptions(false);
-    }
-  };
-
-  // Effective mode (from saved options or current selection)
-  const effectiveMode: ThresholdMode = savedThresholdOptions?.mode ?? currentMode;
-
-  // Can only auto-generate if mode is not 'off' and system is not 'custom'
-  const canAutoGenerate = effectiveMode !== 'off' && effectiveSystem !== 'custom';
+  // Can only auto-generate if system is not 'custom'
+  const canAutoGenerate = effectiveSystem !== 'custom';
 
   return (
     <div className="space-y-3">
-      {/* Threshold Options Card */}
-      <ThresholdOptionsCard
+      {/* Chart Preview Card (collapsible) */}
+      <ThresholdChartPreviewCard
         leagueId={leagueId}
-        savedOptions={savedThresholdOptions}
-        currentSystem={savedThresholdOptions?.system ?? currentSystem}
-        currentMode={savedThresholdOptions?.mode ?? currentMode}
+        currentSystem={effectiveSystem}
         handicapDiff={handicapDiff}
-        onSystemChange={setCurrentSystem}
-        onModeChange={setCurrentMode}
-        onSave={handleSaveThresholdOptions}
-        isSaving={isSavingOptions}
         lineupSize={formatConfig.lineupSize}
       />
 
