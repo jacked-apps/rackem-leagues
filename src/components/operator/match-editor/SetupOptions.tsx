@@ -45,8 +45,9 @@ interface SetupIssue {
  * Handicap type determines how player handicaps are calculated and compared
  * - points: Integer-based handicaps (e.g., -5 to +10), used in 3v3 formats
  * - percentage: Percentage-based handicaps (e.g., 45% to 78%), used in 5v5 formats
+ * - custom: Manual handicap entry, no automatic calculation
  */
-export type HandicapType = 'points' | 'percentage';
+export type HandicapType = 'points' | 'percentage' | 'custom';
 
 /**
  * Threshold mode determines how match winners are calculated
@@ -57,12 +58,13 @@ export type HandicapType = 'points' | 'percentage';
 export type ThresholdMode = 'team' | 'player' | 'off';
 
 /**
- * Round robin type determines how many games are played
- * - single: Each player plays every opponent once (lineupSize²)
- * - double: Each player plays every opponent twice (lineupSize² × 2)
+ * Game format determines how games are structured and total count
+ * - single_rr: Single round robin - each player plays every opponent once (lineupSize²)
+ * - double_rr: Double round robin - each player plays every opponent twice (lineupSize² × 2)
+ * - individual_race: Individual race - player 1H vs 1A, player 2H vs 2A, etc. (lineupSize games)
  * - custom: Manual total games entry
  */
-export type RoundRobinType = 'single' | 'double' | 'custom';
+export type GameFormat = 'single_rr' | 'double_rr' | 'individual_race' | 'custom';
 
 /**
  * Setup options configuration
@@ -74,23 +76,29 @@ export interface SetupOptionsConfig {
   handicapType: HandicapType;
   /** How thresholds are applied */
   thresholdMode: ThresholdMode;
-  /** Round robin format */
-  roundRobinType: RoundRobinType;
-  /** Custom total games (only used when roundRobinType is 'custom') */
+  /** Game format - how games are structured */
+  gameFormat: GameFormat;
+  /** Custom total games (only used when gameFormat is 'custom') */
   customTotalGames?: number;
 }
 
 /**
- * Calculate total games based on lineup size and round robin type
+ * Calculate total games based on lineup size and game format
  */
 export function calculateTotalGames(config: SetupOptionsConfig): number {
-  const { lineupSize, roundRobinType, customTotalGames } = config;
+  const { lineupSize, gameFormat, customTotalGames } = config;
 
-  switch (roundRobinType) {
-    case 'single':
+  switch (gameFormat) {
+    case 'single_rr':
+      // Single round robin: each player plays every opponent once
       return lineupSize * lineupSize;
-    case 'double':
+    case 'double_rr':
+      // Double round robin: each player plays every opponent twice
       return lineupSize * lineupSize * 2;
+    case 'individual_race':
+      // Individual race: player 1H vs 1A, player 2H vs 2A, etc.
+      // Each position plays one matchup = lineupSize total matchups
+      return lineupSize;
     case 'custom':
       return customTotalGames ?? lineupSize * lineupSize;
     default:
@@ -108,7 +116,7 @@ export function getDefaultSetupOptions(handicapType: HandicapType): SetupOptions
       lineupSize: 5,
       handicapType: 'percentage',
       thresholdMode: 'team',
-      roundRobinType: 'single',
+      gameFormat: 'single_rr',
     };
   } else {
     // 3v3 points format: 3 players, single round robin = 9 games
@@ -117,7 +125,7 @@ export function getDefaultSetupOptions(handicapType: HandicapType): SetupOptions
       lineupSize: 3,
       handicapType: 'points',
       thresholdMode: 'team',
-      roundRobinType: 'single',
+      gameFormat: 'single_rr',
     };
   }
 }
@@ -342,7 +350,7 @@ export function SetupOptions({
   };
 
   /**
-   * Handle handicap type change - also updates lineup size and round robin defaults
+   * Handle handicap type change - also updates lineup size and game format defaults
    */
   const handleHandicapTypeChange = (type: HandicapType) => {
     if (type === 'percentage') {
@@ -350,14 +358,14 @@ export function SetupOptions({
         ...config,
         handicapType: type,
         lineupSize: 5,
-        roundRobinType: 'single',
+        gameFormat: 'single_rr',
       });
     } else {
       onChange({
         ...config,
         handicapType: type,
         lineupSize: 3,
-        roundRobinType: 'double',
+        gameFormat: 'double_rr',
       });
     }
   };
@@ -372,8 +380,13 @@ export function SetupOptions({
   };
 
   // Labels for display
-  const getHandicapLabel = (type: HandicapType) =>
-    type === 'points' ? 'Points' : 'Percentage';
+  const getHandicapLabel = (type: HandicapType) => {
+    switch (type) {
+      case 'points': return 'Points';
+      case 'percentage': return 'Percentage';
+      case 'custom': return 'Custom';
+    }
+  };
 
   const getModeLabel = (mode: ThresholdMode) => {
     switch (mode) {
@@ -386,12 +399,14 @@ export function SetupOptions({
     }
   };
 
-  const getRoundRobinLabel = (type: RoundRobinType) => {
-    switch (type) {
-      case 'single':
-        return 'Single';
-      case 'double':
-        return 'Double';
+  const getGameFormatLabel = (format: GameFormat) => {
+    switch (format) {
+      case 'single_rr':
+        return 'Single RR';
+      case 'double_rr':
+        return 'Double RR';
+      case 'individual_race':
+        return 'Individual Race';
       case 'custom':
         return 'Custom';
     }
@@ -424,17 +439,17 @@ export function SetupOptions({
                       <strong>Players per Team:</strong> Number of players on each team lineup
                     </li>
                     <li>
-                      <strong>Handicap Type:</strong> Points (3v3 format) or Percentage (5v5 format)
+                      <strong>Handicap Type:</strong> Points (3v3 format), Percentage (5v5 format), or Custom
                     </li>
                     <li>
                       <strong>Thresholds For:</strong> Team-based, player-based, or off
                     </li>
                     <li>
-                      <strong>Round Robin:</strong> Single (n²) or Double (n²×2) round robin
+                      <strong>Format:</strong> Single RR, Double RR, Individual Race, or Custom
                     </li>
                   </ul>
                   <p className="text-xs text-gray-500">
-                    Total Games = Players² × Round Robin Multiplier
+                    Total Games varies by format: Round Robin = n², Individual Race = n
                   </p>
                 </InfoButton>
               </span>
@@ -467,12 +482,16 @@ export function SetupOptions({
                               <strong>Percentage:</strong> Percentage handicaps (e.g., 45% to 78%).
                               Used in 5v5 formats with 25 games (single round robin).
                             </li>
+                            <li>
+                              <strong>Custom:</strong> Manual handicap entry. Use this if your
+                              league uses a different handicap system.
+                            </li>
                           </ul>
                         </InfoButton>
                       </span>
                     </div>
                     <div className="flex gap-1 p-1 bg-gray-100 rounded-lg w-fit">
-                      {(['points', 'percentage'] as HandicapType[]).map((type) => (
+                      {(['points', 'percentage', 'custom'] as HandicapType[]).map((type) => (
                         <Button
                           key={type}
                           type="button"
@@ -537,45 +556,47 @@ export function SetupOptions({
                     </div>
                   </div>
 
-                  {/* Round Robin Type */}
+                  {/* Game Format */}
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <Label className="text-sm text-gray-600">Round Robin:</Label>
+                      <Label className="text-sm text-gray-600">Format:</Label>
                       <span onClick={(e) => e.stopPropagation()}>
-                        <InfoButton title="Round Robin Type" size="sm">
+                        <InfoButton title="Game Format" size="sm">
                           <ul className="list-disc list-inside space-y-1 text-sm">
                             <li>
-                              <strong>Single:</strong> Each player plays every opponent once.
-                              Total = {config.lineupSize}² = {config.lineupSize * config.lineupSize}{' '}
-                              games.
+                              <strong>Single RR:</strong> Single round robin - each player plays every
+                              opponent once. Total = {config.lineupSize}² = {config.lineupSize * config.lineupSize} games.
                             </li>
                             <li>
-                              <strong>Double:</strong> Each player plays every opponent twice.
-                              Total = {config.lineupSize}² × 2 ={' '}
-                              {config.lineupSize * config.lineupSize * 2} games.
+                              <strong>Double RR:</strong> Double round robin - each player plays every
+                              opponent twice. Total = {config.lineupSize}² × 2 = {config.lineupSize * config.lineupSize * 2} games.
                             </li>
                             <li>
-                              <strong>Custom:</strong> Manual total games entry.
+                              <strong>Individual Race:</strong> Position matchups - Player 1H vs 1A,
+                              Player 2H vs 2A, etc. Total = {config.lineupSize} matchups.
+                            </li>
+                            <li>
+                              <strong>Custom:</strong> Manual total games entry for other formats.
                             </li>
                           </ul>
                         </InfoButton>
                       </span>
                     </div>
                     <div className="flex gap-1 p-1 bg-gray-100 rounded-lg w-fit">
-                      {(['single', 'double', 'custom'] as RoundRobinType[]).map((type) => (
+                      {(['single_rr', 'double_rr', 'individual_race', 'custom'] as GameFormat[]).map((format) => (
                         <Button
-                          key={type}
+                          key={format}
                           type="button"
-                          variant={config.roundRobinType === type ? 'secondary' : 'ghost'}
+                          variant={config.gameFormat === format ? 'secondary' : 'ghost'}
                           size="sm"
                           className={`px-3 py-1 h-7 text-xs ${
-                            config.roundRobinType === type
+                            config.gameFormat === format
                               ? 'bg-blue-600 text-white hover:bg-blue-700'
                               : 'bg-transparent hover:bg-gray-200'
                           }`}
-                          onClick={() => updateField('roundRobinType', type)}
+                          onClick={() => updateField('gameFormat', format)}
                         >
-                          {getRoundRobinLabel(type)}
+                          {getGameFormatLabel(format)}
                         </Button>
                       ))}
                     </div>
@@ -584,12 +605,16 @@ export function SetupOptions({
                   {/* Total Games Display */}
                   <div className="p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Total Games:</span>
+                      <span className="text-sm text-gray-600">
+                        {config.gameFormat === 'individual_race' ? 'Total Matchups:' : 'Total Games:'}
+                      </span>
                       <span className="text-lg font-semibold">{totalGames}</span>
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
-                      {config.lineupSize}² {config.roundRobinType === 'double' ? '× 2' : ''} ={' '}
-                      {totalGames} games per match
+                      {config.gameFormat === 'individual_race'
+                        ? `${config.lineupSize} position matchups per match`
+                        : `${config.lineupSize}² ${config.gameFormat === 'double_rr' ? '× 2' : ''} = ${totalGames} games per match`
+                      }
                     </p>
                   </div>
 
@@ -607,11 +632,13 @@ export function SetupOptions({
                               Some configuration options may cause issues with scoring or other features.
                             </p>
                             <p className="mb-2">
-                              While we want to support all formats, we must prioritize well-established
-                              systems with clear rules. Custom configurations may require manual intervention.
+                              Our goal is to support all handicap systems, but we may not have encountered
+                              your particular format yet. Custom configurations may require manual scoring
+                              until we add full support for your system.
                             </p>
                             <p className="text-xs text-gray-500">
-                              For assistance with custom formats, contact support@rackemleagues.com
+                              Have a format we don't support yet? Contact us at support@rackemleagues.com
+                              and we'll work to add it.
                             </p>
                           </InfoButton>
                         </span>
@@ -696,9 +723,9 @@ export function SetupOptions({
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Label className="text-sm text-gray-600">Round Robin:</Label>
+                      <Label className="text-sm text-gray-600">Format:</Label>
                       <span className="text-sm font-medium bg-gray-100 px-3 py-1 rounded">
-                        {getRoundRobinLabel(config.roundRobinType)}
+                        {getGameFormatLabel(config.gameFormat)}
                       </span>
                     </div>
                   </div>

@@ -37,7 +37,7 @@ import {
   SetupOptions,
   type HandicapType,
   type SetupOptionsConfig,
-  type RoundRobinType,
+  type GameFormat,
   type ThresholdMode,
 } from '@/components/operator/match-editor';
 
@@ -118,24 +118,26 @@ export default function MatchDataPage() {
   const [isSavingSetup, setIsSavingSetup] = useState(false);
 
   /**
-   * Map editor gameGeneration to SetupOptions roundRobinType
+   * Map editor gameGeneration to SetupOptions gameFormat
    */
-  const mapGameGenerationToRoundRobin = (gen: string): RoundRobinType => {
+  const mapGameGenerationToFormat = (gen: string): GameFormat => {
     switch (gen) {
-      case 'double_rr': return 'double';
-      case 'single_rr': return 'single';
+      case 'double_rr': return 'double_rr';
+      case 'single_rr': return 'single_rr';
+      case 'individual_race': return 'individual_race';
       case 'manual': return 'custom';
-      default: return 'double';
+      default: return 'double_rr';
     }
   };
 
   /**
-   * Map SetupOptions roundRobinType to editor gameGeneration
+   * Map SetupOptions gameFormat to editor gameGeneration
    */
-  const mapRoundRobinToGameGeneration = (rr: RoundRobinType): 'double_rr' | 'single_rr' | 'manual' => {
-    switch (rr) {
-      case 'double': return 'double_rr';
-      case 'single': return 'single_rr';
+  const mapFormatToGameGeneration = (format: GameFormat): 'double_rr' | 'single_rr' | 'individual_race' | 'manual' => {
+    switch (format) {
+      case 'double_rr': return 'double_rr';
+      case 'single_rr': return 'single_rr';
+      case 'individual_race': return 'individual_race';
       case 'custom': return 'manual';
       default: return 'double_rr';
     }
@@ -146,9 +148,9 @@ export default function MatchDataPage() {
    */
   const setupConfig: SetupOptionsConfig = useMemo(() => ({
     lineupSize: state.formatConfig.lineupSize,
-    handicapType: state.formatConfig.handicapType === 'custom' ? 'points' : state.formatConfig.handicapType,
+    handicapType: state.formatConfig.handicapType,
     thresholdMode: thresholdMode,
-    roundRobinType: mapGameGenerationToRoundRobin(state.formatConfig.gameGeneration),
+    gameFormat: mapGameGenerationToFormat(state.formatConfig.gameGeneration),
   }), [state.formatConfig.lineupSize, state.formatConfig.handicapType, state.formatConfig.gameGeneration, thresholdMode]);
 
   /**
@@ -165,8 +167,8 @@ export default function MatchDataPage() {
       actions.setHandicapType(newConfig.handicapType);
     }
 
-    // Update game generation if round robin type changed
-    const newGameGen = mapRoundRobinToGameGeneration(newConfig.roundRobinType);
+    // Update game generation if game format changed
+    const newGameGen = mapFormatToGameGeneration(newConfig.gameFormat);
     if (newGameGen !== state.formatConfig.gameGeneration) {
       actions.setGameGeneration(newGameGen);
     }

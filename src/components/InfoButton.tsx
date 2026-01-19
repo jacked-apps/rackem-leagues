@@ -114,7 +114,7 @@ export const InfoButton: React.FC<InfoButtonProps> = ({
       {showInfo && (
         <div
           ref={popupRef}
-          className={`absolute top-8 z-50 w-80 p-4 bg-white border border-gray-200 rounded-lg shadow-lg ${
+          className={`absolute top-8 z-50 min-w-64 max-w-80 p-4 bg-white border border-gray-200 rounded-lg shadow-lg ${
             popupPosition === 'left' ? 'left-0' : popupPosition === 'right' ? 'right-0' : 'left-1/2 -translate-x-1/2'
           }`}
         >

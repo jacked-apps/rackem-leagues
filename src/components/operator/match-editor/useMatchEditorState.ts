@@ -35,7 +35,7 @@ import { useReducer, useMemo } from 'react';
 export type HandicapType = 'points' | 'percentage' | 'custom';
 
 /** Game generation method */
-export type GameGeneration = 'double_rr' | 'single_rr' | 'manual';
+export type GameGeneration = 'double_rr' | 'single_rr' | 'individual_race' | 'manual';
 
 /** Points calculation system */
 export type PointsSystem = 'differential' | 'bca_tiered' | 'per_game' | 'manual';

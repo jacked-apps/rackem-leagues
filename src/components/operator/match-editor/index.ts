@@ -31,7 +31,7 @@ export {
   type SetupOptionsConfig,
   type HandicapType as SetupHandicapType,
   type ThresholdMode,
-  type RoundRobinType,
+  type GameFormat,
 } from './SetupOptions';
 
 // State management
