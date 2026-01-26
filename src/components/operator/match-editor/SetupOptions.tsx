@@ -28,6 +28,16 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Settings2, Check, Pencil, AlertTriangle } from 'lucide-react';
 import { InfoButton } from '@/components/InfoButton';
 
@@ -300,6 +310,27 @@ function getSetupIssues(config: SetupOptionsConfig): SetupIssue[] {
   return issues;
 }
 
+/**
+ * Chart type that should be used based on current settings.
+ * Used for navigation when settings change on chart editor pages.
+ */
+export type ChartEditorType = 'points' | 'percentage' | 'race';
+
+/**
+ * Determine which chart editor should be used based on settings
+ */
+export function getChartEditorType(config: SetupOptionsConfig): ChartEditorType {
+  // Individual race format uses race charts
+  if (config.gameFormat === 'individual_race') {
+    return 'race';
+  }
+  // Team-based formats use points or percentage charts
+  if (config.handicapType === 'percentage') {
+    return 'percentage';
+  }
+  return 'points';
+}
+
 interface SetupOptionsProps {
   /** Current configuration */
   config: SetupOptionsConfig;
@@ -315,6 +346,17 @@ interface SetupOptionsProps {
   readOnly?: boolean;
   /** Default accordion state */
   defaultExpanded?: boolean;
+  /**
+   * Callback when settings change in a way that requires navigating to a different chart editor.
+   * Only used on chart editor pages - when the user changes handicap type or game format,
+   * this callback is called with the new chart type so the page can navigate.
+   */
+  onChartTypeChange?: (chartType: ChartEditorType) => void;
+  /**
+   * Whether there are unsaved changes in the chart editor.
+   * When true, changing chart type will show a warning dialog.
+   */
+  hasUnsavedChanges?: boolean;
 }
 
 /**
@@ -331,42 +373,96 @@ export function SetupOptions({
   hasSavedOptions = false,
   readOnly = false,
   defaultExpanded = false,
+  onChartTypeChange,
+  hasUnsavedChanges = false,
 }: SetupOptionsProps) {
   const [isEditing, setIsEditing] = useState(!hasSavedOptions);
   const [issuesAcknowledged, setIssuesAcknowledged] = useState(false);
+
+  // State for unsaved changes warning when navigating to different chart type
+  const [pendingChartNavigation, setPendingChartNavigation] = useState<ChartEditorType | null>(null);
 
   const totalGames = calculateTotalGames(config);
   const issues = getSetupIssues(config);
   const hasIssues = issues.length > 0;
 
+  // Track current chart type to detect when navigation is needed
+  const currentChartType = getChartEditorType(config);
+
   /**
-   * Update a single field in the config
+   * Attempt to navigate to a new chart type, showing warning if there are unsaved changes
+   */
+  const attemptChartNavigation = (newChartType: ChartEditorType) => {
+    if (hasUnsavedChanges) {
+      setPendingChartNavigation(newChartType);
+    } else {
+      onChartTypeChange?.(newChartType);
+    }
+  };
+
+  /**
+   * Confirm navigation and discard changes
+   */
+  const handleConfirmNavigation = () => {
+    if (pendingChartNavigation) {
+      onChartTypeChange?.(pendingChartNavigation);
+      setPendingChartNavigation(null);
+    }
+  };
+
+  /**
+   * Cancel navigation and keep editing
+   */
+  const handleCancelNavigation = () => {
+    setPendingChartNavigation(null);
+  };
+
+  /**
+   * Update a single field in the config, checking if chart type navigation is needed
    */
   const updateField = <K extends keyof SetupOptionsConfig>(
     field: K,
     value: SetupOptionsConfig[K]
   ) => {
-    onChange({ ...config, [field]: value });
+    const newConfig = { ...config, [field]: value };
+    const newChartType = getChartEditorType(newConfig);
+
+    // If chart type changed and we have a navigation callback, show warning or navigate
+    if (onChartTypeChange && newChartType !== currentChartType) {
+      attemptChartNavigation(newChartType);
+    } else {
+      onChange(newConfig);
+    }
   };
 
   /**
    * Handle handicap type change - also updates lineup size and game format defaults
    */
   const handleHandicapTypeChange = (type: HandicapType) => {
+    let newConfig: SetupOptionsConfig;
     if (type === 'percentage') {
-      onChange({
+      newConfig = {
         ...config,
         handicapType: type,
         lineupSize: 5,
         gameFormat: 'single_rr',
-      });
+      };
     } else {
-      onChange({
+      newConfig = {
         ...config,
         handicapType: type,
         lineupSize: 3,
         gameFormat: 'double_rr',
-      });
+      };
+    }
+
+    const newChartType = getChartEditorType(newConfig);
+
+    // If chart type changed and we have a navigation callback, show warning or navigate
+    if (onChartTypeChange && newChartType !== currentChartType) {
+      attemptChartNavigation(newChartType);
+    } else {
+      onChange(newConfig);
     }
   };
 
@@ -759,6 +855,41 @@ export function SetupOptions({
           </AccordionContent>
         </AccordionItem>
       </Accordion>
+
+      {/* Unsaved Changes Warning Dialog */}
+      <AlertDialog open={pendingChartNavigation !== null} onOpenChange={(open) => !open && handleCancelNavigation()}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Unsaved Changes
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                You have unsaved changes in the current chart editor.
+              </p>
+              <p>
+                Switching to a different chart type will take you to a new page with a different
+                data format. <strong>Your current changes will be lost.</strong>
+              </p>
+              <p className="text-amber-600 font-medium">
+                Are you sure you want to leave without saving?
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelNavigation}>
+              Keep Editing
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmNavigation}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Discard Changes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

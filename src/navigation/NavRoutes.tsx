@@ -73,6 +73,9 @@ const MatchListPage = lazy(() => import('../operator/MatchListPage'));
 const MatchDataPage = lazy(() => import('../operator/MatchDataPage'));
 const PointsThresholdChartPage = lazy(() => import('../operator/PointsThresholdChartPage'));
 const PercentageThresholdChartPage = lazy(() => import('../operator/PercentageThresholdChartPage'));
+const DbPointsThresholdChartPage = lazy(() => import('../operator/DbPointsThresholdChartPage'));
+const DbPercentageThresholdChartPage = lazy(() => import('../operator/DbPercentageThresholdChartPage'));
+const DbRaceThresholdChartPage = lazy(() => import('../operator/DbRaceThresholdChartPage'));
 
 /**
  * Helper to wrap element with ProtectedRoute for auth-only routes
@@ -202,6 +205,9 @@ export const router = createBrowserRouter([
       { path: 'league/:leagueId/season/:seasonId/match/:matchId', element: withOperator(MatchDataPage) },
       { path: 'league/:leagueId/threshold-chart/points', element: withOperator(PointsThresholdChartPage) },
       { path: 'league/:leagueId/threshold-chart/percentage', element: withOperator(PercentageThresholdChartPage) },
+      { path: 'league/:leagueId/threshold-chart-db/points', element: withOperator(DbPointsThresholdChartPage) },
+      { path: 'league/:leagueId/threshold-chart-db/percentage', element: withOperator(DbPercentageThresholdChartPage) },
+      { path: 'league/:leagueId/threshold-chart-db/race', element: withOperator(DbRaceThresholdChartPage) },
 
       // === Developer Routes (require developer role) ===
       { path: 'admin-reports', element: withDeveloper(<AdminReports />) },

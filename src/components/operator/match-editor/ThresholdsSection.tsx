@@ -174,12 +174,19 @@ function PointsChartPreview({ highlightDiff }: { highlightDiff?: number }) {
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => {
+          {rows.map((row, idx) => {
             const isHighlighted = roundedHighlight !== undefined && roundedHighlight === row.diff;
+            const isEvenRow = idx % 2 === 0;
             return (
               <tr
                 key={row.diff}
-                className={`border-b border-gray-100 ${isHighlighted ? 'bg-blue-50 font-medium' : ''}`}
+                className={`border-b border-gray-300 ${
+                  isHighlighted
+                    ? 'bg-blue-100 font-semibold text-gray-900'
+                    : isEvenRow
+                      ? 'bg-gray-50'
+                      : 'bg-white'
+                }`}
               >
                 <td className="py-1.5 px-2 text-gray-700">
                   {row.diff >= 0 ? `+${row.diff}` : row.diff}
@@ -251,10 +258,17 @@ function PercentageChartPreview({ highlightDiff }: { highlightDiff?: number }) {
         <tbody>
           {ranges.map((range, idx) => {
             const isHighlighted = idx === highlightRangeIndex;
+            const isEvenRow = idx % 2 === 0;
             return (
               <tr
                 key={range.min}
-                className={`border-b border-gray-100 ${isHighlighted ? 'bg-blue-50 font-medium' : ''}`}
+                className={`border-b border-gray-300 ${
+                  isHighlighted
+                    ? 'bg-blue-100 font-semibold text-gray-900'
+                    : isEvenRow
+                      ? 'bg-gray-50'
+                      : 'bg-white'
+                }`}
               >
                 <td className="py-1.5 px-2 text-gray-700">
                   {range.max === 999 ? `${range.min}+` : `${range.min}-${range.max}`}
@@ -282,6 +296,8 @@ function PercentageChartPreview({ highlightDiff }: { highlightDiff?: number }) {
  * Collapsible accordion showing the threshold chart preview.
  * Settings (system/mode) are controlled by SetupOptions at page level.
  * Links to dedicated chart editor page.
+ *
+ * Always visible - shows "no chart" message for custom/none systems.
  */
 function ThresholdChartPreviewCard({
   leagueId,
@@ -297,65 +313,114 @@ function ThresholdChartPreviewCard({
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Determine if we have a chart to display
+  const hasChart = currentSystem === 'points' || currentSystem === 'percentage';
+
   /**
    * Navigate to the threshold chart editor page
    */
   const handleEditChart = () => {
     if (!leagueId) return;
+    // Default to points chart if no system selected
     const chartType = currentSystem === 'percentage' ? 'percentage' : 'points';
     const returnTo = encodeURIComponent(location.pathname);
-    navigate(`/league/${leagueId}/threshold-chart/${chartType}?returnTo=${returnTo}&lineupSize=${lineupSize}`);
+    navigate(`/league/${leagueId}/threshold-chart-db/${chartType}?returnTo=${returnTo}&lineupSize=${lineupSize}`);
   };
 
-  // Don't show for custom system
-  if (currentSystem === 'custom') {
-    return null;
-  }
+  /**
+   * Navigate to create a new chart
+   */
+  const handleCreateChart = () => {
+    if (!leagueId) return;
+    const returnTo = encodeURIComponent(location.pathname);
+    // Default to points chart for new chart creation
+    navigate(`/league/${leagueId}/threshold-chart-db/points?returnTo=${returnTo}&lineupSize=${lineupSize}`);
+  };
 
   return (
-    <Card>
+    <Card className="border-blue-200 bg-blue-50/30">
       <Accordion type="single" collapsible defaultValue="">
         <AccordionItem value="chart" className="border-b-0">
-          <AccordionTrigger className="px-6 py-3 hover:no-underline">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <BarChart3 className="h-4 w-4" />
-              {currentSystem === 'points' ? 'Points Threshold Chart' : 'Percentage Threshold Chart'}
-              <span className="text-xs font-normal text-gray-500 ml-2">
-                (diff: {handicapDiff >= 0 ? '+' : ''}{handicapDiff.toFixed(1)})
-              </span>
+          <AccordionTrigger className="px-6 py-4 hover:no-underline">
+            <div className="flex items-center gap-3">
+              <BarChart3 className="h-5 w-5 text-blue-600" />
+              <div className="text-left">
+                <span className="text-base font-semibold text-blue-900">
+                  View Threshold Chart
+                </span>
+                {hasChart ? (
+                  <span className="text-sm font-normal text-blue-700 ml-2">
+                    ({currentSystem === 'points' ? 'Points' : 'Percentage'} • diff: {handicapDiff >= 0 ? '+' : ''}{handicapDiff.toFixed(1)})
+                  </span>
+                ) : (
+                  <span className="text-sm font-normal text-gray-500 ml-2">
+                    (No chart configured)
+                  </span>
+                )}
+              </div>
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-6 pb-4">
-            <div className="space-y-3">
-              {/* Edit Chart button */}
-              {leagueId && (
-                <div className="flex justify-end">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleEditChart}
-                    className="h-7 text-xs"
-                  >
-                    <ExternalLink className="h-3 w-3 mr-1" />
-                    Edit Chart
-                  </Button>
-                </div>
-              )}
-
-              {/* Chart preview */}
-              <div className="max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-2">
-                {currentSystem === 'points' ? (
-                  <PointsChartPreview highlightDiff={handicapDiff} />
-                ) : (
-                  <PercentageChartPreview highlightDiff={handicapDiff} />
+            {hasChart ? (
+              <div className="space-y-3">
+                {/* Edit Chart button */}
+                {leagueId && (
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleEditChart}
+                      className="h-7 text-xs"
+                    >
+                      <ExternalLink className="h-3 w-3 mr-1" />
+                      Edit Chart
+                    </Button>
+                  </div>
                 )}
+
+                {/* Chart preview */}
+                <div className="max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-2">
+                  {currentSystem === 'points' ? (
+                    <PointsChartPreview highlightDiff={handicapDiff} />
+                  ) : (
+                    <PercentageChartPreview highlightDiff={handicapDiff} />
+                  )}
+                </div>
+                <p className="text-xs text-gray-500">
+                  Current handicap difference: <span className="font-medium">{handicapDiff >= 0 ? '+' : ''}{handicapDiff.toFixed(1)}</span>
+                  {' '}(highlighted row)
+                </p>
               </div>
-              <p className="text-xs text-gray-500">
-                Current handicap difference: <span className="font-medium">{handicapDiff >= 0 ? '+' : ''}{handicapDiff.toFixed(1)}</span>
-                {' '}(highlighted row)
-              </p>
-            </div>
+            ) : (
+              <div className="space-y-4">
+                {/* No chart message */}
+                <div className="text-center py-6 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                  <BarChart3 className="h-10 w-10 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-600 font-medium mb-1">No Threshold Chart Configured</p>
+                  <p className="text-sm text-gray-500 mb-4">
+                    {currentSystem === 'custom'
+                      ? 'Custom handicap system selected. Create a chart to define thresholds.'
+                      : 'No handicap system selected. Create a chart to get started.'}
+                  </p>
+                  {leagueId && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCreateChart}
+                      className="h-7 text-xs"
+                    >
+                      <ExternalLink className="h-3 w-3 mr-1" />
+                      Create Chart
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500">
+                  Threshold charts determine how many games each team needs to win based on handicap difference.
+                </p>
+              </div>
+            )}
           </AccordionContent>
         </AccordionItem>
       </Accordion>

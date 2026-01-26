@@ -279,3 +279,53 @@ export { useInviteStatuses } from './useInviteStatuses';
 export type { InviteStatus } from './useInviteStatuses';
 export { usePlayerTeamCount } from './usePlayerTeamCount';
 export type { PlayerTeam } from './usePlayerTeamCount';
+
+// Threshold Charts hooks
+export {
+  useGlobalThresholdCharts,
+  useLeagueThresholdCharts,
+  useThresholdChart,
+  useDefaultThresholdChart,
+  useThresholdLookup,
+  useCreateThresholdChart,
+  useCreateThresholdChartRows,
+  useUpdateThresholdChart,
+  useReplaceThresholdChartRows,
+  useDeleteThresholdChart,
+  useCopyGlobalChartToLeague,
+  thresholdChartKeys,
+} from './useThresholdCharts';
+export type {
+  ThresholdChartType,
+  ThresholdEntityType,
+  ThresholdLookupMode,
+  ThresholdChart,
+  ThresholdChartRow,
+  ThresholdChartWithRows,
+  ThresholdLookupResult,
+  CreateThresholdChartInput,
+  CreateThresholdChartRowInput,
+} from './useThresholdCharts';
+
+// League Format Settings hooks
+export {
+  useLeagueFormatSettings,
+  useLeagueFormatSettingsWithChart,
+  useLeagueFormatSettingsOrCreate,
+  useCreateLeagueFormatSettings,
+  useUpdateLeagueFormatSettings,
+  useUpsertLeagueFormatSettings,
+  useDeleteLeagueFormatSettings,
+  leagueFormatSettingsKeys,
+  calculateEstimatedGames,
+  getChartTypeForHandicapType,
+} from './useLeagueFormatSettings';
+export type {
+  LeagueFormatSettings,
+  LeagueFormatSettingsWithChart,
+  CreateLeagueFormatSettingsInput,
+  UpdateLeagueFormatSettingsInput,
+  HandicapType,
+  GameGeneration,
+  PointsSystem,
+} from './useLeagueFormatSettings';

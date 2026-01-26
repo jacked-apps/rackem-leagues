@@ -90,9 +90,6 @@ export function generateChartFromGames(
   }));
 }
 
-/** Chart type for navigation (imported from PointsThresholdChartEditor) */
-type ChartType = 'points' | 'percentage' | 'race';
-
 interface PercentageThresholdChartEditorProps {
   /** Initial chart data (if loading from saved) */
   initialData?: PercentageChartRow[] | null;
@@ -102,10 +99,10 @@ interface PercentageThresholdChartEditorProps {
   onCancel?: () => void;
   /** Whether save is in progress */
   isSaving?: boolean;
-  /** Callback when chart type is changed (for navigation) */
-  onChartTypeChange?: (type: ChartType) => void;
   /** Initial lineup size from URL param (determines default total games) */
   initialLineupSize?: number;
+  /** Callback when unsaved changes state changes - allows parent to track dirty state */
+  onUnsavedChangesChange?: (hasUnsavedChanges: boolean) => void;
 }
 
 /**
@@ -148,8 +145,8 @@ export function PercentageThresholdChartEditor({
   onSave,
   onCancel,
   isSaving = false,
-  onChartTypeChange,
   initialLineupSize = 5,
+  onUnsavedChangesChange,
 }: PercentageThresholdChartEditorProps) {
   // Chart data state
   const [rows, setRows] = useState<PercentageChartRow[]>(
@@ -238,6 +235,11 @@ export function PercentageThresholdChartEditor({
     initialData ?? getDefaultPercentageChartRows()
   );
   const hasUnsavedChanges = JSON.stringify(rows) !== JSON.stringify(savedRows);
+
+  // Notify parent of unsaved changes state
+  useEffect(() => {
+    onUnsavedChangesChange?.(hasUnsavedChanges);
+  }, [hasUnsavedChanges, onUnsavedChangesChange]);
 
   // Update saved rows when initial data changes
   useEffect(() => {
@@ -339,46 +341,6 @@ export function PercentageThresholdChartEditor({
 
   return (
     <div className="space-y-4">
-      {/* Chart Type Navigation */}
-      {onChartTypeChange && (
-        <Card>
-          <CardContent className="py-3">
-            <div className="flex items-center gap-3">
-              <Label className="text-sm text-gray-600 whitespace-nowrap">Chart Type:</Label>
-              <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="px-4 py-1 h-8 text-sm bg-transparent hover:bg-gray-200"
-                  onClick={() => onChartTypeChange('points')}
-                >
-                  Points
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  className="px-4 py-1 h-8 text-sm bg-blue-600 text-white hover:bg-blue-700"
-                >
-                  %
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="px-4 py-1 h-8 text-sm bg-transparent hover:bg-gray-200 text-gray-400 cursor-not-allowed"
-                  disabled
-                  title="Race chart coming soon"
-                >
-                  Race
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Chart Settings Card */}
       <Card>
         <CardHeader className="pb-3">
@@ -553,9 +515,9 @@ export function PercentageThresholdChartEditor({
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {/* Add Row Button (Top) - only if first row doesn't start at 0 */}
-          {rows[0]?.minDiff > 0 && (
-            <div className="flex justify-center">
+          {/* Add/Remove Row Buttons (Top) */}
+          <div className="flex justify-center gap-2">
+            {rows[0]?.minDiff > 0 && (
               <Button
                 type="button"
                 variant="outline"
@@ -566,8 +528,23 @@ export function PercentageThresholdChartEditor({
                 <Plus className="h-4 w-4 mr-1" />
                 Add Range (0 - {rows[0].minDiff - 1})
               </Button>
-            </div>
-          )}
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (rows.length > 1) {
+                  setRows(rows.slice(1));
+                }
+              }}
+              disabled={rows.length <= 1}
+              className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              Remove Top Row
+            </Button>
+          </div>
 
           {/* Chart Table */}
           <div className="border rounded-lg overflow-hidden">
@@ -714,8 +691,8 @@ export function PercentageThresholdChartEditor({
             </table>
           </div>
 
-          {/* Add Row Button (Bottom) */}
-          <div className="flex justify-center">
+          {/* Add/Remove Row Buttons (Bottom) */}
+          <div className="flex justify-center gap-2">
             <Button
               type="button"
               variant="outline"
@@ -725,6 +702,21 @@ export function PercentageThresholdChartEditor({
             >
               <Plus className="h-4 w-4 mr-1" />
               Add Range ({rows[rows.length - 1]?.maxDiff + 1}+)
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (rows.length > 1) {
+                  setRows(rows.slice(0, -1));
+                }
+              }}
+              disabled={rows.length <= 1}
+              className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              Remove Bottom Row
             </Button>
           </div>
         </CardContent>

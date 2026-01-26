@@ -23,7 +23,6 @@ import {
   PointsThresholdChartEditor,
   getDefaultPointsChartRows,
   type PointsChartRow,
-  type ChartType,
 } from '@/components/operator/threshold-editor';
 import {
   SetupOptions,
@@ -106,19 +105,6 @@ export default function PointsThresholdChartPage() {
     }
   };
 
-  /**
-   * Handle chart type change - navigate to different chart editor
-   * Preserves returnTo and lineupSize params
-   */
-  const handleChartTypeChange = (type: ChartType) => {
-    if (!leagueId) return;
-    const params = new URLSearchParams();
-    if (returnTo) params.set('returnTo', returnTo);
-    if (lineupSize) params.set('lineupSize', lineupSize.toString());
-    const queryString = params.toString();
-    navigate(`/league/${leagueId}/threshold-chart/${type}${queryString ? `?${queryString}` : ''}`);
-  };
-
   // Determine back navigation
   const backTo = returnTo || (leagueId ? `/league/${leagueId}` : '/');
   const backLabel = returnTo?.includes('match') ? 'Back to Match' : 'Back to League';
@@ -147,7 +133,6 @@ export default function PointsThresholdChartPage() {
           onSave={handleSave}
           onCancel={handleCancel}
           isSaving={isSaving}
-          onChartTypeChange={handleChartTypeChange}
           initialLineupSize={setupConfig.lineupSize}
         />
       </div>

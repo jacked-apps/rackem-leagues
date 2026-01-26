@@ -28,10 +28,12 @@ export {
   SetupOptions,
   calculateTotalGames,
   getDefaultSetupOptions,
+  getChartEditorType,
   type SetupOptionsConfig,
   type HandicapType as SetupHandicapType,
   type ThresholdMode,
   type GameFormat,
+  type ChartEditorType,
 } from './SetupOptions';
 
 // State management

@@ -179,6 +179,32 @@ const mutation = useMutation({
 
 ---
 
+## 3. Fix Add Placeholder Player Modal in Team Editor
+
+**Branch needed:** `fix-placeholder-modal`
+
+**Problem:** The "Add Placeholder Player" modal in the Team Editor has usability issues:
+1. The modal content is not scrollable - top and bottom are cut off
+2. No explanation of what a placeholder player is or when to use one
+3. Users can't access the full form on smaller screens
+
+**Location:** Team Management page → Add Player → Add Placeholder Player modal
+
+**Changes needed:**
+1. Make modal content scrollable (add `overflow-y-auto` and `max-h-[80vh]` or similar)
+2. Add InfoButton component with explanation at the top of the modal:
+   - What is a placeholder player?
+   - When should you use one vs inviting a real player?
+   - What happens when a real player claims the placeholder?
+3. Ensure modal has proper padding/margins so content isn't cut off
+
+**Files to check:**
+- Look for the Add Placeholder modal component in Team Management
+- May be in `src/operator/TeamManagement.tsx` or a separate modal component
+- Use existing `InfoButton` component from `@/components/InfoButton`
+
+---
+
 ## Future Items
 
 (Add more items here as needed)

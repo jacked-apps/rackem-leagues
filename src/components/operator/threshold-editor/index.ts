@@ -7,7 +7,7 @@
  * Chart Types:
  * - Points: Exact diff lookup (-12 to +12), has ties on even diffs
  * - Percentage: Range-based lookup (0-14, 15-40, etc.), no ties
- * - PvP Race: Player vs player race format (future)
+ * - Race: Player vs player 2D matrix lookup (no ties)
  */
 
 export {
@@ -22,3 +22,29 @@ export {
   getDefaultPercentageChartRows,
   type PercentageChartRow,
 } from './PercentageThresholdChartEditor';
+
+export {
+  RaceThresholdChartEditor,
+  getDefaultRacePointsChartRows,
+  getDefaultRaceMatrixPercentageChartRows,
+  generateRaceChartRows,
+  generateRacePercentageChartRowsWithGap,
+  calculateRaceLengths,
+  calculateRaceLengthRange,
+  type RaceChartRow,
+  type RaceChartType,
+} from './RaceThresholdChartEditor';
+
+export {
+  RacePercentageThresholdChartEditor,
+  getDefaultRacePercentageChartRows,
+  generateRacePercentageChartRows,
+  calculateRacePercentageLengthRange,
+  type RacePercentageChartRow,
+} from './RacePercentageThresholdChartEditor';
+
+export {
+  ChartTypeSelector,
+  type ChartEditorType,
+  type RaceChartType as ChartRaceType,
+} from './ChartTypeSelector';

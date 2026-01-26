@@ -221,10 +221,10 @@ interface PointsThresholdChartEditorProps {
   onCancel?: () => void;
   /** Whether save is in progress */
   isSaving?: boolean;
-  /** Callback when chart type is changed (for navigation) */
-  onChartTypeChange?: (type: ChartType) => void;
   /** Initial lineup size from URL param (determines default total games) */
   initialLineupSize?: number;
+  /** Callback when unsaved changes state changes - allows parent to track dirty state */
+  onUnsavedChangesChange?: (hasUnsavedChanges: boolean) => void;
 }
 
 /**
@@ -265,8 +265,8 @@ export function PointsThresholdChartEditor({
   onSave,
   onCancel,
   isSaving = false,
-  onChartTypeChange,
   initialLineupSize = 3,
+  onUnsavedChangesChange,
 }: PointsThresholdChartEditorProps) {
   // Chart data state
   const [rows, setRows] = useState<PointsChartRow[]>(
@@ -334,6 +334,11 @@ export function PointsThresholdChartEditor({
     initialData ?? getDefaultPointsChartRows()
   );
   const hasUnsavedChanges = JSON.stringify(rows) !== JSON.stringify(savedRows);
+
+  // Notify parent of unsaved changes state
+  useEffect(() => {
+    onUnsavedChangesChange?.(hasUnsavedChanges);
+  }, [hasUnsavedChanges, onUnsavedChangesChange]);
 
   // Update saved rows when initial data changes
   useEffect(() => {
@@ -414,46 +419,6 @@ export function PointsThresholdChartEditor({
 
   return (
     <div className="space-y-4">
-      {/* Chart Type Navigation */}
-      {onChartTypeChange && (
-        <Card>
-          <CardContent className="py-3">
-            <div className="flex items-center gap-3">
-              <Label className="text-sm text-gray-600 whitespace-nowrap">Chart Type:</Label>
-              <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  className="px-4 py-1 h-8 text-sm bg-blue-600 text-white hover:bg-blue-700"
-                >
-                  Points
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="px-4 py-1 h-8 text-sm bg-transparent hover:bg-gray-200"
-                  onClick={() => onChartTypeChange('percentage')}
-                >
-                  %
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="px-4 py-1 h-8 text-sm bg-transparent hover:bg-gray-200 text-gray-400 cursor-not-allowed"
-                  disabled
-                  title="Race chart coming soon"
-                >
-                  Race
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Chart Settings Card */}
       <Card>
         <CardHeader className="pb-3">
@@ -648,8 +613,8 @@ export function PointsThresholdChartEditor({
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {/* Add Row Button (Top) */}
-          <div className="flex justify-center">
+          {/* Add/Remove Row Buttons (Top) */}
+          <div className="flex justify-center gap-2">
             <Button
               type="button"
               variant="outline"
@@ -659,6 +624,21 @@ export function PointsThresholdChartEditor({
             >
               <Plus className="h-4 w-4 mr-1" />
               Add Row (Diff +{(rows[0]?.diff ?? 12) + 1})
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (rows.length > 1) {
+                  setRows(rows.slice(1));
+                }
+              }}
+              disabled={rows.length <= 1}
+              className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              Remove Top Row
             </Button>
           </div>
 
@@ -796,8 +776,8 @@ export function PointsThresholdChartEditor({
             </table>
           </div>
 
-          {/* Add Row Button (Bottom) */}
-          <div className="flex justify-center">
+          {/* Add/Remove Row Buttons (Bottom) */}
+          <div className="flex justify-center gap-2">
             <Button
               type="button"
               variant="outline"
@@ -807,6 +787,21 @@ export function PointsThresholdChartEditor({
             >
               <Plus className="h-4 w-4 mr-1" />
               Add Row (Diff {(rows[rows.length - 1]?.diff ?? -12) - 1})
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (rows.length > 1) {
+                  setRows(rows.slice(0, -1));
+                }
+              }}
+              disabled={rows.length <= 1}
+              className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              Remove Bottom Row
             </Button>
           </div>
         </CardContent>
