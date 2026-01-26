@@ -71,8 +71,6 @@ const LeaguePlayoffSettings = lazy(() => import('../operator/LeaguePlayoffSettin
 const PlayoffsSetupWizard = lazy(() => import('../operator/PlayoffsSetupWizard'));
 const MatchListPage = lazy(() => import('../operator/MatchListPage'));
 const MatchDataPage = lazy(() => import('../operator/MatchDataPage'));
-const PointsThresholdChartPage = lazy(() => import('../operator/PointsThresholdChartPage'));
-const PercentageThresholdChartPage = lazy(() => import('../operator/PercentageThresholdChartPage'));
 const DbPointsThresholdChartPage = lazy(() => import('../operator/DbPointsThresholdChartPage'));
 const DbPercentageThresholdChartPage = lazy(() => import('../operator/DbPercentageThresholdChartPage'));
 const DbRaceThresholdChartPage = lazy(() => import('../operator/DbRaceThresholdChartPage'));
@@ -203,8 +201,6 @@ export const router = createBrowserRouter([
       { path: 'venues/:orgId', element: withOperator(VenueManagement) },
       { path: 'league/:leagueId/season/:seasonId/match-list', element: withOperator(MatchListPage) },
       { path: 'league/:leagueId/season/:seasonId/match/:matchId', element: withOperator(MatchDataPage) },
-      { path: 'league/:leagueId/threshold-chart/points', element: withOperator(PointsThresholdChartPage) },
-      { path: 'league/:leagueId/threshold-chart/percentage', element: withOperator(PercentageThresholdChartPage) },
       // Season-based threshold chart editors (DB-backed)
       { path: 'league/:leagueId/season/:seasonId/threshold-chart/points', element: withOperator(DbPointsThresholdChartPage) },
       { path: 'league/:leagueId/season/:seasonId/threshold-chart/percentage', element: withOperator(DbPercentageThresholdChartPage) },

@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2025-01-15 (added useMatchEditorState.ts hook for match editor state management)
+> **Last Updated**: 2026-01-26 (refactored threshold chart pages with shared hook and components)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -357,7 +357,9 @@
 - `SeasonSchedulePage.tsx` - Season schedule page
 - `MatchListPage.tsx` - Match list page (Phase 1: navigation to individual matches)
 - `MatchDataPage.tsx` - Match data page (Phase 1: placeholder, Phase 2: full editing)
-- `PointsThresholdChartPage.tsx` - Dedicated page for editing points-based threshold charts
+- `DbPointsThresholdChartPage.tsx` - Database-backed page for editing points-based threshold charts
+- `DbPercentageThresholdChartPage.tsx` - Database-backed page for editing percentage-based threshold charts
+- `DbRaceThresholdChartPage.tsx` - Database-backed page for editing race threshold charts (points and percentage via query param)
 
 **Team & Venue Management**
 - `TeamManagement.tsx` - Team management interface
@@ -533,7 +535,15 @@ Reusable wizard/form step components
 
 #### Threshold Editor Components (`/components/operator/threshold-editor/`)
 - `index.ts` - Barrel export for threshold editor components
-- `PointsThresholdChartEditor.tsx` - Full-page editor for points-based threshold charts (exact diff lookup)
+- `PointsThresholdChartEditor.tsx` - Editor component for points-based threshold charts (exact diff lookup)
+- `PercentageThresholdChartEditor.tsx` - Editor component for percentage-based threshold charts (range lookup)
+- `RaceThresholdChartEditor.tsx` - Editor component for race threshold charts (2D matrix lookup)
+- `RacePercentageThresholdChartEditor.tsx` - Editor component for race percentage charts
+- `ChartTypeSelector.tsx` - Universal navigation for switching between chart types
+- `SaveChartModal.tsx` - Modal for saving custom charts with name/description
+- `DatabaseStatusCard.tsx` - Shows chart ownership status and "Create Season Copy" action
+- `ThresholdChartPageLayout.tsx` - Shared page layout (loading, error, header)
+- `useThresholdChartPage.ts` - Custom hook with all shared page logic (data fetching, mutations, handlers)
 
 #### Operator Components (`/components/operator/`)
 - `ActiveLeagues.tsx` - Active leagues overview (uses LeagueStatusCard)
@@ -770,6 +780,7 @@ Help/info content for features
 #### Other Constants (`/constants/`)
 - `states.ts` - US states list
 - `scheduleConflicts.ts` - Schedule conflict definitions
+- `thresholdCharts.ts` - Threshold chart type metadata (labels, lookup modes, max widths)
 
 ---
 

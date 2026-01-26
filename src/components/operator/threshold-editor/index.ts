@@ -8,8 +8,14 @@
  * - Points: Exact diff lookup (-12 to +12), has ties on even diffs
  * - Percentage: Range-based lookup (0-14, 15-40, etc.), no ties
  * - Race: Player vs player 2D matrix lookup (no ties)
+ *
+ * Shared Components:
+ * - ThresholdChartPageLayout: Common page shell (loading, error, header)
+ * - DatabaseStatusCard: Shows chart ownership status and copy action
+ * - useThresholdChartPage: Custom hook with shared page logic
  */
 
+// === Editor Components ===
 export {
   PointsThresholdChartEditor,
   getDefaultPointsChartRows,
@@ -43,6 +49,7 @@ export {
   type RacePercentageChartRow,
 } from './RacePercentageThresholdChartEditor';
 
+// === UI Components ===
 export {
   ChartTypeSelector,
   type ChartEditorType,
@@ -53,3 +60,19 @@ export {
   SaveChartModal,
   type SaveChartData,
 } from './SaveChartModal';
+
+// === Shared Page Components ===
+export { DatabaseStatusCard, type DatabaseStatusCardProps } from './DatabaseStatusCard';
+
+export {
+  ThresholdChartPageLayout,
+  type ThresholdChartPageLayoutProps,
+} from './ThresholdChartPageLayout';
+
+// === Custom Hook ===
+export {
+  useThresholdChartPage,
+  type UseThresholdChartPageConfig,
+  type UseThresholdChartPageResult,
+  type DbRowFormat,
+} from './useThresholdChartPage';
