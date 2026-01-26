@@ -25,7 +25,7 @@
  * />
  */
 
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -56,6 +56,8 @@ type ThresholdSystem = 'points' | 'percentage' | 'custom';
 interface ThresholdsSectionProps {
   /** League ID for navigation to chart editor */
   leagueId?: string;
+  /** Season ID for navigation to chart editor */
+  seasonId?: string;
   /** Home team thresholds (legacy prop) */
   homeThresholds?: {
     win: number | null;
@@ -301,40 +303,39 @@ function PercentageChartPreview({ highlightDiff }: { highlightDiff?: number }) {
  */
 function ThresholdChartPreviewCard({
   leagueId,
+  seasonId,
   currentSystem,
   handicapDiff,
-  lineupSize,
 }: {
   leagueId?: string;
+  seasonId?: string;
   currentSystem: ThresholdSystem;
   handicapDiff: number;
-  lineupSize: number;
 }) {
   const navigate = useNavigate();
-  const location = useLocation();
 
   // Determine if we have a chart to display
   const hasChart = currentSystem === 'points' || currentSystem === 'percentage';
 
   /**
    * Navigate to the threshold chart editor page
+   * Route: /league/:leagueId/season/:seasonId/threshold-chart/:chartType
    */
   const handleEditChart = () => {
-    if (!leagueId) return;
+    if (!leagueId || !seasonId) return;
     // Default to points chart if no system selected
     const chartType = currentSystem === 'percentage' ? 'percentage' : 'points';
-    const returnTo = encodeURIComponent(location.pathname);
-    navigate(`/league/${leagueId}/threshold-chart-db/${chartType}?returnTo=${returnTo}&lineupSize=${lineupSize}`);
+    navigate(`/league/${leagueId}/season/${seasonId}/threshold-chart/${chartType}`);
   };
 
   /**
    * Navigate to create a new chart
+   * Route: /league/:leagueId/season/:seasonId/threshold-chart/:chartType
    */
   const handleCreateChart = () => {
-    if (!leagueId) return;
-    const returnTo = encodeURIComponent(location.pathname);
+    if (!leagueId || !seasonId) return;
     // Default to points chart for new chart creation
-    navigate(`/league/${leagueId}/threshold-chart-db/points?returnTo=${returnTo}&lineupSize=${lineupSize}`);
+    navigate(`/league/${leagueId}/season/${seasonId}/threshold-chart/points`);
   };
 
   return (
@@ -364,7 +365,7 @@ function ThresholdChartPreviewCard({
             {hasChart ? (
               <div className="space-y-3">
                 {/* Edit Chart button */}
-                {leagueId && (
+                {leagueId && seasonId && (
                   <div className="flex justify-end">
                     <Button
                       type="button"
@@ -403,7 +404,7 @@ function ThresholdChartPreviewCard({
                       ? 'Custom handicap system selected. Create a chart to define thresholds.'
                       : 'No handicap system selected. Create a chart to get started.'}
                   </p>
-                  {leagueId && (
+                  {leagueId && seasonId && (
                     <Button
                       type="button"
                       variant="outline"
@@ -499,6 +500,7 @@ function ThresholdInput({
  */
 export function ThresholdsSection({
   leagueId,
+  seasonId,
   homeThresholds: legacyHomeThresholds,
   awayThresholds: legacyAwayThresholds,
   playerCount: legacyPlayerCount,
@@ -599,9 +601,9 @@ export function ThresholdsSection({
       {/* Chart Preview Card (collapsible) */}
       <ThresholdChartPreviewCard
         leagueId={leagueId}
+        seasonId={seasonId}
         currentSystem={effectiveSystem}
         handicapDiff={handicapDiff}
-        lineupSize={formatConfig.lineupSize}
       />
 
       {/* Main Thresholds Card */}

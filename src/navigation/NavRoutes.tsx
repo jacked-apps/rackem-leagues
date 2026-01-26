@@ -205,9 +205,10 @@ export const router = createBrowserRouter([
       { path: 'league/:leagueId/season/:seasonId/match/:matchId', element: withOperator(MatchDataPage) },
       { path: 'league/:leagueId/threshold-chart/points', element: withOperator(PointsThresholdChartPage) },
       { path: 'league/:leagueId/threshold-chart/percentage', element: withOperator(PercentageThresholdChartPage) },
-      { path: 'league/:leagueId/threshold-chart-db/points', element: withOperator(DbPointsThresholdChartPage) },
-      { path: 'league/:leagueId/threshold-chart-db/percentage', element: withOperator(DbPercentageThresholdChartPage) },
-      { path: 'league/:leagueId/threshold-chart-db/race', element: withOperator(DbRaceThresholdChartPage) },
+      // Season-based threshold chart editors (DB-backed)
+      { path: 'league/:leagueId/season/:seasonId/threshold-chart/points', element: withOperator(DbPointsThresholdChartPage) },
+      { path: 'league/:leagueId/season/:seasonId/threshold-chart/percentage', element: withOperator(DbPercentageThresholdChartPage) },
+      { path: 'league/:leagueId/season/:seasonId/threshold-chart/race', element: withOperator(DbRaceThresholdChartPage) },
 
       // === Developer Routes (require developer role) ===
       { path: 'admin-reports', element: withDeveloper(<AdminReports />) },

@@ -2,21 +2,22 @@
  * @fileoverview Database-Backed Percentage Threshold Chart Editor Page
  *
  * Full-page editor for percentage-based threshold charts using database storage.
- * This is the database-backed version of PercentageThresholdChartPage.
+ * Season-based: the chart is stored on and linked to a specific season.
  *
- * Route: /league/:leagueId/threshold-chart-db/percentage
+ * Route: /league/:leagueId/season/:seasonId/threshold-chart/percentage
  *
- * Key differences from the localStorage version:
- * - Loads chart data from threshold_charts and threshold_chart_rows tables
- * - Can use global templates, organization defaults, or league-specific charts
- * - Saves changes to database via mutation hooks
- * - Supports copying global templates to create league-specific charts
+ * Data flow:
+ * 1. Load season to get threshold_chart_id and league_id
+ * 2. If season has threshold_chart_id → load that specific chart
+ * 3. If season has no chart (null) → load league/org/global default for display
+ * 4. On save → create/update chart AND link it to the season via threshold_chart_id
  *
  * Percentage charts use range-based lookup (VLOOKUP style) rather than exact match.
+ * Back navigation always returns to the match list page.
  */
 
 import { useState, useMemo } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,26 +32,26 @@ import {
   type SaveChartData,
 } from '@/components/operator/threshold-editor';
 import {
+  useThresholdChart,
   useDefaultThresholdChart,
   useGlobalThresholdCharts,
-  useLeagueThresholdCharts,
   useCreateThresholdChart,
   useReplaceThresholdChartRows,
   useCopyGlobalChartToLeague,
+  useSeasonById,
+  useUpdateSeason,
+  useLeagueById,
   type ThresholdChartWithRows,
 } from '@/api/hooks';
-import { useLeagueById } from '@/api/hooks/useLeagues';
 
 /**
  * Convert database chart rows to editor format for percentage charts
  *
  * DB format: comp_1 (minDiff), comp_2 (maxDiff), result_1 (higherWins), result_3 (lowerWins)
- * Note: For percentage charts, we use comp_1 as minDiff and a separate row attribute for maxDiff
- *       However, the DB schema uses comp_2 for the second comparison value (maxDiff in range charts)
  *
  * For range-based percentage charts, we store:
  * - comp_1: min of the range
- * - comp_2: max of the range (we'll use sort_order to derive this if not stored)
+ * - comp_2: max of the range
  * - result_1: higher handicap team games to win
  * - result_3: lower handicap team games to win
  * - result_2: NULL (no ties in percentage format)
@@ -104,15 +105,12 @@ function editorRowsToDbRows(
 /**
  * Database-Backed Percentage Threshold Chart Editor Page
  *
- * Loads charts from database and saves changes via mutations.
+ * Season-based: loads chart from season.threshold_chart_id or falls back to defaults.
+ * On save, links the chart to the season.
  */
 export default function DbPercentageThresholdChartPage() {
-  const { leagueId } = useParams<{ leagueId: string }>();
+  const { leagueId, seasonId } = useParams<{ leagueId: string; seasonId: string }>();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-
-  // Get params from query string
-  const returnTo = searchParams.get('returnTo');
 
   // Track unsaved changes from the editor (for navigation warning)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -121,63 +119,70 @@ export default function DbPercentageThresholdChartPage() {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [pendingChartData, setPendingChartData] = useState<PercentageChartRow[] | null>(null);
 
-  // Fetch league to get organization ID for fallback lookup
-  const { data: league, isLoading: isLeagueLoading } = useLeagueById(leagueId);
+  // === Data Fetching ===
 
-  // Fetch charts from database
+  // 1. Fetch the season to get threshold_chart_id and league_id
+  const { data: season, isLoading: isSeasonLoading } = useSeasonById(seasonId);
+
+  // 2. Fetch the league to get organization_id for fallback lookup
+  const { data: league, isLoading: isLeagueLoading } = useLeagueById(season?.league_id);
+
+  // 3. If season has a specific chart, load it directly
+  const {
+    data: seasonChart,
+    isLoading: isSeasonChartLoading,
+  } = useThresholdChart(season?.threshold_chart_id);
+
+  // 4. If no season-specific chart, load the default (league → org → global)
   const {
     data: defaultChart,
     isLoading: isDefaultChartLoading,
     error: defaultChartError,
   } = useDefaultThresholdChart(
     'league',
-    leagueId,
+    season?.league_id,
     'team_percentage',
     league?.organization_id
   );
 
-  // Fetch league's own charts
-  const { data: leagueCharts, isLoading: isLeagueChartsLoading } = useLeagueThresholdCharts(
-    leagueId,
-    'team_percentage'
-  );
-
-  // Fetch global templates (for copy option)
+  // 5. Fetch global templates (for copy option)
   const { data: globalTemplates } = useGlobalThresholdCharts('team_percentage');
 
-  // Mutations
+  // === Mutations ===
   const { mutate: createChart, isPending: isCreating } = useCreateThresholdChart();
   const { mutate: replaceRows, isPending: isReplacing } = useReplaceThresholdChartRows();
   const { mutate: copyGlobalChart, isPending: isCopying } = useCopyGlobalChartToLeague();
+  const { mutate: updateSeason, isPending: isUpdatingSeason } = useUpdateSeason();
 
-  // Track the active chart
-  // Note: defaultChart follows the hierarchy: league → org → global, and includes rows
-  const hasLeagueChart = leagueCharts && leagueCharts.length > 0;
-  const isUsingGlobalTemplate = !hasLeagueChart && defaultChart?.entity_type === 'global';
+  // === Derived State ===
+
+  // Determine which chart we're actually using
+  const activeChart = seasonChart || defaultChart;
+  const hasSeasonChart = !!season?.threshold_chart_id && !!seasonChart;
+  const isUsingGlobalTemplate = !hasSeasonChart && defaultChart?.entity_type === 'global';
 
   // Convert DB rows to editor format
-  // Use defaultChart which already has rows loaded
   const chartRows = useMemo(() => {
-    if (defaultChart?.rows && defaultChart.rows.length > 0) {
-      return dbRowsToEditorRows(defaultChart.rows);
+    if (activeChart?.rows && activeChart.rows.length > 0) {
+      return dbRowsToEditorRows(activeChart.rows);
     }
     return getDefaultPercentageChartRows();
-  }, [defaultChart]);
+  }, [activeChart]);
 
   // Loading state
-  const isLoading = isLeagueLoading || isDefaultChartLoading || isLeagueChartsLoading;
-  const isSaving = isCreating || isReplacing || isCopying;
+  const isLoading = isSeasonLoading || isLeagueLoading || isSeasonChartLoading || isDefaultChartLoading;
+  const isSaving = isCreating || isReplacing || isCopying || isUpdatingSeason;
 
   /**
    * Handle save from editor - shows modal if creating new chart
    */
   const handleEditorSave = (data: PercentageChartRow[]) => {
-    if (!leagueId) return;
+    if (!seasonId || !season) return;
 
-    // If league already has a chart, just update the rows (no modal needed)
-    if (hasLeagueChart && leagueCharts[0]) {
+    // If season already has its own chart, just update the rows (no modal needed)
+    if (hasSeasonChart && seasonChart) {
       replaceRows({
-        chartId: leagueCharts[0].id,
+        chartId: seasonChart.id,
         rows: editorRowsToDbRows(data),
       });
       return;
@@ -189,27 +194,40 @@ export default function DbPercentageThresholdChartPage() {
   };
 
   /**
-   * Handle modal confirmation - creates chart with name/description
+   * Handle modal confirmation - creates chart with name/description and links to season
    */
   const handleModalSave = (saveData: SaveChartData) => {
-    if (!leagueId || !pendingChartData) return;
+    if (!seasonId || !season || !pendingChartData) return;
 
     createChart(
       {
         entity_type: 'league',
-        entity_id: leagueId,
+        entity_id: season.league_id,
         chart_type: 'team_percentage',
         lookup_mode: 'range', // Percentage charts use range lookup
         name: saveData.name,
         description: saveData.description,
-        is_default: true,
+        is_default: false, // Season-specific charts are not league defaults
       },
       {
         onSuccess: (newChart) => {
-          replaceRows({
-            chartId: newChart.id,
-            rows: editorRowsToDbRows(pendingChartData),
-          });
+          // Save the rows to the new chart
+          replaceRows(
+            {
+              chartId: newChart.id,
+              rows: editorRowsToDbRows(pendingChartData),
+            },
+            {
+              onSuccess: () => {
+                // Link the chart to the season
+                updateSeason({
+                  seasonId: seasonId,
+                  thresholdChartId: newChart.id,
+                });
+              },
+            }
+          );
+          // Close modal and clear pending data
           setShowSaveModal(false);
           setPendingChartData(null);
         },
@@ -218,26 +236,35 @@ export default function DbPercentageThresholdChartPage() {
   };
 
   /**
-   * Handle copying a global template
+   * Handle copying a global template to create a season-specific chart
    */
   const handleCopyTemplate = (templateId: string) => {
-    if (!leagueId) return;
+    if (!seasonId || !season) return;
 
-    copyGlobalChart({
-      globalChartId: templateId,
-      leagueId,
-      name: 'League Percentage Chart',
-    });
+    copyGlobalChart(
+      {
+        globalChartId: templateId,
+        leagueId: season.league_id,
+        name: `${season.season_name} Percentage Chart`,
+      },
+      {
+        onSuccess: (newChart) => {
+          // Link the copied chart to the season
+          updateSeason({
+            seasonId: seasonId,
+            thresholdChartId: newChart.id,
+          });
+        },
+      }
+    );
   };
 
   /**
-   * Handle cancel/back navigation
+   * Handle cancel/back navigation - always returns to match list
    */
   const handleCancel = () => {
-    if (returnTo) {
-      navigate(returnTo);
-    } else if (leagueId) {
-      navigate(`/league/${leagueId}`);
+    if (leagueId && seasonId) {
+      navigate(`/league/${leagueId}/season/${seasonId}/match-list`);
     } else {
       navigate(-1);
     }
@@ -248,16 +275,13 @@ export default function DbPercentageThresholdChartPage() {
    * Navigates to the appropriate chart editor page
    */
   const handleChartTypeChange = (chartType: ChartEditorType) => {
-    if (!leagueId) return;
-    const params = new URLSearchParams();
-    if (returnTo) params.set('returnTo', returnTo);
-    const queryString = params.toString();
-    navigate(`/league/${leagueId}/threshold-chart-db/${chartType}${queryString ? `?${queryString}` : ''}`);
+    if (!leagueId || !seasonId) return;
+    navigate(`/league/${leagueId}/season/${seasonId}/threshold-chart/${chartType}`);
   };
 
-  // Navigation
-  const backTo = returnTo || (leagueId ? `/league/${leagueId}` : '/');
-  const backLabel = returnTo?.includes('match') ? 'Back to Match' : 'Back to League';
+  // Back navigation always goes to match list
+  const backTo = leagueId && seasonId ? `/league/${leagueId}/season/${seasonId}/match-list` : '/';
+  const backLabel = 'Back to Match List';
 
   // Loading state
   if (isLoading) {
@@ -282,7 +306,7 @@ export default function DbPercentageThresholdChartPage() {
   }
 
   // Error state
-  if (defaultChartError) {
+  if (defaultChartError && !seasonChart) {
     return (
       <div className="min-h-screen bg-gray-50">
         <PageHeader
@@ -311,7 +335,7 @@ export default function DbPercentageThresholdChartPage() {
         backTo={backTo}
         backLabel={backLabel}
         title="Threshold Chart Editor (Team/Percentage)"
-        subtitle="Configure games-to-win thresholds for teams using percentage-style handicaps"
+        subtitle={season ? `Season: ${season.season_name}` : 'Configure games-to-win thresholds'}
       />
 
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
@@ -322,12 +346,12 @@ export default function DbPercentageThresholdChartPage() {
               <div className="flex items-center gap-2 text-blue-700">
                 <Database className="h-4 w-4" />
                 <span className="text-sm font-medium">
-                  {hasLeagueChart ? (
-                    'Using league-specific chart'
+                  {hasSeasonChart ? (
+                    'Using season-specific chart'
                   ) : isUsingGlobalTemplate ? (
                     'Using global template (read-only until customized)'
-                  ) : defaultChart ? (
-                    'Using organization default'
+                  ) : activeChart ? (
+                    `Using ${activeChart.entity_type} default`
                   ) : (
                     'No chart found - using hardcoded defaults'
                   )}
@@ -338,21 +362,21 @@ export default function DbPercentageThresholdChartPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => handleCopyTemplate(globalTemplates[0].id)}
-                  disabled={isCopying}
+                  disabled={isCopying || isUpdatingSeason}
                   className="h-7 text-xs"
                 >
-                  {isCopying ? (
+                  {isCopying || isUpdatingSeason ? (
                     <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                   ) : (
                     <Copy className="h-3 w-3 mr-1" />
                   )}
-                  Create League Copy
+                  Create Season Copy
                 </Button>
               )}
             </div>
-            {defaultChart && (
+            {activeChart && (
               <p className="text-xs text-blue-600 mt-1">
-                Chart: {defaultChart.name} ({defaultChart.entity_type})
+                Chart: {activeChart.name} ({activeChart.entity_type})
               </p>
             )}
           </CardContent>
@@ -375,7 +399,7 @@ export default function DbPercentageThresholdChartPage() {
         />
       </div>
 
-      {/* Save Chart Modal - shown when creating a new league chart */}
+      {/* Save Chart Modal - shown when creating a new season chart */}
       <SaveChartModal
         open={showSaveModal}
         onOpenChange={(open) => {

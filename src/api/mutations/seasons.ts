@@ -46,6 +46,9 @@ export interface CreateSeasonParams {
 
 /**
  * Parameters for updating an existing season
+ *
+ * All fields except seasonId are optional - only provided fields are updated.
+ * This allows partial updates (e.g., just updating status, or just linking a threshold chart).
  */
 export interface UpdateSeasonParams {
   seasonId: string;
@@ -54,6 +57,8 @@ export interface UpdateSeasonParams {
   endDate?: string;
   seasonLength?: number;
   status?: 'upcoming' | 'active' | 'completed' | 'cancelled';
+  /** Links a threshold chart to this season. Set to null to clear, undefined to leave unchanged. */
+  thresholdChartId?: string | null;
 }
 
 /**
@@ -213,13 +218,17 @@ export async function createSeason(params: CreateSeasonParams): Promise<Season> 
  * @throws Error if database operation fails
  */
 export async function updateSeason(params: UpdateSeasonParams): Promise<Season> {
-  const updateData: Partial<Season> = {};
+  // Build update object with only provided fields
+  // Using Record to allow dynamic keys including threshold_chart_id
+  const updateData: Record<string, unknown> = {};
 
   if (params.seasonName !== undefined) updateData.season_name = params.seasonName;
   if (params.startDate !== undefined) updateData.start_date = params.startDate;
   if (params.endDate !== undefined) updateData.end_date = params.endDate;
   if (params.seasonLength !== undefined) updateData.season_length = params.seasonLength;
   if (params.status !== undefined) updateData.status = params.status;
+  // threshold_chart_id: undefined = don't change, null = clear, string = set
+  if (params.thresholdChartId !== undefined) updateData.threshold_chart_id = params.thresholdChartId;
 
   const { data: updatedSeason, error } = await supabase
     .from('seasons')

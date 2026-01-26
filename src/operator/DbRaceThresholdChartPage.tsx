@@ -2,16 +2,22 @@
  * @fileoverview Database-Backed Race Threshold Chart Editor Page
  *
  * Full-page editor for race-based threshold charts using database storage.
+ * Season-based: the chart is stored on and linked to a specific season.
  * Race charts are for individual player vs player matchups.
  *
- * Route: /league/:leagueId/threshold-chart-db/race
+ * Route: /league/:leagueId/season/:seasonId/threshold-chart/race
+ *
+ * Data flow:
+ * 1. Load season to get threshold_chart_id and league_id
+ * 2. If season has threshold_chart_id → load that specific chart
+ * 3. If season has no chart (null) → load league/org/global default for display
+ * 4. On save → create/update chart AND link it to the season via threshold_chart_id
  *
  * Key features:
  * - 2D matrix lookup (player 1 handicap vs player 2 handicap)
  * - Supports both points (race_points) and percentage (race_percentage) formats
- * - Loads chart data from threshold_charts and threshold_chart_rows tables
- * - Saves changes to database via mutation hooks
- * - Supports copying global templates to create league-specific charts
+ *
+ * Back navigation always returns to the match list page.
  */
 
 import { useMemo, useState } from 'react';
@@ -32,16 +38,18 @@ import {
   type SaveChartData,
 } from '@/components/operator/threshold-editor';
 import {
+  useThresholdChart,
   useDefaultThresholdChart,
   useGlobalThresholdCharts,
-  useLeagueThresholdCharts,
   useCreateThresholdChart,
   useReplaceThresholdChartRows,
   useCopyGlobalChartToLeague,
+  useSeasonById,
+  useUpdateSeason,
+  useLeagueById,
   type ThresholdChartWithRows,
   type ThresholdChartType,
 } from '@/api/hooks';
-import { useLeagueById } from '@/api/hooks/useLeagues';
 
 /**
  * Convert database chart rows to editor format for race charts
@@ -91,14 +99,16 @@ function raceChartTypeToDbType(raceType: RaceChartType): ThresholdChartType {
 
 /**
  * Database-Backed Race Threshold Chart Editor Page
+ *
+ * Season-based: loads chart from season.threshold_chart_id or falls back to defaults.
+ * On save, links the chart to the season.
  */
 export default function DbRaceThresholdChartPage() {
-  const { leagueId } = useParams<{ leagueId: string }>();
+  const { leagueId, seasonId } = useParams<{ leagueId: string; seasonId: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // Get params from query string
-  const returnTo = searchParams.get('returnTo');
+  // Get race chart sub-type from query string (points vs percentage)
   const raceTypeParam = searchParams.get('raceType') as RaceChartType | null;
 
   // Race chart type - determined from URL params, defaults to 'points'
@@ -111,36 +121,45 @@ export default function DbRaceThresholdChartPage() {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [pendingChartData, setPendingChartData] = useState<RaceChartRow[] | null>(null);
 
-  // Fetch league to get organization ID for fallback lookup
-  const { data: league, isLoading: isLeagueLoading } = useLeagueById(leagueId);
+  // === Data Fetching ===
+
+  // 1. Fetch the season to get threshold_chart_id and league_id
+  const { data: season, isLoading: isSeasonLoading } = useSeasonById(seasonId);
+
+  // 2. Fetch the league to get organization_id for fallback lookup
+  const { data: league, isLoading: isLeagueLoading } = useLeagueById(season?.league_id);
 
   // Determine the database chart type based on race chart type
   const dbChartType = raceChartTypeToDbType(raceChartType);
 
-  // Fetch charts from database
+  // 3. If season has a specific chart, load it directly
+  const {
+    data: seasonChart,
+    isLoading: isSeasonChartLoading,
+  } = useThresholdChart(season?.threshold_chart_id);
+
+  // 4. If no season-specific chart, load the default (league → org → global)
   const {
     data: defaultChart,
     isLoading: isDefaultChartLoading,
     error: defaultChartError,
-  } = useDefaultThresholdChart('league', leagueId, dbChartType, league?.organization_id);
+  } = useDefaultThresholdChart('league', season?.league_id, dbChartType, league?.organization_id);
 
-  // Fetch league's own charts
-  const { data: leagueCharts, isLoading: isLeagueChartsLoading } = useLeagueThresholdCharts(
-    leagueId,
-    dbChartType
-  );
-
-  // Fetch global templates
+  // 5. Fetch global templates (for copy option)
   const { data: globalTemplates } = useGlobalThresholdCharts(dbChartType);
 
-  // Mutations
+  // === Mutations ===
   const { mutate: createChart, isPending: isCreating } = useCreateThresholdChart();
   const { mutate: replaceRows, isPending: isReplacing } = useReplaceThresholdChartRows();
   const { mutate: copyGlobalChart, isPending: isCopying } = useCopyGlobalChartToLeague();
+  const { mutate: updateSeason, isPending: isUpdatingSeason } = useUpdateSeason();
 
-  // Track the active chart
-  const hasLeagueChart = leagueCharts && leagueCharts.length > 0;
-  const isUsingGlobalTemplate = !hasLeagueChart && defaultChart?.entity_type === 'global';
+  // === Derived State ===
+
+  // Determine which chart we're actually using
+  const activeChart = seasonChart || defaultChart;
+  const hasSeasonChart = !!season?.threshold_chart_id && !!seasonChart;
+  const isUsingGlobalTemplate = !hasSeasonChart && defaultChart?.entity_type === 'global';
 
   // Get default rows based on race chart type
   const getDefaultRows = () => {
@@ -151,26 +170,26 @@ export default function DbRaceThresholdChartPage() {
 
   // Convert DB rows to editor format
   const chartRows = useMemo(() => {
-    if (defaultChart?.rows && defaultChart.rows.length > 0) {
-      return dbRowsToEditorRows(defaultChart.rows);
+    if (activeChart?.rows && activeChart.rows.length > 0) {
+      return dbRowsToEditorRows(activeChart.rows);
     }
     return getDefaultRows();
-  }, [defaultChart, raceChartType]);
+  }, [activeChart, raceChartType]);
 
   // Loading state
-  const isLoading = isLeagueLoading || isDefaultChartLoading || isLeagueChartsLoading;
-  const isSaving = isCreating || isReplacing || isCopying;
+  const isLoading = isSeasonLoading || isLeagueLoading || isSeasonChartLoading || isDefaultChartLoading;
+  const isSaving = isCreating || isReplacing || isCopying || isUpdatingSeason;
 
   /**
    * Handle save from editor - shows modal if creating new chart
    */
   const handleEditorSave = (data: RaceChartRow[]) => {
-    if (!leagueId) return;
+    if (!seasonId || !season) return;
 
-    // If league already has a chart, just update the rows (no modal needed)
-    if (hasLeagueChart && leagueCharts[0]) {
+    // If season already has its own chart, just update the rows (no modal needed)
+    if (hasSeasonChart && seasonChart) {
       replaceRows({
-        chartId: leagueCharts[0].id,
+        chartId: seasonChart.id,
         rows: editorRowsToDbRows(data),
       });
       return;
@@ -182,27 +201,40 @@ export default function DbRaceThresholdChartPage() {
   };
 
   /**
-   * Handle modal confirmation - creates chart with name/description
+   * Handle modal confirmation - creates chart with name/description and links to season
    */
   const handleModalSave = (saveData: SaveChartData) => {
-    if (!leagueId || !pendingChartData) return;
+    if (!seasonId || !season || !pendingChartData) return;
 
     createChart(
       {
         entity_type: 'league',
-        entity_id: leagueId,
+        entity_id: season.league_id,
         chart_type: dbChartType,
         lookup_mode: 'exact', // Race charts use exact lookup by handicap pair
         name: saveData.name,
         description: saveData.description,
-        is_default: true,
+        is_default: false, // Season-specific charts are not league defaults
       },
       {
         onSuccess: (newChart) => {
-          replaceRows({
-            chartId: newChart.id,
-            rows: editorRowsToDbRows(pendingChartData),
-          });
+          // Save the rows to the new chart
+          replaceRows(
+            {
+              chartId: newChart.id,
+              rows: editorRowsToDbRows(pendingChartData),
+            },
+            {
+              onSuccess: () => {
+                // Link the chart to the season
+                updateSeason({
+                  seasonId: seasonId,
+                  thresholdChartId: newChart.id,
+                });
+              },
+            }
+          );
+          // Close modal and clear pending data
           setShowSaveModal(false);
           setPendingChartData(null);
         },
@@ -211,26 +243,35 @@ export default function DbRaceThresholdChartPage() {
   };
 
   /**
-   * Handle copying a global template to create a league chart
+   * Handle copying a global template to create a season-specific chart
    */
   const handleCopyTemplate = (templateId: string) => {
-    if (!leagueId) return;
+    if (!seasonId || !season) return;
 
-    copyGlobalChart({
-      globalChartId: templateId,
-      leagueId,
-      name: `League Race ${raceChartType === 'percentage' ? 'Percentage' : 'Points'} Chart`,
-    });
+    copyGlobalChart(
+      {
+        globalChartId: templateId,
+        leagueId: season.league_id,
+        name: `${season.season_name} Race ${raceChartType === 'percentage' ? 'Percentage' : 'Points'} Chart`,
+      },
+      {
+        onSuccess: (newChart) => {
+          // Link the copied chart to the season
+          updateSeason({
+            seasonId: seasonId,
+            thresholdChartId: newChart.id,
+          });
+        },
+      }
+    );
   };
 
   /**
-   * Handle cancel/back navigation
+   * Handle cancel/back navigation - always returns to match list
    */
   const handleCancel = () => {
-    if (returnTo) {
-      navigate(returnTo);
-    } else if (leagueId) {
-      navigate(`/league/${leagueId}`);
+    if (leagueId && seasonId) {
+      navigate(`/league/${leagueId}/season/${seasonId}/match-list`);
     } else {
       navigate(-1);
     }
@@ -241,11 +282,8 @@ export default function DbRaceThresholdChartPage() {
    * Navigates to the appropriate chart editor page
    */
   const handleChartTypeChange = (chartType: ChartEditorType) => {
-    if (!leagueId) return;
-    const params = new URLSearchParams();
-    if (returnTo) params.set('returnTo', returnTo);
-    const queryString = params.toString();
-    navigate(`/league/${leagueId}/threshold-chart-db/${chartType}${queryString ? `?${queryString}` : ''}`);
+    if (!leagueId || !seasonId) return;
+    navigate(`/league/${leagueId}/season/${seasonId}/threshold-chart/${chartType}`);
   };
 
   /**
@@ -253,16 +291,13 @@ export default function DbRaceThresholdChartPage() {
    * Updates the URL query param to switch between race_points and race_percentage
    */
   const handleRaceChartTypeChange = (newRaceType: RaceChartType) => {
-    if (!leagueId) return;
-    const params = new URLSearchParams();
-    if (returnTo) params.set('returnTo', returnTo);
-    params.set('raceType', newRaceType);
-    navigate(`/league/${leagueId}/threshold-chart-db/race?${params.toString()}`);
+    if (!leagueId || !seasonId) return;
+    navigate(`/league/${leagueId}/season/${seasonId}/threshold-chart/race?raceType=${newRaceType}`);
   };
 
-  // Determine back navigation
-  const backTo = returnTo || (leagueId ? `/league/${leagueId}` : '/');
-  const backLabel = returnTo?.includes('match') ? 'Back to Match' : 'Back to League';
+  // Back navigation always goes to match list
+  const backTo = leagueId && seasonId ? `/league/${leagueId}/season/${seasonId}/match-list` : '/';
+  const backLabel = 'Back to Match List';
 
   // Loading state
   if (isLoading) {
@@ -287,7 +322,7 @@ export default function DbRaceThresholdChartPage() {
   }
 
   // Error state
-  if (defaultChartError) {
+  if (defaultChartError && !seasonChart) {
     return (
       <div className="min-h-screen bg-gray-50">
         <PageHeader
@@ -316,7 +351,7 @@ export default function DbRaceThresholdChartPage() {
         backTo={backTo}
         backLabel={backLabel}
         title={`Threshold Chart Editor (Individual/${raceChartType === 'percentage' ? 'Percentage' : 'Points'})`}
-        subtitle="Configure race lengths for individual player matchups based on handicaps"
+        subtitle={season ? `Season: ${season.season_name}` : 'Configure race lengths for individual player matchups'}
       />
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-4">
@@ -327,10 +362,12 @@ export default function DbRaceThresholdChartPage() {
               <div className="flex items-center gap-2 text-blue-700">
                 <Database className="h-4 w-4" />
                 <span className="text-sm font-medium">
-                  {hasLeagueChart ? (
-                    'Using league-specific chart'
+                  {hasSeasonChart ? (
+                    'Using season-specific chart'
                   ) : isUsingGlobalTemplate ? (
                     'Using global template (read-only until customized)'
+                  ) : activeChart ? (
+                    `Using ${activeChart.entity_type} default`
                   ) : (
                     'No chart found - using defaults'
                   )}
@@ -341,21 +378,21 @@ export default function DbRaceThresholdChartPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => handleCopyTemplate(globalTemplates[0].id)}
-                  disabled={isCopying}
+                  disabled={isCopying || isUpdatingSeason}
                   className="h-7 text-xs"
                 >
-                  {isCopying ? (
+                  {isCopying || isUpdatingSeason ? (
                     <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                   ) : (
                     <Copy className="h-3 w-3 mr-1" />
                   )}
-                  Create League Copy
+                  Create Season Copy
                 </Button>
               )}
             </div>
-            {defaultChart && (
+            {activeChart && (
               <p className="text-xs text-blue-600 mt-1">
-                Chart: {defaultChart.name} ({defaultChart.entity_type})
+                Chart: {activeChart.name} ({activeChart.entity_type})
               </p>
             )}
           </CardContent>
@@ -381,7 +418,7 @@ export default function DbRaceThresholdChartPage() {
         />
       </div>
 
-      {/* Save Chart Modal - shown when creating a new league chart */}
+      {/* Save Chart Modal - shown when creating a new season chart */}
       <SaveChartModal
         open={showSaveModal}
         onOpenChange={(open) => {

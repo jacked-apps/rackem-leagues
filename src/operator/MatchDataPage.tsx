@@ -407,6 +407,7 @@ export default function MatchDataPage() {
         {/* Thresholds Section */}
         <ThresholdsSection
           leagueId={leagueId}
+          seasonId={seasonId}
           homeThresholds={{
             win: state.thresholds.homeWin,
             tie: state.thresholds.homeTie,
