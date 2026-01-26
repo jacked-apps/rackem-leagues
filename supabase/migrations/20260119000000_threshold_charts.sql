@@ -343,6 +343,28 @@ COMMENT ON COLUMN threshold_chart_rows.sort_order IS
     'Display order and range lookup priority. Lower values checked first for range lookups.';
 
 -- ============================================================================
+-- ADD THRESHOLD CHART REFERENCE TO SEASONS TABLE
+-- ============================================================================
+-- Each season stores the threshold chart it uses. This is copied from the
+-- league's default chart at season creation time and should not change once
+-- the season starts (similar to how handicaps are cached on match_lineups).
+--
+-- NULL means the season uses the league's default chart (looked up at runtime).
+-- A specific chart_id means this season uses that exact chart, even if the
+-- league's default changes later.
+
+ALTER TABLE seasons
+ADD COLUMN IF NOT EXISTS threshold_chart_id UUID REFERENCES threshold_charts(id);
+
+-- Index for fast lookups when loading season data
+CREATE INDEX IF NOT EXISTS idx_seasons_threshold_chart
+    ON seasons(threshold_chart_id)
+    WHERE threshold_chart_id IS NOT NULL;
+
+COMMENT ON COLUMN seasons.threshold_chart_id IS
+    'The threshold chart this season uses for determining games-to-win thresholds. NULL = use league default. Set at season creation and should not change once season starts.';
+
+-- ============================================================================
 -- LOOKUP FUNCTION FOR THRESHOLD CHARTS
 -- ============================================================================
 -- This function handles all the lookup logic including:
