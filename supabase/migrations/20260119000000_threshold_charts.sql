@@ -210,6 +210,65 @@ CREATE TRIGGER trigger_ensure_single_default_threshold_chart
     FOR EACH ROW
     EXECUTE FUNCTION ensure_single_default_threshold_chart();
 
+-- ----------------------------------------------------------------------------
+-- PROTECT GLOBAL CHARTS FROM MODIFICATION
+-- ----------------------------------------------------------------------------
+-- Global charts are system templates (Rackem League standards). They should
+-- never be modified or deleted - operators must copy them to create custom versions.
+-- These triggers enforce this at the database level.
+
+-- Protect threshold_charts table
+CREATE OR REPLACE FUNCTION prevent_global_chart_modification()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF OLD.entity_type = 'global' THEN
+        RAISE EXCEPTION 'Cannot modify global threshold charts - these are system templates. Copy to your league to customize.';
+    END IF;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS protect_global_charts_update ON threshold_charts;
+CREATE TRIGGER protect_global_charts_update
+    BEFORE UPDATE ON threshold_charts
+    FOR EACH ROW
+    EXECUTE FUNCTION prevent_global_chart_modification();
+
+DROP TRIGGER IF EXISTS protect_global_charts_delete ON threshold_charts;
+CREATE TRIGGER protect_global_charts_delete
+    BEFORE DELETE ON threshold_charts
+    FOR EACH ROW
+    EXECUTE FUNCTION prevent_global_chart_modification();
+
+-- Protect threshold_chart_rows table (check parent chart's entity_type)
+CREATE OR REPLACE FUNCTION prevent_global_chart_row_modification()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_entity_type TEXT;
+BEGIN
+    SELECT entity_type INTO v_entity_type
+    FROM threshold_charts
+    WHERE id = OLD.chart_id;
+
+    IF v_entity_type = 'global' THEN
+        RAISE EXCEPTION 'Cannot modify rows of global threshold charts - these are system templates. Copy to your league to customize.';
+    END IF;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS protect_global_chart_rows_update ON threshold_chart_rows;
+CREATE TRIGGER protect_global_chart_rows_update
+    BEFORE UPDATE ON threshold_chart_rows
+    FOR EACH ROW
+    EXECUTE FUNCTION prevent_global_chart_row_modification();
+
+DROP TRIGGER IF EXISTS protect_global_chart_rows_delete ON threshold_chart_rows;
+CREATE TRIGGER protect_global_chart_rows_delete
+    BEFORE DELETE ON threshold_chart_rows
+    FOR EACH ROW
+    EXECUTE FUNCTION prevent_global_chart_row_modification();
+
 -- ============================================================================
 -- ROW LEVEL SECURITY
 -- ============================================================================

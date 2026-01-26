@@ -23,11 +23,13 @@ import { Loader2, Database, Copy, AlertCircle } from 'lucide-react';
 import {
   RaceThresholdChartEditor,
   ChartTypeSelector,
+  SaveChartModal,
   getDefaultRacePointsChartRows,
   getDefaultRaceMatrixPercentageChartRows,
   type RaceChartRow,
   type RaceChartType,
   type ChartEditorType,
+  type SaveChartData,
 } from '@/components/operator/threshold-editor';
 import {
   useDefaultThresholdChart,
@@ -105,6 +107,10 @@ export default function DbRaceThresholdChartPage() {
   // Track unsaved changes from the editor (for navigation warning)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
+  // Modal state for saving new charts
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [pendingChartData, setPendingChartData] = useState<RaceChartRow[] | null>(null);
+
   // Fetch league to get organization ID for fallback lookup
   const { data: league, isLoading: isLeagueLoading } = useLeagueById(leagueId);
 
@@ -156,12 +162,12 @@ export default function DbRaceThresholdChartPage() {
   const isSaving = isCreating || isReplacing || isCopying;
 
   /**
-   * Handle save - creates league chart if needed, then saves rows
+   * Handle save from editor - shows modal if creating new chart
    */
-  const handleSave = async (data: RaceChartRow[]) => {
+  const handleEditorSave = (data: RaceChartRow[]) => {
     if (!leagueId) return;
 
-    // If league already has a chart, just update the rows
+    // If league already has a chart, just update the rows (no modal needed)
     if (hasLeagueChart && leagueCharts[0]) {
       replaceRows({
         chartId: leagueCharts[0].id,
@@ -170,23 +176,35 @@ export default function DbRaceThresholdChartPage() {
       return;
     }
 
-    // Need to create a league chart first, then save rows
+    // Need to create a new chart - show modal to collect name/description
+    setPendingChartData(data);
+    setShowSaveModal(true);
+  };
+
+  /**
+   * Handle modal confirmation - creates chart with name/description
+   */
+  const handleModalSave = (saveData: SaveChartData) => {
+    if (!leagueId || !pendingChartData) return;
+
     createChart(
       {
         entity_type: 'league',
         entity_id: leagueId,
         chart_type: dbChartType,
         lookup_mode: 'exact', // Race charts use exact lookup by handicap pair
-        name: `League Race ${raceChartType === 'percentage' ? 'Percentage' : 'Points'} Chart`,
-        description: `Custom race threshold chart for this league (${raceChartType} format)`,
+        name: saveData.name,
+        description: saveData.description,
         is_default: true,
       },
       {
         onSuccess: (newChart) => {
           replaceRows({
             chartId: newChart.id,
-            rows: editorRowsToDbRows(data),
+            rows: editorRowsToDbRows(pendingChartData),
           });
+          setShowSaveModal(false);
+          setPendingChartData(null);
         },
       }
     );
@@ -355,13 +373,25 @@ export default function DbRaceThresholdChartPage() {
         {/* Chart Editor */}
         <RaceThresholdChartEditor
           initialData={chartRows}
-          onSave={handleSave}
+          onSave={handleEditorSave}
           onCancel={handleCancel}
           isSaving={isSaving}
           raceChartType={raceChartType}
           onUnsavedChangesChange={setHasUnsavedChanges}
         />
       </div>
+
+      {/* Save Chart Modal - shown when creating a new league chart */}
+      <SaveChartModal
+        open={showSaveModal}
+        onOpenChange={(open) => {
+          setShowSaveModal(open);
+          if (!open) setPendingChartData(null);
+        }}
+        onSave={handleModalSave}
+        isSaving={isSaving}
+        chartTypeLabel={`Race ${raceChartType === 'percentage' ? 'Percentage' : 'Points'}`}
+      />
     </div>
   );
 }

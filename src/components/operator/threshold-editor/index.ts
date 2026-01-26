@@ -48,3 +48,8 @@ export {
   type ChartEditorType,
   type RaceChartType as ChartRaceType,
 } from './ChartTypeSelector';
+
+export {
+  SaveChartModal,
+  type SaveChartData,
+} from './SaveChartModal';

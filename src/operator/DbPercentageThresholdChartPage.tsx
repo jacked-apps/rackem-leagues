@@ -24,9 +24,11 @@ import { Loader2, Database, Copy, AlertCircle } from 'lucide-react';
 import {
   PercentageThresholdChartEditor,
   ChartTypeSelector,
+  SaveChartModal,
   getDefaultPercentageChartRows,
   type PercentageChartRow,
   type ChartEditorType,
+  type SaveChartData,
 } from '@/components/operator/threshold-editor';
 import {
   useDefaultThresholdChart,
@@ -115,6 +117,10 @@ export default function DbPercentageThresholdChartPage() {
   // Track unsaved changes from the editor (for navigation warning)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
+  // Modal state for saving new charts
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [pendingChartData, setPendingChartData] = useState<PercentageChartRow[] | null>(null);
+
   // Fetch league to get organization ID for fallback lookup
   const { data: league, isLoading: isLeagueLoading } = useLeagueById(leagueId);
 
@@ -163,12 +169,12 @@ export default function DbPercentageThresholdChartPage() {
   const isSaving = isCreating || isReplacing || isCopying;
 
   /**
-   * Handle save - creates league chart if needed, then saves rows
+   * Handle save from editor - shows modal if creating new chart
    */
-  const handleSave = async (data: PercentageChartRow[]) => {
+  const handleEditorSave = (data: PercentageChartRow[]) => {
     if (!leagueId) return;
 
-    // If league already has a chart, just update the rows
+    // If league already has a chart, just update the rows (no modal needed)
     if (hasLeagueChart && leagueCharts[0]) {
       replaceRows({
         chartId: leagueCharts[0].id,
@@ -177,23 +183,35 @@ export default function DbPercentageThresholdChartPage() {
       return;
     }
 
-    // Need to create a league chart first, then save rows
+    // Need to create a new chart - show modal to collect name/description
+    setPendingChartData(data);
+    setShowSaveModal(true);
+  };
+
+  /**
+   * Handle modal confirmation - creates chart with name/description
+   */
+  const handleModalSave = (saveData: SaveChartData) => {
+    if (!leagueId || !pendingChartData) return;
+
     createChart(
       {
         entity_type: 'league',
         entity_id: leagueId,
         chart_type: 'team_percentage',
         lookup_mode: 'range', // Percentage charts use range lookup
-        name: 'League Percentage Chart',
-        description: 'Custom percentage threshold chart for this league',
+        name: saveData.name,
+        description: saveData.description,
         is_default: true,
       },
       {
         onSuccess: (newChart) => {
           replaceRows({
             chartId: newChart.id,
-            rows: editorRowsToDbRows(data),
+            rows: editorRowsToDbRows(pendingChartData),
           });
+          setShowSaveModal(false);
+          setPendingChartData(null);
         },
       }
     );
@@ -350,12 +368,24 @@ export default function DbPercentageThresholdChartPage() {
         {/* Chart Editor */}
         <PercentageThresholdChartEditor
           initialData={chartRows}
-          onSave={handleSave}
+          onSave={handleEditorSave}
           onCancel={handleCancel}
           isSaving={isSaving}
           onUnsavedChangesChange={setHasUnsavedChanges}
         />
       </div>
+
+      {/* Save Chart Modal - shown when creating a new league chart */}
+      <SaveChartModal
+        open={showSaveModal}
+        onOpenChange={(open) => {
+          setShowSaveModal(open);
+          if (!open) setPendingChartData(null);
+        }}
+        onSave={handleModalSave}
+        isSaving={isSaving}
+        chartTypeLabel="Percentage"
+      />
     </div>
   );
 }
