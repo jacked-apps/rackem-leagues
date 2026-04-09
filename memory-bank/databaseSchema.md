@@ -1,5 +1,21 @@
 # Database Schema Design
 
+> ## ⚠️ CRITICAL CASCADE WARNING — TEAM DELETION
+>
+> The `matches` table has `ON DELETE CASCADE` on both `home_team_id` and
+> `away_team_id`. **Deleting a team row destroys all of that team's matches**,
+> which can break other teams' weekly schedules and orphan season standings.
+>
+> Until a real fix lands, code that deletes teams must:
+> 1. Show an honest confirmation warning that mentions match destruction
+> 2. Reference the TODO in `src/operator/TeamManagement.tsx` → `handleDeleteTeam`
+> 3. See `memory-bank/edsPlan.md` → "CRITICAL: Team Deletion Cascade Issue" for
+>    the full context and possible fixes
+>
+> **Discovered:** 2026-04-09 during wizard 2.0 planning.
+
+---
+
 ## Database File Organization Pattern
 
 ### File Structure

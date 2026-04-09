@@ -457,6 +457,41 @@ Before merging to main:
 
 ---
 
+## Tech Debt Discovered During Planning
+
+These issues were uncovered while planning wizard 2.0. They are **NOT in scope
+for this branch** — they're pre-existing problems that should be tracked
+separately. Captured here so they don't get lost.
+
+### 🚨 CRITICAL: Team Deletion Cascade Destruction
+- **Where:** `src/operator/TeamManagement.tsx` → `handleDeleteTeam`
+- **Problem:** DB schema has `ON DELETE CASCADE` on `matches.home_team_id` and
+  `matches.away_team_id`. Deleting a team destroys all of that team's scheduled
+  matches, breaking other teams' weekly schedules.
+- **Mitigation in place:** Honest warning message added to confirmation dialog.
+  TODO comments added to code, `databaseSchema.md`, and `edsPlan.md`.
+- **Real fix needed:** Soft delete, replacement workflow, or block deletion when
+  matches exist. See `edsPlan.md` for full details.
+- **Severity:** HIGH
+
+### Missing Matchup Edit UI
+- **Where:** No file exists. There is no UI anywhere to edit matchups after
+  generation.
+- **Problem:** If an operator needs to swap two teams' matchups for a given
+  week (rescheduling, manual fix), the only path is to clear the entire
+  schedule and regenerate it.
+- **Severity:** MEDIUM — workaround exists (regenerate), but it's clunky and
+  destroys data that should be preserved.
+
+### Schedule Date Lock (NOT a bug)
+- Verified during planning: schedule dates are intentionally locked because
+  they're computed from `start_date + (week_number × 7 days)`. Matches reference
+  week IDs, not dates. This is by design and works correctly.
+- **No action needed.** Documented here for future reference so we don't
+  re-investigate this.
+
+---
+
 ## Git Commands Reference
 
 ```bash
