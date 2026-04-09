@@ -3,6 +3,7 @@
 ## Overview
 
 This document outlines the plan to add Fargo Rating support as a third handicap system, while also **redesigning the entire handicap/scoring architecture** to be more flexible and support any combination of:
+
 - Team sizes (3v3, 4v4, 5v5, etc.)
 - Handicap calculation methods (Current 3v3, BCA Standard, Fargo, Custom)
 - Match formats (Round Robin, Race-to-X)
@@ -16,6 +17,7 @@ This document outlines the plan to add Fargo Rating support as a third handicap 
 ### How Fargo Ratings Work (from official sources)
 
 **Rating Scale:**
+
 - Logarithmic scale (like Richter scale for earthquakes)
 - 100-point gap = 2:1 win ratio (better player wins ~67% of games)
 - 200-point gap = 4:1 win ratio (~80% win rate)
@@ -25,6 +27,7 @@ This document outlines the plan to add Fargo Rating support as a third handicap 
 - Casual players: 200-400
 
 **Sources:**
+
 - [FargoRate Official](https://fargorate.com/)
 - [Dr. Dave Pool Info - FargoRate](https://drdavepoolinfo.com/faq/rating/fargorate/)
 - [CSI Pool - FargoRate Explained](https://www.playcsipool.com/fargo-ratings.html)
@@ -32,15 +35,18 @@ This document outlines the plan to add Fargo Rating support as a third handicap 
 ### Point-Based Scoring Systems Found
 
 #### 17-Point System (Common in BCA leagues)
+
 - **Winner gets:** 10 points + 1 point per opponent ball remaining = up to 17
 - **Loser gets:** 1 point per ball pocketed = 0-7 points
 - Total always equals 17
 
 #### USAPL (USA Pool League) System
+
 - **Winner gets:** 14 points (7 for balls + 7 for 8-ball)
 - **Loser gets:** 0-7 points (1 per ball pocketed)
 
 #### User's League System (described)
+
 - **Winner gets:** 10 points
 - **Loser gets:** 0-7 points (based on balls pocketed)
 - Handicap: lower-rated team gets "start points" based on Fargo difference
@@ -52,16 +58,17 @@ This document outlines the plan to add Fargo Rating support as a third handicap 
 ```
 P(higher rated wins) = 1 / (1 + 2^(-D/100))
 ```
+
 Where D = rating difference (higher rating - lower rating)
 
 | Rating Diff | Higher Player Win % | Lower Player Win % |
-|-------------|--------------------|--------------------|
-| 0           | 50%                | 50%                |
-| 50          | 58.6%              | 41.4%              |
-| 100         | 66.7%              | 33.3%              |
-| 150         | 73.9%              | 26.1%              |
-| 200         | 80%                | 20%                |
-| 300         | 88.9%              | 11.1%              |
+| ----------- | ------------------- | ------------------ |
+| 0           | 50%                 | 50%                |
+| 50          | 58.6%               | 41.4%              |
+| 100         | 66.7%               | 33.3%              |
+| 150         | 73.9%               | 26.1%              |
+| 200         | 80%                 | 20%                |
+| 300         | 88.9%               | 11.1%              |
 
 **Step 2: Transform Ratings for Expected Game Calculation**
 
@@ -70,7 +77,7 @@ Transformed Rating = 2^(Fargo Rating / 100)
 ```
 
 | Fargo | Transformed |
-|-------|-------------|
+| ----- | ----------- |
 | 800   | 256         |
 | 700   | 128         |
 | 600   | 64          |
@@ -85,6 +92,7 @@ Expected Wins (Player A) = (TA / (TA + TB)) × Total Games
 ```
 
 **Example:**
+
 - Player A: 575 Fargo → TA = 2^5.75 ≈ 53.8
 - Player B: 525 Fargo → TB = 2^5.25 ≈ 38.1
 - In 10 games:
@@ -98,6 +106,7 @@ Expected Score = (P(Win) × Winner Points) + (P(Lose) × Expected Loser Points)
 ```
 
 For 17-point system where winner gets 10-17, loser gets 0-7:
+
 - Expected loser points varies by skill level (regression formula from Fargo data)
 - Higher skilled players leave fewer balls for opponent
 
@@ -110,11 +119,13 @@ Team Handicap = (Team A Expected Score - Team B Expected Score) × Games Per Rou
 The difference is given to the weaker team as "start points."
 
 **Key Options:**
+
 - **Handicap Percentage**: Usually 100%, but can be 50%, 75%, 150% etc.
 - **Per Round vs Per Match**: Can recalculate each round based on matchups
 - **Max Handicap Cap**: Leagues can limit maximum handicap points
 
 **Sources:**
+
 - [FargoRate Behind the Curtain](https://www.fargorate.com/fargorateblog/archive/behindthecurtain/)
 - [FargoRate League Calculator](https://leaguecalc.fargorate.com/)
 - [17-Point System Explained](https://www.playcsipool.com/csinews/how-fargorate-improves-the-17-point-system)
@@ -123,11 +134,12 @@ The difference is given to the weaker team as "start points."
 ### Key Insight: Handicap Points Vary Per Round
 
 Unlike our current fixed threshold system, Fargo-based handicaps:
+
 - Calculate fresh each round based on WHO is playing WHOM
 - Are NOT static for the entire match
 - Require knowing the exact player matchups
-
-This is a significant architectural difference from our current system.
+  d
+  This is a significant architectural difference from our current system.
 
 ---
 
@@ -135,19 +147,20 @@ This is a significant architectural difference from our current system.
 
 ### What We Have Now
 
-| Aspect | 3v3 (5-Man) System | 5v5 (8-Man) BCA System |
-|--------|-------------------|------------------------|
-| **Team Size** | Hardcoded 3v3 | Hardcoded 5v5 |
-| **Player Handicap** | -2 to +2 integer | 0-100% percentage |
-| **Calculation** | (wins-losses)/weeks | wins/games × 100 |
-| **Match Format** | Double Round Robin (18 games) | Single Round Robin (25 games) |
-| **Threshold** | Fixed lookup table (25 values) | Range-based lookup (7 ranges) |
-| **Scoring** | Games won count | Games won count |
-| **Team Bonus** | Yes (standings-based) | No |
+| Aspect              | 3v3 (5-Man) System             | 5v5 (8-Man) BCA System        |
+| ------------------- | ------------------------------ | ----------------------------- |
+| **Team Size**       | Hardcoded 3v3                  | Hardcoded 5v5                 |
+| **Player Handicap** | -2 to +2 integer               | 0-100% percentage             |
+| **Calculation**     | (wins-losses)/weeks            | wins/games × 100              |
+| **Match Format**    | Double Round Robin (18 games)  | Single Round Robin (25 games) |
+| **Threshold**       | Fixed lookup table (25 values) | Range-based lookup (7 ranges) |
+| **Scoring**         | Games won count                | Games won count               |
+| **Team Bonus**      | Yes (standings-based)          | No                            |
 
 ### The Problem
 
 The current implementation is **tightly coupled**:
+
 - Handicap system is tied to team format
 - Match format is hardcoded per system
 - Threshold charts are embedded in code
@@ -161,16 +174,21 @@ The current implementation is **tightly coupled**:
 ### Currently HARDCODED (In TypeScript Code)
 
 #### 1. Team Sizes
+
 **Location:** Throughout codebase, especially lineup components
+
 ```typescript
 // Only two options exist
 type TeamFormat = '5_man' | '8_man';
 // Maps to: 3v3 (3 players) or 5v5 (5 players)
 ```
+
 **Problem:** Can't do 4v4, can't have 10-player roster with 5v5, etc.
 
 #### 2. Handicap Threshold Charts
+
 **Location:** [get3v3GamesNeeded.ts](src/utils/handicap/get3v3GamesNeeded.ts), [get5v5GamesNeeded.ts](src/utils/handicap/get5v5GamesNeeded.ts)
+
 ```typescript
 // 3v3: Exact lookup table (25 entries)
 const HANDICAP_CHART_3V3: Record<number, HandicapThresholds> = {
@@ -184,42 +202,55 @@ const BCA_5V5_RANGES = [
   // ... 7 hardcoded ranges
 ];
 ```
+
 **Problem:** Can't add Fargo chart, can't let operators customize values.
 
 #### 3. Match Format (Games per Match)
+
 **Location:** Lineup and scoring components
+
 ```typescript
 // Hardcoded calculations
 // 3v3: 3 × 3 × 2 = 18 games (double round robin)
 // 5v5: 5 × 5 × 1 = 25 games (single round robin)
 ```
+
 **Problem:** Can't change to race-to-X, can't adjust games per matchup.
 
 #### 4. Scoring System
+
 **Location:** Match scoring components
+
 ```typescript
 // Only tracks: game won (1) or lost (0)
 // No points tracking
 // No balls pocketed tracking
 ```
+
 **Problem:** Can't do point-based systems (17-point, Fargo 10-point).
 
 #### 5. Handicap Calculation Formulas
+
 **Location:** [calculatePlayerHandicap.ts](src/utils/calculatePlayerHandicap.ts)
+
 ```typescript
 // 3v3 formula: (wins - losses) / weeks_played
 // 5v5 formula: wins / games_played * 100
 ```
+
 **Problem:** Can't use Fargo ratings, can't use external ratings.
 
 #### 6. Handicap Variant Ranges
+
 **Location:** [preferences.ts](src/types/preferences.ts), database CHECK constraints
+
 ```typescript
 type HandicapVariant = 'standard' | 'reduced' | 'none';
 // standard: -2 to +2 (3v3) or 0-100% (5v5)
 // reduced: -1 to +1 (3v3) or 0-50% (5v5)
 // none: 0 only
 ```
+
 **Problem:** Can't define custom ranges, ranges tied to team format.
 
 ---
@@ -228,15 +259,15 @@ type HandicapVariant = 'standard' | 'reduced' | 'none';
 
 **Location:** [preferences.ts](src/types/preferences.ts), `preferences` table
 
-| Setting | Type | Default | Scope |
-|---------|------|---------|-------|
-| `handicap_variant` | 'standard' \| 'reduced' \| 'none' | 'standard' | Org → League |
-| `team_handicap_variant` | 'standard' \| 'reduced' \| 'none' | 'standard' | Org → League |
-| `game_history_limit` | 50-500 | 200 | Org → League |
-| `team_format` | '5_man' \| '8_man' | '5_man' | Org → League |
-| `golden_break_counts_as_win` | boolean | true | Org → League |
-| `allow_unauthorized_players` | boolean | true | Org → League |
-| `profanity_filter_enabled` | boolean | false | Org → League |
+| Setting                      | Type                              | Default    | Scope        |
+| ---------------------------- | --------------------------------- | ---------- | ------------ |
+| `handicap_variant`           | 'standard' \| 'reduced' \| 'none' | 'standard' | Org → League |
+| `team_handicap_variant`      | 'standard' \| 'reduced' \| 'none' | 'standard' | Org → League |
+| `game_history_limit`         | 50-500                            | 200        | Org → League |
+| `team_format`                | '5_man' \| '8_man'                | '5_man'    | Org → League |
+| `golden_break_counts_as_win` | boolean                           | true       | Org → League |
+| `allow_unauthorized_players` | boolean                           | true       | Org → League |
+| `profanity_filter_enabled`   | boolean                           | false      | Org → League |
 
 **Cascading Pattern:** League setting → Organization setting → System default
 
@@ -284,6 +315,7 @@ Instead of hardcoded systems, create **configurable building blocks** that can b
 **Current State:** Hardcoded '5_man' or '8_man' with fixed player counts
 
 **Proposed Schema:**
+
 ```sql
 CREATE TABLE team_configurations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -322,6 +354,7 @@ INSERT INTO team_configurations (is_system_default, name, roster_size, playing_s
 ```
 
 **TypeScript Type:**
+
 ```typescript
 interface TeamConfiguration {
   id: string;
@@ -343,6 +376,7 @@ interface TeamConfiguration {
 **Current State:** Hardcoded double round-robin (3v3) or single round-robin (5v5)
 
 **Proposed Schema:**
+
 ```sql
 CREATE TABLE match_format_configurations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -389,6 +423,7 @@ INSERT INTO match_format_configurations (is_system_default, name, format_type, g
 **Current State:** Only tracks games won/lost, no points
 
 **Proposed Schema:**
+
 ```sql
 CREATE TABLE scoring_system_configurations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -442,6 +477,7 @@ INSERT INTO scoring_system_configurations (is_system_default, name, scoring_meth
 **Current State:** Formula hardcoded per team format
 
 **Proposed Schema:**
+
 ```sql
 CREATE TABLE handicap_rating_configurations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -498,6 +534,7 @@ INSERT INTO handicap_rating_configurations (is_system_default, name, rating_meth
 **Current State:** Hardcoded lookup tables in TypeScript
 
 **Proposed Schema:**
+
 ```sql
 CREATE TABLE threshold_chart_configurations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -568,6 +605,7 @@ CREATE TABLE threshold_chart_entries (
 **Current State:** Only Break & Run and Golden Break, partially configurable
 
 **Proposed Schema:**
+
 ```sql
 CREATE TABLE game_achievement_configurations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -608,6 +646,7 @@ CREATE TABLE game_achievement_configurations (
 ### Module 7: Complete League Configuration (Ties It Together)
 
 **Proposed Schema Updates to `leagues` table:**
+
 ```sql
 ALTER TABLE leagues ADD COLUMN IF NOT EXISTS
   -- Reference to configuration modules
@@ -655,10 +694,12 @@ interface Preferences {
 ### How "Copy on Customize" Works
 
 1. **System defaults are seeded and READ-ONLY**
+
    - Cannot be modified
    - Serve as templates
 
 2. **Organization references system default initially**
+
    ```sql
    -- Org starts using system default
    UPDATE preferences SET team_config_id = 'system-3v3-id'
@@ -666,6 +707,7 @@ interface Preferences {
    ```
 
 3. **When operator wants to customize:**
+
    ```sql
    -- Copy system default to org-owned copy
    INSERT INTO team_configurations (
@@ -745,16 +787,17 @@ UPDATE leagues SET
 
 ### Summary: Modular Components
 
-| Component | Current | Proposed | Configurable By |
-|-----------|---------|----------|-----------------|
-| **Team Size** | Hardcoded 3v3/5v5 | `team_configurations` table | Organization |
-| **Match Format** | Hardcoded RR | `match_format_configurations` table | Organization |
-| **Scoring System** | Games only | `scoring_system_configurations` table | Organization |
-| **Handicap Rating** | Hardcoded formulas | `handicap_rating_configurations` table | Organization |
-| **Threshold Charts** | Hardcoded TypeScript | `threshold_chart_configurations` + entries | Organization |
-| **Achievements** | Partial (B&R, GB) | `game_achievement_configurations` table | Organization |
+| Component            | Current              | Proposed                                   | Configurable By |
+| -------------------- | -------------------- | ------------------------------------------ | --------------- |
+| **Team Size**        | Hardcoded 3v3/5v5    | `team_configurations` table                | Organization    |
+| **Match Format**     | Hardcoded RR         | `match_format_configurations` table        | Organization    |
+| **Scoring System**   | Games only           | `scoring_system_configurations` table      | Organization    |
+| **Handicap Rating**  | Hardcoded formulas   | `handicap_rating_configurations` table     | Organization    |
+| **Threshold Charts** | Hardcoded TypeScript | `threshold_chart_configurations` + entries | Organization    |
+| **Achievements**     | Partial (B&R, GB)    | `game_achievement_configurations` table    | Organization    |
 
 **Each organization gets:**
+
 - Access to read-only system defaults
 - Ability to create custom copies
 - Leagues inherit org settings but can override
@@ -768,17 +811,20 @@ UPDATE leagues SET
 Based on user's league and research needed:
 
 1. **Fargo Ratings**
+
    - Range: ~100-850 (typical pool player range)
    - Changes frequently (after each sanctioned play)
    - Must be manually entered until API access obtained
    - Stored as "last known rating" for reference
 
 2. **Points-Based Scoring** (NOT games won)
+
    - Winner gets: **10 points**
    - Loser gets: **0-7 points** based on balls pocketed
    - Total points determine match winner, not game count
 
 3. **Handicap Start Points**
+
    - Lower-rated team gets "start" points based on rating difference
    - Formula TBD - need to research or make configurable
    - Example: If Team A is 50 Fargo points lower, they might start with +15 points
@@ -838,10 +884,10 @@ Instead of hardcoded systems, create **configurable building blocks**:
 
 ```typescript
 interface TeamConfig {
-  roster_size: number;        // Max players on team (5, 7, 8, 10, etc.)
-  playing_size: number;       // Players per match (3, 4, 5, etc.)
+  roster_size: number; // Max players on team (5, 7, 8, 10, etc.)
+  playing_size: number; // Players per match (3, 4, 5, etc.)
   allow_substitutes: boolean; // Can swap players mid-match?
-  min_roster: number;         // Minimum to field a team
+  min_roster: number; // Minimum to field a team
 }
 
 // Examples:
@@ -855,23 +901,23 @@ interface TeamConfig {
 
 ```typescript
 type MatchStructure =
-  | 'double_round_robin'  // Each player plays each opponent twice
-  | 'single_round_robin'  // Each player plays each opponent once
-  | 'race_to_x'           // First to X wins (per matchup or total)
-  | 'fixed_games';        // Play exactly X games total
+  | 'double_round_robin' // Each player plays each opponent twice
+  | 'single_round_robin' // Each player plays each opponent once
+  | 'race_to_x' // First to X wins (per matchup or total)
+  | 'fixed_games'; // Play exactly X games total
 
 interface MatchFormat {
   structure: MatchStructure;
 
   // For round robin:
-  games_per_matchup?: number;  // 1 for single, 2 for double
+  games_per_matchup?: number; // 1 for single, 2 for double
 
   // For race_to_x:
-  race_to?: number;            // e.g., 5 (first to 5 wins)
-  per_matchup?: boolean;       // Race per player pair or whole match?
+  race_to?: number; // e.g., 5 (first to 5 wins)
+  per_matchup?: boolean; // Race per player pair or whole match?
 
   // For fixed_games:
-  total_games?: number;        // e.g., 18 games regardless of format
+  total_games?: number; // e.g., 18 games regardless of format
 
   // Calculated (derived):
   total_possible_games: number; // Auto-calculated based on above
@@ -887,11 +933,11 @@ interface MatchFormat {
 
 ```typescript
 type HandicapMethod =
-  | 'win_loss_ratio'      // Current 3v3: (W-L)/weeks → -2 to +2
-  | 'win_percentage'      // Current 5v5: W/games × 100 → 0-100%
-  | 'fargo_rating'        // External rating: 100-850
-  | 'manual'              // Operator assigns directly
-  | 'none';               // No handicapping
+  | 'win_loss_ratio' // Current 3v3: (W-L)/weeks → -2 to +2
+  | 'win_percentage' // Current 5v5: W/games × 100 → 0-100%
+  | 'fargo_rating' // External rating: 100-850
+  | 'manual' // Operator assigns directly
+  | 'none'; // No handicapping
 
 interface HandicapSystem {
   method: HandicapMethod;
@@ -904,15 +950,15 @@ interface HandicapSystem {
   variant: 'standard' | 'reduced' | 'none';
 
   // Calculation parameters:
-  min_games_for_calc?: number;  // e.g., 18 games before calculating
-  default_value?: number;       // Starting handicap for new players
+  min_games_for_calc?: number; // e.g., 18 games before calculating
+  default_value?: number; // Starting handicap for new players
 
   // For Fargo specifically:
-  requires_entry_each_match?: boolean;  // true for Fargo
+  requires_entry_each_match?: boolean; // true for Fargo
 
   // Team handicap bonus (standings-based):
   team_bonus_enabled: boolean;
-  team_bonus_threshold?: number;  // Wins ahead per +1 bonus
+  team_bonus_threshold?: number; // Wins ahead per +1 bonus
 }
 ```
 
@@ -920,9 +966,9 @@ interface HandicapSystem {
 
 ```typescript
 type ScoringMethod =
-  | 'games_won'           // Current: count wins
-  | 'points_accumulated'  // Fargo: accumulate points
-  | 'frames_won';         // Snooker-style
+  | 'games_won' // Current: count wins
+  | 'points_accumulated' // Fargo: accumulate points
+  | 'frames_won'; // Snooker-style
 
 interface ScoringSystem {
   method: ScoringMethod;
@@ -931,13 +977,13 @@ interface ScoringSystem {
   // (no additional config needed)
 
   // For points_accumulated:
-  winner_points?: number;      // e.g., 10
+  winner_points?: number; // e.g., 10
   loser_points_method?: 'balls_pocketed' | 'fixed' | 'none';
-  loser_points_max?: number;   // e.g., 7 (for 8-ball)
+  loser_points_max?: number; // e.g., 7 (for 8-ball)
 
   // Handicap start points (for Fargo):
   handicap_affects_start?: boolean;
-  start_points_formula?: string;  // TBD: how to calculate
+  start_points_formula?: string; // TBD: how to calculate
 }
 ```
 
@@ -945,10 +991,10 @@ interface ScoringSystem {
 
 ```typescript
 type ThresholdType =
-  | 'chart_lookup'        // Current: hardcoded lookup tables
-  | 'formula'             // Calculate from handicap diff
-  | 'fixed_target'        // First to X (points or games)
-  | 'custom_chart';       // Operator-defined lookup table
+  | 'chart_lookup' // Current: hardcoded lookup tables
+  | 'formula' // Calculate from handicap diff
+  | 'fixed_target' // First to X (points or games)
+  | 'custom_chart'; // Operator-defined lookup table
 
 interface ThresholdSystem {
   type: ThresholdType;
@@ -957,18 +1003,18 @@ interface ThresholdSystem {
   unit: 'games' | 'points';
 
   // For chart_lookup (current systems):
-  chart_id?: string;  // Reference to stored chart
+  chart_id?: string; // Reference to stored chart
 
   // For formula:
   formula?: {
-    base_target: number;           // e.g., 10 games
+    base_target: number; // e.g., 10 games
     adjustment_per_handicap: number; // e.g., +1 per handicap point
     min_target: number;
     max_target: number;
   };
 
   // For fixed_target:
-  fixed_target?: number;  // e.g., first to 100 points
+  fixed_target?: number; // e.g., first to 100 points
 
   // For custom_chart:
   custom_chart?: ThresholdChartEntry[];
@@ -1102,23 +1148,27 @@ ALTER TABLE match_games ADD COLUMN IF NOT EXISTS
 ## Migration Strategy
 
 ### Phase 1: Foundation (No Breaking Changes)
+
 1. Create new database tables for configurable systems
 2. Seed with current hardcoded values as "system defaults"
 3. Add new columns to existing tables (nullable)
 4. Current systems continue to work unchanged
 
 ### Phase 2: Fargo Implementation
+
 1. Add Fargo as a scoring_system record
 2. Create Fargo threshold chart (or formula)
 3. Add UI for Fargo rating entry in lineup
 4. Add points tracking to match scoring
 
 ### Phase 3: Flexible Team Sizes
+
 1. Make team size configurable in league wizard
 2. Update lineup components to handle variable players
 3. Update round robin generation for any NxN
 
 ### Phase 4: Full Configurability
+
 1. Allow operators to create custom scoring systems
 2. Allow custom threshold charts
 3. League wizard offers presets + custom option
@@ -1128,28 +1178,35 @@ ALTER TABLE match_games ADD COLUMN IF NOT EXISTS
 ## Open Questions
 
 ### 1. Fargo Start Points Formula
+
 **Need to research or define:**
+
 - How does Fargo rating difference translate to start points?
 - Is there a standard formula or is it league-specific?
 - Example: Rating diff of 100 = +X start points?
 
 ### 2. Points Entry During Scoring
+
 For Fargo point-based system:
+
 - Who enters loser's balls pocketed? (Winner? Loser? Both confirm?)
 - Is this per-game or calculated at end?
 - UI consideration: adds complexity to scoring flow
 
 ### 3. Backward Compatibility
+
 - How do existing leagues migrate?
 - Can we auto-assign them to equivalent new configs?
 - What if an operator wants to change mid-season?
 
 ### 4. Preset vs Custom Balance
+
 - How many "preset" configurations should we offer?
 - Should operators be able to modify presets?
 - Full custom: how much flexibility vs complexity?
 
 ### 5. Match Winner Determination (Points System)
+
 - Is it "first to X points"?
 - Or "highest points after all games"?
 - Can there be ties?
@@ -1161,6 +1218,7 @@ For Fargo point-based system:
 ### Current Implementation
 
 The existing [ScoringDialog.tsx](src/components/scoring/ScoringDialog.tsx) supports:
+
 - Game number display
 - Winner name
 - Break & Run checkbox (always visible)
@@ -1173,21 +1231,22 @@ The game win dialog needs to become **configurable** based on league settings. N
 
 #### Game Outcome Types
 
-| Outcome | Description | Who Can Select | Points Impact |
-|---------|-------------|----------------|---------------|
-| **Normal Win** | Standard game win | Breaker or Racker | Winner: 10, Loser: balls pocketed |
-| **Break & Run** | Winner broke and ran table | Breaker ONLY | Same as normal (achievement tracking) |
-| **Golden Break** | Made game ball on break | Breaker ONLY | Same as normal (if enabled) |
-| **Runout** | Opponent broke dry, ran table | Racker ONLY | Same as normal (achievement tracking) |
-| **Win by Forfeit** | Opponent forfeited | Either | Winner: 10, Loser: 0 |
-| **Loss on Break** | Scratched & made 8 on break | N/A (auto-loss) | Winner: 10, Loser: 0 |
-| **Illegal Break** | Breaker lost the break | Breaker | Switch breaker, no points |
+| Outcome            | Description                   | Who Can Select    | Points Impact                         |
+| ------------------ | ----------------------------- | ----------------- | ------------------------------------- |
+| **Normal Win**     | Standard game win             | Breaker or Racker | Winner: 10, Loser: balls pocketed     |
+| **Break & Run**    | Winner broke and ran table    | Breaker ONLY      | Same as normal (achievement tracking) |
+| **Golden Break**   | Made game ball on break       | Breaker ONLY      | Same as normal (if enabled)           |
+| **Runout**         | Opponent broke dry, ran table | Racker ONLY       | Same as normal (achievement tracking) |
+| **Win by Forfeit** | Opponent forfeited            | Either            | Winner: 10, Loser: 0                  |
+| **Loss on Break**  | Scratched & made 8 on break   | N/A (auto-loss)   | Winner: 10, Loser: 0                  |
+| **Illegal Break**  | Breaker lost the break        | Breaker           | Switch breaker, no points             |
 
 #### Critical Logic: Breaker vs Racker Validation
 
 **Problem identified:** Currently Break & Run and Golden Break can be selected even if the racker won.
 
 **Solution:** Track who broke each game and validate:
+
 - If BREAKER won: Can select Break & Run, Golden Break
 - If RACKER won: Can select Runout (they ran out after dry break)
 - Neither can select the wrong achievement type
@@ -1195,6 +1254,7 @@ The game win dialog needs to become **configurable** based on league settings. N
 #### League-Configurable Options
 
 Each league should be able to enable/disable:
+
 - [ ] Golden Break counts as win
 - [ ] Track Golden Breaks (even if not auto-win)
 - [ ] Track Break & Runs
@@ -1206,6 +1266,7 @@ Each league should be able to enable/disable:
 #### Points Entry (for Point-Based Systems)
 
 When scoring system is points-based, the dialog needs:
+
 1. Confirm winner
 2. **Enter loser's balls pocketed** (0-7 for 8-ball)
    - Could be number input or quick-select buttons (0-7)
@@ -1241,10 +1302,12 @@ When scoring system is points-based, the dialog needs:
 ### Break Tracking
 
 Need to track who breaks each game. In round-robin formats:
+
 - Break alternates based on rotation
 - Can be determined from game number and matchup order
 
 Add to `match_games` table:
+
 ```sql
 breaker_player_id UUID REFERENCES members(id)
 ```
@@ -1256,24 +1319,28 @@ Or calculate from game number and rotation pattern.
 ## Implementation Phases
 
 ### Phase 0: Foundation Work (Pre-requisites)
+
 - [ ] Add break tracking to match_games table
 - [ ] Update scoring dialog with breaker/racker validation
 - [ ] Add configurable achievement options to league settings
 - [ ] Refactor scoring dialog to be configuration-driven
 
 ### Phase 1: Flexible Team Sizes
+
 - [ ] Make roster_size and playing_size configurable
 - [ ] Update lineup components for variable player counts
 - [ ] Update round-robin generation to work with NxN
 - [ ] Update threshold lookups to handle any team size
 
 ### Phase 2: Scoring System Abstraction
+
 - [ ] Create scoring_systems table and types
 - [ ] Add points tracking to match_games (winner_points, loser_points)
 - [ ] Create points entry UI in scoring dialog
 - [ ] Support both games-won and points-accumulated systems
 
 ### Phase 3: Fargo Rating System
+
 - [ ] Add fargo_rating to members table
 - [ ] Add per-match fargo fields to lineups table
 - [ ] Create Fargo rating entry UI in lineup page
@@ -1281,6 +1348,7 @@ Or calculate from game number and rotation pattern.
 - [ ] Create or adapt threshold system for Fargo points
 
 ### Phase 4: Threshold System Abstraction
+
 - [ ] Create threshold_charts and threshold_chart_entries tables
 - [ ] Migrate existing hardcoded charts to database
 - [ ] Support formula-based thresholds
@@ -1288,6 +1356,7 @@ Or calculate from game number and rotation pattern.
 - [ ] Allow operator-defined custom charts
 
 ### Phase 5: Full Configurability
+
 - [ ] League wizard updates with new options
 - [ ] Preset configurations (BCA Standard, Fargo 8-Ball, Custom)
 - [ ] Organization-level default configurations
@@ -1304,23 +1373,27 @@ Before proceeding, let's discuss:
 I found several Fargo point systems online, but yours sounds specific. Can you confirm:
 
 a. **Point calculation:**
-   - Winner always gets 10 points?
-   - Loser gets 0-7 based on balls pocketed?
-   - Or is it the 17-point system (winner gets 10 + opponent's remaining balls)?
+
+- Winner always gets 10 points?
+- Loser gets 0-7 based on balls pocketed?
+- Or is it the 17-point system (winner gets 10 + opponent's remaining balls)?
 
 b. **Handicap start points:**
-   - How does your league determine start points from Fargo difference?
-   - Do you have a chart, or is it calculated per-matchup?
-   - Is the handicap per-round or per-match?
+
+- How does your league determine start points from Fargo difference?
+- Do you have a chart, or is it calculated per-matchup?
+- Is the handicap per-round or per-match?
 
 c. **Win condition:**
-   - First team to X total points?
-   - Or highest points after all games played?
-   - What's the threshold in your league?
+
+- First team to X total points?
+- Or highest points after all games played?
+- What's the threshold in your league?
 
 ### 2. **Architecture Approach**
 
 Two paths:
+
 - **Quick path**: Add Fargo as third hardcoded system (faster, more tech debt)
 - **Right path**: Build flexible architecture first (more work, enables all future combinations)
 
@@ -1329,6 +1402,7 @@ Given your goal of supporting any handicap system with any team size with any th
 ### 3. **Priority Order**
 
 Should we tackle in this order?
+
 1. Game Win Dialog fixes (breaker validation, new achievements)
 2. Flexible team sizes
 3. Points-based scoring support
@@ -1340,6 +1414,7 @@ Or different priority?
 ### 4. **Scope Management**
 
 This is a large undertaking. Should we:
+
 - Do it all at once (risky, long time before usable)
 - Phase it with working checkpoints (each phase deployable)
 - Start with Fargo-only MVP then expand
@@ -1358,5 +1433,5 @@ This is a large undertaking. Should we:
 
 ---
 
-*Last Updated: 2025-04-09*
-*Status: Planning / Discussion - Awaiting User Input*
+_Last Updated: 2025-04-09_
+_Status: Planning / Discussion - Awaiting User Input_
