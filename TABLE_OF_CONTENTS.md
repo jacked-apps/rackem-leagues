@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2025-12-18 (added dev email confirmation migration, venue table counts migration)
+> **Last Updated**: 2026-04-09 (added wizard 2.0 framework planning doc)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -172,6 +172,13 @@
 | `futureFeatures.md` | Future feature ideas | Oct 15 |
 | `API-HOOKS-USAGE.md` | TanStack Query API hooks usage guide | Nov 7 ✨ |
 | `CENTRAL-DATABASE-IMPLEMENTATION.md` | TanStack Query patterns and migration approach | Nov 7 ✨ |
+
+### Active Planning Documents (`/memory-bank/plans/`)
+
+| File | Purpose | Status |
+|------|---------|--------|
+| `plans/PLAN-wizard2.md` | Wizard 2.0 framework — clean rebuild of league wizard with reusable shell, schemas, and step contract | Planning (current branch: `wizard-2-creation`) ✨ |
+| `plans/playoff-system-plan.md` | Playoff system architecture and implementation plan | Existing |
 
 ---
 
