@@ -31,16 +31,81 @@ Build the new team format selection UI in the league wizard.
 
 #### Tasks
 
-- [ ] **1A.1** Create `TeamFormatStep.tsx` component with:
-  - Radio buttons: 3v3, 4v4, 5v5
-  - Info box showing: lineup size, roster size, match format
+- [ ] **1A.1** Create `TeamFormatStep.tsx` as a thin orchestrator that composes smaller reusable components:
+  - Selectable cards: 3v3, 4v4, 5v5, Custom (mobile-friendly tap targets)
+  - Stats box dynamically showing current selection: lineup size, roster size, match format
   - Advanced Settings toggle (collapsed by default)
-  - When expanded: lineup size buttons, roster size buttons, match format radio
+  - When expanded: lineup size stepper, roster size stepper, match format selection
+  - Custom card auto-opens Advanced Settings when selected
+  - Modifying values in Advanced Settings auto-switches selection to Custom
+  - Switching to Custom carries over the previously-selected preset's values
+
+#### Component Breakdown (KISS / DRY / Single Responsibility)
+
+Each piece is a small, single-function, easily testable component:
+
+| Component | Responsibility | Reusable? |
+|-----------|----------------|-----------|
+| `TeamFormatStep.tsx` | Orchestrator — owns state, composes children | No (step-specific) |
+| `CardSelector.tsx` | Generic card-based radio selector with optional label, label InfoButton, per-option InfoButton, disabled state, and disabled toast message | **Yes — reuse anywhere** |
+| `NumberStepper.tsx` | `−` value `+` control with min/max enforcement, optional label + InfoButton | **Yes — reuse anywhere** |
+| `TeamFormatStatsBox.tsx` | Read-only display of current values, fixed position | No (specific to this form) |
+| `InfoButton` | Existing — `?` icon with popup. Used inside CardSelector + NumberStepper. | Yes (already exists) |
+
+**Build order:** `CardSelector` → `NumberStepper` → `TeamFormatStatsBox` → `TeamFormatStep` (compose them all).
+
+Each leaf component should be testable in isolation: pass props, assert rendered output and callback behavior. No business logic in leaves — orchestrator owns state.
+
+#### CardSelector API (v1 — keep it simple)
+
+```typescript
+interface CardSelectorOption<T> {
+  value: T;
+  title: string;
+  description?: string;
+  disabled?: boolean;
+  disabledMessage?: string;    // Toast message when disabled card is tapped
+  infoButton?: {               // Optional per-option info (?)
+    title: string;
+    content: React.ReactNode;
+  };
+}
+
+interface CardSelectorProps<T> {
+  // Question label (optional but encouraged)
+  label?: string;
+  labelInfoButton?: {          // Optional info button on the question itself
+    title: string;
+    content: React.ReactNode;
+  };
+
+  // The choices
+  options: CardSelectorOption<T>[];
+  value: T;
+  onChange: (value: T) => void;
+
+  // Layout
+  layout?: 'horizontal' | 'vertical';
+}
+```
+
+**Explicitly NOT in v1** (add later if needed): icon support, custom render props, animation config, columns count, custom styling overrides. Keep it simple, ship it, extend when there's a real need.
+
+#### InfoButton Usage on Labels
+
+Every question in this step gets an `InfoButton` next to its label. Content suggestions:
+
+| Question | InfoButton Title | Content |
+|----------|------------------|---------|
+| Team Format (preset cards) | "What is team format?" | Explains the difference between lineup size and roster size, why presets exist |
+| Lineup Size (stepper) | "What is lineup size?" | "The number of players who actually play during a match night." |
+| Roster Size (stepper) | "What is roster size?" | "The maximum number of players you can have on your team. Extra players act as substitutes." |
+| Match Format | "What is match format?" | Explains Single RR vs Double RR vs Individual Races |
 
 - [ ] **1A.2** Add new fields to `LeagueFormData` type:
   - `lineupSize: number`
   - `rosterSize: number`
-  - `matchFormat: 'single_round_robin' | 'double_round_robin'`
+  - `matchFormat: 'single_round_robin' | 'double_round_robin' | 'individual_races'`
 
 - [ ] **1A.3** Update `leagueWizardSteps.tsx` to use new `TeamFormatStep`
 
@@ -53,29 +118,41 @@ Build the new team format selection UI in the league wizard.
 **Basic View (default):**
 ```
 Choose your team format:
-○ 3v3 Teams
-○ 4v4 Teams
-○ 5v5 Teams
+
+┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐
+│   3v3    │  │   4v4    │  │   5v5    │  │  Custom  │
+└──────────┘  └──────────┘  └──────────┘  └──────────┘
+  (selectable cards - large tap targets, mobile-friendly)
 
 ┌─────────────────────────────────────┐
-│  Lineup: 3 players                  │
-│  Roster: 5 players                  │
+│  Lineup Size: 3                     │
+│  Roster Size: 5                     │
 │  Match Format: Double Round Robin   │
 └─────────────────────────────────────┘
+  (stats box - fixed position, no layout shift)
 
 [▼ Advanced Settings]
 ```
 
 **Advanced Settings (expanded):**
 ```
-Lineup Size: [3] [4] [5] [6]
+Lineup Size:  [ − ]   3   [ + ]    (min 3, max 6)
 
-Roster Size: [5] [6] [7] [8] [9] [10]
+Roster Size:  [ − ]   5   [ + ]    (min = lineup size, max 12)
 
 Match Format:
 ○ Single Round Robin (each player plays each opponent once)
 ○ Double Round Robin (each player plays each opponent twice)
+○ Individual Races (coming soon - shows toast, disabled for now)
 ```
+
+#### Behavior Rules
+
+- **Selecting a preset card** (3v3/4v4/5v5): Sets lineup, roster, and format to preset values. Stats box updates immediately.
+- **Selecting "Custom" card**: Auto-opens Advanced Settings. Initial values carry over from whichever preset was previously selected.
+- **Modifying values in Advanced Settings**: If new values don't match any preset, selection auto-switches to "Custom" card. If values happen to match a preset exactly, that preset card highlights.
+- **Stepper disable rules**: `−` button disabled at min, `+` button disabled at max. Roster size `−` disabled when roster size equals lineup size.
+- **Individual Races selection**: Disabled for now. If enabled in future, displays "Coming soon" toast on selection.
 
 #### Preset Mappings
 
@@ -87,12 +164,28 @@ Match Format:
 
 #### Verification Checklist (Phase 1A)
 
-- [ ] Radio buttons show 3v3, 4v4, 5v5 options
-- [ ] Info box updates when selection changes
+- [ ] Selectable cards show 3v3, 4v4, 5v5, Custom options
+- [ ] Cards have large tap targets (mobile-friendly)
+- [ ] Stats box updates when selection changes
+- [ ] Stats box has fixed position (no layout shift when advanced toggles)
 - [ ] Advanced settings toggle works
-- [ ] Lineup/roster/format can be customized in advanced
+- [ ] Selecting Custom auto-opens advanced settings
+- [ ] Modifying advanced values switches selection to Custom
+- [ ] Custom carries over previously-selected preset values
+- [ ] Lineup stepper enforces min 3, max 6
+- [ ] Roster stepper enforces min = lineup size, max 12
+- [ ] Match format shows Single RR, Double RR, Individual Races
+- [ ] Individual Races is disabled with "coming soon" toast
 - [ ] Form data contains all new fields
 - [ ] Old teamFormat field still gets populated (backward compat)
+- [ ] InfoButton appears next to every question label
+- [ ] InfoButton popups display correct content
+- [ ] CardSelector renders correctly in horizontal and vertical layouts
+- [ ] CardSelector handles disabled options with toast message
+- [ ] CardSelector supports per-option info buttons
+- [ ] NumberStepper enforces min/max correctly
+- [ ] Each leaf component (CardSelector, NumberStepper, TeamFormatStatsBox) works in isolation
+- [ ] No business logic in leaf components — only in TeamFormatStep orchestrator
 
 ---
 
@@ -132,7 +225,8 @@ CREATE TABLE team_configurations (
   CONSTRAINT valid_sizes CHECK (
     lineup_size <= roster_size AND
     min_roster <= lineup_size AND
-    lineup_size >= 2 AND lineup_size <= 8
+    lineup_size >= 3 AND lineup_size <= 6 AND
+    roster_size <= 12
   )
 );
 
@@ -146,8 +240,7 @@ CREATE TABLE match_format_configurations (
   format_type TEXT NOT NULL CHECK (format_type IN (
     'single_round_robin',
     'double_round_robin',
-    'race_to_x',
-    'fixed_games'
+    'individual_races'
   )),
   games_per_matchup INTEGER,
   created_at TIMESTAMPTZ DEFAULT now(),
@@ -165,10 +258,11 @@ CREATE TABLE match_format_configurations (
 | 5v5 Standard (8-player roster) | 5 | 8 |
 
 **Match Format Configurations:**
-| Name | Format Type |
-|------|-------------|
-| Single Round Robin | single_round_robin |
-| Double Round Robin | double_round_robin |
+| Name | Format Type | Notes |
+|------|-------------|-------|
+| Single Round Robin | single_round_robin | Each player plays each opponent once |
+| Double Round Robin | double_round_robin | Each player plays each opponent twice |
+| Individual Races | individual_races | Coming soon - disabled in UI for now |
 
 #### Verification Checklist (Phase 1B)
 
