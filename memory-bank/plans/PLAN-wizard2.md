@@ -54,6 +54,15 @@ Eventually, "Custom" handicap systems will be a formula builder where the operat
 
 This is its own future branch. Wizard 2.0 v1 just shows it as a "Coming soon" disabled card so users see where the system is headed.
 
+### Future Rules System (separate from preferences)
+
+There's an important distinction between **preferences** and **rules**:
+
+- **Preferences** = settings that change app behavior (UI flows, calculations, validations). Example: "show the golden break tracking button" → controls UI directly.
+- **Rules** = the rulebook content itself (BCA rulebook + house rules). Reference content for lookup and AI processing. Example: "9-ball golden break in the 2-foot side pocket doesn't count" → a house rule that lives in the rulebook, not a UI toggle.
+
+A future "rules" system will hold the BCA rulebook + house rules in a structured form designed for AI lookup and processing. **NOT in wizard 2.0 v1 scope.** Mentioned here so we don't accidentally cram rule content into the preferences table.
+
 ### Realistic Limitations Principle
 
 **Not all combinations will work out of the box.** When wizard 2.0 ships:
@@ -96,9 +105,12 @@ Rather than fight the old wizard's limitations, build a clean modular foundation
 - **localStorage scratch state** — debounced, for in-progress data within a single wizard step
 
 **Modular configuration foundation (the whole point):**
-- **New configuration tables** — additive schema changes only. New tables for things like team format config, league settings, etc. The exact list will emerge as we build but the pattern is: each modular concept gets its own table.
-- **Dual-write pattern** — wizard 2.0 writes to BOTH the new modular tables AND the existing hardcoded fields (e.g., `leagues.team_format = '5_man'`). Old reading code keeps working unchanged. Nothing in the app reads the new tables yet — they're populated for future use.
-- **No app code changes for reading** — the rest of the app stays untouched. Lineup screens, scoring screens, etc. still read from the existing hardcoded fields. Reading from new tables happens in later branches.
+- **Extend existing `preferences` table** with new modular columns (lineup_size, max_roster_size, game_generation, handicap_type, points_system, points_config, threshold_chart_id, uses_fargo). Preserve the cascade pattern (league → org → system default) and existing UI/code.
+- **Bring in `threshold_charts` system** from the unmerged `lo-manual-scoring` branch (chart + chart_rows tables, 4 chart types, lookup functions, editor UI).
+- **Add `fargo_rating` column to `members` table** for per-player Fargo data.
+- **Loosen `team_format` CHECK constraint** to allow new format values.
+- **Dual-write pattern** — wizard 2.0 writes to BOTH the existing `leagues` columns AND the extended `preferences` row. Old reading code keeps working unchanged. The new modular columns are populated for future use.
+- **No app code changes for reading** — the rest of the app stays untouched. Lineup screens, scoring screens, etc. still read from the existing fields. Reading from the modular columns happens in later branches.
 
 **First consumer:**
 - **"Create New League" flow** — first flow built on the framework
@@ -485,43 +497,54 @@ Once swap is complete (separate follow-up branch after wizard-v2 merges):
 
 ### Phase 1: Modular Configuration Schema
 
-**Goal:** Create ALL the modular configuration tables for the long-term modular vision. The wizard UI in v1 only captures choices for some of these (team format + handicap system); the others get system-default values when a league is created. Future branches add UI for the rest.
+**Goal:** Set up the database schema for modular league configuration. Strategy: **extend the existing `preferences` table** rather than create separate modular tables, and **bring in the `threshold_charts` system** from the unmerged `lo-manual-scoring` branch.
 
-**The pattern:** Every modular table must support BOTH preset rows AND custom rows from day one. The shape is:
-- `id` (primary key)
-- `is_system_default` (boolean) — true for seeded preset rows
-- `name` (text) — display name
-- `kind` or `type` discriminator (e.g., `'preset'` vs `'custom'`)
-- `preset_key` (nullable) — identifier for hardcoded presets
-- Concept-specific columns (lineup_size for team format, formula_string for handicap, etc.)
-- Standard timestamps
+#### Why extend `preferences` instead of new tables
 
-This ensures future "custom" features (like the formula builder) don't require schema changes.
+The existing `preferences` table on `main` is the right pattern for almost everything:
+- Already has the cascade pattern (league → organization → system default)
+- Already has UI components (`PreferencesCard`, `FormatSettingsSection`, `HandicapSettingsSection`, `MatchRulesSection`, etc.)
+- Already has query/mutation/hooks code
+- Adding columns is non-breaking
+- Single source of truth instead of fragmented modular tables
 
-#### Tables to create
+The original plan was to create 5 separate modular tables. After reviewing what's already on `main` and on the `lo-manual-scoring` branch, extending `preferences` is simpler and uses existing infrastructure.
 
-- [ ] **1.1** `team_format_configs` — lineup_size, roster_size, match_format. Seed 3 presets (3v3/4v4/5v5).
-- [ ] **1.2** `handicap_system_configs` — handicap calculation method. Seed 2-3 presets matching the wizard 1 hardcoded systems (-1/+2 system, % system). Schema must support a future `formula_string` column for the custom formula builder.
-- [ ] **1.3** `player_handicap_type_configs` — how individual player handicaps are determined. Seed presets matching what wizard 1 currently uses.
-- [ ] **1.4** `win_condition_configs` — what defines a "win" (games won vs points accumulated). Seed presets.
-- [ ] **1.5** `threshold_configs` — numerical targets for outcomes. Seed presets matching wizard 1's hardcoded thresholds.
+#### Tasks
 
-#### Foreign keys on leagues table (additive only)
+- [ ] **1.1** Extend the `preferences` table with new columns:
+  - `lineup_size` INTEGER (3-10, nullable, cascade)
+  - `max_roster_size` INTEGER (1-20, nullable, cascade)
+  - `game_generation` TEXT (double_round_robin/single_round_robin/sets/manual, nullable, cascade)
+  - `games_per_set` INTEGER (only used when game_generation='sets', nullable)
+  - `handicap_type` TEXT (points/percentage/skill_level/fargo/none, nullable, cascade)
+  - `points_system` TEXT (differential/bca_tiered/per_game/manual, nullable, cascade)
+  - `points_config` JSONB (system-specific config, nullable)
+  - `threshold_chart_id` UUID FK (to threshold_charts, nullable, cascade)
+  - `uses_fargo` BOOLEAN (true if league uses Fargo handicap system, nullable, cascade)
 
-- [ ] **1.6** Add `team_format_config_id` UUID column to `leagues` (nullable FK)
-- [ ] **1.7** Add `handicap_system_config_id` UUID column to `leagues` (nullable FK)
-- [ ] **1.8** Add `player_handicap_type_config_id` UUID column to `leagues` (nullable FK)
-- [ ] **1.9** Add `win_condition_config_id` UUID column to `leagues` (nullable FK)
-- [ ] **1.10** Add `threshold_config_id` UUID column to `leagues` (nullable FK)
+- [ ] **1.2** Loosen the `team_format` CHECK constraint to allow new format strings (or drop the constraint entirely — values are validated by the wizard now)
 
-#### Migration and documentation
+- [ ] **1.3** Bring in the `threshold_charts` migrations from `lo-manual-scoring` branch:
+  - Copy `supabase/migrations/20260119000000_threshold_charts.sql` (creates `threshold_charts` and `threshold_chart_rows` tables)
+  - Copy `supabase/migrations/20260119000001_seed_threshold_charts.sql` (seeds the 4 default chart types)
+  - Skip `20260119000002_league_format_settings.sql` — we're using `preferences` instead
+  - Run on local Supabase
 
-- [ ] **1.11** Create migration SQL files in `/database` folder
-- [ ] **1.12** Run migrations on local Supabase
-- [ ] **1.13** Document the modular pattern in `memory-bank/databaseSchema.md` so future modular tables follow the same convention
-- [ ] **1.14** Document each table's purpose and the preset+custom support pattern
+- [ ] **1.4** Add `fargo_rating` INTEGER column to `members` table (nullable, for per-player Fargo ratings)
 
-**Verification:** All 5 modular tables exist with seed data. All 5 FK columns exist on leagues table (nullable, additive only). Existing leagues unaffected. Pattern documented for reuse.
+- [ ] **1.5** Document the schema strategy in `memory-bank/databaseSchema.md`:
+  - `preferences` table is the home for league-level settings (cascade pattern)
+  - `threshold_charts` is its own system for lookup tables (chart + rows)
+  - `members.fargo_rating` is per-player Fargo data
+  - Note that `golden_break_counts_as_win` actually means "show the golden break tracking UI" (historical name, real behavior is "track yes/no")
+
+- [ ] **1.6** Document the **future "rules" system** as a separate, non-v1 feature:
+  - Will hold BCA rulebook + house rules in structured form
+  - Designed for AI lookup and rule processing
+  - NOT in wizard 2.0 v1 scope — entirely separate future feature
+
+**Verification:** `preferences` table has all new columns. Existing leagues unaffected. `threshold_charts` system imported and queryable. `members.fargo_rating` exists. Schema strategy documented.
 
 ---
 
@@ -588,46 +611,65 @@ This ensures future "custom" features (like the formula builder) don't require s
 
 ### Phase 6: League Wizard Steps
 
-**Goal:** Build the steps that make up the new League Creation Wizard. The TeamFormatStep and HandicapSystemStep capture NEW modular data; other steps capture existing fields.
+**Goal:** Build the steps that make up the new League Creation Wizard. The wizard is built around 3 standard presets that make setup fast for most users, with a Custom path for advanced configurations.
 
-- [ ] **6.1** Define `leagueWizardSchema` (zod) covering existing league fields AND new modular fields (team format + handicap system)
+#### The 3 standard presets + Custom
+
+The team format / handicap system selection is **one combined step** with 4 cards. Each preset locks in all the modular fields automatically, so the user doesn't see additional questions.
+
+| Card | Lineup | Handicap System | Notes |
+|------|--------|-----------------|-------|
+| **5v5 Fargo** *(at top — BCA pitch priority)* | 5 | Fargo | Warning toast: "Fargo API not connected yet — player ratings entered manually" |
+| **3v3 Standard** | 3 | -1/+2 points system | The original wizard 1 default |
+| **5v5 Standard** | 5 | % system | The other wizard 1 default |
+| **Custom** | (asks) | (asks) | Warning toast: "Customizing means more questions and longer setup" |
+
+If user picks a preset → wizard knows everything it needs, just creates the league.
+If user picks Custom → wizard branches into a longer flow with additional questions.
+
+#### Tasks
+
+- [ ] **6.1** Define `leagueWizardSchema` (zod) covering all the fields the wizard captures
 - [ ] **6.2** Build `GameTypeStep` (writes to existing `leagues.game_type`)
 - [ ] **6.3** Build `StartDateStep` (writes to existing `leagues.start_date`)
 - [ ] **6.4** Build `QualifierStep` with conditional logic (writes to existing field)
-- [ ] **6.5** Build `TeamFormatStep` (the fancy one) — uses `CardSelector` for preset cards (3v3/4v4/5v5/Custom), `NumberStepper` for advanced lineup/roster sizes, `CardSelector` for match format. Includes Custom card auto-opening advanced settings, info buttons on every label, stable stats box, "Coming soon" toast for Individual Races. Captures modular team format data.
-- [ ] **6.6** Build `HandicapSystemStep` — uses `CardSelector` for handicap system options:
-  - Preset cards for the existing wizard 1 systems (-1/+2 system, % system, etc.)
-  - "Custom Formula Builder" card — disabled with "Coming soon" toast (placeholder for future formula builder feature)
-  - Info button on each option explaining what the system does
-  - Captures the selected `handicap_system_config_id`
-- [ ] **6.7** Wire all steps into the `leagueWizardSteps` registry
+- [ ] **6.5** Build `LeagueFormatStep` — the combined preset/custom step:
+  - 4 cards via `CardSelector` (5v5 Fargo, 3v3, 5v5, Custom)
+  - Fargo card on top (BCA pitch priority)
+  - Fargo card shows manual-entry warning toast on selection
+  - Custom card shows "longer setup" warning toast on selection
+  - Picking a preset locks in all the modular values automatically
+  - Picking Custom opens the Custom path (next step)
+  - Info button on each card explaining the system
+- [ ] **6.6** Build the Custom path steps (only shown if user picks Custom card):
+  - Lineup size step (`NumberStepper`, 3-10)
+  - Max roster size step (`NumberStepper`, lineup_size to 20)
+  - Match format step (`CardSelector`: single RR / double RR / sets / manual + Individual Races as "Coming soon")
+  - Handicap system step (`CardSelector`: points / percentage / skill_level / none + Custom Formula Builder as "Coming soon")
+  - Each Custom step has info buttons explaining what it does
+- [ ] **6.7** Wire all steps into the `leagueWizardSteps` registry with `showIf` logic so Custom steps only appear when Custom card is selected
 
-**Verification:** Walk through the standalone wizard manually. Every step renders. Cards/steppers work. Info buttons show popups. The Custom Formula Builder option shows a "Coming soon" toast when clicked. Validation blocks advancement on invalid data. Each step file under 100 lines.
+**Verification:** Walk through the wizard with each preset — fast happy path, no extra questions. Walk through Custom — see all the additional questions appear. Fargo and Custom warnings show on selection. Info buttons work. Each step file under 100 lines.
 
 ---
 
 ### Phase 7: Dual-Write Mutation
 
-**Goal:** Wire the wizard's final submit to write data to both the existing `leagues` table AND the new modular configuration tables.
+**Goal:** Wire the wizard's final submit to write data to both the existing `leagues` table AND the extended `preferences` table. Also auto-pick a default `threshold_chart_id` based on the chosen handicap system.
 
-- [ ] **7.1** Create or update `useCreateLeague` mutation (or write a new modular-aware mutation)
-- [ ] **7.2** Write game type, start date, qualifier, etc. to existing `leagues` columns (unchanged behavior)
-- [ ] **7.3** For team format:
-  - If user picked a preset that matches a system default config → use the existing seeded `team_format_configs` row's ID
-  - If user picked Custom → insert a new `team_format_configs` row, get its ID
-  - Set `leagues.team_format_config_id` to that ID
-  - ALSO write a best-fit string to `leagues.team_format` (e.g., 5v5 → `'5_man'`, 3v3 → `'5_man'` since wizard 1 only had two options) for backward compat
-- [ ] **7.4** For handicap system:
-  - User selected one of the preset cards → use the existing seeded `handicap_system_configs` row's ID
-  - Set `leagues.handicap_system_config_id` to that ID
-  - ALSO write the legacy handicap system string to the existing `leagues` column for backward compat
-- [ ] **7.5** For other modular tables NOT exposed in v1 UI (player_handicap_type, win_condition, threshold):
-  - Pick the seeded "default" row from each table based on the user's team format + handicap system choices
-  - Set the corresponding FK on `leagues` to that default row's ID
-  - This ensures every wizard 2 league has all 5 modular FKs populated, even though the user only chose 2 of them via UI
-- [ ] **7.6** Test that creating a league via wizard 2.0 produces a record that the existing app can render correctly (lineup screens, scoring, etc.)
+- [ ] **7.1** Create or update `useCreateLeague` mutation to also create a `preferences` row for the new league
+- [ ] **7.2** Write game type, start date, qualifier to existing `leagues` columns (unchanged behavior)
+- [ ] **7.3** Write a best-fit `team_format` string to `leagues.team_format` for backward compat (e.g., Fargo and 5v5 → `'5_man'`, 3v3 → `'5_man'` since wizard 1 only had two options). Existing app code keeps working.
+- [ ] **7.4** Insert a new `preferences` row with `entity_type='league'`, `entity_id=newLeague.id` and the wizard's modular field values:
+  - Preset selected → all modular columns get values from the preset (lineup_size, max_roster_size, game_generation, handicap_type, points_system, uses_fargo, etc.)
+  - Custom selected → modular columns get the user's customized values
+  - `threshold_chart_id` auto-populated with the system default chart for the chosen handicap_type (lookup from `threshold_charts` where `is_default=true` and `entity_type='global'`)
+- [ ] **7.5** Test that creating a league via wizard 2.0 produces:
+  - A `leagues` row with backward-compat fields populated
+  - A `preferences` row with all the new modular fields populated
+  - The existing app renders the league correctly (lineup screens, scoring, etc.)
 
-**Verification:** Create a league via wizard 2.0 with a 3v3 preset and -1/+2 handicap. The existing app renders it correctly. All 5 modular FK columns on the league are populated. Create a league with Custom 4v4 setup. The `team_format_configs` table has a new row, the league has its FK, and the old `team_format` field has a best-fit value.
+**Verification:** Create a league via wizard 2.0 with a 3v3 preset. `leagues.team_format = '5_man'`. `preferences` row has `lineup_size=3`, `handicap_type='points'`, etc. The existing app renders it as a 3-player lineup. Create a Fargo league. `preferences.uses_fargo=true`. Create a Custom 4v4 setup. `preferences` row reflects the custom choices.
 
 ---
 
@@ -935,7 +977,8 @@ git push
 
 ---
 
-_Last Updated: 2026-04-09 (added full modular vision: 5 modular tables, handicap system step with "Coming soon" custom card, dual-write for all modular FKs, realistic limitations principle)_
-_Status: Planning — 2 minor open questions remain (dashboard resume UX, mid-season team drops). Both deferable._
-_Estimated Effort: ~4-5 weeks (framework + 5 modular tables + new wizard with team format + handicap system steps + Create New League flow with placeholders)_
+_Last Updated: 2026-04-09 (final planning pass: extended preferences table strategy, threshold_charts brought in from lo-manual-scoring, 3-presets-or-Custom design with Fargo at top, future rules system noted)_
+_Status: Planning complete — ready for Phase 0 to begin_
+_Estimated Effort: ~4-5 weeks (framework + preferences extension + threshold_charts import + new wizard with 3 presets + Custom path + Create New League flow with placeholders)_
 _Risk Note: App is live but has no real users yet — all test data. We can break things during development without backward compatibility concerns. Reassess if real users arrive before this ships._
+_Schema Strategy: Extend existing `preferences` table (cascade pattern) instead of creating separate modular tables. Bring in `threshold_charts` system from `lo-manual-scoring` branch as-is. Add `fargo_rating` to `members`. Loosen `team_format` CHECK constraint._
