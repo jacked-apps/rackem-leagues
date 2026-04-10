@@ -1,41 +1,93 @@
 /**
  * @fileoverview WizardShell — Layer 1 of the Wizard 2.0 framework
  *
- * Generic shell that renders a single wizard with its steps. Handles
- * step transitions, navigation, validation, error display, and per-wizard
- * scratch state in localStorage.
+ * Thin layout component that orchestrates the wizard's visual structure:
+ * progress bar, step header, step content, error display, and navigation.
  *
- * This is a STUB. The full implementation comes in Phase 2 of wizard 2.0.
- *
- * See memory-bank/plans/PLAN-wizard2.md → Phase 2: Wizard Shell
+ * All logic (state, persistence, validation, handlers) lives in
+ * useWizardShell. All navigation buttons live in WizardNavigation.
  */
 
+import { WizardProgress } from '@/components/forms/WizardProgress';
 import type { WizardConfig } from './flowTypes';
+import type { WizardStepProps } from './types';
+import { useWizardShell } from './useWizardShell';
+import { WizardNavigation } from './WizardNavigation';
+import { WizardSummary } from './WizardSummary';
 
-interface WizardShellProps {
-  /** The wizard configuration to render */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  wizard: WizardConfig;
-
-  /** Called when the wizard completes successfully */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  onComplete?: (formData: unknown) => void;
-
-  /** Called when the user cancels the wizard */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+interface WizardShellProps<TFormData = unknown> {
+  wizard: WizardConfig<TFormData>;
+  persistKey?: string;
+  onComplete?: (formData: TFormData) => void;
   onCancel?: () => void;
 }
 
-/**
- * Stub implementation. Renders a placeholder until Phase 2 fills it in.
- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function WizardShell(_props: WizardShellProps) {
+export function WizardShell<TFormData>(props: WizardShellProps<TFormData>) {
+  const {
+    formData,
+    currentStep,
+    currentIndex,
+    totalSteps,
+    isFirstStep,
+    isLastStep,
+    goBack,
+    errors,
+    handleStepChange,
+    handleNext,
+    handleCancel,
+  } = useWizardShell(props);
+
+  if (!currentStep) {
+    return <div className="p-4 text-sm text-red-600">No steps configured.</div>;
+  }
+
+  const StepComponent = currentStep.component;
+  const stepValue = (formData as Record<string, unknown>)[currentStep.id];
+
+  const stepProps: WizardStepProps<unknown, TFormData> = {
+    value: stepValue,
+    onChange: handleStepChange,
+    errors,
+    formData,
+    onNext: handleNext,
+  };
+
   return (
-    <div className="p-4 border border-dashed border-gray-300 rounded">
-      <p className="text-sm text-gray-500">
-        WizardShell stub — full implementation in Phase 2
-      </p>
+    <div className="space-y-6">
+      <WizardProgress currentStep={currentIndex} totalSteps={totalSteps} />
+
+      <div>
+        <h2 className="text-2xl font-semibold mb-1">{currentStep.title}</h2>
+        {currentStep.subtitle && (
+          <p className="text-sm text-gray-600 mb-4">{currentStep.subtitle}</p>
+        )}
+
+        <StepComponent {...stepProps} />
+
+        {errors.length > 0 && (
+          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+            {errors.map((err, i) => (
+              <p key={i}>{err}</p>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {props.wizard.getSummaryItems && (
+        <WizardSummary
+          title="League Preview"
+          items={props.wizard.getSummaryItems(formData)}
+        />
+      )}
+
+      <WizardNavigation
+        isFirstStep={isFirstStep}
+        isLastStep={isLastStep}
+        showSkip={currentStep.optional === true && !stepValue}
+        onBack={goBack}
+        onNext={handleNext}
+        onCancel={props.onCancel ? handleCancel : undefined}
+      />
     </div>
   );
 }

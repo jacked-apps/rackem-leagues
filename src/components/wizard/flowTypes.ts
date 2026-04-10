@@ -12,6 +12,7 @@
  */
 
 import type { WizardStepConfig } from './types';
+import type { WizardSummaryItem } from './WizardSummary';
 
 /**
  * Configuration for a wizard that lives inside a flow stage.
@@ -33,6 +34,20 @@ export interface WizardConfig<TFormData = unknown> {
 
   /** Initial form data when the wizard starts fresh */
   initialFormData: TFormData;
+
+  /**
+   * Schema version for persistence. Bump this when the form data shape
+   * or step structure changes in a way that would make stale persisted
+   * data incompatible. Defaults to 1.
+   */
+  schemaVersion?: number;
+
+  /**
+   * Optional function that maps form data to a list of summary items.
+   * When provided, WizardShell renders a running summary box showing
+   * the user's choices so far.
+   */
+  getSummaryItems?: (formData: TFormData) => WizardSummaryItem[];
 }
 
 /**

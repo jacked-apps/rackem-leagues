@@ -977,8 +977,9 @@ git push
 
 ---
 
-_Last Updated: 2026-04-09 (final planning pass: extended preferences table strategy, threshold_charts brought in from lo-manual-scoring, 3-presets-or-Custom design with Fargo at top, future rules system noted)_
-_Status: Planning complete — ready for Phase 0 to begin_
-_Estimated Effort: ~4-5 weeks (framework + preferences extension + threshold_charts import + new wizard with 3 presets + Custom path + Create New League flow with placeholders)_
+_Last Updated: 2026-04-09 (Phase 0 complete; reordered phases to UI-first per user preference — schema work deferred until after wizard UI is built so we know exactly what fields to save)_
+_Status: Phase 0 ✅ complete. Currently entering Phase 1 (Wizard Shell). Schema work (originally Phase 1) is now Phase 8, AFTER the UI is built._
+_Estimated Effort: ~4-5 weeks (framework + new wizard with 3 presets + Custom path + Create New League flow with placeholders + schema/mutations)_
 _Risk Note: App is live but has no real users yet — all test data. We can break things during development without backward compatibility concerns. Reassess if real users arrive before this ships._
-_Schema Strategy: Extend existing `preferences` table (cascade pattern) instead of creating separate modular tables. Bring in `threshold_charts` system from `lo-manual-scoring` branch as-is. Add `fargo_rating` to `members`. Loosen `team_format` CHECK constraint._
+_Schema Strategy: Extend existing `preferences` table (cascade pattern) instead of creating separate modular tables. Bring in `threshold_charts` system from `lo-manual-scoring` branch as-is. Add `fargo_rating` to `members`. Loosen `team_format` CHECK constraint. **Schema work happens AFTER UI work** — user prefers to discover the data shape by building the UI first and holding answers in state until the wizard is functional._
+_Reordered Phases (UI-first): Phase 0 Foundation ✅ → Phase 1 Wizard Shell → Phase 2 Persistence (localStorage) → Phase 3 Validation → Phase 4 Building Blocks → Phase 5 League Wizard Steps (captures to state) → Phase 6 WizardFlow Shell → Phase 7 Create New League Flow → Phase 8 Modular Schema (now we know what to save) → Phase 9 Dual-Write Mutation → Phase 10 Testing → Phase 11 Documentation._

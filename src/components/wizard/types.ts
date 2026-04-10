@@ -60,9 +60,12 @@ export interface WizardStepConfig<TFormData = unknown> {
   /** The React component that renders this step's UI */
   component: ComponentType<WizardStepProps<unknown, TFormData>>;
 
-  /** Optional zod schema slice for this step's validation */
+  /** Optional zod schema for validating this step's value on Next click */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   schema?: any;
+
+  /** Optional custom validator — return error strings or undefined if valid */
+  validate?: (value: unknown, formData: TFormData) => string[] | undefined;
 
   /** If true, the user can skip this step without filling it in */
   optional?: boolean;

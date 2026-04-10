@@ -21,3 +21,16 @@ export type {
 // Shells
 export { WizardShell } from './WizardShell';
 export { WizardFlowShell } from './WizardFlowShell';
+
+// Reusable step building blocks
+export { CardSelector } from './CardSelector';
+export { SelectableCard, type SelectableCardOption } from './SelectableCard';
+export { NumberStepper } from './NumberStepper';
+export { WizardSummary, type WizardSummaryItem } from './WizardSummary';
+export { ReviewStep } from './ReviewStep';
+
+// Persistence (advanced — most callers just pass persistKey to WizardShell)
+export {
+  useWizardPersistence,
+  readPersistedWizardState,
+} from './useWizardPersistence';
