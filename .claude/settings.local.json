@@ -61,7 +61,8 @@
       "Bash(xargs:*)",
       "Bash(curl:*)",
       "Bash(python3:*)",
-      "Bash(git ls-tree:*)"
+      "Bash(git ls-tree:*)",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,0 +1,72 @@
+/**
+ * @fileoverview Wizard 2.0 Framework Type Definitions
+ *
+ * Core type contracts for the wizard framework. The framework has two layers:
+ *
+ * 1. Wizard Layer — a single multi-step form (League Wizard, Season Wizard, etc.)
+ * 2. WizardFlow Layer — a sequence of wizards composed into a multi-stage user
+ *    journey with unified progress tracking
+ *
+ * See memory-bank/plans/PLAN-wizard2.md for the complete design.
+ */
+
+import type { ComponentType } from 'react';
+
+/**
+ * Props passed to every wizard step component.
+ *
+ * Steps are plain React components that receive their value, an onChange
+ * handler, and any validation errors. They have read-only access to the
+ * full form data for steps that need to react to earlier choices.
+ *
+ * @template TValue - The type of this step's slice of form data
+ * @template TFormData - The type of the wizard's full form data object
+ */
+export interface WizardStepProps<TValue = unknown, TFormData = unknown> {
+  /** Current value for this step's slice of form data */
+  value: TValue;
+
+  /** Update this step's value (writes back to wizard form state) */
+  onChange: (value: TValue) => void;
+
+  /** Validation errors for this step (from zod or custom validators) */
+  errors: string[];
+
+  /** Read-only access to the full form data for steps that depend on earlier choices */
+  formData: TFormData;
+
+  /** Programmatically advance to the next step (rarely used by step itself) */
+  onNext: () => void;
+}
+
+/**
+ * Configuration for a single step in a wizard.
+ *
+ * Each step has a stable string ID (not an array index) so adding/removing
+ * steps doesn't break in-progress wizards persisted in localStorage.
+ *
+ * @template TFormData - The type of the wizard's full form data object
+ */
+export interface WizardStepConfig<TFormData = unknown> {
+  /** Stable string identifier for this step (used in localStorage and routing) */
+  id: string;
+
+  /** Display title shown at the top of the step */
+  title: string;
+
+  /** Optional subtitle/description shown under the title */
+  subtitle?: string;
+
+  /** The React component that renders this step's UI */
+  component: ComponentType<WizardStepProps<unknown, TFormData>>;
+
+  /** Optional zod schema slice for this step's validation */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  schema?: any;
+
+  /** If true, the user can skip this step without filling it in */
+  optional?: boolean;
+
+  /** Conditional rendering — return false to skip this step */
+  showIf?: (formData: TFormData) => boolean;
+}

@@ -1,0 +1,89 @@
+/**
+ * @fileoverview Wizard 2.0 Framework — Flow Layer Type Definitions
+ *
+ * Type contracts for the WizardFlow layer (Layer 2). A WizardFlow composes
+ * multiple wizards into a single user journey with unified progress tracking.
+ *
+ * Flow stages can be either:
+ * - 'wizard' stages — built on the new framework, rendered inline
+ * - 'placeholder' stages — link to existing legacy pages until rebuilt
+ *
+ * See memory-bank/plans/PLAN-wizard2.md for the complete design.
+ */
+
+import type { WizardStepConfig } from './types';
+
+/**
+ * Configuration for a wizard that lives inside a flow stage.
+ *
+ * A WizardConfig describes one of the wizards in our system (League Wizard,
+ * Season Wizard, etc.) so the flow shell knows how to render it.
+ *
+ * @template TFormData - The type of the wizard's full form data object
+ */
+export interface WizardConfig<TFormData = unknown> {
+  /** Stable string identifier for this wizard */
+  id: string;
+
+  /** Display title for the wizard */
+  title: string;
+
+  /** The list of steps that make up this wizard */
+  steps: WizardStepConfig<TFormData>[];
+
+  /** Initial form data when the wizard starts fresh */
+  initialFormData: TFormData;
+}
+
+/**
+ * A single stage in a flow. Stages are either real wizards built on the
+ * new framework, or placeholders that link to existing legacy implementations.
+ *
+ * The placeholder pattern is how we ship the flow architecture in v1
+ * without rebuilding all 5 wizards (League, Season, Schedule, Teams, Matchups).
+ */
+export type FlowStage =
+  | {
+      kind: 'wizard';
+      id: string;
+      title: string;
+      wizard: WizardConfig;
+    }
+  | {
+      kind: 'placeholder';
+      id: string;
+      title: string;
+      /** Legacy route to navigate to when the user clicks "Continue" */
+      legacyRoute: string;
+      /** Optional function to check if this stage is complete (queries DB) */
+      isComplete?: (context: FlowContext) => Promise<boolean>;
+    };
+
+/**
+ * Context passed to flow-level helpers (completion checks, etc.).
+ * Holds the IDs of entities created in earlier stages.
+ */
+export interface FlowContext {
+  /** ID of the league this flow is creating/managing (set after Stage 1) */
+  leagueId?: string;
+
+  /** ID of the season this flow is creating/managing (set after Stage 2) */
+  seasonId?: string;
+}
+
+/**
+ * Configuration for an entire flow (e.g., "Create New League").
+ *
+ * A flow is a declarative list of stages. The flow shell handles rendering,
+ * progress tracking, navigation, and resume-from-database.
+ */
+export interface WizardFlowConfig {
+  /** Stable string identifier for this flow */
+  id: string;
+
+  /** Display title for the flow */
+  title: string;
+
+  /** Ordered list of stages */
+  stages: FlowStage[];
+}
