@@ -26,7 +26,6 @@ export interface PreferenceFields {
   game_generation?: string | null;
   handicap_type?: string | null;
   points_system?: string | null;
-  uses_fargo?: boolean | null;
   threshold_chart_id?: string | null;
 }
 

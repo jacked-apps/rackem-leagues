@@ -43,7 +43,6 @@ export const PRESET_MAPPINGS: Record<string, PresetMapping> = {
       game_generation: 'single_round_robin',
       handicap_type: 'fargo',
       points_system: 'differential',
-      uses_fargo: true,
     },
   },
   standard_3v3: {
@@ -58,7 +57,6 @@ export const PRESET_MAPPINGS: Record<string, PresetMapping> = {
       game_generation: 'double_round_robin',
       handicap_type: 'points',
       points_system: 'differential',
-      uses_fargo: false,
     },
   },
   standard_5v5: {
@@ -73,7 +71,6 @@ export const PRESET_MAPPINGS: Record<string, PresetMapping> = {
       game_generation: 'single_round_robin',
       handicap_type: 'percentage',
       points_system: 'bca_tiered',
-      uses_fargo: false,
     },
   },
 };

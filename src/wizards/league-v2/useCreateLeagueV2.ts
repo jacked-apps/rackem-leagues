@@ -60,7 +60,6 @@ export function useCreateLeagueV2({ organizationId }: UseCreateLeagueV2Args) {
             max_roster_size: formData['roster-size'] ?? 5,
             game_generation: formData['match-format'] ?? 'double_round_robin',
             handicap_type: formData['handicap-system'] ?? 'points',
-            uses_fargo: formData['handicap-system'] === 'fargo',
           }
         : preset?.preferences ?? {};
 

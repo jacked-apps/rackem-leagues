@@ -78,13 +78,6 @@ ALTER TABLE preferences
 COMMENT ON COLUMN preferences.points_system IS
   'How team points are scored: differential, bca_tiered, per_game, or manual. NULL = use next level default.';
 
--- Uses Fargo: flag for leagues that use the Fargo rating system
-ALTER TABLE preferences
-  ADD COLUMN IF NOT EXISTS uses_fargo BOOLEAN;
-
-COMMENT ON COLUMN preferences.uses_fargo IS
-  'Whether this league uses Fargo ratings. When true, players need fargo_rating on members table. NULL = use next level default.';
-
 -- Threshold chart reference: links to the threshold chart for win calculations
 -- FK added after threshold_charts table exists (see threshold charts migration)
 ALTER TABLE preferences
