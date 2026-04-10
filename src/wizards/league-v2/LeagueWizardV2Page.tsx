@@ -7,32 +7,38 @@
  * so it's invisible in production builds. The "Create League (v2)"
  * button on the operator dashboard (ActiveLeagues.tsx) links here.
  *
- * CURRENT STATE: Renders the WizardShell with all league wizard steps.
- * On "Finish", displays the captured form data as JSON (no DB write yet).
- * DB writes come in Phase 9 (Dual-Write Mutation).
- *
- * FUTURE: This page will be replaced by the WizardFlowShell which wraps
- * the League Wizard as Stage 1 of the "Create New League" multi-stage flow
- * (League → Season → Schedule → Teams → Matchups).
+ * On "Finish": creates a league row + upserts a preferences row with
+ * the modular fields (dual-write pattern). Then shows a success screen
+ * with options to continue setup or go to the dashboard.
  *
  * See memory-bank/plans/PLAN-wizard2.md
  */
 
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import { DevOnly } from '@/dev/DevOnly';
 import { PageHeader } from '@/components/PageHeader';
 import { WizardShell } from '@/components/wizard';
 import { leagueWizardConfig } from './leagueWizardConfig';
+import { useCreateLeagueV2 } from './useCreateLeagueV2';
+import { LeagueCreatedScreen } from './LeagueCreatedScreen';
 import type { LeagueWizardFormData } from './leagueWizardTypes';
 
 function LeagueWizardV2PageContent() {
   const { orgId } = useParams<{ orgId: string }>();
   const navigate = useNavigate();
-  const [completedData, setCompletedData] = useState<LeagueWizardFormData | null>(null);
+  const [createdLeagueId, setCreatedLeagueId] = useState<string | null>(null);
+  const createLeague = useCreateLeagueV2({ organizationId: orgId ?? '' });
 
-  const handleComplete = (formData: LeagueWizardFormData) => {
-    setCompletedData(formData);
+  const handleComplete = async (formData: LeagueWizardFormData) => {
+    try {
+      const league = await createLeague.mutateAsync(formData);
+      setCreatedLeagueId(league.id);
+      toast.success('League created successfully');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to create league');
+    }
   };
 
   const handleCancel = () => {
@@ -49,18 +55,8 @@ function LeagueWizardV2PageContent() {
       />
 
       <div className="container mx-auto px-4 max-w-4xl py-8">
-        {completedData ? (
-          <div className="p-6 border-2 border-green-300 rounded-lg bg-green-50">
-            <p className="text-green-900 font-medium mb-2">
-              Wizard completed (Phase 1 — no DB write yet)
-            </p>
-            <p className="text-sm text-green-800 mb-2">
-              Captured form data:
-            </p>
-            <pre className="text-xs bg-white p-3 rounded border border-green-200 overflow-auto">
-              {JSON.stringify(completedData, null, 2)}
-            </pre>
-          </div>
+        {createdLeagueId ? (
+          <LeagueCreatedScreen leagueId={createdLeagueId} orgId={orgId ?? ''} />
         ) : (
           <WizardShell
             wizard={leagueWizardConfig}

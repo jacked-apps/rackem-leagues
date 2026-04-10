@@ -270,6 +270,7 @@ export {
 export {
   useCreatePreference,
   useUpdatePreference,
+  useUpsertPreference,
   useDeletePreference,
 } from './usePreferenceMutations';
 
