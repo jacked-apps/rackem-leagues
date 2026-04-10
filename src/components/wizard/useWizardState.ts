@@ -2,11 +2,14 @@
  * @fileoverview useWizardState — internal state hook for WizardShell
  *
  * Holds form data, current step ID, and provides navigation helpers
- * (next/back/jumpTo). No persistence — that's added in Phase 2.
- * No validation — that's added in Phase 3.
+ * (next/back). Persistence lives in useWizardPersistence. Validation
+ * lives in validateStep. This hook is pure state management.
  *
- * Step IDs are strings (not array indices) so adding/removing steps
- * doesn't break in-progress wizards once persistence is wired up.
+ * KEY DESIGN: Step IDs are strings (not array indices). This means you
+ * can add, remove, or reorder steps without breaking in-progress wizards
+ * that are saved to localStorage. The showIf system also means steps can
+ * appear/disappear based on earlier answers (e.g., custom path steps only
+ * show when user picks "Custom" format).
  */
 
 import { useState, useCallback } from 'react';

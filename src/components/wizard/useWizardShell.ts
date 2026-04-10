@@ -1,11 +1,18 @@
 /**
  * @fileoverview useWizardShell — orchestration hook for WizardShell
  *
- * Composes the lower-level hooks (useWizardState, useWizardPersistence)
- * with validation and event handlers. Returns everything WizardShell
- * needs to render.
+ * The "brain" of the wizard. Composes three lower-level concerns:
+ *   1. useWizardState — form data + step navigation
+ *   2. useWizardPersistence — debounced localStorage saves
+ *   3. validateStep — zod + custom validation on Next click
  *
- * Extracted from WizardShell to keep each file under 100 lines.
+ * Returns everything WizardShell needs to render (state + handlers).
+ * WizardShell itself is just a thin layout component.
+ *
+ * Flow on user click Next:
+ *   validate current step → if errors, show them and block
+ *   → if last step, clear localStorage + call onComplete
+ *   → otherwise advance to next visible step
  */
 
 import { useCallback, useMemo, useState } from 'react';

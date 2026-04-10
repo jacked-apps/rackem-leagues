@@ -1,12 +1,19 @@
 /**
  * @fileoverview League Creation Wizard v2 — Dev Page
  *
- * Entry point for the new modular league creation flow. This page is
- * accessible only in development mode via the hidden route
- * `/operator/leagues/create-v2/:orgId`.
+ * Entry point for the new modular league creation wizard.
  *
- * Currently a stub. Will host the WizardFlowShell with the "Create New
- * League" flow once the framework is built out.
+ * ACCESS: Dev-only via `/create-league-v2/:orgId`. Wrapped in DevOnly
+ * so it's invisible in production builds. The "Create League (v2)"
+ * button on the operator dashboard (ActiveLeagues.tsx) links here.
+ *
+ * CURRENT STATE: Renders the WizardShell with all league wizard steps.
+ * On "Finish", displays the captured form data as JSON (no DB write yet).
+ * DB writes come in Phase 9 (Dual-Write Mutation).
+ *
+ * FUTURE: This page will be replaced by the WizardFlowShell which wraps
+ * the League Wizard as Stage 1 of the "Create New League" multi-stage flow
+ * (League → Season → Schedule → Teams → Matchups).
  *
  * See memory-bank/plans/PLAN-wizard2.md
  */

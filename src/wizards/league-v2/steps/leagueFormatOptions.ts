@@ -1,15 +1,20 @@
 /**
  * @fileoverview League format preset options for the LeagueFormatStep
  *
- * Defines the 4 cards shown in the format selector:
- * 1. 5v5 Fargo (top — BCA pitch priority)
- * 2. 3v3 Standard
- * 3. 5v5 Standard
- * 4. Custom
+ * THE 4 MAIN PRODUCT OPTIONS for league creation. Order matters — Fargo
+ * is first because it's the BCA sales pitch.
  *
- * Each preset locks in lineup size, handicap system, match format, etc.
- * The actual field values for each preset are mapped in the dual-write
- * mutation (Phase 9). For now this just captures the selection string.
+ * 1. 5v5 Fargo (top — BCA priority) — 5 player lineup, Fargo handicap
+ * 2. 3v3 Standard — 3 player lineup, -2/+2 points handicap, double round robin
+ * 3. 5v5 Standard — 5 player lineup, percentage handicap, single round robin
+ * 4. Custom — opens the longer custom path with individual questions
+ *
+ * Picking a preset (1-3) locks in all modular fields automatically.
+ * The dual-write mutation (Phase 9) maps these preset values to both
+ * the existing leagues columns AND the new modular preferences columns.
+ *
+ * Picking Custom (4) triggers the showIf custom path steps in the
+ * wizard config (LineupSize, RosterSize, MatchFormat, HandicapSystem).
  */
 
 import type { SelectableCardOption } from '@/components/wizard';

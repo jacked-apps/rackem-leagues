@@ -1,11 +1,23 @@
 /**
  * @fileoverview League Wizard v2 Configuration
  *
- * Defines the steps, schema version, and initial form data for the
- * League Creation Wizard. Steps are added incrementally as they're built.
+ * THE CENTRAL CONFIG for the League Creation Wizard. This is where all
+ * the steps are registered, ordered, and wired up.
  *
- * Currently: GameTypeStep (real) + DummyTextStep (placeholder)
- * Eventually: GameType → StartDate → Qualifier → LeagueFormat → (Custom path)
+ * Two paths through the wizard:
+ *   PRESET (fast): GameType → StartDate → Qualifier → Pick a preset → Review
+ *   CUSTOM (longer): GameType → StartDate → Qualifier → Custom → LineupSize
+ *                    → RosterSize → MatchFormat → HandicapSystem → Review
+ *
+ * Custom path steps use showIf: they only appear when formData['league-format']
+ * === 'custom'. The shell handles this automatically — no routing needed.
+ *
+ * schemaVersion: bump this number if you change the form data shape or step
+ * IDs in a way that would break saved localStorage data. It forces a fresh
+ * start for users mid-wizard.
+ *
+ * getSummaryItems: maps form data to the live preview box that shows the
+ * league name building in real time as the user answers questions.
  */
 
 import type { WizardConfig } from '@/components/wizard';

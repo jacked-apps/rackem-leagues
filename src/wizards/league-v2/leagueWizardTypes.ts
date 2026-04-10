@@ -1,11 +1,16 @@
 /**
  * @fileoverview LeagueWizardFormData — shared type for the league creation wizard
  *
- * Holds the answers captured across all wizard steps. During the wizard,
- * these live in React state. After Finish, they're written to the database
- * (Phase 9: Dual-Write Mutation).
+ * Holds the answers captured across all wizard steps. Keys match the step
+ * IDs in leagueWizardConfig.ts (e.g., 'game-type' matches the GameTypeStep).
  *
- * Fields are added as steps are built. For now only GameType exists.
+ * During the wizard, this lives in React state + localStorage scratch.
+ * After Finish, it gets written to the database via the dual-write mutation
+ * (writes to both existing leagues columns AND new modular preferences columns).
+ *
+ * Custom path fields (lineup-size, roster-size, etc.) are only populated
+ * when the user picks "Custom" format. For presets, these stay undefined
+ * and the mutation maps the preset to the correct values.
  */
 
 import type { GameType } from '@/types/league';
