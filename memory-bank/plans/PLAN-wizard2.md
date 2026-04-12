@@ -752,7 +752,14 @@ These are NOT part of wizard-v2 — they're follow-up work in separate branches:
 
 1. **Swap branch:** Switch the production "Create League" button from old wizard to new wizard. Remove old wizard files.
 2. **`modular-handicap-config` resumes** with `TeamFormatStep` rebuilt against the new framework (much cleaner integration than what was originally planned).
-3. **Future:** Migrate Season Creation Wizard to the new framework (separate branch, separate effort).
+3. **Future:** Migrate Season Creation Wizard to the new framework (separate branch). Steps planned:
+   - Start date (Calendar)
+   - Season length (NumberStepper, 10-52 weeks — replaces the current radio choice)
+   - Playoff weeks (NumberStepper, 0-4 — this is where playoffs belong, right after season length)
+   - BCA Championship dates
+   - APA Championship dates
+   - Review
+   Note: Blackout/holiday weeks are handled by the Schedule Manager, not the season wizard.
 4. **Future:** Build Schedule Creation Wizard on the new framework when its time comes.
 5. **Future:** AI assistant integration (only if product validates and AI is greenlit).
 

@@ -1,48 +1,36 @@
 /**
  * @fileoverview League Creation Wizard v2 — Dev Page
  *
- * Entry point for the new modular league creation wizard.
+ * Renders the WizardFlowShell with the "Create New League" 5-stage flow.
+ * Provides a stageHandler for the league stage that does the dual-write
+ * (creates league row + upserts preferences row).
  *
- * ACCESS: Dev-only via `/create-league-v2/:orgId`. Wrapped in DevOnly
- * so it's invisible in production builds. The "Create League (v2)"
- * button on the operator dashboard (ActiveLeagues.tsx) links here.
- *
- * On "Finish": creates a league row + upserts a preferences row with
- * the modular fields (dual-write pattern). Then shows a success screen
- * with options to continue setup or go to the dashboard.
- *
+ * ACCESS: Dev-only via `/create-league-v2/:orgId`.
  * See memory-bank/plans/PLAN-wizard2.md
  */
 
-import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { DevOnly } from '@/dev/DevOnly';
 import { PageHeader } from '@/components/PageHeader';
-import { WizardShell } from '@/components/wizard';
-import { leagueWizardConfig } from './leagueWizardConfig';
+import { WizardFlowShell } from '@/components/wizard';
+import type { StageHandlers } from '@/components/wizard/WizardFlowShell';
+import { createNewLeagueFlow } from '@/flows/createNewLeagueFlow';
 import { useCreateLeagueV2 } from './useCreateLeagueV2';
-import { LeagueCreatedScreen } from './LeagueCreatedScreen';
 import type { LeagueWizardFormData } from './leagueWizardTypes';
 
 function LeagueWizardV2PageContent() {
   const { orgId } = useParams<{ orgId: string }>();
   const navigate = useNavigate();
-  const [createdLeagueId, setCreatedLeagueId] = useState<string | null>(null);
   const createLeague = useCreateLeagueV2({ organizationId: orgId ?? '' });
 
-  const handleComplete = async (formData: LeagueWizardFormData) => {
-    try {
-      const league = await createLeague.mutateAsync(formData);
-      setCreatedLeagueId(league.id);
-      toast.success('League created successfully');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to create league');
-    }
-  };
-
-  const handleCancel = () => {
-    navigate(`/operator-dashboard/${orgId}`);
+  /** Stage handlers — run when each stage completes (e.g., DB writes) */
+  const stageHandlers: StageHandlers = {
+    league: async (formData) => {
+      const league = await createLeague.mutateAsync(formData as LeagueWizardFormData);
+      toast.success('League created');
+      return { leagueId: league.id };
+    },
   };
 
   return (
@@ -55,16 +43,12 @@ function LeagueWizardV2PageContent() {
       />
 
       <div className="container mx-auto px-4 max-w-4xl py-8">
-        {createdLeagueId ? (
-          <LeagueCreatedScreen leagueId={createdLeagueId} orgId={orgId ?? ''} />
-        ) : (
-          <WizardShell
-            wizard={leagueWizardConfig}
-            persistKey="wizard-v2:standalone:league-creation-v2:formData"
-            onComplete={handleComplete}
-            onCancel={handleCancel}
-          />
-        )}
+        <WizardFlowShell
+          flow={createNewLeagueFlow}
+          stageHandlers={stageHandlers}
+          onComplete={() => navigate(`/operator-dashboard/${orgId}`)}
+          onCancel={() => navigate(`/operator-dashboard/${orgId}`)}
+        />
       </div>
     </>
   );

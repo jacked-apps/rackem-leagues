@@ -62,12 +62,15 @@ export type FlowStage =
       kind: 'wizard';
       id: string;
       title: string;
-      wizard: WizardConfig;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      wizard: WizardConfig<any>;
     }
   | {
       kind: 'placeholder';
       id: string;
       title: string;
+      /** Brief description shown to the user explaining what this stage does */
+      description?: string;
       /** Legacy route to navigate to when the user clicks "Continue" */
       legacyRoute: string;
       /** Optional function to check if this stage is complete (queries DB) */

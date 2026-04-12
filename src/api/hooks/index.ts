@@ -274,6 +274,9 @@ export {
   useDeletePreference,
 } from './usePreferenceMutations';
 
+// Wizard 2.0 detection
+export { useIsWizard2League } from './useIsWizard2League';
+
 // Invite hooks
 export { usePendingInvites } from './usePendingInvites';
 export { useInviteStatuses } from './useInviteStatuses';
