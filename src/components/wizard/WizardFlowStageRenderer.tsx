@@ -9,6 +9,7 @@
  * Placeholders link to existing pages until each wizard gets rebuilt.
  */
 
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import type { FlowStage, FlowContext } from './flowTypes';
@@ -28,11 +29,15 @@ export function WizardFlowStageRenderer({
   onCancel,
 }: WizardFlowStageRendererProps) {
   if (stage.kind === 'wizard') {
+    // key={stage.id} forces React to unmount/remount when the stage changes,
+    // resetting all wizard state. Without this, React reuses the component
+    // and the previous wizard's state (like currentStepId) leaks through.
     return (
-      <WizardShell
-        wizard={stage.wizard}
-        persistKey={`wizard-v2:flow:${stage.id}:formData`}
-        onComplete={(formData) => onStageComplete(formData)}
+      <FlowWizardStage
+        key={stage.id}
+        stage={stage}
+        context={context}
+        onStageComplete={onStageComplete}
         onCancel={onCancel}
       />
     );
@@ -44,6 +49,49 @@ export function WizardFlowStageRenderer({
       stage={stage}
       context={context}
       onStageComplete={onStageComplete}
+      onCancel={onCancel}
+    />
+  );
+}
+
+/**
+ * Wizard stage wrapper — clears stale localStorage on mount so the
+ * wizard always starts fresh when entering a new flow stage.
+ */
+function FlowWizardStage({
+  stage,
+  context,
+  onStageComplete,
+  onCancel,
+}: {
+  stage: Extract<FlowStage, { kind: 'wizard' }>;
+  context: FlowContext;
+  onStageComplete: (formData?: unknown) => void;
+  onCancel?: () => void;
+}) {
+  const persistKey = `wizard-v2:flow:${stage.id}:formData`;
+
+  // Clear stale persistence synchronously on first render (before WizardShell reads it).
+  // Using useState initializer ensures this runs once, before any useEffect.
+  useState(() => {
+    try { window.localStorage.removeItem(persistKey); } catch { /* silent */ }
+  });
+
+  // Inject flow context into the wizard's initial form data so steps can read it.
+  // E.g., season wizard needs leagueId and league start date from the flow.
+  const wizardWithContext = {
+    ...stage.wizard,
+    initialFormData: {
+      ...stage.wizard.initialFormData,
+      _flowContext: context,
+    },
+  };
+
+  return (
+    <WizardShell
+      wizard={wizardWithContext}
+      persistKey={persistKey}
+      onComplete={(formData) => onStageComplete(formData)}
       onCancel={onCancel}
     />
   );

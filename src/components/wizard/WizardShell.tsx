@@ -26,8 +26,8 @@ export function WizardShell<TFormData>(props: WizardShellProps<TFormData>) {
   const {
     formData,
     currentStep,
-    currentIndex,
     totalSteps,
+    visibleStepIndex,
     isFirstStep,
     isLastStep,
     goBack,
@@ -54,7 +54,7 @@ export function WizardShell<TFormData>(props: WizardShellProps<TFormData>) {
 
   return (
     <div className="space-y-6">
-      <WizardProgress currentStep={currentIndex} totalSteps={totalSteps} />
+      <WizardProgress currentStep={visibleStepIndex} totalSteps={totalSteps} />
 
       <div>
         <h2 className="text-2xl font-semibold mb-1">{currentStep.title}</h2>
@@ -75,7 +75,7 @@ export function WizardShell<TFormData>(props: WizardShellProps<TFormData>) {
 
       {props.wizard.getSummaryItems && (
         <WizardSummary
-          title="League Preview"
+          title="Summary"
           items={props.wizard.getSummaryItems(formData)}
         />
       )}

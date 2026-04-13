@@ -75,13 +75,24 @@ export function useWizardState<TFormData>({
   const isFirstStep = findNextVisibleIndex(steps, formData, currentIndex, -1) === -1;
   const isLastStep = findNextVisibleIndex(steps, formData, currentIndex, 1) === -1;
 
+  // Only count steps that are currently visible (pass their showIf check)
+  const visibleStepCount = steps.filter(
+    (s) => !s.showIf || s.showIf(formData),
+  ).length;
+
+  // Current position among visible steps (for accurate progress bar)
+  const visibleStepIndex = steps
+    .filter((s) => !s.showIf || s.showIf(formData))
+    .findIndex((s) => s.id === currentStepId);
+
   return {
     formData,
     updateFormData,
     currentStep,
     currentStepId,
     currentIndex,
-    totalSteps: steps.length,
+    totalSteps: visibleStepCount,
+    visibleStepIndex,
     goNext,
     goBack,
     isFirstStep,

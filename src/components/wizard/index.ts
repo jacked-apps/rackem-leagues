@@ -52,6 +52,7 @@ export { WizardFlowShell } from './WizardFlowShell';
 export { CardSelector } from './CardSelector';
 export { SelectableCard, type SelectableCardOption } from './SelectableCard';
 export { NumberStepper } from './NumberStepper';
+export { DateStepper } from './DateStepper';
 export { WizardSummary, type WizardSummaryItem } from './WizardSummary';
 export { ReviewStep } from './ReviewStep';
 

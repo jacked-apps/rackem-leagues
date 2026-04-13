@@ -22,6 +22,7 @@ import { PlayoffsCard } from '@/components/operator/PlayoffsCard';
 import { Button } from '@/components/ui/button';
 import { DashboardCard } from '@/components/operator/DashboardCard';
 import { Settings } from 'lucide-react';
+import { useIsWizard2League } from '@/api/hooks';
 
 /**
  * League Detail Component
@@ -183,28 +184,13 @@ export const LeagueDetail: React.FC = () => {
           <LeagueStatusCard league={league} variant="section" />
 
           {/* Action Button - 1 column */}
-          <div className="lg:bg-white lg:rounded-xl lg:shadow-sm p-6 flex flex-col items-center justify-center">
-            <div className="text-6xl mb-4">🚀</div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2 text-center">Ready to Begin?</h3>
-            <p className="text-sm text-gray-600 mb-6 text-center">
-              {seasonCount === 0
-                ? 'Create your first season to get started'
-                : 'Manage venues and teams for your league'
-              }
-            </p>
-            <Button
-              loadingText="Loading..."
-              isLoading={isNavigating}
-              onClick={() => {
-                setIsNavigating(true);
-                navigate(seasonCount === 0 ? `/league/${league.id}/create-season` : `/league/${league.id}/manage-teams`);
-              }}
-              disabled={isNavigating}
-              size="lg"
-            >
-              Let's Go!
-            </Button>
-          </div>
+          <ActionCard
+            league={league}
+            seasonCount={seasonCount}
+            isNavigating={isNavigating}
+            setIsNavigating={setIsNavigating}
+            navigate={navigate}
+          />
         </div>
 
         {/* Stats & Standings (only shown if active season exists) */}
@@ -237,5 +223,67 @@ export const LeagueDetail: React.FC = () => {
     </div>
   );
 };
+
+/**
+ * Action card — shows different buttons for v1 vs v2 leagues.
+ * V2 leagues get a "Continue Setup" button that resumes the wizard flow.
+ */
+function ActionCard({
+  league,
+  seasonCount,
+  isNavigating,
+  setIsNavigating,
+  navigate,
+}: {
+  league: League;
+  seasonCount: number;
+  isNavigating: boolean;
+  setIsNavigating: (v: boolean) => void;
+  navigate: ReturnType<typeof useNavigate>;
+}) {
+  const isV2 = useIsWizard2League(league.id);
+
+  return (
+    <div className="lg:bg-white lg:rounded-xl lg:shadow-sm p-6 flex flex-col items-center justify-center">
+      <div className="text-6xl mb-4">🚀</div>
+      <h3 className="text-lg font-semibold text-gray-900 mb-2 text-center">Ready to Begin?</h3>
+      <p className="text-sm text-gray-600 mb-6 text-center">
+        {seasonCount === 0
+          ? 'Continue setting up your league'
+          : 'Manage venues and teams for your league'
+        }
+      </p>
+      <div className="flex flex-col gap-2">
+        {isV2 && seasonCount === 0 && (
+          <Button
+            loadingText="Loading..."
+            isLoading={isNavigating}
+            onClick={() => {
+              setIsNavigating(true);
+              navigate(`/create-league-v2/${league.organization_id}?leagueId=${league.id}`);
+            }}
+            disabled={isNavigating}
+            size="lg"
+          >
+            Continue Setup
+          </Button>
+        )}
+        <Button
+          loadingText="Loading..."
+          isLoading={isNavigating}
+          variant={isV2 && seasonCount === 0 ? 'outline' : undefined}
+          onClick={() => {
+            setIsNavigating(true);
+            navigate(seasonCount === 0 ? `/league/${league.id}/create-season` : `/league/${league.id}/manage-teams`);
+          }}
+          disabled={isNavigating}
+          size="lg"
+        >
+          {seasonCount === 0 ? (isV2 ? 'Use Original Wizard' : "Let's Go!") : "Let's Go!"}
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 export default LeagueDetail;

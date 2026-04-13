@@ -30,6 +30,8 @@ interface WizardFlowShellProps {
   stageHandlers?: StageHandlers;
   /** Optional initial context (e.g., resuming an in-progress flow) */
   initialContext?: FlowContext;
+  /** Skip to this stage index (from DB detection). Marks earlier stages as complete. */
+  startAtStage?: number;
   /** Called when all stages are complete */
   onComplete?: (context: FlowContext) => void;
   /** Called when the user cancels the flow */
@@ -40,12 +42,15 @@ export function WizardFlowShell({
   flow,
   stageHandlers,
   initialContext,
+  startAtStage,
   onComplete,
   onCancel,
 }: WizardFlowShellProps) {
   const state = useWizardFlowState({
+    persistKey: `wizard-v2:flow:${flow.id}:state`,
     stages: flow.stages,
     initialContext,
+    startAtStage,
   });
 
   const handleStageComplete = async (formData?: unknown) => {
@@ -60,10 +65,17 @@ export function WizardFlowShell({
 
     state.completeStage(state.currentStage.id, contextUpdates);
 
-    // If that was the last stage, notify parent
+    // If that was the last stage, clear persistence and notify parent
     if (state.isLastStage && onComplete) {
+      state.clearFlow();
       onComplete({ ...state.context, ...contextUpdates });
     }
+  };
+
+  const handleCancel = () => {
+    // Don't clear flow state on cancel — user can resume later
+    // The flow persists so they pick up where they left off
+    onCancel?.();
   };
 
   if (!state.currentStage) {
@@ -81,7 +93,7 @@ export function WizardFlowShell({
         stage={state.currentStage}
         context={state.context}
         onStageComplete={handleStageComplete}
-        onCancel={onCancel}
+        onCancel={handleCancel}
       />
     </div>
   );

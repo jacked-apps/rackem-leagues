@@ -57,7 +57,7 @@ export function NumberStepper({
   return (
     <div className="space-y-2">
       {(label || labelInfoButton) && (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center justify-center gap-1">
           {label && <p className="font-medium text-gray-900">{label}</p>}
           {labelInfoButton && (
             <InfoButton title={labelInfoButton.title} size="sm">
@@ -67,7 +67,7 @@ export function NumberStepper({
         </div>
       )}
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center justify-center gap-3">
         <Button
           variant="outline"
           onClick={decrement}

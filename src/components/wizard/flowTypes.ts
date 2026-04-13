@@ -85,6 +85,9 @@ export interface FlowContext {
   /** ID of the league this flow is creating/managing (set after Stage 1) */
   leagueId?: string;
 
+  /** The league's start date (set after Stage 1, used by Season wizard) */
+  leagueStartDate?: string;
+
   /** ID of the season this flow is creating/managing (set after Stage 2) */
   seasonId?: string;
 }

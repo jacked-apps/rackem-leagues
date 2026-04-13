@@ -2,14 +2,16 @@
  * @fileoverview League Creation Wizard v2 — Dev Page
  *
  * Renders the WizardFlowShell with the "Create New League" 5-stage flow.
- * Provides a stageHandler for the league stage that does the dual-write
- * (creates league row + upserts preferences row).
  *
- * ACCESS: Dev-only via `/create-league-v2/:orgId`.
- * See memory-bank/plans/PLAN-wizard2.md
+ * RESUME LOGIC: On mount, checks the URL for a leagueId param. If found,
+ * queries the DB to determine which stages are already complete and skips
+ * ahead. After the league is created (Stage 1), the URL is updated with
+ * the leagueId so refreshes/cancels always resume correctly.
+ *
+ * ACCESS: Dev-only via `/create-league-v2/:orgId`
  */
 
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { DevOnly } from '@/dev/DevOnly';
 import { PageHeader } from '@/components/PageHeader';
@@ -17,21 +19,38 @@ import { WizardFlowShell } from '@/components/wizard';
 import type { StageHandlers } from '@/components/wizard/WizardFlowShell';
 import { createNewLeagueFlow } from '@/flows/createNewLeagueFlow';
 import { useCreateLeagueV2 } from './useCreateLeagueV2';
+import { useFlowStageDetection } from './useFlowStageDetection';
 import type { LeagueWizardFormData } from './leagueWizardTypes';
 
 function LeagueWizardV2PageContent() {
   const { orgId } = useParams<{ orgId: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const createLeague = useCreateLeagueV2({ organizationId: orgId ?? '' });
 
-  /** Stage handlers — run when each stage completes (e.g., DB writes) */
+  // Check URL for leagueId (set after Stage 1 completes)
+  const leagueId = searchParams.get('leagueId');
+
+  // Query DB to determine which stages are already done
+  const { isLoading, firstIncompleteStage, context } = useFlowStageDetection(leagueId);
+
   const stageHandlers: StageHandlers = {
     league: async (formData) => {
-      const league = await createLeague.mutateAsync(formData as LeagueWizardFormData);
+      const fd = formData as LeagueWizardFormData;
+      const league = await createLeague.mutateAsync(fd);
       toast.success('League created');
-      return { leagueId: league.id };
+      setSearchParams({ leagueId: league.id }, { replace: true });
+      return { leagueId: league.id, leagueStartDate: fd['start-date'] };
     },
   };
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 max-w-4xl py-8 text-center text-gray-500">
+        Loading...
+      </div>
+    );
+  }
 
   return (
     <>
@@ -46,6 +65,8 @@ function LeagueWizardV2PageContent() {
         <WizardFlowShell
           flow={createNewLeagueFlow}
           stageHandlers={stageHandlers}
+          initialContext={context}
+          startAtStage={firstIncompleteStage}
           onComplete={() => navigate(`/operator-dashboard/${orgId}`)}
           onCancel={() => navigate(`/operator-dashboard/${orgId}`)}
         />

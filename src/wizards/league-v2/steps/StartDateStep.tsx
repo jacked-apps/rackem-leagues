@@ -12,7 +12,7 @@
 
 import { Calendar } from '@/components/ui/calendar';
 import { InfoButton } from '@/components/InfoButton';
-import { formatLocalDate } from '@/utils/formatters';
+import { formatLocalDate, getDayOfWeekName } from '@/utils/formatters';
 import type { WizardStepProps } from '@/components/wizard';
 import type { LeagueWizardFormData } from '../leagueWizardTypes';
 
@@ -44,16 +44,9 @@ export function StartDateStep({
 
       {value && (
         <p className="text-sm text-gray-600">
-          Matches will play every <strong>{getDayName(value)}</strong>
+          Matches will play every <strong>{getDayOfWeekName(value)}</strong>
         </p>
       )}
     </div>
   );
-}
-
-/** Get the day name from an ISO date string using local timezone */
-function getDayName(isoDate: string): string {
-  const [year, month, day] = isoDate.split('-').map(Number);
-  const date = new Date(year, month - 1, day);
-  return date.toLocaleDateString('en-US', { weekday: 'long' });
 }

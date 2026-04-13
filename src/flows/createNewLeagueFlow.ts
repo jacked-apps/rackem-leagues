@@ -15,6 +15,7 @@
 
 import type { WizardFlowConfig } from '@/components/wizard';
 import { leagueWizardConfig } from '@/wizards/league-v2/leagueWizardConfig';
+import { seasonWizardConfig } from '@/wizards/season-v2/seasonWizardConfig';
 
 export const createNewLeagueFlow: WizardFlowConfig = {
   id: 'create-new-league',
@@ -27,11 +28,10 @@ export const createNewLeagueFlow: WizardFlowConfig = {
       wizard: leagueWizardConfig,
     },
     {
-      kind: 'placeholder',
+      kind: 'wizard',
       id: 'season',
       title: 'Season',
-      description: 'Your league has been created. The next step is to create your first season — set the length, playoff weeks, and tournament dates.',
-      legacyRoute: '/league/:leagueId/create-season',
+      wizard: seasonWizardConfig,
     },
     {
       kind: 'placeholder',
