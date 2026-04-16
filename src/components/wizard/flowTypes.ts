@@ -69,8 +69,8 @@ export type FlowStage =
       kind: 'placeholder';
       id: string;
       title: string;
-      /** Brief description shown to the user explaining what this stage does */
-      description?: string;
+      /** Brief description — static string or function that receives flow context */
+      description?: string | ((context: FlowContext) => string);
       /** Legacy route to navigate to when the user clicks "Continue" */
       legacyRoute: string;
       /** Optional function to check if this stage is complete (queries DB) */
@@ -88,8 +88,32 @@ export interface FlowContext {
   /** The league's start date (set after Stage 1, used by Season wizard) */
   leagueStartDate?: string;
 
+  /** Auto-generated league name (e.g., "8 Ball Monday Fall 2026") */
+  leagueName?: string;
+
+  /** Game type selected (e.g., "eight_ball") */
+  gameType?: string;
+
+  /** League format selected (e.g., "standard_3v3", "fargo_5v5") */
+  leagueFormat?: string;
+
+  /** League day of week (e.g., "monday") */
+  dayOfWeek?: string;
+
+  /** League division/qualifier */
+  division?: string;
+
   /** ID of the season this flow is creating/managing (set after Stage 2) */
   seasonId?: string;
+
+  /** Generated season name (e.g., "8 Ball Thursday Blue League Fall 2026") */
+  seasonName?: string;
+
+  /** Number of regular season weeks (from Season wizard) */
+  seasonLength?: number;
+
+  /** Number of playoff weeks (from Season wizard playoff preset) */
+  playoffWeeks?: number;
 }
 
 /**

@@ -10,6 +10,11 @@ import type { SelectableCardOption } from '@/components/wizard';
 
 export const PLAYOFF_OPTIONS: SelectableCardOption<string>[] = [
   {
+    value: 'none',
+    title: 'No Playoffs',
+    description: 'Regular season only — no playoff weeks',
+  },
+  {
     value: '1week_all',
     title: '1 Week — All Teams',
     description: 'Single playoff night, every team competes',

@@ -236,3 +236,36 @@ const mutation = useMutation({
 ## Future Items
 
 (Add more items here as needed)
+
+---
+
+## 3. Automated Championship Date Reminders
+
+**Branch needed:** `championship-date-reminders`
+**Discovered:** 2026-04-16
+
+**Problem:** BCA and APA national championship dates need to be entered into
+the `championship_date_options` table each year. Easy to forget, and missing
+dates means the schedule wizard can't flag conflicts for those weeks.
+
+**Solution:** Supabase Edge Function on a cron schedule that checks if
+upcoming year's dates are missing and sends reminder emails to devs.
+
+**Reuse existing infrastructure:**
+- Resend is already set up (see `supabase/functions/send-invite/index.ts`)
+- `RESEND_API_KEY` env var already configured
+- Email send pattern can be copied directly
+
+**Implementation:**
+1. Create `supabase/functions/check-championship-dates/index.ts`
+2. Function queries `championship_date_options` for upcoming year
+3. If missing → call Resend API to send reminder
+4. Schedule via Supabase cron (monthly Sept-Nov for BCA, Jan-Apr for APA)
+
+**Recipients:** Either env var (`DEV_NOTIFICATION_EMAILS`) or new
+`dev_notification_recipients` table.
+
+**Effort:** ~50 lines of code. Hardest part is configuring the cron in Supabase.
+
+**Reference:** See `memory-bank/plans/TODO-championship-date-reminders.md`
+for full details.

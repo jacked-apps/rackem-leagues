@@ -22,7 +22,7 @@ import { PlayoffsCard } from '@/components/operator/PlayoffsCard';
 import { Button } from '@/components/ui/button';
 import { DashboardCard } from '@/components/operator/DashboardCard';
 import { Settings } from 'lucide-react';
-import { useIsWizard2League } from '@/api/hooks';
+import { useIsWizard2League, useFlowStageDetection } from '@/api/hooks';
 
 /**
  * League Detail Component
@@ -242,19 +242,29 @@ function ActionCard({
   navigate: ReturnType<typeof useNavigate>;
 }) {
   const isV2 = useIsWizard2League(league.id);
+  const { firstIncompleteStage } = useFlowStageDetection(league.id);
+  const flowComplete = firstIncompleteStage >= 5;
+  const showContinueSetup = isV2 && !flowComplete;
+
+  const STAGE_LABELS = ['League', 'Season', 'Schedule', 'Teams', 'Matchups'];
+  const nextStageName = STAGE_LABELS[firstIncompleteStage] ?? 'Setup';
 
   return (
     <div className="lg:bg-white lg:rounded-xl lg:shadow-sm p-6 flex flex-col items-center justify-center">
       <div className="text-6xl mb-4">🚀</div>
-      <h3 className="text-lg font-semibold text-gray-900 mb-2 text-center">Ready to Begin?</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-2 text-center">
+        {showContinueSetup ? 'Setup In Progress' : 'Ready to Begin?'}
+      </h3>
       <p className="text-sm text-gray-600 mb-6 text-center">
-        {seasonCount === 0
-          ? 'Continue setting up your league'
-          : 'Manage venues and teams for your league'
+        {showContinueSetup
+          ? `Next step: ${nextStageName} (Stage ${firstIncompleteStage + 1} of 5)`
+          : seasonCount === 0
+            ? 'Create your first season to get started'
+            : 'Manage venues and teams for your league'
         }
       </p>
       <div className="flex flex-col gap-2">
-        {isV2 && seasonCount === 0 && (
+        {showContinueSetup && (
           <Button
             loadingText="Loading..."
             isLoading={isNavigating}
@@ -271,7 +281,7 @@ function ActionCard({
         <Button
           loadingText="Loading..."
           isLoading={isNavigating}
-          variant={isV2 && seasonCount === 0 ? 'outline' : undefined}
+          variant={showContinueSetup ? 'outline' : undefined}
           onClick={() => {
             setIsNavigating(true);
             navigate(seasonCount === 0 ? `/league/${league.id}/create-season` : `/league/${league.id}/manage-teams`);
@@ -279,7 +289,7 @@ function ActionCard({
           disabled={isNavigating}
           size="lg"
         >
-          {seasonCount === 0 ? (isV2 ? 'Use Original Wizard' : "Let's Go!") : "Let's Go!"}
+          {showContinueSetup ? 'Use Original Wizard' : "Let's Go!"}
         </Button>
       </div>
     </div>

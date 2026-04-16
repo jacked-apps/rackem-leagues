@@ -156,6 +156,47 @@ function leagueDayToNumber(day: string): number {
 }
 
 /**
+ * Filter holidays by type. When showAll is false, only returns 'public'
+ * holidays (federal holidays). When true, returns everything including
+ * observances like Easter, Halloween, Mother's Day, etc.
+ *
+ * Call this BEFORE passing holidays to ScheduleReview or conflict detection
+ * so the filtering happens upstream and doesn't touch existing components.
+ */
+export function filterHolidaysByType(
+  holidays: Holiday[],
+  showAll: boolean,
+): Holiday[] {
+  const filtered = showAll
+    ? holidays
+    : holidays.filter((h) => h.type === 'public' || h.type === 'optional');
+
+  return deduplicateHolidays(filtered);
+}
+
+/**
+ * Remove duplicate entries for the same holiday event.
+ * The date-holidays package returns both the actual date and the
+ * observed/substitute date as separate entries (e.g., "Independence Day"
+ * AND "Independence Day (substitute day)"). We keep the actual holiday.
+ */
+function deduplicateHolidays(holidays: Holiday[]): Holiday[] {
+  const byBaseName = new Map<string, Holiday>();
+
+  for (const h of holidays) {
+    // "Independence Day (substitute day)" → "Independence Day"
+    const baseName = h.name.replace(/\s*\(.*\)$/, '').trim();
+    const existing = byBaseName.get(baseName);
+    // Keep shorter name = actual holiday, not the substitute
+    if (!existing || h.name.length < existing.name.length) {
+      byBaseName.set(baseName, h);
+    }
+  }
+
+  return Array.from(byBaseName.values());
+}
+
+/**
  * Get formatted date string for display
  */
 export function formatHolidayDate(date: string | Date): string {

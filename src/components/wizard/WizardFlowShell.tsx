@@ -84,10 +84,15 @@ export function WizardFlowShell({
 
   return (
     <div className="space-y-6">
-      {/* Stage context — subtle label, no progress bar (the inner wizard has its own) */}
-      <p className="text-xs text-center text-gray-400">
-        Stage {state.currentStageIndex + 1} of {state.totalStages}: {state.currentStage.title}
-      </p>
+      {/* Stage context + league name if available */}
+      <div className="text-center">
+        {state.context.leagueName && (
+          <p className="text-sm font-semibold text-gray-700">{state.context.leagueName}</p>
+        )}
+        <p className="text-xs text-gray-400">
+          Stage {state.currentStageIndex + 1} of {state.totalStages}: {state.currentStage.title}
+        </p>
+      </div>
 
       <WizardFlowStageRenderer
         stage={state.currentStage}

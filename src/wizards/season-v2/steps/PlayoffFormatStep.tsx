@@ -52,7 +52,7 @@ export function PlayoffFormatStep({
         onChange={handleFormatChange}
       />
 
-      {current.format && current.format !== 'custom' && (
+      {current.format && current.format !== 'custom' && current.format !== 'none' && (
         <div className="flex items-center gap-3 pl-1">
           <Checkbox
             id="wildcard"

@@ -20,6 +20,7 @@ import { PlayoffFormatStep } from './steps/PlayoffFormatStep';
 import type { SeasonWizardFormData } from './seasonWizardTypes';
 
 const PLAYOFF_FORMAT_LABELS: Record<string, string> = {
+  'none': 'No Playoffs',
   '1week_all': '1 Week — All Teams',
   '1week_top4': '1 Week — Top 4',
   '2week_top4': '2 Weeks — Top 4',
@@ -44,25 +45,24 @@ export const seasonWizardConfig: WizardConfig<SeasonWizardFormData> = {
   schemaVersion: 1,
   initialFormData: {},
   getSummaryItems: (formData) => {
-    // First season: start date comes from the intro context (league start date)
-    // Next season: start date comes from the date picker step
-    const intro = formData['intro'] as { leagueStartDate?: string; hasExistingSeasons?: boolean } | undefined;
-    const startDate = formData['season-start-date'] ?? intro?.leagueStartDate;
+    // Flow context injected by WizardFlowStageRenderer
+    const ctx = (formData as Record<string, unknown>)._flowContext as
+      { leagueName?: string; gameType?: string; leagueFormat?: string; leagueStartDate?: string } | undefined;
+
+    // Start date: first season from flow context, next season from date picker
+    const intro = formData['intro'] as { leagueStartDate?: string } | undefined;
+    const startDate = formData['season-start-date'] ?? intro?.leagueStartDate ?? ctx?.leagueStartDate;
 
     return [
-    {
-      label: 'Start Date',
-      value: startDate ?? undefined,
-    },
-    {
-      label: 'Regular Season',
-      value: formData['season-length'] ? `${formData['season-length']} weeks` : undefined,
-    },
-    {
-      label: 'Playoffs',
-      value: formatPlayoffFormat(formData['playoff-format']),
-    },
-  ];
+      // League info carried forward from Stage 1
+      { label: 'League', value: ctx?.leagueName ?? undefined },
+      { label: 'Start Date', value: startDate ?? undefined },
+      {
+        label: 'Regular Season',
+        value: formData['season-length'] ? `${formData['season-length']} weeks` : undefined,
+      },
+      { label: 'Playoffs', value: formatPlayoffFormat(formData['playoff-format']) },
+    ];
   },
   steps: [
     {

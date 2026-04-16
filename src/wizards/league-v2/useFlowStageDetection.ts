@@ -22,6 +22,11 @@ interface StageDetectionResult {
   context: {
     leagueId?: string;
     leagueStartDate?: string;
+    leagueName?: string;
+    gameType?: string;
+    leagueFormat?: string;
+    dayOfWeek?: string;
+    division?: string;
     seasonId?: string;
   };
 }
@@ -36,10 +41,10 @@ export function useFlowStageDetection(leagueId: string | null): StageDetectionRe
     queryFn: async () => {
       if (!leagueId) return { leagueStartDate: null, seasonId: null };
 
-      // Fetch the league's start date (needed by the Season wizard)
+      // Fetch league details (needed by Season wizard + summary display)
       const { data: league } = await supabase
         .from('leagues')
-        .select('league_start_date')
+        .select('league_start_date, game_type, team_format, division, day_of_week')
         .eq('id', leagueId)
         .single();
 
@@ -52,8 +57,23 @@ export function useFlowStageDetection(leagueId: string | null): StageDetectionRe
         .limit(1)
         .maybeSingle();
 
+      // Build the league name from its fields
+      const gameTypeMap: Record<string, string> = {
+        eight_ball: '8 Ball', nine_ball: '9 Ball', ten_ball: '10 Ball',
+      };
+      const gameType = league?.game_type ?? '';
+      const dayOfWeek = league?.day_of_week ?? '';
+      const dayCapitalized = dayOfWeek.charAt(0).toUpperCase() + dayOfWeek.slice(1);
+      const nameParts = [gameTypeMap[gameType] ?? gameType, dayCapitalized, league?.division].filter(Boolean);
+      const leagueName = nameParts.join(' ');
+
       return {
         leagueStartDate: league?.league_start_date ?? null,
+        leagueName: leagueName || null,
+        gameType: gameType || null,
+        leagueFormat: league?.team_format ?? null,
+        dayOfWeek: dayOfWeek || null,
+        division: league?.division ?? null,
         seasonId: season?.id ?? null,
       };
     },
@@ -73,12 +93,19 @@ export function useFlowStageDetection(leagueId: string | null): StageDetectionRe
 
   const leagueStartDate = data?.leagueStartDate ?? undefined;
 
+  const leagueName = data?.leagueName ?? undefined;
+  const gameType = data?.gameType ?? undefined;
+  const leagueFormat = data?.leagueFormat ?? undefined;
+
+  const dayOfWeek = data?.dayOfWeek ?? undefined;
+  const division = data?.division ?? undefined;
+
   // Check season
   if (!data?.seasonId) {
     return {
       isLoading: false,
       firstIncompleteStage: 1,
-      context: { leagueId, leagueStartDate },
+      context: { leagueId, leagueStartDate, leagueName, gameType, leagueFormat, dayOfWeek, division },
     };
   }
 
@@ -86,6 +113,6 @@ export function useFlowStageDetection(leagueId: string | null): StageDetectionRe
   return {
     isLoading: false,
     firstIncompleteStage: 2,
-    context: { leagueId, leagueStartDate, seasonId: data.seasonId },
+    context: { leagueId, leagueStartDate, leagueName, gameType, leagueFormat, dayOfWeek, division, seasonId: data.seasonId },
   };
 }

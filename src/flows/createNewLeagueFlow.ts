@@ -16,6 +16,7 @@
 import type { WizardFlowConfig } from '@/components/wizard';
 import { leagueWizardConfig } from '@/wizards/league-v2/leagueWizardConfig';
 import { seasonWizardConfig } from '@/wizards/season-v2/seasonWizardConfig';
+import { scheduleWizardConfig } from '@/wizards/schedule-v2/scheduleWizardConfig';
 
 export const createNewLeagueFlow: WizardFlowConfig = {
   id: 'create-new-league',
@@ -34,11 +35,10 @@ export const createNewLeagueFlow: WizardFlowConfig = {
       wizard: seasonWizardConfig,
     },
     {
-      kind: 'placeholder',
+      kind: 'wizard',
       id: 'schedule',
       title: 'Schedule',
-      description: 'Your season is set. Now generate the weekly schedule — set blackout dates, holidays, and review the calendar.',
-      legacyRoute: '/league/:leagueId/season/:seasonId/manage-schedule',
+      wizard: scheduleWizardConfig,
     },
     {
       kind: 'placeholder',

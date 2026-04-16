@@ -33,7 +33,8 @@ export const ScheduleReview: React.FC<ScheduleReviewProps> = ({
   holidays,
   bcaChampionship,
   apaChampionship,
-  currentPlayWeek = 0, // TODO: In future, fetch from database (e.g., SELECT MAX(week_number) FROM match_results WHERE season_id = ?)
+  currentPlayWeek = 0,
+  playoffWeeks = 1,
   onScheduleChange,
   onConfirm,
   onBack,
@@ -119,7 +120,8 @@ export const ScheduleReview: React.FC<ScheduleReviewProps> = ({
       leagueDayOfWeek,
       originalSeasonLength,
       blackoutWeeks,
-      addSeasonEndBreak
+      addSeasonEndBreak,
+      playoffWeeks
     );
 
     // Detect conflicts using shared utility

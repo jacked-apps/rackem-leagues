@@ -28,6 +28,8 @@ export interface ScheduleReviewProps {
    * For new seasons, pass 0 to allow all weeks to be edited
    */
   currentPlayWeek?: number;
+  /** Number of playoff weeks to generate (0-4, default 1) */
+  playoffWeeks?: number;
   /** Callback when schedule is modified */
   onScheduleChange: (updatedSchedule: WeekEntry[]) => void;
   /** Callback when user confirms final schedule - destination can be 'dashboard' or 'teams' */

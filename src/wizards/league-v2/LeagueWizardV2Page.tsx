@@ -2,47 +2,32 @@
  * @fileoverview League Creation Wizard v2 — Dev Page
  *
  * Renders the WizardFlowShell with the "Create New League" 5-stage flow.
- *
- * RESUME LOGIC: On mount, checks the URL for a leagueId param. If found,
- * queries the DB to determine which stages are already complete and skips
- * ahead. After the league is created (Stage 1), the URL is updated with
- * the leagueId so refreshes/cancels always resume correctly.
+ * On mount, checks DB for existing progress and resumes at the right stage.
  *
  * ACCESS: Dev-only via `/create-league-v2/:orgId`
  */
 
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { toast } from 'sonner';
 import { DevOnly } from '@/dev/DevOnly';
 import { PageHeader } from '@/components/PageHeader';
 import { WizardFlowShell } from '@/components/wizard';
-import type { StageHandlers } from '@/components/wizard/WizardFlowShell';
 import { createNewLeagueFlow } from '@/flows/createNewLeagueFlow';
-import { useCreateLeagueV2 } from './useCreateLeagueV2';
 import { useFlowStageDetection } from './useFlowStageDetection';
-import type { LeagueWizardFormData } from './leagueWizardTypes';
+import { useFlowStageHandlers } from './useFlowStageHandlers';
 
 function LeagueWizardV2PageContent() {
   const { orgId } = useParams<{ orgId: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const createLeague = useCreateLeagueV2({ organizationId: orgId ?? '' });
 
-  // Check URL for leagueId (set after Stage 1 completes)
   const leagueId = searchParams.get('leagueId');
-
-  // Query DB to determine which stages are already done
   const { isLoading, firstIncompleteStage, context } = useFlowStageDetection(leagueId);
 
-  const stageHandlers: StageHandlers = {
-    league: async (formData) => {
-      const fd = formData as LeagueWizardFormData;
-      const league = await createLeague.mutateAsync(fd);
-      toast.success('League created');
-      setSearchParams({ leagueId: league.id }, { replace: true });
-      return { leagueId: league.id, leagueStartDate: fd['start-date'] };
-    },
-  };
+  const stageHandlers = useFlowStageHandlers({
+    orgId: orgId ?? '',
+    context,
+    onLeagueCreated: (id) => setSearchParams({ leagueId: id }, { replace: true }),
+  });
 
   if (isLoading) {
     return (
