@@ -11,9 +11,11 @@ import { buildLeagueTitle } from '@/utils/leagueUtils';
 import { deriveDateFields } from './leagueWizardHelpers';
 import { useCreateLeagueV2 } from './useCreateLeagueV2';
 import { useCreateSeasonV2 } from '@/wizards/season-v2/useCreateSeasonV2';
+import { useSaveScheduleV2 } from '@/wizards/schedule-v2/useSaveScheduleV2';
 import type { StageHandlers } from '@/components/wizard/WizardFlowShell';
 import type { LeagueWizardFormData } from './leagueWizardTypes';
 import type { SeasonWizardFormData } from '@/wizards/season-v2/seasonWizardTypes';
+import type { ScheduleWizardFormData } from '@/wizards/schedule-v2/scheduleWizardTypes';
 import type { FlowContext } from '@/components/wizard';
 
 interface UseFlowStageHandlersArgs {
@@ -36,6 +38,7 @@ export function useFlowStageHandlers({
       division: context.division ?? null,
     },
   });
+  const saveSchedule = useSaveScheduleV2();
 
   return {
     league: async (formData) => {
@@ -66,7 +69,6 @@ export function useFlowStageHandlers({
       const season = await createSeason.mutateAsync(fd);
       toast.success('Season created');
 
-      // Pass season details to flow context for the Schedule wizard
       const playoffValue = fd['playoff-format'] as { format?: string } | undefined;
       const playoffMapping = playoffValue?.format
         ? (await import('@/wizards/season-v2/playoffPresetMappings')).PLAYOFF_PRESET_MAPPINGS[playoffValue.format]
@@ -78,6 +80,19 @@ export function useFlowStageHandlers({
         seasonLength: fd['season-length'] ?? 16,
         playoffWeeks: playoffMapping?.playoffWeeks ?? 1,
       };
+    },
+    schedule: async (formData) => {
+      const fd = formData as ScheduleWizardFormData;
+      const schedule = fd['schedule-review'];
+      if (!schedule || schedule.length === 0) {
+        throw new Error('No schedule to save');
+      }
+      if (!context.seasonId) {
+        throw new Error('Missing season ID — cannot save schedule');
+      }
+      await saveSchedule.mutateAsync({ seasonId: context.seasonId, schedule });
+      toast.success('Schedule saved');
+      return {};
     },
   };
 }

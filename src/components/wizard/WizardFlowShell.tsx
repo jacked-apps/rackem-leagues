@@ -1,23 +1,15 @@
 /**
  * @fileoverview WizardFlowShell — Layer 2 of the Wizard 2.0 framework
  *
- * Composes multiple wizards into a single user journey with a unified
- * progress bar. Each stage is either a real wizard (rendered inline via
- * WizardShell) or a placeholder (shows a "Continue" button linking to
- * an existing legacy page).
- *
- * Progress bar reflects ALL stages (e.g., 5 stages = 20% each).
+ * Composes multiple wizards into a single journey with unified progress.
  */
 
+import { toast } from 'sonner';
 import type { WizardFlowConfig, FlowContext } from './flowTypes';
 import { useWizardFlowState } from './useWizardFlowState';
 import { WizardFlowStageRenderer } from './WizardFlowStageRenderer';
 
-/**
- * Optional per-stage handlers. When a wizard stage completes, its handler
- * runs (e.g., to save to the database). Returns context updates that get
- * merged into the flow context for later stages.
- */
+/** Per-stage handlers that run when a stage completes (e.g., DB writes). */
 export type StageHandlers = Record<
   string,
   (formData: unknown) => Promise<Partial<FlowContext>>
@@ -56,11 +48,17 @@ export function WizardFlowShell({
   const handleStageComplete = async (formData?: unknown) => {
     if (!state.currentStage) return;
 
-    // Run the stage handler if one exists (e.g., DB write)
+    // Run stage handler (DB write). On failure: toast + stay on this stage.
     let contextUpdates: Partial<FlowContext> = {};
     const handler = stageHandlers?.[state.currentStage.id];
     if (handler && formData) {
-      contextUpdates = await handler(formData);
+      try {
+        contextUpdates = await handler(formData);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Something went wrong';
+        toast.error(message);
+        return; // Don't advance — user stays on this stage
+      }
     }
 
     state.completeStage(state.currentStage.id, contextUpdates);
@@ -72,11 +70,8 @@ export function WizardFlowShell({
     }
   };
 
-  const handleCancel = () => {
-    // Don't clear flow state on cancel — user can resume later
-    // The flow persists so they pick up where they left off
-    onCancel?.();
-  };
+  // Don't clear flow state on cancel — user can resume later
+  const handleCancel = () => onCancel?.();
 
   if (!state.currentStage) {
     return <div className="p-4 text-sm text-red-600">No stages configured.</div>;
