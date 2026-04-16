@@ -64,6 +64,14 @@ export const ScheduleSetup: React.FC<ScheduleSetupProps> = ({
     }));
 
     // Add BYE team if needed
+    // TODO: BYE Team Enhancement - Instead of creating a temporary BYE object with id: 'BYE'
+    // that gets converted to null in the database, we should create actual BYE team records.
+    // Benefits:
+    // - Cleaner data model (no null team IDs in matches)
+    // - Easier late-team additions (swap BYE team with new team)
+    // - Better schedule editor UX (BYE is a real team option)
+    // - Simpler queries (no special null handling)
+    // See: memory-bank/plans/bye-team-enhancement-plan.md
     if (needsByeTeam) {
       positions.push({
         id: 'BYE',
