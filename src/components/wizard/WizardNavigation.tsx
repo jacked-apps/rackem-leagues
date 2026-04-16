@@ -12,6 +12,8 @@ interface WizardNavigationProps {
   isLastStep: boolean;
   /** When true and step is optional, show "Skip" instead of "Next" */
   showSkip?: boolean;
+  /** When true, suppress the Back button even when not on the first step */
+  hideBack?: boolean;
   onBack: () => void;
   onNext: () => void;
   onCancel?: () => void;
@@ -21,11 +23,13 @@ export function WizardNavigation({
   isFirstStep,
   isLastStep,
   showSkip,
+  hideBack,
   onBack,
   onNext,
   onCancel,
 }: WizardNavigationProps) {
   const nextLabel = isLastStep ? 'Finish' : showSkip ? 'Skip' : 'Next';
+  const showBack = !isFirstStep && !hideBack;
   return (
     <div className="flex justify-between pt-4 border-t">
       <div className="flex gap-2">
@@ -34,7 +38,7 @@ export function WizardNavigation({
             Cancel
           </Button>
         )}
-        {!isFirstStep && (
+        {showBack && (
           <Button variant="outline" onClick={onBack}>
             Back
           </Button>

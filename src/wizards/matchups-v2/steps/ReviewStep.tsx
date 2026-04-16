@@ -1,0 +1,212 @@
+/**
+ * @fileoverview ReviewStep — generates (if needed) and displays the schedule
+ *
+ * On mount, if no matches exist for the season, calls generateSchedule with
+ * the positions from form data. Renders a week-by-week view with per-week
+ * Edit buttons that open Jack's WeekEditorView inline (swap teams, change
+ * venues, adjust tables). All saves happen incrementally via WeekEditorView's
+ * own mutation, so this step has no aggregate save action — Next simply
+ * completes the wizard.
+ */
+
+import { useEffect, useMemo, useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { Calendar, Pencil, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { parseLocalDate } from '@/utils/formatters';
+import { generateSchedule, clearSchedule } from '@/utils/scheduleGenerator';
+import { useSeasonSchedule, useTeamsBySeason, useLeagueVenuesWithDetails } from '@/api/hooks';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { WeekEditorView } from '@/components/schedule/WeekEditorView';
+import type { MatchEditState, TeamVenueMap } from '@/components/schedule/useWeekEditor';
+import type { TeamOption } from '@/components/schedule/TeamSelect';
+import type { VenueOption } from '@/components/schedule/VenueSelect';
+import type { MatchWithDetails } from '@/types';
+import type { WizardStepProps } from '@/components/wizard';
+import type { MatchupsWizardFormData } from '../matchupsWizardTypes';
+
+function toEditState(matches: MatchWithDetails[]): MatchEditState[] {
+  return matches.map((m) => ({
+    matchId: m.id,
+    homeTeamId: m.home_team_id,
+    awayTeamId: m.away_team_id,
+    venueId: m.scheduled_venue_id,
+    venueOverride: false,
+    tableNumber: m.assigned_table_number ?? null,
+    homeTeamName: m.home_team?.team_name ?? 'BYE',
+    awayTeamName: m.away_team?.team_name ?? 'BYE',
+    isEditable: m.status === 'scheduled',
+    matchNumber: m.match_number,
+  }));
+}
+
+export function ReviewStep({ formData, onBack }: WizardStepProps<unknown, MatchupsWizardFormData>) {
+  const ctx = (formData as Record<string, unknown>)._flowContext as
+    | { seasonId?: string; leagueId?: string }
+    | undefined;
+  const seasonId = ctx?.seasonId ?? '';
+  const leagueId = ctx?.leagueId ?? '';
+  const positions = formData.positions ?? [];
+
+  const queryClient = useQueryClient();
+  const { confirm, ConfirmDialogComponent } = useConfirmDialog();
+  const [editingWeekId, setEditingWeekId] = useState<string | null>(null);
+  const [genError, setGenError] = useState<string | null>(null);
+  const [clearing, setClearing] = useState(false);
+
+  const { data: schedule = [], isLoading: scheduleLoading } = useSeasonSchedule(seasonId);
+  const { data: teams = [] } = useTeamsBySeason(seasonId);
+  const { data: leagueVenues = [] } = useLeagueVenuesWithDetails(leagueId);
+
+  const generateMutation = useMutation({
+    mutationFn: async () => {
+      const result = await generateSchedule({ seasonId, teams: positions, skipExistingCheck: true });
+      if (!result.success) throw new Error(result.error ?? 'Schedule generation failed');
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['schedules'] });
+      queryClient.invalidateQueries({ queryKey: ['matches'] });
+    },
+  });
+
+  // Generate matches on mount if none exist for this season
+  useEffect(() => {
+    if (!seasonId || positions.length === 0 || scheduleLoading) return;
+    const hasMatches = schedule.some(({ matches }) => matches.length > 0);
+    if (hasMatches || generateMutation.isPending || generateMutation.isSuccess || genError) return;
+    generateMutation.mutate(undefined, {
+      onError: (err) => setGenError(err instanceof Error ? err.message : 'Generation failed'),
+    });
+  }, [seasonId, positions.length, schedule, scheduleLoading, generateMutation, genError]);
+
+  const teamOptions: TeamOption[] = useMemo(
+    () => teams.map((t) => ({ id: t.id, teamName: t.team_name })).sort((a, b) => a.teamName.localeCompare(b.teamName)),
+    [teams],
+  );
+  const venueOptions: VenueOption[] = useMemo(
+    () => leagueVenues.map((lv) => ({ id: lv.venue.id, name: lv.venue.name, city: lv.venue.city, state: lv.venue.state })),
+    [leagueVenues],
+  );
+  const teamHomeVenues: TeamVenueMap = useMemo(() => {
+    const map: TeamVenueMap = {};
+    for (const t of teams) map[t.id] = t.home_venue_id ?? null;
+    return map;
+  }, [teams]);
+  const hasByeTeam = useMemo(
+    () =>
+      schedule.some(
+        ({ week, matches }) =>
+          week.week_type === 'regular' && matches.some((m) => m.home_team_id === null || m.away_team_id === null),
+      ),
+    [schedule],
+  );
+
+  if (!seasonId || !leagueId) return <p className="text-red-600">Missing league/season ID from flow context.</p>;
+  if (generateMutation.isPending) return <p className="text-sm text-gray-600">Generating schedule...</p>;
+  if (genError) return <p className="text-red-600">Error generating schedule: {genError}</p>;
+  if (scheduleLoading) return <p className="text-sm text-gray-500">Loading schedule...</p>;
+
+  const regularWeeks = schedule.filter(({ week }) => week.week_type === 'regular');
+
+  const handleResetMatchups = async () => {
+    const ok = await confirm({
+      title: 'Reset matchups?',
+      message:
+        'This deletes all generated matches and sends you back to the team positions page so you can reshuffle or reassign and regenerate.\n\nAny per-week edits you\'ve already made will be lost.\n\nNote: you\'ll also be able to edit individual weeks later from the season schedule page — you don\'t have to get everything perfect right now.',
+      confirmText: 'Yes, Reset Matchups',
+      cancelText: 'Keep Current',
+      confirmVariant: 'destructive',
+    });
+    if (!ok) return;
+    setClearing(true);
+    const result = await clearSchedule(seasonId);
+    setClearing(false);
+    if (!result.success) {
+      toast.error(result.error ?? 'Failed to reset matchups');
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ['schedules'] });
+    queryClient.invalidateQueries({ queryKey: ['matches'] });
+    toast.success('Matchups reset — adjust positions and regenerate');
+    onBack();
+  };
+
+  return (
+    <div className="space-y-4">
+      {regularWeeks.map(({ week, matches }) => {
+        if (editingWeekId === week.id) {
+          return (
+            <WeekEditorView
+              key={week.id}
+              week={week}
+              initialMatches={toEditState(matches)}
+              teams={teamOptions}
+              venues={venueOptions}
+              teamHomeVenues={teamHomeVenues}
+              seasonId={seasonId}
+              hasByeTeam={hasByeTeam}
+              onCancel={() => setEditingWeekId(null)}
+              onSaveSuccess={() => setEditingWeekId(null)}
+            />
+          );
+        }
+        return (
+          <Card key={week.id}>
+            <CardHeader className="bg-gray-50 rounded-t-xl -my-6 py-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">{week.week_name}</CardTitle>
+                <div className="flex items-center gap-3">
+                  <Button variant="outline" size="sm" onClick={() => setEditingWeekId(week.id)}>
+                    <Pencil className="h-4 w-4 mr-1" />
+                    Edit Week
+                  </Button>
+                  <div className="flex items-center gap-1 text-sm text-gray-600">
+                    <Calendar className="h-4 w-4" />
+                    <span>{parseLocalDate(week.scheduled_date).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-3 space-y-2">
+              {matches.map((m) => (
+                <div key={m.id} className="flex items-center justify-between p-3 border rounded-lg text-sm">
+                  <div className="flex items-center gap-3">
+                    <span className="font-medium">{m.home_team?.team_name ?? 'BYE'}</span>
+                    <span className="text-gray-400">vs</span>
+                    <span className="font-medium">{m.away_team?.team_name ?? 'BYE'}</span>
+                  </div>
+                  <span className="text-xs text-gray-500">{m.scheduled_venue?.name ?? 'Venue TBD'}</span>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        );
+      })}
+      {regularWeeks.length === 0 && (
+        <p className="text-sm text-gray-500">No regular-season weeks found.</p>
+      )}
+
+      {regularWeeks.length > 0 && (
+        <div className="pt-4 border-t flex items-center justify-between">
+          <p className="text-sm text-gray-600">
+            Satisfied with the schedule? Click <strong>Finish</strong> below to activate the season.
+          </p>
+          <Button
+            variant="destructive"
+            onClick={handleResetMatchups}
+            isLoading={clearing}
+            loadingText="Resetting..."
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Reset Matchups
+          </Button>
+        </div>
+      )}
+
+      {ConfirmDialogComponent}
+    </div>
+  );
+}

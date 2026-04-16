@@ -37,6 +37,9 @@ export interface WizardStepProps<TValue = unknown, TFormData = unknown> {
 
   /** Programmatically advance to the next step (rarely used by step itself) */
   onNext: () => void;
+
+  /** Programmatically go back to the previous step (rarely used by step itself) */
+  onBack: () => void;
 }
 
 /**
@@ -72,4 +75,12 @@ export interface WizardStepConfig<TFormData = unknown> {
 
   /** Conditional rendering — return false to skip this step */
   showIf?: (formData: TFormData) => boolean;
+
+  /**
+   * If true, hide the default Back button on this step. Useful when going
+   * back would desynchronize state with earlier steps (e.g., positions don't
+   * match already-generated matches), so the step needs to handle "back"
+   * via its own explicit, state-resetting action.
+   */
+  hideBack?: boolean;
 }

@@ -50,6 +50,7 @@ export function WizardShell<TFormData>(props: WizardShellProps<TFormData>) {
     errors,
     formData,
     onNext: handleNext,
+    onBack: goBack,
   };
 
   return (
@@ -84,6 +85,7 @@ export function WizardShell<TFormData>(props: WizardShellProps<TFormData>) {
         isFirstStep={isFirstStep}
         isLastStep={isLastStep}
         showSkip={currentStep.optional === true && !stepValue}
+        hideBack={currentStep.hideBack === true}
         onBack={goBack}
         onNext={handleNext}
         onCancel={props.onCancel ? handleCancel : undefined}

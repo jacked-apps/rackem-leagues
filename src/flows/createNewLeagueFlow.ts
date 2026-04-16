@@ -18,6 +18,7 @@ import { leagueWizardConfig } from '@/wizards/league-v2/leagueWizardConfig';
 import { seasonWizardConfig } from '@/wizards/season-v2/seasonWizardConfig';
 import { scheduleWizardConfig } from '@/wizards/schedule-v2/scheduleWizardConfig';
 import { teamsWizardConfig } from '@/wizards/teams-v2/teamsWizardConfig';
+import { matchupsWizardConfig } from '@/wizards/matchups-v2/matchupsWizardConfig';
 
 export const createNewLeagueFlow: WizardFlowConfig = {
   id: 'create-new-league',
@@ -48,11 +49,10 @@ export const createNewLeagueFlow: WizardFlowConfig = {
       wizard: teamsWizardConfig,
     },
     {
-      kind: 'placeholder',
+      kind: 'wizard',
       id: 'matchups',
       title: 'Matchups',
-      description: 'Teams are set. The final step is to generate the matchups — which teams play each other each week.',
-      legacyRoute: '/league/:leagueId/season/:seasonId/schedule-setup',
+      wizard: matchupsWizardConfig,
     },
   ],
 };

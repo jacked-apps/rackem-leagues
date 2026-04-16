@@ -7,6 +7,7 @@
  */
 
 import { toast } from 'sonner';
+import { supabase } from '@/supabaseClient';
 import { buildLeagueTitle } from '@/utils/leagueUtils';
 import { deriveDateFields } from './leagueWizardHelpers';
 import { useCreateLeagueV2 } from './useCreateLeagueV2';
@@ -122,6 +123,21 @@ export function useFlowStageHandlers({
       toast.success(
         `Created ${result.teams.length} team${result.teams.length === 1 ? '' : 's'} at ${result.venueCount} venue${result.venueCount === 1 ? '' : 's'}`,
       );
+      return {};
+    },
+    matchups: async () => {
+      // User clicked Finish on the Review step — accept the schedule and activate the season.
+      // Matches were already written (by ReviewStep's mount effect) and any per-week edits
+      // saved themselves via WeekEditorView's own mutation. All we do here is flip status.
+      if (!context.seasonId) {
+        throw new Error('Missing season ID — cannot activate season');
+      }
+      const { error } = await supabase
+        .from('seasons')
+        .update({ status: 'active' })
+        .eq('id', context.seasonId);
+      if (error) throw new Error(`Failed to activate season: ${error.message}`);
+      toast.success('League setup complete — season is active!');
       return {};
     },
   };
