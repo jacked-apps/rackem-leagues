@@ -67,7 +67,11 @@ export function useSaveTeamsV2() {
         });
       }
 
-      // Insert one team per captain (captain-only roster)
+      // Insert one team per captain (captain-only roster).
+      // If there's only one venue, every team has to play there — auto-assign
+      // it as the home venue. With 2+ venues, leave home_venue_id blank so the
+      // operator can decide per-team later via Team Management.
+      const defaultHomeVenueId = venueIds.length === 1 ? venueIds[0] : null;
       const rosterSize = getRosterSize(leagueFormat);
       const createdTeams: { teamId: string; teamName: string }[] = [];
       for (const captain of captains) {
@@ -77,7 +81,7 @@ export function useSaveTeamsV2() {
           captainId: captain.captainId,
           teamName: captain.teamName.trim() || `Team ${createdTeams.length + 1}`,
           rosterSize,
-          homeVenueId: null,
+          homeVenueId: defaultHomeVenueId,
           rosterPlayerIds: [captain.captainId],
         });
         createdTeams.push({ teamId: team.id, teamName: team.team_name });

@@ -43,6 +43,7 @@ export const LeagueOverviewCard: React.FC<LeagueOverviewCardProps> = ({ league }
   const [loading, setLoading] = useState(true);
   const [hasTeams, setHasTeams] = useState(false);
   const [hasSchedule, setHasSchedule] = useState(false);
+  const [hasMatchups, setHasMatchups] = useState(false);
   const [currentPlayWeek, setCurrentPlayWeek] = useState(0);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -94,6 +95,14 @@ export const LeagueOverviewCard: React.FC<LeagueOverviewCardProps> = ({ league }
             .eq('season_id', data.id);
 
           setHasSchedule((weekCount ?? 0) > 0);
+
+          // Check if matchups have been generated (matches exist)
+          const { count: matchCount } = await supabase
+            .from('matches')
+            .select('*', { count: 'exact', head: true })
+            .eq('season_id', data.id);
+
+          setHasMatchups((matchCount ?? 0) > 0);
 
           // Get current play week (count of completed regular weeks)
           const { count: completedWeeks } = await supabase
@@ -306,10 +315,13 @@ export const LeagueOverviewCard: React.FC<LeagueOverviewCardProps> = ({ league }
 
 
   /**
-   * Determine if season is complete (has teams and schedule)
+   * Determine if season setup is complete. A season is only "Complete" once
+   * matchups have been generated AND the LO has activated the season (via
+   * Finish on the matchups wizard step). Before that, it's still Incomplete
+   * even if teams + schedule exist.
    */
   const isSeasonComplete = (): boolean => {
-    return hasTeams && hasSchedule;
+    return hasTeams && hasSchedule && hasMatchups && currentSeason?.status === 'active';
   };
 
   /**

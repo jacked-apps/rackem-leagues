@@ -2,13 +2,16 @@
  * @fileoverview useFlowStageDetection — checks the DB to determine which
  * stages are complete for a given league.
  *
- * Used on page mount to skip past already-completed stages.
+ * Used on page mount to skip past already-completed stages and drive the
+ * "Continue Wizard" button's target stage on the league detail page.
  * The database is the source of truth — not localStorage.
  *
- * Checks:
- *   Stage 1 (League): leagueId exists in URL → done
- *   Stage 2 (Season): seasons table has a row for this league → done
- *   (Stages 3-5: future — schedule, teams, matchups checks)
+ * Stage checks (cascading):
+ *   Stage 0 (League):   leagueId exists in URL      → done
+ *   Stage 1 (Season):   seasons has a row           → done
+ *   Stage 2 (Schedule): season_weeks has rows       → done
+ *   Stage 3 (Teams):    teams has rows              → done
+ *   Stage 4 (Matchups): season.status === 'active'  → done (flow complete → 5)
  */
 
 import { useQuery } from '@tanstack/react-query';
@@ -16,7 +19,7 @@ import { supabase } from '@/supabaseClient';
 
 interface StageDetectionResult {
   isLoading: boolean;
-  /** Index of the first incomplete stage (0-based) */
+  /** Index of the first incomplete stage (0-based). 5 = all stages done. */
   firstIncompleteStage: number;
   /** Data discovered from the DB */
   context: {
@@ -33,13 +36,13 @@ interface StageDetectionResult {
 
 /**
  * Query the DB to figure out which flow stages are already complete.
- * Returns the index of the first incomplete stage.
+ * Returns the index of the first incomplete stage (or 5 if all done).
  */
 export function useFlowStageDetection(leagueId: string | null): StageDetectionResult {
   const { data, isLoading } = useQuery({
     queryKey: ['flow-stage-detection', leagueId],
     queryFn: async () => {
-      if (!leagueId) return { leagueStartDate: null, seasonId: null };
+      if (!leagueId) return null;
 
       // Fetch league details (needed by Season wizard + summary display)
       const { data: league } = await supabase
@@ -48,14 +51,32 @@ export function useFlowStageDetection(leagueId: string | null): StageDetectionRe
         .eq('id', leagueId)
         .single();
 
-      // Check if a season exists for this league
+      // Fetch the most-recent season for this league (if any)
       const { data: season } = await supabase
         .from('seasons')
-        .select('id')
+        .select('id, status')
         .eq('league_id', leagueId)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
+
+      // If a season exists, check downstream stage progress in parallel
+      let hasSchedule = false;
+      let hasTeams = false;
+      if (season?.id) {
+        const [weeksRes, teamsRes] = await Promise.all([
+          supabase
+            .from('season_weeks')
+            .select('*', { count: 'exact', head: true })
+            .eq('season_id', season.id),
+          supabase
+            .from('teams')
+            .select('*', { count: 'exact', head: true })
+            .eq('season_id', season.id),
+        ]);
+        hasSchedule = (weeksRes.count ?? 0) > 0;
+        hasTeams = (teamsRes.count ?? 0) > 0;
+      }
 
       // Build the league name from its fields
       const gameTypeMap: Record<string, string> = {
@@ -75,6 +96,9 @@ export function useFlowStageDetection(leagueId: string | null): StageDetectionRe
         dayOfWeek: dayOfWeek || null,
         division: league?.division ?? null,
         seasonId: season?.id ?? null,
+        seasonActive: season?.status === 'active',
+        hasSchedule,
+        hasTeams,
       };
     },
     enabled: !!leagueId,
@@ -86,33 +110,42 @@ export function useFlowStageDetection(leagueId: string | null): StageDetectionRe
     return { isLoading: false, firstIncompleteStage: 0, context: {} };
   }
 
-  // LeagueId exists = stage 0 is done
+  // LeagueId exists = stage 0 done; while fetching, hold on stage 1
   if (isLoading) {
     return { isLoading: true, firstIncompleteStage: 1, context: { leagueId } };
   }
 
   const leagueStartDate = data?.leagueStartDate ?? undefined;
-
   const leagueName = data?.leagueName ?? undefined;
   const gameType = data?.gameType ?? undefined;
   const leagueFormat = data?.leagueFormat ?? undefined;
-
   const dayOfWeek = data?.dayOfWeek ?? undefined;
   const division = data?.division ?? undefined;
 
-  // Check season
+  const baseCtx = { leagueId, leagueStartDate, leagueName, gameType, leagueFormat, dayOfWeek, division };
+
+  // Stage 1 check: season exists?
   if (!data?.seasonId) {
-    return {
-      isLoading: false,
-      firstIncompleteStage: 1,
-      context: { leagueId, leagueStartDate, leagueName, gameType, leagueFormat, dayOfWeek, division },
-    };
+    return { isLoading: false, firstIncompleteStage: 1, context: baseCtx };
   }
 
-  // Season exists = stage 1 done, check further stages later
-  return {
-    isLoading: false,
-    firstIncompleteStage: 2,
-    context: { leagueId, leagueStartDate, leagueName, gameType, leagueFormat, dayOfWeek, division, seasonId: data.seasonId },
-  };
+  const ctx = { ...baseCtx, seasonId: data.seasonId };
+
+  // Stage 4 check: season activated (matchups finished) — everything done
+  if (data.seasonActive) {
+    return { isLoading: false, firstIncompleteStage: 5, context: ctx };
+  }
+
+  // Stage 2 check: schedule weeks exist?
+  if (!data.hasSchedule) {
+    return { isLoading: false, firstIncompleteStage: 2, context: ctx };
+  }
+
+  // Stage 3 check: teams exist?
+  if (!data.hasTeams) {
+    return { isLoading: false, firstIncompleteStage: 3, context: ctx };
+  }
+
+  // Schedule + teams both exist, season not yet active → resume at matchups
+  return { isLoading: false, firstIncompleteStage: 4, context: ctx };
 }
