@@ -21,6 +21,7 @@ export function CaptainsTeamsStep({
 }: WizardStepProps<TeamCaptainEntry[] | undefined, TeamsWizardFormData>) {
   const captains = value ?? [];
   const [selectedMemberId, setSelectedMemberId] = useState('');
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
   const { data: allMembers = [] } = useQuery({
     queryKey: ['all-members'],
@@ -72,18 +73,38 @@ export function CaptainsTeamsStep({
       {captains.length > 0 && (
         <div className="space-y-2">
           {captains.map((captain, i) => (
-            <div key={captain.captainId} className="flex items-center gap-2 p-3 border rounded-lg">
-              <Input
-                value={captain.teamName}
-                onChange={(e) => updateTeamName(i, e.target.value)}
-                className="flex-1"
-              />
-              <span className="text-sm text-gray-600 whitespace-nowrap">
-                Captain: {captain.captainName}
-              </span>
-              <Button variant="ghost" onClick={() => removeCaptain(i)}>
-                Remove
-              </Button>
+            <div key={captain.captainId} className="p-3 border rounded-lg space-y-2">
+              <div className="flex items-center gap-2">
+                {editingIndex === i ? (
+                  <>
+                    <Input
+                      value={captain.teamName}
+                      onChange={(e) => updateTeamName(i, e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') setEditingIndex(null); }}
+                      autoFocus
+                      className="flex-1"
+                    />
+                    <Button variant="outline" onClick={() => setEditingIndex(null)}>
+                      Done
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <span className="flex-1 font-medium">{captain.teamName}</span>
+                    <Button variant="ghost" onClick={() => setEditingIndex(i)}>
+                      Rename
+                    </Button>
+                  </>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="flex-1 text-sm text-gray-600">
+                  Captain: {captain.captainName}
+                </span>
+                <Button variant="ghost" onClick={() => removeCaptain(i)}>
+                  Remove
+                </Button>
+              </div>
             </div>
           ))}
         </div>
