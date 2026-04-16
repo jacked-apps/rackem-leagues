@@ -17,6 +17,7 @@ import type { WizardFlowConfig } from '@/components/wizard';
 import { leagueWizardConfig } from '@/wizards/league-v2/leagueWizardConfig';
 import { seasonWizardConfig } from '@/wizards/season-v2/seasonWizardConfig';
 import { scheduleWizardConfig } from '@/wizards/schedule-v2/scheduleWizardConfig';
+import { teamsWizardConfig } from '@/wizards/teams-v2/teamsWizardConfig';
 
 export const createNewLeagueFlow: WizardFlowConfig = {
   id: 'create-new-league',
@@ -41,11 +42,10 @@ export const createNewLeagueFlow: WizardFlowConfig = {
       wizard: scheduleWizardConfig,
     },
     {
-      kind: 'placeholder',
+      kind: 'wizard',
       id: 'teams',
       title: 'Teams',
-      description: 'Your schedule is ready. Now create the teams that will compete this season and assign their rosters.',
-      legacyRoute: '/league/:leagueId/manage-teams',
+      wizard: teamsWizardConfig,
     },
     {
       kind: 'placeholder',

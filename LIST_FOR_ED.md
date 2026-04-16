@@ -269,3 +269,27 @@ upcoming year's dates are missing and sends reminder emails to devs.
 
 **Reference:** See `memory-bank/plans/TODO-championship-date-reminders.md`
 for full details.
+
+---
+
+## 4. Refactor TeamManagement.tsx (too big)
+
+**Branch needed:** `refactor-team-management`
+**Discovered:** 2026-04-16
+
+**Problem:** `src/operator/TeamManagement.tsx` is ~800 lines. Hard to navigate,
+hard to test, violates the project's "under 100 lines" preference. Does a lot:
+venue assignment, team creation/editing, roster management, team importing,
+bulk actions, table number assignments.
+
+**Goal:** Break it down into smaller, focused components.
+
+**Suggested splits:**
+- `VenueAssignmentSection.tsx` — assigning venues to the league
+- `TeamList.tsx` — displaying teams, expansion state
+- `TeamEditorModal.tsx` — already exists, keep
+- `TeamImportSection.tsx` — copy from previous season
+- `useTeamManagementActions.ts` — extract handlers into a hook
+- `TeamManagement.tsx` — orchestrator, under 100 lines
+
+**Effort:** Medium. Mostly extraction, no logic changes.

@@ -1,12 +1,12 @@
 /**
- * @fileoverview useSaveScheduleV2 — inserts season_weeks for a new season
+ * @fileoverview useSaveScheduleV2 — saves season_weeks for a season in the wizard
  *
- * Part of the "Create New League" flow — this is INSERT ONLY. The season
- * is brand new and should have no existing weeks. If there are existing
- * weeks, something went wrong (re-running the wizard on an existing season)
- * and the DB will throw a conflict error.
+ * Part of the "Create New League" flow. The flow can be resumed mid-schedule
+ * (user refreshes or leaves and comes back), so this is a REPLACE operation:
+ * clears any existing weeks for the season, then inserts the new ones.
  *
- * For EDITING an existing schedule mid-season, use SeasonScheduleManager.
+ * Editing schedules AFTER matches are played happens in SeasonScheduleManager
+ * which uses a different, additive approach.
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -32,7 +32,13 @@ export function useSaveScheduleV2() {
 
   return useMutation({
     mutationFn: async ({ seasonId, schedule }: SaveScheduleArgs) => {
-      // Insert-only — this wizard creates new seasons, never edits existing ones
+      // Clear any existing weeks for this season (handles resume)
+      const { error: delErr } = await supabase
+        .from('season_weeks')
+        .delete()
+        .eq('season_id', seasonId);
+      if (delErr) throw new Error(`Failed to clear existing weeks: ${delErr.message}`);
+
       const rows = schedule.map((week) => ({
         season_id: seasonId,
         scheduled_date: week.date,
@@ -43,10 +49,7 @@ export function useSaveScheduleV2() {
       }));
 
       const { error } = await supabase.from('season_weeks').insert(rows);
-
-      if (error) {
-        throw new Error(`Failed to save schedule: ${error.message}`);
-      }
+      if (error) throw new Error(`Failed to save schedule: ${error.message}`);
 
       return { seasonId, weeksInserted: rows.length };
     },

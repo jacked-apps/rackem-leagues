@@ -381,7 +381,7 @@ export const ScheduleReview: React.FC<ScheduleReviewProps> = ({
                 style={{ backgroundColor: '#2563eb', color: 'white' }}
                 loadingText="Saving..."
               >
-                Save & Add Teams →
+                Save & Continue →
               </Button>
             </div>
           </div>

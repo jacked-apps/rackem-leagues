@@ -12,10 +12,12 @@ import { deriveDateFields } from './leagueWizardHelpers';
 import { useCreateLeagueV2 } from './useCreateLeagueV2';
 import { useCreateSeasonV2 } from '@/wizards/season-v2/useCreateSeasonV2';
 import { useSaveScheduleV2 } from '@/wizards/schedule-v2/useSaveScheduleV2';
+import { useSaveTeamsV2 } from '@/wizards/teams-v2/useSaveTeamsV2';
 import type { StageHandlers } from '@/components/wizard/WizardFlowShell';
 import type { LeagueWizardFormData } from './leagueWizardTypes';
 import type { SeasonWizardFormData } from '@/wizards/season-v2/seasonWizardTypes';
 import type { ScheduleWizardFormData } from '@/wizards/schedule-v2/scheduleWizardTypes';
+import type { TeamsWizardFormData } from '@/wizards/teams-v2/teamsWizardTypes';
 import type { FlowContext } from '@/components/wizard';
 
 interface UseFlowStageHandlersArgs {
@@ -39,6 +41,7 @@ export function useFlowStageHandlers({
     },
   });
   const saveSchedule = useSaveScheduleV2();
+  const saveTeams = useSaveTeamsV2();
 
   return {
     league: async (formData) => {
@@ -84,14 +87,41 @@ export function useFlowStageHandlers({
     schedule: async (formData) => {
       const fd = formData as ScheduleWizardFormData;
       const schedule = fd['schedule-review'];
+      // Empty array = user chose to keep existing schedule, skip save
       if (!schedule || schedule.length === 0) {
-        throw new Error('No schedule to save');
+        toast.success('Keeping existing schedule');
+        return {};
       }
       if (!context.seasonId) {
         throw new Error('Missing season ID — cannot save schedule');
       }
       await saveSchedule.mutateAsync({ seasonId: context.seasonId, schedule });
       toast.success('Schedule saved');
+      return {};
+    },
+    teams: async (formData) => {
+      const fd = formData as TeamsWizardFormData;
+      const venueIds = fd['venues'] ?? [];
+      const captains = fd['captains'] ?? [];
+
+      if (!context.leagueId) {
+        throw new Error('Missing league ID — cannot save teams');
+      }
+      if (!context.seasonId) {
+        throw new Error('Missing season ID — cannot save teams');
+      }
+
+      const result = await saveTeams.mutateAsync({
+        leagueId: context.leagueId,
+        seasonId: context.seasonId,
+        leagueFormat: context.leagueFormat ?? '5_man',
+        venueIds,
+        captains,
+      });
+
+      toast.success(
+        `Created ${result.teams.length} team${result.teams.length === 1 ? '' : 's'} at ${result.venueCount} venue${result.venueCount === 1 ? '' : 's'}`,
+      );
       return {};
     },
   };
