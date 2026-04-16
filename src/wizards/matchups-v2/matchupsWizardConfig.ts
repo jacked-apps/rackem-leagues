@@ -36,8 +36,22 @@ export const matchupsWizardConfig: WizardConfig<MatchupsWizardFormData> = {
       title: 'Review Schedule',
       subtitle: 'Review the generated matchups. Click "Edit Week" to swap teams or venues.',
       // Hide default Back — going back with existing matches would desync from positions.
-      // Users go back only via the "Clear & Start Over" button, which wipes first.
+      // Users go back only via the "Reset Matchups" button, which wipes first.
       hideBack: true,
+      // Hide Cancel — by the time the operator sees this step, matchups are already
+      // saved to the DB. Cancel would just leave them here in an "upcoming" season
+      // state, which is confusing. The PageHeader's "Back to Dashboard" is still
+      // available if they truly need to bail out.
+      hideCancel: true,
+      // Confirm before activating the season. Emphasize that edits are still
+      // possible afterward via the season schedule page.
+      confirmOnNext: {
+        title: 'Accept this schedule and activate the season?',
+        message:
+          'The season will move from "upcoming" to "active" and players can begin scoring matches.\n\nYou can still edit individual weeks later from the season schedule page — swap teams, change venues, or adjust tables whenever you need to. You don\'t have to have everything perfect right now.',
+        confirmText: 'Yes, Activate Season',
+        cancelText: 'Not Yet',
+      },
       component: ReviewStep as WizardConfig<MatchupsWizardFormData>['steps'][number]['component'],
     },
   ],

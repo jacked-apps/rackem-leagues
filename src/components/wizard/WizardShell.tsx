@@ -35,6 +35,7 @@ export function WizardShell<TFormData>(props: WizardShellProps<TFormData>) {
     handleStepChange,
     handleNext,
     handleCancel,
+    ConfirmDialogComponent,
   } = useWizardShell(props);
 
   if (!currentStep) {
@@ -86,10 +87,12 @@ export function WizardShell<TFormData>(props: WizardShellProps<TFormData>) {
         isLastStep={isLastStep}
         showSkip={currentStep.optional === true && !stepValue}
         hideBack={currentStep.hideBack === true}
+        hideCancel={currentStep.hideCancel === true}
         onBack={goBack}
         onNext={handleNext}
         onCancel={props.onCancel ? handleCancel : undefined}
       />
+      {ConfirmDialogComponent}
     </div>
   );
 }

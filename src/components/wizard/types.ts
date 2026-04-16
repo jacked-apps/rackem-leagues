@@ -83,4 +83,25 @@ export interface WizardStepConfig<TFormData = unknown> {
    * via its own explicit, state-resetting action.
    */
   hideBack?: boolean;
+
+  /**
+   * If true, hide the wizard-level Cancel ("Finish Later") button on this
+   * step. Useful when the step has already committed enough state to the DB
+   * that "Cancel" would be misleading or encourage user mistakes.
+   */
+  hideCancel?: boolean;
+
+  /**
+   * If set, clicking Next pops a confirmation dialog with this content.
+   * Next only advances if the user confirms. Lets a step warn the user
+   * about actions that are hard to reverse later (e.g., "adding more teams
+   * after this step means regenerating the schedule").
+   */
+  confirmOnNext?: {
+    title: string;
+    message: string;
+    confirmText?: string;
+    cancelText?: string;
+    confirmVariant?: 'default' | 'destructive';
+  };
 }

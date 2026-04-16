@@ -20,6 +20,7 @@ import type { WizardConfig } from './flowTypes';
 import { useWizardState } from './useWizardState';
 import { readPersistedWizardState, useWizardPersistence } from './useWizardPersistence';
 import { validateStep } from './validateStep';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 interface UseWizardShellArgs<TFormData> {
   wizard: WizardConfig<TFormData>;
@@ -57,6 +58,7 @@ export function useWizardShell<TFormData>({
   });
 
   const [errors, setErrors] = useState<string[]>([]);
+  const { confirm, ConfirmDialogComponent } = useConfirmDialog();
 
   const handleStepChange = useCallback(
     (value: unknown) => {
@@ -66,7 +68,7 @@ export function useWizardShell<TFormData>({
     [state, errors.length],
   );
 
-  const handleNext = useCallback(() => {
+  const handleNext = useCallback(async () => {
     if (state.currentStep) {
       const stepValue = (state.formData as Record<string, unknown>)[state.currentStep.id];
       const stepErrors = validateStep(state.currentStep, stepValue, state.formData);
@@ -76,18 +78,34 @@ export function useWizardShell<TFormData>({
       }
     }
     setErrors([]);
+
+    // Framework-level confirmation before advancing. Lets a step warn the
+    // user about actions that are hard to reverse (e.g., adding more teams
+    // after the Teams step means regenerating the matchup schedule).
+    if (state.currentStep?.confirmOnNext) {
+      const cfg = state.currentStep.confirmOnNext;
+      const ok = await confirm({
+        title: cfg.title,
+        message: cfg.message,
+        confirmText: cfg.confirmText ?? 'Continue',
+        cancelText: cfg.cancelText ?? 'Cancel',
+        confirmVariant: cfg.confirmVariant ?? 'default',
+      });
+      if (!ok) return;
+    }
+
     if (state.isLastStep) {
       clearPersisted();
       onComplete?.(state.formData);
     } else {
       state.goNext();
     }
-  }, [state, clearPersisted, onComplete]);
+  }, [state, clearPersisted, onComplete, confirm]);
 
   const handleCancel = useCallback(() => {
     clearPersisted();
     onCancel?.();
   }, [clearPersisted, onCancel]);
 
-  return { ...state, errors, handleStepChange, handleNext, handleCancel };
+  return { ...state, errors, handleStepChange, handleNext, handleCancel, ConfirmDialogComponent };
 }

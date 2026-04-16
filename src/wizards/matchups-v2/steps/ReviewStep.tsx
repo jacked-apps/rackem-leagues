@@ -136,6 +136,25 @@ export function ReviewStep({ formData, onBack }: WizardStepProps<unknown, Matchu
 
   return (
     <div className="space-y-4">
+      {regularWeeks.length > 0 && (
+        <div className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+          <div className="text-sm text-amber-900">
+            <strong>Not happy with the matchups?</strong>{' '}
+            Reset to wipe and redo. You can also edit individual weeks below.
+          </div>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleResetMatchups}
+            isLoading={clearing}
+            loadingText="Resetting..."
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Reset Matchups
+          </Button>
+        </div>
+      )}
+
       {regularWeeks.map(({ week, matches }) => {
         if (editingWeekId === week.id) {
           return (
@@ -190,19 +209,15 @@ export function ReviewStep({ formData, onBack }: WizardStepProps<unknown, Matchu
       )}
 
       {regularWeeks.length > 0 && (
-        <div className="pt-4 border-t flex items-center justify-between">
-          <p className="text-sm text-gray-600">
-            Satisfied with the schedule? Click <strong>Finish</strong> below to activate the season.
-          </p>
-          <Button
-            variant="destructive"
-            onClick={handleResetMatchups}
-            isLoading={clearing}
-            loadingText="Resetting..."
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Reset Matchups
-          </Button>
+        <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+          <strong>Ready to activate?</strong>{' '}
+          Click <strong>Finish</strong> below to accept this schedule and move the
+          season from "upcoming" to "active" — captains can now build out their
+          teams and then score their matches.
+          <br />
+          Don&apos;t stress about getting every matchup perfect right now — you
+          can edit individual weeks anytime from the season schedule page:
+          swap teams, change venues, or adjust tables whenever you need to.
         </div>
       )}
 

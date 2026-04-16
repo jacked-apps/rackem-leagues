@@ -9,7 +9,6 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { InfoButton } from '@/components/InfoButton';
 import { MemberCombobox } from '@/components/MemberCombobox';
 import { getAllMembers } from '@/api/queries/members';
 import type { WizardStepProps } from '@/components/wizard';
@@ -49,16 +48,26 @@ export function CaptainsTeamsStep({
 
   return (
     <div className="space-y-4">
+      <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700 space-y-1">
+        <p>
+          Each captain here creates a team. Count of captains = count of teams.
+        </p>
+        <p>
+          <strong>Captains can</strong> rename their team and add/remove roster
+          players themselves, anytime.
+        </p>
+        <p>
+          <strong>You (the operator) can</strong> do all of the above from the
+          Team Management page after the wizard — including building full
+          rosters right now if you want.
+        </p>
+        <p>
+          <strong>Only operators can</strong> change who the captain of a team is.
+        </p>
+      </div>
+
       <div className="flex items-center gap-1">
         <p className="font-medium text-gray-900">Team Captains</p>
-        <InfoButton title="Captains & Teams" size="sm">
-          <div className="space-y-2">
-            <p>Each captain creates a team. Count of captains = count of teams.</p>
-            <p><strong>Captains can:</strong> rename team, add/remove roster players.</p>
-            <p><strong>Only LOs can:</strong> change who the captain is.</p>
-            <p>To build full rosters now, use the Team Management page after the wizard.</p>
-          </div>
-        </InfoButton>
       </div>
 
       <MemberCombobox
@@ -114,6 +123,13 @@ export function CaptainsTeamsStep({
         {captains.length === 0 ? 'Add at least 2 captains to create teams.' :
           `${captains.length} team${captains.length === 1 ? '' : 's'} ready.`}
       </p>
+
+      <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+        <strong>Add every team before continuing.</strong>{' '}
+        After the next step the schedule is generated from these teams —
+        adding more teams later means resetting and regenerating matchups
+        (unless a new team fills a BYE slot for odd counts).
+      </div>
     </div>
   );
 }

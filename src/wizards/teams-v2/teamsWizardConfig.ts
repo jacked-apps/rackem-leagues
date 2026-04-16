@@ -47,6 +47,17 @@ export const teamsWizardConfig: WizardConfig<TeamsWizardFormData> = {
         const v = value as unknown[] | undefined;
         return v && v.length >= 2 ? undefined : ['Add at least 2 captains'];
       },
+      // Warn before advancing. Adding teams after the matchups step means
+      // regenerating the entire schedule (positions + matchup table change).
+      // The one forgiving case: if this league has an odd team count, a new
+      // team fills the BYE slot without disturbing existing matchups.
+      confirmOnNext: {
+        title: 'Done adding teams?',
+        message:
+          'Once the matchup schedule is generated, adding a new team becomes difficult — you\'ll typically have to reset matchups and regenerate them with the new team included.\n\n(Exception: if your current team count is odd, a new team can fill the BYE slot without disturbing the generated schedule.)\n\nMake sure every team you know about is added before continuing.',
+        confirmText: 'Yes, Continue to Matchups',
+        cancelText: 'Add More Teams',
+      },
       component: CaptainsTeamsStep as WizardConfig<TeamsWizardFormData>['steps'][number]['component'],
     },
   ],
