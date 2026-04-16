@@ -164,6 +164,10 @@ function generateWeekMatches(
       continue;
     }
 
+    // TODO: BYE Team Enhancement - Currently we convert 'BYE' to null for team IDs.
+    // When actual BYE team records exist in the teams table, this conversion
+    // should be removed and the real BYE team ID should be used instead.
+    // See: memory-bank/plans/bye-team-enhancement-plan.md
     matches.push({
       season_id: seasonId,
       season_week_id: seasonWeekId,

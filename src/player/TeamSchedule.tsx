@@ -326,7 +326,11 @@ export function TeamSchedule() {
                         })()}
 
                         {/* Action Button */}
-                        {match.status === 'scheduled' && (
+                        {/* TODO: BYE Match Guard - Currently we check !opponent to detect BYE weeks.
+                            When BYE team enhancement is implemented (actual BYE team records),
+                            this check should change to opponent?.is_bye_team === true.
+                            See: memory-bank/plans/bye-team-enhancement-plan.md */}
+                        {match.status === 'scheduled' && opponent && (
                           <Link to={`/match/${match.id}/lineup`} className="block pt-2">
                             <Button className="w-full" loadingText="none">
                               <Trophy className="h-4 w-4 mr-2" />
@@ -334,7 +338,7 @@ export function TeamSchedule() {
                             </Button>
                           </Link>
                         )}
-                        {match.status === 'in_progress' && (
+                        {match.status === 'in_progress' && opponent && (
                           <Link to={`/match/${match.id}/lineup`} className="block pt-2">
                             <Button className="w-full" loadingText="none">
                               <Trophy className="h-4 w-4 mr-2" />
