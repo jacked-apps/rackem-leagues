@@ -8,8 +8,9 @@
  */
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/supabaseClient';
+import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
@@ -57,22 +58,9 @@ export const TeamManagement: React.FC = () => {
     refreshTeams,
   } = useTeamManagement(null, leagueId);
 
-  // Fetch resolved preferences to get max_roster_size (instead of hardcoding from team_format).
-  // The view cascades: league prefs → org prefs → system default (5).
-  const { data: resolvedPrefs } = useQuery({
-    queryKey: ['resolved-league-preferences', leagueId],
-    queryFn: async () => {
-      const { data, error: prefError } = await supabase
-        .from('resolved_league_preferences')
-        .select('max_roster_size, lineup_size')
-        .eq('league_id', leagueId!)
-        .single();
-      if (prefError) throw new Error(prefError.message);
-      return data;
-    },
-    enabled: !!leagueId,
-  });
-  const maxRosterSize: number = resolvedPrefs?.max_roster_size ?? 8;
+  // Resolved preferences — lazy-migrates legacy leagues on first access
+  const { data: leaguePrefs } = useResolvedLeaguePrefs(leagueId);
+  const maxRosterSize: number = leaguePrefs?.max_roster_size ?? 8;
 
   // Get organization ID from the league once it's loaded
   const organizationId = league?.organization_id || null;

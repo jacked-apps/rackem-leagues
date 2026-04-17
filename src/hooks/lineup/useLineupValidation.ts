@@ -29,7 +29,7 @@ export interface LineupValidationInput {
   player3Id: string;
   player4Id?: string; // Optional for 5v5
   player5Id?: string; // Optional for 5v5
-  playerCount?: 3 | 5; // Defaults to 3 for backward compatibility
+  playerCount?: number; // Defaults to 3 for backward compatibility
   subHandicap: string;
   players: Player[];
   isTiebreakerMode?: boolean;

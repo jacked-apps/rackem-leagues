@@ -8,11 +8,11 @@
  */
 
 import { useContext, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/supabaseClient';
+import { useQueryClient } from '@tanstack/react-query';
 import { UserContext } from '@/context/UserContext';
 import { useMemberId } from '@/api/hooks';
 import { usePlayerTeams, useCaptainTeamEditData, useMatchesByTeam } from '@/api/hooks';
+import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { queryKeys } from '@/api/queryKeys';
 import { TeamEditorModal } from '@/operator/TeamEditorModal';
 import {
@@ -96,21 +96,9 @@ function TeamAccordionItem({
   const isCaptain = team.captain_id === memberId;
   const leagueId = team.season.league.id;
 
-  // Fetch resolved preferences to get the actual handicap_type for this league
-  const { data: resolvedPrefs } = useQuery({
-    queryKey: ['resolved-league-preferences', leagueId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('resolved_league_preferences')
-        .select('handicap_type')
-        .eq('league_id', leagueId)
-        .single();
-      if (error) return null;
-      return data;
-    },
-    enabled: !!leagueId,
-  });
-  const handicapType = resolvedPrefs?.handicap_type ?? 'points';
+  // Resolved preferences — lazy-migrates legacy leagues on first access
+  const { data: leaguePrefs } = useResolvedLeaguePrefs(leagueId);
+  const handicapType = leaguePrefs?.handicap_type ?? 'points';
 
   // Fetch all matches to find makeups and upcoming
   const { data: allMatches = [] } = useMatchesByTeam(team.id);

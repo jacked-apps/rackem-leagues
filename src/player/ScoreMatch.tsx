@@ -18,8 +18,9 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/supabaseClient';
+import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -117,22 +118,9 @@ export function ScoreMatch() {
   const userLineup = isHomeTeam ? homeLineup : awayLineup;
   const opponentLineup = isHomeTeam ? awayLineup : homeLineup;
 
-  // Fetch resolved preferences to get the actual handicap_type for this league
-  const scoreLeagueId = match?.league?.id;
-  const { data: scoreResolvedPrefs } = useQuery({
-    queryKey: ['resolved-league-preferences', scoreLeagueId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('resolved_league_preferences')
-        .select('handicap_type')
-        .eq('league_id', scoreLeagueId!)
-        .single();
-      if (error) return null;
-      return data;
-    },
-    enabled: !!scoreLeagueId,
-  });
-  const handicapType = scoreResolvedPrefs?.handicap_type ?? 'points';
+  // Resolved preferences — lazy-migrates legacy leagues on first access
+  const { data: leaguePrefs } = useResolvedLeaguePrefs(match?.league?.id);
+  const handicapType = leaguePrefs?.handicap_type ?? 'points';
 
   // Get handicaps for roster players (for lineup change requests)
   const rosterPlayerIds = teamRoster.map((tp: any) => tp.member_id).filter(Boolean);

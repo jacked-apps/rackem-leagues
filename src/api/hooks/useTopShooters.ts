@@ -16,8 +16,8 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/supabaseClient';
 import { queryKeys } from '../queryKeys';
+import { useResolvedLeaguePrefs } from './useResolvedLeaguePrefs';
 import { fetchSeasonPlayerStats } from '../queries/playerStats';
 import { getLeagueBySeasonId } from '../queries/leagues';
 import { usePlayerHandicaps } from './usePlayerHandicaps';
@@ -107,21 +107,9 @@ export function useTopShooters(seasonId: string): UseTopShootersResult {
     retry: 1,
   });
 
-  // Fetch resolved preferences to get the actual handicap_type
-  const { data: topShooterPrefs } = useQuery({
-    queryKey: ['resolved-league-preferences', league?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('resolved_league_preferences')
-        .select('handicap_type')
-        .eq('league_id', league!.id)
-        .single();
-      if (error) return null;
-      return data;
-    },
-    enabled: !!league?.id,
-  });
-  const handicapType = topShooterPrefs?.handicap_type ?? 'points';
+  // Resolved preferences — lazy-migrates legacy leagues on first access
+  const { data: leaguePrefs } = useResolvedLeaguePrefs(league?.id);
+  const handicapType = leaguePrefs?.handicap_type ?? 'points';
 
   // Extract player IDs for handicap calculation
   const playerIds = playerStats?.map((p) => p.playerId) || [];

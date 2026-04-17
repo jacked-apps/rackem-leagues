@@ -28,7 +28,7 @@ interface LineupPersistenceParams {
   player3Handicap: number;
   player4Handicap?: number; // Optional for 5v5
   player5Handicap?: number; // Optional for 5v5
-  playerCount?: 3 | 5; // Defaults to 3 for backward compatibility
+  playerCount?: number; // Defaults to 3 for backward compatibility
   teamHandicap: number;
   isComplete: boolean;
   hasDuplicates: boolean;

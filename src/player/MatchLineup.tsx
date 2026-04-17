@@ -9,9 +9,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { supabase } from '@/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Users } from 'lucide-react';
 import {
@@ -47,7 +45,7 @@ import { usePreparationStatus } from '@/hooks/lineup/useMatchPreparation';
 import { calculateSubstituteHandicap } from '@/utils/lineup';
 import { useMatchRealtime } from '@/realtime/useMatchRealtime';
 import { Loader2 } from 'lucide-react';
-import { getPlayerCount } from '@/utils/lineup/getPlayerCount';
+import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { shouldUseTeamBonus } from '@/utils/calculateHandicapThresholds';
 import { logger } from '@/utils/logger';
 
@@ -115,27 +113,12 @@ export function MatchLineup() {
     setPreparationMessage,
   } = usePreparationStatus();
 
-  // Determine player count from team format (3 for 3v3, 5 for 5v5)
-  // TODO: read lineup_size from resolved prefs instead of deriving from team_format
-  const teamFormat = (matchData?.league?.team_format || '5_man') as '5_man' | '8_man';
-  const playerCount = getPlayerCount(teamFormat);
-
-  // Fetch resolved preferences to get the actual handicap_type for this league
+  // Resolved preferences — lazy-migrates legacy leagues on first access
   const leagueId = matchData?.league?.id;
-  const { data: resolvedPrefs } = useQuery({
-    queryKey: ['resolved-league-preferences', leagueId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('resolved_league_preferences')
-        .select('handicap_type')
-        .eq('league_id', leagueId!)
-        .single();
-      if (error) return null;
-      return data;
-    },
-    enabled: !!leagueId,
-  });
-  const handicapType = resolvedPrefs?.handicap_type ?? 'points';
+  const { data: leaguePrefs } = useResolvedLeaguePrefs(leagueId);
+  const handicapType = leaguePrefs?.handicap_type ?? 'points';
+  const playerCount = leaguePrefs?.lineup_size ?? 3;
+  const teamFormat = (matchData?.league?.team_format || '5_man') as '5_man' | '8_man'; // legacy — kept for downstream that still needs it
 
   // Centralized lineup state management
   const lineup = useLineupState(playerCount);

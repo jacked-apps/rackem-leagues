@@ -32,7 +32,7 @@ export interface HandicapCalculationsInput {
   player3Id: string;
   player4Id?: string; // Optional for 5v5
   player5Id?: string; // Optional for 5v5
-  playerCount: 3 | 5; // Number of players in lineup
+  playerCount: number; // Number of players in lineup
   subHandicap: string;
   players: Player[];
   testMode: boolean;

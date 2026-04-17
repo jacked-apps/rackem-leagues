@@ -17,8 +17,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/supabaseClient';
 import { useTeamStats } from '@/api/hooks/useTeamStats';
+import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { usePlayerHandicaps } from '@/api/hooks/usePlayerHandicaps';
 import { getLeagueBySeasonId } from '@/api/queries/leagues';
 import { queryKeys } from '@/api/queryKeys';
@@ -61,21 +61,9 @@ export function TeamStats() {
     retry: 1,
   });
 
-  // Fetch resolved preferences to get the actual handicap_type
-  const { data: statsResolvedPrefs } = useQuery({
-    queryKey: ['resolved-league-preferences', leagueId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('resolved_league_preferences')
-        .select('handicap_type')
-        .eq('league_id', leagueId!)
-        .single();
-      if (error) return null;
-      return data;
-    },
-    enabled: !!leagueId,
-  });
-  const handicapType = statsResolvedPrefs?.handicap_type ?? 'points';
+  // Resolved preferences — lazy-migrates legacy leagues on first access
+  const { data: leaguePrefs } = useResolvedLeaguePrefs(leagueId);
+  const handicapType = leaguePrefs?.handicap_type ?? 'points';
 
   // Extract all player IDs (excluding substitutes)
   const allPlayerIds = teams.flatMap(team =>
