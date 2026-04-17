@@ -264,7 +264,7 @@ function ActionCard({
         }
       </p>
       <div className="flex flex-col gap-2">
-        {showContinueSetup && (
+        {showContinueSetup ? (
           <Button
             loadingText="Loading..."
             isLoading={isNavigating}
@@ -277,20 +277,20 @@ function ActionCard({
           >
             Continue Setup
           </Button>
+        ) : (
+          <Button
+            loadingText="Loading..."
+            isLoading={isNavigating}
+            onClick={() => {
+              setIsNavigating(true);
+              navigate(seasonCount === 0 ? `/league/${league.id}/create-season` : `/league/${league.id}/manage-teams`);
+            }}
+            disabled={isNavigating}
+            size="lg"
+          >
+            Let's Go!
+          </Button>
         )}
-        <Button
-          loadingText="Loading..."
-          isLoading={isNavigating}
-          variant={showContinueSetup ? 'outline' : undefined}
-          onClick={() => {
-            setIsNavigating(true);
-            navigate(seasonCount === 0 ? `/league/${league.id}/create-season` : `/league/${league.id}/manage-teams`);
-          }}
-          disabled={isNavigating}
-          size="lg"
-        >
-          {showContinueSetup ? 'Use Original Wizard' : "Let's Go!"}
-        </Button>
       </div>
     </div>
   );
