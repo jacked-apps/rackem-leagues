@@ -9,6 +9,7 @@
  */
 
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -63,6 +64,12 @@ interface PlayerSelectionRowProps {
 
   /** Hide handicap display? (used in tiebreaker mode) */
   hideHandicap?: boolean;
+
+  /** Manual handicap entry value (Fargo — LO types the rating) */
+  manualHandicapValue?: string;
+
+  /** Called when manual handicap value changes */
+  onManualHandicapChange?: (position: number, value: string) => void;
 }
 
 /**
@@ -87,7 +94,11 @@ export function PlayerSelectionRow({
   onSubHandicapChange,
   showSubHandicapSelector = false,
   hideHandicap = false,
+  manualHandicapValue,
+  onManualHandicapChange,
 }: PlayerSelectionRowProps) {
+  const isManualEntry = handicapType === 'fargo' && onManualHandicapChange;
+
   return (
     <div className="flex gap-2 items-center">
       {/* Position Number */}
@@ -95,13 +106,28 @@ export function PlayerSelectionRow({
         <div className="text-sm font-semibold text-gray-700">{position}</div>
       </div>
 
-      {/* Handicap Display - Hidden in tiebreaker mode */}
+      {/* Handicap Display — editable input for Fargo, read-only for others */}
       {!hideHandicap && (
-        <div className="w-12 text-center">
-          <div className="text-sm font-semibold text-blue-600">
-            {playerId ? formatHandicap(handicap, handicapType === 'percentage') : '-'}
+        isManualEntry ? (
+          <div className="w-16">
+            <Input
+              type="number"
+              min={100}
+              max={850}
+              value={manualHandicapValue ?? ''}
+              onChange={(e) => onManualHandicapChange(position, e.target.value)}
+              disabled={locked || !playerId}
+              placeholder="—"
+              className="text-center text-sm font-semibold h-8 px-1"
+            />
           </div>
-        </div>
+        ) : (
+          <div className="w-12 text-center">
+            <div className="text-sm font-semibold text-blue-600">
+              {playerId ? formatHandicap(handicap, handicapType === 'percentage') : '-'}
+            </div>
+          </div>
+        )
       )}
 
       {/* Player Dropdown */}

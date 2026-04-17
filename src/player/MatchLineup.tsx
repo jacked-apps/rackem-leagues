@@ -126,6 +126,24 @@ export function MatchLineup() {
   // Get update mutation for direct dropdown saves
   const updateLineupMutation = useUpdateMatchLineup();
 
+  // Manual Fargo rating entry — LO types in each player's current rating.
+  // Keyed by position (1-5). Only used when handicapType === 'fargo'.
+  const [manualHandicaps, setManualHandicaps] = useState<Record<number, string>>({});
+  const handleManualHandicapChange = (position: number, value: string) => {
+    setManualHandicaps((prev) => ({ ...prev, [position]: value }));
+    // Save to DB on each valid entry so the value persists
+    if (lineup.lineupId && matchId) {
+      const parsed = parseInt(value, 10);
+      if (Number.isFinite(parsed)) {
+        updateLineupMutation.mutate({
+          lineupId: lineup.lineupId,
+          updates: { [`player${position}_handicap`]: parsed },
+          matchId,
+        });
+      }
+    }
+  };
+
   // Fetch all match games (for tiebreaker mode)
   const matchGamesQuery = useMatchGames(matchId);
   const allGames = matchGamesQuery.data || [];
@@ -669,6 +687,13 @@ export function MatchLineup() {
               captainId={teamDetailsQuery.data?.captain_id}
             />
 
+            {/* Fargo manual entry banner */}
+            {handicapType === 'fargo' && !isTiebreakerMode && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                <strong>Automatic Fargo ratings coming soon</strong> — for now, enter each player&apos;s current rating manually.
+              </div>
+            )}
+
             {/* Player Selection Dropdowns */}
             <div className="pt-2">
               {/* Header Row */}
@@ -680,8 +705,10 @@ export function MatchLineup() {
                 </div>
                 {/* Hide handicap column in tiebreaker mode */}
                 {!isTiebreakerMode && (
-                  <div className="w-12 text-center">
-                    <div className="text-xs font-medium text-gray-500">H/C</div>
+                  <div className={`${handicapType === 'fargo' ? 'w-16' : 'w-12'} text-center`}>
+                    <div className="text-xs font-medium text-gray-500">
+                      {handicapType === 'fargo' ? 'Fargo' : 'H/C'}
+                    </div>
                   </div>
                 )}
                 <div className="flex-1">
@@ -771,6 +798,8 @@ export function MatchLineup() {
                       onSubHandicapChange={handleSubHandicapChange}
                       showSubHandicapSelector={!isTiebreakerMode && handicapType === 'points'}
                       hideHandicap={isTiebreakerMode}
+                      manualHandicapValue={manualHandicaps[position]}
+                      onManualHandicapChange={handicapType === 'fargo' ? handleManualHandicapChange : undefined}
                     />
                   );
                 })}
