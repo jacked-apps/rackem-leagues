@@ -1,0 +1,151 @@
+/**
+ * @fileoverview useFlowStageDetection — checks the DB to determine which
+ * stages are complete for a given league.
+ *
+ * Used on page mount to skip past already-completed stages and drive the
+ * "Continue Wizard" button's target stage on the league detail page.
+ * The database is the source of truth — not localStorage.
+ *
+ * Stage checks (cascading):
+ *   Stage 0 (League):   leagueId exists in URL      → done
+ *   Stage 1 (Season):   seasons has a row           → done
+ *   Stage 2 (Schedule): season_weeks has rows       → done
+ *   Stage 3 (Teams):    teams has rows              → done
+ *   Stage 4 (Matchups): season.status === 'active'  → done (flow complete → 5)
+ */
+
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/supabaseClient';
+
+interface StageDetectionResult {
+  isLoading: boolean;
+  /** Index of the first incomplete stage (0-based). 5 = all stages done. */
+  firstIncompleteStage: number;
+  /** Data discovered from the DB */
+  context: {
+    leagueId?: string;
+    leagueStartDate?: string;
+    leagueName?: string;
+    gameType?: string;
+    leagueFormat?: string;
+    dayOfWeek?: string;
+    division?: string;
+    seasonId?: string;
+  };
+}
+
+/**
+ * Query the DB to figure out which flow stages are already complete.
+ * Returns the index of the first incomplete stage (or 5 if all done).
+ */
+export function useFlowStageDetection(leagueId: string | null): StageDetectionResult {
+  const { data, isLoading } = useQuery({
+    queryKey: ['flow-stage-detection', leagueId],
+    queryFn: async () => {
+      if (!leagueId) return null;
+
+      // Fetch league details (needed by Season wizard + summary display)
+      const { data: league } = await supabase
+        .from('leagues')
+        .select('league_start_date, game_type, team_format, division, day_of_week')
+        .eq('id', leagueId)
+        .single();
+
+      // Fetch the most-recent season for this league (if any)
+      const { data: season } = await supabase
+        .from('seasons')
+        .select('id, status')
+        .eq('league_id', leagueId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      // If a season exists, check downstream stage progress in parallel
+      let hasSchedule = false;
+      let hasTeams = false;
+      if (season?.id) {
+        const [weeksRes, teamsRes] = await Promise.all([
+          supabase
+            .from('season_weeks')
+            .select('*', { count: 'exact', head: true })
+            .eq('season_id', season.id),
+          supabase
+            .from('teams')
+            .select('*', { count: 'exact', head: true })
+            .eq('season_id', season.id),
+        ]);
+        hasSchedule = (weeksRes.count ?? 0) > 0;
+        hasTeams = (teamsRes.count ?? 0) > 0;
+      }
+
+      // Build the league name from its fields
+      const gameTypeMap: Record<string, string> = {
+        eight_ball: '8 Ball', nine_ball: '9 Ball', ten_ball: '10 Ball',
+      };
+      const gameType = league?.game_type ?? '';
+      const dayOfWeek = league?.day_of_week ?? '';
+      const dayCapitalized = dayOfWeek.charAt(0).toUpperCase() + dayOfWeek.slice(1);
+      const nameParts = [gameTypeMap[gameType] ?? gameType, dayCapitalized, league?.division].filter(Boolean);
+      const leagueName = nameParts.join(' ');
+
+      return {
+        leagueStartDate: league?.league_start_date ?? null,
+        leagueName: leagueName || null,
+        gameType: gameType || null,
+        leagueFormat: league?.team_format ?? null,
+        dayOfWeek: dayOfWeek || null,
+        division: league?.division ?? null,
+        seasonId: season?.id ?? null,
+        seasonActive: season?.status === 'active',
+        hasSchedule,
+        hasTeams,
+      };
+    },
+    enabled: !!leagueId,
+    staleTime: 0, // Always check fresh
+  });
+
+  // No leagueId = start at stage 0 (league creation)
+  if (!leagueId) {
+    return { isLoading: false, firstIncompleteStage: 0, context: {} };
+  }
+
+  // LeagueId exists = stage 0 done; while fetching, hold on stage 1
+  if (isLoading) {
+    return { isLoading: true, firstIncompleteStage: 1, context: { leagueId } };
+  }
+
+  const leagueStartDate = data?.leagueStartDate ?? undefined;
+  const leagueName = data?.leagueName ?? undefined;
+  const gameType = data?.gameType ?? undefined;
+  const leagueFormat = data?.leagueFormat ?? undefined;
+  const dayOfWeek = data?.dayOfWeek ?? undefined;
+  const division = data?.division ?? undefined;
+
+  const baseCtx = { leagueId, leagueStartDate, leagueName, gameType, leagueFormat, dayOfWeek, division };
+
+  // Stage 1 check: season exists?
+  if (!data?.seasonId) {
+    return { isLoading: false, firstIncompleteStage: 1, context: baseCtx };
+  }
+
+  const ctx = { ...baseCtx, seasonId: data.seasonId };
+
+  // Stage 4 check: season activated (matchups finished) — everything done
+  if (data.seasonActive) {
+    return { isLoading: false, firstIncompleteStage: 5, context: ctx };
+  }
+
+  // Stage 2 check: schedule weeks exist?
+  if (!data.hasSchedule) {
+    return { isLoading: false, firstIncompleteStage: 2, context: ctx };
+  }
+
+  // Stage 3 check: teams exist?
+  if (!data.hasTeams) {
+    return { isLoading: false, firstIncompleteStage: 3, context: ctx };
+  }
+
+  // Schedule + teams both exist, season not yet active → resume at matchups
+  return { isLoading: false, firstIncompleteStage: 4, context: ctx };
+}

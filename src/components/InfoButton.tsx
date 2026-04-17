@@ -27,6 +27,27 @@ interface InfoButtonProps {
  * @param size - Size variant: 'sm' (16px) or 'default' (24px)
  * @param align - Force popup alignment: 'left', 'right', or 'center'. Auto-detects if not set.
  */
+/** Calculate fixed position for the popup based on button location and alignment */
+function getPopupStyle(
+  button: HTMLButtonElement | null,
+  position: 'left' | 'right' | 'center',
+): React.CSSProperties {
+  if (!button) return {};
+  const rect = button.getBoundingClientRect();
+  const popupWidth = 320;
+  const topOffset = rect.bottom + 4; // 4px gap below button
+
+  if (position === 'left') {
+    return { top: topOffset, left: Math.max(8, rect.left) };
+  }
+  if (position === 'right') {
+    return { top: topOffset, right: Math.max(8, window.innerWidth - rect.right) };
+  }
+  // Center
+  const centerLeft = rect.left + rect.width / 2 - popupWidth / 2;
+  return { top: topOffset, left: Math.max(8, Math.min(centerLeft, window.innerWidth - popupWidth - 8)) };
+}
+
 export const InfoButton: React.FC<InfoButtonProps> = ({
   title,
   children,
@@ -114,9 +135,8 @@ export const InfoButton: React.FC<InfoButtonProps> = ({
       {showInfo && (
         <div
           ref={popupRef}
-          className={`absolute top-8 z-50 w-80 p-4 bg-white border border-gray-200 rounded-lg shadow-lg ${
-            popupPosition === 'left' ? 'left-0' : popupPosition === 'right' ? 'right-0' : 'left-1/2 -translate-x-1/2'
-          }`}
+          className="fixed z-50 w-80 p-4 bg-white border border-gray-200 rounded-lg shadow-lg"
+          style={getPopupStyle(buttonRef.current, popupPosition)}
         >
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-semibold text-gray-900">{title}</h3>

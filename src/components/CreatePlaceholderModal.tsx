@@ -156,7 +156,7 @@ export function CreatePlaceholderModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add Placeholder Player</DialogTitle>
           <DialogDescription className="space-y-2">

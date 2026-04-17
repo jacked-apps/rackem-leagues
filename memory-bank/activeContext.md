@@ -1,5 +1,20 @@
 # Active Context
 
+> ## 🚨 KNOWN HIGH-SEVERITY ISSUE — READ BEFORE TOUCHING TEAMS/MATCHES
+>
+> **Team deletion cascades destroy matches.** The `matches` table has
+> `ON DELETE CASCADE` on team foreign keys. Deleting a team in
+> `src/operator/TeamManagement.tsx` silently destroys all of that team's
+> scheduled matches and breaks other teams' schedules.
+>
+> **Mitigation in place:** Honest warning dialog (see `handleDeleteTeam`).
+> **Real fix:** Pending — see `memory-bank/edsPlan.md` → "CRITICAL: Team
+> Deletion Cascade Issue" for details and possible approaches.
+>
+> Discovered: 2026-04-09 during wizard 2.0 planning.
+
+---
+
 ## Current Work Focus
 
 ### **🎯 CURRENT: MVP Development**

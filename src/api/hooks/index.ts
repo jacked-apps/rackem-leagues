@@ -270,8 +270,15 @@ export {
 export {
   useCreatePreference,
   useUpdatePreference,
+  useUpsertPreference,
   useDeletePreference,
 } from './usePreferenceMutations';
+
+// Wizard 2.0 detection
+export { useIsWizard2League } from './useIsWizard2League';
+
+// Flow progress (usable on dashboard/league pages to show setup progress)
+export { useFlowStageDetection } from '@/wizards/league-v2/useFlowStageDetection';
 
 // Invite hooks
 export { usePendingInvites } from './usePendingInvites';

@@ -4,6 +4,60 @@ Tasks and refactoring items for Ed to work on.
 
 ---
 
+## 🚨 CRITICAL BUG: Team Deletion Destroys Matches
+
+**Discovered:** 2026-04-09 during wizard 2.0 planning
+**Severity:** HIGH — could destroy season data with one click
+**Branch needed:** `fix-team-cascade-deletion`
+
+**The problem:**
+The `matches` table has `ON DELETE CASCADE` on both `home_team_id` and
+`away_team_id` foreign keys. When a team is deleted via
+`src/operator/TeamManagement.tsx` → `handleDeleteTeam`, the database
+silently destroys ALL of that team's scheduled matches for the season.
+This breaks other teams' weekly schedules and orphans season standings
+that reference the destroyed matches.
+
+**Current state (mitigation only — NOT a real fix):**
+- Confirmation dialog message has been updated to honestly warn about
+  match destruction (was previously misleading — only mentioned losing
+  the team and roster)
+- Inline TODO comments added to `src/operator/TeamManagement.tsx` →
+  `handleDeleteTeam` function
+- Cascade warning added to `memory-bank/databaseSchema.md`
+- Critical entry added to `memory-bank/edsPlan.md`
+- Warning callout added to `memory-bank/activeContext.md`
+
+**Possible real fixes (Ed to choose approach):**
+1. **Block deletion entirely** if the team has any matches in the season.
+   Force operator to use a different workflow (replacement, regenerate
+   schedule, etc.). Safest, simplest.
+2. **Soft delete pattern** — add `deleted_at` column to `teams`. Mark as
+   deleted instead of removing the row. Matches stay intact but team is
+   hidden from active views.
+3. **Team replacement workflow** — UI that swaps a deleted team with a
+   replacement team in all match records before deletion happens.
+4. **Combination:** soft delete + replacement workflow + hard delete only
+   when there are no matches.
+
+**Files involved when fixing:**
+- `src/operator/TeamManagement.tsx` (delete handler — has TODO comments)
+- Database schema: `matches` table foreign keys (cascade behavior)
+- Possibly add a `deleted_at` column to `teams` if going soft-delete route
+- Any queries that filter teams may need to add `WHERE deleted_at IS NULL`
+
+**When this matters:**
+- Mid-season team drops (real scenario this needs to handle)
+- Operator mistakes (clicking delete on wrong team)
+- Cleanup of stale/test teams that have associated matches
+
+**Until this is fixed:**
+The honest warning message prevents accidental destruction, but the
+underlying cascade is still dangerous. Treat team deletion as
+destructive and avoid it on real seasons until a proper fix lands.
+
+---
+
 ## 1. Refactor PlayerNameLink Component
 
 **Branch needed:** `refactor-player-name-link`
@@ -182,3 +236,60 @@ const mutation = useMutation({
 ## Future Items
 
 (Add more items here as needed)
+
+---
+
+## 3. Automated Championship Date Reminders
+
+**Branch needed:** `championship-date-reminders`
+**Discovered:** 2026-04-16
+
+**Problem:** BCA and APA national championship dates need to be entered into
+the `championship_date_options` table each year. Easy to forget, and missing
+dates means the schedule wizard can't flag conflicts for those weeks.
+
+**Solution:** Supabase Edge Function on a cron schedule that checks if
+upcoming year's dates are missing and sends reminder emails to devs.
+
+**Reuse existing infrastructure:**
+- Resend is already set up (see `supabase/functions/send-invite/index.ts`)
+- `RESEND_API_KEY` env var already configured
+- Email send pattern can be copied directly
+
+**Implementation:**
+1. Create `supabase/functions/check-championship-dates/index.ts`
+2. Function queries `championship_date_options` for upcoming year
+3. If missing → call Resend API to send reminder
+4. Schedule via Supabase cron (monthly Sept-Nov for BCA, Jan-Apr for APA)
+
+**Recipients:** Either env var (`DEV_NOTIFICATION_EMAILS`) or new
+`dev_notification_recipients` table.
+
+**Effort:** ~50 lines of code. Hardest part is configuring the cron in Supabase.
+
+**Reference:** See `memory-bank/plans/TODO-championship-date-reminders.md`
+for full details.
+
+---
+
+## 4. Refactor TeamManagement.tsx (too big)
+
+**Branch needed:** `refactor-team-management`
+**Discovered:** 2026-04-16
+
+**Problem:** `src/operator/TeamManagement.tsx` is ~800 lines. Hard to navigate,
+hard to test, violates the project's "under 100 lines" preference. Does a lot:
+venue assignment, team creation/editing, roster management, team importing,
+bulk actions, table number assignments.
+
+**Goal:** Break it down into smaller, focused components.
+
+**Suggested splits:**
+- `VenueAssignmentSection.tsx` — assigning venues to the league
+- `TeamList.tsx` — displaying teams, expansion state
+- `TeamEditorModal.tsx` — already exists, keep
+- `TeamImportSection.tsx` — copy from previous season
+- `useTeamManagementActions.ts` — extract handlers into a hook
+- `TeamManagement.tsx` — orchestrator, under 100 lines
+
+**Effort:** Medium. Mostly extraction, no logic changes.

@@ -36,6 +36,7 @@ export interface Member {
   starting_handicap_3v3: number | null; // Starting handicap for 3v3 format. NULL = not yet authorized.
   starting_handicap_5v5: number | null; // Starting handicap for 5v5 format. NULL = not yet authorized.
   profanity_filter_enabled?: boolean; // User's profanity filter preference
+  fargo_rating: number | null; // FargoRate rating (100-850). NULL = not set.
   created_at: string; // ISO timestamp
   updated_at: string; // ISO timestamp
 }

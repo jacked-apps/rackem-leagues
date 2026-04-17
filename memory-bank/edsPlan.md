@@ -1,3 +1,46 @@
+============================================================
+🚨 CRITICAL: Team Deletion Cascade Issue
+============================================================
+
+**Discovered:** 2026-04-09 during wizard 2.0 planning
+
+**The problem:**
+Database schema has `ON DELETE CASCADE` on `matches.home_team_id` and
+`matches.away_team_id`. Deleting a team in `TeamManagement.tsx` silently
+destroys ALL of that team's scheduled matches for the season, breaking
+other teams' weekly schedules and any season standings/history.
+
+**Current state (temporary mitigation in place):**
+- Confirmation dialog message has been updated to honestly warn the user
+  that match destruction will occur (was previously misleading — only
+  mentioned losing the team and roster)
+- Inline TODO comments added to `src/operator/TeamManagement.tsx`
+  → `handleDeleteTeam` function
+
+**This is NOT a real fix.** The honest warning prevents accidental
+destruction, but the underlying cascade is still dangerous.
+
+**Possible real fixes (Ed to decide):**
+1. Block deletion entirely if the team has any matches in the season.
+   Force operator to use a different workflow (replacement, regenerate
+   schedule, etc.).
+2. Soft delete pattern — mark team as `deleted_at` instead of removing
+   the row. Matches stay intact but team is hidden from active views.
+3. Team replacement workflow — UI that swaps a deleted team with a
+   replacement team in all match records before deletion.
+4. Combination: soft delete + replacement workflow + hard delete only
+   when there are no matches.
+
+**Files affected when fixing:**
+- `src/operator/TeamManagement.tsx` (delete handler)
+- Database schema: `matches` table foreign keys
+- Possibly add a `deleted_at` column to `teams` if going soft-delete route
+
+**Severity:** HIGH — could destroy season data with one click. Mid-season
+team drops are a real scenario this needs to handle correctly.
+
+============================================================
+
 ==== Message System ======
 
 #

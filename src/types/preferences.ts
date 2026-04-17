@@ -38,6 +38,14 @@ export interface Preferences {
   // Content Moderation (NULL = use next level default, system default: false)
   profanity_filter_enabled: boolean | null;
 
+  // Modular Configuration (Wizard 2.0 — NULL = use next level default)
+  lineup_size: number | null;
+  max_roster_size: number | null;
+  game_generation: string | null;
+  handicap_type: string | null;
+  points_system: string | null;
+  threshold_chart_id: string | null;
+
   // Timestamps
   created_at: string;
   updated_at: string;
@@ -57,6 +65,12 @@ export type PreferencesInsertData = {
   golden_break_counts_as_win?: boolean | null;
   allow_unauthorized_players?: boolean | null;
   profanity_filter_enabled?: boolean | null;
+  lineup_size?: number | null;
+  max_roster_size?: number | null;
+  game_generation?: string | null;
+  handicap_type?: string | null;
+  points_system?: string | null;
+  threshold_chart_id?: string | null;
 };
 
 /**
@@ -108,6 +122,14 @@ export interface ResolvedLeaguePreferences {
   golden_break_counts_as_win: boolean;
   allow_unauthorized_players: boolean;
   profanity_filter_enabled: boolean;
+
+  // Modular fields (Wizard 2.0)
+  lineup_size: number;
+  max_roster_size: number;
+  game_generation: string;
+  handicap_type: string;
+  points_system: string;
+  threshold_chart_id: string | null;
 }
 
 /**
@@ -122,4 +144,12 @@ export const SYSTEM_DEFAULTS = {
   golden_break_counts_as_win: true,
   allow_unauthorized_players: true,
   profanity_filter_enabled: false,
+
+  // Modular defaults (Wizard 2.0)
+  lineup_size: 3,
+  max_roster_size: 5,
+  game_generation: 'double_round_robin',
+  handicap_type: 'points',
+  points_system: 'differential',
+  threshold_chart_id: null,
 } as const;

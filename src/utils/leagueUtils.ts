@@ -148,10 +148,10 @@ export const buildLeagueTitle = (options: {
     parts.push(gameTypeMap[options.gameType] || options.gameType);
   }
 
-  // Day of week: tuesday -> Tuesdays (capitalize and pluralize)
+  // Day of week: tuesday -> Tuesday (capitalize, no plural)
   if (options.dayOfWeek) {
     const dayName = options.dayOfWeek.charAt(0).toUpperCase() + options.dayOfWeek.slice(1);
-    parts.push(dayName + 's');
+    parts.push(dayName);
   }
 
   // Division/qualifier if exists

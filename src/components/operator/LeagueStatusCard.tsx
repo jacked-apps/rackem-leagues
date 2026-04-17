@@ -42,8 +42,8 @@ export const LeagueStatusCard: React.FC<LeagueStatusCardProps> = ({
   const [loading, setLoading] = useState(true);
   const [seasonCount, setSeasonCount] = useState(0);
   const [teamCount, setTeamCount] = useState(0);
-  const [playerCount, setPlayerCount] = useState(0);
   const [scheduleExists, setScheduleExists] = useState(false);
+  const [matchupsExist, setMatchupsExist] = useState(false);
   const [activeSeason, setActiveSeason] = useState<any | null>(null);
   const [completedWeeksCount, setCompletedWeeksCount] = useState(0);
   const [totalWeeksCount, setTotalWeeksCount] = useState(0);
@@ -62,92 +62,79 @@ export const LeagueStatusCard: React.FC<LeagueStatusCardProps> = ({
           .eq('league_id', league.id);
         setSeasonCount(seasonCountResult || 0);
 
-        // Fetch active season (if any)
-        const { data: activeSeasonData } = await supabase
+        // Fetch the most-recent season (any status). Previously this only
+        // fetched active seasons, which meant upcoming seasons (mid-setup)
+        // reported 0 teams / no schedule and the card was always misleading.
+        const { data: mostRecentSeason } = await supabase
           .from('seasons')
           .select('*')
           .eq('league_id', league.id)
-          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(1)
           .maybeSingle();
 
-        if (activeSeasonData) {
-          setActiveSeason(activeSeasonData);
+        if (mostRecentSeason) {
+          // Only flag as "active" if the LO has finished Matchups (status=active).
+          setActiveSeason(mostRecentSeason.status === 'active' ? mostRecentSeason : null);
 
-          // Get week counts for the active season
-          const { data: regularWeeks } = await supabase
-            .from('season_weeks')
-            .select('id')
-            .eq('season_id', activeSeasonData.id)
-            .eq('week_type', 'regular');
+          // These counts apply to ANY season (upcoming, active, completed) so
+          // the progress bar and next-steps list reflect real state during setup.
+          const [teamRes, scheduleRes, matchRes] = await Promise.all([
+            supabase.from('teams').select('*', { count: 'exact', head: true }).eq('season_id', mostRecentSeason.id),
+            supabase.from('season_weeks').select('*', { count: 'exact', head: true }).eq('season_id', mostRecentSeason.id),
+            supabase.from('matches').select('*', { count: 'exact', head: true }).eq('season_id', mostRecentSeason.id),
+          ]);
+          setTeamCount(teamRes.count || 0);
+          setScheduleExists((scheduleRes.count || 0) > 0);
+          setMatchupsExist((matchRes.count || 0) > 0);
 
-          const totalWeeks = regularWeeks?.length || 0;
-          setTotalWeeksCount(totalWeeks);
+          // Week-completion stats only meaningful once season is active
+          if (mostRecentSeason.status === 'active') {
+            const { data: regularWeeks } = await supabase
+              .from('season_weeks')
+              .select('id')
+              .eq('season_id', mostRecentSeason.id)
+              .eq('week_type', 'regular');
 
-          // Calculate completed weeks by checking match status
-          if (regularWeeks && regularWeeks.length > 0) {
-            const weekIds = regularWeeks.map(w => w.id);
+            const totalWeeks = regularWeeks?.length || 0;
+            setTotalWeeksCount(totalWeeks);
 
-            // Get all matches grouped by week
-            const { data: matches } = await supabase
-              .from('matches')
-              .select('season_week_id, status')
-              .in('season_week_id', weekIds);
+            if (regularWeeks && regularWeeks.length > 0) {
+              const weekIds = regularWeeks.map(w => w.id);
+              const { data: matches } = await supabase
+                .from('matches')
+                .select('season_week_id, status')
+                .in('season_week_id', weekIds);
 
-            // Count matches per week and check if all are completed
-            const weekMatchCounts = new Map<string, { total: number; completed: number }>();
+              const weekMatchCounts = new Map<string, { total: number; completed: number }>();
+              matches?.forEach(match => {
+                const weekId = match.season_week_id;
+                if (!weekId) return;
+                const counts = weekMatchCounts.get(weekId) || { total: 0, completed: 0 };
+                counts.total++;
+                if (match.status === 'completed' || match.status === 'verified') counts.completed++;
+                weekMatchCounts.set(weekId, counts);
+              });
 
-            matches?.forEach(match => {
-              const weekId = match.season_week_id;
-              if (!weekId) return;
-
-              const counts = weekMatchCounts.get(weekId) || { total: 0, completed: 0 };
-              counts.total++;
-              if (match.status === 'completed' || match.status === 'verified') {
-                counts.completed++;
-              }
-              weekMatchCounts.set(weekId, counts);
-            });
-
-            // Count how many weeks have all matches completed
-            let completedWeeks = 0;
-            weekIds.forEach(weekId => {
-              const counts = weekMatchCounts.get(weekId);
-              if (counts && counts.total > 0 && counts.completed === counts.total) {
-                completedWeeks++;
-              }
-            });
-
-            setCompletedWeeksCount(completedWeeks);
+              let completedWeeks = 0;
+              weekIds.forEach(weekId => {
+                const counts = weekMatchCounts.get(weekId);
+                if (counts && counts.total > 0 && counts.completed === counts.total) completedWeeks++;
+              });
+              setCompletedWeeksCount(completedWeeks);
+            } else {
+              setCompletedWeeksCount(0);
+            }
           } else {
+            setTotalWeeksCount(0);
             setCompletedWeeksCount(0);
           }
-
-          // Get team count for active season
-          const { count: teamCountResult } = await supabase
-            .from('teams')
-            .select('*', { count: 'exact', head: true })
-            .eq('season_id', activeSeasonData.id);
-          setTeamCount(teamCountResult || 0);
-
-          // Get player count across all teams in active season
-          const { count: playerCountResult } = await supabase
-            .from('team_players')
-            .select('*', { count: 'exact', head: true })
-            .eq('season_id', activeSeasonData.id);
-          setPlayerCount(playerCountResult || 0);
-
-          // Check if schedule exists
-          const { count: scheduleCount } = await supabase
-            .from('season_weeks')
-            .select('*', { count: 'exact', head: true })
-            .eq('season_id', activeSeasonData.id);
-          setScheduleExists((scheduleCount || 0) > 0);
         } else {
-          // No active season - check if ANY season exists
+          // No season at all yet
           setActiveSeason(null);
           setTeamCount(0);
-          setPlayerCount(0);
           setScheduleExists(false);
+          setMatchupsExist(false);
           setTotalWeeksCount(0);
           setCompletedWeeksCount(0);
         }
@@ -162,33 +149,32 @@ export const LeagueStatusCard: React.FC<LeagueStatusCardProps> = ({
   }, [league.id]);
 
   /**
-   * Determine current status
+   * Determine current status.
+   * Setup stages mirror Wizard 2.0: Season → Schedule → Teams → Matchups → Activate.
+   * A season is only "ready" once all stages are done (activation is the final flip).
    */
   const getStatus = (): LeagueStatus => {
     if (activeSeason) return 'in_session';
-    if (seasonCount > 0 && teamCount > 0 && playerCount > 0 && scheduleExists) return 'ready';
+    if (seasonCount > 0 && scheduleExists && teamCount > 0 && matchupsExist) return 'ready';
     return 'setup';
   };
 
   /**
-   * Calculate progress percentage
+   * Calculate progress percentage.
    * - If in session: season progress (weeks completed / total weeks)
-   * - Otherwise: setup progress (0-100% based on setup tasks)
+   * - Otherwise: 4 setup stages (Season / Schedule / Teams / Matchups), 25% each.
+   *   Activation (status=active) is implicit — it lands you on the in-session path.
    */
   const calculateProgress = (): number => {
     if (activeSeason && totalWeeksCount > 0) {
       return Math.round((completedWeeksCount / totalWeeksCount) * 100);
     }
 
-    // Setup progress
     let progress = 0;
-    if (seasonCount > 0) progress += 20;
-    if (teamCount > 0) progress += 20;
-    if (playerCount > 0) progress += 20;
-    if (scheduleExists) progress += 20;
-    if (seasonCount > 0 && teamCount > 0 && playerCount > 0 && scheduleExists) {
-      progress += 20; // All done!
-    }
+    if (seasonCount > 0) progress += 25;
+    if (scheduleExists) progress += 25;
+    if (teamCount > 0) progress += 25;
+    if (matchupsExist) progress += 25;
     return progress;
   };
 
@@ -217,7 +203,8 @@ export const LeagueStatusCard: React.FC<LeagueStatusCardProps> = ({
   };
 
   /**
-   * Get next action text
+   * Get next action text.
+   * Ordered to match Wizard 2.0 stages: Season → Schedule → Teams → Matchups → Activate.
    */
   const getNextAction = (): string => {
     if (activeSeason) {
@@ -225,10 +212,10 @@ export const LeagueStatusCard: React.FC<LeagueStatusCardProps> = ({
     }
 
     if (seasonCount === 0) return 'Next: Create your first season';
+    if (!scheduleExists) return 'Next: Set up the weekly schedule';
     if (teamCount === 0) return 'Next: Add teams to your season';
-    if (playerCount === 0) return 'Next: Enroll players on each team';
-    if (!scheduleExists) return 'Next: Generate the schedule';
-    return "All set! You're ready to start!";
+    if (!matchupsExist) return 'Next: Generate the matchups';
+    return "All set! Finish the wizard to activate the season.";
   };
 
   const status = getStatus();
@@ -301,19 +288,19 @@ export const LeagueStatusCard: React.FC<LeagueStatusCardProps> = ({
         ) : (
           <ol className="list-decimal list-inside text-blue-800 space-y-1">
             <li className={seasonCount > 0 ? 'line-through opacity-50' : ''}>
-              Create your first season (set dates and weeks)
-            </li>
-            <li className={teamCount > 0 ? 'line-through opacity-50' : ''}>
-              Add teams to the season
-            </li>
-            <li className={playerCount > 0 ? 'line-through opacity-50' : ''}>
-              Enroll players on each team
+              Create the season (dates, length, playoff format)
             </li>
             <li className={scheduleExists ? 'line-through opacity-50' : ''}>
-              Generate the schedule
+              Set up the weekly schedule (blackout weeks, championships)
             </li>
-            <li className={seasonCount > 0 && teamCount > 0 && playerCount > 0 && scheduleExists ? 'line-through opacity-50' : ''}>
-              You're ready to start!
+            <li className={teamCount > 0 ? 'line-through opacity-50' : ''}>
+              Add teams and captains
+            </li>
+            <li className={matchupsExist ? 'line-through opacity-50' : ''}>
+              Generate the matchups (team positions + round-robin)
+            </li>
+            <li className={activeSeason ? 'line-through opacity-50' : ''}>
+              Accept the schedule to activate the season
             </li>
           </ol>
         )}

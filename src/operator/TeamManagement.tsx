@@ -339,11 +339,29 @@ export const TeamManagement: React.FC = () => {
 
   /**
    * Handle team deletion
+   *
+   * ⚠️ CRITICAL TODO — DESTRUCTIVE CASCADE WARNING ⚠️
+   * The database schema has `ON DELETE CASCADE` on `matches.home_team_id` and
+   * `matches.away_team_id`. Deleting a team here will silently destroy ALL of
+   * that team's scheduled matches for the season, breaking other teams'
+   * weekly schedules and any season standings/history that reference them.
+   *
+   * The current confirmation dialog warns about losing the team and roster
+   * but does NOT mention the match destruction. This needs a real fix:
+   *   - Block deletion entirely if matches exist (safest)
+   *   - Or implement soft delete / replacement workflow
+   *   - Or build a "team replacement" feature that swaps the team in matches
+   *
+   * Until that fix lands, the warning message below has been updated to
+   * honestly describe what gets destroyed. See:
+   *   - memory-bank/edsPlan.md → "CRITICAL: Team Deletion Cascade Issue"
+   *   - memory-bank/databaseSchema.md (cascade warning)
+   *   - memory-bank/plans/PLAN-wizard2.md → "Tech Debt Discovered" section
    */
   const handleDeleteTeam = async (teamId: string) => {
     const confirmed = await confirm({
       title: 'Delete Team?',
-      message: 'Are you sure you want to delete this team? This will also remove all roster players. This action cannot be undone.',
+      message: 'WARNING: Deleting this team will permanently remove the team and its roster, AND will destroy ALL scheduled matches involving this team for the season. Other teams\' weekly schedules may be affected. Season standings and history that reference this team may be impacted. This cannot be undone.',
       confirmText: 'Delete Team',
       confirmVariant: 'destructive',
     });
@@ -351,7 +369,8 @@ export const TeamManagement: React.FC = () => {
     if (!confirmed) return;
 
     try {
-      // Delete team (cascade will delete team_players)
+      // ⚠️ TODO: This delete triggers cascade destruction of matches.
+      // See the function-level comment above for details.
       const { error: deleteError } = await supabase
         .from('teams')
         .delete()

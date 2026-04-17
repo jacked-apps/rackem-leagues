@@ -94,7 +94,9 @@ export interface SeasonFormData {
 
 /**
  * Generate season name from league info and start date
- * Format: "Fall 2025 Monday 8-Ball" or "Spring 2026 Tuesday 9-Ball East Division"
+ * Format matches league name with season/year appended:
+ * "8 Ball Monday East Side Fall 2026"
+ * Game + Day + Qualifier + Season + Year
  */
 export function generateSeasonName(
   startDate: Date,
@@ -104,22 +106,17 @@ export function generateSeasonName(
 ): string {
   const month = startDate.getMonth();
 
-  // Determine season based on month
-  let seasonLabel: string;
-  if (month >= 2 && month <= 4) {
-    seasonLabel = 'Spring';
-  } else if (month >= 5 && month <= 7) {
-    seasonLabel = 'Summer';
-  } else if (month >= 8 && month <= 10) {
-    seasonLabel = 'Fall';
-  } else {
-    seasonLabel = 'Winter';
-  }
+  const seasonLabel =
+    month >= 2 && month <= 4 ? 'Spring' :
+    month >= 5 && month <= 7 ? 'Summer' :
+    month >= 8 && month <= 10 ? 'Fall' : 'Winter';
 
   const year = startDate.getFullYear();
-  const divisionText = division ? ` ${division}` : '';
+  const parts = [gameType, dayOfWeek];
+  if (division) parts.push(division);
+  parts.push(seasonLabel, year.toString());
 
-  return `${seasonLabel} ${year} ${dayOfWeek} ${gameType}${divisionText}`;
+  return parts.join(' ');
 }
 
 /**
