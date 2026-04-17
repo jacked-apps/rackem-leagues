@@ -112,7 +112,8 @@ function TeamAccordionItem({
 
       return scheduledDate < today;
     })
-    .sort((a, b) => a.scheduled_date!.localeCompare(b.scheduled_date!)); // Oldest first
+    .sort((a, b) => a.scheduled_date!.localeCompare(b.scheduled_date!)) // Oldest first
+    .slice(0, 1); // Show only the oldest makeup — keeps the list clean
 
   // Find upcoming matches (in_progress or future scheduled)
   const upcomingMatches = allMatches
@@ -135,8 +136,8 @@ function TeamAccordionItem({
     })
     .slice(0, 1); // Only show next upcoming
 
-  // Combine makeup + upcoming for display in header
-  const actionableMatches = [...makeupMatches, ...upcomingMatches];
+  // Combine: upcoming always first, then oldest makeup (max 2 buttons total)
+  const actionableMatches = [...upcomingMatches, ...makeupMatches];
 
   // Calculate team readiness
   const minRoster = team.roster_size === 5 ? 3 : 5;
@@ -484,7 +485,7 @@ export function MyTeams() {
         <TeamEditorModal
           leagueId={editData.leagueId}
           seasonId={editData.seasonId}
-          teamFormat={editData.teamFormat}
+          rosterSize={editData.rosterSize}
           venues={editData.venues}
           leagueVenues={editData.leagueVenues}
           members={editData.members}

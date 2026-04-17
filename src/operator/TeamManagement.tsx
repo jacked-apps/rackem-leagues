@@ -8,7 +8,7 @@
  */
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/supabaseClient';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -56,6 +56,23 @@ export const TeamManagement: React.FC = () => {
     error,
     refreshTeams,
   } = useTeamManagement(null, leagueId);
+
+  // Fetch resolved preferences to get max_roster_size (instead of hardcoding from team_format).
+  // The view cascades: league prefs → org prefs → system default (5).
+  const { data: resolvedPrefs } = useQuery({
+    queryKey: ['resolved-league-preferences', leagueId],
+    queryFn: async () => {
+      const { data, error: prefError } = await supabase
+        .from('resolved_league_preferences')
+        .select('max_roster_size, lineup_size')
+        .eq('league_id', leagueId!)
+        .single();
+      if (prefError) throw new Error(prefError.message);
+      return data;
+    },
+    enabled: !!leagueId,
+  });
+  const maxRosterSize: number = resolvedPrefs?.max_roster_size ?? 8;
 
   // Get organization ID from the league once it's loaded
   const organizationId = league?.organization_id || null;
@@ -773,7 +790,7 @@ export const TeamManagement: React.FC = () => {
           <TeamEditorModal
             leagueId={leagueId!}
             seasonId={seasonId}
-            teamFormat={league.team_format}
+            rosterSize={maxRosterSize}
             venues={venues}
             leagueVenues={leagueVenues}
             members={members}

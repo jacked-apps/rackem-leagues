@@ -112,10 +112,19 @@ export function useFlowStageHandlers({
         throw new Error('Missing season ID — cannot save teams');
       }
 
+      // Read max_roster_size from resolved preferences (the source of truth)
+      // instead of deriving from the old leagueFormat string.
+      const { data: prefs } = await supabase
+        .from('resolved_league_preferences')
+        .select('max_roster_size')
+        .eq('league_id', context.leagueId)
+        .single();
+      const maxRosterSize = prefs?.max_roster_size ?? 5;
+
       const result = await saveTeams.mutateAsync({
         leagueId: context.leagueId,
         seasonId: context.seasonId,
-        leagueFormat: context.leagueFormat ?? '5_man',
+        maxRosterSize,
         venueIds,
         captains,
       });
