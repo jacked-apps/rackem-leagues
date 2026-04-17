@@ -17,6 +17,64 @@ import { assignRandomPositions } from '@/utils/scheduleGenerator';
 import type { WizardStepProps } from '@/components/wizard';
 import type { MatchupsWizardFormData, MatchupTeamPosition } from '../matchupsWizardTypes';
 
+/**
+ * Controlled position input with a local draft buffer.
+ *
+ * Why: the committed value in the parent must always be a valid
+ * non-NaN number in [1..max]. But while the user is typing, the input
+ * may briefly be empty or out of range. A fully-controlled input that
+ * rejects invalid typing makes the field feel frozen — the user clears
+ * it, but state won't let the visual clear, so the field appears stuck.
+ *
+ * So: the input holds its own string draft. We only commit the parsed
+ * number upstream on blur or Enter. If the draft is invalid on commit,
+ * we snap back to the last known good value.
+ */
+function PositionInput({
+  value,
+  max,
+  disabled,
+  onCommit,
+}: {
+  value: number;
+  max: number;
+  disabled?: boolean;
+  onCommit: (n: number) => void;
+}) {
+  const [draft, setDraft] = useState(String(value));
+
+  // Re-sync when the upstream value changes (e.g., after a swap from
+  // editing another row, or after Shuffle).
+  useEffect(() => {
+    setDraft(String(value));
+  }, [value]);
+
+  const commit = () => {
+    const parsed = parseInt(draft, 10);
+    if (Number.isFinite(parsed) && parsed >= 1 && parsed <= max && parsed !== value) {
+      onCommit(parsed);
+    } else {
+      setDraft(String(value));
+    }
+  };
+
+  return (
+    <Input
+      type="number"
+      min={1}
+      max={max}
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+      }}
+      disabled={disabled}
+      className="text-center font-mono"
+    />
+  );
+}
+
 export function PositionsStep({
   value,
   onChange,
@@ -33,7 +91,9 @@ export function PositionsStep({
         .from('teams')
         .select('id, team_name, home_venue_id')
         .eq('season_id', seasonId!)
-        .order('team_name');
+        // Preserve the order the LO added captains during the Teams step,
+        // regardless of any subsequent team-name renames.
+        .order('created_at', { ascending: true });
       if (error) throw new Error(error.message);
       return data ?? [];
     },
@@ -67,10 +127,12 @@ export function PositionsStep({
     setShuffling(false);
   };
 
-  const handlePositionChange = (teamId: string, newPos: number) => {
-    if (newPos < 1 || newPos > positions.length) return;
+  const handlePositionCommit = (teamId: string, newPos: number) => {
+    // Defensive: PositionInput already validates, but double-check.
+    if (!Number.isFinite(newPos) || newPos < 1 || newPos > positions.length) return;
     const updated = positions.map((p) => ({ ...p }));
     const idx = updated.findIndex((t) => t.id === teamId);
+    if (idx === -1) return;
     const oldPos = updated[idx].schedule_position;
     const swapIdx = updated.findIndex((t) => t.schedule_position === newPos);
     if (swapIdx !== -1) updated[swapIdx].schedule_position = oldPos;
@@ -93,14 +155,11 @@ export function PositionsStep({
           <div key={team.id} className="flex items-center gap-3 p-3 border rounded-lg">
             <div className="w-20">
               <Label className="text-xs text-gray-600">Position</Label>
-              <Input
-                type="number"
-                min={1}
-                max={positions.length}
+              <PositionInput
                 value={team.schedule_position}
-                onChange={(e) => handlePositionChange(team.id, parseInt(e.target.value, 10))}
+                max={positions.length}
                 disabled={team.id === 'BYE'}
-                className="text-center font-mono"
+                onCommit={(n) => handlePositionCommit(team.id, n)}
               />
             </div>
             <p className="flex-1 font-medium">

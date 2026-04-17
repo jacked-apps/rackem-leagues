@@ -56,6 +56,7 @@ export function useSaveScheduleV2() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['season_weeks'] });
       queryClient.invalidateQueries({ queryKey: ['seasons'] });
+      queryClient.invalidateQueries({ queryKey: ['flow-stage-detection'] });
     },
   });
 }

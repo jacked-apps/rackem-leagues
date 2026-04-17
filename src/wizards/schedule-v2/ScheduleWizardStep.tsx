@@ -66,16 +66,6 @@ export function ScheduleWizardStep({
     return detectScheduleConflicts(schedule, filteredHolidays, undefined, undefined, dayOfWeek);
   }, [startDate, dayOfWeek, seasonLength, playoffWeeks, filteredHolidays]);
 
-  // Seed the form value with initialSchedule when unset. Ensures "Save New" has
-  // something to save even if the user didn't manually edit anything.
-  useEffect(() => {
-    if ((!value || value.length === 0) && initialSchedule.length > 0 && !pendingKeepAdvance) {
-      onChange(initialSchedule);
-    }
-    // onChange identity changes per render — intentionally exclude it.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialSchedule]);
-
   // After "Keep Existing" fires onChange([]), wait for the empty value to
   // propagate through state, then call onNext. This avoids a stale closure
   // in useWizardShell's handleNext that would otherwise read the old schedule.

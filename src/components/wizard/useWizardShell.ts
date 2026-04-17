@@ -60,12 +60,20 @@ export function useWizardShell<TFormData>({
   const [errors, setErrors] = useState<string[]>([]);
   const { confirm, ConfirmDialogComponent } = useConfirmDialog();
 
+  // IMPORTANT: depend on the stable pieces of `state` (updateFormData is a
+  // useCallback with []; currentStep?.id is a string) rather than `state`
+  // itself. The full `state` object is rebuilt every render, which made
+  // this callback's identity change on every render — any child effect
+  // that had onChange in its deps (e.g., ScheduleReview's schedule-sync
+  // effect) would then re-fire on every render, causing infinite loops
+  // when the child also writes back through onChange.
   const handleStepChange = useCallback(
     (value: unknown) => {
       if (errors.length > 0) setErrors([]);
       state.updateFormData((prev) => ({ ...prev, [state.currentStep?.id ?? '']: value }));
     },
-    [state, errors.length],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [state.updateFormData, state.currentStep?.id, errors.length],
   );
 
   const handleNext = useCallback(async () => {
@@ -96,7 +104,10 @@ export function useWizardShell<TFormData>({
 
     if (state.isLastStep) {
       clearPersisted();
-      onComplete?.(state.formData);
+      // Await — onComplete may be async (stage handler doing a DB write).
+      // Without awaiting, the caller's pending state resets before the
+      // handler finishes, letting a second click fire a duplicate write.
+      await onComplete?.(state.formData);
     } else {
       state.goNext();
     }

@@ -92,6 +92,7 @@ export function useSaveTeamsV2() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teams'] });
       queryClient.invalidateQueries({ queryKey: ['league_venues'] });
+      queryClient.invalidateQueries({ queryKey: ['flow-stage-detection'] });
     },
   });
 }

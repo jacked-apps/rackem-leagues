@@ -73,7 +73,10 @@ export function useCreateSeasonV2({ leagueId, league }: UseCreateSeasonV2Args) {
 
       if (playoffValue?.format) {
         const preset = PLAYOFF_PRESET_MAPPINGS[playoffValue.format];
-        if (preset) {
+        // Only save a playoff config when there ARE playoffs. The DB enforces
+        // playoff_weeks >= 1, so "none" (playoffWeeks = 0) would fail the
+        // CHECK constraint. A season without a config simply has no playoffs.
+        if (preset && preset.playoffWeeks > 0) {
           await savePlayoffConfiguration({
             entityType: 'league',
             entityId: leagueId,
@@ -94,6 +97,10 @@ export function useCreateSeasonV2({ leagueId, league }: UseCreateSeasonV2Args) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['seasons'] });
       queryClient.invalidateQueries({ queryKey: ['playoff-configurations'] });
+      // Force the flow-stage-detection query to refetch so the wizard's
+      // handler context picks up the new seasonId. Without this, the next
+      // stage's handler runs with stale context and throws "missing season ID".
+      queryClient.invalidateQueries({ queryKey: ['flow-stage-detection'] });
     },
   });
 }
