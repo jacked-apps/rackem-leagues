@@ -8,7 +8,8 @@
  */
 
 import { useContext, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/supabaseClient';
 import { UserContext } from '@/context/UserContext';
 import { useMemberId } from '@/api/hooks';
 import { usePlayerTeams, useCaptainTeamEditData, useMatchesByTeam } from '@/api/hooks';
@@ -93,6 +94,23 @@ function TeamAccordionItem({
 }) {
   const team = teamData.teams;
   const isCaptain = team.captain_id === memberId;
+  const leagueId = team.season.league.id;
+
+  // Fetch resolved preferences to get the actual handicap_type for this league
+  const { data: resolvedPrefs } = useQuery({
+    queryKey: ['resolved-league-preferences', leagueId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('resolved_league_preferences')
+        .select('handicap_type')
+        .eq('league_id', leagueId)
+        .single();
+      if (error) return null;
+      return data;
+    },
+    enabled: !!leagueId,
+  });
+  const handicapType = resolvedPrefs?.handicap_type ?? 'points';
 
   // Fetch all matches to find makeups and upcoming
   const { data: allMatches = [] } = useMatchesByTeam(team.id);
@@ -359,7 +377,7 @@ function TeamAccordionItem({
           {/* Roster */}
           <PlayerRoster
             playerIds={team.team_players.map(p => p.member_id)}
-            teamFormat={team.roster_size === 5 ? '5_man' : '8_man'}
+            handicapType={handicapType}
             handicapVariant="standard"
             gameType={team.season.league.game_type as 'eight_ball' | 'nine_ball' | 'ten_ball'}
             leagueId={team.season.league.id}

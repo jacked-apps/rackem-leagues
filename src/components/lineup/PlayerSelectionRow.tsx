@@ -18,8 +18,6 @@ import {
 } from '@/components/ui/select';
 import { Trash2 } from 'lucide-react';
 import { formatHandicap } from '@/utils/lineup';
-import type { TeamFormat } from '@/types/league';
-
 interface PlayerSelectionRowProps {
   /** Position number (1-5) */
   position: number;
@@ -33,8 +31,8 @@ interface PlayerSelectionRowProps {
   /** Is the lineup locked? */
   locked: boolean;
 
-  /** Team format (5_man = 3v3, 8_man = 5v5) */
-  teamFormat: TeamFormat;
+  /** Handicap system: 'points', 'percentage', 'fargo', 'none' */
+  handicapType: string;
 
   /** Array of available player IDs for selection */
   availablePlayerIds: string[];
@@ -78,7 +76,7 @@ export function PlayerSelectionRow({
   playerId,
   handicap,
   locked,
-  teamFormat,
+  handicapType,
   availablePlayerIds,
   otherPlayerIds,
   getPlayerDisplayName,
@@ -101,7 +99,7 @@ export function PlayerSelectionRow({
       {!hideHandicap && (
         <div className="w-12 text-center">
           <div className="text-sm font-semibold text-blue-600">
-            {playerId ? formatHandicap(handicap, teamFormat === '8_man') : '-'}
+            {playerId ? formatHandicap(handicap, handicapType === 'percentage') : '-'}
           </div>
         </div>
       )}

@@ -529,15 +529,15 @@ export const PlayerManagement: React.FC = () => {
                         </div>
                         <div className="flex gap-4 text-sm">
                           <div>
-                            <span className="text-gray-600">3v3:</span>{' '}
+                            <span className="text-gray-600">Points:</span>{' '}
                             <span className="font-semibold">
-                              {playerDetails.handicaps.eight_ball_3v3}
+                              {playerDetails.handicaps.eight_ball_points}
                             </span>
                           </div>
                           <div>
-                            <span className="text-gray-600">5v5:</span>{' '}
+                            <span className="text-gray-600">Pct:</span>{' '}
                             <span className="font-semibold">
-                              {playerDetails.handicaps.eight_ball_5v5}%
+                              {playerDetails.handicaps.eight_ball_percentage}%
                             </span>
                           </div>
                         </div>
@@ -553,15 +553,15 @@ export const PlayerManagement: React.FC = () => {
                         </div>
                         <div className="flex gap-4 text-sm">
                           <div>
-                            <span className="text-gray-600">3v3:</span>{' '}
+                            <span className="text-gray-600">Points:</span>{' '}
                             <span className="font-semibold">
-                              {playerDetails.handicaps.nine_ball_3v3}
+                              {playerDetails.handicaps.nine_ball_points}
                             </span>
                           </div>
                           <div>
-                            <span className="text-gray-600">5v5:</span>{' '}
+                            <span className="text-gray-600">Pct:</span>{' '}
                             <span className="font-semibold">
-                              {playerDetails.handicaps.nine_ball_5v5}%
+                              {playerDetails.handicaps.nine_ball_percentage}%
                             </span>
                           </div>
                         </div>
@@ -577,15 +577,15 @@ export const PlayerManagement: React.FC = () => {
                         </div>
                         <div className="flex gap-4 text-sm">
                           <div>
-                            <span className="text-gray-600">3v3:</span>{' '}
+                            <span className="text-gray-600">Points:</span>{' '}
                             <span className="font-semibold">
-                              {playerDetails.handicaps.ten_ball_3v3}
+                              {playerDetails.handicaps.ten_ball_points}
                             </span>
                           </div>
                           <div>
-                            <span className="text-gray-600">5v5:</span>{' '}
+                            <span className="text-gray-600">Pct:</span>{' '}
                             <span className="font-semibold">
-                              {playerDetails.handicaps.ten_ball_5v5}%
+                              {playerDetails.handicaps.ten_ball_percentage}%
                             </span>
                           </div>
                         </div>
@@ -602,7 +602,7 @@ export const PlayerManagement: React.FC = () => {
                       </p>
                       <div className="flex gap-4 text-sm">
                         <div>
-                          <span className="text-gray-600">3v3:</span>{' '}
+                          <span className="text-gray-600">Points:</span>{' '}
                           <span
                             className={`font-semibold ${
                               playerDetails.starting_handicap_3v3 === null
@@ -616,7 +616,7 @@ export const PlayerManagement: React.FC = () => {
                           </span>
                         </div>
                         <div>
-                          <span className="text-gray-600">5v5:</span>{' '}
+                          <span className="text-gray-600">Pct:</span>{' '}
                           <span
                             className={`font-semibold ${
                               playerDetails.starting_handicap_5v5 === null

@@ -143,7 +143,7 @@ export function MatchLineup() {
   // Uses matchId for per-match caching - handicaps are calculated once per match and cached forever
   const { handicaps: playerHandicaps } = usePlayerHandicaps({
     playerIds: playersWithoutHandicaps.map(p => p.id),
-    teamFormat: (matchData?.league?.team_format || '5_man') as '5_man' | '8_man',
+    handicapType: matchData?.league?.team_format === '8_man' ? 'percentage' : 'points', // TODO: read from resolved prefs
     handicapVariant: (matchData?.league?.handicap_variant || 'standard') as 'standard' | 'reduced' | 'none',
     gameType: matchData?.league?.game_type as 'eight_ball' | 'nine_ball' | 'ten_ball',
     leagueId: matchData?.league?.id,
@@ -154,7 +154,7 @@ export function MatchLineup() {
   // Merge players with their calculated handicaps
   const players: Player[] = playersWithoutHandicaps.map(p => ({
     ...p,
-    handicap: playerHandicaps.get(p.id) ?? 0,
+    handicap: playerHandicaps.get(p.id)?.value ?? 0,
   }));
 
   // Extract opponent players from opponent team details query
@@ -170,7 +170,7 @@ export function MatchLineup() {
   // Uses matchId for per-match caching - handicaps are calculated once per match and cached forever
   const { handicaps: opponentPlayerHandicaps } = usePlayerHandicaps({
     playerIds: opponentPlayersWithoutHandicaps.map(p => p.id),
-    teamFormat: (matchData?.league?.team_format || '5_man') as '5_man' | '8_man',
+    handicapType: matchData?.league?.team_format === '8_man' ? 'percentage' : 'points', // TODO: read from resolved prefs
     handicapVariant: (matchData?.league?.handicap_variant || 'standard') as 'standard' | 'reduced' | 'none',
     gameType: matchData?.league?.game_type as 'eight_ball' | 'nine_ball' | 'ten_ball',
     leagueId: matchData?.league?.id,
@@ -181,7 +181,7 @@ export function MatchLineup() {
   // Merge opponent players with their calculated handicaps
   const opponentPlayers: Player[] = opponentPlayersWithoutHandicaps.map(p => ({
     ...p,
-    handicap: opponentPlayerHandicaps.get(p.id) ?? 0,
+    handicap: opponentPlayerHandicaps.get(p.id)?.value ?? 0,
   }));
 
   // Team handicap bonus (only for 3v3, only for home team)
@@ -647,7 +647,7 @@ export function MatchLineup() {
                     ].filter(Boolean)
                   : players.map((p) => p.id)
               }
-              teamFormat={teamFormat}
+              handicapType={matchData?.league?.team_format === '8_man' ? 'percentage' : 'points'} // TODO: read from resolved prefs
               handicapVariant={
                 (matchData?.league?.handicap_variant || 'standard') as
                   | 'standard'
@@ -759,7 +759,7 @@ export function MatchLineup() {
                       playerId={playerId}
                       handicap={handicap}
                       locked={lineup.lineupLocked}
-                      teamFormat={teamFormat}
+                      handicapType={matchData?.league?.team_format === '8_man' ? 'percentage' : 'points'} // TODO: read from resolved prefs
                       availablePlayerIds={getAvailablePlayerIds()}
                       otherPlayerIds={otherPlayerIds}
                       getPlayerDisplayName={getPlayerDisplayName}
@@ -784,7 +784,7 @@ export function MatchLineup() {
                 teamHandicap={useTeamBonus ? teamHandicap : 0}
                 teamTotal={handicaps.teamTotal}
                 isHomeTeam={isHomeTeam}
-                teamFormat={teamFormat}
+                handicapType={matchData?.league?.team_format === '8_man' ? 'percentage' : 'points'} // TODO: read from resolved prefs
               />
             )}
 

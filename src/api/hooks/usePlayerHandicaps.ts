@@ -1,139 +1,87 @@
 /**
  * @fileoverview Player Handicap Hooks (TanStack Query)
  *
- * React hooks for fetching player handicaps with automatic caching.
- * Calculates handicaps based on game history for multiple players in parallel.
+ * Fetches player handicaps in parallel with per-match caching.
+ * Uses the league's handicapType ('points' / 'percentage' / 'fargo' / 'none')
+ * instead of the old teamFormat ('5_man' / '8_man').
  *
- * Benefits:
- * - Per-match caching - each match gets its own cached handicaps
- * - Infinite stale time - handicaps stay fresh for entire match session
- * - Fresh calculations for new matches - changing matchId triggers recalculation
- * - Parallel fetching (all players calculated simultaneously)
- * - Request deduplication
- * - Loading and error states
- *
- * Caching Strategy:
- * Handicaps are cached per-match using the matchId in the query key.
- * - Same match: Handicaps calculated once on lineup page, cached forever
- * - Different match: Fresh handicaps calculated (different query key)
- * - Page refresh: Handicaps recalculated (cache cleared)
- *
- * This prevents mid-match handicap changes while ensuring each new match
- * gets fresh calculations based on the latest game history.
- *
- * @example
- * const { data: handicaps } = usePlayerHandicaps({
- *   playerIds: ['id1', 'id2', 'id3'],
- *   teamFormat: '5_man',
- *   handicapVariant: 'standard',
- *   gameType: 'nine_ball',
- *   leagueId: 'league-123',
- *   matchId: 'match-456' // Scopes cache to this match
- * });
- * // Returns: Map of playerId -> handicap number
+ * For Fargo: returns stale ratings from the last match (marked with stale flag)
+ * or null if the player is unrated. The lineup page uses the stale flag to
+ * show an asterisk (e.g., "491*") and render an editable input.
  */
 
 import { useQueries } from '@tanstack/react-query';
 import { queryKeys } from '../queryKeys';
-import { calculatePlayerHandicap } from '@/utils/calculatePlayerHandicap';
-import type { TeamFormat, HandicapVariant, GameType } from '@/types/league';
+import { calculatePlayerHandicap, type HandicapResult } from '@/utils/calculatePlayerHandicap';
 
 interface UsePlayerHandicapsParams {
   playerIds: string[];
-  teamFormat: TeamFormat;
-  handicapVariant: HandicapVariant;
-  gameType: GameType;
+  /** Which handicap system: 'points', 'percentage', 'fargo', 'none' */
+  handicapType: string;
+  /** Strength modifier: 'standard', 'reduced', 'none' */
+  handicapVariant: string;
+  gameType: 'eight_ball' | 'nine_ball' | 'ten_ball';
   leagueId?: string;
   gameLimit?: number;
-  /** Optional match ID to scope caching per-match. When provided, handicaps are cached
-   * separately for each match, ensuring fresh calculations for new matches while
-   * maintaining stable handicaps throughout a single match session. */
+  /** Scopes cache per-match so handicaps stay stable during a match session */
   matchId?: string;
 }
 
-// Infinity - handicaps stay fresh for entire browser session
-// They're calculated once on lineup page and never refetched during the match
-// A page refresh or new session will recalculate fresh handicaps
 const HANDICAP_STALE_TIME = Infinity;
 
 /**
- * Hook to fetch handicaps for multiple players in parallel
+ * Fetch handicaps for multiple players in parallel.
  *
- * Fetches handicaps for all players simultaneously using useQueries.
- * Returns a Map for easy lookup by player ID.
- * Caches handicaps for 2 hours (entire match session).
+ * Returns a Map of playerId → HandicapResult. Each result has:
+ *   - value: the handicap number (or null if unrated)
+ *   - stale: true if the value came from a previous match (Fargo fallback)
  *
- * @param params - Parameters for handicap calculation
- * @returns Object with handicaps Map, loading state, and any errors
- *
- * @example
- * const { handicaps, isLoading } = usePlayerHandicaps({
- *   playerIds: ['player1', 'player2', 'player3'],
- *   teamFormat: '5_man',
- *   handicapVariant: 'standard',
- *   gameType: 'nine_ball',
- *   leagueId: 'league-123',
- *   gameLimit: 200 // optional, defaults to 200
- * });
- *
- * if (isLoading) return <div>Calculating handicaps...</div>;
- *
- * const player1Handicap = handicaps.get('player1');
+ * Missing entries (player not in map) = query still loading or errored.
  */
 export function usePlayerHandicaps({
   playerIds,
-  teamFormat,
+  handicapType,
   handicapVariant,
   gameType,
   leagueId,
   gameLimit = 200,
   matchId,
 }: UsePlayerHandicapsParams) {
-  // Use useQueries to fetch all player handicaps in parallel
   const queries = useQueries({
     queries: playerIds.map((playerId) => ({
-      // Include matchId in query key to scope caching per-match
-      // This ensures each match gets fresh handicap calculations, but handicaps
-      // stay stable throughout a single match session
       queryKey: [
         ...queryKeys.players.handicap(playerId),
-        teamFormat,
+        handicapType,
         handicapVariant,
         gameType,
         leagueId || 'none',
         gameLimit,
-        matchId || 'no-match', // Per-match scoping
+        matchId || 'no-match',
       ],
       queryFn: () =>
         calculatePlayerHandicap(
           playerId,
-          teamFormat,
-          handicapVariant,
+          handicapType as 'points' | 'percentage' | 'fargo' | 'skill_level' | 'none',
+          handicapVariant as 'standard' | 'reduced' | 'none',
           gameType,
           leagueId,
-          gameLimit
+          gameLimit,
         ),
-      staleTime: HANDICAP_STALE_TIME, // 2 hours - handicaps don't change during a match
+      staleTime: HANDICAP_STALE_TIME,
       retry: 1,
       refetchOnWindowFocus: false,
     })),
   });
 
-  // Convert array of queries to a Map for easy lookup
-  const handicaps = new Map<string, number>();
+  const handicaps = new Map<string, HandicapResult>();
   queries.forEach((query, index) => {
-    if (query.data !== undefined) {
+    if (query.data) {
       handicaps.set(playerIds[index], query.data);
     }
   });
 
-  // Check if any queries are still loading
-  const isLoading = queries.some((query) => query.isLoading);
-
-  // Collect any errors
-  const errors = queries
-    .filter((query) => query.error)
-    .map((query) => query.error);
+  const isLoading = queries.some((q) => q.isLoading);
+  const errors = queries.filter((q) => q.error).map((q) => q.error);
 
   return {
     handicaps,

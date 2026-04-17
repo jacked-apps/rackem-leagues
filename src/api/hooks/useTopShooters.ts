@@ -116,7 +116,7 @@ export function useTopShooters(seasonId: string): UseTopShootersResult {
     errors: handicapErrors,
   } = usePlayerHandicaps({
     playerIds,
-    teamFormat: league?.team_format || '5_man',
+    handicapType: league?.team_format === '8_man' ? 'percentage' : 'points', // TODO: read from resolved prefs
     handicapVariant: league?.handicap_variant || 'standard',
     gameType: league?.game_type || 'eight_ball',
     leagueId: league?.id, // Use league ID to prioritize games from this league
@@ -142,7 +142,7 @@ export function useTopShooters(seasonId: string): UseTopShootersResult {
   // Combine player stats with handicaps
   const playersWithHandicaps: PlayerWithHandicap[] = playerStats.map((player) => ({
     ...player,
-    handicap: handicaps.get(player.playerId) ?? 0, // Default to 0 if handicap calculation failed
+    handicap: handicaps.get(player.playerId)?.value ?? 0,
   }));
 
   // Sort based on team format

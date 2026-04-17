@@ -71,7 +71,7 @@ export function TeamStats() {
     isLoading: handicapsLoading,
   } = usePlayerHandicaps({
     playerIds: allPlayerIds,
-    teamFormat: league?.team_format || '5_man',
+    handicapType: league?.team_format === '8_man' ? 'percentage' : 'points', // TODO: read from resolved prefs
     handicapVariant: league?.handicap_variant || 'standard',
     gameType: league?.game_type || 'eight_ball',
     leagueId,
@@ -177,7 +177,7 @@ export function TeamStats() {
 
                   {/* Player Detail Rows */}
                   {team.players.map((player) => {
-                    const handicap = player.isSubstitute ? '' : (handicaps.get(player.playerId) ?? '-');
+                    const handicap = player.isSubstitute ? '' : (handicaps.get(player.playerId)?.value ?? '-');
 
                     return (
                       <tr key={`${team.teamId}-${player.playerId}`} className="border-b">

@@ -123,7 +123,7 @@ export function ScoreMatch() {
   const rosterPlayerIds = teamRoster.map((tp: any) => tp.member_id).filter(Boolean);
   const { handicaps: rosterHandicaps } = usePlayerHandicaps({
     playerIds: rosterPlayerIds,
-    teamFormat: match?.league?.team_format || '5_man',
+    handicapType: match?.league?.team_format === '8_man' ? 'percentage' : 'points', // TODO: read from resolved prefs
     handicapVariant: match?.league?.handicap_variant || 'standard',
     gameType: gameType,
     leagueId: match?.league?.id,
@@ -440,7 +440,7 @@ export function ScoreMatch() {
 
     // Get the new player's handicap from the cached handicaps (calculated via usePlayerHandicaps)
     // This uses TanStack Query caching - likely already calculated from lineup page
-    const newPlayerHandicap = rosterHandicaps.get(newPlayerId) ?? 0;
+    const newPlayerHandicap = rosterHandicaps.get(newPlayerId)?.value ?? 0;
 
     requestLineupChangeMutation.mutate({
       lineupId: userLineup.id,
