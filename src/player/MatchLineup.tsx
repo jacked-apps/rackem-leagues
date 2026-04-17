@@ -9,7 +9,9 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { supabase } from '@/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Users } from 'lucide-react';
 import {
@@ -114,8 +116,26 @@ export function MatchLineup() {
   } = usePreparationStatus();
 
   // Determine player count from team format (3 for 3v3, 5 for 5v5)
+  // TODO: read lineup_size from resolved prefs instead of deriving from team_format
   const teamFormat = (matchData?.league?.team_format || '5_man') as '5_man' | '8_man';
   const playerCount = getPlayerCount(teamFormat);
+
+  // Fetch resolved preferences to get the actual handicap_type for this league
+  const leagueId = matchData?.league?.id;
+  const { data: resolvedPrefs } = useQuery({
+    queryKey: ['resolved-league-preferences', leagueId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('resolved_league_preferences')
+        .select('handicap_type')
+        .eq('league_id', leagueId!)
+        .single();
+      if (error) return null;
+      return data;
+    },
+    enabled: !!leagueId,
+  });
+  const handicapType = resolvedPrefs?.handicap_type ?? 'points';
 
   // Centralized lineup state management
   const lineup = useLineupState(playerCount);
@@ -143,7 +163,7 @@ export function MatchLineup() {
   // Uses matchId for per-match caching - handicaps are calculated once per match and cached forever
   const { handicaps: playerHandicaps } = usePlayerHandicaps({
     playerIds: playersWithoutHandicaps.map(p => p.id),
-    handicapType: matchData?.league?.team_format === '8_man' ? 'percentage' : 'points', // TODO: read from resolved prefs
+    handicapType,
     handicapVariant: (matchData?.league?.handicap_variant || 'standard') as 'standard' | 'reduced' | 'none',
     gameType: matchData?.league?.game_type as 'eight_ball' | 'nine_ball' | 'ten_ball',
     leagueId: matchData?.league?.id,
@@ -170,7 +190,7 @@ export function MatchLineup() {
   // Uses matchId for per-match caching - handicaps are calculated once per match and cached forever
   const { handicaps: opponentPlayerHandicaps } = usePlayerHandicaps({
     playerIds: opponentPlayersWithoutHandicaps.map(p => p.id),
-    handicapType: matchData?.league?.team_format === '8_man' ? 'percentage' : 'points', // TODO: read from resolved prefs
+    handicapType,
     handicapVariant: (matchData?.league?.handicap_variant || 'standard') as 'standard' | 'reduced' | 'none',
     gameType: matchData?.league?.game_type as 'eight_ball' | 'nine_ball' | 'ten_ball',
     leagueId: matchData?.league?.id,
@@ -647,7 +667,7 @@ export function MatchLineup() {
                     ].filter(Boolean)
                   : players.map((p) => p.id)
               }
-              handicapType={matchData?.league?.team_format === '8_man' ? 'percentage' : 'points'} // TODO: read from resolved prefs
+              handicapType={handicapType}
               handicapVariant={
                 (matchData?.league?.handicap_variant || 'standard') as
                   | 'standard'
@@ -759,7 +779,7 @@ export function MatchLineup() {
                       playerId={playerId}
                       handicap={handicap}
                       locked={lineup.lineupLocked}
-                      handicapType={matchData?.league?.team_format === '8_man' ? 'percentage' : 'points'} // TODO: read from resolved prefs
+                      handicapType={handicapType}
                       availablePlayerIds={getAvailablePlayerIds()}
                       otherPlayerIds={otherPlayerIds}
                       getPlayerDisplayName={getPlayerDisplayName}
@@ -784,7 +804,7 @@ export function MatchLineup() {
                 teamHandicap={useTeamBonus ? teamHandicap : 0}
                 teamTotal={handicaps.teamTotal}
                 isHomeTeam={isHomeTeam}
-                handicapType={matchData?.league?.team_format === '8_man' ? 'percentage' : 'points'} // TODO: read from resolved prefs
+                handicapType={handicapType}
               />
             )}
 

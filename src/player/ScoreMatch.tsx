@@ -18,7 +18,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQueryClient, useMutation } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/supabaseClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -117,13 +117,28 @@ export function ScoreMatch() {
   const userLineup = isHomeTeam ? homeLineup : awayLineup;
   const opponentLineup = isHomeTeam ? awayLineup : homeLineup;
 
+  // Fetch resolved preferences to get the actual handicap_type for this league
+  const scoreLeagueId = match?.league?.id;
+  const { data: scoreResolvedPrefs } = useQuery({
+    queryKey: ['resolved-league-preferences', scoreLeagueId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('resolved_league_preferences')
+        .select('handicap_type')
+        .eq('league_id', scoreLeagueId!)
+        .single();
+      if (error) return null;
+      return data;
+    },
+    enabled: !!scoreLeagueId,
+  });
+  const handicapType = scoreResolvedPrefs?.handicap_type ?? 'points';
+
   // Get handicaps for roster players (for lineup change requests)
-  // Uses TanStack Query caching with matchId - if these were already fetched on lineup page, they'll be cached
-  // The matchId in the query key ensures same handicaps are used throughout the match
   const rosterPlayerIds = teamRoster.map((tp: any) => tp.member_id).filter(Boolean);
   const { handicaps: rosterHandicaps } = usePlayerHandicaps({
     playerIds: rosterPlayerIds,
-    handicapType: match?.league?.team_format === '8_man' ? 'percentage' : 'points', // TODO: read from resolved prefs
+    handicapType,
     handicapVariant: match?.league?.handicap_variant || 'standard',
     gameType: gameType,
     leagueId: match?.league?.id,
