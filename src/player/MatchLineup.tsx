@@ -118,7 +118,7 @@ export function MatchLineup() {
   const { data: leaguePrefs } = useResolvedLeaguePrefs(leagueId);
   const handicapType = leaguePrefs?.handicap_type ?? 'points';
   const playerCount = leaguePrefs?.lineup_size ?? 3;
-  const teamFormat = (matchData?.league?.team_format || '5_man') as '5_man' | '8_man'; // legacy — kept for downstream that still needs it
+  // teamFormat is no longer used in lineup — all branching uses handicapType and lineupSize
 
   // Centralized lineup state management
   const lineup = useLineupState(playerCount);
@@ -189,7 +189,7 @@ export function MatchLineup() {
 
   // Team handicap bonus (only for 3v3, only for home team)
   // 5v5 does not use team bonus - it's disabled by default
-  const useTeamBonus = shouldUseTeamBonus(teamFormat);
+  const useTeamBonus = shouldUseTeamBonus(handicapType);
   const [teamHandicap, setTeamHandicap] = useState<number>(0);
 
   // Calculate team handicap bonus based on season standings
@@ -268,7 +268,7 @@ export function MatchLineup() {
     players,
     teamHandicap,
     isHomeTeam,
-    teamFormat,
+    handicapType,
   });
 
   // Lineup validation
@@ -282,7 +282,7 @@ export function MatchLineup() {
     subHandicap: lineup.subHandicap,
     players,
     isTiebreakerMode,
-    teamFormat,
+    handicapType,
   });
 
   // Lineup persistence operations
@@ -321,7 +321,8 @@ export function MatchLineup() {
     matchId,
     matchData,
     isHomeTeam,
-    teamFormat,
+    lineupSize: playerCount,
+    handicapType,
     player1Id: lineup.player1Id,
     player2Id: lineup.player2Id,
     player3Id: lineup.player3Id,
@@ -505,14 +506,14 @@ export function MatchLineup() {
   };
 
   const getHandicapByPosition = (position: number): number => {
-    switch (position) {
-      case 1: return handicaps.player1Handicap;
-      case 2: return handicaps.player2Handicap;
-      case 3: return handicaps.player3Handicap;
-      case 4: return handicaps.player4Handicap || 0;
-      case 5: return handicaps.player5Handicap || 0;
-      default: return 0;
-    }
+    const handicapsByPosition: Record<number, number | undefined> = {
+      1: handicaps.player1Handicap,
+      2: handicaps.player2Handicap,
+      3: handicaps.player3Handicap,
+      4: handicaps.player4Handicap,
+      5: handicaps.player5Handicap,
+    };
+    return handicapsByPosition[position] ?? 0;
   };
 
   const getOtherPlayerIds = (position: number): string[] => {
@@ -581,12 +582,11 @@ export function MatchLineup() {
    */
   const getAvailablePlayerIds = (): string[] => {
     if (isTiebreakerMode && myLineup) {
-      // Tiebreaker: Only original 3 players can be selected
-      return [
-        myLineup.player1_id,
-        myLineup.player2_id,
-        myLineup.player3_id,
-      ].filter(Boolean) as string[];
+      // Tiebreaker: Only original lineup players can be selected
+      return Array.from({ length: playerCount }, (_, i) => {
+        const key = `player${i + 1}_id` as keyof typeof myLineup;
+        return myLineup[key];
+      }).filter(Boolean) as string[];
     }
 
     // Normal mode: All roster players + substitute
@@ -731,11 +731,9 @@ export function MatchLineup() {
                     lineup.setSubHandicap(newSubHandicap);
 
                     // Collect used player IDs (excluding current position)
-                    const usedPlayerIds = [
-                      lineup.player1Id,
-                      lineup.player2Id,
-                      lineup.player3Id,
-                    ].filter(Boolean);
+                    const usedPlayerIds = Array.from({ length: playerCount }, (_, i) =>
+                      lineup.getPlayerId((i + 1) as 1 | 2 | 3 | 4 | 5),
+                    ).filter(Boolean);
 
                     // Calculate substitute handicap using utility function
                     const calculatedHandicap = calculateSubstituteHandicap(
@@ -771,7 +769,7 @@ export function MatchLineup() {
                       isSubstitute={isSubstitute}
                       subHandicap={lineup.subHandicap}
                       onSubHandicapChange={handleSubHandicapChange}
-                      showSubHandicapSelector={!isTiebreakerMode && teamFormat !== '8_man'}
+                      showSubHandicapSelector={!isTiebreakerMode && handicapType === 'points'}
                       hideHandicap={isTiebreakerMode}
                     />
                   );

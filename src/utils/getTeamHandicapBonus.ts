@@ -11,46 +11,25 @@ import { supabase } from '@/supabaseClient';
 import { logger } from '@/utils/logger';
 
 /**
- * Team format types
- */
-type TeamFormat = '5_man' | '8_man';
-
-/**
- * Calculate team handicap bonus for the home team
+ * Calculate team handicap bonus for the home team.
  *
- * Team handicap is awarded based on the difference in match WINS between home and away teams.
- * Formula (once standings are implemented):
- * - 3v3: (home_wins - away_wins) / 2 = bonus (every 2 wins ahead = +1 handicap)
- * - 5v5: No team handicap (always returns 0)
+ * Only the points handicap system uses team bonus.
+ * All other systems (percentage, fargo, none) return 0.
  *
- * @param homeTeamId - The home team's ID
- * @param awayTeamId - The away team's ID
- * @param seasonId - The season ID to calculate standings from
- * @param teamFormat - '5_man' (3v3) or '8_man' (5v5)
- * @returns Team handicap bonus (can be positive, negative, or zero)
- *
- * @example
- * // 3v3 format - returns placeholder value until standings built
- * const bonus = await getTeamHandicapBonus('home-123', 'away-456', 'season-789', '5_man');
- * // Currently returns: 1 (placeholder)
- *
- * @example
- * // 5v5 format - no team handicap
- * const bonus = await getTeamHandicapBonus('home-123', 'away-456', 'season-789', '8_man');
- * // Returns: 0
+ * Formula: (home_wins - away_wins) / 2 (rounded down)
  */
 export async function getTeamHandicapBonus(
   homeTeamId: string,
   awayTeamId: string,
   seasonId: string,
-  teamFormat: TeamFormat
+  handicapType: string
 ): Promise<number> {
-  // 5v5 (8_man) does not use team handicap
-  if (teamFormat === '8_man') {
+  // Only points system uses team handicap
+  if (handicapType !== 'points') {
     return 0;
   }
 
-  // 3v3 (5_man) uses team handicap based on match win differential
+  // Points system: team handicap based on match win differential
   // Formula: (home_wins - away_wins) / 2 (rounded down)
 
   try {

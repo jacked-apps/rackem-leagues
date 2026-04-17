@@ -27,7 +27,8 @@ interface MatchPreparationParams {
   matchId: string | undefined;
   matchData: any;
   isHomeTeam: boolean;
-  teamFormat: '5_man' | '8_man';
+  lineupSize: number;
+  handicapType: string;
   player1Id: string;
   player2Id: string;
   player3Id: string;
@@ -51,7 +52,8 @@ export function useMatchPreparation(params: MatchPreparationParams) {
     matchId,
     matchData,
     isHomeTeam,
-    teamFormat,
+    lineupSize,
+    handicapType,
     player1Id,
     player2Id,
     player3Id,
@@ -216,10 +218,12 @@ export function useMatchPreparation(params: MatchPreparationParams) {
             player3_handicap: player3Handicap,
           };
 
-          // Add player4/5 for 5v5 matches (backward compatible)
-          if (teamFormat === '8_man') {
+          // Add player4/5 based on actual lineup size
+          if (lineupSize >= 4) {
             myLineup.player4_id = player4Id || null;
             myLineup.player4_handicap = player4Handicap || 0;
+          }
+          if (lineupSize >= 5) {
             myLineup.player5_id = player5Id || null;
             myLineup.player5_handicap = player5Handicap || 0;
           }
@@ -233,7 +237,7 @@ export function useMatchPreparation(params: MatchPreparationParams) {
               matchData.home_team_id,
               matchData.away_team_id,
               matchData.season_id,
-              teamFormat
+              handicapType
             );
 
           // Save thresholds to match table
@@ -252,11 +256,10 @@ export function useMatchPreparation(params: MatchPreparationParams) {
 
           // Create all game rows in match_games table
           setPreparationMessage?.('Creating games...');
-          const playersPerTeam = teamFormat === '8_man' ? 5 : 3;
-          const useDoubleRoundRobin = playersPerTeam === 3;
+          const useDoubleRoundRobin = lineupSize === 3; // TODO: read from game_generation pref
 
           const allGames = generateGameOrder(
-            playersPerTeam,
+            lineupSize,
             useDoubleRoundRobin
           );
 

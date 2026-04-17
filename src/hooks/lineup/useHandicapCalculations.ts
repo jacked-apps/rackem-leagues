@@ -39,7 +39,7 @@ export interface HandicapCalculationsInput {
   testHandicaps: Record<string, number>;
   teamHandicap: number;
   isHomeTeam: boolean;
-  teamFormat?: '5_man' | '8_man'; // Team format to determine sub handicap logic
+  handicapType?: string; // 'points' uses sub handicap calc, 'percentage' uses placeholder
 }
 
 export interface HandicapCalculations {
@@ -80,7 +80,7 @@ export function useHandicapCalculations(
     testHandicaps,
     teamHandicap,
     isHomeTeam,
-    teamFormat = '5_man',
+    handicapType = 'points',
   } = input;
 
   /**
@@ -120,13 +120,13 @@ export function useHandicapCalculations(
 
       // Handle substitutes
       if (isSubstitute(playerId)) {
-        // 5v5: SUB doesn't need a calculated handicap - opponent will choose double duty player
-        // Return 40 as placeholder (initial 5v5 handicap)
-        if (teamFormat === '8_man') {
+        // Percentage system: SUB doesn't need a calculated handicap — opponent chooses double duty player
+        // Return 40 as placeholder (initial percentage handicap)
+        if (handicapType === 'percentage') {
           return 40;
         }
 
-        // 3v3: Calculate substitute handicap from highest unused player or manual entry
+        // Points system: Calculate substitute handicap from highest unused player or manual entry
         const highestUnused = getHighestUnusedHandicap();
 
         // If sub handicap is manually entered, use the HIGHER of the two
@@ -143,7 +143,7 @@ export function useHandicapCalculations(
       const player = players.find((p) => p.id === playerId);
       return player?.handicap || 0;
     };
-  }, [players, testMode, testHandicaps, subHandicap, teamFormat, getHighestUnusedHandicap]);
+  }, [players, testMode, testHandicaps, subHandicap, handicapType, getHighestUnusedHandicap]);
 
   // Calculate individual player handicaps
   const player1Handicap = useMemo(
@@ -171,12 +171,10 @@ export function useHandicapCalculations(
     [player5Id, getPlayerHandicap]
   );
 
-  // Calculate player total (sum of 3 or 5 players based on playerCount)
+  // Calculate player total — sum handicaps for all active lineup positions
   const playerTotal = useMemo(() => {
-    let total = player1Handicap + player2Handicap + player3Handicap;
-    if (playerCount === 5) {
-      total += player4Handicap + player5Handicap;
-    }
+    const all = [player1Handicap, player2Handicap, player3Handicap, player4Handicap, player5Handicap];
+    const total = all.slice(0, playerCount).reduce((sum, h) => sum + h, 0);
     return roundHandicap(total);
   }, [player1Handicap, player2Handicap, player3Handicap, player4Handicap, player5Handicap, playerCount]);
 
@@ -190,7 +188,8 @@ export function useHandicapCalculations(
     player1Handicap,
     player2Handicap,
     player3Handicap,
-    ...(playerCount === 5 && { player4Handicap, player5Handicap }),
+    ...(playerCount >= 4 && { player4Handicap }),
+    ...(playerCount >= 5 && { player5Handicap }),
     playerTotal,
     teamTotal,
     getPlayerHandicap,
