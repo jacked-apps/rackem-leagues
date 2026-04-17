@@ -175,6 +175,7 @@ export const LeagueOperatorApplication: React.FC = () => {
         expiry_month: mockPayment.expiry_month,
         expiry_year: mockPayment.expiry_year,
         billing_zip: mockPayment.billing_zip,
+        payment_verified: mockPayment.payment_verified,
       });
 
       // Step 2: Organization_staff record is automatically created by database trigger
