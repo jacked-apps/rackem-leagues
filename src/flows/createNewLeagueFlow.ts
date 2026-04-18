@@ -78,6 +78,9 @@ export const createNewLeagueFlow: WizardFlowConfig = {
         value: String(context.playoffWeeks),
       });
     }
+    if (context.scheduleComplete) {
+      items.push({ label: 'Schedule', value: 'Saved' });
+    }
     return items;
   },
   stages: [

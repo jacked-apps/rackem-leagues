@@ -102,14 +102,14 @@ export function useFlowStageHandlers({
       // Empty array = user chose to keep existing schedule, skip save
       if (!schedule || schedule.length === 0) {
         toast.success('Keeping existing schedule');
-        return {};
+        return { scheduleComplete: true };
       }
       if (!context.seasonId) {
         throw new Error('Missing season ID — cannot save schedule');
       }
       await saveSchedule.mutateAsync({ seasonId: context.seasonId, schedule });
       toast.success('Schedule saved');
-      return {};
+      return { scheduleComplete: true };
     },
     teams: async (formData) => {
       const fd = formData as TeamsWizardFormData;

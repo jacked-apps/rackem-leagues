@@ -163,6 +163,7 @@ export function useFlowStageDetection(leagueId: string | null): StageDetectionRe
     seasonId: data.seasonId,
     seasonName: data.seasonName ?? undefined,
     seasonLength: data.seasonLength ?? undefined,
+    scheduleComplete: data.hasSchedule,
   };
 
   // Stage 4 check: season activated (matchups finished) — everything done

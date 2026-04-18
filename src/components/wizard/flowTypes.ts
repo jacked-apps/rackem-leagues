@@ -129,6 +129,9 @@ export interface FlowContext {
 
   /** Number of playoff weeks (from Season wizard playoff preset) */
   playoffWeeks?: number;
+
+  /** True once the schedule stage has saved weeks to the DB */
+  scheduleComplete?: boolean;
 }
 
 /**
