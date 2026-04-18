@@ -35,6 +35,8 @@ interface StageDetectionResult {
     dayOfWeek?: string;
     division?: string;
     seasonId?: string;
+    seasonName?: string;
+    seasonLength?: number;
   };
 }
 
@@ -67,7 +69,7 @@ export function useFlowStageDetection(leagueId: string | null): StageDetectionRe
       // Fetch the most-recent season for this league (if any)
       const { data: season } = await supabase
         .from('seasons')
-        .select('id, status')
+        .select('id, status, season_name, season_length, start_date')
         .eq('league_id', leagueId)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -113,6 +115,8 @@ export function useFlowStageDetection(leagueId: string | null): StageDetectionRe
         dayOfWeek: dayOfWeek || null,
         division: league?.division ?? null,
         seasonId: season?.id ?? null,
+        seasonName: season?.season_name ?? null,
+        seasonLength: season?.season_length ?? null,
         seasonActive: season?.status === 'active',
         hasSchedule,
         hasTeams,
@@ -154,7 +158,12 @@ export function useFlowStageDetection(leagueId: string | null): StageDetectionRe
     return { isLoading: false, firstIncompleteStage: 1, context: baseCtx };
   }
 
-  const ctx = { ...baseCtx, seasonId: data.seasonId };
+  const ctx = {
+    ...baseCtx,
+    seasonId: data.seasonId,
+    seasonName: data.seasonName ?? undefined,
+    seasonLength: data.seasonLength ?? undefined,
+  };
 
   // Stage 4 check: season activated (matchups finished) — everything done
   if (data.seasonActive) {
