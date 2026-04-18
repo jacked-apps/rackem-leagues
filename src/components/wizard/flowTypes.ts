@@ -88,25 +88,40 @@ export interface FlowContext {
   /** The league's start date (set after Stage 1, used by Season wizard) */
   leagueStartDate?: string;
 
-  /** Auto-generated league name (e.g., "8 Ball Monday Fall 2026") */
+  /** Auto-generated league name — game + day + differentiator only (no season/year) */
   leagueName?: string;
 
   /** Game type selected (e.g., "eight_ball") */
   gameType?: string;
 
-  /** League format selected (e.g., "standard_3v3", "fargo_5v5") */
+  /**
+   * @deprecated Use lineupSize / rosterSize / handicapType instead.
+   * Left for any consumers still reading legacy "format" presets.
+   */
   leagueFormat?: string;
+
+  /** How many players field a match at once (e.g., 3 or 5) */
+  lineupSize?: number;
+
+  /** Max players on the roster (e.g., 5, 8) */
+  rosterSize?: number;
+
+  /** Handicap system the league uses ('points' | 'percentage' | 'fargo' | 'none' | 'custom_formula') */
+  handicapType?: string;
+
+  /** How matches are generated ('double_round_robin' | 'single_round_robin' | 'individual_races') */
+  matchFormat?: string;
 
   /** League day of week (e.g., "monday") */
   dayOfWeek?: string;
 
-  /** League division/qualifier */
+  /** League division/differentiator */
   division?: string;
 
   /** ID of the season this flow is creating/managing (set after Stage 2) */
   seasonId?: string;
 
-  /** Generated season name (e.g., "8 Ball Thursday Blue League Fall 2026") */
+  /** Generated season name (e.g., "8 Ball Monday Blue Fall 2026") */
   seasonName?: string;
 
   /** Number of regular season weeks (from Season wizard) */

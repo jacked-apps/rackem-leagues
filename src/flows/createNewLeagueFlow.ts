@@ -20,10 +20,18 @@ import { scheduleWizardConfig } from '@/wizards/schedule-v2/scheduleWizardConfig
 import { teamsWizardConfig } from '@/wizards/teams-v2/teamsWizardConfig';
 import { matchupsWizardConfig } from '@/wizards/matchups-v2/matchupsWizardConfig';
 
-const LEAGUE_FORMAT_LABELS: Record<string, string> = {
-  standard_3v3: 'Standard 3v3',
-  fargo_5v5: 'Fargo 5v5',
-  custom_5v5: 'Custom 5v5',
+const HANDICAP_LABELS: Record<string, string> = {
+  points: 'Points (-1/+2)',
+  percentage: 'Percentage (BCA)',
+  fargo: 'Fargo Rating',
+  none: 'No Handicap',
+  custom_formula: 'Custom Formula',
+};
+
+const MATCH_FORMAT_LABELS: Record<string, string> = {
+  double_round_robin: 'Double Round Robin',
+  single_round_robin: 'Single Round Robin',
+  individual_races: 'Individual Races',
 };
 
 export const createNewLeagueFlow: WizardFlowConfig = {
@@ -37,10 +45,22 @@ export const createNewLeagueFlow: WizardFlowConfig = {
     if (context.leagueName) {
       items.push({ label: 'League', value: context.leagueName });
     }
-    if (context.leagueFormat) {
+    if (context.lineupSize) {
+      items.push({ label: 'Lineup Size', value: String(context.lineupSize) });
+    }
+    if (context.rosterSize) {
+      items.push({ label: 'Roster Size', value: String(context.rosterSize) });
+    }
+    if (context.handicapType) {
       items.push({
-        label: 'Format',
-        value: LEAGUE_FORMAT_LABELS[context.leagueFormat] ?? context.leagueFormat,
+        label: 'Handicap',
+        value: HANDICAP_LABELS[context.handicapType] ?? context.handicapType,
+      });
+    }
+    if (context.matchFormat) {
+      items.push({
+        label: 'Match Format',
+        value: MATCH_FORMAT_LABELS[context.matchFormat] ?? context.matchFormat,
       });
     }
     if (context.leagueStartDate) {

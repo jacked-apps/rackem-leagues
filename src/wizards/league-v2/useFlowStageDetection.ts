@@ -28,6 +28,10 @@ interface StageDetectionResult {
     leagueName?: string;
     gameType?: string;
     leagueFormat?: string;
+    lineupSize?: number;
+    rosterSize?: number;
+    handicapType?: string;
+    matchFormat?: string;
     dayOfWeek?: string;
     division?: string;
     seasonId?: string;
@@ -50,6 +54,15 @@ export function useFlowStageDetection(leagueId: string | null): StageDetectionRe
         .select('league_start_date, game_type, team_format, division, day_of_week')
         .eq('id', leagueId)
         .single();
+
+      // Fetch modular preferences (new-system fields: lineup/roster/handicap).
+      // These live in the preferences table keyed by entity_type='league'.
+      const { data: prefs } = await supabase
+        .from('preferences')
+        .select('lineup_size, max_roster_size, game_generation, handicap_type')
+        .eq('entity_type', 'league')
+        .eq('entity_id', leagueId)
+        .maybeSingle();
 
       // Fetch the most-recent season for this league (if any)
       const { data: season } = await supabase
@@ -93,6 +106,10 @@ export function useFlowStageDetection(leagueId: string | null): StageDetectionRe
         leagueName: leagueName || null,
         gameType: gameType || null,
         leagueFormat: league?.team_format ?? null,
+        lineupSize: prefs?.lineup_size ?? null,
+        rosterSize: prefs?.max_roster_size ?? null,
+        handicapType: prefs?.handicap_type ?? null,
+        matchFormat: prefs?.game_generation ?? null,
         dayOfWeek: dayOfWeek || null,
         division: league?.division ?? null,
         seasonId: season?.id ?? null,
@@ -119,10 +136,18 @@ export function useFlowStageDetection(leagueId: string | null): StageDetectionRe
   const leagueName = data?.leagueName ?? undefined;
   const gameType = data?.gameType ?? undefined;
   const leagueFormat = data?.leagueFormat ?? undefined;
+  const lineupSize = data?.lineupSize ?? undefined;
+  const rosterSize = data?.rosterSize ?? undefined;
+  const handicapType = data?.handicapType ?? undefined;
+  const matchFormat = data?.matchFormat ?? undefined;
   const dayOfWeek = data?.dayOfWeek ?? undefined;
   const division = data?.division ?? undefined;
 
-  const baseCtx = { leagueId, leagueStartDate, leagueName, gameType, leagueFormat, dayOfWeek, division };
+  const baseCtx = {
+    leagueId, leagueStartDate, leagueName, gameType, leagueFormat,
+    lineupSize, rosterSize, handicapType, matchFormat,
+    dayOfWeek, division,
+  };
 
   // Stage 1 check: season exists?
   if (!data?.seasonId) {

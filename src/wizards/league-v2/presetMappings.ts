@@ -30,6 +30,31 @@ export interface PresetMapping {
  * Maps each preset key to its full set of field values.
  * Custom path doesn't use this — its values come from the wizard steps.
  */
+/**
+ * Resolve a league wizard form's modular preference fields. For preset
+ * formats (fargo_5v5, standard_3v3, standard_5v5), values come from the
+ * mapping table below. For the 'custom' path, values come directly from
+ * the wizard's step answers.
+ */
+export function getLeaguePresetModularFields(formData: {
+  'league-format'?: string;
+  'lineup-size'?: number;
+  'roster-size'?: number;
+  'match-format'?: string;
+  'handicap-system'?: string;
+}): Partial<PreferenceFields> {
+  const presetKey = formData['league-format'];
+  if (presetKey && presetKey !== 'custom' && PRESET_MAPPINGS[presetKey]) {
+    return PRESET_MAPPINGS[presetKey].preferences;
+  }
+  return {
+    lineup_size: formData['lineup-size'],
+    max_roster_size: formData['roster-size'],
+    game_generation: formData['match-format'],
+    handicap_type: formData['handicap-system'],
+  };
+}
+
 export const PRESET_MAPPINGS: Record<string, PresetMapping> = {
   fargo_5v5: {
     legacy: {
