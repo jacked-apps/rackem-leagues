@@ -59,7 +59,8 @@ export function CaptainsTeamsStep({
         <p>
           <strong>You (the operator) can</strong> do everything a captain can
           from the Team Management page. Finish this wizard first, then head
-          to Team Management to flesh out each team's roster.
+          there to flesh out each team's roster if you want — or just leave
+          it to the captains. Totally fine to let them do the work.
         </p>
         <p>
           <strong>Only operators can</strong> change who the captain of a team is.
