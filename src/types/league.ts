@@ -71,6 +71,8 @@ export type Season = 'Winter' | 'Spring' | 'Summer' | 'Fall';
  */
 export type HandicapVariant = 'standard' | 'reduced' | 'none';
 
+import type { SystemOverrides } from './systemOverrides';
+
 /**
  * League database record interface
  * Matches the leagues table schema exactly
@@ -87,6 +89,12 @@ export interface League {
   game_history_limit: number | null; // Optional override for handicap calculation history (null = use organization default of 200)
   golden_break_counts_as_win: boolean;
   league_start_date: string; // ISO date string
+  /**
+   * Per-league dial overrides (tier 2 mutability — editable between seasons, locked during active season).
+   * Flat JSONB; absent keys fall back to module defaults. See src/types/systemOverrides.ts for shape.
+   * Added by migration 20260418000000_add_leagues_system_overrides.sql.
+   */
+  system_overrides: SystemOverrides;
   created_at: string;
   updated_at: string;
   status: LeagueStatus;
@@ -105,10 +113,12 @@ export type LeagueInsertData = Omit<League,
   | 'status'                   // Has default value in database
   | 'team_handicap_variant'    // Optional override (will use operator default)
   | 'game_history_limit'       // Optional override (will use operator default)
+  | 'system_overrides'         // Has default value '{}'::jsonb in database
 > & {
   // Override fields are optional - will use operator defaults if not provided
   team_handicap_variant?: HandicapVariant | null;
   game_history_limit?: number | null;
+  system_overrides?: SystemOverrides;
 };
 
 /**

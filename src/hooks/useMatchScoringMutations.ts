@@ -16,6 +16,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/supabaseClient';
 import type { Lineup, MatchGame } from '@/types/match';
 import { queryKeys } from '@/api/queryKeys';
+import { populateMatchSnapshotIfNeeded } from '@/api/queries/matches';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
 
@@ -26,6 +27,8 @@ interface UseMatchScoringMutationsParams {
     home_team_id: string;
     away_team_id: string;
   } | null;
+  /** League ID — used for tier-3 system_snapshot population at first-scoring-event */
+  leagueId: string | null;
   /** Map of game results by game number */
   gameResults: Map<number, MatchGame>;
   /** Home team lineup */
@@ -60,6 +63,7 @@ interface UseMatchScoringMutationsParams {
  */
 export function useMatchScoringMutations({
   match,
+  leagueId,
   gameResults,
   homeLineup,
   awayLineup,
@@ -297,6 +301,14 @@ export function useMatchScoringMutations({
       if (!scoringGame || !match || !homeLineup || !awayLineup) return;
 
       try {
+        // Tier 3 mutability: populate system_snapshot at the first scoring event.
+        // No-op if already populated. Runs before the score write so the snapshot
+        // reflects league state as of the moment the first game was scored.
+        // Non-blocking: any error is logged but doesn't prevent scoring.
+        if (leagueId) {
+          await populateMatchSnapshotIfNeeded(match.id, leagueId);
+        }
+
         // Determine if this is home or away team confirming (based on WHO is scoring, not who won)
         const isHomeTeamScoring = userTeamId === match.home_team_id;
 

@@ -4,6 +4,19 @@
  */
 
 import type { HandicapVariant } from '@/utils/handicapCalculations';
+import type { SystemOverrides } from './systemOverrides';
+
+/**
+ * Per-match frozen snapshot of tier 2 dials + threshold chart selection.
+ * Populated at scheduled → in_progress transition and never mutated after.
+ * Stored as `matches.system_snapshot JSONB`. See migration
+ * 20260418000003_add_matches_system_snapshot.sql.
+ */
+export interface MatchSystemSnapshot {
+  overrides: SystemOverrides;
+  threshold_chart_id: string | null;
+  snapshot_at: string; // ISO 8601 timestamp
+}
 
 /**
  * Match type - determines format and scoring rules
@@ -54,6 +67,13 @@ export interface MatchWithLeagueSettings {
   away_games_to_win: number | null;
   away_games_to_tie: number | null;
   away_games_to_lose: number | null;
+  /** Fargo team handicap (added by migration 20260418000001). NULL for non-Fargo matches. */
+  fargo_start_points: number | null;
+  /**
+   * Tier 3 snapshot (added by migration 20260418000003). NULL for unstarted or legacy matches.
+   * Populated at scheduled → in_progress transition; scoring reads from this, not live league data.
+   */
+  system_snapshot: MatchSystemSnapshot | null;
   assigned_table_number: number | null;
   home_team: {
     id: string;
@@ -208,6 +228,11 @@ export interface MatchGame {
   confirmed_by_home: boolean;
   confirmed_by_away: boolean;
   is_tiebreaker: boolean;
+  // Fargo fields (added by 20260418000001_add_fargo_match_columns.sql).
+  // NULL for BCA matches; populated for Fargo matches per Unit 11's scoring UX.
+  winner_points: number | null;         // Fargo winner points (default 10, override-able)
+  loser_points: number | null;          // Fargo loser points (0-7 for 8-ball)
+  loser_balls_pocketed: number | null;  // Raw input driving loser_points calculation
 }
 
 /**

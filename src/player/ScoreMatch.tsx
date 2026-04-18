@@ -382,6 +382,7 @@ export function ScoreMatch() {
   // Use mutations hook for all database operations
   const mutations = useMatchScoringMutations({
     match,
+    leagueId: match?.league?.id ?? null,
     gameResults,
     homeLineup,
     awayLineup,

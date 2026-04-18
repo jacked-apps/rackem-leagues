@@ -291,6 +291,8 @@ export async function getMatchWithLeagueSettings(matchId: string): Promise<Match
       away_games_to_win,
       away_games_to_tie,
       away_games_to_lose,
+      fargo_start_points,
+      system_snapshot,
       assigned_table_number,
       home_team:teams!matches_home_team_id_fkey(id, team_name),
       away_team:teams!matches_away_team_id_fkey(id, team_name),
@@ -347,6 +349,8 @@ export async function getMatchWithLeagueSettings(matchId: string): Promise<Match
     away_games_to_win: data.away_games_to_win ?? null,
     away_games_to_tie: data.away_games_to_tie ?? null,
     away_games_to_lose: data.away_games_to_lose ?? null,
+    fargo_start_points: data.fargo_start_points ?? null,
+    system_snapshot: data.system_snapshot ?? null,
     assigned_table_number: data.assigned_table_number ?? null,
     home_team: homeTeam as any,
     away_team: awayTeam as any,
@@ -555,5 +559,78 @@ export async function completeMatch(
 
   if (error) {
     throw new Error(`Failed to complete match: ${error.message}`);
+  }
+}
+
+/**
+ * Populate `matches.system_snapshot` if it's currently null — tier 3 mutability.
+ *
+ * Called at the first scoring event for a match. Reads the league's current
+ * `system_overrides` and `preferences.threshold_chart_id`, then writes them
+ * to the match as a frozen snapshot. Subsequent calls are no-ops because the
+ * update is guarded by `WHERE system_snapshot IS NULL`.
+ *
+ * This is intentionally a best-effort operation: if it fails for any reason,
+ * scoring continues. The snapshot is defense-in-depth against mid-season
+ * dial edits; absence of a snapshot falls back to reading live league data
+ * (current behavior pre-Unit-7). Legacy matches from before this migration
+ * will always have a null snapshot.
+ *
+ * Safe under concurrent writes: if two players confirm the first game in
+ * parallel, both reads see null, both try to update, but both produce the
+ * same snapshot content (same league state at the same moment), so
+ * last-writer-wins is harmless.
+ *
+ * @param matchId - Match whose snapshot should be populated
+ * @param leagueId - League the match belongs to (for overrides lookup)
+ */
+export async function populateMatchSnapshotIfNeeded(
+  matchId: string,
+  leagueId: string,
+): Promise<void> {
+  // Check if snapshot already exists to avoid unnecessary writes
+  const { data: existing, error: readErr } = await supabase
+    .from('matches')
+    .select('system_snapshot')
+    .eq('id', matchId)
+    .single();
+
+  if (readErr) {
+    console.warn('[matches.populateMatchSnapshotIfNeeded] read error', readErr.message);
+    return;
+  }
+  if (existing?.system_snapshot != null) {
+    return; // Already populated — never overwrite
+  }
+
+  // Read current league overrides + threshold chart ID
+  const [leagueRes, prefRes] = await Promise.all([
+    supabase.from('leagues').select('system_overrides').eq('id', leagueId).single(),
+    supabase
+      .from('preferences')
+      .select('threshold_chart_id')
+      .eq('entity_type', 'league')
+      .eq('entity_id', leagueId)
+      .maybeSingle(),
+  ]);
+
+  const overrides = leagueRes.data?.system_overrides ?? {};
+  const threshold_chart_id = prefRes.data?.threshold_chart_id ?? null;
+
+  const snapshot = {
+    overrides,
+    threshold_chart_id,
+    snapshot_at: new Date().toISOString(),
+  };
+
+  // Conditional write — only set if still null (guards against simultaneous first-score races)
+  const { error: writeErr } = await supabase
+    .from('matches')
+    .update({ system_snapshot: snapshot })
+    .eq('id', matchId)
+    .is('system_snapshot', null);
+
+  if (writeErr) {
+    console.warn('[matches.populateMatchSnapshotIfNeeded] write error', writeErr.message);
   }
 }
