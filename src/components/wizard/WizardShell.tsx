@@ -13,13 +13,19 @@ import type { WizardConfig } from './flowTypes';
 import type { WizardStepProps } from './types';
 import { useWizardShell } from './useWizardShell';
 import { WizardNavigation } from './WizardNavigation';
-import { WizardSummary } from './WizardSummary';
+import { WizardSummary, type WizardSummaryItem } from './WizardSummary';
 
 interface WizardShellProps<TFormData = unknown> {
   wizard: WizardConfig<TFormData>;
   persistKey?: string;
   onComplete?: (formData: TFormData) => void;
   onCancel?: () => void;
+  /**
+   * Summary items for facts committed in earlier flow stages. Rendered
+   * above the wizard's own summary items so the user sees a cumulative
+   * running summary when this wizard is embedded in a flow.
+   */
+  contextSummaryItems?: WizardSummaryItem[];
 }
 
 export function WizardShell<TFormData>(props: WizardShellProps<TFormData>) {
@@ -75,10 +81,13 @@ export function WizardShell<TFormData>(props: WizardShellProps<TFormData>) {
         )}
       </div>
 
-      {props.wizard.getSummaryItems && (
+      {(props.contextSummaryItems?.length || props.wizard.getSummaryItems) && (
         <WizardSummary
           title="Summary"
-          items={props.wizard.getSummaryItems(formData)}
+          items={[
+            ...(props.contextSummaryItems ?? []),
+            ...(props.wizard.getSummaryItems?.(formData) ?? []),
+          ]}
         />
       )}
 

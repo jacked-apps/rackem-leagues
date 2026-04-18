@@ -20,9 +20,46 @@ import { scheduleWizardConfig } from '@/wizards/schedule-v2/scheduleWizardConfig
 import { teamsWizardConfig } from '@/wizards/teams-v2/teamsWizardConfig';
 import { matchupsWizardConfig } from '@/wizards/matchups-v2/matchupsWizardConfig';
 
+const LEAGUE_FORMAT_LABELS: Record<string, string> = {
+  standard_3v3: 'Standard 3v3',
+  fargo_5v5: 'Fargo 5v5',
+  custom_5v5: 'Custom 5v5',
+};
+
 export const createNewLeagueFlow: WizardFlowConfig = {
   id: 'create-new-league',
   title: 'Create New League',
+  // Cumulative summary: what's been committed from earlier stages.
+  // Rendered above the active wizard's own summary so the user always
+  // sees the full picture, not just in-progress choices.
+  getContextSummaryItems: (context) => {
+    const items = [];
+    if (context.leagueName) {
+      items.push({ label: 'League', value: context.leagueName });
+    }
+    if (context.leagueFormat) {
+      items.push({
+        label: 'Format',
+        value: LEAGUE_FORMAT_LABELS[context.leagueFormat] ?? context.leagueFormat,
+      });
+    }
+    if (context.leagueStartDate) {
+      items.push({ label: 'Start Date', value: context.leagueStartDate });
+    }
+    if (context.seasonName) {
+      items.push({ label: 'Season', value: context.seasonName });
+    }
+    if (context.seasonLength) {
+      items.push({ label: 'Regular Season', value: `${context.seasonLength} weeks` });
+    }
+    if (context.playoffWeeks) {
+      items.push({
+        label: 'Playoff Weeks',
+        value: String(context.playoffWeeks),
+      });
+    }
+    return items;
+  },
   stages: [
     {
       kind: 'wizard',

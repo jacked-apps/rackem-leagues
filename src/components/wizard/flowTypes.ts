@@ -131,4 +131,14 @@ export interface WizardFlowConfig {
 
   /** Ordered list of stages */
   stages: FlowStage[];
+
+  /**
+   * Optional: turn the flow's context (facts collected from completed
+   * stages) into summary items. When provided, the shell renders these
+   * ABOVE each wizard's own summary items — so every stage shows a
+   * cumulative "what we know so far" box that grows as the user
+   * progresses. Each wizard's own getSummaryItems only needs to return
+   * items for in-progress choices in THAT wizard.
+   */
+  getContextSummaryItems?: (context: FlowContext) => WizardSummaryItem[];
 }

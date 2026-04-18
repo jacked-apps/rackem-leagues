@@ -48,6 +48,11 @@ export function WizardFlowShell({
   }
   const nextStage = flow.stages[state.currentStageIndex + 1] ?? null;
 
+  // Cumulative summary items from all completed stages. Rendered above the
+  // current wizard's own summary so the user sees everything we've gathered
+  // so far, not just the in-progress stage.
+  const contextSummaryItems = flow.getContextSummaryItems?.(state.context) ?? [];
+
   return (
     <div className="space-y-6">
       <FlowStageHeader
@@ -70,6 +75,7 @@ export function WizardFlowShell({
         <WizardFlowStageRenderer
           stage={state.currentStage}
           context={state.context}
+          contextSummaryItems={contextSummaryItems}
           onStageComplete={handleStageComplete}
           onCancel={onCancel}
         />
