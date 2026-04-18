@@ -138,7 +138,7 @@ export const ActiveLeagues: React.FC<ActiveLeaguesProps> = ({ operatorId }) => {
             isLoading={isNavigating}
             onClick={() => {
               setIsNavigating(true);
-              navigate(`/create-league-v2/${operatorId}`);
+              navigate(`/create-league/${operatorId}`);
             }}
             disabled={isNavigating}
           >
@@ -162,7 +162,7 @@ export const ActiveLeagues: React.FC<ActiveLeaguesProps> = ({ operatorId }) => {
             isLoading={isNavigating}
             onClick={() => {
               setIsNavigating(true);
-              navigate(`/create-league-v2/${operatorId}`);
+              navigate(`/create-league/${operatorId}`);
             }}
             disabled={isNavigating}
           >

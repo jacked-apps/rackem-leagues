@@ -1,21 +1,18 @@
 /**
- * @fileoverview League Creation Wizard v2 — Dev Page
+ * @fileoverview League Creation Wizard — Page
  *
  * Renders the WizardFlowShell with the "Create New League" 5-stage flow.
  * On mount, checks DB for existing progress and resumes at the right stage.
- *
- * ACCESS: Dev-only via `/create-league-v2/:orgId`
  */
 
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { DevOnly } from '@/dev/DevOnly';
 import { PageHeader } from '@/components/PageHeader';
 import { WizardFlowShell } from '@/components/wizard';
 import { createNewLeagueFlow } from '@/flows/createNewLeagueFlow';
 import { useFlowStageDetection } from './useFlowStageDetection';
 import { useFlowStageHandlers } from './useFlowStageHandlers';
 
-function LeagueWizardV2PageContent() {
+export default function LeagueWizardV2Page() {
   const { orgId } = useParams<{ orgId: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -42,7 +39,7 @@ function LeagueWizardV2PageContent() {
       <PageHeader
         backTo={`/operator-dashboard/${orgId}`}
         backLabel="Back to Dashboard"
-        title="Create New League (v2)"
+        title="Create New League"
         organizationId={orgId}
       />
 
@@ -60,10 +57,3 @@ function LeagueWizardV2PageContent() {
   );
 }
 
-export default function LeagueWizardV2Page() {
-  return (
-    <DevOnly>
-      <LeagueWizardV2PageContent />
-    </DevOnly>
-  );
-}

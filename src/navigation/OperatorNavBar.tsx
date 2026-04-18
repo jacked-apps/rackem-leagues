@@ -40,7 +40,7 @@ export const OperatorNavBar: React.FC<OperatorNavBarProps> = ({ orgId }) => {
         </li>
         <li>
           <NavLink
-            to={`/create-league-v2/${orgId}`}
+            to={`/create-league/${orgId}`}
             className={({ isActive }) =>
               `text-blue-600 hover:underline ${isActive ? 'font-semibold' : ''}`
             }

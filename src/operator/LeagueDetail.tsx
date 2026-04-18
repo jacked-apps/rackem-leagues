@@ -270,7 +270,7 @@ function ActionCard({
             isLoading={isNavigating}
             onClick={() => {
               setIsNavigating(true);
-              navigate(`/create-league-v2/${league.organization_id}?leagueId=${league.id}`);
+              navigate(`/create-league/${league.organization_id}?leagueId=${league.id}`);
             }}
             disabled={isNavigating}
             size="lg"

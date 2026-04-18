@@ -55,7 +55,6 @@ const OperatorDashboard = lazy(() => import('../operator/OperatorDashboard'));
 const OrganizationSettings = lazy(() => import('../operator/OrganizationSettings'));
 const ReportsManagement = lazy(() => import('../operator/ReportsManagement'));
 const PlayerManagement = lazy(() => import('../operator/PlayerManagement'));
-const LeagueCreationWizard = lazy(() => import('../operator/LeagueCreationWizard'));
 const LeagueWizardV2Page = lazy(() => import('../wizards/league-v2/LeagueWizardV2Page'));
 const LeagueRules = lazy(() => import('../operator/LeagueRules'));
 const LeagueDetail = lazy(() => import('../operator/LeagueDetail'));
@@ -180,9 +179,7 @@ export const router = createBrowserRouter([
       { path: 'operator-dashboard/:orgId', element: withOperator(OperatorDashboard) },
       { path: 'operator-reports/:orgId', element: withOperator(ReportsManagement) },
       { path: 'manage-players/:orgId', element: withOperator(PlayerManagement) },
-      { path: 'create-league/:orgId', element: withOperator(LeagueCreationWizard) },
-      // Wizard 2.0 dev preview — page component itself gates access via DevOnly
-      { path: 'create-league-v2/:orgId', element: withOperator(LeagueWizardV2Page) },
+      { path: 'create-league/:orgId', element: withOperator(LeagueWizardV2Page) },
       { path: 'operator-settings/:orgId', element: withOperator(OrganizationSettings) },
       { path: 'operator-settings/:orgId/playoffs', element: withOperator(OrganizationPlayoffSettings) },
       { path: 'league-rules/:orgId', element: withOperator(LeagueRules) },
