@@ -134,7 +134,10 @@ export function useFlowStageHandlers({
       toast.success(
         `Created ${result.teams.length} team${result.teams.length === 1 ? '' : 's'} at ${result.venueCount} venue${result.venueCount === 1 ? '' : 's'}`,
       );
-      return {};
+      return {
+        teamCount: result.teams.length,
+        venueCount: result.venueCount,
+      };
     },
     matchups: async () => {
       // User clicked Finish on the Review step — accept the schedule and activate the season.

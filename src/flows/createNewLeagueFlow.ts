@@ -81,6 +81,18 @@ export const createNewLeagueFlow: WizardFlowConfig = {
     if (context.scheduleComplete) {
       items.push({ label: 'Schedule', value: 'Saved' });
     }
+    if (context.teamCount) {
+      items.push({
+        label: 'Teams',
+        value: `${context.teamCount} team${context.teamCount === 1 ? '' : 's'}`,
+      });
+    }
+    if (context.venueCount) {
+      items.push({
+        label: 'Venues',
+        value: `${context.venueCount} venue${context.venueCount === 1 ? '' : 's'}`,
+      });
+    }
     return items;
   },
   stages: [

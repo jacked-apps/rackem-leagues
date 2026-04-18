@@ -132,6 +132,12 @@ export interface FlowContext {
 
   /** True once the schedule stage has saved weeks to the DB */
   scheduleComplete?: boolean;
+
+  /** Number of teams created for the current season (set after Stage 4) */
+  teamCount?: number;
+
+  /** Number of distinct venues in use by those teams */
+  venueCount?: number;
 }
 
 /**

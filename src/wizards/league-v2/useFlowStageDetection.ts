@@ -37,6 +37,8 @@ interface StageDetectionResult {
     seasonId?: string;
     seasonName?: string;
     seasonLength?: number;
+    teamCount?: number;
+    venueCount?: number;
   };
 }
 
@@ -78,6 +80,8 @@ export function useFlowStageDetection(leagueId: string | null): StageDetectionRe
       // If a season exists, check downstream stage progress in parallel
       let hasSchedule = false;
       let hasTeams = false;
+      let teamCount = 0;
+      let venueCount = 0;
       if (season?.id) {
         const [weeksRes, teamsRes] = await Promise.all([
           supabase
@@ -86,11 +90,19 @@ export function useFlowStageDetection(leagueId: string | null): StageDetectionRe
             .eq('season_id', season.id),
           supabase
             .from('teams')
-            .select('*', { count: 'exact', head: true })
+            .select('home_venue_id', { count: 'exact' })
             .eq('season_id', season.id),
         ]);
         hasSchedule = (weeksRes.count ?? 0) > 0;
-        hasTeams = (teamsRes.count ?? 0) > 0;
+        teamCount = teamsRes.count ?? 0;
+        hasTeams = teamCount > 0;
+        // Count distinct venues the teams play out of
+        const venueIds = new Set(
+          (teamsRes.data ?? [])
+            .map((t) => t.home_venue_id)
+            .filter((v): v is string => Boolean(v)),
+        );
+        venueCount = venueIds.size;
       }
 
       // Build the league name from its fields
@@ -120,6 +132,8 @@ export function useFlowStageDetection(leagueId: string | null): StageDetectionRe
         seasonActive: season?.status === 'active',
         hasSchedule,
         hasTeams,
+        teamCount,
+        venueCount,
       };
     },
     enabled: !!leagueId,
@@ -164,6 +178,8 @@ export function useFlowStageDetection(leagueId: string | null): StageDetectionRe
     seasonName: data.seasonName ?? undefined,
     seasonLength: data.seasonLength ?? undefined,
     scheduleComplete: data.hasSchedule,
+    teamCount: data.teamCount || undefined,
+    venueCount: data.venueCount || undefined,
   };
 
   // Stage 4 check: season activated (matchups finished) — everything done
