@@ -88,6 +88,7 @@ export function WizardShell<TFormData>(props: WizardShellProps<TFormData>) {
         showSkip={currentStep.optional === true && !stepValue}
         hideBack={currentStep.hideBack === true}
         hideCancel={currentStep.hideCancel === true}
+        hideNext={currentStep.hideNext === true}
         onBack={goBack}
         onNext={handleNext}
         onCancel={props.onCancel ? handleCancel : undefined}

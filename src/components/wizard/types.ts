@@ -92,6 +92,16 @@ export interface WizardStepConfig<TFormData = unknown> {
   hideCancel?: boolean;
 
   /**
+   * If true, hide the default Next / Finish button. Useful when the step
+   * renders its own navigation buttons with step-specific semantics (e.g.,
+   * "Save & Exit" + "Save & Continue" on a schedule review) — combined with
+   * hideBack and hideCancel this lets the step own its entire nav bar and
+   * avoids duplicate buttons. The step is responsible for calling onNext()
+   * from its own handler when appropriate.
+   */
+  hideNext?: boolean;
+
+  /**
    * If set, clicking Next pops a confirmation dialog with this content.
    * Next only advances if the user confirms. Lets a step warn the user
    * about actions that are hard to reverse later (e.g., "adding more teams
