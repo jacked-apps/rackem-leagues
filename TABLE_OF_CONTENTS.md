@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-04-09 (added wizard 2.0 framework planning doc)
+> **Last Updated**: 2026-04-18 (added `/src/systems/` modular handicap substrate — Phase 1 of fargo-scoring refactor)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -28,7 +28,6 @@
 |------|---------|--------|
 | `README.md` | Project overview and setup instructions | Active |
 | `CLAUDE.md` | Claude Code AI assistant instructions for this project | **CRITICAL** - Always read |
-| `CLAUDE-PERSONAL.md` | Personal Claude preferences | Active |
 | `TABLE_OF_CONTENTS.md` | This file - complete project index | **UPDATE ON EVERY FILE CHANGE** |
 | `RESTRUCTURE_PLAN.md` | Current app reorganization plan | Active (app-restructure branch) |
 
@@ -652,7 +651,8 @@ Reusable wizard/form step components
 #### Handicap System (`/utils/handicap/`)
 - `get3v3GamesNeeded.ts` - **Hard-coded 3v3 handicap chart** (25 rows, -12 to +12 range)
 - `get5v5GamesNeeded.ts` - **Hard-coded 5v5 BCA handicap chart** (7 ranges, percentage-based)
-- `index.ts` - **Unified handicap interface** (getGamesNeeded, getGamesNeededForBothTeams)
+- `index.ts` - **Unified handicap interface** (getGamesNeeded; now delegates through SystemModule resolver)
+- `__tests__/getGamesNeeded.characterization.test.ts` - **Characterization tests** locking in pre-refactor behavior (49 cases across 3v3 and 5v5 charts)
 
 #### League, Season & Tournament
 - `leagueUtils.ts` - League utilities
@@ -767,8 +767,22 @@ TypeScript type definitions - **Single source of truth for all types**
 - `schedule.ts` - **Match and schedule types** (Match, MatchWithDetails, MatchStatus, TeamSchedulePosition)
 - `scheduleReview.ts` - Schedule review types
 - `match.ts` - Match scoring and game types
+- `systemOverrides.ts` - **Per-league dial overrides** (JSONB shape stored as `leagues.system_overrides`; Fargo + BCA dial names)
 
 **Type Organization Best Practice**: All duplicate type definitions have been consolidated into this folder. Always import from `@/types` for consistency.
+
+---
+
+### 🎯 Systems (`/systems/`) **NEW — Modular handicap/scoring substrate**
+
+Preset modules implementing the `SystemModule` interface. Each shipped preset owns its rating, scoring, and threshold behavior. The resolver maps `handicap_type` string → module. See `docs/plans/2026-04-18-001-refactor-modular-handicap-scoring-systems-plan.md`.
+
+- `types.ts` - **SystemModule interface** + discriminated threshold union (BCAThreshold | FargoThreshold) + supporting types
+- `resolver.ts` - **Module resolver** — `pickModule(handicap_type)` routes to bca3v3 / bca5v5 / fargo5v5
+- `bca3v3.ts` - **BCA 3v3 module** — wraps the existing get3v3GamesNeeded chart
+- `bca5v5.ts` - **BCA 5v5 module** — wraps the existing get5v5GamesNeeded chart
+- `fargo5v5.ts` - **Fargo 5v5 module** — stub scaffolding (Unit 10 will implement the Fargo math)
+- `__tests__/resolver.test.ts` - Resolver routing tests (15 cases including unmapped fallback)
 
 ---
 

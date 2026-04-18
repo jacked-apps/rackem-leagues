@@ -32,6 +32,9 @@ export type {
 } from './preferences';
 export { SYSTEM_DEFAULTS } from './preferences';
 
+// System overrides (per-league dial JSONB shape — used by leagues.system_overrides)
+export type { SystemOverrides } from './systemOverrides';
+
 // Season types
 export type { SeasonWeek } from './season';
 
