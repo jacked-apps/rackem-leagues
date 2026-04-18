@@ -7,8 +7,10 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { fetchTeamsWithDetails } from '@/api/hooks';
 import { Button } from '@/components/ui/button';
+import { InfoButton } from '@/components/InfoButton';
 import type { TeamWithQueryDetails } from '@/types/team';
 import { logger } from '@/utils/logger';
+import { useFlowStageDetection } from '@/wizards/league-v2/useFlowStageDetection';
 
 interface TeamsCardProps {
   /** League ID to fetch teams for */
@@ -30,6 +32,9 @@ export const TeamsCard: React.FC<TeamsCardProps> = ({ leagueId }) => {
   const [loading, setLoading] = useState(true);
   const [isNavigating, setIsNavigating] = useState(false);
   const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null);
+
+  const { context } = useFlowStageDetection(leagueId);
+  const hasSeason = Boolean(context.seasonId);
 
   /**
    * Fetch teams with captain details
@@ -74,18 +79,26 @@ export const TeamsCard: React.FC<TeamsCardProps> = ({ leagueId }) => {
     <div className="bg-white lg:rounded-xl shadow-sm p-6 mb-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold text-gray-900">Teams</h2>
-        <Button
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsNavigating(true);
-            navigate(`/league/${leagueId}/manage-teams`);
-          }}
-          size="sm"
-          disabled={isNavigating}
-          loadingText="Loading..."
-        >
-          {isNavigating ? 'Loading...' : 'Manage Teams'}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsNavigating(true);
+              navigate(`/league/${leagueId}/manage-teams`);
+            }}
+            size="sm"
+            disabled={isNavigating || !hasSeason}
+            loadingText="Loading..."
+          >
+            {isNavigating ? 'Loading...' : 'Manage Teams'}
+          </Button>
+          {!hasSeason && (
+            <InfoButton title="Manage Teams unavailable" size="sm">
+              Create a season for this league before adding teams. Teams are
+              attached to a season, so we need one in place first.
+            </InfoButton>
+          )}
+        </div>
       </div>
 
       {loading ? (
@@ -96,16 +109,24 @@ export const TeamsCard: React.FC<TeamsCardProps> = ({ leagueId }) => {
         <div className="text-center py-8">
           <div className="text-4xl mb-3">👥</div>
           <p className="text-gray-600 mb-4">No teams yet</p>
-          <Button
-            onClick={() => {
-              setIsNavigating(true);
-              navigate(`/league/${leagueId}/manage-teams`);
-            }}
-            variant="outline"
-            disabled={isNavigating}
-          >
-            {isNavigating ? 'Loading...' : 'Add Your First Team'}
-          </Button>
+          <div className="inline-flex items-center gap-2">
+            <Button
+              onClick={() => {
+                setIsNavigating(true);
+                navigate(`/league/${leagueId}/manage-teams`);
+              }}
+              variant="outline"
+              disabled={isNavigating || !hasSeason}
+            >
+              {isNavigating ? 'Loading...' : 'Add Your First Team'}
+            </Button>
+            {!hasSeason && (
+              <InfoButton title="Teams require a season" size="sm">
+                Create a season for this league before adding teams. Teams are
+                attached to a season, so we need one in place first.
+              </InfoButton>
+            )}
+          </div>
         </div>
       ) : (
         <div className="overflow-x-auto">

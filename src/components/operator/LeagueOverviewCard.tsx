@@ -10,6 +10,14 @@ import { DeleteSeasonModal } from '@/components/modals/DeleteSeasonModal';
 import type { League } from '@/types/league';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
+import { useFlowStageDetection } from '@/wizards/league-v2/useFlowStageDetection';
+
+const STAGE_BUTTON_LABELS: Record<number, string> = {
+  1: 'Create Season',
+  2: 'Create Schedule',
+  3: 'Add Teams',
+  4: 'Set Matchups',
+};
 
 interface LeagueOverviewCardProps {
   /** League data to display */
@@ -48,6 +56,17 @@ export const LeagueOverviewCard: React.FC<LeagueOverviewCardProps> = ({ league }
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
+
+  const { firstIncompleteStage } = useFlowStageDetection(league.id);
+  const flowComplete = firstIncompleteStage >= 5;
+  const wizardButtonLabel = flowComplete
+    ? 'Season Active'
+    : STAGE_BUTTON_LABELS[firstIncompleteStage] ?? 'Continue Setup';
+
+  const handleWizardClick = () => {
+    setIsNavigating(true);
+    navigate(`/create-league/${league.organization_id}?leagueId=${league.id}`);
+  };
 
   /**
    * Fetch the most recent season for this league (active or otherwise)
@@ -125,19 +144,19 @@ export const LeagueOverviewCard: React.FC<LeagueOverviewCardProps> = ({ league }
   }, [league.id]);
 
   /**
-   * Determine which edit options should be available based on season state
-   * Implements the button matrix from EDIT-MODE-PLAN.md Phase 2
+   * Determine which edit options should be available based on season state.
+   * The Create / Continue Setup button is handled separately via
+   * useFlowStageDetection and the wizard flow.
    */
   const getSeasonEditOptions = () => {
     // No season exists
     if (!currentSeason) {
-      return { showCreate: true };
+      return {};
     }
 
     // Incomplete season (wizard not finished - no schedule yet)
     if (!hasSchedule) {
       return {
-        showContinueSetup: true,
         showDelete: true,
       };
     }
@@ -166,153 +185,6 @@ export const LeagueOverviewCard: React.FC<LeagueOverviewCardProps> = ({ league }
 
     return {};
   };
-
-  /**
-   * Navigate to wizard to create a new season
-   */
-  const handleCreateSeasonClick = () => {
-    // Clear ALL localStorage keys related to season creation
-    localStorage.removeItem(`season-creation-${league.id}`);
-    localStorage.removeItem(`season-wizard-step-${league.id}`);
-    localStorage.removeItem('season-schedule-review');
-    localStorage.removeItem('season-blackout-weeks');
-    setIsNavigating(true);
-    navigate(`/league/${league.id}/create-season`);
-  };
-
-  /**
-   * Navigate to wizard to continue incomplete season setup
-   * Loads existing season data from database into localStorage
-   */
-  const handleContinueSetupClick = async () => {
-    if (!currentSeason) return;
-
-    try {
-      // Fetch season_weeks to reconstruct championship dates and blackout weeks
-      const { data: seasonWeeks, error } = await supabase
-        .from('season_weeks')
-        .select('*')
-        .eq('season_id', currentSeason.id)
-        .order('scheduled_date', { ascending: true });
-
-      if (error) throw error;
-
-      // Build the SeasonFormData object from existing season
-      const seasonFormData = {
-        startDate: currentSeason.start_date,
-        seasonLength: currentSeason.season_length?.toString() || '16',
-        isCustomLength: ![10, 12, 14, 16, 18, 20].includes(currentSeason.season_length),
-        bcaChoice: '',
-        bcaStartDate: '',
-        bcaEndDate: '',
-        bcaIgnored: true, // Default to ignored
-        apaChoice: '',
-        apaStartDate: '',
-        apaEndDate: '',
-        apaIgnored: true, // Default to ignored
-      };
-
-      // Extract blackout weeks (excluding championship-related ones)
-      // Championship weeks will be reconstructed from form data below
-      const blackoutWeeks = (seasonWeeks || [])
-        .filter(w => {
-          // Only include blackout type weeks
-          if (w.week_type !== 'blackout') return false;
-
-          // Exclude championship-related blackouts (they'll be handled separately as championship dates)
-          const weekName = w.week_name?.toLowerCase() || '';
-          const isChampionship = weekName.includes('bca') ||
-                                weekName.includes('apa') ||
-                                weekName.includes('championship');
-
-          return !isChampionship;
-        })
-        .map(w => ({
-          weekNumber: 0,
-          weekName: w.week_name,
-          date: w.scheduled_date,
-          type: 'week-off' as const,
-          conflicts: [],
-        }));
-
-      // Check for BCA championship in week names
-      const bcaWeeks = (seasonWeeks || []).filter(w =>
-        w.week_name?.toLowerCase().includes('bca') ||
-        w.week_name?.toLowerCase().includes('championship')
-      );
-
-      if (bcaWeeks.length > 0) {
-        const bcaStart = bcaWeeks[0].scheduled_date;
-        const bcaEnd = bcaWeeks[bcaWeeks.length - 1].scheduled_date;
-        seasonFormData.bcaChoice = 'custom'; // Mark as custom since we don't know the original choice ID
-        seasonFormData.bcaStartDate = bcaStart;
-        seasonFormData.bcaEndDate = bcaEnd;
-        seasonFormData.bcaIgnored = false;
-      }
-
-      // Check for APA championship in week names
-      const apaWeeks = (seasonWeeks || []).filter(w =>
-        w.week_name?.toLowerCase().includes('apa')
-      );
-
-      if (apaWeeks.length > 0) {
-        const apaStart = apaWeeks[0].scheduled_date;
-        const apaEnd = apaWeeks[apaWeeks.length - 1].scheduled_date;
-        seasonFormData.apaChoice = 'custom';
-        seasonFormData.apaStartDate = apaStart;
-        seasonFormData.apaEndDate = apaEnd;
-        seasonFormData.apaIgnored = false;
-      }
-
-      // Save form data to localStorage
-      const STORAGE_KEY = `season-creation-${league.id}`;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(seasonFormData));
-
-      // Save blackout weeks to localStorage
-      if (blackoutWeeks.length > 0) {
-        localStorage.setItem('season-blackout-weeks', JSON.stringify(blackoutWeeks));
-      }
-
-      // DON'T load the schedule from database - let the wizard regenerate it fresh
-      // The database might have incomplete/corrupted data
-      // The wizard will regenerate the correct schedule based on:
-      // - seasonFormData (start date, length, championships)
-      // - blackoutWeeks (loaded above)
-      // This ensures we always get a complete, correct schedule
-
-      // Clear any old saved schedule
-      localStorage.removeItem('season-schedule-review');
-
-      // Determine which step to start at based on what data exists
-      let startStep = 0;
-      if (hasSchedule) {
-        // Has complete schedule - go directly to review step (last step)
-        startStep = 4; // Assuming: 0=start, 1=length, 2=BCA, 3=APA, 4=review
-      } else if (seasonFormData.apaStartDate) {
-        // Has APA dates - go to review step
-        startStep = 4;
-      } else if (seasonFormData.bcaStartDate) {
-        // Has BCA dates - go to APA step
-        startStep = 3;
-      } else if (seasonFormData.seasonLength) {
-        // Has season length - go to BCA step
-        startStep = 2;
-      } else if (seasonFormData.startDate) {
-        // Has start date - go to season length step
-        startStep = 1;
-      }
-
-      localStorage.setItem(`season-wizard-step-${league.id}`, startStep.toString());
-
-      // Navigate to wizard with seasonId for tracking
-      setIsNavigating(true);
-      navigate(`/league/${league.id}/create-season?seasonId=${currentSeason.id}`);
-    } catch (err) {
-      logger.error('Error loading season data for Continue Setup', { error: err instanceof Error ? err.message : String(err) });
-      toast.error('Failed to load season data. Please try again.');
-    }
-  };
-
 
   /**
    * Determine if season setup is complete. A season is only "Complete" once
@@ -401,31 +273,18 @@ export const LeagueOverviewCard: React.FC<LeagueOverviewCardProps> = ({ league }
           )}
 
 
-          {/* Continue Setup - shown for incomplete seasons */}
-          {editOptions.showContinueSetup && (
-            <Button
-              size="sm"
-              onClick={handleContinueSetupClick}
-              style={{ backgroundColor: '#2563eb', color: 'white' }}
-              disabled={isNavigating}
-              loadingText="Loading..."
-            >
-              {isNavigating ? 'Loading...' : 'Continue Setup'}
-            </Button>
-          )}
-
-          {/* Create Season - shown when no season exists */}
-          {editOptions.showCreate && (
-            <Button
-              size="sm"
-              onClick={handleCreateSeasonClick}
-              style={{ backgroundColor: '#2563eb', color: 'white' }}
-              disabled={isNavigating}
-              loadingText="Loading..."
-            >
-              {isNavigating ? 'Loading...' : 'Create Season'}
-            </Button>
-          )}
+          {/* Wizard stage button — mirrors the rocket on LeagueDetail but
+              with a stage-specific label. Disabled once the flow is complete;
+              the next-season wizard will take over here later. */}
+          <Button
+            size="sm"
+            onClick={handleWizardClick}
+            style={{ backgroundColor: '#2563eb', color: 'white' }}
+            disabled={isNavigating || flowComplete}
+            loadingText="Loading..."
+          >
+            {isNavigating ? 'Loading...' : wizardButtonLabel}
+          </Button>
 
           {/* Delete Season - shown for incomplete/upcoming seasons */}
           {editOptions.showDelete && currentSeason && (
