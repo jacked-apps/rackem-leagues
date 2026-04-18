@@ -49,9 +49,12 @@ import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { shouldUseTeamBonus } from '@/utils/calculateHandicapThresholds';
 import { logger } from '@/utils/logger';
 
-// Special substitute member IDs
+// Special substitute member IDs (same ID for both anonymous + double duty — type tracked in state)
 const SUB_HOME_ID = '00000000-0000-0000-0000-000000000001';
 const SUB_AWAY_ID = '00000000-0000-0000-0000-000000000002';
+// Synthetic dropdown values — parsed in handlePlayerChange to set the real ID + type
+const ANON_SUB_VALUE = '__anonymous_sub__';
+const DOUBLE_DUTY_VALUE = '__double_duty__';
 
 export function MatchLineup() {
   const { matchId } = useParams<{ matchId: string }>();
@@ -125,6 +128,10 @@ export function MatchLineup() {
 
   // Get update mutation for direct dropdown saves
   const updateLineupMutation = useUpdateMatchLineup();
+
+  // Track which type of substitute was chosen: anonymous or double duty.
+  // null = no sub in lineup. Once set, the other type is hidden from the dropdown.
+  const [substituteType, setSubstituteType] = useState<'anonymous' | 'double_duty' | null>(null);
 
   // Manual Fargo rating entry — LO types in each player's current rating.
   // Keyed by position (1-5). Only used when handicapType === 'fargo'.
@@ -436,7 +443,7 @@ export function MatchLineup() {
       return;
     }
 
-    // Check all 5 positions for SUB_HOME_ID or SUB_AWAY_ID
+    // Check all positions for a substitute placeholder
     const hasSubstitute = [
       opponentLineup.player1_id,
       opponentLineup.player2_id,
@@ -473,8 +480,25 @@ export function MatchLineup() {
   };
 
   // Generic player change handler - works for any position (3 or 5 players)
-  const handlePlayerChange = (position: number, playerId: string) => {
+  const handlePlayerChange = (position: number, rawPlayerId: string) => {
     if (!lineup.lineupId || !matchId) return;
+
+    // Map synthetic dropdown values to real sub ID + track type
+    let playerId = rawPlayerId;
+    if (rawPlayerId === ANON_SUB_VALUE) {
+      playerId = isHomeTeam ? SUB_HOME_ID : SUB_AWAY_ID;
+      setSubstituteType('anonymous');
+    } else if (rawPlayerId === DOUBLE_DUTY_VALUE) {
+      playerId = isHomeTeam ? SUB_HOME_ID : SUB_AWAY_ID;
+      setSubstituteType('double_duty');
+    }
+
+    // If clearing a sub slot (replacing sub with a real player), reset type
+    const wasSub = lineup.getPlayerId(position as 1 | 2 | 3 | 4 | 5) === SUB_HOME_ID ||
+                   lineup.getPlayerId(position as 1 | 2 | 3 | 4 | 5) === SUB_AWAY_ID;
+    if (wasSub && playerId !== SUB_HOME_ID && playerId !== SUB_AWAY_ID) {
+      setSubstituteType(null);
+    }
 
     // Update local state using generic setter
     lineup.setPlayerId(position as 1 | 2 | 3 | 4 | 5, playerId);
@@ -503,6 +527,12 @@ export function MatchLineup() {
   // Clear player handler - remove player from lineup position
   const handleClearPlayer = (position: number) => {
     if (!lineup.lineupId || !matchId) return;
+
+    // If clearing a sub slot, reset the substitute type
+    const currentId = lineup.getPlayerId(position as 1 | 2 | 3 | 4 | 5);
+    if (currentId === SUB_HOME_ID || currentId === SUB_AWAY_ID) {
+      setSubstituteType(null);
+    }
 
     // Clear local state using generic setter
     lineup.setPlayerId(position as 1 | 2 | 3 | 4 | 5, '');
@@ -574,21 +604,23 @@ export function MatchLineup() {
     if (player) {
       return player.nickname || `${player.first_name} ${player.last_name}`;
     }
-    // For substitutes
-    if (playerId === SUB_HOME_ID) return 'Sub (Home)';
-    if (playerId === SUB_AWAY_ID) return 'Sub (Away)';
+    // Synthetic dropdown entries
+    if (playerId === ANON_SUB_VALUE) return 'Anonymous Sub';
+    if (playerId === DOUBLE_DUTY_VALUE) return 'Double Duty';
+    // Placeholder IDs (after selection) — show whichever type was chosen
+    if (playerId === SUB_HOME_ID || playerId === SUB_AWAY_ID) {
+      return substituteType === 'double_duty' ? 'Double Duty' : 'Anonymous Sub';
+    }
     return 'Unknown';
   };
 
-  // Helper to get opponent player display name (for 5v5 substitute modal)
+  // Helper to get opponent player display name (for substitute modal)
   const getOpponentPlayerDisplayName = (playerId: string): string => {
     const player = opponentPlayers.find((p) => p.id === playerId);
     if (player) {
       return player.nickname || `${player.first_name} ${player.last_name}`;
     }
-    // For substitutes
-    if (playerId === SUB_HOME_ID) return 'Sub (Home)';
-    if (playerId === SUB_AWAY_ID) return 'Sub (Away)';
+    if (playerId === SUB_HOME_ID || playerId === SUB_AWAY_ID) return 'Sub';
     return 'Unknown';
   };
 
@@ -607,11 +639,18 @@ export function MatchLineup() {
       }).filter(Boolean) as string[];
     }
 
-    // Normal mode: All roster players + substitute
-    return [
-      ...players.map((p) => p.id),
-      isHomeTeam ? SUB_HOME_ID : SUB_AWAY_ID,
-    ];
+    // Normal mode: All roster players + sub options
+    // TODO: check substitute_method preference to show one/both/neither
+    const playerIds = players.map((p) => p.id);
+    const subId = isHomeTeam ? SUB_HOME_ID : SUB_AWAY_ID;
+
+    if (substituteType === null) {
+      // No sub chosen yet — show both options
+      return [...playerIds, ANON_SUB_VALUE, DOUBLE_DUTY_VALUE];
+    }
+    // A sub is already in the lineup — include the real sub ID so the
+    // Select can display the current selection, but don't offer new sub options
+    return [...playerIds, subId];
   };
 
   return (
@@ -747,7 +786,7 @@ export function MatchLineup() {
                     ? handleClearTiebreakerPlayer
                     : handleClearPlayer;
 
-                  // Is this a substitute player?
+                  // Is this slot a substitute (placeholder ID)?
                   const isSubstitute = playerId === SUB_HOME_ID || playerId === SUB_AWAY_ID;
 
                   // Handler for substitute handicap change
@@ -796,8 +835,8 @@ export function MatchLineup() {
                       isSubstitute={isSubstitute}
                       subHandicap={lineup.subHandicap}
                       onSubHandicapChange={handleSubHandicapChange}
-                      showSubHandicapSelector={!isTiebreakerMode && handicapType === 'points'}
                       hideHandicap={isTiebreakerMode}
+                      isDoubleDuty={isSubstitute && substituteType === 'double_duty'}
                       manualHandicapValue={manualHandicaps[position]}
                       onManualHandicapChange={handicapType === 'fargo' ? handleManualHandicapChange : undefined}
                     />
