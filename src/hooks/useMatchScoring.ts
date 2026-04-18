@@ -334,8 +334,26 @@ export function useMatchScoring({
       return;
     }
 
-    // Check if any queries are loading
-    const isLoading = matchLoading || lineupsLoading || userTeamLoading || gamesLoading || homeTeamLoading || awayTeamLoading;
+    // Check if any queries are loading OR if the data we depend on isn't materialized yet.
+    //
+    // The data-presence checks (!homeTeamData, !awayTeamData) guard against a race:
+    // TanStack Query's isLoading flips to `false` as soon as the query resolves, which
+    // is BEFORE the data reference propagates through React state on the next render.
+    // Without this guard, when the home team transitions into the scoring view right
+    // after the lineup-lock trigger creates match_games rows, awayTeamLoading can be
+    // false (from a cached prior state or a fast cache hydration) while awayTeamData
+    // is still undefined for the render. The `players` Map is then built from only the
+    // home roster, and every away player's name resolves to "Unknown" — which clears
+    // on page refresh because both queries start fresh and complete before first render.
+    const isLoading =
+      matchLoading ||
+      lineupsLoading ||
+      userTeamLoading ||
+      gamesLoading ||
+      homeTeamLoading ||
+      awayTeamLoading ||
+      !homeTeamData ||
+      !awayTeamData;
     setLoading(isLoading);
 
     // Handle errors
@@ -357,6 +375,8 @@ export function useMatchScoring({
     gamesLoading,
     homeTeamLoading,
     awayTeamLoading,
+    homeTeamData,
+    awayTeamData,
     matchError,
     lineupsError,
     userTeamError,
