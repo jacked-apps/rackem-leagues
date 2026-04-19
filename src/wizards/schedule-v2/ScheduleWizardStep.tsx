@@ -82,7 +82,7 @@ export function ScheduleWizardStep({
 
   const handleConfirm = async (destination: 'dashboard' | 'teams') => {
     if (destination === 'dashboard') {
-      const orgId = window.location.pathname.split('/create-league-v2/')[1]?.split('/')[0]?.split('?')[0];
+      const orgId = window.location.pathname.split('/create-league/')[1]?.split('/')[0]?.split('?')[0];
       navigate(`/operator-dashboard/${orgId ?? ''}`);
       return;
     }

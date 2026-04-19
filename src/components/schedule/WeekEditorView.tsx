@@ -211,6 +211,18 @@ export const WeekEditorView: React.FC<WeekEditorViewProps> = ({
       </CardHeader>
 
       <CardContent className="p-4">
+        {/* Column headers — mirrors MatchEditRow's 12-col grid so labels
+            line up over the same fields on every row. Edit mode only; the
+            display view's layout is self-explanatory. */}
+        <div className="grid grid-cols-12 gap-3 px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+          <div className="col-span-1">Match</div>
+          <div className="col-span-3">Home</div>
+          <div className="col-span-1" aria-hidden="true" />
+          <div className="col-span-3">Away</div>
+          <div className="col-span-3">Venue</div>
+          <div className="col-span-1 text-center">Table #</div>
+        </div>
+
         {/* Match rows */}
         <div className="space-y-2 mb-4">
           {editedMatches.map((match) => (

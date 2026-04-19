@@ -17,6 +17,8 @@ interface WizardNavigationProps {
   hideBack?: boolean;
   /** When true, suppress the Cancel / "Finish Later" button */
   hideCancel?: boolean;
+  /** When true, suppress the Next / Finish button (step owns its own nav) */
+  hideNext?: boolean;
   onBack: () => void;
   onNext: () => void;
   onCancel?: () => void;
@@ -28,6 +30,7 @@ export function WizardNavigation({
   showSkip,
   hideBack,
   hideCancel,
+  hideNext,
   onBack,
   onNext,
   onCancel,
@@ -35,6 +38,10 @@ export function WizardNavigation({
   const nextLabel = isLastStep ? 'Finish' : showSkip ? 'Skip' : 'Next';
   const showBack = !isFirstStep && !hideBack;
   const showCancel = onCancel && !hideCancel;
+  const showNext = !hideNext;
+
+  // If nothing renders, return null so callers don't get an empty nav bar.
+  if (!showBack && !showCancel && !showNext) return null;
 
   // Track pending state locally so the Next button disables itself while the
   // async onNext chain (validation → confirm dialog → stage handler → DB) is
@@ -64,14 +71,16 @@ export function WizardNavigation({
           </Button>
         )}
       </div>
-      <Button
-        onClick={handleNextClick}
-        disabled={pending}
-        isLoading={pending}
-        loadingText="Saving..."
-      >
-        {nextLabel}
-      </Button>
+      {showNext && (
+        <Button
+          onClick={handleNextClick}
+          disabled={pending}
+          isLoading={pending}
+          loadingText="Saving..."
+        >
+          {nextLabel}
+        </Button>
+      )}
     </div>
   );
 }

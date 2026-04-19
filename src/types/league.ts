@@ -4,39 +4,6 @@
  */
 
 /**
- * League form data interface
- * Used during league creation wizard to capture all league configuration
- */
-export interface LeagueFormData {
-  gameType: string;
-  startDate: string;
-  dayOfWeek: string;
-  season: string;
-  year: number;
-  qualifier: string;
-  seasonLength: number;
-  endDate: string;
-  bcaNationalsChoice: string;
-  bcaNationalsStart: string;
-  bcaNationalsEnd: string;
-  apaNationalsStart: string;
-  apaNationalsEnd: string;
-  teamFormat: '5_man' | '8_man' | '';
-  handicapSystem: 'custom_5man' | 'bca_standard' | '';
-  handicapVariant: 'standard' | 'reduced' | 'none' | '';
-  teamHandicapVariant: 'standard' | 'reduced' | 'none' | '';
-  organizationName: string;
-  organizationAddress: string;
-  organizationCity: string;
-  organizationState: string;
-  organizationZipCode: string;
-  contactEmail: string;
-  contactPhone: string;
-  selectedVenueId: string;
-  venueIds: string[];  // Array of venue IDs for multi-venue leagues
-}
-
-/**
  * Team format types
  */
 export type TeamFormat = '5_man' | '8_man';

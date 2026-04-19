@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-04-18 (Phase 3 Unit 10 — Fargo math module)
+> **Last Updated**: 2026-04-19 (Phase 3 Units 11-12 Fargo scoring; merged main's wizard-v2 cleanup)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -341,14 +341,11 @@
 - `OperatorWelcome.tsx` - Welcome screen
 
 **League Management**
-- `LeagueCreationWizard.tsx` - Current league wizard
-- `LeagueCreationWizard.old.tsx` - ⚠️ **LEGACY - DELETE?**
 - `LeagueDetail.tsx` - League details page
 - `LeagueRules.tsx` - League rules management
 
 **Season & Schedule Management**
 - `SeasonCreationWizard.tsx` - Season creation wizard
-- `ScheduleCreationWizard.tsx` - Schedule creation wizard
 - `ScheduleSetup.tsx` - Schedule setup component
 - `ScheduleSetupPage.tsx` - Schedule setup page
 - `ScheduleView.tsx` - Schedule view
@@ -460,16 +457,11 @@
 Reusable wizard/form step components
 
 - `WizardProgress.tsx` - Progress indicator
-- `WizardStepRenderer.tsx` - Step renderer wrapper
 - `ChoiceStep.tsx` - Choice selection step
-- `RadioChoiceStep.tsx` - Radio choice step
 - `SimpleRadioChoice.tsx` - Simple radio choice
 - `QuestionStep.tsx` - Question step
 - `DateField.tsx` - Date input field
-- `DateStep.tsx` - Date selection step
 - `DualDateStep.tsx` - Dual date selection
-- `ChampionshipDateStep.tsx` - Championship date step
-- `LeaguePreview.tsx` - League preview card
 
 #### Schedule Components (`/components/schedule/`)
 - `MatchCard.tsx` - Match display card ⚠️ **DUPLICATE** (also in `/components`)
@@ -597,7 +589,6 @@ Reusable wizard/form step components
 - `useUnreadMessageCount.ts` - Unread message count
 
 #### League & Season Management
-- `useLeagueWizard.ts` - League wizard state
 - `useScheduleGeneration.ts` - Schedule generation
 - `useSeasonSchedule.ts` - Season schedule data
 
@@ -719,9 +710,6 @@ High-level business logic services
 ### 📊 Data & Constants
 
 #### Wizard Step Definitions (`/data/`)
-- `leagueWizardSteps.tsx` - League wizard steps
-- `leagueWizardSteps.simple.tsx` - Simplified league steps
-- `scheduleWizardSteps.tsx` - Schedule wizard steps
 - `seasonWizardSteps.tsx` - Season wizard steps
 - `mockVenues.ts` - Mock venue data
 
@@ -741,7 +729,6 @@ Pre-calculated round-robin schedules (19 files)
 
 Help/info content for features
 
-- `leagueWizardInfoContent.tsx` - League wizard help
 - `seasonWizardInfoContent.tsx` - Season wizard help
 - `operatorApplicationInfoContent.tsx` - Operator app help
 - `profileInfoContent.tsx` - Profile help
@@ -877,6 +864,10 @@ Supabase local configuration and migrations
 | `supabase/migrations/20260418000002_lock_tier1_preferences.sql` | **Phase 2 Unit 6** — DB trigger blocking UPDATE of `handicap_type` and `lineup_size` on league preferences (tier 1 mutability) |
 | `supabase/migrations/20260418000003_add_matches_system_snapshot.sql` | **Phase 2 Unit 7** — adds `matches.system_snapshot JSONB` for per-match frozen tier-2 dials (tier 3 mutability) |
 | `supabase/migrations/20260418000004_revise_fargo_columns.sql` | **Phase 2 revision** — drops 3 redundant Fargo columns (fargo_start_points, winner_points, loser_points); adds 3 always-tracked per-game flags (break_fouled, runout, win_by_forfeit). Fargo start-points now reuses home/away_games_to_win. |
+| `supabase/migrations/20260419000000_add_fargo_start_points_negotiation.sql` | **Phase 3 Unit 11c** — adds `matches.fargo_start_points` + home/away confirm columns for the captain-negotiated start-points value |
+| `supabase/seed.sql` | Full local dev DB dump — auto-applied on `supabase db reset`. **Local only, never runs against production.** |
+| `supabase/seed_test_users.sql` | 4 synthetic test auth users (player/operator/captain/owner, password `test-password-123`). **Dev-only — run manually via `docker exec ... psql`.** |
+| `supabase/seed_members.sql` | 20 placeholder players (no `user_id`) spanning Fargo 300–580 ratings for wizard/team-management testing. **Dev-only — not wired into auto-seed; run manually when the local DB needs a bench of fake members.** |
 
 ---
 
@@ -894,7 +885,6 @@ Supabase local configuration and migrations
 
 | File | Status | Action |
 |------|--------|--------|
-| `operator/LeagueCreationWizard.old.tsx` | Old version | Verify not referenced, then delete |
 | `cUsersshodbpersonalsupabase-learning-hubsrcutilsscheduleGenerator.ts` | Corrupt file path? | **DELETE** |
 
 ### 🟠 Organizational Issues
@@ -916,9 +906,9 @@ See [RESTRUCTURE_PLAN.md](RESTRUCTURE_PLAN.md) for complete list of 20 organizat
 |---------|------------------|-----------|
 | **Authentication** | `/login`, `/context` | `Login.tsx`, `UserProvider.tsx`, `members.sql` |
 | **User Profile** | `/profile`, `/components/privacy` | `Profile.tsx`, `PrivacySettingsSection.tsx` |
-| **League Management** | `/operator`, `/leagueOperator`, `/components/operator`, `/services` | `LeagueCreationWizard.tsx`, `leagueService.ts`, `leagues.sql` |
+| **League Management** | `/wizards/league-v2`, `/operator`, `/leagueOperator`, `/components/operator`, `/services` | `LeagueWizardV2Page.tsx`, `createNewLeagueFlow.ts`, `leagueService.ts`, `leagues.sql` |
 | **Season Management** | `/operator`, `/components/season`, `/services` | `SeasonCreationWizard.tsx`, `seasonService.ts`, `seasons.sql` |
-| **Schedule Generation** | `/operator`, `/components/schedule`, `/utils`, `/data/matchupTables` | `scheduleGenerator.ts`, `ScheduleCreationWizard.tsx` |
+| **Schedule Generation** | `/operator`, `/components/schedule`, `/utils`, `/data/matchupTables` | `scheduleGenerator.ts`, `SeasonScheduleManager.tsx` |
 | **Team Management** | `/operator`, `/components/player`, `/hooks` | `TeamManagement.tsx`, `useTeamManagement.ts`, `teams.sql` |
 | **Match Lineup** | `/player`, `/components/lineup`, `/hooks` | `MatchLineup.tsx`, `useMatchLineup.ts`, `lineups.sql` |
 | **Scoring (3x3)** | `/player`, `/components/scoring`, `/hooks`, `/database/scoring3x3` | `ScoreMatch.tsx`, `useMatchScoring.ts`, `match_games.sql` |
@@ -926,7 +916,7 @@ See [RESTRUCTURE_PLAN.md](RESTRUCTURE_PLAN.md) for complete list of 20 organizat
 | **Venues** | `/operator`, `/components/operator` | `VenueManagement.tsx`, `VenueCard.tsx`, `venues.sql` |
 | **Player Registration** | `/newPlayer` | `NewPlayerForm.tsx`, `usePlayerFormSubmission.ts` |
 | **Reporting** | `/operator`, `/pages`, `/database/reporting` | `ReportsManagement.tsx`, `AdminReports.tsx`, `user_reports.sql` |
-| **Wizards/Forms** | `/components/forms`, `/data` | `WizardStepRenderer.tsx`, `*WizardSteps.tsx` |
+| **Wizards/Forms** | `/wizards`, `/components/wizard`, `/components/forms`, `/data`, `/flows` | `WizardFlowShell.tsx`, `createNewLeagueFlow.ts`, `seasonWizardSteps.tsx` |
 
 ---
 

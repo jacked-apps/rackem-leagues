@@ -157,21 +157,6 @@ export const ActiveLeagues: React.FC<ActiveLeaguesProps> = ({ operatorId }) => {
           Your Active Leagues
         </h3>
         <div className="flex gap-2">
-          {/* Wizard 2.0 dev preview button — only visible in dev mode */}
-          {import.meta.env.DEV && (
-            <Button
-              variant="outline"
-              loadingText="Loading..."
-              isLoading={isNavigating}
-              onClick={() => {
-                setIsNavigating(true);
-                navigate(`/create-league-v2/${operatorId}`);
-              }}
-              disabled={isNavigating}
-            >
-              Create League (v2)
-            </Button>
-          )}
           <Button
             loadingText="Loading..."
             isLoading={isNavigating}

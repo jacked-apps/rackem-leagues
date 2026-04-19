@@ -8,6 +8,7 @@
 import { parseLocalDate } from '@/utils/formatters';
 import { formatGameType } from '@/types/league';
 import { buildLeagueTitle } from '@/utils/leagueUtils';
+import { PRESET_MAPPINGS } from './presetMappings';
 import type { WizardSummaryItem } from '@/components/wizard';
 import type { LeagueWizardFormData } from './leagueWizardTypes';
 
@@ -29,18 +30,6 @@ export function deriveDateFields(isoDate: string) {
   const year = date.getFullYear();
 
   return { dayOfWeek, season, year };
-}
-
-/** Map the format selection value to a display string for the summary */
-export function formatLeagueFormat(value: string | undefined): string | undefined {
-  if (!value) return undefined;
-  const map: Record<string, string> = {
-    fargo_5v5: '5v5 Fargo Rated',
-    standard_3v3: '3v3 Standard',
-    standard_5v5: '5v5 Standard',
-    custom: 'Custom',
-  };
-  return map[value] ?? value;
 }
 
 /** Map match format value to display string */
@@ -75,13 +64,24 @@ export function getLeagueSummaryItems(formData: LeagueWizardFormData): WizardSum
 
   const qualifier = formData['qualifier']?.trim() || null;
 
+  // League name = game + day + differentiator. Season + year belong to
+  // the season name, which extends this base.
   const leagueName = buildLeagueTitle({
     gameType: formData['game-type'] ?? null,
     dayOfWeek: dateFields?.dayOfWeek ?? null,
     division: qualifier,
-    season: dateFields?.season ?? null,
-    year: dateFields?.year ?? null,
   });
+
+  // Resolve preset → modular values. Custom path reads directly from the
+  // wizard's steps. Presets (Fargo 5v5, Standard 3v3, Standard 5v5) use
+  // the shared mapping so the summary stays consistent with what the DB
+  // actually receives.
+  const presetKey = formData['league-format'];
+  const preset = presetKey && presetKey !== 'custom' ? PRESET_MAPPINGS[presetKey] : undefined;
+  const lineupSize = preset?.preferences.lineup_size ?? formData['lineup-size'];
+  const rosterSize = preset?.preferences.max_roster_size ?? formData['roster-size'];
+  const matchFormat = preset?.preferences.game_generation ?? formData['match-format'];
+  const handicapSystem = preset?.preferences.handicap_type ?? formData['handicap-system'];
 
   return [
     { label: 'League Name', value: leagueName || undefined },
@@ -91,14 +91,9 @@ export function getLeagueSummaryItems(formData: LeagueWizardFormData): WizardSum
     },
     { label: 'Start Date', value: formData['start-date'] ?? undefined },
     { label: 'League Day', value: dateFields?.dayOfWeek ?? undefined },
-    { label: 'Format', value: formatLeagueFormat(formData['league-format']) },
-    ...(formData['league-format'] === 'custom'
-      ? [
-          { label: 'Lineup Size', value: formData['lineup-size']?.toString() },
-          { label: 'Roster Size', value: formData['roster-size']?.toString() },
-          { label: 'Match Format', value: formatMatchFormat(formData['match-format']) },
-          { label: 'Handicap', value: formatHandicapSystem(formData['handicap-system']) },
-        ]
-      : []),
+    { label: 'Lineup Size', value: lineupSize ? String(lineupSize) : undefined },
+    { label: 'Roster Size', value: rosterSize ? String(rosterSize) : undefined },
+    { label: 'Match Format', value: formatMatchFormat(matchFormat) },
+    { label: 'Handicap', value: formatHandicapSystem(handicapSystem) },
   ];
 }

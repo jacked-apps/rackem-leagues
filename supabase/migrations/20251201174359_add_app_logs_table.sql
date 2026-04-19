@@ -3,6 +3,8 @@
 -- Stores application logs from the frontend for production debugging
 -- ============================================================================
 
+SET search_path = public;
+
 CREATE TABLE IF NOT EXISTS app_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   level TEXT NOT NULL CHECK (level IN ('error', 'warn', 'info')),
