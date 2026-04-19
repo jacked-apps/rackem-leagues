@@ -31,6 +31,8 @@ import { HandicapSummary } from '@/components/lineup/HandicapSummary';
 import { DuplicateNicknameWarning } from '@/components/lineup/DuplicateNicknameWarning';
 import { PlayerSelectionRow } from '@/components/lineup/PlayerSelectionRow';
 import { OpponentSubstituteModal } from '@/components/lineup/OpponentSubstituteModal';
+import { FargoStartPointsCard } from '@/components/lineup/FargoStartPointsCard';
+import { useFargoStartPointsNegotiation } from '@/hooks/lineup/useFargoStartPointsNegotiation';
 import { useQueryStates } from '@/hooks/useQueryStates';
 import {
   useLineupState,
@@ -400,7 +402,82 @@ export function MatchLineup() {
   // Note: Lineups are now auto-created by database trigger when match is inserted
   // See migration: 20251115000000_auto_create_match_lineups.sql
 
-  // Match preparation and auto-navigation
+  // Unit 11c: Fargo start-points negotiation. When both lineups are locked
+  // on a Fargo match, gather each side's ratings and let the hook drive the
+  // propose / confirm state machine via direct writes to `matches`.
+  const bothLineupsLockedForFargo =
+    handicapType === 'fargo' &&
+    lineup.lineupLocked &&
+    !!opponentLineup?.locked;
+
+  const { homeRatingsForFargo, awayRatingsForFargo } = useMemo(() => {
+    const gatherFrom = (src: {
+      p1?: number | null;
+      p2?: number | null;
+      p3?: number | null;
+      p4?: number | null;
+      p5?: number | null;
+    }): number[] => {
+      const out: number[] = [];
+      const all = [src.p1, src.p2, src.p3, src.p4, src.p5];
+      for (let i = 0; i < playerCount; i++) {
+        const v = Number(all[i]);
+        if (Number.isFinite(v) && v > 0) out.push(v);
+      }
+      return out;
+    };
+
+    const myRatings = gatherFrom({
+      p1: handicaps.player1Handicap,
+      p2: handicaps.player2Handicap,
+      p3: handicaps.player3Handicap,
+      p4: handicaps.player4Handicap,
+      p5: handicaps.player5Handicap,
+    });
+    const oppRatings = gatherFrom({
+      p1: opponentLineup?.player1_handicap,
+      p2: opponentLineup?.player2_handicap,
+      p3: opponentLineup?.player3_handicap,
+      p4: opponentLineup?.player4_handicap,
+      p5: opponentLineup?.player5_handicap,
+    });
+
+    return isHomeTeam
+      ? { homeRatingsForFargo: myRatings, awayRatingsForFargo: oppRatings }
+      : { homeRatingsForFargo: oppRatings, awayRatingsForFargo: myRatings };
+  }, [
+    isHomeTeam,
+    playerCount,
+    handicaps.player1Handicap,
+    handicaps.player2Handicap,
+    handicaps.player3Handicap,
+    handicaps.player4Handicap,
+    handicaps.player5Handicap,
+    opponentLineup?.player1_handicap,
+    opponentLineup?.player2_handicap,
+    opponentLineup?.player3_handicap,
+    opponentLineup?.player4_handicap,
+    opponentLineup?.player5_handicap,
+  ]);
+
+  const fargoNegotiation = useFargoStartPointsNegotiation({
+    matchId,
+    memberId: memberId ?? null,
+    isHomeTeam,
+    handicapType,
+    bothLineupsLocked: bothLineupsLockedForFargo,
+    homeRatings: homeRatingsForFargo,
+    awayRatings: awayRatingsForFargo,
+    lineupSize: playerCount,
+    fargoStartPoints: matchData?.fargo_start_points ?? null,
+    confirmedByHome: matchData?.fargo_start_points_confirmed_by_home ?? null,
+    confirmedByAway: matchData?.fargo_start_points_confirmed_by_away ?? null,
+    systemOverrides: leaguePrefs?.system_overrides,
+    refetchMatch: matchQuery.refetch,
+  });
+
+  // Match preparation and auto-navigation. For Fargo matches, gated on
+  // both-captains-confirmed via the negotiation above.
   useMatchPreparation({
     lineupLocked: lineup.lineupLocked,
     opponentLineup,
@@ -410,6 +487,8 @@ export function MatchLineup() {
     lineupSize: playerCount,
     handicapType,
     systemOverrides: leaguePrefs?.system_overrides,
+    fargoNegotiationBlocking:
+      fargoNegotiation.applicable && !fargoNegotiation.bothConfirmed,
     player1Id: lineup.player1Id,
     player2Id: lineup.player2Id,
     player3Id: lineup.player3Id,
@@ -923,6 +1002,16 @@ export function MatchLineup() {
             {!isTiebreakerMode && (
               <DuplicateNicknameWarning
                 show={validation.isComplete && validation.hasDuplicates}
+              />
+            )}
+
+            {/* Fargo start-points negotiation — only after both lineups locked */}
+            {fargoNegotiation.applicable && !fargoNegotiation.bothConfirmed && (
+              <FargoStartPointsCard
+                negotiation={fargoNegotiation}
+                homeTeamName={matchData?.home_team?.team_name ?? 'Home'}
+                awayTeamName={matchData?.away_team?.team_name ?? 'Away'}
+                isHomeTeam={isHomeTeam}
               />
             )}
 

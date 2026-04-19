@@ -68,6 +68,19 @@ export interface MatchWithLeagueSettings {
   away_games_to_tie: number | null;
   away_games_to_lose: number | null;
   /**
+   * Fargo start-points negotiation (Unit 11c). Captains must agree on the
+   * start-points value before the scoring page opens. `fargo_start_points`
+   * holds the current proposed or agreed value; the two confirm columns
+   * track which captain(s) have accepted it. Editing the value clears both
+   * confirms. Once both are non-null, the value is copied to the weaker
+   * team's home_games_to_win / away_games_to_win and match preparation
+   * runs. NULL on non-Fargo matches (and on Fargo matches before the first
+   * proposal is written).
+   */
+  fargo_start_points: number | null;
+  fargo_start_points_confirmed_by_home: string | null;
+  fargo_start_points_confirmed_by_away: string | null;
+  /**
    * Tier 3 snapshot (added by migration 20260418000003). NULL for unstarted or legacy matches.
    * Populated at scheduled → in_progress transition; scoring reads from this, not live league data.
    *

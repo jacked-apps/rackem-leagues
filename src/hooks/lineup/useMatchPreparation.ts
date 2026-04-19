@@ -33,6 +33,13 @@ interface MatchPreparationParams {
   handicapType: string;
   /** Resolved per-league dial overrides. Used by Fargo threshold compute. */
   systemOverrides?: SystemOverrides;
+  /**
+   * Unit 11c: when handicap_type='fargo' and the captains have not both
+   * confirmed the start-points value, match preparation must not run.
+   * Caller passes `true` while the negotiation card is showing and
+   * flips it to `false` once both confirms are present.
+   */
+  fargoNegotiationBlocking?: boolean;
   player1Id: string;
   player2Id: string;
   player3Id: string;
@@ -59,6 +66,7 @@ export function useMatchPreparation(params: MatchPreparationParams) {
     lineupSize,
     handicapType,
     systemOverrides,
+    fargoNegotiationBlocking,
     player1Id,
     player2Id,
     player3Id,
@@ -82,6 +90,11 @@ export function useMatchPreparation(params: MatchPreparationParams) {
   // Auto-navigate to scoring page when both lineups are locked - useEffect MUST be before early returns
   // IMPORTANT: Only HOME team prepares the match to avoid race conditions
   useEffect(() => {
+    // Unit 11c: Fargo matches wait until start-points negotiation is
+    // both-confirmed. When blocking, skip entirely — the lineup page shows
+    // the negotiation card instead. When the caller flips this to false
+    // (both captains confirmed), this effect fires normally.
+    if (fargoNegotiationBlocking) return;
     if (lineupLocked && opponentLineup?.locked && !matchPreparedRef.current) {
       // Only home team prepares the match data to avoid both teams doing it simultaneously
       if (!isHomeTeam) {
@@ -238,18 +251,19 @@ export function useMatchPreparation(params: MatchPreparationParams) {
           // BCA systems (points, percentage): compute games-to-win/tie/lose
           // from the existing chart lookup; write all six threshold columns.
           //
-          // Fargo system: compute a single start-points value from the team
-          // rating totals; write it to the weaker team's games_to_win column
-          // (the stronger team gets 0; tie/lose columns stay null). The
-          // reused threshold columns hold a per-system "initial per-team
-          // number"; handicap_type tells downstream code how to interpret.
+          // Fargo system: the start-points value is NOT computed here — it
+          // has already been agreed on by both captains via the start-points
+          // negotiation flow (Unit 11c). We just read the confirmed value
+          // out of `matches.fargo_start_points` and copy it to the weaker
+          // team's `home_games_to_win` / `away_games_to_win`. The weaker
+          // team is determined structurally from the locked lineup ratings
+          // (not from the agreed number, which captains may have overridden
+          // to match BCA's FargoRate app).
           if (handicapType === 'fargo') {
-            setPreparationMessage?.('Calculating Fargo start points...');
+            setPreparationMessage?.('Saving Fargo start points...');
 
-            // Build rating arrays from each team's lineup. A lineup may have
-            // fewer than `lineupSize` ratings if TBD slots are unresolved;
-            // fall back to the opponent's stored player handicaps which
-            // HandicapCell already writes at rating-entry time.
+            // Re-derive weaker team from the locked lineups so we know
+            // which side receives the agreed start-points value.
             const homeLineup = isHomeTeam ? myLineup : opponentLineup;
             const awayLineup = isHomeTeam ? opponentLineup : myLineup;
 
@@ -265,11 +279,14 @@ export function useMatchPreparation(params: MatchPreparationParams) {
             const homeRatings = gatherRatings(homeLineup);
             const awayRatings = gatherRatings(awayLineup);
 
-            // Only compute if both teams have all named-slot ratings. If
-            // ratings are missing (e.g., unresolved TBD without propagation),
-            // skip writing start-points — the scoring UI will fall back to 0
-            // and the override-at-lineup flow (Unit 11c) gives the captains
-            // a chance to set the right number manually.
+            // Default: use the confirmed value from the match row. Fall
+            // back to a live compute if the negotiation never set one
+            // (defensive; shouldn't happen because match prep only runs
+            // once both confirms are present, which requires a value).
+            let startPointsValue: number | null =
+              matchData?.fargo_start_points ?? null;
+            let weakerTeam: 'home' | 'away' | 'even' | null = null;
+
             if (
               homeRatings.length === lineupSize &&
               awayRatings.length === lineupSize
@@ -277,42 +294,41 @@ export function useMatchPreparation(params: MatchPreparationParams) {
               if (fargo5v5.threshold.mode !== 'start_points') {
                 throw new Error('fargo5v5 threshold must be start_points mode');
               }
-              const { startPointsForWeakerTeam, weakerTeam } =
-                fargo5v5.threshold.compute(homeRatings, awayRatings, systemOverrides ?? {});
-
-              setPreparationMessage?.('Saving match settings...');
-              await updateMatchMutation.mutateAsync({
-                matchId,
-                updates: {
-                  home_games_to_win: weakerTeam === 'home' ? startPointsForWeakerTeam : 0,
-                  home_games_to_tie: null,
-                  home_games_to_lose: null,
-                  away_games_to_win: weakerTeam === 'away' ? startPointsForWeakerTeam : 0,
-                  away_games_to_tie: null,
-                  away_games_to_lose: null,
-                },
-              });
+              const computed = fargo5v5.threshold.compute(
+                homeRatings,
+                awayRatings,
+                systemOverrides ?? {}
+              );
+              weakerTeam = computed.weakerTeam;
+              if (startPointsValue === null) {
+                startPointsValue = computed.startPointsForWeakerTeam;
+              }
             } else {
-              // Missing ratings — write zeros so the match can still score;
-              // captains can override via Unit 11c's flow when it lands.
-              logger.error('Fargo lineup lock without complete ratings', {
+              // Missing ratings — log and fall back to zeros so the match
+              // can still proceed. Negotiation should have blocked us here,
+              // but be defensive.
+              logger.error('Fargo match prep without complete ratings', {
                 matchId,
                 homeRatingsCount: homeRatings.length,
                 awayRatingsCount: awayRatings.length,
                 expected: lineupSize,
               });
-              await updateMatchMutation.mutateAsync({
-                matchId,
-                updates: {
-                  home_games_to_win: 0,
-                  home_games_to_tie: null,
-                  home_games_to_lose: null,
-                  away_games_to_win: 0,
-                  away_games_to_tie: null,
-                  away_games_to_lose: null,
-                },
-              });
+              startPointsValue = startPointsValue ?? 0;
             }
+
+            await updateMatchMutation.mutateAsync({
+              matchId,
+              updates: {
+                home_games_to_win:
+                  weakerTeam === 'home' ? startPointsValue ?? 0 : 0,
+                home_games_to_tie: null,
+                home_games_to_lose: null,
+                away_games_to_win:
+                  weakerTeam === 'away' ? startPointsValue ?? 0 : 0,
+                away_games_to_tie: null,
+                away_games_to_lose: null,
+              },
+            });
           } else {
             setPreparationMessage?.('Calculating handicap thresholds...');
             const { homeThresholds, awayThresholds } =
@@ -402,5 +418,6 @@ export function useMatchPreparation(params: MatchPreparationParams) {
     lineupLocked,
     opponentLineup,
     matchId,
+    fargoNegotiationBlocking,
   ]);
 }
