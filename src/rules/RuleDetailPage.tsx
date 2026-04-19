@@ -33,6 +33,7 @@ import { CopyLinkButton } from './CopyLinkButton';
 import { resolveRuleId } from './resolveRuleId';
 import { RuleView } from './RuleView';
 import { rulebook } from './useRulebook';
+import { rulesEvents } from './useRulesEvents';
 
 export default function RuleDetailPage() {
   const { game = '', ruleId = '' } = useParams<{ game: string; ruleId: string }>();
@@ -48,6 +49,12 @@ export default function RuleDetailPage() {
     toast.error(`Rule ${ruleId || '?'} not found — showing all rules instead.`);
     navigate('/rules', { replace: true });
   }, [rule, ruleId, navigate]);
+
+  // Log a deep_link_open event for successful resolves.
+  useEffect(() => {
+    if (!rule) return;
+    rulesEvents.logDeepLink(rule.game, rule.id);
+  }, [rule]);
 
   if (!rule) return null;
 

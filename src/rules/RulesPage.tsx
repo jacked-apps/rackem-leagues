@@ -33,6 +33,8 @@ import { GameTOC } from './GameTOC';
 import { SearchInput } from './SearchInput';
 import { SearchResults } from './SearchResults';
 import { rulebook } from './useRulebook';
+import { useRulebookSearch } from './useRulebookSearch';
+import { rulesEvents } from './useRulesEvents';
 
 const LAST_GAME_KEY = 'rackem:rules:lastGame';
 const ALL_GAMES_VALUE = 'all';
@@ -75,6 +77,21 @@ export default function RulesPage() {
     setResetCount((c) => c + 1);
   };
   const handleClearFilter = () => setTab(ALL_GAMES_VALUE);
+
+  // Pre-compute search results so the usage-logging effect can see the
+  // count without duplicating the search call. Hook memoizes on its inputs.
+  const searchResults = useRulebookSearch(query, tab);
+
+  // Fire a page_open event once on mount.
+  useEffect(() => {
+    rulesEvents.logPageOpen();
+  }, []);
+
+  // Fire a search_query event when the debounced query settles.
+  useEffect(() => {
+    if (query.trim().length === 0) return;
+    rulesEvents.logSearch(tab, searchResults.length);
+  }, [query, tab, searchResults.length]);
 
   // Persist selection on change (best-effort; ignore storage failures).
   useEffect(() => {
@@ -156,6 +173,7 @@ export default function RulesPage() {
           <SearchResults
             query={query}
             gameFilter={tab}
+            results={searchResults}
             onClearSearch={handleClearSearch}
             onClearFilter={handleClearFilter}
           />

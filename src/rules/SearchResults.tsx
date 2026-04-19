@@ -13,12 +13,14 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 
 import { SearchSnippet } from './SearchSnippet';
-import { useRulebookSearch, type GameFilter, ALL_GAMES } from './useRulebookSearch';
+import type { SearchResult, GameFilter } from './useRulebookSearch';
+import { ALL_GAMES } from './useRulebookSearch';
 import { rulebook } from './useRulebook';
 
 type SearchResultsProps = {
   query: string;
   gameFilter: GameFilter;
+  results: SearchResult[];
   onClearSearch: () => void;
   onClearFilter: () => void;
 };
@@ -26,10 +28,10 @@ type SearchResultsProps = {
 export function SearchResults({
   query,
   gameFilter,
+  results,
   onClearSearch,
   onClearFilter,
 }: SearchResultsProps) {
-  const results = useRulebookSearch(query, gameFilter);
 
   if (results.length === 0) {
     return (
