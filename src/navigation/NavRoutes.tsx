@@ -53,6 +53,7 @@ import RLSTestPage from '../dev/RLSTestPage';
 
 // Lazy-loaded public rules reader (keeps the cleaned rulebook data out of the main bundle).
 const RulesPage = lazy(() => import('../rules/RulesPage'));
+const RuleDetailPage = lazy(() => import('../rules/RuleDetailPage'));
 
 // Lazy-loaded operator pages (only loaded when operator accesses them)
 const OperatorWelcome = lazy(() => import('../operator/OperatorWelcome'));
@@ -159,6 +160,16 @@ export const router = createBrowserRouter([
           <RulesErrorBoundary>
             <Suspense fallback={<RulesSkeleton />}>
               <RulesPage />
+            </Suspense>
+          </RulesErrorBoundary>
+        ),
+      },
+      {
+        path: 'rules/:game/:ruleId',
+        element: (
+          <RulesErrorBoundary>
+            <Suspense fallback={<RulesSkeleton />}>
+              <RuleDetailPage />
             </Suspense>
           </RulesErrorBoundary>
         ),
