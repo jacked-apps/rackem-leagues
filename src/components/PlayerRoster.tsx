@@ -9,11 +9,12 @@
 import { useMembersByIds } from '@/api/hooks/useCurrentMember';
 import { usePlayerHandicaps } from '@/api/hooks/usePlayerHandicaps';
 import { PlayerNameLink } from '@/components/PlayerNameLink';
-import type { TeamFormat, HandicapVariant, GameType } from '@/types/league';
+import type { HandicapVariant, GameType } from '@/types/league';
 
 interface PlayerRosterProps {
   playerIds: string[];
-  teamFormat: TeamFormat;
+  /** Which handicap system: 'points', 'percentage', 'fargo', 'none' */
+  handicapType: string;
   handicapVariant: HandicapVariant;
   gameType: GameType;
   leagueId?: string;
@@ -33,7 +34,7 @@ interface PlayerRosterProps {
  */
 export function PlayerRoster({
   playerIds,
-  teamFormat,
+  handicapType,
   handicapVariant,
   gameType,
   leagueId,
@@ -47,7 +48,7 @@ export function PlayerRoster({
   const { data: players = [], isLoading: loadingPlayers } = useMembersByIds(playerIds);
   const { handicaps, isLoading: loadingHandicaps } = usePlayerHandicaps({
     playerIds,
-    teamFormat,
+    handicapType,
     handicapVariant,
     gameType,
     leagueId,
@@ -110,15 +111,17 @@ export function PlayerRoster({
       {/* Player Rows */}
       <div className="mt-1">
         {sortedPlayers.map((player) => {
-          const handicap = handicaps.get(player.id);
+          const result = handicaps.get(player.id);
           const isCaptain = player.id === captainId;
 
-          // Format handicap display: 5v5 shows %, 3v3 shows plain number
-          const handicapDisplay = handicap !== undefined
-            ? teamFormat === '8_man'
-              ? `${handicap}%`  // 5v5 uses percentages
-              : `${handicap}`    // 3v3 uses integers
-            : '-';
+          // Format handicap display based on type and stale flag
+          let handicapDisplay = '-';
+          if (result?.value != null) {
+            const val = handicapType === 'percentage' ? `${result.value}%` : `${result.value}`;
+            handicapDisplay = result.stale ? `${val}*` : val;
+          } else if (handicapType === 'fargo') {
+            handicapDisplay = 'Unrated';
+          }
 
           return (
             <div key={player.id} className={`grid ${gridCols} gap-4 text-sm py-1 px-2 bg-gray-50 rounded`}>

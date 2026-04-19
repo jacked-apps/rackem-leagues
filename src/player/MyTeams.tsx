@@ -12,6 +12,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { UserContext } from '@/context/UserContext';
 import { useMemberId } from '@/api/hooks';
 import { usePlayerTeams, useCaptainTeamEditData, useMatchesByTeam } from '@/api/hooks';
+import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { queryKeys } from '@/api/queryKeys';
 import { TeamEditorModal } from '@/operator/TeamEditorModal';
 import {
@@ -93,6 +94,11 @@ function TeamAccordionItem({
 }) {
   const team = teamData.teams;
   const isCaptain = team.captain_id === memberId;
+  const leagueId = team.season.league.id;
+
+  // Resolved preferences — lazy-migrates legacy leagues on first access
+  const { data: leaguePrefs } = useResolvedLeaguePrefs(leagueId);
+  const handicapType = leaguePrefs?.handicap_type ?? 'points';
 
   // Fetch all matches to find makeups and upcoming
   const { data: allMatches = [] } = useMatchesByTeam(team.id);
@@ -112,7 +118,8 @@ function TeamAccordionItem({
 
       return scheduledDate < today;
     })
-    .sort((a, b) => a.scheduled_date!.localeCompare(b.scheduled_date!)); // Oldest first
+    .sort((a, b) => a.scheduled_date!.localeCompare(b.scheduled_date!)) // Oldest first
+    .slice(0, 1); // Show only the oldest makeup — keeps the list clean
 
   // Find upcoming matches (in_progress or future scheduled)
   const upcomingMatches = allMatches
@@ -135,8 +142,8 @@ function TeamAccordionItem({
     })
     .slice(0, 1); // Only show next upcoming
 
-  // Combine makeup + upcoming for display in header
-  const actionableMatches = [...makeupMatches, ...upcomingMatches];
+  // Combine: upcoming always first, then oldest makeup (max 2 buttons total)
+  const actionableMatches = [...upcomingMatches, ...makeupMatches];
 
   // Calculate team readiness
   const minRoster = team.roster_size === 5 ? 3 : 5;
@@ -358,7 +365,7 @@ function TeamAccordionItem({
           {/* Roster */}
           <PlayerRoster
             playerIds={team.team_players.map(p => p.member_id)}
-            teamFormat={team.roster_size === 5 ? '5_man' : '8_man'}
+            handicapType={handicapType}
             handicapVariant="standard"
             gameType={team.season.league.game_type as 'eight_ball' | 'nine_ball' | 'ten_ball'}
             leagueId={team.season.league.id}
@@ -484,7 +491,7 @@ export function MyTeams() {
         <TeamEditorModal
           leagueId={editData.leagueId}
           seasonId={editData.seasonId}
-          teamFormat={editData.teamFormat}
+          rosterSize={editData.rosterSize}
           venues={editData.venues}
           leagueVenues={editData.leagueVenues}
           members={editData.members}

@@ -18,12 +18,20 @@ import {
 interface ConfirmationDialogProps {
   /** Whether dialog is open */
   open: boolean;
-  /** Game needing confirmation */
+  /** Game needing confirmation. The dialog is "dumb" — it renders each
+   *  modifier that is truthy (or each non-null numeric field) regardless of
+   *  which league or scoring system produced it. Caller passes the full
+   *  match_games snapshot; the scoring dialog upstream is responsible for
+   *  only letting relevant fields be set in the first place. */
   game: {
     gameNumber: number;
     winnerPlayerName: string;
     breakAndRun: boolean;
     goldenBreak: boolean;
+    breakFouled: boolean;
+    runout: boolean;
+    winByForfeit: boolean;
+    loserBallsPocketed: number | null;
     isResetRequest?: boolean;
   } | null;
   /** Game type for golden break label (8-ball, 9-ball, 10-ball, etc.) */
@@ -123,20 +131,51 @@ export function ConfirmationDialog({
               <p className="text-center text-gray-500 text-sm">
                 Opponent recorded for game {game.gameNumber}:
               </p>
-              {/* Dynamic result message based on what was selected */}
+
+              {/* Winner line — always shown. */}
               <div className="text-center text-lg font-semibold">
-                {game.breakAndRun ? (
-                  <div className="text-blue-600">
-                    {game.winnerPlayerName} had a Break & Run!
+                {game.winnerPlayerName} won the game
+              </div>
+
+              {/* Modifiers — render each truthy flag on its own line so the
+                  opponent sees every detail the scorer entered. Order runs
+                  from most-celebratory to most-routine; presentation is
+                  dumb and does not filter by league. */}
+              <div className="text-center space-y-1 text-sm">
+                {game.breakAndRun && (
+                  <div className="text-blue-600 font-semibold">
+                    Break &amp; Run
                   </div>
-                ) : game.goldenBreak ? (
-                  <div className="text-green-600">
-                    {game.winnerPlayerName} had {getGoldenBreakLabel()}
+                )}
+                {game.goldenBreak && (
+                  <div className="text-green-600 font-semibold">
+                    {getGoldenBreakLabel()}
                   </div>
-                ) : (
-                  <div>{game.winnerPlayerName} won the game</div>
+                )}
+                {game.runout && (
+                  <div className="text-purple-600 font-semibold">
+                    Runout after opponent&apos;s break
+                  </div>
+                )}
+                {game.winByForfeit && (
+                  <div className="text-gray-700">Won by forfeit</div>
+                )}
+                {game.breakFouled && (
+                  <div className="text-amber-700">
+                    Break was fouled (re-rack with opposite breaker)
+                  </div>
+                )}
+                {game.loserBallsPocketed !== null && (
+                  <div className="text-gray-700">
+                    Opponent pocketed{' '}
+                    <span className="font-semibold">
+                      {game.loserBallsPocketed}
+                    </span>{' '}
+                    {game.loserBallsPocketed === 1 ? 'ball' : 'balls'}
+                  </div>
                 )}
               </div>
+
               <p className="text-center mt-4 text-gray-600">
                 Do you agree with this result?
               </p>

@@ -272,7 +272,19 @@ for full details.
 
 ---
 
-## 4. Refactor TeamManagement.tsx (too big)
+## 4. Better Dashboard Button on Home Page
+
+**Discovered:** 2026-04-17
+
+**Problem:** The home page needs a more prominent / better-designed button
+to navigate to the operator dashboard. Current one is easy to miss.
+
+**Fix:** Redesign the dashboard navigation on the home page to be more
+visible and obvious.
+
+---
+
+## 5. Refactor TeamManagement.tsx (too big)
 
 **Branch needed:** `refactor-team-management`
 **Discovered:** 2026-04-16

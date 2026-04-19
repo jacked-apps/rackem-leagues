@@ -19,7 +19,7 @@ import { useState } from 'react';
 
 export interface LineupState {
   // Player count
-  playerCount: 3 | 5;
+  playerCount: number;
 
   // Player selections (always 5 positions, unused ones are empty strings)
   player1Id: string;
@@ -71,7 +71,7 @@ export interface LineupState {
  * @param playerCount - Number of players in lineup (3 for 3v3, 5 for 5v5)
  * @returns LineupState object with all state and setters
  */
-export function useLineupState(playerCount: 3 | 5 = 3): LineupState {
+export function useLineupState(playerCount: number = 3): LineupState {
   // Player selections (UUID or "SUBSTITUTE" special ID)
   const [player1Id, setPlayer1Id] = useState<string>('');
   const [player2Id, setPlayer2Id] = useState<string>('');

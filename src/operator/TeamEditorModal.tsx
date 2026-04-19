@@ -26,7 +26,6 @@ import { containsProfanity } from '@/utils/profanityFilter';
 import type { PartialMember } from '@/types/member';
 import { isPlaceholderMember, getPlayerDisplayName } from '@/types/member';
 import type { Venue, LeagueVenue } from '@/types/venue';
-import type { TeamFormat } from '@/types/league';
 import { logger } from '@/utils/logger';
 
 interface TeamEditorModalProps {
@@ -34,8 +33,8 @@ interface TeamEditorModalProps {
   leagueId: string;
   /** Season ID for the team */
   seasonId: string;
-  /** Team format (5_man or 8_man) */
-  teamFormat: TeamFormat;
+  /** Max players on a team roster (from resolved league preferences) */
+  rosterSize: number;
   /** Available venues for home venue selection */
   venues: Venue[];
   /** League venues assignments */
@@ -74,7 +73,7 @@ interface TeamEditorModalProps {
 export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
   leagueId,
   seasonId,
-  teamFormat,
+  rosterSize,
   venues,
   leagueVenues,
   members,
@@ -85,7 +84,6 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
   onCancel,
   variant = 'operator',
 }) => {
-  const rosterSize = teamFormat === '5_man' ? 5 : 8;
   const isEditing = !!existingTeam;
   const isCaptainVariant = variant === 'captain';
 

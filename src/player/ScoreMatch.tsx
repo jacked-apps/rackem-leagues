@@ -20,6 +20,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/supabaseClient';
+import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -43,11 +44,13 @@ import { ConfirmationDialog } from '@/components/scoring/ConfirmationDialog';
 import { EditGameDialog } from '@/components/scoring/EditGameDialog';
 import { ThreeVThreeScoreboard } from '@/components/scoring/ThreeVThreeScoreboard';
 import { FiveVFiveScoreboard } from '@/components/scoring/FiveVFiveScoreboard';
+import { TenSevenScoreboard } from '@/components/scoring/TenSevenScoreboard';
 import { TiebreakerScoreboard } from '@/components/scoring/TiebreakerScoreboard';
 import { GamesList } from '@/components/scoring/GamesList';
 import { TableNumberBar } from '@/components/scoring/TableNumberBar';
 import { queryKeys } from '@/api/queryKeys';
-import { calculateBCAPoints, getTeamStats, getPlayerStats as getPlayerStatsUtil } from '@/types';
+import { calculateBCAPoints, calculatePoints, getTeamStats, getPlayerStats as getPlayerStatsUtil } from '@/types';
+import { calculateFargoMatchTotals } from '@/utils/fargoMatchTotals';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
 
@@ -117,13 +120,15 @@ export function ScoreMatch() {
   const userLineup = isHomeTeam ? homeLineup : awayLineup;
   const opponentLineup = isHomeTeam ? awayLineup : homeLineup;
 
+  // Resolved preferences — lazy-migrates legacy leagues on first access
+  const { data: leaguePrefs } = useResolvedLeaguePrefs(match?.league?.id);
+  const handicapType = leaguePrefs?.handicap_type ?? 'points';
+
   // Get handicaps for roster players (for lineup change requests)
-  // Uses TanStack Query caching with matchId - if these were already fetched on lineup page, they'll be cached
-  // The matchId in the query key ensures same handicaps are used throughout the match
   const rosterPlayerIds = teamRoster.map((tp: any) => tp.member_id).filter(Boolean);
   const { handicaps: rosterHandicaps } = usePlayerHandicaps({
     playerIds: rosterPlayerIds,
-    teamFormat: match?.league?.team_format || '5_man',
+    handicapType,
     handicapVariant: match?.league?.handicap_variant || 'standard',
     gameType: gameType,
     leagueId: match?.league?.id,
@@ -174,9 +179,16 @@ export function ScoreMatch() {
     winnerTeamId: string;
     winnerPlayerId: string;
     winnerPlayerName: string;
+    winnerWasScheduledBreaker: boolean;
   } | null>(null);
   const [breakAndRun, setBreakAndRun] = useState(false);
   const [goldenBreak, setGoldenBreak] = useState(false);
+  // Unit 11b: configurable scoring fields. All default false/null; Fargo
+  // matches require `loserBallsPocketed` before submit (0 is a valid pick).
+  const [breakFouled, setBreakFouled] = useState(false);
+  const [winByForfeit, setWinByForfeit] = useState(false);
+  const [runout, setRunout] = useState(false);
+  const [loserBallsPocketed, setLoserBallsPocketed] = useState<number | null>(null);
 
   // Opponent confirmation modal state
   const [confirmationGame, setConfirmationGame] = useState<{
@@ -184,6 +196,10 @@ export function ScoreMatch() {
     winnerPlayerName: string;
     breakAndRun: boolean;
     goldenBreak: boolean;
+    breakFouled: boolean;
+    runout: boolean;
+    winByForfeit: boolean;
+    loserBallsPocketed: number | null;
     isResetRequest?: boolean; // True if this is a request to reset the game
   } | null>(null);
 
@@ -379,6 +395,7 @@ export function ScoreMatch() {
   // Use mutations hook for all database operations
   const mutations = useMatchScoringMutations({
     match,
+    leagueId: match?.league?.id ?? null,
     gameResults,
     homeLineup,
     awayLineup,
@@ -440,7 +457,7 @@ export function ScoreMatch() {
 
     // Get the new player's handicap from the cached handicaps (calculated via usePlayerHandicaps)
     // This uses TanStack Query caching - likely already calculated from lineup page
-    const newPlayerHandicap = rosterHandicaps.get(newPlayerId) ?? 0;
+    const newPlayerHandicap = rosterHandicaps.get(newPlayerId)?.value ?? 0;
 
     requestLineupChangeMutation.mutate({
       lineupId: userLineup.id,
@@ -631,6 +648,53 @@ export function ScoreMatch() {
   const homeBCAPoints = calculateBCAPoints(match.home_team_id, homeThresholds, filteredGameResults);
   const awayBCAPoints = calculateBCAPoints(match.away_team_id, awayThresholds, filteredGameResults);
 
+  // Fargo totals (Unit 12): for 5v5 Fargo matches, points are running Fargo
+  // totals (per-game winner/loser points + start-points credit on the weaker
+  // team) instead of BCA's capped points. Using the snapshotted overrides
+  // when present so the dial values are frozen from first-scoring-event.
+  const fargoOverrides = match.system_snapshot?.overrides
+    ?? leaguePrefs?.system_overrides
+    ?? {};
+  const fargoTotals = handicapType === 'fargo'
+    ? calculateFargoMatchTotals({
+        homeTeamId: match.home_team_id,
+        awayTeamId: match.away_team_id,
+        homeGamesToWin: match.home_games_to_win ?? 0,
+        awayGamesToWin: match.away_games_to_win ?? 0,
+        gameResults: filteredGameResults,
+        overrides: fargoOverrides,
+      })
+    : null;
+
+  // Per-player running points for the 10-7 scoreboard drawer. Scoped per
+  // lineup-slot (playerId + position) so double-duty shows up on both rows.
+  // Only computed for Fargo matches; the BCA scoreboards don't use this.
+  const fargoWinnerPoints =
+    typeof fargoOverrides.winner_points === 'number'
+      ? fargoOverrides.winner_points
+      : 10;
+  const getPlayerPoints = (
+    playerId: string,
+    position: number,
+    playerIsHomeTeam: boolean,
+  ): number => {
+    let total = 0;
+    for (const game of filteredGameResults.values()) {
+      if (!game.winner_team_id) continue;
+      const positionField = playerIsHomeTeam ? game.home_position : game.away_position;
+      const idField = playerIsHomeTeam ? game.home_player_id : game.away_player_id;
+      if (idField !== playerId) continue;
+      if (positionField !== position) continue;
+      const teamId = playerIsHomeTeam ? match.home_team_id : match.away_team_id;
+      if (game.winner_team_id === teamId) {
+        total += fargoWinnerPoints;
+      } else if (game.loser_balls_pocketed !== null && game.loser_balls_pocketed !== undefined) {
+        total += game.loser_balls_pocketed;
+      }
+    }
+    return total;
+  };
+
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       {/* Header with back button, team name, and auto-confirm */}
@@ -674,7 +738,11 @@ export function ScoreMatch() {
         tableNumber={match.assigned_table_number}
       />
 
-      {/* Scoreboard - Fixed at top */}
+      {/* Scoreboard - Fixed at top.
+          Routing: tiebreaker → TiebreakerScoreboard (isolated 3-game playoff).
+                   points-accumulation systems (currently only Fargo) →
+                     TenSevenScoreboard (generic — not Fargo-specific).
+                   games-won-against-threshold systems → per-format scoreboard. */}
       {isTiebreakerMode ? (
         <TiebreakerScoreboard
           match={{
@@ -687,6 +755,34 @@ export function ScoreMatch() {
           onVerify={handleVerify}
           isVerifying={isVerifying}
           gameType={gameType}
+        />
+      ) : handicapType === 'fargo' && fargoTotals ? (
+        <TenSevenScoreboard
+          match={{
+            ...match,
+            home_team_verified_by: (match as any).home_team_verified_by ?? null,
+            away_team_verified_by: (match as any).away_team_verified_by ?? null,
+          }}
+          homeLineup={homeLineup}
+          awayLineup={awayLineup}
+          homePoints={fargoTotals.homePoints}
+          awayPoints={fargoTotals.awayPoints}
+          homeGamesWon={fargoTotals.homeGamesWon}
+          awayGamesWon={fargoTotals.awayGamesWon}
+          totalScheduledGames={filteredGameResults.size}
+          startPoints={fargoTotals.startPointsApplied}
+          startPointsFor={
+            fargoTotals.startPointsFor === 'even' ? 'none' : fargoTotals.startPointsFor
+          }
+          allGamesComplete={allGamesComplete}
+          isHomeTeam={isHomeTeam ?? false}
+          onVerify={handleVerify}
+          isVerifying={isVerifying}
+          gameType={gameType}
+          getPlayerDisplayName={getPlayerDisplayName}
+          getPlayerStats={getPlayerStats}
+          getPlayerPoints={getPlayerPoints}
+          onSwapPlayer={handleSwapPlayer}
         />
       ) : is5v5 ? (
         <FiveVFiveScoreboard
@@ -703,8 +799,8 @@ export function ScoreMatch() {
           awayWins={awayStats.wins}
           homeLosses={homeStats.losses}
           awayLosses={awayStats.losses}
-          homePoints={homeBCAPoints}
-          awayPoints={awayBCAPoints}
+          homePoints={fargoTotals ? fargoTotals.homePoints : homeBCAPoints}
+          awayPoints={fargoTotals ? fargoTotals.awayPoints : awayBCAPoints}
           allGamesComplete={allGamesComplete}
           isHomeTeam={isHomeTeam ?? false}
           onVerify={handleVerify}
@@ -729,8 +825,8 @@ export function ScoreMatch() {
           awayWins={awayStats.wins}
           homeLosses={homeStats.losses}
           awayLosses={awayStats.losses}
-          homePoints={homeStats.wins}
-          awayPoints={awayStats.wins}
+          homePoints={calculatePoints(match.home_team_id, homeThresholds, filteredGameResults)}
+          awayPoints={calculatePoints(match.away_team_id, awayThresholds, filteredGameResults)}
           homeTeamHandicap={homeTeamHandicap}
           allGamesComplete={allGamesComplete}
           isHomeTeam={isHomeTeam ?? false}
@@ -755,7 +851,8 @@ export function ScoreMatch() {
           });
         }}
         onVacateRequestClick={(gameNumber, winnerName) => {
-          // When opponent clicks "Vacate Request" button, open confirmation dialog
+          // When opponent clicks "Vacate Request" button, open confirmation dialog.
+          // Forward every scored field so the dialog can show the full detail.
           const game = gameResults.get(gameNumber);
           if (game) {
             setConfirmationGame({
@@ -763,6 +860,10 @@ export function ScoreMatch() {
               winnerPlayerName: winnerName,
               breakAndRun: game.break_and_run,
               goldenBreak: game.golden_break,
+              breakFouled: game.break_fouled,
+              runout: game.runout,
+              winByForfeit: game.win_by_forfeit,
+              loserBallsPocketed: game.loser_balls_pocketed,
               isResetRequest: true,
             });
           }
@@ -781,6 +882,11 @@ export function ScoreMatch() {
         goldenBreak={goldenBreak}
         goldenBreakCountsAsWin={goldenBreakCountsAsWin}
         gameType={gameType}
+        handicapType={handicapType}
+        breakFouled={breakFouled}
+        winByForfeit={winByForfeit}
+        runout={runout}
+        loserBallsPocketed={loserBallsPocketed}
         onBreakAndRunChange={(checked) => {
           setBreakAndRun(checked);
           if (checked) setGoldenBreak(false);
@@ -789,10 +895,18 @@ export function ScoreMatch() {
           setGoldenBreak(checked);
           if (checked) setBreakAndRun(false);
         }}
+        onBreakFouledChange={setBreakFouled}
+        onWinByForfeitChange={setWinByForfeit}
+        onRunoutChange={setRunout}
+        onLoserBallsPocketedChange={setLoserBallsPocketed}
         onCancel={() => {
           setScoringGame(null);
           setBreakAndRun(false);
           setGoldenBreak(false);
+          setBreakFouled(false);
+          setWinByForfeit(false);
+          setRunout(false);
+          setLoserBallsPocketed(null);
         }}
         onConfirm={() => {
           if (scoringGame) {
@@ -804,7 +918,12 @@ export function ScoreMatch() {
                 setScoringGame(null);
                 setBreakAndRun(false);
                 setGoldenBreak(false);
-              }
+                setBreakFouled(false);
+                setWinByForfeit(false);
+                setRunout(false);
+                setLoserBallsPocketed(null);
+              },
+              { breakFouled, runout, winByForfeit, loserBallsPocketed }
             );
           }
         }}

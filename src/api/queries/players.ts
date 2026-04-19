@@ -189,12 +189,12 @@ export interface PlayerDetails {
     ten_ball: number;
   };
   handicaps: {
-    eight_ball_3v3: number;
-    eight_ball_5v5: number;
-    nine_ball_3v3: number;
-    nine_ball_5v5: number;
-    ten_ball_3v3: number;
-    ten_ball_5v5: number;
+    eight_ball_points: number | null;
+    eight_ball_percentage: number | null;
+    nine_ball_points: number | null;
+    nine_ball_percentage: number | null;
+    ten_ball_points: number | null;
+    ten_ball_percentage: number | null;
   };
 }
 
@@ -298,14 +298,15 @@ export async function fetchPlayerDetails(
     total: eightBallGames.length + nineBallGames.length + tenBallGames.length,
   };
 
-  // Calculate handicaps for both formats (3v3 and 5v5) and all game types
+  // Calculate handicaps for both systems (points and percentage) and all game types.
+  // Uses handicapType ('points' / 'percentage') instead of the old teamFormat ('5_man' / '8_man').
   const handicaps = {
-    eight_ball_3v3: await calculatePlayerHandicap(playerId, '5_man', 'standard', 'eight_ball'),
-    eight_ball_5v5: await calculatePlayerHandicap(playerId, '8_man', 'standard', 'eight_ball'),
-    nine_ball_3v3: await calculatePlayerHandicap(playerId, '5_man', 'standard', 'nine_ball'),
-    nine_ball_5v5: await calculatePlayerHandicap(playerId, '8_man', 'standard', 'nine_ball'),
-    ten_ball_3v3: await calculatePlayerHandicap(playerId, '5_man', 'standard', 'ten_ball'),
-    ten_ball_5v5: await calculatePlayerHandicap(playerId, '8_man', 'standard', 'ten_ball'),
+    eight_ball_points: (await calculatePlayerHandicap(playerId, 'points', 'standard', 'eight_ball')).value,
+    eight_ball_percentage: (await calculatePlayerHandicap(playerId, 'percentage', 'standard', 'eight_ball')).value,
+    nine_ball_points: (await calculatePlayerHandicap(playerId, 'points', 'standard', 'nine_ball')).value,
+    nine_ball_percentage: (await calculatePlayerHandicap(playerId, 'percentage', 'standard', 'nine_ball')).value,
+    ten_ball_points: (await calculatePlayerHandicap(playerId, 'points', 'standard', 'ten_ball')).value,
+    ten_ball_percentage: (await calculatePlayerHandicap(playerId, 'percentage', 'standard', 'ten_ball')).value,
   };
 
   return {
@@ -438,13 +439,13 @@ export async function autoAuthorizeEstablishedPlayer(
     // Calculate handicaps in parallel (was sequential before)
     // Use 8-ball as the primary game type for handicap calculation
     // (most common game type, provides best baseline)
-    const [handicap3v3, handicap5v5] = await Promise.all([
-      calculatePlayerHandicap(playerId, '5_man', 'standard', 'eight_ball'),
-      calculatePlayerHandicap(playerId, '8_man', 'standard', 'eight_ball'),
+    const [pointsResult, percentageResult] = await Promise.all([
+      calculatePlayerHandicap(playerId, 'points', 'standard', 'eight_ball'),
+      calculatePlayerHandicap(playerId, 'percentage', 'standard', 'eight_ball'),
     ]);
 
     // Update the player's starting handicaps
-    const { error } = await updatePlayerStartingHandicaps(playerId, handicap3v3, handicap5v5);
+    const { error } = await updatePlayerStartingHandicaps(playerId, pointsResult.value ?? 0, percentageResult.value ?? 40);
 
     if (error) {
       return {
@@ -457,8 +458,8 @@ export async function autoAuthorizeEstablishedPlayer(
     return {
       authorized: true,
       totalGames,
-      handicap3v3,
-      handicap5v5,
+      handicap3v3: pointsResult.value ?? 0,
+      handicap5v5: percentageResult.value ?? 40,
     };
   } catch (error) {
     logger.error('Error auto-authorizing player', { error: error instanceof Error ? error.message : String(error) });

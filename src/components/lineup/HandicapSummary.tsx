@@ -9,14 +9,14 @@
 
 import { InfoButton } from '@/components/InfoButton';
 import { formatHandicap } from '@/utils/lineup';
-import type { TeamFormat } from '@/types/league';
 
 interface HandicapSummaryProps {
   playerTotal: number;
   teamHandicap: number;
   teamTotal: number;
   isHomeTeam: boolean;
-  teamFormat: TeamFormat;
+  /** Handicap system: 'points', 'percentage', 'fargo', 'none' */
+  handicapType: string;
 }
 
 export function HandicapSummary({
@@ -24,9 +24,9 @@ export function HandicapSummary({
   teamHandicap,
   teamTotal,
   isHomeTeam,
-  teamFormat,
+  handicapType,
 }: HandicapSummaryProps) {
-  const showPercentage = teamFormat === '8_man';
+  const showPercentage = handicapType === 'percentage';
 
   return (
     <div className="border-t pt-4 space-y-2">

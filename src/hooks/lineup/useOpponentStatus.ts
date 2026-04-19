@@ -22,7 +22,7 @@ interface OpponentStatusParams {
   /** All games (for tiebreaker mode player counting) */
   allGames?: any[];
   /** Player count (3 for 3v3, 5 for 5v5) */
-  playerCount?: 3 | 5;
+  playerCount?: number;
 }
 
 export type OpponentStatus = 'absent' | 'choosing' | 'ready';

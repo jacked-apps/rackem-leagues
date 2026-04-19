@@ -21,14 +21,9 @@ import type { TeamCaptainEntry } from './teamsWizardTypes';
 interface SaveTeamsArgs {
   leagueId: string;
   seasonId: string;
-  leagueFormat: string; // '5_man' or '8_man' — determines rosterSize
+  maxRosterSize: number; // from resolved league preferences
   venueIds: string[];
   captains: TeamCaptainEntry[];
-}
-
-/** Convert team_format string to rosterSize number (5 or 8). */
-function getRosterSize(leagueFormat: string): 5 | 8 {
-  return leagueFormat === '8_man' ? 8 : 5;
 }
 
 export function useSaveTeamsV2() {
@@ -38,7 +33,7 @@ export function useSaveTeamsV2() {
     mutationFn: async ({
       leagueId,
       seasonId,
-      leagueFormat,
+      maxRosterSize,
       venueIds,
       captains,
     }: SaveTeamsArgs) => {
@@ -72,7 +67,6 @@ export function useSaveTeamsV2() {
       // it as the home venue. With 2+ venues, leave home_venue_id blank so the
       // operator can decide per-team later via Team Management.
       const defaultHomeVenueId = venueIds.length === 1 ? venueIds[0] : null;
-      const rosterSize = getRosterSize(leagueFormat);
       const createdTeams: { teamId: string; teamName: string }[] = [];
       for (const captain of captains) {
         const team = await createTeam({
@@ -80,7 +74,7 @@ export function useSaveTeamsV2() {
           leagueId,
           captainId: captain.captainId,
           teamName: captain.teamName.trim() || `Team ${createdTeams.length + 1}`,
-          rosterSize,
+          rosterSize: maxRosterSize,
           homeVenueId: defaultHomeVenueId,
           rosterPlayerIds: [captain.captainId],
         });
