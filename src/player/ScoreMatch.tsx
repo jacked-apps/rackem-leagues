@@ -48,7 +48,7 @@ import { TiebreakerScoreboard } from '@/components/scoring/TiebreakerScoreboard'
 import { GamesList } from '@/components/scoring/GamesList';
 import { TableNumberBar } from '@/components/scoring/TableNumberBar';
 import { queryKeys } from '@/api/queryKeys';
-import { calculateBCAPoints, getTeamStats, getPlayerStats as getPlayerStatsUtil } from '@/types';
+import { calculateBCAPoints, calculatePoints, getTeamStats, getPlayerStats as getPlayerStatsUtil } from '@/types';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
 
@@ -733,8 +733,8 @@ export function ScoreMatch() {
           awayWins={awayStats.wins}
           homeLosses={homeStats.losses}
           awayLosses={awayStats.losses}
-          homePoints={homeStats.wins}
-          awayPoints={awayStats.wins}
+          homePoints={calculatePoints(match.home_team_id, homeThresholds, filteredGameResults)}
+          awayPoints={calculatePoints(match.away_team_id, awayThresholds, filteredGameResults)}
           homeTeamHandicap={homeTeamHandicap}
           allGamesComplete={allGamesComplete}
           isHomeTeam={isHomeTeam ?? false}
