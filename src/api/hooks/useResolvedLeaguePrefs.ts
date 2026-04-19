@@ -16,6 +16,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/supabaseClient';
 import { logger } from '@/utils/logger';
+import type { SystemOverrides } from '@/types/systemOverrides';
 
 /** The resolved preference fields we care about */
 export interface ResolvedLeaguePrefs {
@@ -25,6 +26,12 @@ export interface ResolvedLeaguePrefs {
   game_generation: string;
   points_system: string;
   threshold_chart_id: string | null;
+  /**
+   * Per-league dial overrides from `leagues.system_overrides` (not part of the
+   * preferences cascade — stored directly on the league row). Always an object;
+   * `{}` if no overrides are set. Merged over SystemModule defaults at read time.
+   */
+  system_overrides: SystemOverrides;
 }
 
 /** Maps old team_format to the new modular fields */
@@ -53,12 +60,24 @@ function deriveFromTeamFormat(teamFormat: string): Partial<ResolvedLeaguePrefs> 
  * (legacy league), derives them from team_format and writes to the DB.
  */
 async function ensureLeaguePreferences(leagueId: string): Promise<ResolvedLeaguePrefs> {
-  // Read from the resolved view (handles cascade)
-  const { data: resolved, error: viewError } = await supabase
-    .from('resolved_league_preferences')
-    .select('handicap_type, lineup_size, max_roster_size, game_generation, points_system, threshold_chart_id')
-    .eq('league_id', leagueId)
-    .single();
+  // Read from the resolved view (handles cascade) AND the leagues row in parallel.
+  // system_overrides lives directly on the leagues table, not in the preferences
+  // cascade, so we fetch it separately.
+  const [viewRes, leagueRes] = await Promise.all([
+    supabase
+      .from('resolved_league_preferences')
+      .select('handicap_type, lineup_size, max_roster_size, game_generation, points_system, threshold_chart_id')
+      .eq('league_id', leagueId)
+      .single(),
+    supabase
+      .from('leagues')
+      .select('team_format, system_overrides')
+      .eq('id', leagueId)
+      .single(),
+  ]);
+
+  const { data: resolved, error: viewError } = viewRes;
+  const systemOverrides = (leagueRes.data?.system_overrides as SystemOverrides | undefined) ?? {};
 
   if (viewError) {
     logger.error('Failed to read resolved_league_preferences', { leagueId, error: viewError.message });
@@ -70,22 +89,17 @@ async function ensureLeaguePreferences(leagueId: string): Promise<ResolvedLeague
       game_generation: 'double_round_robin',
       points_system: 'differential',
       threshold_chart_id: null,
+      system_overrides: systemOverrides,
     };
   }
 
-  // If the modular fields are already populated, return as-is
+  // If the modular fields are already populated, return as-is (plus overrides)
   if (resolved.handicap_type && resolved.lineup_size && resolved.max_roster_size) {
-    return resolved as ResolvedLeaguePrefs;
+    return { ...resolved, system_overrides: systemOverrides } as ResolvedLeaguePrefs;
   }
 
   // Legacy league — derive from team_format and write to preferences
-  const { data: league } = await supabase
-    .from('leagues')
-    .select('team_format')
-    .eq('id', leagueId)
-    .single();
-
-  const derived = deriveFromTeamFormat(league?.team_format ?? '5_man');
+  const derived = deriveFromTeamFormat(leagueRes.data?.team_format ?? '5_man');
 
   // Upsert the league-level preference so next time it's there
   const { error: upsertError } = await supabase
@@ -103,7 +117,7 @@ async function ensureLeaguePreferences(leagueId: string): Promise<ResolvedLeague
     logger.error('Failed to backfill league preferences', { leagueId, error: upsertError.message });
   }
 
-  return { ...resolved, ...derived } as ResolvedLeaguePrefs;
+  return { ...resolved, ...derived, system_overrides: systemOverrides } as ResolvedLeaguePrefs;
 }
 
 /**

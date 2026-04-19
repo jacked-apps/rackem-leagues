@@ -34,6 +34,15 @@ export interface LineupValidationInput {
   players: Player[];
   isTiebreakerMode?: boolean;
   handicapType?: string; // 'points' needs sub handicap, others don't
+  /**
+   * Per-named-slot Fargo rating values. Only consulted when handicapType='fargo'.
+   * Named slots (real players selected by ID) must have a rating 100-850 to lock.
+   * TBD (double-duty) slots are allowed to be null — they inherit a rating when
+   * the TBD resolves to a real player.
+   */
+  fargoRatingsBySlot?: Record<number, number | null | undefined>;
+  /** Set of slot positions (1-based) that are TBD / double-duty. */
+  doubleDutySlots?: Set<number>;
 }
 
 export interface LineupValidation {
@@ -42,10 +51,13 @@ export interface LineupValidation {
   hasDuplicates: boolean;
   hasSub: boolean;
   canLock: boolean;
+  /** True when handicapType='fargo' and a named slot has a missing or out-of-range rating. */
+  fargoRatingError: boolean;
 
   // Error messages
   completenessError: string | null;
   duplicatesError: string | null;
+  fargoRatingErrorMessage: string | null;
 }
 
 /**
@@ -68,6 +80,8 @@ export function useLineupValidation(
     players,
     isTiebreakerMode,
     handicapType = 'points',
+    fargoRatingsBySlot,
+    doubleDutySlots,
   } = input;
 
   // Build array of all player IDs based on actual lineup size
@@ -104,10 +118,45 @@ export function useLineupValidation(
     return nicknames.length !== new Set(nicknames).size;
   }, [allPlayerIds, players]);
 
+  // Fargo rating validation — each named slot must have a rating in [100, 850].
+  // TBD (double-duty) slots are allowed to be null; they inherit a rating when resolved.
+  const fargoRatingError = useMemo(() => {
+    if (handicapType !== 'fargo') return false;
+    if (isTiebreakerMode) return false;
+    for (let slot = 1; slot <= playerCount; slot++) {
+      // Skip TBD slots — they're allowed to have no rating at lock time
+      if (doubleDutySlots?.has(slot)) continue;
+      // Only check slots that have a named player selected
+      const slotPlayerId = [player1Id, player2Id, player3Id, player4Id, player5Id][slot - 1];
+      if (!slotPlayerId) continue; // Empty slot caught by the `isComplete` check above
+      const rating = fargoRatingsBySlot?.[slot];
+      if (typeof rating !== 'number' || !Number.isFinite(rating)) return true;
+      if (rating < 100 || rating > 850) return true;
+      if (!Number.isInteger(rating)) return true;
+    }
+    return false;
+  }, [
+    handicapType,
+    isTiebreakerMode,
+    playerCount,
+    doubleDutySlots,
+    player1Id,
+    player2Id,
+    player3Id,
+    player4Id,
+    player5Id,
+    fargoRatingsBySlot,
+  ]);
+
+  const fargoRatingErrorMessage = useMemo(() => {
+    if (!fargoRatingError) return null;
+    return 'Each named player in this Fargo lineup needs a rating between 100 and 850. (Double-duty slots are exempt — they inherit the player\'s rating when assigned.)';
+  }, [fargoRatingError]);
+
   // Check if lineup can be locked
   const canLock = useMemo(
-    () => isComplete && !hasDuplicates,
-    [isComplete, hasDuplicates]
+    () => isComplete && !hasDuplicates && !fargoRatingError,
+    [isComplete, hasDuplicates, fargoRatingError]
   );
 
   // Generate error messages
@@ -130,7 +179,9 @@ export function useLineupValidation(
     hasDuplicates,
     hasSub,
     canLock,
+    fargoRatingError,
     completenessError,
     duplicatesError,
+    fargoRatingErrorMessage,
   };
 }

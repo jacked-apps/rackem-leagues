@@ -12,8 +12,10 @@ import { supabase } from '@/supabaseClient';
 import { useUpdateMatch } from '@/api/hooks';
 import { calculateHandicapThresholds } from '@/utils/calculateHandicapThresholds';
 import { generateGameOrder } from '@/utils/gameOrder';
+import { fargo5v5 } from '@/systems/fargo5v5';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
+import type { SystemOverrides } from '@/types/systemOverrides';
 
 export function usePreparationStatus() {
   const [isPreparingMatch, setIsPreparingMatch] = useState(false);
@@ -29,6 +31,8 @@ interface MatchPreparationParams {
   isHomeTeam: boolean;
   lineupSize: number;
   handicapType: string;
+  /** Resolved per-league dial overrides. Used by Fargo threshold compute. */
+  systemOverrides?: SystemOverrides;
   player1Id: string;
   player2Id: string;
   player3Id: string;
@@ -54,6 +58,7 @@ export function useMatchPreparation(params: MatchPreparationParams) {
     isHomeTeam,
     lineupSize,
     handicapType,
+    systemOverrides,
     player1Id,
     player2Id,
     player3Id,
@@ -228,31 +233,111 @@ export function useMatchPreparation(params: MatchPreparationParams) {
             myLineup.player5_handicap = player5Handicap || 0;
           }
 
-          // Calculate handicap thresholds
-          setPreparationMessage?.('Calculating handicap thresholds...');
-          const { homeThresholds, awayThresholds } =
-            await calculateHandicapThresholds(
-              myLineup as any,
-              opponentLineup,
-              matchData.home_team_id,
-              matchData.away_team_id,
-              matchData.season_id,
-              handicapType
-            );
+          // Calculate and save handicap thresholds.
+          //
+          // BCA systems (points, percentage): compute games-to-win/tie/lose
+          // from the existing chart lookup; write all six threshold columns.
+          //
+          // Fargo system: compute a single start-points value from the team
+          // rating totals; write it to the weaker team's games_to_win column
+          // (the stronger team gets 0; tie/lose columns stay null). The
+          // reused threshold columns hold a per-system "initial per-team
+          // number"; handicap_type tells downstream code how to interpret.
+          if (handicapType === 'fargo') {
+            setPreparationMessage?.('Calculating Fargo start points...');
 
-          // Save thresholds to match table
-          setPreparationMessage?.('Saving match settings...');
-          await updateMatchMutation.mutateAsync({
-            matchId,
-            updates: {
-              home_games_to_win: homeThresholds.games_to_win,
-              home_games_to_tie: homeThresholds.games_to_tie,
-              home_games_to_lose: homeThresholds.games_to_lose,
-              away_games_to_win: awayThresholds.games_to_win,
-              away_games_to_tie: awayThresholds.games_to_tie,
-              away_games_to_lose: awayThresholds.games_to_lose,
-            },
-          });
+            // Build rating arrays from each team's lineup. A lineup may have
+            // fewer than `lineupSize` ratings if TBD slots are unresolved;
+            // fall back to the opponent's stored player handicaps which
+            // HandicapCell already writes at rating-entry time.
+            const homeLineup = isHomeTeam ? myLineup : opponentLineup;
+            const awayLineup = isHomeTeam ? opponentLineup : myLineup;
+
+            const gatherRatings = (lineup: any): number[] => {
+              const out: number[] = [];
+              for (let i = 1; i <= lineupSize; i++) {
+                const rating = Number(lineup?.[`player${i}_handicap`]);
+                if (Number.isFinite(rating) && rating > 0) out.push(rating);
+              }
+              return out;
+            };
+
+            const homeRatings = gatherRatings(homeLineup);
+            const awayRatings = gatherRatings(awayLineup);
+
+            // Only compute if both teams have all named-slot ratings. If
+            // ratings are missing (e.g., unresolved TBD without propagation),
+            // skip writing start-points — the scoring UI will fall back to 0
+            // and the override-at-lineup flow (Unit 11c) gives the captains
+            // a chance to set the right number manually.
+            if (
+              homeRatings.length === lineupSize &&
+              awayRatings.length === lineupSize
+            ) {
+              if (fargo5v5.threshold.mode !== 'start_points') {
+                throw new Error('fargo5v5 threshold must be start_points mode');
+              }
+              const { startPointsForWeakerTeam, weakerTeam } =
+                fargo5v5.threshold.compute(homeRatings, awayRatings, systemOverrides ?? {});
+
+              setPreparationMessage?.('Saving match settings...');
+              await updateMatchMutation.mutateAsync({
+                matchId,
+                updates: {
+                  home_games_to_win: weakerTeam === 'home' ? startPointsForWeakerTeam : 0,
+                  home_games_to_tie: null,
+                  home_games_to_lose: null,
+                  away_games_to_win: weakerTeam === 'away' ? startPointsForWeakerTeam : 0,
+                  away_games_to_tie: null,
+                  away_games_to_lose: null,
+                },
+              });
+            } else {
+              // Missing ratings — write zeros so the match can still score;
+              // captains can override via Unit 11c's flow when it lands.
+              logger.error('Fargo lineup lock without complete ratings', {
+                matchId,
+                homeRatingsCount: homeRatings.length,
+                awayRatingsCount: awayRatings.length,
+                expected: lineupSize,
+              });
+              await updateMatchMutation.mutateAsync({
+                matchId,
+                updates: {
+                  home_games_to_win: 0,
+                  home_games_to_tie: null,
+                  home_games_to_lose: null,
+                  away_games_to_win: 0,
+                  away_games_to_tie: null,
+                  away_games_to_lose: null,
+                },
+              });
+            }
+          } else {
+            setPreparationMessage?.('Calculating handicap thresholds...');
+            const { homeThresholds, awayThresholds } =
+              await calculateHandicapThresholds(
+                myLineup as any,
+                opponentLineup,
+                matchData.home_team_id,
+                matchData.away_team_id,
+                matchData.season_id,
+                handicapType,
+              );
+
+            setPreparationMessage?.('Saving match settings...');
+            await updateMatchMutation.mutateAsync({
+              matchId,
+              updates: {
+                home_games_to_win: homeThresholds.games_to_win,
+                home_games_to_tie: homeThresholds.games_to_tie,
+                home_games_to_lose: homeThresholds.games_to_lose,
+                away_games_to_win: awayThresholds.games_to_win,
+                away_games_to_tie: awayThresholds.games_to_tie,
+                away_games_to_lose: awayThresholds.games_to_lose,
+              },
+            });
+          }
 
           // Create all game rows in match_games table
           setPreparationMessage?.('Creating games...');

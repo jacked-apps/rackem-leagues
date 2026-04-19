@@ -8,7 +8,7 @@
  * Flow: Team Schedule → Score Match → Lineup Entry
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Users } from 'lucide-react';
@@ -296,6 +296,65 @@ export function MatchLineup() {
     handicapType,
   });
 
+  // Build Fargo rating + double-duty slot inputs for validation.
+  // Only used when handicapType='fargo'; cheap no-op for other systems.
+  const { fargoRatingsBySlot, doubleDutySlots } = useMemo(() => {
+    const ratings: Record<number, number | null | undefined> = {};
+    const duty = new Set<number>();
+    if (handicapType !== 'fargo') return { fargoRatingsBySlot: ratings, doubleDutySlots: duty };
+
+    const slotPlayerIds = [
+      lineup.player1Id,
+      lineup.player2Id,
+      lineup.player3Id,
+      lineup.player4Id,
+      lineup.player5Id,
+    ];
+    const slotHandicaps = [
+      handicaps.player1Handicap,
+      handicaps.player2Handicap,
+      handicaps.player3Handicap,
+      handicaps.player4Handicap,
+      handicaps.player5Handicap,
+    ];
+
+    for (let slot = 1; slot <= playerCount; slot++) {
+      const pid = slotPlayerIds[slot - 1];
+      const isSubPlaceholder = pid === SUB_HOME_ID || pid === SUB_AWAY_ID;
+      const isDoubleDuty = isSubPlaceholder && substituteType === 'double_duty';
+      if (isDoubleDuty) duty.add(slot);
+
+      // Prefer the pending manual entry (user is typing); fall back to the persisted handicap
+      const typed = manualHandicaps[slot];
+      if (typed && typed.trim() !== '') {
+        const parsed = Number.parseInt(typed, 10);
+        ratings[slot] = Number.isFinite(parsed) ? parsed : null;
+      } else {
+        const persisted = slotHandicaps[slot - 1];
+        ratings[slot] =
+          typeof persisted === 'number' && Number.isFinite(persisted) && persisted > 0
+            ? persisted
+            : null;
+      }
+    }
+    return { fargoRatingsBySlot: ratings, doubleDutySlots: duty };
+  }, [
+    handicapType,
+    playerCount,
+    lineup.player1Id,
+    lineup.player2Id,
+    lineup.player3Id,
+    lineup.player4Id,
+    lineup.player5Id,
+    handicaps.player1Handicap,
+    handicaps.player2Handicap,
+    handicaps.player3Handicap,
+    handicaps.player4Handicap,
+    handicaps.player5Handicap,
+    manualHandicaps,
+    substituteType,
+  ]);
+
   // Lineup validation
   const validation = useLineupValidation({
     player1Id: validationPlayer1Id,
@@ -308,6 +367,8 @@ export function MatchLineup() {
     players,
     isTiebreakerMode,
     handicapType,
+    fargoRatingsBySlot,
+    doubleDutySlots,
   });
 
   // Lineup persistence operations
@@ -348,6 +409,7 @@ export function MatchLineup() {
     isHomeTeam,
     lineupSize: playerCount,
     handicapType,
+    systemOverrides: leaguePrefs?.system_overrides,
     player1Id: lineup.player1Id,
     player2Id: lineup.player2Id,
     player3Id: lineup.player3Id,
