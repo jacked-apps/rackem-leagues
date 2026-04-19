@@ -49,6 +49,7 @@ import { GamesList } from '@/components/scoring/GamesList';
 import { TableNumberBar } from '@/components/scoring/TableNumberBar';
 import { queryKeys } from '@/api/queryKeys';
 import { calculateBCAPoints, calculatePoints, getTeamStats, getPlayerStats as getPlayerStatsUtil } from '@/types';
+import { calculateFargoMatchTotals } from '@/utils/fargoMatchTotals';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
 
@@ -642,6 +643,24 @@ export function ScoreMatch() {
   const homeBCAPoints = calculateBCAPoints(match.home_team_id, homeThresholds, filteredGameResults);
   const awayBCAPoints = calculateBCAPoints(match.away_team_id, awayThresholds, filteredGameResults);
 
+  // Fargo totals (Unit 12): for 5v5 Fargo matches, points are running Fargo
+  // totals (per-game winner/loser points + start-points credit on the weaker
+  // team) instead of BCA's capped points. Using the snapshotted overrides
+  // when present so the dial values are frozen from first-scoring-event.
+  const fargoOverrides = match.system_snapshot?.overrides
+    ?? leaguePrefs?.system_overrides
+    ?? {};
+  const fargoTotals = handicapType === 'fargo'
+    ? calculateFargoMatchTotals({
+        homeTeamId: match.home_team_id,
+        awayTeamId: match.away_team_id,
+        homeGamesToWin: match.home_games_to_win ?? 0,
+        awayGamesToWin: match.away_games_to_win ?? 0,
+        gameResults: filteredGameResults,
+        overrides: fargoOverrides,
+      })
+    : null;
+
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       {/* Header with back button, team name, and auto-confirm */}
@@ -714,8 +733,8 @@ export function ScoreMatch() {
           awayWins={awayStats.wins}
           homeLosses={homeStats.losses}
           awayLosses={awayStats.losses}
-          homePoints={homeBCAPoints}
-          awayPoints={awayBCAPoints}
+          homePoints={fargoTotals ? fargoTotals.homePoints : homeBCAPoints}
+          awayPoints={fargoTotals ? fargoTotals.awayPoints : awayBCAPoints}
           allGamesComplete={allGamesComplete}
           isHomeTeam={isHomeTeam ?? false}
           onVerify={handleVerify}
