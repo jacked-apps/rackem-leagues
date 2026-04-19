@@ -177,9 +177,16 @@ export function ScoreMatch() {
     winnerTeamId: string;
     winnerPlayerId: string;
     winnerPlayerName: string;
+    winnerWasScheduledBreaker: boolean;
   } | null>(null);
   const [breakAndRun, setBreakAndRun] = useState(false);
   const [goldenBreak, setGoldenBreak] = useState(false);
+  // Unit 11b: configurable scoring fields. All default false/null; Fargo
+  // matches require `loserBallsPocketed` before submit (0 is a valid pick).
+  const [breakFouled, setBreakFouled] = useState(false);
+  const [winByForfeit, setWinByForfeit] = useState(false);
+  const [runout, setRunout] = useState(false);
+  const [loserBallsPocketed, setLoserBallsPocketed] = useState<number | null>(null);
 
   // Opponent confirmation modal state
   const [confirmationGame, setConfirmationGame] = useState<{
@@ -785,6 +792,11 @@ export function ScoreMatch() {
         goldenBreak={goldenBreak}
         goldenBreakCountsAsWin={goldenBreakCountsAsWin}
         gameType={gameType}
+        handicapType={handicapType}
+        breakFouled={breakFouled}
+        winByForfeit={winByForfeit}
+        runout={runout}
+        loserBallsPocketed={loserBallsPocketed}
         onBreakAndRunChange={(checked) => {
           setBreakAndRun(checked);
           if (checked) setGoldenBreak(false);
@@ -793,10 +805,18 @@ export function ScoreMatch() {
           setGoldenBreak(checked);
           if (checked) setBreakAndRun(false);
         }}
+        onBreakFouledChange={setBreakFouled}
+        onWinByForfeitChange={setWinByForfeit}
+        onRunoutChange={setRunout}
+        onLoserBallsPocketedChange={setLoserBallsPocketed}
         onCancel={() => {
           setScoringGame(null);
           setBreakAndRun(false);
           setGoldenBreak(false);
+          setBreakFouled(false);
+          setWinByForfeit(false);
+          setRunout(false);
+          setLoserBallsPocketed(null);
         }}
         onConfirm={() => {
           if (scoringGame) {
@@ -808,7 +828,12 @@ export function ScoreMatch() {
                 setScoringGame(null);
                 setBreakAndRun(false);
                 setGoldenBreak(false);
-              }
+                setBreakFouled(false);
+                setWinByForfeit(false);
+                setRunout(false);
+                setLoserBallsPocketed(null);
+              },
+              { breakFouled, runout, winByForfeit, loserBallsPocketed }
             );
           }
         }}

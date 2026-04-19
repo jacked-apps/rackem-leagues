@@ -92,6 +92,13 @@ export function useMatchScoringMutations({
         winnerTeamId: string;
         winnerPlayerId: string;
         winnerPlayerName: string;
+        /**
+         * Whether the winner was the scheduled breaker of this game (i.e., had
+         * the `breaks` action in the game row). Role-conditional modal fields
+         * (BR / GB / runout) derive from this combined with the break-fault
+         * toggle: actualBreaker = scheduledBreaker XOR breakFouled.
+         */
+        winnerWasScheduledBreaker: boolean;
       }) => void,
       confirmOpponentScoreFn: (gameNumber: number) => void
     ) => {
@@ -150,12 +157,26 @@ export function useMatchScoringMutations({
         return;
       }
 
+      // Derive whether the clicked winner was the scheduled breaker by
+      // comparing the winner's player ID to the game row's per-side action.
+      // `existingGame` is always present here because games are pre-created by
+      // the match preparation step before any scoring UI renders.
+      let winnerWasScheduledBreaker = false;
+      if (existingGame) {
+        if (existingGame.home_player_id === playerId) {
+          winnerWasScheduledBreaker = existingGame.home_action === 'breaks';
+        } else if (existingGame.away_player_id === playerId) {
+          winnerWasScheduledBreaker = existingGame.away_action === 'breaks';
+        }
+      }
+
       // Open confirmation modal to score new game
       onOpenScoringModal({
         gameNumber,
         winnerTeamId: teamId,
         winnerPlayerId: playerId,
         winnerPlayerName: playerName,
+        winnerWasScheduledBreaker,
       });
     },
     [match, gameResults, userTeamId, autoConfirm, addToConfirmationQueue, getPlayerDisplayName]
@@ -187,6 +208,10 @@ export function useMatchScoringMutations({
               winner_player_id: null,
               break_and_run: false,
               golden_break: false,
+              break_fouled: false,
+              runout: false,
+              win_by_forfeit: false,
+              loser_balls_pocketed: null,
               confirmed_by_home: null,
               confirmed_by_away: null,
               vacate_requested_by: null,
@@ -262,6 +287,10 @@ export function useMatchScoringMutations({
               winner_player_id: null,
               break_and_run: false,
               golden_break: false,
+              break_fouled: false,
+              runout: false,
+              win_by_forfeit: false,
+              loser_balls_pocketed: null,
               confirmed_by_home: null,
               confirmed_by_away: null,
               confirmed_at: null,
@@ -296,9 +325,25 @@ export function useMatchScoringMutations({
       },
       breakAndRun: boolean,
       goldenBreak: boolean,
-      onSuccess: () => void
+      onSuccess: () => void,
+      /**
+       * Always-tracked + system-specific extras added in Unit 11b. Defaults
+       * preserve prior behavior (all flags false, ball count null) so legacy
+       * callers that don't pass this object continue to work unchanged.
+       */
+      extras: {
+        breakFouled?: boolean;
+        runout?: boolean;
+        winByForfeit?: boolean;
+        loserBallsPocketed?: number | null;
+      } = {}
     ) => {
       if (!scoringGame || !match || !homeLineup || !awayLineup) return;
+
+      const breakFouled = extras.breakFouled ?? false;
+      const runout = extras.runout ?? false;
+      const winByForfeit = extras.winByForfeit ?? false;
+      const loserBallsPocketed = extras.loserBallsPocketed ?? null;
 
       try {
         // Tier 3 mutability: populate system_snapshot at the first scoring event.
@@ -344,6 +389,10 @@ export function useMatchScoringMutations({
           winner_player_id: scoringGame.winnerPlayerId,
           break_and_run: breakAndRun,
           golden_break: goldenBreak,
+          break_fouled: breakFouled,
+          runout,
+          win_by_forfeit: winByForfeit,
+          loser_balls_pocketed: loserBallsPocketed,
           confirmed_by_home: isHomeTeamScoring ? memberId : null,
           confirmed_by_away: !isHomeTeamScoring ? memberId : null,
         };
@@ -356,6 +405,10 @@ export function useMatchScoringMutations({
             winner_player_id: gameData.winner_player_id,
             break_and_run: gameData.break_and_run,
             golden_break: gameData.golden_break,
+            break_fouled: gameData.break_fouled,
+            runout: gameData.runout,
+            win_by_forfeit: gameData.win_by_forfeit,
+            loser_balls_pocketed: gameData.loser_balls_pocketed,
             confirmed_by_home: isHomeTeamScoring
               ? memberId
               : existingGame.confirmed_by_home,
