@@ -24,13 +24,35 @@
 import { extractPdfText } from './clean-rulebook/extractPdfText';
 import { scrubAndJoin } from './clean-rulebook/scrubText';
 import { splitIntoSections } from './clean-rulebook/splitSections';
+import { splitRulesInSection } from './clean-rulebook/splitRules';
+import { verifyRulebook } from './clean-rulebook/verifyRulebook';
+import { writeRulebookModules } from './clean-rulebook/writeModules';
+import { GAMES, DEFAULT_GAME_SLUG } from './clean-rulebook/games';
 
-type Args = { pdf: string; peek: number[]; section: string | null };
+/**
+ * ISO-8601 date of the source edition. Read from the PDF text ("Effective June
+ * 1, 2023"). Update this when re-running against a newer edition PDF.
+ */
+const EDITION = '2023-06-01';
+
+/**
+ * Publicly-hosted source PDF. Attribution links here so we do not redistribute
+ * CSI's PDF from our own domain. TODO: confirm the exact live URL with CSI.
+ */
+const SOURCE_PDF_URL = 'https://playbca.com/official-rules';
+
+type Args = {
+  pdf: string;
+  peek: number[];
+  section: string | null;
+  rules: string | null;
+};
 
 function parseArgs(argv: string[]): Args {
   const pdfIdx = argv.indexOf('--pdf');
   const peekIdx = argv.indexOf('--peek');
   const sectionIdx = argv.indexOf('--section');
+  const rulesIdx = argv.indexOf('--rules');
   if (pdfIdx < 0 || !argv[pdfIdx + 1]) {
     throw new Error(
       'Missing --pdf argument. Example: pnpm tsx scripts/clean-rulebook.ts --pdf "/abs/path.pdf"',
@@ -44,11 +66,12 @@ function parseArgs(argv: string[]): Args {
           .filter((n) => Number.isFinite(n) && n > 0)
       : [];
   const section = sectionIdx >= 0 ? (argv[sectionIdx + 1] ?? null) : null;
-  return { pdf: argv[pdfIdx + 1], peek, section };
+  const rules = rulesIdx >= 0 ? (argv[rulesIdx + 1] ?? null) : null;
+  return { pdf: argv[pdfIdx + 1], peek, section, rules };
 }
 
 async function main() {
-  const { pdf, peek, section } = parseArgs(process.argv.slice(2));
+  const { pdf, peek, section, rules } = parseArgs(process.argv.slice(2));
   console.log(`Extracting text from: ${pdf}`);
   const pages = await extractPdfText(pdf);
   console.log(`Extracted ${pages.length} pages.`);
@@ -81,7 +104,53 @@ async function main() {
     return;
   }
 
-  console.log('\nNo --section flag — slicing preview only. Rule splitting TBD.');
+  if (rules) {
+    const slice = slices.find((s) => s.game.slug === rules);
+    if (!slice) {
+      console.error(`\nNo section slug "${rules}". Valid slugs listed above.`);
+      process.exitCode = 1;
+      return;
+    }
+    const parsed = splitRulesInSection(slice.text, slice.game.slug);
+    console.log(`\n===== RULES: ${slice.game.name} (${slice.game.slug}) =====`);
+    console.log(`Parsed ${parsed.length} rules:\n`);
+    for (const rule of parsed) {
+      console.log(`[${rule.id}] ${rule.heading}`);
+      for (const para of rule.body) {
+        console.log(`  ${para}`);
+      }
+      console.log('');
+    }
+    return;
+  }
+
+  // Default path: full pipeline → parse, verify, write TypeScript modules.
+  const rulesByGame: Record<string, ReturnType<typeof splitRulesInSection>> = {};
+  for (const slice of slices) {
+    rulesByGame[slice.game.slug] = splitRulesInSection(slice.text, slice.game.slug);
+  }
+
+  const verdict = verifyRulebook(rulesByGame);
+  console.log('\nVerification:');
+  for (const s of verdict.samples) {
+    console.log(`  ${s.gameSlug.padEnd(18)} rules=${s.ruleCount}  sample: ${s.firstThreeHeadings[0] ?? '(none)'}`);
+  }
+  if (!verdict.ok) {
+    console.error('\nVerification FAILED:');
+    for (const v of verdict.violations) console.error(`  - ${v}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  writeRulebookModules({
+    rulesByGame,
+    games: GAMES,
+    edition: EDITION,
+    sourcePdfUrl: SOURCE_PDF_URL,
+    defaultGame: DEFAULT_GAME_SLUG,
+  });
+  const totalRules = Object.values(rulesByGame).reduce((n, arr) => n + arr.length, 0);
+  console.log(`\nWrote ${GAMES.length} game modules + index. Total rules: ${totalRules}.`);
 }
 
 main().catch((err: unknown) => {
