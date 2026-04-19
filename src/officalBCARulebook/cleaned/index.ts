@@ -4,7 +4,7 @@ import type { RulebookIndex } from "../../rules/rulebook.types";
 export const index: RulebookIndex = {
   publisher: "CSI",
   edition: "2023-06-01",
-  sourcePdfUrl: "https://playbca.com/official-rules",
+  sourcePdfUrl: "https://www.playcsipool.com/bcapl-rules.html",
   defaultGame: "8-ball",
   games: [
     { slug: "general", name: "General Rules", ruleCount: 46 },

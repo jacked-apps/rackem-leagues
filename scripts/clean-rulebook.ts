@@ -36,10 +36,11 @@ import { GAMES, DEFAULT_GAME_SLUG } from './clean-rulebook/games';
 const EDITION = '2023-06-01';
 
 /**
- * Publicly-hosted source PDF. Attribution links here so we do not redistribute
- * CSI's PDF from our own domain. TODO: confirm the exact live URL with CSI.
+ * Publicly-hosted CSI rulebook download page. Attribution links here so we
+ * don't redistribute the PDF from our own domain. This is the BCAPL rules
+ * page (the official landing page for the current CSI rulebook download).
  */
-const SOURCE_PDF_URL = 'https://playbca.com/official-rules';
+const SOURCE_PDF_URL = 'https://www.playcsipool.com/bcapl-rules.html';
 
 type Args = {
   pdf: string;
