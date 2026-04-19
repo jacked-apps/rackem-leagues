@@ -53,12 +53,17 @@ interface GameUpdateOptions {
   players: Map<string, Player>;
   /** Ref tracking vacate requests initiated by current user */
   myVacateRequests: React.MutableRefObject<Set<number>>;
-  /** Function to add confirmation to queue */
+  /** Function to add confirmation to queue. Accepts the full confirmation
+   *  payload so the dialog can render every field the scorer entered. */
   addToConfirmationQueue: (confirmation: {
     gameNumber: number;
     winnerPlayerName: string;
     breakAndRun: boolean;
     goldenBreak: boolean;
+    breakFouled: boolean;
+    runout: boolean;
+    winByForfeit: boolean;
+    loserBallsPocketed: number | null;
     isResetRequest?: boolean;
   }) => void;
   /** Current editing game (to suppress own vacate requests) */
@@ -202,7 +207,8 @@ export function useMatchRealtime(
                 return;
               }
 
-              // This is from opponent - show the confirmation modal
+              // This is from opponent - show the confirmation modal.
+              // Forward every scored field — dumb dialog renders whatever is truthy.
               if (updatedGame.winner_player_id) {
                 const winnerName = getPlayerNicknameById(updatedGame.winner_player_id, players);
                 addToConfirmationQueue({
@@ -210,6 +216,10 @@ export function useMatchRealtime(
                   winnerPlayerName: winnerName,
                   breakAndRun: updatedGame.break_and_run,
                   goldenBreak: updatedGame.golden_break,
+                  breakFouled: updatedGame.break_fouled,
+                  runout: updatedGame.runout,
+                  winByForfeit: updatedGame.win_by_forfeit,
+                  loserBallsPocketed: updatedGame.loser_balls_pocketed,
                   isResetRequest: true,
                 });
               }
@@ -232,11 +242,16 @@ export function useMatchRealtime(
                 }
 
                 const winnerName = getPlayerNicknameById(updatedGame.winner_player_id, players);
+                // Forward every scored field — dumb dialog renders whatever is truthy.
                 addToConfirmationQueue({
                   gameNumber: updatedGame.game_number,
                   winnerPlayerName: winnerName,
                   breakAndRun: updatedGame.break_and_run,
                   goldenBreak: updatedGame.golden_break,
+                  breakFouled: updatedGame.break_fouled,
+                  runout: updatedGame.runout,
+                  winByForfeit: updatedGame.win_by_forfeit,
+                  loserBallsPocketed: updatedGame.loser_balls_pocketed,
                   isResetRequest: false,
                 });
               }

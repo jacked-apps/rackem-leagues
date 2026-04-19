@@ -43,12 +43,17 @@ interface UseMatchScoringMutationsParams {
   // gameType: string;
   /** Auto-confirm setting (skip confirmation modal) */
   autoConfirm: boolean;
-  /** Add confirmation to queue */
+  /** Add confirmation to queue. Forwards the full match_games snapshot so
+   *  the confirmation dialog can show every field the scorer entered. */
   addToConfirmationQueue: (confirmation: {
     gameNumber: number;
     winnerPlayerName: string;
     breakAndRun: boolean;
     goldenBreak: boolean;
+    breakFouled: boolean;
+    runout: boolean;
+    winByForfeit: boolean;
+    loserBallsPocketed: number | null;
   }) => void;
   /** Get player display name by ID */
   getPlayerDisplayName: (playerId: string) => string;
@@ -129,12 +134,17 @@ export function useMatchScoringMutations({
             return;
           }
 
-          // Add to confirmation queue (will show immediately or queue if modal is open)
+          // Add to confirmation queue (will show immediately or queue if modal is open).
+          // Forward every scored field — the dialog displays whatever is truthy.
           addToConfirmationQueue({
             gameNumber,
             winnerPlayerName: getPlayerDisplayName(existingGame.winner_player_id),
             breakAndRun: existingGame.break_and_run,
             goldenBreak: existingGame.golden_break,
+            breakFouled: existingGame.break_fouled,
+            runout: existingGame.runout,
+            winByForfeit: existingGame.win_by_forfeit,
+            loserBallsPocketed: existingGame.loser_balls_pocketed,
           });
           return;
         }

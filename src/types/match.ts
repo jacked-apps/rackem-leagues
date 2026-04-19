@@ -271,8 +271,18 @@ export interface ScoringOptions {
 export interface ConfirmationQueueItem {
   gameNumber: number;
   winnerPlayerName: string;
+  // Always-tracked game modifiers. The confirmation dialog renders each one
+  // that is truthy; the entry point is responsible for passing the full set
+  // from the match_games row — the dialog stays dumb and displays whatever
+  // it receives. No per-league filtering happens here.
   breakAndRun: boolean;
   goldenBreak: boolean;
+  breakFouled: boolean;
+  runout: boolean;
+  winByForfeit: boolean;
+  // Fargo per-game: number of balls the loser pocketed (0–7 for 8-ball).
+  // null for BCA matches (field isn't captured). Shown when non-null.
+  loserBallsPocketed: number | null;
   isVacateRequest?: boolean;
 }
 
