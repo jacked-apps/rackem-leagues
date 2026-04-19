@@ -121,16 +121,16 @@ Primary operator goal: ship a pool-league app demonstrably superior to BCA's off
 - **DB routing via existing `preferences.handicap_type`.** No new preset_key column. Values (`points`/`percentage`/`fargo`) map 1:1 to `SystemModule` implementations. Lazy migration in `useResolvedLeaguePrefs` already populates legacy leagues.
 - **`leagues.system_overrides JSONB` for per-league dials.** Flat key-value. Module defaults overridden at resolution time. No cascade to org in v1.
 - **Threshold interface is signature-per-preset, not one-size-fits-all.** BCA modules take `(handicapDiff, overrides)` and return games thresholds. Fargo takes `(homeLineupRatings, awayLineupRatings, overrides)` and returns a single start-points integer. Each preset's signature matches what it actually needs.
-- **Fargo start-points are match-level, set once, operator-verifiable.** Computed at match start from lineup pairings as a **default**. Captains confirm or override the number via the same propose/confirm flow the scoring modal uses — we run in parallel to BCA's official FargoRate app and the official app's number is authoritative when captains decide. Stored in `matches.fargo_start_points INTEGER` as the final agreed-upon value (which may or may not equal our computed default). Lineup amendments mid-match do NOT retroactively change the deficit.
+- **Fargo start-points are match-level, set once, operator-verifiable.** Computed at match start from lineup pairings as a **default**. Captains confirm or override the number via the same propose/confirm flow the scoring modal uses — we run in parallel to BCA's official FargoRate app and the official app's number is authoritative when captains decide. **Stored by reusing the existing `home_games_to_win` / `away_games_to_win` integer columns** — the weaker team's column holds the handicap, the stronger team's gets 0. Both columns already exist on `matches` as per-team "initial threshold/number" fields; BCA interprets them as "games needed to win," Fargo interprets them as "start points awarded." `handicap_type` tells code how to read the value. Lineup amendments mid-match do NOT retroactively change the deficit.
 - **Mutability hierarchy — four tiers, enforced at the DB/mutation layer.** Not operator discipline. Implemented by Units 6, 7, and 8.
   - **Tier 1 — League-immutable.** `preferences.handicap_type`, `preferences.lineup_size`. Cannot change after league creation. Enforced by DB trigger rejecting UPDATE. Philosophy: "want different? Start a new league."
   - **Tier 2 — Season-immutable.** `leagues.system_overrides` (scoring dials), `preferences.threshold_chart_id` (chart selection). Editable between seasons. Locked once the season is active (first match started, or season status moved to `active`). Enforced by application guard + UI disable during active season.
-  - **Tier 3 — Match-immutable (snapshot).** All gameplay-relevant dials (tier 2 values + `fargo_start_points`) are snapshotted onto the `matches` record when the match transitions from `scheduled` to `in_progress`. In-flight matches are immune to dial changes even if a mid-season edit somehow bypassed tier 2. Threshold-chart edits that land mid-season apply forward-only: only unstarted matches see the change; matches already started or completed keep their snapshotted values. Per-game points (`match_games.winner_points` etc.) are already per-row frozen on scoring — the match-level snapshot extends that protection to dials that don't have per-game storage.
+  - **Tier 3 — Match-immutable (snapshot).** All gameplay-relevant dials (tier 2 values) are snapshotted onto the `matches.system_snapshot` JSONB record when the match transitions from `scheduled` to `in_progress`. In-flight matches are immune to dial changes even if a mid-season edit somehow bypassed tier 2. Threshold-chart edits that land mid-season apply forward-only: only unstarted matches see the change; matches already started or completed keep their snapshotted values. Per-game records on `match_games` are already frozen at scoring time — the match-level snapshot extends that protection to dials that don't have per-game storage. Per-game winner points and loser points are not stored as separate columns — they are derived at read time from the snapshotted dials plus the stored `loser_balls_pocketed`.
   - **Tier 4 — Always editable.** No gameplay impact (`roster_size`, team names, venue info, etc.). No guards.
 - **Completed matches are never retroactively recomputed.** The only post-finalization mutation path is LO/admin manual correction via the existing EditGameDialog — for fixing data-entry mistakes, not for applying new rules. Retroactive recompute is not a feature and never will be.
 - **BCA threshold charts stay in TS files for v1.** DB infrastructure (`threshold_charts` table, `lookup_threshold` SQL function) is prep work; wiring it to TS modules is a follow-up.
 - **The BCA 3v3 chart is operator-defined, not BCAPL-official.** BCAPL's standard team format is 5v5 SRR 25-game; the 3v3 double-round-robin 18-game format is the operator's own 15-year-evolved league variant. Unit 3 characterization tests capture this chart's actual current behavior — it's the authoritative source for that league's rules, with no external spec to cross-check against.
-- **Fargo scoring UX:** winner selection uses the existing BCA confirm flow; ball-count entry is a single-player segmented 0–7 input that appears after mutual confirmation. Two-step model in one modal.
+- **Fargo scoring UX:** one configurable modal handles all three systems. Winner selection always shown. Always-tracked achievement/state flags shown for every game: break-fault toggle, win-by-forfeit toggle. Role-conditional achievements: BR and GB shown only when winner is the actual breaker (derived from scheduled roles XOR `break_fouled`); runout shown only when winner is the non-breaker. GB only rendered if the league's `golden_break_counts_as_win` preference is true. Fargo-specific: balls-pocketed 0–7 input shown when `handicap_type = 'fargo'`. Same scorer/confirmer audit flow for every system. Per-game winner and loser points are NOT stored — derived from the snapshotted dials plus stored `loser_balls_pocketed`.
 
 ## Open Questions
 
@@ -194,9 +194,10 @@ src/
 
 supabase/migrations/
 ├── 20260418000000_add_leagues_system_overrides.sql        (new — Unit 4)
-├── 20260418000001_add_fargo_match_columns.sql             (new — Unit 5, bundles fargo_start_points + match_games Fargo columns)
+├── 20260418000001_add_fargo_match_columns.sql             (new — Unit 5, initial Fargo columns; revised by 000004)
 ├── 20260418000002_lock_tier1_preferences.sql              (new — Unit 6, BEFORE UPDATE trigger on preferences)
-└── 20260418000003_add_matches_system_snapshot.sql         (new — Unit 7, matches.system_snapshot JSONB column)
+├── 20260418000003_add_matches_system_snapshot.sql         (new — Unit 7, matches.system_snapshot JSONB column)
+└── 20260418000004_revise_fargo_columns.sql                (Phase 2 revision — drops 3 overbuilt columns, adds 3 always-tracked flags)
 ```
 
 ## High-Level Technical Design
@@ -418,39 +419,41 @@ No snapshot, no drift warning — once a game is scored, its points don't re-rea
 
 ---
 
-- [ ] **Unit 5: Add Fargo columns to matches and match_games**
+- [ ] **Unit 5: Add Fargo columns to matches and match_games** (revised by 20260418000004 after operator walkthrough)
 
-**Goal:** Storage for Fargo start-points (match-level, set once) and per-game points (frozen per game).
+**Goal:** Storage for the one genuinely per-game Fargo input (balls pocketed by the loser) plus three always-tracked per-game state/achievement flags that serve every scoring system. Fargo start-points reuse existing `home_games_to_win` / `away_games_to_win` columns — no new match-level column.
 
 **Requirements:** R3.
 
 **Dependencies:** None.
 
 **Files:**
-- Create: `supabase/migrations/20260418000001_add_fargo_match_columns.sql`
-- Modify: `src/types/match.ts` (extend types with new nullable fields)
-- Modify: `src/api/mutations/*` that touch `match_games` (accept new fields)
+- Create: `supabase/migrations/20260418000001_add_fargo_match_columns.sql` (original — introduces loser_balls_pocketed and three columns later dropped)
+- Create: `supabase/migrations/20260418000004_revise_fargo_columns.sql` (revision — drops fargo_start_points / winner_points / loser_points; adds break_fouled / runout / win_by_forfeit)
+- Modify: `src/types/match.ts` (MatchGame picks up loser_balls_pocketed + three new bool flags; MatchWithLeagueSettings picks up system_snapshot; no fargo_start_points field)
+- Modify: `src/api/queries/matches.ts` (SELECT picks up system_snapshot; does not select the dropped columns)
 
 **Approach:**
-- Migration adds:
-  - `matches.fargo_start_points INTEGER` (nullable; set at Fargo match start, NULL for BCA matches)
-  - `match_games.winner_points INTEGER` (Fargo winner points; default 10 override-able; NULL for BCA)
-  - `match_games.loser_points INTEGER` (Fargo loser points; 0–7; NULL for BCA)
-  - `match_games.loser_balls_pocketed INTEGER` (raw input; NULL for BCA)
-- No CHECK constraints on ranges — TypeScript validation is enforced at the single write path (the scoring modal). Keeps the schema flexible for future Fargo variants without a migration.
+- **Start-points storage** reuses `matches.home_games_to_win` / `matches.away_games_to_win`. The weaker team's column holds the Fargo handicap, the stronger team's gets 0. Both columns already exist for BCA's "games to win" — interpretation is per-system based on `handicap_type`.
+- **Per-game Fargo data** stored as `match_games.loser_balls_pocketed INTEGER` (nullable). Only populated for Fargo matches. Winner points and loser points are NOT stored — they're derived at read time from the league's snapshotted `winner_points` / `loser_points_method` dials plus this one value.
+- **Per-game always-tracked flags** (new columns, `BOOLEAN NOT NULL DEFAULT false`): `break_fouled` (breaker fouled on break → re-rack with opponent breaking), `runout` (winner won as non-breaker), `win_by_forfeit` (winner by forfeit). These apply to every scoring system; their UI visibility is driven by winner role (breaker vs racker) and league preferences.
+- **Derivation rule for actual breaker:** `scheduled breaker XOR break_fouled`. No separate `breaker_player_id` column — derivable from `home_action` / `away_action` + `home_player_id` / `away_player_id` + `break_fouled`.
+- No CHECK constraints on ranges — TypeScript validation at the single write path (the scoring modal). Schema stays flexible for future scoring variants without migrations.
 
 **Patterns to follow:**
 - Migration structure per Unit 4
+- Existing `break_and_run` / `golden_break` bool columns on `match_games` — new flags follow the same pattern
 
 **Test scenarios:**
-- Happy path: insert match_games row with Fargo fields → persists
-- Happy path: insert match_games row with all Fargo fields NULL → persists (BCA case)
-- Happy path: update matches.fargo_start_points at Fargo match start → persists
-- Edge case: existing match_games rows after migration → all new columns NULL (no backfill)
+- Happy path: insert match_games row with Fargo `loser_balls_pocketed` set and all three new flags false → persists
+- Happy path: insert match_games row with all Fargo fields NULL and flags false → persists (BCA case)
+- Happy path: update matches row's `home_games_to_win` with a Fargo start-points value (e.g., 56) → persists (column is reused, no schema change needed)
+- Happy path: set `break_fouled = true` on a game → persists
+- Edge case: existing match_games rows after migration → loser_balls_pocketed NULL, all three flags default false (no backfill needed)
 
 **Verification:**
-- Migration applies cleanly
-- Existing BCA scoring continues to work (NULL columns are fine)
+- Both migrations apply cleanly in order (000001 then 000004)
+- Existing BCA scoring continues to work (new columns either NULL or default false)
 - `pnpm run build` succeeds
 
 ---
@@ -632,9 +635,9 @@ Remaining work: gather 5-10 more cases over time from played matches or hand-wal
 - `rating.requiresManualEntry: true`. `rating.validate` enforces 100–850 integer range.
 - `rating.computeFromHistory` returns null/undefined (manual-only).
 - `threshold.compute(homeRatings, awayRatings, overrides)`: single call, returns start-points for the weaker team per the formula from Unit 9.
-- `scoring.method: 'points_accumulated'`. `recordGameOutcome` writes `winner_points` (from `overrides.winner_points ?? 10`) and `loser_points` (from `loser_balls_pocketed`).
-- `scoring.computeMatchResult`: sums home vs away points across all games + `matches.fargo_start_points` awarded to the weaker team; applies `highest_after_all_games`; returns winner or 'tie'.
-- Hardcoded defaults: `winner_points: 10`, `loser_points_method: 'balls_pocketed'`, `loser_points_max: 7`. All override-able via `system_overrides`.
+- `scoring.method: 'points_accumulated'`. `recordGameOutcome` writes only `loser_balls_pocketed` to `match_games`. Winner points and loser points are NOT stored as separate columns — they are derived at read time from the match's snapshotted dials (`winner_points`, `loser_points_method`, `loser_points_max`) plus the stored `loser_balls_pocketed`.
+- `scoring.computeMatchResult`: at read time, derive each game's winner/loser points using the snapshotted dials + stored ball count, sum home vs away across all games, then add the Fargo start-points awarded to the weaker team (from `home_games_to_win` / `away_games_to_win`). Applies `highest_after_all_games` cascade (points → games_won). In Fargo 5v5 this always resolves; no tie return value.
+- Hardcoded defaults: `winner_points: 10`, `loser_points_method: 'balls_pocketed'`, `loser_points_max: 7`. All override-able via `leagues.system_overrides` and snapshotted per-match.
 
 **Execution note:** Test-first. Use the 10+ test cases from Unit 9 as the initial test inputs; implement until all pass within rounding tolerance.
 
@@ -644,8 +647,8 @@ Remaining work: gather 5-10 more cases over time from played matches or hand-wal
 
 **Test scenarios:**
 - Happy path: all 10+ captured FargoRate test cases — input rosters → expected start-points within rounding tolerance
-- Happy path: `scoring.recordGameOutcome({ winnerTeam: 'home', loserBallsPocketed: 3 }, {})` returns `{ winner_points: 10, loser_points: 3, loser_balls_pocketed: 3 }`
-- Happy path: with override `{ winner_points: 14 }`, same call returns `winner_points: 14`
+- Happy path: `scoring.recordGameOutcome({ winnerTeam: 'home', loserBallsPocketed: 3 }, {})` returns a record that stores only `loser_balls_pocketed: 3` — winner/loser points are derived downstream
+- Happy path: reading a stored game with `loser_balls_pocketed: 3` and overrides `{ winner_points: 14 }` derives `winner_points: 14, loser_points: 3` at read time
 - Happy path: `computeMatchResult` with home totaling 145 + away 140 + start_points=8 to away → winner is home (145 vs 148, home loses); flipping to home=150 → home wins (150 vs 148)
 - Happy path: `computeMatchResult` with equal totals after applying start_points returns `'tie'`
 - Edge case: `rating.validate(99)` returns ok: false (below range)
@@ -655,7 +658,7 @@ Remaining work: gather 5-10 more cases over time from played matches or hand-wal
 - Edge case: `threshold.compute` with ratings arrays of different lengths errors cleanly (defense in depth — Unit 11 validates upstream)
 - Edge case: `threshold.compute` with a null/undefined rating in the array errors cleanly
 - Integration: score a full 25-game Fargo match via all three module methods; assert final score matches hand-computed expected value including start_points
-- Integration: `overrides.loser_points_method = 'none'` → all games credit 0 to loser regardless of ball count
+- Integration: `overrides.loser_points_method = 'none'` → reading any game derives 0 for loser regardless of stored ball count
 
 **Verification:**
 - All Unit 9 captured test cases pass within tolerance
@@ -667,33 +670,38 @@ Remaining work: gather 5-10 more cases over time from played matches or hand-wal
 
 - [ ] **Unit 11: Fargo lineup integration and scoring-modal points field**
 
-**Goal:** User-facing Fargo scoring flow. Lineup submission computes + stores start-points. The existing single-step scoring modal gains a points field (winner points + loser balls pocketed) shown conditionally for Fargo matches, alongside existing Break & Run / Golden Break checkboxes.
+**Goal:** User-facing Fargo scoring flow. Lineup submission computes + stores start-points in the existing `home_games_to_win` / `away_games_to_win` columns. The existing single-step scoring modal becomes fully configurable across all three systems — always-tracked fields (BR, runout, break-fault, win-by-forfeit), role-conditional fields, and Fargo-only balls-pocketed input all render driven by system + preferences.
 
 **Requirements:** R3.
 
 **Dependencies:** Unit 5, Unit 10, Resolve Before Implementation #1 and #2.
 
 **Files:**
-- Modify: `src/components/scoring/ScoringModal.tsx` — add a points field (winner-points input + loser-balls-pocketed 0–7 segmented control) rendered conditionally based on resolved preset. Submit is still a single confirm action that writes all fields together.
-- Modify: `src/hooks/useMatchScoringMutations.ts` (accept the new fields; write to match_games Fargo columns in the same mutation as winner + achievement flags)
-- Modify: `src/hooks/lineup/useLineupPersistence.ts` (on Fargo lineup lock, compute + persist `matches.fargo_start_points`; also handle TBD-slot rating propagation)
+- Modify: `src/components/scoring/ScoringModal.tsx` — rendering becomes preference-driven per the configurable-field model. Adds: always-visible break-fault and win-by-forfeit toggles, role-conditional runout button, Fargo-only ball-count 0–7 segmented control. Existing BR / GB rendering becomes role-conditional and preference-gated (GB only when `golden_break_counts_as_win` is true). Single Submit persists all fields in one confirm action.
+- Modify: `src/hooks/useMatchScoringMutations.ts` (accept the new fields — loser_balls_pocketed, break_fouled, runout, win_by_forfeit — in the same mutation as winner + existing BR/GB)
+- Modify: `src/hooks/lineup/useLineupPersistence.ts` (on Fargo lineup lock, compute start-points and persist to the weaker team's `home_games_to_win` or `away_games_to_win`; handle TBD-slot rating propagation)
 - Modify: `src/hooks/lineup/useLineupValidation.ts` (Fargo-specific: rating required 100–850 per *named* slot at submit; TBD slots allowed to be null)
 - No new standalone `BallCountInput.tsx` component — the ball-count segmented control lives inside ScoringModal as a field, not as a separate step component.
 
 **Approach:**
-- **Single-step confirm modal.** Fargo does NOT add a post-confirm step. The existing modal adds points as another field. User picks winner + fills applicable fields (achievement checkboxes, points if Fargo) → one Submit → one DB write of winner + `winner_points` + `loser_points` + `loser_balls_pocketed` + any achievements. Opponent-confirm audit flow is unchanged.
-- **Configurable-field shape.** Which fields render is driven by resolved preferences. For v1, the rule is simple: `handicap_type === 'fargo'` shows the points field; BCA shows existing checkboxes only. Layout is built so future preferences can toggle each field independently (break_and_run_tracked, golden_break_counts_as_win, points_tracked, etc.) without another redesign.
-- **Points field UX:** winner-points as a plain number input defaulting to resolved `winner_points` (10 default, override-able). Loser-balls-pocketed as a shadcn ToggleGroup 0–7, touch-friendly. Loser-points is computed from the selected ball count on submit. Submit disabled until ball count is selected.
+- **One configurable modal for all three systems.** Single-step confirm (no post-confirm step added for Fargo). User picks winner, fills applicable fields per role + system + preferences, one Submit writes everything together. Opponent-confirm audit flow unchanged.
+- **Always-tracked fields (every system, every game):**
+  - Break-fault toggle. When true, the actual breaker of the game-of-record is the scheduled racker (derivation: scheduled breaker XOR break_fouled).
+  - Win-by-forfeit toggle.
+- **Role-conditional achievements:**
+  - BR and GB shown only when winner = actual breaker. BR always trackable; GB only rendered when league's `golden_break_counts_as_win = true`.
+  - Runout shown only when winner = non-breaker (scheduled racker if no break-fault, scheduled breaker if break-fault).
+- **Fargo-only fields:** when `handicap_type = 'fargo'`, the modal adds a ball-count 0–7 segmented ToggleGroup (touch-friendly). Opens with no selection; Submit disabled until a ball count is tapped (0 is a valid, explicit selection). Winner points and loser points are NOT input fields — they are derived at read time from the league's snapshotted dials plus the stored ball count.
 - **Lineup persistence for Fargo (with override + confirm flow):** when both teams have locked lineups with all *named* slots rated, compute `fargo5v5.threshold.compute(homeRatings, awayRatings, overrides)` — this is the **default** start-points value. Display it in the lineup confirmation UI alongside an edit control. Flow:
   1. Home captain sees the computed number. Can accept it or override with a different value (if BCA's official calculator produced a different number).
   2. Home captain submits their accepted/overridden value → enters "pending away confirmation" state.
   3. Away captain sees the proposed number + whether it matches the computed default. Confirms or disputes.
-  4. On mutual confirmation, the agreed value writes to `matches.fargo_start_points`. Single write per match.
+  4. On mutual confirmation, the agreed value writes to the weaker team's `home_games_to_win` or `away_games_to_win` column (the stronger team gets 0). Single write per match.
   5. On dispute, captains discuss offline; one re-submits, other re-confirms. Same back-and-forth pattern the scoring modal uses.
-- The stored value in `matches.fargo_start_points` is the **final agreed-upon number** (possibly overridden), not necessarily the computed default. This is intentional — the app runs in parallel to BCA's official FargoRate app, and the official app's number is authoritative when captains decide.
+- The stored value in the threshold column is the **final agreed-upon number** (possibly overridden), not necessarily the computed default. This is intentional — the app runs in parallel to BCA's official FargoRate app, and the official app's number is authoritative when captains decide.
 - If TBD slots remain null at compute time, follow Unit 9 formula research for defined behavior on unknown ratings.
 - **TBD resolution:** HandicapCell continues to render "TBD" for double-duty. When TBD resolves to a named player, that player's existing rating propagates by reference into the slot's persisted rating.
-- **EditGameDialog:** same modal, same fields, same submit + confirm flow. For Fargo games, fields re-open pre-filled with the stored values.
+- **EditGameDialog:** same modal, same fields, same submit + confirm flow. Fields re-open pre-filled with the stored values.
 - Concurrency: rely on DB atomic writes; last-writer-wins for simultaneous same-game edits. Document in code comment.
 
 **Execution note:** Start with an integration test driving the full flow (lineup lock with ratings → start-points written → open scoring modal → pick winner → select ball count → submit → opponent confirms → match_games row written with all Fargo fields). This is where R3 is proven end-to-end.
@@ -704,25 +712,30 @@ Remaining work: gather 5-10 more cases over time from played matches or hand-wal
 - Mutation pattern: `handleConfirmScore` in `src/hooks/useMatchScoringMutations.ts`
 
 **Test scenarios:**
-- Happy path: both teams lock Fargo lineup with all *named* slots rated → computed start-points shown in UI; home captain accepts → away captain confirms → `matches.fargo_start_points` populated with the computed value
-- Happy path: home captain overrides the computed value (e.g., computed shows 5, BCA app shows 6, captain enters 6) → away captain confirms 6 → `matches.fargo_start_points` = 6 (overridden value stored, not computed)
+- Happy path: both teams lock Fargo lineup with all *named* slots rated → computed start-points shown in UI; home captain accepts → away captain confirms → weaker team's `games_to_win` column populated with the computed value; stronger team's gets 0
+- Happy path: home captain overrides the computed value (e.g., computed shows 5, BCA app shows 6, captain enters 6) → away captain confirms 6 → threshold column = 6 (overridden value stored, not computed)
 - Happy path: away captain disputes the proposed value → home captain re-submits with corrected value → away re-confirms → final agreed value stored
 - Edge case: home captain submits the computed default unchanged → away captain confirms → stored value equals computed value (common path)
-- Happy path: open modal on a Fargo game → winner select + ball count "3" + submit → `match_games` row has `winner_points: 10, loser_points: 3, loser_balls_pocketed: 3`; opponent confirms; row finalizes
-- Happy path: override `winner_points: 14` set on league → submit produces `winner_points: 14`
-- Happy path: BCA match opens modal with NO points field rendered (checkboxes only)
-- Happy path: Fargo match opens modal with points field rendered ALONGSIDE existing achievement checkboxes
+- Happy path: open modal on a Fargo game → winner select + ball count "3" + submit → `match_games` row has `loser_balls_pocketed: 3` and existing winner_team_id / winner_player_id fields; opponent confirms; row finalizes
+- Reading that same game: derivation produces `winner_points: 10, loser_points: 3` from the snapshotted dials + stored ball count
+- Happy path: override `winner_points: 14` set on league and snapshotted → derivation produces `winner_points: 14`
+- Happy path: BCA match opens modal with NO ball-count input rendered
+- Happy path: Fargo match opens modal with ball-count input ALONGSIDE the always-tracked achievement flags
+- Happy path: modal always shows break-fault and win-by-forfeit toggles, regardless of system
+- Happy path: when winner = actual breaker, BR button visible (GB visible only if `golden_break_counts_as_win` is true)
+- Happy path: when winner = non-breaker (racker), runout button visible; BR / GB hidden
+- Happy path: toggling break-fault when winner = scheduled breaker → BR/GB disappear, runout appears (role flipped by derivation)
 - Edge case: ball count segmented control opens with NO button highlighted; Submit disabled until tap
-- Edge case: tap 0 → submit produces `loser_points: 0` (0 is a valid score)
-- Edge case: tap 7 → submit produces `loser_points: 7`
-- Edge case: Fargo game's `EditGameDialog` re-opens with original ball count + winner_points pre-filled
+- Edge case: tap 0 → submits with `loser_balls_pocketed: 0` (0 is a valid, explicit choice)
+- Edge case: tap 7 → submits with `loser_balls_pocketed: 7`
+- Edge case: Fargo game's `EditGameDialog` re-opens with original ball count + flag states pre-filled
 - Edge case: lineup submission blocked if any *named* Fargo slot is missing its rating
 - Edge case: TBD Fargo slot with no rating is allowed at lineup submit (resolves later)
 - Edge case: Fargo rating out-of-range (<100 or >850) → inline validation error, blocks lineup submit
 - Edge case: TBD slot resolves → that player's existing rating propagates into the slot's persisted rating
 - Error path: DB write fails during scoring submit → UI shows error toast; `match_games` row not partially written
 - Integration: two players on same team tap different winners within 1 second → DB records last write; UI reflects final state
-- Integration: after submit + confirm, running totals on scoreboard update (including `fargo_start_points` credit to weaker team)
+- Integration: after submit + confirm, running totals on scoreboard update (including the start-points credit to the weaker team read from `home_games_to_win` / `away_games_to_win`)
 
 **Verification:**
 - Full Fargo match runs end-to-end in dev environment
@@ -746,7 +759,7 @@ Remaining work: gather 5-10 more cases over time from played matches or hand-wal
 
 **Approach:**
 - On every game confirmation: check whether all scheduled games are confirmed AND preset is Fargo.
-- If yes: call `fargo5v5.scoring.computeMatchResult` → returns `{ winner: 'home' | 'away', home_points: N, away_points: M, home_games: G, away_games: G }` (totals INCLUDE `matches.fargo_start_points` credited to the weaker team). Winner is determined by `higher_points → higher_games_won` cascade. In Fargo 5v5 this always resolves; no tie return value.
+- If yes: call `fargo5v5.scoring.computeMatchResult` → returns `{ winner: 'home' | 'away', home_points: N, away_points: M, home_games: G, away_games: G }` (totals INCLUDE the start-points stored in `home_games_to_win` / `away_games_to_win` credited to the weaker team, plus the derived winner/loser points per game computed from the snapshotted dials + stored `loser_balls_pocketed`). Winner is determined by `higher_points → higher_games_won` cascade. In Fargo 5v5 this always resolves; no tie return value.
 - Write to `matches`: `winner_team_id`, `match_result` ('home_win' | 'away_win'), `home_team_score` (Fargo point total including start-points), `away_team_score` (Fargo point total including start-points), `home_points_earned` (Fargo match total for standings — same value as home_team_score), `away_points_earned` (same, for away), `home_games_won` (count of games home won), `away_games_won`, `completed_at: now()`, `status: 'completed'`.
 - `home_points_earned` / `away_points_earned` are the generic "points earned" tally — every system fills these with values meaningful to that system. Standings (matches-won → points → games-won cascade) works for any system since values are internally consistent within a league's season.
 - TIE outcomes: Fargo 5v5 resolves points-ties via games-won tiebreaker (Open Question 4, resolved). 25-game odd total means games-won is always decisive — Fargo 5v5 matches never end in a true tie. No `match_result='tie'` write; no pending placeholder.
@@ -897,7 +910,7 @@ Remaining work: gather 5-10 more cases over time from played matches or hand-wal
 
 - **API surface parity:**
   - No external API changes.
-  - Types gain `SystemModule`, `SystemOverrides`. `match_games` gains optional Fargo fields. `matches` gains `fargo_start_points`.
+  - Types gain `SystemModule`, `SystemOverrides`. `match_games` gains `loser_balls_pocketed` (Fargo-only, nullable) plus three always-tracked bool flags (`break_fouled`, `runout`, `win_by_forfeit`). `matches` gains `system_snapshot` JSONB; Fargo start-points reuse existing `home_games_to_win` / `away_games_to_win`. No separate `fargo_start_points` column.
 
 - **Integration coverage:**
   - Full match flow per preset requires integration tests.
