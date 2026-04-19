@@ -36,7 +36,7 @@ describe('RulesPage', () => {
     expect(screen.getByRole('heading', { name: 'Official Rules' })).toBeInTheDocument();
     expect(screen.getByRole('searchbox', { name: /search the rules/i })).toBeInTheDocument();
 
-    for (const name of ['8-Ball', '9-Ball', '10-Ball', 'All games']) {
+    for (const name of ['General Rules', '8-Ball', '9-Ball', '10-Ball', 'All games']) {
       expect(screen.getByRole('button', { name })).toBeInTheDocument();
     }
     // Default game is 8-Ball — its first rule's heading is "The Game".
@@ -44,7 +44,8 @@ describe('RulesPage', () => {
 
     // The "More games" disclosure chip is there but the secondary row is hidden.
     expect(screen.getByRole('button', { name: /more games/i })).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByRole('button', { name: 'General Rules' })).not.toBeInTheDocument();
+    // One Pocket lives behind the disclosure, so it isn't rendered yet.
+    expect(screen.queryByRole('button', { name: 'One Pocket' })).not.toBeInTheDocument();
   });
 
   it('switches content when a different game chip is clicked', async () => {
@@ -81,11 +82,11 @@ describe('RulesPage', () => {
 
     // First: cold-start with a main game — "More games" starts collapsed.
     const { unmount } = renderWithProviders(<RulesPage />);
-    expect(screen.queryByRole('button', { name: 'General Rules' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'One Pocket' })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /more games/i }));
-    expect(screen.getByRole('button', { name: 'General Rules' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'One Pocket' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Bank Pool' })).toBeInTheDocument();
     unmount();
 
     // Second: if localStorage points at an "other" game, the row is open from mount.
@@ -101,9 +102,10 @@ describe('RulesPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'All games' }));
 
-    // The accordion lists every game; "General Rules" appears as a trigger button.
-    expect(screen.getByRole('button', { name: /^General Rules/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^Scotch Doubles/ })).toBeInTheDocument();
+    // Accordion triggers include the rule count in their label, which is
+    // how we distinguish them from the identically-named filter chips.
+    expect(screen.getByRole('button', { name: /General Rules\s*\(46\)/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Scotch Doubles\s*\(4\)/ })).toBeInTheDocument();
   });
 
   it('pressing "/" focuses the search input', async () => {

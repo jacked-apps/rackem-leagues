@@ -35,7 +35,9 @@ import { rulebook } from './useRulebook';
 
 const LAST_GAME_KEY = 'rackem:rules:lastGame';
 const ALL_GAMES_VALUE = 'all';
-const MAIN_GAME_SLUGS = ['8-ball', '9-ball', '10-ball'] as const;
+// Always-visible chips: General Rules (applies across every game) plus the
+// three most common games. Everything else is tucked behind "More games".
+const MAIN_GAME_SLUGS = ['general', '8-ball', '9-ball', '10-ball'] as const;
 
 /** True iff the slug is one of the primary games always visible in the top row. */
 function isMainGame(slug: string): boolean {
