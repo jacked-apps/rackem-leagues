@@ -15,7 +15,7 @@ import { useUser } from '../context/useUser';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { PageHeader } from '@/components/PageHeader';
-import { Building2, Trophy, Radio, MapPin, LogOut } from 'lucide-react';
+import { Building2, Trophy, Radio, MapPin, LogOut, BookOpen } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { toast } from 'sonner';
 
@@ -152,6 +152,22 @@ export const Home: React.FC = () => {
               title="Find a League"
               description="Search for leagues near you to join"
             />
+
+            <Link to="/rules" className="md:col-span-2">
+              <Card className="cursor-pointer hover:border-primary/50 hover:shadow-md transition-all">
+                <CardHeader className="flex flex-row items-center gap-4">
+                  <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                    <BookOpen className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">Official Rules</CardTitle>
+                    <CardDescription>
+                      Browse the BCA / CSI rulebook. Search any rule to settle a dispute.
+                    </CardDescription>
+                  </div>
+                </CardHeader>
+              </Card>
+            </Link>
           </div>
         </div>
 
