@@ -21,7 +21,7 @@
  * console.log(handicaps.teamTotal);   // Player total + team bonus
  */
 
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import type { Player } from '@/types/match';
 import { isSubstitute } from '@/utils/lineup';
 import { roundHandicap } from '@/utils/lineup';
@@ -40,6 +40,12 @@ export interface HandicapCalculationsInput {
   teamHandicap: number;
   isHomeTeam: boolean;
   handicapType?: string; // 'points' uses sub handicap calc, 'percentage' uses placeholder
+  // Fargo-only: LO types each player's current rating directly in the lineup UI.
+  // Keyed by position (1-5). When handicapType === 'fargo', these override the
+  // member's `player.handicap` value (which stores BCA handicaps, not Fargo
+  // ratings). Without this override the hook would write zeros into
+  // match_lineups on lock and break Fargo start-points negotiation.
+  manualFargoRatings?: Record<number, string>;
 }
 
 export interface HandicapCalculations {
@@ -81,7 +87,20 @@ export function useHandicapCalculations(
     teamHandicap,
     isHomeTeam,
     handicapType = 'points',
+    manualFargoRatings,
   } = input;
+
+  // Fargo override: pull the typed rating for a position. Returns 0 when the
+  // LO hasn't entered a value yet (lineup validation blocks lock in that case).
+  const getPositionFargoRating = useCallback(
+    (position: number): number => {
+      const manual = manualFargoRatings?.[position];
+      if (!manual || manual.trim() === '') return 0;
+      const parsed = parseInt(manual, 10);
+      return Number.isFinite(parsed) ? parsed : 0;
+    },
+    [manualFargoRatings]
+  );
 
   /**
    * Get the highest handicap of players NOT in the lineup
@@ -145,31 +164,34 @@ export function useHandicapCalculations(
     };
   }, [players, testMode, testHandicaps, subHandicap, handicapType, getHighestUnusedHandicap]);
 
-  // Calculate individual player handicaps
-  const player1Handicap = useMemo(
-    () => (player1Id ? getPlayerHandicap(player1Id) : 0),
-    [player1Id, getPlayerHandicap]
-  );
+  // Calculate individual player handicaps.
+  // For Fargo, the value is the manual rating the LO typed (player.handicap
+  // stores BCA, which is irrelevant here). For all other systems, the existing
+  // player-lookup / substitute logic applies.
+  const player1Handicap = useMemo(() => {
+    if (handicapType === 'fargo') return getPositionFargoRating(1);
+    return player1Id ? getPlayerHandicap(player1Id) : 0;
+  }, [handicapType, getPositionFargoRating, player1Id, getPlayerHandicap]);
 
-  const player2Handicap = useMemo(
-    () => (player2Id ? getPlayerHandicap(player2Id) : 0),
-    [player2Id, getPlayerHandicap]
-  );
+  const player2Handicap = useMemo(() => {
+    if (handicapType === 'fargo') return getPositionFargoRating(2);
+    return player2Id ? getPlayerHandicap(player2Id) : 0;
+  }, [handicapType, getPositionFargoRating, player2Id, getPlayerHandicap]);
 
-  const player3Handicap = useMemo(
-    () => (player3Id ? getPlayerHandicap(player3Id) : 0),
-    [player3Id, getPlayerHandicap]
-  );
+  const player3Handicap = useMemo(() => {
+    if (handicapType === 'fargo') return getPositionFargoRating(3);
+    return player3Id ? getPlayerHandicap(player3Id) : 0;
+  }, [handicapType, getPositionFargoRating, player3Id, getPlayerHandicap]);
 
-  const player4Handicap = useMemo(
-    () => (player4Id ? getPlayerHandicap(player4Id) : 0),
-    [player4Id, getPlayerHandicap]
-  );
+  const player4Handicap = useMemo(() => {
+    if (handicapType === 'fargo') return getPositionFargoRating(4);
+    return player4Id ? getPlayerHandicap(player4Id) : 0;
+  }, [handicapType, getPositionFargoRating, player4Id, getPlayerHandicap]);
 
-  const player5Handicap = useMemo(
-    () => (player5Id ? getPlayerHandicap(player5Id) : 0),
-    [player5Id, getPlayerHandicap]
-  );
+  const player5Handicap = useMemo(() => {
+    if (handicapType === 'fargo') return getPositionFargoRating(5);
+    return player5Id ? getPlayerHandicap(player5Id) : 0;
+  }, [handicapType, getPositionFargoRating, player5Id, getPlayerHandicap]);
 
   // Calculate player total — sum handicaps for all active lineup positions
   const playerTotal = useMemo(() => {

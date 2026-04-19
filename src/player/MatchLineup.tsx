@@ -296,6 +296,7 @@ export function MatchLineup() {
     teamHandicap,
     isHomeTeam,
     handicapType,
+    manualFargoRatings: manualHandicaps,
   });
 
   // Build Fargo rating + double-duty slot inputs for validation.
@@ -553,6 +554,41 @@ export function MatchLineup() {
     // Include lineupsQuery.data to sync when database updates (real-time)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lineupsQuery.data, userTeamData, isHomeTeam]);
+
+  // Fargo-only: hydrate manual rating entries from the persisted lineup so
+  // refreshes / tab-returns preserve what the LO typed. Without this, the
+  // HandicapCell inputs show empty after reload and the handicap hook would
+  // compute zeros for positions that already have real values in the DB.
+  useEffect(() => {
+    if (handicapType !== 'fargo' || !lineupsQuery.data) return;
+    const myLineup = isHomeTeam
+      ? lineupsQuery.data.homeLineup
+      : lineupsQuery.data.awayLineup;
+    if (!myLineup) return;
+
+    const stored: Record<number, string> = {};
+    for (let pos = 1; pos <= playerCount; pos++) {
+      const field = `player${pos}_handicap` as keyof typeof myLineup;
+      const val = myLineup[field] as number | null | undefined;
+      if (val !== null && val !== undefined && val > 0) {
+        stored[pos] = String(val);
+      }
+    }
+
+    // Merge with any in-memory edits the user is currently typing — only fill
+    // in positions the user hasn't touched yet. Don't clobber a partial entry.
+    setManualHandicaps((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      for (const [pos, val] of Object.entries(stored)) {
+        if (next[Number(pos)] === undefined) {
+          next[Number(pos)] = val;
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [handicapType, lineupsQuery.data, isHomeTeam, playerCount]);
 
   // Unified real-time subscription for match, lineups, and games
   // Watches all three tables throughout entire match flow (lineup + tiebreaker + scoring)

@@ -212,7 +212,9 @@ export interface Player {
 export interface HandicapThresholds {
   games_to_win: number;
   games_to_tie: number | null;
-  games_to_lose: number;
+  // Fargo matches set this to null — Fargo scores by point accumulation, not
+  // by a games-to-lose threshold. BCA systems always return a non-null number.
+  games_to_lose: number | null;
 }
 
 /**

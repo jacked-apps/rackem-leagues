@@ -175,15 +175,16 @@ export function useMatchScoring({
   const homeThresholds = useMemo(() => {
     if (matchType === 'tiebreaker') return TIEBREAKER_THRESHOLDS;
 
-    // Get thresholds from match table (saved during lineup lock)
-    // Note: games_to_tie can be null if tie is not possible (e.g., 10+9=19 > 18 games)
-    if (matchData &&
-        matchData.home_games_to_win !== null &&
-        matchData.home_games_to_lose !== null) {
+    // Get thresholds from match table (saved during lineup lock).
+    // - games_to_tie is null when a tie is impossible (e.g., 10+9=19 > 18 games).
+    // - games_to_lose is null for Fargo matches: Fargo uses start-points
+    //   accumulation, not a games-to-lose threshold. Only games_to_win must
+    //   be non-null to signal the match is prepared.
+    if (matchData && matchData.home_games_to_win !== null) {
       return {
         games_to_win: matchData.home_games_to_win,
-        games_to_tie: matchData.home_games_to_tie ?? null, // Allow null when tie is impossible
-        games_to_lose: matchData.home_games_to_lose,
+        games_to_tie: matchData.home_games_to_tie ?? null,
+        games_to_lose: matchData.home_games_to_lose ?? null,
       };
     }
 
@@ -193,15 +194,12 @@ export function useMatchScoring({
   const awayThresholds = useMemo(() => {
     if (matchType === 'tiebreaker') return TIEBREAKER_THRESHOLDS;
 
-    // Get thresholds from match table (saved during lineup lock)
-    // Note: games_to_tie can be null if tie is not possible (e.g., 10+9=19 > 18 games)
-    if (matchData &&
-        matchData.away_games_to_win !== null &&
-        matchData.away_games_to_lose !== null) {
+    // See homeThresholds above — same rules apply to the away side.
+    if (matchData && matchData.away_games_to_win !== null) {
       return {
         games_to_win: matchData.away_games_to_win,
-        games_to_tie: matchData.away_games_to_tie ?? null, // Allow null when tie is impossible
-        games_to_lose: matchData.away_games_to_lose,
+        games_to_tie: matchData.away_games_to_tie ?? null,
+        games_to_lose: matchData.away_games_to_lose ?? null,
       };
     }
 
