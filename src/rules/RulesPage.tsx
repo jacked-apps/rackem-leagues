@@ -31,6 +31,7 @@ import { AllGamesAccordion } from './AllGamesAccordion';
 import { Attribution } from './Attribution';
 import { GameTOC } from './GameTOC';
 import { SearchInput } from './SearchInput';
+import { SearchResults } from './SearchResults';
 import { rulebook } from './useRulebook';
 
 const LAST_GAME_KEY = 'rackem:rules:lastGame';
@@ -64,8 +65,16 @@ export default function RulesPage() {
   const [showMore, setShowMore] = useState<boolean>(
     () => !isMainGame(tab) && tab !== ALL_GAMES_VALUE,
   );
-  // Debounced query state. Unit 4 wires this into SearchResults.
-  const [, setQuery] = useState('');
+  // Debounced query state. Drives SearchResults when non-empty.
+  const [query, setQuery] = useState('');
+  // Remount-key for SearchInput so "Clear search" can reset its internal value.
+  const [resetCount, setResetCount] = useState(0);
+
+  const handleClearSearch = () => {
+    setQuery('');
+    setResetCount((c) => c + 1);
+  };
+  const handleClearFilter = () => setTab(ALL_GAMES_VALUE);
 
   // Persist selection on change (best-effort; ignore storage failures).
   useEffect(() => {
@@ -140,10 +149,17 @@ export default function RulesPage() {
           </div>
         )}
 
-        <SearchInput onDebouncedChange={setQuery} />
+        <SearchInput key={resetCount} onDebouncedChange={setQuery} />
 
-        {/* Content area. */}
-        {tab === ALL_GAMES_VALUE ? (
+        {/* Content area — search results when a query is typed, else the TOC. */}
+        {query.trim().length > 0 ? (
+          <SearchResults
+            query={query}
+            gameFilter={tab}
+            onClearSearch={handleClearSearch}
+            onClearFilter={handleClearFilter}
+          />
+        ) : tab === ALL_GAMES_VALUE ? (
           <AllGamesAccordion />
         ) : (
           <>

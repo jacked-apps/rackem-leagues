@@ -126,4 +126,75 @@ describe('RulesPage', () => {
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
     expect(link.getAttribute('href')).toMatch(/^https?:\/\//);
   });
+
+  it('swaps the TOC for search results when the user types a matching query', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<RulesPage />);
+
+    await user.type(screen.getByRole('searchbox', { name: /search the rules/i }), 'stalemate');
+    // Wait for debounce (250 ms in SearchInput).
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    // A search-results list rendered. At least one result card links to a
+    // rule whose heading or body contains "stalemate".
+    const resultsList = await screen.findByRole('list', { name: /search results for stalemate/i });
+    expect(resultsList).toBeInTheDocument();
+  });
+
+  it('renders the zero-results state with both Clear buttons when a game filter is active', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<RulesPage />);
+
+    await user.type(screen.getByRole('searchbox', { name: /search the rules/i }), 'xyzzy-not-a-word');
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    expect(await screen.findByText(/No rules match "xyzzy-not-a-word" in 8-Ball/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Clear filter' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Clear search' })).toBeInTheDocument();
+  });
+
+  it('renders only the Clear search button in zero-results when "All games" is active', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<RulesPage />);
+
+    await user.click(screen.getByRole('button', { name: 'All games' }));
+    await user.type(screen.getByRole('searchbox', { name: /search the rules/i }), 'xyzzy-not-a-word');
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    expect(await screen.findByText(/No rules match "xyzzy-not-a-word"\.$/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Clear filter' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Clear search' })).toBeInTheDocument();
+  });
+
+  it('"Clear search" resets the input and restores the TOC', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<RulesPage />);
+
+    const input = screen.getByRole('searchbox', { name: /search the rules/i });
+    await user.type(input, 'xyzzy-not-a-word');
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    await user.click(await screen.findByRole('button', { name: 'Clear search' }));
+
+    // The SearchInput is remounted via key; its value is empty.
+    expect(
+      (screen.getByRole('searchbox', { name: /search the rules/i }) as HTMLInputElement).value,
+    ).toBe('');
+    // The TOC is back (8-Ball default shows "The Game").
+    expect(screen.getAllByText('The Game').length).toBeGreaterThan(0);
+  });
+
+  it('"Clear filter" switches to All games so the query can hit every rule', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<RulesPage />);
+
+    await user.type(screen.getByRole('searchbox', { name: /search the rules/i }), 'xyzzy-not-a-word');
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    await screen.findByRole('button', { name: 'Clear filter' });
+
+    await user.click(screen.getByRole('button', { name: 'Clear filter' }));
+
+    // "All games" chip is now active.
+    expect(screen.getByRole('button', { name: 'All games' })).toHaveAttribute('aria-pressed', 'true');
+  });
 });
