@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-04-18 (Phase 2 revision — simplified Fargo columns after operator walkthrough)
+> **Last Updated**: 2026-04-18 (Phase 3 Unit 10 — Fargo math module)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -781,8 +781,9 @@ Preset modules implementing the `SystemModule` interface. Each shipped preset ow
 - `resolver.ts` - **Module resolver** — `pickModule(handicap_type)` routes to bca3v3 / bca5v5 / fargo5v5
 - `bca3v3.ts` - **BCA 3v3 module** — wraps the existing get3v3GamesNeeded chart
 - `bca5v5.ts` - **BCA 5v5 module** — wraps the existing get5v5GamesNeeded chart
-- `fargo5v5.ts` - **Fargo 5v5 module** — stub scaffolding (Unit 10 will implement the Fargo math)
+- `fargo5v5.ts` - **Fargo 5v5 module** — real math (Phase 3 Unit 10): rating validation (100-850 integer), start-points formula from `docs/research/fargorate-formula.md`, points→games-won match-result cascade
 - `__tests__/resolver.test.ts` - Resolver routing tests (15 cases including unmapped fallback)
+- `__tests__/fargo5v5.test.ts` - **Fargo math tests** (Phase 3 Unit 10) — validates against 1 real-match test case (56 start-points ±1) + 34 synthetic cases covering rating validation, start-points formula, scoring cascade, override behavior
 
 ---
 
