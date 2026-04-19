@@ -9,8 +9,10 @@
  */
 
 import { useEffect, useState } from 'react';
+import { Search } from 'lucide-react';
 
 import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 const INPUT_ID = 'rules-search-input';
 
@@ -57,18 +59,28 @@ export function SearchInput({
 
   return (
     <div className="sticky top-0 z-10 bg-background pb-3 pt-2">
-      <Input
-        id={INPUT_ID}
-        type="search"
-        role="searchbox"
-        placeholder="Search the rulebook…  (press / to focus)"
-        value={value}
-        onChange={(e) => {
-          setValue(e.target.value);
-          onDraftChange?.(e.target.value);
-        }}
-        aria-label="Search the rulebook"
-      />
+      <div className="relative">
+        <Search
+          aria-hidden="true"
+          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+        />
+        <Input
+          id={INPUT_ID}
+          type="search"
+          role="searchbox"
+          placeholder="Search the rules"
+          value={value}
+          onChange={(e) => {
+            setValue(e.target.value);
+            onDraftChange?.(e.target.value);
+          }}
+          aria-label="Search the rules"
+          className={cn(
+            // Icon clearance on the left, stronger border, slightly taller.
+            'pl-9 h-10 border-2 border-input focus-visible:border-ring',
+          )}
+        />
+      </div>
     </div>
   );
 }

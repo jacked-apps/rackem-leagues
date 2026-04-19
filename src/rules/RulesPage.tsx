@@ -1,12 +1,20 @@
 /**
  * @fileoverview The `/rules` landing page.
  *
- * Layout (mobile-first): a sticky search input on top, a row of game tabs
- * underneath, and either the selected game's TOC or the "All games"
- * accordion below. Attribution sits at the bottom.
+ * Layout (mobile-first, top → bottom):
+ *   1. PageHeader — app-standard header with back-to-home.
+ *   2. Game-picker filter chips — main games (8/9/10-Ball) always visible,
+ *      plus a "More games ▾" disclosure that expands a secondary chip row
+ *      for the less-common games, and an "All games" chip.
+ *   3. Search input — sticky below the chip row.
+ *   4. Content — either the selected game's TOC or the cover-to-cover
+ *      accordion when "All games" is active.
+ *   5. Attribution footer (R11).
  *
  * Selection is persisted to `localStorage` under `rackem:rules:lastGame` so
- * returning users land on the game they were reading last.
+ * returning users land on the game they were reading last. If the stored
+ * slug is in the "other games" group, the secondary chip row opens on
+ * mount so the active selection is visible.
  *
  * The search input is rendered but typing does not swap to a results list
  * yet — `SearchResults` lands in Unit 4 and will replace the TOC/accordion
@@ -14,7 +22,10 @@
  */
 
 import { useEffect, useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ChevronDown } from 'lucide-react';
+
+import { PageHeader } from '@/components/PageHeader';
+import { FilterChip } from '@/components/ui/filter-chip';
 
 import { AllGamesAccordion } from './AllGamesAccordion';
 import { Attribution } from './Attribution';
@@ -24,6 +35,12 @@ import { rulebook } from './useRulebook';
 
 const LAST_GAME_KEY = 'rackem:rules:lastGame';
 const ALL_GAMES_VALUE = 'all';
+const MAIN_GAME_SLUGS = ['8-ball', '9-ball', '10-ball'] as const;
+
+/** True iff the slug is one of the primary games always visible in the top row. */
+function isMainGame(slug: string): boolean {
+  return (MAIN_GAME_SLUGS as readonly string[]).includes(slug);
+}
 
 /** Valid game slug from storage, or the configured default. */
 function readInitialTab(): string {
@@ -40,6 +57,11 @@ function readInitialTab(): string {
 
 export default function RulesPage() {
   const [tab, setTab] = useState<string>(() => readInitialTab());
+  // If the initial tab is an "other" game, the secondary chip row opens so
+  // the active selection is visible.
+  const [showMore, setShowMore] = useState<boolean>(
+    () => !isMainGame(tab) && tab !== ALL_GAMES_VALUE,
+  );
   // Debounced query state. Unit 4 wires this into SearchResults.
   const [, setQuery] = useState('');
 
@@ -52,36 +74,80 @@ export default function RulesPage() {
     }
   }, [tab]);
 
+  const mainGames = rulebook.index.games.filter((g) => isMainGame(g.slug));
+  const otherGames = rulebook.index.games.filter(
+    (g) => !isMainGame(g.slug) && g.slug !== ALL_GAMES_VALUE,
+  );
+  const activeGame = rulebook.index.games.find((g) => g.slug === tab);
+  const activeRules = activeGame ? rulebook.rulesByGame[activeGame.slug] ?? [] : [];
+
   return (
-    <div className="mx-auto max-w-3xl p-4">
-      <h1 className="sr-only">Official Rules</h1>
-      <SearchInput onDebouncedChange={setQuery} />
+    <div>
+      <PageHeader backTo="/" backLabel="Home" title="Official Rules" />
 
-      <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 bg-transparent p-0">
-          {rulebook.index.games.map((game) => (
-            <TabsTrigger key={game.slug} value={game.slug} className="flex-none">
+      <div className="mx-auto max-w-3xl p-4">
+        {/* Game picker — main chips, a disclosure, and "All games". */}
+        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by game">
+          {mainGames.map((game) => (
+            <FilterChip
+              key={game.slug}
+              active={tab === game.slug}
+              onClick={() => setTab(game.slug)}
+            >
               {game.name}
-            </TabsTrigger>
+            </FilterChip>
           ))}
-          <TabsTrigger value={ALL_GAMES_VALUE} className="flex-none">
+          <FilterChip
+            aria-expanded={showMore}
+            aria-controls="rules-more-games"
+            onClick={() => setShowMore((v) => !v)}
+          >
+            More games
+            <ChevronDown
+              aria-hidden="true"
+              className={`h-3 w-3 transition-transform ${showMore ? 'rotate-180' : ''}`}
+            />
+          </FilterChip>
+          <FilterChip
+            active={tab === ALL_GAMES_VALUE}
+            onClick={() => setTab(ALL_GAMES_VALUE)}
+          >
             All games
-          </TabsTrigger>
-        </TabsList>
+          </FilterChip>
+        </div>
 
-        {rulebook.index.games.map((game) => (
-          <TabsContent key={game.slug} value={game.slug}>
-            <h2 className="sr-only">{game.name}</h2>
-            <GameTOC rules={rulebook.rulesByGame[game.slug] ?? []} />
-          </TabsContent>
-        ))}
-        <TabsContent value={ALL_GAMES_VALUE}>
-          <h2 className="sr-only">All games</h2>
+        {/* Secondary row for less-common games. */}
+        {showMore && (
+          <div
+            id="rules-more-games"
+            className="mt-2 flex flex-wrap gap-2 border-l-2 border-muted pl-2"
+          >
+            {otherGames.map((game) => (
+              <FilterChip
+                key={game.slug}
+                active={tab === game.slug}
+                onClick={() => setTab(game.slug)}
+              >
+                {game.name}
+              </FilterChip>
+            ))}
+          </div>
+        )}
+
+        <SearchInput onDebouncedChange={setQuery} />
+
+        {/* Content area. */}
+        {tab === ALL_GAMES_VALUE ? (
           <AllGamesAccordion />
-        </TabsContent>
-      </Tabs>
+        ) : (
+          <>
+            <h2 className="sr-only">{activeGame?.name ?? 'Rules'}</h2>
+            <GameTOC rules={activeRules} />
+          </>
+        )}
 
-      <Attribution />
+        <Attribution />
+      </div>
     </div>
   );
 }
