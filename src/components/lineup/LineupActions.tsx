@@ -23,14 +23,15 @@ interface LineupActionsProps {
   canUnlock: boolean; // Opponent hasn't locked yet
   onLock: () => void;
   onUnlock: () => void;
-  onProceed?: () => void; // Navigate to scoring when both locked
 }
 
 /**
- * Lineup action buttons with status indicators
+ * Lineup action buttons with status indicators.
  *
- * Shows Lock/Unlock buttons based on lineup state and opponent status.
- * Provides proceed button when both teams are ready.
+ * Shows Lock/Unlock for the user's lineup and reports opponent status.
+ * Navigation to the scoring page is NOT handled here — useMatchPreparation
+ * auto-navigates once both lineups are locked and (for Fargo) start-points
+ * are mutually confirmed.
  */
 export function LineupActions({
   locked,
@@ -40,7 +41,6 @@ export function LineupActions({
   canUnlock,
   onLock,
   onUnlock,
-  onProceed,
 }: LineupActionsProps) {
   return (
     <div className="space-y-4">
@@ -110,19 +110,6 @@ export function LineupActions({
             size="lg"
           >
             Unlock Lineup
-          </Button>
-        )}
-
-        {/* Proceed to Scoring (only show when both teams locked) */}
-        {locked && opponentStatus === 'ready' && onProceed && (
-          <Button
-            loadingText="none"
-            onClick={onProceed}
-            className="w-full bg-green-600 hover:bg-green-700"
-            size="lg"
-          >
-            <CheckCircle className="h-4 w-4 mr-2" />
-            Proceed to Scoring
           </Button>
         )}
       </div>

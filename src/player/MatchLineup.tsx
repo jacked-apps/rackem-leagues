@@ -9,7 +9,7 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Users } from 'lucide-react';
 import {
@@ -60,7 +60,6 @@ const DOUBLE_DUTY_VALUE = '__double_duty__';
 
 export function MatchLineup() {
   const { matchId } = useParams<{ matchId: string }>();
-  const navigate = useNavigate();
 
   // TanStack Query: Get current member data
   const memberQuery = useCurrentMember();
@@ -1060,10 +1059,11 @@ export function MatchLineup() {
               canUnlock={opponentStatus !== 'ready'}
               onLock={handleLockLineup}
               onUnlock={handleUnlockLineup}
-              onProceed={() => {
-                // TODO: Before navigating to score page, insert all 18 game rows into match_games table
-                navigate(`/match/${matchId}/score`);
-              }}
+              // No manual Proceed button — useMatchPreparation auto-navigates
+              // once both lineups are locked (and for Fargo, once start-points
+              // are mutually confirmed). A manual button could navigate early,
+              // before prep or negotiation completes, and leave the match in
+              // a half-started state. Trust the auto-nav path.
             />
           </CardContent>
         </Card>
