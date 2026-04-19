@@ -67,11 +67,14 @@ export interface MatchWithLeagueSettings {
   away_games_to_win: number | null;
   away_games_to_tie: number | null;
   away_games_to_lose: number | null;
-  /** Fargo team handicap (added by migration 20260418000001). NULL for non-Fargo matches. */
-  fargo_start_points: number | null;
   /**
    * Tier 3 snapshot (added by migration 20260418000003). NULL for unstarted or legacy matches.
    * Populated at scheduled → in_progress transition; scoring reads from this, not live league data.
+   *
+   * Note: Fargo start-points for the weaker team are stored directly in
+   * home_games_to_win / away_games_to_win (per-system semantic — BCA's "games needed to win"
+   * and Fargo's "start points awarded" share the shape and column family; handicap_type
+   * tells code how to interpret them).
    */
   system_snapshot: MatchSystemSnapshot | null;
   assigned_table_number: number | null;
@@ -228,11 +231,15 @@ export interface MatchGame {
   confirmed_by_home: boolean;
   confirmed_by_away: boolean;
   is_tiebreaker: boolean;
-  // Fargo fields (added by 20260418000001_add_fargo_match_columns.sql).
-  // NULL for BCA matches; populated for Fargo matches per Unit 11's scoring UX.
-  winner_points: number | null;         // Fargo winner points (default 10, override-able)
-  loser_points: number | null;          // Fargo loser points (0-7 for 8-ball)
-  loser_balls_pocketed: number | null;  // Raw input driving loser_points calculation
+  // Per-game achievement / break-state flags (added by migration 20260418000004).
+  // Always tracked across all scoring systems. Default false.
+  break_fouled: boolean;
+  runout: boolean;
+  win_by_forfeit: boolean;
+  // Fargo-specific per-game input (added by 20260418000001). NULL for BCA matches.
+  // Winner points and loser points are NOT stored — they are derived at read time
+  // from this value plus the league's winner_points / loser_points_method dials.
+  loser_balls_pocketed: number | null;
 }
 
 /**
