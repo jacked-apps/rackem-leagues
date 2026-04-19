@@ -229,7 +229,15 @@ function computeMatchResult(
   }
 
   // Cascade: higher points → higher games won. In Fargo 5v5 (25 games odd),
-  // games-won is always decisive when points tie. No tie result possible.
+  // games-won is always decisive when points tie, so no tie result is
+  // reachable here.
+  //
+  // TODO: when an even-games points-scored format lands (e.g. 4v4 = 16
+  // games, 3v3 = 18 games) it becomes possible for both points AND games
+  // to tie. The `else winner = 'away'` fallback below is arbitrary and
+  // needs a real rule. Candidates: most 10-0 sweeps, start-points
+  // recipient wins, declared tie with league-level sudden-death rule.
+  // Pick when a real league's tiebreaker is known; don't guess.
   let winner: 'home' | 'away';
   if (homePoints > awayPoints) {
     winner = 'home';
