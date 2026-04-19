@@ -88,34 +88,38 @@ export default function RulesPage() {
       <PageHeader backTo="/" backLabel="Home" title="Official Rules" />
 
       <div className="mx-auto max-w-3xl p-4">
-        {/* Game picker — main chips, a disclosure, and "All games". */}
-        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by game">
-          {mainGames.map((game) => (
+        {/* Game picker — always-visible game chips on row 1, meta chips on row 2. */}
+        <div className="space-y-2" role="group" aria-label="Filter by game">
+          <div className="flex flex-wrap items-center gap-2">
+            {mainGames.map((game) => (
+              <FilterChip
+                key={game.slug}
+                active={tab === game.slug}
+                onClick={() => setTab(game.slug)}
+              >
+                {game.name}
+              </FilterChip>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
             <FilterChip
-              key={game.slug}
-              active={tab === game.slug}
-              onClick={() => setTab(game.slug)}
+              aria-expanded={showMore}
+              aria-controls="rules-more-games"
+              onClick={() => setShowMore((v) => !v)}
             >
-              {game.name}
+              More games
+              <ChevronDown
+                aria-hidden="true"
+                className={`h-3 w-3 transition-transform ${showMore ? 'rotate-180' : ''}`}
+              />
             </FilterChip>
-          ))}
-          <FilterChip
-            aria-expanded={showMore}
-            aria-controls="rules-more-games"
-            onClick={() => setShowMore((v) => !v)}
-          >
-            More games
-            <ChevronDown
-              aria-hidden="true"
-              className={`h-3 w-3 transition-transform ${showMore ? 'rotate-180' : ''}`}
-            />
-          </FilterChip>
-          <FilterChip
-            active={tab === ALL_GAMES_VALUE}
-            onClick={() => setTab(ALL_GAMES_VALUE)}
-          >
-            All games
-          </FilterChip>
+            <FilterChip
+              active={tab === ALL_GAMES_VALUE}
+              onClick={() => setTab(ALL_GAMES_VALUE)}
+            >
+              All games
+            </FilterChip>
+          </div>
         </div>
 
         {/* Secondary row for less-common games. */}
