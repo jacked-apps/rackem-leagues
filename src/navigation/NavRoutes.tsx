@@ -14,6 +14,8 @@
 import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Outlet } from 'react-router-dom';
 import { Home } from '../home/Home';
+import { RulesSkeleton } from '../rules/RulesSkeleton';
+import { RulesErrorBoundary } from '../rules/RulesErrorBoundary';
 import { Login } from '../login/Login';
 import { Register } from '../login/Register';
 import { ClaimPlayer } from '../login/ClaimPlayer';
@@ -48,6 +50,9 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import HandicapLookupTest from '../pages/HandicapLookupTest';
 import { DevOnly } from '../dev/DevOnly';
 import RLSTestPage from '../dev/RLSTestPage';
+
+// Lazy-loaded public rules reader (keeps the cleaned rulebook data out of the main bundle).
+const RulesPage = lazy(() => import('../rules/RulesPage'));
 
 // Lazy-loaded operator pages (only loaded when operator accesses them)
 const OperatorWelcome = lazy(() => import('../operator/OperatorWelcome'));
@@ -148,6 +153,16 @@ export const router = createBrowserRouter([
       { path: '8-man-format-details', element: <EightManFormatDetails /> },
       { path: 'format-comparison', element: <FormatComparison /> },
       { path: 'test/handicap-lookup', element: <HandicapLookupTest /> },
+      {
+        path: 'rules',
+        element: (
+          <RulesErrorBoundary>
+            <Suspense fallback={<RulesSkeleton />}>
+              <RulesPage />
+            </Suspense>
+          </RulesErrorBoundary>
+        ),
+      },
 
       // === Development-only Routes ===
       { path: 'dev/rls-tests', element: <DevOnly><RLSTestPage /></DevOnly> },
