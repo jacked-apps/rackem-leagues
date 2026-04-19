@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/supabaseClient';
 import { buildLeagueTitle } from '@/utils/leagueUtils';
 import { deriveDateFields } from './leagueWizardHelpers';
+import { getLeaguePresetModularFields } from './presetMappings';
 import { useCreateLeagueV2 } from './useCreateLeagueV2';
 import { useCreateSeasonV2 } from '@/wizards/season-v2/useCreateSeasonV2';
 import { useSaveScheduleV2 } from '@/wizards/schedule-v2/useSaveScheduleV2';
@@ -52,13 +53,19 @@ export function useFlowStageHandlers({
       onLeagueCreated(league.id);
 
       const dateFields = fd['start-date'] ? deriveDateFields(fd['start-date']) : null;
+      // League name excludes season + year on purpose — those belong to the
+      // season name, which appends them to this base ("8 Ball Monday Blue"
+      // → "8 Ball Monday Blue Fall 2026").
       const leagueName = buildLeagueTitle({
         gameType: fd['game-type'] ?? null,
         dayOfWeek: dateFields?.dayOfWeek ?? null,
         division: fd['qualifier']?.trim() || null,
-        season: dateFields?.season ?? null,
-        year: dateFields?.year ?? null,
       });
+
+      // Resolve preset → modular fields. Custom leagues read directly from
+      // the wizard; presets (fargo_5v5, standard_3v3, etc.) come from the
+      // shared mapping so the summary shows the same values the DB got.
+      const modular = getLeaguePresetModularFields(fd);
 
       return {
         leagueId: league.id,
@@ -66,6 +73,10 @@ export function useFlowStageHandlers({
         leagueName,
         gameType: fd['game-type'],
         leagueFormat: fd['league-format'],
+        lineupSize: modular.lineup_size ?? undefined,
+        rosterSize: modular.max_roster_size ?? undefined,
+        handicapType: modular.handicap_type ?? undefined,
+        matchFormat: modular.game_generation ?? undefined,
       };
     },
     season: async (formData) => {
@@ -91,14 +102,14 @@ export function useFlowStageHandlers({
       // Empty array = user chose to keep existing schedule, skip save
       if (!schedule || schedule.length === 0) {
         toast.success('Keeping existing schedule');
-        return {};
+        return { scheduleComplete: true };
       }
       if (!context.seasonId) {
         throw new Error('Missing season ID — cannot save schedule');
       }
       await saveSchedule.mutateAsync({ seasonId: context.seasonId, schedule });
       toast.success('Schedule saved');
-      return {};
+      return { scheduleComplete: true };
     },
     teams: async (formData) => {
       const fd = formData as TeamsWizardFormData;
@@ -123,7 +134,10 @@ export function useFlowStageHandlers({
       toast.success(
         `Created ${result.teams.length} team${result.teams.length === 1 ? '' : 's'} at ${result.venueCount} venue${result.venueCount === 1 ? '' : 's'}`,
       );
-      return {};
+      return {
+        teamCount: result.teams.length,
+        venueCount: result.venueCount,
+      };
     },
     matchups: async () => {
       // User clicked Finish on the Review step — accept the schedule and activate the season.

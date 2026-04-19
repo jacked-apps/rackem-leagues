@@ -228,4 +228,29 @@ This website provides perfect team scheduling PDFs for leagues ranging from 4 te
 
 ---
 
+## UX & Component Ideas
+
+### Click-a-disabled-button to see why it's disabled
+**Status**: Idea — not yet scoped
+
+**Concept**:
+Today we pair disabled buttons with a separate InfoButton (`?`) that explains
+the reason. Idea: wrap the disabled-button pattern so that clicking (or tapping)
+the disabled button itself pops the same InfoButton explanation. Users wouldn't
+need to discover the `?`; the obvious action (pressing the button) teaches them
+why it's off.
+
+**Sketch**:
+- Probably belongs as an option on the shared `Button` component — `<Button disabledReason="Create a season first" ...>`.
+- When `disabledReason` is set and the button is disabled: render with `aria-disabled="true"` (not `disabled`) so it still receives pointer events, then show the InfoButton popup on click.
+- Keep the current `?` alongside pattern as a fallback for keyboard / screen-reader discoverability.
+
+**Why it's nice**:
+- Disabled buttons are often the most frustrating UI state — "I can't click this and I don't know why." This closes that loop with zero extra UI when the button is enabled.
+- Uses the existing InfoButton popup — nothing new for users to learn.
+
+**Not doing now** because the current pattern works; flagged by Ed as a future polish item.
+
+---
+
 *This is a living document - add ideas as they come up during development and user feedback sessions.*

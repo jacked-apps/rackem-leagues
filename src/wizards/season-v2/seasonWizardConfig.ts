@@ -45,18 +45,10 @@ export const seasonWizardConfig: WizardConfig<SeasonWizardFormData> = {
   schemaVersion: 1,
   initialFormData: {},
   getSummaryItems: (formData) => {
-    // Flow context injected by WizardFlowStageRenderer
-    const ctx = (formData as Record<string, unknown>)._flowContext as
-      { leagueName?: string; gameType?: string; leagueFormat?: string; leagueStartDate?: string } | undefined;
-
-    // Start date: first season from flow context, next season from date picker
-    const intro = formData['intro'] as { leagueStartDate?: string } | undefined;
-    const startDate = formData['season-start-date'] ?? intro?.leagueStartDate ?? ctx?.leagueStartDate;
-
+    // The flow's getContextSummaryItems handles league info (name, format,
+    // start date) carried forward from Stage 1 — don't duplicate it here.
+    // Only return the choices the user is actively making in this wizard.
     return [
-      // League info carried forward from Stage 1
-      { label: 'League', value: ctx?.leagueName ?? undefined },
-      { label: 'Start Date', value: startDate ?? undefined },
       {
         label: 'Regular Season',
         value: formData['season-length'] ? `${formData['season-length']} weeks` : undefined,

@@ -47,8 +47,25 @@ export function useWizardFlowState({
   initialContext = {},
   startAtStage,
 }: UseWizardFlowStateArgs) {
-  // DB detection takes priority → localStorage fallback → start at 0
-  const persisted = readPersistedFlow(persistKey);
+  // DB is the source of truth. LocalStorage is only valid if it describes
+  // the same league we're currently looking at. Two cases wipe it:
+  //   1. Fresh start — no leagueId in initialContext, but persisted state
+  //      carries one (stale from a previous, possibly deleted, league).
+  //   2. Different league — the URL says leagueId A but persistence carries
+  //      leagueId B (e.g., the previous league was deleted and we're
+  //      starting over).
+  const rawPersisted = readPersistedFlow(persistKey);
+  const persistedLeagueId = rawPersisted?.context?.leagueId;
+  const currentLeagueId = initialContext.leagueId;
+  const persistedMatchesCurrent =
+    !rawPersisted ||
+    (currentLeagueId
+      ? persistedLeagueId === currentLeagueId
+      : !persistedLeagueId);
+  if (!persistedMatchesCurrent) {
+    try { window.localStorage.removeItem(persistKey); } catch { /* silent */ }
+  }
+  const persisted = persistedMatchesCurrent ? rawPersisted : null;
   const resolvedStartIndex = startAtStage ?? persisted?.currentStageIndex ?? 0;
 
   const [currentStageIndex, setCurrentStageIndex] = useState(resolvedStartIndex);

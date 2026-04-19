@@ -62,6 +62,7 @@ export interface CreateOrganizationParams {
   expiry_month: number;
   expiry_year: number;
   billing_zip: string;
+  payment_verified: boolean;
 }
 
 /**
@@ -103,6 +104,7 @@ export async function createOrganization(params: CreateOrganizationParams) {
     expiry_month: params.expiry_month,
     expiry_year: params.expiry_year,
     billing_zip: params.billing_zip,
+    payment_verified: params.payment_verified,
   };
 
   const { data, error } = await supabase

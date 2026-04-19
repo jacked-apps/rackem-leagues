@@ -13,11 +13,13 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import type { FlowStage, FlowContext } from './flowTypes';
+import type { WizardSummaryItem } from './WizardSummary';
 import { WizardShell } from './WizardShell';
 
 interface WizardFlowStageRendererProps {
   stage: FlowStage;
   context: FlowContext;
+  contextSummaryItems?: WizardSummaryItem[];
   onStageComplete: (formData?: unknown) => void;
   onCancel?: () => void;
 }
@@ -25,6 +27,7 @@ interface WizardFlowStageRendererProps {
 export function WizardFlowStageRenderer({
   stage,
   context,
+  contextSummaryItems,
   onStageComplete,
   onCancel,
 }: WizardFlowStageRendererProps) {
@@ -37,6 +40,7 @@ export function WizardFlowStageRenderer({
         key={stage.id}
         stage={stage}
         context={context}
+        contextSummaryItems={contextSummaryItems}
         onStageComplete={onStageComplete}
         onCancel={onCancel}
       />
@@ -61,11 +65,13 @@ export function WizardFlowStageRenderer({
 function FlowWizardStage({
   stage,
   context,
+  contextSummaryItems,
   onStageComplete,
   onCancel,
 }: {
   stage: Extract<FlowStage, { kind: 'wizard' }>;
   context: FlowContext;
+  contextSummaryItems?: WizardSummaryItem[];
   onStageComplete: (formData?: unknown) => void;
   onCancel?: () => void;
 }) {
@@ -91,6 +97,7 @@ function FlowWizardStage({
     <WizardShell
       wizard={wizardWithContext}
       persistKey={persistKey}
+      contextSummaryItems={contextSummaryItems}
       onComplete={(formData) => onStageComplete(formData)}
       onCancel={onCancel}
     />

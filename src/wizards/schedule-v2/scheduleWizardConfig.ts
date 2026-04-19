@@ -40,6 +40,13 @@ export const scheduleWizardConfig: WizardConfig<ScheduleWizardFormData> = {
       title: 'Review Schedule',
       subtitle: 'Review the weekly calendar, add blackout weeks for holidays or breaks',
       component: ScheduleWizardStep as WizardConfig<ScheduleWizardFormData>['steps'][number]['component'],
+      // ScheduleReview renders its own Previous / Save & Exit / Save & Continue
+      // buttons with step-specific semantics (the replace-vs-keep dialog for
+      // existing schedules can't be expressed through the shell's generic nav).
+      // Suppress the shell's Back / Cancel / Next so we don't double-render.
+      hideBack: true,
+      hideCancel: true,
+      hideNext: true,
     },
   ],
 };
