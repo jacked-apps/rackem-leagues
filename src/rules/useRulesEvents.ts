@@ -20,13 +20,22 @@ import { supabase } from '@/supabaseClient';
 
 const TABLE = 'rules_page_events';
 
-type EventType = 'page_open' | 'search_query' | 'deep_link_open';
+type EventType =
+  | 'page_open'
+  | 'search_query'
+  | 'deep_link_open'
+  | 'house_filter_activated'
+  | 'differences_only_activated'
+  | 'house_rule_opened'
+  | 'scope_changed';
 
 type EventRow = {
   event_type: EventType;
   game?: string | null;
   rule_id?: string | null;
   result_count?: number | null;
+  scope_type?: 'organization' | 'league' | null;
+  scope_id?: string | null;
 };
 
 function log(row: EventRow): void {
@@ -57,5 +66,40 @@ export const rulesEvents = {
 
   logDeepLink(game: string, ruleId: string) {
     log({ event_type: 'deep_link_open', game, rule_id: ruleId });
+  },
+
+  // ----- Branch 2 (house rules) -----
+
+  logHouseFilterActivated(scope: { type: 'organization' | 'league'; id: string } | null) {
+    log({
+      event_type: 'house_filter_activated',
+      scope_type: scope?.type ?? null,
+      scope_id: scope?.id ?? null,
+    });
+  },
+
+  logDifferencesOnlyActivated(scope: { type: 'organization' | 'league'; id: string } | null) {
+    log({
+      event_type: 'differences_only_activated',
+      scope_type: scope?.type ?? null,
+      scope_id: scope?.id ?? null,
+    });
+  },
+
+  logHouseRuleOpened(scope: { type: 'organization' | 'league'; id: string }, ruleId: string) {
+    log({
+      event_type: 'house_rule_opened',
+      scope_type: scope.type,
+      scope_id: scope.id,
+      rule_id: ruleId,
+    });
+  },
+
+  logScopeChanged(scope: { type: 'organization' | 'league'; id: string } | null) {
+    log({
+      event_type: 'scope_changed',
+      scope_type: scope?.type ?? null,
+      scope_id: scope?.id ?? null,
+    });
   },
 };
