@@ -101,14 +101,18 @@ export default function RulesPage() {
   const nonMembershipRules = useHouseRulesForScope(nonMembershipScope);
 
   // Resolve the visible house-rule corpus for the current selection.
+  //
+  // For single-league scope we always defer to `useHouseRulesForScope` so the
+  // cascade logic (league + parent-org rules, modulo `ignore_org_house_rules`)
+  // lives in one place. Org-scope selections stay on the membership shortcut
+  // since they don't cascade.
   const visibleHouseRules: HouseRule[] = useMemo(() => {
     if (!scopeSelection) return [];
     if (scopeSelection.kind === 'my-memberships') return memberships.data ?? [];
     const scope = scopeSelection.scope;
-    const membershipMatch = (memberships.data ?? []).filter((r) =>
-      scope.type === 'organization'
-        ? r.organization_id === scope.organizationId
-        : r.league_id === scope.leagueId,
+    if (scope.type === 'league') return nonMembershipRules.data ?? [];
+    const membershipMatch = (memberships.data ?? []).filter(
+      (r) => r.organization_id === scope.organizationId,
     );
     if (membershipMatch.length > 0) return membershipMatch;
     return nonMembershipRules.data ?? [];

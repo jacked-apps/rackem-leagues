@@ -195,8 +195,15 @@ describe('RulesPage — House rules filter (Unit 3A)', () => {
   });
 
   it('merges house-rule matches into the search results with scope badges', async () => {
+    const rule = houseRule({ title: 'No jump cues', body: ['Jump cues are prohibited in all Ed matches.'] });
     houseForMembershipsMock.mockReturnValue({
-      data: [houseRule({ title: 'No jump cues', body: ['Jump cues are prohibited in all Ed matches.'] })],
+      data: [rule],
+      isLoading: false,
+      isSuccess: true,
+    });
+    // Single-league scope now reads from useHouseRulesForScope (cascade-aware).
+    houseForScopeMock.mockReturnValue({
+      data: [rule],
       isLoading: false,
       isSuccess: true,
     });
@@ -237,11 +244,14 @@ describe('RulesPage — TOC interleave + differences-only (Unit 3B)', () => {
   });
 
   it('shows a standalone house rule under "League-specific additions"', async () => {
+    const rule = houseRule({ id: 'std-1', effect_type: 'standalone', related_rule_id: null, title: 'No jump cues' });
     houseForMembershipsMock.mockReturnValue({
-      data: [houseRule({ id: 'std-1', effect_type: 'standalone', related_rule_id: null, title: 'No jump cues' })],
+      data: [rule],
       isLoading: false,
       isSuccess: true,
     });
+    // Active league is Ed's league → single-league scope → reads from useHouseRulesForScope.
+    houseForScopeMock.mockReturnValue({ data: [rule], isLoading: false, isSuccess: true });
     const user = userEvent.setup();
     renderWithProviders(<RulesPage />);
     await user.click(screen.getByRole('button', { name: /^house rules$/i }));

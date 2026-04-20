@@ -40,14 +40,33 @@ async function fetchForOrgOrLeagueIds(args: {
 }
 
 async function fetchForScope(scope: HouseRuleScope): Promise<HouseRule[]> {
-  const column = scope.type === 'organization' ? 'organization_id' : 'league_id';
-  const id = scope.type === 'organization' ? scope.organizationId : scope.leagueId;
-  const { data, error } = await supabase
-    .from(VIEW as never)
-    .select('*')
-    .eq(column, id);
-  if (error) throw error;
-  return (data ?? []) as HouseRule[];
+  if (scope.type === 'organization') {
+    const { data, error } = await supabase
+      .from(VIEW as never)
+      .select('*')
+      .eq('organization_id', scope.organizationId);
+    if (error) throw error;
+    return (data ?? []) as HouseRule[];
+  }
+
+  // League scope: cascade — include the parent org's rules unless the league
+  // has opted out via `ignore_org_house_rules`.
+  const { data: lg, error: lgErr } = await supabase
+    .from('leagues')
+    .select('organization_id, ignore_org_house_rules')
+    .eq('id', scope.leagueId)
+    .maybeSingle();
+  if (lgErr) throw lgErr;
+  const meta = (lg ?? null) as
+    | { organization_id: string | null; ignore_org_house_rules: boolean }
+    | null;
+  const parentOrgId = meta?.organization_id ?? null;
+  const inheritOrg = !(meta?.ignore_org_house_rules ?? false);
+
+  return fetchForOrgOrLeagueIds({
+    orgIds: inheritOrg && parentOrgId ? [parentOrgId] : [],
+    leagueIds: [scope.leagueId],
+  });
 }
 
 /** Fetch every house rule visible to the current user by membership. */
