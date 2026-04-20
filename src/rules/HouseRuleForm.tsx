@@ -27,6 +27,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 
 import { CsiRulePicker } from './CsiRulePicker';
+import { CsiSuggestions } from './CsiSuggestions';
 import { resolveRuleId } from './resolveRuleId';
 import { rulebook } from './useRulebook';
 import type {
@@ -73,6 +74,7 @@ export function HouseRuleForm({ initial, submitting = false, onCancel, onSubmit,
   const [values, setValues] = useState<HouseRuleFormState>(base);
   const [bodyText, setBodyText] = useState<string>(() => toTextarea(base.body));
   const [errors, setErrors] = useState<Errors>({});
+  const [suggestionsDismissed, setSuggestionsDismissed] = useState(false);
 
   useEffect(() => {
     const dirty =
@@ -177,6 +179,23 @@ export function HouseRuleForm({ initial, submitting = false, onCancel, onSubmit,
           placeholder="e.g., No jump cues"
         />
         {errors.title ? <p className="text-sm text-destructive">{errors.title}</p> : null}
+        {values.effect_type === 'standalone' &&
+        !suggestionsDismissed &&
+        values.title.trim().length >= 3 ? (
+          <CsiSuggestions
+            title={values.title}
+            onDismiss={() => setSuggestionsDismissed(true)}
+            onPick={(key) => {
+              setValues((s) => ({
+                ...s,
+                effect_type: 'override',
+                related_rule_id: key,
+                game: key.split(':')[0],
+              }));
+              setSuggestionsDismissed(true);
+            }}
+          />
+        ) : null}
       </div>
 
       <div className="space-y-2">

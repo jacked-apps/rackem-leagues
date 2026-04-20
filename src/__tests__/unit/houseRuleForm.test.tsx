@@ -96,6 +96,48 @@ describe('HouseRuleForm', () => {
     confirmSpy.mockRestore();
   });
 
+  it('shows CSI suggestions under title when standalone + 3+ chars, hidden when Override', async () => {
+    const user = userEvent.setup();
+    render(<HouseRuleForm onCancel={() => {}} onSubmit={() => {}} />);
+
+    // Typing a real CSI term should surface suggestions.
+    await user.type(screen.getByLabelText(/title/i), 'break');
+    expect(screen.getByText(/sounds like it might be related/i)).toBeInTheDocument();
+
+    // Switching to Override hides them — user has already declared intent.
+    await user.click(screen.getByRole('radio', { name: /override/i }));
+    expect(screen.queryByText(/sounds like it might be related/i)).not.toBeInTheDocument();
+  });
+
+  it('picking a suggestion flips effect type to Override and sets the CSI rule', async () => {
+    const user = userEvent.setup();
+    render(<HouseRuleForm onCancel={() => {}} onSubmit={() => {}} />);
+
+    await user.type(screen.getByLabelText(/title/i), 'break');
+    // Click any suggestion button in the list.
+    const firstSuggestion = screen.getAllByRole('button').find((btn) => /^\d/.test(btn.textContent ?? ''));
+    if (!firstSuggestion) throw new Error('expected a suggestion button');
+    await user.click(firstSuggestion);
+
+    // Override radio is now checked.
+    expect(screen.getByRole('radio', { name: /override/i })).toBeChecked();
+    // Suggestions panel is gone.
+    expect(screen.queryByText(/sounds like it might be related/i)).not.toBeInTheDocument();
+  });
+
+  it('dismiss button hides suggestions for the rest of the session', async () => {
+    const user = userEvent.setup();
+    render(<HouseRuleForm onCancel={() => {}} onSubmit={() => {}} />);
+
+    await user.type(screen.getByLabelText(/title/i), 'break');
+    await user.click(screen.getByRole('button', { name: /dismiss suggestions/i }));
+
+    expect(screen.queryByText(/sounds like it might be related/i)).not.toBeInTheDocument();
+    // Typing more keeps it hidden.
+    await user.type(screen.getByLabelText(/title/i), ' shot');
+    expect(screen.queryByText(/sounds like it might be related/i)).not.toBeInTheDocument();
+  });
+
   it('submits valid Standalone values (body split into paragraphs)', async () => {
     const onSubmit = vi.fn();
     const user = userEvent.setup();
