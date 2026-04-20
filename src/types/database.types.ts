@@ -247,6 +247,77 @@ export type Database = {
         }
         Relationships: []
       }
+      house_rules: {
+        Row: {
+          body: string[]
+          created_at: string
+          effect_type: string
+          game: string
+          id: string
+          league_id: string | null
+          organization_id: string | null
+          related_rule_id: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          body?: string[]
+          created_at?: string
+          effect_type: string
+          game: string
+          id?: string
+          league_id?: string | null
+          organization_id?: string | null
+          related_rule_id?: string | null
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          body?: string[]
+          created_at?: string
+          effect_type?: string
+          game?: string
+          id?: string
+          league_id?: string | null
+          organization_id?: string | null
+          related_rule_id?: string | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "house_rules_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "house_rules_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "resolved_league_playoff_config"
+            referencedColumns: ["league_id"]
+          },
+          {
+            foreignKeyName: "house_rules_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "resolved_league_preferences"
+            referencedColumns: ["league_id"]
+          },
+          {
+            foreignKeyName: "house_rules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invite_tokens: {
         Row: {
           claimed_at: string | null
@@ -1498,6 +1569,8 @@ export type Database = {
           id: string
           result_count: number | null
           rule_id: string | null
+          scope_id: string | null
+          scope_type: string | null
         }
         Insert: {
           created_at?: string
@@ -1506,6 +1579,8 @@ export type Database = {
           id?: string
           result_count?: number | null
           rule_id?: string | null
+          scope_id?: string | null
+          scope_type?: string | null
         }
         Update: {
           created_at?: string
@@ -1514,6 +1589,8 @@ export type Database = {
           id?: string
           result_count?: number | null
           rule_id?: string | null
+          scope_id?: string | null
+          scope_type?: string | null
         }
         Relationships: []
       }
@@ -2095,6 +2172,54 @@ export type Database = {
       }
     }
     Views: {
+      house_rules_with_scope_name: {
+        Row: {
+          body: string[] | null
+          created_at: string | null
+          effect_type: string | null
+          game: string | null
+          id: string | null
+          league_id: string | null
+          organization_id: string | null
+          parent_org_name: string | null
+          related_rule_id: string | null
+          scope_name: string | null
+          scope_type: string | null
+          title: string | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "house_rules_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "house_rules_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "resolved_league_playoff_config"
+            referencedColumns: ["league_id"]
+          },
+          {
+            foreignKeyName: "house_rules_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "resolved_league_preferences"
+            referencedColumns: ["league_id"]
+          },
+          {
+            foreignKeyName: "house_rules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       resolved_league_playoff_config: {
         Row: {
           auto_generate: boolean | null
@@ -2155,6 +2280,10 @@ export type Database = {
       assign_tables_for_week: {
         Args: { p_season_week_id: string }
         Returns: undefined
+      }
+      can_write_house_rule_org: {
+        Args: { target_org_id: string }
+        Returns: boolean
       }
       claim_invite_token: {
         Args: { p_token: string; p_user_id: string }
