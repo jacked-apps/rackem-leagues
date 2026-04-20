@@ -153,8 +153,8 @@ describe('RulesPage — House rules filter (Unit 3A)', () => {
 
     await user.click(screen.getByRole('button', { name: /^house rules$/i }));
 
-    expect(await screen.findByRole('heading', { name: /choose a scope/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /my memberships \(all\)/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /which league/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /all my leagues/i })).toBeInTheDocument();
   });
 
   it('picker lists memberships and selecting one updates the chip label', async () => {
@@ -188,8 +188,8 @@ describe('RulesPage — House rules filter (Unit 3A)', () => {
 
     await user.click(screen.getByRole('button', { name: /^house rules$/i }));
 
-    expect(await screen.findByText(/not a member of any league/i)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /my memberships \(all\)/i })).not.toBeInTheDocument();
+    expect(await screen.findByText(/not in a league yet/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /all my leagues/i })).not.toBeInTheDocument();
   });
 
   it('merges house-rule matches into the search results with scope badges', async () => {
@@ -209,8 +209,8 @@ describe('RulesPage — House rules filter (Unit 3A)', () => {
     await new Promise((r) => setTimeout(r, 300));
 
     const list = await screen.findByRole('list', { name: /search results for jump/i });
-    // CSI-first, house-second per R16 — both render. House badge uses the scope_name.
+    // CSI-first, house-second per R16 — both render. House badge is prefixed "House · {scope}".
     expect(list).toHaveTextContent('No jump cues');
-    expect(list).toHaveTextContent("Ed's 8-Ball Mondays");
+    expect(list).toHaveTextContent("House · Ed's 8-Ball Mondays");
   });
 });

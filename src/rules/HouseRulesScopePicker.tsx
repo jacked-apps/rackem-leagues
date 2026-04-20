@@ -57,19 +57,19 @@ export function HouseRulesScopePicker({ open, onOpenChange, onSelect }: Props) {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col p-0">
         <SheetHeader className="shrink-0 p-4 pr-10 border-b">
-          <SheetTitle>Choose a scope</SheetTitle>
+          <SheetTitle>Which league?</SheetTitle>
           <SheetDescription>
-            Pick a league to see its house rules layered on top of the official rulebook.
+            Pick which league's house rules you want to see alongside the official rules.
           </SheetDescription>
         </SheetHeader>
 
         <div className="shrink-0 p-4 border-b">
           <Input
             type="search"
-            placeholder="Filter by league or organization"
+            placeholder="Find your league"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            aria-label="Filter leagues"
+            aria-label="Find your league"
           />
         </div>
 
@@ -81,7 +81,7 @@ export function HouseRulesScopePicker({ open, onOpenChange, onSelect }: Props) {
                 className="flex w-full min-h-11 items-center rounded-md px-3 py-2 text-left hover:bg-accent"
                 onClick={() => onSelect({ kind: 'my-memberships' })}
               >
-                <span className="font-medium">My memberships (all)</span>
+                <span className="font-medium">All my leagues</span>
                 <span className="ml-auto text-xs text-muted-foreground">
                   {memberships.data?.leagues.length} league
                   {memberships.data?.leagues.length === 1 ? '' : 's'}
@@ -93,8 +93,8 @@ export function HouseRulesScopePicker({ open, onOpenChange, onSelect }: Props) {
           {filteredLeagues.length === 0 && !memberships.isLoading ? (
             <p className="p-4 text-sm text-muted-foreground">
               {hasMemberships
-                ? 'No leagues match your filter.'
-                : "You're not a member of any league yet. Ask your LO once you've joined."}
+                ? 'No leagues match that search.'
+                : "You're not in a league yet. Once you join one, your league's rules will show up here."}
             </p>
           ) : null}
 

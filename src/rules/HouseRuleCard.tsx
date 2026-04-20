@@ -24,7 +24,7 @@ export function HouseRuleCard({ rule }: HouseRuleCardProps) {
     <RuleCard
       rule={{ id: rule.id, heading: rule.title, game: rule.game }}
       to={to}
-      originLabel={rule.scope_name}
+      originLabel={`House · ${rule.scope_name}`}
     />
   );
 }

@@ -97,7 +97,7 @@ export function SearchResults({
               </span>
               <span className="font-medium">{hit.rule.title}</span>
               <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                {hit.rule.scope_name}
+                House · {hit.rule.scope_name}
               </span>
             </div>
             {hit.rule.related_rule_id ? (
