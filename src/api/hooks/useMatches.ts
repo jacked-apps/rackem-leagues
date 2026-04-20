@@ -26,6 +26,8 @@ import {
   getMatchGames,
   completeMatch,
   getNextMatchForTeam,
+  getLiveMatchesForLeague,
+  getLiveMatchesForMember,
 } from '../queries/matches';
 import { STALE_TIME } from '../client';
 
@@ -76,6 +78,42 @@ export function useMatchesBySeason(seasonId: string | null | undefined) {
     queryFn: () => getMatchesBySeason(seasonId!),
     enabled: !!seasonId,
     staleTime: STALE_TIME.SCHEDULES, // 10 minutes
+    retry: 1,
+  });
+}
+
+/**
+ * Fetch in-progress matches for a league.
+ *
+ * Used by the spectator page to list matches currently being played in the
+ * league so other members can peek at them. Short stale time and
+ * refetchOnWindowFocus because match status can change quickly during a
+ * match night; per-match realtime subscriptions handle the live score
+ * updates, but the LIST of in-progress matches can change too (matches
+ * complete, new ones start).
+ */
+export function useLiveMatchesForLeague(leagueId: string | null | undefined) {
+  return useQuery({
+    queryKey: [...queryKeys.matches.all, 'league', leagueId, 'live'],
+    queryFn: () => getLiveMatchesForLeague(leagueId!),
+    enabled: !!leagueId,
+    staleTime: 30_000, // 30s — list composition changes during match night
+    refetchOnWindowFocus: true,
+    retry: 1,
+  });
+}
+
+/**
+ * Fetch live matches across every league where the given member is on a
+ * team. Used by the cross-league dashboard spectator page.
+ */
+export function useLiveMatchesForMember(memberId: string | null | undefined) {
+  return useQuery({
+    queryKey: [...queryKeys.matches.all, 'member', memberId, 'live'],
+    queryFn: () => getLiveMatchesForMember(memberId!),
+    enabled: !!memberId,
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }

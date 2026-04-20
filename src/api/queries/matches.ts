@@ -140,6 +140,117 @@ export async function getMatchesByTeam(teamId: string): Promise<MatchWithDetails
 }
 
 /**
+ * Fetch all currently-live matches for a league.
+ *
+ * "Live" means both lineups have locked (started_at is set by the
+ * lineup-persistence flow when both sides lock) and the match has not yet
+ * been marked completed. This codebase doesn't actually transition matches
+ * to status='in_progress' — they sit at 'scheduled' until completeMatch()
+ * flips them to 'completed', so we key off started_at instead of status.
+ *
+ * @param leagueId - League's primary key ID
+ * @returns Array of live matches with team and week details, sorted by
+ *          scheduled date ascending (so the current match night groups together)
+ * @throws Error if database query fails
+ */
+export async function getLiveMatchesForLeague(leagueId: string): Promise<MatchWithDetails[]> {
+  // matches has no league_id column — it's joined via seasons.league_id.
+  // `!inner` turns the join into an INNER JOIN so the league filter works.
+  const { data, error } = await supabase
+    .from('matches')
+    .select(`
+      *,
+      home_team:teams!matches_home_team_id_fkey(id, team_name, captain_id),
+      away_team:teams!matches_away_team_id_fkey(id, team_name, captain_id),
+      scheduled_venue:venues!matches_scheduled_venue_id_fkey(id, name, city, state),
+      season_week:season_weeks(id, week_name, scheduled_date, week_type),
+      season:seasons!inner(id, league_id, league:leagues(id, game_type, day_of_week, division))
+    `)
+    .eq('season.league_id', leagueId)
+    .not('started_at', 'is', null)
+    .neq('status', 'completed')
+    .order('season_week(scheduled_date)', { ascending: true });
+
+  if (error) {
+    throw new Error(`Failed to fetch live matches: ${error.message}`);
+  }
+
+  const matches = (data || []).map((match: any) => ({
+    ...match,
+    scheduled_date: match.season_week?.scheduled_date || null,
+  }));
+
+  return matches as MatchWithDetails[];
+}
+
+/**
+ * Fetch all currently-live matches across every league where the given
+ * member is on a team's roster.
+ *
+ * "On a team" = has a row in team_players for a team in that league's season.
+ * This scoping enforces the product rule that players can only spectate
+ * matches in leagues they participate in — no peeking into other leagues
+ * just because they exist.
+ *
+ * LOs who aren't on any team will see nothing here. That's intentional; an
+ * LO-wide cross-league view is a separate feature that hasn't been asked for.
+ *
+ * @param memberId - The current user's members.id
+ * @returns Array of live matches grouped-in-caller-side by league
+ */
+export async function getLiveMatchesForMember(memberId: string): Promise<MatchWithDetails[]> {
+  // Step 1: find the league IDs the member is participating in (via
+  // team_players → teams → seasons → leagues). We do this as a separate
+  // query because PostgREST doesn't let us filter on a sub-select inside the
+  // matches query directly.
+  const { data: teamRows, error: teamErr } = await supabase
+    .from('team_players')
+    .select('team:teams!inner(season:seasons!inner(league_id))')
+    .eq('member_id', memberId);
+
+  if (teamErr) {
+    throw new Error(`Failed to resolve member's leagues: ${teamErr.message}`);
+  }
+
+  const leagueIds = Array.from(
+    new Set(
+      (teamRows ?? [])
+        .map((r: any) => r.team?.season?.league_id)
+        .filter(Boolean),
+    ),
+  );
+
+  if (leagueIds.length === 0) return [];
+
+  // Step 2: fetch live matches in those leagues.
+  const { data, error } = await supabase
+    .from('matches')
+    .select(`
+      *,
+      home_team:teams!matches_home_team_id_fkey(id, team_name, captain_id),
+      away_team:teams!matches_away_team_id_fkey(id, team_name, captain_id),
+      scheduled_venue:venues!matches_scheduled_venue_id_fkey(id, name, city, state),
+      season_week:season_weeks(id, week_name, scheduled_date, week_type),
+      season:seasons!inner(id, league_id, league:leagues(id, game_type, day_of_week, division))
+    `)
+    .in('season.league_id', leagueIds)
+    .not('started_at', 'is', null)
+    .neq('status', 'completed')
+    .order('season_week(scheduled_date)', { ascending: true });
+
+  if (error) {
+    throw new Error(`Failed to fetch live matches: ${error.message}`);
+  }
+
+  const matches = (data || []).map((match: any) => ({
+    ...match,
+    scheduled_date: match.season_week?.scheduled_date || null,
+  }));
+
+  return matches as MatchWithDetails[];
+}
+
+/**
  * Fetch season schedule organized by week
  *
  * Gets all weeks and matches for a season, organized hierarchically.

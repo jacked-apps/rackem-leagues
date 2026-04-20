@@ -732,10 +732,12 @@ export function ScoreMatch() {
         </div>
       </div>
 
-      {/* Table Number Bar - clickable to change */}
+      {/* Table Number Bar - clickable to change. Also hosts the spectator
+          icon(s) on the right side when we have a league ID. */}
       <TableNumberBar
         matchId={matchId!}
         tableNumber={match.assigned_table_number}
+        spectatorLeagueId={match.league?.id ?? null}
       />
 
       {/* Scoreboard - Fixed at top.
