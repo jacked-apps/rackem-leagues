@@ -65,6 +65,25 @@ export function useHouseRulesForMemberships() {
   });
 }
 
+/** Fetch a single house rule by id (detail-page deep-link flow). */
+export function useHouseRule(ruleId: string | null | undefined) {
+  return useQuery({
+    queryKey: ['rules', 'house', 'one', ruleId ?? 'none'],
+    queryFn: async (): Promise<HouseRule | null> => {
+      if (!ruleId) return null;
+      const { data, error } = await supabase
+        .from(VIEW as never)
+        .select('*')
+        .eq('id', ruleId)
+        .maybeSingle();
+      if (error) throw error;
+      return (data ?? null) as HouseRule | null;
+    },
+    enabled: !!ruleId,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 /** Fetch rules for a specific scope on demand (cheat-sheet flow). */
 export function useHouseRulesForScope(scope: HouseRuleScope | null) {
   return useQuery({
