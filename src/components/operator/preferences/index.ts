@@ -6,7 +6,7 @@
  */
 
 export { HandicapSettingsSection } from './HandicapSettingsSection';
-export { FormatSettingsSection } from './FormatSettingsSection';
+export { RosterSettingsSection } from './RosterSettingsSection';
 export { MatchRulesSection } from './MatchRulesSection';
 export { PlayerAuthorizationSection } from './PlayerAuthorizationSection';
 export { ContentModerationSection } from './ContentModerationSection';
