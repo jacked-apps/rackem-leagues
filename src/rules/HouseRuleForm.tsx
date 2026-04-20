@@ -125,6 +125,10 @@ export function HouseRuleForm({ initial, submitting = false, onCancel, onSubmit,
     setBodyText(csi.body.join('\n\n'));
   }
 
+  function addSnippet(paragraph: string) {
+    setBodyText((prev) => (prev.trim().length === 0 ? paragraph : `${prev.trimEnd()}\n\n${paragraph}`));
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4" aria-label={initial ? 'Edit house rule' : 'Add house rule'}>
       <fieldset className="space-y-2">
@@ -171,13 +175,28 @@ export function HouseRuleForm({ initial, submitting = false, onCancel, onSubmit,
             return (
               <details className="rounded-md border bg-muted/30 p-3" open>
                 <summary className="cursor-pointer text-xs font-medium">
-                  What the official rule says
+                  What the official rule says — click <span className="font-semibold">+ Add</span> to pull a piece into your rule
                 </summary>
                 <div className="mt-2 space-y-2 text-sm leading-relaxed">
                   {csi.body.length === 0 ? (
                     <p className="italic text-muted-foreground">(No content in this rule.)</p>
                   ) : (
-                    csi.body.map((p, i) => <p key={i}>{p}</p>)
+                    csi.body.map((p, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          loadingText="none"
+                          className="shrink-0"
+                          onClick={() => addSnippet(p)}
+                          aria-label={`Add snippet ${i + 1} to my rule`}
+                        >
+                          + Add
+                        </Button>
+                        <p className="flex-1">{p}</p>
+                      </div>
+                    ))
                   )}
                 </div>
               </details>

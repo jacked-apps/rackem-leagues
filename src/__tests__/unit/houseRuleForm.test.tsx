@@ -138,6 +138,32 @@ describe('HouseRuleForm', () => {
     expect(screen.queryByText(/sounds like it might be related/i)).not.toBeInTheDocument();
   });
 
+  it('clicking + Add on a CSI snippet appends it to the body textarea', async () => {
+    const user = userEvent.setup();
+    render(<HouseRuleForm onCancel={() => {}} onSubmit={() => {}} />);
+
+    // Pick a CSI rule via the suggestions shortcut.
+    await user.type(screen.getByLabelText(/title/i), 'break');
+    const firstSuggestion = screen.getAllByRole('button').find((btn) => /^\d/.test(btn.textContent ?? ''));
+    if (!firstSuggestion) throw new Error('expected suggestion');
+    await user.click(firstSuggestion);
+
+    // Click the first "+ Add" in the "What the official rule says" panel.
+    const addButtons = screen.getAllByRole('button', { name: /add snippet \d+ to my rule/i });
+    expect(addButtons.length).toBeGreaterThan(0);
+    await user.click(addButtons[0]);
+
+    // Textarea should now contain non-empty text.
+    const textarea = screen.getByLabelText(/rule text/i) as HTMLTextAreaElement;
+    expect(textarea.value.length).toBeGreaterThan(0);
+
+    // Clicking a second snippet appends with a blank-line separator.
+    if (addButtons.length >= 2) {
+      await user.click(addButtons[1]);
+      expect(textarea.value).toContain('\n\n');
+    }
+  });
+
   it('submits valid Standalone values (body split into paragraphs)', async () => {
     const onSubmit = vi.fn();
     const user = userEvent.setup();
