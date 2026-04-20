@@ -89,6 +89,8 @@ function houseRule(partial: Partial<HouseRule>): HouseRule {
 describe('RulesPage — House rules filter (Unit 3A)', () => {
   beforeEach(() => {
     window.localStorage.clear();
+    // Pre-dismiss the discovery nudge — each test opts in explicitly.
+    window.localStorage.setItem('rackem:rules:houseFilterNudgeDismissed', '1');
     vi.clearAllMocks();
 
     // Default: logged-in user, member of one league. Chip toggle → selection.
@@ -212,5 +214,106 @@ describe('RulesPage — House rules filter (Unit 3A)', () => {
     // CSI-first, house-second per R16 — both render. House badge is prefixed "House · {scope}".
     expect(list).toHaveTextContent('No jump cues');
     expect(list).toHaveTextContent("House · Ed's 8-Ball Mondays");
+  });
+});
+
+describe('RulesPage — TOC interleave + differences-only (Unit 3B)', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    window.localStorage.setItem('rackem:rules:houseFilterNudgeDismissed', '1');
+    vi.clearAllMocks();
+
+    activeLeagueMock.mockReturnValue({
+      activeLeague: { id: ED_LEAGUE.id, displayName: ED_LEAGUE.displayName, organizationName: ED_LEAGUE.organizationName },
+      setActiveLeague: vi.fn(),
+      clear: vi.fn(),
+    });
+    myMembershipsMock.mockReturnValue({
+      data: { organizations: [], leagues: [ED_LEAGUE] },
+      isLoading: false,
+      isSuccess: true,
+    });
+    houseForScopeMock.mockReturnValue({ data: [], isLoading: false, isSuccess: true });
+  });
+
+  it('shows a standalone house rule under "League-specific additions"', async () => {
+    houseForMembershipsMock.mockReturnValue({
+      data: [houseRule({ id: 'std-1', effect_type: 'standalone', related_rule_id: null, title: 'No jump cues' })],
+      isLoading: false,
+      isSuccess: true,
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<RulesPage />);
+    await user.click(screen.getByRole('button', { name: /^house rules$/i }));
+
+    const additions = screen.getByRole('region', { name: /league-specific additions/i });
+    expect(additions).toHaveTextContent('No jump cues');
+  });
+
+  it('shows the differences-only toggle only when a single scope is active', async () => {
+    houseForMembershipsMock.mockReturnValue({ data: [], isLoading: false, isSuccess: true });
+    const user = userEvent.setup();
+    renderWithProviders(<RulesPage />);
+    expect(screen.queryByLabelText(/show only house-rule differences/i)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /^house rules$/i }));
+    expect(screen.getByLabelText(/show only house-rule differences/i)).toBeInTheDocument();
+  });
+
+  it('renders the empty state when differences-only is on with zero house rules', async () => {
+    houseForMembershipsMock.mockReturnValue({ data: [], isLoading: false, isSuccess: true });
+    const user = userEvent.setup();
+    renderWithProviders(<RulesPage />);
+    await user.click(screen.getByRole('button', { name: /^house rules$/i }));
+    await user.click(screen.getByLabelText(/show only house-rule differences/i));
+
+    expect(screen.getByText(/uses the standard CSI rules/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /view the full rulebook/i }));
+    expect(screen.queryByText(/uses the standard CSI rules/i)).not.toBeInTheDocument();
+  });
+});
+
+describe('RulesPage — discovery nudge (Unit 3B)', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    vi.clearAllMocks();
+
+    activeLeagueMock.mockReturnValue({
+      activeLeague: { id: ED_LEAGUE.id, displayName: ED_LEAGUE.displayName, organizationName: ED_LEAGUE.organizationName },
+      setActiveLeague: vi.fn(),
+      clear: vi.fn(),
+    });
+    myMembershipsMock.mockReturnValue({
+      data: { organizations: [], leagues: [ED_LEAGUE] },
+      isLoading: false,
+      isSuccess: true,
+    });
+    houseForMembershipsMock.mockReturnValue({ data: [], isLoading: false, isSuccess: true });
+    houseForScopeMock.mockReturnValue({ data: [], isLoading: false, isSuccess: true });
+  });
+
+  it('shows the nudge for a logged-in member who hasn\'t dismissed it', () => {
+    renderWithProviders(<RulesPage />);
+    expect(screen.getByText(/your league may have house rules/i)).toBeInTheDocument();
+  });
+
+  it('does not show the nudge when the user has no memberships', () => {
+    myMembershipsMock.mockReturnValue({
+      data: { organizations: [], leagues: [] },
+      isLoading: false,
+      isSuccess: true,
+    });
+    renderWithProviders(<RulesPage />);
+    expect(screen.queryByText(/your league may have house rules/i)).not.toBeInTheDocument();
+  });
+
+  it('dismissing the nudge persists across reload', async () => {
+    const user = userEvent.setup();
+    const { unmount } = renderWithProviders(<RulesPage />);
+    await user.click(screen.getByRole('button', { name: /dismiss house rules tip/i }));
+    expect(screen.queryByText(/your league may have house rules/i)).not.toBeInTheDocument();
+
+    unmount();
+    renderWithProviders(<RulesPage />);
+    expect(screen.queryByText(/your league may have house rules/i)).not.toBeInTheDocument();
   });
 });

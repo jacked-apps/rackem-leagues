@@ -15,11 +15,14 @@
  * only toggle. Unit 4 adds the house-rule detail route.
  */
 
-import { useEffect, useMemo, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ChevronDown, X } from 'lucide-react';
 
 import { PageHeader } from '@/components/PageHeader';
 import { FilterChip } from '@/components/ui/filter-chip';
+import { Button } from '@/components/ui/button';
+import { useUser } from '@/context/useUser';
+import { useMyMemberships } from './useMyMemberships';
 
 import { AllGamesAccordion } from './AllGamesAccordion';
 import { Attribution } from './Attribution';
@@ -39,6 +42,7 @@ import { searchHouseRules, type HouseRuleSearchResult } from './searchHouseRules
 import type { HouseRule, HouseRuleScope } from './house-rules.types';
 
 const LAST_GAME_KEY = 'rackem:rules:lastGame';
+const NUDGE_DISMISS_KEY = 'rackem:rules:houseFilterNudgeDismissed';
 const ALL_GAMES_VALUE = 'all';
 const MAIN_GAME_SLUGS = ['general', '8-ball', '9-ball', '10-ball'] as const;
 
@@ -77,6 +81,7 @@ export default function RulesPage() {
   const { activeLeague } = useActiveLeague();
   const [scopeSelection, setScopeSelection] = useState<ScopeSelection | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [differencesOnly, setDifferencesOnly] = useState(false);
 
   const handleClearSearch = () => {
     setQuery('');
@@ -113,6 +118,43 @@ export default function RulesPage() {
     () => (query.trim().length === 0 ? [] : searchHouseRules(query, visibleHouseRules)),
     [query, visibleHouseRules],
   );
+
+  const isSingleScope = scopeSelection?.kind === 'single';
+
+  // ---- Discovery nudge (R28) ---------------------------------------------
+  const { isLoggedIn } = useUser();
+  const { data: myMemberships } = useMyMemberships();
+  const hasMemberships = (myMemberships?.leagues.length ?? 0) > 0;
+  const [nudgeDismissed, setNudgeDismissed] = useState<boolean>(() => {
+    try {
+      return window.localStorage.getItem(NUDGE_DISMISS_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+  const autoHideTimer = useRef<number | null>(null);
+  const filterWasInteractedWith = useRef(false);
+
+  const showNudge = isLoggedIn && hasMemberships && !nudgeDismissed;
+
+  const dismissNudge = () => {
+    setNudgeDismissed(true);
+    try {
+      window.localStorage.setItem(NUDGE_DISMISS_KEY, '1');
+    } catch {
+      /* ignore */
+    }
+  };
+
+  // Auto-hide 8s after the first filter interaction.
+  useEffect(() => {
+    if (!showNudge || !scopeSelection || filterWasInteractedWith.current) return;
+    filterWasInteractedWith.current = true;
+    autoHideTimer.current = window.setTimeout(dismissNudge, 8000);
+    return () => {
+      if (autoHideTimer.current) window.clearTimeout(autoHideTimer.current);
+    };
+  }, [scopeSelection, showNudge]);
 
   // Events.
   useEffect(() => {
@@ -186,6 +228,30 @@ export default function RulesPage() {
       <PageHeader backTo="/" backLabel="Home" title="Official Rules" />
 
       <div className="mx-auto max-w-3xl p-4">
+        {showNudge ? (
+          <div
+            role="status"
+            className="mb-3 flex items-start gap-3 rounded-md border bg-primary/5 p-3 text-sm"
+          >
+            <div className="flex-1">
+              <p className="font-medium">Your league may have house rules.</p>
+              <p className="text-muted-foreground">
+                Turn on the <span className="font-medium">House rules</span> chip below to see them alongside the official rules.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              loadingText="none"
+              aria-label="Dismiss house rules tip"
+              onClick={dismissNudge}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        ) : null}
+
         <div className="space-y-2" role="group" aria-label="Filter rules">
           <div className="flex flex-wrap items-center gap-2">
             {mainGames.map((game) => (
@@ -249,6 +315,30 @@ export default function RulesPage() {
 
         <SearchInput key={resetCount} onDebouncedChange={setQuery} />
 
+        {isSingleScope ? (
+          <div className="mt-3 flex items-center justify-end gap-2">
+            <label className="flex cursor-pointer items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="h-4 w-4"
+                checked={differencesOnly}
+                onChange={(e) => {
+                  setDifferencesOnly(e.target.checked);
+                  if (e.target.checked && scopeSelection?.kind === 'single') {
+                    const s = scopeSelection.scope;
+                    rulesEvents.logDifferencesOnlyActivated(
+                      s.type === 'organization'
+                        ? { type: 'organization', id: s.organizationId }
+                        : { type: 'league', id: s.leagueId },
+                    );
+                  }
+                }}
+              />
+              Show only house-rule differences
+            </label>
+          </div>
+        ) : null}
+
         {query.trim().length > 0 ? (
           <SearchResults
             query={query}
@@ -258,12 +348,22 @@ export default function RulesPage() {
             onClearSearch={handleClearSearch}
             onClearFilter={handleClearFilter}
           />
+        ) : differencesOnly && visibleHouseRules.length === 0 ? (
+          <DifferencesOnlyEmpty
+            scopeName={scopeSelection?.kind === 'single' ? scopeSelection.displayName : ''}
+            onViewAll={() => setDifferencesOnly(false)}
+          />
         ) : tab === ALL_GAMES_VALUE ? (
-          <AllGamesAccordion />
+          <AllGamesAccordion houseRules={visibleHouseRules} differencesOnly={differencesOnly} />
         ) : (
           <>
             <h2 className="sr-only">{activeGame?.name ?? 'Rules'}</h2>
-            <GameTOC rules={activeRules} />
+            <GameTOC
+              rules={activeRules}
+              houseRules={visibleHouseRules}
+              game={activeGame?.slug}
+              differencesOnly={differencesOnly}
+            />
           </>
         )}
 
@@ -275,6 +375,26 @@ export default function RulesPage() {
         onOpenChange={setPickerOpen}
         onSelect={handlePickerSelect}
       />
+    </div>
+  );
+}
+
+type DifferencesOnlyEmptyProps = {
+  scopeName: string;
+  onViewAll: () => void;
+};
+
+function DifferencesOnlyEmpty({ scopeName, onViewAll }: DifferencesOnlyEmptyProps) {
+  return (
+    <div role="status" className="mt-3 rounded-md border bg-muted/30 p-6 text-center">
+      <p className="text-sm">
+        <span className="font-medium">{scopeName}</span> uses the standard CSI rules — no house rules on file.
+      </p>
+      <div className="mt-3">
+        <Button type="button" variant="outline" size="sm" loadingText="none" onClick={onViewAll}>
+          View the full rulebook →
+        </Button>
+      </div>
     </div>
   );
 }
