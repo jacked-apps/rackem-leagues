@@ -163,6 +163,26 @@ export function HouseRuleForm({ initial, submitting = false, onCancel, onSubmit,
             onChange={(next) => setValues((s) => ({ ...s, related_rule_id: next }))}
           />
           {errors.related_rule_id ? <p className="text-sm text-destructive">{errors.related_rule_id}</p> : null}
+          {(() => {
+            if (!values.related_rule_id) return null;
+            const [g, id] = values.related_rule_id.split(':');
+            const csi = resolveRuleId(g, id);
+            if (!csi) return null;
+            return (
+              <details className="rounded-md border bg-muted/30 p-3" open>
+                <summary className="cursor-pointer text-xs font-medium">
+                  What the official rule says
+                </summary>
+                <div className="mt-2 space-y-2 text-sm leading-relaxed">
+                  {csi.body.length === 0 ? (
+                    <p className="italic text-muted-foreground">(No content in this rule.)</p>
+                  ) : (
+                    csi.body.map((p, i) => <p key={i}>{p}</p>)
+                  )}
+                </div>
+              </details>
+            );
+          })()}
           <Button type="button" variant="ghost" size="sm" loadingText="none" onClick={copyOfficialText} disabled={!values.related_rule_id}>
             Copy official text as a starting point
           </Button>

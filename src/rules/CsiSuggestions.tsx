@@ -24,7 +24,14 @@ type Props = {
 const MAX_SUGGESTIONS = 4;
 
 export function CsiSuggestions({ title, onPick, onDismiss }: Props) {
-  const results = searchRulebook(title, ALL_GAMES).slice(0, MAX_SUGGESTIONS);
+  // Heading matches first so diverse games with a relevant heading beat
+  // whichever game happens to come first in the rulebook's body-text scan.
+  const raw = searchRulebook(title, ALL_GAMES);
+  const ranked = [
+    ...raw.filter((r) => r.matchType === 'heading'),
+    ...raw.filter((r) => r.matchType === 'body'),
+  ];
+  const results = ranked.slice(0, MAX_SUGGESTIONS);
   if (results.length === 0) return null;
 
   return (
