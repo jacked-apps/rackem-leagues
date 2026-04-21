@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 import { PendingInvitesModal } from '@/components/modals/PendingInvitesModal';
+import { ShareAppCard } from '@/components/ShareAppCard';
 import { Users, MessageSquare, Trophy, Building2, Settings, Radio } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
@@ -182,6 +183,12 @@ export const Dashboard: React.FC = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Share the app with teammates */}
+        <ShareAppCard
+          title="Invite teammates"
+          description="Scan the QR code or share the link to get your teammates on Rack'em Leagues."
+        />
 
         {/* League Operator Section - Multi-Org */}
         {(member.role === 'league_operator' || member.role === 'developer') && organizations.length > 0 && (

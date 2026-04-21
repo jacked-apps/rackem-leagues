@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-04-19 (Phase 3 Units 11-12 Fargo scoring; merged main's wizard-v2 cleanup)
+> **Last Updated**: 2026-04-21 (env differentiation: banner + favicon + env-aware PWA manifest + installed app icons)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -300,6 +300,8 @@
 | `main.tsx` | Application entry point |
 | `supabaseClient.ts` | Supabase client configuration |
 | `vite-env.d.ts` | Vite TypeScript definitions |
+| `config/environment.ts` | App environment detection (dev/staging/prod) + banner config |
+| `components/EnvironmentBanner.tsx` | Top-of-app banner labeling non-production builds |
 
 ---
 
