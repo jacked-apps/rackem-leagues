@@ -11,7 +11,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'prompt',
-      includeAssets: ['favicon.svg', 'icons/*.png', 'icons/*.svg'],
+      includeAssets: ['favicon*.svg', 'icons/*.png', 'icons/*.svg'],
       manifest: {
         name: "Rack 'Em Leagues",
         short_name: "Rack 'Em",

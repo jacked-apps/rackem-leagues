@@ -47,6 +47,10 @@ export const ENV_BANNER_CONFIG: Record<
     bgClass: string;
     /** Tailwind text color class */
     textClass: string;
+    /** Path (public-relative) to the env-specific favicon SVG */
+    faviconPath: string;
+    /** Prefix prepended to document.title, e.g. "[BETA]" */
+    titlePrefix: string;
   }
 > = {
   staging: {
@@ -55,11 +59,36 @@ export const ENV_BANNER_CONFIG: Record<
       'You are testing a pre-release build. Features may change. Report issues to Ed or to the league operator running tonight.',
     bgClass: 'bg-amber-500',
     textClass: 'text-black',
+    faviconPath: '/favicon-staging.svg',
+    titlePrefix: '[BETA]',
   },
   development: {
     label: 'DEV',
     message: 'Development build — not connected to production data.',
     bgClass: 'bg-red-600',
     textClass: 'text-white',
+    faviconPath: '/favicon-dev.svg',
+    titlePrefix: '[DEV]',
   },
+};
+
+/**
+ * Applies environment-specific branding (favicon swap + title prefix) to
+ * the document. No-op on production. Call once, as early as possible —
+ * typically from `main.tsx` before React renders, to avoid a flash of
+ * production branding on non-production builds.
+ */
+export const applyEnvironmentBranding = (): void => {
+  if (env === 'production') return;
+
+  const config = ENV_BANNER_CONFIG[env];
+
+  const faviconLink = document.querySelector<HTMLLinkElement>(
+    'link[rel="icon"]'
+  );
+  if (faviconLink) {
+    faviconLink.href = config.faviconPath;
+  }
+
+  document.title = `${config.titlePrefix} ${document.title}`;
 };
