@@ -16,6 +16,7 @@ import { UserProvider } from './context/UserProvider';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Toaster } from './components/ui/sonner';
 import { PWAUpdatePrompt } from './components/PWAUpdatePrompt';
+import { EnvironmentBanner } from './components/EnvironmentBanner';
 
 const App: React.FC = () => {
   return (
@@ -24,6 +25,7 @@ const App: React.FC = () => {
         style={{ minHeight: '100vh', minWidth: '100vw' }}
         className="full-screen"
       >
+        <EnvironmentBanner />
         <UserProvider>
           <RouterProvider router={router} />
         </UserProvider>
