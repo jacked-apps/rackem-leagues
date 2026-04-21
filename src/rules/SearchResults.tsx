@@ -16,11 +16,14 @@ import { SearchSnippet } from './SearchSnippet';
 import type { SearchResult, GameFilter } from './useRulebookSearch';
 import { ALL_GAMES } from './useRulebookSearch';
 import { rulebook } from './useRulebook';
+import type { HouseRuleSearchResult } from './searchHouseRules';
 
 type SearchResultsProps = {
   query: string;
   gameFilter: GameFilter;
   results: SearchResult[];
+  /** House-rule matches, pre-ordered by caller per R16. Empty when filter off. */
+  houseResults?: HouseRuleSearchResult[];
   onClearSearch: () => void;
   onClearFilter: () => void;
 };
@@ -29,11 +32,12 @@ export function SearchResults({
   query,
   gameFilter,
   results,
+  houseResults = [],
   onClearSearch,
   onClearFilter,
 }: SearchResultsProps) {
-
-  if (results.length === 0) {
+  const hasAny = results.length > 0 || houseResults.length > 0;
+  if (!hasAny) {
     return (
       <ZeroResults
         query={query}
@@ -50,7 +54,7 @@ export function SearchResults({
         const gameName = rulebook.index.games.find((g) => g.slug === hit.rule.game)?.name ?? hit.rule.game;
         return (
           <Link
-            key={`${hit.rule.game}:${hit.rule.id}`}
+            key={`csi:${hit.rule.game}:${hit.rule.id}`}
             role="listitem"
             to={`/rules/${hit.rule.game}/${hit.rule.id}`}
             className="block rounded-md border bg-card p-3 transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -60,13 +64,60 @@ export function SearchResults({
                 {hit.rule.id}
               </span>
               <span className="font-medium">{hit.rule.heading}</span>
-              <span className="ml-auto text-xs text-muted-foreground">{gameName}</span>
+              <span className="ml-auto rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                Official · {gameName}
+              </span>
             </div>
             <div className="mt-1">
               <SearchSnippet
                 rule={hit.rule}
                 query={query}
                 matchType={hit.matchType}
+                bodyParagraphIndex={hit.bodyParagraphIndex}
+              />
+            </div>
+          </Link>
+        );
+      })}
+
+      {houseResults.map((hit) => {
+        const scopeType = hit.rule.scope_type;
+        const scopeId =
+          scopeType === 'organization' ? hit.rule.organization_id : hit.rule.league_id;
+        return (
+          <Link
+            key={`house:${hit.rule.id}`}
+            role="listitem"
+            to={`/rules/house/${scopeType}/${scopeId}/${hit.rule.id}`}
+            className="block rounded-md border bg-card p-3 transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <div className="flex items-center gap-3">
+              <span className="font-mono text-sm text-muted-foreground shrink-0">
+                {hit.rule.related_rule_id ?? hit.rule.id.slice(0, 8)}
+              </span>
+              <span className="font-medium">{hit.rule.title}</span>
+              <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                House · {hit.rule.scope_name}
+              </span>
+            </div>
+            {hit.rule.related_rule_id ? (
+              <p className="mt-1 text-xs text-muted-foreground">
+                {hit.rule.effect_type === 'override' ? 'Overrides' : 'Enhances'} CSI{' '}
+                {hit.rule.related_rule_id.split(':')[1]}
+              </p>
+            ) : null}
+            <div className="mt-1">
+              {/* SearchSnippet accepts Rule; HouseRule's `body: string[]` shape matches. */}
+              <SearchSnippet
+                rule={{
+                  id: hit.rule.id,
+                  heading: hit.rule.title,
+                  game: hit.rule.game,
+                  body: hit.rule.body,
+                  order: 0,
+                }}
+                query={query}
+                matchType={hit.matchType === 'title' ? 'heading' : 'body'}
                 bodyParagraphIndex={hit.bodyParagraphIndex}
               />
             </div>

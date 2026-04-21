@@ -1,4 +1,6 @@
 /**
+ * @vitest-environment node
+ *
  * @fileoverview RLS + constraint tests for `rules_page_events`.
  *
  * Runs against the local Supabase instance (`supabase start`, migrations
@@ -60,6 +62,43 @@ describe('rules_page_events — RLS + constraints (anonymous client)', () => {
     const { error } = await client
       .from(TABLE)
       .insert({ event_type: 'search_query', result_count: -1 } as never);
+    expect(error).not.toBeNull();
+  });
+
+  // --- Branch 2 additions: new event types + optional scope columns --------
+
+  it.each([
+    'house_filter_activated',
+    'differences_only_activated',
+    'house_rule_opened',
+    'scope_changed',
+  ] as const)(
+    'anonymous INSERT with new event_type="%s" succeeds',
+    async (eventType) => {
+      const { error } = await client
+        .from(TABLE)
+        .insert({ event_type: eventType } as never);
+      expect(error).toBeNull();
+    },
+  );
+
+  it.each(['organization', 'league'] as const)(
+    'anonymous INSERT accepts scope_type="%s"',
+    async (scopeType) => {
+      const { error } = await client.from(TABLE).insert({
+        event_type: 'house_filter_activated',
+        scope_type: scopeType,
+        scope_id: '00000000-0000-0000-0000-000000000000',
+      } as never);
+      expect(error).toBeNull();
+    },
+  );
+
+  it('INSERT with an invalid scope_type is rejected', async () => {
+    const { error } = await client.from(TABLE).insert({
+      event_type: 'house_filter_activated',
+      scope_type: 'season', // not in the allowed set
+    } as never);
     expect(error).not.toBeNull();
   });
 

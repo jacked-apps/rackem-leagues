@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-04-19 (added Official Rulebook Reader feature — `/src/rules/`, `/scripts/clean-rulebook/`, cleaned BCA data, `rules_page_events` migration, filter-chip + sheet UI components)
+> **Last Updated**: 2026-04-21 (added League House Rules feature on top of the rulebook reader — LO authoring UI, league/org scoped rules with cascade + pure-CSI opt-out, `house_rules` migration, dev bootstrap SQL fixtures)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -330,6 +330,9 @@ Node-only tooling the operator runs manually (not part of the app bundle).
 - `SeasonCreationWizard.smoke.test.tsx` - Smoke tests
 - `RulesPage.test.tsx` - `/rules` landing: filter chips, search, zero-results, clear actions
 - `RuleDetailPage.test.tsx` - `/rules/:game/:ruleId`: happy path, drawer, unknown-ID fallback
+- `RulesPageHouseRules.test.tsx` - House rules chip, scope picker, merged search, TOC interleave, differences-only, discovery nudge
+- `HouseRuleDetailPage.test.tsx` - `/rules/house/:scope/:scopeId/:ruleId`: happy path, drawer, CSI backlink, standalone variant, unknown-ID fallback
+- `LeagueRulesPage.test.tsx` - Org-wide house rules manager: render, Add/Cancel form, delete-with-Undo
 
 #### Unit Tests (`/__tests__/unit/`)
 - `messageQueries.test.ts` - Message query utilities
@@ -340,9 +343,13 @@ Node-only tooling the operator runs manually (not part of the app bundle).
 - `useRulebookSearch.test.ts` - In-memory substring search hook
 - `searchSnippet.test.ts` - Snippet extraction + highlight helpers
 - `copyLinkButton.test.tsx` - Share-link clipboard button
+- `searchHouseRules.test.ts` - Pure substring search over house-rule title + body
+- `groupHouseRules.test.ts` - TOC interleave grouping: standalones, override pairing, specificity ordering
+- `houseRuleForm.test.tsx` - HouseRuleForm: validation, effect-type switch, CSI suggestions, snippet picker, dirty state
 
 #### Database Tests (`/__tests__/database/`)
 - `rulesPageEvents.rls.test.ts` - `rules_page_events` RLS + constraints (requires local Supabase)
+- `houseRules.rls.test.ts` - `house_rules` RLS probes (requires local Supabase; full coverage deferred until seed fixtures land)
 
 #### Test Utilities (`/test/`)
 - `setup.ts` - Test environment setup
@@ -468,8 +475,27 @@ Public feature at `/rules`. Reads the cleaned CSI rulebook from `/src/officalBCA
 - `useRulebook.ts` - Typed loader singleton (merges cleaned game modules)
 - `useRulebookSearch.ts` - In-memory substring search (hook + pure function)
 - `resolveRuleId.ts` - O(1) deep-link resolver
-- `useRulesEvents.ts` - Fire-and-forget usage events (page_open / search / deep_link)
+- `useRulesEvents.ts` - Fire-and-forget usage events (page_open / search / deep_link / house_filter / differences_only / house_rule_opened / scope_changed)
 - `rulebook.types.ts` - Shared types: `Rule`, `Game`, `Rulebook`, `RulebookIndex`
+
+#### League House Rules (part of `/rules/`)
+
+LO-authored rules layered on top of the CSI rulebook. Org-wide rules cascade into every league unless the league opts out. Reader interleaves matching house rules beneath their CSI counterparts.
+
+- `HouseRuleDetailPage.tsx` - `/rules/house/:scope/:scopeId/:ruleId`: full rule + scope attribution + CSI backlink
+- `HouseRuleCard.tsx` - Clickable house-rule row with scope badge
+- `HouseRuleForm.tsx` - Shared add/edit form: effect-type radios, CSI picker, CSI preview with per-snippet "+ Add", dirty-state reporting
+- `HouseRulesList.tsx` - Reusable list with inline Add/Edit and delete-with-Undo (preserves `id`)
+- `HouseRulesScopePicker.tsx` - Sheet for picking which league's rules to overlay on the reader
+- `CsiRulePicker.tsx` - shadcn Command palette over the in-bundle rulebook
+- `CsiSuggestions.tsx` - Live "similar official rules?" panel under the title input
+- `LeagueHouseRulesSection.tsx` - League-scoped list + "Use official CSI rulebook only" opt-out toggle for LeagueSettings
+- `useHouseRules.ts` - Loader hooks: by memberships, by single id, and cascade-aware for a single scope
+- `useMyMemberships.ts` - Derives player + staff org/league memberships for scope defaulting
+- `useActiveLeague.ts` - Per-device active-league state with localStorage + sign-out clear
+- `searchHouseRules.ts` - Pure substring search across house-rule title + body
+- `groupHouseRules.ts` - Interleave helper: pairs house rules to their CSI counterparts + pulls out standalones
+- `house-rules.types.ts` - Shared types: `HouseRule`, `HouseRuleScope`, `ScopeSelection`, memberships, etc.
 
 ---
 
@@ -906,6 +932,10 @@ Supabase local configuration and migrations
 | `supabase/config.toml` | Supabase local configuration |
 | `supabase/migrations/20251218000000_venue_table_counts_optional.sql` | Fix venue total_tables computed column for array columns |
 | `supabase/migrations/20260419000000_rules_page_events.sql` | `rules_page_events` table + RLS (anon INSERT, developer-only SELECT) |
+| `supabase/migrations/20260419120000_house_rules.sql` | `house_rules` table, `house_rules_with_scope_name` view, `can_write_house_rule_org` SECURITY DEFINER, RLS policies |
+| `supabase/migrations/20260420120000_leagues_ignore_org_house_rules.sql` | `leagues.ignore_org_house_rules` column for per-league pure-CSI opt-out |
+| `database/dev_bootstrap_lo.sql` | DEV-ONLY: given an email, upserts member + org (owner via trigger) + one empty league. Paste into Studio. |
+| `database/dev_bootstrap_full.sql` | DEV-ONLY: full fixture — org + venue + league + active 12-week season + 4 teams with 5-player rosters + full round-robin schedule. Paste into Studio. |
 | `supabase/seed.sql` | Full local dev DB dump — auto-applied on `supabase db reset`. **Local only, never runs against production.** |
 | `supabase/seed_test_users.sql` | 4 synthetic test auth users (player/operator/captain/owner, password `test-password-123`). **Dev-only — run manually via `docker exec ... psql`.** |
 | `supabase/seed_members.sql` | 20 placeholder players (no `user_id`) spanning Fargo 300–580 ratings for wizard/team-management testing. **Dev-only — not wired into auto-seed; run manually when the local DB needs a bench of fake members.** |
@@ -956,6 +986,7 @@ See [RESTRUCTURE_PLAN.md](RESTRUCTURE_PLAN.md) for complete list of 20 organizat
 | **Messaging** | `/pages`, `/components/messages`, `/hooks`, `/utils`, `/database/messaging` | `Messages.tsx`, `useMessages.ts`, `messageQueries.ts` |
 | **Venues** | `/operator`, `/components/operator` | `VenueManagement.tsx`, `VenueCard.tsx`, `venues.sql` |
 | **Official Rulebook Reader** | `/rules`, `/officalBCARulebook/cleaned`, `/scripts/clean-rulebook` | `RulesPage.tsx`, `RuleDetailPage.tsx`, `useRulebook.ts`, `scripts/clean-rulebook.ts`, `rules_page_events.sql` |
+| **League House Rules** | `/rules` (reader overlay), `/rules/house/:scope/:scopeId/:ruleId`, `/league-rules/:orgId`, `/league-settings/:leagueId` (authoring) | `HouseRuleForm.tsx`, `HouseRulesList.tsx`, `HouseRuleDetailPage.tsx`, `LeagueHouseRulesSection.tsx`, `useHouseRules.ts`, `house_rules.sql`, `leagues_ignore_org_house_rules.sql` |
 | **Player Registration** | `/newPlayer` | `NewPlayerForm.tsx`, `usePlayerFormSubmission.ts` |
 | **Reporting** | `/operator`, `/pages`, `/database/reporting` | `ReportsManagement.tsx`, `AdminReports.tsx`, `user_reports.sql` |
 | **Wizards/Forms** | `/wizards`, `/components/wizard`, `/components/forms`, `/data`, `/flows` | `WizardFlowShell.tsx`, `createNewLeagueFlow.ts`, `seasonWizardSteps.tsx` |

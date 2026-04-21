@@ -5,6 +5,9 @@
  * The default open accordion is the rulebook's `defaultGame` slug so a cold
  * cover-to-cover visit lands on the same game the single-game tab view
  * defaults to (R5a consistency with R5).
+ *
+ * Accepts the same house-rule props as GameTOC so interleaving works across
+ * every game section when the filter is on.
  */
 
 import {
@@ -16,12 +19,19 @@ import {
 
 import { GameTOC } from './GameTOC';
 import { rulebook } from './useRulebook';
+import type { HouseRule } from './house-rules.types';
 
-export function AllGamesAccordion() {
+type AllGamesAccordionProps = {
+  houseRules?: HouseRule[];
+  differencesOnly?: boolean;
+};
+
+export function AllGamesAccordion({ houseRules = [], differencesOnly = false }: AllGamesAccordionProps) {
   return (
     <Accordion type="single" collapsible defaultValue={rulebook.index.defaultGame}>
       {rulebook.index.games.map((game) => {
         const rules = rulebook.rulesByGame[game.slug] ?? [];
+        const gameHouseRules = houseRules.filter((r) => r.game === game.slug);
         return (
           <AccordionItem key={game.slug} value={game.slug}>
             <AccordionTrigger className="text-base">
@@ -31,7 +41,12 @@ export function AllGamesAccordion() {
               </span>
             </AccordionTrigger>
             <AccordionContent>
-              <GameTOC rules={rules} />
+              <GameTOC
+                rules={rules}
+                houseRules={gameHouseRules}
+                game={game.slug}
+                differencesOnly={differencesOnly}
+              />
             </AccordionContent>
           </AccordionItem>
         );
