@@ -618,6 +618,29 @@ sequenceDiagram
 - Post-launch: query `rules_page_events` for the four new `event_type` values + their `scope_type`/`scope_id` metadata to measure feature engagement (per R30).
 - Update `LeagueRules.tsx`'s page-level JSDoc — current doc says "Official BCA rules and optional house rules"; rewrite to reflect the post-repurpose purpose (org-wide house-rules management + a link back to `/rules` for the official rulebook).
 
+## Future / Deferred (not shipping in v1)
+
+Ideas surfaced during build-out but parked. Not commitments — capture the thinking
+so a future plan can pick them up with context intact.
+
+- **League rule overrides a *specific* org rule.** Today a league can opt out of all
+  org rules via the "Use the official CSI rulebook only" toggle on LeagueSettings.
+  It cannot nullify one specific org rule while keeping the others. Proposed shape:
+  extend `related_rule_id` (or add a sibling column like `overrides_house_rule_id`)
+  so a league rule can target a *house rule's* UUID, not just a CSI key. Reader
+  then hides / greys out the org rule when a league rule points at it.
+  **Why parked:** the org-wide opt-out covers the primary pro-hall use case; per-rule
+  nullification is a niche refinement and adds reader-UX decisions (hide? grey? both-shown
+  with annotation?).
+
+- **Copy / apply-to-other-leagues.** When an LO has 10 leagues and wants a rule to
+  apply to 8 of them (but not at the org level), they currently have to author the
+  same rule 8 times. Proposed shape: at submit time or via a per-rule "Copy to…"
+  action, present a multi-select of the LO's leagues and duplicate the rule into
+  each. Could also be an "Apply from league X" direction on LeagueSettings.
+  **Why parked:** first need signal that LOs actually hit this pain — if most rules
+  are naturally org-wide or truly league-specific, the in-between case may be rare.
+
 ## Sources & References
 
 - **Origin document:** [docs/brainstorms/league-house-rules-requirements.md](../brainstorms/league-house-rules-requirements.md)
