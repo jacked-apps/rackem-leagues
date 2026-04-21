@@ -49,6 +49,8 @@ export const ENV_BANNER_CONFIG: Record<
     textClass: string;
     /** Path (public-relative) to the env-specific favicon SVG */
     faviconPath: string;
+    /** Path (public-relative) to env-specific apple-touch-icon PNG (iOS home screen) */
+    appleTouchIconPath: string;
     /** Prefix prepended to document.title, e.g. "[BETA]" */
     titlePrefix: string;
   }
@@ -60,6 +62,7 @@ export const ENV_BANNER_CONFIG: Record<
     bgClass: 'bg-amber-500',
     textClass: 'text-black',
     faviconPath: '/favicon-staging.svg',
+    appleTouchIconPath: '/icons-staging/apple-touch-icon.png',
     titlePrefix: '[BETA]',
   },
   development: {
@@ -68,15 +71,22 @@ export const ENV_BANNER_CONFIG: Record<
     bgClass: 'bg-red-600',
     textClass: 'text-white',
     faviconPath: '/favicon-dev.svg',
+    appleTouchIconPath: '/icons-dev/apple-touch-icon.png',
     titlePrefix: '[DEV]',
   },
 };
 
 /**
- * Applies environment-specific branding (favicon swap + title prefix) to
- * the document. No-op on production. Call once, as early as possible —
- * typically from `main.tsx` before React renders, to avoid a flash of
- * production branding on non-production builds.
+ * Applies environment-specific branding (favicon swap, apple-touch-icon
+ * swap, title prefix) to the document. No-op on production. Call once,
+ * as early as possible — typically from `main.tsx` before React renders,
+ * to avoid a flash of production branding on non-production builds.
+ *
+ * The apple-touch-icon swap matters for iOS users who "Add to Home Screen"
+ * — iOS captures the icon from the current `<link rel="apple-touch-icon">`
+ * at the moment the user taps install, so swapping early ensures they get
+ * the staging/dev icon on their home screen. (Already-installed PWAs do
+ * NOT update their cached home-screen icon — users must reinstall.)
  */
 export const applyEnvironmentBranding = (): void => {
   if (env === 'production') return;
@@ -88,6 +98,13 @@ export const applyEnvironmentBranding = (): void => {
   );
   if (faviconLink) {
     faviconLink.href = config.faviconPath;
+  }
+
+  const appleTouchLink = document.querySelector<HTMLLinkElement>(
+    'link[rel="apple-touch-icon"]'
+  );
+  if (appleTouchLink) {
+    appleTouchLink.href = config.appleTouchIconPath;
   }
 
   document.title = `${config.titlePrefix} ${document.title}`;

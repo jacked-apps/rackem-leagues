@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-04-21 (added EnvironmentBanner + src/config/environment.ts for dev/staging/prod differentiation)
+> **Last Updated**: 2026-04-21 (env differentiation: banner + favicon + env-aware PWA manifest + installed app icons)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
