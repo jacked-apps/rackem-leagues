@@ -13,14 +13,14 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Settings } from 'lucide-react';
 import { supabase } from '@/supabaseClient';
 import type { Preferences } from '@/types/preferences';
-import type { HandicapVariant, TeamFormat } from '@/types/league';
+import type { HandicapVariant } from '@/types/league';
 import { SYSTEM_DEFAULTS } from '@/types/preferences';
 import { logger } from '@/utils/logger';
 
 // Import section components
 import {
   HandicapSettingsSection,
-  FormatSettingsSection,
+  RosterSettingsSection,
   MatchRulesSection,
   PlayerAuthorizationSection,
   ContentModerationSection,
@@ -48,13 +48,14 @@ export const PreferencesCard: React.FC<PreferencesCardProps> = ({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [editingSection, setEditingSection] = useState<'handicap' | 'format' | 'rules' | 'authorization' | 'moderation' | null>(null);
+  const [editingSection, setEditingSection] = useState<'handicap' | 'roster' | 'rules' | 'authorization' | 'moderation' | null>(null);
 
   // Local edit state
   const [handicapVariant, setHandicapVariant] = useState<HandicapVariant | 'default'>('default');
   const [teamHandicapVariant, setTeamHandicapVariant] = useState<HandicapVariant | 'default'>('default');
   const [gameHistoryLimit, setGameHistoryLimit] = useState<number>(200);
-  const [teamFormat, setTeamFormat] = useState<TeamFormat | 'default'>('default');
+  const [maxRosterSize, setMaxRosterSize] = useState<string>('');
+  const [useOrgDefaultMaxRoster, setUseOrgDefaultMaxRoster] = useState<boolean>(false);
   const [goldenBreakSetting, setGoldenBreakSetting] = useState<'bca_standard' | 'always' | 'never'>('bca_standard');
   const [allowUnauthorizedPlayers, setAllowUnauthorizedPlayers] = useState<boolean>(true);
   const [profanityFilterEnabled, setProfanityFilterEnabled] = useState<boolean>(false);
@@ -120,7 +121,11 @@ export const PreferencesCard: React.FC<PreferencesCardProps> = ({
     setHandicapVariant(prefs.handicap_variant || 'default');
     setTeamHandicapVariant(prefs.team_handicap_variant || 'default');
     setGameHistoryLimit(prefs.game_history_limit ?? SYSTEM_DEFAULTS.game_history_limit);
-    setTeamFormat(prefs.team_format || 'default');
+    // Roster: null at league level means "inherit org default". Store as
+    // empty string in the input when inheriting so the placeholder shows.
+    const rosterRaw = (prefs as any).max_roster_size;
+    setMaxRosterSize(rosterRaw == null ? '' : String(rosterRaw));
+    setUseOrgDefaultMaxRoster(rosterRaw == null);
     // Map boolean/null to our three-way setting
     if (prefs.golden_break_counts_as_win === null) {
       setGoldenBreakSetting('bca_standard');
@@ -136,7 +141,7 @@ export const PreferencesCard: React.FC<PreferencesCardProps> = ({
   };
 
   // Start editing a section
-  const startEditing = (section: 'handicap' | 'format' | 'rules' | 'authorization' | 'moderation') => {
+  const startEditing = (section: 'handicap' | 'roster' | 'rules' | 'authorization' | 'moderation') => {
     if (preferences) {
       syncLocalState(preferences);
     }
@@ -180,23 +185,37 @@ export const PreferencesCard: React.FC<PreferencesCardProps> = ({
     setSaving(false);
   };
 
-  // Save format settings
-  const saveFormat = async () => {
+  // Save roster settings (max_roster_size). League level can choose to
+  // inherit the org default by setting the value to null.
+  const saveRoster = async () => {
     if (!preferences) return;
 
     setSaving(true);
     setError(null);
 
+    let nextValue: number | null;
+    if (isLeague && useOrgDefaultMaxRoster) {
+      nextValue = null;
+    } else {
+      const parsed = parseInt(maxRosterSize, 10);
+      if (!Number.isFinite(parsed) || parsed < 1 || parsed > 20) {
+        setError('Max Roster Size must be a whole number between 1 and 20');
+        setSaving(false);
+        return;
+      }
+      nextValue = parsed;
+    }
+
     const { error: updateError } = await supabase
       .from('preferences')
       .update({
-        team_format: teamFormat === 'default' ? null : teamFormat,
+        max_roster_size: nextValue,
         updated_at: new Date().toISOString(),
       })
       .eq('id', preferences.id);
 
     if (updateError) {
-      setError('Failed to update format settings');
+      setError('Failed to update roster settings');
       logger.error('Error updating preferences', { error: updateError.message });
     } else {
       setEditingSection(null);
@@ -304,9 +323,22 @@ export const PreferencesCard: React.FC<PreferencesCardProps> = ({
     if (value === 'standard') return 'Standard';
     if (value === 'reduced') return 'Reduced';
     if (value === 'none') return 'None';
-    if (value === '5_man') return '5-Man Teams';
-    if (value === '8_man') return '8-Man Teams';
     return String(value);
+  };
+
+  // Display helper for max_roster_size. At league level, null means "use
+  // org default" (which we can't resolve here without another fetch, so we
+  // just label it as such). At org level, null means "system default".
+  const getRosterDisplay = (value: number | null | undefined): string => {
+    if (value == null) {
+      return isLeague ? 'Organization default' : 'Not set';
+    }
+    return `${value} players`;
+  };
+
+  const getLineupDisplay = (value: number | null | undefined): string => {
+    if (value == null) return 'Not set';
+    return `${value} per match`;
   };
 
   // Get golden break display value
@@ -383,20 +415,26 @@ export const PreferencesCard: React.FC<PreferencesCardProps> = ({
           </div>
         )}
 
-        {/* Format Settings Section - Only show for organization level (league format is static) */}
-        {!isLeague && (
-          <FormatSettingsSection
-            isLeague={isLeague}
-            isEditing={editingSection === 'format'}
-            saving={saving}
-            teamFormat={teamFormat}
-            teamFormatDisplay={getDisplayValue(preferences.team_format)}
-            onTeamFormatChange={setTeamFormat}
-            onStartEditing={() => startEditing('format')}
-            onSave={saveFormat}
-            onCancel={cancelEditing}
-          />
-        )}
+        {/* Roster Settings Section — lets LOs edit max_roster_size at both
+            levels. At league level also shows the tier-1-locked lineup_size
+            as a read-only reference. Replaces the older FormatSettingsSection
+            which only offered a hardcoded 5-man / 8-man dropdown. */}
+        <RosterSettingsSection
+          isLeague={isLeague}
+          isEditing={editingSection === 'roster'}
+          saving={saving}
+          maxRosterSize={maxRosterSize}
+          useOrgDefaultMaxRoster={useOrgDefaultMaxRoster}
+          maxRosterSizeDisplay={getRosterDisplay((preferences as any).max_roster_size)}
+          lineupSizeDisplay={
+            isLeague ? getLineupDisplay((preferences as any).lineup_size) : undefined
+          }
+          onMaxRosterSizeChange={setMaxRosterSize}
+          onUseOrgDefaultChange={setUseOrgDefaultMaxRoster}
+          onStartEditing={() => startEditing('roster')}
+          onSave={saveRoster}
+          onCancel={cancelEditing}
+        />
 
         {/* Handicap Settings Section */}
         <HandicapSettingsSection

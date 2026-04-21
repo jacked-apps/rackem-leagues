@@ -23,7 +23,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 import { PendingInvitesModal } from '@/components/modals/PendingInvitesModal';
 import { ShareAppCard } from '@/components/ShareAppCard';
-import { Users, MessageSquare, Trophy, Building2, Settings } from 'lucide-react';
+import { Users, MessageSquare, Trophy, Building2, Settings, Radio } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
   const { user } = useUser();
@@ -109,6 +109,25 @@ export const Dashboard: React.FC = () => {
                   <div className="flex-1">
                     <h2 className="font-semibold text-lg text-gray-900">My Teams</h2>
                     <p className="text-sm text-gray-600">View leagues, teams, and schedules</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          {/* Live Matches — peek at any match currently in progress in any
+              league the player is on a team in. Cross-league view; scoping
+              to team membership is enforced by the query. */}
+          <Link to="/live">
+            <Card className="hover:shadow-md transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-red-100 rounded-lg">
+                    <Radio className="h-6 w-6 text-red-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="font-semibold text-lg text-gray-900">Live Matches</h2>
+                    <p className="text-sm text-gray-600">See what's happening in your leagues right now</p>
                   </div>
                 </div>
               </CardContent>
