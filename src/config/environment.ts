@@ -52,7 +52,7 @@ export const ENV_BANNER_CONFIG: Record<
   staging: {
     label: 'BETA PREVIEW',
     message:
-      'You are testing a pre-release build. Features may change. Report issues to your league operator.',
+      'You are testing a pre-release build. Features may change. Report issues to Ed or to the league operator running tonight.',
     bgClass: 'bg-amber-500',
     textClass: 'text-black',
   },
