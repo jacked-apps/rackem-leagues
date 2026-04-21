@@ -63,7 +63,17 @@
       "Bash(python3:*)",
       "Bash(git ls-tree:*)",
       "Bash(npx tsc:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git add:*)",
+      "Bash(git -C /Users/edpoplet/Programming/rackem-leagues show --stat 438b92f)",
+      "WebSearch",
+      "WebFetch(domain:www.playcsipool.com)",
+      "WebFetch(domain:leaguecalc.fargorate.com)",
+      "WebFetch(domain:www.fargorate.com)",
+      "WebFetch(domain:forums.azbilliards.com)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(echo \"---typecheck exit: $?\")",
+      "Bash(pnpm exec *)"
     ],
     "deny": [],
     "ask": []
