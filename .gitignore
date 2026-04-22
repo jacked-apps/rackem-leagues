@@ -30,3 +30,7 @@ dist-ssr
 
 # Database backups (contain sensitive auth data)
 database_backups/
+
+# Claude Code per-developer settings (permissions, approvals)
+# Shared .claude/settings.json stays tracked; this local override does not.
+.claude/settings.local.json
