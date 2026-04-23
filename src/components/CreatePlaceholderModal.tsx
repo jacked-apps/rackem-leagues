@@ -32,6 +32,7 @@ import {
 import { US_STATES } from '@/constants/states';
 import { generateNickname } from '@/utils/nicknameGenerator';
 import { createPlaceholderMember } from '@/api/mutations/members';
+import { queryKeys } from '@/api/queryKeys';
 import { toast } from 'sonner';
 import { logger } from '@/utils/logger';
 
@@ -96,9 +97,9 @@ export function CreatePlaceholderModal({
   const createMutation = useMutation({
     mutationFn: createPlaceholderMember,
     onSuccess: (data) => {
-      // Invalidate member queries so lists refresh
-      queryClient.invalidateQueries({ queryKey: ['members'] });
-      queryClient.invalidateQueries({ queryKey: ['availableMembers'] });
+      // Invalidate all member queries so lists refresh everywhere
+      // (wizard's ['all-members'], modal's ['members'], and any future member-prefixed keys)
+      queryClient.invalidateQueries({ queryKey: queryKeys.members.all });
 
       toast.success(`Created placeholder player: ${data.first_name} ${data.last_name}`);
 

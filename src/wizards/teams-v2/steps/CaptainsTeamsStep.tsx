@@ -5,12 +5,14 @@
  * MemberCombobox with placeholder creation for unregistered captains.
  */
 
-import { useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MemberCombobox } from '@/components/MemberCombobox';
 import { getAllMembers } from '@/api/queries/members';
+import { queryKeys } from '@/api/queryKeys';
+import type { PartialMember } from '@/types/member';
 import type { WizardStepProps } from '@/components/wizard';
 import type { TeamsWizardFormData, TeamCaptainEntry } from '../teamsWizardTypes';
 
@@ -21,24 +23,60 @@ export function CaptainsTeamsStep({
   const captains = value ?? [];
   const [selectedMemberId, setSelectedMemberId] = useState('');
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [newPlaceholders, setNewPlaceholders] = useState<PartialMember[]>([]);
 
-  const { data: allMembers = [] } = useQuery({
-    queryKey: ['all-members'],
+  // Tracks IDs added via handlePlaceholderCreated so the follow-up
+  // onValueChange from MemberCombobox (which fires in the same sync tick
+  // and would re-enter addCaptain with stale state) is a no-op.
+  const justAddedIdsRef = useRef<Set<string>>(new Set());
+
+  const { data: fetchedMembers = [] } = useQuery({
+    queryKey: queryKeys.members.all,
     queryFn: () => getAllMembers(),
   });
 
+  // Merge fetched members with locally-created placeholders so newly-added
+  // placeholders appear in the dropdown immediately, before TanStack Query's
+  // background refetch lands. Dedup guards against the moment both sources
+  // contain the same member.
+  const allMembers = useMemo(() => {
+    const existingIds = new Set(fetchedMembers.map((m) => m.id));
+    const uniqueNew = newPlaceholders.filter((p) => !existingIds.has(p.id));
+    return [...fetchedMembers, ...uniqueNew];
+  }, [fetchedMembers, newPlaceholders]);
+
   const excludeIds = captains.map((c) => c.captainId);
 
-  const addCaptain = (memberId: string) => {
-    const member = allMembers.find((m) => m.id === memberId);
-    if (!member) return;
+  // Shared add path: takes the full member object so callers who already
+  // have it (e.g. placeholder creation) don't depend on the allMembers
+  // memo having refreshed yet.
+  const addCaptainFromMember = (member: PartialMember) => {
+    if (captains.some((c) => c.captainId === member.id)) return;
     const captainName = `${member.first_name} ${member.last_name}`;
     const teamNumber = captains.length + 1;
     onChange([
       ...captains,
-      { captainId: memberId, captainName, teamName: `Team ${teamNumber}` },
+      { captainId: member.id, captainName, teamName: `Team ${teamNumber}` },
     ]);
     setSelectedMemberId('');
+  };
+
+  const addCaptain = (memberId: string) => {
+    // Skip if this ID was just added via placeholder creation in the
+    // same sync tick. Consume the sentinel so later real selections work.
+    if (justAddedIdsRef.current.has(memberId)) {
+      justAddedIdsRef.current.delete(memberId);
+      return;
+    }
+    const member = allMembers.find((m) => m.id === memberId);
+    if (!member) return;
+    addCaptainFromMember(member);
+  };
+
+  const handlePlaceholderCreated = (newMember: PartialMember) => {
+    setNewPlaceholders((prev) => [...prev, newMember]);
+    justAddedIdsRef.current.add(newMember.id);
+    addCaptainFromMember(newMember);
   };
 
   const removeCaptain = (i: number) => onChange(captains.filter((_, idx) => idx !== i));
@@ -78,6 +116,7 @@ export function CaptainsTeamsStep({
         placeholder="Search for a registered player..."
         excludeIds={excludeIds}
         allowCreatePlaceholder={true}
+        onPlaceholderCreated={handlePlaceholderCreated}
       />
 
       {captains.length > 0 && (
