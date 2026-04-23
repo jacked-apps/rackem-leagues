@@ -312,10 +312,10 @@ export type Database = {
           email: string
           expires_at: string
           id: string
-          invited_by_member_id: string
+          invited_by_member_id: string | null
           member_id: string
           status: string
-          team_id: string
+          team_id: string | null
           token: string
         }
         Insert: {
@@ -325,10 +325,10 @@ export type Database = {
           email: string
           expires_at?: string
           id?: string
-          invited_by_member_id: string
+          invited_by_member_id?: string | null
           member_id: string
           status?: string
-          team_id: string
+          team_id?: string | null
           token?: string
         }
         Update: {
@@ -338,10 +338,10 @@ export type Database = {
           email?: string
           expires_at?: string
           id?: string
-          invited_by_member_id?: string
+          invited_by_member_id?: string | null
           member_id?: string
           status?: string
-          team_id?: string
+          team_id?: string | null
           token?: string
         }
         Relationships: [
