@@ -2334,6 +2334,22 @@ export type Database = {
           total_rows_updated: number
         }[]
       }
+      merge_placeholder_into_member_v2: {
+        Args: {
+          p_actor_member_id: string
+          p_actor_role: string
+          p_organization_id: string
+          p_placeholder_member_id: string
+          p_target_member_id: string
+        }
+        Returns: {
+          archive_id: string
+          error_message: string
+          success: boolean
+          tables_updated: number
+          total_rows_updated: number
+        }[]
+      }
       placeholder_has_stats: { Args: { p_member_id: string }; Returns: boolean }
       remove_placeholder_from_team: {
         Args: { p_member_id: string; p_org_id: string; p_team_id: string }
