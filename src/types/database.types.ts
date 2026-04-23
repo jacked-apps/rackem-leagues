@@ -1264,6 +1264,64 @@ export type Database = {
           },
         ]
       }
+      placeholder_audit_log: {
+        Row: {
+          action: string
+          actor_member_id: string
+          affected_tables: Json | null
+          archive_id: string | null
+          created_at: string
+          id: string
+          organization_id: string
+          placeholder_member_id: string | null
+          target_member_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_member_id: string
+          affected_tables?: Json | null
+          archive_id?: string | null
+          created_at?: string
+          id?: string
+          organization_id: string
+          placeholder_member_id?: string | null
+          target_member_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_member_id?: string
+          affected_tables?: Json | null
+          archive_id?: string | null
+          created_at?: string
+          id?: string
+          organization_id?: string
+          placeholder_member_id?: string | null
+          target_member_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "placeholder_audit_log_actor_member_id_fkey"
+            columns: ["actor_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "placeholder_audit_log_archive_id_fkey"
+            columns: ["archive_id"]
+            isOneToOne: false
+            referencedRelation: "archived_placeholders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "placeholder_audit_log_target_member_id_fkey"
+            columns: ["target_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       playoff_configurations: {
         Row: {
           auto_generate: boolean
