@@ -64,6 +64,63 @@ export type Database = {
         }
         Relationships: []
       }
+      archived_placeholders: {
+        Row: {
+          actor_member_id: string
+          actor_role: string
+          created_at: string
+          expires_at: string
+          id: string
+          member_snapshot: Json
+          organization_id: string
+          placeholder_member_id: string
+          target_member_id: string
+          transferred_rows: Json
+          undone_at: string | null
+        }
+        Insert: {
+          actor_member_id: string
+          actor_role: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          member_snapshot: Json
+          organization_id: string
+          placeholder_member_id: string
+          target_member_id: string
+          transferred_rows: Json
+          undone_at?: string | null
+        }
+        Update: {
+          actor_member_id?: string
+          actor_role?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          member_snapshot?: Json
+          organization_id?: string
+          placeholder_member_id?: string
+          target_member_id?: string
+          transferred_rows?: Json
+          undone_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "archived_placeholders_actor_member_id_fkey"
+            columns: ["actor_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "archived_placeholders_target_member_id_fkey"
+            columns: ["target_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blocked_users: {
         Row: {
           blocked_at: string
@@ -960,100 +1017,6 @@ export type Database = {
           zip_code?: string | null
         }
         Relationships: []
-      }
-      merge_requests: {
-        Row: {
-          created_at: string
-          id: string
-          organization_id: string | null
-          placeholder_member_id: string
-          processed_at: string | null
-          processed_by_member_id: string | null
-          processor_notes: string | null
-          registered_member_id: string
-          request_notes: string | null
-          requested_by_member_id: string
-          requester_role: string
-          status: Database["public"]["Enums"]["merge_request_status"]
-          team_id: string | null
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          organization_id?: string | null
-          placeholder_member_id: string
-          processed_at?: string | null
-          processed_by_member_id?: string | null
-          processor_notes?: string | null
-          registered_member_id: string
-          request_notes?: string | null
-          requested_by_member_id: string
-          requester_role: string
-          status?: Database["public"]["Enums"]["merge_request_status"]
-          team_id?: string | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          organization_id?: string | null
-          placeholder_member_id?: string
-          processed_at?: string | null
-          processed_by_member_id?: string | null
-          processor_notes?: string | null
-          registered_member_id?: string
-          request_notes?: string | null
-          requested_by_member_id?: string
-          requester_role?: string
-          status?: Database["public"]["Enums"]["merge_request_status"]
-          team_id?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "merge_requests_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "merge_requests_placeholder_member_id_fkey"
-            columns: ["placeholder_member_id"]
-            isOneToOne: false
-            referencedRelation: "members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "merge_requests_processed_by_member_id_fkey"
-            columns: ["processed_by_member_id"]
-            isOneToOne: false
-            referencedRelation: "members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "merge_requests_registered_member_id_fkey"
-            columns: ["registered_member_id"]
-            isOneToOne: false
-            referencedRelation: "members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "merge_requests_requested_by_member_id_fkey"
-            columns: ["requested_by_member_id"]
-            isOneToOne: false
-            referencedRelation: "members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "merge_requests_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       messages: {
         Row: {
@@ -2350,7 +2313,6 @@ export type Database = {
       text_soundex: { Args: { "": string }; Returns: string }
     }
     Enums: {
-      merge_request_status: "pending" | "approved" | "rejected"
       moderation_action:
         | "warning"
         | "temporary_suspension"
@@ -2507,7 +2469,6 @@ export const Constants = {
   },
   public: {
     Enums: {
-      merge_request_status: ["pending", "approved", "rejected"],
       moderation_action: [
         "warning",
         "temporary_suspension",
