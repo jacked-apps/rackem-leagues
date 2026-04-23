@@ -2420,6 +2420,19 @@ export type Database = {
       show_trgm: { Args: { "": string }; Returns: string[] }
       soundex: { Args: { "": string }; Returns: string }
       text_soundex: { Args: { "": string }; Returns: string }
+      undo_merge_placeholder: {
+        Args: {
+          p_actor_member_id: string
+          p_archive_id: string
+          p_caller_org_id: string
+        }
+        Returns: {
+          error_message: string
+          missing_rows: number
+          rows_restored: number
+          success: boolean
+        }[]
+      }
     }
     Enums: {
       moderation_action:
