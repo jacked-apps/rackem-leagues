@@ -2281,11 +2281,16 @@ export type Database = {
         Returns: {
           captain_name: string
           expires_at: string
+          game_count: number
           invited_at: string
           is_expired: boolean
           member_id: string
+          organization_name: string
+          organization_owner_name: string
           placeholder_first_name: string
           placeholder_last_name: string
+          placeholder_nickname: string
+          starting_handicap_5v5: number
           team_name: string
           token: string
         }[]

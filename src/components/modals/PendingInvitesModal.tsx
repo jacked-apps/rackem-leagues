@@ -32,7 +32,12 @@ export interface PendingInvite {
   placeholder_first_name: string;
   placeholder_last_name: string;
   team_name: string | null;
+  organization_name: string | null;
+  organization_owner_name: string | null;
   captain_name: string | null;
+  placeholder_nickname: string | null;
+  game_count: number | null;
+  starting_handicap_5v5: number | null;
   invited_at: string;
   expires_at: string;
   is_expired: boolean;
@@ -104,21 +109,60 @@ export const PendingInvitesModal: React.FC<PendingInvitesModalProps> = ({
               className="border rounded-lg p-3 bg-blue-50 border-blue-200"
             >
               <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 space-y-1">
+                  {/* Primary headline: team name if we have one, else a
+                      gentler framing that still names the action. */}
                   <p className="font-medium text-blue-900 truncate">
-                    {invite.team_name ?? 'Pending player claim'}
+                    {invite.team_name ?? 'Claim your player profile'}
                   </p>
+
+                  {/* Who invited + org context when available. */}
                   <p className="text-sm text-blue-700">
                     {invite.captain_name
                       ? `Invited by ${invite.captain_name}`
                       : invite.team_name
                         ? 'Team invite'
                         : 'A placeholder profile was linked to your email'}
+                    {invite.organization_name && (
+                      <> · {invite.organization_name}</>
+                    )}
                   </p>
-                  <p className="text-xs text-blue-600 mt-1">
-                    Profile: {invite.placeholder_first_name}{' '}
+
+                  {/* Profile identity line — name + nickname if set */}
+                  <p className="text-xs text-blue-600">
+                    Profile: {invite.placeholder_first_name}
+                    {invite.placeholder_nickname
+                      ? ` "${invite.placeholder_nickname}"`
+                      : ''}{' '}
                     {invite.placeholder_last_name}
                   </p>
+
+                  {/* Stats row — games played + starting handicap. Chips
+                      only render when the underlying data is present. */}
+                  {(invite.game_count !== null || invite.starting_handicap_5v5 !== null) && (
+                    <div className="flex flex-wrap gap-1 pt-1">
+                      {invite.game_count !== null && (
+                        <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-800">
+                          {invite.game_count === 0
+                            ? 'No games played yet'
+                            : `${invite.game_count} game${invite.game_count === 1 ? '' : 's'} played`}
+                        </span>
+                      )}
+                      {invite.starting_handicap_5v5 !== null && (
+                        <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-800">
+                          Handicap {invite.starting_handicap_5v5}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Org-owner line for trust — "run by X" so the invited
+                      user knows whose organization they're joining. */}
+                  {invite.organization_owner_name && (
+                    <p className="text-xs text-blue-600 pt-0.5 italic">
+                      Run by {invite.organization_owner_name}
+                    </p>
+                  )}
                 </div>
                 <Button
                   size="sm"
