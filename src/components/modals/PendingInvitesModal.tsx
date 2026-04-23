@@ -35,6 +35,7 @@ export interface PendingInvite {
   organization_name: string | null;
   organization_owner_name: string | null;
   captain_name: string | null;
+  creator_name: string | null;
   placeholder_nickname: string | null;
   game_count: number | null;
   starting_handicap_5v5: number | null;
@@ -116,13 +117,16 @@ export const PendingInvitesModal: React.FC<PendingInvitesModalProps> = ({
                     {invite.team_name ?? 'Claim your player profile'}
                   </p>
 
-                  {/* Who invited + org context when available. */}
+                  {/* Who invited / who created + org context when available.
+                      Attribution order: explicit inviter > creator > generic. */}
                   <p className="text-sm text-blue-700">
                     {invite.captain_name
                       ? `Invited by ${invite.captain_name}`
-                      : invite.team_name
-                        ? 'Team invite'
-                        : 'A placeholder profile was linked to your email'}
+                      : invite.creator_name
+                        ? `Created by ${invite.creator_name}`
+                        : invite.team_name
+                          ? 'Team invite'
+                          : 'A placeholder profile was linked to your email'}
                     {invite.organization_name && (
                       <> · {invite.organization_name}</>
                     )}

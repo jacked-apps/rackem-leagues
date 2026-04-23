@@ -984,6 +984,7 @@ export type Database = {
           bca_member_number: string | null
           city: string
           created_at: string | null
+          created_by_member_id: string | null
           date_of_birth: string | null
           email: string | null
           fargo_rating: number | null
@@ -1008,6 +1009,7 @@ export type Database = {
           bca_member_number?: string | null
           city: string
           created_at?: string | null
+          created_by_member_id?: string | null
           date_of_birth?: string | null
           email?: string | null
           fargo_rating?: number | null
@@ -1032,6 +1034,7 @@ export type Database = {
           bca_member_number?: string | null
           city?: string
           created_at?: string | null
+          created_by_member_id?: string | null
           date_of_birth?: string | null
           email?: string | null
           fargo_rating?: number | null
@@ -1051,7 +1054,15 @@ export type Database = {
           user_id?: string | null
           zip_code?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "members_created_by_member_id_fkey"
+            columns: ["created_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       messages: {
         Row: {
@@ -2280,6 +2291,7 @@ export type Database = {
         Args: never
         Returns: {
           captain_name: string
+          creator_name: string
           expires_at: string
           game_count: number
           invited_at: string
