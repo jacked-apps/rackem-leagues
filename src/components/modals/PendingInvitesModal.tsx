@@ -31,7 +31,7 @@ export interface PendingInvite {
   member_id: string;
   placeholder_first_name: string;
   placeholder_last_name: string;
-  team_name: string;
+  team_name: string | null;
   captain_name: string | null;
   invited_at: string;
   expires_at: string;
@@ -106,12 +106,14 @@ export const PendingInvitesModal: React.FC<PendingInvitesModalProps> = ({
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-blue-900 truncate">
-                    {invite.team_name}
+                    {invite.team_name ?? 'Pending player claim'}
                   </p>
                   <p className="text-sm text-blue-700">
                     {invite.captain_name
                       ? `Invited by ${invite.captain_name}`
-                      : 'Team invite'}
+                      : invite.team_name
+                        ? 'Team invite'
+                        : 'A placeholder profile was linked to your email'}
                   </p>
                   <p className="text-xs text-blue-600 mt-1">
                     Profile: {invite.placeholder_first_name}{' '}
@@ -151,7 +153,7 @@ export const PendingInvitesModal: React.FC<PendingInvitesModalProps> = ({
                     <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-amber-900 truncate">
-                        {invite.team_name}
+                        {invite.team_name ?? 'Pending player claim'}
                       </p>
                       <p className="text-sm text-amber-700">
                         Invite expired {formatDate(invite.expires_at)}
