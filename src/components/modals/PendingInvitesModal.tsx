@@ -14,6 +14,8 @@
  */
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -24,6 +26,9 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Users, Clock, UserCheck, AlertTriangle } from 'lucide-react';
+import { supabase } from '@/supabaseClient';
+import { logger } from '@/utils/logger';
+import { queryKeys } from '@/api/queryKeys';
 
 /** Pending invite data from get_my_pending_invites() */
 export interface PendingInvite {
@@ -60,6 +65,7 @@ export const PendingInvitesModal: React.FC<PendingInvitesModalProps> = ({
   invites,
 }) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [claimingId, setClaimingId] = useState<string | null>(null);
 
   // Separate valid and expired invites
@@ -67,13 +73,65 @@ export const PendingInvitesModal: React.FC<PendingInvitesModalProps> = ({
   const expiredInvites = invites.filter((i) => i.is_expired);
 
   /**
-   * Navigate to claim page for a specific invite
+   * Claim the invite directly from the modal. The user has already seen
+   * all the context (team, org, creator, chips) right here — making them
+   * confirm again on /claim-player would be redundant. Fires the
+   * claim-placeholder Edge Function, shows a success toast on completion,
+   * and closes the modal. On failure, modal stays open so the user can
+   * try again or review details.
    */
-  const handleClaim = (invite: PendingInvite) => {
+  const handleClaim = async (invite: PendingInvite) => {
     setClaimingId(invite.member_id);
-    // Navigate to claim page with token
-    navigate(`/claim-player?claim=${invite.member_id}&token=${invite.token}`);
-    onClose();
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const jwt = sessionData?.session?.access_token;
+      if (!jwt) {
+        toast.error('Session expired. Please log in again.');
+        setClaimingId(null);
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/claim-placeholder`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${jwt}`,
+          },
+          body: JSON.stringify({
+            placeholderMemberId: invite.member_id,
+            token: invite.token,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        logger.error('Claim from modal failed', { status: response.status, result });
+        // Route to the /claim-player page with the token so the user can
+        // see the detailed error and try "This isn't me" if applicable.
+        toast.error(result.details || result.error || 'Could not claim invite — opening details');
+        navigate(`/claim-player?claim=${invite.member_id}&token=${invite.token}`);
+        onClose();
+        return;
+      }
+
+      toast.success('Player history claimed!');
+      // Invalidate so dashboard reflects the new state (invites gone,
+      // profile reflects the merged data).
+      queryClient.invalidateQueries({ queryKey: queryKeys.invites.pending() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.members.all });
+      onClose();
+    } catch (err) {
+      logger.error('Network error during modal claim', { error: err });
+      toast.error('Network error — opening details so you can retry');
+      navigate(`/claim-player?claim=${invite.member_id}&token=${invite.token}`);
+      onClose();
+    } finally {
+      setClaimingId(null);
+    }
   };
 
   /**
