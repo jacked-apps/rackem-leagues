@@ -181,7 +181,7 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
                   onClick={(e) => e.stopPropagation()}
                   onPointerDown={(e) => e.stopPropagation()}
                 >
-                  <InfoButton title="About placeholders" size="sm" align="left">
+                  <InfoButton title="About placeholders" size="sm">
                     <p>
                       A placeholder represents a real player who hasn't
                       registered (or never wants to). They have stats,
