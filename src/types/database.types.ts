@@ -2291,9 +2291,9 @@ export type Database = {
           error_message: string
           expires_at: string
           is_valid: boolean
-          member_first_name: string
           member_id: string
-          member_last_name: string
+          placeholder_first_name: string
+          placeholder_last_name: string
           team_name: string
         }[]
       }
