@@ -44,17 +44,27 @@ import {
   useTiebreakerLineup,
 } from '@/hooks/lineup';
 import { usePreparationStatus } from '@/hooks/lineup/useMatchPreparation';
-import { calculateSubstituteHandicap } from '@/utils/lineup';
+import {
+  calculateSubstituteHandicap,
+  SUB_HOME_ANON_ID,
+  SUB_AWAY_ANON_ID,
+  SUB_HOME_DD_ID,
+  SUB_AWAY_DD_ID,
+  isAnonSubSentinel,
+  isDoubleDutySentinel,
+  isAnySubSentinel,
+  getAnonSubId,
+  getDoubleDutySubId,
+  lineupHasDoubleDuty,
+} from '@/utils/lineup';
 import { useMatchRealtime } from '@/realtime/useMatchRealtime';
 import { Loader2 } from 'lucide-react';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { shouldUseTeamBonus } from '@/utils/calculateHandicapThresholds';
 import { logger } from '@/utils/logger';
 
-// Special substitute member IDs (same ID for both anonymous + double duty — type tracked in state)
-const SUB_HOME_ID = '00000000-0000-0000-0000-000000000001';
-const SUB_AWAY_ID = '00000000-0000-0000-0000-000000000002';
-// Synthetic dropdown values — parsed in handlePlayerChange to set the real ID + type
+// Synthetic dropdown values — parsed in handlePlayerChange to pick the right
+// sentinel UUID. The sentinel itself encodes the sub type going forward.
 const ANON_SUB_VALUE = '__anonymous_sub__';
 const DOUBLE_DUTY_VALUE = '__double_duty__';
 
@@ -322,9 +332,8 @@ export function MatchLineup() {
 
     for (let slot = 1; slot <= playerCount; slot++) {
       const pid = slotPlayerIds[slot - 1];
-      const isSubPlaceholder = pid === SUB_HOME_ID || pid === SUB_AWAY_ID;
-      const isDoubleDuty = isSubPlaceholder && substituteType === 'double_duty';
-      if (isDoubleDuty) duty.add(slot);
+      // Sentinel UUID itself encodes the type — no need to consult React state
+      if (isDoubleDutySentinel(pid)) duty.add(slot);
 
       // Prefer the pending manual entry (user is typing); fall back to the persisted handicap
       const typed = manualHandicaps[slot];
@@ -607,29 +616,15 @@ export function MatchLineup() {
       return;
     }
 
-    const is5v5 = (matchData.league?.team_format || '5_man') === '8_man';
-    if (!is5v5) {
-      setShowOpponentSubModal(false);
-      return;
-    }
-
-    // Check if opponent's lineup is locked and has a substitute
+    // Check if opponent's lineup is locked and has a double-duty placeholder
+    // (anonymous subs don't need opposing-captain action; DD subs do)
     if (!opponentLineup.locked) {
       setShowOpponentSubModal(false);
       return;
     }
 
-    // Check all positions for a substitute placeholder
-    const hasSubstitute = [
-      opponentLineup.player1_id,
-      opponentLineup.player2_id,
-      opponentLineup.player3_id,
-      opponentLineup.player4_id,
-      opponentLineup.player5_id,
-    ].some(id => id === SUB_HOME_ID || id === SUB_AWAY_ID);
-
-    setShowOpponentSubModal(hasSubstitute);
-  }, [opponentLineup, matchData, isTiebreakerMode]);
+    setShowOpponentSubModal(lineupHasDoubleDuty(opponentLineup, playerCount));
+  }, [opponentLineup, matchData, isTiebreakerMode, playerCount]);
 
   // Handle opponent substitute choice
   const handleOpponentSubChoice = (playerId: string, handicap: number, subPosition: number) => {
@@ -659,20 +654,20 @@ export function MatchLineup() {
   const handlePlayerChange = (position: number, rawPlayerId: string) => {
     if (!lineup.lineupId || !matchId) return;
 
-    // Map synthetic dropdown values to real sub ID + track type
+    // Map synthetic dropdown values to the right sentinel UUID — the sentinel
+    // itself encodes sub type, so both clients can discriminate from DB state.
     let playerId = rawPlayerId;
     if (rawPlayerId === ANON_SUB_VALUE) {
-      playerId = isHomeTeam ? SUB_HOME_ID : SUB_AWAY_ID;
+      playerId = getAnonSubId(isHomeTeam);
       setSubstituteType('anonymous');
     } else if (rawPlayerId === DOUBLE_DUTY_VALUE) {
-      playerId = isHomeTeam ? SUB_HOME_ID : SUB_AWAY_ID;
+      playerId = getDoubleDutySubId(isHomeTeam);
       setSubstituteType('double_duty');
     }
 
-    // If clearing a sub slot (replacing sub with a real player), reset type
-    const wasSub = lineup.getPlayerId(position as 1 | 2 | 3 | 4 | 5) === SUB_HOME_ID ||
-                   lineup.getPlayerId(position as 1 | 2 | 3 | 4 | 5) === SUB_AWAY_ID;
-    if (wasSub && playerId !== SUB_HOME_ID && playerId !== SUB_AWAY_ID) {
+    // If replacing a sub slot with a real player, reset the React-side type flag
+    const previousId = lineup.getPlayerId(position as 1 | 2 | 3 | 4 | 5);
+    if (isAnySubSentinel(previousId) && !isAnySubSentinel(playerId)) {
       setSubstituteType(null);
     }
 
@@ -706,7 +701,7 @@ export function MatchLineup() {
 
     // If clearing a sub slot, reset the substitute type
     const currentId = lineup.getPlayerId(position as 1 | 2 | 3 | 4 | 5);
-    if (currentId === SUB_HOME_ID || currentId === SUB_AWAY_ID) {
+    if (isAnySubSentinel(currentId)) {
       setSubstituteType(null);
     }
 
@@ -783,10 +778,9 @@ export function MatchLineup() {
     // Synthetic dropdown entries
     if (playerId === ANON_SUB_VALUE) return 'Anonymous Sub';
     if (playerId === DOUBLE_DUTY_VALUE) return 'Double Duty';
-    // Placeholder IDs (after selection) — show whichever type was chosen
-    if (playerId === SUB_HOME_ID || playerId === SUB_AWAY_ID) {
-      return substituteType === 'double_duty' ? 'Double Duty' : 'Anonymous Sub';
-    }
+    // Persisted sentinels self-describe via the UUID
+    if (isDoubleDutySentinel(playerId)) return 'Double Duty';
+    if (isAnonSubSentinel(playerId)) return 'Anonymous Sub';
     return 'Unknown';
   };
 
@@ -796,7 +790,7 @@ export function MatchLineup() {
     if (player) {
       return player.nickname || `${player.first_name} ${player.last_name}`;
     }
-    if (playerId === SUB_HOME_ID || playerId === SUB_AWAY_ID) return 'Sub';
+    if (isAnySubSentinel(playerId)) return 'Sub';
     return 'Unknown';
   };
 
@@ -818,14 +812,16 @@ export function MatchLineup() {
     // Normal mode: All roster players + sub options
     // TODO: check substitute_method preference to show one/both/neither
     const playerIds = players.map((p) => p.id);
-    const subId = isHomeTeam ? SUB_HOME_ID : SUB_AWAY_ID;
 
     if (substituteType === null) {
       // No sub chosen yet — show both options
       return [...playerIds, ANON_SUB_VALUE, DOUBLE_DUTY_VALUE];
     }
-    // A sub is already in the lineup — include the real sub ID so the
-    // Select can display the current selection, but don't offer new sub options
+    // A sub is already in the lineup — include the current sub's sentinel so
+    // the Select can display the current selection, but don't offer a new sub
+    const subId = substituteType === 'double_duty'
+      ? getDoubleDutySubId(isHomeTeam)
+      : getAnonSubId(isHomeTeam);
     return [...playerIds, subId];
   };
 
@@ -962,8 +958,8 @@ export function MatchLineup() {
                     ? handleClearTiebreakerPlayer
                     : handleClearPlayer;
 
-                  // Is this slot a substitute (placeholder ID)?
-                  const isSubstitute = playerId === SUB_HOME_ID || playerId === SUB_AWAY_ID;
+                  // Is this slot a substitute (anon OR double-duty placeholder)?
+                  const isSubstitute = isAnySubSentinel(playerId);
 
                   // Handler for substitute handicap change
                   const handleSubHandicapChange = (newSubHandicap: string) => {
@@ -1085,11 +1081,10 @@ export function MatchLineup() {
         <OpponentSubstituteModal
           isOpen={showOpponentSubModal}
           opponentLineup={opponentLineup}
+          lineupSize={playerCount}
           getPlayerDisplayName={getOpponentPlayerDisplayName}
           onPlayerChosen={handleOpponentSubChoice}
           onClose={() => setShowOpponentSubModal(false)}
-          subHomeId={SUB_HOME_ID}
-          subAwayId={SUB_AWAY_ID}
         />
       )}
     </div>
