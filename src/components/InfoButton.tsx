@@ -23,7 +23,6 @@ interface InfoButtonProps {
   align?: 'left' | 'right' | 'center';
 }
 
-const POPUP_WIDTH = 320; // matches w-80
 const VIEWPORT_MARGIN = 8;
 const BUTTON_GAP = 4;
 
