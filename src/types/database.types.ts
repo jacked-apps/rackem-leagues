@@ -313,7 +313,7 @@ export type Database = {
           expires_at: string
           id: string
           invited_by_member_id: string | null
-          member_id: string
+          member_id: string | null
           status: string
           team_id: string | null
           token: string
@@ -326,7 +326,7 @@ export type Database = {
           expires_at?: string
           id?: string
           invited_by_member_id?: string | null
-          member_id: string
+          member_id?: string | null
           status?: string
           team_id?: string | null
           token?: string
@@ -339,7 +339,7 @@ export type Database = {
           expires_at?: string
           id?: string
           invited_by_member_id?: string | null
-          member_id?: string
+          member_id?: string | null
           status?: string
           team_id?: string | null
           token?: string
