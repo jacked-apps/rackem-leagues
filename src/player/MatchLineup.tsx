@@ -9,9 +9,10 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Users } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
   useCurrentMember,
   useMatchWithLeagueSettings,
@@ -32,6 +33,8 @@ import { DuplicateNicknameWarning } from '@/components/lineup/DuplicateNicknameW
 import { PlayerSelectionRow } from '@/components/lineup/PlayerSelectionRow';
 import { OpponentSubstituteModal } from '@/components/lineup/OpponentSubstituteModal';
 import { FargoStartPointsCard } from '@/components/lineup/FargoStartPointsCard';
+import { PrepStatusBanner } from '@/components/lineup/PrepStatusBanner';
+import { SubResolutionBanner } from '@/components/lineup/SubResolutionBanner';
 import { useFargoStartPointsNegotiation } from '@/hooks/lineup/useFargoStartPointsNegotiation';
 import { useQueryStates } from '@/hooks/useQueryStates';
 import {
@@ -71,6 +74,7 @@ const DOUBLE_DUTY_VALUE = '__double_duty__';
 
 export function MatchLineup() {
   const { matchId } = useParams<{ matchId: string }>();
+  const navigate = useNavigate();
 
   // TanStack Query: Get current member data
   const memberQuery = useCurrentMember();
@@ -1089,6 +1093,31 @@ export function MatchLineup() {
               />
             )}
 
+            {/* My-side double-duty waiting state — hidden while the opponent-
+                resolution modal is open (don't stack two sub-resolution affordances). */}
+            <PrepStatusBanner
+              show={
+                !isTiebreakerMode &&
+                !showOpponentSubModal &&
+                prepBlockedReason?.kind === 'waiting_on_sub_resolution' &&
+                prepBlockedReason?.lineupWithPlaceholder === 'mine'
+              }
+              opponentLabel={opponent?.team_name ?? 'the opposing captain'}
+            />
+
+            {/* Canceled-modal re-open affordance — when opponent has DD and I
+                dismissed the modal without picking. */}
+            <SubResolutionBanner
+              show={
+                !isTiebreakerMode &&
+                !showOpponentSubModal &&
+                prepBlockedReason?.kind === 'waiting_on_sub_resolution' &&
+                prepBlockedReason?.lineupWithPlaceholder === 'opponent'
+              }
+              opponentTeamLabel={opponent?.team_name ?? 'the opposing team'}
+              onChoose={() => setShowOpponentSubModal(true)}
+            />
+
             {/* Fargo start-points negotiation — only after both lineups locked */}
             {fargoNegotiation.applicable && !fargoNegotiation.bothConfirmed && (
               <FargoStartPointsCard
@@ -1118,13 +1147,28 @@ export function MatchLineup() {
         </Card>
       </main>
 
-      {/* Loading Overlay - Show while preparing match */}
+      {/* Loading Overlay — Back-to-Schedule lets captains escape without
+          killing the flow. DB state persists; returning resumes from whichever
+          step is next incomplete (idempotency short-circuit in useMatchPreparation). */}
       {isPreparingMatch && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 text-center">
             <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Preparing Match</h2>
-            <p className="text-gray-600">{preparationMessage}</p>
+            <h2 className="text-xl font-semibold mb-2">
+              {isHomeTeam ? 'Setting up the match…' : 'Waiting for match to be set up…'}
+            </h2>
+            {preparationMessage ? (
+              <p className="text-gray-600 mb-4">{preparationMessage}</p>
+            ) : null}
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsPreparingMatch(false);
+                if (userTeamId) navigate(`/team/${userTeamId}/schedule`);
+              }}
+            >
+              Back to Schedule
+            </Button>
           </div>
         </div>
       )}
