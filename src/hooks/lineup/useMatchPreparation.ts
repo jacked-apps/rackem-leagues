@@ -101,6 +101,8 @@ export function useMatchPreparation(params: MatchPreparationParams) {
 
   const navigate = useNavigate();
   const matchPreparedRef = useRef(false);
+  const awayRetryCountRef = useRef(0);
+  const awayToastIdRef = useRef<string | number | null>(null);
 
   // Auto-navigate to scoring when both lineups are locked and the gate is clear.
   // Only HOME team runs the transactional prep_match RPC; AWAY team waits on
@@ -117,30 +119,67 @@ export function useMatchPreparation(params: MatchPreparationParams) {
     const useDoubleRoundRobin = (gameGeneration ?? 'double_round_robin') === 'double_round_robin';
     const expectedGameCount = generateGameOrder(lineupSize, useDoubleRoundRobin).length;
 
-    // Synchronous idempotency short-circuit. If games already exist at the
-    // expected count (or above, e.g. tiebreaker rows 19-21), skip the overlay
-    // entirely and navigate — captain re-entering a completed match does not
-    // see a flash of "Setting up the match...".
+    // Synchronous idempotency / ready short-circuit. Fires for both home and
+    // away: if games already exist at the expected count (or above, e.g.
+    // tiebreaker rows 19-21), navigate immediately. No overlay flash on
+    // re-entry, AND this is the knowledge-driven away-team navigation — we
+    // only advance when we can OBSERVE that games exist, never on a timeout.
     if (typeof currentGamesCount === 'number' && currentGamesCount >= expectedGameCount) {
-      matchPreparedRef.current = true;
-      navigate(`/match/${matchId}/score`);
+      if (!matchPreparedRef.current) {
+        matchPreparedRef.current = true;
+        // Clear any pending retry-exhausted toast so it doesn't linger post-navigation
+        if (awayToastIdRef.current !== null) {
+          toast.dismiss(awayToastIdRef.current);
+          awayToastIdRef.current = null;
+        }
+        setIsPreparingMatch?.(false);
+        navigate(`/match/${matchId}/score`);
+      }
       return;
     }
 
-    // Away team: waits for games to appear via realtime (Unit 5 owns the
-    // retry/fallback logic; keeping the blind 2s timeout here as a temporary
-    // bridge — Unit 5 will replace it).
+    // Away team: watch for games to appear via realtime. The effect re-runs
+    // every time currentGamesCount changes (realtime triggers matchGamesQuery
+    // refetch → prop update → re-run). When count crosses expectedGameCount,
+    // the short-circuit above fires and we navigate. While waiting, show
+    // the overlay and run a 10s fallback loop that refetches on each tick —
+    // NEVER navigates speculatively. After 3 fruitless refetches, surface
+    // a persistent toast and dismiss the overlay.
     if (!isHomeTeam) {
-      const awayTeamNavigate = async () => {
-        matchPreparedRef.current = true;
-        setIsPreparingMatch?.(true);
-        setPreparationMessage?.('Waiting for match to be set up...');
-        await new Promise((r) => setTimeout(r, 2000));
-        setIsPreparingMatch?.(false);
-        navigate(`/match/${matchId}/score`);
+      setIsPreparingMatch?.(true);
+      setPreparationMessage?.('Waiting for match to be set up...');
+
+      const MAX_RETRIES = 3;
+      const FALLBACK_MS = 10_000;
+      let cancelled = false;
+      let pendingTimer: number | null = null;
+
+      const scheduleNext = () => {
+        if (cancelled) return;
+        pendingTimer = window.setTimeout(async () => {
+          if (cancelled) return;
+          awayRetryCountRef.current += 1;
+          if (awayRetryCountRef.current > MAX_RETRIES) {
+            setIsPreparingMatch?.(false);
+            const tid = toast.error(
+              "Match setup didn't complete. Contact the opposing captain or try again.",
+              { duration: Infinity }
+            );
+            awayToastIdRef.current = tid;
+            return;
+          }
+          await refetchGames?.();
+          // If refetch produced new rows, the prop change re-runs this effect
+          // and the cleanup below cancels us. Otherwise, schedule another tick.
+          if (!cancelled) scheduleNext();
+        }, FALLBACK_MS);
       };
-      awayTeamNavigate();
-      return;
+      scheduleNext();
+
+      return () => {
+        cancelled = true;
+        if (pendingTimer !== null) window.clearTimeout(pendingTimer);
+      };
     }
 
     // Home team: transactional prep via prep_match RPC with 3-attempt retry.
