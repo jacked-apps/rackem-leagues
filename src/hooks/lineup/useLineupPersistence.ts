@@ -12,6 +12,7 @@ import { supabase } from '@/supabaseClient';
 import { useUpdateMatch, useUpdateMatchLineup } from '@/api/hooks';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
+import { computeLineupCompleteness } from '@/utils/lineup';
 
 interface LineupPersistenceParams {
   matchId: string | undefined;
@@ -72,7 +73,23 @@ export function useLineupPersistence(params: LineupPersistenceParams) {
    */
   const handleLockLineup = async () => {
     if (!isComplete) {
-      toast.error('Please select all 3 players before locking your lineup');
+      // Derive a precise reason from the completeness function rather than
+      // hardcoding "3 players" — works for any lineup_size, any handicap system.
+      const row = {
+        player1_id: player1Id,
+        player1_handicap: player1Handicap,
+        player2_id: player2Id,
+        player2_handicap: player2Handicap,
+        player3_id: player3Id,
+        player3_handicap: player3Handicap,
+        player4_id: player4Id,
+        player4_handicap: player4Handicap,
+        player5_id: player5Id,
+        player5_handicap: player5Handicap,
+      };
+      const result = computeLineupCompleteness(row, playerCount);
+      const message = result.reasons[0] ?? `Please complete all ${playerCount} lineup slots before locking`;
+      toast.error(message);
       return;
     }
 
