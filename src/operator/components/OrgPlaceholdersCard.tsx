@@ -345,22 +345,21 @@ const PlaceholderRow: React.FC<{
           </p>
 
           {/* Attach — LO-initiated direct merge to an existing registered
-              user. No email/invite round trip. Visible for every
-              placeholder (useful even for "No stats" rows: new team member
-              says "I can't see my team", LO attaches them). Unused rows
-              skip this since there's no history to move. */}
-          {!isUnused && (
-            <div className="pt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowAttach(true)}
-              >
-                <UserPlus className="h-3.5 w-3.5 mr-1" />
-                Attach to registered user
-              </Button>
-            </div>
-          )}
+              user. Available for every placeholder (including Unused —
+              captain may have typed someone's name before ever putting
+              them on a team; if that person later registers, attach
+              still records the identity link even when there's nothing
+              material to transfer). */}
+          <div className="pt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowAttach(true)}
+            >
+              <UserPlus className="h-3.5 w-3.5 mr-1" />
+              Attach to registered user
+            </Button>
+          </div>
 
           {/* Delete — only for the "Unused" case. Two-click confirm via local
               state: first click arms the action, second click fires it.
