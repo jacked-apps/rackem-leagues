@@ -17,6 +17,7 @@
  * Phase E: merge picker lands in a follow-up commit.
  */
 
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -72,10 +73,24 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
   const totalCount = placeholders.length;
   const needsMergeCount = placeholders.filter((p) => p.has_stats).length;
   const noStatsCount = totalCount - needsMergeCount;
-  // Unused = not on any team AND no stats. Safe-to-delete cruft.
+  // Unused = not on any team AND no stats. This is a data anomaly, not
+  // housekeeping — every placeholder should exist because someone's playing
+  // (or about to). Unused ones are stuck/orphaned and need the LO's
+  // attention. Sorted to the top, highlighted in red.
   const unusedCount = placeholders.filter(
     (p) => !p.has_stats && p.teams.length === 0,
   ).length;
+
+  // Sort: Unused first (anomalies), then Needs merge (priority action),
+  // then the rest. RPC's server-side order stays as a tiebreaker.
+  const sortedPlaceholders = useMemo(() => {
+    const priority = (p: OrgPlaceholderRow): number => {
+      if (!p.has_stats && p.teams.length === 0) return 0; // unused — top
+      if (p.has_stats) return 1;                           // needs merge
+      return 2;                                             // healthy
+    };
+    return [...placeholders].sort((a, b) => priority(a) - priority(b));
+  }, [placeholders]);
 
   return (
     <Card className="rounded-none lg:rounded-xl">
@@ -107,20 +122,22 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
           <AccordionContent>
             <CardContent className="p-4 lg:p-6 pt-0">
               {/* Detailed breakdown visible only when expanded — the
-                  numbers the LO uses to triage their queue. */}
+                  numbers the LO uses to triage their queue. Unused comes
+                  first in the chip row (and in solid red) because those
+                  are the ones that shouldn't exist at all. */}
               {!isLoading && totalCount > 0 && (
                 <div className="flex flex-wrap gap-2 pb-3 mb-3 border-b border-gray-100">
+                  {unusedCount > 0 && (
+                    <span className="inline-flex items-center rounded-full bg-red-600 px-2.5 py-0.5 text-xs font-semibold text-white">
+                      {unusedCount} unused (no team)
+                    </span>
+                  )}
                   <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
                     {needsMergeCount} needs merge
                   </span>
                   <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
                     {noStatsCount} no stats
                   </span>
-                  {unusedCount > 0 && (
-                    <span className="inline-flex items-center rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700 border border-red-200 border-dashed">
-                      {unusedCount} unused (no team)
-                    </span>
-                  )}
                 </div>
               )}
 
@@ -139,7 +156,7 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
                 // Inner accordion: one AccordionItem per row. Each row stays
                 // compact until the LO clicks to expand it for full detail.
                 <Accordion type="multiple" className="divide-y divide-gray-100">
-                  {placeholders.map((p) => (
+                  {sortedPlaceholders.map((p) => (
                     <PlaceholderRow key={p.member_id} placeholder={p} />
                   ))}
                 </Accordion>
@@ -173,10 +190,13 @@ const PlaceholderRow: React.FC<{ placeholder: OrgPlaceholderRow }> = ({
     <AccordionItem
       value={p.member_id}
       className={`border-b-0 ${
-        p.has_stats
-          ? 'border-l-4 border-l-amber-400 pl-3 -ml-3'
-          : isUnused
-            ? 'border-l-4 border-l-red-300 border-dashed pl-3 -ml-3 opacity-80'
+        isUnused
+          ? // Unused = anomaly. Full red treatment: border all around,
+            // light-red background. Visually loud because it shouldn't
+            // be there.
+            'border border-red-300 bg-red-50 rounded-md px-3 my-1'
+          : p.has_stats
+            ? 'border-l-4 border-l-amber-400 pl-3 -ml-3'
             : ''
       }`}
     >
@@ -193,7 +213,7 @@ const PlaceholderRow: React.FC<{ placeholder: OrgPlaceholderRow }> = ({
               Needs merge
             </span>
           ) : isUnused ? (
-            <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700 border border-red-200 border-dashed shrink-0">
+            <span className="inline-flex items-center rounded-full bg-red-600 px-2 py-0.5 text-xs font-semibold text-white shrink-0">
               Unused
             </span>
           ) : (
