@@ -2320,6 +2320,23 @@ export type Database = {
       get_operator_placeholders: { Args: { p_org_id: string }; Returns: Json }
       get_operator_player_stats: { Args: { p_org_id: string }; Returns: Json }
       get_operator_stats: { Args: { operator_id_param: string }; Returns: Json }
+      get_org_placeholders_for_merge: {
+        Args: { p_org_id: string }
+        Returns: {
+          created_at: string
+          creator_name: string
+          email: string
+          first_name: string
+          game_count: number
+          has_pending_invite: boolean
+          has_stats: boolean
+          last_name: string
+          member_id: string
+          nickname: string
+          system_player_number: number
+          teams: Json
+        }[]
+      }
       get_team_verification_options: {
         Args: { p_decoy_count?: number; p_member_id: string }
         Returns: {
