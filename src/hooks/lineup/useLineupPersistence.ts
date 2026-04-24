@@ -19,6 +19,13 @@ interface LineupPersistenceParams {
   userTeamId: string | undefined;
   memberId: string | undefined;
   lineupId: string | null;
+  /**
+   * Whether the opponent's lineup is currently locked. Unlock is forbidden
+   * once BOTH lineups are locked — we're committed to the match at that
+   * point (Unit 6). If the opponent hasn't locked yet, this captain is
+   * free to unlock and edit.
+   */
+  opponentLocked?: boolean;
   player1Id: string;
   player2Id: string;
   player3Id: string;
@@ -45,6 +52,7 @@ export function useLineupPersistence(params: LineupPersistenceParams) {
     userTeamId,
     memberId,
     lineupId,
+    opponentLocked = false,
     player1Id,
     player2Id,
     player3Id,
@@ -206,6 +214,15 @@ export function useLineupPersistence(params: LineupPersistenceParams) {
   const handleUnlockLineup = async () => {
     if (!lineupId || !matchId) {
       toast.error('Error: No lineup to unlock');
+      return;
+    }
+
+    // Unit 6: once both lineups are locked, the match is committed — sub
+    // resolution, Fargo agreement, and game creation all proceed from here
+    // without a re-do path. Reject the unlock explicitly (UI also hides
+    // the button via canUnlock, this is defense-in-depth).
+    if (opponentLocked) {
+      toast.error('Both lineups are locked. Work things out from this screen, or contact an operator.');
       return;
     }
 

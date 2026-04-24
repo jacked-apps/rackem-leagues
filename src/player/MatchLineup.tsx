@@ -389,6 +389,7 @@ export function MatchLineup() {
     userTeamId: userTeamData?.team_id,
     memberId,
     lineupId: lineup.lineupId,
+    opponentLocked: !!opponentLineup?.locked,
     player1Id: lineup.player1Id,
     player2Id: lineup.player2Id,
     player3Id: lineup.player3Id,
