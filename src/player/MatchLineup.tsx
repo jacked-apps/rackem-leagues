@@ -548,6 +548,8 @@ export function MatchLineup() {
     handicapType,
     systemOverrides: leaguePrefs?.system_overrides,
     blockedReason: prepBlockedReason,
+    gameGeneration: leaguePrefs?.game_generation,
+    currentGamesCount: allGames.length,
     player1Id: lineup.player1Id,
     player2Id: lineup.player2Id,
     player3Id: lineup.player3Id,
