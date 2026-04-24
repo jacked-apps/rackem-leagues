@@ -993,6 +993,7 @@ export type Database = {
           last_name: string
           membership_paid_date: string | null
           nickname: string | null
+          organization_id: string | null
           phone: string | null
           profanity_filter_enabled: boolean | null
           role: Database["public"]["Enums"]["user_role"] | null
@@ -1018,6 +1019,7 @@ export type Database = {
           last_name: string
           membership_paid_date?: string | null
           nickname?: string | null
+          organization_id?: string | null
           phone?: string | null
           profanity_filter_enabled?: boolean | null
           role?: Database["public"]["Enums"]["user_role"] | null
@@ -1043,6 +1045,7 @@ export type Database = {
           last_name?: string
           membership_paid_date?: string | null
           nickname?: string | null
+          organization_id?: string | null
           phone?: string | null
           profanity_filter_enabled?: boolean | null
           role?: Database["public"]["Enums"]["user_role"] | null
@@ -1060,6 +1063,13 @@ export type Database = {
             columns: ["created_by_member_id"]
             isOneToOne: false
             referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "members_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -2371,6 +2381,10 @@ export type Database = {
       remove_placeholder_from_team: {
         Args: { p_member_id: string; p_org_id: string; p_team_id: string }
         Returns: Json
+      }
+      resolve_member_primary_org: {
+        Args: { p_member_id: string }
+        Returns: string
       }
       search_placeholder_matches: {
         Args: {
