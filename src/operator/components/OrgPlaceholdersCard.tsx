@@ -69,8 +69,13 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
     staleTime: 1000 * 60,
   });
 
+  const totalCount = placeholders.length;
   const needsMergeCount = placeholders.filter((p) => p.has_stats).length;
-  const noStatsCount = placeholders.length - needsMergeCount;
+  const noStatsCount = totalCount - needsMergeCount;
+  // Unused = not on any team AND no stats. Safe-to-delete cruft.
+  const unusedCount = placeholders.filter(
+    (p) => !p.has_stats && p.teams.length === 0,
+  ).length;
 
   return (
     <Card className="rounded-none lg:rounded-xl">
@@ -82,27 +87,43 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
         <AccordionItem value="placeholders" className="border-b-0">
           <AccordionTrigger className="p-4 lg:p-6 hover:no-underline">
             <CardHeader className="p-0 w-full">
-              <CardTitle className="flex items-center gap-2 text-left">
+              {/* Title is bigger than row names (row nicknames are text-lg;
+                  title is text-xl) — hierarchy is legible at a glance. */}
+              <CardTitle className="flex items-center gap-2 text-left text-xl">
                 <Users className="h-5 w-5 text-blue-600" />
                 Placeholders
-                <span className="ml-auto flex items-center gap-2 flex-wrap">
-                  {!isLoading && placeholders.length > 0 && (
-                    <>
-                      <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
-                        {needsMergeCount} needs merge
-                      </span>
-                      <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
-                        {noStatsCount} no stats
-                      </span>
-                    </>
-                  )}
-                </span>
+                {/* Summary when closed: total only — the overview number the
+                    LO cares about at the section level. Breakdown lives
+                    inside once they open the section. */}
+                {!isLoading && totalCount > 0 && (
+                  <span className="ml-auto inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-sm font-medium text-blue-800">
+                    {totalCount} total
+                  </span>
+                )}
               </CardTitle>
             </CardHeader>
           </AccordionTrigger>
 
           <AccordionContent>
             <CardContent className="p-4 lg:p-6 pt-0">
+              {/* Detailed breakdown visible only when expanded — the
+                  numbers the LO uses to triage their queue. */}
+              {!isLoading && totalCount > 0 && (
+                <div className="flex flex-wrap gap-2 pb-3 mb-3 border-b border-gray-100">
+                  <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                    {needsMergeCount} needs merge
+                  </span>
+                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
+                    {noStatsCount} no stats
+                  </span>
+                  {unusedCount > 0 && (
+                    <span className="inline-flex items-center rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700 border border-red-200 border-dashed">
+                      {unusedCount} unused (no team)
+                    </span>
+                  )}
+                </div>
+              )}
+
               {isLoading ? (
                 <p className="text-sm text-gray-500">Loading placeholders…</p>
               ) : error ? (
@@ -143,12 +164,20 @@ const PlaceholderRow: React.FC<{ placeholder: OrgPlaceholderRow }> = ({
   // system_player_number stay behind the expand to respect that space budget.
   const compactName = p.nickname?.trim() || p.first_name;
   const fullName = `${p.first_name} ${p.last_name}`;
+  // Unused = no team AND no stats. Safe-to-delete cruft. Flagged with a
+  // dashed red border so the LO recognizes them at a glance without the
+  // harshness of a solid red (they're not errors, just housekeeping).
+  const isUnused = !p.has_stats && p.teams.length === 0;
 
   return (
     <AccordionItem
       value={p.member_id}
       className={`border-b-0 ${
-        p.has_stats ? 'border-l-4 border-l-amber-400 pl-3 -ml-3' : ''
+        p.has_stats
+          ? 'border-l-4 border-l-amber-400 pl-3 -ml-3'
+          : isUnused
+            ? 'border-l-4 border-l-red-300 border-dashed pl-3 -ml-3 opacity-80'
+            : ''
       }`}
     >
       <AccordionTrigger className="py-3 hover:no-underline">
@@ -159,15 +188,19 @@ const PlaceholderRow: React.FC<{ placeholder: OrgPlaceholderRow }> = ({
           <span className="text-lg font-semibold text-gray-900 truncate">
             {compactName}
           </span>
-          <span
-            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium shrink-0 ${
-              p.has_stats
-                ? 'bg-amber-100 text-amber-800'
-                : 'bg-gray-100 text-gray-700'
-            }`}
-          >
-            {p.has_stats ? 'Needs merge' : 'No stats'}
-          </span>
+          {p.has_stats ? (
+            <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 shrink-0">
+              Needs merge
+            </span>
+          ) : isUnused ? (
+            <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700 border border-red-200 border-dashed shrink-0">
+              Unused
+            </span>
+          ) : (
+            <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 shrink-0">
+              No stats
+            </span>
+          )}
           {p.has_pending_invite && (
             <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-800 shrink-0">
               Invite pending
