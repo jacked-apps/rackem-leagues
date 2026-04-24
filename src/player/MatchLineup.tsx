@@ -49,10 +49,6 @@ import {
 import { usePreparationStatus } from '@/hooks/lineup/useMatchPreparation';
 import {
   calculateSubstituteHandicap,
-  SUB_HOME_ANON_ID,
-  SUB_AWAY_ANON_ID,
-  SUB_HOME_DD_ID,
-  SUB_AWAY_DD_ID,
   isAnonSubSentinel,
   isDoubleDutySentinel,
   isAnySubSentinel,
@@ -368,7 +364,6 @@ export function MatchLineup() {
     handicaps.player4Handicap,
     handicaps.player5Handicap,
     manualHandicaps,
-    substituteType,
   ]);
 
   // Lineup validation

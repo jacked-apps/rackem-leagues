@@ -95,7 +95,6 @@ export function useMatchPreparation(params: MatchPreparationParams) {
     player5Handicap,
     setIsPreparingMatch,
     setPreparationMessage,
-    refetchLineups,
     refetchGames,
   } = params;
 
