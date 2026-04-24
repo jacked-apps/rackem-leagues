@@ -110,30 +110,46 @@ export const PendingInvitesModal: React.FC<PendingInvitesModalProps> = ({
               className="border rounded-lg p-3 bg-blue-50 border-blue-200"
             >
               <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0 space-y-1">
-                  {/* Primary headline: team name if we have one, else a
-                      gentler framing that still names the action. */}
-                  <p className="font-medium text-blue-900 truncate">
-                    {invite.team_name ?? 'Claim your player profile'}
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  {/* Fixed call-to-action headline so the card's purpose
+                      is instantly clear regardless of which fields are
+                      populated. Team name gets its own labeled row below. */}
+                  <p className="font-medium text-blue-900">
+                    You've been invited
                   </p>
 
-                  {/* Who invited / who created + org context when available.
-                      Attribution order: explicit inviter > creator > generic. */}
+                  {/* Team — labeled so users recognize it as a team, not
+                      mistake it for a headline. Falls back to "No team yet"
+                      for auto-invites without team context. */}
                   <p className="text-sm text-blue-700">
-                    {invite.captain_name
-                      ? `Invited by ${invite.captain_name}`
-                      : invite.creator_name
-                        ? `Created by ${invite.creator_name}`
-                        : invite.team_name
-                          ? 'Team invite'
-                          : 'A placeholder profile was linked to your email'}
-                    {invite.organization_name && (
-                      <> · {invite.organization_name}</>
-                    )}
+                    <span className="text-blue-600">Team:</span>{' '}
+                    <span className="font-medium">
+                      {invite.team_name ?? 'No team yet'}
+                    </span>
                   </p>
+
+                  {/* Organization */}
+                  {invite.organization_name && (
+                    <p className="text-sm text-blue-700">
+                      <span className="text-blue-600">Organization:</span>{' '}
+                      <span className="font-medium">{invite.organization_name}</span>
+                    </p>
+                  )}
+
+                  {/* Attribution — captain who explicitly invited, else creator. */}
+                  {(invite.captain_name || invite.creator_name) && (
+                    <p className="text-sm text-blue-700">
+                      <span className="text-blue-600">
+                        {invite.captain_name ? 'Invited by:' : 'Created by:'}
+                      </span>{' '}
+                      <span className="font-medium">
+                        {invite.captain_name ?? invite.creator_name}
+                      </span>
+                    </p>
+                  )}
 
                   {/* Profile identity line — name + nickname if set */}
-                  <p className="text-xs text-blue-600">
+                  <p className="text-xs text-blue-600 pt-0.5">
                     Profile: {invite.placeholder_first_name}
                     {invite.placeholder_nickname
                       ? ` "${invite.placeholder_nickname}"`
