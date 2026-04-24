@@ -17,8 +17,8 @@
  * Phase E: merge picker lands in a follow-up commit.
  */
 
-import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -27,8 +27,11 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { Users, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Users, AlertCircle, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { logger } from '@/utils/logger';
+import { useUser } from '@/context/useUser';
 
 export interface OrgPlaceholderRow {
   member_id: string;
@@ -63,11 +66,54 @@ async function fetchOrgPlaceholders(orgId: string): Promise<OrgPlaceholderRow[]>
 export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
   organizationId,
 }) => {
+  const queryClient = useQueryClient();
+  const { user } = useUser();
+
   const { data: placeholders = [], isLoading, error } = useQuery({
     queryKey: ['org-placeholders-for-merge', organizationId],
     queryFn: () => fetchOrgPlaceholders(organizationId),
     enabled: !!organizationId,
     staleTime: 1000 * 60,
+  });
+
+  // Delete mutation — one-click purge for unused placeholders. Fetches the
+  // caller's member id at call time so we don't need to plumb it through
+  // props. Server-side RPC re-checks all invariants (no team, no stats,
+  // no BCA#) so even a stale UI can't delete something that shouldn't be.
+  const deleteMutation = useMutation({
+    mutationFn: async (placeholderId: string) => {
+      if (!user) throw new Error('Not authenticated');
+      const { data: callerMember } = await supabase
+        .from('members')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (!callerMember) throw new Error('No member record for caller');
+
+      const { data, error: rpcError } = await supabase.rpc(
+        'delete_unused_placeholder',
+        {
+          p_member_id: placeholderId,
+          p_actor_member_id: callerMember.id,
+          p_organization_id: organizationId,
+        },
+      );
+      if (rpcError) throw rpcError;
+      const result = (data as { success: boolean; error_message: string | null }[])?.[0];
+      if (!result?.success) {
+        throw new Error(result?.error_message ?? 'Delete failed');
+      }
+    },
+    onSuccess: () => {
+      toast.success('Placeholder deleted');
+      queryClient.invalidateQueries({
+        queryKey: ['org-placeholders-for-merge', organizationId],
+      });
+    },
+    onError: (err) => {
+      logger.error('Delete placeholder failed', { error: (err as Error).message });
+      toast.error((err as Error).message || 'Could not delete');
+    },
   });
 
   const totalCount = placeholders.length;
@@ -160,7 +206,15 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
                 // compact until the LO clicks to expand it for full detail.
                 <Accordion type="multiple" className="divide-y divide-gray-100">
                   {sortedPlaceholders.map((p) => (
-                    <PlaceholderRow key={p.member_id} placeholder={p} />
+                    <PlaceholderRow
+                      key={p.member_id}
+                      placeholder={p}
+                      onDelete={() => deleteMutation.mutate(p.member_id)}
+                      isDeleting={
+                        deleteMutation.isPending &&
+                        deleteMutation.variables === p.member_id
+                      }
+                    />
                   ))}
                 </Accordion>
               )}
@@ -176,9 +230,12 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
  * One placeholder, collapsed by default. Header shows identity + chips;
  * expanding reveals detail rows.
  */
-const PlaceholderRow: React.FC<{ placeholder: OrgPlaceholderRow }> = ({
-  placeholder: p,
-}) => {
+const PlaceholderRow: React.FC<{
+  placeholder: OrgPlaceholderRow;
+  onDelete: () => void;
+  isDeleting: boolean;
+}> = ({ placeholder: p, onDelete, isDeleting }) => {
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   // Nicknames are the mobile display format — capped at ~12 chars at creation
   // so they stay readable at large sizes without squishing. Full names and
   // system_player_number stay behind the expand to respect that space budget.
@@ -283,7 +340,47 @@ const PlaceholderRow: React.FC<{ placeholder: OrgPlaceholderRow }> = ({
             Created {new Date(p.created_at).toLocaleDateString()}
           </p>
 
-          {/* Merge button slot — wired up in Phase E part 2 */}
+          {/* Delete — only for the "Unused" case. Two-click confirm via local
+              state: first click arms the action, second click fires it.
+              Cheap and keyboard-accessible without pulling in a dialog. */}
+          {isUnused && (
+            <div className="pt-2 border-t border-gray-100 mt-2">
+              {!confirmingDelete ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-red-700 hover:text-red-800 hover:bg-red-50 border-red-200"
+                  onClick={() => setConfirmingDelete(true)}
+                >
+                  <Trash2 className="h-3.5 w-3.5 mr-1" />
+                  Delete this placeholder
+                </Button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-red-700">
+                    Sure? This can't be undone.
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={onDelete}
+                    isLoading={isDeleting}
+                    loadingText="Deleting…"
+                  >
+                    Yes, delete
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setConfirmingDelete(false)}
+                    disabled={isDeleting}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </AccordionContent>
     </AccordionItem>

@@ -2281,6 +2281,17 @@ export type Database = {
         Returns: string
       }
       daitch_mokotoff: { Args: { "": string }; Returns: string[] }
+      delete_unused_placeholder: {
+        Args: {
+          p_actor_member_id: string
+          p_member_id: string
+          p_organization_id: string
+        }
+        Returns: {
+          error_message: string
+          success: boolean
+        }[]
+      }
       dmetaphone: { Args: { "": string }; Returns: string }
       dmetaphone_alt: { Args: { "": string }; Returns: string }
       get_current_member_id: { Args: never; Returns: string }
