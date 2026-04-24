@@ -28,10 +28,11 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
-import { Users, AlertCircle, Trash2 } from 'lucide-react';
+import { Users, AlertCircle, Trash2, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { logger } from '@/utils/logger';
 import { useUser } from '@/context/useUser';
+import { AttachPlaceholderDialog } from '@/operator/components/AttachPlaceholderDialog';
 
 export interface OrgPlaceholderRow {
   member_id: string;
@@ -209,6 +210,7 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
                     <PlaceholderRow
                       key={p.member_id}
                       placeholder={p}
+                      organizationId={organizationId}
                       onDelete={() => deleteMutation.mutate(p.member_id)}
                       isDeleting={
                         deleteMutation.isPending &&
@@ -232,10 +234,12 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
  */
 const PlaceholderRow: React.FC<{
   placeholder: OrgPlaceholderRow;
+  organizationId: string;
   onDelete: () => void;
   isDeleting: boolean;
-}> = ({ placeholder: p, onDelete, isDeleting }) => {
+}> = ({ placeholder: p, organizationId, onDelete, isDeleting }) => {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [showAttach, setShowAttach] = useState(false);
   // Nicknames are the mobile display format — capped at ~12 chars at creation
   // so they stay readable at large sizes without squishing. Full names and
   // system_player_number stay behind the expand to respect that space budget.
@@ -340,6 +344,24 @@ const PlaceholderRow: React.FC<{
             Created {new Date(p.created_at).toLocaleDateString()}
           </p>
 
+          {/* Attach — LO-initiated direct merge to an existing registered
+              user. No email/invite round trip. Visible for every
+              placeholder (useful even for "No stats" rows: new team member
+              says "I can't see my team", LO attaches them). Unused rows
+              skip this since there's no history to move. */}
+          {!isUnused && (
+            <div className="pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAttach(true)}
+              >
+                <UserPlus className="h-3.5 w-3.5 mr-1" />
+                Attach to registered user
+              </Button>
+            </div>
+          )}
+
           {/* Delete — only for the "Unused" case. Two-click confirm via local
               state: first click arms the action, second click fires it.
               Cheap and keyboard-accessible without pulling in a dialog. */}
@@ -383,6 +405,19 @@ const PlaceholderRow: React.FC<{
           )}
         </div>
       </AccordionContent>
+
+      {/* Attach dialog — rendered as a sibling so it stays open independent
+          of the accordion state. Only mounts when the LO triggers it. */}
+      {showAttach && (
+        <AttachPlaceholderDialog
+          open={showAttach}
+          onOpenChange={setShowAttach}
+          placeholderId={p.member_id}
+          placeholderNickname={p.nickname?.trim() || p.first_name}
+          placeholderFullName={`${p.first_name} ${p.last_name}`}
+          organizationId={organizationId}
+        />
+      )}
     </AccordionItem>
   );
 };
