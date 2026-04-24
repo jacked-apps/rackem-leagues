@@ -138,61 +138,70 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
 const PlaceholderRow: React.FC<{ placeholder: OrgPlaceholderRow }> = ({
   placeholder: p,
 }) => {
-  const displayName = `${p.first_name}${p.nickname ? ` "${p.nickname}"` : ''} ${p.last_name}`;
+  // Nicknames are the mobile display format — capped at ~12 chars at creation
+  // so they stay readable at large sizes without squishing. Full names and
+  // system_player_number stay behind the expand to respect that space budget.
+  const compactName = p.nickname?.trim() || p.first_name;
+  const fullName = `${p.first_name} ${p.last_name}`;
+
   return (
     <AccordionItem
       value={p.member_id}
-      className={`border-b-0 py-1 ${
+      className={`border-b-0 ${
         p.has_stats ? 'border-l-4 border-l-amber-400 pl-3 -ml-3' : ''
       }`}
     >
-      <AccordionTrigger className="py-2 hover:no-underline">
-        <div className="flex-1 min-w-0 text-left">
-          <p className="font-medium text-gray-900 truncate">
-            {displayName}
-            {p.system_player_number !== null && (
-              <span className="text-xs text-gray-400 font-normal ml-1">
-                #P{p.system_player_number}
-              </span>
-            )}
-          </p>
-          <div className="flex flex-wrap gap-1 mt-1">
-            <span
-              className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                p.has_stats
-                  ? 'bg-amber-100 text-amber-800'
-                  : 'bg-gray-100 text-gray-700'
-              }`}
-            >
-              {p.has_stats ? 'Needs merge' : 'No stats'}
+      <AccordionTrigger className="py-3 hover:no-underline">
+        {/* Single compact row. Large nickname + only the two most load-bearing
+            chips (merge priority + invite status). Everything else lives
+            behind the expand. */}
+        <div className="flex-1 min-w-0 flex items-center gap-2 text-left">
+          <span className="text-lg font-semibold text-gray-900 truncate">
+            {compactName}
+          </span>
+          <span
+            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium shrink-0 ${
+              p.has_stats
+                ? 'bg-amber-100 text-amber-800'
+                : 'bg-gray-100 text-gray-700'
+            }`}
+          >
+            {p.has_stats ? 'Needs merge' : 'No stats'}
+          </span>
+          {p.has_pending_invite && (
+            <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-800 shrink-0">
+              Invite pending
             </span>
-            {p.game_count > 0 && (
-              <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-800">
-                {p.game_count} game{p.game_count === 1 ? '' : 's'}
-              </span>
-            )}
-            {p.has_pending_invite && (
-              <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-800">
-                Invite pending
-              </span>
-            )}
-            {p.teams.length > 0 && (
-              <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
-                {p.teams.length} team{p.teams.length === 1 ? '' : 's'}
-              </span>
-            )}
-          </div>
+          )}
         </div>
       </AccordionTrigger>
 
       <AccordionContent>
-        {/* Detail rows — labeled for scannability. Match the PendingInvites
-            modal's labeled-row idiom so the LO learns one visual pattern. */}
+        {/* Full detail reveal. Real name + #P number here, not in the compact
+            header — same rationale as nicknames: keep the closed list
+            scannable on phones. */}
         <div className="pt-1 pb-3 space-y-1 text-sm">
+          <p className="text-gray-700">
+            <span className="text-gray-500">Name:</span>{' '}
+            <span className="font-medium">{fullName}</span>
+            {p.system_player_number !== null && (
+              <span className="text-gray-400 ml-2">
+                #P{p.system_player_number}
+              </span>
+            )}
+          </p>
+
           {p.email && (
             <p className="text-gray-700">
               <span className="text-gray-500">Email:</span>{' '}
               <span className="font-medium">{p.email}</span>
+            </p>
+          )}
+
+          {p.game_count > 0 && (
+            <p className="text-gray-700">
+              <span className="text-gray-500">Games played:</span>{' '}
+              <span className="font-medium">{p.game_count}</span>
             </p>
           )}
 
