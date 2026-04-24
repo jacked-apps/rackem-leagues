@@ -2364,6 +2364,19 @@ export type Database = {
           teams: Json
         }[]
       }
+      get_placeholder_remove_context: {
+        Args: { p_member_id: string }
+        Returns: {
+          first_name: string
+          found: boolean
+          has_bca: boolean
+          has_stats: boolean
+          is_archived: boolean
+          is_placeholder: boolean
+          nickname: string
+          team_count: number
+        }[]
+      }
       get_team_verification_options: {
         Args: { p_decoy_count?: number; p_member_id: string }
         Returns: {
