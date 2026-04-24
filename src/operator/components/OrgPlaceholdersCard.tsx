@@ -187,21 +187,6 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
 
           <AccordionContent>
             <CardContent className="p-4 lg:p-6 pt-0">
-              {/* Quiet entry point for the unmerge flow — undoing a merge
-                  is mistake-correction, not routine. Lives here (not on
-                  any specific row) because LO reaches it via player
-                  lookup, not by browsing placeholders. */}
-              <div className="flex justify-end mb-3">
-                <Button
-                  variant="link"
-                  size="sm"
-                  className="text-xs text-gray-600"
-                  onClick={() => setShowUnmerge(true)}
-                >
-                  Made a wrong attach? Unmerge a player…
-                </Button>
-              </div>
-
               {/* Detailed breakdown visible only when expanded — the
                   numbers the LO uses to triage their queue. Unused comes
                   first in the chip row (and in solid red) because those
@@ -282,6 +267,23 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
                       </AccordionContent>
                     </AccordionItem>
                   </Accordion>
+                </div>
+              )}
+              {/* Unmerge entry point — quiet, lives at the very bottom so
+                  it's there when needed but doesn't invite casual use.
+                  The actual flow is a deliberate three-stage dialog
+                  (player lookup → review with synopsis → confirm).
+                  Only renders when there are placeholders to manage. */}
+              {totalCount > 0 && (
+                <div className="mt-6 pt-3 border-t border-gray-100 flex justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-gray-600"
+                    onClick={() => setShowUnmerge(true)}
+                  >
+                    Unmerge a player…
+                  </Button>
                 </div>
               )}
             </CardContent>
