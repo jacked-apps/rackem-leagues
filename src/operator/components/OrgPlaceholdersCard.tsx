@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Users, AlertCircle, Trash2, UserPlus, Archive as ArchiveIcon, RotateCcw } from 'lucide-react';
+import { InfoButton } from '@/components/InfoButton';
 import { toast } from 'sonner';
 import { logger } from '@/utils/logger';
 import { useUser } from '@/context/useUser';
@@ -173,6 +174,46 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
               <CardTitle className="flex items-center gap-2 text-left text-xl">
                 <Users className="h-5 w-5 text-blue-600" />
                 Placeholders
+                {/* Inline help. onClick stop-propagates so the question-mark
+                    doesn't toggle the parent accordion when the LO just
+                    wants to read the popup. */}
+                <span
+                  onClick={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
+                  <InfoButton title="About placeholders" size="sm" align="left">
+                    <p>
+                      A placeholder represents a real player who hasn't
+                      registered (or never wants to). They have stats,
+                      handicaps, and team memberships just like registered
+                      users — they just don't have an account.
+                    </p>
+                    <p className="mt-2 font-medium">From this section you can:</p>
+                    <ul className="mt-1 list-disc list-inside space-y-1">
+                      <li>
+                        <strong>Attach</strong> — link a placeholder to a
+                        registered user. Their teams and history move to the
+                        user's account.
+                      </li>
+                      <li>
+                        <strong>Remove</strong> — for unused placeholders
+                        (no team, no stats), permanent delete. For everyone
+                        else, archive.
+                      </li>
+                      <li>
+                        <strong>Archive</strong> — soft-inactivate a
+                        placeholder who left the league. Data is preserved,
+                        they just stop showing up in active dropdowns.
+                        Restore from the Archived section any time.
+                      </li>
+                      <li>
+                        <strong>Unmerge</strong> — at the bottom of this
+                        card, reverse a wrong attach. Look up the player,
+                        review what was merged, confirm the specific reversal.
+                      </li>
+                    </ul>
+                  </InfoButton>
+                </span>
                 {/* Summary when closed: total only — the overview number the
                     LO cares about at the section level. Breakdown lives
                     inside once they open the section. */}
