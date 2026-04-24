@@ -189,22 +189,43 @@ serve(async (req) => {
       );
     }
 
-    // Resolve the invite's organization_id via team_id -> teams -> seasons -> leagues.
-    // merge_v2 requires this as an authz parameter. Sourcing it from the invite's
-    // team_id (rather than from a client body field) means a caller cannot spoof
-    // a different org — the invite itself pins the org.
-    const { data: teamRow, error: teamError } = await supabaseAdmin
-      .from("teams")
-      .select("seasons!inner(leagues!inner(organization_id))")
-      .eq("id", tokenData.team_id)
-      .single();
+    // Resolve the invite's organization_id for merge_v2's authz parameter.
+    // Priority:
+    //   1. Placeholder's members.organization_id (populated by the trigger for
+    //      all new placeholders — handles auto-invites without team_id).
+    //   2. Fallback: invite.team_id -> teams -> seasons -> leagues. Covers
+    //      legacy invites that predate the org column.
+    // Sourcing server-side means a caller cannot spoof a different org — the
+    // invite itself pins which org the merge belongs to.
+    let organizationId: string | null = null;
 
-    // deno-lint-ignore no-explicit-any
-    const organizationId = (teamRow as any)?.seasons?.leagues?.organization_id;
-    if (teamError || !organizationId) {
-      console.error("Failed to resolve organization_id from invite team", teamError);
+    const { data: placeholderRow } = await supabaseAdmin
+      .from("members")
+      .select("organization_id")
+      .eq("id", placeholderMemberId)
+      .maybeSingle();
+    organizationId = placeholderRow?.organization_id ?? null;
+
+    if (!organizationId && tokenData.team_id) {
+      const { data: teamRow } = await supabaseAdmin
+        .from("teams")
+        .select("seasons!inner(leagues!inner(organization_id))")
+        .eq("id", tokenData.team_id)
+        .single();
+      // deno-lint-ignore no-explicit-any
+      organizationId = (teamRow as any)?.seasons?.leagues?.organization_id ?? null;
+    }
+
+    if (!organizationId) {
+      console.error("Failed to resolve organization_id for invite", {
+        placeholderMemberId,
+        team_id: tokenData.team_id,
+      });
       return new Response(
-        JSON.stringify({ error: "Could not resolve invite organization" }),
+        JSON.stringify({
+          error: "Could not resolve invite organization",
+          details: "Placeholder has no org and the invite has no team. Ask your league operator.",
+        }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
