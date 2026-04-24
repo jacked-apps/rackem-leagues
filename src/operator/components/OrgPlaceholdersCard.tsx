@@ -28,7 +28,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
-import { Users, AlertCircle, Trash2, UserPlus } from 'lucide-react';
+import { Users, AlertCircle, Trash2, UserPlus, Archive as ArchiveIcon, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { logger } from '@/utils/logger';
 import { useUser } from '@/context/useUser';
@@ -46,6 +46,8 @@ export interface OrgPlaceholderRow {
   teams: { team_id: string; team_name: string; is_captain: boolean }[];
   creator_name: string | null;
   has_pending_invite: boolean;
+  is_archived: boolean;
+  archived_at: string | null;
   created_at: string;
 }
 
@@ -53,9 +55,13 @@ interface OrgPlaceholdersCardProps {
   organizationId: string;
 }
 
-async function fetchOrgPlaceholders(orgId: string): Promise<OrgPlaceholderRow[]> {
+async function fetchOrgPlaceholders(
+  orgId: string,
+  includeArchived: boolean,
+): Promise<OrgPlaceholderRow[]> {
   const { data, error } = await supabase.rpc('get_org_placeholders_for_merge', {
     p_org_id: orgId,
+    p_include_archived: includeArchived,
   });
   if (error) {
     logger.error('Failed to fetch org placeholders', { error: error.message });
@@ -70,11 +76,68 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
   const queryClient = useQueryClient();
   const { user } = useUser();
 
+  // Active placeholders (archived excluded)
   const { data: placeholders = [], isLoading, error } = useQuery({
     queryKey: ['org-placeholders-for-merge', organizationId],
-    queryFn: () => fetchOrgPlaceholders(organizationId),
+    queryFn: () => fetchOrgPlaceholders(organizationId, false),
     enabled: !!organizationId,
     staleTime: 1000 * 60,
+  });
+
+  // Archived placeholders — shown in a separate sub-section below.
+  // Lazy: we fetch only when the main card is expanded to avoid an extra
+  // query for LOs who never look at archived.
+  const { data: archived = [] } = useQuery({
+    queryKey: ['org-placeholders-archived', organizationId],
+    queryFn: async () => {
+      const all = await fetchOrgPlaceholders(organizationId, true);
+      return all.filter((p) => p.is_archived);
+    },
+    enabled: !!organizationId,
+    staleTime: 1000 * 60,
+  });
+
+  const runRpc = async (
+    rpcName: 'archive_placeholder' | 'restore_placeholder',
+    memberId: string,
+  ) => {
+    if (!user) throw new Error('Not authenticated');
+    const { data: callerMember } = await supabase
+      .from('members')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (!callerMember) throw new Error('No member record for caller');
+    const { data, error: rpcError } = await supabase.rpc(rpcName, {
+      p_member_id: memberId,
+      p_actor_member_id: callerMember.id,
+      p_organization_id: organizationId,
+    });
+    if (rpcError) throw rpcError;
+    const result = (data as { success: boolean; error_message: string | null }[])?.[0];
+    if (!result?.success) {
+      throw new Error(result?.error_message ?? `${rpcName} failed`);
+    }
+  };
+
+  const archiveMutation = useMutation({
+    mutationFn: (memberId: string) => runRpc('archive_placeholder', memberId),
+    onSuccess: () => {
+      toast.success('Archived');
+      queryClient.invalidateQueries({ queryKey: ['org-placeholders-for-merge', organizationId] });
+      queryClient.invalidateQueries({ queryKey: ['org-placeholders-archived', organizationId] });
+    },
+    onError: (err) => toast.error((err as Error).message || 'Archive failed'),
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: (memberId: string) => runRpc('restore_placeholder', memberId),
+    onSuccess: () => {
+      toast.success('Restored');
+      queryClient.invalidateQueries({ queryKey: ['org-placeholders-for-merge', organizationId] });
+      queryClient.invalidateQueries({ queryKey: ['org-placeholders-archived', organizationId] });
+    },
+    onError: (err) => toast.error((err as Error).message || 'Restore failed'),
   });
 
   // Delete mutation — one-click purge for unused placeholders. Fetches the
@@ -216,9 +279,52 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
                         deleteMutation.isPending &&
                         deleteMutation.variables === p.member_id
                       }
+                      onArchive={() => archiveMutation.mutate(p.member_id)}
+                      isArchiving={
+                        archiveMutation.isPending &&
+                        archiveMutation.variables === p.member_id
+                      }
                     />
                   ))}
                 </Accordion>
+              )}
+
+              {/* Archived sub-section — collapsed by default. Keeps
+                  inactive placeholders queryable without adding them to
+                  the top-level active list. Only renders if there's
+                  something to show. */}
+              {archived.length > 0 && (
+                <div className="mt-6 pt-4 border-t border-gray-200">
+                  <Accordion type="single" collapsible>
+                    <AccordionItem value="archived" className="border-b-0">
+                      <AccordionTrigger className="py-2 hover:no-underline">
+                        <div className="flex items-center gap-2 text-left">
+                          <span className="text-base font-semibold text-gray-700">
+                            Archived
+                          </span>
+                          <span className="inline-flex items-center rounded-full bg-gray-200 px-2 py-0.5 text-xs text-gray-700">
+                            {archived.length}
+                          </span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <Accordion type="multiple" className="divide-y divide-gray-100 mt-1">
+                          {archived.map((p) => (
+                            <ArchivedRow
+                              key={p.member_id}
+                              placeholder={p}
+                              onRestore={() => restoreMutation.mutate(p.member_id)}
+                              isRestoring={
+                                restoreMutation.isPending &&
+                                restoreMutation.variables === p.member_id
+                              }
+                            />
+                          ))}
+                        </Accordion>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                </div>
               )}
             </CardContent>
           </AccordionContent>
@@ -237,7 +343,9 @@ const PlaceholderRow: React.FC<{
   organizationId: string;
   onDelete: () => void;
   isDeleting: boolean;
-}> = ({ placeholder: p, organizationId, onDelete, isDeleting }) => {
+  onArchive: () => void;
+  isArchiving: boolean;
+}> = ({ placeholder: p, organizationId, onDelete, isDeleting, onArchive, isArchiving }) => {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [showAttach, setShowAttach] = useState(false);
   // Nicknames are the mobile display format — capped at ~12 chars at creation
@@ -350,7 +458,7 @@ const PlaceholderRow: React.FC<{
               them on a team; if that person later registers, attach
               still records the identity link even when there's nothing
               material to transfer). */}
-          <div className="pt-2">
+          <div className="pt-2 flex flex-wrap gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -358,6 +466,20 @@ const PlaceholderRow: React.FC<{
             >
               <UserPlus className="h-3.5 w-3.5 mr-1" />
               Attach to registered user
+            </Button>
+
+            {/* Archive — "inactive in this league, kept for future lookup".
+                Distinct from Delete: all data is preserved. Available for
+                every active placeholder. */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onArchive}
+              isLoading={isArchiving}
+              loadingText="Archiving…"
+            >
+              <ArchiveIcon className="h-3.5 w-3.5 mr-1" />
+              Archive
             </Button>
           </div>
 
@@ -417,6 +539,75 @@ const PlaceholderRow: React.FC<{
           organizationId={organizationId}
         />
       )}
+    </AccordionItem>
+  );
+};
+
+
+/**
+ * Archived placeholder row — compact view with a Restore button. No
+ * delete/attach affordances here: restore first, then take actions from
+ * the active list. Keeps each responsibility to one place.
+ */
+const ArchivedRow: React.FC<{
+  placeholder: OrgPlaceholderRow;
+  onRestore: () => void;
+  isRestoring: boolean;
+}> = ({ placeholder: p, onRestore, isRestoring }) => {
+  const compactName = p.nickname?.trim() || p.first_name;
+  const fullName = `${p.first_name} ${p.last_name}`;
+  return (
+    <AccordionItem
+      value={p.member_id}
+      className="border-b-0 opacity-75"
+    >
+      <AccordionTrigger className="py-2 hover:no-underline">
+        <div className="flex-1 min-w-0 flex items-center gap-2 text-left">
+          <span className="text-base font-medium text-gray-700 truncate">
+            {compactName}
+          </span>
+          <span className="inline-flex items-center rounded-full bg-gray-200 px-2 py-0.5 text-xs text-gray-700 shrink-0">
+            Archived
+          </span>
+        </div>
+      </AccordionTrigger>
+      <AccordionContent>
+        <div className="pt-1 pb-2 space-y-1 text-sm">
+          <p className="text-gray-700">
+            <span className="text-gray-500">Name:</span>{" "}
+            <span className="font-medium">{fullName}</span>
+          </p>
+          {p.email && (
+            <p className="text-gray-700">
+              <span className="text-gray-500">Email:</span>{" "}
+              <span className="font-medium">{p.email}</span>
+            </p>
+          )}
+          {p.game_count > 0 && (
+            <p className="text-gray-700">
+              <span className="text-gray-500">Games played:</span>{" "}
+              <span className="font-medium">{p.game_count}</span>
+            </p>
+          )}
+          {p.archived_at && (
+            <p className="text-gray-500 text-xs">
+              Archived {new Date(p.archived_at).toLocaleDateString()}
+            </p>
+          )}
+          <div className="pt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onRestore}
+              isLoading={isRestoring}
+              loadingText="Restoring…"
+            >
+              <RotateCcw className="h-3.5 w-3.5 mr-1" />
+              Restore
+            </Button>
+          </div>
+        </div>
+      </AccordionContent>
     </AccordionItem>
   );
 };

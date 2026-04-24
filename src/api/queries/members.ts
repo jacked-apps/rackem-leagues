@@ -213,8 +213,11 @@ export async function getAllMembers(excludeMemberId?: string): Promise<PartialMe
   let query = supabase
     .from('members')
     .select('id, first_name, last_name, system_player_number, bca_member_number, user_id')
-    // Note: user_id is included to detect placeholder players (user_id = null)
-    // Placeholder players are real people who haven't registered yet
+    // user_id included to detect placeholder players (user_id = null).
+    // Archived placeholders (archived_at NOT NULL) are excluded — they
+    // shouldn't clutter active player pickers. The LO's dedicated archived
+    // view queries them separately.
+    .is('archived_at', null)
     .order('last_name', { ascending: true });
 
   if (excludeMemberId) {

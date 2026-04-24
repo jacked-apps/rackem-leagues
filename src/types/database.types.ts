@@ -981,6 +981,7 @@ export type Database = {
       members: {
         Row: {
           address: string | null
+          archived_at: string | null
           bca_member_number: string | null
           city: string
           created_at: string | null
@@ -1007,6 +1008,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          archived_at?: string | null
           bca_member_number?: string | null
           city: string
           created_at?: string | null
@@ -1033,6 +1035,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          archived_at?: string | null
           bca_member_number?: string | null
           city?: string
           created_at?: string | null
@@ -2243,6 +2246,17 @@ export type Database = {
       }
     }
     Functions: {
+      archive_placeholder: {
+        Args: {
+          p_actor_member_id: string
+          p_member_id: string
+          p_organization_id: string
+        }
+        Returns: {
+          error_message: string
+          success: boolean
+        }[]
+      }
       assign_tables_for_season: {
         Args: { p_season_id: string }
         Returns: undefined
@@ -2332,8 +2346,9 @@ export type Database = {
       get_operator_player_stats: { Args: { p_org_id: string }; Returns: Json }
       get_operator_stats: { Args: { operator_id_param: string }; Returns: Json }
       get_org_placeholders_for_merge: {
-        Args: { p_org_id: string }
+        Args: { p_include_archived?: boolean; p_org_id: string }
         Returns: {
+          archived_at: string
           created_at: string
           creator_name: string
           email: string
@@ -2341,6 +2356,7 @@ export type Database = {
           game_count: number
           has_pending_invite: boolean
           has_stats: boolean
+          is_archived: boolean
           last_name: string
           member_id: string
           nickname: string
@@ -2413,6 +2429,17 @@ export type Database = {
       resolve_member_primary_org: {
         Args: { p_member_id: string }
         Returns: string
+      }
+      restore_placeholder: {
+        Args: {
+          p_actor_member_id: string
+          p_member_id: string
+          p_organization_id: string
+        }
+        Returns: {
+          error_message: string
+          success: boolean
+        }[]
       }
       search_placeholder_matches: {
         Args: {
