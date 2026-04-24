@@ -34,6 +34,7 @@ import { logger } from '@/utils/logger';
 import { useUser } from '@/context/useUser';
 import { AttachPlaceholderDialog } from '@/operator/components/AttachPlaceholderDialog';
 import { RemovePlaceholderDialog } from '@/operator/components/RemovePlaceholderDialog';
+import { UnmergePlayerDialog } from '@/operator/components/UnmergePlayerDialog';
 
 export interface OrgPlaceholderRow {
   member_id: string;
@@ -76,6 +77,7 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
 }) => {
   const queryClient = useQueryClient();
   const { user } = useUser();
+  const [showUnmerge, setShowUnmerge] = useState(false);
 
   // Active placeholders (archived excluded)
   const { data: placeholders = [], isLoading, error } = useQuery({
@@ -185,6 +187,21 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
 
           <AccordionContent>
             <CardContent className="p-4 lg:p-6 pt-0">
+              {/* Quiet entry point for the unmerge flow — undoing a merge
+                  is mistake-correction, not routine. Lives here (not on
+                  any specific row) because LO reaches it via player
+                  lookup, not by browsing placeholders. */}
+              <div className="flex justify-end mb-3">
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="text-xs text-gray-600"
+                  onClick={() => setShowUnmerge(true)}
+                >
+                  Made a wrong attach? Unmerge a player…
+                </Button>
+              </div>
+
               {/* Detailed breakdown visible only when expanded — the
                   numbers the LO uses to triage their queue. Unused comes
                   first in the chip row (and in solid red) because those
@@ -271,6 +288,15 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
           </AccordionContent>
         </AccordionItem>
       </Accordion>
+
+      {/* Unmerge dialog — only mounts when the LO triggers it. */}
+      {showUnmerge && (
+        <UnmergePlayerDialog
+          open={showUnmerge}
+          onOpenChange={setShowUnmerge}
+          organizationId={organizationId}
+        />
+      )}
     </Card>
   );
 };

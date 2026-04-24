@@ -2322,6 +2322,21 @@ export type Database = {
           team_name: string
         }[]
       }
+      get_merges_into_member: {
+        Args: { p_org_id: string; p_target_member_id: string }
+        Returns: {
+          actor_name: string
+          actor_role: string
+          archive_id: string
+          created_at: string
+          expires_at: string
+          placeholder_first_name: string
+          placeholder_last_name: string
+          placeholder_member_id: string
+          placeholder_nickname: string
+          synopsis: Json
+        }[]
+      }
       get_my_pending_invites: {
         Args: never
         Returns: {
