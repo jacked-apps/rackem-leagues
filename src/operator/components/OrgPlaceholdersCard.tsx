@@ -71,17 +71,20 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
   });
 
   const totalCount = placeholders.length;
-  const needsMergeCount = placeholders.filter((p) => p.has_stats).length;
-  const noStatsCount = totalCount - needsMergeCount;
-  // Unused = not on any team AND no stats. This is a data anomaly, not
-  // housekeeping — every placeholder should exist because someone's playing
-  // (or about to). Unused ones are stuck/orphaned and need the LO's
-  // attention. Sorted to the top, highlighted in red.
+  const activeWithStatsCount = placeholders.filter((p) => p.has_stats).length;
+  // "No stats on a team" = placeholder who hasn't played yet but IS
+  // assigned to a team — a new addition, healthy state.
+  const noStatsCount = placeholders.filter(
+    (p) => !p.has_stats && p.teams.length > 0,
+  ).length;
+  // Unused = no team AND no stats. Data anomaly — every placeholder should
+  // exist because someone is (or is about to be) playing. Unused ones
+  // clutter player dropdowns and need LO cleanup. Sorted to top, red.
   const unusedCount = placeholders.filter(
     (p) => !p.has_stats && p.teams.length === 0,
   ).length;
 
-  // Sort: Unused first (anomalies), then Needs merge (priority action),
+  // Sort: Unused first (anomalies), then Has stats (priority action),
   // then the rest. RPC's server-side order stays as a tiebreaker.
   const sortedPlaceholders = useMemo(() => {
     const priority = (p: OrgPlaceholderRow): number => {
@@ -133,10 +136,10 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
                     </span>
                   )}
                   <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
-                    {needsMergeCount} needs merge
+                    {activeWithStatsCount} playing
                   </span>
                   <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
-                    {noStatsCount} no stats
+                    {noStatsCount} on team (no stats yet)
                   </span>
                 </div>
               )}
@@ -210,7 +213,7 @@ const PlaceholderRow: React.FC<{ placeholder: OrgPlaceholderRow }> = ({
           </span>
           {p.has_stats ? (
             <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 shrink-0">
-              Needs merge
+              Has stats
             </span>
           ) : isUnused ? (
             <span className="inline-flex items-center rounded-full bg-red-600 px-2 py-0.5 text-xs font-semibold text-white shrink-0">
