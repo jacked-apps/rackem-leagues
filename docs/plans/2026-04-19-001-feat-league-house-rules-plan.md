@@ -1,8 +1,9 @@
 ---
 title: "feat: League House Rules (Branch 2)"
 type: feat
-status: active
+status: shipped
 date: 2026-04-19
+shipped: 2026-04-21
 origin: docs/brainstorms/league-house-rules-requirements.md
 deepened: 2026-04-19
 ---
@@ -252,7 +253,7 @@ sequenceDiagram
 
 ## Implementation Units
 
-- [ ] **Unit 1: Database migration — `house_rules` table + view + RLS + extended `rules_page_events`**
+- [x] **Unit 1: Database migration — `house_rules` table + view + RLS + extended `rules_page_events`**
 
 **Goal:** Create the `house_rules` table with two-nullable-FK scoping, foreign keys with ON DELETE CASCADE, check constraints, length caps, a `house_rules_with_scope_name` view, RLS via a `SECURITY DEFINER` write-permission function, and the extension of `rules_page_events`. Regenerate typed DB types.
 
@@ -308,7 +309,7 @@ sequenceDiagram
 
 ---
 
-- [ ] **Unit 2: Data access layer — types, loaders, search, mutations, active-league, memberships, event types**
+- [x] **Unit 2: Data access layer — types, loaders, search, mutations, active-league, memberships, event types**
 
 **Goal:** Expose typed read + write access to house rules (scoped lazy loading per the decision), DB-backed search, an active-league hook, a memberships hook, and the extended event logger. All UI units consume this module.
 
@@ -362,7 +363,7 @@ sequenceDiagram
 
 ---
 
-- [ ] **Unit 3A: Filter chip + scope picker + merged search (reader part 1)**
+- [x] **Unit 3A: Filter chip + scope picker + merged search (reader part 1)**
 
 **Goal:** Add the House rules filter chip + chevron disclosure, the `HouseRulesScopePicker` (Sheet-based), and merge house-rule search results into `SearchResults` with correct ordering and labeling. Fire `house_filter_activated` + `scope_changed` events.
 
@@ -407,7 +408,7 @@ sequenceDiagram
 
 ---
 
-- [ ] **Unit 3B: TOC / Accordion interleave + differences-only + discovery nudge (reader part 2)**
+- [x] **Unit 3B: TOC / Accordion interleave + differences-only + discovery nudge (reader part 2)**
 
 **Goal:** When the filter is on AND a single scope is active (not search), interleave matching house rules beneath the CSI rules they override/enhance in `GameTOC` / `AllGamesAccordion`, specificity-ordered (league > org). Add the differences-only toggle with empty state. Ship the first-time discovery nudge.
 
@@ -449,7 +450,7 @@ sequenceDiagram
 
 ---
 
-- [ ] **Unit 4: House rule detail page + deep-link route**
+- [x] **Unit 4: House rule detail page + deep-link route**
 
 **Goal:** `/rules/house/:scope/:scopeId/:ruleId` renders a single house rule using the shared `RuleView` shape (via the `toRule` adapter), with drawer + Copy-link + inline attribution + unknown-ID fallback. Fires `house_rule_opened`.
 
@@ -490,7 +491,7 @@ sequenceDiagram
 
 ---
 
-- [ ] **Unit 5: Shared `HouseRuleForm` + org-wide authoring via repurposed `LeagueRules.tsx`**
+- [x] **Unit 5: Shared `HouseRuleForm` + org-wide authoring via repurposed `LeagueRules.tsx`**
 
 **Goal:** Build the reusable LO authoring form (with dirty-state guard). Repurpose `LeagueRules.tsx` as the org-wide manager. Delete the obsolete external-links section; replace with a link to `/rules`.
 
@@ -542,7 +543,7 @@ sequenceDiagram
 
 ---
 
-- [ ] **Unit 6: League-specific authoring in `LeagueSettings`**
+- [x] **Unit 6: League-specific authoring in `LeagueSettings`**
 
 **Goal:** Add a "House rules" section to `LeagueSettings` scoped to a single league. Reuses `HouseRulesList` from Unit 5.
 
@@ -618,6 +619,12 @@ sequenceDiagram
 - Post-launch: query `rules_page_events` for the four new `event_type` values + their `scope_type`/`scope_id` metadata to measure feature engagement (per R30).
 - Update `LeagueRules.tsx`'s page-level JSDoc — current doc says "Official BCA rules and optional house rules"; rewrite to reflect the post-repurpose purpose (org-wide house-rules management + a link back to `/rules` for the official rulebook).
 
+## Shipped Status
+
+All units shipped via PR #77 (merged 2026-04-21 into `feature/official-rulebook-reader`).
+Full browser smoke-test was **skipped at ship time** by author decision and should be
+folded into the eventual rulebook-reader branch review. 134/134 automated tests pass.
+
 ## Future / Deferred (not shipping in v1)
 
 Ideas surfaced during build-out but parked. Not commitments — capture the thinking
@@ -640,6 +647,18 @@ so a future plan can pick them up with context intact.
   each. Could also be an "Apply from league X" direction on LeagueSettings.
   **Why parked:** first need signal that LOs actually hit this pain — if most rules
   are naturally org-wide or truly league-specific, the in-between case may be rare.
+
+- **Bookstyle reader mode.** Today's `/rules` is chunked into collapsible sections
+  with filters, search, and interleaved house rules — optimized for "look something
+  up mid-dispute." A player who just wants to *read the rulebook cover-to-cover*
+  like the source PDF has no cleaner path than expanding every accordion. Proposed
+  shape: a "Read the whole book" toggle that renders every game end-to-end with
+  proper typography (generous spacing, clear heading hierarchy, optional page
+  breaks), house-rule overlays off by default, no filter chips. Essentially a web
+  version of the PDF experience. **Why parked:** the dispute-sharing use case
+  drove v1 and is served well by the current UI. This is a different audience
+  (studious readers, new players learning the game) and can be built without
+  touching any of the shipped primitives — it's a new view over the same data.
 
 ## Sources & References
 

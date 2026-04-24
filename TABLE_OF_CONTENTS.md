@@ -291,7 +291,6 @@ Node-only tooling the operator runs manually (not part of the app bundle).
 | File | Purpose |
 |------|---------|
 | `rebuild_all_tables.sql` | Complete database rebuild script |
-| `seed_test_users.sql` | Test user data |
 | `seed_fake_members.sql` | Fake member data for testing |
 | `seed_fake_members.sql.backup` | Backup of seed data |
 | `add_member_insert_policy.sql` | Member insert RLS policy |
