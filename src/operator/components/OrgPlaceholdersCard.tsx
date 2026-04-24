@@ -33,6 +33,7 @@ import { toast } from 'sonner';
 import { logger } from '@/utils/logger';
 import { useUser } from '@/context/useUser';
 import { AttachPlaceholderDialog } from '@/operator/components/AttachPlaceholderDialog';
+import { RemovePlaceholderDialog } from '@/operator/components/RemovePlaceholderDialog';
 
 export interface OrgPlaceholderRow {
   member_id: string;
@@ -120,16 +121,6 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
     }
   };
 
-  const archiveMutation = useMutation({
-    mutationFn: (memberId: string) => runRpc('archive_placeholder', memberId),
-    onSuccess: () => {
-      toast.success('Archived');
-      queryClient.invalidateQueries({ queryKey: ['org-placeholders-for-merge', organizationId] });
-      queryClient.invalidateQueries({ queryKey: ['org-placeholders-archived', organizationId] });
-    },
-    onError: (err) => toast.error((err as Error).message || 'Archive failed'),
-  });
-
   const restoreMutation = useMutation({
     mutationFn: (memberId: string) => runRpc('restore_placeholder', memberId),
     onSuccess: () => {
@@ -138,46 +129,6 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
       queryClient.invalidateQueries({ queryKey: ['org-placeholders-archived', organizationId] });
     },
     onError: (err) => toast.error((err as Error).message || 'Restore failed'),
-  });
-
-  // Delete mutation — one-click purge for unused placeholders. Fetches the
-  // caller's member id at call time so we don't need to plumb it through
-  // props. Server-side RPC re-checks all invariants (no team, no stats,
-  // no BCA#) so even a stale UI can't delete something that shouldn't be.
-  const deleteMutation = useMutation({
-    mutationFn: async (placeholderId: string) => {
-      if (!user) throw new Error('Not authenticated');
-      const { data: callerMember } = await supabase
-        .from('members')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      if (!callerMember) throw new Error('No member record for caller');
-
-      const { data, error: rpcError } = await supabase.rpc(
-        'delete_unused_placeholder',
-        {
-          p_member_id: placeholderId,
-          p_actor_member_id: callerMember.id,
-          p_organization_id: organizationId,
-        },
-      );
-      if (rpcError) throw rpcError;
-      const result = (data as { success: boolean; error_message: string | null }[])?.[0];
-      if (!result?.success) {
-        throw new Error(result?.error_message ?? 'Delete failed');
-      }
-    },
-    onSuccess: () => {
-      toast.success('Placeholder deleted');
-      queryClient.invalidateQueries({
-        queryKey: ['org-placeholders-for-merge', organizationId],
-      });
-    },
-    onError: (err) => {
-      logger.error('Delete placeholder failed', { error: (err as Error).message });
-      toast.error((err as Error).message || 'Could not delete');
-    },
   });
 
   const totalCount = placeholders.length;
@@ -274,16 +225,6 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
                       key={p.member_id}
                       placeholder={p}
                       organizationId={organizationId}
-                      onDelete={() => deleteMutation.mutate(p.member_id)}
-                      isDeleting={
-                        deleteMutation.isPending &&
-                        deleteMutation.variables === p.member_id
-                      }
-                      onArchive={() => archiveMutation.mutate(p.member_id)}
-                      isArchiving={
-                        archiveMutation.isPending &&
-                        archiveMutation.variables === p.member_id
-                      }
                     />
                   ))}
                 </Accordion>
@@ -341,13 +282,9 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
 const PlaceholderRow: React.FC<{
   placeholder: OrgPlaceholderRow;
   organizationId: string;
-  onDelete: () => void;
-  isDeleting: boolean;
-  onArchive: () => void;
-  isArchiving: boolean;
-}> = ({ placeholder: p, organizationId, onDelete, isDeleting, onArchive, isArchiving }) => {
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
+}> = ({ placeholder: p, organizationId }) => {
   const [showAttach, setShowAttach] = useState(false);
+  const [showRemove, setShowRemove] = useState(false);
   // Nicknames are the mobile display format — capped at ~12 chars at creation
   // so they stay readable at large sizes without squishing. Full names and
   // system_player_number stay behind the expand to respect that space budget.
@@ -458,6 +395,10 @@ const PlaceholderRow: React.FC<{
               them on a team; if that person later registers, attach
               still records the identity link even when there's nothing
               material to transfer). */}
+          {/* Two actions: Attach routes a placeholder to a registered user;
+              Remove is a smart router that shows a delete vs archive
+              confirmation based on whether the placeholder has preservable
+              state (stats or team). */}
           <div className="pt-2 flex flex-wrap gap-2">
             <Button
               variant="outline"
@@ -465,70 +406,36 @@ const PlaceholderRow: React.FC<{
               onClick={() => setShowAttach(true)}
             >
               <UserPlus className="h-3.5 w-3.5 mr-1" />
-              Attach to registered user
+              Attach
             </Button>
-
-            {/* Archive — "inactive in this league, kept for future lookup".
-                Distinct from Delete: all data is preserved. Available for
-                every active placeholder. */}
             <Button
               variant="outline"
               size="sm"
-              onClick={onArchive}
-              isLoading={isArchiving}
-              loadingText="Archiving…"
+              className={
+                isUnused
+                  ? 'text-red-700 hover:text-red-800 hover:bg-red-50 border-red-200'
+                  : ''
+              }
+              onClick={() => setShowRemove(true)}
             >
-              <ArchiveIcon className="h-3.5 w-3.5 mr-1" />
-              Archive
+              {isUnused ? (
+                <>
+                  <Trash2 className="h-3.5 w-3.5 mr-1" />
+                  Remove
+                </>
+              ) : (
+                <>
+                  <ArchiveIcon className="h-3.5 w-3.5 mr-1" />
+                  Remove
+                </>
+              )}
             </Button>
           </div>
-
-          {/* Delete — only for the "Unused" case. Two-click confirm via local
-              state: first click arms the action, second click fires it.
-              Cheap and keyboard-accessible without pulling in a dialog. */}
-          {isUnused && (
-            <div className="pt-2 border-t border-gray-100 mt-2">
-              {!confirmingDelete ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-red-700 hover:text-red-800 hover:bg-red-50 border-red-200"
-                  onClick={() => setConfirmingDelete(true)}
-                >
-                  <Trash2 className="h-3.5 w-3.5 mr-1" />
-                  Delete this placeholder
-                </Button>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-red-700">
-                    Sure? This can't be undone.
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={onDelete}
-                    isLoading={isDeleting}
-                    loadingText="Deleting…"
-                  >
-                    Yes, delete
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setConfirmingDelete(false)}
-                    disabled={isDeleting}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </AccordionContent>
 
-      {/* Attach dialog — rendered as a sibling so it stays open independent
-          of the accordion state. Only mounts when the LO triggers it. */}
+      {/* Dialogs — sibling to the accordion so they stay open independent
+          of its collapsed state. Only mount when triggered. */}
       {showAttach && (
         <AttachPlaceholderDialog
           open={showAttach}
@@ -536,6 +443,17 @@ const PlaceholderRow: React.FC<{
           placeholderId={p.member_id}
           placeholderNickname={p.nickname?.trim() || p.first_name}
           placeholderFullName={`${p.first_name} ${p.last_name}`}
+          organizationId={organizationId}
+        />
+      )}
+      {showRemove && (
+        <RemovePlaceholderDialog
+          open={showRemove}
+          onOpenChange={setShowRemove}
+          placeholderId={p.member_id}
+          placeholderNickname={p.nickname?.trim() || p.first_name}
+          hasStats={p.has_stats}
+          teamCount={p.teams.length}
           organizationId={organizationId}
         />
       )}
