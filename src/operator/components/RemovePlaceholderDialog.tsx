@@ -180,10 +180,15 @@ export const RemovePlaceholderDialog: React.FC<RemovePlaceholderDialogProps> = (
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           {fetching ? (
-            <DialogTitle className="flex items-center gap-2">
-              <Loader2 className="h-5 w-5 animate-spin" />
-              Loading current state…
-            </DialogTitle>
+            <>
+              <DialogTitle className="flex items-center gap-2">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Loading current state…
+              </DialogTitle>
+              <DialogDescription>
+                Checking the latest data so we show the right action.
+              </DialogDescription>
+            </>
           ) : fetchError ? (
             <>
               <DialogTitle className="flex items-center gap-2">
