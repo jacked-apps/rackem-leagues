@@ -39,7 +39,13 @@ interface FargoNegotiationParams {
   memberId: string | null;
   isHomeTeam: boolean;
   handicapType: string;
-  bothLineupsLocked: boolean;
+  /**
+   * True iff both lineups are locked AND Step 1 (lineup completeness) passes
+   * on both sides. Gates every side effect in this hook so the initial-
+   * proposal write can't fire against placeholder-contaminated ratings.
+   * Supersedes the old `bothLineupsReady` input from before Unit 3.
+   */
+  bothLineupsReady: boolean;
   /** Per-slot ratings from BOTH locked lineups. Must match lineupSize length each. */
   homeRatings: number[];
   awayRatings: number[];
@@ -91,7 +97,7 @@ export function useFargoStartPointsNegotiation(
     memberId,
     isHomeTeam,
     handicapType,
-    bothLineupsLocked,
+    bothLineupsReady,
     homeRatings,
     awayRatings,
     lineupSize,
@@ -103,7 +109,7 @@ export function useFargoStartPointsNegotiation(
   } = params;
 
   const applicable =
-    handicapType === 'fargo' && bothLineupsLocked;
+    handicapType === 'fargo' && bothLineupsReady;
 
   // Compute the default from the locked lineup ratings. Only valid when all
   // slots have a rating.

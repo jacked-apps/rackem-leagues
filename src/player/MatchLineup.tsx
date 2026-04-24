@@ -56,6 +56,7 @@ import {
   getAnonSubId,
   getDoubleDutySubId,
   lineupHasDoubleDuty,
+  computePrepBlockedReason,
 } from '@/utils/lineup';
 import { useMatchRealtime } from '@/realtime/useMatchRealtime';
 import { Loader2 } from 'lucide-react';
@@ -411,13 +412,63 @@ export function MatchLineup() {
   // Note: Lineups are now auto-created by database trigger when match is inserted
   // See migration: 20251115000000_auto_create_match_lineups.sql
 
-  // Unit 11c: Fargo start-points negotiation. When both lineups are locked
-  // on a Fargo match, gather each side's ratings and let the hook drive the
-  // propose / confirm state machine via direct writes to `matches`.
-  const bothLineupsLockedForFargo =
-    handicapType === 'fargo' &&
+  // Build a row-shaped snapshot of MY lineup from component state so the
+  // completeness gate reads the same shape as the persisted opponent row.
+  const myLineupRow = useMemo(() => ({
+    player1_id: lineup.player1Id || null,
+    player1_handicap: handicaps.player1Handicap,
+    player2_id: lineup.player2Id || null,
+    player2_handicap: handicaps.player2Handicap,
+    player3_id: lineup.player3Id || null,
+    player3_handicap: handicaps.player3Handicap,
+    player4_id: lineup.player4Id || null,
+    player4_handicap: handicaps.player4Handicap,
+    player5_id: lineup.player5Id || null,
+    player5_handicap: handicaps.player5Handicap,
+  }), [
+    lineup.player1Id, lineup.player2Id, lineup.player3Id,
+    lineup.player4Id, lineup.player5Id,
+    handicaps.player1Handicap, handicaps.player2Handicap,
+    handicaps.player3Handicap, handicaps.player4Handicap,
+    handicaps.player5Handicap,
+  ]);
+
+  // Compute the discriminated match-prep blocker. null = ready for Step 3.
+  const prepBlockedReason = useMemo(
+    () => computePrepBlockedReason({
+      myLineup: myLineupRow,
+      opponentLineup: opponentLineup ?? null,
+      lineupSize: playerCount,
+      handicapType,
+      confirmedByHome: matchData?.fargo_start_points_confirmed_by_home ?? null,
+      confirmedByAway: matchData?.fargo_start_points_confirmed_by_away ?? null,
+      isHomeTeam,
+    }),
+    [
+      myLineupRow,
+      opponentLineup,
+      playerCount,
+      handicapType,
+      matchData?.fargo_start_points_confirmed_by_home,
+      matchData?.fargo_start_points_confirmed_by_away,
+      isHomeTeam,
+    ]
+  );
+
+  // Step 1 complete on BOTH sides — used by the Fargo hook to gate its
+  // initial-proposal effect (so it doesn't fire against placeholder slots).
+  const step1CompleteBothSides =
+    prepBlockedReason === null ||
+    prepBlockedReason?.kind === 'fargo_pending';
+
+  // Fargo initial-write / propose effects only run when Step 1 is complete
+  // on both sides AND both lineups are physically locked. Replaces the prior
+  // `bothLineupsLocked` input so placeholder-contaminated ratings never leak
+  // into the Fargo default computation.
+  const bothLineupsReadyForFargo =
     lineup.lineupLocked &&
-    !!opponentLineup?.locked;
+    !!opponentLineup?.locked &&
+    step1CompleteBothSides;
 
   const { homeRatingsForFargo, awayRatingsForFargo } = useMemo(() => {
     const gatherFrom = (src: {
@@ -474,7 +525,7 @@ export function MatchLineup() {
     memberId: memberId ?? null,
     isHomeTeam,
     handicapType,
-    bothLineupsLocked: bothLineupsLockedForFargo,
+    bothLineupsReady: bothLineupsReadyForFargo,
     homeRatings: homeRatingsForFargo,
     awayRatings: awayRatingsForFargo,
     lineupSize: playerCount,
@@ -496,8 +547,7 @@ export function MatchLineup() {
     lineupSize: playerCount,
     handicapType,
     systemOverrides: leaguePrefs?.system_overrides,
-    fargoNegotiationBlocking:
-      fargoNegotiation.applicable && !fargoNegotiation.bothConfirmed,
+    blockedReason: prepBlockedReason,
     player1Id: lineup.player1Id,
     player2Id: lineup.player2Id,
     player3Id: lineup.player3Id,

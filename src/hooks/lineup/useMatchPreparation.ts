@@ -16,6 +16,7 @@ import { fargo5v5 } from '@/systems/fargo5v5';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
 import type { SystemOverrides } from '@/types/systemOverrides';
+import type { PrepBlockedReason } from '@/utils/lineup';
 
 export function usePreparationStatus() {
   const [isPreparingMatch, setIsPreparingMatch] = useState(false);
@@ -34,12 +35,12 @@ interface MatchPreparationParams {
   /** Resolved per-league dial overrides. Used by Fargo threshold compute. */
   systemOverrides?: SystemOverrides;
   /**
-   * Unit 11c: when handicap_type='fargo' and the captains have not both
-   * confirmed the start-points value, match preparation must not run.
-   * Caller passes `true` while the negotiation card is showing and
-   * flips it to `false` once both confirms are present.
+   * Discriminated reason for blocking match preparation. When non-null, the
+   * effect short-circuits — the UI renders the corresponding waiting state.
+   * Supersedes the prior `fargoNegotiationBlocking` flag and covers all
+   * blocking conditions (Step 1 completeness, sub resolution, Fargo).
    */
-  fargoNegotiationBlocking?: boolean;
+  blockedReason?: PrepBlockedReason;
   player1Id: string;
   player2Id: string;
   player3Id: string;
@@ -66,7 +67,7 @@ export function useMatchPreparation(params: MatchPreparationParams) {
     lineupSize,
     handicapType,
     systemOverrides,
-    fargoNegotiationBlocking,
+    blockedReason,
     player1Id,
     player2Id,
     player3Id,
@@ -90,11 +91,10 @@ export function useMatchPreparation(params: MatchPreparationParams) {
   // Auto-navigate to scoring page when both lineups are locked - useEffect MUST be before early returns
   // IMPORTANT: Only HOME team prepares the match to avoid race conditions
   useEffect(() => {
-    // Unit 11c: Fargo matches wait until start-points negotiation is
-    // both-confirmed. When blocking, skip entirely — the lineup page shows
-    // the negotiation card instead. When the caller flips this to false
-    // (both captains confirmed), this effect fires normally.
-    if (fargoNegotiationBlocking) return;
+    // Short-circuit whenever the caller has a non-null blockedReason. The
+    // UI renders the corresponding waiting state (Step 1 banner / modal,
+    // Fargo card, etc.) instead of preparing the match.
+    if (blockedReason !== null && blockedReason !== undefined) return;
     if (lineupLocked && opponentLineup?.locked && !matchPreparedRef.current) {
       // Only home team prepares the match data to avoid both teams doing it simultaneously
       if (!isHomeTeam) {
