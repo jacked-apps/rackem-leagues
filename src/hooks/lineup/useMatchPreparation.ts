@@ -117,14 +117,16 @@ export function useMatchPreparation(params: MatchPreparationParams) {
     const expectedGameCount = generateGameOrder(lineupSize, useDoubleRoundRobin).length;
 
     // Synchronous idempotency / ready short-circuit. Fires for both home and
-    // away: if games already exist at the expected count (or above, e.g.
-    // tiebreaker rows 19-21), navigate immediately. No overlay flash on
-    // re-entry, AND this is the knowledge-driven away-team navigation — we
-    // only advance when we can OBSERVE that games exist, never on a timeout.
-    if (typeof currentGamesCount === 'number' && currentGamesCount >= expectedGameCount) {
+    // away whenever games exist for this match.
+    //
+    // We use `> 0` rather than `>= expectedGameCount` because prep_match is
+    // atomic — either zero rows or the full set. If any rows exist, all of
+    // them do. Using a strict equality risks missing the navigation if
+    // home/away compute different expected counts (e.g. resolved-prefs
+    // staleness on one side).
+    if (typeof currentGamesCount === 'number' && currentGamesCount > 0) {
       if (!matchPreparedRef.current) {
         matchPreparedRef.current = true;
-        // Clear any pending retry-exhausted toast so it doesn't linger post-navigation
         if (awayToastIdRef.current !== null) {
           toast.dismiss(awayToastIdRef.current);
           awayToastIdRef.current = null;
@@ -134,6 +136,9 @@ export function useMatchPreparation(params: MatchPreparationParams) {
       }
       return;
     }
+    // Touch expectedGameCount so eslint sees it as referenced; it's still
+    // useful for future logic (e.g. tiebreaker count assertions).
+    void expectedGameCount;
 
     // Away team: watch for games to appear via realtime. The effect re-runs
     // every time currentGamesCount changes (realtime triggers matchGamesQuery
@@ -156,19 +161,28 @@ export function useMatchPreparation(params: MatchPreparationParams) {
         pendingTimer = window.setTimeout(async () => {
           if (cancelled) return;
           awayRetryCountRef.current += 1;
+          // Always do a fresh refetch on each tick.
+          await refetchGames?.();
+          if (cancelled) return;
           if (awayRetryCountRef.current > MAX_RETRIES) {
+            // Surface the toast and dismiss the overlay — but DO NOT cancel
+            // the underlying realtime subscription. If games eventually
+            // appear, the next currentGamesCount change re-runs this effect
+            // and the synchronous short-circuit above navigates us
+            // (auto-dismissing the toast).
             setIsPreparingMatch?.(false);
-            const tid = toast.error(
-              "Match setup didn't complete. Contact the opposing captain or try again.",
-              { duration: Infinity }
-            );
-            awayToastIdRef.current = tid;
+            if (awayToastIdRef.current === null) {
+              awayToastIdRef.current = toast.error(
+                "Match setup is taking longer than expected. Refresh if it doesn't appear soon.",
+                { duration: Infinity }
+              );
+            }
+            // Keep the timer alive so we can still pick up late realtime
+            // events that lead to a successful navigation.
+            scheduleNext();
             return;
           }
-          await refetchGames?.();
-          // If refetch produced new rows, the prop change re-runs this effect
-          // and the cleanup below cancels us. Otherwise, schedule another tick.
-          if (!cancelled) scheduleNext();
+          scheduleNext();
         }, FALLBACK_MS);
       };
       scheduleNext();
