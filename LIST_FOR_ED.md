@@ -272,7 +272,19 @@ for full details.
 
 ---
 
-## 4. Refactor TeamManagement.tsx (too big)
+## 4. Better Dashboard Button on Home Page
+
+**Discovered:** 2026-04-17
+
+**Problem:** The home page needs a more prominent / better-designed button
+to navigate to the operator dashboard. Current one is easy to miss.
+
+**Fix:** Redesign the dashboard navigation on the home page to be more
+visible and obvious.
+
+---
+
+## 5. Refactor TeamManagement.tsx (too big)
 
 **Branch needed:** `refactor-team-management`
 **Discovered:** 2026-04-16
@@ -293,3 +305,28 @@ bulk actions, table number assignments.
 - `TeamManagement.tsx` — orchestrator, under 100 lines
 
 **Effort:** Medium. Mostly extraction, no logic changes.
+
+---
+
+## 6. Wizard: Placeholder Captain Not Auto-Assigned + Dropdown Stale
+
+**Discovered:** 2026-04-19
+**Severity:** Low — has a workaround (refresh the page)
+
+**Problem:** In the league/season creation wizard, when creating a placeholder
+player on the fly to set as team captain:
+1. The PP is created successfully, but it is NOT assigned as the team captain
+   like it should be.
+2. The newly created PP does not appear in the captain dropdown until the
+   page is refreshed (cache isn't invalidated after the create mutation).
+
+**Workaround:** Refresh the page after creating the PP, then manually select
+them from the dropdown as captain.
+
+**Likely fix:**
+- After `createPlaceholderMember()` mutation succeeds, invalidate the relevant
+  members/captains query keys so the dropdown refetches.
+- Wire the auto-captain-assignment: on PP create success inside the captain
+  flow, also call the "set captain" mutation with the new PP's id.
+
+**Files likely involved:** _(truncated in restoration — you filled these in originally; add them back when you revisit this item)_

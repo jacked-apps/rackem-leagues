@@ -4,6 +4,19 @@
  */
 
 import type { HandicapVariant } from '@/utils/handicapCalculations';
+import type { SystemOverrides } from './systemOverrides';
+
+/**
+ * Per-match frozen snapshot of tier 2 dials + threshold chart selection.
+ * Populated at scheduled → in_progress transition and never mutated after.
+ * Stored as `matches.system_snapshot JSONB`. See migration
+ * 20260418000003_add_matches_system_snapshot.sql.
+ */
+export interface MatchSystemSnapshot {
+  overrides: SystemOverrides;
+  threshold_chart_id: string | null;
+  snapshot_at: string; // ISO 8601 timestamp
+}
 
 /**
  * Match type - determines format and scoring rules
@@ -54,6 +67,29 @@ export interface MatchWithLeagueSettings {
   away_games_to_win: number | null;
   away_games_to_tie: number | null;
   away_games_to_lose: number | null;
+  /**
+   * Fargo start-points negotiation (Unit 11c). Captains must agree on the
+   * start-points value before the scoring page opens. `fargo_start_points`
+   * holds the current proposed or agreed value; the two confirm columns
+   * track which captain(s) have accepted it. Editing the value clears both
+   * confirms. Once both are non-null, the value is copied to the weaker
+   * team's home_games_to_win / away_games_to_win and match preparation
+   * runs. NULL on non-Fargo matches (and on Fargo matches before the first
+   * proposal is written).
+   */
+  fargo_start_points: number | null;
+  fargo_start_points_confirmed_by_home: string | null;
+  fargo_start_points_confirmed_by_away: string | null;
+  /**
+   * Tier 3 snapshot (added by migration 20260418000003). NULL for unstarted or legacy matches.
+   * Populated at scheduled → in_progress transition; scoring reads from this, not live league data.
+   *
+   * Note: Fargo start-points for the weaker team are stored directly in
+   * home_games_to_win / away_games_to_win (per-system semantic — BCA's "games needed to win"
+   * and Fargo's "start points awarded" share the shape and column family; handicap_type
+   * tells code how to interpret them).
+   */
+  system_snapshot: MatchSystemSnapshot | null;
   assigned_table_number: number | null;
   home_team: {
     id: string;
@@ -176,7 +212,9 @@ export interface Player {
 export interface HandicapThresholds {
   games_to_win: number;
   games_to_tie: number | null;
-  games_to_lose: number;
+  // Fargo matches set this to null — Fargo scores by point accumulation, not
+  // by a games-to-lose threshold. BCA systems always return a non-null number.
+  games_to_lose: number | null;
 }
 
 /**
@@ -208,6 +246,15 @@ export interface MatchGame {
   confirmed_by_home: boolean;
   confirmed_by_away: boolean;
   is_tiebreaker: boolean;
+  // Per-game achievement / break-state flags (added by migration 20260418000004).
+  // Always tracked across all scoring systems. Default false.
+  break_fouled: boolean;
+  runout: boolean;
+  win_by_forfeit: boolean;
+  // Fargo-specific per-game input (added by 20260418000001). NULL for BCA matches.
+  // Winner points and loser points are NOT stored — they are derived at read time
+  // from this value plus the league's winner_points / loser_points_method dials.
+  loser_balls_pocketed: number | null;
 }
 
 /**
@@ -224,8 +271,18 @@ export interface ScoringOptions {
 export interface ConfirmationQueueItem {
   gameNumber: number;
   winnerPlayerName: string;
+  // Always-tracked game modifiers. The confirmation dialog renders each one
+  // that is truthy; the entry point is responsible for passing the full set
+  // from the match_games row — the dialog stays dumb and displays whatever
+  // it receives. No per-league filtering happens here.
   breakAndRun: boolean;
   goldenBreak: boolean;
+  breakFouled: boolean;
+  runout: boolean;
+  winByForfeit: boolean;
+  // Fargo per-game: number of balls the loser pocketed (0–7 for 8-ball).
+  // null for BCA matches (field isn't captured). Shown when non-null.
+  loserBallsPocketed: number | null;
   isVacateRequest?: boolean;
 }
 

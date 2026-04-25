@@ -20,7 +20,7 @@
 
 import { useMemo } from 'react';
 import type { Player } from '@/types/match';
-import { hasDuplicateNicknames } from '@/utils/lineup';
+// hasDuplicateNicknames removed — duplicate check now uses dynamic allPlayerIds array
 import { lineupHasSubstitute } from '@/utils/lineup';
 
 export interface LineupValidationInput {
@@ -29,11 +29,20 @@ export interface LineupValidationInput {
   player3Id: string;
   player4Id?: string; // Optional for 5v5
   player5Id?: string; // Optional for 5v5
-  playerCount?: 3 | 5; // Defaults to 3 for backward compatibility
+  playerCount?: number; // Defaults to 3 for backward compatibility
   subHandicap: string;
   players: Player[];
   isTiebreakerMode?: boolean;
-  teamFormat?: '5_man' | '8_man'; // Team format - 5v5 doesn't need sub handicap
+  handicapType?: string; // 'points' needs sub handicap, others don't
+  /**
+   * Per-named-slot Fargo rating values. Only consulted when handicapType='fargo'.
+   * Named slots (real players selected by ID) must have a rating 100-850 to lock.
+   * TBD (double-duty) slots are allowed to be null — they inherit a rating when
+   * the TBD resolves to a real player.
+   */
+  fargoRatingsBySlot?: Record<number, number | null | undefined>;
+  /** Set of slot positions (1-based) that are TBD / double-duty. */
+  doubleDutySlots?: Set<number>;
 }
 
 export interface LineupValidation {
@@ -42,10 +51,13 @@ export interface LineupValidation {
   hasDuplicates: boolean;
   hasSub: boolean;
   canLock: boolean;
+  /** True when handicapType='fargo' and a named slot has a missing or out-of-range rating. */
+  fargoRatingError: boolean;
 
   // Error messages
   completenessError: string | null;
   duplicatesError: string | null;
+  fargoRatingErrorMessage: string | null;
 }
 
 /**
@@ -67,16 +79,15 @@ export function useLineupValidation(
     subHandicap,
     players,
     isTiebreakerMode,
-    teamFormat = '5_man',
+    handicapType = 'points',
+    fargoRatingsBySlot,
+    doubleDutySlots,
   } = input;
 
-  // Build array of all player IDs based on player count
+  // Build array of all player IDs based on actual lineup size
   const allPlayerIds = useMemo(() => {
-    const ids = [player1Id, player2Id, player3Id];
-    if (playerCount === 5) {
-      ids.push(player4Id, player5Id);
-    }
-    return ids;
+    const all = [player1Id, player2Id, player3Id, player4Id, player5Id];
+    return all.slice(0, playerCount);
   }, [player1Id, player2Id, player3Id, player4Id, player5Id, playerCount]);
 
   // Check if lineup has a substitute (check first 3 positions - subs only in 3v3)
@@ -92,43 +103,71 @@ export function useLineupValidation(
 
     // If there's a sub and not in tiebreaker mode and not in 5v5, must have subHandicap
     // 5v5 (8_man) doesn't need substitute handicap - opponent chooses double duty player
-    if (hasSub && !isTiebreakerMode && teamFormat !== '8_man' && !subHandicap) {
+    if (hasSub && !isTiebreakerMode && handicapType === 'points' && !subHandicap) {
       return false;
     }
 
     return allFilled;
-  }, [allPlayerIds, playerCount, hasSub, isTiebreakerMode, teamFormat, subHandicap]);
+  }, [allPlayerIds, playerCount, hasSub, isTiebreakerMode, handicapType, subHandicap]);
 
-  // Check for duplicate nicknames
+  // Check for duplicate nicknames across all lineup positions
   const hasDuplicates = useMemo(() => {
-    // For now, only check first 3 players (existing utility only supports 3)
-    // TODO: Update hasDuplicateNicknames utility to support 5 players
-    if (playerCount === 5) {
-      // Manual check for 5 players
-      const selectedPlayerIds = allPlayerIds.filter((id) => id !== '');
-      const selectedPlayers = players.filter((p) => selectedPlayerIds.includes(p.id));
-      const nicknames = selectedPlayers.map((p) => p.nickname || `${p.first_name} ${p.last_name}`);
-      const uniqueNicknames = new Set(nicknames);
-      return nicknames.length !== uniqueNicknames.size;
+    const selectedPlayerIds = allPlayerIds.filter((id) => id !== '');
+    const selectedPlayers = players.filter((p) => selectedPlayerIds.includes(p.id));
+    const nicknames = selectedPlayers.map((p) => p.nickname || `${p.first_name} ${p.last_name}`);
+    return nicknames.length !== new Set(nicknames).size;
+  }, [allPlayerIds, players]);
+
+  // Fargo rating validation — each named slot must have a rating in [100, 850].
+  // TBD (double-duty) slots are allowed to be null; they inherit a rating when resolved.
+  const fargoRatingError = useMemo(() => {
+    if (handicapType !== 'fargo') return false;
+    if (isTiebreakerMode) return false;
+    for (let slot = 1; slot <= playerCount; slot++) {
+      // Skip TBD slots — they're allowed to have no rating at lock time
+      if (doubleDutySlots?.has(slot)) continue;
+      // Only check slots that have a named player selected
+      const slotPlayerId = [player1Id, player2Id, player3Id, player4Id, player5Id][slot - 1];
+      if (!slotPlayerId) continue; // Empty slot caught by the `isComplete` check above
+      const rating = fargoRatingsBySlot?.[slot];
+      if (typeof rating !== 'number' || !Number.isFinite(rating)) return true;
+      if (rating < 100 || rating > 850) return true;
+      if (!Number.isInteger(rating)) return true;
     }
-    return hasDuplicateNicknames(player1Id, player2Id, player3Id, players);
-  }, [allPlayerIds, playerCount, players, player1Id, player2Id, player3Id]);
+    return false;
+  }, [
+    handicapType,
+    isTiebreakerMode,
+    playerCount,
+    doubleDutySlots,
+    player1Id,
+    player2Id,
+    player3Id,
+    player4Id,
+    player5Id,
+    fargoRatingsBySlot,
+  ]);
+
+  const fargoRatingErrorMessage = useMemo(() => {
+    if (!fargoRatingError) return null;
+    return 'Each named player in this Fargo lineup needs a rating between 100 and 850. (Double-duty slots are exempt — they inherit the player\'s rating when assigned.)';
+  }, [fargoRatingError]);
 
   // Check if lineup can be locked
   const canLock = useMemo(
-    () => isComplete && !hasDuplicates,
-    [isComplete, hasDuplicates]
+    () => isComplete && !hasDuplicates && !fargoRatingError,
+    [isComplete, hasDuplicates, fargoRatingError]
   );
 
   // Generate error messages
   const completenessError = useMemo(() => {
     if (isComplete) return null;
     // Only show substitute handicap error in 3v3 (not tiebreaker and not 5v5)
-    if (hasSub && !isTiebreakerMode && teamFormat !== '8_man' && !subHandicap) {
+    if (hasSub && !isTiebreakerMode && handicapType === 'points' && !subHandicap) {
       return 'Please select a handicap for the substitute player';
     }
     return `Please select all ${playerCount} players before locking your lineup`;
-  }, [isComplete, hasSub, isTiebreakerMode, teamFormat, subHandicap, playerCount]);
+  }, [isComplete, hasSub, isTiebreakerMode, handicapType, subHandicap, playerCount]);
 
   const duplicatesError = useMemo(() => {
     if (!hasDuplicates) return null;
@@ -140,7 +179,9 @@ export function useLineupValidation(
     hasDuplicates,
     hasSub,
     canLock,
+    fargoRatingError,
     completenessError,
     duplicatesError,
+    fargoRatingErrorMessage,
   };
 }

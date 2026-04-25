@@ -140,6 +140,117 @@ export async function getMatchesByTeam(teamId: string): Promise<MatchWithDetails
 }
 
 /**
+ * Fetch all currently-live matches for a league.
+ *
+ * "Live" means both lineups have locked (started_at is set by the
+ * lineup-persistence flow when both sides lock) and the match has not yet
+ * been marked completed. This codebase doesn't actually transition matches
+ * to status='in_progress' — they sit at 'scheduled' until completeMatch()
+ * flips them to 'completed', so we key off started_at instead of status.
+ *
+ * @param leagueId - League's primary key ID
+ * @returns Array of live matches with team and week details, sorted by
+ *          scheduled date ascending (so the current match night groups together)
+ * @throws Error if database query fails
+ */
+export async function getLiveMatchesForLeague(leagueId: string): Promise<MatchWithDetails[]> {
+  // matches has no league_id column — it's joined via seasons.league_id.
+  // `!inner` turns the join into an INNER JOIN so the league filter works.
+  const { data, error } = await supabase
+    .from('matches')
+    .select(`
+      *,
+      home_team:teams!matches_home_team_id_fkey(id, team_name, captain_id),
+      away_team:teams!matches_away_team_id_fkey(id, team_name, captain_id),
+      scheduled_venue:venues!matches_scheduled_venue_id_fkey(id, name, city, state),
+      season_week:season_weeks(id, week_name, scheduled_date, week_type),
+      season:seasons!inner(id, league_id, league:leagues(id, game_type, day_of_week, division))
+    `)
+    .eq('season.league_id', leagueId)
+    .not('started_at', 'is', null)
+    .neq('status', 'completed')
+    .order('season_week(scheduled_date)', { ascending: true });
+
+  if (error) {
+    throw new Error(`Failed to fetch live matches: ${error.message}`);
+  }
+
+  const matches = (data || []).map((match: any) => ({
+    ...match,
+    scheduled_date: match.season_week?.scheduled_date || null,
+  }));
+
+  return matches as MatchWithDetails[];
+}
+
+/**
+ * Fetch all currently-live matches across every league where the given
+ * member is on a team's roster.
+ *
+ * "On a team" = has a row in team_players for a team in that league's season.
+ * This scoping enforces the product rule that players can only spectate
+ * matches in leagues they participate in — no peeking into other leagues
+ * just because they exist.
+ *
+ * LOs who aren't on any team will see nothing here. That's intentional; an
+ * LO-wide cross-league view is a separate feature that hasn't been asked for.
+ *
+ * @param memberId - The current user's members.id
+ * @returns Array of live matches grouped-in-caller-side by league
+ */
+export async function getLiveMatchesForMember(memberId: string): Promise<MatchWithDetails[]> {
+  // Step 1: find the league IDs the member is participating in (via
+  // team_players → teams → seasons → leagues). We do this as a separate
+  // query because PostgREST doesn't let us filter on a sub-select inside the
+  // matches query directly.
+  const { data: teamRows, error: teamErr } = await supabase
+    .from('team_players')
+    .select('team:teams!inner(season:seasons!inner(league_id))')
+    .eq('member_id', memberId);
+
+  if (teamErr) {
+    throw new Error(`Failed to resolve member's leagues: ${teamErr.message}`);
+  }
+
+  const leagueIds = Array.from(
+    new Set(
+      (teamRows ?? [])
+        .map((r: any) => r.team?.season?.league_id)
+        .filter(Boolean),
+    ),
+  );
+
+  if (leagueIds.length === 0) return [];
+
+  // Step 2: fetch live matches in those leagues.
+  const { data, error } = await supabase
+    .from('matches')
+    .select(`
+      *,
+      home_team:teams!matches_home_team_id_fkey(id, team_name, captain_id),
+      away_team:teams!matches_away_team_id_fkey(id, team_name, captain_id),
+      scheduled_venue:venues!matches_scheduled_venue_id_fkey(id, name, city, state),
+      season_week:season_weeks(id, week_name, scheduled_date, week_type),
+      season:seasons!inner(id, league_id, league:leagues(id, game_type, day_of_week, division))
+    `)
+    .in('season.league_id', leagueIds)
+    .not('started_at', 'is', null)
+    .neq('status', 'completed')
+    .order('season_week(scheduled_date)', { ascending: true });
+
+  if (error) {
+    throw new Error(`Failed to fetch live matches: ${error.message}`);
+  }
+
+  const matches = (data || []).map((match: any) => ({
+    ...match,
+    scheduled_date: match.season_week?.scheduled_date || null,
+  }));
+
+  return matches as MatchWithDetails[];
+}
+
+/**
  * Fetch season schedule organized by week
  *
  * Gets all weeks and matches for a season, organized hierarchically.
@@ -291,6 +402,10 @@ export async function getMatchWithLeagueSettings(matchId: string): Promise<Match
       away_games_to_win,
       away_games_to_tie,
       away_games_to_lose,
+      fargo_start_points,
+      fargo_start_points_confirmed_by_home,
+      fargo_start_points_confirmed_by_away,
+      system_snapshot,
       assigned_table_number,
       home_team:teams!matches_home_team_id_fkey(id, team_name),
       away_team:teams!matches_away_team_id_fkey(id, team_name),
@@ -347,6 +462,10 @@ export async function getMatchWithLeagueSettings(matchId: string): Promise<Match
     away_games_to_win: data.away_games_to_win ?? null,
     away_games_to_tie: data.away_games_to_tie ?? null,
     away_games_to_lose: data.away_games_to_lose ?? null,
+    fargo_start_points: (data as any).fargo_start_points ?? null,
+    fargo_start_points_confirmed_by_home: (data as any).fargo_start_points_confirmed_by_home ?? null,
+    fargo_start_points_confirmed_by_away: (data as any).fargo_start_points_confirmed_by_away ?? null,
+    system_snapshot: data.system_snapshot ?? null,
     assigned_table_number: data.assigned_table_number ?? null,
     home_team: homeTeam as any,
     away_team: awayTeam as any,
@@ -555,5 +674,78 @@ export async function completeMatch(
 
   if (error) {
     throw new Error(`Failed to complete match: ${error.message}`);
+  }
+}
+
+/**
+ * Populate `matches.system_snapshot` if it's currently null — tier 3 mutability.
+ *
+ * Called at the first scoring event for a match. Reads the league's current
+ * `system_overrides` and `preferences.threshold_chart_id`, then writes them
+ * to the match as a frozen snapshot. Subsequent calls are no-ops because the
+ * update is guarded by `WHERE system_snapshot IS NULL`.
+ *
+ * This is intentionally a best-effort operation: if it fails for any reason,
+ * scoring continues. The snapshot is defense-in-depth against mid-season
+ * dial edits; absence of a snapshot falls back to reading live league data
+ * (current behavior pre-Unit-7). Legacy matches from before this migration
+ * will always have a null snapshot.
+ *
+ * Safe under concurrent writes: if two players confirm the first game in
+ * parallel, both reads see null, both try to update, but both produce the
+ * same snapshot content (same league state at the same moment), so
+ * last-writer-wins is harmless.
+ *
+ * @param matchId - Match whose snapshot should be populated
+ * @param leagueId - League the match belongs to (for overrides lookup)
+ */
+export async function populateMatchSnapshotIfNeeded(
+  matchId: string,
+  leagueId: string,
+): Promise<void> {
+  // Check if snapshot already exists to avoid unnecessary writes
+  const { data: existing, error: readErr } = await supabase
+    .from('matches')
+    .select('system_snapshot')
+    .eq('id', matchId)
+    .single();
+
+  if (readErr) {
+    console.warn('[matches.populateMatchSnapshotIfNeeded] read error', readErr.message);
+    return;
+  }
+  if (existing?.system_snapshot != null) {
+    return; // Already populated — never overwrite
+  }
+
+  // Read current league overrides + threshold chart ID
+  const [leagueRes, prefRes] = await Promise.all([
+    supabase.from('leagues').select('system_overrides').eq('id', leagueId).single(),
+    supabase
+      .from('preferences')
+      .select('threshold_chart_id')
+      .eq('entity_type', 'league')
+      .eq('entity_id', leagueId)
+      .maybeSingle(),
+  ]);
+
+  const overrides = leagueRes.data?.system_overrides ?? {};
+  const threshold_chart_id = prefRes.data?.threshold_chart_id ?? null;
+
+  const snapshot = {
+    overrides,
+    threshold_chart_id,
+    snapshot_at: new Date().toISOString(),
+  };
+
+  // Conditional write — only set if still null (guards against simultaneous first-score races)
+  const { error: writeErr } = await supabase
+    .from('matches')
+    .update({ system_snapshot: snapshot })
+    .eq('id', matchId)
+    .is('system_snapshot', null);
+
+  if (writeErr) {
+    console.warn('[matches.populateMatchSnapshotIfNeeded] write error', writeErr.message);
   }
 }

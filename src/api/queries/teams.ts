@@ -339,8 +339,8 @@ export async function getCaptainTeamEditData(teamId: string) {
   const leagueId = team.season.league.id;
   const seasonId = team.season.id;
 
-  // Fetch all data in parallel
-  const [members, venues, leagueVenues, allTeams] = await Promise.all([
+  // Fetch all data in parallel (includes resolved preferences for roster size)
+  const [members, venues, leagueVenues, allTeams, resolvedPrefs] = await Promise.all([
     // Get all members for player selection
     supabase
       .from('members')
@@ -373,6 +373,17 @@ export async function getCaptainTeamEditData(teamId: string) {
 
     // Get all teams in this season for duplicate validation
     getTeamsBySeason(seasonId),
+
+    // Get resolved max_roster_size from preferences (source of truth)
+    supabase
+      .from('resolved_league_preferences')
+      .select('max_roster_size')
+      .eq('league_id', leagueId)
+      .single()
+      .then(({ data, error }) => {
+        if (error) return { max_roster_size: 8 }; // fallback
+        return data;
+      }),
   ]);
 
   return {
@@ -383,6 +394,7 @@ export async function getCaptainTeamEditData(teamId: string) {
     allTeams,
     leagueId,
     seasonId,
-    teamFormat: team.season.league.team_format,
+    teamFormat: team.season.league.team_format, // legacy — kept for backward compat
+    rosterSize: resolvedPrefs?.max_roster_size ?? 8,
   };
 }

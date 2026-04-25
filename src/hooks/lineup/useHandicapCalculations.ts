@@ -21,7 +21,7 @@
  * console.log(handicaps.teamTotal);   // Player total + team bonus
  */
 
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import type { Player } from '@/types/match';
 import { isSubstitute } from '@/utils/lineup';
 import { roundHandicap } from '@/utils/lineup';
@@ -32,14 +32,20 @@ export interface HandicapCalculationsInput {
   player3Id: string;
   player4Id?: string; // Optional for 5v5
   player5Id?: string; // Optional for 5v5
-  playerCount: 3 | 5; // Number of players in lineup
+  playerCount: number; // Number of players in lineup
   subHandicap: string;
   players: Player[];
   testMode: boolean;
   testHandicaps: Record<string, number>;
   teamHandicap: number;
   isHomeTeam: boolean;
-  teamFormat?: '5_man' | '8_man'; // Team format to determine sub handicap logic
+  handicapType?: string; // 'points' uses sub handicap calc, 'percentage' uses placeholder
+  // Fargo-only: LO types each player's current rating directly in the lineup UI.
+  // Keyed by position (1-5). When handicapType === 'fargo', these override the
+  // member's `player.handicap` value (which stores BCA handicaps, not Fargo
+  // ratings). Without this override the hook would write zeros into
+  // match_lineups on lock and break Fargo start-points negotiation.
+  manualFargoRatings?: Record<number, string>;
 }
 
 export interface HandicapCalculations {
@@ -80,8 +86,21 @@ export function useHandicapCalculations(
     testHandicaps,
     teamHandicap,
     isHomeTeam,
-    teamFormat = '5_man',
+    handicapType = 'points',
+    manualFargoRatings,
   } = input;
+
+  // Fargo override: pull the typed rating for a position. Returns 0 when the
+  // LO hasn't entered a value yet (lineup validation blocks lock in that case).
+  const getPositionFargoRating = useCallback(
+    (position: number): number => {
+      const manual = manualFargoRatings?.[position];
+      if (!manual || manual.trim() === '') return 0;
+      const parsed = parseInt(manual, 10);
+      return Number.isFinite(parsed) ? parsed : 0;
+    },
+    [manualFargoRatings]
+  );
 
   /**
    * Get the highest handicap of players NOT in the lineup
@@ -120,13 +139,13 @@ export function useHandicapCalculations(
 
       // Handle substitutes
       if (isSubstitute(playerId)) {
-        // 5v5: SUB doesn't need a calculated handicap - opponent will choose double duty player
-        // Return 40 as placeholder (initial 5v5 handicap)
-        if (teamFormat === '8_man') {
+        // Percentage system: SUB doesn't need a calculated handicap — opponent chooses double duty player
+        // Return 40 as placeholder (initial percentage handicap)
+        if (handicapType === 'percentage') {
           return 40;
         }
 
-        // 3v3: Calculate substitute handicap from highest unused player or manual entry
+        // Points system: Calculate substitute handicap from highest unused player or manual entry
         const highestUnused = getHighestUnusedHandicap();
 
         // If sub handicap is manually entered, use the HIGHER of the two
@@ -143,40 +162,41 @@ export function useHandicapCalculations(
       const player = players.find((p) => p.id === playerId);
       return player?.handicap || 0;
     };
-  }, [players, testMode, testHandicaps, subHandicap, teamFormat, getHighestUnusedHandicap]);
+  }, [players, testMode, testHandicaps, subHandicap, handicapType, getHighestUnusedHandicap]);
 
-  // Calculate individual player handicaps
-  const player1Handicap = useMemo(
-    () => (player1Id ? getPlayerHandicap(player1Id) : 0),
-    [player1Id, getPlayerHandicap]
-  );
+  // Calculate individual player handicaps.
+  // For Fargo, the value is the manual rating the LO typed (player.handicap
+  // stores BCA, which is irrelevant here). For all other systems, the existing
+  // player-lookup / substitute logic applies.
+  const player1Handicap = useMemo(() => {
+    if (handicapType === 'fargo') return getPositionFargoRating(1);
+    return player1Id ? getPlayerHandicap(player1Id) : 0;
+  }, [handicapType, getPositionFargoRating, player1Id, getPlayerHandicap]);
 
-  const player2Handicap = useMemo(
-    () => (player2Id ? getPlayerHandicap(player2Id) : 0),
-    [player2Id, getPlayerHandicap]
-  );
+  const player2Handicap = useMemo(() => {
+    if (handicapType === 'fargo') return getPositionFargoRating(2);
+    return player2Id ? getPlayerHandicap(player2Id) : 0;
+  }, [handicapType, getPositionFargoRating, player2Id, getPlayerHandicap]);
 
-  const player3Handicap = useMemo(
-    () => (player3Id ? getPlayerHandicap(player3Id) : 0),
-    [player3Id, getPlayerHandicap]
-  );
+  const player3Handicap = useMemo(() => {
+    if (handicapType === 'fargo') return getPositionFargoRating(3);
+    return player3Id ? getPlayerHandicap(player3Id) : 0;
+  }, [handicapType, getPositionFargoRating, player3Id, getPlayerHandicap]);
 
-  const player4Handicap = useMemo(
-    () => (player4Id ? getPlayerHandicap(player4Id) : 0),
-    [player4Id, getPlayerHandicap]
-  );
+  const player4Handicap = useMemo(() => {
+    if (handicapType === 'fargo') return getPositionFargoRating(4);
+    return player4Id ? getPlayerHandicap(player4Id) : 0;
+  }, [handicapType, getPositionFargoRating, player4Id, getPlayerHandicap]);
 
-  const player5Handicap = useMemo(
-    () => (player5Id ? getPlayerHandicap(player5Id) : 0),
-    [player5Id, getPlayerHandicap]
-  );
+  const player5Handicap = useMemo(() => {
+    if (handicapType === 'fargo') return getPositionFargoRating(5);
+    return player5Id ? getPlayerHandicap(player5Id) : 0;
+  }, [handicapType, getPositionFargoRating, player5Id, getPlayerHandicap]);
 
-  // Calculate player total (sum of 3 or 5 players based on playerCount)
+  // Calculate player total — sum handicaps for all active lineup positions
   const playerTotal = useMemo(() => {
-    let total = player1Handicap + player2Handicap + player3Handicap;
-    if (playerCount === 5) {
-      total += player4Handicap + player5Handicap;
-    }
+    const all = [player1Handicap, player2Handicap, player3Handicap, player4Handicap, player5Handicap];
+    const total = all.slice(0, playerCount).reduce((sum, h) => sum + h, 0);
     return roundHandicap(total);
   }, [player1Handicap, player2Handicap, player3Handicap, player4Handicap, player5Handicap, playerCount]);
 
@@ -190,7 +210,8 @@ export function useHandicapCalculations(
     player1Handicap,
     player2Handicap,
     player3Handicap,
-    ...(playerCount === 5 && { player4Handicap, player5Handicap }),
+    ...(playerCount >= 4 && { player4Handicap }),
+    ...(playerCount >= 5 && { player5Handicap }),
     playerTotal,
     teamTotal,
     getPlayerHandicap,

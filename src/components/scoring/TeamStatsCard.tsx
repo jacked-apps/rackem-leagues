@@ -183,19 +183,28 @@ export function TeamStatsCard({
           </div>
         )}
 
-        {/* Points - decimal point centered like "/" in threshold rows */}
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center pb-2">
-          <div className="font-semibold text-gray-700 text-xl text-right pr-0.5">
-            {Math.floor(points)}
-          </div>
-          <div className="font-semibold text-gray-700 text-xl">.</div>
-          <div className="flex items-center pl-0.5">
-            <span className="font-semibold text-gray-700 text-xl">
-              {Math.round((points % 1) * 10)}
-            </span>
+        {/* Points — show decimal split only when the value actually has a fractional part
+            (the 3v3 margin-from-threshold system produces integers; the 5v5 BCA bonus
+            system produces decimals). */}
+        {Number.isInteger(points) ? (
+          <div className="flex justify-center items-center pb-2">
+            <span className="font-semibold text-gray-700 text-xl">{points}</span>
             <span className="text-gray-600 ml-2 text-xs">Points</span>
           </div>
-        </div>
+        ) : (
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center pb-2">
+            <div className="font-semibold text-gray-700 text-xl text-right pr-0.5">
+              {Math.floor(points)}
+            </div>
+            <div className="font-semibold text-gray-700 text-xl">.</div>
+            <div className="flex items-center pl-0.5">
+              <span className="font-semibold text-gray-700 text-xl">
+                {Math.round((points % 1) * 10)}
+              </span>
+              <span className="text-gray-600 ml-2 text-xs">Points</span>
+            </div>
+          </div>
+        )}
 
         {/* Collapsible Player Stats */}
         {showPlayerStats && (

@@ -17,6 +17,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '../queryKeys';
+import { useResolvedLeaguePrefs } from './useResolvedLeaguePrefs';
 import { fetchSeasonPlayerStats } from '../queries/playerStats';
 import { getLeagueBySeasonId } from '../queries/leagues';
 import { usePlayerHandicaps } from './usePlayerHandicaps';
@@ -106,6 +107,10 @@ export function useTopShooters(seasonId: string): UseTopShootersResult {
     retry: 1,
   });
 
+  // Resolved preferences — lazy-migrates legacy leagues on first access
+  const { data: leaguePrefs } = useResolvedLeaguePrefs(league?.id);
+  const handicapType = leaguePrefs?.handicap_type ?? 'points';
+
   // Extract player IDs for handicap calculation
   const playerIds = playerStats?.map((p) => p.playerId) || [];
 
@@ -116,7 +121,7 @@ export function useTopShooters(seasonId: string): UseTopShootersResult {
     errors: handicapErrors,
   } = usePlayerHandicaps({
     playerIds,
-    teamFormat: league?.team_format || '5_man',
+    handicapType,
     handicapVariant: league?.handicap_variant || 'standard',
     gameType: league?.game_type || 'eight_ball',
     leagueId: league?.id, // Use league ID to prioritize games from this league
@@ -142,7 +147,7 @@ export function useTopShooters(seasonId: string): UseTopShootersResult {
   // Combine player stats with handicaps
   const playersWithHandicaps: PlayerWithHandicap[] = playerStats.map((player) => ({
     ...player,
-    handicap: handicaps.get(player.playerId) ?? 0, // Default to 0 if handicap calculation failed
+    handicap: handicaps.get(player.playerId)?.value ?? 0,
   }));
 
   // Sort based on team format

@@ -147,7 +147,7 @@ export const SYSTEM_DEFAULTS = {
 
   // Modular defaults (Wizard 2.0)
   lineup_size: 3,
-  max_roster_size: 5,
+  max_roster_size: 8,
   game_generation: 'double_round_robin',
   handicap_type: 'points',
   points_system: 'differential',

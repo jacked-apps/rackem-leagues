@@ -18,6 +18,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useTeamStats } from '@/api/hooks/useTeamStats';
+import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { usePlayerHandicaps } from '@/api/hooks/usePlayerHandicaps';
 import { getLeagueBySeasonId } from '@/api/queries/leagues';
 import { queryKeys } from '@/api/queryKeys';
@@ -60,6 +61,10 @@ export function TeamStats() {
     retry: 1,
   });
 
+  // Resolved preferences — lazy-migrates legacy leagues on first access
+  const { data: leaguePrefs } = useResolvedLeaguePrefs(leagueId);
+  const handicapType = leaguePrefs?.handicap_type ?? 'points';
+
   // Extract all player IDs (excluding substitutes)
   const allPlayerIds = teams.flatMap(team =>
     team.players.filter(p => !p.isSubstitute).map(p => p.playerId)
@@ -71,7 +76,7 @@ export function TeamStats() {
     isLoading: handicapsLoading,
   } = usePlayerHandicaps({
     playerIds: allPlayerIds,
-    teamFormat: league?.team_format || '5_man',
+    handicapType,
     handicapVariant: league?.handicap_variant || 'standard',
     gameType: league?.game_type || 'eight_ball',
     leagueId,
@@ -177,7 +182,7 @@ export function TeamStats() {
 
                   {/* Player Detail Rows */}
                   {team.players.map((player) => {
-                    const handicap = player.isSubstitute ? '' : (handicaps.get(player.playerId) ?? '-');
+                    const handicap = player.isSubstitute ? '' : (handicaps.get(player.playerId)?.value ?? '-');
 
                     return (
                       <tr key={`${team.teamId}-${player.playerId}`} className="border-b">

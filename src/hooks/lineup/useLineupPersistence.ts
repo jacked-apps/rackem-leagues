@@ -28,7 +28,7 @@ interface LineupPersistenceParams {
   player3Handicap: number;
   player4Handicap?: number; // Optional for 5v5
   player5Handicap?: number; // Optional for 5v5
-  playerCount?: 3 | 5; // Defaults to 3 for backward compatibility
+  playerCount?: number; // Defaults to 3 for backward compatibility
   teamHandicap: number;
   isComplete: boolean;
   hasDuplicates: boolean;
@@ -116,10 +116,12 @@ export function useLineupPersistence(params: LineupPersistenceParams) {
         locked_at: new Date().toISOString(), // Timestamp when lineup was locked
       };
 
-      // Add player4/5 if this is a 5v5 match
-      if (playerCount === 5) {
+      // Add player4/5 based on actual lineup size
+      if (playerCount >= 4) {
         lineupData.player4_id = player4Id || null;
         lineupData.player4_handicap = player4Handicap;
+      }
+      if (playerCount >= 5) {
         lineupData.player5_id = player5Id || null;
         lineupData.player5_handicap = player5Handicap;
       }

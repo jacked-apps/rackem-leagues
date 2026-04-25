@@ -10,6 +10,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/supabaseClient';
+import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
@@ -56,6 +57,10 @@ export const TeamManagement: React.FC = () => {
     error,
     refreshTeams,
   } = useTeamManagement(null, leagueId);
+
+  // Resolved preferences — lazy-migrates legacy leagues on first access
+  const { data: leaguePrefs } = useResolvedLeaguePrefs(leagueId);
+  const maxRosterSize: number = leaguePrefs?.max_roster_size ?? 8;
 
   // Get organization ID from the league once it's loaded
   const organizationId = league?.organization_id || null;
@@ -773,7 +778,7 @@ export const TeamManagement: React.FC = () => {
           <TeamEditorModal
             leagueId={leagueId!}
             seasonId={seasonId}
-            teamFormat={league.team_format}
+            rosterSize={maxRosterSize}
             venues={venues}
             leagueVenues={leagueVenues}
             members={members}

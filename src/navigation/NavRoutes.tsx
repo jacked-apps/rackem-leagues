@@ -32,6 +32,8 @@ import { MyTeams } from '../player/MyTeams';
 import { TeamSchedule } from '../player/TeamSchedule';
 import { MatchLineup } from '../player/MatchLineup';
 import { ScoreMatch } from '../player/ScoreMatch';
+import { SpectateLiveMatches } from '../player/SpectateLiveMatches';
+import { SpectateMyLiveMatches } from '../player/SpectateMyLiveMatches';
 import { BecomeLeagueOperator } from '../leagueOperator/BecomeLeagueOperator';
 import { LeagueOperatorApplication } from '../leagueOperator/LeagueOperatorApplication';
 import { Messages } from '../pages/Messages';
@@ -204,6 +206,8 @@ export const router = createBrowserRouter([
       { path: 'team/:teamId/schedule', element: withMember(<TeamSchedule />) },
       { path: 'match/:matchId/lineup', element: withMember(<MatchLineup />) },
       { path: 'match/:matchId/score', element: withMember(<ScoreMatch />) },
+      { path: 'league/:leagueId/live', element: withMember(<SpectateLiveMatches />) },
+      { path: 'live', element: withMember(<SpectateMyLiveMatches />) },
       // Stats & Standings pages (accessible to all members)
       { path: 'league/:leagueId/season/:seasonId/standings', element: withMember(<Standings />) },
       { path: 'league/:leagueId/season/:seasonId/top-shooters', element: withMember(<TopShooters />) },

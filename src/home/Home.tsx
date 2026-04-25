@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { PageHeader } from '@/components/PageHeader';
 import { Building2, Trophy, Radio, MapPin, LogOut, BookOpen } from 'lucide-react';
+import { ShareAppCard } from '@/components/ShareAppCard';
 import { supabase } from '../supabaseClient';
 import { toast } from 'sonner';
 
@@ -170,6 +171,11 @@ export const Home: React.FC = () => {
             </Link>
           </div>
         </div>
+
+        {/* Share the app */}
+        <ShareAppCard
+          description="Scan the QR code or share the link so your teammates can join Rack'em Leagues."
+        />
 
         {/* Brief description */}
         <div className="text-center text-muted-foreground space-y-2 pt-4 border-t">

@@ -16,6 +16,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/supabaseClient';
 import type { Lineup, MatchGame } from '@/types/match';
 import { queryKeys } from '@/api/queryKeys';
+import { populateMatchSnapshotIfNeeded } from '@/api/queries/matches';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
 
@@ -26,6 +27,8 @@ interface UseMatchScoringMutationsParams {
     home_team_id: string;
     away_team_id: string;
   } | null;
+  /** League ID — used for tier-3 system_snapshot population at first-scoring-event */
+  leagueId: string | null;
   /** Map of game results by game number */
   gameResults: Map<number, MatchGame>;
   /** Home team lineup */
@@ -40,12 +43,17 @@ interface UseMatchScoringMutationsParams {
   // gameType: string;
   /** Auto-confirm setting (skip confirmation modal) */
   autoConfirm: boolean;
-  /** Add confirmation to queue */
+  /** Add confirmation to queue. Forwards the full match_games snapshot so
+   *  the confirmation dialog can show every field the scorer entered. */
   addToConfirmationQueue: (confirmation: {
     gameNumber: number;
     winnerPlayerName: string;
     breakAndRun: boolean;
     goldenBreak: boolean;
+    breakFouled: boolean;
+    runout: boolean;
+    winByForfeit: boolean;
+    loserBallsPocketed: number | null;
   }) => void;
   /** Get player display name by ID */
   getPlayerDisplayName: (playerId: string) => string;
@@ -60,6 +68,7 @@ interface UseMatchScoringMutationsParams {
  */
 export function useMatchScoringMutations({
   match,
+  leagueId,
   gameResults,
   homeLineup,
   awayLineup,
@@ -88,6 +97,13 @@ export function useMatchScoringMutations({
         winnerTeamId: string;
         winnerPlayerId: string;
         winnerPlayerName: string;
+        /**
+         * Whether the winner was the scheduled breaker of this game (i.e., had
+         * the `breaks` action in the game row). Role-conditional modal fields
+         * (BR / GB / runout) derive from this combined with the break-fault
+         * toggle: actualBreaker = scheduledBreaker XOR breakFouled.
+         */
+        winnerWasScheduledBreaker: boolean;
       }) => void,
       confirmOpponentScoreFn: (gameNumber: number) => void
     ) => {
@@ -118,12 +134,17 @@ export function useMatchScoringMutations({
             return;
           }
 
-          // Add to confirmation queue (will show immediately or queue if modal is open)
+          // Add to confirmation queue (will show immediately or queue if modal is open).
+          // Forward every scored field — the dialog displays whatever is truthy.
           addToConfirmationQueue({
             gameNumber,
             winnerPlayerName: getPlayerDisplayName(existingGame.winner_player_id),
             breakAndRun: existingGame.break_and_run,
             goldenBreak: existingGame.golden_break,
+            breakFouled: existingGame.break_fouled,
+            runout: existingGame.runout,
+            winByForfeit: existingGame.win_by_forfeit,
+            loserBallsPocketed: existingGame.loser_balls_pocketed,
           });
           return;
         }
@@ -146,12 +167,26 @@ export function useMatchScoringMutations({
         return;
       }
 
+      // Derive whether the clicked winner was the scheduled breaker by
+      // comparing the winner's player ID to the game row's per-side action.
+      // `existingGame` is always present here because games are pre-created by
+      // the match preparation step before any scoring UI renders.
+      let winnerWasScheduledBreaker = false;
+      if (existingGame) {
+        if (existingGame.home_player_id === playerId) {
+          winnerWasScheduledBreaker = existingGame.home_action === 'breaks';
+        } else if (existingGame.away_player_id === playerId) {
+          winnerWasScheduledBreaker = existingGame.away_action === 'breaks';
+        }
+      }
+
       // Open confirmation modal to score new game
       onOpenScoringModal({
         gameNumber,
         winnerTeamId: teamId,
         winnerPlayerId: playerId,
         winnerPlayerName: playerName,
+        winnerWasScheduledBreaker,
       });
     },
     [match, gameResults, userTeamId, autoConfirm, addToConfirmationQueue, getPlayerDisplayName]
@@ -183,6 +218,10 @@ export function useMatchScoringMutations({
               winner_player_id: null,
               break_and_run: false,
               golden_break: false,
+              break_fouled: false,
+              runout: false,
+              win_by_forfeit: false,
+              loser_balls_pocketed: null,
               confirmed_by_home: null,
               confirmed_by_away: null,
               vacate_requested_by: null,
@@ -258,6 +297,10 @@ export function useMatchScoringMutations({
               winner_player_id: null,
               break_and_run: false,
               golden_break: false,
+              break_fouled: false,
+              runout: false,
+              win_by_forfeit: false,
+              loser_balls_pocketed: null,
               confirmed_by_home: null,
               confirmed_by_away: null,
               confirmed_at: null,
@@ -292,11 +335,35 @@ export function useMatchScoringMutations({
       },
       breakAndRun: boolean,
       goldenBreak: boolean,
-      onSuccess: () => void
+      onSuccess: () => void,
+      /**
+       * Always-tracked + system-specific extras added in Unit 11b. Defaults
+       * preserve prior behavior (all flags false, ball count null) so legacy
+       * callers that don't pass this object continue to work unchanged.
+       */
+      extras: {
+        breakFouled?: boolean;
+        runout?: boolean;
+        winByForfeit?: boolean;
+        loserBallsPocketed?: number | null;
+      } = {}
     ) => {
       if (!scoringGame || !match || !homeLineup || !awayLineup) return;
 
+      const breakFouled = extras.breakFouled ?? false;
+      const runout = extras.runout ?? false;
+      const winByForfeit = extras.winByForfeit ?? false;
+      const loserBallsPocketed = extras.loserBallsPocketed ?? null;
+
       try {
+        // Tier 3 mutability: populate system_snapshot at the first scoring event.
+        // No-op if already populated. Runs before the score write so the snapshot
+        // reflects league state as of the moment the first game was scored.
+        // Non-blocking: any error is logged but doesn't prevent scoring.
+        if (leagueId) {
+          await populateMatchSnapshotIfNeeded(match.id, leagueId);
+        }
+
         // Determine if this is home or away team confirming (based on WHO is scoring, not who won)
         const isHomeTeamScoring = userTeamId === match.home_team_id;
 
@@ -332,6 +399,10 @@ export function useMatchScoringMutations({
           winner_player_id: scoringGame.winnerPlayerId,
           break_and_run: breakAndRun,
           golden_break: goldenBreak,
+          break_fouled: breakFouled,
+          runout,
+          win_by_forfeit: winByForfeit,
+          loser_balls_pocketed: loserBallsPocketed,
           confirmed_by_home: isHomeTeamScoring ? memberId : null,
           confirmed_by_away: !isHomeTeamScoring ? memberId : null,
         };
@@ -344,6 +415,10 @@ export function useMatchScoringMutations({
             winner_player_id: gameData.winner_player_id,
             break_and_run: gameData.break_and_run,
             golden_break: gameData.golden_break,
+            break_fouled: gameData.break_fouled,
+            runout: gameData.runout,
+            win_by_forfeit: gameData.win_by_forfeit,
+            loser_balls_pocketed: gameData.loser_balls_pocketed,
             confirmed_by_home: isHomeTeamScoring
               ? memberId
               : existingGame.confirmed_by_home,

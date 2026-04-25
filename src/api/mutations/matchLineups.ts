@@ -453,10 +453,11 @@ async function recalculateMatchThresholds(matchId: string): Promise<void> {
     return;
   }
 
-  // Determine format from lineup data - if player4/5 have non-zero handicaps, it's 5v5
-  const is5v5 = (homeLineup.player4_handicap !== null && homeLineup.player4_handicap !== 0) ||
-                (homeLineup.player5_handicap !== null && homeLineup.player5_handicap !== 0);
-  const teamFormat: '5_man' | '8_man' = is5v5 ? '8_man' : '5_man';
+  // Derive handicapType from lineup data — if player4/5 are populated, it's percentage.
+  // This is a fallback for mid-match recalculations. New matches get handicapType from prefs.
+  const usesExtendedLineup = (homeLineup.player4_handicap !== null && homeLineup.player4_handicap !== 0) ||
+                              (homeLineup.player5_handicap !== null && homeLineup.player5_handicap !== 0);
+  const handicapType = usesExtendedLineup ? 'percentage' : 'points';
 
   // Calculate player handicap totals (sum all player handicaps)
   // Team bonus is already baked into the lineup handicaps from initial match preparation
@@ -475,8 +476,8 @@ async function recalculateMatchThresholds(matchId: string): Promise<void> {
     (awayLineup.player5_handicap || 0);
 
   // Look up thresholds based on handicap difference
-  const homeThresholds = getHandicapThresholds(homeHandicapTotal - awayHandicapTotal, teamFormat);
-  const awayThresholds = getHandicapThresholds(awayHandicapTotal - homeHandicapTotal, teamFormat);
+  const homeThresholds = getHandicapThresholds(homeHandicapTotal - awayHandicapTotal, handicapType);
+  const awayThresholds = getHandicapThresholds(awayHandicapTotal - homeHandicapTotal, handicapType);
 
   // Update match with new thresholds
   const { error: updateError } = await supabase

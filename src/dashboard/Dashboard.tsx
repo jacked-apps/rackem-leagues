@@ -22,7 +22,8 @@ import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 import { PendingInvitesModal } from '@/components/modals/PendingInvitesModal';
-import { Users, MessageSquare, Trophy, Building2, Settings, BookOpen } from 'lucide-react';
+import { ShareAppCard } from '@/components/ShareAppCard';
+import { Users, MessageSquare, Trophy, Building2, Settings, Radio, BookOpen } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
   const { user } = useUser();
@@ -114,6 +115,25 @@ export const Dashboard: React.FC = () => {
             </Card>
           </Link>
 
+          {/* Live Matches — peek at any match currently in progress in any
+              league the player is on a team in. Cross-league view; scoping
+              to team membership is enforced by the query. */}
+          <Link to="/live">
+            <Card className="hover:shadow-md transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-red-100 rounded-lg">
+                    <Radio className="h-6 w-6 text-red-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="font-semibold text-lg text-gray-900">Live Matches</h2>
+                    <p className="text-sm text-gray-600">See what's happening in your leagues right now</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+
           {/* Messages */}
           <Link to="/messages">
             <Card className="hover:shadow-md transition-shadow">
@@ -180,6 +200,12 @@ export const Dashboard: React.FC = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Share the app with teammates */}
+        <ShareAppCard
+          title="Invite teammates"
+          description="Scan the QR code or share the link to get your teammates on Rack'em Leagues."
+        />
 
         {/* League Operator Section - Multi-Org */}
         {(member.role === 'league_operator' || member.role === 'developer') && organizations.length > 0 && (

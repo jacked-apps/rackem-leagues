@@ -9,6 +9,7 @@
 
 import { supabase } from '@/supabaseClient';
 import type { League, LeagueInsertData, DayOfWeek, GameType, TeamFormat, HandicapVariant } from '@/types/league';
+import type { SystemOverrides } from '@/types/systemOverrides';
 
 /**
  * Parameters for creating a new league
@@ -190,4 +191,78 @@ export async function updateLeagueDayOfWeek(
   }
 
   return newDayString;
+}
+
+// ============================================================================
+// TIER 2 MUTABILITY — season-active lock for per-league dial overrides
+// ============================================================================
+
+/**
+ * Check whether a league has an active season — defined as at least one match
+ * in `in_progress` or `completed` status. Used by tier-2 guards to block
+ * scoring-dial edits after play has started for the season.
+ *
+ * This is a read-only check; safe to call from any context.
+ */
+export async function isLeagueSeasonActive(leagueId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('matches')
+    .select('id', { count: 'exact', head: true })
+    .eq('season.league_id', leagueId)
+    .in('status', ['in_progress', 'completed'])
+    .limit(1);
+
+  // If the nested filter path isn't supported by the server, the above may fail;
+  // fall back to joining through seasons explicitly.
+  if (error) {
+    const { data: seasons } = await supabase
+      .from('seasons')
+      .select('id')
+      .eq('league_id', leagueId);
+
+    if (!seasons || seasons.length === 0) return false;
+
+    const seasonIds = seasons.map((s) => s.id);
+    const { count } = await supabase
+      .from('matches')
+      .select('id', { count: 'exact', head: true })
+      .in('season_id', seasonIds)
+      .in('status', ['in_progress', 'completed']);
+
+    return (count ?? 0) > 0;
+  }
+
+  return (data?.length ?? 0) > 0;
+}
+
+/**
+ * Update a league's `system_overrides` JSONB — tier 2 mutability.
+ *
+ * Throws a user-facing error if the season is currently active. Editable
+ * between seasons; once the first match transitions to in_progress, this
+ * blocks further edits to protect active scoring from retroactive dial shifts.
+ *
+ * Tier 3 (match-start snapshot) provides additional belt-and-braces: even if
+ * a caller bypasses this guard, in-flight matches score from their snapshot
+ * and aren't affected by subsequent dial edits.
+ */
+export async function updateLeagueSystemOverrides(params: {
+  leagueId: string;
+  overrides: SystemOverrides;
+}): Promise<void> {
+  const active = await isLeagueSeasonActive(params.leagueId);
+  if (active) {
+    throw new Error(
+      'These settings are locked while the season is active. They will become editable once the season ends.',
+    );
+  }
+
+  const { error } = await supabase
+    .from('leagues')
+    .update({ system_overrides: params.overrides })
+    .eq('id', params.leagueId);
+
+  if (error) {
+    throw new Error(`Failed to update league system overrides: ${error.message}`);
+  }
 }

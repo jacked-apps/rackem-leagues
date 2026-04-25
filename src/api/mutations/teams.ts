@@ -69,8 +69,8 @@ export async function createTeam(params: CreateTeamParams): Promise<Team> {
     throw new Error('Captain is required');
   }
 
-  if (params.rosterSize !== 5 && params.rosterSize !== 8) {
-    throw new Error('Roster size must be 5 or 8');
+  if (params.rosterSize < 2 || params.rosterSize > 20) {
+    throw new Error('Roster size must be between 2 and 20');
   }
 
   if (params.rosterPlayerIds.length === 0) {

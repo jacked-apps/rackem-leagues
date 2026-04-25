@@ -18,7 +18,9 @@ import { Button } from '@/components/ui/button';
 import { useMatchLineups, useMatchGames, useMatchWithLeagueSettings } from '@/api/hooks/useMatches';
 import { useCreateMatchGames, useUpdateMatchGame, useUpdateMatch } from '@/api/hooks/useMatchMutations';
 import { useUpdateMatchLineup } from '@/api/hooks';
+import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { calculatePoints, calculateBCAPoints } from '@/types/match';
+import { calculateFargoMatchTotals } from '@/utils/fargoMatchTotals';
 import { logger } from '@/utils/logger';
 
 interface MatchEndVerificationProps {
@@ -128,6 +130,18 @@ export function MatchEndVerification({
   const teamFormat = match?.league?.team_format || '5_man';
   const is5v5 = teamFormat === '8_man';
 
+  // Unit 12: Fargo matches use a different completion math than BCA.
+  // handicap_type is resolved through the league preferences cascade.
+  const { data: leaguePrefs } = useResolvedLeaguePrefs(match?.league?.id);
+  const handicapType = leaguePrefs?.handicap_type ?? 'points';
+  const isFargoMatch = handicapType === 'fargo';
+  // Prefer the match-level snapshot (tier 3 frozen at first scoring event)
+  // over live league overrides so completion math matches what was live
+  // while the match was being played.
+  const fargoOverrides = match?.system_snapshot?.overrides
+    ?? leaguePrefs?.system_overrides
+    ?? {};
+
   // Fetch lineups to get lineup IDs for unlocking
   const lineupsQuery = useMatchLineups(matchId, homeTeamId, awayTeamId, false);
   const homeLineup = lineupsQuery.data?.homeLineup;
@@ -141,7 +155,11 @@ export function MatchEndVerification({
   const [isCompleting, setIsCompleting] = useState(false);
   const completionStartedRef = useRef(false);
 
-  const result = determineMatchResult(
+  // For BCA systems we use thresholds to determine the result (may be a
+  // tie triggering the tiebreaker flow). For Fargo matches we replace this
+  // later with the cascade winner from fargo5v5.scoring.computeMatchResult
+  // — Fargo 5v5 never produces a true tie.
+  const bcaResult = determineMatchResult(
     homeWins,
     awayWins,
     homeWinThreshold,
@@ -192,13 +210,38 @@ export function MatchEndVerification({
     games_to_lose: awayTieThreshold !== null ? awayTieThreshold - 1 : awayWinThreshold - 1,
   };
 
-  // Use BCA points for 5v5, regular points for 3v3
-  const homePoints = is5v5
-    ? calculateBCAPoints(homeTeamId, homeThresholds, gameResultsMap)
-    : calculatePoints(homeTeamId, homeThresholds, gameResultsMap);
-  const awayPoints = is5v5
-    ? calculateBCAPoints(awayTeamId, awayThresholds, gameResultsMap)
-    : calculatePoints(awayTeamId, awayThresholds, gameResultsMap);
+  // Fargo matches compute totals via the fargo5v5 module (includes
+  // start-points credit + per-game winner/loser points derived from the
+  // snapshotted dials). BCA matches keep the existing calculation.
+  const fargoTotals = isFargoMatch
+    ? calculateFargoMatchTotals({
+        homeTeamId,
+        awayTeamId,
+        homeGamesToWin: match?.home_games_to_win ?? 0,
+        awayGamesToWin: match?.away_games_to_win ?? 0,
+        gameResults: gameResultsMap,
+        overrides: fargoOverrides,
+      })
+    : null;
+
+  // Use BCA points for 5v5, regular points for 3v3, Fargo points for fargo.
+  const homePoints = fargoTotals
+    ? fargoTotals.homePoints
+    : is5v5
+      ? calculateBCAPoints(homeTeamId, homeThresholds, gameResultsMap)
+      : calculatePoints(homeTeamId, homeThresholds, gameResultsMap);
+  const awayPoints = fargoTotals
+    ? fargoTotals.awayPoints
+    : is5v5
+      ? calculateBCAPoints(awayTeamId, awayThresholds, gameResultsMap)
+      : calculatePoints(awayTeamId, awayThresholds, gameResultsMap);
+
+  // Final result. Fargo uses the points → games-won cascade (always
+  // decisive); BCA uses the threshold-based determination (may be 'tie'
+  // which triggers the tiebreaker flow).
+  const result: 'home_win' | 'away_win' | 'tie' = fargoTotals
+    ? fargoTotals.winner === 'home' ? 'home_win' : 'away_win'
+    : bcaResult;
 
   // Auto-complete match when both teams verify
   useEffect(() => {
@@ -248,21 +291,41 @@ export function MatchEndVerification({
                 completed_at: new Date().toISOString(),
                 status: winnerTeamId ? 'completed' : 'in_progress',
               }
-            : {
-                // Regular match: update scores, points, result, and verification
-                home_team_score: homeWins,
-                away_team_score: awayWins,
-                home_games_won: homeWins,
-                away_games_won: awayWins,
-                home_points_earned: homePoints,
-                away_points_earned: awayPoints,
-                winner_team_id: winnerTeamId,
-                match_result: result,
-                results_confirmed_by_home: true,
-                results_confirmed_by_away: true,
-                completed_at: new Date().toISOString(),
-                status: winnerTeamId ? 'completed' : 'in_progress',
-              };
+            : isFargoMatch
+              ? {
+                  // Fargo match (Unit 12): team_score is the Fargo point total
+                  // (includes start-points credit + per-game winner/loser
+                  // points). points_earned mirrors team_score — same unit,
+                  // meaningful to the system. games_won is the raw game
+                  // count home/away won. No tie possible in Fargo 5v5.
+                  home_team_score: homePoints,
+                  away_team_score: awayPoints,
+                  home_games_won: homeWins,
+                  away_games_won: awayWins,
+                  home_points_earned: homePoints,
+                  away_points_earned: awayPoints,
+                  winner_team_id: winnerTeamId,
+                  match_result: result,
+                  results_confirmed_by_home: true,
+                  results_confirmed_by_away: true,
+                  completed_at: new Date().toISOString(),
+                  status: 'completed', // Fargo always has a decisive winner
+                }
+              : {
+                  // BCA regular match: update scores, points, result, and verification
+                  home_team_score: homeWins,
+                  away_team_score: awayWins,
+                  home_games_won: homeWins,
+                  away_games_won: awayWins,
+                  home_points_earned: homePoints,
+                  away_points_earned: awayPoints,
+                  winner_team_id: winnerTeamId,
+                  match_result: result,
+                  results_confirmed_by_home: true,
+                  results_confirmed_by_away: true,
+                  completed_at: new Date().toISOString(),
+                  status: winnerTeamId ? 'completed' : 'in_progress',
+                };
 
           await updateMatchMutation.mutateAsync({
             matchId,
