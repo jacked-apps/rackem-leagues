@@ -1,40 +1,44 @@
 /**
  * @fileoverview PlaceholderBadge
  *
- * Small visual marker shown next to a placeholder player's name. Tells
- * everyone reading a roster, lineup, or scoring screen "this person
- * doesn't have a claimed account yet" — without making it sound like a
- * failure. Many placeholders are intentional and permanent (per Ed's
- * model: some players will never want an app account; their stats stay
- * captain-kept forever).
+ * Tiny visual marker shown next to a placeholder player's name.
  *
- * Universal single-variant component on purpose. The has-stats vs
- * no-stats distinction stays in the LO Placeholders card where it
- * drives triage; for everyone else this is just an identifier tag.
+ * Why "PP": this is the internal abbreviation the entire codebase
+ * already uses ("the PP", "the PP's history", etc. — see comments
+ * throughout members.ts, merge_placeholder_into_member, etc.). Two
+ * letters keeps the badge small even on narrow mobile rows where the
+ * full word "Placeholder" would crowd out the actual player name.
  *
- * Used by PlayerNameLink so it propagates everywhere player names
- * render without needing audits of individual surfaces.
+ * Stands for: Placeholder Player — a real human represented in the
+ * system who has not (or will not) register an auth account. Many
+ * placeholders are intentional and permanent (Ed's model: some
+ * players never want an app; their stats stay captain-kept).
+ *
+ * The hover tooltip spells out the abbreviation for first-time users.
+ *
+ * If a later display-name pass changes the visual treatment, this is
+ * the only file to edit — everywhere it's used (PlayerNameLink, the
+ * three player pickers, etc.) just renders <PlaceholderBadge />.
  */
 
 import React from 'react';
 
 interface PlaceholderBadgeProps {
-  /** 'sm' for compact rows, 'md' as the default. Keeps narrow cells
-   *  (live-scoring rows, lineup chips) readable without breaking layout. */
+  /** 'sm' for compact rows (default), 'md' for spacier contexts. */
   size?: 'sm' | 'md';
   className?: string;
 }
 
 export const PlaceholderBadge: React.FC<PlaceholderBadgeProps> = ({
-  size = 'md',
+  size = 'sm',
   className = '',
 }) => (
   <span
-    className={`inline-flex items-center rounded-full bg-gray-200 text-gray-700 font-medium align-middle ${
-      size === 'sm' ? 'px-1.5 py-0 text-[10px]' : 'px-2 py-0.5 text-xs'
+    className={`inline-flex items-center rounded-full bg-gray-200 text-gray-700 font-semibold align-middle leading-none ${
+      size === 'sm' ? 'px-1 py-0.5 text-[10px]' : 'px-1.5 py-0.5 text-[11px]'
     } ${className}`}
-    title="Placeholder — this player hasn't registered an account yet"
+    title="PP = Placeholder Player — this player hasn't registered an account yet"
   >
-    Placeholder
+    PP
   </span>
 );
