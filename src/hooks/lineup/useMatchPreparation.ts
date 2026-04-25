@@ -14,7 +14,7 @@ import { generateGameOrder } from '@/utils/gameOrder';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
 import type { SystemOverrides } from '@/types/systemOverrides';
-import { isAnySubSentinel, type PrepBlockedReason } from '@/utils/lineup';
+import { isDoubleDutySentinel, type PrepBlockedReason } from '@/utils/lineup';
 
 export function usePreparationStatus() {
   const [isPreparingMatch, setIsPreparingMatch] = useState(false);
@@ -260,17 +260,19 @@ export function useMatchPreparation(params: MatchPreparationParams) {
           away_action: game.awayAction,
         }));
 
-        // Pre-insert placeholder guard: the Step 1 gate should have prevented
-        // any sub sentinel from reaching this path. If one does, it's a
-        // latent bug — surface it loudly rather than silently corrupting data.
-        const hasPlaceholder = gameRows.some(
-          (r) => isAnySubSentinel(r.home_player_id) || isAnySubSentinel(r.away_player_id)
+        // Pre-insert guard: ONLY double-duty placeholders should be impossible
+        // at this point — anonymous sub sentinels are legitimate final values
+        // (the captain entered a handicap; we just don't know who the player
+        // is). The Step 1 / blockedReason gate should already have prevented
+        // any unresolved DD sentinel from reaching here.
+        const hasDoubleDutyPlaceholder = gameRows.some(
+          (r) => isDoubleDutySentinel(r.home_player_id) || isDoubleDutySentinel(r.away_player_id)
         );
-        if (hasPlaceholder) {
-          logger.error('prep_match guard tripped: sentinel UUID in gameRows', {
+        if (hasDoubleDutyPlaceholder) {
+          logger.error('prep_match guard tripped: unresolved double-duty sentinel in gameRows', {
             matchId,
             sampleRow: gameRows.find(
-              (r) => isAnySubSentinel(r.home_player_id) || isAnySubSentinel(r.away_player_id)
+              (r) => isDoubleDutySentinel(r.home_player_id) || isDoubleDutySentinel(r.away_player_id)
             ),
           });
           toast.error('Match setup hit an unexpected state — please report this. Returning to lineup.');
