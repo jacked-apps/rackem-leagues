@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-04-21 (env differentiation: banner + favicon + env-aware PWA manifest + installed app icons)
+> **Last Updated**: 2026-04-21 (added League House Rules feature on top of the rulebook reader — LO authoring UI, league/org scoped rules with cascade + pure-CSI opt-out, `house_rules` migration, dev bootstrap SQL fixtures)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -46,6 +46,10 @@
 | `docs/BCA_HANDICAP_SYSTEM.md` | BCA handicap system documentation | Official BCA handicap rules and calculations |
 | `docs/CUSTOM_5MAN_HANDICAP_SYSTEM.md` | Custom 5-man handicap system | Proprietary handicap system for 5-man format |
 | `docs/LEAGUE_MANAGEMENT_PLAN.md` | League management system architecture | System hierarchy and database schema |
+| `/docs/brainstorms/` | **CE brainstorm requirements docs** | Output of `/compound-engineering:ce-brainstorm` |
+| `docs/brainstorms/official-rulebook-reader-requirements.md` | Requirements for the Official Rulebook Reader feature | Branch 1 of the rules-feature family |
+| `/docs/plans/` | **CE implementation plans** | Output of `/compound-engineering:ce-plan` |
+| `docs/plans/2026-04-17-001-feat-official-rulebook-reader-plan.md` | Implementation plan for the Official Rulebook Reader | 6 units, active branch `feature/official-rulebook-reader` |
 
 ### Future Work Folder
 
@@ -95,6 +99,21 @@
 | `pnpm-lock.yaml` | **pnpm dependency lock** (primary) |
 | `pnpm-workspace.yaml` | pnpm workspace configuration |
 | `index.html` | Vite HTML entry point |
+
+### Operator Scripts (`/scripts/`)
+
+Node-only tooling the operator runs manually (not part of the app bundle).
+
+| File | Purpose |
+|------|---------|
+| `scripts/clean-rulebook.ts` | Orchestrator — turns the CSI rulebook PDF into committed TS data modules under `src/officalBCARulebook/cleaned/`. Usage: `pnpm tsx scripts/clean-rulebook.ts --pdf "<abs-path>"` |
+| `scripts/clean-rulebook/extractPdfText.ts` | `pdfjs-dist` wrapper: PDF → per-page text |
+| `scripts/clean-rulebook/scrubText.ts` | Strip running headers, normalize whitespace (preserves double-space markers) |
+| `scripts/clean-rulebook/splitSections.ts` | Slice scrubbed text at "RULES SECTION N" markers |
+| `scripts/clean-rulebook/splitRules.ts` | Slice a section into `Rule[]` using double-space delimiters; filters figure noise |
+| `scripts/clean-rulebook/writeModules.ts` | Emit the `index.ts` + per-game `.ts` modules |
+| `scripts/clean-rulebook/verifyRulebook.ts` | Pre-commit sanity checks on the cleaned data |
+| `scripts/clean-rulebook/games.ts` | Canonical list of games (slug, display name, section number) |
 
 ### Orphaned/Unknown Files
 
@@ -271,7 +290,6 @@
 | File | Purpose |
 |------|---------|
 | `rebuild_all_tables.sql` | Complete database rebuild script |
-| `seed_test_users.sql` | Test user data |
 | `seed_fake_members.sql` | Fake member data for testing |
 | `seed_fake_members.sql.backup` | Backup of seed data |
 | `add_member_insert_policy.sql` | Member insert RLS policy |
@@ -310,11 +328,28 @@
 #### Integration Tests (`/__tests__/integration/`)
 - `SeasonCreationWizard.critical.test.tsx` - Critical path tests
 - `SeasonCreationWizard.smoke.test.tsx` - Smoke tests
+- `RulesPage.test.tsx` - `/rules` landing: filter chips, search, zero-results, clear actions
+- `RuleDetailPage.test.tsx` - `/rules/:game/:ruleId`: happy path, drawer, unknown-ID fallback
+- `RulesPageHouseRules.test.tsx` - House rules chip, scope picker, merged search, TOC interleave, differences-only, discovery nudge
+- `HouseRuleDetailPage.test.tsx` - `/rules/house/:scope/:scopeId/:ruleId`: happy path, drawer, CSI backlink, standalone variant, unknown-ID fallback
+- `LeagueRulesPage.test.tsx` - Org-wide house rules manager: render, Add/Cancel form, delete-with-Undo
 
 #### Unit Tests (`/__tests__/unit/`)
 - `messageQueries.test.ts` - Message query utilities
 - `profanityFilter.test.ts` - Profanity filter
 - `scheduleUtils.test.ts` - Schedule utilities
+- `cleanup.smoke.test.ts` - Rulebook cleanup output smoke checks (18 tests)
+- `resolveRuleId.test.ts` - Deep-link rule resolver
+- `useRulebookSearch.test.ts` - In-memory substring search hook
+- `searchSnippet.test.ts` - Snippet extraction + highlight helpers
+- `copyLinkButton.test.tsx` - Share-link clipboard button
+- `searchHouseRules.test.ts` - Pure substring search over house-rule title + body
+- `groupHouseRules.test.ts` - TOC interleave grouping: standalones, override pairing, specificity ordering
+- `houseRuleForm.test.tsx` - HouseRuleForm: validation, effect-type switch, CSI suggestions, snippet picker, dirty state
+
+#### Database Tests (`/__tests__/database/`)
+- `rulesPageEvents.rls.test.ts` - `rules_page_events` RLS + constraints (requires local Supabase)
+- `houseRules.rls.test.ts` - `house_rules` RLS probes (requires local Supabase; full coverage deferred until seed fixtures land)
 
 #### Test Utilities (`/test/`)
 - `setup.ts` - Test environment setup
@@ -420,6 +455,48 @@
 - `EightManFormatDetails.tsx` - 8-man format details
 - `FiveManFormatDetails.tsx` - 5-man format details
 
+#### Official Rulebook Reader (`/rules/`)
+
+Public feature at `/rules`. Reads the cleaned CSI rulebook from `/src/officalBCARulebook/cleaned/` and renders it as a searchable, mobile-first document. Rule detail lives at `/rules/:game/:ruleId`.
+
+- `RulesPage.tsx` - `/rules` landing: filter chips, search, TOC / All-games accordion
+- `RuleDetailPage.tsx` - `/rules/:game/:ruleId`: full rule text, drawer, Copy-link, attribution
+- `RuleView.tsx` - Pure rule renderer (heading + body paragraphs)
+- `GameTOC.tsx` - Ordered rule list inside a single-game view
+- `AllGamesAccordion.tsx` - Cover-to-cover reader (every game as collapsible section)
+- `RuleCard.tsx` - One clickable rule row in the TOC
+- `SearchInput.tsx` - Sticky debounced search with "/" keyboard shortcut
+- `SearchResults.tsx` - Results list + zero-results state (Clear filter / Clear search)
+- `SearchSnippet.tsx` - Snippet extraction + <mark> highlighting
+- `Attribution.tsx` - R11 footer linking to CSI's hosted PDF
+- `CopyLinkButton.tsx` - One-tap clipboard share with sonner toast
+- `RulesSkeleton.tsx` - Suspense fallback matching the page layout
+- `RulesErrorBoundary.tsx` - Branded error boundary for data-load failures
+- `useRulebook.ts` - Typed loader singleton (merges cleaned game modules)
+- `useRulebookSearch.ts` - In-memory substring search (hook + pure function)
+- `resolveRuleId.ts` - O(1) deep-link resolver
+- `useRulesEvents.ts` - Fire-and-forget usage events (page_open / search / deep_link / house_filter / differences_only / house_rule_opened / scope_changed)
+- `rulebook.types.ts` - Shared types: `Rule`, `Game`, `Rulebook`, `RulebookIndex`
+
+#### League House Rules (part of `/rules/`)
+
+LO-authored rules layered on top of the CSI rulebook. Org-wide rules cascade into every league unless the league opts out. Reader interleaves matching house rules beneath their CSI counterparts.
+
+- `HouseRuleDetailPage.tsx` - `/rules/house/:scope/:scopeId/:ruleId`: full rule + scope attribution + CSI backlink
+- `HouseRuleCard.tsx` - Clickable house-rule row with scope badge
+- `HouseRuleForm.tsx` - Shared add/edit form: effect-type radios, CSI picker, CSI preview with per-snippet "+ Add", dirty-state reporting
+- `HouseRulesList.tsx` - Reusable list with inline Add/Edit and delete-with-Undo (preserves `id`)
+- `HouseRulesScopePicker.tsx` - Sheet for picking which league's rules to overlay on the reader
+- `CsiRulePicker.tsx` - shadcn Command palette over the in-bundle rulebook
+- `CsiSuggestions.tsx` - Live "similar official rules?" panel under the title input
+- `LeagueHouseRulesSection.tsx` - League-scoped list + "Use official CSI rulebook only" opt-out toggle for LeagueSettings
+- `useHouseRules.ts` - Loader hooks: by memberships, by single id, and cascade-aware for a single scope
+- `useMyMemberships.ts` - Derives player + staff org/league memberships for scope defaulting
+- `useActiveLeague.ts` - Per-device active-league state with localStorage + sign-out clear
+- `searchHouseRules.ts` - Pure substring search across house-rule title + body
+- `groupHouseRules.ts` - Interleave helper: pairs house rules to their CSI counterparts + pulls out standalones
+- `house-rules.types.ts` - Shared types: `HouseRule`, `HouseRuleScope`, `ScopeSelection`, memberships, etc.
+
 ---
 
 ### 🧩 Components
@@ -447,6 +524,8 @@
 | `textarea.tsx` | Multiline text input |
 | `capitalize-input.tsx` | Auto-capitalize input |
 | `password-input.tsx` | Password input with toggle |
+| `filter-chip.tsx` | **ALL filter chip buttons** — extracted from MemberSearchCombobox |
+| `sheet.tsx` | Side-anchored drawer (shadcn Sheet, built on Radix Dialog) |
 
 #### Shared UI Components (`/components/shared/`)
 - `EmptyState.tsx` - Empty state component
@@ -715,6 +794,13 @@ High-level business logic services
 - `seasonWizardSteps.tsx` - Season wizard steps
 - `mockVenues.ts` - Mock venue data
 
+#### Official Rulebook Data (`/officalBCARulebook/`)
+Source and cleaned data for the Rules Reader feature. Note the legacy folder-name typo ("offical") — kept as-is to avoid a cross-cutting rename.
+- `bca_rules_sections.json` - **LEGACY** raw PDF-to-text dump (no longer read at runtime; kept until post-launch cleanup)
+- `BCA Rules Figure 2-1.png` - **LEGACY** figure asset (not rendered in v1; retained for a future figures pass)
+- `cleaned/index.ts` - Edition metadata + games list + `(game, ruleId)` → ref `idMap` (auto-generated)
+- `cleaned/8-ball.ts` through `cleaned/scotch-doubles.ts` - Per-game `Rule[]` modules (auto-generated, 9 files total, 135 rules)
+
 #### Matchup Tables (`/data/matchupTables/`)
 
 Pre-calculated round-robin schedules (19 files)
@@ -861,6 +947,11 @@ Supabase local configuration and migrations
 |------|---------|
 | `supabase/config.toml` | Supabase local configuration |
 | `supabase/migrations/20251218000000_venue_table_counts_optional.sql` | Fix venue total_tables computed column for array columns |
+| `supabase/migrations/20260419000000_rules_page_events.sql` | `rules_page_events` table + RLS (anon INSERT, developer-only SELECT) |
+| `supabase/migrations/20260419120000_house_rules.sql` | `house_rules` table, `house_rules_with_scope_name` view, `can_write_house_rule_org` SECURITY DEFINER, RLS policies |
+| `supabase/migrations/20260420120000_leagues_ignore_org_house_rules.sql` | `leagues.ignore_org_house_rules` column for per-league pure-CSI opt-out |
+| `database/dev_bootstrap_lo.sql` | DEV-ONLY: given an email, upserts member + org (owner via trigger) + one empty league. Paste into Studio. |
+| `database/dev_bootstrap_full.sql` | DEV-ONLY: full fixture — org + venue + league + active 12-week season + 4 teams with 5-player rosters + full round-robin schedule. Paste into Studio. |
 | `supabase/migrations/20260418000000_add_leagues_system_overrides.sql` | **Phase 2 Unit 4** — adds `leagues.system_overrides JSONB` for per-league dial overrides |
 | `supabase/migrations/20260418000001_add_fargo_match_columns.sql` | **Phase 2 Unit 5** — adds `matches.fargo_start_points` + `match_games.winner_points`/`loser_points`/`loser_balls_pocketed` |
 | `supabase/migrations/20260418000002_lock_tier1_preferences.sql` | **Phase 2 Unit 6** — DB trigger blocking UPDATE of `handicap_type` and `lineup_size` on league preferences (tier 1 mutability) |
@@ -916,6 +1007,8 @@ See [RESTRUCTURE_PLAN.md](RESTRUCTURE_PLAN.md) for complete list of 20 organizat
 | **Scoring (3x3)** | `/player`, `/components/scoring`, `/hooks`, `/database/scoring3x3` | `ScoreMatch.tsx`, `useMatchScoring.ts`, `match_games.sql` |
 | **Messaging** | `/pages`, `/components/messages`, `/hooks`, `/utils`, `/database/messaging` | `Messages.tsx`, `useMessages.ts`, `messageQueries.ts` |
 | **Venues** | `/operator`, `/components/operator` | `VenueManagement.tsx`, `VenueCard.tsx`, `venues.sql` |
+| **Official Rulebook Reader** | `/rules`, `/officalBCARulebook/cleaned`, `/scripts/clean-rulebook` | `RulesPage.tsx`, `RuleDetailPage.tsx`, `useRulebook.ts`, `scripts/clean-rulebook.ts`, `rules_page_events.sql` |
+| **League House Rules** | `/rules` (reader overlay), `/rules/house/:scope/:scopeId/:ruleId`, `/league-rules/:orgId`, `/league-settings/:leagueId` (authoring) | `HouseRuleForm.tsx`, `HouseRulesList.tsx`, `HouseRuleDetailPage.tsx`, `LeagueHouseRulesSection.tsx`, `useHouseRules.ts`, `house_rules.sql`, `leagues_ignore_org_house_rules.sql` |
 | **Player Registration** | `/newPlayer` | `NewPlayerForm.tsx`, `usePlayerFormSubmission.ts` |
 | **Reporting** | `/operator`, `/pages`, `/database/reporting` | `ReportsManagement.tsx`, `AdminReports.tsx`, `user_reports.sql` |
 | **Wizards/Forms** | `/wizards`, `/components/wizard`, `/components/forms`, `/data`, `/flows` | `WizardFlowShell.tsx`, `createNewLeagueFlow.ts`, `seasonWizardSteps.tsx` |

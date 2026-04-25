@@ -23,7 +23,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 import { PendingInvitesModal } from '@/components/modals/PendingInvitesModal';
 import { ShareAppCard } from '@/components/ShareAppCard';
-import { Users, MessageSquare, Trophy, Building2, Settings, Radio } from 'lucide-react';
+import { Users, MessageSquare, Trophy, Building2, Settings, Radio, BookOpen } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
   const { user } = useUser();
@@ -162,6 +162,23 @@ export const Dashboard: React.FC = () => {
                   <div className="flex-1">
                     <h2 className="font-semibold text-lg text-gray-900">Player Settings</h2>
                     <p className="text-sm text-gray-600">Manage your profile and preferences</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          {/* Official Rules */}
+          <Link to="/rules">
+            <Card className="hover:shadow-md transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-amber-100 rounded-lg">
+                    <BookOpen className="h-6 w-6 text-amber-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="font-semibold text-lg text-gray-900">Official Rules</h2>
+                    <p className="text-sm text-gray-600">Browse the BCA / CSI rulebook — search any rule to settle a dispute</p>
                   </div>
                 </div>
               </CardContent>

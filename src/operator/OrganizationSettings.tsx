@@ -108,13 +108,13 @@ export const OrganizationSettings: React.FC = () => {
             onUpdate={() => refetchOrganization()}
           />
 
-          {/* League Rules Card */}
+          {/* House Rules Card — org-wide manager */}
           <DashboardCard
             icon={<BookOpen className="h-6 w-6" />}
             iconColor="text-teal-600"
-            title="League Rules"
-            description="Access official BCA rules and manage optional house rules for your leagues"
-            buttonText="View Rules"
+            title="House Rules"
+            description="Add rules that apply to every league in this organization"
+            buttonText="Manage Rules"
             linkTo={`/league-rules/${organization.id}`}
           />
 

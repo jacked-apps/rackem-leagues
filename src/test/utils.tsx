@@ -5,6 +5,7 @@
 import { render } from '@testing-library/react';
 import type { RenderOptions } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { UserContext } from '@/context/UserContext';
 import type { UserContextType } from '@/context/UserContext';
 import type { User } from '@supabase/supabase-js';
@@ -52,11 +53,20 @@ export function renderWithProviders(
     window.history.pushState({}, 'Test page', initialRoute);
   }
 
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false, gcTime: 0, staleTime: 0 },
+      mutations: { retry: false },
+    },
+  });
+
   function Wrapper({ children }: { children: React.ReactNode }) {
     return (
-      <UserContext.Provider value={defaultUserContext}>
-        <BrowserRouter>{children}</BrowserRouter>
-      </UserContext.Provider>
+      <QueryClientProvider client={queryClient}>
+        <UserContext.Provider value={defaultUserContext}>
+          <BrowserRouter>{children}</BrowserRouter>
+        </UserContext.Provider>
+      </QueryClientProvider>
     );
   }
 
