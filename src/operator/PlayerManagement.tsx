@@ -31,6 +31,7 @@ import { PlayerNameLink } from '@/components/PlayerNameLink';
 import { TeamNameLink } from '@/components/TeamNameLink';
 import { AuthorizeNewPlayersCard } from '@/components/operator/AuthorizeNewPlayersCard';
 import { PendingInvitesList } from '@/components/operator/PendingInvitesList';
+import { OrgPlaceholdersCard } from '@/operator/components/OrgPlaceholdersCard';
 import { RecordDuesModal } from '@/components/RecordDuesModal';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { Users, AlertCircle, Mail } from 'lucide-react';
@@ -772,6 +773,11 @@ export const PlayerManagement: React.FC = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* Placeholders (Phase E — LO merge surface). Listed here so LOs
+            can scan every placeholder in their org without leaving the
+            existing Player Management page. */}
+        {operatorId && <OrgPlaceholdersCard organizationId={operatorId} />}
       </div>
 
       {ConfirmDialogComponent}

@@ -14,6 +14,8 @@
  */
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -24,6 +26,9 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Users, Clock, UserCheck, AlertTriangle } from 'lucide-react';
+import { supabase } from '@/supabaseClient';
+import { logger } from '@/utils/logger';
+import { queryKeys } from '@/api/queryKeys';
 
 /** Pending invite data from get_my_pending_invites() */
 export interface PendingInvite {
@@ -31,8 +36,14 @@ export interface PendingInvite {
   member_id: string;
   placeholder_first_name: string;
   placeholder_last_name: string;
-  team_name: string;
+  team_name: string | null;
+  organization_name: string | null;
+  organization_owner_name: string | null;
   captain_name: string | null;
+  creator_name: string | null;
+  placeholder_nickname: string | null;
+  game_count: number | null;
+  starting_handicap_5v5: number | null;
   invited_at: string;
   expires_at: string;
   is_expired: boolean;
@@ -54,6 +65,7 @@ export const PendingInvitesModal: React.FC<PendingInvitesModalProps> = ({
   invites,
 }) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [claimingId, setClaimingId] = useState<string | null>(null);
 
   // Separate valid and expired invites
@@ -61,13 +73,65 @@ export const PendingInvitesModal: React.FC<PendingInvitesModalProps> = ({
   const expiredInvites = invites.filter((i) => i.is_expired);
 
   /**
-   * Navigate to claim page for a specific invite
+   * Claim the invite directly from the modal. The user has already seen
+   * all the context (team, org, creator, chips) right here — making them
+   * confirm again on /claim-player would be redundant. Fires the
+   * claim-placeholder Edge Function, shows a success toast on completion,
+   * and closes the modal. On failure, modal stays open so the user can
+   * try again or review details.
    */
-  const handleClaim = (invite: PendingInvite) => {
+  const handleClaim = async (invite: PendingInvite) => {
     setClaimingId(invite.member_id);
-    // Navigate to claim page with token
-    navigate(`/claim-player?claim=${invite.member_id}&token=${invite.token}`);
-    onClose();
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const jwt = sessionData?.session?.access_token;
+      if (!jwt) {
+        toast.error('Session expired. Please log in again.');
+        setClaimingId(null);
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/claim-placeholder`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${jwt}`,
+          },
+          body: JSON.stringify({
+            placeholderMemberId: invite.member_id,
+            token: invite.token,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        logger.error('Claim from modal failed', { status: response.status, result });
+        // Route to the /claim-player page with the token so the user can
+        // see the detailed error and try "This isn't me" if applicable.
+        toast.error(result.details || result.error || 'Could not claim invite — opening details');
+        navigate(`/claim-player?claim=${invite.member_id}&token=${invite.token}`);
+        onClose();
+        return;
+      }
+
+      toast.success('Player history claimed!');
+      // Invalidate so dashboard reflects the new state (invites gone,
+      // profile reflects the merged data).
+      queryClient.invalidateQueries({ queryKey: queryKeys.invites.pending() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.members.all });
+      onClose();
+    } catch (err) {
+      logger.error('Network error during modal claim', { error: err });
+      toast.error('Network error — opening details so you can retry');
+      navigate(`/claim-player?claim=${invite.member_id}&token=${invite.token}`);
+      onClose();
+    } finally {
+      setClaimingId(null);
+    }
   };
 
   /**
@@ -104,19 +168,79 @@ export const PendingInvitesModal: React.FC<PendingInvitesModalProps> = ({
               className="border rounded-lg p-3 bg-blue-50 border-blue-200"
             >
               <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-blue-900 truncate">
-                    {invite.team_name}
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  {/* Fixed call-to-action headline so the card's purpose
+                      is instantly clear regardless of which fields are
+                      populated. Team name gets its own labeled row below. */}
+                  <p className="font-medium text-blue-900">
+                    You've been invited
                   </p>
+
+                  {/* Team — labeled so users recognize it as a team, not
+                      mistake it for a headline. Falls back to "No team yet"
+                      for auto-invites without team context. */}
                   <p className="text-sm text-blue-700">
-                    {invite.captain_name
-                      ? `Invited by ${invite.captain_name}`
-                      : 'Team invite'}
+                    <span className="text-blue-600">Team:</span>{' '}
+                    <span className="font-medium">
+                      {invite.team_name ?? 'No team yet'}
+                    </span>
                   </p>
-                  <p className="text-xs text-blue-600 mt-1">
-                    Profile: {invite.placeholder_first_name}{' '}
+
+                  {/* Organization */}
+                  {invite.organization_name && (
+                    <p className="text-sm text-blue-700">
+                      <span className="text-blue-600">Organization:</span>{' '}
+                      <span className="font-medium">{invite.organization_name}</span>
+                    </p>
+                  )}
+
+                  {/* Attribution — captain who explicitly invited, else creator. */}
+                  {(invite.captain_name || invite.creator_name) && (
+                    <p className="text-sm text-blue-700">
+                      <span className="text-blue-600">
+                        {invite.captain_name ? 'Invited by:' : 'Created by:'}
+                      </span>{' '}
+                      <span className="font-medium">
+                        {invite.captain_name ?? invite.creator_name}
+                      </span>
+                    </p>
+                  )}
+
+                  {/* Profile identity line — name + nickname if set */}
+                  <p className="text-xs text-blue-600 pt-0.5">
+                    Profile: {invite.placeholder_first_name}
+                    {invite.placeholder_nickname
+                      ? ` "${invite.placeholder_nickname}"`
+                      : ''}{' '}
                     {invite.placeholder_last_name}
                   </p>
+
+                  {/* Stats row — games played + starting handicap. Chips
+                      only render when the underlying data is present. */}
+                  {(invite.game_count !== null || invite.starting_handicap_5v5 !== null) && (
+                    <div className="flex flex-wrap gap-1 pt-1">
+                      {invite.game_count !== null && (
+                        <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-800">
+                          {invite.game_count === 0
+                            ? 'No games played yet'
+                            : `${invite.game_count} game${invite.game_count === 1 ? '' : 's'} played`}
+                        </span>
+                      )}
+                      {invite.starting_handicap_5v5 !== null && (
+                        <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-800">
+                          Handicap {invite.starting_handicap_5v5}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Org-owner line for trust — "run by X" so the invited
+                      user knows whose organization they're joining. */}
+                  {invite.organization_owner_name && (
+                    <p className="text-xs text-blue-600 pt-0.5 italic">
+                      Run by {invite.organization_owner_name}
+                    </p>
+                  )}
                 </div>
                 <Button
                   size="sm"
@@ -151,7 +275,7 @@ export const PendingInvitesModal: React.FC<PendingInvitesModalProps> = ({
                     <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-amber-900 truncate">
-                        {invite.team_name}
+                        {invite.team_name ?? 'Pending player claim'}
                       </p>
                       <p className="text-sm text-amber-700">
                         Invite expired {formatDate(invite.expires_at)}
