@@ -434,14 +434,16 @@ export function MatchLineup() {
   ]);
 
   // Compute the discriminated match-prep blocker. null = ready for Step 3.
+  // Fargo confirmations are now tracked in *_games_to_lose (captain's
+  // system_player_number) rather than dedicated columns.
   const prepBlockedReason = useMemo(
     () => computePrepBlockedReason({
       myLineup: myLineupRow,
       opponentLineup: opponentLineup ?? null,
       lineupSize: playerCount,
       handicapType,
-      confirmedByHome: matchData?.fargo_start_points_confirmed_by_home ?? null,
-      confirmedByAway: matchData?.fargo_start_points_confirmed_by_away ?? null,
+      homeGamesToLose: matchData?.home_games_to_lose ?? null,
+      awayGamesToLose: matchData?.away_games_to_lose ?? null,
       isHomeTeam,
     }),
     [
@@ -449,8 +451,8 @@ export function MatchLineup() {
       opponentLineup,
       playerCount,
       handicapType,
-      matchData?.fargo_start_points_confirmed_by_home,
-      matchData?.fargo_start_points_confirmed_by_away,
+      matchData?.home_games_to_lose,
+      matchData?.away_games_to_lose,
       isHomeTeam,
     ]
   );
@@ -522,16 +524,17 @@ export function MatchLineup() {
 
   const fargoNegotiation = useFargoStartPointsNegotiation({
     matchId,
-    memberId: memberId ?? null,
+    memberPlayerNumber: member?.system_player_number ?? null,
     isHomeTeam,
     handicapType,
     bothLineupsReady: bothLineupsReadyForFargo,
     homeRatings: homeRatingsForFargo,
     awayRatings: awayRatingsForFargo,
     lineupSize: playerCount,
-    fargoStartPoints: matchData?.fargo_start_points ?? null,
-    confirmedByHome: matchData?.fargo_start_points_confirmed_by_home ?? null,
-    confirmedByAway: matchData?.fargo_start_points_confirmed_by_away ?? null,
+    homeGamesToTie: matchData?.home_games_to_tie ?? null,
+    awayGamesToTie: matchData?.away_games_to_tie ?? null,
+    homeGamesToLose: matchData?.home_games_to_lose ?? null,
+    awayGamesToLose: matchData?.away_games_to_lose ?? null,
     systemOverrides: leaguePrefs?.system_overrides,
     refetchMatch: matchQuery.refetch,
   });

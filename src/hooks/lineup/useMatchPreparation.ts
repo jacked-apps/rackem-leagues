@@ -11,7 +11,6 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/supabaseClient';
 import { calculateHandicapThresholds } from '@/utils/calculateHandicapThresholds';
 import { generateGameOrder } from '@/utils/gameOrder';
-import { fargo5v5 } from '@/systems/fargo5v5';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
 import type { SystemOverrides } from '@/types/systemOverrides';
@@ -79,7 +78,6 @@ export function useMatchPreparation(params: MatchPreparationParams) {
     isHomeTeam,
     lineupSize,
     handicapType,
-    systemOverrides,
     blockedReason,
     gameGeneration,
     currentGamesCount,
@@ -211,55 +209,22 @@ export function useMatchPreparation(params: MatchPreparationParams) {
         // Compute threshold payload per handicap system.
         let thresholdPayload: Record<string, number | null>;
         if (handicapType === 'fargo') {
-          // Fargo: weaker team (from lineup ratings) receives the agreed
-          // start-points value. Negotiation already confirmed the value.
-          const homeLineup = isHomeTeam ? myLineup : opponentLineup;
-          const awayLineup = isHomeTeam ? opponentLineup : myLineup;
-          const gatherRatings = (ln: Record<string, unknown> | null | undefined): number[] => {
-            const out: number[] = [];
-            for (let i = 1; i <= lineupSize; i++) {
-              const r = Number(ln?.[`player${i}_handicap`]);
-              if (Number.isFinite(r) && r > 0) out.push(r);
-            }
-            return out;
-          };
-          const homeRatings = gatherRatings(homeLineup);
-          const awayRatings = gatherRatings(awayLineup);
-
-          let startPointsValue: number | null = matchData?.fargo_start_points ?? null;
-          let weakerTeam: 'home' | 'away' | 'even' | null = null;
-
-          if (homeRatings.length === lineupSize && awayRatings.length === lineupSize) {
-            if (fargo5v5.threshold.mode !== 'start_points') {
-              throw new Error('fargo5v5 threshold must be start_points mode');
-            }
-            const computed = fargo5v5.threshold.compute(
-              homeRatings,
-              awayRatings,
-              systemOverrides ?? {}
-            );
-            weakerTeam = computed.weakerTeam;
-            if (startPointsValue === null) {
-              startPointsValue = computed.startPointsForWeakerTeam;
-            }
-          } else {
-            // Defensive: negotiation gate should have blocked us.
-            logger.error('Fargo prep without complete ratings', {
-              matchId,
-              homeRatingsCount: homeRatings.length,
-              awayRatingsCount: awayRatings.length,
-              expected: lineupSize,
-            });
-            startPointsValue = startPointsValue ?? 0;
-          }
-
+          // Fargo: by this point the negotiation has already written the agreed
+          // start points to the weaker team's *_games_to_tie and stamped both
+          // *_games_to_lose with confirming captain numbers (that's what gated
+          // us through blockedReason). prep_match only needs to fill in the
+          // race target on *_games_to_win; we leave to_tie / to_lose untouched.
+          //
+          // TODO: pull race target from prefs once Fargo race-to-N becomes
+          // configurable. 10 is the standard Fargo 5v5 race today.
+          const FARGO_RACE_TARGET = 10;
           thresholdPayload = {
-            home_games_to_win: weakerTeam === 'home' ? (startPointsValue ?? 0) : 0,
-            home_games_to_tie: null,
-            home_games_to_lose: null,
-            away_games_to_win: weakerTeam === 'away' ? (startPointsValue ?? 0) : 0,
-            away_games_to_tie: null,
-            away_games_to_lose: null,
+            home_games_to_win: FARGO_RACE_TARGET,
+            home_games_to_tie: matchData?.home_games_to_tie ?? null,
+            home_games_to_lose: matchData?.home_games_to_lose ?? null,
+            away_games_to_win: FARGO_RACE_TARGET,
+            away_games_to_tie: matchData?.away_games_to_tie ?? null,
+            away_games_to_lose: matchData?.away_games_to_lose ?? null,
           };
         } else {
           const { homeThresholds, awayThresholds } = await calculateHandicapThresholds(

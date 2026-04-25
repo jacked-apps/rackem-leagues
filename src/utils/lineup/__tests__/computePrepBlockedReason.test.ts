@@ -33,8 +33,8 @@ describe('computePrepBlockedReason', () => {
       opponentLineup: fullRealLineup('a', 5),
       lineupSize: 5,
       handicapType: 'fargo',
-      confirmedByHome: 'captain-h',
-      confirmedByAway: 'captain-a',
+      homeGamesToLose: 12345,
+      awayGamesToLose: 67890,
       isHomeTeam: true,
     });
     expect(result).toBeNull();
@@ -46,8 +46,8 @@ describe('computePrepBlockedReason', () => {
       opponentLineup: fullRealLineup('a', 5),
       lineupSize: 5,
       handicapType: 'fargo',
-      confirmedByHome: 'captain-h',
-      confirmedByAway: null,
+      homeGamesToLose: 12345,
+      awayGamesToLose: null,
       isHomeTeam: true,
     });
     expect(result?.kind).toBe('fargo_pending');
@@ -129,8 +129,8 @@ describe('computePrepBlockedReason', () => {
       opponentLineup: fullRealLineup('a', 5),
       lineupSize: 5,
       handicapType: 'fargo',
-      confirmedByHome: null,
-      confirmedByAway: null,
+      homeGamesToLose: null,
+      awayGamesToLose: null,
       isHomeTeam: true,
     });
     expect(result?.kind).toBe('lineup_incomplete');
@@ -143,8 +143,8 @@ describe('computePrepBlockedReason', () => {
       opponentLineup: oppRow,
       lineupSize: 5,
       handicapType: 'fargo',
-      confirmedByHome: null,
-      confirmedByAway: null,
+      homeGamesToLose: null,
+      awayGamesToLose: null,
       isHomeTeam: true,
     });
     expect(result?.kind).toBe('waiting_on_sub_resolution');
@@ -167,19 +167,19 @@ describe('computePrepBlockedReason', () => {
   });
 
   it('is isHomeTeam-aware for the Fargo confirm labels', () => {
-    // As AWAY team, my confirm is confirmedByAway.
+    // As AWAY team, my confirm is awayGamesToLose.
     const result = computePrepBlockedReason({
       myLineup: fullRealLineup('h', 5),
       opponentLineup: fullRealLineup('a', 5),
       lineupSize: 5,
       handicapType: 'fargo',
-      confirmedByHome: null,
-      confirmedByAway: 'captain-a',
+      homeGamesToLose: null,
+      awayGamesToLose: 67890,
       isHomeTeam: false,
     });
     expect(result?.kind).toBe('fargo_pending');
     if (result?.kind === 'fargo_pending') {
-      expect(result.myConfirmed).toBe(true); // I'm away, confirmedByAway is set
+      expect(result.myConfirmed).toBe(true); // I'm away, awayGamesToLose is set
       expect(result.oppConfirmed).toBe(false);
     }
   });

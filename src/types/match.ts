@@ -61,6 +61,24 @@ export interface MatchWithLeagueSettings {
   away_team_verified_by?: string | null;
   home_tiebreaker_verified_by?: string | null;
   away_tiebreaker_verified_by?: string | null;
+  /**
+   * Six threshold columns whose semantics depend on the league's
+   * handicap_type. The columns themselves are reused across systems — no
+   * Fargo-specific columns exist on `matches`.
+   *
+   * BCA points / percentage:
+   *   *_games_to_win  = games each team needs to WIN
+   *   *_games_to_tie  = games each team needs to TIE
+   *   *_games_to_lose = games above which loss is locked
+   *
+   * Fargo:
+   *   *_games_to_win  = race target (e.g. 10) — same for both teams
+   *   *_games_to_tie  = start points the weaker team needs to tie expected
+   *                      output (only weaker team's is non-zero)
+   *   *_games_to_lose = confirming captain's `system_player_number` during
+   *                      start-points negotiation (NULL = not confirmed;
+   *                      both non-null = both captains confirmed → match prep fires)
+   */
   home_games_to_win: number | null;
   home_games_to_tie: number | null;
   home_games_to_lose: number | null;
@@ -68,26 +86,8 @@ export interface MatchWithLeagueSettings {
   away_games_to_tie: number | null;
   away_games_to_lose: number | null;
   /**
-   * Fargo start-points negotiation (Unit 11c). Captains must agree on the
-   * start-points value before the scoring page opens. `fargo_start_points`
-   * holds the current proposed or agreed value; the two confirm columns
-   * track which captain(s) have accepted it. Editing the value clears both
-   * confirms. Once both are non-null, the value is copied to the weaker
-   * team's home_games_to_win / away_games_to_win and match preparation
-   * runs. NULL on non-Fargo matches (and on Fargo matches before the first
-   * proposal is written).
-   */
-  fargo_start_points: number | null;
-  fargo_start_points_confirmed_by_home: string | null;
-  fargo_start_points_confirmed_by_away: string | null;
-  /**
    * Tier 3 snapshot (added by migration 20260418000003). NULL for unstarted or legacy matches.
    * Populated at scheduled → in_progress transition; scoring reads from this, not live league data.
-   *
-   * Note: Fargo start-points for the weaker team are stored directly in
-   * home_games_to_win / away_games_to_win (per-system semantic — BCA's "games needed to win"
-   * and Fargo's "start points awarded" share the shape and column family; handicap_type
-   * tells code how to interpret them).
    */
   system_snapshot: MatchSystemSnapshot | null;
   assigned_table_number: number | null;

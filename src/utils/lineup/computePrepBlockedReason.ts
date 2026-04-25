@@ -33,9 +33,13 @@ export interface ComputePrepBlockedReasonParams {
   opponentLineup: LineupRowLike | null | undefined;
   lineupSize: number;
   handicapType: string;
-  /** Fargo state — ignored when handicapType !== 'fargo'. */
-  confirmedByHome?: string | null;
-  confirmedByAway?: string | null;
+  /**
+   * Fargo confirmation tracking — ignored when handicapType !== 'fargo'.
+   * Each captain stamps their `system_player_number` into their side's
+   * `*_games_to_lose` when they confirm. Both non-null = both confirmed.
+   */
+  homeGamesToLose?: number | null;
+  awayGamesToLose?: number | null;
   /** Which side is "me" — used to label Fargo confirm flags. */
   isHomeTeam: boolean;
 }
@@ -48,8 +52,8 @@ export function computePrepBlockedReason(
     opponentLineup,
     lineupSize,
     handicapType,
-    confirmedByHome,
-    confirmedByAway,
+    homeGamesToLose,
+    awayGamesToLose,
     isHomeTeam,
   } = params;
 
@@ -71,9 +75,15 @@ export function computePrepBlockedReason(
   }
 
   // Step 2 — Fargo agreement (other systems skip this step entirely).
+  // Confirmation = captain's system_player_number written to their
+  // side's *_games_to_lose. Both non-null = both confirmed.
   if (handicapType === 'fargo') {
-    const myConfirmed = isHomeTeam ? !!confirmedByHome : !!confirmedByAway;
-    const oppConfirmed = isHomeTeam ? !!confirmedByAway : !!confirmedByHome;
+    const myConfirmed = isHomeTeam
+      ? homeGamesToLose !== null && homeGamesToLose !== undefined
+      : awayGamesToLose !== null && awayGamesToLose !== undefined;
+    const oppConfirmed = isHomeTeam
+      ? awayGamesToLose !== null && awayGamesToLose !== undefined
+      : homeGamesToLose !== null && homeGamesToLose !== undefined;
     if (!myConfirmed || !oppConfirmed) {
       return { kind: 'fargo_pending', myConfirmed, oppConfirmed };
     }
