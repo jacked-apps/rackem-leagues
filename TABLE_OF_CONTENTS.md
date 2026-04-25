@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-04-21 (added League House Rules feature on top of the rulebook reader — LO authoring UI, league/org scoped rules with cascade + pure-CSI opt-out, `house_rules` migration, dev bootstrap SQL fixtures)
+> **Last Updated**: 2026-04-25 (added Player Name Display brainstorm — universal name-display component system, replaces 559-line PlayerNameLink, normalizes PP and Captain badges, mobile-aware viewport detection, peers-prop collision disambiguation)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -48,6 +48,7 @@
 | `docs/LEAGUE_MANAGEMENT_PLAN.md` | League management system architecture | System hierarchy and database schema |
 | `/docs/brainstorms/` | **CE brainstorm requirements docs** | Output of `/compound-engineering:ce-brainstorm` |
 | `docs/brainstorms/official-rulebook-reader-requirements.md` | Requirements for the Official Rulebook Reader feature | Branch 1 of the rules-feature family |
+| `docs/brainstorms/player-name-display-requirements.md` | Requirements for the universal Player Name display component system | Active branch `feat/player-name-display` |
 | `/docs/plans/` | **CE implementation plans** | Output of `/compound-engineering:ce-plan` |
 | `docs/plans/2026-04-17-001-feat-official-rulebook-reader-plan.md` | Implementation plan for the Official Rulebook Reader | 6 units, active branch `feature/official-rulebook-reader` |
 
