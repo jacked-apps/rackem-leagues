@@ -73,8 +73,8 @@ export const UnmergePlayerDialog: React.FC<UnmergePlayerDialogProps> = ({
   );
 
   const { data: allMembers = [] } = useQuery({
-    queryKey: queryKeys.members.all,
-    queryFn: () => getAllMembers(),
+    queryKey: [...queryKeys.members.all, 'org', organizationId],
+    queryFn: () => getAllMembers(organizationId),
     enabled: open,
   });
 
