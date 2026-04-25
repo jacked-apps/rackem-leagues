@@ -89,7 +89,7 @@ export function PageHeader({ backTo, backLabel, onBackClick, hideBack = false, p
         {preTitle && (
           <p className="text-xl font-bold text-gray-700">{preTitle}</p>
         )}
-        <div className="text-2xl lg:text-4xl font-semibold text-gray-900">{title}</div>
+        <h1 className="text-2xl lg:text-4xl font-semibold text-gray-900">{title}</h1>
         {subtitle && (
           <p className="text-md lg:text-xl text-gray-600">{subtitle}</p>
         )}
