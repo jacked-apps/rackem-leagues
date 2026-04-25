@@ -31,14 +31,12 @@ dist-ssr
 # Database backups (contain sensitive auth data)
 database_backups/
 
-# Playwright — generated artifacts from test runs
-playwright-report/
-test-results/
-
-# Playwright — saved auth state contains session cookies/tokens, never commit
-tests/e2e/.auth/
-
-# Per-user Claude Code settings — local-only, should not be committed.
-# (Project-wide Claude config can still live under .claude/ as long as
-# it's named something other than settings.local.json.)
+# Claude Code per-developer settings (permissions, approvals)
+# Shared .claude/settings.json stays tracked; this local override does not.
 .claude/settings.local.json
+
+# Playwright E2E test outputs and auth state
+/test-results/
+/playwright-report/
+/playwright/.cache/
+/tests/e2e/.auth/
