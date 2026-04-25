@@ -25,6 +25,7 @@ import type { PartialMember } from '@/types/member';
 import { getPlayerDisplayName, isPlaceholderMember } from '@/types/member';
 import { logger } from '@/utils/logger';
 import { CreatePlaceholderModal } from '@/components/CreatePlaceholderModal';
+import { PlaceholderBadge } from '@/components/PlaceholderBadge';
 
 interface MemberComboboxProps {
   /** List of members to choose from (only needs id, name, player number) */
@@ -130,9 +131,14 @@ export const MemberCombobox: React.FC<MemberComboboxProps> = ({
               disabled={disabled}
               className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <span className="truncate">
+              <span className="truncate flex items-center gap-1.5">
                 {selectedMember
-                  ? getPlayerDisplayName(selectedMember)
+                  ? (
+                    <>
+                      <span className="truncate">{getPlayerDisplayName(selectedMember)}</span>
+                      {isPlaceholderMember(selectedMember) && <PlaceholderBadge size="sm" />}
+                    </>
+                  )
                   : placeholder}
               </span>
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -200,7 +206,10 @@ export const MemberCombobox: React.FC<MemberComboboxProps> = ({
                         setOpen(false);
                       }}
                     >
-                      {getPlayerDisplayName(member)}
+                      <span className="flex items-center gap-1.5">
+                        {getPlayerDisplayName(member)}
+                        {isPlaceholderMember(member) && <PlaceholderBadge size="sm" />}
+                      </span>
                       <Check
                         className={`ml-auto h-4 w-4 ${
                           member.id === value ? 'opacity-100' : 'opacity-0'

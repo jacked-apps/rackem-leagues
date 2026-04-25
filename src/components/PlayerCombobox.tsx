@@ -22,7 +22,8 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import type { PartialMember } from '@/types/member';
-import { getPlayerDisplayName } from '@/types/member';
+import { getPlayerDisplayName, isPlaceholderMember } from '@/types/member';
+import { PlaceholderBadge } from '@/components/PlaceholderBadge';
 import { fetchOperatorPlayers } from '@/api/queries/players';
 import { useAllMembers } from '@/api/hooks';
 
@@ -190,10 +191,13 @@ export const PlayerCombobox: React.FC<PlayerComboboxProps> = ({
               disabled={disabled}
               className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <span className="truncate">
-                {selectedPlayer
-                  ? getPlayerDisplayName(selectedPlayer)
-                  : placeholder}
+              <span className="truncate flex items-center gap-1.5">
+                {selectedPlayer ? (
+                  <>
+                    <span className="truncate">{getPlayerDisplayName(selectedPlayer)}</span>
+                    {isPlaceholderMember(selectedPlayer) && <PlaceholderBadge size="sm" />}
+                  </>
+                ) : placeholder}
               </span>
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </button>
@@ -242,7 +246,10 @@ export const PlayerCombobox: React.FC<PlayerComboboxProps> = ({
                           setOpen(false);
                         }}
                       >
-                        {getPlayerDisplayName(player)}
+                        <span className="flex items-center gap-1.5">
+                          {getPlayerDisplayName(player)}
+                          {isPlaceholderMember(player) && <PlaceholderBadge size="sm" />}
+                        </span>
                         <Check
                           className={`ml-auto h-4 w-4 ${
                             player.id === value ? 'opacity-100' : 'opacity-0'
