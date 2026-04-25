@@ -58,8 +58,8 @@ export const AttachPlaceholderDialog: React.FC<AttachPlaceholderDialogProps> = (
   // getAllMembers returns PartialMember rows that carry user_id — we use
   // it to keep placeholders out of the target picker.
   const { data: allMembers = [] } = useQuery({
-    queryKey: queryKeys.members.all,
-    queryFn: () => getAllMembers(),
+    queryKey: [...queryKeys.members.all, 'org', organizationId],
+    queryFn: () => getAllMembers(organizationId),
     enabled: open,
   });
 

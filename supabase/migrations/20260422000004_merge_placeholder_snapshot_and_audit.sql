@@ -6,13 +6,21 @@
 --
 -- Compatibility: the existing merge_placeholder_into_member (v1) is
 -- INTENTIONALLY LEFT IN PLACE. Migrating the sole caller (the
--- claim-placeholder Edge Function) to v2 is a separate change (Unit 12).
--- v1 can be dropped in a follow-up migration once all callers have moved.
+-- claim-placeholder Edge Function) to v2 is part of this branch (Unit 12
+-- in the plan). v1 can be dropped in a follow-up migration once all
+-- callers have moved.
 --
 -- Parameters added (all server-resolved from JWT by the calling Edge
 -- Function — never accepted from client request bodies, which would let a
 -- valid LO falsify audit rows or spoof another org):
 --   p_actor_member_id, p_actor_role, p_organization_id
+--
+-- Org-scope check accepts EITHER:
+--   - members.organization_id matches p_organization_id (set by the
+--     creation trigger for new placeholders), OR
+--   - the placeholder is on a team in the org (legacy chain, still
+--     valid for placeholders that predate the column)
+-- Both are legitimate ownership signals.
 --
 -- Transferred-rows structure (the undo lookup index for Unit 5):
 --   Entry A: {t: <table>, id: <uuid>, c: <column>, op: 'rewritten'}
@@ -72,8 +80,7 @@ DECLARE
   v_conflict_match_ids   UUID[];
 BEGIN
   -- ========================================================================
-  -- VALIDATE actor_role (server-resolved; defensive check against bad Edge
-  -- Function configuration)
+  -- VALIDATE actor_role
   -- ========================================================================
   IF p_actor_role NOT IN ('invite_accept', 'lo_initiated') THEN
     RETURN QUERY SELECT FALSE, NULL::UUID, 0, 0,
@@ -85,7 +92,6 @@ BEGIN
   -- VALIDATE placeholder
   -- ========================================================================
   SELECT user_id INTO v_pp_user_id FROM members WHERE id = p_placeholder_member_id;
-
   IF NOT FOUND THEN
     RETURN QUERY SELECT FALSE, NULL::UUID, 0, 0, 'Placeholder member not found'::TEXT;
     RETURN;
@@ -100,7 +106,6 @@ BEGIN
   -- VALIDATE target
   -- ========================================================================
   SELECT user_id INTO v_target_user_id FROM members WHERE id = p_target_member_id;
-
   IF NOT FOUND THEN
     RETURN QUERY SELECT FALSE, NULL::UUID, 0, 0, 'Target member not found'::TEXT;
     RETURN;
@@ -117,19 +122,25 @@ BEGIN
   END IF;
 
   -- ========================================================================
-  -- VALIDATE org scope — the placeholder must belong to p_organization_id
-  -- via at least one team chain. Belt-and-suspenders alongside the Edge
-  -- Function's caller-authz check.
+  -- VALIDATE org scope — accept either members.organization_id (set by
+  -- the creation trigger for new placeholders) OR a team-chain match
+  -- (legacy placeholders that predate the column). Both are legitimate
+  -- ownership signals.
   -- ========================================================================
   IF NOT EXISTS (
-    SELECT 1
-    FROM team_players tp
-    JOIN teams     t ON t.id = tp.team_id
-    JOIN seasons   s ON s.id = t.season_id
-    JOIN leagues   l ON l.id = s.league_id
-    WHERE tp.member_id = p_placeholder_member_id
-      AND l.organization_id = p_organization_id
-  ) THEN
+       SELECT 1 FROM members
+       WHERE id = p_placeholder_member_id
+         AND organization_id = p_organization_id
+     )
+     AND NOT EXISTS (
+       SELECT 1
+       FROM team_players tp
+       JOIN teams     t ON t.id = tp.team_id
+       JOIN seasons   s ON s.id = t.season_id
+       JOIN leagues   l ON l.id = s.league_id
+       WHERE tp.member_id = p_placeholder_member_id
+         AND l.organization_id = p_organization_id
+     ) THEN
     RETURN QUERY SELECT FALSE, NULL::UUID, 0, 0,
       format('Placeholder %s is not in organization %s',
              p_placeholder_member_id, p_organization_id)::TEXT;
@@ -138,8 +149,6 @@ BEGIN
 
   -- ========================================================================
   -- COLLISION: same-match, placeholder AND target both in lineup
-  -- Must be detected BEFORE any rewrite — otherwise the UPDATE step would
-  -- create two of the same member in one lineup, corrupting stats.
   -- ========================================================================
   SELECT array_agg(DISTINCT ml_p.match_id)
   INTO v_conflict_match_ids
@@ -166,10 +175,6 @@ BEGIN
 
   -- ========================================================================
   -- SPECIAL: team_players (copy+delete; track both sides for undo)
-  -- team_players has a natural uniqueness of (team_id, season_id, member_id),
-  -- so a plain UPDATE would violate it when the target is already on a team
-  -- the placeholder was also on. We keep v1's copy-then-delete approach and
-  -- log both operations so undo can reverse cleanly.
   -- ========================================================================
   FOR v_tp_rec IN
     SELECT tp.* FROM team_players tp WHERE tp.member_id = p_placeholder_member_id
@@ -211,9 +216,7 @@ BEGIN
   END IF;
 
   -- ========================================================================
-  -- SCHEMA-AWARE: all other member-referencing FKs (match_lineups player1-5,
-  -- matches.swap_new_player_id, message participants, verifier columns, etc.)
-  -- For each target column: collect row ids (for undo), then rewrite.
+  -- SCHEMA-AWARE: all other member-referencing FKs
   -- ========================================================================
   FOR v_fk_record IN
     SELECT tc.table_schema, tc.table_name, kcu.column_name
@@ -230,12 +233,6 @@ BEGIN
       AND NOT (tc.table_name = 'invite_tokens' AND kcu.column_name = 'member_id')  -- audit breadcrumb
       AND NOT (tc.table_name = 'archived_placeholders')                         -- archive rows never merge
       AND NOT (tc.table_name = 'placeholder_audit_log')                         -- audit log never merges
-      -- Only rewrite tables that have a simple `id` primary key. Composite-PK
-      -- tables (blocked_users, conversation_participants, etc.) are all
-      -- user-account-only features today — a placeholder, by definition, has
-      -- no rows in them. If a future composite-PK table holds
-      -- placeholder-relevant data, this loop needs an extension to record
-      -- full row data in transferred_rows so undo can delete+reinsert.
       AND EXISTS (
         SELECT 1 FROM information_schema.columns col
         WHERE col.table_schema = tc.table_schema
@@ -243,7 +240,6 @@ BEGIN
           AND col.column_name  = 'id'
       )
   LOOP
-    -- Collect row ids scheduled for rewrite
     v_sql := format(
       'SELECT jsonb_agg(jsonb_build_object(''t'', %L, ''id'', id, ''c'', %L, ''op'', ''rewritten''))
        FROM %I.%I WHERE %I = $1',
@@ -259,7 +255,6 @@ BEGIN
       v_transferred_rows := v_transferred_rows || v_batch_rewrites;
     END IF;
 
-    -- Rewrite
     v_sql := format(
       'UPDATE %I.%I SET %I = $1 WHERE %I = $2',
       v_fk_record.table_schema, v_fk_record.table_name,
@@ -277,16 +272,15 @@ BEGIN
   END LOOP;
 
   -- ========================================================================
-  -- invite_tokens: mark any pending invites as claimed, preserve member_id
-  -- (audit breadcrumb). Not tracked in transferred_rows — status change, not
-  -- a member_id rewrite.
+  -- invite_tokens: mark any pending invites as claimed (audit breadcrumb,
+  -- not a member_id rewrite — kept out of transferred_rows)
   -- ========================================================================
   UPDATE invite_tokens
   SET status = 'claimed', claimed_by_user_id = v_target_user_id, claimed_at = now()
   WHERE member_id = p_placeholder_member_id AND status = 'pending';
 
   -- ========================================================================
-  -- WRITE archive row
+  -- Archive snapshot
   -- ========================================================================
   INSERT INTO archived_placeholders (
     placeholder_member_id, target_member_id, organization_id,
@@ -300,12 +294,12 @@ BEGIN
   RETURNING id INTO v_archive_id;
 
   -- ========================================================================
-  -- DELETE the placeholder — any surviving FK surfaces here as a clear error.
+  -- Delete placeholder (FK violations here surface as clear errors)
   -- ========================================================================
   DELETE FROM members WHERE id = p_placeholder_member_id;
 
   -- ========================================================================
-  -- WRITE audit row
+  -- Audit row
   -- ========================================================================
   INSERT INTO placeholder_audit_log (
     action, actor_member_id, placeholder_member_id, target_member_id,
@@ -326,7 +320,6 @@ EXCEPTION
 END;
 $$;
 
--- Only Edge Functions (service_role) may call this. Never exposed to client.
 GRANT EXECUTE ON FUNCTION merge_placeholder_into_member_v2 TO service_role;
 
 COMMENT ON FUNCTION merge_placeholder_into_member_v2 IS

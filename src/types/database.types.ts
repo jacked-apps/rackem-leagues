@@ -1554,13 +1554,6 @@ export type Database = {
             referencedRelation: "members"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "report_actions_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "user_reports"
-            referencedColumns: ["id"]
-          },
         ]
       }
       report_updates: {
@@ -1595,13 +1588,6 @@ export type Database = {
           updater_role?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "report_updates_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "user_reports"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "report_updates_updater_id_fkey"
             columns: ["updater_id"]

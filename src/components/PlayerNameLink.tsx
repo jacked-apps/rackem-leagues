@@ -25,6 +25,7 @@ import { useMemberId, useMemberById, useCreateOrOpenConversation, useBlockUser, 
 import { queryKeys } from '@/api/queryKeys';
 import { ReportUserModal } from '@/components/ReportUserModal';
 import { InvitePlayerModal } from '@/components/InvitePlayerModal';
+import { PlaceholderBadge } from '@/components/PlaceholderBadge';
 import { RecordDuesModal } from '@/components/RecordDuesModal';
 import { ConfirmDialog } from '@/components/shared';
 import { logger } from '@/utils/logger';
@@ -299,19 +300,28 @@ export function PlayerNameLink({
         <PopoverTrigger asChild>
           <button
             className={cn(
-              'text-blue-600 hover:text-blue-800 hover:underline cursor-pointer font-medium transition-colors',
+              'text-blue-600 hover:text-blue-800 hover:underline cursor-pointer font-medium transition-colors inline-flex items-center gap-1.5',
               className
             )}
           >
-            {playerName}
+            <span>{playerName}</span>
+            {/* Universal "Placeholder" tag rendered everywhere a player's
+                name renders through PlayerNameLink. Single source of
+                truth for the visual marker — every roster, lineup,
+                scoring screen, etc. gets it for free. memberData may
+                still be loading; isPlaceholder defaults to false until
+                we know, so the badge fades in once the lookup resolves
+                rather than flashing on first render. */}
+            {isPlaceholder && <PlaceholderBadge size="sm" />}
           </button>
         </PopoverTrigger>
         <PopoverContent className="w-56 p-0" align="start">
           <div className="flex flex-col">
             {/* Player Full Name Header */}
             <div className="px-4 py-3 border-b bg-gray-50">
-              <div className="font-semibold text-gray-900">
-                {playerFullName || playerName}
+              <div className="font-semibold text-gray-900 inline-flex items-center gap-1.5">
+                <span>{playerFullName || playerName}</span>
+                {isPlaceholder && <PlaceholderBadge size="sm" />}
               </div>
               {isPlaceholder && (
                 <div className="text-xs text-amber-600 mt-1">

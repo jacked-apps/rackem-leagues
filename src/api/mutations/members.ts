@@ -39,16 +39,20 @@ export interface CreatePlaceholderMemberParams {
   first_name: string;
   last_name: string;
   nickname: string;
-  city: string;
-  state: string;
+  /** Optional — defaults to '' if not supplied. LO can edit later. */
+  city?: string;
+  /** Optional — defaults to '' if not supplied. LO can edit later. */
+  state?: string;
   /** Starting handicap for 8-ball/3v3 formats (0-100). Default: 0 */
   starting_handicap_3v3?: number;
   /** Starting handicap for 5v5 formats (0-100). Default: 40 */
   starting_handicap_5v5?: number;
   /**
    * Optional email for the placeholder player.
-   * If provided, allows the PP to be used on multiple teams (same person verified by email).
-   * If not provided, PP can only be on a single team.
+   * If provided, the trigger auto-creates an invite_token. Callers who
+   * have team context (captain/LO inviting to a specific team) should
+   * also fire send-invite for email delivery; flows without team context
+   * (wizard captain pick) leave delivery to a later explicit action.
    */
   email?: string;
 }
@@ -371,12 +375,9 @@ export async function createPlaceholderMember(
   if (!params.nickname.trim()) {
     throw new Error('Nickname is required');
   }
-  if (!params.city.trim()) {
-    throw new Error('City is required');
-  }
-  if (!params.state.trim()) {
-    throw new Error('State is required');
-  }
+  // City + state are no longer required at creation — captains rarely know
+  // them and the data isn't load-bearing for placeholder identity. LO can
+  // edit later if the player carries a BCA# that needs them populated.
 
   // Identify the caller so we can attribute creation. Used by the
   // dashboard pending-invites modal to show "Created by X in Y
@@ -398,8 +399,8 @@ export async function createPlaceholderMember(
       first_name: params.first_name.trim(),
       last_name: params.last_name.trim(),
       nickname: params.nickname.trim(),
-      city: params.city.trim(),
-      state: params.state.trim().toUpperCase(),
+      city: params.city?.trim() || '',
+      state: params.state?.trim().toUpperCase() || '',
       // Starting handicaps (defaults: 0 for 3v3, 40 for 5v5)
       starting_handicap_3v3: params.starting_handicap_3v3 ?? 0,
       starting_handicap_5v5: params.starting_handicap_5v5 ?? 40,
