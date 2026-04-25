@@ -37,3 +37,8 @@ test-results/
 
 # Playwright — saved auth state contains session cookies/tokens, never commit
 tests/e2e/.auth/
+
+# Per-user Claude Code settings — local-only, should not be committed.
+# (Project-wide Claude config can still live under .claude/ as long as
+# it's named something other than settings.local.json.)
+.claude/settings.local.json
