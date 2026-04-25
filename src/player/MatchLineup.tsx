@@ -1100,6 +1100,7 @@ export function MatchLineup() {
                 prepBlockedReason?.kind === 'waiting_on_sub_resolution' &&
                 prepBlockedReason?.lineupWithPlaceholder === 'mine'
               }
+              locked={lineup.lineupLocked}
               opponentLabel={opponent?.team_name ?? 'the opposing captain'}
             />
 
