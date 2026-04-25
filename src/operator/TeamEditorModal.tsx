@@ -451,6 +451,8 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
               excludeIds={[...excludedPlayerIds, ...playerIds.filter(id => id)]}
               allowCreatePlaceholder={true}
               onPlaceholderCreated={handlePlaceholderCreated}
+              teamId={existingTeam?.id}
+              teamName={teamName}
             />
           )}
 
@@ -534,6 +536,9 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
                     excludeIds={getExcludedIdsForSlot(index)}
                     allowCreatePlaceholder={true}
                     onPlaceholderCreated={handlePlaceholderCreated}
+                    teamId={existingTeam?.id}
+                    teamName={teamName}
+                    captainName={captainDisplayName}
                   />
                 );
               })}

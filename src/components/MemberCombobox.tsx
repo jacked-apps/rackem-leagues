@@ -49,10 +49,14 @@ interface MemberComboboxProps {
   allowCreatePlaceholder?: boolean;
   /** Callback when a new placeholder is created - should refresh the members list */
   onPlaceholderCreated?: (member: PartialMember) => void;
-  /** Default city to pre-fill in placeholder creation modal */
-  defaultCity?: string;
-  /** Default state to pre-fill in placeholder creation modal */
-  defaultState?: string;
+  /** Optional team context — when provided, creating a placeholder with
+   *  an email also fires send-invite for email delivery. Without this,
+   *  the trigger-created invite_token is still saved and the recipient
+   *  gets it via the dashboard pending-invites modal on next login. */
+  teamId?: string;
+  invitedByMemberId?: string;
+  teamName?: string;
+  captainName?: string;
   /** Prevent clearing placeholder members (used in captain mode) */
   preventClearPlaceholders?: boolean;
 }
@@ -75,8 +79,10 @@ export const MemberCombobox: React.FC<MemberComboboxProps> = ({
   excludeIds = [],
   allowCreatePlaceholder = false,
   onPlaceholderCreated,
-  defaultCity = '',
-  defaultState = '',
+  teamId,
+  invitedByMemberId,
+  teamName,
+  captainName,
   preventClearPlaceholders = false,
 }) => {
   const [open, setOpen] = useState(false);
@@ -234,8 +240,10 @@ export const MemberCombobox: React.FC<MemberComboboxProps> = ({
         <CreatePlaceholderModal
           open={showPlaceholderModal}
           onOpenChange={setShowPlaceholderModal}
-          defaultCity={defaultCity}
-          defaultState={defaultState}
+          teamId={teamId}
+          invitedByMemberId={invitedByMemberId}
+          teamName={teamName}
+          captainName={captainName}
           onCreated={(newMember) => {
             // Call the callback so parent can refresh the members list
             if (onPlaceholderCreated) {
