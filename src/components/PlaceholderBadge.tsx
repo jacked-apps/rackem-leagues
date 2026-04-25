@@ -14,7 +14,11 @@
  * placeholders are intentional and permanent (Ed's model: some
  * players never want an app; their stats stay captain-kept).
  *
- * The hover tooltip spells out the abbreviation for first-time users.
+ * The hover tooltip spells out the abbreviation for first-time
+ * users — desktop only; mobile has no hover state. The upcoming
+ * display-name pass should add a tap-to-explain affordance for
+ * mobile (popover, info modal on first session, or small legend on
+ * surfaces where placeholders are common).
  *
  * If a later display-name pass changes the visual treatment, this is
  * the only file to edit — everywhere it's used (PlayerNameLink, the
