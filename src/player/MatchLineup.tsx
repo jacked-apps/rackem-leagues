@@ -610,6 +610,22 @@ export function MatchLineup() {
             // Update if database has different player (e.g., opponent chose double duty)
             if (dbPlayerId && dbPlayerId !== currentPlayerId) {
               lineup.setPlayerId(pos as 1 | 2 | 3 | 4 | 5, dbPlayerId);
+
+              // ALSO sync the manualHandicaps entry — when DD resolves via the
+              // opposing captain's pick, the DB now has the resolved player's
+              // handicap. The local manualHandicaps cache still has the old
+              // value (e.g., what the captain typed for the previous player
+              // in this slot). Reset it so the UI displays the correct number
+              // without requiring a page refresh.
+              const handicapField = `player${pos}_handicap` as keyof typeof myLineup;
+              const dbHandicap = myLineup[handicapField] as number | null | undefined;
+              if (typeof dbHandicap === 'number' && dbHandicap > 0) {
+                setManualHandicaps((prev) => {
+                  const newVal = String(dbHandicap);
+                  if (prev[pos] === newVal) return prev;
+                  return { ...prev, [pos]: newVal };
+                });
+              }
             }
           }
         } else {
