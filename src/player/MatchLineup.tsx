@@ -8,7 +8,7 @@
  * Flow: Team Schedule → Score Match → Lineup Entry
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Users } from 'lucide-react';
@@ -148,19 +148,34 @@ export function MatchLineup() {
   // Manual Fargo rating entry — LO types in each player's current rating.
   // Keyed by position (1-5). Only used when handicapType === 'fargo'.
   const [manualHandicaps, setManualHandicaps] = useState<Record<number, string>>({});
+
+  // Debounce per-position autosave so multiple keystrokes don't race. Without
+  // this, typing "358" can fire three separate mutations (3, 35, 358) that
+  // complete in any order — the final DB value depends on which network
+  // response wins, and the wrong one often does.
+  const handicapSaveTimersRef = useRef<Record<number, number>>({});
+
   const handleManualHandicapChange = (position: number, value: string) => {
     setManualHandicaps((prev) => ({ ...prev, [position]: value }));
-    // Save to DB on each valid entry so the value persists
-    if (lineup.lineupId && matchId) {
-      const parsed = parseInt(value, 10);
-      if (Number.isFinite(parsed)) {
-        updateLineupMutation.mutate({
-          lineupId: lineup.lineupId,
-          updates: { [`player${position}_handicap`]: parsed },
-          matchId,
-        });
-      }
+
+    // Cancel any pending save for this position — only the latest typed
+    // value should hit the DB.
+    if (handicapSaveTimersRef.current[position] !== undefined) {
+      window.clearTimeout(handicapSaveTimersRef.current[position]);
     }
+
+    if (!lineup.lineupId || !matchId) return;
+    const parsed = parseInt(value, 10);
+    if (!Number.isFinite(parsed)) return;
+
+    handicapSaveTimersRef.current[position] = window.setTimeout(() => {
+      if (!lineup.lineupId || !matchId) return;
+      updateLineupMutation.mutate({
+        lineupId: lineup.lineupId,
+        updates: { [`player${position}_handicap`]: parsed },
+        matchId,
+      });
+    }, 300);
   };
 
   // Fetch all match games (for tiebreaker mode)
