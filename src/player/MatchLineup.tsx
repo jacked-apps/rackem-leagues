@@ -1113,6 +1113,7 @@ export function MatchLineup() {
                 prepBlockedReason?.kind === 'waiting_on_sub_resolution' &&
                 prepBlockedReason?.lineupWithPlaceholder === 'opponent'
               }
+              opponentLocked={!!opponentLineup?.locked}
               opponentTeamLabel={opponent?.team_name ?? 'the opposing team'}
               onChoose={() => setShowOpponentSubModal(true)}
             />
