@@ -63,6 +63,7 @@ import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { shouldUseTeamBonus } from '@/utils/calculateHandicapThresholds';
 import { logger } from '@/utils/logger';
 import { supabase } from '@/supabaseClient';
+import { toast } from 'sonner';
 
 // Synthetic dropdown values — parsed in handlePlayerChange to pick the right
 // sentinel UUID. The sentinel itself encodes the sub type going forward.
@@ -745,10 +746,11 @@ export function MatchLineup() {
       }
 
       // Find which slot the picked player is in.
+      const freshRow = freshLineup as unknown as Record<string, unknown>;
       let sourceHandicap: number | null | undefined = undefined;
       for (let pos = 1; pos <= playerCount; pos++) {
-        if ((freshLineup as Record<string, unknown>)[`player${pos}_id`] === playerId) {
-          sourceHandicap = (freshLineup as Record<string, unknown>)[`player${pos}_handicap`] as number | null;
+        if (freshRow[`player${pos}_id`] === playerId) {
+          sourceHandicap = freshRow[`player${pos}_handicap`] as number | null;
           break;
         }
       }

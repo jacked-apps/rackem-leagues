@@ -378,6 +378,20 @@ export async function createPlaceholderMember(
     throw new Error('State is required');
   }
 
+  // Identify the caller so we can attribute creation. Used by the
+  // dashboard pending-invites modal to show "Created by X in Y
+  // Organization" on floating placeholders that have no team context yet.
+  const { data: { user } } = await supabase.auth.getUser();
+  let createdByMemberId: string | null = null;
+  if (user) {
+    const { data: callerMember } = await supabase
+      .from('members')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    createdByMemberId = callerMember?.id ?? null;
+  }
+
   const { data, error } = await supabase
     .from('members')
     .insert([{
@@ -397,6 +411,7 @@ export async function createPlaceholderMember(
       address: null,
       zip_code: null,
       date_of_birth: null,
+      created_by_member_id: createdByMemberId,
     }])
     .select('id, first_name, last_name, system_player_number')
     .single();

@@ -101,34 +101,74 @@ async function fetchOrganizationInvites(organizationId: string): Promise<Organiz
   const teamIds = teams.map(t => t.id);
   const teamMap = new Map(teams.map(t => [t.id, t.team_name]));
 
-  // Finally, get all invites for these teams
-  const { data: invites, error: invitesError } = await supabase
-    .from('invite_tokens')
-    .select(`
-      id,
-      member_id,
-      email,
-      team_id,
-      status,
-      expires_at,
-      created_at,
-      members!member_id (
-        first_name,
-        last_name
-      )
-    `)
-    .in('team_id', teamIds)
-    .order('created_at', { ascending: false });
+  // Invites belong to this org by one of two paths:
+  //   1. invite.team_id is a team in this org (original design)
+  //   2. invite.member's placeholder has organization_id = this org
+  //      (new — covers auto-created invites with no team_id yet because
+  //      the placeholder isn't on a team)
+  // PostgREST OR semantics across embedded-resource filters are awkward,
+  // so we run two queries and union client-side by invite id.
+  const commonSelect = `
+    id,
+    member_id,
+    email,
+    team_id,
+    status,
+    expires_at,
+    created_at,
+    members!member_id (
+      first_name,
+      last_name,
+      organization_id
+    )
+  `;
 
-  if (invitesError) {
-    console.error('Error fetching invites:', invitesError);
-    throw invitesError;
+  const byTeamPromise = teamIds.length > 0
+    ? supabase.from('invite_tokens').select(commonSelect).in('team_id', teamIds)
+    : null;
+
+  // The supabase-js type system chokes on dotted-path filters against
+  // embedded resources; cast the client to a loose type locally so we
+  // can issue the `members.organization_id = ?` filter without blowing
+  // the TS compiler. Runtime behavior is fully supported by PostgREST.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const byMemberOrgPromise = (supabase as any)
+    .from('invite_tokens')
+    .select(commonSelect)
+    .eq('members.organization_id', organizationId);
+
+  const [byTeamResult, byMemberOrgResult] = await Promise.all([
+    byTeamPromise,
+    byMemberOrgPromise,
+  ]);
+
+  if (byTeamResult?.error) {
+    console.error('Error fetching invites by team:', byTeamResult.error);
+    throw byTeamResult.error;
   }
+  if (byMemberOrgResult.error) {
+    console.error('Error fetching invites by member org:', byMemberOrgResult.error);
+    throw byMemberOrgResult.error;
+  }
+
+  // Union + dedupe by invite id. Also drop rows where the embedded
+  // filter effectively excluded the member (PostgREST returns the row
+  // but with members=null when the inner filter doesn't match).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  type InviteRow = any;
+  const byId = new Map<string, InviteRow>();
+  for (const i of byTeamResult?.data ?? []) byId.set(i.id, i);
+  for (const i of byMemberOrgResult.data ?? []) {
+    if (i.members) byId.set(i.id, i);
+  }
+  const invites = Array.from(byId.values()).sort((a, b) =>
+    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
 
   const now = new Date();
 
   // Transform to OrganizationInvite format
-  return (invites || []).map(invite => {
+  return invites.map(invite => {
     const expiresAt = invite.expires_at ? new Date(invite.expires_at) : null;
     const isExpired = invite.status === 'expired' || (expiresAt !== null && expiresAt < now);
 
@@ -144,7 +184,12 @@ async function fetchOrganizationInvites(organizationId: string): Promise<Organiz
       member_last_name: member?.last_name || '',
       email: invite.email,
       team_id: invite.team_id,
-      team_name: teamMap.get(invite.team_id) || 'Unknown Team',
+      // team_name: known team name if team_id is set and in scope,
+      // else a friendly fallback for auto-invites that haven't been
+      // attached to a team yet.
+      team_name: invite.team_id
+        ? teamMap.get(invite.team_id) || 'Unknown Team'
+        : 'No team yet',
       status: invite.status as OrganizationInvite['status'],
       isExpired,
       expires_at: invite.expires_at,
