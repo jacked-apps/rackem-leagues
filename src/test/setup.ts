@@ -37,6 +37,22 @@ global.localStorage = localStorageMock as Storage;
 // Mock window.confirm for tests
 global.confirm = () => true;
 
+// Mock matchMedia for tests — happy-dom does not provide one.
+// Default returns matches=false (desktop). Individual tests that need
+// to drive viewport changes should override via vi.spyOn(window, 'matchMedia').
+if (typeof window !== 'undefined' && !window.matchMedia) {
+  window.matchMedia = ((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  })) as typeof window.matchMedia;
+}
+
 // Suppress console errors during tests (optional)
 // Uncomment if tests are too noisy
 // global.console = {
