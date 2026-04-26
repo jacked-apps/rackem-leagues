@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-04-25 (added Player Name Display brainstorm — universal name-display component system, replaces 559-line PlayerNameLink, normalizes PP and Captain badges, mobile-aware viewport detection, peers-prop collision disambiguation)
+> **Last Updated**: 2026-04-25 (added Player Name Display brainstorm + 14-unit implementation plan — universal name-display component system, replaces 549-line PlayerNameLink, normalizes PP and Captain badges, mobile-aware viewport detection, peers-prop collision disambiguation, ESLint rule blocking raw name renders)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -51,6 +51,7 @@
 | `docs/brainstorms/player-name-display-requirements.md` | Requirements for the universal Player Name display component system | Active branch `feat/player-name-display` |
 | `/docs/plans/` | **CE implementation plans** | Output of `/compound-engineering:ce-plan` |
 | `docs/plans/2026-04-17-001-feat-official-rulebook-reader-plan.md` | Implementation plan for the Official Rulebook Reader | 6 units, active branch `feature/official-rulebook-reader` |
+| `docs/plans/2026-04-25-001-feat-player-name-display-plan.md` | Implementation plan for the universal Player Name display component system | 14 units across 6 phases; active branch `feat/player-name-display`; waits for `feat/placeholder-lifecycle-frontend` to merge first |
 
 ### Future Work Folder
 
