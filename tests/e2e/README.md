@@ -80,3 +80,45 @@ pre-authenticated. No test has to type the password again.
 For a logged-out test (e.g., the public home page), use
 `test.use({ storageState: { cookies: [], origins: [] } })` at the top
 of the file to override the saved state.
+
+## The lineup-demo spec
+
+`lineup-demo.spec.ts` walks one captain through filling out a Fargo
+5v5 lineup with a Double Duty pick, demonstrates the new pre-lock
+banner, and confirms the Lock button activates once Fargo ratings
+are entered. Doubles as a sales/demo asset — the recorded
+`video.webm` under `test-results/` is shareable as-is.
+
+### Extra prerequisite: a known match ID
+
+Add to `.env.local`:
+
+```
+E2E_TEST_MATCH_ID=<uuid-of-an-unlocked-fargo-5v5-match>
+```
+
+Where to get one:
+
+1. Sign up your test user at `/register` (locally) and run
+   `database/dev_bootstrap_full.sql` to seed an org, league, season,
+   teams, and matches. Make sure to add your test user to a team's
+   roster as a captain first (the bootstrap does NOT do this for you).
+2. The bootstrap RAISE NOTICEs at the end include a `teams: <UUIDs>`
+   line. Pick any team, then look up a match for that team via Studio:
+   ```sql
+   SELECT id, scheduled_venue_id FROM matches
+   WHERE home_team_id = '<team-id>' OR away_team_id = '<team-id>'
+   ORDER BY id LIMIT 1;
+   ```
+3. Drop that match UUID into `E2E_TEST_MATCH_ID`.
+
+If the env var is missing, the test is skipped with a clear message.
+
+### Two-captain handoff is a follow-up
+
+The full DD handoff (opposing captain receives the
+`OpponentSubstituteModal`, picks the player, both captains auto-navigate
+to scoring) needs a second test user account and two `BrowserContext`s
+in the same test. Not in this spec — covered separately when the second
+test account is set up. See `lineup-demo.spec.ts`'s file header for a
+note pointing here.
