@@ -681,28 +681,72 @@ export function MatchLineup() {
     setShowOpponentSubModal(lineupHasDoubleDuty(opponentLineup, playerCount));
   }, [opponentLineup, matchData, isTiebreakerMode, playerCount]);
 
-  // Handle opponent substitute choice
-  const handleOpponentSubChoice = (playerId: string, handicap: number, subPosition: number) => {
+  // Handle opponent substitute choice — STRICT COPY semantics.
+  //
+  // Refetch the opponent's lineup first so we copy the FRESH source slot
+  // (not whatever was cached in the modal at render time). Then copy
+  // player_id AND player_handicap verbatim from the source slot into the
+  // DD slot. This guarantees the double-duty player plays both slots with
+  // exactly the same data — whatever's in the source is what goes into
+  // the copy. We don't second-guess the handicap, we don't recompute, we
+  // just copy.
+  const handleOpponentSubChoice = async (playerId: string, _modalHandicap: number, subPosition: number) => {
     if (!opponentLineup?.id || !matchId) return;
 
-    // Update opponent's lineup - replace SUB with chosen player
-    updateLineupMutation.mutate({
-      lineupId: opponentLineup.id,
-      updates: {
-        [`player${subPosition}_id`]: playerId,
-        [`player${subPosition}_handicap`]: handicap,
-      },
-      matchId,
-    }, {
-      onSuccess: async () => {
-        // Manually refetch lineups to ensure UI updates immediately
-        await lineupsQuery.refetch();
-        setShowOpponentSubModal(false);
-      },
-      onError: (error) => {
-        logger.error('Failed to update opponent lineup', { error: error instanceof Error ? error.message : String(error) });
-      },
-    });
+    try {
+      // Refetch so we read the freshest source-slot values (e.g., if the
+      // opposing captain edited a Fargo rating right before locking, those
+      // edits land in player_handicap and we want the latest).
+      const { data: fresh } = await lineupsQuery.refetch();
+      const opp = isHomeTeam ? fresh?.awayLineup : fresh?.homeLineup;
+      if (!opp) {
+        logger.error('handleOpponentSubChoice: opponent lineup missing after refetch', { matchId });
+        toast.error('Could not load the opposing lineup. Please try again.');
+        return;
+      }
+
+      // Find which slot the picked player is in on the opponent's lineup.
+      let sourcePosition: number | null = null;
+      for (let pos = 1; pos <= playerCount; pos++) {
+        if ((opp as Record<string, unknown>)[`player${pos}_id`] === playerId) {
+          sourcePosition = pos;
+          break;
+        }
+      }
+      if (sourcePosition === null) {
+        logger.error('handleOpponentSubChoice: picked player not found in opponent lineup', {
+          matchId,
+          playerId,
+        });
+        toast.error('That player is not in the opposing lineup anymore. Please pick again.');
+        return;
+      }
+
+      const sourceHandicap = (opp as Record<string, unknown>)[`player${sourcePosition}_handicap`] as number | null;
+
+      updateLineupMutation.mutate({
+        lineupId: opponentLineup.id,
+        updates: {
+          [`player${subPosition}_id`]: playerId,
+          [`player${subPosition}_handicap`]: sourceHandicap,
+        },
+        matchId,
+      }, {
+        onSuccess: async () => {
+          await lineupsQuery.refetch();
+          setShowOpponentSubModal(false);
+        },
+        onError: (error) => {
+          logger.error('Failed to update opponent lineup', {
+            error: error instanceof Error ? error.message : String(error),
+          });
+        },
+      });
+    } catch (error) {
+      logger.error('handleOpponentSubChoice failed', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
   };
 
   // Generic player change handler - works for any position (3 or 5 players)
