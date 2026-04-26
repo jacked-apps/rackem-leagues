@@ -62,6 +62,7 @@ import { Loader2 } from 'lucide-react';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { shouldUseTeamBonus } from '@/utils/calculateHandicapThresholds';
 import { logger } from '@/utils/logger';
+import { supabase } from '@/supabaseClient';
 
 // Synthetic dropdown values — parsed in handlePlayerChange to pick the right
 // sentinel UUID. The sentinel itself encodes the sub type going forward.
@@ -698,46 +699,51 @@ export function MatchLineup() {
 
   // Handle opponent substitute choice — STRICT COPY semantics.
   //
-  // Refetch the opponent's lineup first so we copy the FRESH source slot
-  // (not whatever was cached in the modal at render time). Then copy
-  // player_id AND player_handicap verbatim from the source slot into the
-  // DD slot. This guarantees the double-duty player plays both slots with
-  // exactly the same data — whatever's in the source is what goes into
-  // the copy. We don't second-guess the handicap, we don't recompute, we
-  // just copy.
+  // Bypass React Query entirely and read the source lineup row DIRECTLY from
+  // Supabase. Whatever's in the DB at that moment is what we copy into the
+  // DD slot — no cache, no debounce timer, no closure value. After the write,
+  // invalidate the lineups query so every observer (both clients) picks up
+  // the new state immediately.
   const handleOpponentSubChoice = async (playerId: string, _modalHandicap: number, subPosition: number) => {
     if (!opponentLineup?.id || !matchId) return;
 
     try {
-      // Refetch so we read the freshest source-slot values (e.g., if the
-      // opposing captain edited a Fargo rating right before locking, those
-      // edits land in player_handicap and we want the latest).
-      const { data: fresh } = await lineupsQuery.refetch();
-      const opp = isHomeTeam ? fresh?.awayLineup : fresh?.homeLineup;
-      if (!opp) {
-        logger.error('handleOpponentSubChoice: opponent lineup missing after refetch', { matchId });
+      // Direct DB read — bypass TanStack Query cache.
+      const { data: freshLineup, error: readError } = await supabase
+        .from('match_lineups')
+        .select(
+          'player1_id, player1_handicap, player2_id, player2_handicap, ' +
+          'player3_id, player3_handicap, player4_id, player4_handicap, ' +
+          'player5_id, player5_handicap'
+        )
+        .eq('id', opponentLineup.id)
+        .single();
+
+      if (readError || !freshLineup) {
+        logger.error('handleOpponentSubChoice: failed to read fresh opponent lineup', {
+          matchId,
+          error: readError?.message,
+        });
         toast.error('Could not load the opposing lineup. Please try again.');
         return;
       }
 
-      // Find which slot the picked player is in on the opponent's lineup.
-      let sourcePosition: number | null = null;
+      // Find which slot the picked player is in.
+      let sourceHandicap: number | null | undefined = undefined;
       for (let pos = 1; pos <= playerCount; pos++) {
-        if ((opp as Record<string, unknown>)[`player${pos}_id`] === playerId) {
-          sourcePosition = pos;
+        if ((freshLineup as Record<string, unknown>)[`player${pos}_id`] === playerId) {
+          sourceHandicap = (freshLineup as Record<string, unknown>)[`player${pos}_handicap`] as number | null;
           break;
         }
       }
-      if (sourcePosition === null) {
-        logger.error('handleOpponentSubChoice: picked player not found in opponent lineup', {
+      if (sourceHandicap === undefined) {
+        logger.error('handleOpponentSubChoice: picked player not in fresh opponent lineup', {
           matchId,
           playerId,
         });
         toast.error('That player is not in the opposing lineup anymore. Please pick again.');
         return;
       }
-
-      const sourceHandicap = (opp as Record<string, unknown>)[`player${sourcePosition}_handicap`] as number | null;
 
       updateLineupMutation.mutate({
         lineupId: opponentLineup.id,
