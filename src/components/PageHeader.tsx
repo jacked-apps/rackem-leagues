@@ -131,9 +131,7 @@ export function PageHeader({
       >
         {showBack ? <BackAffordance backTo={backTo} backLabel={backLabel} onBackClick={onBackClick} /> : null}
 
-        <h1 className="flex-1 truncate text-base font-semibold text-gray-900">{title}</h1>
-
-        <IdentitySlot pathname={location.pathname} />
+        <h1 className="flex-1 truncate text-lg font-semibold text-gray-900">{title}</h1>
 
         <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
           <SheetTrigger asChild>
@@ -153,23 +151,56 @@ export function PageHeader({
         </Sheet>
       </header>
 
-      {(organization || subtitle || children) ? (
-        <div className="px-4 pt-3">
-          {organization ? (
-            <div className="mb-1 flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-blue-600" />
-              <span className="text-sm font-medium text-blue-600">
-                {organization.organization_name}
-              </span>
-            </div>
-          ) : null}
-          {subtitle ? (
-            <p className="text-md text-gray-600 lg:text-xl">{subtitle}</p>
-          ) : null}
-          {children}
-        </div>
-      ) : null}
+      <SubHeader
+        organization={organization}
+        subtitle={subtitle}
+        pathname={location.pathname}
+      >
+        {children}
+      </SubHeader>
     </>
+  );
+}
+
+/**
+ * Sub-header rendered below the sticky bar — scrolls with content. Hosts
+ * the org badge, subtitle, decorative children, and the identity slot
+ * (avatar / Sign-in) on the right. Renders nothing when there is nothing
+ * to show (e.g., a no-subtitle page on an auth-flow route).
+ */
+function SubHeader({
+  organization,
+  subtitle,
+  pathname,
+  children,
+}: {
+  organization: { organization_name?: string | null } | null | undefined;
+  subtitle?: string;
+  pathname: string;
+  children?: React.ReactNode;
+}) {
+  const isAuthFlowRoute = AUTH_FLOW_ROUTES.includes(pathname);
+  const showIdentity = !isAuthFlowRoute;
+  const hasContent = Boolean(organization || subtitle || children || showIdentity);
+
+  if (!hasContent) return null;
+
+  return (
+    <div className="flex items-start justify-between gap-3 px-4 pt-3">
+      <div className="min-w-0 flex-1">
+        {organization ? (
+          <div className="mb-1 flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-blue-600" />
+            <span className="text-sm font-medium text-blue-600">
+              {organization.organization_name}
+            </span>
+          </div>
+        ) : null}
+        {subtitle ? <p className="text-sm text-gray-600">{subtitle}</p> : null}
+        {children}
+      </div>
+      {showIdentity ? <IdentitySlot pathname={pathname} /> : null}
+    </div>
   );
 }
 
