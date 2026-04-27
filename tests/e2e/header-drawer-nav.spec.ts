@@ -3,8 +3,9 @@
  *
  * Verifies the cross-cutting nav flow that's the centerpiece of the
  * header rework: from any logged-in page, tapping the hamburger opens
- * the drawer with the player root items, tapping a drawer item closes
- * the drawer and navigates the user there.
+ * the drawer with the player root items (Dashboard / My Teams / Stats
+ * / Rules / Messages / Profile), tapping a drawer item closes the
+ * drawer and navigates the user there.
  *
  * Relies on tests/e2e/.auth/user.json produced by auth.setup.ts — the
  * `chromium` project in playwright.config.ts wires that state in
@@ -29,6 +30,7 @@ test.describe('Header drawer navigation (authenticated player)', () => {
     await expect(drawer.getByRole('link', { name: 'Dashboard' })).toBeVisible();
     await expect(drawer.getByRole('link', { name: 'My Teams' })).toBeVisible();
     await expect(drawer.getByRole('link', { name: 'Stats' })).toBeVisible();
+    await expect(drawer.getByRole('link', { name: 'Rules' })).toBeVisible();
     await expect(drawer.getByRole('link', { name: /^Messages/ })).toBeVisible();
     await expect(drawer.getByRole('link', { name: 'Profile' })).toBeVisible();
     await expect(drawer.getByRole('button', { name: /sign out/i })).toBeVisible();

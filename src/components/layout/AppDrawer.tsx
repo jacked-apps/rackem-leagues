@@ -148,7 +148,7 @@ function PublicSection() {
   );
 }
 
-/** Logged-in player roots: Dashboard / My Teams / Stats / Messages / Profile. */
+/** Logged-in player roots: Dashboard / My Teams / Stats / Rules / Messages / Profile. */
 function PlayerSection({ unreadCount }: { unreadCount: number }) {
   const messagesLabel = unreadCount > 0 ? `Messages (${unreadCount})` : 'Messages';
   return (
@@ -156,6 +156,7 @@ function PlayerSection({ unreadCount }: { unreadCount: number }) {
       <DrawerLink to="/dashboard" label="Dashboard" />
       <DrawerLink to="/my-teams" label="My Teams" />
       <DrawerLink to="/stats" label="Stats" />
+      <DrawerLink to="/rules" label="Rules" />
       <DrawerLink to="/messages" label={messagesLabel} />
       <DrawerLink to="/profile" label="Profile" />
     </ul>

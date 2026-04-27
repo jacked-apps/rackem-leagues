@@ -109,7 +109,7 @@ describe('AppDrawer', () => {
   });
 
   // Happy path — logged-in player
-  it('renders the six player root items when logged in as a non-operator', () => {
+  it('renders the player root items when logged in as a non-operator', () => {
     configurePlayer();
     renderDrawer();
 
@@ -117,6 +117,7 @@ describe('AppDrawer', () => {
     expect(within(nav).getByRole('link', { name: 'Dashboard' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'My Teams' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Stats' })).toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Rules' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: /^Messages/ })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Profile' })).toBeInTheDocument();
     expect(within(nav).getByRole('button', { name: /sign out/i })).toBeInTheDocument();
