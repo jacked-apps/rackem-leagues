@@ -118,12 +118,12 @@ export function PageHeader({
   return (
     <>
       <header
-        className="sticky z-30 flex h-12 items-center gap-2 border-b bg-white px-3"
+        className="sticky z-30 flex h-12 items-center gap-2 border-b bg-white px-3 lg:gap-4"
         style={{ top: 'var(--env-banner-height, 0px)' }}
       >
         {showBack ? <BackAffordance backTo={backTo} backLabel={backLabel} onBackClick={onBackClick} /> : null}
 
-        <h1 className="flex-1 truncate text-lg font-semibold text-gray-900">{title}</h1>
+        <h1 className="flex-1 truncate text-lg font-semibold text-gray-900 lg:text-2xl">{title}</h1>
 
         <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
           <SheetTrigger asChild>
@@ -147,6 +147,7 @@ export function PageHeader({
         organization={organization}
         subtitle={subtitle}
         pathname={location.pathname}
+        hasBack={Boolean(showBack)}
       >
         {children}
       </SubHeader>
@@ -164,11 +165,13 @@ function SubHeader({
   organization,
   subtitle,
   pathname,
+  hasBack,
   children,
 }: {
   organization: { organization_name?: string | null } | null | undefined;
   subtitle?: string;
   pathname: string;
+  hasBack: boolean;
   children?: React.ReactNode;
 }) {
   const isAuthFlowRoute = AUTH_FLOW_ROUTES.includes(pathname);
@@ -177,18 +180,26 @@ function SubHeader({
 
   if (!hasContent) return null;
 
+  // On desktop, indent the sub-header when a back button is shown so the
+  // subtitle and org badge sit under where the title actually starts in the
+  // sticky bar (back-button width + gap). Mobile stays at the standard
+  // px-4 padding — the offset isn't worth the eye effort on a small screen.
+  const desktopIndent = hasBack ? 'lg:pl-14' : 'lg:pl-3';
+
   return (
-    <div className="flex items-start justify-between gap-3 px-4 pt-3">
+    <div className={`flex items-start justify-between gap-3 px-4 pt-3 ${desktopIndent}`}>
       <div className="min-w-0 flex-1">
         {organization ? (
           <div className="mb-1 flex items-center gap-2">
-            <Building2 className="h-4 w-4 text-blue-600" />
-            <span className="text-sm font-medium text-blue-600">
+            <Building2 className="h-4 w-4 text-blue-600 lg:h-5 lg:w-5" />
+            <span className="text-sm font-medium text-blue-600 lg:text-base">
               {organization.organization_name}
             </span>
           </div>
         ) : null}
-        {subtitle ? <p className="text-sm text-gray-600">{subtitle}</p> : null}
+        {subtitle ? (
+          <p className="text-sm text-gray-600 lg:text-lg">{subtitle}</p>
+        ) : null}
         {children}
       </div>
       {showIdentity ? <IdentitySlot pathname={pathname} /> : null}
