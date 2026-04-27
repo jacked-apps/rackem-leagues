@@ -123,7 +123,7 @@ export function PageHeader({
       >
         {showBack ? <BackAffordance backTo={backTo} backLabel={backLabel} onBackClick={onBackClick} /> : null}
 
-        <h1 className="flex-1 truncate text-lg font-semibold text-gray-900 lg:text-2xl">{title}</h1>
+        <h1 className="flex-1 truncate text-lg font-semibold text-gray-900 lg:text-3xl">{title}</h1>
 
         <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
           <SheetTrigger asChild>
@@ -182,9 +182,11 @@ function SubHeader({
 
   // On desktop, indent the sub-header when a back button is shown so the
   // subtitle and org badge sit under where the title actually starts in the
-  // sticky bar (back-button width + gap). Mobile stays at the standard
-  // px-4 padding — the offset isn't worth the eye effort on a small screen.
-  const desktopIndent = hasBack ? 'lg:pl-14' : 'lg:pl-3';
+  // sticky bar (back-button width + gap). Calibrated for short back labels
+  // (e.g., "Home"); longer labels like "Back to My Teams" will still leave
+  // the subtitle slightly left of the title — accept that for now. Mobile
+  // stays at the standard px-4 padding.
+  const desktopIndent = hasBack ? 'lg:pl-24' : 'lg:pl-3';
 
   return (
     <div className={`flex items-start justify-between gap-3 px-4 pt-3 ${desktopIndent}`}>
@@ -224,7 +226,11 @@ function BackAffordance({
   const ariaLabel = backLabel ?? 'Back';
   const labelOnDesktop = backTo && backLabel ? backLabel : null;
 
-  const className = 'flex h-10 shrink-0 items-center gap-1 rounded-md px-2 text-sm text-gray-600 hover:bg-accent';
+  // self-start pins the back button to the top of the (centered) header
+  // flex row so the cap-height of the back-button text aligns with the
+  // cap-height of the (larger) title. The 40px tap target is preserved;
+  // it just sits in the upper portion of the bar instead of centered.
+  const className = 'flex h-10 shrink-0 items-center gap-1 self-start rounded-md px-2 text-sm text-gray-600 hover:bg-accent';
 
   if (onBackClick) {
     return (
