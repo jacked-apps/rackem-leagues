@@ -29,7 +29,7 @@
  * production where the banner never renders.
  */
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, Building2, LogIn, Menu } from 'lucide-react';
 import {
@@ -103,6 +103,12 @@ export function PageHeader({
   children,
 }: PageHeaderProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  // Rendered pixel width of the back button (icon + label + padding).
+  // BackAffordance measures itself via ResizeObserver and reports here.
+  // SubHeader consumes it on desktop to indent so subtitle/org-badge
+  // align under where the title actually starts in the sticky bar —
+  // works automatically for any back-label length, no per-page tuning.
+  const [backWidth, setBackWidth] = useState(0);
   const location = useLocation();
   const { organization } = useOrganization(organizationId);
 
@@ -121,7 +127,14 @@ export function PageHeader({
         className="sticky z-30 flex h-12 items-center gap-2 border-b bg-white px-3 lg:gap-4"
         style={{ top: 'var(--env-banner-height, 0px)' }}
       >
-        {showBack ? <BackAffordance backTo={backTo} backLabel={backLabel} onBackClick={onBackClick} /> : null}
+        {showBack ? (
+          <BackAffordance
+            backTo={backTo}
+            backLabel={backLabel}
+            onBackClick={onBackClick}
+            onMeasure={setBackWidth}
+          />
+        ) : null}
 
         <h1 className="flex-1 truncate text-lg font-semibold text-gray-900 lg:text-3xl">{title}</h1>
 
@@ -148,6 +161,7 @@ export function PageHeader({
         subtitle={subtitle}
         pathname={location.pathname}
         hasBack={Boolean(showBack)}
+        backWidth={backWidth}
       >
         {children}
       </SubHeader>
@@ -166,12 +180,18 @@ function SubHeader({
   subtitle,
   pathname,
   hasBack,
+  backWidth,
   children,
 }: {
   organization: { organization_name?: string | null } | null | undefined;
   subtitle?: string;
   pathname: string;
   hasBack: boolean;
+  /** Rendered pixel width of the back affordance, measured by BackAffordance.
+   *  Used on desktop to compute the sub-header's left indent so subtitle and
+   *  org-badge align under the title's actual start position. Zero when
+   *  there is no back button. */
+  backWidth: number;
   children?: React.ReactNode;
 }) {
   const isAuthFlowRoute = AUTH_FLOW_ROUTES.includes(pathname);
@@ -180,16 +200,24 @@ function SubHeader({
 
   if (!hasContent) return null;
 
-  // On desktop, indent the sub-header when a back button is shown so the
-  // subtitle and org badge sit under where the title actually starts in the
-  // sticky bar (back-button width + gap). Calibrated for short back labels
-  // (e.g., "Home"); longer labels like "Back to My Teams" will still leave
-  // the subtitle slightly left of the title — accept that for now. Mobile
-  // stays at the standard px-4 padding.
-  const desktopIndent = hasBack ? 'lg:pl-24' : 'lg:pl-3';
+  // Title's left position in the sticky bar = header's px-3 (12px) +
+  // back-button width + gap-4 (16px on desktop). To align the sub-header
+  // content with the title, the sub-header needs that same left padding
+  // on desktop. Mobile keeps its plain px-4 padding — the alignment isn't
+  // worth the eye effort on a small screen.
+  const desktopIndentPx = hasBack && backWidth > 0 ? 12 + backWidth + 16 : null;
+  const indentStyle = desktopIndentPx
+    ? ({ '--ph-sub-indent': `${desktopIndentPx}px` } as React.CSSProperties)
+    : undefined;
+  const desktopIndentClass = hasBack
+    ? 'lg:pl-[var(--ph-sub-indent,6rem)]'
+    : 'lg:pl-3';
 
   return (
-    <div className={`flex items-start justify-between gap-3 px-4 pt-3 ${desktopIndent}`}>
+    <div
+      className={`flex items-start justify-between gap-3 px-4 pt-3 ${desktopIndentClass}`}
+      style={indentStyle}
+    >
       <div className="min-w-0 flex-1">
         {organization ? (
           <div className="mb-1 flex items-center gap-2">
@@ -213,18 +241,43 @@ function SubHeader({
  * Back affordance. Mobile: icon only with `aria-label` from `backLabel`.
  * Desktop ≥1024px: icon + visible label text. Falls back to icon-only when
  * `onBackClick` is the only handler (no static destination string to render).
+ *
+ * Reports its rendered width to the parent via `onMeasure` so the sub-header
+ * can indent to align with where the title actually starts in the sticky bar
+ * — works automatically across any back-label length, no per-page tuning.
  */
 function BackAffordance({
   backTo,
   backLabel,
   onBackClick,
+  onMeasure,
 }: {
   backTo?: string;
   backLabel?: string;
   onBackClick?: () => void;
+  onMeasure: (width: number) => void;
 }) {
   const ariaLabel = backLabel ?? 'Back';
   const labelOnDesktop = backTo && backLabel ? backLabel : null;
+
+  // Measure the back affordance and re-measure whenever it resizes (label
+  // changes, viewport crosses the lg breakpoint and the label shows/hides,
+  // font load, etc.). useLayoutEffect runs synchronously before paint so
+  // the parent's setState happens in the same paint cycle — no flicker.
+  const elRef = useRef<HTMLElement | null>(null);
+  const setRef = useCallback((node: HTMLElement | null) => {
+    elRef.current = node;
+  }, []);
+
+  useLayoutEffect(() => {
+    const el = elRef.current;
+    if (!el) return;
+    const measure = () => onMeasure(Math.ceil(el.getBoundingClientRect().width));
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [onMeasure, backLabel, backTo]);
 
   // self-start pins the back button to the top of the (centered) header
   // flex row so the cap-height of the back-button text aligns with the
@@ -234,7 +287,13 @@ function BackAffordance({
 
   if (onBackClick) {
     return (
-      <button type="button" aria-label={ariaLabel} onClick={onBackClick} className={className}>
+      <button
+        ref={setRef as React.RefCallback<HTMLButtonElement>}
+        type="button"
+        aria-label={ariaLabel}
+        onClick={onBackClick}
+        className={className}
+      >
         <ArrowLeft className="h-4 w-4" />
         {labelOnDesktop ? (
           <span className="hidden lg:inline">{labelOnDesktop}</span>
@@ -244,7 +303,12 @@ function BackAffordance({
   }
 
   return (
-    <Link to={backTo!} aria-label={ariaLabel} className={className}>
+    <Link
+      ref={setRef as React.RefCallback<HTMLAnchorElement>}
+      to={backTo!}
+      aria-label={ariaLabel}
+      className={className}
+    >
       <ArrowLeft className="h-4 w-4" />
       {labelOnDesktop ? (
         <span className="hidden lg:inline">{labelOnDesktop}</span>
