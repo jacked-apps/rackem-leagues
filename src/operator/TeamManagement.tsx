@@ -481,14 +481,14 @@ export const TeamManagement: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen bg-gray-50 ${teams.length > 0 && seasonId ? 'pb-24' : ''}`}>
       <PageHeader
         backTo={`/league/${leagueId}`}
         backLabel="Back to League"
         title="Manage Teams"
         subtitle="Assign venues and create teams for your league"
       >
-        <div className="mt-2 flex flex-col gap-4">
+        <div className="mt-2">
           <InfoButton title="Quick Tip" label="Team Management Tips">
             <div className="space-y-3">
               <p className="text-sm text-gray-700">
@@ -503,39 +503,46 @@ export const TeamManagement: React.FC = () => {
               </p>
             </div>
           </InfoButton>
-          {teams.length > 0 && seasonId && (
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                className="w-full"
-                size="lg"
-                variant="outline"
-                onClick={() => {
-                  setIsNavigating(true);
-                  navigate(`/league/${leagueId}`);
-                }}
-                disabled={isNavigating}
-                isLoading={isNavigating}
-                loadingText="Loading..."
-              >
-                Save & Exit
-              </Button>
-              <Button
-                className="w-full"
-                size="lg"
-                onClick={() => {
-                  setIsNavigating(true);
-                  navigate(`/league/${leagueId}/season/${seasonId}/playoffs-setup`);
-                }}
-                disabled={isNavigating}
-                isLoading={isNavigating}
-                loadingText="Loading..."
-              >
-                Save & Continue →
-                </Button>
-              </div>
-            )}
-          </div>
+        </div>
       </PageHeader>
+      {/*
+        Save & Exit / Save & Continue pair lives in a fixed bottom bar (R6a)
+        so it stays in the thumb zone and does not scroll out of view. Only
+        rendered when there are teams to save and a seasonId is in scope.
+      */}
+      {teams.length > 0 && seasonId && (
+        <div className="fixed bottom-0 inset-x-0 z-30 border-t bg-white p-3 shadow-lg">
+          <div className="mx-auto grid max-w-4xl grid-cols-2 gap-2">
+            <Button
+              className="w-full"
+              size="lg"
+              variant="outline"
+              onClick={() => {
+                setIsNavigating(true);
+                navigate(`/league/${leagueId}`);
+              }}
+              disabled={isNavigating}
+              isLoading={isNavigating}
+              loadingText="Loading..."
+            >
+              Save & Exit
+            </Button>
+            <Button
+              className="w-full"
+              size="lg"
+              onClick={() => {
+                setIsNavigating(true);
+                navigate(`/league/${leagueId}/season/${seasonId}/playoffs-setup`);
+              }}
+              disabled={isNavigating}
+              isLoading={isNavigating}
+              loadingText="Loading..."
+            >
+              Save & Continue →
+            </Button>
+          </div>
+        </div>
+      )}
 
       <div className="container mx-auto px-4 max-w-7xl py-3 lg:py-8">
         {/* Layout: Venues (left) and Teams (right) */}
