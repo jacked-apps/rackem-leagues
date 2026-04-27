@@ -10,14 +10,27 @@ origin: docs/brainstorms/e2e-test-infrastructure-requirements.md
 
 ## Overview
 
-Build the v1 Playwright test infrastructure for rackem-leagues: a foundation
-seed (1 test org, 5 users), test data factories, multi-user auth setup that
-replaces the existing PR #78 single-user model, demo run mode, and 4 starter
-scenarios that prove the pattern works (lineup-flow, double-duty-handoff,
-scoring + spectator, wizard-tour-as-demo).
+Build the v1 Playwright **scaffolding** for rackem-leagues so future plans
+("test feature X") become 10–30 lines of spec on top of existing primitives.
+The scaffolding is the deliverable: a foundation seed (1 test org, 5 users),
+test data factories, multi-user auth setup that replaces the existing PR #78
+single-user model, and demo run mode.
 
-After this lands, adding a new E2E test for a future feature is a few dozen
-lines on top of factories. v1 is local-Supabase-only.
+Plus **2 reference scenarios** to prove the scaffolding works and to serve as
+copy-from templates for future tests:
+
+- `lineup-flow.spec.ts` — canonical single-captain UI flow (log in, drive a
+  page, assert state). The shape future "test a captain on page X" plans
+  copy.
+- `wizard-tour.spec.ts` — LO + multi-step wizard. Doubles as the demo-
+  recording reference (`pnpm test:e2e:demo`) for sales reels and in-app
+  tutorial videos.
+
+Two additional scenarios from the brainstorm (R17 double-duty-handoff,
+R18 scoring + spectator) are deferred to follow-up tests; the scaffolding
+already supports them, they're written when actually needed.
+
+v1 is local-Supabase-only.
 
 ## Problem Frame
 
@@ -49,11 +62,16 @@ between tests, so every new spec would re-invent setup from scratch.
 - **R13–R15.** Run modes (preserve regression; `E2E_DEMO=1` adds slowMo +
   headed; video already on; demo videos may capture session details) —
   Unit 4.
-- **R16.** `lineup-flow.spec.ts` — Unit 6.
-- **R17.** `double-duty-handoff.spec.ts` — Unit 7 (depends on the lineup
-  race-condition merge; see Risks).
-- **R18.** `scoring.spec.ts` (with spectator observer) — Unit 8.
-- **R20.** `wizard-tour.spec.ts` (doubles as demo) — Unit 9.
+- **R16.** `lineup-flow.spec.ts` (canonical single-captain UI reference) —
+  Unit 6.
+- **R17.** `double-duty-handoff.spec.ts` — **deferred to follow-up.** Unit
+  7 in the plan structure is preserved as a reference but not in v1 scope.
+  Recommended sequencing when written: ship inside `feature/lineup-polish`
+  PR alongside the fix it covers.
+- **R18.** `scoring.spec.ts` (with spectator observer) — **deferred to
+  follow-up.** Unit 8 preserved as a reference but not in v1 scope. Add
+  when the first scoring-flow regression test is actually needed.
+- **R20.** `wizard-tour.spec.ts` (doubles as demo recording) — Unit 9.
 - **R21.** No per-test cleanup (foundation rebuild via `pnpm e2e:setup`
   on demand) — Units 5, 6–9 (factory pattern).
 - **R23–R24.** README rewritten + TABLE_OF_CONTENTS.md updated — Unit 10.
@@ -64,29 +82,55 @@ R19 (same-team scoring race) is deferred from v1 per the origin doc.
 
 - **In scope:** local Supabase only, single test org, 5 users, factories
   layer, replacement of PR #78 single-user auth (including migration of
-  `dashboard.spec.ts`), demo run mode, the 4 starter scenarios, README +
-  TOC updates.
+  `dashboard.spec.ts`), demo run mode, **2 reference scenarios** (R16
+  `lineup-flow.spec.ts` + R20 `wizard-tour.spec.ts`), README + TOC updates.
 - **Out of scope:** staging tests, production tests, CI integration, Org B /
   cross-org tests, R19 same-team race, R22 `cleanupOnTeardown` factory
   option, hosted demo environment, polished sales reel pipeline.
 
 ### Deferred to Separate Tasks
 
-- **Lineup race-condition fix on `feature/lineup-polish`** — Unit 7 (R17)
-  cannot pass until that work merges. **Recommended sequencing: ship Unit 7
-  inside `feature/lineup-polish`'s PR** so the fix and its regression test
-  ship together (single review surface; smaller blast radius). If that's
-  not feasible, ship Units 1–6 + 8–10 here, hold Unit 7 as a follow-up PR
-  on this branch and merge it after the fix lands. If the fix is
+- **R17 `double-duty-handoff.spec.ts`** — the regression test for the
+  lineup race-condition fix on `feature/lineup-polish`. Cannot pass until
+  that work merges. **Recommended sequencing: ship Unit 7 inside
+  `feature/lineup-polish`'s PR** so the fix and its regression test ship
+  together (single review surface; smaller blast radius). If the fix is
   superseded by a different approach, Unit 7's *scenario* (double-duty
-  placeholder resolution) remains valid but the specific assertion must be
-  re-checked against whatever shipped.
+  placeholder resolution) remains valid but the specific assertion must
+  be re-checked against whatever shipped. **Pattern reference:** Unit 7
+  introduces the "two browser contexts driving the same match in
+  parallel" idiom for any future test that needs it.
+- **R18 `scoring.spec.ts` (scoring + spectator)** — covers the third-
+  context observer pattern (one captain scores, a non-team-member observer
+  watches the live/spectate route update via realtime). Add when the
+  first scoring-flow or live-route regression test is actually needed.
+  **Pattern reference:** Unit 8 introduces the "third-context spectator
+  observing realtime updates" idiom.
 - **R19 same-team scoring race revival** — separate ticket (defines app-
   side conflict resolution behavior first), then trivially adds the spec.
 - **CI integration + staging mode** — separate v2 plan. Note for that v2:
   several v1 choices (hardcoded local-only service JWT, foundation user
   reuse with optional `fullyParallel: false`, no `cleanupOnTeardown`) will
   become explicit migration items, not configuration switches.
+
+## Success Criteria
+
+- A developer (you) can clone the repo on a fresh machine, populate
+  `.env.local` (`E2E_LOCAL_OK=true` + `E2E_PW`), run two commands
+  (`pnpm e2e:setup` and `pnpm test:e2e`), and see the full suite pass —
+  the 2 reference scenarios + the migrated `dashboard.spec.ts`.
+- **Each foundation user can authenticate via the app login UI with the
+  password defined in `.env.local`.** Hard gate on R5 / Unit 1: if the
+  bcrypt hash chosen during planning does not actually authenticate, R5
+  is not done — even if the SQL inserts succeed.
+- **Adding a new test for any future feature is 10–30 lines of spec
+  code on top of the scaffolding.** Future plans can include "do test
+  stuff" as a unit and have it materially mean "compose factories +
+  drive UI." This is the primary deliverable.
+- A demo-mode run of `wizard-tour.spec.ts` produces raw video the
+  project owner finds usable as a sales-pitch starting point or in-app
+  tutorial seed with light post-production (cuts, captions, voiceover).
+- No test ever fails because a previous test left dirty state.
 
 ## Context & Research
 
@@ -207,6 +251,15 @@ dual-write preferences).
 
 ## Key Technical Decisions
 
+- **Scaffolding-first; reference scenarios second.** The primary v1
+  deliverable is the test primitives (foundation seed, factories,
+  multi-user auth setup, demo run mode). Future plans can include "do
+  test stuff" as a unit and have it materially mean "compose factories +
+  drive UI in 10–30 lines." Two reference scenarios (R16 single-captain,
+  R20 LO/wizard) prove the scaffolding works and serve as copy-from
+  templates. Other patterns (R17 two-context handoff, R18 three-context
+  spectator) are written as follow-up specs when the patterns they
+  introduce are actually needed — the scaffolding already supports them.
 - **Auth setup uses UI login per foundation user, not programmatic.**
   `page.evaluate(() => supabase.auth.signInWithPassword(...))` doesn't
   work because the Supabase client is a module-scoped import, not on
@@ -324,11 +377,15 @@ tests/e2e/
                                      # if individual file grows past ~100
                                      # lines (per project file-size target).
   specs/                             # NEW directory
-    lineup-flow.spec.ts              # NEW (Unit 6, R16)
-    double-duty-handoff.spec.ts     # NEW (Unit 7, R17 — held on lineup
-                                     # race fix)
-    scoring.spec.ts                  # NEW (Unit 8, R18)
-    wizard-tour.spec.ts              # NEW (Unit 9, R20)
+    lineup-flow.spec.ts              # NEW (Unit 6, R16) — single-captain
+                                     # reference for future tests
+    wizard-tour.spec.ts              # NEW (Unit 9, R20) — LO + wizard
+                                     # reference + demo recording
+    # Deferred to follow-up tests (scaffolding already supports them):
+    # double-duty-handoff.spec.ts    # Unit 7 (R17), ships in
+    #                                # feature/lineup-polish PR
+    # scoring.spec.ts                # Unit 8 (R18), ships when first
+    #                                # scoring/spectator test is needed
   dashboard.spec.ts                  # MODIFY (Unit 3) — migrate to palette
   README.md                          # REWRITE (Unit 10)
 
@@ -816,7 +873,7 @@ captain (second context) does the same.
 
 ---
 
-- [ ] **Unit 7: `double-duty-handoff.spec.ts` (R17)** — held on lineup race-condition merge
+- [ ] **Unit 7: `double-duty-handoff.spec.ts` (R17)** — *(Deferred from v1; ships in `feature/lineup-polish` PR alongside the fix)*
 
 **Goal:** Two captains, two contexts; one locks with a double-duty
 placeholder; opponent resolves via `OpponentSubstituteModal`. Verify
@@ -875,7 +932,7 @@ PR).
 
 ---
 
-- [ ] **Unit 8: `scoring.spec.ts` (R18)**
+- [ ] **Unit 8: `scoring.spec.ts` (R18)** — *(Deferred from v1; written when the first scoring or spectate-route regression test is needed)*
 
 **Goal:** Drive lineup → prep → scoring through the UI; score one rack;
 observer (third context) sees the live/spectate route update via
@@ -1063,7 +1120,8 @@ Criteria's clean-checkout test.)
 | Bcrypt hash chosen in Unit 1 doesn't authenticate against GoTrue. | Unit 1 includes a verification scenario; Unit 3 will fail loudly if the hash is wrong. Generate the hash with `bcrypt-cli` (cost factor 10, `$2a$` prefix) and test against the Supabase auth client before declaring Unit 1 done. |
 | `organization_staff` trigger doesn't populate correctly under service-role insert. | Unit 1 verifies during implementation; if not, falls back to manual `INSERT INTO organization_staff`. Without this, R20 (LO wizard tour) fails at the first wizard guard. |
 | Parallel workers cause user-role collisions when one foundation user is captain on multiple simultaneous throwaway leagues. | Run R16 + R17 (or R16 twice) concurrently against a clean DB during Unit 6+7 verification. If collisions occur, set `fullyParallel: false` in `playwright.config.ts` for v1; v2 can revisit with per-test ephemeral users. |
-| Unit 7 (R17) cannot pass until the lineup race-condition fix on `feature/lineup-polish` lands. | **Recommended:** ship Unit 7 inside `feature/lineup-polish`'s PR. Otherwise: ship Units 1–6 + 8–10 here, hold Unit 7 as a follow-up PR after the fix merges. If the fix is superseded, re-evaluate Unit 7's specific assertion against whatever shipped. |
+| Unit 7 (R17) is deferred from v1 (ships inside `feature/lineup-polish`'s PR). | Not a v1 risk. Sequencing recommendation documented in "Deferred to Separate Tasks" — the regression test ships with the fix it covers. |
+| Unit 8 (R18) is deferred from v1 (written when the first scoring or spectate-route regression test is needed). | Not a v1 risk. The scaffolding (3-context auth states, factories, realtime channel) is already in place, so Unit 8 becomes a small follow-up spec at that time. |
 | `tsconfig.app.json` excludes `src/test/`, blocking import of `createServiceClient`. | Resolved by Key Decision — `serviceClient.ts` is local to `tests/e2e/fixtures/`, not imported from `src/`. |
 | Demo-mode video captures authenticated session details (URLs, cookies in DevTools overlay). | R15 and Unit 10 require the README to flag this. Reviewer checklist before any external sharing. Do not open DevTools while recording. |
 | `system_player_number` collisions if seed runs against a DB already containing 200001+. | Cleanup DELETE block in Unit 1 removes any `e2e-` rows first. If a non-`e2e-` row uses 200001+, the conflict surfaces immediately and the developer chooses a different range. |
