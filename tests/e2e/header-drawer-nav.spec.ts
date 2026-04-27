@@ -27,6 +27,7 @@ test.describe('Header drawer navigation (authenticated player)', () => {
     const drawer = page.getByRole('dialog');
     await expect(drawer).toBeVisible();
 
+    await expect(drawer.getByRole('link', { name: 'My Match' })).toBeVisible();
     await expect(drawer.getByRole('link', { name: 'Dashboard' })).toBeVisible();
     await expect(drawer.getByRole('link', { name: 'My Teams' })).toBeVisible();
     await expect(drawer.getByRole('link', { name: 'Stats' })).toBeVisible();

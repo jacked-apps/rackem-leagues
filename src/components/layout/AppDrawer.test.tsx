@@ -114,6 +114,7 @@ describe('AppDrawer', () => {
     renderDrawer();
 
     const nav = screen.getByRole('navigation', { name: /main navigation/i });
+    expect(within(nav).getByRole('link', { name: 'My Match' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Dashboard' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'My Teams' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Stats' })).toBeInTheDocument();

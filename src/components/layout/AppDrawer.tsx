@@ -148,11 +148,19 @@ function PublicSection() {
   );
 }
 
-/** Logged-in player roots: Dashboard / My Teams / Stats / Rules / Messages / Profile. */
+/**
+ * Logged-in player roots. "My Match" sits at the top because once the
+ * live-match jump-in feature is built, it will be the single most-used
+ * button on league night — players need it in one tap from anywhere.
+ * Today the link goes to a placeholder page (see src/player/MyMatch.tsx).
+ *
+ * Order: My Match / Dashboard / My Teams / Stats / Rules / Messages / Profile.
+ */
 function PlayerSection({ unreadCount }: { unreadCount: number }) {
   const messagesLabel = unreadCount > 0 ? `Messages (${unreadCount})` : 'Messages';
   return (
     <ul className="space-y-1">
+      <DrawerLink to="/my-match" label="My Match" />
       <DrawerLink to="/dashboard" label="Dashboard" />
       <DrawerLink to="/my-teams" label="My Teams" />
       <DrawerLink to="/stats" label="Stats" />

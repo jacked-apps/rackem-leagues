@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-04-27 (added PlayerStats placeholder page at /stats — real build-out backlogged)
+> **Last Updated**: 2026-04-27 (added MyMatch placeholder page at /my-match for live-match jump-in; real feature backlogged)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -369,6 +369,7 @@ Node-only tooling the operator runs manually (not part of the app bundle).
 
 #### Player Pages (`/player/`)
 - `MatchLineup.tsx` - Match lineup editor
+- `MyMatch.tsx` - Live-match jump-in landing page (PLACEHOLDER — real detection + jump-in is a backlog item)
 - `MyTeams.tsx` - Player's teams overview
 - `PlayerStats.tsx` - Personal stats landing page (PLACEHOLDER — real build-out is a backlog item)
 - `ScoreMatch.tsx` - Match scoring interface

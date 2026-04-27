@@ -28,6 +28,7 @@ import { NewPlayerForm } from '../newPlayer/NewPlayerForm';
 import { CompleteProfileForm } from '../completeProfile';
 import { Dashboard } from '../dashboard/Dashboard';
 import { Profile } from '../profile/Profile';
+import { MyMatch } from '../player/MyMatch';
 import { MyTeams } from '../player/MyTeams';
 import { PlayerStats } from '../player/PlayerStats';
 import { TeamSchedule } from '../player/TeamSchedule';
@@ -204,6 +205,7 @@ export const router = createBrowserRouter([
       { path: 'messages', element: withMember(<Messages />) },
       { path: 'player/:playerId', element: withMember(<PlayerProfile />) },
       { path: 'my-teams', element: withMember(<MyTeams />) },
+      { path: 'my-match', element: withMember(<MyMatch />) },
       { path: 'stats', element: withMember(<PlayerStats />) },
       { path: 'team/:teamId/schedule', element: withMember(<TeamSchedule />) },
       { path: 'match/:matchId/lineup', element: withMember(<MatchLineup />) },
