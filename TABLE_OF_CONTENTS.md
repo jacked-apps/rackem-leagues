@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-04-27 (added header-mobile-rework implementation plan; 9 units across 3 phases)
+> **Last Updated**: 2026-04-27 (added PlayerStats placeholder page at /stats — real build-out backlogged)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -370,6 +370,7 @@ Node-only tooling the operator runs manually (not part of the app bundle).
 #### Player Pages (`/player/`)
 - `MatchLineup.tsx` - Match lineup editor
 - `MyTeams.tsx` - Player's teams overview
+- `PlayerStats.tsx` - Personal stats landing page (PLACEHOLDER — real build-out is a backlog item)
 - `ScoreMatch.tsx` - Match scoring interface
 - `TeamSchedule.tsx` - Team schedule view
 
