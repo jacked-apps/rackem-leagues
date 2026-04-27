@@ -78,14 +78,6 @@ interface PageHeaderProps {
    *  with primary save/cancel action pairs render those in their own fixed
    *  bottom action bar instead. */
   children?: React.ReactNode;
-  /** @deprecated Slated for removal in Unit 4 of the header rework. Currently
-   *  ignored — included so the 3 existing callers (Home.tsx ×2, About.tsx)
-   *  still typecheck while their migration is pending. */
-  preTitle?: string;
-  /** @deprecated Slated for removal in Unit 4 of the header rework. Currently
-   *  ignored — the new built-in identity slot replaces it. Home.tsx is the
-   *  only existing caller. */
-  rightContent?: React.ReactNode;
 }
 
 /**
