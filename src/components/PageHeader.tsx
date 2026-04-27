@@ -129,6 +129,12 @@ export function PageHeader({
         className="sticky z-30 flex h-12 items-center gap-2 border-b bg-white px-3"
         style={{ top: 'var(--env-banner-height, 0px)' }}
       >
+        {showBack ? <BackAffordance backTo={backTo} backLabel={backLabel} onBackClick={onBackClick} /> : null}
+
+        <h1 className="flex-1 truncate text-base font-semibold text-gray-900">{title}</h1>
+
+        <IdentitySlot pathname={location.pathname} />
+
         <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
           <SheetTrigger asChild>
             <button
@@ -139,18 +145,12 @@ export function PageHeader({
               <Menu className="h-5 w-5" />
             </button>
           </SheetTrigger>
-          <SheetContent side="left">
+          <SheetContent side="right">
             {drawerOpen ? (
               <AppDrawer open={drawerOpen} onOpenChange={setDrawerOpen} />
             ) : null}
           </SheetContent>
         </Sheet>
-
-        {showBack ? <BackAffordance backTo={backTo} backLabel={backLabel} onBackClick={onBackClick} /> : null}
-
-        <h1 className="flex-1 truncate text-base font-semibold text-gray-900">{title}</h1>
-
-        <IdentitySlot pathname={location.pathname} />
       </header>
 
       {(organization || subtitle || children) ? (
