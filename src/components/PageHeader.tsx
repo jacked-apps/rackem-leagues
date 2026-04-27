@@ -30,7 +30,7 @@
  */
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Building2, LogIn, Menu } from 'lucide-react';
 import {
   Sheet,
@@ -320,10 +320,15 @@ function BackAffordance({
 /**
  * Identity slot: avatar/initials linking to /profile when logged in,
  * "Sign in" button when logged out. Suppressed on auth-flow routes.
+ *
+ * The avatar acts as a toggle — tapping it from anywhere goes to /profile,
+ * tapping it again while on /profile goes back to where the user came from.
+ * Saves a navigation step when peeking at profile mid-task.
  */
 function IdentitySlot({ pathname }: { pathname: string }) {
   const { isLoggedIn } = useUser();
   const { member } = useUserProfile();
+  const navigate = useNavigate();
 
   if (AUTH_FLOW_ROUTES.includes(pathname)) {
     return null;
@@ -344,12 +349,32 @@ function IdentitySlot({ pathname }: { pathname: string }) {
 
   const initials = computeInitials(member?.first_name, member?.last_name);
   const displayName = [member?.first_name, member?.last_name].filter(Boolean).join(' ') || 'Profile';
+  const onProfile = pathname === '/profile';
+  const avatarClass =
+    'flex h-9 w-9 shrink-0 items-center justify-center rounded-full border bg-gray-100 text-xs font-semibold text-gray-700 hover:bg-accent';
 
+  // On the profile page, the avatar becomes a "back" button that takes the
+  // user back to wherever they came from (open/close toggle behavior).
+  if (onProfile) {
+    return (
+      <button
+        type="button"
+        onClick={() => navigate(-1)}
+        aria-label="Close profile and go back"
+        className={avatarClass}
+      >
+        {initials}
+      </button>
+    );
+  }
+
+  // Anywhere else, the avatar is a Link to /profile (preserves keyboard,
+  // right-click open-in-new-tab, screen-reader "link" semantics).
   return (
     <Link
       to="/profile"
       aria-label={`${displayName} — open profile`}
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border bg-gray-100 text-xs font-semibold text-gray-700 hover:bg-accent"
+      className={avatarClass}
     >
       {initials}
     </Link>
