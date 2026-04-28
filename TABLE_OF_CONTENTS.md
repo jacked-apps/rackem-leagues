@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-04-21 (added League House Rules feature on top of the rulebook reader — LO authoring UI, league/org scoped rules with cascade + pure-CSI opt-out, `house_rules` migration, dev bootstrap SQL fixtures)
+> **Last Updated**: 2026-04-27 (added MyMatch placeholder page at /my-match for live-match jump-in; real feature backlogged)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -48,8 +48,10 @@
 | `docs/LEAGUE_MANAGEMENT_PLAN.md` | League management system architecture | System hierarchy and database schema |
 | `/docs/brainstorms/` | **CE brainstorm requirements docs** | Output of `/compound-engineering:ce-brainstorm` |
 | `docs/brainstorms/official-rulebook-reader-requirements.md` | Requirements for the Official Rulebook Reader feature | Branch 1 of the rules-feature family |
+| `docs/brainstorms/header-mobile-rework-requirements.md` | Requirements for the global header & navigation rework | Slim sticky header, hamburger drawer with per-org operator shortcuts, drawer-internal badges |
 | `/docs/plans/` | **CE implementation plans** | Output of `/compound-engineering:ce-plan` |
 | `docs/plans/2026-04-17-001-feat-official-rulebook-reader-plan.md` | Implementation plan for the Official Rulebook Reader | 6 units, active branch `feature/official-rulebook-reader` |
+| `docs/plans/2026-04-27-001-feat-global-header-nav-rework-plan.md` | Implementation plan for the global header & navigation rework | 9 units in 3 phases, active branch `fix/header-mobile-rework` |
 
 ### Future Work Folder
 
@@ -367,7 +369,9 @@ Node-only tooling the operator runs manually (not part of the app bundle).
 
 #### Player Pages (`/player/`)
 - `MatchLineup.tsx` - Match lineup editor
+- `MyMatch.tsx` - Live-match jump-in landing page (PLACEHOLDER — real detection + jump-in is a backlog item)
 - `MyTeams.tsx` - Player's teams overview
+- `PlayerStats.tsx` - Personal stats landing page (PLACEHOLDER — real build-out is a backlog item)
 - `ScoreMatch.tsx` - Match scoring interface
 - `TeamSchedule.tsx` - Team schedule view
 

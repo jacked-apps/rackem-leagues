@@ -57,8 +57,7 @@ export const ENV_BANNER_CONFIG: Record<
 > = {
   staging: {
     label: 'BETA PREVIEW',
-    message:
-      'You are testing a pre-release build. Features may change. Report issues to Ed or to the league operator running tonight.',
+    message: 'Pre-release build — report issues to Ed or your LO.',
     bgClass: 'bg-amber-500',
     textClass: 'text-black',
     faviconPath: '/favicon-staging.svg',
