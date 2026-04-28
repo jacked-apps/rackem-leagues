@@ -1,14 +1,12 @@
 /**
- * @fileoverview Opponent Substitute Modal Component
+ * @fileoverview Opponent Substitute Modal
  *
- * Modal that appears when opponent has locked their lineup with a substitute.
- * Allows user to choose which of the opponent's 4 real players will play double duty.
+ * Opens when opponent has locked their lineup with a double-duty placeholder
+ * (SUB_*_DD_ID). The captain picks which of the opponent's real players will
+ * play in two positions; the chosen player's UUID replaces the placeholder.
  *
- * Flow (5v5 only):
- * 1. Opponent locks lineup with SUB in one position
- * 2. This modal appears for you
- * 3. You choose which of their 4 real players plays in 2 positions
- * 4. Chosen player replaces SUB in their lineup (now appears twice)
+ * Anonymous-sub placeholders (SUB_*_ANON_ID) never trigger this modal — they
+ * are the final state for that slot.
  */
 
 import {
@@ -27,76 +25,68 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
+import { isDoubleDutySentinel, isAnySubSentinel } from '@/utils/lineup';
+
+interface OpponentLineupShape {
+  player1_id: string | null;
+  player1_handicap: number;
+  player2_id: string | null;
+  player2_handicap: number;
+  player3_id: string | null;
+  player3_handicap: number;
+  player4_id: string | null;
+  player4_handicap: number;
+  player5_id: string | null;
+  player5_handicap: number;
+}
 
 interface OpponentSubstituteModalProps {
   /** Whether modal is open */
   isOpen: boolean;
-  /** Opponent's locked lineup with SUB in one position */
-  opponentLineup: {
-    player1_id: string | null;
-    player1_handicap: number;
-    player2_id: string | null;
-    player2_handicap: number;
-    player3_id: string | null;
-    player3_handicap: number;
-    player4_id: string | null;
-    player4_handicap: number;
-    player5_id: string | null;
-    player5_handicap: number;
-  };
+  /** Opponent's locked lineup with a DD placeholder in one position */
+  opponentLineup: OpponentLineupShape;
+  /** Number of active slots for this match's lineup_size */
+  lineupSize: number;
   /** Function to get player display name from ID */
   getPlayerDisplayName: (playerId: string) => string;
-  /** Handler when player is chosen - receives player ID and handicap */
+  /** Handler when player is chosen — receives player ID, handicap, and the DD slot position */
   onPlayerChosen: (playerId: string, handicap: number, position: number) => void;
   /** Handler to close modal */
   onClose: () => void;
-  /** SUB_HOME_ID constant */
-  subHomeId: string;
-  /** SUB_AWAY_ID constant */
-  subAwayId: string;
 }
 
-/**
- * Modal for opponent to choose which player plays double duty
- */
 export function OpponentSubstituteModal({
   isOpen,
   opponentLineup,
+  lineupSize,
   getPlayerDisplayName,
   onPlayerChosen,
   onClose,
-  subHomeId,
-  subAwayId,
 }: OpponentSubstituteModalProps) {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>('');
 
-  // Find which position has the substitute
-  const subPosition = [1, 2, 3, 4, 5].find((pos) => {
-    const playerId = opponentLineup[`player${pos}_id` as keyof typeof opponentLineup];
-    return playerId === subHomeId || playerId === subAwayId;
+  // Find the DD placeholder position (anon sentinels never trigger this modal)
+  const activeSlots = Array.from({ length: lineupSize }, (_, i) => i + 1);
+  const subPosition = activeSlots.find((pos) => {
+    const playerId = opponentLineup[`player${pos}_id` as keyof OpponentLineupShape];
+    return typeof playerId === 'string' && isDoubleDutySentinel(playerId);
   });
 
-  // Get all real players (exclude the substitute position)
-  const realPlayers = [1, 2, 3, 4, 5]
+  // Real players are every slot that isn't the DD placeholder and isn't empty
+  const realPlayers = activeSlots
     .filter((pos) => pos !== subPosition)
     .map((pos) => ({
       position: pos,
-      id: opponentLineup[`player${pos}_id` as keyof typeof opponentLineup] as string,
-      handicap: opponentLineup[`player${pos}_handicap` as keyof typeof opponentLineup] as number,
+      id: opponentLineup[`player${pos}_id` as keyof OpponentLineupShape] as string,
+      handicap: opponentLineup[`player${pos}_handicap` as keyof OpponentLineupShape] as number,
     }))
-    .filter((p) => p.id); // Only include positions that have a player
+    .filter((p) => p.id && !isAnySubSentinel(p.id));
 
   const handleConfirm = () => {
     if (!selectedPlayerId || !subPosition) return;
-
-    // Find the selected player's handicap
     const selectedPlayer = realPlayers.find((p) => p.id === selectedPlayerId);
     if (!selectedPlayer) return;
-
-    // Call handler with player ID, handicap, and the position to replace (sub position)
     onPlayerChosen(selectedPlayerId, selectedPlayer.handicap, subPosition);
-
-    // Reset state and close
     setSelectedPlayerId('');
     onClose();
   };
@@ -107,7 +97,7 @@ export function OpponentSubstituteModal({
         <DialogHeader>
           <DialogTitle>Opponent Used Substitute</DialogTitle>
           <DialogDescription>
-            Your opponent only has 4 players. Choose which of their players will play in 2 positions.
+            Your opponent is short a player. Choose which of their players will play in 2 positions.
           </DialogDescription>
         </DialogHeader>
 
@@ -127,7 +117,6 @@ export function OpponentSubstituteModal({
               </SelectContent>
             </Select>
           </div>
-
         </div>
 
         <div className="flex justify-end gap-2">

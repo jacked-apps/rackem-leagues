@@ -64,63 +64,6 @@ export type Database = {
         }
         Relationships: []
       }
-      archived_placeholders: {
-        Row: {
-          actor_member_id: string
-          actor_role: string
-          created_at: string
-          expires_at: string
-          id: string
-          member_snapshot: Json
-          organization_id: string
-          placeholder_member_id: string
-          target_member_id: string
-          transferred_rows: Json
-          undone_at: string | null
-        }
-        Insert: {
-          actor_member_id: string
-          actor_role: string
-          created_at?: string
-          expires_at?: string
-          id?: string
-          member_snapshot: Json
-          organization_id: string
-          placeholder_member_id: string
-          target_member_id: string
-          transferred_rows: Json
-          undone_at?: string | null
-        }
-        Update: {
-          actor_member_id?: string
-          actor_role?: string
-          created_at?: string
-          expires_at?: string
-          id?: string
-          member_snapshot?: Json
-          organization_id?: string
-          placeholder_member_id?: string
-          target_member_id?: string
-          transferred_rows?: Json
-          undone_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "archived_placeholders_actor_member_id_fkey"
-            columns: ["actor_member_id"]
-            isOneToOne: false
-            referencedRelation: "members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "archived_placeholders_target_member_id_fkey"
-            columns: ["target_member_id"]
-            isOneToOne: false
-            referencedRelation: "members"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       blocked_users: {
         Row: {
           blocked_at: string
@@ -383,10 +326,10 @@ export type Database = {
           email: string
           expires_at: string
           id: string
-          invited_by_member_id: string | null
-          member_id: string | null
+          invited_by_member_id: string
+          member_id: string
           status: string
-          team_id: string | null
+          team_id: string
           token: string
         }
         Insert: {
@@ -396,10 +339,10 @@ export type Database = {
           email: string
           expires_at?: string
           id?: string
-          invited_by_member_id?: string | null
-          member_id?: string | null
+          invited_by_member_id: string
+          member_id: string
           status?: string
-          team_id?: string | null
+          team_id: string
           token?: string
         }
         Update: {
@@ -409,10 +352,10 @@ export type Database = {
           email?: string
           expires_at?: string
           id?: string
-          invited_by_member_id?: string | null
-          member_id?: string | null
+          invited_by_member_id?: string
+          member_id?: string
           status?: string
-          team_id?: string | null
+          team_id?: string
           token?: string
         }
         Relationships: [
@@ -767,41 +710,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "match_lineups_player1_id_fkey"
-            columns: ["player1_id"]
-            isOneToOne: false
-            referencedRelation: "members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "match_lineups_player2_id_fkey"
-            columns: ["player2_id"]
-            isOneToOne: false
-            referencedRelation: "members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "match_lineups_player3_id_fkey"
-            columns: ["player3_id"]
-            isOneToOne: false
-            referencedRelation: "members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "match_lineups_player4_id_fkey"
-            columns: ["player4_id"]
-            isOneToOne: false
-            referencedRelation: "members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "match_lineups_player5_id_fkey"
-            columns: ["player5_id"]
-            isOneToOne: false
-            referencedRelation: "members"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "match_lineups_swap_new_player_id_fkey"
             columns: ["swap_new_player_id"]
             isOneToOne: false
@@ -833,9 +741,6 @@ export type Database = {
           away_tiebreaker_verified_by: string | null
           completed_at: string | null
           created_at: string
-          fargo_start_points: number | null
-          fargo_start_points_confirmed_by_away: string | null
-          fargo_start_points_confirmed_by_home: string | null
           home_games_to_lose: number | null
           home_games_to_tie: number | null
           home_games_to_win: number | null
@@ -875,9 +780,6 @@ export type Database = {
           away_tiebreaker_verified_by?: string | null
           completed_at?: string | null
           created_at?: string
-          fargo_start_points?: number | null
-          fargo_start_points_confirmed_by_away?: string | null
-          fargo_start_points_confirmed_by_home?: string | null
           home_games_to_lose?: number | null
           home_games_to_tie?: number | null
           home_games_to_win?: number | null
@@ -917,9 +819,6 @@ export type Database = {
           away_tiebreaker_verified_by?: string | null
           completed_at?: string | null
           created_at?: string
-          fargo_start_points?: number | null
-          fargo_start_points_confirmed_by_away?: string | null
-          fargo_start_points_confirmed_by_home?: string | null
           home_games_to_lose?: number | null
           home_games_to_tie?: number | null
           home_games_to_win?: number | null
@@ -976,20 +875,6 @@ export type Database = {
           {
             foreignKeyName: "matches_away_tiebreaker_verified_by_fkey"
             columns: ["away_tiebreaker_verified_by"]
-            isOneToOne: false
-            referencedRelation: "members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "matches_fargo_start_points_confirmed_by_away_fkey"
-            columns: ["fargo_start_points_confirmed_by_away"]
-            isOneToOne: false
-            referencedRelation: "members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "matches_fargo_start_points_confirmed_by_home_fkey"
-            columns: ["fargo_start_points_confirmed_by_home"]
             isOneToOne: false
             referencedRelation: "members"
             referencedColumns: ["id"]
@@ -1055,11 +940,9 @@ export type Database = {
       members: {
         Row: {
           address: string | null
-          archived_at: string | null
           bca_member_number: string | null
           city: string
           created_at: string | null
-          created_by_member_id: string | null
           date_of_birth: string | null
           email: string | null
           fargo_rating: number | null
@@ -1068,7 +951,6 @@ export type Database = {
           last_name: string
           membership_paid_date: string | null
           nickname: string | null
-          organization_id: string | null
           phone: string | null
           profanity_filter_enabled: boolean | null
           role: Database["public"]["Enums"]["user_role"] | null
@@ -1082,11 +964,9 @@ export type Database = {
         }
         Insert: {
           address?: string | null
-          archived_at?: string | null
           bca_member_number?: string | null
           city: string
           created_at?: string | null
-          created_by_member_id?: string | null
           date_of_birth?: string | null
           email?: string | null
           fargo_rating?: number | null
@@ -1095,7 +975,6 @@ export type Database = {
           last_name: string
           membership_paid_date?: string | null
           nickname?: string | null
-          organization_id?: string | null
           phone?: string | null
           profanity_filter_enabled?: boolean | null
           role?: Database["public"]["Enums"]["user_role"] | null
@@ -1109,11 +988,9 @@ export type Database = {
         }
         Update: {
           address?: string | null
-          archived_at?: string | null
           bca_member_number?: string | null
           city?: string
           created_at?: string | null
-          created_by_member_id?: string | null
           date_of_birth?: string | null
           email?: string | null
           fargo_rating?: number | null
@@ -1122,7 +999,6 @@ export type Database = {
           last_name?: string
           membership_paid_date?: string | null
           nickname?: string | null
-          organization_id?: string | null
           phone?: string | null
           profanity_filter_enabled?: boolean | null
           role?: Database["public"]["Enums"]["user_role"] | null
@@ -1134,19 +1010,98 @@ export type Database = {
           user_id?: string | null
           zip_code?: string | null
         }
+        Relationships: []
+      }
+      merge_requests: {
+        Row: {
+          created_at: string
+          id: string
+          organization_id: string | null
+          placeholder_member_id: string
+          processed_at: string | null
+          processed_by_member_id: string | null
+          processor_notes: string | null
+          registered_member_id: string
+          request_notes: string | null
+          requested_by_member_id: string
+          requester_role: string
+          status: Database["public"]["Enums"]["merge_request_status"]
+          team_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organization_id?: string | null
+          placeholder_member_id: string
+          processed_at?: string | null
+          processed_by_member_id?: string | null
+          processor_notes?: string | null
+          registered_member_id: string
+          request_notes?: string | null
+          requested_by_member_id: string
+          requester_role: string
+          status?: Database["public"]["Enums"]["merge_request_status"]
+          team_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organization_id?: string | null
+          placeholder_member_id?: string
+          processed_at?: string | null
+          processed_by_member_id?: string | null
+          processor_notes?: string | null
+          registered_member_id?: string
+          request_notes?: string | null
+          requested_by_member_id?: string
+          requester_role?: string
+          status?: Database["public"]["Enums"]["merge_request_status"]
+          team_id?: string | null
+          updated_at?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "members_created_by_member_id_fkey"
-            columns: ["created_by_member_id"]
+            foreignKeyName: "merge_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merge_requests_placeholder_member_id_fkey"
+            columns: ["placeholder_member_id"]
             isOneToOne: false
             referencedRelation: "members"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "members_organization_id_fkey"
-            columns: ["organization_id"]
+            foreignKeyName: "merge_requests_processed_by_member_id_fkey"
+            columns: ["processed_by_member_id"]
             isOneToOne: false
-            referencedRelation: "organizations"
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merge_requests_registered_member_id_fkey"
+            columns: ["registered_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merge_requests_requested_by_member_id_fkey"
+            columns: ["requested_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merge_requests_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
@@ -1391,64 +1346,6 @@ export type Database = {
           {
             foreignKeyName: "organizations_created_by_fkey"
             columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "members"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      placeholder_audit_log: {
-        Row: {
-          action: string
-          actor_member_id: string
-          affected_tables: Json | null
-          archive_id: string | null
-          created_at: string
-          id: string
-          organization_id: string
-          placeholder_member_id: string | null
-          target_member_id: string | null
-        }
-        Insert: {
-          action: string
-          actor_member_id: string
-          affected_tables?: Json | null
-          archive_id?: string | null
-          created_at?: string
-          id?: string
-          organization_id: string
-          placeholder_member_id?: string | null
-          target_member_id?: string | null
-        }
-        Update: {
-          action?: string
-          actor_member_id?: string
-          affected_tables?: Json | null
-          archive_id?: string | null
-          created_at?: string
-          id?: string
-          organization_id?: string
-          placeholder_member_id?: string | null
-          target_member_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "placeholder_audit_log_actor_member_id_fkey"
-            columns: ["actor_member_id"]
-            isOneToOne: false
-            referencedRelation: "members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "placeholder_audit_log_archive_id_fkey"
-            columns: ["archive_id"]
-            isOneToOne: false
-            referencedRelation: "archived_placeholders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "placeholder_audit_log_target_member_id_fkey"
-            columns: ["target_member_id"]
             isOneToOne: false
             referencedRelation: "members"
             referencedColumns: ["id"]
@@ -2401,17 +2298,6 @@ export type Database = {
       }
     }
     Functions: {
-      archive_placeholder: {
-        Args: {
-          p_actor_member_id: string
-          p_member_id: string
-          p_organization_id: string
-        }
-        Returns: {
-          error_message: string
-          success: boolean
-        }[]
-      }
       assign_tables_for_season: {
         Args: { p_season_id: string }
         Returns: undefined
@@ -2487,43 +2373,22 @@ export type Database = {
           error_message: string
           expires_at: string
           is_valid: boolean
+          member_first_name: string
           member_id: string
-          placeholder_first_name: string
-          placeholder_last_name: string
+          member_last_name: string
           team_name: string
-        }[]
-      }
-      get_merges_into_member: {
-        Args: { p_org_id: string; p_target_member_id: string }
-        Returns: {
-          actor_name: string
-          actor_role: string
-          archive_id: string
-          created_at: string
-          expires_at: string
-          placeholder_first_name: string
-          placeholder_last_name: string
-          placeholder_member_id: string
-          placeholder_nickname: string
-          synopsis: Json
         }[]
       }
       get_my_pending_invites: {
         Args: Record<PropertyKey, never>
         Returns: {
           captain_name: string
-          creator_name: string
           expires_at: string
-          game_count: number
           invited_at: string
           is_expired: boolean
           member_id: string
-          organization_name: string
-          organization_owner_name: string
           placeholder_first_name: string
           placeholder_last_name: string
-          placeholder_nickname: string
-          starting_handicap_5v5: number
           team_name: string
           token: string
         }[]
@@ -2559,18 +2424,13 @@ export type Database = {
           teams: Json
         }[]
       }
-      get_placeholder_remove_context: {
-        Args: { p_member_id: string }
-        Returns: {
-          first_name: string
-          found: boolean
-          has_bca: boolean
-          has_stats: boolean
-          is_archived: boolean
-          is_placeholder: boolean
-          nickname: string
-          team_count: number
-        }[]
+      get_operator_player_stats: {
+        Args: { p_org_id: string }
+        Returns: Json
+      }
+      get_operator_stats: {
+        Args: { operator_id_param: string }
+        Returns: Json
       }
       get_team_verification_options: {
         Args: { p_decoy_count?: number; p_member_id: string }
@@ -2633,21 +2493,9 @@ export type Database = {
           total_rows_updated: number
         }[]
       }
-      merge_placeholder_into_member_v2: {
-        Args: {
-          p_actor_member_id: string
-          p_actor_role: string
-          p_organization_id: string
-          p_placeholder_member_id: string
-          p_target_member_id: string
-        }
-        Returns: {
-          archive_id: string
-          error_message: string
-          success: boolean
-          tables_updated: number
-          total_rows_updated: number
-        }[]
+      prep_match: {
+        Args: { p_game_rows: Json; p_match_id: string; p_thresholds: Json }
+        Returns: undefined
       }
       placeholder_has_stats: {
         Args: { p_member_id: string }
@@ -2656,21 +2504,6 @@ export type Database = {
       remove_placeholder_from_team: {
         Args: { p_member_id: string; p_org_id: string; p_team_id: string }
         Returns: Json
-      }
-      resolve_member_primary_org: {
-        Args: { p_member_id: string }
-        Returns: string
-      }
-      restore_placeholder: {
-        Args: {
-          p_actor_member_id: string
-          p_member_id: string
-          p_organization_id: string
-        }
-        Returns: {
-          error_message: string
-          success: boolean
-        }[]
       }
       search_placeholder_matches: {
         Args: {
@@ -2768,6 +2601,7 @@ export type Database = {
       }
     }
     Enums: {
+      merge_request_status: "pending" | "approved" | "rejected"
       moderation_action:
         | "warning"
         | "temporary_suspension"
@@ -2924,6 +2758,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      merge_request_status: ["pending", "approved", "rejected"],
       moderation_action: [
         "warning",
         "temporary_suspension",

@@ -221,3 +221,7 @@ The architecture and decisions behind this scaffolding are documented in:
 
 When extending the scaffolding (new factories, new foundation users,
 v2 staging mode), update those docs alongside the code.
+For a logged-out test (e.g., the public home page), use
+`test.use({ storageState: { cookies: [], origins: [] } })` at the top
+of the file to override the saved state.
+

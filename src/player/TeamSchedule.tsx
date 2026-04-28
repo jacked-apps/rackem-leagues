@@ -19,9 +19,10 @@ import {
 } from '@/components/ui/accordion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, MapPin, ArrowLeft, Trophy, AlertCircle, EyeOff, Eye } from 'lucide-react';
+import { Calendar, MapPin, Trophy, AlertCircle, EyeOff, Eye } from 'lucide-react';
 import { parseLocalDate } from '@/utils/formatters';
 import { MatchDetailCard } from '@/components/MatchDetailCard';
+import { PageHeader } from '@/components/PageHeader';
 
 export function TeamSchedule() {
   const { teamId } = useParams<{ teamId: string }>();
@@ -128,42 +129,34 @@ export function TeamSchedule() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header - Mobile First */}
-      <header className="bg-white border-b sticky top-0 z-10">
-        <div className="px-4 py-3">
-          <Link to="/my-teams" className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to My Teams
-          </Link>
-          <div className="text-4xl font-semibold text-gray-900">{team.team_name}</div>
-          {dayOfWeek && (
-            <p className="text-xl text-gray-600">{dayOfWeek}s</p>
-          )}
-
-          {/* Hide Completed Toggle */}
-          <div className="mt-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setHideCompleted(!hideCompleted)}
-              className="w-full sm:w-auto"
-              loadingText="none"
-            >
-              {hideCompleted ? (
-                <>
-                  <Eye className="h-4 w-4 mr-2" />
-                  Show Completed
-                </>
-              ) : (
-                <>
-                  <EyeOff className="h-4 w-4 mr-2" />
-                  Hide Completed
-                </>
-              )}
-            </Button>
-          </div>
+      <PageHeader
+        backTo="/my-teams"
+        backLabel="Back to My Teams"
+        title={team.team_name}
+        subtitle={dayOfWeek ? `${dayOfWeek}s` : undefined}
+      >
+        <div className="mt-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setHideCompleted(!hideCompleted)}
+            className="w-full sm:w-auto"
+            loadingText="none"
+          >
+            {hideCompleted ? (
+              <>
+                <Eye className="h-4 w-4 mr-2" />
+                Show Completed
+              </>
+            ) : (
+              <>
+                <EyeOff className="h-4 w-4 mr-2" />
+                Hide Completed
+              </>
+            )}
+          </Button>
         </div>
-      </header>
+      </PageHeader>
 
       {/* Main Content */}
       <main className="px-4 py-6 max-w-2xl mx-auto">

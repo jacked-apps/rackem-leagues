@@ -7,7 +7,6 @@ export const About: React.FC = () => {
       <PageHeader
         backTo="/"
         backLabel="Home"
-        preTitle="Welcome to"
         title="Rack'em Leagues"
         subtitle="Your league, your way."
       />

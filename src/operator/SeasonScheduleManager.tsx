@@ -391,15 +391,21 @@ export const SeasonScheduleManager: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-24">
       <PageHeader
         backTo={`/league/${leagueId}`}
         backLabel="Back To League"
         title="Manage Schedule"
         subtitle={`${season?.season_name} • ${league?.division || 'League'}`}
-      >
-        <div className="grid grid-cols-2 gap-2 mt-4">
-          <Button 
+      />
+      {/*
+        Save / Cancel pair lives in a fixed bottom bar (R6a) so it stays in
+        the thumb zone and does not scroll out of view on long schedule edits.
+        Wrapper above adds pb-24 to keep the last row of content above the bar.
+      */}
+      <div className="fixed bottom-0 inset-x-0 z-30 border-t bg-white p-3 shadow-lg">
+        <div className="mx-auto grid max-w-6xl grid-cols-2 gap-2">
+          <Button
             variant="outline"
             onClick={handleCancel}
             className="w-full"
@@ -417,7 +423,7 @@ export const SeasonScheduleManager: React.FC = () => {
             Save Changes
           </Button>
         </div>
-      </PageHeader>
+      </div>
       <div className="container mx-auto px-4 max-w-6xl">
         {/* Instructions Info Button */}
         <div className="my-4">

@@ -12,12 +12,20 @@ import { supabase } from '@/supabaseClient';
 import { useUpdateMatch, useUpdateMatchLineup } from '@/api/hooks';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
+import { computeLineupCompleteness } from '@/utils/lineup';
 
 interface LineupPersistenceParams {
   matchId: string | undefined;
   userTeamId: string | undefined;
   memberId: string | undefined;
   lineupId: string | null;
+  /**
+   * Whether the opponent's lineup is currently locked. Unlock is forbidden
+   * once BOTH lineups are locked — we're committed to the match at that
+   * point (Unit 6). If the opponent hasn't locked yet, this captain is
+   * free to unlock and edit.
+   */
+  opponentLocked?: boolean;
   player1Id: string;
   player2Id: string;
   player3Id: string;
@@ -44,6 +52,7 @@ export function useLineupPersistence(params: LineupPersistenceParams) {
     userTeamId,
     memberId,
     lineupId,
+    opponentLocked = false,
     player1Id,
     player2Id,
     player3Id,
@@ -72,7 +81,23 @@ export function useLineupPersistence(params: LineupPersistenceParams) {
    */
   const handleLockLineup = async () => {
     if (!isComplete) {
-      toast.error('Please select all 3 players before locking your lineup');
+      // Derive a precise reason from the completeness function rather than
+      // hardcoding "3 players" — works for any lineup_size, any handicap system.
+      const row = {
+        player1_id: player1Id,
+        player1_handicap: player1Handicap,
+        player2_id: player2Id,
+        player2_handicap: player2Handicap,
+        player3_id: player3Id,
+        player3_handicap: player3Handicap,
+        player4_id: player4Id,
+        player4_handicap: player4Handicap,
+        player5_id: player5Id,
+        player5_handicap: player5Handicap,
+      };
+      const result = computeLineupCompleteness(row, playerCount);
+      const message = result.reasons[0] ?? `Please complete all ${playerCount} lineup slots before locking`;
+      toast.error(message);
       return;
     }
 
@@ -189,6 +214,15 @@ export function useLineupPersistence(params: LineupPersistenceParams) {
   const handleUnlockLineup = async () => {
     if (!lineupId || !matchId) {
       toast.error('Error: No lineup to unlock');
+      return;
+    }
+
+    // Unit 6: once both lineups are locked, the match is committed — sub
+    // resolution, Fargo agreement, and game creation all proceed from here
+    // without a re-do path. Reject the unlock explicitly (UI also hides
+    // the button via canUnlock, this is defense-in-depth).
+    if (opponentLocked) {
+      toast.error('Both lineups are locked. Work things out from this screen, or contact an operator.');
       return;
     }
 
