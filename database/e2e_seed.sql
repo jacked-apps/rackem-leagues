@@ -158,9 +158,15 @@ DELETE FROM venues
 DELETE FROM organizations
   WHERE id = 'e0e0e0e0-cccc-cccc-cccc-cccccccccccc'::uuid;
 
--- 2c. Foundation members (range-scoped) and auth.users (email-pattern-scoped).
+-- 2c. Foundation members (range-scoped) and auth identities + users
+-- (email-pattern-scoped). Identities are deleted before users because
+-- auth.identities.user_id FKs to auth.users.id without CASCADE in some
+-- Supabase versions.
 DELETE FROM members
   WHERE system_player_number BETWEEN 200001 AND 200099;
+
+DELETE FROM auth.identities
+  WHERE user_id IN (SELECT id FROM auth.users WHERE email LIKE 'e2e-%@test.test');
 
 DELETE FROM auth.users WHERE email LIKE 'e2e-%@test.test';
 
@@ -172,9 +178,16 @@ DELETE FROM auth.users WHERE email LIKE 'e2e-%@test.test';
 -- works without email-verification UI.
 -- ============================================================================
 
+-- Note: GoTrue's userByEmail query expects non-null strings for token
+-- columns (confirmation_token, recovery_token, email_change_token_*,
+-- email_change). NULL causes "Database error querying schema" with
+-- underlying error "Scan error: converting NULL to string is unsupported".
+-- We explicitly set these to '' for every foundation user.
+
 INSERT INTO auth.users (
   id, instance_id, email, encrypted_password, email_confirmed_at,
-  raw_app_meta_data, raw_user_meta_data, aud, role, created_at, updated_at
+  raw_app_meta_data, raw_user_meta_data, aud, role, created_at, updated_at,
+  confirmation_token, recovery_token, email_change_token_new, email_change
 ) VALUES
   -- LO
   (
@@ -188,7 +201,8 @@ INSERT INTO auth.users (
     'authenticated',
     'authenticated',
     NOW(),
-    NOW()
+    NOW(),
+    '', '', '', ''
   ),
   -- Captain 1 (home team)
   (
@@ -202,7 +216,8 @@ INSERT INTO auth.users (
     'authenticated',
     'authenticated',
     NOW(),
-    NOW()
+    NOW(),
+    '', '', '', ''
   ),
   -- Captain 2 (away team)
   (
@@ -216,7 +231,8 @@ INSERT INTO auth.users (
     'authenticated',
     'authenticated',
     NOW(),
-    NOW()
+    NOW(),
+    '', '', '', ''
   ),
   -- Captain 3 (reserve / 3rd context)
   (
@@ -230,7 +246,8 @@ INSERT INTO auth.users (
     'authenticated',
     'authenticated',
     NOW(),
-    NOW()
+    NOW(),
+    '', '', '', ''
   ),
   -- Observer (spectator route; members row exists, no team_members)
   (
@@ -244,9 +261,64 @@ INSERT INTO auth.users (
     'authenticated',
     'authenticated',
     NOW(),
-    NOW()
+    NOW(),
+    '', '', '', ''
   )
 ON CONFLICT (id) DO NOTHING;
+
+-- ============================================================================
+-- Section 3b: Auth identities (email provider)
+--
+-- Newer Supabase versions require an auth.identities row per provider for
+-- sign-in to succeed. Without this, GoTrue's signInWithPassword returns
+-- "Database error querying schema". The shape mirrors what auth.admin.
+-- createUser would produce for an email-provider user.
+-- ============================================================================
+
+-- Note: `auth.identities.email` is a generated column (derived from
+-- identity_data->>'email') in this Supabase version. We do NOT include
+-- it in the column list — Postgres computes it.
+
+INSERT INTO auth.identities (
+  provider_id, user_id, identity_data, provider, last_sign_in_at,
+  created_at, updated_at
+) VALUES
+  (
+    'e0e0e0e0-aaaa-aaaa-aaaa-000000000001',
+    'e0e0e0e0-aaaa-aaaa-aaaa-000000000001'::uuid,
+    '{"sub":"e0e0e0e0-aaaa-aaaa-aaaa-000000000001","email":"e2e-lo@test.test","email_verified":false,"phone_verified":false}'::jsonb,
+    'email',
+    NOW(), NOW(), NOW()
+  ),
+  (
+    'e0e0e0e0-aaaa-aaaa-aaaa-000000000002',
+    'e0e0e0e0-aaaa-aaaa-aaaa-000000000002'::uuid,
+    '{"sub":"e0e0e0e0-aaaa-aaaa-aaaa-000000000002","email":"e2e-captain-1@test.test","email_verified":false,"phone_verified":false}'::jsonb,
+    'email',
+    NOW(), NOW(), NOW()
+  ),
+  (
+    'e0e0e0e0-aaaa-aaaa-aaaa-000000000003',
+    'e0e0e0e0-aaaa-aaaa-aaaa-000000000003'::uuid,
+    '{"sub":"e0e0e0e0-aaaa-aaaa-aaaa-000000000003","email":"e2e-captain-2@test.test","email_verified":false,"phone_verified":false}'::jsonb,
+    'email',
+    NOW(), NOW(), NOW()
+  ),
+  (
+    'e0e0e0e0-aaaa-aaaa-aaaa-000000000004',
+    'e0e0e0e0-aaaa-aaaa-aaaa-000000000004'::uuid,
+    '{"sub":"e0e0e0e0-aaaa-aaaa-aaaa-000000000004","email":"e2e-captain-3@test.test","email_verified":false,"phone_verified":false}'::jsonb,
+    'email',
+    NOW(), NOW(), NOW()
+  ),
+  (
+    'e0e0e0e0-aaaa-aaaa-aaaa-000000000005',
+    'e0e0e0e0-aaaa-aaaa-aaaa-000000000005'::uuid,
+    '{"sub":"e0e0e0e0-aaaa-aaaa-aaaa-000000000005","email":"e2e-observer@test.test","email_verified":false,"phone_verified":false}'::jsonb,
+    'email',
+    NOW(), NOW(), NOW()
+  )
+ON CONFLICT (provider, provider_id) DO NOTHING;
 
 -- ============================================================================
 -- Section 4: Foundation members (linked to auth.users via user_id)

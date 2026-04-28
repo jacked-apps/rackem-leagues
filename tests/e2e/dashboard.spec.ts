@@ -1,29 +1,33 @@
 /**
- * @fileoverview First real E2E test: verifies the player Dashboard renders
- * correctly for an authenticated user. This test exists primarily to prove
- * the Playwright + auth-fixture infrastructure works end to end. More
- * specific feature tests will live in sibling *.spec.ts files.
+ * @fileoverview Smoke test that the player dashboard renders for an
+ * authenticated foundation user. Primarily exists to prove the Playwright
+ * + foundation-seed scaffolding (Units 1-4) works end to end. More specific
+ * feature tests live in sibling files under tests/e2e/specs/.
  *
- * Relies on tests/e2e/.auth/user.json produced by auth.setup.ts — the
- * `chromium` project in playwright.config.ts wires that state in
- * automatically via `storageState`.
+ * Starting user: e2e-captain-1 (Captain). Picked because the dashboard's
+ * default render is the most representative for the captain-side flows
+ * future specs will exercise.
  */
 
 import { test, expect } from '@playwright/test';
+import { getStorageState } from './fixtures/users';
 
-test.describe('Dashboard (authenticated)', () => {
+test.use({ storageState: getStorageState('captain-1') });
+
+test.describe('Dashboard (authenticated as e2e-captain-1)', () => {
   test('renders welcome, quick actions, and share card', async ({ page }) => {
     await page.goto('/dashboard');
 
-    // Welcome heading — format is "Welcome, <first name>!"
+    // Welcome heading — format is "Welcome, <first name>!" The seed gives
+    // captain-1 first_name='E2E', so the heading reads "Welcome, E2E!".
     await expect(page.getByRole('heading', { name: /Welcome,/i })).toBeVisible();
 
-    // Quick action cards
+    // Quick action cards — render for any authenticated player.
     await expect(page.getByRole('heading', { name: 'My Teams' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Messages' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Player Settings' })).toBeVisible();
 
-    // Share card (added 2026-04-21)
+    // Share card.
     await expect(page.getByRole('heading', { name: /Invite teammates/i })).toBeVisible();
   });
 });
