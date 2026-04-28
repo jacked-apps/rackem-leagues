@@ -22,7 +22,8 @@ import {
 } from '@/components/ui/popover';
 import { useMemberSearch, type MemberSearchFilter } from '@/api/hooks';
 import type { PartialMember } from '@/types/member';
-import { getPlayerDisplayName } from '@/types/member';
+import { getPlayerDisplayName, isPlaceholderMember } from '@/types/member';
+import { PlaceholderBadge } from '@/components/PlaceholderBadge';
 
 interface MemberSearchComboboxProps {
   /** Currently selected member ID */
@@ -116,10 +117,13 @@ export const MemberSearchCombobox: React.FC<MemberSearchComboboxProps> = ({
               disabled={disabled}
               className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <span className="truncate">
-                {selectedMember
-                  ? getPlayerDisplayName(selectedMember)
-                  : placeholder}
+              <span className="truncate flex items-center gap-1.5">
+                {selectedMember ? (
+                  <>
+                    <span className="truncate">{getPlayerDisplayName(selectedMember)}</span>
+                    {isPlaceholderMember(selectedMember) && <PlaceholderBadge size="sm" />}
+                  </>
+                ) : placeholder}
               </span>
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </button>
@@ -175,7 +179,10 @@ export const MemberSearchCombobox: React.FC<MemberSearchComboboxProps> = ({
                               setOpen(false);
                             }}
                           >
-                            {displayName}
+                            <span className="flex items-center gap-1.5">
+                              {displayName}
+                              {isPlaceholderMember(member) && <PlaceholderBadge size="sm" />}
+                            </span>
                             <Check
                               className={`ml-auto h-4 w-4 ${
                                 member.id === value ? 'opacity-100' : 'opacity-0'

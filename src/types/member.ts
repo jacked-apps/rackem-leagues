@@ -37,6 +37,9 @@ export interface Member {
   starting_handicap_5v5: number | null; // Starting handicap for 5v5 format. NULL = not yet authorized.
   profanity_filter_enabled?: boolean; // User's profanity filter preference
   fargo_rating: number | null; // FargoRate rating (100-850). NULL = not set.
+  organization_id: string | null; // Placeholder-only: org the placeholder belongs to. NULL for registered members (they span orgs).
+  archived_at: string | null; // Placeholder-only: when the LO archived this row. NULL means active.
+  created_by_member_id: string | null; // Placeholder-only: the member (LO/captain) who created this placeholder.
   created_at: string; // ISO timestamp
   updated_at: string; // ISO timestamp
 }
@@ -72,6 +75,8 @@ export function getPlayerDisplayName(member: Member | PartialMember): string {
 export type PartialMember = Pick<Member, 'id' | 'first_name' | 'last_name' | 'system_player_number' | 'bca_member_number'> & {
   /** Optional user_id - NULL indicates a placeholder player */
   user_id?: string | null;
+  /** Placeholder's org attribution (NULL for registered users) */
+  organization_id?: string | null;
 };
 
 /**

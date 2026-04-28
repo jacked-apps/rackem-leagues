@@ -451,6 +451,8 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
               excludeIds={[...excludedPlayerIds, ...playerIds.filter(id => id)]}
               allowCreatePlaceholder={true}
               onPlaceholderCreated={handlePlaceholderCreated}
+              teamId={existingTeam?.id}
+              teamName={teamName}
             />
           )}
 
@@ -474,14 +476,14 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
                   ? `${captainMember.first_name} ${captainMember.last_name}`
                   : undefined;
 
-                // Determine if player can be removed from roster
-                // - Operators can remove anyone
-                // - Captains cannot remove placeholder players (extensible for more rules later)
-                const canRemovePlayer = (): boolean => {
-                  if (!isCaptainVariant) return true; // Operators can remove anyone
-                  if (isCurrentPlaceholder) return false; // Captains cannot remove PPs
-                  return true; // Captains can remove registered players
-                };
+                // Captains and operators can both remove anyone from their
+                // roster. Removing a placeholder doesn't delete the
+                // placeholder — it only clears this team's roster slot.
+                // If that team_players row was the placeholder's last
+                // attachment, the auto_archive_orphan_placeholder trigger
+                // soft-archives them (data preserved, restorable for a
+                // year). Captain doesn't need to think about it.
+                const canRemovePlayer = (): boolean => true;
 
                 // FILLED SLOT: Show player as label with optional X button
                 if (currentMember) {
@@ -502,7 +504,7 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
                           />
                           {isCurrentPlaceholder && <InviteStatusBadge status={inviteStatus} />}
                         </div>
-                        {showRemoveButton ? (
+                        {showRemoveButton && (
                           <Button
                             type="button"
                             variant="ghost"
@@ -513,9 +515,6 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
                           >
                             <X className="h-4 w-4" />
                           </Button>
-                        ) : (
-                          // Show info for captains who can't remove PPs
-                          <span className="text-xs text-gray-400">Contact operator to remove</span>
                         )}
                       </div>
                     </div>
@@ -534,6 +533,9 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
                     excludeIds={getExcludedIdsForSlot(index)}
                     allowCreatePlaceholder={true}
                     onPlaceholderCreated={handlePlaceholderCreated}
+                    teamId={existingTeam?.id}
+                    teamName={teamName}
+                    captainName={captainDisplayName}
                   />
                 );
               })}

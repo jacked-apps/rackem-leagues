@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { MemberCombobox } from '@/components/MemberCombobox';
 import { getAllMembers } from '@/api/queries/members';
 import { queryKeys } from '@/api/queryKeys';
+import { useCurrentMember } from '@/api/hooks';
 import type { PartialMember } from '@/types/member';
 import type { WizardStepProps } from '@/components/wizard';
 import type { TeamsWizardFormData, TeamCaptainEntry } from '../teamsWizardTypes';
@@ -30,9 +31,17 @@ export function CaptainsTeamsStep({
   // and would re-enter addCaptain with stale state) is a no-op.
   const justAddedIdsRef = useRef<Set<string>>(new Set());
 
+  // Resolve the current LO's primary org so the picker is scoped — only
+  // their org's placeholders + all registered users + BCA-elevated
+  // placeholders globally. Until we know the org we don't fire the
+  // members query, to avoid showing the unfiltered list briefly.
+  const { data: currentMember } = useCurrentMember();
+  const orgId = currentMember?.organization_id ?? undefined;
+
   const { data: fetchedMembers = [] } = useQuery({
-    queryKey: queryKeys.members.all,
-    queryFn: () => getAllMembers(),
+    queryKey: [...queryKeys.members.all, 'org', orgId ?? 'none'],
+    queryFn: () => getAllMembers(orgId),
+    enabled: !!orgId,
   });
 
   // Merge fetched members with locally-created placeholders so newly-added

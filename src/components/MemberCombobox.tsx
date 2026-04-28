@@ -25,6 +25,7 @@ import type { PartialMember } from '@/types/member';
 import { getPlayerDisplayName, isPlaceholderMember } from '@/types/member';
 import { logger } from '@/utils/logger';
 import { CreatePlaceholderModal } from '@/components/CreatePlaceholderModal';
+import { PlaceholderBadge } from '@/components/PlaceholderBadge';
 
 interface MemberComboboxProps {
   /** List of members to choose from (only needs id, name, player number) */
@@ -49,10 +50,14 @@ interface MemberComboboxProps {
   allowCreatePlaceholder?: boolean;
   /** Callback when a new placeholder is created - should refresh the members list */
   onPlaceholderCreated?: (member: PartialMember) => void;
-  /** Default city to pre-fill in placeholder creation modal */
-  defaultCity?: string;
-  /** Default state to pre-fill in placeholder creation modal */
-  defaultState?: string;
+  /** Optional team context — when provided, creating a placeholder with
+   *  an email also fires send-invite for email delivery. Without this,
+   *  the trigger-created invite_token is still saved and the recipient
+   *  gets it via the dashboard pending-invites modal on next login. */
+  teamId?: string;
+  invitedByMemberId?: string;
+  teamName?: string;
+  captainName?: string;
   /** Prevent clearing placeholder members (used in captain mode) */
   preventClearPlaceholders?: boolean;
 }
@@ -75,8 +80,10 @@ export const MemberCombobox: React.FC<MemberComboboxProps> = ({
   excludeIds = [],
   allowCreatePlaceholder = false,
   onPlaceholderCreated,
-  defaultCity = '',
-  defaultState = '',
+  teamId,
+  invitedByMemberId,
+  teamName,
+  captainName,
   preventClearPlaceholders = false,
 }) => {
   const [open, setOpen] = useState(false);
@@ -124,9 +131,14 @@ export const MemberCombobox: React.FC<MemberComboboxProps> = ({
               disabled={disabled}
               className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <span className="truncate">
+              <span className="truncate flex items-center gap-1.5">
                 {selectedMember
-                  ? getPlayerDisplayName(selectedMember)
+                  ? (
+                    <>
+                      <span className="truncate">{getPlayerDisplayName(selectedMember)}</span>
+                      {isPlaceholderMember(selectedMember) && <PlaceholderBadge size="sm" />}
+                    </>
+                  )
                   : placeholder}
               </span>
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -194,7 +206,10 @@ export const MemberCombobox: React.FC<MemberComboboxProps> = ({
                         setOpen(false);
                       }}
                     >
-                      {getPlayerDisplayName(member)}
+                      <span className="flex items-center gap-1.5">
+                        {getPlayerDisplayName(member)}
+                        {isPlaceholderMember(member) && <PlaceholderBadge size="sm" />}
+                      </span>
                       <Check
                         className={`ml-auto h-4 w-4 ${
                           member.id === value ? 'opacity-100' : 'opacity-0'
@@ -234,8 +249,10 @@ export const MemberCombobox: React.FC<MemberComboboxProps> = ({
         <CreatePlaceholderModal
           open={showPlaceholderModal}
           onOpenChange={setShowPlaceholderModal}
-          defaultCity={defaultCity}
-          defaultState={defaultState}
+          teamId={teamId}
+          invitedByMemberId={invitedByMemberId}
+          teamName={teamName}
+          captainName={captainName}
           onCreated={(newMember) => {
             // Call the callback so parent can refresh the members list
             if (onPlaceholderCreated) {
