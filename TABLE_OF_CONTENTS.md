@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-04-27 (added MyMatch placeholder page at /my-match for live-match jump-in; real feature backlogged)
+> **Last Updated**: 2026-04-28 (added E2E test infrastructure: foundation seed, factories layer, multi-user auth setup, demo run mode, 2 reference specs — see new `/tests/e2e/` section)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -13,6 +13,7 @@
 - [Configuration Files](#%EF%B8%8F-configuration-files)
 - [Memory Bank](#-memory-bank-project-intelligence)
 - [Database Schema & Migrations](#-database-schema--migrations)
+- [End-to-End Testing (`/tests/e2e/`)](#-end-to-end-testing-testse2e)
 - [Source Code (`/src`)](#-source-code-src)
 - [Reference Code](#-reference-code)
 - [Build & Distribution](#-build--distribution)
@@ -48,6 +49,10 @@
 | `docs/LEAGUE_MANAGEMENT_PLAN.md` | League management system architecture | System hierarchy and database schema |
 | `/docs/brainstorms/` | **CE brainstorm requirements docs** | Output of `/compound-engineering:ce-brainstorm` |
 | `docs/brainstorms/official-rulebook-reader-requirements.md` | Requirements for the Official Rulebook Reader feature | Branch 1 of the rules-feature family |
+| `docs/brainstorms/e2e-test-infrastructure-requirements.md` | Requirements for the Playwright E2E scaffolding (foundation seed + factories + multi-user auth + demo mode) | Active branch `feat/e2e-test-infrastructure` |
+| `/docs/plans/` | **CE implementation plans** | Output of `/compound-engineering:ce-plan` |
+| `docs/plans/2026-04-17-001-feat-official-rulebook-reader-plan.md` | Implementation plan for the Official Rulebook Reader | 6 units, active branch `feature/official-rulebook-reader` |
+| `docs/plans/2026-04-27-001-feat-e2e-test-infrastructure-plan.md` | Implementation plan for the E2E scaffolding | 10 units (8 in v1 scope), active branch `feat/e2e-test-infrastructure` |
 | `docs/brainstorms/header-mobile-rework-requirements.md` | Requirements for the global header & navigation rework | Slim sticky header, hamburger drawer with per-org operator shortcuts, drawer-internal badges |
 | `/docs/plans/` | **CE implementation plans** | Output of `/compound-engineering:ce-plan` |
 | `docs/plans/2026-04-17-001-feat-official-rulebook-reader-plan.md` | Implementation plan for the Official Rulebook Reader | 6 units, active branch `feature/official-rulebook-reader` |
@@ -116,6 +121,9 @@ Node-only tooling the operator runs manually (not part of the app bundle).
 | `scripts/clean-rulebook/writeModules.ts` | Emit the `index.ts` + per-game `.ts` modules |
 | `scripts/clean-rulebook/verifyRulebook.ts` | Pre-commit sanity checks on the cleaned data |
 | `scripts/clean-rulebook/games.ts` | Canonical list of games (slug, display name, section number) |
+| `scripts/e2e-setup.mjs` | E2E foundation seed runner. Wired to `pnpm e2e:setup`. Validates `E2E_LOCAL_OK=true`, then pipes `database/e2e_seed.sql` into local Supabase via the `pg` client. |
+| `scripts/e2e-verify-auth.mjs` | E2E bcrypt-hash verification gate. Wired to `pnpm e2e:verify-auth`. Confirms the committed hash matches `E2E_PW` via Postgres `crypt()`. |
+| `scripts/e2e-verify-factories.ts` | E2E factory smoke-check. Wired to `pnpm e2e:verify-factories`. Calls each factory and asserts the resulting DB rows. |
 
 ### Orphaned/Unknown Files
 
@@ -284,6 +292,7 @@ Node-only tooling the operator runs manually (not part of the app bundle).
 | `migrations/add_match_results_tracking.sql` | Migration: Add match results tracking system |
 | `scoring3x3/add_game_type_to_match_games.sql` | **Add game_type column to match_games (denormalized for performance)** |
 | `tests/` | Database test files |
+| `e2e_seed.sql` | **E2E test foundation seed** — local-only sandbox (1 test org, 1 venue, 5 foundation users with auth.identities + non-NULL token columns for GoTrue compatibility). Idempotent. Double-guarded against running anywhere but local Supabase. |
 | `README_DATABASE_INTEGRATION.md` | Database integration guide |
 | `MESSAGING_AND_REPORTING_COMPLETE.md` | Messaging/reporting completion notes |
 
@@ -306,6 +315,41 @@ Node-only tooling the operator runs manually (not part of the app bundle).
 | `matches_unfinished_update1.sql` | Match schema update |
 
 ---
+
+## 🎭 End-to-End Testing (`/tests/e2e/`)
+
+Playwright-based browser tests. Local-only for v1. Two purposes:
+regression coverage + raw demo video for sales reels (via slow-motion
++ headed run mode). The scaffolding is designed so future plans can
+include "do test stuff" as a unit and have it materially mean
+"compose factories + drive UI in 10–30 lines per spec."
+
+See `tests/e2e/README.md` for the runbook (one-time setup, run modes,
+how to add a new test, demo recording, cleanup model).
+
+### Configuration & Setup
+
+| File | Purpose |
+|------|---------|
+| `playwright.config.ts` | Playwright config. Drives `E2E_DEMO=1` slow-motion mode, the `setup` → `chromium` project chain, the non-localhost startup guard. |
+| `tests/e2e/README.md` | Runbook for the E2E scaffolding. |
+| `tests/e2e/auth.setup.ts` | Multi-user auth setup. Iterates the foundation palette, drives UI login per user, saves per-user storage states under `tests/e2e/.auth/`. |
+
+### Fixtures (Shared Test Primitives)
+
+| File | Purpose |
+|------|---------|
+| `tests/e2e/fixtures/users.ts` | Foundation user palette. Exports `E2E_USERS`, `E2E_ORG_ID`, `E2E_VENUE_ID`, `getStorageState(key)`, `getMemberId(key)`. The starting point every spec imports from. |
+| `tests/e2e/fixtures/serviceClient.ts` | Local-only Supabase service-role client (bypasses RLS for setup operations). Hardcoded demo JWT, never replaced with a real key. |
+| `tests/e2e/fixtures/factories.ts` | Test data factories: `createLeague`, `createSeason`, `createTeam`, `createMatch`, `createMatchReadyForLineup`. The bit that makes future tests cheap. |
+
+### Specs
+
+| File | Purpose |
+|------|---------|
+| `tests/e2e/dashboard.spec.ts` | Smoke: dashboard renders for a foundation user (captain-1). |
+| `tests/e2e/specs/lineup-flow.spec.ts` | Reference example: single-captain pattern (captain reaches a match's lineup page). Copy this shape for future captain-side feature tests. |
+| `tests/e2e/specs/wizard-tour.spec.ts` | Reference example: LO multi-stage tour. Doubles as the demo-recording target (`pnpm test:e2e:demo --grep wizard-tour`). |
 
 ## 💻 Source Code (`/src`)
 

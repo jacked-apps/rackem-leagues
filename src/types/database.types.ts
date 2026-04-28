@@ -247,6 +247,77 @@ export type Database = {
         }
         Relationships: []
       }
+      house_rules: {
+        Row: {
+          body: string[]
+          created_at: string
+          effect_type: string
+          game: string
+          id: string
+          league_id: string | null
+          organization_id: string | null
+          related_rule_id: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          body?: string[]
+          created_at?: string
+          effect_type: string
+          game: string
+          id?: string
+          league_id?: string | null
+          organization_id?: string | null
+          related_rule_id?: string | null
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          body?: string[]
+          created_at?: string
+          effect_type?: string
+          game?: string
+          id?: string
+          league_id?: string | null
+          organization_id?: string | null
+          related_rule_id?: string | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "house_rules_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "house_rules_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "resolved_league_playoff_config"
+            referencedColumns: ["league_id"]
+          },
+          {
+            foreignKeyName: "house_rules_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "resolved_league_preferences"
+            referencedColumns: ["league_id"]
+          },
+          {
+            foreignKeyName: "house_rules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invite_tokens: {
         Row: {
           claimed_at: string | null
@@ -389,6 +460,7 @@ export type Database = {
           handicap_level: string
           handicap_variant: string
           id: string
+          ignore_org_house_rules: boolean
           league_start_date: string
           organization_id: string
           status: string
@@ -406,6 +478,7 @@ export type Database = {
           handicap_level?: string
           handicap_variant?: string
           id?: string
+          ignore_org_house_rules?: boolean
           league_start_date: string
           organization_id: string
           status?: string
@@ -423,6 +496,7 @@ export type Database = {
           handicap_level?: string
           handicap_variant?: string
           id?: string
+          ignore_org_house_rules?: boolean
           league_start_date?: string
           organization_id?: string
           status?: string
@@ -1508,6 +1582,39 @@ export type Database = {
           },
         ]
       }
+      rules_page_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          game: string | null
+          id: string
+          result_count: number | null
+          rule_id: string | null
+          scope_id: string | null
+          scope_type: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          game?: string | null
+          id?: string
+          result_count?: number | null
+          rule_id?: string | null
+          scope_id?: string | null
+          scope_type?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          game?: string | null
+          id?: string
+          result_count?: number | null
+          rule_id?: string | null
+          scope_id?: string | null
+          scope_type?: string | null
+        }
+        Relationships: []
+      }
       season_weeks: {
         Row: {
           created_at: string | null
@@ -2086,6 +2193,54 @@ export type Database = {
       }
     }
     Views: {
+      house_rules_with_scope_name: {
+        Row: {
+          body: string[] | null
+          created_at: string | null
+          effect_type: string | null
+          game: string | null
+          id: string | null
+          league_id: string | null
+          organization_id: string | null
+          parent_org_name: string | null
+          related_rule_id: string | null
+          scope_name: string | null
+          scope_type: string | null
+          title: string | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "house_rules_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "house_rules_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "resolved_league_playoff_config"
+            referencedColumns: ["league_id"]
+          },
+          {
+            foreignKeyName: "house_rules_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "resolved_league_preferences"
+            referencedColumns: ["league_id"]
+          },
+          {
+            foreignKeyName: "house_rules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       resolved_league_playoff_config: {
         Row: {
           auto_generate: boolean | null
@@ -2151,6 +2306,10 @@ export type Database = {
         Args: { p_season_week_id: string }
         Returns: undefined
       }
+      can_write_house_rule_org: {
+        Args: { target_org_id: string }
+        Returns: boolean
+      }
       claim_invite_token: {
         Args: { p_token: string; p_user_id: string }
         Returns: {
@@ -2183,6 +2342,17 @@ export type Database = {
       daitch_mokotoff: {
         Args: { "": string }
         Returns: string[]
+      }
+      delete_unused_placeholder: {
+        Args: {
+          p_actor_member_id: string
+          p_member_id: string
+          p_organization_id: string
+        }
+        Returns: {
+          error_message: string
+          success: boolean
+        }[]
       }
       dmetaphone: {
         Args: { "": string }
@@ -2226,6 +2396,33 @@ export type Database = {
       get_operator_placeholders: {
         Args: { p_org_id: string }
         Returns: Json
+      }
+      get_operator_player_stats: {
+        Args: { p_org_id: string }
+        Returns: Json
+      }
+      get_operator_stats: {
+        Args: { operator_id_param: string }
+        Returns: Json
+      }
+      get_org_placeholders_for_merge: {
+        Args: { p_include_archived?: boolean; p_org_id: string }
+        Returns: {
+          archived_at: string
+          created_at: string
+          creator_name: string
+          email: string
+          first_name: string
+          game_count: number
+          has_pending_invite: boolean
+          has_stats: boolean
+          is_archived: boolean
+          last_name: string
+          member_id: string
+          nickname: string
+          system_player_number: number
+          teams: Json
+        }[]
       }
       get_operator_player_stats: {
         Args: { p_org_id: string }
@@ -2299,6 +2496,10 @@ export type Database = {
       prep_match: {
         Args: { p_game_rows: Json; p_match_id: string; p_thresholds: Json }
         Returns: undefined
+      }
+      placeholder_has_stats: {
+        Args: { p_member_id: string }
+        Returns: boolean
       }
       remove_placeholder_from_team: {
         Args: { p_member_id: string; p_org_id: string; p_team_id: string }
@@ -2384,6 +2585,19 @@ export type Database = {
       text_soundex: {
         Args: { "": string }
         Returns: string
+      }
+      undo_merge_placeholder: {
+        Args: {
+          p_actor_member_id: string
+          p_archive_id: string
+          p_caller_org_id: string
+        }
+        Returns: {
+          error_message: string
+          missing_rows: number
+          rows_restored: number
+          success: boolean
+        }[]
       }
     }
     Enums: {
