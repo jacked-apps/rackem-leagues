@@ -80,3 +80,4 @@ pre-authenticated. No test has to type the password again.
 For a logged-out test (e.g., the public home page), use
 `test.use({ storageState: { cookies: [], origins: [] } })` at the top
 of the file to override the saved state.
+
