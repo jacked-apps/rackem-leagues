@@ -1,9 +1,11 @@
 ---
 title: Modular Handicap & Scoring Systems
 date: 2026-04-18
-status: Requirements — ready for planning
+status: SUPERSEDED on 2026-04-28 by docs/brainstorms/modular-league-system-requirements.md
 supersedes: memory-bank/PLAN-fargo-handicap-system.md (refines, does not replace)
 ---
+
+> **⚠️ SUPERSEDED 2026-04-28.** The strategic identity in this doc ("ship my leagues well, keep the door open") was reframed after the user's Fargo league changed match formats for next season, exposing that the lock-to-3-presets approach is too brittle. The follow-on doc — `docs/brainstorms/modular-league-system-requirements.md` — promotes "operator-authored systems," "custom team sizes (4v4, 6v6)," and "custom threshold-chart editor UI" out of deferred and into scope. Most of this document's architecture (SystemModule interface, three-layer naming, threshold_charts DB infrastructure, system_overrides JSONB, per-match snapshot) survives the pivot. Read this for the architectural detail; read the new doc for the current scope and strategic framing.
 
 # Modular Handicap & Scoring Systems
 
