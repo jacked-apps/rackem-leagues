@@ -57,14 +57,53 @@ if (!E2E_PW) {
 }
 
 export const E2E_USERS = {
-  'lo': { email: 'e2e-lo@test.test', password: E2E_PW },
-  'captain-1': { email: 'e2e-captain-1@test.test', password: E2E_PW },
-  'captain-2': { email: 'e2e-captain-2@test.test', password: E2E_PW },
-  'captain-3': { email: 'e2e-captain-3@test.test', password: E2E_PW },
-  'observer': { email: 'e2e-observer@test.test', password: E2E_PW },
+  'lo': {
+    email: 'e2e-lo@test.test',
+    password: E2E_PW,
+    userId: 'e0e0e0e0-aaaa-aaaa-aaaa-000000000001',
+    memberId: 'e0e0e0e0-bbbb-bbbb-bbbb-000000000001',
+  },
+  'captain-1': {
+    email: 'e2e-captain-1@test.test',
+    password: E2E_PW,
+    userId: 'e0e0e0e0-aaaa-aaaa-aaaa-000000000002',
+    memberId: 'e0e0e0e0-bbbb-bbbb-bbbb-000000000002',
+  },
+  'captain-2': {
+    email: 'e2e-captain-2@test.test',
+    password: E2E_PW,
+    userId: 'e0e0e0e0-aaaa-aaaa-aaaa-000000000003',
+    memberId: 'e0e0e0e0-bbbb-bbbb-bbbb-000000000003',
+  },
+  'captain-3': {
+    email: 'e2e-captain-3@test.test',
+    password: E2E_PW,
+    userId: 'e0e0e0e0-aaaa-aaaa-aaaa-000000000004',
+    memberId: 'e0e0e0e0-bbbb-bbbb-bbbb-000000000004',
+  },
+  'observer': {
+    email: 'e2e-observer@test.test',
+    password: E2E_PW,
+    userId: 'e0e0e0e0-aaaa-aaaa-aaaa-000000000005',
+    memberId: 'e0e0e0e0-bbbb-bbbb-bbbb-000000000005',
+  },
 } as const;
 
 export type UserKey = keyof typeof E2E_USERS;
+
+/**
+ * Foundation organization seeded by database/e2e_seed.sql. Factories
+ * attach throwaway leagues to this org so the cleanup chain in the seed
+ * can find and remove them by org_id.
+ */
+export const E2E_ORG_ID = 'e0e0e0e0-cccc-cccc-cccc-cccccccccccc';
+
+/**
+ * Foundation venue seeded by database/e2e_seed.sql. Factories use it as
+ * the home_venue_id for throwaway teams (avoids creating a new venue
+ * per test).
+ */
+export const E2E_VENUE_ID = 'e0e0e0e0-dddd-dddd-dddd-dddddddddddd';
 
 /**
  * Returns the storage-state file path for a foundation user. The file is
@@ -72,4 +111,13 @@ export type UserKey = keyof typeof E2E_USERS;
  */
 export function getStorageState(key: UserKey): string {
   return `tests/e2e/.auth/${key}.json`;
+}
+
+/**
+ * Returns the seeded `members.id` for a foundation user. Useful when a
+ * factory needs to set captain_id on a teams row, since teams.captain_id
+ * is a member_id (not user_id).
+ */
+export function getMemberId(key: UserKey): string {
+  return E2E_USERS[key].memberId;
 }

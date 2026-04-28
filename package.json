@@ -19,6 +19,7 @@
     "icons:generate-env": "node scripts/generate-env-icons.mjs",
     "e2e:setup": "node scripts/e2e-setup.mjs",
     "e2e:verify-auth": "node scripts/e2e-verify-auth.mjs",
+    "e2e:verify-factories": "tsx scripts/e2e-verify-factories.ts",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:ui": "playwright test --ui",
