@@ -8,10 +8,11 @@
  * Flow: Team Schedule → Score Match → Lineup Entry
  */
 
-import { useState, useEffect, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Users } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
   useCurrentMember,
   useMatchWithLeagueSettings,
@@ -32,6 +33,8 @@ import { DuplicateNicknameWarning } from '@/components/lineup/DuplicateNicknameW
 import { PlayerSelectionRow } from '@/components/lineup/PlayerSelectionRow';
 import { OpponentSubstituteModal } from '@/components/lineup/OpponentSubstituteModal';
 import { FargoStartPointsCard } from '@/components/lineup/FargoStartPointsCard';
+import { PrepStatusBanner } from '@/components/lineup/PrepStatusBanner';
+import { SubResolutionBanner } from '@/components/lineup/SubResolutionBanner';
 import { useFargoStartPointsNegotiation } from '@/hooks/lineup/useFargoStartPointsNegotiation';
 import { useQueryStates } from '@/hooks/useQueryStates';
 import {
@@ -44,22 +47,32 @@ import {
   useTiebreakerLineup,
 } from '@/hooks/lineup';
 import { usePreparationStatus } from '@/hooks/lineup/useMatchPreparation';
-import { calculateSubstituteHandicap } from '@/utils/lineup';
+import {
+  calculateSubstituteHandicap,
+  isAnonSubSentinel,
+  isDoubleDutySentinel,
+  isAnySubSentinel,
+  getAnonSubId,
+  getDoubleDutySubId,
+  lineupHasDoubleDuty,
+  computePrepBlockedReason,
+} from '@/utils/lineup';
 import { useMatchRealtime } from '@/realtime/useMatchRealtime';
 import { Loader2 } from 'lucide-react';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { shouldUseTeamBonus } from '@/utils/calculateHandicapThresholds';
 import { logger } from '@/utils/logger';
+import { supabase } from '@/supabaseClient';
+import { toast } from 'sonner';
 
-// Special substitute member IDs (same ID for both anonymous + double duty — type tracked in state)
-const SUB_HOME_ID = '00000000-0000-0000-0000-000000000001';
-const SUB_AWAY_ID = '00000000-0000-0000-0000-000000000002';
-// Synthetic dropdown values — parsed in handlePlayerChange to set the real ID + type
+// Synthetic dropdown values — parsed in handlePlayerChange to pick the right
+// sentinel UUID. The sentinel itself encodes the sub type going forward.
 const ANON_SUB_VALUE = '__anonymous_sub__';
 const DOUBLE_DUTY_VALUE = '__double_duty__';
 
 export function MatchLineup() {
   const { matchId } = useParams<{ matchId: string }>();
+  const navigate = useNavigate();
 
   // TanStack Query: Get current member data
   const memberQuery = useCurrentMember();
@@ -137,19 +150,34 @@ export function MatchLineup() {
   // Manual Fargo rating entry — LO types in each player's current rating.
   // Keyed by position (1-5). Only used when handicapType === 'fargo'.
   const [manualHandicaps, setManualHandicaps] = useState<Record<number, string>>({});
+
+  // Debounce per-position autosave so multiple keystrokes don't race. Without
+  // this, typing "358" can fire three separate mutations (3, 35, 358) that
+  // complete in any order — the final DB value depends on which network
+  // response wins, and the wrong one often does.
+  const handicapSaveTimersRef = useRef<Record<number, number>>({});
+
   const handleManualHandicapChange = (position: number, value: string) => {
     setManualHandicaps((prev) => ({ ...prev, [position]: value }));
-    // Save to DB on each valid entry so the value persists
-    if (lineup.lineupId && matchId) {
-      const parsed = parseInt(value, 10);
-      if (Number.isFinite(parsed)) {
-        updateLineupMutation.mutate({
-          lineupId: lineup.lineupId,
-          updates: { [`player${position}_handicap`]: parsed },
-          matchId,
-        });
-      }
+
+    // Cancel any pending save for this position — only the latest typed
+    // value should hit the DB.
+    if (handicapSaveTimersRef.current[position] !== undefined) {
+      window.clearTimeout(handicapSaveTimersRef.current[position]);
     }
+
+    if (!lineup.lineupId || !matchId) return;
+    const parsed = parseInt(value, 10);
+    if (!Number.isFinite(parsed)) return;
+
+    handicapSaveTimersRef.current[position] = window.setTimeout(() => {
+      if (!lineup.lineupId || !matchId) return;
+      updateLineupMutation.mutate({
+        lineupId: lineup.lineupId,
+        updates: { [`player${position}_handicap`]: parsed },
+        matchId,
+      });
+    }, 300);
   };
 
   // Fetch all match games (for tiebreaker mode)
@@ -322,9 +350,8 @@ export function MatchLineup() {
 
     for (let slot = 1; slot <= playerCount; slot++) {
       const pid = slotPlayerIds[slot - 1];
-      const isSubPlaceholder = pid === SUB_HOME_ID || pid === SUB_AWAY_ID;
-      const isDoubleDuty = isSubPlaceholder && substituteType === 'double_duty';
-      if (isDoubleDuty) duty.add(slot);
+      // Sentinel UUID itself encodes the type — no need to consult React state
+      if (isDoubleDutySentinel(pid)) duty.add(slot);
 
       // Prefer the pending manual entry (user is typing); fall back to the persisted handicap
       const typed = manualHandicaps[slot];
@@ -354,7 +381,6 @@ export function MatchLineup() {
     handicaps.player4Handicap,
     handicaps.player5Handicap,
     manualHandicaps,
-    substituteType,
   ]);
 
   // Lineup validation
@@ -379,6 +405,7 @@ export function MatchLineup() {
     userTeamId: userTeamData?.team_id,
     memberId,
     lineupId: lineup.lineupId,
+    opponentLocked: !!opponentLineup?.locked,
     player1Id: lineup.player1Id,
     player2Id: lineup.player2Id,
     player3Id: lineup.player3Id,
@@ -402,13 +429,65 @@ export function MatchLineup() {
   // Note: Lineups are now auto-created by database trigger when match is inserted
   // See migration: 20251115000000_auto_create_match_lineups.sql
 
-  // Unit 11c: Fargo start-points negotiation. When both lineups are locked
-  // on a Fargo match, gather each side's ratings and let the hook drive the
-  // propose / confirm state machine via direct writes to `matches`.
-  const bothLineupsLockedForFargo =
-    handicapType === 'fargo' &&
+  // Build a row-shaped snapshot of MY lineup from component state so the
+  // completeness gate reads the same shape as the persisted opponent row.
+  const myLineupRow = useMemo(() => ({
+    player1_id: lineup.player1Id || null,
+    player1_handicap: handicaps.player1Handicap,
+    player2_id: lineup.player2Id || null,
+    player2_handicap: handicaps.player2Handicap,
+    player3_id: lineup.player3Id || null,
+    player3_handicap: handicaps.player3Handicap,
+    player4_id: lineup.player4Id || null,
+    player4_handicap: handicaps.player4Handicap,
+    player5_id: lineup.player5Id || null,
+    player5_handicap: handicaps.player5Handicap,
+  }), [
+    lineup.player1Id, lineup.player2Id, lineup.player3Id,
+    lineup.player4Id, lineup.player5Id,
+    handicaps.player1Handicap, handicaps.player2Handicap,
+    handicaps.player3Handicap, handicaps.player4Handicap,
+    handicaps.player5Handicap,
+  ]);
+
+  // Compute the discriminated match-prep blocker. null = ready for Step 3.
+  // Fargo confirmations are now tracked in *_games_to_lose (captain's
+  // system_player_number) rather than dedicated columns.
+  const prepBlockedReason = useMemo(
+    () => computePrepBlockedReason({
+      myLineup: myLineupRow,
+      opponentLineup: opponentLineup ?? null,
+      lineupSize: playerCount,
+      handicapType,
+      homeGamesToLose: matchData?.home_games_to_lose ?? null,
+      awayGamesToLose: matchData?.away_games_to_lose ?? null,
+      isHomeTeam,
+    }),
+    [
+      myLineupRow,
+      opponentLineup,
+      playerCount,
+      handicapType,
+      matchData?.home_games_to_lose,
+      matchData?.away_games_to_lose,
+      isHomeTeam,
+    ]
+  );
+
+  // Step 1 complete on BOTH sides — used by the Fargo hook to gate its
+  // initial-proposal effect (so it doesn't fire against placeholder slots).
+  const step1CompleteBothSides =
+    prepBlockedReason === null ||
+    prepBlockedReason?.kind === 'fargo_pending';
+
+  // Fargo initial-write / propose effects only run when Step 1 is complete
+  // on both sides AND both lineups are physically locked. Replaces the prior
+  // `bothLineupsLocked` input so placeholder-contaminated ratings never leak
+  // into the Fargo default computation.
+  const bothLineupsReadyForFargo =
     lineup.lineupLocked &&
-    !!opponentLineup?.locked;
+    !!opponentLineup?.locked &&
+    step1CompleteBothSides;
 
   const { homeRatingsForFargo, awayRatingsForFargo } = useMemo(() => {
     const gatherFrom = (src: {
@@ -462,16 +541,17 @@ export function MatchLineup() {
 
   const fargoNegotiation = useFargoStartPointsNegotiation({
     matchId,
-    memberId: memberId ?? null,
+    memberPlayerNumber: member?.system_player_number ?? null,
     isHomeTeam,
     handicapType,
-    bothLineupsLocked: bothLineupsLockedForFargo,
+    bothLineupsReady: bothLineupsReadyForFargo,
     homeRatings: homeRatingsForFargo,
     awayRatings: awayRatingsForFargo,
     lineupSize: playerCount,
-    fargoStartPoints: matchData?.fargo_start_points ?? null,
-    confirmedByHome: matchData?.fargo_start_points_confirmed_by_home ?? null,
-    confirmedByAway: matchData?.fargo_start_points_confirmed_by_away ?? null,
+    homeGamesToTie: matchData?.home_games_to_tie ?? null,
+    awayGamesToTie: matchData?.away_games_to_tie ?? null,
+    homeGamesToLose: matchData?.home_games_to_lose ?? null,
+    awayGamesToLose: matchData?.away_games_to_lose ?? null,
     systemOverrides: leaguePrefs?.system_overrides,
     refetchMatch: matchQuery.refetch,
   });
@@ -487,8 +567,9 @@ export function MatchLineup() {
     lineupSize: playerCount,
     handicapType,
     systemOverrides: leaguePrefs?.system_overrides,
-    fargoNegotiationBlocking:
-      fargoNegotiation.applicable && !fargoNegotiation.bothConfirmed,
+    blockedReason: prepBlockedReason,
+    gameGeneration: leaguePrefs?.game_generation,
+    currentGamesCount: allGames.length,
     player1Id: lineup.player1Id,
     player2Id: lineup.player2Id,
     player3Id: lineup.player3Id,
@@ -530,6 +611,22 @@ export function MatchLineup() {
             // Update if database has different player (e.g., opponent chose double duty)
             if (dbPlayerId && dbPlayerId !== currentPlayerId) {
               lineup.setPlayerId(pos as 1 | 2 | 3 | 4 | 5, dbPlayerId);
+
+              // ALSO sync the manualHandicaps entry — when DD resolves via the
+              // opposing captain's pick, the DB now has the resolved player's
+              // handicap. The local manualHandicaps cache still has the old
+              // value (e.g., what the captain typed for the previous player
+              // in this slot). Reset it so the UI displays the correct number
+              // without requiring a page refresh.
+              const handicapField = `player${pos}_handicap` as keyof typeof myLineup;
+              const dbHandicap = myLineup[handicapField] as number | null | undefined;
+              if (typeof dbHandicap === 'number' && dbHandicap > 0) {
+                setManualHandicaps((prev) => {
+                  const newVal = String(dbHandicap);
+                  if (prev[pos] === newVal) return prev;
+                  return { ...prev, [pos]: newVal };
+                });
+              }
             }
           }
         } else {
@@ -607,72 +704,108 @@ export function MatchLineup() {
       return;
     }
 
-    const is5v5 = (matchData.league?.team_format || '5_man') === '8_man';
-    if (!is5v5) {
-      setShowOpponentSubModal(false);
-      return;
-    }
-
-    // Check if opponent's lineup is locked and has a substitute
+    // Check if opponent's lineup is locked and has a double-duty placeholder
+    // (anonymous subs don't need opposing-captain action; DD subs do)
     if (!opponentLineup.locked) {
       setShowOpponentSubModal(false);
       return;
     }
 
-    // Check all positions for a substitute placeholder
-    const hasSubstitute = [
-      opponentLineup.player1_id,
-      opponentLineup.player2_id,
-      opponentLineup.player3_id,
-      opponentLineup.player4_id,
-      opponentLineup.player5_id,
-    ].some(id => id === SUB_HOME_ID || id === SUB_AWAY_ID);
+    setShowOpponentSubModal(lineupHasDoubleDuty(opponentLineup, playerCount));
+  }, [opponentLineup, matchData, isTiebreakerMode, playerCount]);
 
-    setShowOpponentSubModal(hasSubstitute);
-  }, [opponentLineup, matchData, isTiebreakerMode]);
-
-  // Handle opponent substitute choice
-  const handleOpponentSubChoice = (playerId: string, handicap: number, subPosition: number) => {
+  // Handle opponent substitute choice — STRICT COPY semantics.
+  //
+  // Bypass React Query entirely and read the source lineup row DIRECTLY from
+  // Supabase. Whatever's in the DB at that moment is what we copy into the
+  // DD slot — no cache, no debounce timer, no closure value. After the write,
+  // invalidate the lineups query so every observer (both clients) picks up
+  // the new state immediately.
+  const handleOpponentSubChoice = async (playerId: string, _modalHandicap: number, subPosition: number) => {
     if (!opponentLineup?.id || !matchId) return;
 
-    // Update opponent's lineup - replace SUB with chosen player
-    updateLineupMutation.mutate({
-      lineupId: opponentLineup.id,
-      updates: {
-        [`player${subPosition}_id`]: playerId,
-        [`player${subPosition}_handicap`]: handicap,
-      },
-      matchId,
-    }, {
-      onSuccess: async () => {
-        // Manually refetch lineups to ensure UI updates immediately
-        await lineupsQuery.refetch();
-        setShowOpponentSubModal(false);
-      },
-      onError: (error) => {
-        logger.error('Failed to update opponent lineup', { error: error instanceof Error ? error.message : String(error) });
-      },
-    });
+    try {
+      // Direct DB read — bypass TanStack Query cache.
+      const { data: freshLineup, error: readError } = await supabase
+        .from('match_lineups')
+        .select(
+          'player1_id, player1_handicap, player2_id, player2_handicap, ' +
+          'player3_id, player3_handicap, player4_id, player4_handicap, ' +
+          'player5_id, player5_handicap'
+        )
+        .eq('id', opponentLineup.id)
+        .single();
+
+      if (readError || !freshLineup) {
+        logger.error('handleOpponentSubChoice: failed to read fresh opponent lineup', {
+          matchId,
+          error: readError?.message,
+        });
+        toast.error('Could not load the opposing lineup. Please try again.');
+        return;
+      }
+
+      // Find which slot the picked player is in.
+      const freshRow = freshLineup as unknown as Record<string, unknown>;
+      let sourceHandicap: number | null | undefined = undefined;
+      for (let pos = 1; pos <= playerCount; pos++) {
+        if (freshRow[`player${pos}_id`] === playerId) {
+          sourceHandicap = freshRow[`player${pos}_handicap`] as number | null;
+          break;
+        }
+      }
+      if (sourceHandicap === undefined) {
+        logger.error('handleOpponentSubChoice: picked player not in fresh opponent lineup', {
+          matchId,
+          playerId,
+        });
+        toast.error('That player is not in the opposing lineup anymore. Please pick again.');
+        return;
+      }
+
+      updateLineupMutation.mutate({
+        lineupId: opponentLineup.id,
+        updates: {
+          [`player${subPosition}_id`]: playerId,
+          [`player${subPosition}_handicap`]: sourceHandicap,
+        },
+        matchId,
+      }, {
+        onSuccess: async () => {
+          await lineupsQuery.refetch();
+          setShowOpponentSubModal(false);
+        },
+        onError: (error) => {
+          logger.error('Failed to update opponent lineup', {
+            error: error instanceof Error ? error.message : String(error),
+          });
+        },
+      });
+    } catch (error) {
+      logger.error('handleOpponentSubChoice failed', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
   };
 
   // Generic player change handler - works for any position (3 or 5 players)
   const handlePlayerChange = (position: number, rawPlayerId: string) => {
     if (!lineup.lineupId || !matchId) return;
 
-    // Map synthetic dropdown values to real sub ID + track type
+    // Map synthetic dropdown values to the right sentinel UUID — the sentinel
+    // itself encodes sub type, so both clients can discriminate from DB state.
     let playerId = rawPlayerId;
     if (rawPlayerId === ANON_SUB_VALUE) {
-      playerId = isHomeTeam ? SUB_HOME_ID : SUB_AWAY_ID;
+      playerId = getAnonSubId(isHomeTeam);
       setSubstituteType('anonymous');
     } else if (rawPlayerId === DOUBLE_DUTY_VALUE) {
-      playerId = isHomeTeam ? SUB_HOME_ID : SUB_AWAY_ID;
+      playerId = getDoubleDutySubId(isHomeTeam);
       setSubstituteType('double_duty');
     }
 
-    // If clearing a sub slot (replacing sub with a real player), reset type
-    const wasSub = lineup.getPlayerId(position as 1 | 2 | 3 | 4 | 5) === SUB_HOME_ID ||
-                   lineup.getPlayerId(position as 1 | 2 | 3 | 4 | 5) === SUB_AWAY_ID;
-    if (wasSub && playerId !== SUB_HOME_ID && playerId !== SUB_AWAY_ID) {
+    // If replacing a sub slot with a real player, reset the React-side type flag
+    const previousId = lineup.getPlayerId(position as 1 | 2 | 3 | 4 | 5);
+    if (isAnySubSentinel(previousId) && !isAnySubSentinel(playerId)) {
       setSubstituteType(null);
     }
 
@@ -706,7 +839,7 @@ export function MatchLineup() {
 
     // If clearing a sub slot, reset the substitute type
     const currentId = lineup.getPlayerId(position as 1 | 2 | 3 | 4 | 5);
-    if (currentId === SUB_HOME_ID || currentId === SUB_AWAY_ID) {
+    if (isAnySubSentinel(currentId)) {
       setSubstituteType(null);
     }
 
@@ -783,10 +916,9 @@ export function MatchLineup() {
     // Synthetic dropdown entries
     if (playerId === ANON_SUB_VALUE) return 'Anonymous Sub';
     if (playerId === DOUBLE_DUTY_VALUE) return 'Double Duty';
-    // Placeholder IDs (after selection) — show whichever type was chosen
-    if (playerId === SUB_HOME_ID || playerId === SUB_AWAY_ID) {
-      return substituteType === 'double_duty' ? 'Double Duty' : 'Anonymous Sub';
-    }
+    // Persisted sentinels self-describe via the UUID
+    if (isDoubleDutySentinel(playerId)) return 'Double Duty';
+    if (isAnonSubSentinel(playerId)) return 'Anonymous Sub';
     return 'Unknown';
   };
 
@@ -796,7 +928,7 @@ export function MatchLineup() {
     if (player) {
       return player.nickname || `${player.first_name} ${player.last_name}`;
     }
-    if (playerId === SUB_HOME_ID || playerId === SUB_AWAY_ID) return 'Sub';
+    if (isAnySubSentinel(playerId)) return 'Sub';
     return 'Unknown';
   };
 
@@ -818,14 +950,16 @@ export function MatchLineup() {
     // Normal mode: All roster players + sub options
     // TODO: check substitute_method preference to show one/both/neither
     const playerIds = players.map((p) => p.id);
-    const subId = isHomeTeam ? SUB_HOME_ID : SUB_AWAY_ID;
 
     if (substituteType === null) {
       // No sub chosen yet — show both options
       return [...playerIds, ANON_SUB_VALUE, DOUBLE_DUTY_VALUE];
     }
-    // A sub is already in the lineup — include the real sub ID so the
-    // Select can display the current selection, but don't offer new sub options
+    // A sub is already in the lineup — include the current sub's sentinel so
+    // the Select can display the current selection, but don't offer a new sub
+    const subId = substituteType === 'double_duty'
+      ? getDoubleDutySubId(isHomeTeam)
+      : getAnonSubId(isHomeTeam);
     return [...playerIds, subId];
   };
 
@@ -962,8 +1096,8 @@ export function MatchLineup() {
                     ? handleClearTiebreakerPlayer
                     : handleClearPlayer;
 
-                  // Is this slot a substitute (placeholder ID)?
-                  const isSubstitute = playerId === SUB_HOME_ID || playerId === SUB_AWAY_ID;
+                  // Is this slot a substitute (anon OR double-duty placeholder)?
+                  const isSubstitute = isAnySubSentinel(playerId);
 
                   // Handler for substitute handicap change
                   const handleSubHandicapChange = (newSubHandicap: string) => {
@@ -1040,6 +1174,33 @@ export function MatchLineup() {
               />
             )}
 
+            {/* My-side double-duty waiting state — hidden while the opponent-
+                resolution modal is open (don't stack two sub-resolution affordances). */}
+            <PrepStatusBanner
+              show={
+                !isTiebreakerMode &&
+                !showOpponentSubModal &&
+                prepBlockedReason?.kind === 'waiting_on_sub_resolution' &&
+                prepBlockedReason?.lineupWithPlaceholder === 'mine'
+              }
+              locked={lineup.lineupLocked}
+              opponentLabel={opponent?.team_name ?? 'the opposing captain'}
+            />
+
+            {/* Canceled-modal re-open affordance — when opponent has DD and I
+                dismissed the modal without picking. */}
+            <SubResolutionBanner
+              show={
+                !isTiebreakerMode &&
+                !showOpponentSubModal &&
+                prepBlockedReason?.kind === 'waiting_on_sub_resolution' &&
+                prepBlockedReason?.lineupWithPlaceholder === 'opponent'
+              }
+              opponentLocked={!!opponentLineup?.locked}
+              opponentTeamLabel={opponent?.team_name ?? 'the opposing team'}
+              onChoose={() => setShowOpponentSubModal(true)}
+            />
+
             {/* Fargo start-points negotiation — only after both lineups locked */}
             {fargoNegotiation.applicable && !fargoNegotiation.bothConfirmed && (
               <FargoStartPointsCard
@@ -1069,13 +1230,28 @@ export function MatchLineup() {
         </Card>
       </main>
 
-      {/* Loading Overlay - Show while preparing match */}
+      {/* Loading Overlay — Back-to-Schedule lets captains escape without
+          killing the flow. DB state persists; returning resumes from whichever
+          step is next incomplete (idempotency short-circuit in useMatchPreparation). */}
       {isPreparingMatch && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 text-center">
             <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Preparing Match</h2>
-            <p className="text-gray-600">{preparationMessage}</p>
+            <h2 className="text-xl font-semibold mb-2">
+              {isHomeTeam ? 'Setting up the match…' : 'Waiting for match to be set up…'}
+            </h2>
+            {preparationMessage ? (
+              <p className="text-gray-600 mb-4">{preparationMessage}</p>
+            ) : null}
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsPreparingMatch(false);
+                if (userTeamId) navigate(`/team/${userTeamId}/schedule`);
+              }}
+            >
+              Back to Schedule
+            </Button>
           </div>
         </div>
       )}
@@ -1085,11 +1261,10 @@ export function MatchLineup() {
         <OpponentSubstituteModal
           isOpen={showOpponentSubModal}
           opponentLineup={opponentLineup}
+          lineupSize={playerCount}
           getPlayerDisplayName={getOpponentPlayerDisplayName}
           onPlayerChosen={handleOpponentSubChoice}
           onClose={() => setShowOpponentSubModal(false)}
-          subHomeId={SUB_HOME_ID}
-          subAwayId={SUB_AWAY_ID}
         />
       )}
     </div>

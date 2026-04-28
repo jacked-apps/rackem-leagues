@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev-phone": "node scripts/dev-phone.mjs",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -17,10 +18,13 @@
     "db:start": "supabase start",
     "db:stop": "supabase stop",
     "icons:generate-env": "node scripts/generate-env-icons.mjs",
+    "e2e:setup": "node scripts/e2e-setup.mjs",
+    "e2e:verify-auth": "node scripts/e2e-verify-auth.mjs",
+    "e2e:verify-factories": "tsx scripts/e2e-verify-factories.ts",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:staging": "E2E_BASE_URL=https://staging.rackemleagues.com playwright test",
+    "test:e2e:demo": "E2E_DEMO=1 playwright test",
     "test:e2e:report": "playwright show-report"
   },
   "dependencies": {
@@ -81,6 +85,7 @@
     "globals": "^16.4.0",
     "happy-dom": "^20.0.8",
     "msw": "^2.11.6",
+    "pdfjs-dist": "^5.6.205",
     "pg": "^8.16.3",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.13",

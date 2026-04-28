@@ -107,14 +107,21 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 BEGIN
+  -- Set organization_id for placeholders at insert/email-change time if
+  -- we can derive one from the creator. Registered members stay NULL.
+  IF TG_OP = 'INSERT'
+     AND NEW.user_id IS NULL
+     AND NEW.organization_id IS NULL
+     AND NEW.created_by_member_id IS NOT NULL THEN
+    NEW.organization_id := resolve_member_primary_org(NEW.created_by_member_id);
+  END IF;
+
   -- Only placeholders with a non-empty email need invites.
   IF NEW.user_id IS NOT NULL OR NEW.email IS NULL OR trim(NEW.email) = '' THEN
     RETURN NEW;
   END IF;
 
-  -- Email change: cancel any pending invites for the old email (that
-  -- invite was addressed to a different recipient — reusing it would
-  -- be wrong).
+  -- Email change — cancel old pending invite (it was for a different person).
   IF TG_OP = 'UPDATE' AND OLD.email IS DISTINCT FROM NEW.email THEN
     UPDATE invite_tokens
        SET status = 'cancelled'
@@ -150,6 +157,6 @@ AFTER INSERT OR UPDATE OF email ON members
 FOR EACH ROW
 EXECUTE FUNCTION ensure_placeholder_invite_token();
 
--- Intentionally no backfill. This is pre-production; existing
--- placeholder rows are dev detritus and will wash out. New inserts and
--- email updates go through the triggers above.
+-- Intentionally no backfill. This is pre-production; existing placeholder
+-- rows are dev detritus and will wash out. All new inserts/updates go
+-- through the trigger above and get full attribution.

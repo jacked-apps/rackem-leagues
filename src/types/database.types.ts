@@ -304,6 +304,77 @@ export type Database = {
         }
         Relationships: []
       }
+      house_rules: {
+        Row: {
+          body: string[]
+          created_at: string
+          effect_type: string
+          game: string
+          id: string
+          league_id: string | null
+          organization_id: string | null
+          related_rule_id: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          body?: string[]
+          created_at?: string
+          effect_type: string
+          game: string
+          id?: string
+          league_id?: string | null
+          organization_id?: string | null
+          related_rule_id?: string | null
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          body?: string[]
+          created_at?: string
+          effect_type?: string
+          game?: string
+          id?: string
+          league_id?: string | null
+          organization_id?: string | null
+          related_rule_id?: string | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "house_rules_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "house_rules_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "resolved_league_playoff_config"
+            referencedColumns: ["league_id"]
+          },
+          {
+            foreignKeyName: "house_rules_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "resolved_league_preferences"
+            referencedColumns: ["league_id"]
+          },
+          {
+            foreignKeyName: "house_rules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invite_tokens: {
         Row: {
           claimed_at: string | null
@@ -446,6 +517,7 @@ export type Database = {
           handicap_level: string
           handicap_variant: string
           id: string
+          ignore_org_house_rules: boolean
           league_start_date: string
           organization_id: string
           status: string
@@ -463,6 +535,7 @@ export type Database = {
           handicap_level?: string
           handicap_variant?: string
           id?: string
+          ignore_org_house_rules?: boolean
           league_start_date: string
           organization_id: string
           status?: string
@@ -480,6 +553,7 @@ export type Database = {
           handicap_level?: string
           handicap_variant?: string
           id?: string
+          ignore_org_house_rules?: boolean
           league_start_date?: string
           organization_id?: string
           status?: string
@@ -1077,6 +1151,100 @@ export type Database = {
           },
         ]
       }
+      merge_requests: {
+        Row: {
+          created_at: string
+          id: string
+          organization_id: string | null
+          placeholder_member_id: string
+          processed_at: string | null
+          processed_by_member_id: string | null
+          processor_notes: string | null
+          registered_member_id: string
+          request_notes: string | null
+          requested_by_member_id: string
+          requester_role: string
+          status: Database["public"]["Enums"]["merge_request_status"]
+          team_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organization_id?: string | null
+          placeholder_member_id: string
+          processed_at?: string | null
+          processed_by_member_id?: string | null
+          processor_notes?: string | null
+          registered_member_id: string
+          request_notes?: string | null
+          requested_by_member_id: string
+          requester_role: string
+          status?: Database["public"]["Enums"]["merge_request_status"]
+          team_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organization_id?: string | null
+          placeholder_member_id?: string
+          processed_at?: string | null
+          processed_by_member_id?: string | null
+          processor_notes?: string | null
+          registered_member_id?: string
+          request_notes?: string | null
+          requested_by_member_id?: string
+          requester_role?: string
+          status?: Database["public"]["Enums"]["merge_request_status"]
+          team_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merge_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merge_requests_placeholder_member_id_fkey"
+            columns: ["placeholder_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merge_requests_processed_by_member_id_fkey"
+            columns: ["processed_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merge_requests_registered_member_id_fkey"
+            columns: ["registered_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merge_requests_requested_by_member_id_fkey"
+            columns: ["requested_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merge_requests_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string
@@ -1596,6 +1764,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rules_page_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          game: string | null
+          id: string
+          result_count: number | null
+          rule_id: string | null
+          scope_id: string | null
+          scope_type: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          game?: string | null
+          id?: string
+          result_count?: number | null
+          rule_id?: string | null
+          scope_id?: string | null
+          scope_type?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          game?: string | null
+          id?: string
+          result_count?: number | null
+          rule_id?: string | null
+          scope_id?: string | null
+          scope_type?: string | null
+        }
+        Relationships: []
       }
       season_weeks: {
         Row: {
@@ -2175,6 +2376,54 @@ export type Database = {
       }
     }
     Views: {
+      house_rules_with_scope_name: {
+        Row: {
+          body: string[] | null
+          created_at: string | null
+          effect_type: string | null
+          game: string | null
+          id: string | null
+          league_id: string | null
+          organization_id: string | null
+          parent_org_name: string | null
+          related_rule_id: string | null
+          scope_name: string | null
+          scope_type: string | null
+          title: string | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "house_rules_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "house_rules_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "resolved_league_playoff_config"
+            referencedColumns: ["league_id"]
+          },
+          {
+            foreignKeyName: "house_rules_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "resolved_league_preferences"
+            referencedColumns: ["league_id"]
+          },
+          {
+            foreignKeyName: "house_rules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       resolved_league_playoff_config: {
         Row: {
           auto_generate: boolean | null
@@ -2251,6 +2500,10 @@ export type Database = {
         Args: { p_season_week_id: string }
         Returns: undefined
       }
+      can_write_house_rule_org: {
+        Args: { target_org_id: string }
+        Returns: boolean
+      }
       claim_invite_token: {
         Args: { p_token: string; p_user_id: string }
         Returns: {
@@ -2280,7 +2533,10 @@ export type Database = {
         }
         Returns: string
       }
-      daitch_mokotoff: { Args: { "": string }; Returns: string[] }
+      daitch_mokotoff: {
+        Args: { "": string }
+        Returns: string[]
+      }
       delete_unused_placeholder: {
         Args: {
           p_actor_member_id: string
@@ -2292,9 +2548,18 @@ export type Database = {
           success: boolean
         }[]
       }
-      dmetaphone: { Args: { "": string }; Returns: string }
-      dmetaphone_alt: { Args: { "": string }; Returns: string }
-      get_current_member_id: { Args: never; Returns: string }
+      dmetaphone: {
+        Args: { "": string }
+        Returns: string
+      }
+      dmetaphone_alt: {
+        Args: { "": string }
+        Returns: string
+      }
+      get_current_member_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_invite_details: {
         Args: { p_token: string }
         Returns: {
@@ -2343,9 +2608,18 @@ export type Database = {
           token: string
         }[]
       }
-      get_operator_placeholders: { Args: { p_org_id: string }; Returns: Json }
-      get_operator_player_stats: { Args: { p_org_id: string }; Returns: Json }
-      get_operator_stats: { Args: { operator_id_param: string }; Returns: Json }
+      get_operator_placeholders: {
+        Args: { p_org_id: string }
+        Returns: Json
+      }
+      get_operator_player_stats: {
+        Args: { p_org_id: string }
+        Returns: Json
+      }
+      get_operator_stats: {
+        Args: { operator_id_param: string }
+        Returns: Json
+      }
       get_org_placeholders_for_merge: {
         Args: { p_include_archived?: boolean; p_org_id: string }
         Returns: {
@@ -2377,6 +2651,13 @@ export type Database = {
           nickname: string
           team_count: number
         }[]
+      get_operator_player_stats: {
+        Args: { p_org_id: string }
+        Returns: Json
+      }
+      get_operator_stats: {
+        Args: { operator_id_param: string }
+        Returns: Json
       }
       get_team_verification_options: {
         Args: { p_decoy_count?: number; p_member_id: string }
@@ -2384,6 +2665,26 @@ export type Database = {
           is_correct: boolean
           team_name: string
         }[]
+      }
+      gtrgm_compress: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_decompress: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_in: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_options: {
+        Args: { "": unknown }
+        Returns: undefined
+      }
+      gtrgm_out: {
+        Args: { "": unknown }
+        Returns: unknown
       }
       is_conversation_participant: {
         Args: { conv_id: string; uid: string }
@@ -2436,24 +2737,17 @@ export type Database = {
         }[]
       }
       placeholder_has_stats: { Args: { p_member_id: string }; Returns: boolean }
+      prep_match: {
+        Args: { p_game_rows: Json; p_match_id: string; p_thresholds: Json }
+        Returns: undefined
+      }
+      placeholder_has_stats: {
+        Args: { p_member_id: string }
+        Returns: boolean
+      }
       remove_placeholder_from_team: {
         Args: { p_member_id: string; p_org_id: string; p_team_id: string }
         Returns: Json
-      }
-      resolve_member_primary_org: {
-        Args: { p_member_id: string }
-        Returns: string
-      }
-      restore_placeholder: {
-        Args: {
-          p_actor_member_id: string
-          p_member_id: string
-          p_organization_id: string
-        }
-        Returns: {
-          error_message: string
-          success: boolean
-        }[]
       }
       search_placeholder_matches: {
         Args: {
@@ -2516,10 +2810,26 @@ export type Database = {
           total_score: number
         }[]
       }
-      show_limit: { Args: never; Returns: number }
-      show_trgm: { Args: { "": string }; Returns: string[] }
-      soundex: { Args: { "": string }; Returns: string }
-      text_soundex: { Args: { "": string }; Returns: string }
+      set_limit: {
+        Args: { "": number }
+        Returns: number
+      }
+      show_limit: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      show_trgm: {
+        Args: { "": string }
+        Returns: string[]
+      }
+      soundex: {
+        Args: { "": string }
+        Returns: string
+      }
+      text_soundex: {
+        Args: { "": string }
+        Returns: string
+      }
       undo_merge_placeholder: {
         Args: {
           p_actor_member_id: string
@@ -2535,6 +2845,7 @@ export type Database = {
       }
     }
     Enums: {
+      merge_request_status: "pending" | "approved" | "rejected"
       moderation_action:
         | "warning"
         | "temporary_suspension"
@@ -2691,6 +3002,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      merge_request_status: ["pending", "approved", "rejected"],
       moderation_action: [
         "warning",
         "temporary_suspension",
