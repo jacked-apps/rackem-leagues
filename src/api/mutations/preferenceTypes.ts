@@ -27,6 +27,38 @@ export interface PreferenceFields {
   handicap_type?: string | null;
   points_system?: string | null;
   threshold_chart_id?: string | null;
+
+  // Phase 2 Unit 2.1 modular columns
+  pairing_format?: 'single_rack' | 'race_to_n' | string | null;
+  scoring_method?:
+    | 'winner_takes_all'
+    | 'points_10_7'
+    | 'race_winner'
+    | string
+    | null;
+  win_condition?:
+    | 'first_to_games'
+    | 'first_to_pairings'
+    | 'highest_after_all_games'
+    | 'total_points_target'
+    | string
+    | null;
+  mechanism?:
+    | 'extra_games'
+    | 'start_points'
+    | 'race_length_adjustment'
+    | 'none'
+    | string
+    | null;
+  standings_sort?: ('match_wins' | 'games_won' | 'points_earned')[] | null;
+  tiebreaker_trigger?: 'even_total_games_only' | 'never' | string | null;
+  tiebreaker_format?:
+    | 'best_of_3_short_race'
+    | 'single_short_race'
+    | 'accept_tie'
+    | string
+    | null;
+  race_length?: number | null;
 }
 
 /** Full preference record as returned from the database */
