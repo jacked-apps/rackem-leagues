@@ -611,7 +611,7 @@ These need integration / component-test infrastructure rather than pure unit tes
 - View resolves correctly across the 3 cascade tiers
 - `rating_edit_audit_log` table exists with expected columns
 
-- [ ] **Unit 2.4: Replace threshold-charts dev-only RLS with production policies**
+- [x] **Unit 2.4: Replace threshold-charts dev-only RLS with production policies** *(completed 2026-04-29)*
 
 **Goal:** The `threshold_charts` and `threshold_chart_rows` tables shipped with placeholder RLS labeled "Dev: Allow all operations" (per `supabase/migrations/20260410000002_threshold_charts.sql` lines 275-294, with TODO to add proper policies before production). This work activates those tables in Phase 3 — the placeholder RLS must be replaced first or LOs and players could write to other leagues' charts.
 
