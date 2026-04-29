@@ -20,9 +20,12 @@
  */
 
 import type { SystemModule } from './types';
+import type { SystemOverrides } from '@/types/systemOverrides';
+import type { ResolvedSystemConfig } from '@/types/resolvedSystemConfig';
 import { bca3v3 } from './bca3v3';
 import { bca5v5 } from './bca5v5';
 import { fargo5v5 } from './fargo5v5';
+import { buildSystemFromPreferences } from './buildSystemFromPreferences';
 
 /**
  * Resolve a `handicap_type` string to its SystemModule.
@@ -30,6 +33,11 @@ import { fargo5v5 } from './fargo5v5';
  * Logs a warning (console.warn) when the input is unmapped and the fallback
  * is applied — production telemetry should pick this up to identify any
  * legacy leagues whose `handicap_type` hasn't been backfilled.
+ *
+ * Used by the many call sites that only have a `handicap_type` string
+ * (legacy paths). For full-preference resolution (modular axes beyond
+ * `handicap_type`), prefer {@link resolveSystem} which delegates to
+ * {@link buildSystemFromPreferences} and supports ad-hoc combos.
  */
 export function pickModule(handicapType: string | null | undefined): SystemModule {
   switch (handicapType) {
@@ -45,4 +53,21 @@ export function pickModule(handicapType: string | null | undefined): SystemModul
       );
       return bca5v5;
   }
+}
+
+/**
+ * Resolve a full preference snapshot to a SystemModule.
+ *
+ * Thin wrapper around {@link buildSystemFromPreferences} that exists at
+ * the resolver-module boundary so callers don't have to know about the
+ * builder file. Fast-paths to one of the three shipped presets when prefs
+ * match; otherwise builds an ad-hoc module.
+ *
+ * @see Phase 5 Unit 5.1 in the modular-league plan.
+ */
+export function resolveSystem(
+  prefs: ResolvedSystemConfig,
+  overrides: SystemOverrides,
+): SystemModule {
+  return buildSystemFromPreferences(prefs, overrides);
 }

@@ -922,7 +922,7 @@ These need integration / component-test infrastructure rather than pure unit tes
 
 ### Phase 5 — Scoring Runtime Refactor
 
-- [ ] **Unit 5.1: Build runtime resolver `buildSystemFromPreferences`**
+- [x] **Unit 5.1: Build runtime resolver `buildSystemFromPreferences`** *(completed 2026-04-29)*
 
 **Goal:** Implement R18's "ad-hoc SystemModule from preferences" — a function that takes resolved preferences + system_overrides and returns a SystemModule-equivalent for runtime scoring.
 

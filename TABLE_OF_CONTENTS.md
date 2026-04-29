@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-04-28 (added E2E test infrastructure + modular-league-system brainstorm and implementation plan; supersedes April 18 modular-handicap-scoring doc)
+> **Last Updated**: 2026-04-29 (Phase 5 Unit 5.1 — buildSystemFromPreferences runtime resolver added)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -902,12 +902,14 @@ TypeScript type definitions - **Single source of truth for all types**
 
 Preset modules implementing the `SystemModule` interface. Each shipped preset owns its rating, scoring, and threshold behavior. The resolver maps `handicap_type` string → module. See `docs/plans/2026-04-18-001-refactor-modular-handicap-scoring-systems-plan.md`.
 
-- `types.ts` - **SystemModule interface** + discriminated threshold union (BCAThreshold | FargoThreshold) + supporting types
-- `resolver.ts` - **Module resolver** — `pickModule(handicap_type)` routes to bca3v3 / bca5v5 / fargo5v5
+- `types.ts` - **SystemModule interface** + mechanism-discriminated threshold union (ExtraGamesThreshold | StartPointsThreshold | RaceLengthThreshold) + supporting types (Phase 1 Unit 1.3)
+- `resolver.ts` - **Module resolver** — `pickModule(handicap_type)` routes to bca3v3 / bca5v5 / fargo5v5; `resolveSystem(prefs, overrides)` delegates to buildSystemFromPreferences for full-preference resolution (Phase 5 Unit 5.1)
+- `buildSystemFromPreferences.ts` - **Runtime resolver** (Phase 5 Unit 5.1) — produces a SystemModule from a `ResolvedSystemConfig`. Fast-paths to one of the three shipped presets when prefs match exactly; otherwise builds an ad-hoc module by dispatching rating/scoring/threshold sections on the resolved axes
 - `bca3v3.ts` - **BCA 3v3 module** — wraps the existing get3v3GamesNeeded chart
 - `bca5v5.ts` - **BCA 5v5 module** — wraps the existing get5v5GamesNeeded chart
 - `fargo5v5.ts` - **Fargo 5v5 module** — real math (Phase 3 Unit 10): rating validation (100-850 integer), start-points formula from `docs/research/fargorate-formula.md`, points→games-won match-result cascade
 - `__tests__/resolver.test.ts` - Resolver routing tests (15 cases including unmapped fallback)
+- `__tests__/buildSystemFromPreferences.test.ts` - **Runtime resolver tests** (Phase 5 Unit 5.1) — preset fast-path equivalence + ad-hoc combos (29 cases): teamFormat derivation, rating/scoring/threshold dispatch, mechanism dispatch (extra_games / start_points / race_length_adjustment / none), graceful fallback for not-yet-wired layers
 - `__tests__/fargo5v5.test.ts` - **Fargo math tests** (Phase 3 Unit 10) — validates against 1 real-match test case (56 start-points ±1) + 34 synthetic cases covering rating validation, start-points formula, scoring cascade, override behavior
 
 ---
