@@ -1590,6 +1590,54 @@ export type Database = {
           },
         ]
       }
+      rating_edit_audit_log: {
+        Row: {
+          actor_type: string
+          actor_user_id: string | null
+          after_value: string | null
+          before_value: string | null
+          created_at: string
+          id: string
+          organization_id: string | null
+          rating_system: string
+          reason: string | null
+          scope: string
+          source: string
+          target_match_lineup_id: string | null
+          target_member_id: string
+        }
+        Insert: {
+          actor_type?: string
+          actor_user_id?: string | null
+          after_value?: string | null
+          before_value?: string | null
+          created_at?: string
+          id?: string
+          organization_id?: string | null
+          rating_system: string
+          reason?: string | null
+          scope: string
+          source?: string
+          target_match_lineup_id?: string | null
+          target_member_id: string
+        }
+        Update: {
+          actor_type?: string
+          actor_user_id?: string | null
+          after_value?: string | null
+          before_value?: string | null
+          created_at?: string
+          id?: string
+          organization_id?: string | null
+          rating_system?: string
+          reason?: string | null
+          scope?: string
+          source?: string
+          target_match_lineup_id?: string | null
+          target_member_id?: string
+        }
+        Relationships: []
+      }
       report_actions: {
         Row: {
           action_notes: string
@@ -2384,11 +2432,19 @@ export type Database = {
           league_id: string | null
           lineup_size: number | null
           max_roster_size: number | null
+          mechanism: string | null
           organization_id: string | null
+          pairing_format: string | null
           points_system: string | null
+          race_length: number | null
+          scoring_method: string | null
+          standings_sort: string[] | null
           team_format: string | null
           team_handicap_variant: string | null
           threshold_chart_id: string | null
+          tiebreaker_format: string | null
+          tiebreaker_trigger: string | null
+          win_condition: string | null
         }
         Relationships: [
           {
