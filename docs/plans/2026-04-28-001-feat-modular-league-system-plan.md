@@ -269,6 +269,8 @@ The BCA meeting is the forcing function for this work. The 21-unit plan does not
 ### Phase 0 — Pre-Implementation Research and Baseline Capture (blocking)
 
 - [ ] **Phase 0a research:** Mobile-app `team_format` grep (Jack's repo); BCAPL Playing Handicap Chart sourcing (playbca.com / BCA contact); `lo-manual-scoring` branch investigation (cherry-pick viability); Fargo logistic divisor validation (FargoRate official materials). Captured as research notes; outcomes feed Phases 3, 7.
+  - **Resolved 2026-04-28:** `lo-manual-scoring` branch investigated. Hybrid port recommended: keep ~4,200 lines of UI components, rebuild data layer against main's existing schema. Saves ~1.5-2.5 days for Unit 3.4. See `docs/plans/2026-04-28-001-feat-modular-league-system-plan-supplements/lo-manual-scoring-investigation.md`.
+  - **Still pending:** mobile-app grep, BCAPL chart sourcing, Fargo logistic divisor validation.
 
 - [ ] **Phase 0b: Record 3v3 (and BCA 5v5, Fargo 5v5) characterization fixtures from CURRENT code, BEFORE any refactor begins.**
 
@@ -322,7 +324,45 @@ The BCA meeting is the forcing function for this work. The 21-unit plan does not
 
 **Hard rule across all later phases:** every phase ends with a re-run of the characterization tests against the post-phase code. If any 3v3 fixture diverges, the phase is rejected and must be fixed before moving to the next phase. No exceptions.
 
+**Status (2026-04-29): SUBSTANTIALLY COMPLETE.** Rather than recording fixtures as JSON files for one-shot script comparison, characterization is implemented as Vitest tests that lock current behavior at every layer. Each test file's expected outputs ARE the fixture; running the test against post-refactor code is the comparison. This is functionally equivalent to the JSON+script approach and integrates cleanly with the existing test infrastructure.
+
+Tests landed on `feature/modular-league-system` branch:
+
+| Layer | File | Tests |
+|---|---|---|
+| Chart values (existing) | `src/utils/handicap/__tests__/getGamesNeeded.characterization.test.ts` | 49 |
+| BCA 3v3 module | `src/systems/__tests__/bca3v3.characterization.test.ts` | 86 |
+| BCA 5v5 module | `src/systems/__tests__/bca5v5.characterization.test.ts` | 104 |
+| Fargo 5v5 module (existing) | `src/systems/__tests__/fargo5v5.test.ts` | 35 |
+| Resolver (existing) | `src/systems/__tests__/resolver.test.ts` | 15 |
+| Threshold integration (lineup → diff → chart) | `src/utils/__tests__/calculateHandicapThresholds.characterization.test.ts` | 11 |
+| Standings sort | `src/utils/__tests__/playoffGenerator.standingsSort.characterization.test.ts` | 13 |
+| Team handicap bonus (points-specific) | `src/utils/__tests__/getTeamHandicapBonus.characterization.test.ts` | 14 |
+| Variant-aware team handicap + substitute options | `src/utils/__tests__/handicapCalculations.characterization.test.ts` | 19 |
+| Fargo running scoreboard | `src/utils/__tests__/fargoMatchTotals.characterization.test.ts` | 16 |
+| BCA running scoreboard (calculatePoints / calculateBCAPoints / getTeamStats) | `src/types/__tests__/match-scoring.characterization.test.ts` | 31 |
+| Game order generation (with cross-combos: 3v3 SRR / 4v4 / 6v6 / etc.) | `src/utils/__tests__/gameOrder.characterization.test.ts` | 53 |
+| Golden break rules | `src/utils/__tests__/goldenBreakRules.characterization.test.ts` | 16 |
+
+**Total: ~462 tests guarding scoring math + standings + game-generation + integration.**
+
+Coverage of the user's specific scoring-preservation concerns:
+- ✅ **Home/away independent chart lookups** locked at three layers (chart, module, integration)
+- ✅ **Sum rule + equality rule** locked at module layer (bca3v3 + bca5v5)
+- ✅ **Tiered points counting** locked at multiple layers (BCA 3v3 calculatePoints + 5v5 BCA bonus jumps)
+- ✅ **Match structure independence** (lineup size × RR mode treated as independent axes; cross-combo coverage in gameOrder tests)
+
+**Coverage gaps that remain (lower priority, can be added later):**
+- Match-result determination logic (`determineMatchResult` private function in MatchEndVerification.tsx)
+- Hooks with DB+React Query dependencies (`useStandings`, `useMatchScoring`, `useMatchPreparation`)
+- UI components (`ThreeVThreeScoreboard`, `MatchEndVerification` rendering)
+
+These need integration / component-test infrastructure rather than pure unit tests.
+
 - [ ] **Phase 0c: Record E2E intermediate-state fixtures for full match scoring (3v3, BCA 5v5, Fargo 5v5).**
+
+**Status (2026-04-29): PARTIAL.** First spec shipped (`tests/e2e/characterization/3v3-foundation.spec.ts`, 4 tests) — locks the factory's 3v3 output shape, the auto-create-match-lineups DB trigger, and the captain's lineup-page route guards. The full per-game scoring capture (driving the scoring UI for all 18 games and asserting per-game intermediate state) remains as future work — needs a focused session because it requires understanding the scoring UI selectors AND a small piece of test infrastructure work (the `getServiceClient` cached singleton has stale-OpenAPI behavior for newly-added RPCs; documented but not yet fixed).
+
 
 **Goal:** Capture the running state of a match game-by-game from the actual UI, against current code. Unit fixtures (Phase 0b) catch math drift in isolation; these E2E fixtures catch *integration* drift — the wrong scoring function being called, the wrong chart consulted, the snapshot read incorrectly, etc. Together they form a two-layer safety net.
 
