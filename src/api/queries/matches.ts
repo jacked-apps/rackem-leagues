@@ -675,15 +675,21 @@ export async function completeMatch(
  * Populate `matches.system_snapshot` if it's currently null — tier 3 mutability.
  *
  * Called at the first scoring event for a match. Reads the league's current
- * `system_overrides` and `preferences.threshold_chart_id`, then writes them
- * to the match as a frozen snapshot. Subsequent calls are no-ops because the
- * update is guarded by `WHERE system_snapshot IS NULL`.
+ * resolved preferences (full 13-axis modular cascade) plus
+ * `leagues.system_overrides`, then writes them to the match as a frozen
+ * snapshot. Subsequent calls are no-ops because the update is guarded by
+ * `WHERE system_snapshot IS NULL`.
+ *
+ * Snapshot shape: `ResolvedSystemConfig` (see `src/types/resolvedSystemConfig.ts`).
+ * Captures all modular axes plus per-league override dials so the scoring
+ * runtime can reconstruct a SystemModule via `buildSystemFromPreferences`
+ * (Phase 5 Unit 5.1) without re-querying possibly-edited live preferences.
  *
  * This is intentionally a best-effort operation: if it fails for any reason,
  * scoring continues. The snapshot is defense-in-depth against mid-season
  * dial edits; absence of a snapshot falls back to reading live league data
- * (current behavior pre-Unit-7). Legacy matches from before this migration
- * will always have a null snapshot.
+ * (Unit 5.2b will tighten this to a refuse-to-finalize policy once backfill
+ * for legacy in-flight matches lands).
  *
  * Safe under concurrent writes: if two players confirm the first game in
  * parallel, both reads see null, both try to update, but both produce the
@@ -691,7 +697,7 @@ export async function completeMatch(
  * last-writer-wins is harmless.
  *
  * @param matchId - Match whose snapshot should be populated
- * @param leagueId - League the match belongs to (for overrides lookup)
+ * @param leagueId - League the match belongs to (for prefs + overrides lookup)
  */
 export async function populateMatchSnapshotIfNeeded(
   matchId: string,
@@ -712,23 +718,49 @@ export async function populateMatchSnapshotIfNeeded(
     return; // Already populated — never overwrite
   }
 
-  // Read current league overrides + threshold chart ID
-  const [leagueRes, prefRes] = await Promise.all([
-    supabase.from('leagues').select('system_overrides').eq('id', leagueId).single(),
+  // Read full resolved preferences (all 13 modular axes) + per-league
+  // override dials in parallel. The resolved view applies the league →
+  // org → system-default cascade so we capture exactly what the league
+  // looks like to the scoring runtime at this moment.
+  const [resolvedRes, leagueRes] = await Promise.all([
     supabase
-      .from('preferences')
-      .select('threshold_chart_id')
-      .eq('entity_type', 'league')
-      .eq('entity_id', leagueId)
-      .maybeSingle(),
+      .from('resolved_league_preferences')
+      .select(
+        'lineup_size, max_roster_size, game_generation, pairing_format, race_length, scoring_method, win_condition, handicap_type, mechanism, threshold_chart_id, standings_sort, tiebreaker_trigger, tiebreaker_format',
+      )
+      .eq('league_id', leagueId)
+      .single(),
+    supabase.from('leagues').select('system_overrides').eq('id', leagueId).single(),
   ]);
 
-  const overrides = leagueRes.data?.system_overrides ?? {};
-  const threshold_chart_id = prefRes.data?.threshold_chart_id ?? null;
+  if (resolvedRes.error) {
+    console.warn(
+      '[matches.populateMatchSnapshotIfNeeded] resolved-prefs read error',
+      resolvedRes.error.message,
+    );
+    return;
+  }
 
+  const resolved = resolvedRes.data;
+  const overrides = leagueRes.data?.system_overrides ?? {};
+
+  // Build full ResolvedSystemConfig shape. Field order matches the type
+  // definition in src/types/resolvedSystemConfig.ts for easy comparison.
   const snapshot = {
+    lineup_size: resolved.lineup_size,
+    max_roster_size: resolved.max_roster_size,
+    game_generation: resolved.game_generation,
+    pairing_format: resolved.pairing_format,
+    race_length: resolved.race_length,
+    scoring_method: resolved.scoring_method,
+    win_condition: resolved.win_condition,
+    handicap_type: resolved.handicap_type,
+    mechanism: resolved.mechanism,
+    threshold_chart_id: resolved.threshold_chart_id,
+    standings_sort: resolved.standings_sort,
+    tiebreaker_trigger: resolved.tiebreaker_trigger,
+    tiebreaker_format: resolved.tiebreaker_format,
     overrides,
-    threshold_chart_id,
     snapshot_at: new Date().toISOString(),
   };
 

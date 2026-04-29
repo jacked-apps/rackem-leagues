@@ -541,7 +541,7 @@ These need integration / component-test infrastructure rather than pure unit tes
 - Generated `database.types.ts` reflects the new columns
 - Existing `useResolvedLeaguePrefs` resolves the new fields (post-Unit 2.3 view update)
 
-- [ ] **Unit 2.2: Define `ResolvedSystemConfig` type and expand `system_snapshot` shape**
+- [~] **Unit 2.2: Define `ResolvedSystemConfig` type and expand `system_snapshot` shape** *(2026-04-29: type defined in d66a30a; writer expanded in this commit. MatchSystemSnapshot type aliased to ResolvedSystemConfig. Deferred: lifecycle-hook move from first-scoring-event to scheduled→in_progress, one-time backfill migration, and UI banner for backfilled snapshots — all minor follow-ups; current writer is sufficient to unblock Unit 5.2b.)*
 
 **Goal:** Define the TypeScript type that represents the full resolved per-match system configuration. Update snapshot population to capture all 13 axes, and move snapshot timing earlier (scheduled→in_progress transition).
 

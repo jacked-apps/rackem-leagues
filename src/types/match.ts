@@ -4,19 +4,26 @@
  */
 
 import type { HandicapVariant } from '@/utils/handicapCalculations';
-import type { SystemOverrides } from './systemOverrides';
+import type { ResolvedSystemConfig } from './resolvedSystemConfig';
 
 /**
- * Per-match frozen snapshot of tier 2 dials + threshold chart selection.
- * Populated at scheduled → in_progress transition and never mutated after.
+ * Per-match frozen snapshot of the full resolved system configuration.
+ * Populated at the first scoring event and never mutated after.
  * Stored as `matches.system_snapshot JSONB`. See migration
  * 20260418000003_add_matches_system_snapshot.sql.
+ *
+ * As of Phase 2 Unit 2.2 (2026-04-29) this is the full `ResolvedSystemConfig`
+ * shape — all 13 modular axes plus per-league override dials. The Phase-1
+ * shape (just `{ overrides, threshold_chart_id, snapshot_at }`) is a strict
+ * subset; readers that only check `.overrides` or `.threshold_chart_id`
+ * keep working unchanged. New readers can access the full configuration
+ * (lineup_size, mechanism, scoring_method, etc.) via the wider shape.
+ *
+ * NOTE: legacy matches scored before the writer expansion will still have
+ * the smaller Phase-1 shape on disk. Readers must tolerate missing fields
+ * (`field ?? defaultFromLivePrefs ?? hardcodedDefault`).
  */
-export interface MatchSystemSnapshot {
-  overrides: SystemOverrides;
-  threshold_chart_id: string | null;
-  snapshot_at: string; // ISO 8601 timestamp
-}
+export type MatchSystemSnapshot = ResolvedSystemConfig;
 
 /**
  * Match type - determines format and scoring rules
