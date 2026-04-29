@@ -21,6 +21,7 @@ import { useUpdateMatchLineup } from '@/api/hooks';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { calculatePoints, calculateBCAPoints } from '@/types/match';
 import { calculateFargoMatchTotals } from '@/utils/fargoMatchTotals';
+import { determineMatchResult } from '@/utils/determineMatchResult';
 import { logger } from '@/utils/logger';
 
 interface MatchEndVerificationProps {
@@ -60,38 +61,9 @@ interface MatchEndVerificationProps {
   gameType: string;
 }
 
-/**
- * Determine match result from scores and thresholds
- */
-function determineMatchResult(
-  homeWins: number,
-  awayWins: number,
-  homeWinThreshold: number,
-  awayWinThreshold: number,
-  homeTieThreshold: number | null,
-  awayTieThreshold: number | null
-): 'home_win' | 'away_win' | 'tie' {
-  // Check for wins first
-  if (homeWins >= homeWinThreshold) {
-    return 'home_win';
-  }
-  if (awayWins >= awayWinThreshold) {
-    return 'away_win';
-  }
-
-  // Check for tie (only if thresholds exist)
-  if (
-    homeTieThreshold !== null &&
-    awayTieThreshold !== null &&
-    homeWins === homeTieThreshold &&
-    awayWins === awayTieThreshold
-  ) {
-    return 'tie';
-  }
-
-  // Shouldn't happen if all games are complete
-  return 'tie';
-}
+// determineMatchResult extracted to src/utils/determineMatchResult.ts
+// (Phase 0b characterization tests at
+// src/utils/__tests__/determineMatchResult.characterization.test.ts).
 
 /**
  * Match end verification component
