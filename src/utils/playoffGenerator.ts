@@ -14,6 +14,7 @@
 
 import { supabase } from '@/supabaseClient';
 import { fetchSeasonStandings, type TeamStanding } from '@/api/queries/standings';
+import { sortStandings } from '@/utils/standings/sortStandings';
 import { logger } from '@/utils/logger';
 import type {
   SeededTeam,
@@ -26,29 +27,19 @@ import type {
 import type { MatchInsertData } from '@/types/schedule';
 
 /**
- * Sort standings by ranking criteria
+ * Sort standings by ranking criteria.
  *
- * Ranking order (same as regular season):
- * 1. Match wins (most wins first)
- * 2. Points (highest first)
- * 3. Games won (highest first)
+ * Delegates to the shared helper at `src/utils/standings/sortStandings.ts`
+ * (Phase 5 Unit 5.3). The default priority is `[match_wins, games_won,
+ * points_earned]` — same as before this refactor. A future PR will pass
+ * the league's resolved `standings_sort` priority instead of using the
+ * default.
  *
  * @param standings - Array of team standings
  * @returns Sorted array (best team first)
  */
 function sortStandingsByRank(standings: TeamStanding[]): TeamStanding[] {
-  return [...standings].sort((a, b) => {
-    // Primary: Match wins (descending)
-    if (b.matchWins !== a.matchWins) {
-      return b.matchWins - a.matchWins;
-    }
-    // Secondary: Points (descending)
-    if (b.points !== a.points) {
-      return b.points - a.points;
-    }
-    // Tertiary: Games won (descending)
-    return b.gamesWon - a.gamesWon;
-  });
+  return sortStandings(standings);
 }
 
 /**
