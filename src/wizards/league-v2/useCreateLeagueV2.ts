@@ -16,7 +16,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createLeague } from '@/api/mutations/leagues';
 import { upsertPreference } from '@/api/mutations/preferences';
 import { formatLocalDate } from '@/utils/formatters';
-import { PRESET_MAPPINGS } from './presetMappings';
+import { PRESET_MAPPINGS, mapStandingsSort, mapTiebreaker } from './presetMappings';
 import { deriveDateFields } from './leagueWizardHelpers';
 import type { LeagueWizardFormData } from './leagueWizardTypes';
 import type { DayOfWeek, GameType } from '@/types/league';
@@ -53,13 +53,33 @@ export function useCreateLeagueV2({ organizationId }: UseCreateLeagueV2Args) {
         division: formData['qualifier']?.trim() || null,
       });
 
-      // 2. Upsert preferences row with modular fields
+      // 2. Upsert preferences row with modular fields.
+      //
+      // For presets, values come from PRESET_MAPPINGS (all 13 axes baked in).
+      // For custom, each axis is sourced from its wizard step. Two axes
+      // require a small key→DB-shape transform:
+      //   - standings-sort: a single preset key maps to a 3-element priority array
+      //   - tiebreaker:    a single key maps to (trigger, format) pair
+      // (See StandingsSortStep / TiebreakerStep for the user-facing options.)
       const prefFields = isCustom
         ? {
             lineup_size: formData['lineup-size'] ?? 3,
             max_roster_size: formData['roster-size'] ?? 5,
             game_generation: formData['match-format'] ?? 'double_round_robin',
             handicap_type: formData['handicap-system'] ?? 'points',
+            pairing_format: formData['pairing-format'] ?? 'single_rack',
+            scoring_method: formData['scoring-method'] ?? 'winner_takes_all',
+            win_condition: formData['win-condition'] ?? 'first_to_games',
+            mechanism: formData['mechanism'] ?? 'extra_games',
+            standings_sort: mapStandingsSort(formData['standings-sort']),
+            ...mapTiebreaker(formData['tiebreaker']),
+            // race_length defaults to NULL (single_rack); only meaningful
+            // when pairing_format='race_to_n' — captured in a follow-up
+            // unit, default 7 (race-to-7) is the BCAPL convention.
+            race_length:
+              (formData['pairing-format'] ?? 'single_rack') === 'race_to_n'
+                ? formData['race-length'] ?? 7
+                : null,
           }
         : preset?.preferences ?? {};
 

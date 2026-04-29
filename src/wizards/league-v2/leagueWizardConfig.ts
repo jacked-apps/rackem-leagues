@@ -31,8 +31,15 @@ import { LineupSizeStep } from './steps/LineupSizeStep';
 import { RosterSizeStep } from './steps/RosterSizeStep';
 import { MatchFormatStep } from './steps/MatchFormatStep';
 import { HandicapSystemStep } from './steps/HandicapSystemStep';
+import { PairingFormatStep } from './steps/PairingFormatStep';
+import { ScoringMethodStep } from './steps/ScoringMethodStep';
+import { WinConditionStep } from './steps/WinConditionStep';
+import { MechanismStep } from './steps/MechanismStep';
+import { StandingsSortStep } from './steps/StandingsSortStep';
+import { TiebreakerStep } from './steps/TiebreakerStep';
 import type { LeagueWizardFormData } from './leagueWizardTypes';
 import { getLeagueSummaryItems } from './leagueWizardHelpers';
+import { getMatchTotalGames } from '@/utils/lineup/getMatchTotalGames';
 
 /** Simple validator — blocks Next if nothing is selected */
 const requireSelection = (value: unknown) =>
@@ -100,6 +107,62 @@ export const leagueWizardConfig: WizardConfig<LeagueWizardFormData> = {
       showIf: (fd) => fd['league-format'] === 'custom',
       validate: requireSelection,
       component: HandicapSystemStep as WizardConfig<LeagueWizardFormData>['steps'][number]['component'],
+    },
+    // Phase 4 Unit 4.1 — additional modular axes (custom path only).
+    // Steps appear in dependency order: pairing format and scoring method
+    // come first because their values constrain the remaining choices.
+    {
+      id: 'pairing-format',
+      title: 'Pairing Format',
+      showIf: (fd) => fd['league-format'] === 'custom',
+      validate: requireSelection,
+      component: PairingFormatStep as WizardConfig<LeagueWizardFormData>['steps'][number]['component'],
+    },
+    {
+      id: 'scoring-method',
+      title: 'Scoring Method',
+      showIf: (fd) => fd['league-format'] === 'custom',
+      validate: requireSelection,
+      component: ScoringMethodStep as WizardConfig<LeagueWizardFormData>['steps'][number]['component'],
+    },
+    {
+      id: 'win-condition',
+      title: 'Win Condition',
+      showIf: (fd) => fd['league-format'] === 'custom',
+      validate: requireSelection,
+      component: WinConditionStep as WizardConfig<LeagueWizardFormData>['steps'][number]['component'],
+    },
+    {
+      id: 'mechanism',
+      title: 'Handicap Mechanism',
+      showIf: (fd) => fd['league-format'] === 'custom',
+      validate: requireSelection,
+      component: MechanismStep as WizardConfig<LeagueWizardFormData>['steps'][number]['component'],
+    },
+    {
+      id: 'standings-sort',
+      title: 'Standings Sort',
+      showIf: (fd) => fd['league-format'] === 'custom',
+      validate: requireSelection,
+      component: StandingsSortStep as WizardConfig<LeagueWizardFormData>['steps'][number]['component'],
+    },
+    // Tiebreaker only matters when the configured (lineup × match-format)
+    // produces an even total game count. Even lineup sizes always do; odd
+    // lineup with double-round-robin also does. Odd × single-RR = odd
+    // games, no ties possible — skip the question.
+    {
+      id: 'tiebreaker',
+      title: 'Tiebreaker',
+      showIf: (fd) => {
+        if (fd['league-format'] !== 'custom') return false;
+        const totalGames = getMatchTotalGames({
+          lineupSize: fd['lineup-size'] ?? 3,
+          gameGeneration: fd['match-format'] ?? 'double_round_robin',
+        });
+        return totalGames % 2 === 0;
+      },
+      validate: requireSelection,
+      component: TiebreakerStep as WizardConfig<LeagueWizardFormData>['steps'][number]['component'],
     },
     {
       id: 'review',

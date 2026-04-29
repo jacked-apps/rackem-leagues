@@ -795,7 +795,7 @@ These need integration / component-test infrastructure rather than pure unit tes
 
 ### Phase 4 — Wizard Expansion + Combo Coherence
 
-- [ ] **Unit 4.1: Add wizard steps for new modular axes**
+- [x] **Unit 4.1: Add wizard steps for new modular axes** *(completed 2026-04-29 — 6 new step components (PairingFormat, ScoringMethod, WinCondition, Mechanism, StandingsSort, Tiebreaker), skill_level option on HandicapSystemStep, presetMappings extended for all 13 axes per preset, dual-write + key→DB-shape mappings (mapStandingsSort, mapTiebreaker) in useCreateLeagueV2. Tiebreaker step shows conditionally via getMatchTotalGames % 2 === 0. Race-length step deferred — race_length defaults to 7 when pairing_format=race_to_n. 46 unit tests cover the helper mappings + preset-completeness contract.)*
 
 **Goal:** Extend the Wizard 2.0 "Custom" path to collect all 13 axes. Today's wizard collects 4 (lineup-size, roster-size, match-format, handicap-system). New steps cover per-pairing format, scoring method, win condition, mechanism, standings sort, tiebreaker.
 
