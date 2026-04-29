@@ -156,19 +156,19 @@ export function useSpectateMatch(matchId: string | null | undefined) {
     ? calculatePoints(match.away_team_id, awayThresholds, filteredGameResults)
     : 0;
 
-  const handicapType = leaguePrefs?.handicap_type ?? 'points';
+  // Resolved system configuration. Reads prefer the per-match
+  // `system_snapshot` so spectator displays match what was live during
+  // scoring, even if the LO edited preferences mid-match. Live prefs
+  // are the fallback for matches not yet scored (no snapshot) or
+  // legacy snapshots from before Phase 2 Unit 2.2's writer expansion.
+  const snapshot = match?.system_snapshot;
+  const handicapType = snapshot?.handicap_type ?? leaguePrefs?.handicap_type ?? 'points';
   // Lineup-size routing decision: previously `team_format === '8_man'`.
-  // Same semantic, modular source — drives 3v3-vs-5v5 scoreboard component
-  // selection in SpectateMatchCard. Phase 5.2 dropped the legacy
-  // team_format flow through this hook.
-  const is5v5 = (leaguePrefs?.lineup_size ?? 3) === 5;
+  // Drives 3v3-vs-5v5 scoreboard component selection in SpectateMatchCard.
+  const is5v5 = (snapshot?.lineup_size ?? leaguePrefs?.lineup_size ?? 3) === 5;
   const gameType = (match?.league?.game_type as string) || 'eight_ball';
 
-  // Fargo totals use snapshotted dials if present so late-spectate always
-  // reflects what was live at scoring time.
-  const fargoOverrides = (match as any)?.system_snapshot?.overrides
-    ?? leaguePrefs?.system_overrides
-    ?? {};
+  const fargoOverrides = snapshot?.overrides ?? leaguePrefs?.system_overrides ?? {};
   const fargoTotals = match && handicapType === 'fargo'
     ? calculateFargoMatchTotals({
         homeTeamId: match.home_team_id,

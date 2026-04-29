@@ -104,28 +104,27 @@ export function MatchEndVerification({
   const matchQuery = useMatchWithLeagueSettings(matchId);
   const match = matchQuery.data;
 
-  // Modular preferences cascade — single source of truth for lineup
-  // geometry, handicap system, and override dials. Phase 5.2 replaced
-  // the legacy `match.league.team_format` reads with these prefs-derived
-  // values; the old '5_man' / '8_man' tags no longer flow through this
-  // file. (Snapshot-based reads land with Phase 2 Unit 2.2's writer
-  // expansion + Phase 5 Unit 5.2b refuse-to-finalize policy.)
+  // Resolved system configuration. Reads prefer the per-match
+  // `system_snapshot` (frozen at first-scoring-event by
+  // populateMatchSnapshotIfNeeded) so completion math matches what was
+  // live during play, even if the LO edited preferences mid-match.
+  // Live `useResolvedLeaguePrefs` is the fallback for matches whose
+  // snapshot pre-dates Phase 2 Unit 2.2's writer expansion (legacy
+  // shape may be missing fields) and matches still in `scheduled`
+  // status (no scoring yet, snapshot not populated).
   const { data: leaguePrefs } = useResolvedLeaguePrefs(match?.league?.id);
-  const lineupSize = leaguePrefs?.lineup_size ?? 3;
-  const gameGeneration = leaguePrefs?.game_generation ?? 'double_round_robin';
+  const snapshot = match?.system_snapshot;
+  const lineupSize = snapshot?.lineup_size ?? leaguePrefs?.lineup_size ?? 3;
+  const gameGeneration =
+    snapshot?.game_generation ?? leaguePrefs?.game_generation ?? 'double_round_robin';
   const matchTotalGames = getMatchTotalGames({ lineupSize, gameGeneration });
   // 5v5 routing decision was previously `team_format === '8_man'`. Same
   // semantic, modular source: the BCA-tiered points helper applies to
   // 5-player lineups regardless of how the league type was tagged.
   const is5v5 = lineupSize === 5;
-  const handicapType = leaguePrefs?.handicap_type ?? 'points';
+  const handicapType = snapshot?.handicap_type ?? leaguePrefs?.handicap_type ?? 'points';
   const isFargoMatch = handicapType === 'fargo';
-  // Prefer the match-level snapshot (tier 3 frozen at first scoring event)
-  // over live league overrides so completion math matches what was live
-  // while the match was being played.
-  const fargoOverrides = match?.system_snapshot?.overrides
-    ?? leaguePrefs?.system_overrides
-    ?? {};
+  const fargoOverrides = snapshot?.overrides ?? leaguePrefs?.system_overrides ?? {};
 
   // Fetch lineups to get lineup IDs for unlocking
   const lineupsQuery = useMatchLineups(matchId, homeTeamId, awayTeamId, false);
