@@ -110,9 +110,9 @@ describe('pickModule', () => {
   });
 
   describe('returned modules expose expected threshold mode', () => {
-    it('BCA modules use games_to_win threshold mode', () => {
-      expect(pickModule('points').threshold.mode).toBe('games_to_win');
-      expect(pickModule('percentage').threshold.mode).toBe('games_to_win');
+    it('BCA modules use extra_games threshold mode (renamed from games_to_win in Phase 1 Unit 1.3)', () => {
+      expect(pickModule('points').threshold.mode).toBe('extra_games');
+      expect(pickModule('percentage').threshold.mode).toBe('extra_games');
     });
 
     it('Fargo module uses start_points threshold mode', () => {

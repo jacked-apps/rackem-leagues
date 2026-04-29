@@ -59,8 +59,8 @@ describe('bca3v3 SystemModule — characterization', () => {
       expect(bca3v3.scoring.method).toBe('games_won_with_team_bonus');
     });
 
-    it('threshold.mode is "games_to_win" (mechanism: extra games)', () => {
-      expect(bca3v3.threshold.mode).toBe('games_to_win');
+    it('threshold.mode is "extra_games" (mechanism: extra games)', () => {
+      expect(bca3v3.threshold.mode).toBe('extra_games');
     });
 
     it('rating.requiresManualEntry is false (BCA derives rating from history)', () => {
@@ -141,7 +141,7 @@ describe('bca3v3 SystemModule — characterization', () => {
     // These tests verify the module-level wrapper is a faithful delegate.
     it('threshold.compute(0) matches get3v3GamesNeeded(0)', () => {
       // Type narrows via mode discriminator — bca3v3 is BCAThreshold
-      if (bca3v3.threshold.mode !== 'games_to_win') {
+      if (bca3v3.threshold.mode !== 'extra_games') {
         throw new Error('expected BCA threshold mode');
       }
       expect(bca3v3.threshold.compute(0, NO_OVERRIDES)).toEqual(
@@ -152,7 +152,7 @@ describe('bca3v3 SystemModule — characterization', () => {
     it.each([-12, -7, -1, 0, 1, 5, 12])(
       'threshold.compute(%i) returns the same shape as get3v3GamesNeeded(%i)',
       (diff) => {
-        if (bca3v3.threshold.mode !== 'games_to_win') {
+        if (bca3v3.threshold.mode !== 'extra_games') {
           throw new Error('expected BCA threshold mode');
         }
         expect(bca3v3.threshold.compute(diff, NO_OVERRIDES)).toEqual(
@@ -162,7 +162,7 @@ describe('bca3v3 SystemModule — characterization', () => {
     );
 
     it('threshold.compute caps diffs above +12', () => {
-      if (bca3v3.threshold.mode !== 'games_to_win') {
+      if (bca3v3.threshold.mode !== 'extra_games') {
         throw new Error('expected BCA threshold mode');
       }
       expect(bca3v3.threshold.compute(20, NO_OVERRIDES)).toEqual(
@@ -171,7 +171,7 @@ describe('bca3v3 SystemModule — characterization', () => {
     });
 
     it('threshold.compute caps diffs below -12', () => {
-      if (bca3v3.threshold.mode !== 'games_to_win') {
+      if (bca3v3.threshold.mode !== 'extra_games') {
         throw new Error('expected BCA threshold mode');
       }
       expect(bca3v3.threshold.compute(-20, NO_OVERRIDES)).toEqual(
@@ -210,7 +210,7 @@ describe('bca3v3 SystemModule — characterization', () => {
     ])(
       'home diff %i: home and away thresholds are both direct chart lookups',
       (homeDiff) => {
-        if (bca3v3.threshold.mode !== 'games_to_win') {
+        if (bca3v3.threshold.mode !== 'extra_games') {
           throw new Error('expected BCA threshold mode');
         }
         // From the home team's perspective: handicap diff is +homeDiff.
@@ -234,7 +234,7 @@ describe('bca3v3 SystemModule — characterization', () => {
    */
   describe('equality rule', () => {
     it('handicap diff 0: home and away thresholds are identical', () => {
-      if (bca3v3.threshold.mode !== 'games_to_win') {
+      if (bca3v3.threshold.mode !== 'extra_games') {
         throw new Error('expected BCA threshold mode');
       }
       const home = bca3v3.threshold.compute(0, NO_OVERRIDES);
@@ -248,7 +248,7 @@ describe('bca3v3 SystemModule — characterization', () => {
     it.each([1, 2, 3, 5, 7, 12])(
       'handicap diff %i: home and away games_to_win MUST differ',
       (diff) => {
-        if (bca3v3.threshold.mode !== 'games_to_win') {
+        if (bca3v3.threshold.mode !== 'extra_games') {
           throw new Error('expected BCA threshold mode');
         }
         const home = bca3v3.threshold.compute(diff, NO_OVERRIDES);
@@ -273,7 +273,7 @@ describe('bca3v3 SystemModule — characterization', () => {
     it.each([-12, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12])(
       'even diff %i has a non-null games_to_tie',
       (diff) => {
-        if (bca3v3.threshold.mode !== 'games_to_win') {
+        if (bca3v3.threshold.mode !== 'extra_games') {
           throw new Error('expected BCA threshold mode');
         }
         expect(
@@ -285,7 +285,7 @@ describe('bca3v3 SystemModule — characterization', () => {
     it.each([-11, -9, -7, -5, -3, -1, 1, 3, 5, 7, 9, 11])(
       'odd diff %i has games_to_tie === null',
       (diff) => {
-        if (bca3v3.threshold.mode !== 'games_to_win') {
+        if (bca3v3.threshold.mode !== 'extra_games') {
           throw new Error('expected BCA threshold mode');
         }
         expect(

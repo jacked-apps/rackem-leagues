@@ -122,20 +122,38 @@ export interface MatchResult {
 // ============================================================================
 
 /**
- * BCA-style threshold: games-to-win/tie/lose determined by scalar handicap diff.
- * Returns the shape already used across the codebase (src/types/match.ts HandicapThresholds).
+ * Threshold mechanism: extra-games handicap (the higher-rated team must win
+ * MORE games than the lower-rated team to compensate for skill diff).
+ *
+ * Used by BCA points (3v3) and BCA percentage (5v5) systems. Will be used
+ * by Fargo games-won format and any other system whose handicap is expressed
+ * as "win N games" rather than start-points or race-length.
+ *
+ * Returns the shape already used across the codebase
+ * (src/types/match.ts HandicapThresholds).
+ *
+ * Renamed from `BCAThreshold` (mode `'games_to_win'`) — see the modular-
+ * league plan Phase 1 Unit 1.3. The discriminator now describes the
+ * MECHANISM (extra_games / start_points / race_length_adjustment) rather
+ * than the rating system, so combos like (BCA-rating + 10-7 scoring +
+ * start-points-mechanism) have a valid output shape.
  */
-export interface BCAThreshold {
-  mode: 'games_to_win';
+export interface ExtraGamesThreshold {
+  mode: 'extra_games';
   compute: (handicapDiff: number, overrides: SystemOverrides) => HandicapThresholds;
 }
 
 /**
- * Fargo-style threshold: start points awarded to the weaker team at match start.
- * Takes both teams' rosters (ratings) because the calculation depends on the
- * full lineup, not a single diff scalar.
+ * Threshold mechanism: start-points handicap (the lower-rated team starts
+ * the match with bonus points already on the board).
+ *
+ * Used by Fargo 5v5 10-7 today; could be paired with any rating system.
+ * Takes both teams' rosters (ratings) because the calculation depends on
+ * the full lineup, not a single diff scalar.
+ *
+ * Renamed from `FargoThreshold` — type rename only; mode tag unchanged.
  */
-export interface FargoThreshold {
+export interface StartPointsThreshold {
   mode: 'start_points';
   compute: (
     homeRatings: RatingValue[],
@@ -145,13 +163,46 @@ export interface FargoThreshold {
 }
 
 /**
- * Output of `FargoThreshold.compute()`. `weakerTeam` identifies which team receives
- * the deficit (or 'even' if teams are perfectly matched). `startPointsForWeakerTeam`
- * is always non-negative — 0 means no handicap applies.
+ * Threshold mechanism: race-length-adjustment handicap (each pairing plays
+ * a race-to-N where N differs by skill diff — higher-rated player has a
+ * longer race).
+ *
+ * Used by BCAPL Skill Level (SL1-SL9) race format. Not yet wired to a
+ * shipped module — the type is in place so future modules can implement
+ * it without restructuring the union. Per the plan, BCAPL SL is a future
+ * Phase 2/3 addition.
+ *
+ * Output shape: per-pairing race lengths for home and away. The runtime
+ * uses these to score race-to-N pairings; first to N racks wins the
+ * pairing (and contributes one game-win to the team).
+ */
+export interface RaceLengthThreshold {
+  mode: 'race_length_adjustment';
+  compute: (
+    homeRatings: RatingValue[],
+    awayRatings: RatingValue[],
+    overrides: SystemOverrides
+  ) => RaceLengthResult;
+}
+
+/**
+ * Output of `StartPointsThreshold.compute()`. `weakerTeam` identifies which
+ * team receives the deficit (or 'even' if teams are perfectly matched).
+ * `startPointsForWeakerTeam` is always non-negative — 0 means no handicap
+ * applies.
  */
 export interface FargoStartPointsResult {
   startPointsForWeakerTeam: number;
   weakerTeam: 'home' | 'away' | 'even';
+}
+
+/**
+ * Output of `RaceLengthThreshold.compute()`. Per-pairing race targets for
+ * each side. Both must be ≥ 1.
+ */
+export interface RaceLengthResult {
+  homeRaceLength: number;
+  awayRaceLength: number;
 }
 
 // ============================================================================
@@ -186,8 +237,17 @@ export interface TeamFormatConstants {
  * calculation, threshold lookup) delegate through the module.
  */
 export interface SystemModule {
-  /** Module identity. Stable across versions; used as a debugging/logging key. */
-  key: 'bca3v3' | 'bca5v5' | 'fargo5v5';
+  /**
+   * Module identity. Stable for the three preset modules (`'bca3v3'`,
+   * `'bca5v5'`, `'fargo5v5'`); free-form for ad-hoc resolved modules
+   * built by `buildSystemFromPreferences()` (Phase 5 Unit 5.1).
+   *
+   * Type widened from a closed literal union to `string` per Phase 1
+   * Unit 1.2 of the modular-league plan. Switch statements that branch
+   * on `key` must add a `default` case (with `console.warn` graceful
+   * fallback) to honor the graceful-degradation principle.
+   */
+  key: string;
 
   /** Structural team-format constants for this preset. */
   teamFormat: TeamFormatConstants;
@@ -248,5 +308,9 @@ export interface SystemModule {
   };
 
   /** Threshold lookup — discriminated union by mode. */
-  threshold: BCAThreshold | FargoThreshold;
+  /**
+   * Threshold lookup — discriminated union by **mechanism**, not rating
+   * system (per Phase 1 Unit 1.3 restructuring).
+   */
+  threshold: ExtraGamesThreshold | StartPointsThreshold | RaceLengthThreshold;
 }
