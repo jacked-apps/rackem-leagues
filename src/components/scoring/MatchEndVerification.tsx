@@ -22,6 +22,11 @@ import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { calculatePoints, calculateBCAPoints } from '@/types/match';
 import { calculateFargoMatchTotals } from '@/utils/fargoMatchTotals';
 import { determineMatchResult } from '@/utils/determineMatchResult';
+import {
+  tiebreakerGameNumbers,
+  tiebreakerGameToPosition,
+  tiebreakerGameSpecs,
+} from '@/utils/tiebreaker/gameNumbers';
 import { logger } from '@/utils/logger';
 
 interface MatchEndVerificationProps {
@@ -311,9 +316,15 @@ export function MatchEndVerification({
             const winningLineup = winnerTeamId === homeTeamId ? homeLineup : awayLineup;
 
             if (winningLineup) {
-              // Override all 3 tiebreaker games (19, 20, 21) with winning team's players
-              for (let gameNumber = 19; gameNumber <= 21; gameNumber++) {
-                const position = gameNumber - 18;
+              // BCA 3v3 has 18 regular games; tiebreaker games are 19, 20, 21.
+              // Sourced via tiebreakerGameNumbers/tiebreakerGameToPosition so
+              // future lineup geometries (4v4 etc.) compute their own ranges.
+              // Phase 5.2 will read MATCH_TOTAL_GAMES from match.system_snapshot
+              // instead of the hardcoded 18.
+              const MATCH_TOTAL_GAMES = 18; // BCA 3v3 DRR — hardcoded until Phase 5.2 wires snapshot
+              for (const gameNumber of tiebreakerGameNumbers(MATCH_TOTAL_GAMES)) {
+                // 0-indexed position from the helper; lineup fields are 1-indexed
+                const position = tiebreakerGameToPosition(MATCH_TOTAL_GAMES, gameNumber) + 1;
                 const game = tiebreakerGames.find(g => g.game_number === gameNumber);
 
                 if (!game) {
@@ -339,34 +350,20 @@ export function MatchEndVerification({
           // Handle tie result - create tiebreaker games
           if (result === 'tie') {
 
-            // Create 3 tiebreaker games
+            // BCA 3v3 default: best-of-3 tiebreaker after the 18 regular
+            // games. Specs are computed via tiebreakerGameSpecs so future
+            // lineup geometries get the right numbers + alternating actions.
+            // Phase 5.2 will read MATCH_TOTAL_GAMES from match.system_snapshot.
+            const MATCH_TOTAL_GAMES = 18; // BCA 3v3 DRR — hardcoded until Phase 5.2 wires snapshot
             await createGamesMutation.mutateAsync({
-              games: [
-                {
-                  match_id: matchId,
-                  game_number: 19,
-                  home_action: 'breaks',
-                  away_action: 'racks',
-                  is_tiebreaker: true,
-                  game_type: gameType,
-                },
-                {
-                  match_id: matchId,
-                  game_number: 20,
-                  home_action: 'racks',
-                  away_action: 'breaks',
-                  is_tiebreaker: true,
-                  game_type: gameType,
-                },
-                {
-                  match_id: matchId,
-                  game_number: 21,
-                  home_action: 'breaks',
-                  away_action: 'racks',
-                  is_tiebreaker: true,
-                  game_type: gameType,
-                },
-              ],
+              games: tiebreakerGameSpecs(MATCH_TOTAL_GAMES).map((spec) => ({
+                match_id: matchId,
+                game_number: spec.game_number,
+                home_action: spec.home_action,
+                away_action: spec.away_action,
+                is_tiebreaker: true,
+                game_type: gameType,
+              })),
             });
 
             // Unlock both lineups
