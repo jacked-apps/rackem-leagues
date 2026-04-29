@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-04-29 (Phase 5 Unit 5.1 — buildSystemFromPreferences runtime resolver added)
+> **Last Updated**: 2026-04-29 (Phase 5 Units 5.1 + 5.2a — runtime resolver + team_format reads removed from MatchEndVerification / useSpectateMatch)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 

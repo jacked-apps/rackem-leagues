@@ -27,6 +27,7 @@ import {
   tiebreakerGameToPosition,
   tiebreakerGameSpecs,
 } from '@/utils/tiebreaker/gameNumbers';
+import { getMatchTotalGames } from '@/utils/lineup/getMatchTotalGames';
 import { logger } from '@/utils/logger';
 
 interface MatchEndVerificationProps {
@@ -103,13 +104,20 @@ export function MatchEndVerification({
   const matchQuery = useMatchWithLeagueSettings(matchId);
   const match = matchQuery.data;
 
-  // Detect team format (5v5 vs 3v3)
-  const teamFormat = match?.league?.team_format || '5_man';
-  const is5v5 = teamFormat === '8_man';
-
-  // Unit 12: Fargo matches use a different completion math than BCA.
-  // handicap_type is resolved through the league preferences cascade.
+  // Modular preferences cascade — single source of truth for lineup
+  // geometry, handicap system, and override dials. Phase 5.2 replaced
+  // the legacy `match.league.team_format` reads with these prefs-derived
+  // values; the old '5_man' / '8_man' tags no longer flow through this
+  // file. (Snapshot-based reads land with Phase 2 Unit 2.2's writer
+  // expansion + Phase 5 Unit 5.2b refuse-to-finalize policy.)
   const { data: leaguePrefs } = useResolvedLeaguePrefs(match?.league?.id);
+  const lineupSize = leaguePrefs?.lineup_size ?? 3;
+  const gameGeneration = leaguePrefs?.game_generation ?? 'double_round_robin';
+  const matchTotalGames = getMatchTotalGames({ lineupSize, gameGeneration });
+  // 5v5 routing decision was previously `team_format === '8_man'`. Same
+  // semantic, modular source: the BCA-tiered points helper applies to
+  // 5-player lineups regardless of how the league type was tagged.
+  const is5v5 = lineupSize === 5;
   const handicapType = leaguePrefs?.handicap_type ?? 'points';
   const isFargoMatch = handicapType === 'fargo';
   // Prefer the match-level snapshot (tier 3 frozen at first scoring event)
@@ -316,15 +324,13 @@ export function MatchEndVerification({
             const winningLineup = winnerTeamId === homeTeamId ? homeLineup : awayLineup;
 
             if (winningLineup) {
-              // BCA 3v3 has 18 regular games; tiebreaker games are 19, 20, 21.
+              // Tiebreaker game numbers start at matchTotalGames + 1.
+              // For BCA 3v3 DRR (18 regular games) that's 19, 20, 21.
               // Sourced via tiebreakerGameNumbers/tiebreakerGameToPosition so
               // future lineup geometries (4v4 etc.) compute their own ranges.
-              // Phase 5.2 will read MATCH_TOTAL_GAMES from match.system_snapshot
-              // instead of the hardcoded 18.
-              const MATCH_TOTAL_GAMES = 18; // BCA 3v3 DRR — hardcoded until Phase 5.2 wires snapshot
-              for (const gameNumber of tiebreakerGameNumbers(MATCH_TOTAL_GAMES)) {
+              for (const gameNumber of tiebreakerGameNumbers(matchTotalGames)) {
                 // 0-indexed position from the helper; lineup fields are 1-indexed
-                const position = tiebreakerGameToPosition(MATCH_TOTAL_GAMES, gameNumber) + 1;
+                const position = tiebreakerGameToPosition(matchTotalGames, gameNumber) + 1;
                 const game = tiebreakerGames.find(g => g.game_number === gameNumber);
 
                 if (!game) {
@@ -350,13 +356,12 @@ export function MatchEndVerification({
           // Handle tie result - create tiebreaker games
           if (result === 'tie') {
 
-            // BCA 3v3 default: best-of-3 tiebreaker after the 18 regular
-            // games. Specs are computed via tiebreakerGameSpecs so future
-            // lineup geometries get the right numbers + alternating actions.
-            // Phase 5.2 will read MATCH_TOTAL_GAMES from match.system_snapshot.
-            const MATCH_TOTAL_GAMES = 18; // BCA 3v3 DRR — hardcoded until Phase 5.2 wires snapshot
+            // Tiebreaker games numbered matchTotalGames+1, +2, +3 — for
+            // BCA 3v3 DRR that's games 19/20/21. Specs are computed via
+            // tiebreakerGameSpecs so future lineup geometries get the
+            // right numbers + alternating actions automatically.
             await createGamesMutation.mutateAsync({
-              games: tiebreakerGameSpecs(MATCH_TOTAL_GAMES).map((spec) => ({
+              games: tiebreakerGameSpecs(matchTotalGames).map((spec) => ({
                 match_id: matchId,
                 game_number: spec.game_number,
                 home_action: spec.home_action,
@@ -450,7 +455,7 @@ export function MatchEndVerification({
     };
 
     completeTheMatch();
-  }, [bothVerified, isCompleting, matchId, homeTeamId, awayTeamId, homeWins, awayWins, homePoints, awayPoints, result, updateMatchMutation, createGamesMutation, gameType, navigate, homeVerifiedBy, awayVerifiedBy, isTiebreakerMode, tiebreakerGames, homeLineup, awayLineup, updateGameMutation, updateLineupMutation]);
+  }, [bothVerified, isCompleting, matchId, homeTeamId, awayTeamId, homeWins, awayWins, homePoints, awayPoints, result, updateMatchMutation, createGamesMutation, gameType, navigate, homeVerifiedBy, awayVerifiedBy, isTiebreakerMode, tiebreakerGames, homeLineup, awayLineup, updateGameMutation, updateLineupMutation, matchTotalGames]);
 
   return (
     <div className="bg-gradient-to-r from-blue-50 to-orange-50 border-b-2 border-gray-300">

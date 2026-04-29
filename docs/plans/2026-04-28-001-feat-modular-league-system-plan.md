@@ -962,7 +962,7 @@ These need integration / component-test infrastructure rather than pure unit tes
 - Unit tests cover all 5 clean triples plus 2-3 ad-hoc combos
 - Phase 8 characterization tests confirm 3-preset equivalence
 
-- [ ] **Unit 5.2: Refactor `MatchEndVerification.tsx` to read from snapshot, remove `team_format` routing**
+- [~] **Unit 5.2: Refactor `MatchEndVerification.tsx` to read from snapshot, remove `team_format` routing** *(2026-04-29: Unit 5.2a partial — `team_format` / `is5v5` reads replaced with prefs-derived values in MatchEndVerification.tsx + useSpectateMatch.ts; hardcoded `MATCH_TOTAL_GAMES = 18` replaced with `getMatchTotalGames({ lineupSize, gameGeneration })` helper. Snapshot-based reads + refuse-to-finalize policy deferred to Unit 5.2b once Phase 2 Unit 2.2's snapshot-writer expansion lands.)*
 
 **Goal:** The heaviest `team_format` consumer. Replace the line-130 `is5v5 = teamFormat === '8_man'` scoring routing with reads from `match.system_snapshot`. Replace tiebreaker hardcoding (lines 370-397) with abstracted game-number arithmetic.
 

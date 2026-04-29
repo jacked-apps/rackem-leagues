@@ -157,8 +157,11 @@ export function useSpectateMatch(matchId: string | null | undefined) {
     : 0;
 
   const handicapType = leaguePrefs?.handicap_type ?? 'points';
-  const teamFormat = match?.league?.team_format || '5_man';
-  const is5v5 = teamFormat === '8_man';
+  // Lineup-size routing decision: previously `team_format === '8_man'`.
+  // Same semantic, modular source — drives 3v3-vs-5v5 scoreboard component
+  // selection in SpectateMatchCard. Phase 5.2 dropped the legacy
+  // team_format flow through this hook.
+  const is5v5 = (leaguePrefs?.lineup_size ?? 3) === 5;
   const gameType = (match?.league?.game_type as string) || 'eight_ball';
 
   // Fargo totals use snapshotted dials if present so late-spectate always
@@ -235,7 +238,6 @@ export function useSpectateMatch(matchId: string | null | undefined) {
     away3v3Points,
     fargoTotals,
     handicapType,
-    teamFormat,
     is5v5,
     gameType,
     allGamesComplete,
