@@ -1069,7 +1069,7 @@ These need integration / component-test infrastructure rather than pure unit tes
 
 ### Phase 6 — Audit Log (R21)
 
-- [ ] **Unit 6.1: Atomic rating-mutation RPCs (mutation + audit in one transaction)**
+- [x] **Unit 6.1: Atomic rating-mutation RPCs (mutation + audit in one transaction)** *(completed 2026-04-29 — three SECURITY DEFINER RPCs (set_match_lineup_rating, recompute_member_rating, vacate_and_rescore_audit_marker), SELECT RLS for org owners/admins, GRANT/REVOKE incl. explicit anon revoke (Supabase grants anon EXECUTE by default), TS wrappers, no-seed RLS tests. Atomicity-rollback tests + happy-path coverage deferred alongside the seed-fixture work used by other RLS suites. Wiring existing rating-edit pathways through these RPCs is Unit 6.2.)*
 
 **Goal:** Build a small set of rating-mutation RPCs where each RPC performs the rating change AND inserts the audit row in the same PL/pgSQL transaction. This is the only architecture where the audit log can credibly claim immutability + completeness — separate client calls for the mutation and the audit cannot be rolled back together.
 

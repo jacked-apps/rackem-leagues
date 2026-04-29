@@ -1604,7 +1604,7 @@ export type Database = {
           scope: string
           source: string
           target_match_lineup_id: string | null
-          target_member_id: string
+          target_member_id: string | null
         }
         Insert: {
           actor_type?: string
@@ -1619,7 +1619,7 @@ export type Database = {
           scope: string
           source?: string
           target_match_lineup_id?: string | null
-          target_member_id: string
+          target_member_id?: string | null
         }
         Update: {
           actor_type?: string
@@ -1634,7 +1634,7 @@ export type Database = {
           scope?: string
           source?: string
           target_match_lineup_id?: string | null
-          target_member_id?: string
+          target_member_id?: string | null
         }
         Relationships: []
       }
@@ -2481,6 +2481,14 @@ export type Database = {
         Args: { target_org_id: string }
         Returns: boolean
       }
+      can_write_threshold_chart: {
+        Args: { p_entity_id: string; p_entity_type: string }
+        Returns: boolean
+      }
+      can_write_threshold_chart_via_id: {
+        Args: { p_chart_id: string }
+        Returns: boolean
+      }
       claim_invite_token: {
         Args: { p_token: string; p_user_id: string }
         Returns: {
@@ -2670,6 +2678,15 @@ export type Database = {
         Args: { p_game_rows: Json; p_match_id: string; p_thresholds: Json }
         Returns: undefined
       }
+      recompute_member_rating: {
+        Args: {
+          p_member_id: string
+          p_new_value: number
+          p_rating_system: string
+          p_source?: string
+        }
+        Returns: string
+      }
       remove_placeholder_from_team: {
         Args: { p_member_id: string; p_org_id: string; p_team_id: string }
         Returns: Json
@@ -2750,6 +2767,15 @@ export type Database = {
           total_score: number
         }[]
       }
+      set_match_lineup_rating: {
+        Args: {
+          p_match_lineup_id: string
+          p_member_id: string
+          p_rating_value: number
+          p_reason?: string
+        }
+        Returns: string
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       soundex: { Args: { "": string }; Returns: string }
@@ -2766,6 +2792,10 @@ export type Database = {
           rows_restored: number
           success: boolean
         }[]
+      }
+      vacate_and_rescore_audit_marker: {
+        Args: { p_match_id: string; p_reason?: string }
+        Returns: string
       }
     }
     Enums: {
