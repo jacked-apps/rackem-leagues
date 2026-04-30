@@ -13,9 +13,9 @@ export function FlowStageHeader({ leagueName, index, total, title }: FlowStageHe
   return (
     <div className="text-center">
       {leagueName && (
-        <p className="text-sm font-semibold text-gray-700">{leagueName}</p>
+        <p className="text-sm font-semibold text-foreground">{leagueName}</p>
       )}
-      <p className="text-xs text-gray-400">
+      <p className="text-xs text-muted-foreground">
         Stage {index + 1} of {total}: {title}
       </p>
     </div>

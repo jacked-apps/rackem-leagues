@@ -48,9 +48,9 @@ export function WizardSummary({ title = 'Summary', items }: WizardSummaryProps) 
           <div key={item.label} className="flex justify-between text-sm">
             <span className="font-medium text-blue-800">{item.label}</span>
             {item.value ? (
-              <span className="text-gray-800">{item.value}</span>
+              <span className="text-foreground">{item.value}</span>
             ) : (
-              <span className="text-gray-400 italic">—</span>
+              <span className="text-muted-foreground italic">—</span>
             )}
           </div>
         ))}

@@ -73,10 +73,10 @@ export const SeasonsCard: React.FC<SeasonsCardProps> = ({ leagueId, onCreateSeas
   // Loading state
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Seasons</h2>
+      <div className="bg-card rounded-xl shadow-sm p-6">
+        <h2 className="text-xl font-semibold text-foreground mb-4">Seasons</h2>
         <div className="text-center py-8">
-          <p className="text-gray-600">Loading seasons...</p>
+          <p className="text-muted-foreground">Loading seasons...</p>
         </div>
       </div>
     );
@@ -85,12 +85,12 @@ export const SeasonsCard: React.FC<SeasonsCardProps> = ({ leagueId, onCreateSeas
   // Empty state - no seasons yet
   if (seasons.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Seasons</h2>
+      <div className="bg-card rounded-xl shadow-sm p-6">
+        <h2 className="text-xl font-semibold text-foreground mb-4">Seasons</h2>
         <div className="text-center py-12">
           <div className="text-6xl mb-4">📅</div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Seasons Yet</h3>
-          <p className="text-gray-600 mb-6">
+          <h3 className="text-lg font-medium text-foreground mb-2">No Seasons Yet</h3>
+          <p className="text-muted-foreground mb-6">
             Create your first season to start adding teams and scheduling matches.
           </p>
           <button
@@ -105,8 +105,8 @@ export const SeasonsCard: React.FC<SeasonsCardProps> = ({ leagueId, onCreateSeas
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6">
-      <h2 className="text-xl font-semibold text-gray-900 mb-4">Seasons</h2>
+    <div className="bg-card rounded-xl shadow-sm p-6">
+      <h2 className="text-xl font-semibold text-foreground mb-4">Seasons</h2>
 
       {/* Current Active Season */}
       {currentSeason ? (
@@ -157,15 +157,15 @@ export const SeasonsCard: React.FC<SeasonsCardProps> = ({ leagueId, onCreateSeas
         <div>
           <button
             onClick={() => setShowPastSeasons(!showPastSeasons)}
-            className="flex items-center justify-between w-full py-3 px-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+            className="flex items-center justify-between w-full py-3 px-4 bg-muted hover:bg-muted rounded-lg transition-colors"
           >
-            <span className="text-gray-700 font-medium">
+            <span className="text-foreground font-medium">
               {pastSeasons.length} Past Season{pastSeasons.length !== 1 ? 's' : ''}
             </span>
             {showPastSeasons ? (
-              <ChevronUp className="h-5 w-5 text-gray-500" />
+              <ChevronUp className="h-5 w-5 text-muted-foreground" />
             ) : (
-              <ChevronDown className="h-5 w-5 text-gray-500" />
+              <ChevronDown className="h-5 w-5 text-muted-foreground" />
             )}
           </button>
 
@@ -174,15 +174,15 @@ export const SeasonsCard: React.FC<SeasonsCardProps> = ({ leagueId, onCreateSeas
               {pastSeasons.map((season) => (
                 <div
                   key={season.id}
-                  className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors"
+                  className="border border-border rounded-lg p-3 hover:bg-muted transition-colors"
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <h4 className="font-medium text-gray-900">{season.season_name}</h4>
-                    <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded">
+                    <h4 className="font-medium text-foreground">{season.season_name}</h4>
+                    <span className="px-2 py-1 bg-muted text-foreground text-xs font-medium rounded">
                       Completed
                     </span>
                   </div>
-                  <div className="text-xs text-gray-600">
+                  <div className="text-xs text-muted-foreground">
                     {new Date(season.start_date).toLocaleDateString()} - {new Date(season.end_date).toLocaleDateString()}
                     {season.team_count !== undefined && ` • ${season.team_count} teams`}
                   </div>

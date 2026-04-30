@@ -278,7 +278,7 @@ export function ReportsManagement() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       <PageHeader
         backTo={`/operator-dashboard/${orgId}`}
         backLabel="Back to Organization"

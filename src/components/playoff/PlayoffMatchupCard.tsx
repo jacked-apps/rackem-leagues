@@ -148,10 +148,10 @@ export const PlayoffMatchupCard: React.FC<PlayoffMatchupCardProps> = ({
         return {
           icon: <ThumbsDown className="h-4 w-4" />,
           label: `Loser Match ${matchRef}`,
-          bgColor: 'bg-gray-100',
-          circleBg: 'bg-gray-500',
-          textColor: 'text-gray-600',
-          badgeColor: isHome ? 'text-gray-600' : 'text-gray-500',
+          bgColor: 'bg-muted',
+          circleBg: 'bg-muted0',
+          textColor: 'text-muted-foreground',
+          badgeColor: isHome ? 'text-muted-foreground' : 'text-muted-foreground',
         };
       }
 
@@ -183,10 +183,10 @@ export const PlayoffMatchupCard: React.FC<PlayoffMatchupCardProps> = ({
     return {
       icon: seed,
       label: `${getOrdinal(seed)} Place Team`,
-      bgColor: isHome ? 'bg-blue-50' : 'bg-gray-50',
+      bgColor: isHome ? 'bg-blue-50' : 'bg-muted',
       circleBg: isHome ? 'bg-blue-600' : 'bg-gray-600',
-      textColor: 'text-gray-500',
-      badgeColor: isHome ? 'text-blue-600' : 'text-gray-500',
+      textColor: 'text-muted-foreground',
+      badgeColor: isHome ? 'text-blue-600' : 'text-muted-foreground',
     };
   };
 
@@ -194,8 +194,8 @@ export const PlayoffMatchupCard: React.FC<PlayoffMatchupCardProps> = ({
   const awayDisplay = getSeedDisplay(awaySeed, false);
 
   return (
-    <div className="border-2 border-gray-300 rounded-lg p-4 bg-white shadow-sm">
-      <div className="text-sm text-gray-700 font-medium mb-2 text-center">
+    <div className="border-2 border-border rounded-lg p-4 bg-card shadow-sm">
+      <div className="text-sm text-foreground font-medium mb-2 text-center">
         Match {matchNumber}
       </div>
       <div className="space-y-3">
@@ -214,7 +214,7 @@ export const PlayoffMatchupCard: React.FC<PlayoffMatchupCardProps> = ({
           <div className={`text-xs font-medium ${homeDisplay.badgeColor}`}>HOME</div>
         </div>
 
-        <div className="text-center text-gray-600 text-sm font-semibold">vs</div>
+        <div className="text-center text-muted-foreground text-sm font-semibold">vs</div>
 
         {/* Away team */}
         <div className={`flex items-center justify-between rounded-lg p-3 ${awayDisplay.bgColor}`}>

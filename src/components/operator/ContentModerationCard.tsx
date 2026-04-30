@@ -65,15 +65,15 @@ export const ContentModerationCard: React.FC<ContentModerationCardProps> = ({
           </div>
         )}
 
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-muted-foreground">
           Control profanity validation for your organization. When enabled, team names and other public content containing inappropriate language will be rejected.
         </p>
 
-        <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+        <div className="p-4 bg-muted rounded-lg border border-border">
           <div className="flex items-center justify-between">
             <div className="flex-1">
-              <p className="font-medium text-gray-900">Profanity Filter</p>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="font-medium text-foreground">Profanity Filter</p>
+              <p className="text-sm text-muted-foreground mt-1">
                 {profanityFilterEnabled
                   ? 'Team names may not contain profanity'
                   : 'Team names may contain profanity'}
@@ -82,7 +82,7 @@ export const ContentModerationCard: React.FC<ContentModerationCardProps> = ({
                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                   profanityFilterEnabled
                     ? 'bg-green-100 text-green-800'
-                    : 'bg-gray-100 text-gray-800'
+                    : 'bg-muted text-foreground'
                 }`}>
                   {profanityFilterEnabled ? 'Enabled' : 'Disabled'}
                 </span>

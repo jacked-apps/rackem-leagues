@@ -42,37 +42,37 @@ export const LeagueProgressBar: React.FC<LeagueProgressBarProps> = ({
         return {
           barColor: 'bg-orange-500',
           textColor: 'text-orange-700',
-          bgColor: 'bg-gray-200',
+          bgColor: 'bg-accent',
         };
       case 'active':
         return {
           barColor: 'bg-green-500',
           textColor: 'text-green-700',
-          bgColor: 'bg-gray-200',
+          bgColor: 'bg-accent',
         };
       case 'ending_soon':
         return {
           barColor: 'bg-yellow-500',
           textColor: 'text-yellow-700',
-          bgColor: 'bg-gray-200',
+          bgColor: 'bg-accent',
         };
       case 'playoffs':
         return {
           barColor: 'bg-orange-500',
           textColor: 'text-orange-700',
-          bgColor: 'bg-gray-200',
+          bgColor: 'bg-accent',
         };
       case 'completed':
         return {
           barColor: 'bg-red-500',
           textColor: 'text-red-700',
-          bgColor: 'bg-gray-200',
+          bgColor: 'bg-accent',
         };
       default:
         return {
           barColor: 'bg-blue-500',
-          textColor: 'text-gray-600',
-          bgColor: 'bg-gray-200',
+          textColor: 'text-muted-foreground',
+          bgColor: 'bg-accent',
         };
     }
   };
@@ -81,7 +81,7 @@ export const LeagueProgressBar: React.FC<LeagueProgressBarProps> = ({
 
   return (
     <div className="mb-4">
-      <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+      <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
         <span>{label}</span>
         <span>{Math.round(progress)}%</span>
       </div>

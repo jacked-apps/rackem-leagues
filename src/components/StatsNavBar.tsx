@@ -58,7 +58,7 @@ export function StatsNavBar({ activePage }: StatsNavBarProps) {
   ];
 
   return (
-    <div className="bg-white lg:rounded-xl border-b border-gray-200 mb-6 -mx-4 px-4 overflow-x-auto">
+    <div className="bg-card lg:rounded-xl border-b border-border mb-6 -mx-4 px-4 overflow-x-auto">
       <nav className="flex gap-1 min-w-max">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -73,7 +73,7 @@ export function StatsNavBar({ activePage }: StatsNavBarProps) {
                 ${
                   isActive
                     ? 'border-blue-600 text-blue-600 font-semibold'
-                    : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
                 }
               `}
             >

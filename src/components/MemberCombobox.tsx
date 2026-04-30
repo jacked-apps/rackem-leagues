@@ -117,7 +117,7 @@ export const MemberCombobox: React.FC<MemberComboboxProps> = ({
   return (
     <div className={className}>
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-foreground mb-1">
           {label}
         </label>
       )}
@@ -179,13 +179,13 @@ export const MemberCombobox: React.FC<MemberComboboxProps> = ({
               <button className="px-3 py-1 text-xs font-medium rounded-full bg-orange-500 text-white">
                 All
               </button>
-              <button className="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200">
+              <button className="px-3 py-1 text-xs font-medium rounded-full bg-muted text-foreground hover:bg-accent">
                 My Org
               </button>
-              <button className="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200">
+              <button className="px-3 py-1 text-xs font-medium rounded-full bg-muted text-foreground hover:bg-accent">
                 State
               </button>
-              <button className="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200">
+              <button className="px-3 py-1 text-xs font-medium rounded-full bg-muted text-foreground hover:bg-accent">
                 Operators
               </button>
             </div>
@@ -194,7 +194,7 @@ export const MemberCombobox: React.FC<MemberComboboxProps> = ({
               <CommandEmpty>No member found.</CommandEmpty>
               <CommandGroup>
                 {members.length === 0 ? (
-                  <div className="p-2 text-sm text-gray-500">No members available</div>
+                  <div className="p-2 text-sm text-muted-foreground">No members available</div>
                 ) : (
                   filteredMembers.map((member) => (
                     <CommandItem
@@ -233,12 +233,12 @@ export const MemberCombobox: React.FC<MemberComboboxProps> = ({
             type="button"
             onClick={() => !clearDisabled && onValueChange('')}
             disabled={clearDisabled}
-            className="flex h-10 items-center justify-center px-3 rounded-md border border-input bg-background hover:bg-gray-100 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-10 items-center justify-center px-3 rounded-md border border-input bg-background hover:bg-muted transition-colors disabled:cursor-not-allowed disabled:opacity-50"
             title={clearDisabled && isSelectedPlaceholder
               ? "Placeholder players can only be removed by a league operator"
               : "Clear selection"}
           >
-            <X className="h-4 w-4 text-gray-600" />
+            <X className="h-4 w-4 text-muted-foreground" />
           </button>
         );
       })()}

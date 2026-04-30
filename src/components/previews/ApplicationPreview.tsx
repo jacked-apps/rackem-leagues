@@ -22,18 +22,18 @@ export const ApplicationPreview: React.FC<ApplicationPreviewProps> = ({
 }) => {
   const { member } = useUserProfile();
   return (
-    <div className="bg-white rounded-xl shadow-lg px-8 py-4">
-      <h3 className="text-xl font-bold text-gray-900 mb-2">
+    <div className="bg-card rounded-xl shadow-lg px-8 py-4">
+      <h3 className="text-xl font-bold text-foreground mb-2">
         Application Review
       </h3>
-      <p className="text-gray-600 text-sm mb-6">
+      <p className="text-muted-foreground text-sm mb-6">
         Verify the information below before creating your organization.
       </p>
 
       <div className="space-y-6 text-sm">
         {/* Organization Information */}
-        <div className="border-b border-gray-200 pb-4">
-          <h4 className="font-semibold text-gray-700 mb-2">
+        <div className="border-b border-border pb-4">
+          <h4 className="font-semibold text-foreground mb-2">
             Organization Information
           </h4>
           {member ||
@@ -42,16 +42,16 @@ export const ApplicationPreview: React.FC<ApplicationPreviewProps> = ({
             <div className="space-y-1">
               {member && (
                 <div className="flex">
-                  <span className="text-gray-500 w-32">Owner: </span>
-                  <span className="text-gray-900 font-medium">
+                  <span className="text-muted-foreground w-32">Owner: </span>
+                  <span className="text-foreground font-medium">
                     {member.first_name} {member.last_name}
                   </span>
                 </div>
               )}
               {applicationData.leagueName && (
                 <div className="flex">
-                  <span className="text-gray-500 w-32">Name: </span>
-                  <span className="text-gray-900 font-medium">
+                  <span className="text-muted-foreground w-32">Name: </span>
+                  <span className="text-foreground font-medium">
                     {applicationData.leagueName}
                   </span>
                 </div>
@@ -59,15 +59,15 @@ export const ApplicationPreview: React.FC<ApplicationPreviewProps> = ({
               {applicationData.useProfileAddress && member && (
                 <>
                   <div className="flex">
-                    <span className="text-gray-500 w-32">Address: </span>
-                    <span className="text-gray-900 font-medium">
+                    <span className="text-muted-foreground w-32">Address: </span>
+                    <span className="text-foreground font-medium">
                       {member.address}, {member.city}, {member.state}{' '}
                       {member.zip_code}
                     </span>
                   </div>
                   <div className="flex">
-                    <span className="text-gray-500 w-32"></span>
-                    <span className="text-xs text-gray-400">
+                    <span className="text-muted-foreground w-32"></span>
+                    <span className="text-xs text-muted-foreground">
                       Sanctioning purposes only
                     </span>
                   </div>
@@ -76,8 +76,8 @@ export const ApplicationPreview: React.FC<ApplicationPreviewProps> = ({
               {applicationData.useProfileAddress === false && (
                 <>
                   <div className="flex">
-                    <span className="text-gray-500 w-32">Address: </span>
-                    <span className="text-gray-900 font-medium">
+                    <span className="text-muted-foreground w-32">Address: </span>
+                    <span className="text-foreground font-medium">
                       {applicationData.organizationAddress
                         ? `${applicationData.organizationAddress}${
                             applicationData.organizationCity
@@ -97,8 +97,8 @@ export const ApplicationPreview: React.FC<ApplicationPreviewProps> = ({
                   </div>
                   {applicationData.organizationAddress && (
                     <div className="flex">
-                      <span className="text-gray-500 w-32"></span>
-                      <span className="text-xs text-gray-400">
+                      <span className="text-muted-foreground w-32"></span>
+                      <span className="text-xs text-muted-foreground">
                         Sanctioning purposes only
                       </span>
                     </div>
@@ -107,15 +107,15 @@ export const ApplicationPreview: React.FC<ApplicationPreviewProps> = ({
               )}
             </div>
           ) : (
-            <div className="text-gray-400">
+            <div className="text-muted-foreground">
               No organization information added yet
             </div>
           )}
         </div>
 
         {/* Contact Information */}
-        <div className="border-b border-gray-200 pb-4">
-          <h4 className="font-semibold text-gray-700 mb-2">
+        <div className="border-b border-border pb-4">
+          <h4 className="font-semibold text-foreground mb-2">
             Contact Information
           </h4>
           {applicationData.useProfileEmail !== undefined ||
@@ -125,8 +125,8 @@ export const ApplicationPreview: React.FC<ApplicationPreviewProps> = ({
                 <>
                   {applicationData.useProfileEmail && member && (
                     <div className="flex">
-                      <span className="text-gray-500 w-32">Email: </span>
-                      <span className="text-gray-900 font-medium">
+                      <span className="text-muted-foreground w-32">Email: </span>
+                      <span className="text-foreground font-medium">
                         {member.email}
                       </span>
                     </div>
@@ -134,8 +134,8 @@ export const ApplicationPreview: React.FC<ApplicationPreviewProps> = ({
                   {applicationData.useProfileEmail === false &&
                     applicationData.leagueEmail && (
                       <div className="flex">
-                        <span className="text-gray-500 w-32">Email: </span>
-                        <span className="text-gray-900 font-medium">
+                        <span className="text-muted-foreground w-32">Email: </span>
+                        <span className="text-foreground font-medium">
                           {applicationData.leagueEmail}
                         </span>
                       </div>
@@ -143,18 +143,18 @@ export const ApplicationPreview: React.FC<ApplicationPreviewProps> = ({
                   {applicationData.useProfileEmail === false &&
                     !applicationData.leagueEmail && (
                       <div className="flex">
-                        <span className="text-gray-500 w-32">Email: </span>
-                        <span className="text-gray-400">
+                        <span className="text-muted-foreground w-32">Email: </span>
+                        <span className="text-muted-foreground">
                           Custom email will be entered
                         </span>
                       </div>
                     )}
                   {applicationData.emailVisibility && (
                     <div className="flex">
-                      <span className="text-gray-500 w-32">
+                      <span className="text-muted-foreground w-32">
                         Email Visibility:{' '}
                       </span>
-                      <span className="text-gray-700 text-xs">
+                      <span className="text-foreground text-xs">
                         {getVisibilityLabel(applicationData.emailVisibility)}
                       </span>
                     </div>
@@ -165,8 +165,8 @@ export const ApplicationPreview: React.FC<ApplicationPreviewProps> = ({
                 <>
                   {applicationData.useProfilePhone && member && (
                     <div className="flex">
-                      <span className="text-gray-500 w-32">Phone: </span>
-                      <span className="text-gray-900 font-medium">
+                      <span className="text-muted-foreground w-32">Phone: </span>
+                      <span className="text-foreground font-medium">
                         {member.phone || 'No phone in profile'}
                       </span>
                     </div>
@@ -174,8 +174,8 @@ export const ApplicationPreview: React.FC<ApplicationPreviewProps> = ({
                   {applicationData.useProfilePhone === false &&
                     applicationData.leaguePhone && (
                       <div className="flex">
-                        <span className="text-gray-500 w-32">Phone: </span>
-                        <span className="text-gray-900 font-medium">
+                        <span className="text-muted-foreground w-32">Phone: </span>
+                        <span className="text-foreground font-medium">
                           {applicationData.leaguePhone}
                         </span>
                       </div>
@@ -183,18 +183,18 @@ export const ApplicationPreview: React.FC<ApplicationPreviewProps> = ({
                   {applicationData.useProfilePhone === false &&
                     !applicationData.leaguePhone && (
                       <div className="flex">
-                        <span className="text-gray-500 w-32">Phone: </span>
-                        <span className="text-gray-400">
+                        <span className="text-muted-foreground w-32">Phone: </span>
+                        <span className="text-muted-foreground">
                           Custom phone will be entered
                         </span>
                       </div>
                     )}
                   {applicationData.phoneVisibility && (
                     <div className="flex">
-                      <span className="text-gray-500 w-32">
+                      <span className="text-muted-foreground w-32">
                         Phone Visibility:{' '}
                       </span>
-                      <span className="text-gray-700 text-xs">
+                      <span className="text-foreground text-xs">
                         {getVisibilityLabel(applicationData.phoneVisibility)}
                       </span>
                     </div>
@@ -203,7 +203,7 @@ export const ApplicationPreview: React.FC<ApplicationPreviewProps> = ({
               )}
             </div>
           ) : (
-            <div className="text-gray-400">
+            <div className="text-muted-foreground">
               No contact information added yet
             </div>
           )}
@@ -211,21 +211,21 @@ export const ApplicationPreview: React.FC<ApplicationPreviewProps> = ({
 
         {/* Payment Information */}
         <div>
-          <h4 className="font-semibold text-gray-700 mb-2">
+          <h4 className="font-semibold text-foreground mb-2">
             Payment Information
           </h4>
           {applicationData.paymentVerified ? (
             <div className="space-y-1">
               <div className="flex">
-                <span className="text-gray-500 w-32">Method: </span>
-                <span className="text-gray-900 font-medium">
+                <span className="text-muted-foreground w-32">Method: </span>
+                <span className="text-foreground font-medium">
                   {applicationData.cardBrand?.toUpperCase()} ending in{' '}
                   {applicationData.cardLast4}
                 </span>
               </div>
             </div>
           ) : (
-            <div className="text-gray-400">
+            <div className="text-muted-foreground">
               No payment information added yet
             </div>
           )}

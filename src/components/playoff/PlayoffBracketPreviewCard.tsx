@@ -160,32 +160,32 @@ export const PlayoffBracketPreviewCard: React.FC<PlayoffBracketPreviewCardProps>
               <SelectItem value="seeded">
                 <div className="flex flex-col">
                   <span>Seeded</span>
-                  <span className="text-xs text-gray-500">{getMatchupStyleDescription('seeded')}</span>
+                  <span className="text-xs text-muted-foreground">{getMatchupStyleDescription('seeded')}</span>
                 </div>
               </SelectItem>
               <SelectItem value="ranked">
                 <div className="flex flex-col">
                   <span>Ranked</span>
-                  <span className="text-xs text-gray-500">{getMatchupStyleDescription('ranked')}</span>
+                  <span className="text-xs text-muted-foreground">{getMatchupStyleDescription('ranked')}</span>
                 </div>
               </SelectItem>
               <SelectItem value="random">
                 <div className="flex flex-col">
                   <span>Random Draw</span>
-                  <span className="text-xs text-gray-500">{getMatchupStyleDescription('random')}</span>
+                  <span className="text-xs text-muted-foreground">{getMatchupStyleDescription('random')}</span>
                 </div>
               </SelectItem>
               <SelectItem value="bracket">
                 <div className="flex flex-col">
                   <span>Bracket Progression</span>
-                  <span className="text-xs text-gray-500">{getMatchupStyleDescription('bracket')}</span>
+                  <span className="text-xs text-muted-foreground">{getMatchupStyleDescription('bracket')}</span>
                 </div>
               </SelectItem>
             </SelectContent>
           </Select>
         </div>
         {/* Style description below title */}
-        <p className="text-sm text-gray-500 mt-2">
+        <p className="text-sm text-muted-foreground mt-2">
           {getMatchupStyleLabel(matchupStyle)}: {getMatchupStyleDescription(matchupStyle)}
         </p>
       </CardHeader>

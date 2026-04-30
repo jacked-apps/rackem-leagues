@@ -373,7 +373,7 @@ export const PreferencesCard: React.FC<PreferencesCardProps> = ({
           </div>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-gray-500">Loading preferences...</p>
+          <p className="text-sm text-muted-foreground">Loading preferences...</p>
         </CardContent>
       </Card>
     );
@@ -404,7 +404,7 @@ export const PreferencesCard: React.FC<PreferencesCardProps> = ({
           <Settings className="h-6 w-6 text-indigo-600" />
           <div className="flex-1">
             <CardTitle>{cardTitle}</CardTitle>
-            <p className="text-sm text-gray-500 mt-1">{cardSubtitle}</p>
+            <p className="text-sm text-muted-foreground mt-1">{cardSubtitle}</p>
           </div>
         </div>
       </CardHeader>

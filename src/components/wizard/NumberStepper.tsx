@@ -58,7 +58,7 @@ export function NumberStepper({
     <div className="space-y-2">
       {(label || labelInfoButton) && (
         <div className="flex items-center justify-center gap-1">
-          {label && <p className="font-medium text-gray-900">{label}</p>}
+          {label && <p className="font-medium text-foreground">{label}</p>}
           {labelInfoButton && (
             <InfoButton title={labelInfoButton.title} size="sm">
               {labelInfoButton.content}

@@ -224,9 +224,9 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({ leagueId }) => {
   };
 
   return (
-    <div className="lg:bg-white lg:rounded-xl lg:shadow-sm p-6 mb-6">
+    <div className="lg:bg-card lg:rounded-xl lg:shadow-sm p-6 mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-gray-900">Schedule</h2>
+        <h2 className="text-xl font-semibold text-foreground">Schedule</h2>
         {scheduleExists && (
           <Button size="sm" onClick={handleViewSchedule} disabled={isNavigating} isLoading={isNavigating} loadingText="Loading...">
             View Schedule
@@ -236,24 +236,24 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({ leagueId }) => {
 
       {loading ? (
         <div className="text-center py-8">
-          <p className="text-gray-600">Loading schedule status...</p>
+          <p className="text-muted-foreground">Loading schedule status...</p>
         </div>
       ) : !activeSeason ? (
         <div className="text-center py-8">
           <div className="text-4xl mb-3">🗓️</div>
-          <p className="text-gray-600">Create a season first to generate a schedule</p>
+          <p className="text-muted-foreground">Create a season first to generate a schedule</p>
         </div>
       ) : scheduleExists ? (
         <div>
           {upcomingWeeks.length > 0 ? (
             <>
               {/* Summary Info Row */}
-              <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200">
-                <div className="text-sm text-gray-700">
+              <div className="flex items-center justify-between mb-4 pb-4 border-b border-border">
+                <div className="text-sm text-foreground">
                   <span className="font-medium">Weeks:</span>{' '}
                   <span>{weeksCompleted}/{totalWeeks} played</span>
                 </div>
-                <div className="text-sm text-gray-700">
+                <div className="text-sm text-foreground">
                   <span className="font-medium">Started:</span>{' '}
                   {seasonStartDate && (
                     <span>
@@ -265,7 +265,7 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({ leagueId }) => {
                     </span>
                   )}
                 </div>
-                <div className="text-sm text-gray-700">
+                <div className="text-sm text-foreground">
                   <span className="font-medium">Playoffs:</span>{' '}
                   {playoffsDate ? (
                     <span>
@@ -276,7 +276,7 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({ leagueId }) => {
                       })}
                     </span>
                   ) : (
-                    <span className="text-gray-500 italic">Not scheduled</span>
+                    <span className="text-muted-foreground italic">Not scheduled</span>
                   )}
                 </div>
               </div>
@@ -284,13 +284,13 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({ leagueId }) => {
               {/* Upcoming Weeks and Holiday Cards */}
               <div className="grid md:grid-cols-2 gap-4">
                 {/* Upcoming Weeks Card */}
-                <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Upcoming Weeks</h3>
+                <div className="bg-muted rounded-lg p-4">
+                <h3 className="text-sm font-semibold text-foreground mb-3">Upcoming Weeks</h3>
                 <div className="space-y-2">
                   {upcomingWeeks.map((week, index) => (
-                    <div key={index} className="flex items-center justify-between py-2 border-b border-gray-200 last:border-0">
-                      <span className="text-sm font-medium text-gray-900">{week.name}</span>
-                      <span className="text-sm text-gray-600">
+                    <div key={index} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                      <span className="text-sm font-medium text-foreground">{week.name}</span>
+                      <span className="text-sm text-muted-foreground">
                         {new Date(week.date).toLocaleDateString('en-US', {
                           weekday: 'short',
                           month: 'short',
@@ -303,12 +303,12 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({ leagueId }) => {
               </div>
 
               {/* Next Holiday Card */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Next Holiday</h3>
+              <div className="bg-muted rounded-lg p-4">
+                <h3 className="text-sm font-semibold text-foreground mb-3">Next Holiday</h3>
                 {nextBlackout ? (
                   <div className="py-2">
-                    <p className="text-lg font-semibold text-gray-900 mb-1">{nextBlackout.name}</p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-lg font-semibold text-foreground mb-1">{nextBlackout.name}</p>
+                    <p className="text-sm text-muted-foreground">
                       {new Date(nextBlackout.date).toLocaleDateString('en-US', {
                         weekday: 'long',
                         month: 'long',
@@ -318,7 +318,7 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({ leagueId }) => {
                   </div>
                 ) : (
                   <div className="py-2">
-                    <p className="text-sm text-gray-500 italic">No holidays scheduled</p>
+                    <p className="text-sm text-muted-foreground italic">No holidays scheduled</p>
                   </div>
                 )}
               </div>
@@ -327,14 +327,14 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({ leagueId }) => {
           ) : (
             <div className="text-center py-8">
               <div className="text-4xl mb-3">🏁</div>
-              <p className="text-gray-600">All weeks completed</p>
+              <p className="text-muted-foreground">All weeks completed</p>
             </div>
           )}
         </div>
       ) : (
         <div className="text-center py-8">
           <div className="text-4xl mb-3">🗓️</div>
-          <p className="text-gray-600 mb-4">Ready to create your schedule</p>
+          <p className="text-muted-foreground mb-4">Ready to create your schedule</p>
           <Button onClick={handleCreateSchedule} disabled={isNavigating} isLoading={isNavigating} loadingText="Loading...">
             Create Schedule
           </Button>

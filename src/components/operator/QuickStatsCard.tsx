@@ -52,48 +52,48 @@ export const QuickStatsCard: React.FC<QuickStatsCardProps> = ({ operatorId }) =>
       <CardContent>
         {/* Active Stats Section */}
         <div className="mb-6">
-          <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
             Active
           </h4>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-gray-600">Leagues</span>
+              <span className="text-muted-foreground">Leagues</span>
               <span className="font-medium">{leagueCount}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Teams</span>
+              <span className="text-muted-foreground">Teams</span>
               <span className="font-medium">{teamCount}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Players</span>
+              <span className="text-muted-foreground">Players</span>
               <span className="font-medium">{playerCount}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Venues</span>
+              <span className="text-muted-foreground">Venues</span>
               <span className="font-medium">{venueCount}</span>
             </div>
           </div>
         </div>
 
         {/* Divider */}
-        <div className="border-t border-gray-200 mb-6"></div>
+        <div className="border-t border-border mb-6"></div>
 
         {/* Historical Stats Section */}
         <div>
-          <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
             All Time
           </h4>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-gray-600">Seasons Completed</span>
+              <span className="text-muted-foreground">Seasons Completed</span>
               <span className="font-medium">{completedSeasonCount}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Total Matches</span>
+              <span className="text-muted-foreground">Total Matches</span>
               <span className="font-medium">{completedMatchCount}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Total Games</span>
+              <span className="text-muted-foreground">Total Games</span>
               <span className="font-medium">{gamesPlayedCount}</span>
             </div>
           </div>

@@ -23,6 +23,7 @@
 
 import { Link } from 'react-router-dom';
 import { LogOut, LogIn } from 'lucide-react';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import {
   SheetHeader,
   SheetTitle,
@@ -115,6 +116,13 @@ export function AppDrawer({ onOpenChange }: AppDrawerProps) {
             <SignedInFooter onSignOut={handleSignOut} />
           </>
         )}
+
+        <div className="mt-6 border-t pt-4">
+          <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Theme
+          </h3>
+          <ThemeToggle />
+        </div>
       </nav>
     </>
   );

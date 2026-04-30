@@ -41,14 +41,14 @@ export const OperatorDashboard: React.FC = () => {
 
   if (orgLoading || !organization) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-muted flex items-center justify-center">
         <p>Loading organization...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       <PageHeader
         backTo="/dashboard"
         backLabel="Back to Player Dashboard"

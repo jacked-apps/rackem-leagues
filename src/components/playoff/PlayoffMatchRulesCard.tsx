@@ -57,33 +57,33 @@ export const PlayoffMatchRulesCard: React.FC<PlayoffMatchRulesCardProps> = ({
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">Playoff Match Rules</CardTitle>
           {isExpanded ? (
-            <ChevronUp className="h-5 w-5 text-gray-500" />
+            <ChevronUp className="h-5 w-5 text-muted-foreground" />
           ) : (
-            <ChevronDown className="h-5 w-5 text-gray-500" />
+            <ChevronDown className="h-5 w-5 text-muted-foreground" />
           )}
         </div>
       </CardHeader>
       {isExpanded && (
         <CardContent className="space-y-3">
-          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+          <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
             <div className="w-2 h-2 rounded-full bg-purple-600" />
             <div className="text-sm">
               <span className="font-medium">No Team Handicap Bonus</span>
-              <span className="text-gray-500 ml-2">— Team standing modifiers do not apply</span>
+              <span className="text-muted-foreground ml-2">— Team standing modifiers do not apply</span>
             </div>
           </div>
-          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+          <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
             <div className="w-2 h-2 rounded-full bg-purple-600" />
             <div className="text-sm">
               <span className="font-medium">Points Don&apos;t Count</span>
-              <span className="text-gray-500 ml-2">— Only win/loss matters for advancement</span>
+              <span className="text-muted-foreground ml-2">— Only win/loss matters for advancement</span>
             </div>
           </div>
-          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+          <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
             <div className="w-2 h-2 rounded-full bg-purple-600" />
             <div className="text-sm">
               <span className="font-medium">Early Termination</span>
-              <span className="text-gray-500 ml-2">— Match ends when win threshold is reached</span>
+              <span className="text-muted-foreground ml-2">— Match ends when win threshold is reached</span>
             </div>
           </div>
         </CardContent>

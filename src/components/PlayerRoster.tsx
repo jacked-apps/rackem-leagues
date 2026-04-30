@@ -96,12 +96,12 @@ export function PlayerRoster({
 
   return (
     <div>
-      <p className="text-sm font-medium text-gray-600 mb-2">
+      <p className="text-sm font-medium text-muted-foreground mb-2">
         Roster ({players.length} players)
       </p>
 
       {/* Header Row */}
-      <div className={`grid ${gridCols} gap-4 text-xs font-medium text-gray-500 pb-1 border-b`}>
+      <div className={`grid ${gridCols} gap-4 text-xs font-medium text-muted-foreground pb-1 border-b`}>
         {!hideHandicap && <span className="text-center">H/C</span>}
         {!hideNickname && <span>Nickname</span>}
         {!hideName && <span>Name</span>}
@@ -124,14 +124,14 @@ export function PlayerRoster({
           }
 
           return (
-            <div key={player.id} className={`grid ${gridCols} gap-4 text-sm py-1 px-2 bg-gray-50 rounded`}>
+            <div key={player.id} className={`grid ${gridCols} gap-4 text-sm py-1 px-2 bg-muted rounded`}>
               {!hideHandicap && (
-                <span className="text-gray-600 text-center">
+                <span className="text-muted-foreground text-center">
                   {handicapDisplay}
                 </span>
               )}
               {!hideNickname && (
-                <span className={`truncate ${isCaptain ? 'text-gray-900 font-semibold' : 'text-gray-900'}`}>
+                <span className={`truncate ${isCaptain ? 'text-foreground font-semibold' : 'text-foreground'}`}>
                   <PlayerNameLink
                     playerId={player.id}
                     playerName={player.nickname || `${player.first_name} ${player.last_name}`}
@@ -140,13 +140,13 @@ export function PlayerRoster({
                 </span>
               )}
               {!hideName && (
-                <span className="text-gray-600 text-xs truncate">
+                <span className="text-muted-foreground text-xs truncate">
                   {player.first_name} {player.last_name}
                   {isCaptain && <span className="ml-1 text-blue-600 font-bold">(C)</span>}
                 </span>
               )}
               {!hidePlayerNumber && (
-                <span className="text-gray-600">
+                <span className="text-muted-foreground">
                   {player.system_player_number}
                 </span>
               )}

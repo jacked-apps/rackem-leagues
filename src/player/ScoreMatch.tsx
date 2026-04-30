@@ -510,9 +510,9 @@ export function ScoreMatch() {
   // Early returns for loading/error states
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-muted flex items-center justify-center">
         <div className="text-center">
-          <div className="text-lg font-semibold text-gray-700">
+          <div className="text-lg font-semibold text-foreground">
             Loading match...
           </div>
         </div>
@@ -525,9 +525,9 @@ export function ScoreMatch() {
     if (error.includes('lineups must be locked')) {
       navigate(`/match/${matchId}/lineup`);
       return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="min-h-screen bg-muted flex items-center justify-center">
           <div className="text-center">
-            <div className="text-lg font-semibold text-gray-700">
+            <div className="text-lg font-semibold text-foreground">
               Redirecting to lineup page...
             </div>
           </div>
@@ -537,14 +537,14 @@ export function ScoreMatch() {
 
     // Show error for other types of errors
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-muted flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
           <CardContent className="pt-6">
             <div className="text-center">
               <div className="text-lg font-semibold text-red-600 mb-2">
                 Error
               </div>
-              <div className="text-gray-700 mb-4">{error}</div>
+              <div className="text-foreground mb-4">{error}</div>
               <Button loadingText="none" onClick={() => navigate(-1)}>Go Back</Button>
             </div>
           </CardContent>
@@ -556,18 +556,18 @@ export function ScoreMatch() {
   // Show loading screen while waiting for preparation
   if (waitingForPreparation && retryCount < MAX_RETRIES) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-muted flex items-center justify-center">
         <div className="text-center">
-          <div className="text-lg font-semibold text-gray-700 mb-4">
+          <div className="text-lg font-semibold text-foreground mb-4">
             Preparing Match...
           </div>
-          <div className="text-sm text-gray-600 mb-4">
+          <div className="text-sm text-muted-foreground mb-4">
             Setting up handicap thresholds and game order
           </div>
           <div className="flex justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
-          <div className="text-xs text-gray-500 mt-4">
+          <div className="text-xs text-muted-foreground mt-4">
             Attempt {retryCount + 1} of {MAX_RETRIES}
           </div>
         </div>
@@ -584,24 +584,24 @@ export function ScoreMatch() {
     !awayThresholds
   ) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-muted flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
           <CardContent className="pt-6">
             <div className="text-center">
               <div className="text-lg font-semibold text-red-600 mb-2">
                 Match Preparation Failed
               </div>
-              <div className="text-gray-600 mb-4">
+              <div className="text-muted-foreground mb-4">
                 The match could not be prepared after {MAX_RETRIES} attempts.
               </div>
-              <div className="text-sm text-gray-500 mb-4">
+              <div className="text-sm text-muted-foreground mb-4">
                 {!match && <div>• Match data not loaded</div>}
                 {!homeLineup && <div>• Home lineup not available</div>}
                 {!awayLineup && <div>• Away lineup not available</div>}
                 {!homeThresholds && <div>• Home thresholds not set</div>}
                 {!awayThresholds && <div>• Away thresholds not set</div>}
               </div>
-              <div className="text-xs text-gray-500 mb-4">
+              <div className="text-xs text-muted-foreground mb-4">
                 This usually means the home team's lineup lock failed to prepare the match.
                 Both teams should go back to lineup and try again.
               </div>
@@ -696,9 +696,9 @@ export function ScoreMatch() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className="h-screen flex flex-col bg-muted">
       {/* Header with back button, team name, and auto-confirm */}
-      <div className="bg-white border-b px-4 py-2">
+      <div className="bg-card border-b px-4 py-2">
         <div className="flex items-center justify-between">
           <Button
             variant="ghost"
@@ -710,11 +710,11 @@ export function ScoreMatch() {
             Dashboard
           </Button>
           {/* Team Name */}
-          <div className="text-lg font-semibold text-gray-800">
+          <div className="text-lg font-semibold text-foreground">
             {isHomeTeam ? match.home_team?.team_name : match.away_team?.team_name}
           </div>
           <div className="flex items-center gap-2">
-            <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+            <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
               <input
                 type="checkbox"
                 checked={autoConfirm}

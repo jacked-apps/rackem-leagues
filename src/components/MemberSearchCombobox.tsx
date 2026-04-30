@@ -103,7 +103,7 @@ export const MemberSearchCombobox: React.FC<MemberSearchComboboxProps> = ({
   return (
     <div className={className}>
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-foreground mb-1">
           {label}
         </label>
       )}
@@ -140,7 +140,7 @@ export const MemberSearchCombobox: React.FC<MemberSearchComboboxProps> = ({
                     className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
                       activeFilter === filter.id
                         ? 'bg-orange-500 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        : 'bg-muted text-foreground hover:bg-accent'
                     }`}
                   >
                     {filter.label}
@@ -156,7 +156,7 @@ export const MemberSearchCombobox: React.FC<MemberSearchComboboxProps> = ({
               />
               <CommandList>
                 {isLoading ? (
-                  <div className="p-4 text-sm text-gray-500 text-center">Searching...</div>
+                  <div className="p-4 text-sm text-muted-foreground text-center">Searching...</div>
                 ) : (
                   <>
                     <CommandEmpty>
@@ -203,10 +203,10 @@ export const MemberSearchCombobox: React.FC<MemberSearchComboboxProps> = ({
             type="button"
             onClick={() => onValueChange('')}
             disabled={disabled}
-            className="flex h-10 items-center justify-center px-3 rounded-md border border-input bg-background hover:bg-gray-100 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-10 items-center justify-center px-3 rounded-md border border-input bg-background hover:bg-muted transition-colors disabled:cursor-not-allowed disabled:opacity-50"
             title="Clear selection"
           >
-            <X className="h-4 w-4 text-gray-600" />
+            <X className="h-4 w-4 text-muted-foreground" />
           </button>
         )}
       </div>

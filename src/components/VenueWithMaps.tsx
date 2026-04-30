@@ -103,13 +103,13 @@ export function VenueWithMaps({
 
   if (isLoading) {
     return (
-      <span className="text-gray-400 text-sm">Loading venue...</span>
+      <span className="text-muted-foreground text-sm">Loading venue...</span>
     );
   }
 
   if (isError || !venue) {
     return (
-      <span className="text-gray-400 text-sm">Venue not found</span>
+      <span className="text-muted-foreground text-sm">Venue not found</span>
     );
   }
 
@@ -134,10 +134,10 @@ export function VenueWithMaps({
             <AlertDialogTitle>Open in Maps?</AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
               <p>This will open the following location in Google Maps:</p>
-              <div className="bg-gray-50 p-3 rounded-md">
-                <p className="font-semibold text-gray-900">{venue.name}</p>
-                <p className="text-sm text-gray-700">{venue.street_address}</p>
-                <p className="text-sm text-gray-700">
+              <div className="bg-muted p-3 rounded-md">
+                <p className="font-semibold text-foreground">{venue.name}</p>
+                <p className="text-sm text-foreground">{venue.street_address}</p>
+                <p className="text-sm text-foreground">
                   {venue.city}, {venue.state} {venue.zip_code}
                 </p>
               </div>

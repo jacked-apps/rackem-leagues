@@ -64,7 +64,7 @@ export const DateField: React.FC<DateFieldProps> = ({
   return (
     <div className="space-y-2">
       {/* Label */}
-      <label className="block text-sm font-medium text-gray-700">
+      <label className="block text-sm font-medium text-foreground">
         {label}
         {required && <span className="text-red-500 ml-1">*</span>}
       </label>

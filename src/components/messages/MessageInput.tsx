@@ -50,7 +50,7 @@ export function MessageInput({ onSend, disabled = false, maxLength = 2000 }: Mes
           value={messageInput}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMessageInput(e.target.value)}
           onKeyDown={handleKeyPress}
-          className="flex-1 h-11 md:h-10 text-base md:text-sm bg-white"
+          className="flex-1 h-11 md:h-10 text-base md:text-sm bg-card"
           disabled={sending || disabled}
           maxLength={maxLength}
         />
@@ -64,7 +64,7 @@ export function MessageInput({ onSend, disabled = false, maxLength = 2000 }: Mes
           <Send className="h-5 w-5 md:h-4 md:w-4 text-white" />
         </Button>
       </div>
-      <p className="text-xs text-gray-700 mt-1.5 md:mt-1">
+      <p className="text-xs text-foreground mt-1.5 md:mt-1">
         {messageInput.length}/{maxLength} characters
       </p>
     </div>

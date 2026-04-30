@@ -99,7 +99,7 @@ export const TeamSelect: React.FC<TeamSelectProps> = ({
         {/* BYE option - only shown for seasons with odd team count */}
         {showByeOption && (
           <SelectItem value="__BYE__">
-            <span className="text-gray-500 italic">BYE</span>
+            <span className="text-muted-foreground italic">BYE</span>
           </SelectItem>
         )}
 

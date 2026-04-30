@@ -403,7 +403,7 @@ export const ClaimPlayer: React.FC = () => {
           <div className="flex justify-center">
             <Users className="h-16 w-16 text-primary" />
           </div>
-          <p className="text-gray-700">
+          <p className="text-foreground">
             You need to be logged in to claim your player history.
           </p>
           <Button
@@ -429,8 +429,8 @@ export const ClaimPlayer: React.FC = () => {
           <div className="flex justify-center">
             <AlertTriangle className="h-16 w-16 text-amber-500" />
           </div>
-          <p className="text-gray-700">{errorMessage}</p>
-          <p className="text-gray-600 text-sm">
+          <p className="text-foreground">{errorMessage}</p>
+          <p className="text-muted-foreground text-sm">
             Please contact your team captain for a new invite link.
           </p>
         </div>
@@ -449,10 +449,10 @@ export const ClaimPlayer: React.FC = () => {
           <div className="flex justify-center">
             <Clock className="h-16 w-16 text-amber-500" />
           </div>
-          <p className="text-gray-700">
+          <p className="text-foreground">
             The invite to join <strong>{inviteDetails.team_name}</strong> has expired.
           </p>
-          <p className="text-gray-600 text-sm">
+          <p className="text-muted-foreground text-sm">
             Please ask{' '}
             {inviteDetails.captain_name ? (
               <strong>{inviteDetails.captain_name}</strong>
@@ -477,14 +477,14 @@ export const ClaimPlayer: React.FC = () => {
           <div className="flex justify-center">
             <UserCheck className="h-16 w-16 text-green-600" />
           </div>
-          <p className="text-gray-700">
+          <p className="text-foreground">
             The player profile for{' '}
             <strong>
               {inviteDetails.placeholder_first_name} {inviteDetails.placeholder_last_name}
             </strong>{' '}
             has already been claimed.
           </p>
-          <p className="text-gray-600 text-sm">
+          <p className="text-muted-foreground text-sm">
             If this was you, your history should already be in your account.
           </p>
         </div>
@@ -503,7 +503,7 @@ export const ClaimPlayer: React.FC = () => {
           <div className="flex justify-center">
             <CheckCircle className="h-16 w-16 text-green-600" />
           </div>
-          <p className="text-gray-700">
+          <p className="text-foreground">
             You've successfully joined <strong>{inviteDetails.team_name}</strong>!
           </p>
           {mergeStats && (
@@ -541,13 +541,13 @@ export const ClaimPlayer: React.FC = () => {
       >
         <div className="text-center space-y-4">
           <div className="flex justify-center">
-            <XCircle className="h-16 w-16 text-gray-500" />
+            <XCircle className="h-16 w-16 text-muted-foreground" />
           </div>
-          <p className="text-gray-700">
+          <p className="text-foreground">
             We've flagged that this invite wasn't meant for you. No account
             history has been moved.
           </p>
-          <p className="text-gray-600 text-sm">
+          <p className="text-muted-foreground text-sm">
             Your league operator will see the placeholder still needs a match
             and can reach out if needed.
           </p>
@@ -567,7 +567,7 @@ export const ClaimPlayer: React.FC = () => {
           <div className="flex justify-center">
             <AlertTriangle className="h-16 w-16 text-red-500" />
           </div>
-          <p className="text-gray-700">{errorMessage}</p>
+          <p className="text-foreground">{errorMessage}</p>
           <Button variant="outline" onClick={() => setClaimState('valid')}>
             Try Again
           </Button>
@@ -627,27 +627,27 @@ export const ClaimPlayer: React.FC = () => {
           {/* Player profile being claimed — richer details let the invited
               user recognize (or reject) the record before any merge fires. */}
           <div className="text-center">
-            <p className="text-sm text-gray-600 mb-1">Claiming player profile:</p>
+            <p className="text-sm text-muted-foreground mb-1">Claiming player profile:</p>
             <p className="text-lg font-semibold">
               {inviteDetails.placeholder_first_name}
               {placeholderExtras?.nickname ? ` "${placeholderExtras.nickname}" ` : ' '}
               {inviteDetails.placeholder_last_name}
             </p>
             {placeholderExtras && (
-              <div className="mt-2 inline-flex flex-wrap items-center justify-center gap-2 text-xs text-gray-600">
-                <span className="rounded-full bg-gray-100 px-2 py-0.5">
+              <div className="mt-2 inline-flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground">
+                <span className="rounded-full bg-muted px-2 py-0.5">
                   {placeholderExtras.hasPlayed
                     ? 'Has played games'
                     : 'No game history yet'}
                 </span>
                 {placeholderExtras.handicap5v5 !== null && (
-                  <span className="rounded-full bg-gray-100 px-2 py-0.5">
+                  <span className="rounded-full bg-muted px-2 py-0.5">
                     Handicap: {placeholderExtras.handicap5v5}
                   </span>
                 )}
               </div>
             )}
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-xs text-muted-foreground mt-2">
               Your game history and stats will be merged into your account.
             </p>
           </div>
@@ -682,7 +682,7 @@ export const ClaimPlayer: React.FC = () => {
           <Button
             variant="ghost"
             size="sm"
-            className="w-full text-gray-600 hover:text-gray-800"
+            className="w-full text-muted-foreground hover:text-foreground"
             onClick={handleReject}
             disabled={isClaiming || isRejecting}
             isLoading={isRejecting}
@@ -690,7 +690,7 @@ export const ClaimPlayer: React.FC = () => {
           >
             This isn't me
           </Button>
-          <p className="text-xs text-center text-gray-500 -mt-2">
+          <p className="text-xs text-center text-muted-foreground -mt-2">
             Clicking this won't move any history. Your league operator will see
             the placeholder still needs a match.
           </p>

@@ -83,24 +83,24 @@ export const OrganizationStaffCard: React.FC<OrganizationStaffCardProps> = ({
         </CardHeader>
         <CardContent>
           {staffLoading ? (
-            <p className="text-gray-600 text-sm text-center py-4">Loading staff...</p>
+            <p className="text-muted-foreground text-sm text-center py-4">Loading staff...</p>
           ) : staff.length === 0 ? (
             <div className="text-center py-6">
-              <UserPlus className="h-12 w-12 mx-auto text-gray-400 mb-2" />
-              <p className="text-gray-600 text-sm">No staff members yet</p>
+              <UserPlus className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+              <p className="text-muted-foreground text-sm">No staff members yet</p>
             </div>
           ) : (
             <div className="space-y-2">
               {staff.map((staffMember) => (
                 <div
                   key={staffMember.id}
-                  className="flex items-center justify-between p-2 rounded hover:bg-gray-50"
+                  className="flex items-center justify-between p-2 rounded hover:bg-muted"
                 >
                   <div>
                     <p className="font-medium text-sm">
                       {staffMember.member.first_name} {staffMember.member.last_name}
                     </p>
-                    <p className="text-xs text-gray-500 capitalize">
+                    <p className="text-xs text-muted-foreground capitalize">
                       {staffMember.position.replace('_', ' ')}
                     </p>
                   </div>
@@ -111,7 +111,7 @@ export const OrganizationStaffCard: React.FC<OrganizationStaffCardProps> = ({
                       onClick={() => handleRemoveStaff(staffMember.id, staffMember.member_id)}
                       disabled={removeStaffMutation.isPending}
                     >
-                      <X className="h-4 w-4 text-gray-600" />
+                      <X className="h-4 w-4 text-muted-foreground" />
                     </Button>
                   )}
                 </div>

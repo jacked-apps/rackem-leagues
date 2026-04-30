@@ -42,16 +42,16 @@ export const PrivacySettingsSection: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Privacy Settings</h3>
-        <div className="text-gray-500">Loading privacy settings...</div>
+      <div className="bg-card rounded-lg shadow-md p-6">
+        <h3 className="text-lg font-semibold text-foreground mb-4">Privacy Settings</h3>
+        <div className="text-muted-foreground">Loading privacy settings...</div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+    <div className="bg-card rounded-lg shadow-md p-6">
+      <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
         <Shield className="h-5 w-5" />
         Privacy Settings
       </h3>
@@ -70,17 +70,17 @@ export const PrivacySettingsSection: React.FC = () => {
 
       <div className="space-y-4">
         {/* Profanity Filter Toggle */}
-        <div className="flex items-start justify-between p-4 border border-gray-200 rounded-lg">
+        <div className="flex items-start justify-between p-4 border border-border rounded-lg">
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <Label className="text-sm font-medium text-gray-900">
+              <Label className="text-sm font-medium text-foreground">
                 Profanity Filter
               </Label>
               {!canToggle && (
-                <Lock className="h-4 w-4 text-gray-400" />
+                <Lock className="h-4 w-4 text-muted-foreground" />
               )}
             </div>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               {canToggle
                 ? 'Filter inappropriate language in messages. When enabled, profanity will be replaced with asterisks.'
                 : 'Profanity filter is required for users under 18 years old.'}
@@ -89,7 +89,7 @@ export const PrivacySettingsSection: React.FC = () => {
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                 shouldFilter
                   ? 'bg-green-100 text-green-800'
-                  : 'bg-gray-100 text-gray-800'
+                  : 'bg-muted text-foreground'
               }`}>
                 {shouldFilter ? 'Enabled' : 'Disabled'}
               </span>

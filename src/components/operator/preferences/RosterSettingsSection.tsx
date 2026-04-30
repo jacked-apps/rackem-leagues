@@ -64,7 +64,7 @@ export function RosterSettingsSection({
     <div className="border rounded-lg p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <h3 className="font-semibold text-gray-900">Roster Settings</h3>
+          <h3 className="font-semibold text-foreground">Roster Settings</h3>
           <InfoButton title="Roster Settings">
             {isLeague
               ? 'Maximum players a team can have on its roster for this league. Lineup size (how many play per match) is fixed at league creation and shown below for reference.'
@@ -104,7 +104,7 @@ export function RosterSettingsSection({
               />
               <Label
                 htmlFor="use-org-default-roster"
-                className="text-sm text-gray-700 cursor-pointer"
+                className="text-sm text-foreground cursor-pointer"
               >
                 Use organization default
               </Label>
@@ -123,22 +123,22 @@ export function RosterSettingsSection({
               onChange={(e) => onMaxRosterSizeChange(e.target.value)}
               placeholder="e.g. 8"
             />
-            <p className="text-xs text-gray-500 mt-1">Must be between 1 and 20.</p>
+            <p className="text-xs text-muted-foreground mt-1">Must be between 1 and 20.</p>
           </div>
         </div>
       ) : (
         <div className="space-y-1 text-sm">
           <div className="flex justify-between">
-            <span className="text-gray-600">Max Roster Size:</span>
-            <span className="font-medium text-gray-900">{maxRosterSizeDisplay}</span>
+            <span className="text-muted-foreground">Max Roster Size:</span>
+            <span className="font-medium text-foreground">{maxRosterSizeDisplay}</span>
           </div>
           {isLeague && lineupSizeDisplay && (
             <div className="flex justify-between pt-1 border-t mt-2">
-              <span className="text-gray-600">
+              <span className="text-muted-foreground">
                 Lineup Size{' '}
-                <span className="text-xs text-gray-400">(locked at league creation)</span>:
+                <span className="text-xs text-muted-foreground">(locked at league creation)</span>:
               </span>
-              <span className="font-medium text-gray-900">{lineupSizeDisplay}</span>
+              <span className="font-medium text-foreground">{lineupSizeDisplay}</span>
             </div>
           )}
         </div>

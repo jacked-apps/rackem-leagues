@@ -113,16 +113,16 @@ export function PWAInstallPrompt() {
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <div>
-                <h3 className="font-semibold text-gray-900 text-sm">
+                <h3 className="font-semibold text-foreground text-sm">
                   Install Rackem Leagues
                 </h3>
-                <p className="text-xs text-gray-600 mt-0.5">
+                <p className="text-xs text-muted-foreground mt-0.5">
                   Add to your home screen for quick access
                 </p>
               </div>
               <button
                 onClick={handleDismiss}
-                className="text-gray-400 hover:text-gray-600 p-1"
+                className="text-muted-foreground hover:text-muted-foreground p-1"
                 aria-label="Dismiss"
               >
                 <X className="h-4 w-4" />

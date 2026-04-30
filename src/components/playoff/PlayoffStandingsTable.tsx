@@ -95,7 +95,7 @@ export const PlayoffStandingsTable: React.FC<PlayoffStandingsTableProps> = ({
    * Get row styling based on team playoff status
    */
   const getRowClass = (team: PlaceholderTeam): string => {
-    if (team.isAutoQualified) return 'hover:bg-gray-50';
+    if (team.isAutoQualified) return 'hover:bg-muted';
     if (team.isWildcardEligible) return 'bg-amber-50';
     return 'bg-red-50 opacity-60';
   };
@@ -104,7 +104,7 @@ export const PlayoffStandingsTable: React.FC<PlayoffStandingsTableProps> = ({
    * Get seed circle styling based on team playoff status
    */
   const getSeedClass = (team: PlaceholderTeam): string => {
-    if (team.isAutoQualified) return 'bg-gray-200 text-gray-700';
+    if (team.isAutoQualified) return 'bg-accent text-foreground';
     if (team.isWildcardEligible) return 'bg-amber-200 text-amber-700';
     return 'bg-red-200 text-red-700';
   };
@@ -124,13 +124,13 @@ export const PlayoffStandingsTable: React.FC<PlayoffStandingsTableProps> = ({
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b bg-gray-50">
-            <th className="text-left py-2 px-3 font-medium text-gray-600">Seed</th>
-            <th className="text-left py-2 px-3 font-medium text-gray-600">Team</th>
-            <th className="text-center py-2 px-3 font-medium text-gray-600">W</th>
-            <th className="text-center py-2 px-3 font-medium text-gray-600">L</th>
-            <th className="text-center py-2 px-3 font-medium text-gray-600">Pts</th>
-            <th className="text-center py-2 px-3 font-medium text-gray-600">Games</th>
+          <tr className="border-b bg-muted">
+            <th className="text-left py-2 px-3 font-medium text-muted-foreground">Seed</th>
+            <th className="text-left py-2 px-3 font-medium text-muted-foreground">Team</th>
+            <th className="text-center py-2 px-3 font-medium text-muted-foreground">W</th>
+            <th className="text-center py-2 px-3 font-medium text-muted-foreground">L</th>
+            <th className="text-center py-2 px-3 font-medium text-muted-foreground">Pts</th>
+            <th className="text-center py-2 px-3 font-medium text-muted-foreground">Games</th>
           </tr>
         </thead>
         <tbody>
@@ -144,14 +144,14 @@ export const PlayoffStandingsTable: React.FC<PlayoffStandingsTableProps> = ({
                   {team.seed}
                 </span>
               </td>
-              <td className="py-2 px-3 font-medium text-gray-500 italic">
+              <td className="py-2 px-3 font-medium text-muted-foreground italic">
                 {team.name}
                 {getStatusLabel(team)}
               </td>
-              <td className="py-2 px-3 text-center text-gray-400">--</td>
-              <td className="py-2 px-3 text-center text-gray-400">--</td>
-              <td className="py-2 px-3 text-center text-gray-400">--</td>
-              <td className="py-2 px-3 text-center text-gray-400">--</td>
+              <td className="py-2 px-3 text-center text-muted-foreground">--</td>
+              <td className="py-2 px-3 text-center text-muted-foreground">--</td>
+              <td className="py-2 px-3 text-center text-muted-foreground">--</td>
+              <td className="py-2 px-3 text-center text-muted-foreground">--</td>
             </tr>
           ))}
         </tbody>

@@ -23,7 +23,7 @@ export function LoadingState({ message = 'Loading...', size = 'md' }: LoadingSta
   };
 
   return (
-    <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+    <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
       <Loader2 className={`${sizeClasses[size]} animate-spin mb-2`} />
       <p className="text-sm">{message}</p>
     </div>

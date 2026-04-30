@@ -13,7 +13,7 @@ export const About: React.FC = () => {
       <div className="max-w-2xl mx-auto p-6 space-y-6">
         <section>
           <h2 className="text-2xl font-semibold mb-3">What We Do</h2>
-          <p className="text-gray-700 leading-relaxed">
+          <p className="text-foreground leading-relaxed">
             Rackem Leagues Network empowers independent pool league operators with professional-grade management tools.
             Whether you're a bar owner, pool hall operator, or experienced player looking to start your own league,
             our platform handles the complexity so you can focus on growing your pool community.
@@ -22,7 +22,7 @@ export const About: React.FC = () => {
 
         <section>
           <h2 className="text-2xl font-semibold mb-3">Current Features</h2>
-          <ul className="space-y-2 text-gray-700">
+          <ul className="space-y-2 text-foreground">
             <li className="flex items-start">
               <span className="mr-2">•</span>
               <span><strong>League Operator Dashboard:</strong> Centralized control for all league operations and settings</span>
@@ -76,7 +76,7 @@ export const About: React.FC = () => {
 
         <section>
           <h2 className="text-2xl font-semibold mb-3">Coming Soon</h2>
-          <ul className="space-y-2 text-gray-700">
+          <ul className="space-y-2 text-foreground">
             <li className="flex items-start">
               <span className="mr-2">•</span>
               <span><strong>House Rules Management:</strong> Add custom house rules to official rulesets—choose from our list or create your own (scratch on 8 is a loss, magic rack usage, golden break only counts in specific pockets, etc.)</span>
@@ -98,7 +98,7 @@ export const About: React.FC = () => {
 
         <section>
           <h2 className="text-2xl font-semibold mb-3">Future Vision</h2>
-          <ul className="space-y-2 text-gray-700">
+          <ul className="space-y-2 text-foreground">
             <li className="flex items-start">
               <span className="mr-2">•</span>
               <span><strong>BCA CSI Sanctioning & Integration:</strong> League results contributing to Fargo ratings for players, Fargo rating handicap leagues, and official BCA sanctioning options</span>
@@ -116,7 +116,7 @@ export const About: React.FC = () => {
 
         <section>
           <h2 className="text-2xl font-semibold mb-3">Pricing</h2>
-          <p className="text-gray-700 leading-relaxed mb-3">
+          <p className="text-foreground leading-relaxed mb-3">
             <strong>Free to get started.</strong> No upfront costs to become a league operator. We charge $1 per team per week
             (regular season only) plus a $10 setup fee per season. With a 4-week grace period, you can use your collected league
             dues to pay for the entire season before week 5. Playoffs are free.
@@ -130,12 +130,12 @@ export const About: React.FC = () => {
 
         <section>
           <h2 className="text-2xl font-semibold mb-3">Our Philosophy</h2>
-          <p className="text-gray-700 leading-relaxed mb-3">
+          <p className="text-foreground leading-relaxed mb-3">
             Personally built by a league operator with over 15 years of experience, this platform represents the tools you'll wish you had
             when first becoming a league operator. No extensive certifications or intrusive approval processes; just professional-grade software
             that transforms casual league players into professional operators running smooth, well-organized leagues.
           </p>
-          <p className="text-gray-700 leading-relaxed">
+          <p className="text-foreground leading-relaxed">
             We believe in empowering local operators to build thriving pool communities with minimal administrative burden,
             so more time can be spent on what matters: growing the sport and connecting players.
           </p>

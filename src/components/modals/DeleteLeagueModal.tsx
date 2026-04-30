@@ -165,8 +165,8 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 max-w-md w-full">
-          <p className="text-center text-gray-600">Loading league information...</p>
+        <div className="bg-card rounded-lg p-6 max-w-md w-full">
+          <p className="text-center text-muted-foreground">Loading league information...</p>
         </div>
       </div>
     );
@@ -176,9 +176,9 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
   if (error && !stats) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 max-w-md w-full">
+        <div className="bg-card rounded-lg p-6 max-w-md w-full">
           <h3 className="text-lg font-semibold text-red-600 mb-4">Error</h3>
-          <p className="text-gray-700 mb-4">{error}</p>
+          <p className="text-foreground mb-4">{error}</p>
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={onCancel}>
               Close
@@ -193,7 +193,7 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
   if (stats?.hasCompletedSeasons) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 max-w-lg w-full">
+        <div className="bg-card rounded-lg p-6 max-w-lg w-full">
           <div className="flex items-start gap-3 mb-4">
             <XCircle className="h-6 w-6 text-red-600 flex-shrink-0 mt-1" />
             <div>
@@ -219,14 +219,14 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
             </p>
           </div>
 
-          <div className="bg-gray-50 rounded-lg p-3 mb-4">
-            <p className="text-sm text-gray-700">
+          <div className="bg-muted rounded-lg p-3 mb-4">
+            <p className="text-sm text-foreground">
               <strong>League:</strong> {leagueName}
             </p>
-            <p className="text-sm text-gray-700">
+            <p className="text-sm text-foreground">
               <strong>Seasons:</strong> {stats.totalSeasons} ({stats.hasCompletedSeasons ? 'includes completed' : 'all active/upcoming'})
             </p>
-            <p className="text-sm text-gray-700">
+            <p className="text-sm text-foreground">
               <strong>Total Matches:</strong> {stats.totalMatches}
             </p>
           </div>
@@ -247,7 +247,7 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 max-w-lg w-full">
+        <div className="bg-card rounded-lg p-6 max-w-lg w-full">
           <div className="flex items-start gap-3 mb-4">
             <AlertTriangle className="h-6 w-6 text-orange-600 flex-shrink-0 mt-1" />
             <div>
@@ -271,18 +271,18 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
             </ul>
           </div>
 
-          <div className="bg-gray-50 rounded-lg p-3 mb-4">
-            <p className="text-sm text-gray-700 mb-2">
+          <div className="bg-muted rounded-lg p-3 mb-4">
+            <p className="text-sm text-foreground mb-2">
               <strong>League:</strong> {leagueName}
             </p>
-            <p className="text-sm text-gray-600 italic">
+            <p className="text-sm text-muted-foreground italic">
               💡 Tip: If the season is over, mark it as "Completed" to preserve the data instead of deleting.
             </p>
           </div>
 
           <div className="mb-4">
-            <Label htmlFor="confirm-delete" className="text-sm font-medium text-gray-700">
-              Type <span className="font-mono bg-gray-100 px-1">DELETE</span> to confirm:
+            <Label htmlFor="confirm-delete" className="text-sm font-medium text-foreground">
+              Type <span className="font-mono bg-muted px-1">DELETE</span> to confirm:
             </Label>
             <Input
               id="confirm-delete"
@@ -323,7 +323,7 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
   if (stats?.hasSeasons || stats?.hasMatches) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 max-w-lg w-full">
+        <div className="bg-card rounded-lg p-6 max-w-lg w-full">
           <div className="flex items-start gap-3 mb-4">
             <AlertTriangle className="h-6 w-6 text-yellow-600 flex-shrink-0 mt-1" />
             <div>
@@ -342,8 +342,8 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
             </ul>
           </div>
 
-          <div className="bg-gray-50 rounded-lg p-3 mb-4">
-            <p className="text-sm text-gray-700">
+          <div className="bg-muted rounded-lg p-3 mb-4">
+            <p className="text-sm text-foreground">
               <strong>League:</strong> {leagueName}
             </p>
           </div>
@@ -376,15 +376,15 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
   // INFO: Empty league
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full">
+      <div className="bg-card rounded-lg p-6 max-w-md w-full">
         <div className="flex items-start gap-3 mb-4">
           <Info className="h-6 w-6 text-blue-600 flex-shrink-0 mt-1" />
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Delete Empty League?</h3>
+            <h3 className="text-lg font-semibold text-foreground">Delete Empty League?</h3>
           </div>
         </div>
 
-        <p className="text-gray-700 mb-4">
+        <p className="text-foreground mb-4">
           Are you sure you want to delete <strong>{leagueName}</strong>?
         </p>
 

@@ -49,7 +49,7 @@ export const MatchRulesSection: React.FC<MatchRulesSectionProps> = ({
     <div className="border rounded-lg p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <h3 className="font-semibold text-gray-900">Match Rules</h3>
+          <h3 className="font-semibold text-foreground">Match Rules</h3>
           <InfoButton title="Golden Break Rules">
             <div className="space-y-3">
               <p><strong>Official BCA Rules:</strong></p>
@@ -96,14 +96,14 @@ export const MatchRulesSection: React.FC<MatchRulesSectionProps> = ({
               <SelectItem value="never">Never Count</SelectItem>
             </SelectContent>
           </Select>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             BCA Standard: 9-ball and 10-ball count, 8-ball does not
           </p>
         </div>
       ) : (
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Golden Break Rule:</span>
-          <span className="font-medium text-gray-900">{goldenBreakDisplay}</span>
+          <span className="text-muted-foreground">Golden Break Rule:</span>
+          <span className="font-medium text-foreground">{goldenBreakDisplay}</span>
         </div>
       )}
     </div>

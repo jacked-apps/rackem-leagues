@@ -70,8 +70,8 @@ export const Profile: React.FC = () => {
   // Show loading state while fetching member data
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-600">Loading your profile...</div>
+      <div className="min-h-screen bg-muted flex items-center justify-center">
+        <div className="text-muted-foreground">Loading your profile...</div>
       </div>
     );
   }
@@ -79,10 +79,10 @@ export const Profile: React.FC = () => {
   // Show error if member data is not available
   if (!member) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-muted flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Profile Not Found</h2>
-          <p className="text-gray-600">
+          <h2 className="text-2xl font-bold text-foreground mb-4">Profile Not Found</h2>
+          <p className="text-muted-foreground">
             We couldn't find your member profile. Please contact support if this error persists.
           </p>
         </div>
@@ -95,7 +95,7 @@ export const Profile: React.FC = () => {
   const duesStatusStyling = getDuesStatusStyling(membershipStatus.status);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       <PageHeader
         backTo="/dashboard"
         backLabel="Dashboard"
@@ -131,17 +131,17 @@ export const Profile: React.FC = () => {
           <PrivacySettingsSection />
 
           {/* BCA Membership Status Section (Read-Only) */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">BCA Membership Status</h3>
+          <div className="bg-card rounded-lg shadow-md p-6">
+            <h3 className="text-lg font-semibold text-foreground mb-4">BCA Membership Status</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <span className="text-sm font-medium text-gray-500">BCA Member Number</span>
-                <p className="text-gray-900 font-mono">
+                <span className="text-sm font-medium text-muted-foreground">BCA Member Number</span>
+                <p className="text-foreground font-mono">
                   {member.bca_member_number || 'Not assigned'}
                 </p>
               </div>
               <div>
-                <span className="text-sm font-medium text-gray-500">Dues Status</span>
+                <span className="text-sm font-medium text-muted-foreground">Dues Status</span>
                 <div className="flex items-center mt-1">
                   <span
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${duesStatusStyling.badgeColor}`}
@@ -151,7 +151,7 @@ export const Profile: React.FC = () => {
                 </div>
               </div>
               <div>
-                <span className="text-sm font-medium text-gray-500">Dues Paid Through</span>
+                <span className="text-sm font-medium text-muted-foreground">Dues Paid Through</span>
                 <p className={`text-sm ${duesStatusStyling.textColor}`}>
                   {formatDueDate(member.membership_paid_date)}
                 </p>

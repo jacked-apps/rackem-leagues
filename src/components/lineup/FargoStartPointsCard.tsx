@@ -95,7 +95,7 @@ export function FargoStartPointsCard({
       </CardHeader>
       <CardContent className="space-y-4">
         {status === 'pending_initial_write' && (
-          <div className="flex items-center gap-2 text-sm text-gray-600">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
             Calculating start points from the locked lineups...
           </div>
@@ -103,7 +103,7 @@ export function FargoStartPointsCard({
 
         {status !== 'pending_initial_write' && currentValue !== null && (
           <>
-            <p className="text-sm text-gray-700">
+            <p className="text-sm text-foreground">
               Before the match starts, both captains must agree on the
               start-points value the weaker team receives. If BCA&apos;s FargoRate
               app shows a different number, edit the value here so both apps
@@ -112,25 +112,25 @@ export function FargoStartPointsCard({
 
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <div className="text-gray-500">Computed default</div>
+                <div className="text-muted-foreground">Computed default</div>
                 <div className="text-lg font-semibold">
                   {computedDefault !== null ? computedDefault : '—'}
                 </div>
               </div>
               <div>
-                <div className="text-gray-500">Current proposal</div>
+                <div className="text-muted-foreground">Current proposal</div>
                 <div className="text-lg font-semibold">{currentValue}</div>
               </div>
             </div>
 
             {weakerTeamName && (
-              <p className="text-xs text-gray-600">
+              <p className="text-xs text-muted-foreground">
                 Start points go to <strong>{weakerTeamName}</strong> (the
                 weaker team by rating total).
               </p>
             )}
             {teamsEvenlyMatched && (
-              <p className="text-xs text-gray-600">
+              <p className="text-xs text-muted-foreground">
                 Teams are evenly rated — no start points apply.
               </p>
             )}
@@ -178,22 +178,22 @@ export function FargoStartPointsCard({
             ) : (
               <>
                 {status === 'awaiting_opponent_confirm' && (
-                  <div className="rounded-md bg-white p-3 text-sm">
+                  <div className="rounded-md bg-card p-3 text-sm">
                     <p className="font-medium">
                       You confirmed <strong>{currentValue}</strong>.
                     </p>
-                    <p className="text-gray-600 mt-1">
+                    <p className="text-muted-foreground mt-1">
                       Waiting for {opponentLabel} to confirm.
                     </p>
                   </div>
                 )}
 
                 {status === 'awaiting_my_confirm' && (
-                  <div className="rounded-md bg-white p-3 text-sm">
+                  <div className="rounded-md bg-card p-3 text-sm">
                     <p className="font-medium">
                       {opponentLabel} proposed <strong>{currentValue}</strong>.
                     </p>
-                    <p className="text-gray-600 mt-1">
+                    <p className="text-muted-foreground mt-1">
                       Confirm this value or edit it to match your FargoRate
                       app, then {opponentLabel} will re-confirm.
                     </p>
@@ -220,7 +220,7 @@ export function FargoStartPointsCard({
                   </Button>
                 </div>
 
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   ({myLabel} is{' '}
                   {negotiation.myConfirmed ? 'confirmed' : 'unconfirmed'};{' '}
                   {opponentLabel} is{' '}

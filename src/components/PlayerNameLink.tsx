@@ -318,8 +318,8 @@ export function PlayerNameLink({
         <PopoverContent className="w-56 p-0" align="start">
           <div className="flex flex-col">
             {/* Player Full Name Header */}
-            <div className="px-4 py-3 border-b bg-gray-50">
-              <div className="font-semibold text-gray-900 inline-flex items-center gap-1.5">
+            <div className="px-4 py-3 border-b bg-muted">
+              <div className="font-semibold text-foreground inline-flex items-center gap-1.5">
                 <span>{playerFullName || playerName}</span>
                 {isPlaceholder && <PlaceholderBadge size="sm" />}
               </div>
@@ -337,9 +337,9 @@ export function PlayerNameLink({
                   setOpen(false);
                   setShowRegisterModal(true);
                 }}
-                className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-100 transition-colors text-left"
+                className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted transition-colors text-left"
               >
-                <User className="h-4 w-4 text-gray-600" />
+                <User className="h-4 w-4 text-muted-foreground" />
                 <span>Register Player</span>
               </button>
             )}
@@ -347,9 +347,9 @@ export function PlayerNameLink({
             {/* View Profile */}
             <button
               onClick={handleViewProfile}
-              className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-100 transition-colors text-left"
+              className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted transition-colors text-left"
             >
-              <User className="h-4 w-4 text-gray-600" />
+              <User className="h-4 w-4 text-muted-foreground" />
               <span>View Profile</span>
             </button>
 
@@ -357,9 +357,9 @@ export function PlayerNameLink({
             {!isPlaceholder && (
               <button
                 onClick={handleSendMessage}
-                className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-100 transition-colors text-left"
+                className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted transition-colors text-left"
               >
-                <MessageSquare className="h-4 w-4 text-gray-600" />
+                <MessageSquare className="h-4 w-4 text-muted-foreground" />
                 <span>Send Message</span>
               </button>
             )}
@@ -369,7 +369,7 @@ export function PlayerNameLink({
             {/* Report Player - Available for all users */}
             <button
               onClick={handleReportUser}
-              className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-100 transition-colors text-left text-orange-600"
+              className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted transition-colors text-left text-orange-600"
             >
               <Flag className="h-4 w-4" />
               <span>Report Player</span>
@@ -379,7 +379,7 @@ export function PlayerNameLink({
             {!isPlaceholder && (
               <button
                 onClick={handleBlockToggle}
-                className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-100 transition-colors text-left text-red-600"
+                className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted transition-colors text-left text-red-600"
               >
                 <Ban className="h-4 w-4" />
                 <span>{isBlocked ? 'Unblock User' : 'Block User'}</span>
@@ -393,7 +393,7 @@ export function PlayerNameLink({
                 {/* Set Starting Handicaps */}
                 <button
                   onClick={handleHandicapAction}
-                  className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-100 transition-colors text-left text-blue-600"
+                  className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted transition-colors text-left text-blue-600"
                 >
                   <UserCog className="h-4 w-4" />
                   <span>Set Starting H/C</span>
@@ -402,7 +402,7 @@ export function PlayerNameLink({
                 <button
                   onClick={handleMembershipAction}
                   className={cn(
-                    "flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-100 transition-colors text-left",
+                    "flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted transition-colors text-left",
                     hasMembershipPaid ? "text-red-600" : "text-green-600"
                   )}
                 >
@@ -423,7 +423,7 @@ export function PlayerNameLink({
                       action.onClick();
                       setOpen(false);
                     }}
-                    className={action.className || "flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-100 transition-colors text-left"}
+                    className={action.className || "flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted transition-colors text-left"}
                   >
                     {action.icon}
                     <span>{action.label}</span>
@@ -489,7 +489,7 @@ export function PlayerNameLink({
 
           <div className="space-y-4 py-4">
             {/* Current values display */}
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-muted-foreground">
               Current: 3v3 = {memberData?.starting_handicap_3v3 ?? 'Not set'}, 5v5 = {memberData?.starting_handicap_5v5 ?? 'Not set'}
             </div>
 
@@ -514,7 +514,7 @@ export function PlayerNameLink({
             <div>
               <Label htmlFor="handicap5v5">
                 Starting Handicap (5v5)
-                <span className="text-xs text-gray-500 ml-2">(0 to 100)</span>
+                <span className="text-xs text-muted-foreground ml-2">(0 to 100)</span>
               </Label>
               <Input
                 id="handicap5v5"

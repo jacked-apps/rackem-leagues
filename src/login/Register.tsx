@@ -242,8 +242,8 @@ export const Register: React.FC = () => {
           <div className="flex justify-center">
             <AlertTriangle className="h-16 w-16 text-amber-500" />
           </div>
-          <p className="text-gray-700">{claimData.errorMessage}</p>
-          <p className="text-gray-600 text-sm">
+          <p className="text-foreground">{claimData.errorMessage}</p>
+          <p className="text-muted-foreground text-sm">
             Please contact your league operator for a new registration link, or register a new account below.
           </p>
         </div>
@@ -271,14 +271,14 @@ export const Register: React.FC = () => {
             )}
           </div>
           {claimData?.isValid && (
-            <p className="text-gray-700">
+            <p className="text-foreground">
               You've claimed the profile for <strong>{claimData.playerName}</strong>
             </p>
           )}
-          <p className="text-gray-700">
+          <p className="text-foreground">
             We sent a verification email to <strong>{email}</strong>
           </p>
-          <p className="text-gray-600 text-sm">
+          <p className="text-muted-foreground text-sm">
             Click the link in your email to verify your account and log in automatically.
           </p>
           <div className="pt-4 space-y-2">
@@ -298,7 +298,7 @@ export const Register: React.FC = () => {
             </Button>
           </div>
           <div className="pt-2 border-t">
-            <p className="text-gray-500 text-sm mb-2">Didn't receive the email?</p>
+            <p className="text-muted-foreground text-sm mb-2">Didn't receive the email?</p>
             <Button
               variant="ghost"
               className="w-full"
@@ -455,7 +455,7 @@ export const Register: React.FC = () => {
               <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-gray-500">Or continue with</span>
+              <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
             </div>
           </div>
 

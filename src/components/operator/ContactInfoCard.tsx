@@ -149,7 +149,7 @@ export const ContactInfoCard: React.FC<ContactInfoCardProps> = ({
         {/* Contact Email Section */}
         <div className="border rounded-lg p-4">
           <div className="flex justify-between items-start mb-2">
-            <p className="text-sm text-gray-600 font-medium">Contact Email</p>
+            <p className="text-sm text-muted-foreground font-medium">Contact Email</p>
             {editingSection !== 'email' && (
               <Button
                 variant="ghost"
@@ -196,9 +196,9 @@ export const ContactInfoCard: React.FC<ContactInfoCardProps> = ({
               </div>
             </div>
           ) : (
-            <div className="text-gray-900">
+            <div className="text-foreground">
               <p>{organization.organization_email}</p>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 Visible to: {getVisibilityLabel(organization.organization_email_visibility)}
               </p>
             </div>
@@ -208,7 +208,7 @@ export const ContactInfoCard: React.FC<ContactInfoCardProps> = ({
         {/* Contact Phone Section */}
         <div className="border rounded-lg p-4">
           <div className="flex justify-between items-start mb-2">
-            <p className="text-sm text-gray-600 font-medium">Contact Phone</p>
+            <p className="text-sm text-muted-foreground font-medium">Contact Phone</p>
             {editingSection !== 'phone' && (
               <Button
                 variant="ghost"
@@ -255,9 +255,9 @@ export const ContactInfoCard: React.FC<ContactInfoCardProps> = ({
               </div>
             </div>
           ) : (
-            <div className="text-gray-900">
+            <div className="text-foreground">
               <p>{organization.organization_phone}</p>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 Visible to: {getVisibilityLabel(organization.organization_phone_visibility)}
               </p>
             </div>

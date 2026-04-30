@@ -31,7 +31,7 @@ import { PageHeader } from '@/components/PageHeader';
  */
 export function MyMatch() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       <PageHeader
         backTo="/dashboard"
         backLabel="Home"
@@ -43,7 +43,7 @@ export function MyMatch() {
           <CardHeader>
             <CardTitle>One-tap access to your live match</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm text-gray-700">
+          <CardContent className="space-y-3 text-sm text-foreground">
             <p>
               When one of your teams is in the middle of a match, this page
               will show it at the top with a Jump-in button that drops you
@@ -55,7 +55,7 @@ export function MyMatch() {
               it&apos;s the first thing you see when you open the app on
               league night.
             </p>
-            <p className="text-xs italic text-gray-500">
+            <p className="text-xs italic text-muted-foreground">
               (Live-match detection + jump-in is tracked in the project
               backlog. The drawer entry is here so it doesn&apos;t get
               forgotten.)

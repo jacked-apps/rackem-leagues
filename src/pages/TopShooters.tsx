@@ -68,12 +68,12 @@ export function TopShooters() {
         <Card>
           <CardHeader>
             <CardTitle>Top Shooter</CardTitle>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               Loading player statistics...
             </p>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8 text-gray-500">Loading...</div>
+            <div className="text-center py-8 text-muted-foreground">Loading...</div>
           </CardContent>
         </Card>
       </div>
@@ -108,10 +108,10 @@ export function TopShooters() {
         <Card>
           <CardHeader>
             <CardTitle>Top Shooter</CardTitle>
-            <p className="text-sm text-gray-600">Individual player rankings</p>
+            <p className="text-sm text-muted-foreground">Individual player rankings</p>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-muted-foreground">
               No player statistics available for this season yet.
               <br />
               <span className="text-sm">
@@ -125,7 +125,7 @@ export function TopShooters() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       <PageHeader
         hideBack
         title="Stats & Standings"

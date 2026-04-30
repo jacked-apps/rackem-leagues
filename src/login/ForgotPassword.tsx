@@ -68,10 +68,10 @@ export const ForgotPassword: React.FC = () => {
           <div className="flex justify-center">
             <Mail className="h-16 w-16 text-blue-600" />
           </div>
-          <p className="text-gray-700">
+          <p className="text-foreground">
             We sent a password reset link to <strong>{email}</strong>
           </p>
-          <p className="text-gray-600 text-sm">
+          <p className="text-muted-foreground text-sm">
             Click the link in your email to reset your password. The link will expire in 1 hour.
           </p>
           <div className="pt-4 space-y-2">
@@ -91,7 +91,7 @@ export const ForgotPassword: React.FC = () => {
             </Button>
           </div>
           <div className="pt-2 border-t">
-            <p className="text-gray-500 text-sm mb-2">Didn't receive the email?</p>
+            <p className="text-muted-foreground text-sm mb-2">Didn't receive the email?</p>
             <Button
               variant="ghost"
               className="w-full"

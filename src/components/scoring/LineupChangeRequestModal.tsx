@@ -66,7 +66,7 @@ export function LineupChangeRequestModal({
 
         <div className="py-4 space-y-4">
           {/* Position info */}
-          <div className="text-center text-sm text-gray-600">
+          <div className="text-center text-sm text-muted-foreground">
             Position {position}
           </div>
 
@@ -79,7 +79,7 @@ export function LineupChangeRequestModal({
             </div>
 
             {/* Arrow */}
-            <ArrowRight className="h-6 w-6 text-gray-400 flex-shrink-0" />
+            <ArrowRight className="h-6 w-6 text-muted-foreground flex-shrink-0" />
 
             {/* New player */}
             <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200 min-w-[100px]">
@@ -89,7 +89,7 @@ export function LineupChangeRequestModal({
           </div>
 
           {/* Info text */}
-          <p className="text-xs text-gray-500 text-center">
+          <p className="text-xs text-muted-foreground text-center">
             If you approve, the lineup will be updated immediately.
           </p>
         </div>

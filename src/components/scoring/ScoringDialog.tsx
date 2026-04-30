@@ -171,7 +171,7 @@ export function ScoringDialog({
 
         <div className="space-y-4 py-4">
           <div className="text-center">
-            <p className="text-sm text-gray-500">Game {game.gameNumber}</p>
+            <p className="text-sm text-muted-foreground">Game {game.gameNumber}</p>
             <p className="text-lg font-semibold mt-2">
               Winner: {game.winnerPlayerName}
             </p>
@@ -211,7 +211,7 @@ export function ScoringDialog({
                   onBreakAndRunChange(e.target.checked);
                   if (e.target.checked) onGoldenBreakChange(false);
                 }}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                className="w-4 h-4 text-blue-600 border-border rounded focus:ring-blue-500"
               />
               <label
                 htmlFor="breakAndRun"
@@ -232,7 +232,7 @@ export function ScoringDialog({
                   onGoldenBreakChange(e.target.checked);
                   if (e.target.checked) onBreakAndRunChange(false);
                 }}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                className="w-4 h-4 text-blue-600 border-border rounded focus:ring-blue-500"
               />
               <label
                 htmlFor="goldenBreak"
@@ -250,7 +250,7 @@ export function ScoringDialog({
                 id="runout"
                 checked={runout}
                 onChange={(e) => onRunoutChange?.(e.target.checked)}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                className="w-4 h-4 text-blue-600 border-border rounded focus:ring-blue-500"
               />
               <label
                 htmlFor="runout"

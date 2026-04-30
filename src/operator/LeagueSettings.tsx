@@ -78,9 +78,9 @@ export const LeagueSettings: React.FC = () => {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-muted py-8">
         <div className="container mx-auto px-4 max-w-6xl">
-          <div className="text-center text-gray-600">Loading league settings...</div>
+          <div className="text-center text-muted-foreground">Loading league settings...</div>
         </div>
       </div>
     );
@@ -89,11 +89,11 @@ export const LeagueSettings: React.FC = () => {
   // Error state
   if (error || !league) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-muted py-8">
         <div className="container mx-auto px-4 max-w-6xl">
-          <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="bg-card rounded-xl shadow-sm p-6">
             <h3 className="text-red-600 text-lg font-semibold mb-4">Error</h3>
-            <p className="text-gray-700 mb-4">{error || 'League not found'}</p>
+            <p className="text-foreground mb-4">{error || 'League not found'}</p>
             <button
               onClick={() => navigate(-1)}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg"
@@ -107,7 +107,7 @@ export const LeagueSettings: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       <PageHeader
         backTo={`/league/${league.id}`}
         backLabel="Back to League"

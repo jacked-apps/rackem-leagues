@@ -117,9 +117,9 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-muted py-8">
         <div className="container mx-auto px-4 max-w-7xl">
-          <div className="text-center text-gray-600">Loading schedule...</div>
+          <div className="text-center text-muted-foreground">Loading schedule...</div>
         </div>
       </div>
     );
@@ -127,11 +127,11 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-muted py-8">
         <div className="container mx-auto px-4 max-w-7xl">
-          <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="bg-card rounded-xl shadow-sm p-6">
             <h3 className="text-red-600 text-lg font-semibold mb-4">Error</h3>
-            <p className="text-gray-700 mb-4">{error}</p>
+            <p className="text-foreground mb-4">{error}</p>
             {onBack && (
               <Button onClick={onBack} loadingText="none">
                 <ArrowLeft className="h-4 w-4 mr-2" />
@@ -146,13 +146,13 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
 
   if (weekGroups.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-muted py-8">
         <div className="container mx-auto px-4 max-w-7xl">
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="text-gray-900 text-lg font-semibold mb-4">
+          <div className="bg-card rounded-xl shadow-sm p-6">
+            <h3 className="text-foreground text-lg font-semibold mb-4">
               No Schedule Generated
             </h3>
-            <p className="text-gray-600 mb-4">
+            <p className="text-muted-foreground mb-4">
               The schedule has not been generated yet. Please generate the schedule
               from the schedule setup page.
             </p>
@@ -169,7 +169,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-muted py-8">
       <div className="container mx-auto px-4 max-w-7xl">
         {/* Header */}
         <div className="mb-8">
@@ -185,8 +185,8 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
           )}
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Season Schedule</h1>
-              <p className="text-gray-600 mt-1">
+              <h1 className="text-3xl font-bold text-foreground">Season Schedule</h1>
+              <p className="text-muted-foreground mt-1">
                 {weekGroups.length} weeks scheduled
               </p>
             </div>
@@ -196,13 +196,13 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
         {/* Schedule - Grouped by Week */}
         <div className="space-y-8">
           {weekGroups.map((weekGroup) => (
-            <div key={weekGroup.weekId} className="bg-white rounded-xl shadow-sm p-6">
+            <div key={weekGroup.weekId} className="bg-card rounded-xl shadow-sm p-6">
               {/* Week Header */}
-              <div className="mb-4 pb-3 border-b border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-900">
+              <div className="mb-4 pb-3 border-b border-border">
+                <h2 className="text-xl font-semibold text-foreground">
                   {weekGroup.weekName}
                 </h2>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   {new Date(weekGroup.scheduledDate).toLocaleDateString('en-US', {
                     weekday: 'long',
                     year: 'numeric',

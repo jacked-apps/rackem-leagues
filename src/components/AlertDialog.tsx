@@ -80,7 +80,7 @@ export const AlertDialog: React.FC<AlertDialogProps> = ({
       onClick={onOk}
     >
       <div
-        className="bg-white rounded-xl shadow-xl max-w-md w-full"
+        className="bg-card rounded-xl shadow-xl max-w-md w-full"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header with colored background */}
@@ -90,7 +90,7 @@ export const AlertDialog: React.FC<AlertDialogProps> = ({
 
         {/* Content */}
         <div className="p-6">
-          <p className="text-gray-700">{message}</p>
+          <p className="text-foreground">{message}</p>
         </div>
 
         {/* Footer */}

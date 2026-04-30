@@ -57,10 +57,10 @@ export function TableSizeLabel({ sizeKey, className }: TableSizeLabelProps) {
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-64 p-0" align="start">
-        <div className="px-4 py-3 border-b bg-gray-50">
-          <div className="font-semibold text-gray-900">{config.infoTitle}</div>
+        <div className="px-4 py-3 border-b bg-muted">
+          <div className="font-semibold text-foreground">{config.infoTitle}</div>
         </div>
-        <div className="px-4 py-3 text-sm text-gray-600">
+        <div className="px-4 py-3 text-sm text-muted-foreground">
           {config.infoContent}
         </div>
       </PopoverContent>

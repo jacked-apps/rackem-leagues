@@ -260,7 +260,7 @@ export const PendingInvitesModal: React.FC<PendingInvitesModalProps> = ({
             <>
               {validInvites.length > 0 && (
                 <div className="border-t pt-3 mt-3">
-                  <p className="text-sm text-gray-500 flex items-center gap-1 mb-2">
+                  <p className="text-sm text-muted-foreground flex items-center gap-1 mb-2">
                     <Clock className="h-4 w-4" />
                     Expired Invites
                   </p>

@@ -68,10 +68,10 @@ export const ScheduleWeekRow: React.FC<ScheduleWeekRowProps> = ({
     <tr
       className={`border-b ${
         isWeekOff
-          ? 'bg-gray-50'
+          ? 'bg-muted'
           : hasConflicts
           ? 'bg-orange-50'
-          : 'hover:bg-gray-50'
+          : 'hover:bg-muted'
       }`}
     >
       {/* Week Name */}
@@ -81,16 +81,16 @@ export const ScheduleWeekRow: React.FC<ScheduleWeekRowProps> = ({
 
       {/* Date */}
       <>
-      <td className="hidden lg:block text-xs lg:text-md py-3 px-4 text-gray-700">{displayDate}</td>
-      <td className="lg:hidden text-xs lg:text-md py-3 px-4 text-gray-700">{displayDateMobile}</td>
+      <td className="hidden lg:block text-xs lg:text-md py-3 px-4 text-foreground">{displayDate}</td>
+      <td className="lg:hidden text-xs lg:text-md py-3 px-4 text-foreground">{displayDateMobile}</td>
       </>
 
       {/* Status */}
       <td className="py-3 px px-4">
         {isWeekOff ? (
           <div className="w-full flex justify-center">
-            <span className="hidden lg:block text-gray-500 text-sm">🚫 Week Off</span>
-            <span className="lg:hidden text-gray-500 text-sm">🚫</span>
+            <span className="hidden lg:block text-muted-foreground text-sm">🚫 Week Off</span>
+            <span className="lg:hidden text-muted-foreground text-sm">🚫</span>
           </div>
         ) : hasConflicts ? (
           <div className="w-full flex justify-center">
@@ -141,7 +141,7 @@ export const ScheduleWeekRow: React.FC<ScheduleWeekRowProps> = ({
       {/* Actions */}
       <td className="py-3 px-4">
         {isWeekLocked ? (
-          <span className="text-gray-400 text-sm flex items-center gap-1">
+          <span className="text-muted-foreground text-sm flex items-center gap-1">
             🔒 Week Completed
           </span>
         ) : (
