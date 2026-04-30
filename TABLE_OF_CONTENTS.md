@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-04-29 (Phase 5 Units 5.1 + 5.2a — runtime resolver + team_format reads removed from MatchEndVerification / useSpectateMatch)
+> **Last Updated**: 2026-04-29 (Phase 4/5/6 modular-league refactor units 4.1, 5.1, 5.2, 6.1 + Phase 2 Unit 2.4 RLS hardening; merged main with `database/dev_starting_point.sql` single-paste dev seed and project-specific root README.md)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -295,6 +295,7 @@ Node-only tooling the operator runs manually (not part of the app bundle).
 | `scoring3x3/add_game_type_to_match_games.sql` | **Add game_type column to match_games (denormalized for performance)** |
 | `tests/` | Database test files |
 | `e2e_seed.sql` | **E2E test foundation seed** — local-only sandbox (1 test org, 1 venue, 5 foundation users with auth.identities + non-NULL token columns for GoTrue compatibility). Idempotent. Double-guarded against running anywhere but local Supabase. |
+| `dev_starting_point.sql` | **THE dev seed.** Single-paste setup for local dev: 4 logins (dev@test.com + 3 captains, all password "password"), Tester Org with mock Stripe, Sams's Billiards venue, 3 leagues (3v3 Tuesday, Standard 5v5 Wednesday, Fargo 5v5 Thursday — start dates today/today+1/today+2), 12 teams with full rosters (captain + 4 placeholders), ~102 matches, 130 placeholder members. Idempotent. Documented in the root README's "Local development setup" section. |
 | `README_DATABASE_INTEGRATION.md` | Database integration guide |
 | `MESSAGING_AND_REPORTING_COMPLETE.md` | Messaging/reporting completion notes |
 
