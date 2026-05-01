@@ -45,11 +45,13 @@ interface TeamEditorModalProps {
   defaultTeamName: string;
   /** All teams (for cross-team duplicate validation) */
   allTeams: import('@/types/team').TeamWithQueryDetails[];
-  /** Existing team to edit (optional) */
+  /** Existing team to edit (optional). captain_id is nullable because the
+   *  underlying Team type allows null (for bye rows); the modal handles
+   *  the null case via `?? ''` when initializing local state. */
   existingTeam?: {
     id: string;
     team_name: string;
-    captain_id: string;
+    captain_id: string | null;
     home_venue_id: string | null;
     roster_size: number;
   } | null;

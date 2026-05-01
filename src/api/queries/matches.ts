@@ -50,8 +50,8 @@ export async function getMatchById(matchId: string): Promise<MatchWithDetails> {
     .from('matches')
     .select(`
       *,
-      home_team:teams!matches_home_team_id_fkey(id, team_name, captain_id),
-      away_team:teams!matches_away_team_id_fkey(id, team_name, captain_id),
+      home_team:teams!matches_home_team_id_fkey(id, team_name, captain_id, status),
+      away_team:teams!matches_away_team_id_fkey(id, team_name, captain_id, status),
       scheduled_venue:venues!matches_scheduled_venue_id_fkey(id, name, street_address, city, state),
       season_week:season_weeks(id, scheduled_date, week_name, week_type)
     `)
@@ -84,8 +84,8 @@ export async function getMatchesBySeason(seasonId: string): Promise<MatchWithDet
     .from('matches')
     .select(`
       *,
-      home_team:teams!matches_home_team_id_fkey(id, team_name, captain_id),
-      away_team:teams!matches_away_team_id_fkey(id, team_name, captain_id),
+      home_team:teams!matches_home_team_id_fkey(id, team_name, captain_id, status),
+      away_team:teams!matches_away_team_id_fkey(id, team_name, captain_id, status),
       scheduled_venue:venues!matches_scheduled_venue_id_fkey(id, name, street_address, city, state),
       season_week:season_weeks(id, scheduled_date, week_name, week_type)
     `)
@@ -118,8 +118,8 @@ export async function getMatchesByTeam(teamId: string): Promise<MatchWithDetails
     .from('matches')
     .select(`
       *,
-      home_team:teams!matches_home_team_id_fkey(id, team_name, captain_id),
-      away_team:teams!matches_away_team_id_fkey(id, team_name, captain_id),
+      home_team:teams!matches_home_team_id_fkey(id, team_name, captain_id, status),
+      away_team:teams!matches_away_team_id_fkey(id, team_name, captain_id, status),
       scheduled_venue:venues!matches_scheduled_venue_id_fkey(id, name, city, state),
       season_week:season_weeks(id, week_name, scheduled_date)
     `)
@@ -160,8 +160,8 @@ export async function getLiveMatchesForLeague(leagueId: string): Promise<MatchWi
     .from('matches')
     .select(`
       *,
-      home_team:teams!matches_home_team_id_fkey(id, team_name, captain_id),
-      away_team:teams!matches_away_team_id_fkey(id, team_name, captain_id),
+      home_team:teams!matches_home_team_id_fkey(id, team_name, captain_id, status),
+      away_team:teams!matches_away_team_id_fkey(id, team_name, captain_id, status),
       scheduled_venue:venues!matches_scheduled_venue_id_fkey(id, name, city, state),
       season_week:season_weeks(id, week_name, scheduled_date, week_type),
       season:seasons!inner(id, league_id, league:leagues(id, game_type, day_of_week, division))
@@ -227,8 +227,8 @@ export async function getLiveMatchesForMember(memberId: string): Promise<MatchWi
     .from('matches')
     .select(`
       *,
-      home_team:teams!matches_home_team_id_fkey(id, team_name, captain_id),
-      away_team:teams!matches_away_team_id_fkey(id, team_name, captain_id),
+      home_team:teams!matches_home_team_id_fkey(id, team_name, captain_id, status),
+      away_team:teams!matches_away_team_id_fkey(id, team_name, captain_id, status),
       scheduled_venue:venues!matches_scheduled_venue_id_fkey(id, name, city, state),
       season_week:season_weeks(id, week_name, scheduled_date, week_type),
       season:seasons!inner(id, league_id, league:leagues(id, game_type, day_of_week, division))

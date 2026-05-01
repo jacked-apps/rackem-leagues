@@ -172,11 +172,13 @@ export async function calculateLeagueProgress(league: League): Promise<LeagueWit
     completedWeeks = completed || 0;
   }
 
-  // Fetch team count
+  // Fetch team count — active-only (bye / withdrawn / forfeited rows
+  // are not user-visible teams).
   const { count: teamCount } = await supabase
     .from('teams')
     .select('*', { count: 'exact', head: true })
-    .eq('league_id', league.id);
+    .eq('league_id', league.id)
+    .eq('status', 'active');
 
   // Fetch player count (across all teams in league)
   const { count: playerCount } = await supabase

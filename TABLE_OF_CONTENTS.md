@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-04-28 (added `database/dev_starting_point.sql` — the single-paste dev seed, plus rewrote root README.md as project-specific docs)
+> **Last Updated**: 2026-05-01 (PR 1 bye-as-real-team: added 3 migrations — `teams_status_add_bye`, `teams_captain_id_nullable`, `backfill_null_bye_matches`)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -1007,6 +1007,9 @@ Supabase local configuration and migrations
 | `supabase/migrations/20260418000003_add_matches_system_snapshot.sql` | **Phase 2 Unit 7** — adds `matches.system_snapshot JSONB` for per-match frozen tier-2 dials (tier 3 mutability) |
 | `supabase/migrations/20260418000004_revise_fargo_columns.sql` | **Phase 2 revision** — drops 3 redundant Fargo columns (fargo_start_points, winner_points, loser_points); adds 3 always-tracked per-game flags (break_fouled, runout, win_by_forfeit). Fargo start-points now reuses home/away_games_to_win. |
 | `supabase/migrations/20260419000000_add_fargo_start_points_negotiation.sql` | **Phase 3 Unit 11c** — adds `matches.fargo_start_points` + home/away confirm columns for the captain-negotiated start-points value |
+| `supabase/migrations/20260501000002_teams_status_add_bye.sql` | **PR 1 bye-as-real-team** — adds `'bye'` to `teams_status_check` so byes can be represented as real teams rows. |
+| `supabase/migrations/20260501000003_teams_captain_id_nullable.sql` | **PR 1 bye-as-real-team** — drops NOT NULL on `teams.captain_id` so bye rows (no captain) can be inserted. |
+| `supabase/migrations/20260501000004_backfill_null_bye_matches.sql` | **PR 1 bye-as-real-team** — one-time backfill: replaces NULL `home_team_id`/`away_team_id` on legacy matches with real per-season bye-team rows. Includes pre-flight DO block enumerating abort conditions. |
 | `supabase/seed.sql` | Full local dev DB dump — auto-applied on `supabase db reset`. **Local only, never runs against production.** |
 | `supabase/seed_test_users.sql` | 4 synthetic test auth users (player/operator/captain/owner, password `test-password-123`). **Dev-only — run manually via `docker exec ... psql`.** |
 | `supabase/seed_members.sql` | 20 placeholder players (no `user_id`) spanning Fargo 300–580 ratings for wizard/team-management testing. **Dev-only — not wired into auto-seed; run manually when the local DB needs a bench of fake members.** |

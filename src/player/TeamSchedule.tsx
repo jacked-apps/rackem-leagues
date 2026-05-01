@@ -175,6 +175,11 @@ export function TeamSchedule() {
               const teamRole = getTeamRole(match);
               const opponent =
                 teamRole === 'home' ? match.away_team : match.home_team;
+              // A "real" opponent is an active team. A bye/withdrawn opponent
+              // (or a legacy NULL one before the backfill ran) means this is
+              // a bye week — no lineup, no Score Match button.
+              const hasRealOpponent =
+                !!opponent && opponent.status === 'active';
               const isMakeup = needsMakeup(match);
               const isUpcoming = match.id === upcomingMatchId || match.status === 'in_progress';
 
@@ -227,10 +232,12 @@ export function TeamSchedule() {
                           match.status === 'completed' ? 'text-foreground' : 'text-foreground'
                         }`}>
                           vs{' '}
-                          {opponent ? (
+                          {hasRealOpponent && opponent ? (
                             <span className="text-foreground">{opponent.team_name}</span>
                           ) : (
-                            'BYE'
+                            // Bye / withdrawn / NULL-legacy: render the
+                            // descriptive bye name when available, else "BYE".
+                            opponent?.team_name ?? 'BYE'
                           )}
                         </div>
                       </div>
@@ -318,12 +325,9 @@ export function TeamSchedule() {
                           );
                         })()}
 
-                        {/* Action Button */}
-                        {/* TODO: BYE Match Guard - Currently we check !opponent to detect BYE weeks.
-                            When BYE team enhancement is implemented (actual BYE team records),
-                            this check should change to opponent?.is_bye_team === true.
-                            See: memory-bank/plans/bye-team-enhancement-plan.md */}
-                        {match.status === 'scheduled' && opponent && (
+                        {/* Action Button — hidden for bye weeks (no real
+                            opponent → no lineup to score). */}
+                        {match.status === 'scheduled' && hasRealOpponent && (
                           <Link to={`/match/${match.id}/lineup`} className="block pt-2">
                             <Button className="w-full" loadingText="none">
                               <Trophy className="h-4 w-4 mr-2" />
@@ -331,7 +335,7 @@ export function TeamSchedule() {
                             </Button>
                           </Link>
                         )}
-                        {match.status === 'in_progress' && opponent && (
+                        {match.status === 'in_progress' && hasRealOpponent && (
                           <Link to={`/match/${match.id}/lineup`} className="block pt-2">
                             <Button className="w-full" loadingText="none">
                               <Trophy className="h-4 w-4 mr-2" />

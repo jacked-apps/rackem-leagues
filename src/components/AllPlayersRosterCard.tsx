@@ -51,8 +51,8 @@ export const AllPlayersRosterCard: React.FC<AllPlayersRosterCardProps> = ({ team
     const playersMap = new Map<string, PlayerInfo>();
 
     teams.forEach((team) => {
-      // Add captain
-      if (team.captain) {
+      // Add captain. Bye teams have NULL captain_id; skip them.
+      if (team.captain && team.captain_id) {
         const captain = team.captain as Member;
         playersMap.set(team.captain_id, {
           memberId: team.captain_id,

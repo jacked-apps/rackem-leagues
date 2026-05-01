@@ -91,6 +91,7 @@ export function PositionsStep({
         .from('teams')
         .select('id, team_name, home_venue_id')
         .eq('season_id', seasonId!)
+        .eq('status', 'active')
         // Preserve the order the LO added captains during the Teams step,
         // regardless of any subsequent team-name renames.
         .order('created_at', { ascending: true });

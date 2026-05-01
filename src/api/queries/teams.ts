@@ -154,14 +154,35 @@ export async function getPlayerTeams(memberId: string) {
 }
 
 /**
- * Fetch a specific team with full details
+ * Options for team-list queries.
+ *
+ * `includeInactive` controls whether bye/withdrawn/forfeited rows are
+ * returned. List helpers default to `false` (active-only) so general
+ * UIs (standings, captain dropdowns, active-team lists) never need to
+ * remember to filter manually. Pass `true` for views that need the full
+ * roster of rows (e.g., the operator's "Inactive Slots" section in PR 2).
+ */
+export interface TeamFetchOptions {
+  /** Include rows with status != 'active'. Defaults to false for list helpers. */
+  includeInactive?: boolean;
+}
+
+/**
+ * Fetch a specific team with full details.
+ *
+ * Default behavior returns the team regardless of status — single-team
+ * fetches usually want the row whether the team is active, withdrawn,
+ * or a bye placeholder. Pass `{ includeInactive: false }` to filter out
+ * non-active rows (rare for this helper).
  *
  * @param teamId - The team ID to fetch
+ * @param options - { includeInactive } — defaults to true for getTeamDetails
  * @returns Promise with team data
  * @throws Error if query fails
  */
-export async function getTeamDetails(teamId: string) {
-  const { data, error } = await supabase
+export async function getTeamDetails(teamId: string, options: TeamFetchOptions = {}) {
+  const { includeInactive = true } = options;
+  let query = supabase
     .from('teams')
     .select(`
       *,
@@ -201,28 +222,39 @@ export async function getTeamDetails(teamId: string) {
         state
       )
     `)
-    .eq('id', teamId)
-    .single();
+    .eq('id', teamId);
+
+  if (!includeInactive) {
+    query = query.eq('status', 'active');
+  }
+
+  const { data, error } = await query.single();
 
   if (error) throw error;
   return data;
 }
 
 /**
- * Fetch teams in a league with full details
+ * Fetch teams in a league with full details.
+ *
+ * Defaults to active-only (`includeInactive: false`) — bye, withdrawn, and
+ * forfeited rows are filtered out. Pass `{ includeInactive: true }` to
+ * include the full roster of rows (e.g., the operator's Inactive Slots view).
  *
  * Returns teams with:
  * - All team fields
- * - Captain member info (name, player numbers)
+ * - Captain member info (name, player numbers) — null for bye rows
  * - Full roster with member details
  * - Venue information
  *
  * @param leagueId - The league ID to fetch teams for
+ * @param options - { includeInactive } — defaults to false (active-only)
  * @returns Promise with teams data
  * @throws Error if query fails
  */
-export async function getTeamsByLeague(leagueId: string) {
-  const { data, error } = await supabase
+export async function getTeamsByLeague(leagueId: string, options: TeamFetchOptions = {}) {
+  const { includeInactive = false } = options;
+  let query = supabase
     .from('teams')
     .select(`
       *,
@@ -252,19 +284,31 @@ export async function getTeamsByLeague(leagueId: string) {
     .eq('league_id', leagueId)
     .order('created_at', { ascending: false });
 
+  if (!includeInactive) {
+    query = query.eq('status', 'active');
+  }
+
+  const { data, error } = await query;
+
   if (error) throw error;
   return data || [];
 }
 
 /**
- * Fetch teams in a season with full details
+ * Fetch teams in a season with full details.
+ *
+ * Defaults to active-only (`includeInactive: false`). Pass
+ * `{ includeInactive: true }` to include bye / withdrawn / forfeited rows
+ * (e.g., for the operator's Inactive Slots section).
  *
  * @param seasonId - The season ID to fetch teams for
+ * @param options - { includeInactive } — defaults to false (active-only)
  * @returns Promise with teams data
  * @throws Error if query fails
  */
-export async function getTeamsBySeason(seasonId: string) {
-  const { data, error } = await supabase
+export async function getTeamsBySeason(seasonId: string, options: TeamFetchOptions = {}) {
+  const { includeInactive = false } = options;
+  let query = supabase
     .from('teams')
     .select(`
       *,
@@ -286,6 +330,12 @@ export async function getTeamsBySeason(seasonId: string) {
       )
     `)
     .eq('season_id', seasonId);
+
+  if (!includeInactive) {
+    query = query.eq('status', 'active');
+  }
+
+  const { data, error } = await query;
 
   if (error) throw error;
   return data || [];

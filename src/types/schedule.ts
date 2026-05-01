@@ -49,8 +49,13 @@ export interface Match {
   id: string;
   season_id: string;
   season_week_id: string;       // FK to season_weeks table
-  home_team_id: string | null;  // Null if BYE
-  away_team_id: string | null;  // Null if BYE
+  // After PR 1 of the team-deletion-cascade fix, byes are real teams rows
+  // (status='bye'), so new matches always have non-null UUIDs here. NULL
+  // remains in the type for legacy matches predating the NULL-bye backfill
+  // migration; defensive consumers should treat NULL as a stale bye and
+  // handle it the same as opponent.status === 'bye'.
+  home_team_id: string | null;
+  away_team_id: string | null;
   scheduled_venue_id: string | null;  // Home team's venue by default
   actual_venue_id: string | null;     // If venue changed from scheduled (overflow)
   assigned_table_number: number | null; // Table number assigned at the venue
@@ -107,12 +112,14 @@ export interface MatchWithDetails extends Match {
   home_team?: {
     id: string;
     team_name: string;
-    captain_id: string;
+    captain_id: string | null;
+    status: 'active' | 'withdrawn' | 'forfeited' | 'bye';
   } | null;
   away_team?: {
     id: string;
     team_name: string;
-    captain_id: string;
+    captain_id: string | null;
+    status: 'active' | 'withdrawn' | 'forfeited' | 'bye';
   } | null;
   scheduled_venue?: {
     id: string;

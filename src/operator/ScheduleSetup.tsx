@@ -14,6 +14,7 @@ import { InfoButton } from '@/components/InfoButton';
 import { Shuffle, Lock } from 'lucide-react';
 import { assignRandomPositions, generateSchedule, clearSchedule } from '@/utils/scheduleGenerator';
 import { hasMatchupTable } from '@/utils/matchupTables';
+import { createByeTeam } from '@/api/mutations/teams';
 import type { TeamWithQueryDetails } from '@/types/team';
 import { logger } from '@/utils/logger';
 
@@ -63,15 +64,11 @@ export const ScheduleSetup: React.FC<ScheduleSetupProps> = ({
       schedule_position: index + 1,
     }));
 
-    // Add BYE team if needed
-    // TODO: BYE Team Enhancement - Instead of creating a temporary BYE object with id: 'BYE'
-    // that gets converted to null in the database, we should create actual BYE team records.
-    // Benefits:
-    // - Cleaner data model (no null team IDs in matches)
-    // - Easier late-team additions (swap BYE team with new team)
-    // - Better schedule editor UX (BYE is a real team option)
-    // - Simpler queries (no special null handling)
-    // See: memory-bank/plans/bye-team-enhancement-plan.md
+    // Add a BYE placeholder if team count is odd. The 'BYE' string id is a
+    // sentinel during the position-assignment phase only — when the operator
+    // clicks Generate, performScheduleGeneration() replaces it with a real
+    // bye team row's UUID via createByeTeam(). The schedule generator then
+    // writes that real UUID into matches.home_team_id / away_team_id.
     if (needsByeTeam) {
       positions.push({
         id: 'BYE',
@@ -210,16 +207,48 @@ export const ScheduleSetup: React.FC<ScheduleSetupProps> = ({
   };
 
   /**
-   * Actually perform the schedule generation
+   * Actually perform the schedule generation.
+   *
+   * If a BYE placeholder is in teamPositions (odd team count), this first
+   * INSERTs a real bye team row and swaps the placeholder's id for the
+   * real UUID. The schedule generator then writes real team UUIDs into
+   * matches.home_team_id / away_team_id — no NULL team_ids.
    */
   const performScheduleGeneration = async () => {
     setGenerating(true);
     setError(null);
 
     try {
+      let teamsForGeneration = teamPositions;
+      const byePlaceholder = teamPositions.find(t => t.id === 'BYE');
+
+      if (byePlaceholder) {
+        // Look up league_id and roster_size for the bye row from the season's
+        // first real team (all real teams in a season share the same league
+        // and roster size). The placeholder is at the end of the array, so
+        // find() returns the first non-BYE row.
+        const realTeam = teams.find(t => t.id !== 'BYE');
+        if (!realTeam) {
+          setError('Cannot generate schedule: no real teams found');
+          return;
+        }
+
+        const byeTeam = await createByeTeam({
+          seasonId,
+          leagueId: realTeam.league_id,
+          rosterSize: realTeam.roster_size,
+        });
+
+        // Swap the placeholder's id for the real bye team's UUID; keep
+        // schedule_position so the matchup table still places it correctly.
+        teamsForGeneration = teamPositions.map(t =>
+          t.id === 'BYE' ? { ...t, id: byeTeam.id } : t
+        );
+      }
+
       const result = await generateSchedule({
         seasonId,
-        teams: teamPositions,
+        teams: teamsForGeneration,
         skipExistingCheck: true, // Skip the check since we already did it
       });
 

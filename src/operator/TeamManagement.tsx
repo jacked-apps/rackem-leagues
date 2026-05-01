@@ -249,11 +249,13 @@ export const TeamManagement: React.FC = () => {
     setImportingTeams(true);
 
     try {
-      // Fetch previous season's teams with rosters
+      // Fetch previous season's teams with rosters — active only,
+      // so import doesn't pull bye/withdrawn rows from last season.
       const { data: prevTeams, error: teamsError } = await supabase
         .from('teams')
         .select('*')
-        .eq('season_id', previousSeasonId);
+        .eq('season_id', previousSeasonId)
+        .eq('status', 'active');
 
       if (teamsError) throw teamsError;
 

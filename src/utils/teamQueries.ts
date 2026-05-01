@@ -8,7 +8,11 @@
 import { supabase } from '@/supabaseClient';
 
 /**
- * Fetch teams with full details including captain, roster, and venue
+ * Fetch teams with full details including captain, roster, and venue.
+ *
+ * Returns active teams only by default. Bye / withdrawn / forfeited rows
+ * are filtered out so callers (operator's TeamManagement page,
+ * useTeamManagement hook) don't need to remember to filter manually.
  *
  * Returns teams with:
  * - All team fields
@@ -17,10 +21,15 @@ import { supabase } from '@/supabaseClient';
  * - Venue information
  *
  * @param leagueId - The league ID to fetch teams for
+ * @param options - { includeInactive } — defaults to false (active-only)
  * @returns Promise with teams data and any error
  */
-export async function fetchTeamsWithDetails(leagueId: string) {
-  return supabase
+export async function fetchTeamsWithDetails(
+  leagueId: string,
+  options: { includeInactive?: boolean } = {}
+) {
+  const { includeInactive = false } = options;
+  let query = supabase
     .from('teams')
     .select(`
       *,
@@ -55,4 +64,10 @@ export async function fetchTeamsWithDetails(leagueId: string) {
     `)
     .eq('league_id', leagueId)
     .order('created_at', { ascending: false });
+
+  if (!includeInactive) {
+    query = query.eq('status', 'active');
+  }
+
+  return query;
 }
