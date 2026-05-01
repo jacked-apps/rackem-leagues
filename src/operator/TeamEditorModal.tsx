@@ -10,7 +10,7 @@
  */
 import React, { useState, useMemo } from 'react';
 import { X } from 'lucide-react';
-import { useCreateTeam, useUpdateTeam, useInviteStatuses } from '@/api/hooks';
+import { useCreateTeam, useUpdateTeam, useReplaceTeam, useInviteStatuses } from '@/api/hooks';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -55,6 +55,14 @@ interface TeamEditorModalProps {
     home_venue_id: string | null;
     roster_size: number;
   } | null;
+  /**
+   * If set, the modal runs in "replace mode": creating a brand-new team
+   * AND reassigning the named bye/withdrawn team's remaining
+   * scheduled+postponed matches to the new team in a single operation
+   * (via replaceTeam mutation). Used by the Inactive Slots section.
+   * Mutually exclusive with existingTeam.
+   */
+  replacingTeamId?: string;
   /** Called when team is successfully created/updated */
   onSuccess: () => void;
   /** Called when user cancels or closes modal */
@@ -82,11 +90,13 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
   defaultTeamName,
   allTeams,
   existingTeam,
+  replacingTeamId,
   onSuccess,
   onCancel,
   variant = 'operator',
 }) => {
   const isEditing = !!existingTeam;
+  const isReplacing = !!replacingTeamId;
   const isCaptainVariant = variant === 'captain';
 
   /**
@@ -160,8 +170,9 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
   // Mutation hooks
   const createTeamMutation = useCreateTeam();
   const updateTeamMutation = useUpdateTeam();
+  const replaceTeamMutation = useReplaceTeam();
 
-  const saving = createTeamMutation.isPending || updateTeamMutation.isPending;
+  const saving = createTeamMutation.isPending || updateTeamMutation.isPending || replaceTeamMutation.isPending;
 
   // Check if operator has profanity filter enabled
   const { shouldValidate: operatorProfanityFilterEnabled } = useOperatorProfanityFilter(leagueId);
@@ -293,6 +304,20 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
           homeVenueId: homeVenueId || null,
           rosterPlayerIds: rosterPlayers,
           isCaptainVariant,
+        });
+
+      } else if (isReplacing && replacingTeamId) {
+        // REPLACE: create new team AND reassign the bye/withdrawn slot's
+        // remaining scheduled+postponed matches to the new team.
+        await replaceTeamMutation.mutateAsync({
+          seasonId,
+          leagueId,
+          captainId,
+          teamName: teamName.trim(),
+          rosterSize,
+          homeVenueId: homeVenueId || null,
+          rosterPlayerIds: rosterPlayers,
+          replacingTeamId,
         });
 
       } else {

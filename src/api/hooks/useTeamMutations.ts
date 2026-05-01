@@ -13,6 +13,8 @@ import {
   createTeam,
   updateTeam,
   deleteTeam,
+  dropTeam,
+  replaceTeam,
 } from '../mutations/teams';
 
 /**
@@ -152,6 +154,47 @@ export function useDeleteTeam() {
         queryKeys.teams.detail(withdrawnTeam.id),
         withdrawnTeam
       );
+    },
+  });
+}
+
+/**
+ * Hook for the drop_team operator action.
+ *
+ * After a successful drop the team list, schedule, standings, and
+ * captain-status caches all need to refresh — broad invalidation is
+ * cheaper than fine-grained tracking and matches the placeholder-wizard
+ * cache pattern used elsewhere in the codebase.
+ */
+export function useDropTeam() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: dropTeam,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.teams.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.matches.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.schedules.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.members.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.invites.all });
+    },
+  });
+}
+
+/**
+ * Hook for replacing a bye / withdrawn slot with a brand-new active team.
+ */
+export function useReplaceTeam() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: replaceTeam,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.teams.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.matches.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.schedules.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
     },
   });
 }

@@ -242,3 +242,72 @@ export async function updateMatchGame(params: UpdateMatchGameParams): Promise<Ma
 
   return data;
 }
+
+/**
+ * Parameters for converting a forfeited / unplayed bye match into a makeup.
+ */
+export interface ConvertMatchToMakeupParams {
+  matchId: string;
+  /** New active team that takes over the bye/withdrawn side. */
+  newTeamId: string;
+  /** Which side the bye/withdrawn team is on. */
+  side: 'home' | 'away';
+}
+
+/**
+ * Convert a forfeited / unplayed bye match into a playable makeup.
+ *
+ * Calls the convert_match_to_makeup RPC, which validates the match
+ * state (rejects results-bearing matches), reassigns the side's team,
+ * and resets all forfeit-write fields so the standings query no
+ * longer credits a forfeit win.
+ *
+ * @throws Error from the RPC's RAISE EXCEPTION on validation failure.
+ */
+export async function convertMatchToMakeup(
+  params: ConvertMatchToMakeupParams
+): Promise<void> {
+  const { error } = await supabase.rpc('convert_match_to_makeup', {
+    p_match_id: params.matchId,
+    p_new_team_id: params.newTeamId,
+    p_side: params.side,
+  });
+
+  if (error) {
+    throw new Error(`convert_match_to_makeup failed: ${error.message}`);
+  }
+}
+
+/**
+ * Parameters for sweeping past-due bye matches into forfeits.
+ */
+export interface ForfeitPastByeMatchesParams {
+  seasonId: string;
+  /**
+   * Optional. When set, only matches involving this team get forfeited
+   * (drop-scoped). Omit to sweep all season-wide past byes (used by the
+   * operator's "Close Past Byes" button).
+   */
+  teamFilter?: string;
+}
+
+/**
+ * Forfeit past-due bye/withdrawn matches in a season.
+ *
+ * Wraps forfeit_past_bye_matches RPC. Returns the number of matches
+ * actually forfeited.
+ */
+export async function forfeitPastByeMatches(
+  params: ForfeitPastByeMatchesParams
+): Promise<number> {
+  const { data, error } = await supabase.rpc('forfeit_past_bye_matches', {
+    p_season_id: params.seasonId,
+    p_team_filter: params.teamFilter ?? null,
+  });
+
+  if (error) {
+    throw new Error(`forfeit_past_bye_matches failed: ${error.message}`);
+  }
+
+  return typeof data === 'number' ? data : 0;
+}

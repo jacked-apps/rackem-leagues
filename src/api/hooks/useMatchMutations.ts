@@ -9,7 +9,13 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../queryKeys';
-import { updateMatch, createMatchGames, updateMatchGame } from '../mutations/matches';
+import {
+  updateMatch,
+  createMatchGames,
+  updateMatchGame,
+  convertMatchToMakeup,
+  forfeitPastByeMatches,
+} from '../mutations/matches';
 
 /**
  * Options for controlling cache invalidation
@@ -163,6 +169,41 @@ export function useUpdateMatchGame(matchId: string, options: MatchMutationOption
       queryClient.invalidateQueries({
         queryKey: queryKeys.matches.detail(matchId),
       });
+    },
+  });
+}
+
+/**
+ * Hook for converting a forfeited / unplayed bye match into a makeup.
+ *
+ * Affects matches, schedules, and standings — invalidate broadly.
+ */
+export function useConvertMatchToMakeup() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: convertMatchToMakeup,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.matches.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.schedules.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
+    },
+  });
+}
+
+/**
+ * Hook for sweeping past-due bye/withdrawn matches into forfeit wins.
+ * Used by the operator's "Close Past Byes" button.
+ */
+export function useForfeitPastByeMatches() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: forfeitPastByeMatches,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.matches.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.schedules.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
     },
   });
 }

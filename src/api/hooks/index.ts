@@ -200,6 +200,8 @@ export {
   useCreateTeam,
   useUpdateTeam,
   useDeleteTeam,
+  useDropTeam,
+  useReplaceTeam,
 } from './useTeamMutations';
 
 // Season mutations

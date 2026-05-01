@@ -16,7 +16,13 @@ import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
 // Organization ID will come from the league data
 import { useTeamManagement } from '@/hooks/useTeamManagement';
+import { useDropTeam } from '@/api/hooks/useTeamMutations';
+import { useForfeitPastByeMatches } from '@/api/hooks/useMatchMutations';
+import { useCurrentMember } from '@/api/hooks/useCurrentMember';
 import { queryKeys } from '@/api/queryKeys';
+import { useQuery } from '@tanstack/react-query';
+import { MultiByeWarning } from '@/components/operator/MultiByeWarning';
+import { InactiveSlotsSection } from '@/components/operator/InactiveSlotsSection';
 import { VenueLimitModal } from './VenueLimitModal';
 import { TeamEditorModal } from './TeamEditorModal';
 import { VenueCreationModal } from '@/components/operator/VenueCreationModal';
@@ -42,6 +48,9 @@ export const TeamManagement: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { confirm, ConfirmDialogComponent } = useConfirmDialog();
+  const dropTeamMutation = useDropTeam();
+  const forfeitPastByeMutation = useForfeitPastByeMatches();
+  const { data: currentMember } = useCurrentMember();
 
   // Use custom hook for all data fetching
   // NOTE: organizationId will be fetched from the league inside useTeamManagement
@@ -62,6 +71,26 @@ export const TeamManagement: React.FC = () => {
   const { data: leaguePrefs } = useResolvedLeaguePrefs(leagueId);
   const maxRosterSize: number = leaguePrefs?.max_roster_size ?? 8;
 
+  // Bye-team count for the multi-bye warning banner (R24 / Unit 2.10).
+  // Active teams aren't fetched here — useTeamManagement already filters
+  // those — so we just count bye-status rows in this season.
+  const { data: byeTeamCount = 0 } = useQuery({
+    queryKey: seasonId
+      ? [...queryKeys.teams.bySeason(seasonId), 'byeCount']
+      : ['teams', 'byeCount', 'disabled'],
+    queryFn: async () => {
+      if (!seasonId) return 0;
+      const { count, error: byeCountError } = await supabase
+        .from('teams')
+        .select('id', { count: 'exact', head: true })
+        .eq('season_id', seasonId)
+        .eq('status', 'bye');
+      if (byeCountError) return 0;
+      return count ?? 0;
+    },
+    enabled: !!seasonId,
+  });
+
   // Get organization ID from the league once it's loaded
   const organizationId = league?.organization_id || null;
 
@@ -71,6 +100,12 @@ export const TeamManagement: React.FC = () => {
   const [limitModalVenue, setLimitModalVenue] = useState<{ venue: Venue; leagueVenue: LeagueVenue } | null>(null);
   const [showTeamEditor, setShowTeamEditor] = useState(false);
   const [editingTeam, setEditingTeam] = useState<TeamWithQueryDetails | null>(null);
+  /**
+   * Replace mode: when set, opening the TeamEditorModal creates a
+   * brand-new team AND reassigns the named slot's remaining
+   * scheduled+postponed matches to it. Used by the Inactive Slots section.
+   */
+  const [replacingSlotTeamId, setReplacingSlotTeamId] = useState<string | null>(null);
   const [importingTeams, setImportingTeams] = useState(false);
   const [expandedTeams, setExpandedTeams] = useState<Set<string>>(new Set());
   const [showVenueCreation, setShowVenueCreation] = useState(false);
@@ -334,62 +369,155 @@ export const TeamManagement: React.FC = () => {
   };
 
   /**
+   * Open the team editor in "replace mode" for an inactive slot.
+   * The modal will create a new team AND reassign the slot's remaining
+   * scheduled+postponed matches to it (via replaceTeam mutation).
+   */
+  const handleOpenReplace = (slotTeamId: string) => {
+    setEditingTeam(null);
+    setReplacingSlotTeamId(slotTeamId);
+    setShowTeamEditor(true);
+  };
+
+  /**
    * Handle successful team creation/update
    */
   const handleTeamCreateSuccess = async () => {
     setShowTeamEditor(false);
     setEditingTeam(null);
+    setReplacingSlotTeamId(null);
 
     // Refresh teams list using hook function
     await refreshTeams();
   };
 
   /**
-   * Handle team deletion
+   * Handle the operator's "Close Past Byes" sweep.
    *
-   * ⚠️ CRITICAL TODO — DESTRUCTIVE CASCADE WARNING ⚠️
-   * The database schema has `ON DELETE CASCADE` on `matches.home_team_id` and
-   * `matches.away_team_id`. Deleting a team here will silently destroy ALL of
-   * that team's scheduled matches for the season, breaking other teams'
-   * weekly schedules and any season standings/history that reference them.
-   *
-   * The current confirmation dialog warns about losing the team and roster
-   * but does NOT mention the match destruction. This needs a real fix:
-   *   - Block deletion entirely if matches exist (safest)
-   *   - Or implement soft delete / replacement workflow
-   *   - Or build a "team replacement" feature that swaps the team in matches
-   *
-   * Until that fix lands, the warning message below has been updated to
-   * honestly describe what gets destroyed. See:
-   *   - memory-bank/edsPlan.md → "CRITICAL: Team Deletion Cascade Issue"
-   *   - memory-bank/databaseSchema.md (cascade warning)
-   *   - memory-bank/plans/PLAN-wizard2.md → "Tech Debt Discovered" section
+   * Calls forfeit_past_bye_matches with no team filter — every past-due
+   * scheduled match in this season against a bye/withdrawn opponent gets
+   * marked status='completed' with the active opponent credited as
+   * winner. Idempotent; safe to click repeatedly.
    */
-  const handleDeleteTeam = async (teamId: string) => {
-    const confirmed = await confirm({
-      title: 'Delete Team?',
-      message: 'WARNING: Deleting this team will permanently remove the team and its roster, AND will destroy ALL scheduled matches involving this team for the season. Other teams\' weekly schedules may be affected. Season standings and history that reference this team may be impacted. This cannot be undone.',
-      confirmText: 'Delete Team',
-      confirmVariant: 'destructive',
-    });
+  const handleCloseByes = async () => {
+    if (!seasonId) return;
 
+    const confirmed = await confirm({
+      title: 'Close Past Bye Matches?',
+      message:
+        'Past-due unplayed bye matches in this season will be marked as forfeit wins for the opposing teams. This is the standard end-of-week cleanup. Already-played matches are not affected. Continue?',
+      confirmText: 'Close Past Byes',
+      confirmVariant: 'default',
+    });
     if (!confirmed) return;
 
     try {
-      // ⚠️ TODO: This delete triggers cascade destruction of matches.
-      // See the function-level comment above for details.
-      const { error: deleteError } = await supabase
-        .from('teams')
-        .delete()
-        .eq('id', teamId);
+      const forfeited = await forfeitPastByeMutation.mutateAsync({ seasonId });
+      if (forfeited === 0) {
+        toast.success('Nothing to close — no past-due bye matches.');
+      } else {
+        toast.success(
+          `Closed ${forfeited} past bye match${forfeited === 1 ? '' : 'es'}.`
+        );
+      }
+    } catch (err) {
+      logger.error('Error closing past byes', { error: err instanceof Error ? err.message : String(err) });
+      toast.error(err instanceof Error ? err.message : 'Failed to close past byes');
+    }
+  };
 
-      if (deleteError) throw deleteError;
+  /**
+   * Handle the operator's "remove this team" action.
+   *
+   * Branches by team state per the priority order in useTeamLifecycle:
+   *   1. in_progress matches → refuse (live scoring active)
+   *   2. 0 matches → hard delete
+   *   3. otherwise (placeholder-only or has-results) → drop_team RPC
+   *
+   * The drop_team RPC handles all the heavy lifting atomically: marks
+   * the team withdrawn, clears the roster, creates a bye row, reassigns
+   * future matches, forfeits past-due ones, cancels invites.
+   */
+  const handleDeleteTeam = async (teamId: string) => {
+    if (!currentMember) {
+      toast.error('Not signed in');
+      return;
+    }
 
-      // Refresh teams list using hook function
+    // Pre-flight: count matches by status so we can branch correctly and
+    // surface meaningful confirmation copy.
+    const { data: matchRows, error: countError } = await supabase
+      .from('matches')
+      .select('status')
+      .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`);
+
+    if (countError) {
+      logger.error('Error counting team matches', { error: countError.message });
+      toast.error('Could not check team matches. Please try again.');
+      return;
+    }
+
+    const matches = matchRows ?? [];
+    const inProgress = matches.filter(m => m.status === 'in_progress').length;
+    const placeholders = matches.filter(m =>
+      m.status === 'scheduled' || m.status === 'postponed'
+    ).length;
+    const total = matches.length;
+
+    // Priority 1: live scoring blocks the drop.
+    if (inProgress > 0) {
+      toast.error(
+        `This team has ${inProgress} live match${inProgress === 1 ? '' : 'es'}. Wait for scoring to finish before dropping.`
+      );
+      return;
+    }
+
+    // Priority 2: zero matches → safe hard delete.
+    if (total === 0) {
+      const confirmed = await confirm({
+        title: 'Delete Team?',
+        message: 'This team has no matches yet. Deleting it will permanently remove the team and its roster. This cannot be undone.',
+        confirmText: 'Delete Team',
+        confirmVariant: 'destructive',
+      });
+      if (!confirmed) return;
+
+      try {
+        const { error: deleteError } = await supabase
+          .from('teams')
+          .delete()
+          .eq('id', teamId);
+        if (deleteError) throw deleteError;
+        await refreshTeams();
+      } catch (err) {
+        logger.error('Error deleting team', { error: err instanceof Error ? err.message : String(err) });
+        toast.error(err instanceof Error ? err.message : 'Failed to delete team');
+      }
+      return;
+    }
+
+    // Priority 3: drop. Reassigns scheduled+postponed matches to a new
+    // bye row, forfeits past-due ones, preserves all played history.
+    const confirmed = await confirm({
+      title: 'Drop Team?',
+      message: `This team has ${total} match${total === 1 ? '' : 'es'} (${placeholders} unplayed). Dropping reassigns the unplayed matches to a BYE slot, preserves all played history, and removes the team from active lists. Played matches and stats stay intact. Continue?`,
+      confirmText: 'Drop Team',
+      confirmVariant: 'destructive',
+    });
+    if (!confirmed) return;
+
+    try {
+      const result = await dropTeamMutation.mutateAsync({
+        teamId,
+        actorMemberId: currentMember.id,
+      });
+      toast.success(
+        `Team dropped. ${result.matchesReassigned} match${result.matchesReassigned === 1 ? '' : 'es'} reassigned to BYE; ${result.matchesForfeited} past-due forfeited.`
+      );
       await refreshTeams();
     } catch (err) {
-      logger.error('Error deleting team', { error: err instanceof Error ? err.message : String(err) });
-      toast.error(err instanceof Error ? err.message : 'Failed to delete team');
+      logger.error('Error dropping team', { error: err instanceof Error ? err.message : String(err) });
+      toast.error(err instanceof Error ? err.message : 'Failed to drop team');
     }
   };
 
@@ -547,6 +675,22 @@ export const TeamManagement: React.FC = () => {
       )}
 
       <div className="container mx-auto px-4 max-w-7xl py-3 lg:py-8">
+        {seasonId && byeTeamCount >= 2 && (
+          <MultiByeWarning seasonId={seasonId} byeCount={byeTeamCount} />
+        )}
+        {seasonId && byeTeamCount >= 1 && (
+          <div className="flex justify-end mb-3">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleCloseByes}
+              isLoading={forfeitPastByeMutation.isPending}
+              loadingText="Closing..."
+            >
+              Close Past Bye Matches
+            </Button>
+          </div>
+        )}
         {/* Layout: Venues (left) and Teams (right) */}
         <div className="w-full grid grid-cols-1 gap-2 lg:grid-cols-12 lg:gap-6">
           {/* Left Column */}
@@ -666,6 +810,14 @@ export const TeamManagement: React.FC = () => {
             {/* All Players Roster Card */}
             {teams.length > 0 && (
               <AllPlayersRosterCard teams={teams} />
+            )}
+
+            {/* Inactive Slots — bye/withdrawn rows the operator can replace */}
+            {seasonId && (
+              <InactiveSlotsSection
+                seasonId={seasonId}
+                onReplace={handleOpenReplace}
+              />
             )}
           </div>
 
@@ -800,10 +952,12 @@ export const TeamManagement: React.FC = () => {
               home_venue_id: editingTeam.home_venue_id,
               roster_size: editingTeam.roster_size,
             } : null}
+            replacingTeamId={replacingSlotTeamId ?? undefined}
             onSuccess={handleTeamCreateSuccess}
             onCancel={() => {
               setShowTeamEditor(false);
               setEditingTeam(null);
+              setReplacingSlotTeamId(null);
             }}
           />
         )}

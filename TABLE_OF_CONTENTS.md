@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-01 (PR 1 bye-as-real-team: added 3 migrations — `teams_status_add_bye`, `teams_captain_id_nullable`, `backfill_null_bye_matches`)
+> **Last Updated**: 2026-05-01 (PR 2 team-drop-replace-workflow: 4 new migrations — `teams_add_withdrawn_at`, `forfeit_past_bye_matches_function`, `drop_team_rpc`, `convert_match_to_makeup_rpc`; new components `MultiByeWarning` + `InactiveSlotsSection`; new hook `useTeamLifecycle`)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -1010,6 +1010,10 @@ Supabase local configuration and migrations
 | `supabase/migrations/20260501000002_teams_status_add_bye.sql` | **PR 1 bye-as-real-team** — adds `'bye'` to `teams_status_check` so byes can be represented as real teams rows. |
 | `supabase/migrations/20260501000003_teams_captain_id_nullable.sql` | **PR 1 bye-as-real-team** — drops NOT NULL on `teams.captain_id` so bye rows (no captain) can be inserted. |
 | `supabase/migrations/20260501000004_backfill_null_bye_matches.sql` | **PR 1 bye-as-real-team** — one-time backfill: replaces NULL `home_team_id`/`away_team_id` on legacy matches with real per-season bye-team rows. Includes pre-flight DO block enumerating abort conditions. |
+| `supabase/migrations/20260501000005_teams_add_withdrawn_at.sql` | **PR 2 drop/replace workflow** — adds `teams.withdrawn_at timestamptz NULL` audit column. Set by `drop_team` RPC; NULL for teams that were never dropped. |
+| `supabase/migrations/20260501000006_forfeit_past_bye_matches_function.sql` | **PR 2 drop/replace workflow** — `forfeit_past_bye_matches(p_season_id, p_team_filter)` SECURITY DEFINER helper. Marks past-due `'scheduled'` bye/withdrawn matches as `'completed'` with the active opponent credited as winner. Auth-gated. Used by `drop_team` (drop-scoped) and the operator's "Close Past Byes" button (season-scoped). |
+| `supabase/migrations/20260501000007_drop_team_rpc.sql` | **PR 2 drop/replace workflow** — `drop_team(p_team_id, p_actor_member_id)` SECURITY DEFINER RPC. Atomic mid-season team drop: marks team `'withdrawn'`, clears roster, creates a fresh bye row, reassigns scheduled+postponed matches, forfeits past-due ones, cancels pending invites. Auth-gated, idempotent. |
+| `supabase/migrations/20260501000008_convert_match_to_makeup_rpc.sql` | **PR 2 drop/replace workflow** — `convert_match_to_makeup(p_match_id, p_new_team_id, p_side)` SECURITY DEFINER RPC. Turns a forfeited or unplayed bye match into a playable makeup against a real active team. Auth-gated; refuses results-bearing matches. |
 | `supabase/seed.sql` | Full local dev DB dump — auto-applied on `supabase db reset`. **Local only, never runs against production.** |
 | `supabase/seed_test_users.sql` | 4 synthetic test auth users (player/operator/captain/owner, password `test-password-123`). **Dev-only — run manually via `docker exec ... psql`.** |
 | `supabase/seed_members.sql` | 20 placeholder players (no `user_id`) spanning Fargo 300–580 ratings for wizard/team-management testing. **Dev-only — not wired into auto-seed; run manually when the local DB needs a bench of fake members.** |
