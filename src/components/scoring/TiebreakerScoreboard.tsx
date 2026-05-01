@@ -98,15 +98,15 @@ export function TiebreakerScoreboard({
   }
 
   return (
-    <div className="bg-white border-b px-4 py-3">
+    <div className="bg-card border-b px-4 py-3">
       <Card className="shadow-lg">
         <CardContent className="pt-6">
           {/* Tiebreaker Header */}
           <div className="text-center mb-4">
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
               Tiebreaker
             </div>
-            <div className="text-sm text-gray-400 mt-1">
+            <div className="text-sm text-muted-foreground mt-1">
               First to 2 Wins
             </div>
           </div>
@@ -115,10 +115,10 @@ export function TiebreakerScoreboard({
           <div className="grid grid-cols-3 gap-6 items-center">
             {/* Home Score */}
             <div className="text-center bg-blue-100 rounded-lg p-4">
-              <div className="text-sm font-medium text-gray-600 mb-2">
+              <div className="text-sm font-medium text-muted-foreground mb-2">
                 HOME
               </div>
-              <div className="text-6xl font-bold text-gray-900">
+              <div className="text-6xl font-bold text-foreground">
                 {homeWins}
               </div>
             </div>
@@ -132,10 +132,10 @@ export function TiebreakerScoreboard({
 
             {/* Away Score */}
             <div className="text-center bg-orange-100 rounded-lg p-4">
-              <div className="text-sm font-medium text-gray-600 mb-2">
+              <div className="text-sm font-medium text-muted-foreground mb-2">
                 AWAY
               </div>
-              <div className="text-6xl font-bold text-gray-900">
+              <div className="text-6xl font-bold text-foreground">
                 {awayWins}
               </div>
             </div>

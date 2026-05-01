@@ -196,7 +196,7 @@ export const WeekEditorView: React.FC<WeekEditorViewProps> = ({
               EDITING
             </span>
           </div>
-          <div className="flex items-center gap-2 text-sm text-gray-600">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Calendar className="h-4 w-4" />
             <span>
               {parseLocalDate(week.scheduled_date).toLocaleDateString('en-US', {
@@ -214,7 +214,7 @@ export const WeekEditorView: React.FC<WeekEditorViewProps> = ({
         {/* Column headers — mirrors MatchEditRow's 12-col grid so labels
             line up over the same fields on every row. Edit mode only; the
             display view's layout is self-explanatory. */}
-        <div className="grid grid-cols-12 gap-3 px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+        <div className="grid grid-cols-12 gap-3 px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           <div className="col-span-1">Match</div>
           <div className="col-span-3">Home</div>
           <div className="col-span-1" aria-hidden="true" />
@@ -248,7 +248,7 @@ export const WeekEditorView: React.FC<WeekEditorViewProps> = ({
         </div>
 
         {/* Info message */}
-        <p className="text-sm text-gray-500 mb-4">
+        <p className="text-sm text-muted-foreground mb-4">
           Each team must appear exactly once per week. Selecting a team automatically swaps it with its current position.
         </p>
 
@@ -269,7 +269,7 @@ export const WeekEditorView: React.FC<WeekEditorViewProps> = ({
         )}
 
         {/* Action buttons */}
-        <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+        <div className="flex items-center justify-between pt-4 border-t border-border">
           <Button
             variant="outline"
             onClick={handleRevert}

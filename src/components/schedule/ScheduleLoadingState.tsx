@@ -15,9 +15,9 @@ import React from 'react';
  */
 export const ScheduleLoadingState: React.FC = () => {
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-muted py-8">
       <div className="container mx-auto px-4 max-w-7xl">
-        <div className="text-center text-gray-600">Loading schedule...</div>
+        <div className="text-center text-muted-foreground">Loading schedule...</div>
       </div>
     </div>
   );

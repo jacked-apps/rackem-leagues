@@ -131,7 +131,7 @@ export const InfoButton: React.FC<InfoButtonProps> = ({
     <div className={`relative ${className}`}>
       <div className="flex items-center gap-1">
         {label && (
-          <span className="text-gray-700 text-sm font-medium">{label}</span>
+          <span className="text-foreground text-sm font-medium">{label}</span>
         )}
         <button
           ref={buttonRef}
@@ -148,20 +148,20 @@ export const InfoButton: React.FC<InfoButtonProps> = ({
       {showInfo && (
         <div
           ref={popupRef}
-          className="fixed z-50 w-80 max-h-[80vh] overflow-y-auto p-4 bg-white border border-gray-200 rounded-lg shadow-lg"
+          className="fixed z-50 w-80 max-h-[80vh] overflow-y-auto p-4 bg-card border border-border rounded-lg shadow-lg"
           style={style}
         >
           <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold text-gray-900">{title}</h3>
+            <h3 className="font-semibold text-foreground">{title}</h3>
             <button
               onClick={togglePopup}
-              className="w-5 h-5 text-gray-400 hover:text-gray-600"
+              className="w-5 h-5 text-muted-foreground hover:text-muted-foreground"
               aria-label="Close"
             >
               ×
             </button>
           </div>
-          <div className="text-gray-700 text-sm">{children}</div>
+          <div className="text-foreground text-sm">{children}</div>
         </div>
       )}
     </div>

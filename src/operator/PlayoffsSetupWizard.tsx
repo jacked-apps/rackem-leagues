@@ -273,7 +273,7 @@ export const PlayoffsSetupWizard: React.FC = () => {
   // Loading state
   if (teamsLoading || configLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-muted">
         <PageHeader
           backTo={`/league/${leagueId}/manage-teams?seasonId=${seasonId}`}
           backLabel="Back to Teams"
@@ -281,7 +281,7 @@ export const PlayoffsSetupWizard: React.FC = () => {
           subtitle="Loading..."
         />
         <div className="container mx-auto px-4 max-w-4xl py-8">
-          <div className="text-center text-gray-600">Loading playoff configuration...</div>
+          <div className="text-center text-muted-foreground">Loading playoff configuration...</div>
         </div>
       </div>
     );
@@ -298,7 +298,7 @@ export const PlayoffsSetupWizard: React.FC = () => {
       : 'Global Template';
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       <PageHeader
         backTo={`/league/${leagueId}/manage-teams?seasonId=${seasonId}`}
         backLabel="Back to Teams"

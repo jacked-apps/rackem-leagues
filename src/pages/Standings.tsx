@@ -49,10 +49,10 @@ export function Standings() {
         <Card>
           <CardHeader>
             <CardTitle>Standings</CardTitle>
-            <p className="text-sm text-gray-600">Loading team standings...</p>
+            <p className="text-sm text-muted-foreground">Loading team standings...</p>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8 text-gray-500">Loading...</div>
+            <div className="text-center py-8 text-muted-foreground">Loading...</div>
           </CardContent>
         </Card>
       </div>
@@ -85,10 +85,10 @@ export function Standings() {
         <Card>
           <CardHeader>
             <CardTitle>Standings</CardTitle>
-            <p className="text-sm text-gray-600">Team standings</p>
+            <p className="text-sm text-muted-foreground">Team standings</p>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-muted-foreground">
               No standings available for this season yet.
               <br />
               <span className="text-sm">Standings will appear here after matches are completed.</span>
@@ -100,7 +100,7 @@ export function Standings() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       <PageHeader
         hideBack
         title="Stats & Standings"

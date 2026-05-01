@@ -44,9 +44,9 @@ export const OrganizationSettings: React.FC = () => {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-muted py-8">
         <div className="container mx-auto px-4 max-w-6xl">
-          <div className="text-center text-gray-600">Loading organization settings...</div>
+          <div className="text-center text-muted-foreground">Loading organization settings...</div>
         </div>
       </div>
     );
@@ -55,11 +55,11 @@ export const OrganizationSettings: React.FC = () => {
   // Error state
   if (error || !organization) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-muted py-8">
         <div className="container mx-auto px-4 max-w-6xl">
-          <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="bg-card rounded-xl shadow-sm p-6">
             <h3 className="text-red-600 text-lg font-semibold mb-4">Error</h3>
-            <p className="text-gray-700 mb-4">
+            <p className="text-foreground mb-4">
               {error || 'Organization not found.'}
             </p>
             <button
@@ -75,7 +75,7 @@ export const OrganizationSettings: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       <PageHeader
         backTo={`/operator-dashboard/${organization.id}`}
         backLabel="Back to Dashboard"

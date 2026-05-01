@@ -11,7 +11,7 @@ export function MessagesEmptyState() {
   return (
     <>
       <ConversationHeader title="No Conversation Selected" />
-      <div className="flex-1 flex items-center justify-center text-gray-500 border-l-[16px] border-r-[16px] border-green-300 overflow-hidden">
+      <div className="flex-1 flex items-center justify-center text-muted-foreground border-l-[16px] border-r-[16px] border-green-300 overflow-hidden">
         <div className="text-center">
           <p className="text-lg mb-2">No conversation selected</p>
           <p className="text-sm">Choose a conversation or start a new one</p>

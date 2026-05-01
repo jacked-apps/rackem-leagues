@@ -144,7 +144,7 @@ export function TeamStatsCard({
 
         {/* 3v3 Mode: Static threshold row at top */}
         {mode === '3v3' && (
-          <div className="flex justify-center gap-3 text-xs text-gray-600 pt-1">
+          <div className="flex justify-center gap-3 text-xs text-muted-foreground pt-1">
             <span><span className="font-semibold">{thresholds.games_to_win}</span> Win</span>
             {thresholds.games_to_tie !== null && (
               <span><span className="font-semibold">{thresholds.games_to_tie}</span> Tie</span>
@@ -163,7 +163,7 @@ export function TeamStatsCard({
             <span className={`font-semibold ${thresholdColor} text-2xl`}>
               {gamesNeededToWin}
             </span>
-            <span className="text-gray-600 ml-2 text-sm">To Win</span>
+            <span className="text-muted-foreground ml-2 text-sm">To Win</span>
           </div>
         </div>
 
@@ -178,7 +178,7 @@ export function TeamStatsCard({
               <span className="font-semibold text-orange-600 text-xl">
                 {gamesNeededForSecond}
               </span>
-              <span className="text-gray-600 ml-2 text-xs">For 1.5</span>
+              <span className="text-muted-foreground ml-2 text-xs">For 1.5</span>
             </div>
           </div>
         )}
@@ -188,20 +188,20 @@ export function TeamStatsCard({
             system produces decimals). */}
         {Number.isInteger(points) ? (
           <div className="flex justify-center items-center pb-2">
-            <span className="font-semibold text-gray-700 text-xl">{points}</span>
-            <span className="text-gray-600 ml-2 text-xs">Points</span>
+            <span className="font-semibold text-foreground text-xl">{points}</span>
+            <span className="text-muted-foreground ml-2 text-xs">Points</span>
           </div>
         ) : (
           <div className="grid grid-cols-[1fr_auto_1fr] items-center pb-2">
-            <div className="font-semibold text-gray-700 text-xl text-right pr-0.5">
+            <div className="font-semibold text-foreground text-xl text-right pr-0.5">
               {Math.floor(points)}
             </div>
-            <div className="font-semibold text-gray-700 text-xl">.</div>
+            <div className="font-semibold text-foreground text-xl">.</div>
             <div className="flex items-center pl-0.5">
-              <span className="font-semibold text-gray-700 text-xl">
+              <span className="font-semibold text-foreground text-xl">
                 {Math.round((points % 1) * 10)}
               </span>
-              <span className="text-gray-600 ml-2 text-xs">Points</span>
+              <span className="text-muted-foreground ml-2 text-xs">Points</span>
             </div>
           </div>
         )}
@@ -211,18 +211,18 @@ export function TeamStatsCard({
           <div className={`pt-2 border-t ${borderColor}`}>
             <div className="grid grid-cols-[auto_1fr_auto_auto] gap-2 text-xs">
               {/* Header */}
-              <div className="font-semibold text-gray-600">HC</div>
-              <div className="font-semibold text-gray-600">Name</div>
-              <div className="font-semibold text-gray-600 text-center">W</div>
-              <div className="font-semibold text-gray-600 text-center">L</div>
+              <div className="font-semibold text-muted-foreground">HC</div>
+              <div className="font-semibold text-muted-foreground">Name</div>
+              <div className="font-semibold text-muted-foreground text-center">W</div>
+              <div className="font-semibold text-muted-foreground text-center">L</div>
 
               {/* Team Summary Row */}
-              <div className="font-semibold text-gray-900">{teamHandicap}</div>
-              <div className="font-semibold text-gray-900 truncate">
+              <div className="font-semibold text-foreground">{teamHandicap}</div>
+              <div className="font-semibold text-foreground truncate">
                 <TeamNameLink teamId={lineup.team_id} teamName={teamName} />
               </div>
-              <div className="font-semibold text-gray-900 text-center">{wins}</div>
-              <div className="font-semibold text-gray-900 text-center">{losses}</div>
+              <div className="font-semibold text-foreground text-center">{wins}</div>
+              <div className="font-semibold text-foreground text-center">{losses}</div>
 
               {/* Player Rows */}
               {players.map((player) => {
@@ -236,25 +236,25 @@ export function TeamStatsCard({
                   label: 'Swap Player',
                   icon: <UserRoundPen className="h-4 w-4 text-purple-600" />,
                   onClick: () => onSwapPlayer(player.id!, player.position),
-                  className: 'flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-100 transition-colors text-left text-purple-600',
+                  className: 'flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted transition-colors text-left text-purple-600',
                 }] : [];
 
                 return (
                   <Fragment key={`position-${player.position}`}>
-                    <div className="text-gray-700">
+                    <div className="text-foreground">
                       {player.handicap}
                     </div>
-                    <div className="text-gray-900 truncate">
+                    <div className="text-foreground truncate">
                       <PlayerNameLink
                         playerId={player.id!}
                         playerName={getPlayerDisplayName(player.id!)}
                         customActions={swapAction}
                       />
                     </div>
-                    <div className="text-center text-gray-900">
+                    <div className="text-center text-foreground">
                       {stats.wins}
                     </div>
-                    <div className="text-center text-gray-900">
+                    <div className="text-center text-foreground">
                       {stats.losses}
                     </div>
                   </Fragment>

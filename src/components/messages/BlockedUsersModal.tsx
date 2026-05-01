@@ -58,14 +58,14 @@ function BlockedUserItem({
   const blockedDate = new Date(blockedUser.blocked_at).toLocaleDateString();
 
   return (
-    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+    <div className="flex items-center justify-between p-3 bg-muted rounded-lg hover:bg-muted transition-colors">
       <div className="flex-1 min-w-0">
-        <div className="font-medium text-gray-900 truncate">{userName}</div>
-        <div className="text-xs text-gray-500">
+        <div className="font-medium text-foreground truncate">{userName}</div>
+        <div className="text-xs text-muted-foreground">
           Player #{user.system_player_number} • Blocked {blockedDate}
         </div>
         {blockedUser.reason && (
-          <div className="text-xs text-gray-600 mt-1">Reason: {blockedUser.reason}</div>
+          <div className="text-xs text-muted-foreground mt-1">Reason: {blockedUser.reason}</div>
         )}
       </div>
       <Button
@@ -128,7 +128,7 @@ export function BlockedUsersModal({
       isOpen={true}
       onClose={onClose}
       title="Blocked Users"
-      icon={<UserX className="h-5 w-5 text-gray-600" />}
+      icon={<UserX className="h-5 w-5 text-muted-foreground" />}
     >
       <Modal.Body>
         {loading ? (

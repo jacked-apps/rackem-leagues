@@ -126,7 +126,7 @@ export const OrganizationBasicInfoCard: React.FC<OrganizationBasicInfoCardProps>
         {/* Organization Name Section */}
         <div className="border rounded-lg p-4">
           <div className="flex justify-between items-start mb-2">
-            <p className="text-sm text-gray-600 font-medium">Organization Name</p>
+            <p className="text-sm text-muted-foreground font-medium">Organization Name</p>
             {editingSection !== 'name' && (
               <Button
                 variant="ghost"
@@ -155,14 +155,14 @@ export const OrganizationBasicInfoCard: React.FC<OrganizationBasicInfoCardProps>
               </div>
             </div>
           ) : (
-            <p className="text-gray-900">{organization.organization_name}</p>
+            <p className="text-foreground">{organization.organization_name}</p>
           )}
         </div>
 
         {/* Mailing Address Section */}
         <div className="border rounded-lg p-4">
           <div className="flex justify-between items-start mb-2">
-            <p className="text-sm text-gray-600 font-medium">Mailing Address</p>
+            <p className="text-sm text-muted-foreground font-medium">Mailing Address</p>
             {editingSection !== 'address' && (
               <Button
                 variant="ghost"
@@ -226,7 +226,7 @@ export const OrganizationBasicInfoCard: React.FC<OrganizationBasicInfoCardProps>
               </div>
             </div>
           ) : (
-            <div className="text-gray-900">
+            <div className="text-foreground">
               <p>{organization.organization_address}</p>
               <p>
                 {organization.organization_city}, {organization.organization_state}{' '}

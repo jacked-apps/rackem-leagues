@@ -484,11 +484,11 @@ export function MatchEndVerification({
   }, [bothVerified, isCompleting, matchId, homeTeamId, awayTeamId, homeWins, awayWins, homePoints, awayPoints, result, updateMatchMutation, createGamesMutation, gameType, navigate, homeVerifiedBy, awayVerifiedBy, isTiebreakerMode, tiebreakerGames, homeLineup, awayLineup, updateGameMutation, updateLineupMutation]);
 
   return (
-    <div className="bg-gradient-to-r from-blue-50 to-orange-50 border-b-2 border-gray-300">
+    <div className="bg-gradient-to-r from-blue-50 to-orange-50 border-b-2 border-border">
       <div className="px-4 py-3">
         {/* Match Result Header */}
         <div className="text-center mb-3">
-          <div className="text-sm font-semibold text-gray-600">
+          <div className="text-sm font-semibold text-muted-foreground">
             Match Complete
           </div>
           {result === 'home_win' && (
@@ -504,9 +504,9 @@ export function MatchEndVerification({
         </div>
 
         {/* Score Table */}
-        <div className="bg-white rounded-lg shadow-sm mb-3 overflow-hidden">
+        <div className="bg-card rounded-lg shadow-sm mb-3 overflow-hidden">
           {/* Header Row */}
-          <div className="grid grid-cols-[1fr_auto_auto_auto] gap-2 text-xs font-semibold bg-gray-100 px-3 py-2 border-b">
+          <div className="grid grid-cols-[1fr_auto_auto_auto] gap-2 text-xs font-semibold bg-muted px-3 py-2 border-b">
             <div>Team</div>
             <div className="text-center w-16">Score</div>
             <div className="text-center w-16">Points</div>
@@ -606,14 +606,14 @@ export function MatchEndVerification({
             <div className="flex items-center justify-around text-sm w-full">
               <div
                 className={`font-medium ${
-                  homeVerified ? 'text-green-600' : 'text-gray-500'
+                  homeVerified ? 'text-green-600' : 'text-muted-foreground'
                 }`}
               >
                 Home: {homeVerified ? '✅ Verified' : '⏳ Waiting'}
               </div>
               <div
                 className={`font-medium ${
-                  awayVerified ? 'text-green-600' : 'text-gray-500'
+                  awayVerified ? 'text-green-600' : 'text-muted-foreground'
                 }`}
               >
                 Away: {awayVerified ? '✅ Verified' : '⏳ Waiting'}

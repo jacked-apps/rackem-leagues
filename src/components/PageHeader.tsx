@@ -124,7 +124,7 @@ export function PageHeader({
   return (
     <>
       <header
-        className="sticky z-30 flex h-12 items-center gap-2 border-b bg-white px-3 lg:gap-4"
+        className="sticky z-30 flex h-12 items-center gap-2 border-b bg-background px-3 lg:gap-4"
         style={{ top: 'var(--env-banner-height, 0px)' }}
       >
         {showBack ? (
@@ -136,7 +136,7 @@ export function PageHeader({
           />
         ) : null}
 
-        <h1 className="flex-1 truncate text-lg font-semibold text-gray-900 lg:text-3xl">{title}</h1>
+        <h1 className="flex-1 truncate text-lg font-semibold text-foreground lg:text-3xl">{title}</h1>
 
         <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
           <SheetTrigger asChild>
@@ -228,7 +228,7 @@ function SubHeader({
           </div>
         ) : null}
         {subtitle ? (
-          <p className="text-sm text-gray-600 lg:text-lg">{subtitle}</p>
+          <p className="text-sm text-muted-foreground lg:text-lg">{subtitle}</p>
         ) : null}
         {children}
       </div>
@@ -283,7 +283,7 @@ function BackAffordance({
   // flex row so the cap-height of the back-button text aligns with the
   // cap-height of the (larger) title. The 40px tap target is preserved;
   // it just sits in the upper portion of the bar instead of centered.
-  const className = 'flex h-10 shrink-0 items-center gap-1 self-start rounded-md px-2 text-sm text-gray-600 hover:bg-accent';
+  const className = 'flex h-10 shrink-0 items-center gap-1 self-start rounded-md px-2 text-sm text-muted-foreground hover:bg-accent';
 
   if (onBackClick) {
     return (
@@ -351,7 +351,7 @@ function IdentitySlot({ pathname }: { pathname: string }) {
   const displayName = [member?.first_name, member?.last_name].filter(Boolean).join(' ') || 'Profile';
   const onProfile = pathname === '/profile';
   const avatarClass =
-    'flex h-9 w-9 shrink-0 items-center justify-center rounded-full border bg-gray-100 text-xs font-semibold text-gray-700 hover:bg-accent';
+    'flex h-9 w-9 shrink-0 items-center justify-center rounded-full border bg-muted text-xs font-semibold text-foreground hover:bg-accent';
 
   // On the profile page, the avatar becomes a "back" button that takes the
   // user back to wherever they came from (open/close toggle behavior).

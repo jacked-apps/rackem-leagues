@@ -43,7 +43,7 @@ export const WeekCard: React.FC<WeekCardProps> = ({ weekSchedule, tableNumbers }
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2 text-sm text-gray-600">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Calendar className="h-4 w-4" />
             {parseLocalDate(week.scheduled_date).toLocaleDateString('en-US', {
               weekday: 'long',
@@ -56,7 +56,7 @@ export const WeekCard: React.FC<WeekCardProps> = ({ weekSchedule, tableNumbers }
       </CardHeader>
       <CardContent className="p-6">
         {matches.length === 0 ? (
-          <p className="text-gray-500 text-center py-4">
+          <p className="text-muted-foreground text-center py-4">
             {getEmptyWeekMessage(week.week_type)}
           </p>
         ) : (

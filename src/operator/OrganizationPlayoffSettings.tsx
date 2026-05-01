@@ -126,7 +126,7 @@ export const OrganizationPlayoffSettings: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       {/* Unsaved changes warning dialog */}
       <UnsavedChangesDialog blocker={blocker} />
 

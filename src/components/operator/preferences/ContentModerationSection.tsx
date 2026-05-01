@@ -54,7 +54,7 @@ export const ContentModerationSection: React.FC<ContentModerationSectionProps> =
     <div className="border rounded-lg p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <h3 className="font-semibold text-gray-900">Content Moderation</h3>
+          <h3 className="font-semibold text-foreground">Content Moderation</h3>
           <InfoButton title="Content Moderation">
             <div className="space-y-3">
               <p>Controls profanity validation for team names and other content.</p>
@@ -122,7 +122,7 @@ export const ContentModerationSection: React.FC<ContentModerationSectionProps> =
           </label>
         </div>
       ) : (
-        <p className="text-sm text-gray-900">{profanityFilterDisplay}</p>
+        <p className="text-sm text-foreground">{profanityFilterDisplay}</p>
       )}
     </div>
   );

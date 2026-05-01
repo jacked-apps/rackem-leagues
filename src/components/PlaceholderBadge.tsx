@@ -38,7 +38,7 @@ export const PlaceholderBadge: React.FC<PlaceholderBadgeProps> = ({
   className = '',
 }) => (
   <span
-    className={`inline-flex items-center rounded-full bg-gray-200 text-gray-700 font-semibold align-middle leading-none ${
+    className={`inline-flex items-center rounded-full bg-accent text-foreground font-semibold align-middle leading-none ${
       size === 'sm' ? 'px-1 py-0.5 text-[10px]' : 'px-1.5 py-0.5 text-[11px]'
     } ${className}`}
     title="PP = Placeholder Player — this player hasn't registered an account yet"

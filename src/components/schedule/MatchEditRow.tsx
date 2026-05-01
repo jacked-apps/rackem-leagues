@@ -95,13 +95,13 @@ export const MatchEditRow: React.FC<MatchEditRowProps> = ({
     <div
       className={`grid grid-cols-12 gap-3 items-center p-3 rounded-lg border ${
         isEditable
-          ? 'border-gray-200 bg-white'
-          : 'border-gray-100 bg-gray-50'
+          ? 'border-border bg-card'
+          : 'border-gray-100 bg-muted'
       }`}
     >
       {/* Match number */}
       <div className="col-span-1">
-        <span className="text-sm font-medium text-gray-500">
+        <span className="text-sm font-medium text-muted-foreground">
           #{matchNumber}
         </span>
       </div>
@@ -122,7 +122,7 @@ export const MatchEditRow: React.FC<MatchEditRowProps> = ({
 
       {/* VS separator */}
       <div className="col-span-1 text-center">
-        <span className="text-sm font-medium text-gray-400">vs</span>
+        <span className="text-sm font-medium text-muted-foreground">vs</span>
       </div>
 
       {/* Away team */}

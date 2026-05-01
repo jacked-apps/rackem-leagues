@@ -32,9 +32,9 @@ export function SpectateMatchCard({ match: seedMatch }: SpectateMatchCardProps) 
 
   if (data.isLoading || !data.match || !data.homeLineup || !data.awayLineup) {
     return (
-      <div className="border-y bg-white py-6 flex items-center justify-center">
-        <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
-        <span className="ml-2 text-sm text-gray-500">
+      <div className="border-y bg-card py-6 flex items-center justify-center">
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        <span className="ml-2 text-sm text-muted-foreground">
           Loading {seedMatch.home_team?.team_name || 'Home'} vs{' '}
           {seedMatch.away_team?.team_name || 'Away'}…
         </span>
@@ -83,7 +83,7 @@ export function SpectateMatchCard({ match: seedMatch }: SpectateMatchCardProps) 
   // BCA systems — fall through to format-specific scoreboard.
   if (!data.homeThresholds || !data.awayThresholds) {
     return (
-      <div className="border-y bg-white py-6 text-center text-sm text-gray-500">
+      <div className="border-y bg-card py-6 text-center text-sm text-muted-foreground">
         {data.match.home_team?.team_name || 'Home'} vs{' '}
         {data.match.away_team?.team_name || 'Away'} — scoring not yet started.
       </div>

@@ -62,7 +62,7 @@ export const Dashboard: React.FC = () => {
   if (loading || orgsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-600">Loading your dashboard...</p>
+        <p className="text-muted-foreground">Loading your dashboard...</p>
       </div>
     );
   }
@@ -76,7 +76,7 @@ export const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       {/* Pending Invites Modal - shown when user has unclaimed invites */}
       <PendingInvitesModal
         isOpen={showInvitesModal}
@@ -107,8 +107,8 @@ export const Dashboard: React.FC = () => {
                     <Users className="h-6 w-6 text-blue-600" />
                   </div>
                   <div className="flex-1">
-                    <h2 className="font-semibold text-lg text-gray-900">My Teams</h2>
-                    <p className="text-sm text-gray-600">View leagues, teams, and schedules</p>
+                    <h2 className="font-semibold text-lg text-foreground">My Teams</h2>
+                    <p className="text-sm text-muted-foreground">View leagues, teams, and schedules</p>
                   </div>
                 </div>
               </CardContent>
@@ -126,8 +126,8 @@ export const Dashboard: React.FC = () => {
                     <Radio className="h-6 w-6 text-red-600" />
                   </div>
                   <div className="flex-1">
-                    <h2 className="font-semibold text-lg text-gray-900">Live Matches</h2>
-                    <p className="text-sm text-gray-600">See what's happening in your leagues right now</p>
+                    <h2 className="font-semibold text-lg text-foreground">Live Matches</h2>
+                    <p className="text-sm text-muted-foreground">See what's happening in your leagues right now</p>
                   </div>
                 </div>
               </CardContent>
@@ -143,8 +143,8 @@ export const Dashboard: React.FC = () => {
                     <MessageSquare className="h-6 w-6 text-green-600" />
                   </div>
                   <div className="flex-1">
-                    <h2 className="font-semibold text-lg text-gray-900">Messages</h2>
-                    <p className="text-sm text-gray-600">Chat with teammates and league</p>
+                    <h2 className="font-semibold text-lg text-foreground">Messages</h2>
+                    <p className="text-sm text-muted-foreground">Chat with teammates and league</p>
                   </div>
                 </div>
               </CardContent>
@@ -160,8 +160,8 @@ export const Dashboard: React.FC = () => {
                     <Settings className="h-6 w-6 text-purple-600" />
                   </div>
                   <div className="flex-1">
-                    <h2 className="font-semibold text-lg text-gray-900">Player Settings</h2>
-                    <p className="text-sm text-gray-600">Manage your profile and preferences</p>
+                    <h2 className="font-semibold text-lg text-foreground">Player Settings</h2>
+                    <p className="text-sm text-muted-foreground">Manage your profile and preferences</p>
                   </div>
                 </div>
               </CardContent>
@@ -177,8 +177,8 @@ export const Dashboard: React.FC = () => {
                     <BookOpen className="h-6 w-6 text-amber-600" />
                   </div>
                   <div className="flex-1">
-                    <h2 className="font-semibold text-lg text-gray-900">Official Rules</h2>
-                    <p className="text-sm text-gray-600">Browse the BCA / CSI rulebook — search any rule to settle a dispute</p>
+                    <h2 className="font-semibold text-lg text-foreground">Official Rules</h2>
+                    <p className="text-sm text-muted-foreground">Browse the BCA / CSI rulebook — search any rule to settle a dispute</p>
                   </div>
                 </div>
               </CardContent>
@@ -189,12 +189,12 @@ export const Dashboard: React.FC = () => {
           <Card className="opacity-50">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-gray-100 rounded-lg">
-                  <Trophy className="h-6 w-6 text-gray-400" />
+                <div className="p-3 bg-muted rounded-lg">
+                  <Trophy className="h-6 w-6 text-muted-foreground" />
                 </div>
                 <div className="flex-1">
-                  <h2 className="font-semibold text-lg text-gray-400">Tournaments</h2>
-                  <p className="text-sm text-gray-400">Coming soon</p>
+                  <h2 className="font-semibold text-lg text-muted-foreground">Tournaments</h2>
+                  <p className="text-sm text-muted-foreground">Coming soon</p>
                 </div>
               </div>
             </CardContent>
@@ -209,7 +209,7 @@ export const Dashboard: React.FC = () => {
 
         {/* League Operator Section - Multi-Org */}
         {(member.role === 'league_operator' || member.role === 'developer') && organizations.length > 0 && (
-          <Card className="border-2 border-blue-200 bg-blue-50">
+          <Card className="border-2 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
             <CardHeader>
               <CardTitle className="text-lg">Your Organizations</CardTitle>
             </CardHeader>
@@ -218,7 +218,7 @@ export const Dashboard: React.FC = () => {
                 <Button
                   key={org.id}
                   variant="outline"
-                  className="w-full justify-between hover:bg-blue-100"
+                  className="w-full justify-between hover:bg-blue-100 dark:hover:bg-blue-900"
                   disabled={navigatingOrgId !== null}
                   onClick={() => {
                     setNavigatingOrgId(org.id);
@@ -232,7 +232,7 @@ export const Dashboard: React.FC = () => {
                     </span>
                   </div>
                   {navigatingOrgId !== org.id && (
-                    <span className="text-xs px-2 py-1 bg-blue-100 rounded">
+                    <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded">
                       {org.position === 'owner' ? 'Owner' : 'Admin'}
                     </span>
                   )}
@@ -244,12 +244,12 @@ export const Dashboard: React.FC = () => {
 
         {/* Become League Operator CTA - Only for regular players */}
         {member.role === 'player' && (
-          <Card className="border-2 border-blue-200 bg-blue-50">
+          <Card className="border-2 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
             <CardContent className="p-6">
-              <h3 className="font-semibold text-gray-900 mb-2">
+              <h3 className="font-semibold text-foreground mb-2">
                 Run Your Own League?
               </h3>
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm text-muted-foreground mb-4">
                 Become a league operator and manage pool leagues at your local venue
               </p>
               <Link to="/become-league-operator">

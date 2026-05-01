@@ -45,13 +45,13 @@ export function LineupActions({
   return (
     <div className="space-y-4">
       {/* Opponent Status */}
-      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-        <span className="text-sm font-medium text-gray-700">Opponent Status:</span>
+      <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+        <span className="text-sm font-medium text-foreground">Opponent Status:</span>
         <div className="flex items-center gap-2">
           {opponentStatus === 'absent' && (
             <>
-              <UserX className="h-5 w-5 text-gray-400" />
-              <span className="text-sm text-gray-400">Absent</span>
+              <UserX className="h-5 w-5 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Absent</span>
             </>
           )}
           {opponentStatus === 'choosing' && (
@@ -74,8 +74,8 @@ export function LineupActions({
       </div>
 
       {/* Your Status */}
-      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-        <span className="text-sm font-medium text-gray-700">Your Status:</span>
+      <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+        <span className="text-sm font-medium text-foreground">Your Status:</span>
         <div className="flex items-center gap-2">
           {locked ? (
             <>
@@ -83,7 +83,7 @@ export function LineupActions({
               <span className="text-sm font-semibold text-blue-600">Locked</span>
             </>
           ) : (
-            <span className="text-sm text-gray-500">Not Locked</span>
+            <span className="text-sm text-muted-foreground">Not Locked</span>
           )}
         </div>
       </div>
@@ -116,25 +116,25 @@ export function LineupActions({
 
       {/* Helper Text */}
       {!locked && !canLock && (
-        <p className="text-xs text-gray-500 text-center">
+        <p className="text-xs text-muted-foreground text-center">
           Select all players before locking your lineup
         </p>
       )}
 
       {locked && !canUnlock && (
-        <p className="text-xs text-gray-500 text-center">
+        <p className="text-xs text-muted-foreground text-center">
           Cannot unlock - opponent has already locked their lineup
         </p>
       )}
 
       {locked && opponentStatus === 'absent' && (
-        <p className="text-xs text-gray-500 text-center">
+        <p className="text-xs text-muted-foreground text-center">
           Waiting for opponent to join...
         </p>
       )}
 
       {locked && opponentStatus === 'choosing' && (
-        <p className="text-xs text-gray-500 text-center">
+        <p className="text-xs text-muted-foreground text-center">
           Waiting for opponent to lock their lineup...
         </p>
       )}

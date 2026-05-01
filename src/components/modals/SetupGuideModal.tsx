@@ -28,7 +28,7 @@ export const SetupGuideModal: React.FC<SetupGuideModalProps> = ({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div
-        className="bg-white rounded-lg p-6 max-w-2xl max-h-96 overflow-y-scroll"
+        className="bg-card rounded-lg p-6 max-w-2xl max-h-96 overflow-y-scroll"
         style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 #f1f5f9' }}
       >
         <h3 className="text-lg font-bold mb-4">
@@ -82,7 +82,7 @@ export const SetupGuideModal: React.FC<SetupGuideModalProps> = ({
             <div className="mt-1 text-amber-700 text-xs">
               Note: Requires ongoing effort and content creation to be effective
             </div>
-            <div className="mt-1 text-gray-600 text-xs">
+            <div className="mt-1 text-muted-foreground text-xs">
               Coming soon: App integration for social media functionality
             </div>
           </div>
@@ -95,21 +95,21 @@ export const SetupGuideModal: React.FC<SetupGuideModalProps> = ({
             <p>• Set PUBLIC contact to in-app only</p>
             <p>• Make email public to league members</p>
             <p>• Give phone number personally to select players</p>
-            <div className="mt-2 text-gray-600 font-medium">
+            <div className="mt-2 text-muted-foreground font-medium">
               Fine for smaller and single leagues
             </div>
-            <div className="mt-1 text-gray-700 text-xs">
+            <div className="mt-1 text-foreground text-xs">
               Note: Only recommended if you don't plan to grow beyond a couple
               small leagues
             </div>
           </div>
 
           {/* Professional Benefits Section */}
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <h4 className="font-semibold text-gray-700 mb-2">
+          <div className="mt-4 pt-4 border-t border-border">
+            <h4 className="font-semibold text-foreground mb-2">
               Why Separate Your Personal Information?
             </h4>
-            <p className="text-gray-600 leading-relaxed">
+            <p className="text-muted-foreground leading-relaxed">
               Setting up dedicated league contact methods protects your personal
               privacy while presenting a professional, organized image to
               players. When players see dedicated business email addresses and

@@ -12,7 +12,7 @@ export const FiveManFormatDetails: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-muted py-12 px-4 sm:px-6 lg:px-8">
       {/* Sticky Back Button */}
       <div className="fixed top-20 right-4 z-50">
         <Button
@@ -29,18 +29,18 @@ export const FiveManFormatDetails: React.FC = () => {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+          <h1 className="text-4xl font-bold text-foreground mb-2">
             5-Man Team Format: Complete Guide
           </h1>
-          <p className="text-xl text-gray-600">
+          <p className="text-xl text-muted-foreground">
             Everything you need to know about the 5-man team format and custom handicap system
           </p>
         </div>
 
         {/* Overview */}
         <Card className="p-6 mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Overview</h2>
-          <p className="text-gray-700 mb-4">
+          <h2 className="text-2xl font-bold text-foreground mb-4">Overview</h2>
+          <p className="text-foreground mb-4">
             The 5-man team format is a modern approach to league pool that prioritizes player experience,
             faster matches, and fair competition through an innovative handicap system.
           </p>
@@ -71,12 +71,12 @@ export const FiveManFormatDetails: React.FC = () => {
 
         {/* How It Works */}
         <Card className="p-6 mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">How It Works</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-4">How It Works</h2>
 
           <div className="space-y-4">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Team Structure</h3>
-              <ul className="list-disc ml-5 text-gray-700 space-y-1">
+              <h3 className="text-lg font-semibold text-foreground mb-2">Team Structure</h3>
+              <ul className="list-disc ml-5 text-foreground space-y-1">
                 <li><strong>Roster Size:</strong> 5 total players per team</li>
                 <li><strong>Active Players:</strong> 3 players compete on match night</li>
                 <li><strong>Flexibility:</strong> Rotate which 3 players compete each week</li>
@@ -84,8 +84,8 @@ export const FiveManFormatDetails: React.FC = () => {
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Match Format</h3>
-              <ul className="list-disc ml-5 text-gray-700 space-y-1">
+              <h3 className="text-lg font-semibold text-foreground mb-2">Match Format</h3>
+              <ul className="list-disc ml-5 text-foreground space-y-1">
                 <li><strong>Format:</strong> Double round robin (everyone plays everyone twice)</li>
                 <li><strong>Games per Player:</strong> 6 games each</li>
                 <li><strong>Total Games:</strong> 18 games per match</li>
@@ -101,17 +101,17 @@ export const FiveManFormatDetails: React.FC = () => {
               </p>
             </div>
 
-            <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
-              <h4 className="font-semibold text-gray-900 mb-2">Example Match Night:</h4>
-              <p className="text-sm text-gray-700 mb-3">
+            <div className="bg-muted p-4 rounded-md border border-border">
+              <h4 className="font-semibold text-foreground mb-2">Example Match Night:</h4>
+              <p className="text-sm text-foreground mb-3">
                 Team A sends players Alice, Bob, and Charlie.<br />
                 Team B sends players Dana, Emma, and Frank.
               </p>
-              <p className="text-sm text-gray-700 mb-2">
+              <p className="text-sm text-foreground mb-2">
                 <strong>How it flows:</strong> All players play simultaneously in each round, then rotate to next opponent.
                 Each matchup happens twice - once with each player breaking.
               </p>
-              <div className="text-sm text-gray-700 space-y-2">
+              <div className="text-sm text-foreground space-y-2">
                 <p><strong>Game Order (18 games total):</strong></p>
                 <div className="ml-4 space-y-3">
                   <div>
@@ -138,7 +138,7 @@ export const FiveManFormatDetails: React.FC = () => {
                       <li>Game 9: Charlie (break) vs Emma</li>
                     </ul>
                   </div>
-                  <p className="text-xs text-gray-600 italic">
+                  <p className="text-xs text-muted-foreground italic">
                     Pattern repeats - same matchups, but the break swaps. Rounds 4-6 mirror rounds 1-3 with opposite player breaking.
                   </p>
                 </div>
@@ -150,23 +150,23 @@ export const FiveManFormatDetails: React.FC = () => {
 
         {/* Handicap System */}
         <Card className="p-6 mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Handicap System Explained</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-4">Handicap System Explained</h2>
 
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Individual Skill Levels</h3>
-              <p className="text-gray-700 mb-3">
+              <h3 className="text-lg font-semibold text-foreground mb-3">Individual Skill Levels</h3>
+              <p className="text-foreground mb-3">
                 Each player is assigned a skill level ranging from +2 (strongest) to -2 (developing):
               </p>
-              <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
+              <div className="bg-muted p-4 rounded-md border border-border">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-gray-300">
+                    <tr className="border-b border-border">
                       <th className="text-left py-2">Skill Level</th>
                       <th className="text-left py-2">Player Type</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-border">
                     <tr>
                       <td className="py-2 font-mono">+2</td>
                       <td className="py-2">Advanced player - high win percentage</td>
@@ -193,40 +193,40 @@ export const FiveManFormatDetails: React.FC = () => {
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Skill Level Calculation</h3>
+              <h3 className="text-lg font-semibold text-foreground mb-3">Skill Level Calculation</h3>
 
               <div className="bg-blue-50 p-4 rounded-md border border-blue-200">
                 <p className="font-mono text-center text-lg mb-2">
                   Skill Level = (Wins - Losses) ÷ Weeks Played
                 </p>
-                <p className="text-sm text-gray-700 text-center">
+                <p className="text-sm text-foreground text-center">
                   This formula automatically adjusts based on actual performance
                 </p>
               </div>
 
               <div className="mt-4 space-y-3">
-                <div className="bg-gray-50 p-3 rounded-md border border-gray-200">
-                  <p className="font-semibold text-gray-900 mb-1">Example 1: Strong Player</p>
-                  <p className="text-sm text-gray-700">
+                <div className="bg-muted p-3 rounded-md border border-border">
+                  <p className="font-semibold text-foreground mb-1">Example 1: Strong Player</p>
+                  <p className="text-sm text-foreground">
                     After 10 weeks: 45 wins, 15 losses<br />
                     Skill Level = (45 - 15) ÷ 10 = <strong>+3.0 → capped at +2</strong>
                   </p>
                 </div>
 
-                <div className="bg-gray-50 p-3 rounded-md border border-gray-200">
-                  <p className="font-semibold text-gray-900 mb-1">Example 2: Slightly Above Average Player</p>
-                  <p className="text-sm text-gray-700">
+                <div className="bg-muted p-3 rounded-md border border-border">
+                  <p className="font-semibold text-foreground mb-1">Example 2: Slightly Above Average Player</p>
+                  <p className="text-sm text-foreground">
                     After 10 weeks: 33 wins, 27 losses<br />
                     Skill Level = (33 - 27) ÷ 10 = <strong>+0.6 → rounds up to +1</strong>
                   </p>
-                  <p className="text-xs text-gray-600 mt-1 italic">
+                  <p className="text-xs text-muted-foreground mt-1 italic">
                     Note: Skill levels round to nearest whole number (standard rounding)
                   </p>
                 </div>
 
-                <div className="bg-gray-50 p-3 rounded-md border border-gray-200">
-                  <p className="font-semibold text-gray-900 mb-1">Example 3: Developing Player</p>
-                  <p className="text-sm text-gray-700">
+                <div className="bg-muted p-3 rounded-md border border-border">
+                  <p className="font-semibold text-foreground mb-1">Example 3: Developing Player</p>
+                  <p className="text-sm text-foreground">
                     After 10 weeks: 21 wins, 36 losses<br />
                     Skill Level = (21 - 36) ÷ 10 = <strong>-1.5 → rounds down to -2</strong>
                   </p>
@@ -247,8 +247,8 @@ export const FiveManFormatDetails: React.FC = () => {
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Team Handicap Calculation</h3>
-              <p className="text-gray-700 mb-3">
+              <h3 className="text-lg font-semibold text-foreground mb-3">Team Handicap Calculation</h3>
+              <p className="text-foreground mb-3">
                 The team handicap for each match is calculated by combining individual skill levels
                 with a team modifier based on standings:
               </p>
@@ -260,16 +260,16 @@ export const FiveManFormatDetails: React.FC = () => {
 
               <div className="space-y-3">
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Team Modifier (Home Team Only)</h4>
-                  <p className="text-sm text-gray-700 mb-3">
+                  <h4 className="font-semibold text-foreground mb-2">Team Modifier (Home Team Only)</h4>
+                  <p className="text-sm text-foreground mb-3">
                     The team modifier is applied to the <strong>home team</strong> based on the difference in wins between
                     the home and away teams in the standings. For every 2-win advantage the home team has over the away team,
                     they receive a +1 modifier. If the home team is behind, they receive a negative modifier.
                   </p>
 
-                  <div className="bg-gray-50 p-3 rounded-md border border-gray-200 mb-3">
-                    <p className="font-semibold text-gray-900 mb-2">Example Standings (after 10 weeks):</p>
-                    <ul className="text-sm text-gray-700 space-y-1 ml-4">
+                  <div className="bg-muted p-3 rounded-md border border-border mb-3">
+                    <p className="font-semibold text-foreground mb-2">Example Standings (after 10 weeks):</p>
+                    <ul className="text-sm text-foreground space-y-1 ml-4">
                       <li>Team A: 8 wins, 2 losses</li>
                       <li>Team B: 7 wins, 3 losses</li>
                       <li>Team C: 5 wins, 5 losses</li>
@@ -278,10 +278,10 @@ export const FiveManFormatDetails: React.FC = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <p className="font-semibold text-gray-900">Team Modifier Examples:</p>
+                    <p className="font-semibold text-foreground">Team Modifier Examples:</p>
 
                     <div className="bg-blue-50 p-3 rounded-md border border-blue-200">
-                      <p className="text-sm text-gray-800">
+                      <p className="text-sm text-foreground">
                         <strong>Team A (home) vs Team B (away):</strong><br />
                         Win difference: 8 - 7 = 1 win ahead<br />
                         Modifier: <strong>0</strong> (need 2+ wins for a modifier)
@@ -289,7 +289,7 @@ export const FiveManFormatDetails: React.FC = () => {
                     </div>
 
                     <div className="bg-blue-50 p-3 rounded-md border border-blue-200">
-                      <p className="text-sm text-gray-800">
+                      <p className="text-sm text-foreground">
                         <strong>Team A (home) vs Team C (away):</strong><br />
                         Win difference: 8 - 5 = 3 wins ahead<br />
                         Modifier: <strong>+1</strong> (3 wins ÷ 2 = 1.5 → rounds down to +1)
@@ -297,7 +297,7 @@ export const FiveManFormatDetails: React.FC = () => {
                     </div>
 
                     <div className="bg-blue-50 p-3 rounded-md border border-blue-200">
-                      <p className="text-sm text-gray-800">
+                      <p className="text-sm text-foreground">
                         <strong>Team A (home) vs Team D (away):</strong><br />
                         Win difference: 8 - 4 = 4 wins ahead<br />
                         Modifier: <strong>+2</strong> (4 wins ÷ 2 = +2)
@@ -305,7 +305,7 @@ export const FiveManFormatDetails: React.FC = () => {
                     </div>
 
                     <div className="bg-blue-50 p-3 rounded-md border border-blue-200">
-                      <p className="text-sm text-gray-800">
+                      <p className="text-sm text-foreground">
                         <strong>Team D (home) vs Team B (away):</strong><br />
                         Win difference: 4 - 7 = 3 wins behind<br />
                         Modifier: <strong>-1</strong> (home team is worse, gets negative modifier)
@@ -327,18 +327,18 @@ export const FiveManFormatDetails: React.FC = () => {
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Determining Games Needed to Win</h3>
+              <h3 className="text-lg font-semibold text-foreground mb-3">Determining Games Needed to Win</h3>
 
               {/* Two column layout: 2/3 text, 1/3 chart */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {/* Left column - Example Calculation (2/3 width) */}
                 <div className="lg:col-span-2 bg-blue-50 p-4 rounded-md border border-blue-200">
-                  <p className="font-semibold text-gray-900 mb-3 text-base">Example Calculation:</p>
+                  <p className="font-semibold text-foreground mb-3 text-base">Example Calculation:</p>
 
                   <div className="space-y-3">
                     <div>
-                      <p className="font-semibold text-gray-900">Team A (home team):</p>
-                      <p className="text-gray-700 ml-4">
+                      <p className="font-semibold text-foreground">Team A (home team):</p>
+                      <p className="text-foreground ml-4">
                         Player 1: +1, Player 2: +1, Player 3: +2 = +4<br />
                         Team Modifier: +2 (home team 4 wins ahead in standings)<br />
                         <strong>Team A Total Handicap: +6</strong>
@@ -346,8 +346,8 @@ export const FiveManFormatDetails: React.FC = () => {
                     </div>
 
                     <div>
-                      <p className="font-semibold text-gray-900">Team B (away team):</p>
-                      <p className="text-gray-700 ml-4">
+                      <p className="font-semibold text-foreground">Team B (away team):</p>
+                      <p className="text-foreground ml-4">
                         Player 1: 0, Player 2: -1, Player 3: +1 = 0<br />
                         Team Modifier: 0 (away team gets no modifier)<br />
                         <strong>Team B Total Handicap: 0</strong>
@@ -355,26 +355,26 @@ export const FiveManFormatDetails: React.FC = () => {
                     </div>
 
                     <div className="pt-2 border-t border-blue-300">
-                      <p className="text-gray-700 mb-2">
+                      <p className="text-foreground mb-2">
                         <strong>Handicap Difference:</strong><br />
                         Team A: 6 - 0 = <strong className="text-xl">+6</strong><br />
                         Team B: 0 - 6 = <strong className="text-xl">-6</strong>
                       </p>
                     </div>
 
-                    <div className="bg-white p-3 rounded-md">
-                      <p className="text-gray-900 font-semibold mb-2">Looking at the chart:</p>
+                    <div className="bg-card p-3 rounded-md">
+                      <p className="text-foreground font-semibold mb-2">Looking at the chart:</p>
                       <div className="space-y-2">
                         <div>
-                          <p className="text-gray-700"><strong>Team A (H/C +6):</strong></p>
-                          <p className="text-gray-700 ml-4">Needs 13 games to win, 12 games to tie</p>
+                          <p className="text-foreground"><strong>Team A (H/C +6):</strong></p>
+                          <p className="text-foreground ml-4">Needs 13 games to win, 12 games to tie</p>
                         </div>
                         <div>
-                          <p className="text-gray-700"><strong>Team B (H/C -6):</strong></p>
-                          <p className="text-gray-700 ml-4">Needs 7 games to win, 6 games to tie</p>
+                          <p className="text-foreground"><strong>Team B (H/C -6):</strong></p>
+                          <p className="text-foreground ml-4">Needs 7 games to win, 6 games to tie</p>
                         </div>
                       </div>
-                      <p className="text-xs text-gray-600 mt-3 italic">
+                      <p className="text-xs text-muted-foreground mt-3 italic">
                         Note: Tie numbers add up to 18 total games (12 + 6 = 18)
                       </p>
                     </div>
@@ -386,22 +386,22 @@ export const FiveManFormatDetails: React.FC = () => {
                 </div>
 
                 {/* Right column - Chart (1/3 width) */}
-                <div className="bg-gray-50 p-3 rounded-md border border-gray-200">
+                <div className="bg-muted p-3 rounded-md border border-border">
                   <div className="mb-2">
-                    <p className="font-semibold text-gray-900 text-base">Games Needed Chart:</p>
-                    <p className="text-xs text-gray-500">18-game match</p>
+                    <p className="font-semibold text-foreground text-base">Games Needed Chart:</p>
+                    <p className="text-xs text-muted-foreground">18-game match</p>
                   </div>
                   <div className="flex justify-center">
                     <table className="text-sm border-collapse">
                       <thead>
                         <tr className="border-b-2 border-gray-400">
-                          <th className="text-center py-2 px-1 bg-gray-200">H/C</th>
+                          <th className="text-center py-2 px-1 bg-accent">H/C</th>
                           <th className="text-center py-2 px-1 bg-green-100">Win</th>
                           <th className="text-center py-2 px-1 bg-yellow-100">Tie</th>
                           <th className="text-center py-2 px-1 bg-red-100">Loss</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-200">
+                      <tbody className="divide-y divide-border">
                         <tr><td className="py-1 px-1 text-center font-mono">+12</td><td className="py-1 px-1 text-center">16</td><td className="py-1 px-1 text-center">15</td><td className="py-1 px-1 text-center">14</td></tr>
                         <tr><td className="py-1 px-1 text-center font-mono">+11</td><td className="py-1 px-1 text-center">15</td><td className="py-1 px-1 text-center">—</td><td className="py-1 px-1 text-center">14</td></tr>
                         <tr><td className="py-1 px-1 text-center font-mono">+10</td><td className="py-1 px-1 text-center">15</td><td className="py-1 px-1 text-center">14</td><td className="py-1 px-1 text-center">13</td></tr>
@@ -430,7 +430,7 @@ export const FiveManFormatDetails: React.FC = () => {
                       </tbody>
                     </table>
                   </div>
-                  <p className="text-xs text-gray-500 mt-2 italic">
+                  <p className="text-xs text-muted-foreground mt-2 italic">
                     Odd H/C values have no tie scenario.
                   </p>
                 </div>
@@ -441,10 +441,10 @@ export const FiveManFormatDetails: React.FC = () => {
 
         {/* Tie-Breaker Playoff */}
         <Card className="p-6 mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Tie-Breaker Playoff</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-4">Tie-Breaker Playoff</h2>
 
           <div className="space-y-4">
-            <p className="text-gray-700">
+            <p className="text-foreground">
               If the match ends in a tie after all 18 games, one additional round is played to determine the match winner:
             </p>
 
@@ -490,10 +490,10 @@ export const FiveManFormatDetails: React.FC = () => {
 
         {/* Standings and Ranking */}
         <Card className="p-6 mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Standings and Ranking</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-4">Standings and Ranking</h2>
 
           <div className="space-y-4">
-            <p className="text-gray-700">
+            <p className="text-foreground">
               Team placement in the standings is determined by a three-tier system that ensures fair and accurate rankings throughout the season:
             </p>
 
@@ -547,8 +547,8 @@ export const FiveManFormatDetails: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-gray-100 p-4 rounded-md border border-gray-300 mt-4">
-              <h4 className="font-semibold text-gray-900 mb-3">Example Standings (After 10 Weeks):</h4>
+            <div className="bg-muted p-4 rounded-md border border-border mt-4">
+              <h4 className="font-semibold text-foreground mb-3">Example Standings (After 10 Weeks):</h4>
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b-2 border-gray-400">
@@ -584,13 +584,13 @@ export const FiveManFormatDetails: React.FC = () => {
                     <td className="py-2 text-center">87</td>
                   </tr>
                   <tr className="border-t-2 border-gray-500">
-                    <td className="py-2 text-center text-gray-500 italic" colSpan={4}>
+                    <td className="py-2 text-center text-muted-foreground italic" colSpan={4}>
                       ... additional teams below ...
                     </td>
                   </tr>
                 </tbody>
               </table>
-              <p className="text-xs text-gray-600 mt-3">
+              <p className="text-xs text-muted-foreground mt-3">
                 Team B ranks ahead of Team C because both have 7-3 records, but Team B has more team points (+8 vs +3).
               </p>
             </div>
@@ -599,10 +599,10 @@ export const FiveManFormatDetails: React.FC = () => {
 
         {/* Anti-Sandbagging Features */}
         <Card className="p-6 mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Why This Reduces Handicap Complaints</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-4">Why This Reduces Handicap Complaints</h2>
 
           <div className="space-y-4">
-            <p className="text-gray-700">
+            <p className="text-foreground">
               The dynamic handicap system has built-in features that discourage sandbagging and create fairer competition:
             </p>
 
@@ -659,36 +659,36 @@ export const FiveManFormatDetails: React.FC = () => {
 
         {/* Player Experience */}
         <Card className="p-6 mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Why Players Prefer This Format</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-4">Why Players Prefer This Format</h2>
 
           <div className="space-y-4">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">More Action, Less Waiting</h3>
-              <p className="text-gray-700">
+              <h3 className="text-lg font-semibold text-foreground mb-2">More Action, Less Waiting</h3>
+              <p className="text-foreground">
                 In traditional 8-man format, players shoot only 5 games and spend much of the night waiting.
                 In 5-man format, everyone shoots 6 games in less total time.
               </p>
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Less Crowded Tables</h3>
-              <p className="text-gray-700">
+              <h3 className="text-lg font-semibold text-foreground mb-2">Less Crowded Tables</h3>
+              <p className="text-foreground">
                 With 5-man teams, you have 6-10 people around the tables (when everyone shows up).
                 With 8-man teams, it's 10-16 people crowding around. That's a dramatic difference in comfort and space.
               </p>
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Faster Matches = Better Retention</h3>
-              <p className="text-gray-700">
+              <h3 className="text-lg font-semibold text-foreground mb-2">Faster Matches = Better Retention</h3>
+              <p className="text-foreground">
                 Matches that finish in 2-2.5 hours instead of 3-4 hours mean players can have a life outside
                 of league night. This is especially important for players with families or early work schedules.
               </p>
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Fairer Competition</h3>
-              <p className="text-gray-700">
+              <h3 className="text-lg font-semibold text-foreground mb-2">Fairer Competition</h3>
+              <p className="text-foreground">
                 The dynamic handicap system creates more competitive matches. Players report feeling like
                 every match has a real chance, regardless of skill differences.
               </p>
@@ -698,9 +698,9 @@ export const FiveManFormatDetails: React.FC = () => {
 
         {/* For Operators */}
         <Card className="p-6 mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Benefits for League Operators</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-4">Benefits for League Operators</h2>
 
-          <ul className="space-y-3 text-gray-700">
+          <ul className="space-y-3 text-foreground">
             <li className="flex items-start">
               <span className="text-green-600 font-bold mr-2">✓</span>
               <span><strong>Easier Team Building:</strong> Only need 5 players instead of 8+ to field a team</span>

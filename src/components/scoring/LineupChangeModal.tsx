@@ -137,10 +137,10 @@ export function LineupChangeModal({
 
         <div className="py-4 space-y-4">
           {/* Current player being replaced */}
-          <div className="p-3 bg-gray-100 rounded-md">
-            <p className="text-sm text-gray-600">Replacing:</p>
-            <p className="font-semibold text-gray-900">{currentPlayer.name}</p>
-            <p className="text-xs text-gray-500">Position {currentPlayer.position}</p>
+          <div className="p-3 bg-muted rounded-md">
+            <p className="text-sm text-muted-foreground">Replacing:</p>
+            <p className="font-semibold text-foreground">{currentPlayer.name}</p>
+            <p className="text-xs text-muted-foreground">Position {currentPlayer.position}</p>
           </div>
 
           {/* Replacement player selection */}
@@ -170,7 +170,7 @@ export function LineupChangeModal({
           </div>
 
           {/* Info about the request flow */}
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             Your opponent will need to approve this change before it takes effect.
           </p>
         </div>

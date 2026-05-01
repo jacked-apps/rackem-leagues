@@ -206,7 +206,7 @@ export const RemovePlaceholderDialog: React.FC<RemovePlaceholderDialogProps> = (
               <DialogDescription>
                 {blockReason}
                 <br />
-                <span className="text-xs text-gray-500 mt-2 block">
+                <span className="text-xs text-muted-foreground mt-2 block">
                   Refresh the page to see the current state.
                 </span>
               </DialogDescription>
@@ -227,7 +227,7 @@ export const RemovePlaceholderDialog: React.FC<RemovePlaceholderDialogProps> = (
           ) : (
             <>
               <DialogTitle className="flex items-center gap-2">
-                <ArchiveIcon className="h-5 w-5 text-gray-600" />
+                <ArchiveIcon className="h-5 w-5 text-muted-foreground" />
                 Archive {displayName}?
               </DialogTitle>
               <DialogDescription>

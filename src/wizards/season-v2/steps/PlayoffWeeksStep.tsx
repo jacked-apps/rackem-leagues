@@ -44,7 +44,7 @@ export function PlayoffWeeksStep({
         max={4}
       />
 
-      <p className="text-sm text-gray-600">
+      <p className="text-sm text-muted-foreground">
         Total season: <strong>{seasonLength} regular</strong>
         {playoffWeeks > 0 && <> + <strong>{playoffWeeks} playoff</strong></>}
         {' = '}<strong>{totalWeeks} weeks</strong>

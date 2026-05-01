@@ -68,28 +68,28 @@ function StandingsTable({ teams }: { teams: SeededTeam[] }) {
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b bg-gray-50">
-            <th className="text-left py-2 px-3 font-medium text-gray-600">Seed</th>
-            <th className="text-left py-2 px-3 font-medium text-gray-600">Team</th>
-            <th className="text-center py-2 px-3 font-medium text-gray-600">W</th>
-            <th className="text-center py-2 px-3 font-medium text-gray-600">L</th>
-            <th className="text-center py-2 px-3 font-medium text-gray-600">Pts</th>
-            <th className="text-center py-2 px-3 font-medium text-gray-600">Games</th>
+          <tr className="border-b bg-muted">
+            <th className="text-left py-2 px-3 font-medium text-muted-foreground">Seed</th>
+            <th className="text-left py-2 px-3 font-medium text-muted-foreground">Team</th>
+            <th className="text-center py-2 px-3 font-medium text-muted-foreground">W</th>
+            <th className="text-center py-2 px-3 font-medium text-muted-foreground">L</th>
+            <th className="text-center py-2 px-3 font-medium text-muted-foreground">Pts</th>
+            <th className="text-center py-2 px-3 font-medium text-muted-foreground">Games</th>
           </tr>
         </thead>
         <tbody>
           {teams.map((team) => (
-            <tr key={team.teamId} className="border-b hover:bg-gray-50">
+            <tr key={team.teamId} className="border-b hover:bg-muted">
               <td className="py-2 px-3">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 text-gray-700 font-semibold text-xs">
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-accent text-foreground font-semibold text-xs">
                   {team.seed}
                 </span>
               </td>
-              <td className="py-2 px-3 font-medium text-gray-900">{team.teamName}</td>
+              <td className="py-2 px-3 font-medium text-foreground">{team.teamName}</td>
               <td className="py-2 px-3 text-center text-green-600 font-medium">{team.matchWins}</td>
               <td className="py-2 px-3 text-center text-red-600 font-medium">{team.matchLosses}</td>
-              <td className="py-2 px-3 text-center text-gray-700">{team.points}</td>
-              <td className="py-2 px-3 text-center text-gray-700">{team.gamesWon}</td>
+              <td className="py-2 px-3 text-center text-foreground">{team.points}</td>
+              <td className="py-2 px-3 text-center text-foreground">{team.gamesWon}</td>
             </tr>
           ))}
         </tbody>
@@ -369,9 +369,9 @@ export const PlayoffSetup: React.FC = () => {
   // Loading state
   if (loading || seasonLoading || leagueLoading || configLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-muted py-8">
         <div className="container mx-auto px-4 max-w-4xl">
-          <div className="text-center text-gray-600">Loading playoff data...</div>
+          <div className="text-center text-muted-foreground">Loading playoff data...</div>
         </div>
       </div>
     );
@@ -380,7 +380,7 @@ export const PlayoffSetup: React.FC = () => {
   const seasonName = season?.season_name || 'Season';
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       {/* Unsaved changes warning dialog */}
       <UnsavedChangesDialog blocker={blocker} />
 
@@ -469,7 +469,7 @@ export const PlayoffSetup: React.FC = () => {
                     <span className="font-medium">Regular Season In Progress</span>
                   </div>
                 )}
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-muted-foreground">
                   {seasonStatus.completedMatches} of {seasonStatus.totalMatches} matches completed
                   {seasonStatus.remainingMatches > 0 && (
                     <span className="ml-1">

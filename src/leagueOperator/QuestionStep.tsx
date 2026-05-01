@@ -86,10 +86,10 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-8">
+    <div className="bg-card rounded-xl shadow-lg p-8">
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-4">
-          <h2 className="text-2xl font-bold text-gray-900">
+          <h2 className="text-2xl font-bold text-foreground">
             {title}
           </h2>
           {infoTitle && infoContent && (
@@ -99,7 +99,7 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
           )}
         </div>
 
-        <p className="text-gray-600 mb-6">
+        <p className="text-muted-foreground mb-6">
           {subtitle}
         </p>
 
@@ -112,7 +112,7 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
               onKeyDown={handleKeyDown}
               placeholder={placeholder}
               className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg ${
-                error ? 'border-red-500' : 'border-gray-300'
+                error ? 'border-red-500' : 'border-border'
               }`}
             />
             {error && (
@@ -127,9 +127,9 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
               id="autoCapitalize"
               checked={autoCapitalize}
               onChange={(e) => setAutoCapitalize(e.target.checked)}
-              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+              className="w-4 h-4 text-blue-600 bg-muted border-border rounded focus:ring-blue-500"
             />
-            <label htmlFor="autoCapitalize" className="text-sm text-gray-700">
+            <label htmlFor="autoCapitalize" className="text-sm text-foreground">
               {autoCapitalize
                 ? "Auto-capitalize (press Enter to format)"
                 : "Auto-format off (text will appear exactly as entered)"

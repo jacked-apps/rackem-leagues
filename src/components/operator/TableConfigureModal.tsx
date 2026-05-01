@@ -300,17 +300,17 @@ export const TableConfigureModal: React.FC<TableConfigureModalProps> = ({
       onKeyDown={handleKeyDown}
     >
       <div
-        className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[80vh] flex flex-col"
+        className="bg-card rounded-xl shadow-xl max-w-lg w-full max-h-[80vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">
+        <div className="flex items-center justify-between p-4 border-b border-border">
+          <h3 className="text-lg font-semibold text-foreground">
             Configure Tables
           </h3>
           <button
             onClick={onCancel}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-muted-foreground hover:text-muted-foreground transition-colors"
             aria-label="Close"
           >
             <X className="h-5 w-5" />
@@ -318,9 +318,9 @@ export const TableConfigureModal: React.FC<TableConfigureModalProps> = ({
         </div>
 
         {/* Skip numbers control */}
-        <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+        <div className="px-4 py-3 bg-muted border-b border-border">
           <div className="flex items-center gap-3">
-            <Label htmlFor="skip-number" className="text-sm text-gray-700 whitespace-nowrap">
+            <Label htmlFor="skip-number" className="text-sm text-foreground whitespace-nowrap">
               Skip numbers:
             </Label>
             <Input
@@ -369,7 +369,7 @@ export const TableConfigureModal: React.FC<TableConfigureModalProps> = ({
               ))}
             </div>
           )}
-          <p className="text-xs text-gray-500 mt-2">
+          <p className="text-xs text-muted-foreground mt-2">
             Add numbers to skip in the sequence. Click the grip icon on any table to add its number to the skip list.
           </p>
         </div>
@@ -377,7 +377,7 @@ export const TableConfigureModal: React.FC<TableConfigureModalProps> = ({
         {/* Table list */}
         <div className="flex-1 overflow-y-auto p-4">
           {tables.length === 0 ? (
-            <p className="text-gray-500 text-sm text-center py-4">
+            <p className="text-muted-foreground text-sm text-center py-4">
               No tables to configure. Add table counts first.
             </p>
           ) : (
@@ -385,7 +385,7 @@ export const TableConfigureModal: React.FC<TableConfigureModalProps> = ({
               {tables.map((table, index) => (
                 <div
                   key={table.id}
-                  className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg border border-gray-200"
+                  className="flex items-center gap-3 p-2 bg-muted rounded-lg border border-border"
                 >
                   {/* Skip button - click to add this number to skip list */}
                   <button
@@ -393,7 +393,7 @@ export const TableConfigureModal: React.FC<TableConfigureModalProps> = ({
                     className="p-1 -m-1 rounded hover:bg-orange-100 transition-colors"
                     title={`Skip table #${table.number}`}
                   >
-                    <SkipForward className="h-4 w-4 text-gray-400 hover:text-orange-600" />
+                    <SkipForward className="h-4 w-4 text-muted-foreground hover:text-orange-600" />
                   </button>
 
                   {/* Editable table number */}
@@ -438,18 +438,18 @@ export const TableConfigureModal: React.FC<TableConfigureModalProps> = ({
                     <button
                       onClick={() => moveUp(index)}
                       disabled={index === 0}
-                      className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="p-1 rounded hover:bg-accent disabled:opacity-30 disabled:cursor-not-allowed"
                       title="Move up"
                     >
-                      <ArrowUp className="h-4 w-4 text-gray-600" />
+                      <ArrowUp className="h-4 w-4 text-muted-foreground" />
                     </button>
                     <button
                       onClick={() => moveDown(index)}
                       disabled={index === tables.length - 1}
-                      className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="p-1 rounded hover:bg-accent disabled:opacity-30 disabled:cursor-not-allowed"
                       title="Move down"
                     >
-                      <ArrowDown className="h-4 w-4 text-gray-600" />
+                      <ArrowDown className="h-4 w-4 text-muted-foreground" />
                     </button>
                   </div>
                 </div>
@@ -459,7 +459,7 @@ export const TableConfigureModal: React.FC<TableConfigureModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between gap-3 p-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+        <div className="flex items-center justify-between gap-3 p-4 border-t border-border bg-muted rounded-b-xl">
           {hasDuplicates ? (
             <p className="text-sm text-red-600">
               Duplicate table numbers must be resolved before saving.

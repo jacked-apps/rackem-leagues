@@ -57,7 +57,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
   const displayNumber = captain ? formatPartialMemberNumber(captain) : '';
 
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden">
+    <div className="border border-border rounded-lg overflow-hidden">
       {/* Team Header */}
       <div className="p-4 flex items-start gap-3">
         <Button
@@ -73,8 +73,8 @@ export const TeamCard: React.FC<TeamCardProps> = ({
           )}
         </Button>
         <div className="flex-1">
-          <h3 className="font-semibold text-gray-900">{team.team_name}</h3>
-          <p className="text-sm text-gray-600">
+          <h3 className="font-semibold text-foreground">{team.team_name}</h3>
+          <p className="text-sm text-muted-foreground">
             Captain: {captainName} {displayNumber} • Roster: {rosterCount}/
             {team.roster_size}
           </p>
@@ -91,20 +91,20 @@ export const TeamCard: React.FC<TeamCardProps> = ({
 
       {/* Expanded Details */}
       {isExpanded && (
-        <div className="px-4 pb-4 pt-2 border-t border-gray-200 bg-gray-50">
+        <div className="px-4 pb-4 pt-2 border-t border-border bg-muted">
           {/* Home Venue */}
           <div className="mb-3">
-            <p className="text-xs font-semibold text-gray-700 uppercase mb-1">
+            <p className="text-xs font-semibold text-foreground uppercase mb-1">
               Home Venue
             </p>
-            <p className="text-sm text-gray-900">
+            <p className="text-sm text-foreground">
               {team.venue?.name || 'No venue assigned'}
             </p>
           </div>
 
           {/* Roster */}
           <div>
-            <p className="text-xs font-semibold text-gray-700 uppercase mb-2">
+            <p className="text-xs font-semibold text-foreground uppercase mb-2">
               Roster
             </p>
             <TeamRosterList rosterPlayers={rosterPlayers} />

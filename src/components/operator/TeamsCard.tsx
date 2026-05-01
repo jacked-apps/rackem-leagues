@@ -76,9 +76,9 @@ export const TeamsCard: React.FC<TeamsCardProps> = ({ leagueId }) => {
   };
 
   return (
-    <div className="bg-white lg:rounded-xl shadow-sm p-6 mb-6">
+    <div className="bg-card lg:rounded-xl shadow-sm p-6 mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-gray-900">Teams</h2>
+        <h2 className="text-xl font-semibold text-foreground">Teams</h2>
         <div className="flex items-center gap-2">
           <Button
             onClick={(e) => {
@@ -103,12 +103,12 @@ export const TeamsCard: React.FC<TeamsCardProps> = ({ leagueId }) => {
 
       {loading ? (
         <div className="text-center py-8">
-          <p className="text-gray-600">Loading teams...</p>
+          <p className="text-muted-foreground">Loading teams...</p>
         </div>
       ) : teams.length === 0 ? (
         <div className="text-center py-8">
           <div className="text-4xl mb-3">👥</div>
-          <p className="text-gray-600 mb-4">No teams yet</p>
+          <p className="text-muted-foreground mb-4">No teams yet</p>
           <div className="inline-flex items-center gap-2">
             <Button
               onClick={() => {
@@ -132,10 +132,10 @@ export const TeamsCard: React.FC<TeamsCardProps> = ({ leagueId }) => {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left text-sm font-semibold text-gray-900 pb-3">Team Name</th>
-                <th className="text-left text-sm font-semibold text-gray-900 pb-3">Captain</th>
-                <th className="text-left text-sm font-semibold text-gray-900 pb-3">Venue</th>
+              <tr className="border-b border-border">
+                <th className="text-left text-sm font-semibold text-foreground pb-3">Team Name</th>
+                <th className="text-left text-sm font-semibold text-foreground pb-3">Captain</th>
+                <th className="text-left text-sm font-semibold text-foreground pb-3">Venue</th>
               </tr>
             </thead>
             <tbody>
@@ -143,26 +143,26 @@ export const TeamsCard: React.FC<TeamsCardProps> = ({ leagueId }) => {
                 <tr
                   key={team.id}
                   onClick={() => team.captain && toggleTeam(team.id)}
-                  className={`border-b border-gray-100 last:border-0 ${team.captain ? 'cursor-pointer hover:bg-gray-50' : ''}`}
+                  className={`border-b border-gray-100 last:border-0 ${team.captain ? 'cursor-pointer hover:bg-muted' : ''}`}
                 >
-                  <td className="py-3 text-sm font-medium text-gray-900">
+                  <td className="py-3 text-sm font-medium text-foreground">
                     <div className="flex items-center gap-2">
                       {team.captain && (
                         expandedTeamId === team.id ? (
-                          <ChevronDown className="h-4 w-4 text-gray-400" />
+                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
                         ) : (
-                          <ChevronRight className="h-4 w-4 text-gray-400" />
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
                         )
                       )}
                       <span>{team.team_name}</span>
                     </div>
                   </td>
-                  <td className="py-3 text-sm text-gray-700">
+                  <td className="py-3 text-sm text-foreground">
                     {team.captain ? (
                       <div>
                         <div>{`${team.captain.first_name} ${team.captain.last_name}`}</div>
                         {expandedTeamId === team.id && (
-                          <div className="mt-1 text-xs text-gray-600 space-y-0.5">
+                          <div className="mt-1 text-xs text-muted-foreground space-y-0.5">
                             <div>
                               <a href={`tel:${team.captain.phone}`} className="hover:text-blue-600">
                                 {formatPhoneNumber(team.captain.phone)}
@@ -182,11 +182,11 @@ export const TeamsCard: React.FC<TeamsCardProps> = ({ leagueId }) => {
                       'No captain'
                     )}
                   </td>
-                  <td className="py-3 text-sm text-gray-600">
+                  <td className="py-3 text-sm text-muted-foreground">
                     <div>
                       <div>{team.venue?.name || 'No venue'}</div>
                       {expandedTeamId === team.id && team.venue && (
-                        <div className="mt-1 text-xs text-gray-600 space-y-0.5">
+                        <div className="mt-1 text-xs text-muted-foreground space-y-0.5">
                           {team.venue.phone && (
                             <div>
                               <a href={`tel:${team.venue.phone}`} className="hover:text-blue-600">

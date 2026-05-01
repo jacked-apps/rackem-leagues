@@ -58,7 +58,7 @@ export const PlayoffSeedingCard: React.FC<PlayoffSeedingCardProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-gray-500 mb-4">
+        <p className="text-sm text-muted-foreground mb-4">
           Teams are seeded by: Match Wins → Points → Games Won
         </p>
         <PlayoffStandingsTable

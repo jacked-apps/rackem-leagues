@@ -113,11 +113,11 @@ export const PlayoffsCard: React.FC<PlayoffsCardProps> = ({ leagueId, seasonId }
   // No active season
   if (!seasonId) {
     return (
-      <div className="bg-white lg:rounded-xl shadow-sm p-6 mb-6 opacity-60">
+      <div className="bg-card lg:rounded-xl shadow-sm p-6 mb-6 opacity-60">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Playoffs</h2>
+          <h2 className="text-xl font-semibold text-foreground">Playoffs</h2>
         </div>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-muted-foreground">
           Create a season to configure playoffs.
         </p>
       </div>
@@ -127,11 +127,11 @@ export const PlayoffsCard: React.FC<PlayoffsCardProps> = ({ leagueId, seasonId }
   // Loading
   if (loading || isLoadingConfig) {
     return (
-      <div className="bg-white lg:rounded-xl shadow-sm p-6 mb-6">
+      <div className="bg-card lg:rounded-xl shadow-sm p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Playoffs</h2>
+          <h2 className="text-xl font-semibold text-foreground">Playoffs</h2>
         </div>
-        <p className="text-sm text-gray-500">Loading playoff status...</p>
+        <p className="text-sm text-muted-foreground">Loading playoff status...</p>
       </div>
     );
   }
@@ -139,17 +139,17 @@ export const PlayoffsCard: React.FC<PlayoffsCardProps> = ({ leagueId, seasonId }
   // No playoff week configured
   if (!playoffWeek) {
     return (
-      <div className="bg-white lg:rounded-xl shadow-sm p-6 mb-6">
+      <div className="bg-card lg:rounded-xl shadow-sm p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Playoffs</h2>
+          <h2 className="text-xl font-semibold text-foreground">Playoffs</h2>
         </div>
         <div className="flex items-start gap-3">
           <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
           <div>
-            <p className="text-sm text-gray-700">
+            <p className="text-sm text-foreground">
               No playoff week found in the season schedule.
             </p>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Add a playoff week when creating or editing the season.
             </p>
           </div>
@@ -159,9 +159,9 @@ export const PlayoffsCard: React.FC<PlayoffsCardProps> = ({ leagueId, seasonId }
   }
 
   return (
-    <div className="bg-white lg:rounded-xl shadow-sm p-6 mb-6">
+    <div className="bg-card lg:rounded-xl shadow-sm p-6 mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-gray-900">Playoffs</h2>
+        <h2 className="text-xl font-semibold text-foreground">Playoffs</h2>
         <Button
           onClick={handleNavigate}
           disabled={isNavigating}
@@ -190,11 +190,11 @@ export const PlayoffsCard: React.FC<PlayoffsCardProps> = ({ leagueId, seasonId }
       )}
 
       {/* Playoff Week Info */}
-      <div className="bg-gray-50 rounded-lg p-3 mb-4">
-        <div className="text-sm font-medium text-gray-800">
+      <div className="bg-muted rounded-lg p-3 mb-4">
+        <div className="text-sm font-medium text-foreground">
           {playoffWeek.week_name}
         </div>
-        <div className="text-xs text-gray-600">
+        <div className="text-xs text-muted-foreground">
           {parseLocalDate(playoffWeek.scheduled_date).toLocaleDateString('en-US', {
             weekday: 'long',
             month: 'long',
@@ -234,8 +234,8 @@ export const PlayoffsCard: React.FC<PlayoffsCardProps> = ({ leagueId, seasonId }
             </>
           ) : (
             <>
-              <AlertCircle className="h-4 w-4 text-gray-400" />
-              <span className="text-gray-500">Playoff matches not yet created</span>
+              <AlertCircle className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">Playoff matches not yet created</span>
             </>
           )}
         </div>

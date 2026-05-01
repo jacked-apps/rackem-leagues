@@ -56,11 +56,11 @@ export function Modal({ isOpen, onClose, title, icon, children, maxWidth = 'lg' 
       onClick={onClose}
     >
       <div
-        className={`bg-white rounded-lg shadow-xl ${maxWidthClasses[maxWidth]} w-full max-h-[90vh] overflow-hidden flex flex-col`}
+        className={`bg-card rounded-lg shadow-xl ${maxWidthClasses[maxWidth]} w-full max-h-[90vh] overflow-hidden flex flex-col`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b flex-shrink-0 bg-white">
+        <div className="flex items-center justify-between p-4 border-b flex-shrink-0 bg-card">
           <div className="flex items-center gap-2">
             {icon}
             <h2 className="text-xl font-semibold">{title}</h2>
@@ -98,7 +98,7 @@ Modal.Body = function ModalBody({ children, className = '' }: ModalBodyProps) {
  */
 Modal.Footer = function ModalFooter({ children, className = '' }: ModalFooterProps) {
   return (
-    <div className={`flex items-center justify-end gap-2 p-4 border-t flex-shrink-0 bg-white ${className}`}>
+    <div className={`flex items-center justify-end gap-2 p-4 border-t flex-shrink-0 bg-card ${className}`}>
       {children}
     </div>
   );

@@ -113,7 +113,7 @@ export const WildcardSettingsCard: React.FC<WildcardSettingsCardProps> = ({
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 dispatch({ type: 'SET_WILDCARD_SPOTS', payload: parseInt(e.target.value) || 0 })
               }
-              className="w-20 bg-white"
+              className="w-20 bg-card"
             />
             <span className="text-sm text-amber-700">(0 = disabled)</span>
           </div>

@@ -68,7 +68,7 @@ export const ShareLinkSection: React.FC<ShareLinkSectionProps> = ({
       {/* Share Link */}
       <div className="space-y-3">
         <Label className="text-sm font-medium">Share Registration Link</Label>
-        <p className="text-xs text-gray-600">
+        <p className="text-xs text-muted-foreground">
           Copy the link to share via text, social media, or other messaging apps.
         </p>
 
@@ -87,7 +87,7 @@ export const ShareLinkSection: React.FC<ShareLinkSectionProps> = ({
           <Input
             readOnly
             value={registrationLink}
-            className="flex-1 text-sm bg-gray-50"
+            className="flex-1 text-sm bg-muted"
           />
           <Button
             type="button"
@@ -117,22 +117,22 @@ export const ShareLinkSection: React.FC<ShareLinkSectionProps> = ({
           className="flex items-center justify-between w-full text-left"
         >
           <div className="flex items-center gap-2">
-            <QrCode className="h-4 w-4 text-gray-600" />
+            <QrCode className="h-4 w-4 text-muted-foreground" />
             <Label className="text-sm font-medium cursor-pointer">Show QR Code</Label>
           </div>
           {showQrCode ? (
-            <ChevronUp className="h-4 w-4 text-gray-400" />
+            <ChevronUp className="h-4 w-4 text-muted-foreground" />
           ) : (
-            <ChevronDown className="h-4 w-4 text-gray-400" />
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
           )}
         </button>
 
         {showQrCode && (
           <div className="space-y-3">
-            <p className="text-xs text-gray-600">
+            <p className="text-xs text-muted-foreground">
               Have the player scan this code with their phone to register.
             </p>
-            <div className="flex justify-center p-4 bg-white rounded-lg border">
+            <div className="flex justify-center p-4 bg-card rounded-lg border">
               <QRCodeSVG
                 value={registrationLink}
                 size={180}

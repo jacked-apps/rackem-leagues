@@ -48,10 +48,10 @@ export const InviteSuccessView: React.FC<InviteSuccessViewProps> = ({
 
       {/* Success message */}
       <div className="text-center space-y-2">
-        <p className="text-sm text-gray-900">
+        <p className="text-sm text-foreground">
           A confirmation email has been sent to <span className="font-medium">{email}</span>
         </p>
-        <p className="text-xs text-gray-600">
+        <p className="text-xs text-muted-foreground">
           {firstName} should check their email and click the confirmation link to complete setup.
           They can then log in on their own device.
         </p>

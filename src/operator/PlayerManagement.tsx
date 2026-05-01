@@ -198,7 +198,7 @@ export const PlayerManagement: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       <PageHeader
         backTo={`/operator-dashboard/${operatorId}`}
         backLabel="Back to Organization"
@@ -260,7 +260,7 @@ export const PlayerManagement: React.FC = () => {
                     <Users className="h-8 w-8 text-green-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Active Players</p>
+                    <p className="text-sm text-muted-foreground">Active Players</p>
                     <p className="text-3xl font-bold">{playerStats?.active_players ?? '-'}</p>
                   </div>
                 </div>
@@ -268,15 +268,15 @@ export const PlayerManagement: React.FC = () => {
                 {/* Secondary stats */}
                 <div className="border-l pl-6 grid grid-cols-3 gap-x-4">
                   <div>
-                    <p className="text-xs text-gray-500">Total</p>
+                    <p className="text-xs text-muted-foreground">Total</p>
                     <p className="text-xl font-bold">{playerStats?.total_players ?? '-'}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">Alias</p>
+                    <p className="text-xs text-muted-foreground">Alias</p>
                     <p className="text-xl font-bold text-amber-600">{playerStats?.placeholders ?? '-'}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">ID'd</p>
+                    <p className="text-xs text-muted-foreground">ID'd</p>
                     <p className="text-xl font-bold text-blue-600">{playerStats?.identified_placeholders ?? '-'}</p>
                   </div>
                 </div>
@@ -305,7 +305,7 @@ export const PlayerManagement: React.FC = () => {
           <>
             {isLoadingDetails ? (
               <Card className="rounded-none lg:rounded-xl">
-                <CardContent className="py-12 text-center text-gray-500">
+                <CardContent className="py-12 text-center text-muted-foreground">
                   Loading player details...
                 </CardContent>
               </Card>
@@ -320,7 +320,7 @@ export const PlayerManagement: React.FC = () => {
                     <div className="grid grid-cols-1 min-[320px]:grid-cols-2 gap-x-2 gap-y-3">
                       {/* Status - indicates if player is registered or an alias (spans full width) */}
                       <div className="col-span-full">
-                        <p className="text-xs text-gray-500 uppercase mb-1">
+                        <p className="text-xs text-muted-foreground uppercase mb-1">
                           Status
                         </p>
                         <p className={`font-medium ${
@@ -328,7 +328,7 @@ export const PlayerManagement: React.FC = () => {
                             ? 'text-green-600'
                             : playerDetails.email
                               ? 'text-amber-600'
-                              : 'text-gray-500'
+                              : 'text-muted-foreground'
                         }`}>
                           {playerDetails.user_id
                             ? 'Registered'
@@ -340,7 +340,7 @@ export const PlayerManagement: React.FC = () => {
 
                       {/* Name */}
                       <div>
-                        <p className="text-xs text-gray-500 uppercase mb-1">
+                        <p className="text-xs text-muted-foreground uppercase mb-1">
                           Name
                         </p>
                         <PlayerNameLink
@@ -352,60 +352,60 @@ export const PlayerManagement: React.FC = () => {
 
                       {/* Nickname */}
                       <div>
-                        <p className="text-xs text-gray-500 uppercase mb-1">
+                        <p className="text-xs text-muted-foreground uppercase mb-1">
                           Nickname
                         </p>
-                        <p className="font-medium text-gray-900">
+                        <p className="font-medium text-foreground">
                           {playerDetails.nickname || '-'}
                         </p>
                       </div>
 
                       {/* Phone */}
                       <div>
-                        <p className="text-xs text-gray-500 uppercase mb-1">
+                        <p className="text-xs text-muted-foreground uppercase mb-1">
                           Phone
                         </p>
-                        <p className="font-medium text-gray-900">
+                        <p className="font-medium text-foreground">
                           {playerDetails.phone}
                         </p>
                       </div>
 
                       {/* Email */}
                       <div>
-                        <p className="text-xs text-gray-500 uppercase mb-1">
+                        <p className="text-xs text-muted-foreground uppercase mb-1">
                           Email
                         </p>
-                        <p className="font-medium text-gray-900 break-all">
+                        <p className="font-medium text-foreground break-all">
                           {playerDetails.email || '-'}
                         </p>
                       </div>
 
                       {/* Role */}
                       <div>
-                        <p className="text-xs text-gray-500 uppercase mb-1">
+                        <p className="text-xs text-muted-foreground uppercase mb-1">
                           Role
                         </p>
-                        <p className="font-medium text-gray-900 capitalize">
+                        <p className="font-medium text-foreground capitalize">
                           {playerDetails.role}
                         </p>
                       </div>
 
                       {/* System Player # */}
                       <div>
-                        <p className="text-xs text-gray-500 uppercase mb-1">
+                        <p className="text-xs text-muted-foreground uppercase mb-1">
                           System Player #
                         </p>
-                        <p className="font-medium text-gray-900">
+                        <p className="font-medium text-foreground">
                           {playerDetails.system_player_number}
                         </p>
                       </div>
 
                       {/* BCA Member # */}
                       <div>
-                        <p className="text-xs text-gray-500 uppercase mb-1">
+                        <p className="text-xs text-muted-foreground uppercase mb-1">
                           BCA Member #
                         </p>
-                        <p className="font-medium text-gray-900">
+                        <p className="font-medium text-foreground">
                           {playerDetails.bca_member_number || '-'}
                         </p>
                       </div>
@@ -424,14 +424,14 @@ export const PlayerManagement: React.FC = () => {
                       <div>
                         <button
                           onClick={() => setShowDuesModal(true)}
-                          className="text-left w-full hover:bg-gray-50 -m-2 p-2 rounded transition-colors"
+                          className="text-left w-full hover:bg-muted -m-2 p-2 rounded transition-colors"
                         >
                           <p className="text-xs text-blue-600 hover:text-blue-800 uppercase mb-1">
                             Membership Status
                           </p>
                           <p className={`font-medium ${
                             !playerDetails.membership_paid_date
-                              ? 'text-gray-500'
+                              ? 'text-muted-foreground'
                               : new Date(playerDetails.membership_paid_date).getFullYear() === new Date().getFullYear()
                                 ? 'text-green-600'
                                 : 'text-amber-600'
@@ -457,17 +457,17 @@ export const PlayerManagement: React.FC = () => {
                   </CardHeader>
                   <CardContent className="p-4 lg:p-6 pt-0">
                     {playerDetails.teams.length === 0 ? (
-                      <p className="text-sm text-gray-500">Not on any teams</p>
+                      <p className="text-sm text-muted-foreground">Not on any teams</p>
                     ) : (
                       <div className="space-y-3">
                         {playerDetails.teams.map((team) => (
                           <div
                             key={team.id}
-                            className="p-3 bg-gray-50 rounded-md border border-gray-200"
+                            className="p-3 bg-muted rounded-md border border-border"
                           >
                             {/* Season Name (contains all league info) */}
                             <div className="mb-2">
-                              <p className="text-xs font-semibold text-gray-600 uppercase">
+                              <p className="text-xs font-semibold text-muted-foreground uppercase">
                                 {team.season_name}
                               </p>
                             </div>
@@ -512,7 +512,7 @@ export const PlayerManagement: React.FC = () => {
                   <CardContent className="p-4 lg:p-6 pt-0 space-y-4">
                     {/* Total Games */}
                     <div className="p-3 bg-blue-50 rounded-md">
-                      <p className="text-sm text-gray-600">Total Games</p>
+                      <p className="text-sm text-muted-foreground">Total Games</p>
                       <p className="text-2xl font-bold text-blue-600">
                         {playerDetails.gameCounts.total}
                       </p>
@@ -521,22 +521,22 @@ export const PlayerManagement: React.FC = () => {
                     {/* Game Type Counts with Handicaps */}
                     <div className="space-y-3">
                       {/* 8-Ball */}
-                      <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
+                      <div className="p-3 bg-muted rounded-md border border-border">
                         <div className="flex justify-between items-center mb-2">
-                          <p className="font-medium text-gray-900">8-Ball</p>
-                          <p className="text-sm text-gray-600">
+                          <p className="font-medium text-foreground">8-Ball</p>
+                          <p className="text-sm text-muted-foreground">
                             {playerDetails.gameCounts.eight_ball} games
                           </p>
                         </div>
                         <div className="flex gap-4 text-sm">
                           <div>
-                            <span className="text-gray-600">Points:</span>{' '}
+                            <span className="text-muted-foreground">Points:</span>{' '}
                             <span className="font-semibold">
                               {playerDetails.handicaps.eight_ball_points}
                             </span>
                           </div>
                           <div>
-                            <span className="text-gray-600">Pct:</span>{' '}
+                            <span className="text-muted-foreground">Pct:</span>{' '}
                             <span className="font-semibold">
                               {playerDetails.handicaps.eight_ball_percentage}%
                             </span>
@@ -545,22 +545,22 @@ export const PlayerManagement: React.FC = () => {
                       </div>
 
                       {/* 9-Ball */}
-                      <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
+                      <div className="p-3 bg-muted rounded-md border border-border">
                         <div className="flex justify-between items-center mb-2">
-                          <p className="font-medium text-gray-900">9-Ball</p>
-                          <p className="text-sm text-gray-600">
+                          <p className="font-medium text-foreground">9-Ball</p>
+                          <p className="text-sm text-muted-foreground">
                             {playerDetails.gameCounts.nine_ball} games
                           </p>
                         </div>
                         <div className="flex gap-4 text-sm">
                           <div>
-                            <span className="text-gray-600">Points:</span>{' '}
+                            <span className="text-muted-foreground">Points:</span>{' '}
                             <span className="font-semibold">
                               {playerDetails.handicaps.nine_ball_points}
                             </span>
                           </div>
                           <div>
-                            <span className="text-gray-600">Pct:</span>{' '}
+                            <span className="text-muted-foreground">Pct:</span>{' '}
                             <span className="font-semibold">
                               {playerDetails.handicaps.nine_ball_percentage}%
                             </span>
@@ -569,22 +569,22 @@ export const PlayerManagement: React.FC = () => {
                       </div>
 
                       {/* 10-Ball */}
-                      <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
+                      <div className="p-3 bg-muted rounded-md border border-border">
                         <div className="flex justify-between items-center mb-2">
-                          <p className="font-medium text-gray-900">10-Ball</p>
-                          <p className="text-sm text-gray-600">
+                          <p className="font-medium text-foreground">10-Ball</p>
+                          <p className="text-sm text-muted-foreground">
                             {playerDetails.gameCounts.ten_ball} games
                           </p>
                         </div>
                         <div className="flex gap-4 text-sm">
                           <div>
-                            <span className="text-gray-600">Points:</span>{' '}
+                            <span className="text-muted-foreground">Points:</span>{' '}
                             <span className="font-semibold">
                               {playerDetails.handicaps.ten_ball_points}
                             </span>
                           </div>
                           <div>
-                            <span className="text-gray-600">Pct:</span>{' '}
+                            <span className="text-muted-foreground">Pct:</span>{' '}
                             <span className="font-semibold">
                               {playerDetails.handicaps.ten_ball_percentage}%
                             </span>
@@ -594,16 +594,16 @@ export const PlayerManagement: React.FC = () => {
                     </div>
 
                     {/* Divider */}
-                    <div className="border-t border-gray-200 my-4"></div>
+                    <div className="border-t border-border my-4"></div>
 
                     {/* Current Starting Handicaps Display */}
-                    <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
-                      <p className="text-sm font-medium text-gray-700 mb-2">
+                    <div className="p-3 bg-muted rounded-md border border-border">
+                      <p className="text-sm font-medium text-foreground mb-2">
                         Current Starting Handicaps
                       </p>
                       <div className="flex gap-4 text-sm">
                         <div>
-                          <span className="text-gray-600">Points:</span>{' '}
+                          <span className="text-muted-foreground">Points:</span>{' '}
                           <span
                             className={`font-semibold ${
                               playerDetails.starting_handicap_3v3 === null
@@ -617,7 +617,7 @@ export const PlayerManagement: React.FC = () => {
                           </span>
                         </div>
                         <div>
-                          <span className="text-gray-600">Pct:</span>{' '}
+                          <span className="text-muted-foreground">Pct:</span>{' '}
                           <span
                             className={`font-semibold ${
                               playerDetails.starting_handicap_5v5 === null
@@ -682,7 +682,7 @@ export const PlayerManagement: React.FC = () => {
                         <div>
                           <Label htmlFor="handicap5v5">
                             Starting Handicap (5v5)
-                            <span className="text-xs text-gray-500 ml-2">
+                            <span className="text-xs text-muted-foreground ml-2">
                               (Range: 0 to 100)
                             </span>
                           </Label>
@@ -717,7 +717,7 @@ export const PlayerManagement: React.FC = () => {
               </>
             ) : (
               <Card className="rounded-none lg:rounded-xl">
-                <CardContent className="py-12 text-center text-gray-500">
+                <CardContent className="py-12 text-center text-muted-foreground">
                   Failed to load player details
                 </CardContent>
               </Card>
@@ -747,22 +747,22 @@ export const PlayerManagement: React.FC = () => {
                 <div className="flex items-center gap-4 text-sm">
                   <div className="text-center">
                     <p className="text-2xl font-bold text-blue-600">{pendingCount}</p>
-                    <p className="text-xs text-gray-500">Pending</p>
+                    <p className="text-xs text-muted-foreground">Pending</p>
                   </div>
                   <div className="text-center">
                     <p className="text-2xl font-bold text-amber-600">{expiredCount}</p>
-                    <p className="text-xs text-gray-500">Expired</p>
+                    <p className="text-xs text-muted-foreground">Expired</p>
                   </div>
                   <div className="text-center">
                     <p className="text-2xl font-bold text-green-600">{claimedCount}</p>
-                    <p className="text-xs text-gray-500">Claimed</p>
+                    <p className="text-xs text-muted-foreground">Claimed</p>
                   </div>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="p-4 lg:p-6 pt-0">
               {invitesLoading ? (
-                <p className="text-sm text-gray-500">Loading invites...</p>
+                <p className="text-sm text-muted-foreground">Loading invites...</p>
               ) : (
                 <PendingInvitesList
                   invites={pendingInvites}

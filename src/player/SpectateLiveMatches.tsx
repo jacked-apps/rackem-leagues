@@ -54,7 +54,7 @@ export function SpectateLiveMatches() {
   const leagueLabel = firstLeague ? composeLeagueLabel(firstLeague) : '';
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-muted flex flex-col">
       <PageHeader
         backTo={backTo}
         backLabel={backLabel}
@@ -62,14 +62,14 @@ export function SpectateLiveMatches() {
       >
         {/* Pulsing red dot + "Live Matches" label — traditional broadcast
             indicator that conveys "something is happening right now." */}
-        <div className="flex items-center gap-2 mt-1 text-gray-700">
+        <div className="flex items-center gap-2 mt-1 text-foreground">
           <span className="relative inline-flex h-2.5 w-2.5">
             <span className="absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75 animate-ping" />
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
           </span>
           <span className="text-md lg:text-xl">Live Matches</span>
           {!isLoading && matches.length > 0 && (
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-muted-foreground">
               — {matches.length} in progress
             </span>
           )}
@@ -79,7 +79,7 @@ export function SpectateLiveMatches() {
       {/* Body */}
       <main className="flex-1 overflow-y-auto px-4 py-3 space-y-6">
         {isLoading && (
-          <div className="flex items-center justify-center py-12 text-gray-500">
+          <div className="flex items-center justify-center py-12 text-muted-foreground">
             <Loader2 className="h-5 w-5 animate-spin" />
             <span className="ml-2 text-sm">Loading live matches…</span>
           </div>
@@ -93,11 +93,11 @@ export function SpectateLiveMatches() {
 
         {!isLoading && !error && matches.length === 0 && (
           <div className="text-center py-16 px-6">
-            <div className="inline-flex items-center justify-center h-14 w-14 rounded-full bg-gray-100 mb-3">
+            <div className="inline-flex items-center justify-center h-14 w-14 rounded-full bg-muted mb-3">
               <span className="text-3xl">🎱</span>
             </div>
-            <p className="text-sm font-medium text-gray-700">Nothing on the tables yet.</p>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-sm font-medium text-foreground">Nothing on the tables yet.</p>
+            <p className="text-xs text-muted-foreground mt-1">
               When a match starts in {leagueLabel || 'this league'}, it'll show up here.
             </p>
           </div>
@@ -116,7 +116,7 @@ export function SpectateLiveMatches() {
                 {subLabel && (
                   <h2
                     id={`match-${m.id}-heading`}
-                    className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 px-1"
+                    className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 px-1"
                   >
                     {subLabel}
                   </h2>

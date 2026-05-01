@@ -36,7 +36,7 @@ export function getWeekTypeStyle(weekType: string): WeekStyle {
       };
     case 'blackout':
       return {
-        bgColor: 'bg-gray-50',
+        bgColor: 'bg-muted',
         badge: '',
         badgeColor: '',
       };
@@ -48,7 +48,7 @@ export function getWeekTypeStyle(weekType: string): WeekStyle {
       };
     default:
       return {
-        bgColor: 'bg-gray-50',
+        bgColor: 'bg-muted',
         badge: '',
         badgeColor: '',
       };

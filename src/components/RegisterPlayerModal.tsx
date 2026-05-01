@@ -262,7 +262,7 @@ export function RegisterPlayerModal({
             <DialogHeader>
               <DialogTitle>Register Player</DialogTitle>
               <DialogDescription>
-                Help <span className="font-medium text-gray-900">{playerName}</span> create their account
+                Help <span className="font-medium text-foreground">{playerName}</span> create their account
               </DialogDescription>
             </DialogHeader>
 
@@ -270,7 +270,7 @@ export function RegisterPlayerModal({
               {/* Option 1: Device Handoff (moved to top) */}
               <div className="space-y-3">
                 <Label className="text-sm font-medium">In-Person Registration</Label>
-                <p className="text-xs text-gray-600">
+                <p className="text-xs text-muted-foreground">
                   Hand your device to the player so they can register right now.
                 </p>
                 <Button
@@ -289,14 +289,14 @@ export function RegisterPlayerModal({
                   <span className="w-full border-t" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-2 text-gray-500">or</span>
+                  <span className="bg-card px-2 text-muted-foreground">or</span>
                 </div>
               </div>
 
               {/* Option 2: Copy Registration Link */}
               <div className="space-y-3">
                 <Label className="text-sm font-medium">Share Registration Link</Label>
-                <p className="text-xs text-gray-600">
+                <p className="text-xs text-muted-foreground">
                   Send this link to the player so they can create their account and claim their profile.
                 </p>
 
@@ -325,7 +325,7 @@ export function RegisterPlayerModal({
                   <Input
                     readOnly
                     value={registrationLink}
-                    className="flex-1 text-sm bg-gray-50"
+                    className="flex-1 text-sm bg-muted"
                   />
                   <Button
                     type="button"
@@ -353,7 +353,7 @@ export function RegisterPlayerModal({
                   <span className="w-full border-t" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-2 text-gray-500">or</span>
+                  <span className="bg-card px-2 text-muted-foreground">or</span>
                 </div>
               </div>
 
@@ -365,22 +365,22 @@ export function RegisterPlayerModal({
                   className="flex items-center justify-between w-full text-left"
                 >
                   <div className="flex items-center gap-2">
-                    <QrCode className="h-4 w-4 text-gray-600" />
+                    <QrCode className="h-4 w-4 text-muted-foreground" />
                     <Label className="text-sm font-medium cursor-pointer">Show QR Code</Label>
                   </div>
                   {showQrCode ? (
-                    <ChevronUp className="h-4 w-4 text-gray-400" />
+                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
                   ) : (
-                    <ChevronDown className="h-4 w-4 text-gray-400" />
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
                   )}
                 </button>
 
                 {showQrCode && (
                   <div className="space-y-3">
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-muted-foreground">
                       Have the player scan this code with their phone to register.
                     </p>
-                    <div className="flex justify-center p-4 bg-white rounded-lg border">
+                    <div className="flex justify-center p-4 bg-card rounded-lg border">
                       <QRCodeSVG
                         value={registrationLink}
                         size={180}
@@ -415,7 +415,7 @@ export function RegisterPlayerModal({
                 <button
                   type="button"
                   onClick={handleBackToOptions}
-                  className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                  className="p-1 hover:bg-muted rounded-md transition-colors"
                   aria-label="Go back"
                 >
                   <ArrowLeft className="h-4 w-4" />
@@ -423,7 +423,7 @@ export function RegisterPlayerModal({
                 <DialogTitle>Device Handoff</DialogTitle>
               </div>
               <DialogDescription>
-                Hand your device to <span className="font-medium text-gray-900">{playerName}</span> to complete registration
+                Hand your device to <span className="font-medium text-foreground">{playerName}</span> to complete registration
               </DialogDescription>
             </DialogHeader>
 
@@ -527,10 +527,10 @@ export function RegisterPlayerModal({
 
               {/* Success message */}
               <div className="text-center space-y-2">
-                <p className="text-sm text-gray-900">
+                <p className="text-sm text-foreground">
                   A confirmation email has been sent to <span className="font-medium">{email}</span>
                 </p>
-                <p className="text-xs text-gray-600">
+                <p className="text-xs text-muted-foreground">
                   {playerName.split(' ')[0]} should check their email and click the confirmation link to complete setup.
                   They can then log in on their own device.
                 </p>

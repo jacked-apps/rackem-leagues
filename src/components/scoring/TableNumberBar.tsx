@@ -135,8 +135,8 @@ export function TableNumberBar({ matchId, tableNumber, spectatorLeagueId }: Tabl
       {/* Table Number Change Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <div className="bg-card rounded-lg shadow-xl max-w-sm w-full p-6">
+            <h3 className="text-lg font-semibold text-foreground mb-4">
               Change Table Number
             </h3>
             <div className="space-y-4">
@@ -158,7 +158,7 @@ export function TableNumberBar({ matchId, tableNumber, spectatorLeagueId }: Tabl
                     }
                   }}
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Leave empty to clear the table assignment
                 </p>
               </div>

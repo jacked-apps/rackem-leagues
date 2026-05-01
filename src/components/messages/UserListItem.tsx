@@ -34,10 +34,10 @@ export function UserListItem({
       )}
     >
       <div className="flex items-center justify-between flex-1">
-        <p className="font-medium text-gray-900">
+        <p className="font-medium text-foreground">
           {firstName} {lastName}
         </p>
-        <p className="text-xs text-gray-600">P-{playerNumber.toString().padStart(5, '0')}</p>
+        <p className="text-xs text-muted-foreground">P-{playerNumber.toString().padStart(5, '0')}</p>
       </div>
       {isSelected && (
         <div className="ml-2 flex-shrink-0">

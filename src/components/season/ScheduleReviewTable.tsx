@@ -33,25 +33,25 @@ export const ScheduleReviewTable: React.FC<ScheduleReviewTableProps> = ({
 }) => {
   return (
     <div className="overflow-x-auto mb-4">
-      <table className="min-w-full bg-white border border-gray-200 rounded-lg">
-        <thead className="bg-gray-50 border-b border-gray-200">
+      <table className="min-w-full bg-card border border-border rounded-lg">
+        <thead className="bg-muted border-b border-border">
           <tr>
-            <th className="py-3 px-4 text-center text-sm font-semibold text-gray-700">
+            <th className="py-3 px-4 text-center text-sm font-semibold text-foreground">
               Week
             </th>
-            <th className="py-3 px-4 text-center text-sm font-semibold text-gray-700">
+            <th className="py-3 px-4 text-center text-sm font-semibold text-foreground">
               Date
             </th>
-            <th className="hidden lg:block py-3 px-4 text-center text-sm font-semibold text-gray-700">
+            <th className="hidden lg:block py-3 px-4 text-center text-sm font-semibold text-foreground">
               Status
             </th>
-            <th className="lg:hidden py-3 px-4 text-center text-sm font-semibold text-gray-700">
+            <th className="lg:hidden py-3 px-4 text-center text-sm font-semibold text-foreground">
             {' '}
             </th>
-            <th className="py-3 px-4 text-center text-sm font-semibold text-gray-700">
+            <th className="py-3 px-4 text-center text-sm font-semibold text-foreground">
               Conflicts
             </th>
-            <th className="py-3 px-4 text-center text-sm font-semibold text-gray-700 w-48">
+            <th className="py-3 px-4 text-center text-sm font-semibold text-foreground w-48">
               Actions
             </th>
           </tr>

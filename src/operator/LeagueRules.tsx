@@ -19,7 +19,7 @@ export const LeagueRules: React.FC = () => {
   const { orgId = '' } = useParams<{ orgId: string }>();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       <PageHeader
         backTo={`/operator-settings/${orgId}`}
         backLabel="Back to Settings"
@@ -27,8 +27,8 @@ export const LeagueRules: React.FC = () => {
         subtitle="Rules that apply to every league in this organization"
       />
       <div className="container mx-auto max-w-3xl px-4 py-8">
-        <div className="mb-6 rounded-lg border bg-white p-4">
-          <p className="text-sm text-gray-700">
+        <div className="mb-6 rounded-lg border bg-card p-4">
+          <p className="text-sm text-foreground">
             House rules override or enhance the official CSI rulebook for your players. Add rules here
             and they'll show up for every league in this organization.
           </p>
@@ -40,7 +40,7 @@ export const LeagueRules: React.FC = () => {
           </Button>
         </div>
 
-        <div className="rounded-lg border bg-white p-4">
+        <div className="rounded-lg border bg-card p-4">
           <HouseRulesList scope={{ type: 'organization', organizationId: orgId }} />
         </div>
       </div>

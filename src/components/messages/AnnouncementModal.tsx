@@ -203,7 +203,7 @@ export function AnnouncementModal({
               {selectedTargets.map((target) => (
                 <div
                   key={target.id}
-                  className="bg-white border border-blue-300 rounded-full px-3 py-1 text-sm flex items-center gap-2"
+                  className="bg-card border border-blue-300 rounded-full px-3 py-1 text-sm flex items-center gap-2"
                 >
                   <span>
                     {target.name}
@@ -211,7 +211,7 @@ export function AnnouncementModal({
                   </span>
                   <button
                     onClick={() => handleToggleTarget(target.id)}
-                    className="text-gray-500 hover:text-gray-700"
+                    className="text-muted-foreground hover:text-foreground"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -245,14 +245,14 @@ export function AnnouncementModal({
                     'w-full p-4 rounded-lg border-2 transition-all text-left',
                     selectedTargetIds.includes(target.id)
                       ? 'border-blue-600 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      : 'border-border hover:border-border hover:bg-muted'
                   )}
                 >
-                  <div className="font-medium text-gray-900">{target.name}</div>
+                  <div className="font-medium text-foreground">{target.name}</div>
                   {target.season_name && (
-                    <div className="text-sm text-gray-600 mt-1">Season: {target.season_name}</div>
+                    <div className="text-sm text-muted-foreground mt-1">Season: {target.season_name}</div>
                   )}
-                  <div className="text-xs text-gray-500 mt-1">
+                  <div className="text-xs text-muted-foreground mt-1">
                     {target.type === 'league' ? 'League' : 'Organization-wide'}
                   </div>
                 </button>
@@ -274,7 +274,7 @@ export function AnnouncementModal({
                 onChange={(e) => setAnnouncementText(e.target.value.slice(0, maxLength))}
                 maxLength={maxLength}
               />
-              <p className="text-xs text-gray-600 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 {announcementText.length}/{maxLength} characters
               </p>
             </div>

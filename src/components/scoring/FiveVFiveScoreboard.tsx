@@ -115,7 +115,7 @@ export function FiveVFiveScoreboard({
     (awayLineup.player5_handicap || 0);
 
   return (
-    <div className="bg-white border-b shadow-sm flex-shrink-0">
+    <div className="bg-card border-b shadow-sm flex-shrink-0">
       <div className="px-4 py-2">
         {/* Show verification component when all games complete */}
         {allGamesComplete && (
