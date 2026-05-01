@@ -233,13 +233,13 @@ describe('Teams Table - RLS Tests', () => {
   });
 
   describe('DELETE Operations', () => {
-    it('should allow deleting a team', async () => {
+    it('should allow deleting a team with no matches', async () => {
       if (!testSeasonId || !testLeagueId) {
         console.warn('⚠️ No test season/league found, skipping test');
         return;
       }
 
-      // Create a test team
+      // Create a test team with no matches
       const { data: member } = await client
         .from('members')
         .select('id')
@@ -265,7 +265,7 @@ describe('Teams Table - RLS Tests', () => {
         return;
       }
 
-      // Delete it
+      // Hard delete works because no matches reference this team
       const { error } = await client
         .from('teams')
         .delete()
@@ -281,6 +281,98 @@ describe('Teams Table - RLS Tests', () => {
         .single();
 
       expect(deleted).toBeNull();
+    });
+
+    it('should refuse to delete a team that has matches (FK RESTRICT)', async () => {
+      if (!testSeasonId || !testLeagueId) {
+        console.warn('⚠️ No test season/league found, skipping test');
+        return;
+      }
+
+      const { data: member } = await client
+        .from('members')
+        .select('id')
+        .limit(1)
+        .single();
+
+      if (!member) return;
+
+      // Need a season_week to attach a match to
+      const { data: seasonWeek } = await client
+        .from('season_weeks')
+        .select('id')
+        .eq('season_id', testSeasonId)
+        .limit(1)
+        .single();
+
+      if (!seasonWeek) {
+        console.warn('⚠️ No season_week available, skipping test');
+        return;
+      }
+
+      // Create a test team
+      const { data: testTeam } = await client
+        .from('teams')
+        .insert({
+          season_id: testSeasonId,
+          league_id: testLeagueId,
+          captain_id: member.id,
+          team_name: `Restrict Test ${Date.now()}`,
+          roster_size: 5,
+        })
+        .select()
+        .single();
+
+      if (!testTeam) {
+        console.warn('⚠️ Could not create test team, skipping test');
+        return;
+      }
+
+      // Create a match referencing the team. The auto_create_match_lineups
+      // trigger fires here, also creating a match_lineups row pointing at
+      // the team — so this single match exercises both the matches FK
+      // RESTRICT and the match_lineups FK RESTRICT.
+      const { data: testMatch, error: matchInsertError } = await client
+        .from('matches')
+        .insert({
+          season_id: testSeasonId,
+          season_week_id: seasonWeek.id,
+          home_team_id: testTeam.id,
+          match_number: 9999,
+          status: 'scheduled',
+        })
+        .select()
+        .single();
+
+      if (matchInsertError || !testMatch) {
+        // Roll back the team insert before bailing
+        await client.from('teams').delete().eq('id', testTeam.id);
+        console.warn('⚠️ Could not create test match, skipping test');
+        return;
+      }
+
+      // Attempt to delete the team — must be refused under FK RESTRICT
+      const { error: deleteError } = await client
+        .from('teams')
+        .delete()
+        .eq('id', testTeam.id);
+
+      expect(deleteError).not.toBeNull();
+      // Error code 23503 = foreign_key_violation
+      expect(deleteError?.code).toBe('23503');
+
+      // Confirm the team still exists
+      const { data: stillThere } = await client
+        .from('teams')
+        .select('id')
+        .eq('id', testTeam.id)
+        .single();
+      expect(stillThere?.id).toBe(testTeam.id);
+
+      // Clean up: delete the match first (cascades match_lineups + match_games),
+      // then the team.
+      await client.from('matches').delete().eq('id', testMatch.id);
+      await client.from('teams').delete().eq('id', testTeam.id);
     });
   });
 });

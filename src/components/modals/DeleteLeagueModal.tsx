@@ -6,12 +6,16 @@
  * - Completed leagues: BLOCKED (preserve historical stats)
  * - Empty/upcoming leagues: Standard warning
  *
- * Database cascade will delete:
- * - All seasons for this league
- * - All teams in those seasons
- * - All matches in those seasons
- * - All season weeks
- * - League-venue relationships
+ * Teardown order (matters under FK RESTRICT on team-referencing FKs):
+ * 1. DELETE matches WHERE season_id IN (...) — cascades match_lineups + match_games
+ * 2. DELETE FROM leagues — cascades seasons, season_weeks, team_players,
+ *    teams (via teams.season_id and teams.league_id), and league_venues
+ *
+ * Step 1 must run first because matches.home_team_id, matches.away_team_id,
+ * and match_lineups.team_id are now ON DELETE RESTRICT — Postgres no
+ * longer guarantees an order that lets the leagues cascade chain wipe
+ * matches before it tries to wipe teams. Pre-deleting matches removes
+ * the RESTRICT-bearing rows so the leagues cascade has nothing to trip on.
  */
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/supabaseClient';
@@ -135,14 +139,39 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
   }, [isOpen, leagueId]);
 
   /**
-   * Handle delete confirmation
+   * Handle delete confirmation.
+   *
+   * Two-step teardown required under FK RESTRICT on team-referencing FKs:
+   * step 1 deletes matches (which cascades their lineups + games) so step 2's
+   * leagues cascade can safely delete teams without tripping the team RESTRICTs.
+   * See file header for the full FK rationale.
    */
   const handleDelete = async () => {
     setDeleting(true);
     setError(null);
 
     try {
-      // Delete the league (cascade will handle all related data)
+      // Step 1: collect season IDs and delete matches first.
+      const { data: seasonRows, error: seasonsError } = await supabase
+        .from('seasons')
+        .select('id')
+        .eq('league_id', leagueId);
+
+      if (seasonsError) throw seasonsError;
+
+      const seasonIds = (seasonRows ?? []).map(s => s.id);
+
+      if (seasonIds.length > 0) {
+        const { error: matchesError } = await supabase
+          .from('matches')
+          .delete()
+          .in('season_id', seasonIds);
+
+        if (matchesError) throw matchesError;
+      }
+
+      // Step 2: delete the league. Cascades handle league_venues, seasons,
+      // season_weeks, team_players, and teams now that matches are gone.
       const { error: deleteError } = await supabase
         .from('leagues')
         .delete()
