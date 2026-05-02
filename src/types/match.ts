@@ -6,6 +6,7 @@
 import type { HandicapVariant } from '@/utils/handicapCalculations';
 import type { ResolvedSystemConfig } from './resolvedSystemConfig';
 import { linearAboveThreshold } from '@/systems/calculators/linear_above_threshold';
+import { accumulateWithMilestoneJumps } from '@/systems/calculators/accumulate_with_milestone_jumps';
 
 /**
  * Per-match frozen snapshot of the full resolved system configuration.
@@ -469,6 +470,14 @@ export function calculatePoints(
  * // 13 wins: 3.0 points (bonus jump!)
  * // 14 wins: 3.1 points
  */
+/**
+ * @deprecated Phase 5 Unit 5.5 will route per-game scoring through the
+ * calculator registry directly. This function is now a thin shim that
+ * delegates to the standalone `accumulateWithMilestoneJumps` calculator at
+ * `src/systems/calculators/accumulate_with_milestone_jumps.ts`. Behavior is
+ * unchanged. Once Phase 5 Unit 5.5 ships, callers will read the running
+ * total from the match row directly and this shim can be deleted.
+ */
 export function calculateBCAPoints(
   teamId: string,
   thresholds: HandicapThresholds | null,
@@ -476,22 +485,8 @@ export function calculateBCAPoints(
 ): number {
   if (!thresholds) return 0;
   const { wins } = getTeamStats(teamId, gameResults);
-
-  // Calculate 70% threshold for 1.5 bonus jump (straight round, not round up)
-  const bonus70Threshold = Math.round(thresholds.games_to_win * 0.7);
-
-  // Reached win threshold: 3 points + 0.1 for each game beyond
-  if (wins >= thresholds.games_to_win) {
-    const gamesOverThreshold = wins - thresholds.games_to_win;
-    return 3.0 + (gamesOverThreshold * 0.1);
-  }
-
-  // Reached 70% threshold: 1.5 points + 0.1 for each game beyond
-  if (wins >= bonus70Threshold) {
-    const gamesBeyond70 = wins - bonus70Threshold;
-    return 1.5 + (gamesBeyond70 * 0.1);
-  }
-
-  // Below 70%: 0.1 points per game
-  return wins * 0.1;
+  return accumulateWithMilestoneJumps.compute(
+    { gamesWon: wins, thresholds },
+    accumulateWithMilestoneJumps.defaultParams,
+  );
 }

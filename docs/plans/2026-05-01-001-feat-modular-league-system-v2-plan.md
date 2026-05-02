@@ -563,7 +563,7 @@ Phases organized by dependency. Phase 0 research blocks Phase 3. Phase 1 (calcul
 - Tie-band invariance test cases are explicit and named
 - Migrations within this unit consolidated (N/A)
 
-- [ ] **Unit 1.3: Implement `accumulate_with_milestone_jumps` calculator**
+- [x] **Unit 1.3: Implement `accumulate_with_milestone_jumps` calculator** *(completed 2026-05-01)*
 
 **Goal:** Lift the existing `calculateBCAPoints` formula from `src/types/match.ts` into a standalone `PointsCalculator` implementation.
 

@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-01 (Phase 1 Unit 1.2 — linear_above_threshold calculator with locked tie-band invariant)
+> **Last Updated**: 2026-05-01 (Phase 1 Units 1.2 + 1.3 — linear_above_threshold + accumulate_with_milestone_jumps calculators)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -922,6 +922,8 @@ Calculator-as-type-with-params registry. Each shipped points formula implements 
 - `__tests__/registry.test.ts` - **Registry smoke tests** (18 cases) — empty-registry behavior, lookup, registration, duplicate-rejection, discriminated-union narrowing for both kinds, scoringPopupFields adapts to params, paramSchema validates.
 - `linear_above_threshold.ts` - **`linear_above_threshold` calculator** (Phase 1 Unit 1.2) — three-band formula (above-win / tie-band / below-tie). Tested Preset value: BCA 3v3 default (multiplier=1). The TIE-BAND RULE is a locked invariant: tie-band always 0, multiplier never moves it off zero. Per-game tiebreaker filtering is the caller's responsibility (calculator is aggregate-input). `src/types/match.ts:calculatePoints` is a deprecation shim that delegates here.
 - `__tests__/linear_above_threshold.test.ts` - **Three-band formula tests** (45 cases) — supplement worked-examples table reproduced exactly, no-tie-possible variant, multiplier scaling, tie-band invariant under varying multipliers (locked tests fail loudly if a refactor moves the tie band off zero), defensive behavior on null thresholds + malformed params, characterization equivalence with legacy `calculatePoints`.
+- `accumulate_with_milestone_jumps.ts` - **`accumulate_with_milestone_jumps` calculator** (Phase 1 Unit 1.3) — monotonic with two stepped jumps. Tested Preset value: BCA 5v5 default (`per_game_increment: 0.1, milestone_percent: 0.7, milestone_jump_value: 1.5, win_threshold_jump_value: 3.0`). No tie-band rule — formula always non-decreasing. `src/types/match.ts:calculateBCAPoints` is a deprecation shim that delegates here.
+- `__tests__/accumulate_with_milestone_jumps.test.ts` - **Milestone-jumps formula tests** (34 cases) — supplement worked-examples reproduced exactly (W=13: 14→3.1, 13→3.0, 9→1.5, 8→0.8), milestone target rounding (Math.round semantics), custom params, monotonicity invariant across the full range, edge cases (W=1, per_game_increment=0), defensive behavior, characterization equivalence.
 
 ---
 
