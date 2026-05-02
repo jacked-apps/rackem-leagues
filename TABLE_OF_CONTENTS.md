@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-02 (Phase 4 Unit 4.3 — ThresholdSourceStep: new wizard step that classifies the LO's combo into Tested-Preset / Fargo-formula / manual-entry and tells them what handicap source will run. Off-preset combos get an opt-in "play unhandicapped" toggle that overrides MechanismStep with `mechanism='none'`. Pure `classifyThresholdSource` classifier + 10 dispatch tests covering the user's 5v5 Fargo+games-won combo plus four off-preset combos)
+> **Last Updated**: 2026-05-02 (Phase 6 Unit 6.2 — `set_member_starting_handicap` RPC: new authenticated SECURITY DEFINER function for the LO-edit-starting-handicap path; rewires the legacy `updatePlayerStartingHandicaps` helper to call the audited RPC twice (once per rating system); 4 production callers (PlayerNameLink, AuthorizeNewPlayersCard, PlayerManagement, autoAuthorize) inherit audit-logging without callsite changes. Per-match-lineup Fargo handicap audit wiring deferred to after the user's first Fargo league lifecycle stabilizes)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 

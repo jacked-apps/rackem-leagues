@@ -1227,7 +1227,32 @@ The original plan called for a four-strategy decomposition (`recordGameOutcome` 
 
 ### Phase 6 — Audit log emission completion
 
-- [ ] **Unit 6.2: Wire existing rating-edit pathways through atomic RPCs**
+- [x] **Unit 6.2: Wire existing rating-edit pathways through atomic RPCs**
+
+**Resolution:** Partially shipped 2026-05-02. Specifically:
+
+- **Starting-handicap LO edit path**: a new authenticated RPC
+  `set_member_starting_handicap` ships (sibling to `set_match_lineup_rating`
+  shipped in Unit 6.1; mirrors the SECURITY DEFINER + GRANT-to-authenticated
+  + org-staff authz pattern). The legacy `updatePlayerStartingHandicaps`
+  helper rewires through the new RPC twice (once per rating system) so
+  the four production callers (PlayerNameLink, AuthorizeNewPlayersCard,
+  PlayerManagement, autoAuthorize) get audit-logged for free without
+  callsite changes.
+- **Per-match-lineup Fargo handicap path**: deferred. Wiring the
+  multi-slot `saveMatchLineup` UPDATE through the existing
+  `set_match_lineup_rating` RPC requires either a new transactional
+  multi-slot RPC (substantial work) or an N-RPC sequence with non-atomic
+  audit-drift risk. Sized for a follow-up after the user's first
+  Fargo league lifecycle stabilizes.
+- **Vacate-rescore marker**: `vacateAndRescoreAuditMarker` wrapper exists
+  but no production caller. Wiring deferred to whenever the vacate-rescore
+  UI surfaces a marker call (separate feature work).
+- **BCA computed-rating recompute**: the plan's reference to "useHandicaps.ts —
+  call recomputeMemberRating RPC" assumed an automated post-match
+  recompute path that doesn't exist in production today. The
+  `recompute_member_rating` RPC is service-role-only and remains ready
+  for whenever automated post-match recompute lands.
 
 **Goal:** Replace direct-UPDATE patterns at every rating-edit pathway with calls to the atomic RPCs from Unit 6.1.
 

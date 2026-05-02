@@ -318,25 +318,54 @@ export async function fetchPlayerDetails(
 }
 
 /**
- * Update player's starting handicaps
+ * Update player's starting handicaps.
+ *
+ * Phase 6 Unit 6.2: rewired to call the audited
+ * `set_member_starting_handicap` RPC instead of doing a bare UPDATE.
+ * Each rating writes atomically to both the members column AND the
+ * rating_edit_audit_log so silent rating manipulation (BCA's #1
+ * software concern per R21) is impossible from this path.
+ *
+ * Two RPC calls (one for 3v3 / 'points', one for 5v5 / 'percentage')
+ * because the RPC writes one rating at a time. Each call is atomic on
+ * its own. If the second call fails after the first succeeded, the
+ * first IS persisted — but its audit row is also persisted, so the
+ * trail is honest. Worst case the LO sees the error toast and clicks
+ * Save again; the no-change branch in the RPC suppresses redundant
+ * audit rows.
+ *
+ * Return shape preserves the legacy `{ error: PostgrestError | null }`
+ * contract so existing callers (autoAuthorize flow in `players.ts`,
+ * useMutation hooks in PlayerNameLink / AuthorizeNewPlayersCard /
+ * PlayerManagement) keep working without changes.
  *
  * @param playerId - The player's member ID
- * @param startingHandicap3v3 - Starting handicap for 3v3 format
- * @param startingHandicap5v5 - Starting handicap for 5v5 format
- * @returns Promise with update result
+ * @param startingHandicap3v3 - Starting handicap for 3v3 format (points handicap)
+ * @param startingHandicap5v5 - Starting handicap for 5v5 format (percentage handicap)
+ * @returns Promise with `{ error }` shape — null on success, error object on any RPC failure
  */
 export async function updatePlayerStartingHandicaps(
   playerId: string,
   startingHandicap3v3: number,
   startingHandicap5v5: number
-) {
-  return supabase
-    .from('members')
-    .update({
-      starting_handicap_3v3: startingHandicap3v3,
-      starting_handicap_5v5: startingHandicap5v5,
-    })
-    .eq('id', playerId);
+): Promise<{ error: { message: string } | null }> {
+  const { setMemberStartingHandicap } = await import('@/api/mutations/ratingMutations');
+  try {
+    await setMemberStartingHandicap({
+      memberId: playerId,
+      ratingSystem: 'points',
+      newValue: startingHandicap3v3,
+    });
+    await setMemberStartingHandicap({
+      memberId: playerId,
+      ratingSystem: 'percentage',
+      newValue: startingHandicap5v5,
+    });
+    return { error: null };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { error: { message } };
+  }
 }
 
 /**

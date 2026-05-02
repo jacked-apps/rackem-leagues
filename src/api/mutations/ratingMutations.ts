@@ -110,6 +110,53 @@ export async function recomputeMemberRating(
 }
 
 // ============================================================================
+// set_member_starting_handicap — authenticated LO path (Phase 6 Unit 6.2)
+// ============================================================================
+
+export interface SetMemberStartingHandicapArgs {
+  memberId: string;
+  ratingSystem: PersistentRatingSystem;
+  newValue: number;
+  /** Optional free-text reason captured in the audit row. */
+  reason?: string | null;
+}
+
+/**
+ * Atomically updates a member's persistent BCA starting handicap (3v3 or
+ * 5v5) AND records an audit entry, but ONLY when the value is actually
+ * changing (no-op returns null when before === after).
+ *
+ * Authenticated LO path: any authenticated caller who is an owner/admin
+ * of at least one organization can edit any member's starting handicap.
+ * Mirrors the auth model of `set_match_lineup_rating` (the per-match
+ * lineup-rating sibling).
+ *
+ * Replaces the bare `updatePlayerStartingHandicaps` UPDATE that bypassed
+ * the audit log. R21 of the modular-league plan: every rating change is
+ * recorded immutably to address BCA's #1 software concern (sandbagging
+ * via silent rating manipulation).
+ *
+ * @returns audit row id when an update happened, null when no change
+ * @throws if the caller is not authenticated, not an org owner/admin,
+ *         the rating system isn't persistent, or the underlying RPC fails
+ */
+export async function setMemberStartingHandicap(
+  args: SetMemberStartingHandicapArgs,
+): Promise<string | null> {
+  const { data, error } = await supabase.rpc('set_member_starting_handicap', {
+    p_member_id: args.memberId,
+    p_rating_system: args.ratingSystem,
+    p_new_value: args.newValue,
+    p_reason: args.reason ?? null,
+  });
+
+  if (error) {
+    throw new Error(`setMemberStartingHandicap failed: ${error.message}`);
+  }
+  return (data as string | null) ?? null;
+}
+
+// ============================================================================
 // vacate_and_rescore_audit_marker — LO marker for vacate-rescore flows
 // ============================================================================
 
