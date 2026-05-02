@@ -1306,7 +1306,7 @@ The original plan called for a four-strategy decomposition (`recordGameOutcome` 
 - Resolved preferences for the 3 known presets match what lazy-migration TS code would have produced
 - Migrations within this unit consolidated to a single forward-only intent before PR opens
 
-- [ ] **Unit 7.2: Remove lazy-migration code path from `useResolvedLeaguePrefs.ts`**
+- [x] **Unit 7.2: Remove lazy-migration code path from `useResolvedLeaguePrefs.ts`**
 
 **Goal:** Once SQL backfill is authoritative, the TS lazy-migration is dead code and depends on `team_format`.
 
