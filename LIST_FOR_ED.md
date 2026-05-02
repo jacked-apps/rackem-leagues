@@ -377,3 +377,74 @@ or sets `element.scrollTop`.
 **Files likely involved:** `src/operator/OperatorDashboard.tsx` (or
 wherever the org dashboard lives) — check for scroll-related effects
 on mount.
+
+---
+
+## 9. First-Lineup-Lock Stuck on Match Setup (Pre-Existing Intermittent)
+
+**Discovered:** before 2026-04-01 (long-running)
+**Re-confirmed:** 2026-05-02 during modular-league-system test pass
+**Severity:** Medium — has a workaround ("Try Again" succeeds)
+**Branch:** future bugfix branch — investigation needed
+
+**Problem:** When the FIRST team (typically home team in 3v3 default
+configs) locks their lineup, the screen gets stuck on "Match Setup."
+Clicking the "Try Again" button succeeds on the retry. Has happened
+across many sessions before this branch — not caused by the modular-
+league-system work.
+
+**What we know:**
+- The `prep_match` RPC has retry logic baked in (3 attempts with
+  exponential backoff — see
+  `supabase/migrations/20260424000000_prep_match_rpc.sql`).
+- "Try Again" works → the underlying RPC eventually succeeds, so it's
+  not a permanent failure (auth, schema mismatch, missing data).
+- Pattern looks like a race condition: away team's lineup row may not
+  yet exist / be queryable from the home team's auth context when
+  home locks first.
+
+**Investigation hints for the bugfix branch:**
+- Check `useMatchPreparation.ts` — the home-team-runs-prep-match
+  branch + the await-realtime-on-away-side branch.
+- Check `match_lineups` row creation timing — the
+  `trigger_auto_create_match_lineups` should produce both lineup rows
+  on match insert. Confirm both are visible to the home-team auth
+  user when the lock-lineup mutation fires.
+- Add structured logging at each prep_match attempt (current logs are
+  there but not capturing all the timing context that would help).
+- Capture the exact error from the FAILED attempts (the toast just
+  says "Try Again" — the original error gets swallowed).
+
+**Files likely involved:**
+`src/hooks/lineup/useMatchPreparation.ts`,
+`supabase/migrations/20260424000000_prep_match_rpc.sql`,
+the `trigger_auto_create_match_lineups` definition.
+
+---
+
+## 10. Scoreboard Number Layout Confusing — Threshold Duplicated
+
+**Discovered:** 2026-05-02 during modular-league-system test pass
+**Severity:** Low (cosmetic / UX)
+**Branch:** future bugfix branch — UI tweak only
+
+**Problem:** The scoreboard currently displays threshold info as
+`{threshold}/{games left needed to win}` — e.g. `11/8` for a team
+needing 11 wins that has 8 to go. The threshold (`11`) is also shown
+on its own ABOVE this number. Reading the slash-separated pair as
+"out of" is the natural user instinct ("11 out of 8"?), which makes
+the display read backwards from the LO's expectation.
+
+**Proposed fix:** Switch to `{games won}/{threshold}` — e.g. `3/11`
+for a team that's won 3 games and needs 11 to win the match. Drops
+the redundant threshold-above + reads naturally as "3 out of 11."
+
+Alternative: drop the slash format entirely and just show the
+single most-relevant number ("8 to go") with the threshold as a
+subtitle.
+
+**Files likely involved:**
+- `src/components/scoring/ThreeVThreeScoreboard.tsx`
+- `src/components/scoring/FiveVFiveScoreboard.tsx`
+- `src/components/scoring/TenSevenScoreboard.tsx`
+- Any shared score-display component they pull from

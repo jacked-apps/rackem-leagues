@@ -437,6 +437,27 @@ SET organization_id = '01010101-cccc-cccc-cccc-010101010101'::uuid
 WHERE email = 'dev@test.com';
 
 -- ============================================================================
+-- STEP 6: RANDOM STARTING HANDICAPS
+--
+-- Give every seeded member (4 captains/LO + 130 placeholders) a random
+-- starting handicap so the wizard's lineup + scoring flows have realistic
+-- numbers to render. Without this, all handicaps are NULL and the
+-- handicap-threshold tables can't compute anything meaningful.
+--
+-- Ranges (per the operator UI validation in PlayerNameLink.tsx):
+--   starting_handicap_3v3 (points handicap):    -2 to +2 (integers)
+--   starting_handicap_5v5 (percentage handicap): 0 to 100 (integers)
+-- ============================================================================
+
+UPDATE members
+SET
+  starting_handicap_3v3 = floor(random() * 5)::int - 2,
+  starting_handicap_5v5 = floor(random() * 101)::int
+WHERE
+  email LIKE '%@example.com'
+  OR email IN ('dev@test.com', 'cap1@test.com', 'cap2@test.com', 'cap3@test.com');
+
+-- ============================================================================
 -- DONE
 -- ============================================================================
 

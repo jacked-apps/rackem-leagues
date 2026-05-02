@@ -122,9 +122,13 @@ import { accumulateWithMilestoneJumps as _milestone } from './accumulate_with_mi
 import { accumulatedPerGame as _perGame } from './accumulated_per_game';
 
 /**
- * Register the three Tested Preset calculators. App bootstrap (and tests
- * that need a populated registry) calls this. Idempotent — safe to call
+ * Register the three Tested Preset calculators. Idempotent — safe to call
  * multiple times.
+ *
+ * Also called automatically as a module-load side effect below so the
+ * runtime registry is populated as soon as anything imports from this
+ * file. Tests that need a clean slate call `clearRegistry()` then
+ * `registerTestedPresetCalculators()` themselves.
  */
 export function registerTestedPresetCalculators(): void {
   for (const calc of [_linear, _milestone, _perGame]) {
@@ -133,3 +137,11 @@ export function registerTestedPresetCalculators(): void {
     }
   }
 }
+
+// Self-register at module load so the runtime registry is populated
+// the first time anything imports `getCalculator` / `lookupCalculator`.
+// Without this, production callers (e.g. updateMatchRunningTotals,
+// the per-game scoring writer) hit an empty registry and silently
+// return zero points — the bug surfaced in the user's first match
+// completion 2026-05-02 (no points written despite games scored).
+registerTestedPresetCalculators();
