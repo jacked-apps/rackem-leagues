@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-04-29 (Phase 4/5/6 modular-league refactor units 4.1, 5.1, 5.2, 6.1 + Phase 2 Unit 2.4 RLS hardening; merged main with `database/dev_starting_point.sql` single-paste dev seed and project-specific root README.md)
+> **Last Updated**: 2026-05-01 (modular-league v2 plan locked in + Phase 1 Unit 1.1 — PointsCalculator interface + registry skeleton)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -912,6 +912,14 @@ Preset modules implementing the `SystemModule` interface. Each shipped preset ow
 - `__tests__/resolver.test.ts` - Resolver routing tests (15 cases including unmapped fallback)
 - `__tests__/buildSystemFromPreferences.test.ts` - **Runtime resolver tests** (Phase 5 Unit 5.1) — preset fast-path equivalence + ad-hoc combos (29 cases): teamFormat derivation, rating/scoring/threshold dispatch, mechanism dispatch (extra_games / start_points / race_length_adjustment / none), graceful fallback for not-yet-wired layers
 - `__tests__/fargo5v5.test.ts` - **Fargo math tests** (Phase 3 Unit 10) — validates against 1 real-match test case (56 start-points ±1) + 34 synthetic cases covering rating validation, start-points formula, scoring cascade, override behavior
+
+#### Points Calculators (`/systems/calculators/`) — Phase 1 Unit 1.1
+
+Calculator-as-type-with-params registry. Each shipped points formula implements `PointsCalculator<P>` and registers itself by name. The runtime is parameter-blind: it looks up a calculator by name (read from `preferences.points_calculator` / `match.system_snapshot.points_calculator`), feeds the right input shape, gets a points number back. Mirrors the `threshold_charts` shape pattern.
+
+- `types.ts` - **PointsCalculator interface** — discriminated union by `kind: 'aggregate' | 'per_game'`. Aggregate calculators take `(gamesWon, thresholds, params)`. Per-game calculators take `(games, teamId, params)`. Includes `ScoringPopupFieldSpec` for the per-game UI's calculator-driven fields.
+- `index.ts` - **Registry** — `registerCalculator(calc)`, `getCalculator(name)`, `listCalculators()`. Empty in Unit 1.1; populated by Units 1.2–1.4. `getCalculator(null|undefined|unknown)` returns null (graceful-degradation).
+- `__tests__/registry.test.ts` - **Registry smoke tests** (18 cases) — empty-registry behavior, lookup, registration, duplicate-rejection, discriminated-union narrowing for both kinds, scoringPopupFields adapts to params, paramSchema validates.
 
 ---
 

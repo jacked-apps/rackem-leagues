@@ -489,7 +489,7 @@ Phases organized by dependency. Phase 0 research blocks Phase 3. Phase 1 (calcul
 
 ### Phase 1 — Calculator registry foundation (NEW)
 
-- [ ] **Unit 1.1: Define `PointsCalculator` interface and registry skeleton**
+- [x] **Unit 1.1: Define `PointsCalculator` interface and registry skeleton** *(completed 2026-05-01)*
 
 **Goal:** Establish the type-and-params pattern. No calculator implementations yet; just the interface, the registry, and a smoke test that confirms the registry shape compiles.
 
