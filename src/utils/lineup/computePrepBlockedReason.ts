@@ -34,9 +34,19 @@ export interface ComputePrepBlockedReasonParams {
   lineupSize: number;
   handicapType: string;
   /**
-   * Fargo confirmation tracking — ignored when handicapType !== 'fargo'.
-   * Each captain stamps their `system_player_number` into their side's
-   * `*_games_to_lose` when they confirm. Both non-null = both confirmed.
+   * Win-condition axis from the resolved preferences. The Fargo
+   * confirmation gate only applies to Fargo + win_condition='points'
+   * (the start-points-negotiation flow). Fargo + win_condition='games'
+   * skips negotiation — thresholds are computed deterministically from
+   * lineup ratings via `computeFargoGamesWonThresholds` (Phase 3 Unit 3.2).
+   * Defaults to 'games' when omitted (matches the typical BCA preset).
+   */
+  winCondition?: 'games' | 'points';
+  /**
+   * Fargo confirmation tracking — ignored when handicapType !== 'fargo'
+   * OR when winCondition !== 'points'. Each captain stamps their
+   * `system_player_number` into their side's `*_games_to_lose` when
+   * they confirm. Both non-null = both confirmed.
    */
   homeGamesToLose?: number | null;
   awayGamesToLose?: number | null;
@@ -52,6 +62,7 @@ export function computePrepBlockedReason(
     opponentLineup,
     lineupSize,
     handicapType,
+    winCondition,
     homeGamesToLose,
     awayGamesToLose,
     isHomeTeam,
@@ -77,7 +88,12 @@ export function computePrepBlockedReason(
   // Step 2 — Fargo agreement (other systems skip this step entirely).
   // Confirmation = captain's system_player_number written to their
   // side's *_games_to_lose. Both non-null = both confirmed.
-  if (handicapType === 'fargo') {
+  //
+  // Phase 3 Unit 3.2: only apply this gate to Fargo + win_condition='points'
+  // (the start-points-negotiation flow). Fargo + win_condition='games'
+  // computes thresholds deterministically from lineup ratings and
+  // doesn't need captain consensus.
+  if (handicapType === 'fargo' && (winCondition ?? 'games') === 'points') {
     const myConfirmed = isHomeTeam
       ? homeGamesToLose !== null && homeGamesToLose !== undefined
       : awayGamesToLose !== null && awayGamesToLose !== undefined;

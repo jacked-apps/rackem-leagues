@@ -36,6 +36,15 @@ export interface ResolvedLeaguePrefs {
    */
   win_condition?: 'games' | 'points';
   /**
+   * Threshold-mechanism axis from the v2 modular plan: how the
+   * handicap is applied. 'extra_games' (BCA / Fargo-games-won),
+   * 'start_points' (Fargo-points), 'race_length_adjustment' (BCAPL
+   * Skill Level), 'none' (no handicap). Optional because the resolved
+   * view selectors don't always include it; consumers fall back to
+   * 'extra_games' when absent.
+   */
+  mechanism?: 'extra_games' | 'start_points' | 'race_length_adjustment' | 'none';
+  /**
    * Per-league dial overrides from `leagues.system_overrides` (not part of the
    * preferences cascade — stored directly on the league row). Always an object;
    * `{}` if no overrides are set. Merged over SystemModule defaults at read time.
@@ -52,7 +61,7 @@ async function fetchResolvedLeaguePrefs(leagueId: string): Promise<ResolvedLeagu
   const [viewRes, leagueRes] = await Promise.all([
     supabase
       .from('resolved_league_preferences')
-      .select('handicap_type, lineup_size, max_roster_size, game_generation, points_system, threshold_chart_id, win_condition')
+      .select('handicap_type, lineup_size, max_roster_size, game_generation, points_system, threshold_chart_id, win_condition, mechanism')
       .eq('league_id', leagueId)
       .single(),
     supabase

@@ -393,7 +393,7 @@ Phases organized by dependency. Phase 0 research blocks Phase 3. Phase 1 (calcul
 
 ### Phase 0 — Pre-implementation research (blocking)
 
-- [ ] **Unit 0.1: Replace Fargo games-won threshold research stub with canonical formula or chart**
+- [x] **Unit 0.1: Replace Fargo games-won threshold research stub with canonical formula or chart**
 
 **Goal:** The stub at `docs/research/fargo-games-won-threshold.md` was created during planning when web research was unavailable. It documents the question, the logical derivation that COULD work, and where to look. This unit completes the research and replaces the stub with the canonical formula or chart values.
 
@@ -828,7 +828,7 @@ The audit log table from Unit 6.1 already shipped — no schema changes there.
 - Off-preset combination tested: 4v4 league using a custom-uploaded chart returns chart-defined values
 - Migrations within this unit consolidated (N/A — no SQL migration in this unit)
 
-- [ ] **Unit 3.2: Implement Fargo Layer 1 generative engine (per-pairing logistic)**
+- [x] **Unit 3.2: Implement Fargo Layer 1 generative engine (per-pairing logistic)**
 
 **Goal:** Build a Fargo-only generative threshold engine for any lineup size and any (scoring × win-condition × mechanism) combo.
 

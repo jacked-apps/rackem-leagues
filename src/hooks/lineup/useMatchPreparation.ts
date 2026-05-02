@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/supabaseClient';
 import { calculateHandicapThresholds } from '@/utils/calculateHandicapThresholds';
+import { computeFargoGamesWonThresholds } from '@/utils/handicap/fargoGamesWonThresholds';
 import { generateGameOrder } from '@/utils/gameOrder';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
@@ -30,6 +31,22 @@ interface MatchPreparationParams {
   isHomeTeam: boolean;
   lineupSize: number;
   handicapType: string;
+  /**
+   * Win-condition axis from the resolved preferences. Drives threshold
+   * dispatch — Fargo + win_condition='games' + mechanism='extra_games'
+   * routes through `computeFargoGamesWonThresholds`; Fargo +
+   * win_condition='points' + mechanism='start_points' uses the existing
+   * negotiation path. Phase 3 Unit 3.2 of the v2 plan. Defaults to
+   * 'games' when omitted (matches the typical BCA-preset default).
+   */
+  winCondition?: 'games' | 'points';
+  /**
+   * Threshold-mechanism axis. Combined with `winCondition` to pick the
+   * right threshold computation. 'extra_games' (BCA / Fargo-games-won),
+   * 'start_points' (Fargo-points), 'race_length_adjustment' (BCAPL SL,
+   * not yet wired here), 'none' (no handicap).
+   */
+  mechanism?: 'extra_games' | 'start_points' | 'race_length_adjustment' | 'none';
   /** Resolved per-league dial overrides. Used by Fargo threshold compute. */
   systemOverrides?: SystemOverrides;
   /**
@@ -78,6 +95,8 @@ export function useMatchPreparation(params: MatchPreparationParams) {
     isHomeTeam,
     lineupSize,
     handicapType,
+    winCondition,
+    mechanism,
     blockedReason,
     gameGeneration,
     currentGamesCount,
@@ -220,17 +239,28 @@ export function useMatchPreparation(params: MatchPreparationParams) {
           myLineup.player5_handicap = player5Handicap ?? 0;
         }
 
-        // Compute threshold payload per handicap system.
+        // Compute threshold payload per handicap system. Phase 3 Unit
+        // 3.2: dispatches on (handicapType + winCondition + mechanism)
+        // rather than just handicapType so a Fargo-rated league with
+        // games-won win condition gets the right thresholds.
         let thresholdPayload: Record<string, number | null>;
-        if (handicapType === 'fargo') {
-          // Fargo: by this point the negotiation has already written the agreed
-          // start points to the weaker team's *_games_to_tie and stamped both
-          // *_games_to_lose with confirming captain numbers (that's what gated
-          // us through blockedReason). prep_match only needs to fill in the
-          // race target on *_games_to_win; we leave to_tie / to_lose untouched.
+
+        const isFargoStartPoints =
+          handicapType === 'fargo' &&
+          (mechanism === 'start_points' || winCondition === 'points');
+        const isFargoGamesWon =
+          handicapType === 'fargo' && !isFargoStartPoints;
+
+        if (isFargoStartPoints) {
+          // Fargo + points: by this point the negotiation has already
+          // written the agreed start points to the weaker team's
+          // *_to_tie column and stamped both *_to_lose with confirming
+          // captain numbers (that's what gated us through
+          // blockedReason). prep_match only needs to fill in the race
+          // target on *_to_win; we leave to_tie / to_lose untouched.
           //
-          // TODO: pull race target from prefs once Fargo race-to-N becomes
-          // configurable. 10 is the standard Fargo 5v5 race today.
+          // TODO: pull race target from prefs once Fargo race-to-N
+          // becomes configurable. 10 is the standard Fargo 5v5 race today.
           const FARGO_RACE_TARGET = 10;
           thresholdPayload = {
             home_to_win: FARGO_RACE_TARGET,
@@ -239,6 +269,36 @@ export function useMatchPreparation(params: MatchPreparationParams) {
             away_to_win: FARGO_RACE_TARGET,
             away_to_tie: matchData?.away_to_tie ?? null,
             away_to_lose: matchData?.away_to_lose ?? null,
+          };
+        } else if (isFargoGamesWon) {
+          // Fargo + games-won: derive per-team games-to-win thresholds
+          // from the lineup ratings using the canonical
+          // T = 2^(rating/100) primitive. See
+          // docs/research/fargo-games-won-threshold.md for the formula
+          // and FargoRate HOT-chart calibration.
+          const homeLineupForFargo = isHomeTeam ? myLineup : opponentLineup;
+          const awayLineupForFargo = isHomeTeam ? opponentLineup : myLineup;
+          const homeRatings = [1, 2, 3, 4, 5]
+            .map((n) => (homeLineupForFargo as any)[`player${n}_handicap`])
+            .filter((h): h is number => typeof h === 'number');
+          const awayRatings = [1, 2, 3, 4, 5]
+            .map((n) => (awayLineupForFargo as any)[`player${n}_handicap`])
+            .filter((h): h is number => typeof h === 'number');
+
+          const totalGames = generateGameOrder(lineupSize, useDoubleRoundRobin).length;
+          const fargoThresholds = computeFargoGamesWonThresholds({
+            homeRatings,
+            awayRatings,
+            totalGames,
+          });
+
+          thresholdPayload = {
+            home_to_win: fargoThresholds.home.games_to_win,
+            home_to_tie: fargoThresholds.home.games_to_tie,
+            home_to_lose: fargoThresholds.home.games_to_lose,
+            away_to_win: fargoThresholds.away.games_to_win,
+            away_to_tie: fargoThresholds.away.games_to_tie,
+            away_to_lose: fargoThresholds.away.games_to_lose,
           };
         } else {
           const { homeThresholds, awayThresholds } = await calculateHandicapThresholds(

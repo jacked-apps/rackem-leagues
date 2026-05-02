@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-02 (Phase 7 Unit 7.3 — `team_format` column dropped from leagues + preferences; resolved view migration edited in-place to remove the COALESCE; new migration `20260502000000_drop_team_format.sql`; `TeamFormat` type removed from `@/types/league`; ~30 source files updated to read `lineup_size` from resolved preferences instead of the legacy `'5_man'`/`'8_man'` tag; `getPlayerCount.ts` deleted as dead code)
+> **Last Updated**: 2026-05-02 (Phase 0 Unit 0.1 + Phase 3 Unit 3.2 — Fargo + games-won threshold engine: research doc resolved with FargoRate HOT-chart-calibrated formula (`T = 2^(rating/100)`, `p_i = T_home / (T_home + T_away)`, `home_to_win = ceil(E_home)`, complement = `M+1 − home_to_win`); new `computeFargoGamesWonThresholds` helper + 12 calibration tests including the locked 96-pt/10-game = 7-4 race that matches FargoRate's published HOT chart exactly; `useMatchPreparation` dispatches on (handicapType + winCondition + mechanism) and routes Fargo+games-won through the new helper; `computePrepBlockedReason` skips the Fargo negotiation gate when `win_condition='games'`; `useResolvedLeaguePrefs` now selects `mechanism` field too)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 

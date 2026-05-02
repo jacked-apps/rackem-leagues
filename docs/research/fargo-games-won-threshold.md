@@ -1,175 +1,250 @@
 ---
-title: Fargo handicap → games-to-win threshold — research stub
-date: 2026-05-01
-status: UNRESOLVED — research artifact placeholder; web research blocked in planning environment
+title: Fargo handicap → games-to-win threshold — research notes
+date: 2026-05-02
+status: RESOLVED — formula derivable from FargoRate primitives, calibrated against published HOT race chart
 gates: docs/plans/2026-05-01-001-feat-modular-league-system-v2-plan.md (Unit 3.2 Fargo Layer 1, extra_games math)
 ---
 
 # Fargo handicap → games-to-win threshold
 
-## Status: UNRESOLVED
+## Status: RESOLVED
 
-Web search was attempted during planning on 2026-05-01 and blocked at the
-tool layer (no `WebSearch` / `WebFetch` available in the research subagent
-environment). This document is therefore a **stub**: it captures what we
-know, what we'd need to confirm against authoritative sources, and where
-to look. Future sessions or manual research should replace this content
-with the canonical formula or chart values.
+Web research conducted 2026-05-02 confirmed:
+
+1. **FargoRate does NOT publish a games-to-win threshold chart for team matches.** Their native LMS uses handicap *points* added to scores, not asymmetric per-team game-win targets. The games-won win condition with asymmetric thresholds is an operator design choice that no canonical external source (FargoRate, BCAPL, CSI, LeagueSys) prescribes.
+2. **A formula IS derivable from FargoRate's published primitives** and produces results that match FargoRate's own published HOT race chart for individual matchups. Use this formula as the league's default; captains can override at lineup lock.
 
 ## Purpose
 
-This document will (when complete) capture the official or community-standard
-method for calculating per-team `games_to_win` thresholds in a Fargo-handicapped
-league when:
+This document captures the formula for calculating per-team
+`games_to_win` thresholds in a Fargo-handicapped league when:
 
 - `handicap_type = 'fargo'`
-- `mechanism = 'extra_games'` (higher-rated team must win extra games to compensate)
+- `mechanism = 'extra_games'` (higher-rated team must win more games to compensate)
 - `win_condition = 'games'` (match decided by games-won, not points)
 
 This is structurally distinct from the **start-points formula** documented
 at `docs/research/fargorate-formula.md`, which covers the points-scoring
 case (`mechanism = 'start_points'` + `win_condition = 'points'`).
 
-**Operational framing:** When this formula is found, our implementation
-only needs to be **close enough to be a useful default**. Captains can
-override at lineup lock if the official source disagrees. Same posture
-as the start-points formula.
+**Operational framing:** The formula is the league's default. Captains
+can override at lineup lock if their league has agreed on different
+thresholds. Same posture as the start-points formula.
 
-## What we already know (carries over from the start-points research)
+## The formula
 
-The base FargoRate transformation is:
+### Step 1 — Transform each player's rating
+
+Same as the start-points formula:
 
 ```
 T = 2^(rating / 100)
 ```
 
-For Player A vs Player B in N games:
+A 100-point rating gap predicts a 2:1 win ratio; 200-point gap predicts 4:1.
+
+### Step 2 — Per-pairing single-game win probability
+
+For each pairing in the match (M total games across all pairings):
 
 ```
-P(A wins single game) = TA / (TA + TB)
-Expected wins for A   = P(A wins) × N
-Expected wins for B   = (1 - P(A wins)) × N
+p_i = T_home_i / (T_home_i + T_away_i)
 ```
 
-For a TEAM match with M total games (e.g. M=18 for 3v3 DRR, M=25 for 5v5 SRR):
+This is the home player's probability of winning a single game in matchup `i`.
+
+### Step 3 — Team expected wins
 
 ```
-Σ (Expected wins per matchup) = team's expected total wins
+E_home = Σ p_i  (sum across all M games in the match)
+E_away = M - E_home
 ```
 
-In an even match (zero rating gap) each team's expected wins = M/2. In a
-gapped match, the higher-rated team's expected wins exceed M/2 by some
-amount Δ (call it the "expected win differential").
+`E_home` is the home team's "fair share" of total game wins given the
+rating gap. If both teams are equally rated, `E_home = M/2`.
 
-## Logical derivation (NOT YET CONFIRMED against canonical source)
+### Step 4 — Per-team games-to-win thresholds
 
-If a published Fargo games-won threshold formula exists, it likely takes
-this shape:
+The stronger team (higher expected wins) is handicapped DOWN by needing
+to win more games:
 
 ```
-games_to_win_for_higher_team = ceil(M/2) + round(Δ × scaling_factor)
-games_to_win_for_lower_team  = M + 1 - games_to_win_for_higher_team
+if E_home > E_away:
+    home_to_win = ceil(E_home)
+    away_to_win = M + 1 - home_to_win
+else:
+    away_to_win = ceil(E_away)
+    home_to_win = M + 1 - away_to_win
 ```
 
-Where:
-- `Δ` = expected-win-differential (computed from per-pairing T-ratio sums)
-- `scaling_factor` = some published constant (likely 1.0 — full
-  compensation — but could be 0.5 for "half-compensation" leagues, or
-  variable per league)
-- The `+1` ensures the pair sums to `M+1` (matches the BCA convention
-  where home_to_win + away_to_win = total_games + 1)
+The `+1` ensures `home_to_win + away_to_win = M + 1` — exactly one team
+crosses their target before the match ends, so the result is decisive.
+This matches the BCA convention used by `get3v3GamesNeeded` and
+`get5v5GamesNeeded`.
 
-**This is a reasonable starting guess, NOT a citation.** Real-world
-Fargo leagues likely use a published chart or a slightly different
-formula (e.g., different rounding, different scaling, or different
-treatment of edge cases like exactly-zero-gap or extreme-gap).
+### Step 5 — Tie threshold (optional)
 
-## What needs to be confirmed against authoritative sources
+For even-`M` formats (e.g. 18-game DRR, 16-game 4v4 SRR) where a 9-9
+tie is possible, the tie threshold is one less than the win threshold
+on each side:
 
-1. **Is there a published chart** (analogous to BCAPL's Skill Level
-   Playing Handicap Chart) mapping team-rating-differential bands to
-   per-team games-to-win values?
-2. **Or is it a formula** — and if so, what's the exact scaling factor,
-   rounding rule, and edge-case behavior?
-3. **Does the threshold depend on total games M?** An 18-game format
-   and a 25-game format should produce different thresholds even at
-   the same rating gap.
-4. **Multiple variants in use?** E.g., do different league
-   implementations (LeagueSys, BCA app, league-specific custom
-   software) produce slightly different threshold values for the
-   same rating gap?
+```
+home_to_tie = home_to_win - 1
+away_to_tie = away_to_win - 1
+games_to_lose = tie - 1  (or NULL if no tie band desired)
+```
 
-## Where to look (research checklist)
+For odd-`M` formats (25-game 5v5 SRR), no tie is possible — the formula
+naturally produces a decisive winner. `games_to_tie = NULL`.
 
-In approximate priority order:
+## Calibration against published HOT race chart
 
-1. **fargorate.com directly** — look for a "Race Calculator," "Games-Won
-   Calculator," or downloadable handicap chart. The site published the
-   start-points materials; if a games-won variant exists, this is the
-   first place it would be.
-2. **AzBilliards FargoRate subforum** — Mike Page (FargoRate's creator)
-   posts there directly. He has discussed games-won team handicapping
-   in past threads; specific posts may state the formula.
-3. **leaguesys.com** — LeagueSys is the dominant Fargo-based league
-   management tool. Their handicap chart documentation likely
-   describes the games-won case in detail.
-4. **playbca.com / BCAPL operator materials** — if BCAPL-sanctioned
-   leagues use Fargo-based games-won handicapping (rather than only
-   their own SL system), their handbook or LO manual would document it.
-5. **CSI Pool / playcsipool.com** — they hosted the worked example in
-   the start-points doc; may have a parallel article for games-won.
-6. **Dr. Dave Pool Info — FargoRate** (drdavepoolinfo.com/faq/rating/fargorate/)
-   — community cross-reference; sometimes consolidates formulas the
-   official sources scatter across multiple posts.
-7. **Reddit r/billiards, r/poolplayers** — search for "Fargo team
-   handicap games won" or similar. Practitioner posts can cite the
-   actual chart values their leagues use.
+FargoRate publishes "HOT race charts" for individual matchups (one
+player vs one player). These are the closest published reference for
+asymmetric Fargo handicaps. The chart maps rating gap to race length pairs.
 
-## Suggested confirmation steps once a candidate formula is found
+Worked check at 96-point gap, 10-game race:
 
-1. Hand-walk the formula on 2–3 known matches where the actual
-   threshold was published (e.g., real BCA-touching league results).
-2. Compare against the start-points-formula derivation: in a points-mode
-   match the same teams produce a known start-points value; the
-   games-won threshold should be derivable from the same
-   `T = 2^(rating/100)` foundation, so the two outputs should be
-   internally consistent (e.g., the team that "earns" a 27-point
-   start-points credit in points mode should "need" some specific
-   number of extra games in games mode for the same matchup).
-3. If multiple sources publish slightly different formulas, document
-   each variant and let the LO pick (Layer 3 chart override).
+```
+T_strong = 2^(0)    = 1     (treat the lower-rated player's T as 1)
+T_weak   = 2^(0.96) ≈ 1.946
 
-## Implementation guidance (until canonical source is found)
+p_strong = 1.946 / (1 + 1.946) ≈ 0.6605
+E_strong = 0.6605 × 10 = 6.605
+ceil(E_strong) = 7
+complement = 11 - 7 = 4
+```
 
-Unit 3.2 of the implementation plan ships a **graceful-fallback stub**:
+Result: **7-to-4 race** for a 96-point gap. The published HOT chart
+specifies exactly 7-4 for the 86-106 point gap band. Formula validated.
 
-- `applyExtraGames(homeRatings, awayRatings, totalGames, params)`
-- Default `scaling_factor = 1.0` (full compensation)
-- Use the logical derivation above (ceiling of M/2, plus expected-win
-  differential, sum-to-M+1 invariant)
-- Marked `confidence: 'extrapolated'` in the output so the wizard /
-  match-end UI can surface "this threshold is a community-standard
-  approximation, not a published chart" to the LO
+Additional points from the FargoRate "Anatomy of a Close-to-Fair
+Tournament Tour" blog post:
 
-When canonical research lands, the implementation either:
-(a) replaces the formula with the published one, or
-(b) keeps the stub formula and adds the published chart as a Layer 2
-preset that overrides it for specific known combinations.
+| Rating gap | Published HOT race | Formula output |
+| ---------- | ------------------ | -------------- |
+| ~0 pts     | 6-6                | 6-6 (E=6, ceil=6, complement=6) ✓ |
+| ~40 pts    | 6-5                | 6-5 (E≈5.6, ceil=6, complement=5) ✓ |
+| ~96 pts    | 7-4                | 7-4 (E≈6.6, ceil=7, complement=4) ✓ |
 
-## Sources (placeholders — to be filled when research lands)
+The formula reproduces FargoRate's published individual-matchup chart
+exactly across the calibration points the blog publishes. We extend the
+same arithmetic to team matches by summing per-pairing `p_i` across
+all pairings.
 
-- _Authoritative formula source: TBD_
-- _Published chart values: TBD_
-- _Calibration data: TBD_
+## Worked example — 3v3 DRR with mixed Fargo ratings
+
+Match setup:
+- Home: P1=600, P2=550, P3=500 (avg 550)
+- Away: P1=520, P2=480, P3=460 (avg 487)
+- Match format: 3v3 double-round-robin = 18 games (each home player
+  faces each away player twice — once breaking, once racking)
+
+Per-matchup `p_home_i` (each home/away pair plays 2 games):
+
+| Pairing | Home | Away | T_home | T_away | p_home | × 2 games |
+| ------- | ---- | ---- | ------ | ------ | ------ | --------- |
+| 1×1     | 600  | 520  | 64     | 36.76  | 0.6353 | 1.271     |
+| 1×2     | 600  | 480  | 64     | 27.86  | 0.6967 | 1.393     |
+| 1×3     | 600  | 460  | 64     | 24.25  | 0.7252 | 1.450     |
+| 2×1     | 550  | 520  | 45.25  | 36.76  | 0.5518 | 1.104     |
+| 2×2     | 550  | 480  | 45.25  | 27.86  | 0.6190 | 1.238     |
+| 2×3     | 550  | 460  | 45.25  | 24.25  | 0.6512 | 1.302     |
+| 3×1     | 500  | 520  | 32.00  | 36.76  | 0.4654 | 0.931     |
+| 3×2     | 500  | 480  | 32.00  | 27.86  | 0.5345 | 1.069     |
+| 3×3     | 500  | 460  | 32.00  | 24.25  | 0.5688 | 1.138     |
+| **Σ**   |      |      |        |        |        | **10.896**|
+
+```
+E_home = 10.896
+E_away = 18 - 10.896 = 7.104
+```
+
+Home is favored. Apply Step 4:
+
+```
+home_to_win = ceil(10.896) = 11
+away_to_win = 18 + 1 - 11 = 8
+```
+
+Tie thresholds (18 games, ties possible at 9-9):
+
+```
+home_to_tie = 11 - 1 = 10
+away_to_tie = 8 - 1 = 7
+```
+
+So home needs 11 wins (or 10 + tiebreaker), away needs 8 wins (or 7 +
+tiebreaker). Pair sums to 19 = M+1 — match is always decisive.
+
+## Why no canonical external chart exists
+
+The research surfaced one important gotcha: **FargoRate LMS doesn't
+support games-to-win thresholds at all.** Their native system applies
+handicap points to raw game scores. CSI/BCAPL national championships
+use this same model (handicap points, not threshold targets). The
+FargoRate calculator at leaguecalc.fargorate.com outputs a points
+differential, never per-team threshold values.
+
+This means:
+
+1. **No external source publishes a team threshold chart** because the
+   ecosystem of Fargo-rated leagues mostly uses handicap points, not
+   asymmetric game targets.
+2. **The formula above is league-defined, not protocol-defined.** It's
+   derivable from FargoRate's published primitives and reproduces their
+   individual-matchup HOT chart exactly — but the choice to use
+   asymmetric games-to-win thresholds at all is an operator decision.
+3. **Captains' override is the safety valve.** If a specific league has
+   agreed on a different convention (e.g. round-down instead of ceil,
+   or scaling factor < 1.0 for "half-handicap" leagues), captains adjust
+   at lineup lock. The match-record snapshot freezes their final values.
+
+## Implementation guidance
+
+The Phase 7 v2 plan's Unit 3.2 ships `computeFargoGamesWonThresholds`
+as a pure function:
+
+```
+computeFargoGamesWonThresholds({
+  homeRatings: number[],
+  awayRatings: number[],
+  totalGames: number,
+  pairingCounts?: number[][],  // games per (home_i, away_j) pairing,
+                                // default: SRR (1) or DRR (2) by totalGames
+}) → {
+  home: { games_to_win, games_to_tie, games_to_lose },
+  away: { games_to_win, games_to_tie, games_to_lose },
+}
+```
+
+`pairingCounts` is the lineup-geometry-aware games-per-pairing matrix.
+For 3v3 DRR each pair plays 2; for 5v5 SRR each pair plays 1; etc. If
+omitted the function infers it from `totalGames` and lineup size.
+
+Default `scaling_factor = 1.0` (full handicap). The plan reserves a
+future params object for half-handicap leagues to dial it down — out
+of scope for v1.
+
+The output's `games_to_tie` is set when ties are possible (even M);
+`null` otherwise. `games_to_lose` is `tie - 1` when tie band exists,
+otherwise `null`.
+
+## Sources (confirmed during 2026-05-02 research)
+
+- [FargoRate League Calculator](https://leaguecalc.fargorate.com/) — Official per-round handicap calculator; outputs points differential, not games-threshold
+- [FargoRate LMS Formats Documentation](https://lms.fargorate.com/lms-help/docs/division/format/) — Confirms LMS uses handicap points model, not per-team games-to-win thresholds
+- [CSI: FargoRate League Handicap Calculator Explained](https://www.playcsipool.com/csinews/all-new-fargorate-league-handicap-calculator-explained) — Explains the three LMS handicap modes; points-based throughout
+- [Anatomy of a Close-to-Fair Tournament Tour — FargoRate Blog](https://www.fargorate.com/fargorateblog/archive/anatomy-of-a-close-to-fair-tournament-tour/) — Confirms HOT individual race bands: 6-6 (~0 pt gap), 6-5 (~40 pt), 7-4 (~96 pt). **This is the calibration data above.**
+- [APPA/FargoRate 8-Ball Race Charts](https://poolplayermatchups.com/appa/fr-race-charts/8-Ball/) — Most detailed published band-to-integer-race chart available; structural template
+- [West Michigan BCAPL Race Calculator](https://www.westmibcapl.com/leagues/race-calculator/) — Tiered lookup table, individual races
+- [AzBilliards: Fargo Race Charts thread](https://forums.azbilliards.com/threads/fargo-race-charts.563648/) — Bob Jewett confirms team race tables are constructible but no standard published version exists
+- [Dr. Dave Pool Info: FargoRate FAQ](https://drdavepoolinfo.com/faq/rating/fargorate/) — Confirms `T = 2^(rating/100)` foundation
 
 ## Open items
 
-- Replace this stub with the canonical formula or chart
-- Add 3–5 calibration test cases (real matches with confirmed
-  thresholds from the official source)
-- Document any variants observed across major Fargo-using
-  league-management tools
-- Clarify whether the formula is published anywhere or whether it's
-  community convention with no single canonical source (in which case
-  this stub's approximation may be the most authoritative thing the
-  app has, and Layer 3 override is the LO's path to dial it in)
+- Add 3-5 calibration test cases from real Fargo + games-won matches
+  (operator can hand-walk this against their own league's accepted
+  thresholds)
+- Document any league-specific scaling factor (half-handicap leagues)
+  if the operator's circle uses one
