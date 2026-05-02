@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-01 (Phase 2 Unit 2.1 — consolidated schema migration: preferences `scoring_method`→`points_calculator` + `points_calculator_params` JSONB + `win_condition` 4→2 values; matches `*_games_to_*`→`*_to_*` rename + `home_team_score`/`away_team_score` drop)
+> **Last Updated**: 2026-05-01 (Phase 2 Unit 2.2 — `ResolvedSystemConfig` updated for `points_calculator` + `points_calculator_params`; `populateMatchSnapshotIfNeeded` reads/writes new shape; `buildSystemFromPreferences.pickScoring` rewritten to dispatch on calculator name)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -905,12 +905,12 @@ Preset modules implementing the `SystemModule` interface. Each shipped preset ow
 
 - `types.ts` - **SystemModule interface** + mechanism-discriminated threshold union (ExtraGamesThreshold | StartPointsThreshold | RaceLengthThreshold) + supporting types (Phase 1 Unit 1.3)
 - `resolver.ts` - **Module resolver** — `pickModule(handicap_type)` routes to bca3v3 / bca5v5 / fargo5v5; `resolveSystem(prefs, overrides)` delegates to buildSystemFromPreferences for full-preference resolution (Phase 5 Unit 5.1)
-- `buildSystemFromPreferences.ts` - **Runtime resolver** (Phase 5 Unit 5.1) — produces a SystemModule from a `ResolvedSystemConfig`. Fast-paths to one of the three shipped presets when prefs match exactly; otherwise builds an ad-hoc module by dispatching rating/scoring/threshold sections on the resolved axes
+- `buildSystemFromPreferences.ts` - **Runtime resolver** (Phase 5 Unit 5.1; updated Phase 2 Unit 2.2) — produces a SystemModule from a `ResolvedSystemConfig`. Fast-paths to one of the three shipped presets when prefs match exactly (matchPreset checks `points_calculator` axis: bca3v3=`linear_above_threshold`, bca5v5=`accumulate_with_milestone_jumps`, fargo5v5=`accumulated_per_game`); otherwise builds an ad-hoc module dispatching rating/scoring/threshold sections on the resolved axes. `pickScoring` dispatches by calculator name; aggregate calculators stub through legacy paths until Phase 5 Unit 5.5
 - `bca3v3.ts` - **BCA 3v3 module** — wraps the existing get3v3GamesNeeded chart
 - `bca5v5.ts` - **BCA 5v5 module** — wraps the existing get5v5GamesNeeded chart
 - `fargo5v5.ts` - **Fargo 5v5 module** — real math (Phase 3 Unit 10): rating validation (100-850 integer), start-points formula from `docs/research/fargorate-formula.md`, points→games-won match-result cascade
 - `__tests__/resolver.test.ts` - Resolver routing tests (15 cases including unmapped fallback)
-- `__tests__/buildSystemFromPreferences.test.ts` - **Runtime resolver tests** (Phase 5 Unit 5.1) — preset fast-path equivalence + ad-hoc combos (29 cases): teamFormat derivation, rating/scoring/threshold dispatch, mechanism dispatch (extra_games / start_points / race_length_adjustment / none), graceful fallback for not-yet-wired layers
+- `__tests__/buildSystemFromPreferences.test.ts` - **Runtime resolver tests** (Phase 5 Unit 5.1; updated Phase 2 Unit 2.2 for new `points_calculator` value space) — preset fast-path equivalence + ad-hoc combos (28 cases): teamFormat derivation, rating/scoring/threshold dispatch, mechanism dispatch (extra_games / start_points / race_length_adjustment / none), graceful fallback for not-yet-wired layers
 - `__tests__/fargo5v5.test.ts` - **Fargo math tests** (Phase 3 Unit 10) — validates against 1 real-match test case (56 start-points ±1) + 34 synthetic cases covering rating validation, start-points formula, scoring cascade, override behavior
 
 #### Points Calculators (`/systems/calculators/`) — Phase 1 Unit 1.1

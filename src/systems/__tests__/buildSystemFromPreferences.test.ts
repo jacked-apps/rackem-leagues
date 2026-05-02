@@ -37,8 +37,8 @@ function makeConfig(overrides: Partial<ResolvedSystemConfig> = {}): ResolvedSyst
     game_generation: 'single_round_robin',
     pairing_format: 'single_rack',
     race_length: null,
-    scoring_method: 'winner_takes_all',
-    win_condition: 'first_to_games',
+    points_calculator: 'linear_above_threshold',
+    win_condition: 'games',
     handicap_type: 'percentage',
     mechanism: 'extra_games',
     threshold_chart_id: null,
@@ -58,7 +58,7 @@ function bca3v3Config(): ResolvedSystemConfig {
     game_generation: 'double_round_robin',
     handicap_type: 'points',
     mechanism: 'extra_games',
-    scoring_method: 'winner_takes_all',
+    points_calculator: 'linear_above_threshold',
   });
 }
 
@@ -69,7 +69,7 @@ function bca5v5Config(): ResolvedSystemConfig {
     game_generation: 'single_round_robin',
     handicap_type: 'percentage',
     mechanism: 'extra_games',
-    scoring_method: 'winner_takes_all',
+    points_calculator: 'accumulate_with_milestone_jumps',
   });
 }
 
@@ -80,7 +80,7 @@ function fargo5v5Config(): ResolvedSystemConfig {
     game_generation: 'single_round_robin',
     handicap_type: 'fargo',
     mechanism: 'start_points',
-    scoring_method: 'points_10_7',
+    points_calculator: 'accumulated_per_game',
   });
 }
 
@@ -117,7 +117,7 @@ describe('buildSystemFromPreferences — preset fast-path', () => {
         game_generation: 'double_round_robin',
         handicap_type: 'points',
         mechanism: 'extra_games',
-        scoring_method: 'winner_takes_all',
+        points_calculator: 'linear_above_threshold',
       }),
       EMPTY_OVERRIDES,
     );
@@ -133,7 +133,7 @@ describe('buildSystemFromPreferences — preset fast-path', () => {
         game_generation: 'single_round_robin',
         handicap_type: 'fargo',
         mechanism: 'extra_games',
-        scoring_method: 'winner_takes_all',
+        points_calculator: 'linear_above_threshold',
       }),
       EMPTY_OVERRIDES,
     );
@@ -155,7 +155,7 @@ describe('buildSystemFromPreferences — ad-hoc teamFormat derivation', () => {
         game_generation: 'single_round_robin',
         handicap_type: 'fargo',
         mechanism: 'extra_games',
-        scoring_method: 'winner_takes_all',
+        points_calculator: 'linear_above_threshold',
       }),
       EMPTY_OVERRIDES,
     );
@@ -184,11 +184,11 @@ describe('buildSystemFromPreferences — ad-hoc teamFormat derivation', () => {
         lineup_size: 4,
         handicap_type: 'fargo',
         mechanism: 'extra_games',
-        scoring_method: 'winner_takes_all',
+        points_calculator: 'linear_above_threshold',
       }),
       EMPTY_OVERRIDES,
     );
-    expect(mod.key).toBe('custom_4v4_fargo_extra_games_winner_takes_all');
+    expect(mod.key).toBe('custom_4v4_fargo_extra_games_linear_above_threshold');
   });
 });
 
@@ -203,7 +203,7 @@ describe('buildSystemFromPreferences — rating dispatch', () => {
         lineup_size: 4,
         handicap_type: 'points',
         mechanism: 'extra_games',
-        scoring_method: 'winner_takes_all',
+        points_calculator: 'linear_above_threshold',
       }),
       EMPTY_OVERRIDES,
     );
@@ -219,7 +219,7 @@ describe('buildSystemFromPreferences — rating dispatch', () => {
         lineup_size: 6,
         handicap_type: 'percentage',
         mechanism: 'extra_games',
-        scoring_method: 'winner_takes_all',
+        points_calculator: 'linear_above_threshold',
       }),
       EMPTY_OVERRIDES,
     );
@@ -232,7 +232,7 @@ describe('buildSystemFromPreferences — rating dispatch', () => {
         lineup_size: 4,
         handicap_type: 'fargo',
         mechanism: 'start_points',
-        scoring_method: 'points_10_7',
+        points_calculator: 'accumulated_per_game',
       }),
       EMPTY_OVERRIDES,
     );
@@ -247,7 +247,7 @@ describe('buildSystemFromPreferences — rating dispatch', () => {
         handicap_type: 'skill_level',
         mechanism: 'race_length_adjustment',
         pairing_format: 'race_to_n',
-        scoring_method: 'race_winner',
+        points_calculator: null,
         race_length: 7,
       }),
       EMPTY_OVERRIDES,
@@ -295,7 +295,7 @@ describe('buildSystemFromPreferences — scoring dispatch', () => {
         lineup_size: 4,
         handicap_type: 'fargo',
         mechanism: 'start_points',
-        scoring_method: 'points_10_7',
+        points_calculator: 'accumulated_per_game',
       }),
       EMPTY_OVERRIDES,
     );
@@ -314,7 +314,7 @@ describe('buildSystemFromPreferences — scoring dispatch', () => {
         lineup_size: 4,
         handicap_type: 'points',
         mechanism: 'extra_games',
-        scoring_method: 'winner_takes_all',
+        points_calculator: 'linear_above_threshold',
       }),
       EMPTY_OVERRIDES,
     );
@@ -324,26 +324,17 @@ describe('buildSystemFromPreferences — scoring dispatch', () => {
     ).toThrow(/not yet wired/i);
   });
 
-  it('stubs scoring_method=race_winner with a Phase 3 reference', () => {
-    const mod = buildSystemFromPreferences(
-      makeConfig({
-        handicap_type: 'skill_level',
-        mechanism: 'race_length_adjustment',
-        pairing_format: 'race_to_n',
-        scoring_method: 'race_winner',
-        race_length: 7,
-      }),
-      EMPTY_OVERRIDES,
-    );
-    expect(() =>
-      mod.scoring.recordGameOutcome({ winnerTeam: 'home' }, EMPTY_OVERRIDES),
-    ).toThrow(/race_winner/i);
-  });
+  // Note: the `race_winner` calculator type was removed from the registry's
+  // value space per the v2 plan's architectural decision (race-to-N produces
+  // one game-win per race; no special calculator is needed for that case).
+  // Race-format leagues use null or one of the registered calculators based
+  // on what scoring math the LO actually wants. The "race_winner with Phase 3
+  // reference" test that lived here previously is obsolete.
 
-  it('falls back to winner_takes_all stubs with a warn for an unknown scoring_method', () => {
+  it('falls back to NOT_YET_WIRED stubs with a warn for an unknown points_calculator', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const mod = buildSystemFromPreferences(
-      makeConfig({ scoring_method: 'experimental_scoring' as ResolvedSystemConfig['scoring_method'] }),
+      makeConfig({ points_calculator: 'experimental_calc' as ResolvedSystemConfig['points_calculator'] }),
       EMPTY_OVERRIDES,
     );
     expect(mod.scoring.method).toBe('games_won_with_team_bonus');
@@ -367,7 +358,7 @@ describe('buildSystemFromPreferences — threshold dispatch by mechanism', () =>
         lineup_size: 4,
         handicap_type: 'points',
         mechanism: 'extra_games',
-        scoring_method: 'winner_takes_all',
+        points_calculator: 'linear_above_threshold',
       }),
       EMPTY_OVERRIDES,
     );
@@ -385,7 +376,7 @@ describe('buildSystemFromPreferences — threshold dispatch by mechanism', () =>
         lineup_size: 6,
         handicap_type: 'percentage',
         mechanism: 'extra_games',
-        scoring_method: 'winner_takes_all',
+        points_calculator: 'linear_above_threshold',
       }),
       EMPTY_OVERRIDES,
     );
@@ -404,7 +395,7 @@ describe('buildSystemFromPreferences — threshold dispatch by mechanism', () =>
         lineup_size: 4,
         handicap_type: 'fargo',
         mechanism: 'extra_games',
-        scoring_method: 'winner_takes_all',
+        points_calculator: 'linear_above_threshold',
       }),
       EMPTY_OVERRIDES,
     );
@@ -422,7 +413,7 @@ describe('buildSystemFromPreferences — threshold dispatch by mechanism', () =>
         lineup_size: 4,
         handicap_type: 'fargo',
         mechanism: 'start_points',
-        scoring_method: 'points_10_7',
+        points_calculator: 'accumulated_per_game',
       }),
       EMPTY_OVERRIDES,
     );
@@ -445,7 +436,7 @@ describe('buildSystemFromPreferences — threshold dispatch by mechanism', () =>
       makeConfig({
         handicap_type: 'percentage',
         mechanism: 'start_points',
-        scoring_method: 'points_10_7',
+        points_calculator: 'accumulated_per_game',
       }),
       EMPTY_OVERRIDES,
     );
@@ -464,7 +455,7 @@ describe('buildSystemFromPreferences — threshold dispatch by mechanism', () =>
         handicap_type: 'skill_level',
         mechanism: 'race_length_adjustment',
         pairing_format: 'race_to_n',
-        scoring_method: 'race_winner',
+        points_calculator: null,
         race_length: 5,
       }),
       EMPTY_OVERRIDES,
@@ -484,7 +475,7 @@ describe('buildSystemFromPreferences — threshold dispatch by mechanism', () =>
         handicap_type: 'skill_level',
         mechanism: 'race_length_adjustment',
         pairing_format: 'race_to_n',
-        scoring_method: 'race_winner',
+        points_calculator: null,
         race_length: null,
       }),
       EMPTY_OVERRIDES,
@@ -541,11 +532,11 @@ describe('resolveSystem (resolver.ts wrapper)', () => {
         lineup_size: 4,
         handicap_type: 'fargo',
         mechanism: 'start_points',
-        scoring_method: 'points_10_7',
+        points_calculator: 'accumulated_per_game',
       }),
       EMPTY_OVERRIDES,
     );
-    expect(mod.key).toBe('custom_4v4_fargo_start_points_points_10_7');
+    expect(mod.key).toBe('custom_4v4_fargo_start_points_accumulated_per_game');
     expect(mod.threshold.mode).toBe('start_points');
   });
 });

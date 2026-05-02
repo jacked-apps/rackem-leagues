@@ -62,14 +62,14 @@ import { get5v5GamesNeeded } from '@/utils/handicap/get5v5GamesNeeded';
  * scoring math).
  */
 function matchPreset(prefs: ResolvedSystemConfig): SystemModule | null {
-  const { lineup_size, handicap_type, game_generation, mechanism, scoring_method } = prefs;
+  const { lineup_size, handicap_type, game_generation, mechanism, points_calculator } = prefs;
 
   if (
     lineup_size === 3 &&
     handicap_type === 'points' &&
     game_generation === 'double_round_robin' &&
     mechanism === 'extra_games' &&
-    scoring_method === 'winner_takes_all'
+    points_calculator === 'linear_above_threshold'
   ) {
     return bca3v3;
   }
@@ -79,7 +79,7 @@ function matchPreset(prefs: ResolvedSystemConfig): SystemModule | null {
     handicap_type === 'percentage' &&
     game_generation === 'single_round_robin' &&
     mechanism === 'extra_games' &&
-    scoring_method === 'winner_takes_all'
+    points_calculator === 'accumulate_with_milestone_jumps'
   ) {
     return bca5v5;
   }
@@ -89,7 +89,7 @@ function matchPreset(prefs: ResolvedSystemConfig): SystemModule | null {
     handicap_type === 'fargo' &&
     game_generation === 'single_round_robin' &&
     mechanism === 'start_points' &&
-    scoring_method === 'points_10_7'
+    points_calculator === 'accumulated_per_game'
   ) {
     return fargo5v5;
   }
@@ -104,11 +104,11 @@ function matchPreset(prefs: ResolvedSystemConfig): SystemModule | null {
 /**
  * Deterministic key for an ad-hoc resolved module. Used in logs, snapshot
  * `key` field, and test assertions. Format:
- *   `custom_<lineup>v<lineup>_<handicap>_<mechanism>_<scoring>`
+ *   `custom_<lineup>v<lineup>_<handicap>_<mechanism>_<calculator>`
  */
 function deriveAdHocKey(prefs: ResolvedSystemConfig): string {
-  const { lineup_size, handicap_type, mechanism, scoring_method } = prefs;
-  return `custom_${lineup_size}v${lineup_size}_${handicap_type}_${mechanism}_${scoring_method}`;
+  const { lineup_size, handicap_type, mechanism, points_calculator } = prefs;
+  return `custom_${lineup_size}v${lineup_size}_${handicap_type}_${mechanism}_${points_calculator ?? 'null'}`;
 }
 
 // ============================================================================
@@ -183,62 +183,69 @@ const NOT_YET_WIRED =
   'Ad-hoc system module scoring methods not yet wired (legacy paths still in use for non-Fargo combos)';
 
 /**
- * Pick the scoring capability for the ad-hoc module by `scoring_method`.
+ * Pick the scoring capability for the ad-hoc module by `points_calculator`.
  *
- * Today the only fully-wired scoring path through SystemModule is Fargo's
- * points_10_7 (recordGameOutcome / computeMatchResult). BCA-style winner-
- * takes-all still flows through legacy code paths in MatchEndVerification
- * pending Unit 5.2's refactor; ad-hoc winner_takes_all modules therefore
- * stub the same way bca3v3/bca5v5 do — calling them throws so that any
- * accidental routing through a not-yet-wired path is caught at runtime.
+ * Today the only fully-wired scoring path through SystemModule's god-function
+ * `computeMatchResult` is Fargo's `accumulated_per_game` (recordGameOutcome /
+ * computeMatchResult delegate to fargo5v5's implementation). The aggregate
+ * calculators (`linear_above_threshold`, `accumulate_with_milestone_jumps`)
+ * still flow through legacy code paths in MatchEndVerification pending the
+ * Phase 5 Unit 5.5 refactor; ad-hoc modules with those calculators therefore
+ * stub the SystemModule.scoring methods (calling them throws so any
+ * accidental routing through a not-yet-wired path is caught at runtime).
  *
- * race_winner is reserved for the BCAPL SL race-to-N format (Phase 3
- * Unit 3.3). Stubbed identically until that path lands.
+ * NULL means the league does not track points at all — scoring is effectively
+ * a games-only counter, and no calculator runs. Stubbed identically.
+ *
+ * Phase 5 Unit 5.5 replaces this dispatch entirely with per-game calculator
+ * dispatch in the scoring mutation. After that, this `scoring` capability
+ * on SystemModule is deprecated.
  */
-function pickScoring(scoringMethod: string): SystemModule['scoring'] {
-  switch (scoringMethod) {
-    case 'points_10_7':
-      // Fargo points scoring is rating-system-agnostic — reuse fargo5v5's
-      // implementation for any (any-rating + 10-7 scoring) combo.
-      return {
-        method: 'points_accumulated',
-        recordGameOutcome: fargo5v5.scoring.recordGameOutcome,
-        computeMatchResult: fargo5v5.scoring.computeMatchResult,
-      };
-    case 'winner_takes_all':
-      return {
-        method: 'games_won_with_team_bonus',
-        recordGameOutcome: () => {
-          throw new Error(NOT_YET_WIRED);
-        },
-        computeMatchResult: () => {
-          throw new Error(NOT_YET_WIRED);
-        },
-      };
-    case 'race_winner':
-      return {
-        method: 'games_won_with_team_bonus',
-        recordGameOutcome: () => {
-          throw new Error(`race_winner scoring not yet wired (BCAPL SL — Phase 3 Unit 3.3)`);
-        },
-        computeMatchResult: () => {
-          throw new Error(`race_winner scoring not yet wired (BCAPL SL — Phase 3 Unit 3.3)`);
-        },
-      };
-    default:
-      console.warn(
-        `[buildSystemFromPreferences] Unknown scoring_method ${JSON.stringify(scoringMethod)} — defaulting to winner_takes_all stubs`,
-      );
-      return {
-        method: 'games_won_with_team_bonus',
-        recordGameOutcome: () => {
-          throw new Error(NOT_YET_WIRED);
-        },
-        computeMatchResult: () => {
-          throw new Error(NOT_YET_WIRED);
-        },
-      };
+function pickScoring(pointsCalculator: string | null): SystemModule['scoring'] {
+  if (pointsCalculator === 'accumulated_per_game') {
+    // Per-game accumulation — reuse fargo5v5's implementation for any
+    // (any-rating + accumulated_per_game) combo. Phase 5 Unit 5.5 will
+    // replace this with calculator-registry dispatch in the per-game
+    // scoring mutation.
+    return {
+      method: 'points_accumulated',
+      recordGameOutcome: fargo5v5.scoring.recordGameOutcome,
+      computeMatchResult: fargo5v5.scoring.computeMatchResult,
+    };
   }
+
+  if (
+    pointsCalculator === 'linear_above_threshold' ||
+    pointsCalculator === 'accumulate_with_milestone_jumps' ||
+    pointsCalculator === null
+  ) {
+    // Aggregate calculators + the no-points case all flow through the
+    // legacy MatchEndVerification path until Unit 5.5 refactors. Stub
+    // SystemModule.scoring methods so any accidental call through this
+    // surface throws loudly (caught at runtime).
+    return {
+      method: 'games_won_with_team_bonus',
+      recordGameOutcome: () => {
+        throw new Error(NOT_YET_WIRED);
+      },
+      computeMatchResult: () => {
+        throw new Error(NOT_YET_WIRED);
+      },
+    };
+  }
+
+  console.warn(
+    `[buildSystemFromPreferences] Unknown points_calculator ${JSON.stringify(pointsCalculator)} — defaulting to NOT_YET_WIRED stubs`,
+  );
+  return {
+    method: 'games_won_with_team_bonus',
+    recordGameOutcome: () => {
+      throw new Error(NOT_YET_WIRED);
+    },
+    computeMatchResult: () => {
+      throw new Error(NOT_YET_WIRED);
+    },
+  };
 }
 
 // ============================================================================
@@ -420,7 +427,7 @@ export function buildSystemFromPreferences(
           : 'single_round_robin',
     },
     rating: pickRating(prefs.handicap_type),
-    scoring: pickScoring(prefs.scoring_method),
+    scoring: pickScoring(prefs.points_calculator),
     threshold: pickThreshold(prefs),
   };
 }

@@ -726,7 +726,7 @@ export async function populateMatchSnapshotIfNeeded(
     supabase
       .from('resolved_league_preferences')
       .select(
-        'lineup_size, max_roster_size, game_generation, pairing_format, race_length, scoring_method, win_condition, handicap_type, mechanism, threshold_chart_id, standings_sort, tiebreaker_trigger, tiebreaker_format',
+        'lineup_size, max_roster_size, game_generation, pairing_format, race_length, points_calculator, points_calculator_params, win_condition, handicap_type, mechanism, threshold_chart_id, standings_sort, tiebreaker_trigger, tiebreaker_format',
       )
       .eq('league_id', leagueId)
       .single(),
@@ -752,7 +752,8 @@ export async function populateMatchSnapshotIfNeeded(
     game_generation: resolved.game_generation,
     pairing_format: resolved.pairing_format,
     race_length: resolved.race_length,
-    scoring_method: resolved.scoring_method,
+    points_calculator: resolved.points_calculator,
+    points_calculator_params: resolved.points_calculator_params,
     win_condition: resolved.win_condition,
     handicap_type: resolved.handicap_type,
     mechanism: resolved.mechanism,

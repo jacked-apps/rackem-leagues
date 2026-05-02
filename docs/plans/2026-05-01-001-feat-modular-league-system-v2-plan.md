@@ -741,7 +741,7 @@ The audit log table from Unit 6.1 already shipped — no schema changes there.
 - Grep confirms zero references to `home_games_to_win` / `away_games_to_win` / `home_games_to_tie` / `away_games_to_tie` / `home_games_to_lose` / `away_games_to_lose` / `home_team_score` / `away_team_score` in `src/`
 - Migrations within this unit consolidated to a single forward-only intent before PR opens
 
-- [ ] **Unit 2.2: Update `ResolvedSystemConfig` + snapshot writer for new column names**
+- [x] **Unit 2.2: Update `ResolvedSystemConfig` + snapshot writer for new column names**
 
 **Goal:** Type and writer track the schema corrections. Add `points_calculator_params` to the snapshot shape.
 
