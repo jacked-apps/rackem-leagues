@@ -22,6 +22,8 @@ T = 2^(rating / 100)
 
 Key property: a 100-point rating gap predicts a 2:1 win ratio. A 200-point gap predicts 4:1. Etc.
 
+**Divisor confirmed 2026-05-02 (Unit 0.4 research).** Mike Page (FargoRate's creator) writes this formula verbatim on AzBilliards and the official "Behind the Curtain" blog. The Bradley-Terry academic convention `e^(rating/144.27)` is algebraically identical (since `100 / ln(2) ≈ 144.27`) but FargoRate never publishes the base-e form anywhere. The codebase's `Math.pow(2, rating / 100)` matches the canonical published form exactly.
+
 | Rating | Transformed T |
 | ------ | ------------- |
 | 300    | 2^3 = 8       |

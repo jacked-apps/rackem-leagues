@@ -467,7 +467,7 @@ Phases organized by dependency. Phase 0 research blocks Phase 3. Phase 1 (calcul
 - Either: zero-blocking-reads documented, or each blocking read has a migration plan
 - Jack confirms the migration plan before Phase 2 Unit 2.1 lands
 
-- [ ] **Unit 0.4: Validate Fargo logistic divisor (100 vs 144)**
+- [x] **Unit 0.4: Validate Fargo logistic divisor (100 vs 144)**
 
 **Goal:** The existing `fargorate-formula.md` uses `2^(rating/100)` — a 100-point divisor. Some sources use 144. Validate against FargoRate's own current materials before Unit 3.2 ships.
 

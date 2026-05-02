@@ -62,7 +62,20 @@ export interface FargoGamesWonThresholds {
   expectedHomeWins: number;
 }
 
-/** FargoRate base transform: T = 2^(rating/100). */
+/**
+ * FargoRate base transform: T = 2^(rating/100).
+ *
+ * This is the exact form Mike Page (FargoRate's creator) publishes on
+ * the "Behind the Curtain" blog and his own AzBilliards posts. A
+ * 100-point rating gap predicts a 2:1 single-game win ratio.
+ *
+ * The Bradley-Terry academic convention writes the same formula as
+ * `e^(rating/144.27)` (since `100 / ln(2) ≈ 144.27`). The two are
+ * algebraically identical — same outputs, no precision difference
+ * — but FargoRate canonically uses the base-2 form.
+ *
+ * @see docs/research/fargorate-formula.md (Unit 0.4 — divisor confirmed 2026-05-02)
+ */
 function ratingToT(rating: number): number {
   return Math.pow(2, rating / 100);
 }
