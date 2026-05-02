@@ -419,8 +419,7 @@ export async function getMatchWithLeagueSettings(matchId: string): Promise<Match
           handicap_variant,
           team_handicap_variant,
           golden_break_counts_as_win,
-          game_type,
-          team_format
+          game_type
         )
       )
     `)
@@ -480,7 +479,6 @@ export async function getMatchWithLeagueSettings(matchId: string): Promise<Match
       team_handicap_variant: (leagueData?.team_handicap_variant || 'standard') as any,
       golden_break_counts_as_win: leagueData?.golden_break_counts_as_win ?? false,
       game_type: leagueData?.game_type || '8-ball',
-      team_format: (leagueData?.team_format || '5_man') as '5_man' | '8_man',
     },
   };
 }

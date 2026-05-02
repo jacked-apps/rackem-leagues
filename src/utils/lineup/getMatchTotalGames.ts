@@ -1,9 +1,7 @@
 /**
  * @fileoverview Match total-games derivation from modular lineup geometry.
  *
- * Replaces the team_format-based `getRegularGameCount` for callers that
- * already have modular preferences (lineup_size + game_generation) rather
- * than the legacy `'5_man' | '8_man'` tag. Used by:
+ * Used by:
  *   - MatchEndVerification.tsx — to compute how many regular games a match
  *     contains (drives where tiebreaker game numbers start: regular + 1)
  *   - tiebreakerGameNumbers (Phase 5 Unit 5.4) — caller passes the result
@@ -16,10 +14,11 @@
  *   4v4 SRR → 4 × 4 × 1 = 16
  *   6v6 SRR → 6 × 6 × 1 = 36
  *
- * Phase 7 Unit 7.3 will fold the legacy `getRegularGameCount(teamFormat)`
- * helper into this one.
+ * Phase 7 Unit 7.3 deleted the legacy `getRegularGameCount(teamFormat)`
+ * helper — `team_format` no longer exists. This is the only total-games
+ * helper now.
  *
- * @see docs/plans/2026-04-28-001-feat-modular-league-system-plan.md (Unit 5.2)
+ * @see docs/plans/2026-05-01-001-feat-modular-league-system-v2-plan.md (Unit 5.2)
  */
 
 export interface MatchGeometry {

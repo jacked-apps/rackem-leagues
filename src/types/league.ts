@@ -4,11 +4,6 @@
  */
 
 /**
- * Team format types
- */
-export type TeamFormat = '5_man' | '8_man';
-
-/**
  * Handicap system types
  */
 export type HandicapSystem = 'custom_5man' | 'bca_standard';
@@ -50,7 +45,6 @@ export interface League {
   game_type: GameType;
   day_of_week: DayOfWeek;
   division: string | null;
-  team_format: TeamFormat;
   handicap_variant: HandicapVariant; // Main handicap control (affects both player and team handicaps)
   team_handicap_variant: HandicapVariant | null; // Optional override for team bonus only (null = use organization default, then handicap_variant)
   game_history_limit: number | null; // Optional override for handicap calculation history (null = use organization default of 200)

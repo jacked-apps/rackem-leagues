@@ -34,8 +34,8 @@ SELECT
     AS team_handicap_variant,
   COALESCE(league_prefs.game_history_limit, org_prefs.game_history_limit, 200)
     AS game_history_limit,
-  COALESCE(league_prefs.team_format, org_prefs.team_format, l.team_format::text)
-    AS team_format,
+  -- Phase 7 Unit 7.3: `team_format` column dropped from leagues +
+  -- preferences. Lineup geometry comes from `lineup_size` below.
   COALESCE(league_prefs.golden_break_counts_as_win, org_prefs.golden_break_counts_as_win, l.golden_break_counts_as_win, true)
     AS golden_break_counts_as_win,
 

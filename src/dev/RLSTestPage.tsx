@@ -439,7 +439,6 @@ export default function RLSTestPage() {
         operatorId: organizationId,
         gameType: 'eight_ball',
         dayOfWeek: 'monday',
-        teamFormat: '5_man',
         handicapVariant: 'standard',
         teamHandicapVariant: 'standard',
         leagueStartDate: today,
@@ -522,7 +521,6 @@ export default function RLSTestPage() {
         operatorId: orgs[0].id,
         gameType: 'eight_ball',
         dayOfWeek: 'monday',
-        teamFormat: '5_man',
         handicapVariant: 'standard',
         teamHandicapVariant: 'standard',
         leagueStartDate: today,
@@ -538,7 +536,6 @@ export default function RLSTestPage() {
         handicap_variant: 'reduced',
         team_handicap_variant: 'standard',
         game_history_limit: 150,
-        team_format: '8_man',
         golden_break_counts_as_win: false,
       });
 

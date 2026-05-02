@@ -31,7 +31,12 @@ export interface PlayerWithHandicap extends PlayerSeasonStats {
 }
 
 /**
- * Return type for useTopShooters hook
+ * Return type for useTopShooters hook.
+ *
+ * Phase 7 Unit 7.3: `team_format` was dropped from the leagues schema.
+ * Lineup geometry comes from the resolved preferences' `lineup_size`.
+ * Callers that need to switch sort behavior between 3v3 and 5v5 read
+ * `lineupSize` here (3 ↔ legacy `'5_man'`; 5 ↔ legacy `'8_man'`).
  */
 interface UseTopShootersResult {
   /** Player stats with handicaps, sorted by wins (descending) */
@@ -40,8 +45,8 @@ interface UseTopShootersResult {
   isLoading: boolean;
   /** Error from any failed query */
   error: Error | null;
-  /** Team format for the league */
-  teamFormat?: '5_man' | '8_man';
+  /** Lineup size for the league (3 = 3v3, 5 = 5v5). */
+  lineupSize?: number;
 }
 
 /**
@@ -134,13 +139,15 @@ export function useTopShooters(seasonId: string): UseTopShootersResult {
   // Combine error states (prioritize stats error, then league, then handicap)
   const error = statsError || leagueError || (handicapErrors?.[0] as Error) || null;
 
+  const lineupSize = leaguePrefs?.lineup_size;
+
   // If still loading or error, return empty array
   if (isLoading || error || !playerStats || !league) {
     return {
       players: [],
       isLoading,
       error,
-      teamFormat: league?.team_format,
+      lineupSize,
     };
   }
 
@@ -150,32 +157,30 @@ export function useTopShooters(seasonId: string): UseTopShootersResult {
     handicap: handicaps.get(player.playerId)?.value ?? 0,
   }));
 
-  // Sort based on team format
-  // 5-man: Sort by points (wins - losses), then wins as tiebreaker
-  // 8-man: Sort by win%, then wins as tiebreaker
+  // Sort based on lineup geometry. 3v3 (legacy `5_man`): sort by points
+  // (wins - losses), then wins as tiebreaker. Larger lineups (5v5+,
+  // legacy `8_man`): win% first, then wins. Default for unknown
+  // lineup_size matches the 3v3 behavior — most leagues are 3v3.
   const sortedPlayers = playersWithHandicaps.sort((a, b) => {
-    if (league.team_format === '5_man') {
-      // 5-man: Points first, wins as tiebreaker
-      const aPoints = a.gamesWon - a.gamesLost;
-      const bPoints = b.gamesWon - b.gamesLost;
-
-      if (bPoints !== aPoints) {
-        return bPoints - aPoints; // Most points first
-      }
-      return b.gamesWon - a.gamesWon; // Most wins as tiebreaker
-    } else {
-      // 8-man: Win% first, wins as tiebreaker
+    if (lineupSize === 5) {
       if (b.winPercentage !== a.winPercentage) {
-        return b.winPercentage - a.winPercentage; // Higher win% first
+        return b.winPercentage - a.winPercentage;
       }
-      return b.gamesWon - a.gamesWon; // Most wins as tiebreaker
+      return b.gamesWon - a.gamesWon;
     }
+    // 3v3 (default): points first, wins as tiebreaker.
+    const aPoints = a.gamesWon - a.gamesLost;
+    const bPoints = b.gamesWon - b.gamesLost;
+    if (bPoints !== aPoints) {
+      return bPoints - aPoints;
+    }
+    return b.gamesWon - a.gamesWon;
   });
 
   return {
     players: sortedPlayers,
     isLoading: false,
     error: null,
-    teamFormat: league.team_format,
+    lineupSize,
   };
 }

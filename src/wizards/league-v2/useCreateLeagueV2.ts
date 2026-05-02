@@ -41,12 +41,13 @@ export function useCreateLeagueV2({ organizationId }: UseCreateLeagueV2Args) {
 
       const dayOfWeek = (dateFields?.dayOfWeek?.toLowerCase() ?? 'monday') as DayOfWeek;
 
-      // 1. Create the league row (backward compat fields)
+      // 1. Create the league row (Phase 7 Unit 7.3: `team_format` removed
+      //    from the leagues schema — lineup geometry comes from
+      //    preferences.lineup_size).
       const league = await createLeague({
         operatorId: organizationId,
         gameType: (formData['game-type'] ?? 'eight_ball') as GameType,
         dayOfWeek,
-        teamFormat: preset?.legacy.teamFormat ?? '5_man',
         handicapVariant: preset?.legacy.handicapVariant ?? 'standard',
         teamHandicapVariant: preset?.legacy.teamHandicapVariant ?? 'standard',
         leagueStartDate: formData['start-date'] ?? formatLocalDate(new Date()),

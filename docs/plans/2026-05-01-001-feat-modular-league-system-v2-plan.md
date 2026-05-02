@@ -1335,7 +1335,7 @@ The original plan called for a four-strategy decomposition (`recordGameOutcome` 
 - Resolved preferences for the 3 known leagues unchanged
 - Migrations within this unit consolidated (N/A)
 
-- [ ] **Unit 7.3: Drop `team_format` column + update all readers + remove from preset mappings**
+- [x] **Unit 7.3: Drop `team_format` column + update all readers + remove from preset mappings**
 
 **Goal:** Final removal of the `team_format` column and all `'5_man'` / `'8_man'` references in `src/`. Mobile-app coordination per Unit 0.3.
 

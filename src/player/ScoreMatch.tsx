@@ -380,7 +380,7 @@ export function ScoreMatch() {
    */
   const getPlayerStats = (playerId: string, position?: number, playerIsHomeTeam?: boolean) => {
     // For 5v5 with position specified, use position-aware function
-    if (position !== undefined && teamFormat === '8_man' && playerIsHomeTeam !== undefined) {
+    if (position !== undefined && leaguePrefs?.lineup_size === 5 && playerIsHomeTeam !== undefined) {
       return getPlayerStatsByPosition(playerId, position, playerIsHomeTeam, gameResults);
     }
     // For 3v3 or no position specified, use original util
@@ -638,9 +638,11 @@ export function ScoreMatch() {
       )
     : gameResults;
 
-  // Detect team format (5v5 vs 3v3)
-  const teamFormat = match.league.team_format || '5_man';
-  const is5v5 = teamFormat === '8_man';
+  // Detect lineup geometry. Phase 7 Unit 7.3: `team_format` was dropped
+  // from the leagues schema; lineup size comes from the resolved
+  // preferences. The 5v5 routing decision now reads `lineup_size === 5`
+  // instead of the legacy `team_format === '8_man'` tag.
+  const is5v5 = leaguePrefs?.lineup_size === 5;
 
   // Calculate BCA points for 5v5 scoreboard
   const homeStats = getTeamStats(match.home_team_id, filteredGameResults);

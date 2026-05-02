@@ -175,8 +175,7 @@ export async function getTeamDetails(teamId: string) {
           id,
           game_type,
           day_of_week,
-          division,
-          team_format
+          division
         )
       ),
       captain:members!captain_id(
@@ -394,7 +393,6 @@ export async function getCaptainTeamEditData(teamId: string) {
     allTeams,
     leagueId,
     seasonId,
-    teamFormat: team.season.league.team_format, // legacy — kept for backward compat
     rosterSize: resolvedPrefs?.max_roster_size ?? 8,
   };
 }

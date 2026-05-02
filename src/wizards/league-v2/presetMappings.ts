@@ -11,11 +11,16 @@
  */
 
 import type { PreferenceFields } from '@/api/mutations/preferenceTypes';
-import type { TeamFormat, HandicapVariant } from '@/types/league';
+import type { HandicapVariant } from '@/types/league';
 
-/** Values the dual-write needs for the leagues table (backward compat) */
+/**
+ * Values the dual-write needs for the leagues table.
+ *
+ * Phase 7 Unit 7.3 dropped the `teamFormat` field — `team_format` was
+ * removed from the leagues schema. Lineup size is now sourced solely
+ * from `preferences.lineup_size`.
+ */
 export interface LeagueLegacyFields {
-  teamFormat: TeamFormat;
   handicapVariant: HandicapVariant;
   teamHandicapVariant: HandicapVariant;
 }
@@ -128,7 +133,6 @@ export function getLeaguePresetModularFields(formData: {
 export const PRESET_MAPPINGS: Record<string, PresetMapping> = {
   fargo_5v5: {
     legacy: {
-      teamFormat: '5_man' as TeamFormat,
       handicapVariant: 'standard' as HandicapVariant,
       teamHandicapVariant: 'standard' as HandicapVariant,
     },
@@ -152,7 +156,6 @@ export const PRESET_MAPPINGS: Record<string, PresetMapping> = {
   },
   standard_3v3: {
     legacy: {
-      teamFormat: '5_man' as TeamFormat,
       handicapVariant: 'standard' as HandicapVariant,
       teamHandicapVariant: 'standard' as HandicapVariant,
     },
@@ -176,7 +179,6 @@ export const PRESET_MAPPINGS: Record<string, PresetMapping> = {
   },
   standard_5v5: {
     legacy: {
-      teamFormat: '8_man' as TeamFormat,
       handicapVariant: 'standard' as HandicapVariant,
       teamHandicapVariant: 'standard' as HandicapVariant,
     },

@@ -180,7 +180,6 @@ export interface PlayerDetails {
     status: string;
     league_name: string;
     game_type: string;
-    team_format: '5_man' | '8_man';
   }>;
   gameCounts: {
     total: number;
@@ -239,7 +238,6 @@ export async function fetchPlayerDetails(
           game_type,
           day_of_week,
           division,
-          team_format,
           organization_id
         ),
         season:seasons!inner(
@@ -281,7 +279,6 @@ export async function fetchPlayerDetails(
       status: season.status,
       league_name: `${dayName} ${gameTypeFormatted}${division ? ' - ' + division : ''}`,
       game_type: league.game_type,
-      team_format: league.team_format,
     });
   });
 

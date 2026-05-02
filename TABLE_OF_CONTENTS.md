@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-02 (Phase 7 Unit 7.2 — removed lazy-migration backfill from useResolvedLeaguePrefs; Phase 8 Unit 8.1 — added `off_preset_combos.test.ts` covering 4v4+Fargo+games-won, 5v5+percentage+10-7, 3v3+Fargo+games-won, and `points_calculator: null` through the full runtime pipeline (buildSystemFromPreferences + computeMatchRunningTotals))
+> **Last Updated**: 2026-05-02 (Phase 7 Unit 7.3 — `team_format` column dropped from leagues + preferences; resolved view migration edited in-place to remove the COALESCE; new migration `20260502000000_drop_team_format.sql`; `TeamFormat` type removed from `@/types/league`; ~30 source files updated to read `lineup_size` from resolved preferences instead of the legacy `'5_man'`/`'8_man'` tag; `getPlayerCount.ts` deleted as dead code)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
