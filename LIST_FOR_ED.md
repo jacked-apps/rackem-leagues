@@ -330,3 +330,50 @@ them from the dropdown as captain.
   flow, also call the "set captain" mutation with the new PP's id.
 
 **Files likely involved:** _(truncated in restoration — you filled these in originally; add them back when you revisit this item)_
+
+---
+
+## 7. New Org Not Visible on Dashboard After LO Application
+
+**Discovered:** 2026-05-02 during modular-league-system test pass
+**Severity:** Low — has a workaround (refresh the page)
+**Branch:** future bugfix branch
+
+**Problem:** After completing the League Operator application form, the
+flow redirects to the dashboard. The just-created org doesn't appear in
+the org list until the page is manually refreshed.
+
+**Likely cause:** Cache isn't invalidated after the create-org mutation
+finishes — TanStack Query's stale data wins until next refetch.
+
+**Likely fix:** In whichever mutation handles "complete LO application
++ create org" (probably `createOrganization` or `becomeOperator`),
+add `queryClient.invalidateQueries({ queryKey: ['organizations'] })`
+(or whatever key the dashboard's org-list query uses) on success.
+
+**Files likely involved:** the LO application submit handler + the
+dashboard's org-list query.
+
+---
+
+## 8. Org Dashboard Loads Scrolled Below the Top
+
+**Discovered:** 2026-05-02 during modular-league-system test pass
+**Severity:** Low (cosmetic)
+**Branch:** future bugfix branch
+
+**Problem:** When navigating to an org's operator dashboard, the page
+loads scrolled partway down — the user has to scroll up to see the
+header / top of the screen.
+
+**Likely cause:** Some on-mount effect (focus, scrollIntoView, default
+section anchor) is jumping past the top, OR a previous page's scroll
+position is being restored without resetting.
+
+**Likely fix:** Add `window.scrollTo(0, 0)` on the operator dashboard
+component mount, OR audit any `useEffect` that calls `scrollIntoView`
+or sets `element.scrollTop`.
+
+**Files likely involved:** `src/operator/OperatorDashboard.tsx` (or
+wherever the org dashboard lives) — check for scroll-related effects
+on mount.

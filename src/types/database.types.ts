@@ -522,7 +522,6 @@ export type Database = {
           organization_id: string
           status: string
           system_overrides: Json
-          team_format: string
           team_handicap_variant: string
           updated_at: string | null
         }
@@ -540,7 +539,6 @@ export type Database = {
           organization_id: string
           status?: string
           system_overrides?: Json
-          team_format: string
           team_handicap_variant?: string
           updated_at?: string | null
         }
@@ -558,7 +556,6 @@ export type Database = {
           organization_id?: string
           status?: string
           system_overrides?: Json
-          team_format?: string
           team_handicap_variant?: string
           updated_at?: string | null
         }
@@ -1511,7 +1508,6 @@ export type Database = {
           profanity_filter_enabled: boolean | null
           race_length: number | null
           standings_sort: string[] | null
-          team_format: string | null
           team_handicap_variant: string | null
           threshold_chart_id: string | null
           tiebreaker_format: string | null
@@ -1540,7 +1536,6 @@ export type Database = {
           profanity_filter_enabled?: boolean | null
           race_length?: number | null
           standings_sort?: string[] | null
-          team_format?: string | null
           team_handicap_variant?: string | null
           threshold_chart_id?: string | null
           tiebreaker_format?: string | null
@@ -1569,7 +1564,6 @@ export type Database = {
           profanity_filter_enabled?: boolean | null
           race_length?: number | null
           standings_sort?: string[] | null
-          team_format?: string | null
           team_handicap_variant?: string | null
           threshold_chart_id?: string | null
           tiebreaker_format?: string | null
@@ -2437,7 +2431,6 @@ export type Database = {
           points_system: string | null
           race_length: number | null
           standings_sort: string[] | null
-          team_format: string | null
           team_handicap_variant: string | null
           threshold_chart_id: string | null
           tiebreaker_format: string | null
@@ -2770,6 +2763,15 @@ export type Database = {
           p_match_lineup_id: string
           p_member_id: string
           p_rating_value: number
+          p_reason?: string
+        }
+        Returns: string
+      }
+      set_member_starting_handicap: {
+        Args: {
+          p_member_id: string
+          p_new_value: number
+          p_rating_system: string
           p_reason?: string
         }
         Returns: string
