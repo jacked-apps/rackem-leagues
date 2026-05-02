@@ -1373,7 +1373,7 @@ The original plan called for a four-strategy decomposition (`recordGameOutcome` 
 
 ### Phase 8 — Validation
 
-- [ ] **Unit 8.1: Full characterization sweep on three Tested Presets + off-preset combos**
+- [x] **Unit 8.1: Full characterization sweep on three Tested Presets + off-preset combos**
 
 **Goal:** Final regression-protection pass. Every preset module's behavior preserved (locked by characterization tests). Several off-preset combos work end-to-end.
 

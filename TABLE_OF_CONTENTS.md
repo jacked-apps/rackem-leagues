@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-02 (Phase 4 Unit 4.4 — manual-tiebreaker fallback: new `'manual'` option on `tiebreaker_format` + corresponding wizard card on TiebreakerStep; `ManualTiebreakerDialog` LO prompt rendered from MatchEndVerification when a tied match has `tiebreaker_format='manual'`; LO picks winner team and the match completes immediately (no auto-tiebreaker games, no lineup unlock); preferences DB CHECK constraint and ResolvedSystemConfig type updated)
+> **Last Updated**: 2026-05-02 (Phase 7 Unit 7.2 — removed lazy-migration backfill from useResolvedLeaguePrefs; Phase 8 Unit 8.1 — added `off_preset_combos.test.ts` covering 4v4+Fargo+games-won, 5v5+percentage+10-7, 3v3+Fargo+games-won, and `points_calculator: null` through the full runtime pipeline (buildSystemFromPreferences + computeMatchRunningTotals))
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -917,6 +917,7 @@ Preset modules implementing the `SystemModule` interface. Each shipped preset ow
 - `fargo5v5.ts` - **Fargo 5v5 module** — real math (Phase 3 Unit 10): rating validation (100-850 integer), start-points formula from `docs/research/fargorate-formula.md`, points→games-won match-result cascade
 - `__tests__/resolver.test.ts` - Resolver routing tests (15 cases including unmapped fallback)
 - `__tests__/buildSystemFromPreferences.test.ts` - **Runtime resolver tests** (Phase 5 Unit 5.1; updated Phase 2 Unit 2.2 for new `points_calculator` value space) — preset fast-path equivalence + ad-hoc combos (28 cases): teamFormat derivation, rating/scoring/threshold dispatch, mechanism dispatch (extra_games / start_points / race_length_adjustment / none), graceful fallback for not-yet-wired layers
+- `__tests__/off_preset_combos.test.ts` - **Off-preset integration tests** (Phase 8 Unit 8.1) — exercises non-Tested-Preset combos through the full pipeline (buildSystemFromPreferences + computeMatchRunningTotals): 4v4+Fargo+games-won (linear_above_threshold), 5v5+percentage+10-7, 3v3+Fargo+games-won, and `points_calculator: null`. Locks the LOCKED tie-band invariant across off-preset handicap-system swaps
 - `__tests__/fargo5v5.test.ts` - **Fargo math tests** (Phase 3 Unit 10) — validates against 1 real-match test case (56 start-points ±1) + 34 synthetic cases covering rating validation, start-points formula, scoring cascade, override behavior
 
 #### Points Calculators (`/systems/calculators/`) — Phase 1 Unit 1.1
