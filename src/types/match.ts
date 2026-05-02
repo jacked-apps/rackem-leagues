@@ -5,6 +5,7 @@
 
 import type { HandicapVariant } from '@/utils/handicapCalculations';
 import type { ResolvedSystemConfig } from './resolvedSystemConfig';
+import { linearAboveThreshold } from '@/systems/calculators/linear_above_threshold';
 
 /**
  * Per-match frozen snapshot of the full resolved system configuration.
@@ -402,21 +403,22 @@ export function getCompletedGamesCount(gameResults: Map<number, MatchGame>): num
 }
 
 /**
- * Calculate current points for a team (3v3 system)
+ * Calculate current points for a team using the linear-above-threshold formula.
  *
- * Points calculation logic:
- * - Positive points: wins above games_to_win (e.g., 11 wins when you need 10 = +1 point)
- * - Zero points: wins between games_to_tie and games_to_win (inclusive)
- * - Negative points: wins below games_to_tie
+ * @deprecated Phase 5 Unit 5.5 will route per-game scoring through the
+ * calculator registry directly. This function is kept temporarily for
+ * existing callers (the scoreboard's running display path) and now
+ * delegates to the standalone `linearAboveThreshold` calculator at
+ * `src/systems/calculators/linear_above_threshold.ts`. Behavior is
+ * unchanged. Once Phase 5 Unit 5.5 ships, callers will read the running
+ * total from the match row directly and this shim can be deleted.
  *
- * When ties are possible:
- * - Win exactly what you need (games_to_win) = 0 points
- * - Tie (games_to_tie) = 0 points for both teams
- * - Win more than needed = positive points
- * - Below tie threshold = negative points
- *
- * When no tie possible (games_to_tie = null):
- * - Uses games_to_win as the baseline for all calculations
+ * Points calculation logic (preserved from the original):
+ * - Above-win band: (wins - games_to_win) * multiplier  [multiplier=1 here]
+ * - Tie band: T <= wins <= W → 0 (always 0)
+ * - Below-tie band: (wins - games_to_tie) * multiplier
+ * - When games_to_tie is null: tie band collapses; formula reduces to
+ *   (wins - games_to_win) * multiplier
  *
  * @param teamId - Team's ID to calculate points for
  * @param thresholds - Handicap thresholds (win/tie/lose game counts)
@@ -440,23 +442,10 @@ export function calculatePoints(
 ): number {
   if (!thresholds) return 0;
   const { wins } = getTeamStats(teamId, gameResults);
-
-  // If ties are possible
-  if (thresholds.games_to_tie !== null) {
-    // Positive points: wins above games_to_win
-    if (wins > thresholds.games_to_win) {
-      return wins - thresholds.games_to_win;
-    }
-    // Zero points: in the tie range (games_to_tie to games_to_win, inclusive)
-    if (wins >= thresholds.games_to_tie && wins <= thresholds.games_to_win) {
-      return 0;
-    }
-    // Negative points: below tie threshold
-    return wins - thresholds.games_to_tie;
-  }
-
-  // No tie possible: use games_to_win as baseline
-  return wins - thresholds.games_to_win;
+  return linearAboveThreshold.compute(
+    { gamesWon: wins, thresholds },
+    linearAboveThreshold.defaultParams,
+  );
 }
 
 /**

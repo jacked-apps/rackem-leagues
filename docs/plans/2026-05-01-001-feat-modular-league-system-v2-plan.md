@@ -523,7 +523,7 @@ Phases organized by dependency. Phase 0 research blocks Phase 3. Phase 1 (calcul
 - Registry test file passes
 - Migrations within this unit consolidated to a single forward-only intent before PR opens (N/A — no migrations in this unit)
 
-- [ ] **Unit 1.2: Implement `linear_above_threshold` calculator (with tie-band invariance)**
+- [x] **Unit 1.2: Implement `linear_above_threshold` calculator (with tie-band invariance)** *(completed 2026-05-01)*
 
 **Goal:** Lift the existing `calculatePoints` formula from `src/types/match.ts` into a standalone `PointsCalculator` implementation. **Tie-band rule is a locked invariant** (supplement Section 4 anti-pattern).
 

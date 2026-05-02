@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-01 (modular-league v2 plan locked in + Phase 1 Unit 1.1 — PointsCalculator interface + registry skeleton)
+> **Last Updated**: 2026-05-01 (Phase 1 Unit 1.2 — linear_above_threshold calculator with locked tie-band invariant)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -920,6 +920,8 @@ Calculator-as-type-with-params registry. Each shipped points formula implements 
 - `types.ts` - **PointsCalculator interface** — discriminated union by `kind: 'aggregate' | 'per_game'`. Aggregate calculators take `(gamesWon, thresholds, params)`. Per-game calculators take `(games, teamId, params)`. Includes `ScoringPopupFieldSpec` for the per-game UI's calculator-driven fields.
 - `index.ts` - **Registry** — `registerCalculator(calc)`, `getCalculator(name)`, `listCalculators()`. Empty in Unit 1.1; populated by Units 1.2–1.4. `getCalculator(null|undefined|unknown)` returns null (graceful-degradation).
 - `__tests__/registry.test.ts` - **Registry smoke tests** (18 cases) — empty-registry behavior, lookup, registration, duplicate-rejection, discriminated-union narrowing for both kinds, scoringPopupFields adapts to params, paramSchema validates.
+- `linear_above_threshold.ts` - **`linear_above_threshold` calculator** (Phase 1 Unit 1.2) — three-band formula (above-win / tie-band / below-tie). Tested Preset value: BCA 3v3 default (multiplier=1). The TIE-BAND RULE is a locked invariant: tie-band always 0, multiplier never moves it off zero. Per-game tiebreaker filtering is the caller's responsibility (calculator is aggregate-input). `src/types/match.ts:calculatePoints` is a deprecation shim that delegates here.
+- `__tests__/linear_above_threshold.test.ts` - **Three-band formula tests** (45 cases) — supplement worked-examples table reproduced exactly, no-tie-possible variant, multiplier scaling, tie-band invariant under varying multipliers (locked tests fail loudly if a refactor moves the tie band off zero), defensive behavior on null thresholds + malformed params, characterization equivalence with legacy `calculatePoints`.
 
 ---
 
