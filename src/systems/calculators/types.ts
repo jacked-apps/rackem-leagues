@@ -54,35 +54,41 @@ export interface AggregateInput {
 }
 
 /**
- * Input for a per-game-style calculator. The full list of regular games (and
- * their stored fields like winner, balls pocketed) is fed in, and the calculator
- * sums per-game contributions.
+ * Input for a per-game-style calculator. The list of stored games is fed in;
+ * the calculator sums per-game contributions for the requested team.
  *
- * `is_tiebreaker` filtering is the responsibility of the calculator implementation
- * — `linear_above_threshold` would never receive per-game input (it's aggregate),
- * but `accumulated_per_game` can choose whether to count tiebreaker games or
- * exclude them based on its tie-rule (the supplement's locked tie-band
- * invariance lives inside the calculator, not in a global filter).
+ * Tiebreaker filtering is the caller's responsibility — `linear_above_threshold`
+ * never receives per-game input (it's aggregate; caller passes a regular-only
+ * games_won scalar), but `accumulated_per_game` is given whatever subset of
+ * games the caller decides to pass. Phase 5 Unit 5.5's per-game scoring
+ * mutation is where the "what subset" decision lives.
  *
- * The shape uses the project's `MatchGame` type. Fields the calculator typically
- * reads: `winner_team_id`, `loser_balls_pocketed`, `is_tiebreaker`. Fields it
- * usually ignores: per-player IDs, position, achievements (those are
- * league-preference-driven, separate from scoring).
+ * Field semantics:
+ *   - `winner_team_id`: the winning team's ID. `null` for incomplete games
+ *     (which the calculator should skip).
+ *   - `winner_score` / `loser_score`: the counter values collected by the
+ *     scoring popup at game-record time. The calculator's params describe
+ *     what the values mean (e.g. for Fargo 10-7, `loser_score` = balls
+ *     pocketed by the loser, range 0–7). When the calculator's per-side
+ *     config for that side is `kind: 'fixed'`, the score field is unused.
+ *     `null` means "not collected" — calculator handles defensively.
+ *   - `is_tiebreaker`: whether this game was played as a tiebreaker.
+ *     Calculators are free to consult this if their rule depends on it.
+ *
+ * Player IDs / positions / achievements are deliberately NOT in the calculator
+ * input — those are league-preference-driven concerns separate from scoring.
  */
 export interface PerGameInput {
-  /**
-   * Stored games. The calculator reads whichever fields it needs. Type kept
-   * loose (using `MatchGame` from `@/types`) to avoid coupling the calculator
-   * registry to the full match-games schema; the implementation narrows.
-   */
   games: ReadonlyArray<{
     winner_team_id: string | null;
-    loser_balls_pocketed: number | null;
+    winner_score: number | null;
+    loser_score: number | null;
     is_tiebreaker: boolean;
   }>;
   /**
-   * Which team's points to compute (the calculator iterates `games` and
-   * applies team-specific logic).
+   * Which team's points to compute. The calculator iterates `games` and
+   * applies winner-side or loser-side rules based on which side this team
+   * was on for each game.
    */
   teamId: string;
 }

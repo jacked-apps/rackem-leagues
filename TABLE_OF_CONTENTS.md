@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-01 (Phase 1 Units 1.2 + 1.3 — linear_above_threshold + accumulate_with_milestone_jumps calculators)
+> **Last Updated**: 2026-05-01 (Phase 1 complete — calculator registry, all three Tested Preset calculators, off-preset combinations test)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -924,6 +924,9 @@ Calculator-as-type-with-params registry. Each shipped points formula implements 
 - `__tests__/linear_above_threshold.test.ts` - **Three-band formula tests** (45 cases) — supplement worked-examples table reproduced exactly, no-tie-possible variant, multiplier scaling, tie-band invariant under varying multipliers (locked tests fail loudly if a refactor moves the tie band off zero), defensive behavior on null thresholds + malformed params, characterization equivalence with legacy `calculatePoints`.
 - `accumulate_with_milestone_jumps.ts` - **`accumulate_with_milestone_jumps` calculator** (Phase 1 Unit 1.3) — monotonic with two stepped jumps. Tested Preset value: BCA 5v5 default (`per_game_increment: 0.1, milestone_percent: 0.7, milestone_jump_value: 1.5, win_threshold_jump_value: 3.0`). No tie-band rule — formula always non-decreasing. `src/types/match.ts:calculateBCAPoints` is a deprecation shim that delegates here.
 - `__tests__/accumulate_with_milestone_jumps.test.ts` - **Milestone-jumps formula tests** (34 cases) — supplement worked-examples reproduced exactly (W=13: 14→3.1, 13→3.0, 9→1.5, 8→0.8), milestone target rounding (Math.round semantics), custom params, monotonicity invariant across the full range, edge cases (W=1, per_game_increment=0), defensive behavior, characterization equivalence.
+- `accumulated_per_game.ts` - **`accumulated_per_game` calculator** (Phase 1 Unit 1.4) — per-game accumulation with the per-side fixed-or-counter pattern. Each side independently configurable: `{kind: 'fixed', points: number}` OR `{kind: 'counter', min, max, label}`. Tested Preset value: Fargo 10-7 (winner=fixed-10, loser=counter-0-7 "Balls pocketed"). Per-game `scoringPopupFields` adapts to the params. Counter values clamped to [min, max]; null score → min fallback. Tiebreaker filtering is the caller's responsibility.
+- `__tests__/accumulated_per_game.test.ts` - **Per-game accumulation tests** (31 cases) — Fargo 10-7 default with mixed game outcomes, counter clamping (above max, below min, null, NaN), winner=counter forward-extension, both-sides-fixed configs, both-sides-counter LO-driven scoring, game filtering (skip null winner, do NOT internally filter tiebreakers), defensive behavior, characterization equivalence with legacy fargo5v5 per-game accumulation.
+- `__tests__/off_preset_combinations.test.ts` - **Off-preset combination tests** (15 cases, supplement Section 8.2 mandate) — all three calculators exercised at lineup geometries other than their Tested Preset's lineup (linear at 4v4/5v5/6v6, milestone-jumps at 3v3/6v6, accumulated_per_game at 3v3/4v4 with custom 15/X scoring). Plus `registerTestedPresetCalculators()` registration verification (idempotent). Plus a "same league, three calculators" cross-test proving lineup is independent of calculator choice.
 
 ---
 

@@ -599,7 +599,7 @@ Phases organized by dependency. Phase 0 research blocks Phase 3. Phase 1 (calcul
 - Monotonicity assertion in tests
 - Migrations within this unit consolidated (N/A)
 
-- [ ] **Unit 1.4: Implement `accumulated_per_game` calculator**
+- [x] **Unit 1.4: Implement `accumulated_per_game` calculator** *(completed 2026-05-01)*
 
 **Goal:** Implement the per-game accumulation formula (Fargo 10-7 style) as a `PointsCalculator`. Today this lives inside `fargo5v5.computeMatchResult`'s god-function — extract it.
 
@@ -635,7 +635,7 @@ Phases organized by dependency. Phase 0 research blocks Phase 3. Phase 1 (calcul
 - Calculator handles every per-game scenario the inline code does
 - Migrations within this unit consolidated (N/A)
 
-- [ ] **Unit 1.5: Register calculators and write off-preset combo test**
+- [x] **Unit 1.5: Register calculators and write off-preset combo test** *(completed 2026-05-01)*
 
 **Goal:** Register the three calculators in the index. Add an off-preset combination test to prove the modular guarantee — i.e., the calculator works at lineup sizes other than its Tested Preset's lineup size.
 

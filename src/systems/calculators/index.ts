@@ -101,3 +101,35 @@ export type {
   ScoringPopupFieldSpec,
   ScoringPopupSideSpec,
 } from './types';
+
+// Re-export the three Tested Preset calculators for direct import + their params types.
+export { linearAboveThreshold } from './linear_above_threshold';
+export { accumulateWithMilestoneJumps } from './accumulate_with_milestone_jumps';
+export { accumulatedPerGame } from './accumulated_per_game';
+export type { LinearAboveThresholdParams } from './linear_above_threshold';
+export type { MilestoneJumpsParams } from './accumulate_with_milestone_jumps';
+export type {
+  AccumulatedPerGameParams,
+  SideScoringConfig,
+} from './accumulated_per_game';
+
+// ============================================================================
+// Tested Preset registration
+// ============================================================================
+
+import { linearAboveThreshold as _linear } from './linear_above_threshold';
+import { accumulateWithMilestoneJumps as _milestone } from './accumulate_with_milestone_jumps';
+import { accumulatedPerGame as _perGame } from './accumulated_per_game';
+
+/**
+ * Register the three Tested Preset calculators. App bootstrap (and tests
+ * that need a populated registry) calls this. Idempotent — safe to call
+ * multiple times.
+ */
+export function registerTestedPresetCalculators(): void {
+  for (const calc of [_linear, _milestone, _perGame]) {
+    if (!registry.has(calc.name)) {
+      registry.set(calc.name, calc as PointsCalculator<unknown>);
+    }
+  }
+}
