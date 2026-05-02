@@ -1,13 +1,23 @@
 /**
- * @fileoverview WinConditionStep — custom path: when does the match end
+ * @fileoverview WinConditionStep — custom path: how the match is decided.
  *
- * Captures the match-level win condition:
- *   - first_to_games: first team to a game-win threshold (BCA Classic)
- *   - first_to_pairings: first team to a pairing-win threshold (race format)
- *   - highest_after_all_games: play all games, highest total wins (Fargo 10-7)
- *   - total_points_target: first to a points target
+ * Phase 4 Unit 4.1 collapse: 4 values → binary `'games' | 'points'`.
+ * The original options conflated "early-end vs play-all-out" (a UX detail)
+ * with "decide-by-games vs decide-by-points" (the architectural axis).
+ * The v2 plan unwinds that conflation: only the win axis lives here;
+ * early-end behavior is implicit from the points calculator + thresholds.
  *
- * Phase 4 Unit 4.1 of the modular-league plan.
+ *   - games:  the team that wins more games wins the match (BCA-style;
+ *             tie band possible at the threshold which triggers
+ *             tiebreaker flow).
+ *   - points: the team with more points wins the match (Fargo-style;
+ *             never a true tie because points include partial credit).
+ *
+ * Combo coherence (Unit 4.2): when `points_calculator = null` ("don't
+ * track points"), this step's value MUST be `'games'` — that rule fires
+ * in the combo validator + as a hard error on Save. This step's UI
+ * doesn't enforce it directly; the LO can pick either card and the
+ * validator catches the inconsistency at review time.
  */
 
 import { CardSelector } from '@/components/wizard';
@@ -17,43 +27,50 @@ import type { LeagueWizardFormData } from '../leagueWizardTypes';
 
 const WIN_CONDITION_OPTIONS: SelectableCardOption<string>[] = [
   {
-    value: 'first_to_games',
-    title: 'First to N Games',
-    description: 'First team to reach the game-win threshold wins the match',
+    value: 'games',
+    title: 'Games decide the winner',
+    description:
+      'Whichever team wins more games wins the match (BCA-style). Ties at the threshold trigger the tiebreaker flow.',
     infoButton: {
-      title: 'First to N Games',
-      content:
-        'BCA Classic. Each team has a target game-win count derived from the handicap chart. First team to hit their target wins; the match can end early once decided.',
+      title: 'Games-condition matches',
+      content: (
+        <div className="space-y-2">
+          <p>
+            The team with the higher games-won count wins. If both teams
+            land in the tie band (between the win and tie thresholds),
+            the match goes to the tiebreaker step you configure later.
+          </p>
+          <p className="text-xs text-gray-600">
+            Used by all classic BCA formats (3v3, 5v5, etc.). Pairs
+            naturally with Linear Above Threshold or Accumulate with
+            Milestone Jumps points calculators.
+          </p>
+        </div>
+      ),
     },
   },
   {
-    value: 'first_to_pairings',
-    title: 'First to N Pairings',
-    description: 'First team to reach the pairing-win threshold wins',
+    value: 'points',
+    title: 'Points decide the winner',
+    description:
+      'Whichever team accumulated more points wins. Never a true tie. Fargo-style.',
     infoButton: {
-      title: 'First to N Pairings',
-      content:
-        'Used with race-format pairings (one pairing-win per race). Match ends as soon as one team reaches the pairing threshold.',
-    },
-  },
-  {
-    value: 'highest_after_all_games',
-    title: 'Highest After All Games',
-    description: 'Play every scheduled game; highest team total wins',
-    infoButton: {
-      title: 'Highest After All Games',
-      content:
-        'Fargo 10-7 default. Every game on the schedule plays, and the team with more total points (or game-wins, depending on scoring method) wins the match. Even-game formats can end in a tie — pair with the Tiebreaker step to decide what to do.',
-    },
-  },
-  {
-    value: 'total_points_target',
-    title: 'First to N Points',
-    description: 'First team to reach a points target wins',
-    infoButton: {
-      title: 'First to N Points',
-      content:
-        'Less common; used by some points-based formats where the match ends as soon as one side accumulates the target. Pair with a points scoring method.',
+      title: 'Points-condition matches',
+      content: (
+        <div className="space-y-2">
+          <p>
+            All scheduled games play, then totals are compared. Whichever
+            team has more points wins outright; the partial-credit
+            structure of points-mode calculators means exact ties are
+            functionally impossible.
+          </p>
+          <p className="text-xs text-gray-600">
+            Used by Fargo 10-7. Requires a points calculator that's NOT
+            "None — don't track points." Otherwise this option will be
+            blocked at the review step.
+          </p>
+        </div>
+      ),
     },
   },
 ];
@@ -61,23 +78,24 @@ const WIN_CONDITION_OPTIONS: SelectableCardOption<string>[] = [
 export function WinConditionStep({
   value,
   onChange,
-}: WizardStepProps<string | undefined, LeagueWizardFormData>) {
+}: WizardStepProps<'games' | 'points' | undefined, LeagueWizardFormData>) {
   return (
     <CardSelector
-      label="When does the match end?"
+      label="How is the match decided?"
       labelInfoButton={{
         title: 'Win Condition',
         content: (
           <p>
-            Determines whether matches play to completion or end early
-            once one team is decided. Combinations are reviewed for
-            coherence before the league is created.
+            The two values map directly to the runtime's binary
+            win-condition axis. Combinations are reviewed for coherence
+            before the league is created (e.g. "decide by points" with
+            "no calculator" is blocked).
           </p>
         ),
       }}
       options={WIN_CONDITION_OPTIONS}
       value={value ?? ''}
-      onChange={onChange}
+      onChange={(v) => onChange(v as 'games' | 'points')}
     />
   );
 }

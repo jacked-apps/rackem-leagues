@@ -944,7 +944,7 @@ The audit log table from Unit 6.1 already shipped — no schema changes there.
 
 ### Phase 4 — Wizard rework
 
-- [ ] **Unit 4.1: Replace `ScoringMethodStep` with `PointsCalculatorStep` (calculator-type-with-params)**
+- [x] **Unit 4.1: Replace `ScoringMethodStep` with `PointsCalculatorStep` (calculator-type-with-params)**
 
 **Goal:** Full rewrite of the wizard's scoring step. Each calculator type is a card with definition + formula + worked example + editable params + Tested Preset defaults pre-filled. "None — don't track points" is one of the cards.
 

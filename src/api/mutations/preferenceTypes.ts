@@ -30,19 +30,29 @@ export interface PreferenceFields {
 
   // Phase 2 Unit 2.1 modular columns
   pairing_format?: 'single_rack' | 'race_to_n' | string | null;
-  scoring_method?:
-    | 'winner_takes_all'
-    | 'points_10_7'
-    | 'race_winner'
+  /**
+   * Calculator name from the registry (Phase 2 Unit 2.1 rename:
+   * `scoring_method` → `points_calculator`). NULL = league does not
+   * track points; standings sort cannot include `points_earned` and
+   * `win_condition` must be `'games'`.
+   */
+  points_calculator?:
+    | 'linear_above_threshold'
+    | 'accumulate_with_milestone_jumps'
+    | 'accumulated_per_game'
     | string
     | null;
-  win_condition?:
-    | 'first_to_games'
-    | 'first_to_pairings'
-    | 'highest_after_all_games'
-    | 'total_points_target'
-    | string
-    | null;
+  /**
+   * Calculator-specific parameter object (Phase 2 Unit 2.1 new column).
+   * Shape varies by calculator type — each calculator owns its own zod
+   * schema. Empty object means "use the calculator's defaultParams"
+   * (Tested Preset values).
+   */
+  points_calculator_params?: Record<string, unknown> | null;
+  /**
+   * Phase 2 Unit 2.1 collapse: 4-value union → binary `'games' | 'points'`.
+   */
+  win_condition?: 'games' | 'points' | string | null;
   mechanism?:
     | 'extra_games'
     | 'start_points'

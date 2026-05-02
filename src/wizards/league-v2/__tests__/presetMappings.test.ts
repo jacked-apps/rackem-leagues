@@ -107,7 +107,8 @@ describe('PRESET_MAPPINGS — every preset populates all 13 modular axes', () =>
     'game_generation',
     'handicap_type',
     'pairing_format',
-    'scoring_method',
+    'points_calculator',
+    'points_calculator_params',
     'win_condition',
     'mechanism',
     'standings_sort',
@@ -134,26 +135,30 @@ describe('PRESET_MAPPINGS — every preset populates all 13 modular axes', () =>
     });
   }
 
-  it('fargo_5v5 uses points_10_7 + start_points (calibrated combo)', () => {
+  it('fargo_5v5 uses accumulated_per_game + start_points (calibrated combo)', () => {
     const prefs = PRESET_MAPPINGS.fargo_5v5.preferences;
     expect(prefs.handicap_type).toBe('fargo');
-    expect(prefs.scoring_method).toBe('points_10_7');
+    expect(prefs.points_calculator).toBe('accumulated_per_game');
     expect(prefs.mechanism).toBe('start_points');
-    expect(prefs.win_condition).toBe('highest_after_all_games');
+    expect(prefs.win_condition).toBe('points');
   });
 
-  it('standard_3v3 uses extra_games (BCA Classic) and triggers tiebreakers (18 games)', () => {
+  it('standard_3v3 uses linear_above_threshold + extra_games and triggers tiebreakers (18 games)', () => {
     const prefs = PRESET_MAPPINGS.standard_3v3.preferences;
     expect(prefs.handicap_type).toBe('points');
+    expect(prefs.points_calculator).toBe('linear_above_threshold');
     expect(prefs.mechanism).toBe('extra_games');
+    expect(prefs.win_condition).toBe('games');
     expect(prefs.tiebreaker_trigger).toBe('even_total_games_only');
     expect(prefs.tiebreaker_format).toBe('best_of_3_short_race');
   });
 
-  it('standard_5v5 uses extra_games and skips tiebreakers (25 games — odd)', () => {
+  it('standard_5v5 uses accumulate_with_milestone_jumps + extra_games and skips tiebreakers (25 games — odd)', () => {
     const prefs = PRESET_MAPPINGS.standard_5v5.preferences;
     expect(prefs.handicap_type).toBe('percentage');
+    expect(prefs.points_calculator).toBe('accumulate_with_milestone_jumps');
     expect(prefs.mechanism).toBe('extra_games');
+    expect(prefs.win_condition).toBe('games');
     expect(prefs.tiebreaker_trigger).toBe('never');
   });
 });

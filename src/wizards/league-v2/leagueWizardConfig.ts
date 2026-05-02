@@ -32,7 +32,7 @@ import { RosterSizeStep } from './steps/RosterSizeStep';
 import { MatchFormatStep } from './steps/MatchFormatStep';
 import { HandicapSystemStep } from './steps/HandicapSystemStep';
 import { PairingFormatStep } from './steps/PairingFormatStep';
-import { ScoringMethodStep } from './steps/ScoringMethodStep';
+import { PointsCalculatorStep } from './steps/PointsCalculatorStep';
 import { WinConditionStep } from './steps/WinConditionStep';
 import { MechanismStep } from './steps/MechanismStep';
 import { StandingsSortStep } from './steps/StandingsSortStep';
@@ -119,11 +119,13 @@ export const leagueWizardConfig: WizardConfig<LeagueWizardFormData> = {
       component: PairingFormatStep as WizardConfig<LeagueWizardFormData>['steps'][number]['component'],
     },
     {
-      id: 'scoring-method',
-      title: 'Scoring Method',
+      id: 'points-calculator',
+      title: 'Points Calculator',
       showIf: (fd) => fd['league-format'] === 'custom',
-      validate: requireSelection,
-      component: ScoringMethodStep as WizardConfig<LeagueWizardFormData>['steps'][number]['component'],
+      // No requireSelection here — `null` ("don't track points") is a
+      // valid answer per Phase 4 Unit 4.1, and the CardSelector returns
+      // `null` for that card. requireSelection would falsely block it.
+      component: PointsCalculatorStep as WizardConfig<LeagueWizardFormData>['steps'][number]['component'],
     },
     {
       id: 'win-condition',

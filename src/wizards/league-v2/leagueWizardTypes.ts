@@ -38,10 +38,22 @@ export interface LeagueWizardFormData {
   // Each step's id matches the form-data key (canonical wizard convention).
   /** Step: PairingFormatStep — single_rack | race_to_n */
   'pairing-format'?: string;
-  /** Step: ScoringMethodStep — winner_takes_all | points_10_7 | race_winner */
-  'scoring-method'?: string;
-  /** Step: WinConditionStep — first_to_games | first_to_pairings | highest_after_all_games | total_points_target */
-  'win-condition'?: string;
+  /**
+   * Step: PointsCalculatorStep — calculator name from the registry, or
+   * null when the league does not track points.
+   * (Phase 4 Unit 4.1 rename: previously `'scoring-method'`.)
+   */
+  'points-calculator'?: string | null;
+  /**
+   * Step: PointsCalculatorStep — calculator-specific params (LO-editable).
+   * Empty object = use the calculator's defaultParams from the registry.
+   */
+  'points-calculator-params'?: Record<string, unknown>;
+  /**
+   * Step: WinConditionStep — binary `'games' | 'points'`. Phase 4 Unit
+   * 4.1 collapse: 4 values → 2.
+   */
+  'win-condition'?: 'games' | 'points';
   /** Step: MechanismStep — extra_games | start_points | race_length_adjustment | none */
   'mechanism'?: string;
   /** Step: StandingsSortStep — preset key for the sort priority list */

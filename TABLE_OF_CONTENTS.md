@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-02 (Phase 5 Unit 5.6 — match-completion scoring-consistency audit: new `compareRunningTotals` pure helper + `auditMatchScoringConsistency` IO wrapper that recomputes from match_games and logs divergence to `app_logs` with `tag: 'match_scoring_divergence'`; never mutates the match record; fired fire-and-forget from `MatchEndVerification` after the completion update succeeds)
+> **Last Updated**: 2026-05-02 (Phase 4 Unit 4.1 — wizard rework: `ScoringMethodStep` deleted, replaced with `PointsCalculatorStep` (3 calculator cards + "None"); `WinConditionStep` collapsed from 4 cards to binary `'games' | 'points'`; `presetMappings` updated with new column names + values; `useCreateLeagueV2` writes `points_calculator` + `points_calculator_params`; preset-mappings test suite updated for the new value space; LeagueFormatStep preset cards (3v3 / 5v5 / Fargo) reframed as Tested Preset bundles)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 

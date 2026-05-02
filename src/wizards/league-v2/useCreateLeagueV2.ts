@@ -68,8 +68,15 @@ export function useCreateLeagueV2({ organizationId }: UseCreateLeagueV2Args) {
             game_generation: formData['match-format'] ?? 'double_round_robin',
             handicap_type: formData['handicap-system'] ?? 'points',
             pairing_format: formData['pairing-format'] ?? 'single_rack',
-            scoring_method: formData['scoring-method'] ?? 'winner_takes_all',
-            win_condition: formData['win-condition'] ?? 'first_to_games',
+            // Phase 4 Unit 4.1: writes the renamed column. NULL is a
+            // valid value (LO chose "don't track points") — empty
+            // params object means "use the calculator's defaultParams"
+            // from the registry. Editing params from the wizard arrives
+            // in Unit 4.1's PointsCalculatorStep follow-up; for now the
+            // custom path always uses defaults.
+            points_calculator: formData['points-calculator'] ?? 'linear_above_threshold',
+            points_calculator_params: formData['points-calculator-params'] ?? {},
+            win_condition: formData['win-condition'] ?? 'games',
             mechanism: formData['mechanism'] ?? 'extra_games',
             standings_sort: mapStandingsSort(formData['standings-sort']),
             ...mapTiebreaker(formData['tiebreaker']),
