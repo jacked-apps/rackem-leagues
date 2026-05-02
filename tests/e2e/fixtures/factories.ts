@@ -47,7 +47,6 @@ function addDays(isoDate: string, days: number): string {
 
 export interface CreateLeagueOpts {
   division?: string;
-  teamFormat?: '5_man' | '8_man';
   lineupSize?: number;
   maxRosterSize?: number;
   gameGeneration?: string;
@@ -59,12 +58,13 @@ export interface CreateLeagueOpts {
 export async function createLeague(opts: CreateLeagueOpts = {}) {
   const supabase = getServiceClient();
   const division = opts.division ?? uniqueName('e2e');
-  const teamFormat = opts.teamFormat ?? '8_man';
   const lineupSize = opts.lineupSize ?? 5;
   const maxRosterSize = opts.maxRosterSize ?? 8;
   const gameGeneration = opts.gameGeneration ?? 'single_round_robin';
   const handicapType = opts.handicapType ?? 'none';
 
+  // Phase 7 Unit 7.3 dropped `team_format` from leagues + preferences.
+  // Lineup geometry comes from preferences.lineup_size.
   const { data: league, error } = await supabase
     .from('leagues')
     .insert({
@@ -72,7 +72,6 @@ export async function createLeague(opts: CreateLeagueOpts = {}) {
       game_type: opts.gameType ?? 'eight_ball',
       day_of_week: opts.dayOfWeek ?? 'tuesday',
       division,
-      team_format: teamFormat,
       league_start_date: today(),
       status: 'active',
     })
@@ -90,7 +89,6 @@ export async function createLeague(opts: CreateLeagueOpts = {}) {
       max_roster_size: maxRosterSize,
       game_generation: gameGeneration,
       handicap_type: handicapType,
-      team_format: teamFormat,
     },
     { onConflict: 'entity_type,entity_id' }
   );

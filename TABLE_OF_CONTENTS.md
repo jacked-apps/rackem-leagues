@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-02 (Phase 6 Unit 6.2 — `set_member_starting_handicap` RPC: new authenticated SECURITY DEFINER function for the LO-edit-starting-handicap path; rewires the legacy `updatePlayerStartingHandicaps` helper to call the audited RPC twice (once per rating system); 4 production callers (PlayerNameLink, AuthorizeNewPlayersCard, PlayerManagement, autoAuthorize) inherit audit-logging without callsite changes. Per-match-lineup Fargo handicap audit wiring deferred to after the user's first Fargo league lifecycle stabilizes)
+> **Last Updated**: 2026-05-02 (Phase 8 Unit 8.2 — wizard contract tests: new `useCreateLeagueV2.contract.test.ts` mirrors the prefFields resolution logic and locks the calculator-combo matrix (3 preset paths + 4 custom-path calculator picks + ThresholdSourceStep mechanism override + race_length conditional). Caught a bug: `??` was collapsing the LO's explicit `points-calculator: null` choice back to `'linear_above_threshold'` — fixed via `'points-calculator' in formData` check. New Playwright spec at `league-wizard-custom-path.spec.ts` exercises the wizard step rendering; runs via `pnpm test:e2e` like the other e2e specs)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 

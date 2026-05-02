@@ -82,7 +82,16 @@ export function useCreateLeagueV2({ organizationId }: UseCreateLeagueV2Args) {
             // from the registry. Editing params from the wizard arrives
             // in Unit 4.1's PointsCalculatorStep follow-up; for now the
             // custom path always uses defaults.
-            points_calculator: formData['points-calculator'] ?? 'linear_above_threshold',
+            //
+            // Phase 8 Unit 8.2 fix: distinguish "LO explicitly picked
+            // None" (form-data === null) from "LO never reached the
+            // step" (form-data === undefined). `??` would collapse
+            // both to the default, silently overriding the LO's
+            // explicit None choice.
+            points_calculator:
+              'points-calculator' in formData
+                ? formData['points-calculator']
+                : 'linear_above_threshold',
             points_calculator_params: formData['points-calculator-params'] ?? {},
             win_condition: formData['win-condition'] ?? 'games',
             mechanism: mechanismOverride ?? formData['mechanism'] ?? 'extra_games',

@@ -1431,7 +1431,7 @@ The original plan called for a four-strategy decomposition (`recordGameOutcome` 
 - 3 Tested Presets continue to produce identical scoring output (Success Criterion 4 satisfied)
 - Migrations within this unit consolidated (N/A — tests only)
 
-- [ ] **Unit 8.2: Smoke tests for new combos via wizard**
+- [x] **Unit 8.2: Smoke tests for new combos via wizard**
 
 **Goal:** End-to-end smoke tests confirming the wizard's Custom path produces working leagues across the calculator-type matrix.
 
