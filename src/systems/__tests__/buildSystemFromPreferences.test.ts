@@ -125,7 +125,7 @@ describe('buildSystemFromPreferences — preset fast-path', () => {
     expect(mod.key).toMatch(/^custom_/);
   });
 
-  it('does NOT fast-path when scoring_method differs (Fargo + games-won is ad-hoc)', () => {
+  it('does NOT fast-path when points_calculator differs (Fargo + games-won is ad-hoc)', () => {
     const mod = buildSystemFromPreferences(
       makeConfig({
         lineup_size: 5,
@@ -289,7 +289,7 @@ describe('buildSystemFromPreferences — rating dispatch', () => {
 // ============================================================================
 
 describe('buildSystemFromPreferences — scoring dispatch', () => {
-  it('routes scoring_method=points_10_7 to fargo5v5 scoring (points_accumulated)', () => {
+  it('routes points_calculator=accumulated_per_game to fargo5v5 scoring (points_accumulated)', () => {
     const mod = buildSystemFromPreferences(
       makeConfig({
         lineup_size: 4,
@@ -308,7 +308,7 @@ describe('buildSystemFromPreferences — scoring dispatch', () => {
     expect(recorded.loser_balls_pocketed).toBe(4);
   });
 
-  it('stubs scoring_method=winner_takes_all (legacy paths still in use)', () => {
+  it('stubs points_calculator=linear_above_threshold (legacy paths still in use)', () => {
     const mod = buildSystemFromPreferences(
       makeConfig({
         lineup_size: 4,

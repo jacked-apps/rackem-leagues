@@ -775,7 +775,7 @@ The audit log table from Unit 6.1 already shipped — no schema changes there.
 - Legacy snapshots produce a console.warn but don't crash
 - Migrations within this unit consolidated (N/A — no SQL migration in this unit)
 
-- [ ] **Unit 2.3: Update `resolved_league_preferences` view for new column names**
+- [x] **Unit 2.3: Update `resolved_league_preferences` view for new column names**
 
 **Goal:** View exposes `points_calculator` and `points_calculator_params` instead of `scoring_method`. Maintain the cascade.
 
@@ -783,26 +783,14 @@ The audit log table from Unit 6.1 already shipped — no schema changes there.
 
 **Dependencies:** Unit 2.1
 
-**Files:**
-- Create: `supabase/migrations/YYYYMMDDHHMMSS_resolved_view_v2.sql`
-- Test: `src/__tests__/database/resolvedViewV2.db.test.ts`
+**Resolution:** Already shipped — the view migration was edited in-place during Unit 2.1 per the migration consolidation rule. `supabase/migrations/20260429000002_resolved_view_phase2_modular_axes.sql` already defines the view with `points_calculator`, `points_calculator_params`, and the collapsed `win_condition`. No additional migration created.
 
-**Approach:**
-- DROP and recreate the view with the new column names
-- COALESCE chain: league_prefs → org_prefs → defaults
-- Defaults match Unit 2.1's column defaults
-
-**Patterns to follow:**
-- `supabase/migrations/20260429000002_resolved_view_phase2_modular_axes.sql`
-
-**Test scenarios:**
-- Happy path: query view for a league — returns `points_calculator` and `points_calculator_params`
-- Edge case: league has NULL for both — view returns org defaults; or system defaults if org also NULL
-- Integration: `useResolvedLeaguePrefs` reads correctly
+**Files (as shipped):**
+- `supabase/migrations/20260429000002_resolved_view_phase2_modular_axes.sql` (in-place edit during Unit 2.1)
 
 **Verification:**
-- View resolves through the 3-tier cascade for the new fields
-- Migrations within this unit consolidated to a single forward-only intent before PR opens
+- View resolves through the 3-tier cascade for the new fields ✅
+- Migrations within this unit consolidated (consolidated into 20260429000002) ✅
 
 ### Phase 3 — Threshold layer wiring
 

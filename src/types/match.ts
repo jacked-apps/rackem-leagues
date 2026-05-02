@@ -19,7 +19,7 @@ import { accumulateWithMilestoneJumps } from '@/systems/calculators/accumulate_w
  * shape (just `{ overrides, threshold_chart_id, snapshot_at }`) is a strict
  * subset; readers that only check `.overrides` or `.threshold_chart_id`
  * keep working unchanged. New readers can access the full configuration
- * (lineup_size, mechanism, scoring_method, etc.) via the wider shape.
+ * (lineup_size, mechanism, points_calculator, etc.) via the wider shape.
  *
  * NOTE: legacy matches scored before the writer expansion will still have
  * the smaller Phase-1 shape on disk. Readers must tolerate missing fields
