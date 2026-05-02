@@ -1081,7 +1081,7 @@ The audit log table from Unit 6.1 already shipped — no schema changes there.
 - Off-preset combination tested
 - Migrations within this unit consolidated (N/A)
 
-- [ ] **Unit 4.3: Threshold-source step in wizard with graceful fallback options**
+- [x] **Unit 4.3: Threshold-source step in wizard with graceful fallback options**
 
 **Goal:** When LO picks a combo with no Layer 1 default and no Layer 2 preset, surface fallback options (custom table / unhandicapped / rough estimate) per R16.
 

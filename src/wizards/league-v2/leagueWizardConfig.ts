@@ -34,6 +34,7 @@ import { MatchFormatStep } from './steps/MatchFormatStep';
 import { HandicapSystemStep } from './steps/HandicapSystemStep';
 import { PairingFormatStep } from './steps/PairingFormatStep';
 import { PointsCalculatorStep } from './steps/PointsCalculatorStep';
+import { ThresholdSourceStep } from './steps/ThresholdSourceStep';
 import { WinConditionStep } from './steps/WinConditionStep';
 import { MechanismStep } from './steps/MechanismStep';
 import { StandingsSortStep } from './steps/StandingsSortStep';
@@ -141,6 +142,17 @@ export const leagueWizardConfig: WizardConfig<LeagueWizardFormData> = {
       showIf: (fd) => fd['league-format'] === 'custom',
       validate: requireSelection,
       component: MechanismStep as WizardConfig<LeagueWizardFormData>['steps'][number]['component'],
+    },
+    // Phase 4 Unit 4.3: tells the LO which threshold source their combo
+    // will use (Tested Preset / Fargo formula / manual entry) and lets
+    // them opt into mechanism='none' for off-preset combos.
+    {
+      id: 'threshold-source',
+      title: 'Threshold Source',
+      showIf: (fd) => fd['league-format'] === 'custom',
+      // No requireSelection — the step is informational; the
+      // 'unhandicapped' checkbox is optional.
+      component: ThresholdSourceStep as WizardConfig<LeagueWizardFormData>['steps'][number]['component'],
     },
     {
       id: 'standings-sort',

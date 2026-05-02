@@ -62,6 +62,13 @@ export function useCreateLeagueV2({ organizationId }: UseCreateLeagueV2Args) {
       //   - standings-sort: a single preset key maps to a 3-element priority array
       //   - tiebreaker:    a single key maps to (trigger, format) pair
       // (See StandingsSortStep / TiebreakerStep for the user-facing options.)
+      // Phase 4 Unit 4.3: ThresholdSourceStep can override the LO's
+      // MechanismStep choice with 'none' — "play this league
+      // unhandicapped." Only fires for the custom path, only when the
+      // LO explicitly checked the toggle.
+      const mechanismOverride =
+        formData['threshold-source'] === 'unhandicapped' ? 'none' : null;
+
       const prefFields = isCustom
         ? {
             lineup_size: formData['lineup-size'] ?? 3,
@@ -78,7 +85,7 @@ export function useCreateLeagueV2({ organizationId }: UseCreateLeagueV2Args) {
             points_calculator: formData['points-calculator'] ?? 'linear_above_threshold',
             points_calculator_params: formData['points-calculator-params'] ?? {},
             win_condition: formData['win-condition'] ?? 'games',
-            mechanism: formData['mechanism'] ?? 'extra_games',
+            mechanism: mechanismOverride ?? formData['mechanism'] ?? 'extra_games',
             standings_sort: mapStandingsSort(formData['standings-sort']),
             ...mapTiebreaker(formData['tiebreaker']),
             // race_length defaults to NULL (single_rack); only meaningful

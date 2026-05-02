@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-02 (Phase 3 Unit 3.1 — `lookup_threshold` RPC TS wrapper: new `src/api/queries/thresholdLookup.ts` exposes `getGlobalChartIdByName`, `lookupThresholdRaw`, `lookupTeamThresholds`. Async entry point for Layer 3 LO custom-chart overrides; the BCA preset hot-path stays synchronous via TS chart files (values match the seeded DB rows row-for-row). 12 tests covering the wrapper API, single-row vs array response normalization, and graceful null fallback)
+> **Last Updated**: 2026-05-02 (Phase 4 Unit 4.3 — ThresholdSourceStep: new wizard step that classifies the LO's combo into Tested-Preset / Fargo-formula / manual-entry and tells them what handicap source will run. Off-preset combos get an opt-in "play unhandicapped" toggle that overrides MechanismStep with `mechanism='none'`. Pure `classifyThresholdSource` classifier + 10 dispatch tests covering the user's 5v5 Fargo+games-won combo plus four off-preset combos)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 

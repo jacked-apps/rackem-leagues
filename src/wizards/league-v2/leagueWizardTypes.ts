@@ -62,4 +62,13 @@ export interface LeagueWizardFormData {
   'tiebreaker'?: string;
   /** Step: PairingFormatStep — race_length (only when pairing-format === 'race_to_n') */
   'race-length'?: number;
+  /**
+   * Step: ThresholdSourceStep — informational + opt-in. The only
+   * value that does anything today is `'unhandicapped'`, which
+   * forces `mechanism='none'` regardless of the LO's MechanismStep
+   * choice. Undefined means "use the calibrated source per the
+   * resolved combo" (the default for every Tested Preset and every
+   * combo with a generative formula).
+   */
+  'threshold-source'?: 'unhandicapped';
 }
