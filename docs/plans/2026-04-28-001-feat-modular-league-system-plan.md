@@ -1,10 +1,22 @@
 ---
 title: "feat: Refactor to fully modular league system"
 type: feat
-status: active
+status: superseded
+superseded_by: docs/plans/2026-05-01-001-feat-modular-league-system-v2-plan.md
+superseded_date: 2026-05-01
 date: 2026-04-28
 origin: docs/brainstorms/modular-league-system-requirements.md
 ---
+
+> **SUPERSEDED 2026-05-01.** ~30 commits of implementation surfaced
+> architectural conflations this plan didn't catch (notably: lineup
+> size coupled to scoring formula; god-function `computeMatchResult`
+> bundling four concerns; preset modules treated as architecture rather
+> than UX bundles). The corrected mental model is captured in
+> `docs/plans/2026-04-28-001-feat-modular-league-system-plan-supplements/architectural-reframe-2026-05-01.md`.
+> The forward-going plan is `docs/plans/2026-05-01-001-feat-modular-league-system-v2-plan.md`.
+> This document remains as historical record of work that's already shipped (see Phase 5 status table in the v2 plan for per-unit ✅ / 🟡 / 🔴 classification).
+
 
 # feat: Refactor to fully modular league system
 
