@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-01 (Phase 2 Unit 2.2 — `ResolvedSystemConfig` updated for `points_calculator` + `points_calculator_params`; `populateMatchSnapshotIfNeeded` reads/writes new shape; `buildSystemFromPreferences.pickScoring` rewritten to dispatch on calculator name)
+> **Last Updated**: 2026-05-01 (Phase 5 Unit 5.5 — per-game calculator dispatch: new `computeMatchRunningTotals` helper + `updateMatchRunningTotals` writer; scoring mutations maintain `home/away_games_won` + `home/away_points_earned` columns on the match row; `MatchEndVerification` and `useSpectateMatch` read totals from the match row instead of recomputing; dropped `is5v5` ternary, `calculatePoints`, `calculateBCAPoints`, `calculateFargoMatchTotals` calls from those consumers)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -761,6 +761,10 @@ Reusable wizard/form step components
 - `matchupTables.ts` - Matchup table utilities
 - `conflictDetectionUtils.ts` - Schedule conflict detection
 - `gameOrder.ts` - Game order utilities
+
+#### Match Running Totals (`/utils/match/`)
+- `computeMatchRunningTotals.ts` - **Per-mutation running-totals calculator** (Phase 5 Unit 5.5) — pure helper that filters confirmed regular games, runs the snapshot's points calculator, and returns `{ home_games_won, away_games_won, home_points_earned, away_points_earned }`. Eager recompute on every scoring mutation keeps the match row consistent with the live scoreboard. Tiebreaker games and unconfirmed games are excluded from regular running totals.
+- `__tests__/computeMatchRunningTotals.test.ts` - **Running-totals tests** (10 cases): confirmation filtering, tiebreaker exclusion, linear_above_threshold above/tie/below bands, LOCKED tie-band-with-tiebreaker invariant, accumulated_per_game (Fargo 10-7), null calculator, unknown calculator
 
 #### Team & Player
 - `teamQueries.ts` - Team database queries

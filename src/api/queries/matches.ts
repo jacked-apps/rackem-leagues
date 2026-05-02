@@ -402,6 +402,10 @@ export async function getMatchWithLeagueSettings(matchId: string): Promise<Match
       away_to_win,
       away_to_tie,
       away_to_lose,
+      home_games_won,
+      away_games_won,
+      home_points_earned,
+      away_points_earned,
       system_snapshot,
       assigned_table_number,
       home_team:teams!matches_home_team_id_fkey(id, team_name),
@@ -459,6 +463,10 @@ export async function getMatchWithLeagueSettings(matchId: string): Promise<Match
     away_to_win: data.away_to_win ?? null,
     away_to_tie: data.away_to_tie ?? null,
     away_to_lose: data.away_to_lose ?? null,
+    home_games_won: data.home_games_won ?? 0,
+    away_games_won: data.away_games_won ?? 0,
+    home_points_earned: data.home_points_earned ?? 0,
+    away_points_earned: data.away_points_earned ?? 0,
     system_snapshot: data.system_snapshot ?? null,
     assigned_table_number: data.assigned_table_number ?? null,
     home_team: homeTeam as any,
@@ -774,5 +782,131 @@ export async function populateMatchSnapshotIfNeeded(
 
   if (writeErr) {
     console.warn('[matches.populateMatchSnapshotIfNeeded] write error', writeErr.message);
+  }
+}
+
+/**
+ * Recompute the four running totals for a match (`home_games_won`,
+ * `away_games_won`, `home_points_earned`, `away_points_earned`) from the
+ * current set of `match_games` rows and write them back to the match row.
+ *
+ * Phase 5 Unit 5.5 of the modular-league-system v2 plan: callers are the
+ * per-game scoring mutations (insert / update / confirm / deny / vacate).
+ * Eager recomputation on every mutation keeps the match row consistent
+ * with the live scoreboard at all times — there is no match-end recompute
+ * layer that could drift from what players witnessed during play.
+ *
+ * Behavior:
+ *  - Reads the snapshot's `points_calculator` + `points_calculator_params`.
+ *    Falls back to live `resolved_league_preferences` if the match has no
+ *    snapshot yet (legacy match or scheduled-status edge case).
+ *  - Reads the per-side thresholds from the match row itself (`home_to_win`
+ *    / `home_to_tie` / etc., snapshotted at match preparation).
+ *  - Reads all `match_games` rows for this match.
+ *  - Filters to fully-confirmed regular (non-tiebreaker) games and runs the
+ *    calculator over the result.
+ *  - Writes the four running-total columns back to the match row.
+ *  - Non-blocking: any error is logged and swallowed so a calculator hiccup
+ *    or transient DB error doesn't fail the underlying scoring write.
+ *
+ * Race-safety: not strictly atomic with the per-game write — Supabase does
+ * not give us a per-row transactional update from the client. Concurrent
+ * scoring writes between two devices could produce a brief stale-totals
+ * window. Real-time subscriptions trigger another mutation cycle and the
+ * totals re-converge within a tick. The Unit 5.6 audit catches any
+ * permanent divergence post-completion.
+ *
+ * @param matchId - The match to recompute totals for.
+ */
+export async function updateMatchRunningTotals(matchId: string): Promise<void> {
+  const { computeMatchRunningTotals } = await import(
+    '@/utils/match/computeMatchRunningTotals'
+  );
+
+  const { data: matchRow, error: matchErr } = await supabase
+    .from('matches')
+    .select(
+      'home_team_id, away_team_id, home_to_win, home_to_tie, home_to_lose, away_to_win, away_to_tie, away_to_lose, system_snapshot, league_id',
+    )
+    .eq('id', matchId)
+    .single();
+
+  if (matchErr || !matchRow) {
+    console.warn(
+      '[matches.updateMatchRunningTotals] match read error',
+      matchErr?.message ?? 'no match row',
+    );
+    return;
+  }
+
+  if (matchRow.home_to_win == null || matchRow.away_to_win == null) {
+    return;
+  }
+
+  const snapshot = (matchRow.system_snapshot ?? null) as
+    | { points_calculator: string | null; points_calculator_params: Record<string, unknown> }
+    | null;
+
+  let pointsCalculator: string | null;
+  let pointsCalculatorParams: Record<string, unknown>;
+
+  if (snapshot && 'points_calculator' in snapshot) {
+    pointsCalculator = snapshot.points_calculator ?? null;
+    pointsCalculatorParams =
+      (snapshot.points_calculator_params as Record<string, unknown>) ?? {};
+  } else {
+    const { data: resolved } = await supabase
+      .from('resolved_league_preferences')
+      .select('points_calculator, points_calculator_params')
+      .eq('league_id', matchRow.league_id)
+      .single();
+    pointsCalculator = resolved?.points_calculator ?? null;
+    pointsCalculatorParams =
+      (resolved?.points_calculator_params as Record<string, unknown>) ?? {};
+  }
+
+  const { data: games, error: gamesErr } = await supabase
+    .from('match_games')
+    .select(
+      'winner_team_id, loser_balls_pocketed, is_tiebreaker, confirmed_by_home, confirmed_by_away',
+    )
+    .eq('match_id', matchId);
+
+  if (gamesErr || !games) {
+    console.warn(
+      '[matches.updateMatchRunningTotals] games read error',
+      gamesErr?.message ?? 'no rows',
+    );
+    return;
+  }
+
+  const totals = computeMatchRunningTotals({
+    homeTeamId: matchRow.home_team_id,
+    awayTeamId: matchRow.away_team_id,
+    homeThresholds: {
+      games_to_win: matchRow.home_to_win,
+      games_to_tie: matchRow.home_to_tie,
+      games_to_lose: matchRow.home_to_lose,
+    },
+    awayThresholds: {
+      games_to_win: matchRow.away_to_win,
+      games_to_tie: matchRow.away_to_tie,
+      games_to_lose: matchRow.away_to_lose,
+    },
+    games: games as Parameters<typeof computeMatchRunningTotals>[0]['games'],
+    pointsCalculator,
+    pointsCalculatorParams,
+  });
+
+  const { error: writeErr } = await supabase
+    .from('matches')
+    .update(totals)
+    .eq('id', matchId);
+
+  if (writeErr) {
+    console.warn(
+      '[matches.updateMatchRunningTotals] write error',
+      writeErr.message,
+    );
   }
 }

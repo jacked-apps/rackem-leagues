@@ -1128,7 +1128,7 @@ This phase replaces today's `is5v5` ternary routing with a calculator-registry d
 
 The original plan called for a four-strategy decomposition (`recordGameOutcome` / `tallyMatchTotals` / `applyHandicapCredit` / `determineWinner`) running at match-end. Architectural review established that's the wrong shape — having a recompute path that runs after scoring drifts from what the live scoreboard showed players. Replaced with the per-game-mutation pattern below.
 
-- [ ] **Unit 5.5: Per-game calculator dispatch from scoring mutation**
+- [x] **Unit 5.5: Per-game calculator dispatch from scoring mutation**
 
 **Goal:** When a game is scored, the mutation calls the league's points-calculator (looked up by name from the snapshot) and writes the updated running totals to the match record. Replaces today's `is5v5` ternary in `MatchEndVerification.tsx` (and the indirect routing through `calculatePoints` / `calculateBCAPoints`).
 

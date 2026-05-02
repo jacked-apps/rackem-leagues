@@ -27,6 +27,14 @@ export interface ResolvedLeaguePrefs {
   points_system: string;
   threshold_chart_id: string | null;
   /**
+   * Win-condition axis from the v2 modular plan: 'games' = whoever wins
+   * more games (BCA-style, tie band possible) decides the match;
+   * 'points' = whoever earned more points (Fargo-style, never a true tie)
+   * decides the match. Optional because the resolved view selectors don't
+   * always include it; consumers fall back to 'games' when absent.
+   */
+  win_condition?: 'games' | 'points';
+  /**
    * Per-league dial overrides from `leagues.system_overrides` (not part of the
    * preferences cascade — stored directly on the league row). Always an object;
    * `{}` if no overrides are set. Merged over SystemModule defaults at read time.

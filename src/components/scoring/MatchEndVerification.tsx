@@ -19,8 +19,6 @@ import { useMatchLineups, useMatchGames, useMatchWithLeagueSettings } from '@/ap
 import { useCreateMatchGames, useUpdateMatchGame, useUpdateMatch } from '@/api/hooks/useMatchMutations';
 import { useUpdateMatchLineup } from '@/api/hooks';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
-import { calculatePoints, calculateBCAPoints } from '@/types/match';
-import { calculateFargoMatchTotals } from '@/utils/fargoMatchTotals';
 import { determineMatchResult } from '@/utils/determineMatchResult';
 import {
   tiebreakerGameNumbers,
@@ -112,19 +110,25 @@ export function MatchEndVerification({
   // snapshot pre-dates Phase 2 Unit 2.2's writer expansion (legacy
   // shape may be missing fields) and matches still in `scheduled`
   // status (no scoring yet, snapshot not populated).
+  //
+  // Phase 5 Unit 5.5: this component no longer recomputes points
+  // (no calculatePoints / calculateBCAPoints / calculateFargoMatchTotals).
+  // The match row's `home_points_earned` / `away_points_earned` are
+  // maintained per-game by the scoring mutations via
+  // `updateMatchRunningTotals` and read directly here. The win-condition
+  // axis (snapshot-resolved) decides whether the match outcome is
+  // determined by games-won thresholds (BCA-style — tie band possible)
+  // or by points totals (Fargo-style — never a true tie).
   const { data: leaguePrefs } = useResolvedLeaguePrefs(match?.league?.id);
   const snapshot = match?.system_snapshot;
   const lineupSize = snapshot?.lineup_size ?? leaguePrefs?.lineup_size ?? 3;
   const gameGeneration =
     snapshot?.game_generation ?? leaguePrefs?.game_generation ?? 'double_round_robin';
   const matchTotalGames = getMatchTotalGames({ lineupSize, gameGeneration });
-  // 5v5 routing decision was previously `team_format === '8_man'`. Same
-  // semantic, modular source: the BCA-tiered points helper applies to
-  // 5-player lineups regardless of how the league type was tagged.
-  const is5v5 = lineupSize === 5;
-  const handicapType = snapshot?.handicap_type ?? leaguePrefs?.handicap_type ?? 'points';
-  const isFargoMatch = handicapType === 'fargo';
-  const fargoOverrides = snapshot?.overrides ?? leaguePrefs?.system_overrides ?? {};
+  const winCondition: 'games' | 'points' =
+    (snapshot?.win_condition as 'games' | 'points' | undefined) ??
+    (leaguePrefs?.win_condition as 'games' | 'points' | undefined) ??
+    'games';
 
   // Fetch lineups to get lineup IDs for unlocking
   const lineupsQuery = useMatchLineups(matchId, homeTeamId, awayTeamId, false);
@@ -177,54 +181,24 @@ export function MatchEndVerification({
   // Current user's team verification status
   const userTeamVerified = isHomeTeam ? homeVerified : awayVerified;
 
-  // Convert games array to Map for calculatePoints function
-  const gameResultsMap = new Map(
-    (gamesQuery.data || []).map((game) => [game.game_number, game])
-  );
+  // Phase 5 Unit 5.5: read running totals directly from the match row.
+  // These are maintained per-game by the scoring mutations
+  // (`updateMatchRunningTotals`) so they always reflect the current set
+  // of confirmed games — no recompute here. Falls back to props when
+  // the match row is still loading (transient render before the query
+  // resolves) or when the columns are 0 because the running-totals
+  // pipeline hasn't run yet on this match.
+  const homePoints = match?.home_points_earned ?? 0;
+  const awayPoints = match?.away_points_earned ?? 0;
 
-  // Calculate points using the SAME function as the scoreboard (single source of truth)
-  const homeThresholds = {
-    games_to_win: homeWinThreshold,
-    games_to_tie: homeTieThreshold,
-    games_to_lose: homeTieThreshold !== null ? homeTieThreshold - 1 : homeWinThreshold - 1,
-  };
-  const awayThresholds = {
-    games_to_win: awayWinThreshold,
-    games_to_tie: awayTieThreshold,
-    games_to_lose: awayTieThreshold !== null ? awayTieThreshold - 1 : awayWinThreshold - 1,
-  };
-
-  // Fargo matches compute totals via the fargo5v5 module (includes
-  // start-points credit + per-game winner/loser points derived from the
-  // snapshotted dials). BCA matches keep the existing calculation.
-  const fargoTotals = isFargoMatch
-    ? calculateFargoMatchTotals({
-        homeTeamId,
-        awayTeamId,
-        homeGamesToWin: match?.home_to_win ?? 0,
-        awayGamesToWin: match?.away_to_win ?? 0,
-        gameResults: gameResultsMap,
-        overrides: fargoOverrides,
-      })
-    : null;
-
-  // Use BCA points for 5v5, regular points for 3v3, Fargo points for fargo.
-  const homePoints = fargoTotals
-    ? fargoTotals.homePoints
-    : is5v5
-      ? calculateBCAPoints(homeTeamId, homeThresholds, gameResultsMap)
-      : calculatePoints(homeTeamId, homeThresholds, gameResultsMap);
-  const awayPoints = fargoTotals
-    ? fargoTotals.awayPoints
-    : is5v5
-      ? calculateBCAPoints(awayTeamId, awayThresholds, gameResultsMap)
-      : calculatePoints(awayTeamId, awayThresholds, gameResultsMap);
-
-  // Final result. Fargo uses the points → games-won cascade (always
-  // decisive); BCA uses the threshold-based determination (may be 'tie'
-  // which triggers the tiebreaker flow).
-  const result: 'home_win' | 'away_win' | 'tie' = fargoTotals
-    ? fargoTotals.winner === 'home' ? 'home_win' : 'away_win'
+  // Final result. Win-condition 'points' (Fargo-style) decides on points
+  // totals — no tie possible. Win-condition 'games' (BCA-style) decides on
+  // games-won thresholds and may produce 'tie' which triggers the
+  // tiebreaker flow.
+  const result: 'home_win' | 'away_win' | 'tie' = winCondition === 'points'
+    ? homePoints === awayPoints
+      ? homeWins >= awayWins ? 'home_win' : 'away_win'
+      : homePoints > awayPoints ? 'home_win' : 'away_win'
     : bcaResult;
 
   // Auto-complete match when both teams verify
@@ -263,8 +237,13 @@ export function MatchEndVerification({
             result === 'away_win' ? awayTeamId :
             null; // tie
 
-          // For tiebreaker: only update winner/verification, NOT scores/points
-          // For regular match: update everything
+          // Phase 5 Unit 5.5: completion just persists the outcome — running
+          // totals (home_games_won / away_games_won / home_points_earned /
+          // away_points_earned) are already correct on the match row
+          // because the per-game scoring mutations maintained them via
+          // updateMatchRunningTotals. The home_team_score / away_team_score
+          // columns were dropped in Phase 2 Unit 2.1 (display reads totals
+          // directly).
           const updates = isTiebreakerMode
             ? {
                 // Tiebreaker: only update result and verification fields
@@ -275,34 +254,21 @@ export function MatchEndVerification({
                 completed_at: new Date().toISOString(),
                 status: winnerTeamId ? 'completed' : 'in_progress',
               }
-            : isFargoMatch
+            : winCondition === 'points'
               ? {
-                  // Fargo match (Unit 12): team_score is the Fargo point total
-                  // (includes start-points credit + per-game winner/loser
-                  // points). points_earned mirrors team_score — same unit,
-                  // meaningful to the system. games_won is the raw game
-                  // count home/away won. No tie possible in Fargo 5v5.
-                  home_team_score: homePoints,
-                  away_team_score: awayPoints,
-                  home_games_won: homeWins,
-                  away_games_won: awayWins,
-                  home_points_earned: homePoints,
-                  away_points_earned: awayPoints,
+                  // Points-condition match (Fargo-style) — always has a
+                  // decisive winner; status goes straight to 'completed'.
                   winner_team_id: winnerTeamId,
                   match_result: result,
                   results_confirmed_by_home: true,
                   results_confirmed_by_away: true,
                   completed_at: new Date().toISOString(),
-                  status: 'completed', // Fargo always has a decisive winner
+                  status: 'completed',
                 }
               : {
-                  // BCA regular match: update scores, points, result, and verification
-                  home_team_score: homeWins,
-                  away_team_score: awayWins,
-                  home_games_won: homeWins,
-                  away_games_won: awayWins,
-                  home_points_earned: homePoints,
-                  away_points_earned: awayPoints,
+                  // Games-condition match (BCA-style) — may be a tie that
+                  // triggers tiebreaker; status stays 'in_progress' in
+                  // that case so the tiebreaker flow can complete it.
                   winner_team_id: winnerTeamId,
                   match_result: result,
                   results_confirmed_by_home: true,

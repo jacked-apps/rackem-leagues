@@ -97,6 +97,16 @@ export interface MatchWithLeagueSettings {
   away_to_tie: number | null;
   away_to_lose: number | null;
   /**
+   * Per-mutation running totals (Phase 5 Unit 5.5). Maintained by
+   * `updateMatchRunningTotals` after every match_games write — the match
+   * row is the source of truth for the live scoreboard. Display layers
+   * read these directly rather than recomputing from match_games.
+   */
+  home_games_won: number;
+  away_games_won: number;
+  home_points_earned: number;
+  away_points_earned: number;
+  /**
    * Tier 3 snapshot (added by migration 20260418000003). NULL for unstarted or legacy matches.
    * Populated at scheduled → in_progress transition; scoring reads from this, not live league data.
    */

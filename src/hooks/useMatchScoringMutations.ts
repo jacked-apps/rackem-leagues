@@ -16,7 +16,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/supabaseClient';
 import type { Lineup, MatchGame } from '@/types/match';
 import { queryKeys } from '@/api/queryKeys';
-import { populateMatchSnapshotIfNeeded } from '@/api/queries/matches';
+import { populateMatchSnapshotIfNeeded, updateMatchRunningTotals } from '@/api/queries/matches';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
 
@@ -243,6 +243,14 @@ export function useMatchScoringMutations({
           if (error) throw error;
         }
 
+        // Phase 5 Unit 5.5: eagerly recompute the match row's running totals
+        // from the current set of confirmed match_games. The match record is
+        // the source of truth in real-time — totals never drift from what
+        // both teams have agreed to.
+        if (match?.id) {
+          await updateMatchRunningTotals(match.id);
+        }
+
         // Wait 500ms for database to propagate, then invalidate queries
         // This ensures the refetched data includes the update
         setTimeout(() => {
@@ -308,6 +316,13 @@ export function useMatchScoringMutations({
             .eq('id', existingGame.id);
 
           if (error) throw error;
+        }
+
+        // Phase 5 Unit 5.5: denial / vacate-deny clears confirmations or
+        // resets the game — running totals must be recomputed so the match
+        // row reflects the new confirmed-game count + recalculated points.
+        if (match?.id) {
+          await updateMatchRunningTotals(match.id);
         }
 
         // Game results will be automatically refreshed by real-time subscription
@@ -450,6 +465,15 @@ export function useMatchScoringMutations({
           const { error } = await supabase.from('match_games').insert(gameData);
 
           if (error) throw error;
+        }
+
+        // Phase 5 Unit 5.5: eagerly recompute the match row's running totals
+        // from the current set of confirmed match_games. The new game write
+        // may flip a previously-confirmed game (re-score after auto-confirm
+        // overlap) or add a freshly-pending one — recompute handles both
+        // safely (only fully-confirmed games count toward the totals).
+        if (match?.id) {
+          await updateMatchRunningTotals(match.id);
         }
 
         // Note: Real-time subscription will automatically refresh game results
