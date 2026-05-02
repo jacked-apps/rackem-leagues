@@ -420,6 +420,19 @@ league-system work.
 `supabase/migrations/20260424000000_prep_match_rpc.sql`,
 the `trigger_auto_create_match_lineups` definition.
 
+**Repro data points (correlate FIRST-locker, not home/away role):**
+- 2026-05-02 run #1 — home locked FIRST → got stuck on Match Setup,
+  "Try Again" succeeded.
+- 2026-05-02 run #2 — home locked SECOND → no issue, both went in
+  cleanly.
+
+The pattern strengthens the race-condition hypothesis: it's the team
+that locks FIRST that hits the failed prep_match attempt, regardless
+of home/away role. The team locking SECOND finds the lineup state
+fully populated and prep_match runs cleanly. The first locker may be
+racing the realtime visibility of their own commit OR the auth-context
+visibility of the second team's lineup row.
+
 ---
 
 ## 10. Scoreboard Number Layout Confusing — Threshold Duplicated
