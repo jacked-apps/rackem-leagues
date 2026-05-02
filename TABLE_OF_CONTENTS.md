@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-02 (Phase 0 Unit 0.1 + Phase 3 Unit 3.2 — Fargo + games-won threshold engine: research doc resolved with FargoRate HOT-chart-calibrated formula (`T = 2^(rating/100)`, `p_i = T_home / (T_home + T_away)`, `home_to_win = ceil(E_home)`, complement = `M+1 − home_to_win`); new `computeFargoGamesWonThresholds` helper + 12 calibration tests including the locked 96-pt/10-game = 7-4 race that matches FargoRate's published HOT chart exactly; `useMatchPreparation` dispatches on (handicapType + winCondition + mechanism) and routes Fargo+games-won through the new helper; `computePrepBlockedReason` skips the Fargo negotiation gate when `win_condition='games'`; `useResolvedLeaguePrefs` now selects `mechanism` field too)
+> **Last Updated**: 2026-05-02 (Phase 3 Unit 3.1 — `lookup_threshold` RPC TS wrapper: new `src/api/queries/thresholdLookup.ts` exposes `getGlobalChartIdByName`, `lookupThresholdRaw`, `lookupTeamThresholds`. Async entry point for Layer 3 LO custom-chart overrides; the BCA preset hot-path stays synchronous via TS chart files (values match the seeded DB rows row-for-row). 12 tests covering the wrapper API, single-row vs array response normalization, and graceful null fallback)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 

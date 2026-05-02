@@ -794,7 +794,7 @@ The audit log table from Unit 6.1 already shipped — no schema changes there.
 
 ### Phase 3 — Threshold layer wiring
 
-- [ ] **Unit 3.1: Wire `lookup_threshold()` RPC for BCA modules**
+- [x] **Unit 3.1: Wire `lookup_threshold()` RPC for BCA modules**
 
 **Goal:** Replace the in-process TS chart calls (`get3v3GamesNeeded`, `get5v5GamesNeeded`) with `lookup_threshold()` RPC calls when a `threshold_chart_id` is set. Falls back to TS charts otherwise (during migration).
 
