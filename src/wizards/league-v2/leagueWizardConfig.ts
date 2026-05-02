@@ -21,7 +21,8 @@
  */
 
 import type { WizardConfig } from '@/components/wizard';
-import { ReviewStep } from '@/components/wizard';
+import { ReviewStep } from './steps/ReviewStep';
+import { evaluateCombo } from './comboCoherence';
 import { LeagueIntroStep } from './steps/LeagueIntroStep';
 import { GameTypeStep } from './steps/GameTypeStep';
 import { StartDateStep } from './steps/StartDateStep';
@@ -169,6 +170,14 @@ export const leagueWizardConfig: WizardConfig<LeagueWizardFormData> = {
     {
       id: 'review',
       title: 'Review',
+      // Phase 4 Unit 4.2: combo-coherence ERRORS block Save/Finish.
+      // Warnings are rendered inside the step but don't gate
+      // submission — the LO can save anyway.
+      validate: (_value, formData) => {
+        const { errors } = evaluateCombo(formData);
+        if (errors.length === 0) return undefined;
+        return errors.map((e) => e.message);
+      },
       component: ReviewStep as WizardConfig<LeagueWizardFormData>['steps'][number]['component'],
     },
   ],

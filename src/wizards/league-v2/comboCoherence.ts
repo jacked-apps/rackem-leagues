@@ -1,0 +1,176 @@
+/**
+ * @fileoverview Combo coherence validator (Phase 4 Unit 4.2 of the
+ * modular-league-system v2 plan).
+ *
+ * Pure function: takes the wizard form data and returns a list of
+ * structured errors and warnings. The Review step renders each error
+ * with a destructive Alert (blocks Save) and each warning with a
+ * warning Alert (allows "Save anyway" — non-blocking).
+ *
+ * Rule taxonomy:
+ *   - ERRORS: combinations that produce undefined or contradictory
+ *     runtime behavior (e.g. "decide by points" when the league isn't
+ *     tracking any points). These block Save.
+ *   - WARNINGS: combinations that work at runtime but fall outside the
+ *     three Tested Presets (`bca3v3`, `bca5v5`, `fargo5v5`) or hit
+ *     known limitations of a calculator. The LO can save anyway.
+ *
+ * The validator runs over WIZARD FORM DATA (not the DB-shape resolved
+ * preferences). This gives the LO instant feedback at Review-step time,
+ * while the form-data → preference-record mapping is tested separately.
+ *
+ * @see docs/plans/2026-05-01-001-feat-modular-league-system-v2-plan.md (Unit 4.2)
+ */
+
+import type { LeagueWizardFormData } from './leagueWizardTypes';
+import { getMatchTotalGames } from '@/utils/lineup/getMatchTotalGames';
+
+/** Severity tier — drives the Alert variant in the Review-step UI. */
+export type ComboFinding = {
+  severity: 'error' | 'warning';
+  /** Stable code for tests + telemetry (humans see `message`). */
+  code: string;
+  /** User-facing single-paragraph message rendered inside the Alert. */
+  message: string;
+};
+
+/** Result of evaluating a wizard form's combo coherence. */
+export interface ComboCoherenceResult {
+  errors: ReadonlyArray<ComboFinding>;
+  warnings: ReadonlyArray<ComboFinding>;
+}
+
+/** Tested Preset bundles — combos that match these get no warnings. */
+const TESTED_PRESETS: ReadonlyArray<{
+  lineupSize: number;
+  gameGeneration: 'single_round_robin' | 'double_round_robin';
+  pointsCalculator: string | null;
+  winCondition: 'games' | 'points';
+  pairingFormat: 'single_rack' | 'race_to_n';
+}> = [
+  // BCA 3v3
+  {
+    lineupSize: 3,
+    gameGeneration: 'double_round_robin',
+    pointsCalculator: 'linear_above_threshold',
+    winCondition: 'games',
+    pairingFormat: 'single_rack',
+  },
+  // BCA 5v5
+  {
+    lineupSize: 5,
+    gameGeneration: 'single_round_robin',
+    pointsCalculator: 'accumulate_with_milestone_jumps',
+    winCondition: 'games',
+    pairingFormat: 'single_rack',
+  },
+  // Fargo 5v5
+  {
+    lineupSize: 5,
+    gameGeneration: 'single_round_robin',
+    pointsCalculator: 'accumulated_per_game',
+    winCondition: 'points',
+    pairingFormat: 'single_rack',
+  },
+];
+
+/**
+ * Evaluate the wizard form data and return all coherence findings.
+ *
+ * Behavior:
+ *   - For PRESET-format wizards (`league-format !== 'custom'`) the
+ *     custom-path fields are absent — the validator returns an empty
+ *     result (presets are by construction tested + coherent).
+ *   - For CUSTOM-path wizards, the rules below fire on the form data.
+ *
+ * Currently implemented rules:
+ *   ERROR
+ *     - `points_calculator: null` + `win_condition: 'points'`
+ *       (`error.no_points_to_decide_by`) — you can't decide a match by
+ *       points if you're not tracking them.
+ *     - `pairing_format: 'race_to_n'` + `points_calculator: 'accumulated_per_game'`
+ *       (`error.race_format_without_ball_count`) — race format doesn't
+ *       collect per-game ball-pocketed counts.
+ *   WARNING
+ *     - Combo doesn't match a Tested Preset bundle (`warning.off_preset_combo`).
+ *     - `accumulate_with_milestone_jumps` + even total game count
+ *       (`warning.milestone_jumps_even_games`) — calculator doesn't
+ *       handle ties cleanly when the format can produce them.
+ */
+export function evaluateCombo(formData: LeagueWizardFormData): ComboCoherenceResult {
+  const errors: ComboFinding[] = [];
+  const warnings: ComboFinding[] = [];
+
+  if (formData['league-format'] !== 'custom') {
+    return { errors, warnings };
+  }
+
+  // Preserve the explicit `null` value (LO picked "None — don't track
+  // points"). `??` would coerce null → undefined and we'd lose the
+  // signal needed for the no_points_to_decide_by rule below.
+  const pointsCalculator: string | null | undefined =
+    'points-calculator' in formData ? formData['points-calculator'] : undefined;
+  const winCondition = formData['win-condition'];
+  const pairingFormat = formData['pairing-format'];
+  const lineupSize = formData['lineup-size'];
+  const gameGeneration = formData['match-format'];
+
+  // ERROR: decide-by-points without a calculator
+  if (pointsCalculator === null && winCondition === 'points') {
+    errors.push({
+      severity: 'error',
+      code: 'error.no_points_to_decide_by',
+      message:
+        "You picked 'Don't track points' but also 'Points decide the winner.' These contradict — change one before saving.",
+    });
+  }
+
+  // ERROR: race format with per-game-ball-count calculator
+  if (pairingFormat === 'race_to_n' && pointsCalculator === 'accumulated_per_game') {
+    errors.push({
+      severity: 'error',
+      code: 'error.race_format_without_ball_count',
+      message:
+        "Race-to-N format doesn't collect per-game balls-pocketed counts, but the 'Accumulated per Game' calculator needs them. Pick a different calculator or switch to single-rack pairing.",
+    });
+  }
+
+  // WARNING: milestone jumps + even total game count
+  if (
+    pointsCalculator === 'accumulate_with_milestone_jumps' &&
+    typeof lineupSize === 'number' &&
+    gameGeneration
+  ) {
+    const totalGames = getMatchTotalGames({ lineupSize, gameGeneration });
+    if (totalGames % 2 === 0) {
+      warnings.push({
+        severity: 'warning',
+        code: 'warning.milestone_jumps_even_games',
+        message:
+          "The 'Accumulate with Milestone Jumps' calculator wasn't designed for formats that can end tied. With this lineup × match-format your matches can produce a tie at the threshold — pair with a tiebreaker option to handle it.",
+      });
+    }
+  }
+
+  // WARNING: combo doesn't match a Tested Preset bundle (off-preset)
+  if (typeof lineupSize === 'number' && gameGeneration && pointsCalculator !== undefined) {
+    const matchesPreset = TESTED_PRESETS.some(
+      (p) =>
+        p.lineupSize === lineupSize &&
+        p.gameGeneration === gameGeneration &&
+        p.pointsCalculator === (pointsCalculator ?? null) &&
+        p.winCondition === winCondition &&
+        (pairingFormat ?? 'single_rack') === p.pairingFormat,
+    );
+    if (!matchesPreset) {
+      warnings.push({
+        severity: 'warning',
+        code: 'warning.off_preset_combo',
+        message:
+          'This combination is outside the three Tested Preset bundles (BCA 3v3, BCA 5v5, Fargo 5v5). It will work, but no calibrated handicap chart exists for this exact mix — handicaps fall back to zero.',
+      });
+    }
+  }
+
+  return { errors, warnings };
+}

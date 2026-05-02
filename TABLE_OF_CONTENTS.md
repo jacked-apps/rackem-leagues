@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-02 (Phase 4 Unit 4.1 — wizard rework: `ScoringMethodStep` deleted, replaced with `PointsCalculatorStep` (3 calculator cards + "None"); `WinConditionStep` collapsed from 4 cards to binary `'games' | 'points'`; `presetMappings` updated with new column names + values; `useCreateLeagueV2` writes `points_calculator` + `points_calculator_params`; preset-mappings test suite updated for the new value space; LeagueFormatStep preset cards (3v3 / 5v5 / Fargo) reframed as Tested Preset bundles)
+> **Last Updated**: 2026-05-02 (Phase 4 Unit 4.2 — combo coherence: pure `evaluateCombo` validator returns structured errors + warnings for incoherent custom-path combos (decide-by-points-without-calculator; race-format with per-game-ball-counter; off-preset combos; milestone-jumps with even-game total); league-specific `ReviewStep` renders findings via new shadcn Alert component; review-step validate hook blocks Finish on errors but allows Save-anyway on warnings)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 

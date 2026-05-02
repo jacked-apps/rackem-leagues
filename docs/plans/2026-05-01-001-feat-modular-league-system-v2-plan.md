@@ -993,7 +993,7 @@ The audit log table from Unit 6.1 already shipped — no schema changes there.
 - Off-preset combination test: a 4-player lineup using `linear_above_threshold` saves and resolves correctly
 - Migrations within this unit consolidated (N/A — UI only)
 
-- [ ] **Unit 4.2: Combo coherence validator with corrected value space**
+- [x] **Unit 4.2: Combo coherence validator with corrected value space**
 
 **Goal:** Surface non-blocking warnings (and hard-blocking errors) for combinations per supplement 6.8.
 
