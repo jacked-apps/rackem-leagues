@@ -88,7 +88,7 @@ export interface ResolvedSystemConfig {
   threshold_chart_id: string | null;
   standings_sort: StandingsSortKey[];
   tiebreaker_trigger: 'even_total_games_only' | 'never';
-  tiebreaker_format: 'best_of_3_short_race' | 'single_short_race' | 'accept_tie';
+  tiebreaker_format: 'best_of_3_short_race' | 'single_short_race' | 'accept_tie' | 'manual';
 
   /** League-level dials merged from leagues.system_overrides. */
   overrides: SystemOverrides;

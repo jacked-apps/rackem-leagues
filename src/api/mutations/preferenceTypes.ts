@@ -66,6 +66,7 @@ export interface PreferenceFields {
     | 'best_of_3_short_race'
     | 'single_short_race'
     | 'accept_tie'
+    | 'manual'
     | string
     | null;
   race_length?: number | null;

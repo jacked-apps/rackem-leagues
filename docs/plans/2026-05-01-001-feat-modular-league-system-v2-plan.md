@@ -1038,7 +1038,7 @@ The audit log table from Unit 6.1 already shipped — no schema changes there.
 - 3 Tested Presets pass cleanly with no warnings
 - Migrations within this unit consolidated (N/A)
 
-- [ ] **Unit 4.4: Manual-tiebreaker fallback option**
+- [x] **Unit 4.4: Manual-tiebreaker fallback option**
 
 **Goal:** Add `tiebreaker_format = 'manual'` as a wizard option and a runtime handler. When triggered, prompts the LO to enter the tiebreaker result manually (winner team, optional additional games/points scored). Always available as a fallback for leagues whose specific tiebreaker rule isn't yet codified.
 

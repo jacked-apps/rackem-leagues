@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-02 (Phase 4 Unit 4.2 — combo coherence: pure `evaluateCombo` validator returns structured errors + warnings for incoherent custom-path combos (decide-by-points-without-calculator; race-format with per-game-ball-counter; off-preset combos; milestone-jumps with even-game total); league-specific `ReviewStep` renders findings via new shadcn Alert component; review-step validate hook blocks Finish on errors but allows Save-anyway on warnings)
+> **Last Updated**: 2026-05-02 (Phase 4 Unit 4.4 — manual-tiebreaker fallback: new `'manual'` option on `tiebreaker_format` + corresponding wizard card on TiebreakerStep; `ManualTiebreakerDialog` LO prompt rendered from MatchEndVerification when a tied match has `tiebreaker_format='manual'`; LO picks winner team and the match completes immediately (no auto-tiebreaker games, no lineup unlock); preferences DB CHECK constraint and ResolvedSystemConfig type updated)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 

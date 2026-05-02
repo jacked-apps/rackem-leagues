@@ -21,6 +21,8 @@ import { useUpdateMatchLineup } from '@/api/hooks';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { auditMatchScoringConsistency } from '@/api/queries/matches';
 import { determineMatchResult } from '@/utils/determineMatchResult';
+import { ManualTiebreakerDialog } from './ManualTiebreakerDialog';
+import type { ManualTiebreakerSubmission } from './ManualTiebreakerDialog';
 import {
   tiebreakerGameNumbers,
   tiebreakerGameToPosition,
@@ -130,6 +132,13 @@ export function MatchEndVerification({
     (snapshot?.win_condition as 'games' | 'points' | undefined) ??
     (leaguePrefs?.win_condition as 'games' | 'points' | undefined) ??
     'games';
+  // Phase 4 Unit 4.4: when the league's tiebreaker_format is 'manual',
+  // a tied match prompts the LO with ManualTiebreakerDialog instead of
+  // auto-creating short-race tiebreaker games. Read from the snapshot
+  // (frozen-at-first-score) so mid-match preference edits don't change
+  // the in-flight match's tiebreaker behavior.
+  const tiebreakerFormat: string =
+    (snapshot?.tiebreaker_format as string | undefined) ?? 'accept_tie';
 
   // Fetch lineups to get lineup IDs for unlocking
   const lineupsQuery = useMatchLineups(matchId, homeTeamId, awayTeamId, false);
@@ -143,6 +152,12 @@ export function MatchEndVerification({
 
   const [isCompleting, setIsCompleting] = useState(false);
   const completionStartedRef = useRef(false);
+  // Phase 4 Unit 4.4: manual-tiebreaker dialog state. Opens when a tie
+  // is detected on a league with `tiebreaker_format = 'manual'`. The
+  // LO picks the winner and the match completes immediately (no auto-
+  // tiebreaker games, no lineup unlock).
+  const [manualTbOpen, setManualTbOpen] = useState(false);
+  const [manualTbSubmitting, setManualTbSubmitting] = useState(false);
 
   // For BCA systems we use thresholds to determine the result (may be a
   // tie triggering the tiebreaker flow). For Fargo matches we replace this
@@ -331,6 +346,18 @@ export function MatchEndVerification({
           }
 
           // Handle tie result - create tiebreaker games
+          // Phase 4 Unit 4.4: skip auto-tiebreaker creation when the
+          // league uses manual mode. The dialog rendered below handles
+          // the LO prompt + match completion directly.
+          if (result === 'tie' && tiebreakerFormat === 'manual') {
+            setManualTbOpen(true);
+            // Reset isCompleting so the dialog can take over without
+            // the "completing match" banner being stuck on screen.
+            setIsCompleting(false);
+            completionStartedRef.current = false;
+            return;
+          }
+
           if (result === 'tie') {
 
             // Tiebreaker games numbered matchTotalGames+1, +2, +3 — for
@@ -603,6 +630,49 @@ export function MatchEndVerification({
           </div>
         )}
       </div>
+
+      {/* Phase 4 Unit 4.4: manual-tiebreaker LO prompt. Mounted at the
+          component root so it can render over the score table. Only
+          opens when the league uses manual mode AND the match has
+          tied. Submission writes the LO-chosen winner directly. */}
+      <ManualTiebreakerDialog
+        open={manualTbOpen}
+        onCancel={() => setManualTbOpen(false)}
+        homeTeamName={homeTeamName}
+        awayTeamName={awayTeamName}
+        isSubmitting={manualTbSubmitting}
+        onSubmit={async (submission: ManualTiebreakerSubmission) => {
+          setManualTbSubmitting(true);
+          try {
+            const winnerTeamId =
+              submission.winnerTeam === 'home' ? homeTeamId : awayTeamId;
+            await updateMatchMutation.mutateAsync({
+              matchId,
+              updates: {
+                winner_team_id: winnerTeamId,
+                match_result:
+                  submission.winnerTeam === 'home' ? 'home_win' : 'away_win',
+                results_confirmed_by_home: true,
+                results_confirmed_by_away: true,
+                completed_at: new Date().toISOString(),
+                status: 'completed',
+              },
+            });
+            // Phase 5 Unit 5.6 audit also fires here — manual completion
+            // is a real match-completion event.
+            void auditMatchScoringConsistency(matchId);
+            setManualTbOpen(false);
+            navigate('/dashboard');
+          } catch (error) {
+            logger.error('Failed to record manual tiebreaker', {
+              error: error instanceof Error ? error.message : String(error),
+              matchId,
+            });
+          } finally {
+            setManualTbSubmitting(false);
+          }
+        }}
+      />
     </div>
   );
 }

@@ -52,6 +52,30 @@ const TIEBREAKER_OPTIONS: SelectableCardOption<string>[] = [
         'No tiebreaker is played. The match record shows a tie, and standings reflect it. Some leagues prefer this for simplicity.',
     },
   },
+  {
+    value: 'manual',
+    title: "Manual — we'll prompt you",
+    description: "When ties happen, you decide the winner. Use this if your league has a rule we haven't built yet.",
+    infoButton: {
+      title: 'Manual Tiebreaker',
+      content: (
+        <div className="space-y-2">
+          <p>
+            When a match ends tied, the system prompts the LO with a
+            simple dialog: pick the winner team, optionally enter
+            additional games or points scored. The original regular-game
+            scores stand as the official scoreboard; the manual entry
+            decides the match outcome.
+          </p>
+          <p className="text-xs text-gray-600">
+            Graceful fallback for leagues whose specific tiebreaker rule
+            isn't pre-codified yet. Always available — your league
+            never gets stuck on a tie.
+          </p>
+        </div>
+      ),
+    },
+  },
 ];
 
 export function TiebreakerStep({

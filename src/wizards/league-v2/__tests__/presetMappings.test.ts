@@ -81,6 +81,13 @@ describe('mapTiebreaker', () => {
     });
   });
 
+  it('manual → (even_total_games_only, manual) — graceful fallback per Unit 4.4', () => {
+    expect(mapTiebreaker('manual')).toEqual({
+      tiebreaker_trigger: 'even_total_games_only',
+      tiebreaker_format: 'manual',
+    });
+  });
+
   it('undefined defaults to (never, accept_tie) — safest non-tiebreaker', () => {
     expect(mapTiebreaker(undefined)).toEqual({
       tiebreaker_trigger: 'never',

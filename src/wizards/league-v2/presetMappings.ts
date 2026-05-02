@@ -66,7 +66,7 @@ export function mapStandingsSort(value: string | undefined): SortKey[] {
  */
 export function mapTiebreaker(value: string | undefined): {
   tiebreaker_trigger: 'even_total_games_only' | 'never';
-  tiebreaker_format: 'best_of_3_short_race' | 'single_short_race' | 'accept_tie';
+  tiebreaker_format: 'best_of_3_short_race' | 'single_short_race' | 'accept_tie' | 'manual';
 } {
   switch (value) {
     case 'best_of_3':
@@ -78,6 +78,14 @@ export function mapTiebreaker(value: string | undefined): {
       return {
         tiebreaker_trigger: 'even_total_games_only',
         tiebreaker_format: 'single_short_race',
+      };
+    case 'manual':
+      // Phase 4 Unit 4.4 graceful fallback: trigger fires whenever the
+      // win-condition produces a tie, and the format is the LO prompt
+      // dialog rather than auto-running short-race games.
+      return {
+        tiebreaker_trigger: 'even_total_games_only',
+        tiebreaker_format: 'manual',
       };
     case 'accept_tie':
     default:

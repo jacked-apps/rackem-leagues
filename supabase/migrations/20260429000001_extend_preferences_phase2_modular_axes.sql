@@ -161,11 +161,12 @@ ALTER TABLE preferences
   CHECK (tiebreaker_format IS NULL OR tiebreaker_format IN (
     'best_of_3_short_race',
     'single_short_race',
-    'accept_tie'
+    'accept_tie',
+    'manual'
   ));
 
 COMMENT ON COLUMN preferences.tiebreaker_format IS
-  'Tiebreaker format when triggered. best_of_3_short_race = current 3v3 behavior (games 19-21). single_short_race = one extra rack. accept_tie = treat as final tie, no extra play. Driven by R11.';
+  'Tiebreaker format when triggered. best_of_3_short_race = current 3v3 behavior (games 19-21). single_short_race = one extra rack. accept_tie = treat as final tie, no extra play. manual = LO is prompted to enter the tiebreaker result (winner team + optional score adjustments) — graceful fallback for leagues whose specific rule isn''t pre-codified (Phase 4 Unit 4.4 of the modular-league v2 plan). Driven by R11.';
 
 -- race_length: race-to-N target (only relevant when pairing_format='race_to_n')
 ALTER TABLE preferences
