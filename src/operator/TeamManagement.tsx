@@ -17,7 +17,10 @@ import { PageHeader } from '@/components/PageHeader';
 // Organization ID will come from the league data
 import { useTeamManagement } from '@/hooks/useTeamManagement';
 import { useDropTeam } from '@/api/hooks/useTeamMutations';
-import { useForfeitPastByeMatches } from '@/api/hooks/useMatchMutations';
+import {
+  useForfeitPastByeMatches,
+  useConvertMatchToMakeup,
+} from '@/api/hooks/useMatchMutations';
 import { useCurrentMember } from '@/api/hooks/useCurrentMember';
 import { queryKeys } from '@/api/queryKeys';
 import { useQuery } from '@tanstack/react-query';
@@ -50,6 +53,7 @@ export const TeamManagement: React.FC = () => {
   const { confirm, ConfirmDialogComponent } = useConfirmDialog();
   const dropTeamMutation = useDropTeam();
   const forfeitPastByeMutation = useForfeitPastByeMatches();
+  const convertMakeupMutation = useConvertMatchToMakeup();
   const { data: currentMember } = useCurrentMember();
 
   // Use custom hook for all data fetching
@@ -106,6 +110,16 @@ export const TeamManagement: React.FC = () => {
    * scheduled+postponed matches to it. Used by the Inactive Slots section.
    */
   const [replacingSlotTeamId, setReplacingSlotTeamId] = useState<string | null>(null);
+  /**
+   * IDs of past forfeit matches to convert to makeups after a successful
+   * replace. Captured upfront in handleOpenReplace so the post-success
+   * loop knows which matches the LO chose to unlock. Each entry includes
+   * the side the bye was on (home/away) — that's the side whose team_id
+   * gets reassigned to the new team by convertMatchToMakeup.
+   */
+  const [pendingMakeupConversions, setPendingMakeupConversions] = useState<
+    Array<{ matchId: string; side: 'home' | 'away' }>
+  >([]);
   const [importingTeams, setImportingTeams] = useState(false);
   const [expandedTeams, setExpandedTeams] = useState<Set<string>>(new Set());
   const [showVenueCreation, setShowVenueCreation] = useState(false);
@@ -370,10 +384,60 @@ export const TeamManagement: React.FC = () => {
 
   /**
    * Open the team editor in "replace mode" for an inactive slot.
-   * The modal will create a new team AND reassign the slot's remaining
-   * scheduled+postponed matches to it (via replaceTeam mutation).
+   *
+   * Pre-flight: count any past matches where THIS bye is the loser
+   * (status='completed' and winner_team_id is the opposing team). These
+   * are matches the bye accumulated as forfeits while no captain held
+   * the slot. If any exist, ask the LO whether the new team plans to
+   * play them as makeups — captured here so the post-replace step can
+   * unlock them via convertMatchToMakeup.
    */
-  const handleOpenReplace = (slotTeamId: string) => {
+  const handleOpenReplace = async (slotTeamId: string) => {
+    // Count past forfeits the bye row currently owns. The forfeit-write
+    // sets winner_team_id to the active opponent, so any 'completed'
+    // match that references the bye AND has winner_team_id != bye is a
+    // candidate for makeup conversion.
+    const { data: forfeitRows, error } = await supabase
+      .from('matches')
+      .select('id, home_team_id, away_team_id, winner_team_id, status')
+      .or(`home_team_id.eq.${slotTeamId},away_team_id.eq.${slotTeamId}`)
+      .eq('status', 'completed')
+      .not('winner_team_id', 'is', null);
+
+    if (error) {
+      logger.error('Error counting past forfeits for slot', { error: error.message });
+      toast.error('Could not check past matches for this slot. Please try again.');
+      return;
+    }
+
+    // Filter to forfeits where THIS bye is on the losing side.
+    const candidates = (forfeitRows ?? [])
+      .filter(m => m.winner_team_id !== slotTeamId)
+      .map(m => ({
+        matchId: m.id,
+        side: (m.home_team_id === slotTeamId ? 'home' : 'away') as 'home' | 'away',
+      }));
+
+    let toConvert: Array<{ matchId: string; side: 'home' | 'away' }> = [];
+
+    if (candidates.length > 0) {
+      const allowMakeups = await confirm({
+        title: `Replace BYE — ${candidates.length} past forfeit match${candidates.length === 1 ? '' : 'es'}`,
+        message:
+          `This BYE has ${candidates.length} past match${candidates.length === 1 ? '' : 'es'} where the opposing team currently has a forfeit win. ` +
+          `If the new team and the affected opponents agree to actually play those weeks as makeups, you can unlock them now — the forfeit wins are reverted and the matches go back to scheduled so they can be played.\n\n` +
+          `Click "Allow makeups" to revert and reschedule. Click "Keep as forfeits" to leave the opponents' wins in place.`,
+        confirmText: 'Allow makeups',
+        cancelText: 'Keep as forfeits',
+        confirmVariant: 'default',
+      });
+
+      if (allowMakeups) {
+        toConvert = candidates;
+      }
+    }
+
+    setPendingMakeupConversions(toConvert);
     setEditingTeam(null);
     setReplacingSlotTeamId(slotTeamId);
     setShowTeamEditor(true);
@@ -382,10 +446,48 @@ export const TeamManagement: React.FC = () => {
   /**
    * Handle successful team creation/update
    */
-  const handleTeamCreateSuccess = async () => {
+  const handleTeamCreateSuccess = async (newTeamId?: string) => {
     setShowTeamEditor(false);
     setEditingTeam(null);
     setReplacingSlotTeamId(null);
+
+    // If this was a Replace and the LO opted to unlock past forfeits as
+    // makeups, run convert_match_to_makeup for each captured match. The
+    // RPC sets the side's team_id to the new team and resets all
+    // forfeit-write fields so the match plays normally.
+    const conversions = pendingMakeupConversions;
+    setPendingMakeupConversions([]);
+
+    if (conversions.length > 0 && newTeamId) {
+      let succeeded = 0;
+      let failed = 0;
+      for (const c of conversions) {
+        try {
+          await convertMakeupMutation.mutateAsync({
+            matchId: c.matchId,
+            newTeamId,
+            side: c.side,
+          });
+          succeeded += 1;
+        } catch (err) {
+          failed += 1;
+          logger.error('Error converting forfeit to makeup', {
+            matchId: c.matchId,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }
+      if (succeeded > 0) {
+        toast.success(
+          `Unlocked ${succeeded} past forfeit${succeeded === 1 ? '' : 's'} as makeup${succeeded === 1 ? '' : 's'}.`
+        );
+      }
+      if (failed > 0) {
+        toast.error(
+          `${failed} match${failed === 1 ? '' : 'es'} could not be unlocked. Check the console for details.`
+        );
+      }
+    }
 
     // Refresh teams list using hook function
     await refreshTeams();
@@ -429,14 +531,16 @@ export const TeamManagement: React.FC = () => {
   /**
    * Handle the operator's "remove this team" action.
    *
-   * Branches by team state per the priority order in useTeamLifecycle:
-   *   1. in_progress matches → refuse (live scoring active)
-   *   2. 0 matches → hard delete
-   *   3. otherwise (placeholder-only or has-results) → drop_team RPC
+   * Branches by team state:
+   *   - 0 matches → hard delete (true delete, since nothing is at risk)
+   *   - any matches → "Remove team from season" via drop_team RPC
+   *     (in-progress matches keep playing; their scores get recorded
+   *     to the now-withdrawn team's row as historical truth)
    *
    * The drop_team RPC handles all the heavy lifting atomically: marks
    * the team withdrawn, clears the roster, creates a bye row, reassigns
-   * future matches, forfeits past-due ones, cancels invites.
+   * future scheduled/postponed matches, forfeits past-due ones, cancels
+   * pending invites.
    */
   const handleDeleteTeam = async (teamId: string) => {
     if (!currentMember) {
@@ -444,11 +548,11 @@ export const TeamManagement: React.FC = () => {
       return;
     }
 
-    // Pre-flight: count matches by status so we can branch correctly and
-    // surface meaningful confirmation copy.
-    const { data: matchRows, error: countError } = await supabase
+    // Pre-flight: count matches so we can pick the right verb and craft
+    // meaningful confirmation copy.
+    const { count: matchCount, error: countError } = await supabase
       .from('matches')
-      .select('status')
+      .select('id', { count: 'exact', head: true })
       .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`);
 
     if (countError) {
@@ -457,22 +561,9 @@ export const TeamManagement: React.FC = () => {
       return;
     }
 
-    const matches = matchRows ?? [];
-    const inProgress = matches.filter(m => m.status === 'in_progress').length;
-    const placeholders = matches.filter(m =>
-      m.status === 'scheduled' || m.status === 'postponed'
-    ).length;
-    const total = matches.length;
+    const total = matchCount ?? 0;
 
-    // Priority 1: live scoring blocks the drop.
-    if (inProgress > 0) {
-      toast.error(
-        `This team has ${inProgress} live match${inProgress === 1 ? '' : 'es'}. Wait for scoring to finish before dropping.`
-      );
-      return;
-    }
-
-    // Priority 2: zero matches → safe hard delete.
+    // 0 matches → true delete (typo / pre-schedule cleanup). Nothing at risk.
     if (total === 0) {
       const confirmed = await confirm({
         title: 'Delete Team?',
@@ -496,12 +587,20 @@ export const TeamManagement: React.FC = () => {
       return;
     }
 
-    // Priority 3: drop. Reassigns scheduled+postponed matches to a new
-    // bye row, forfeits past-due ones, preserves all played history.
+    // Has matches → "Remove team from season" workflow. Explain what
+    // happens; nothing about this is destructive to historical truth.
     const confirmed = await confirm({
-      title: 'Drop Team?',
-      message: `This team has ${total} match${total === 1 ? '' : 'es'} (${placeholders} unplayed). Dropping reassigns the unplayed matches to a BYE slot, preserves all played history, and removes the team from active lists. Played matches and stats stay intact. Continue?`,
-      confirmText: 'Drop Team',
+      title: 'Remove team from season?',
+      message:
+        `This team has ${total} match${total === 1 ? '' : 'es'} on record. ` +
+        `Removing the team from the season will:\n` +
+        `\n` +
+        `• Keep all of this team's played games recorded — their wins and losses stay attached to opponents' standings.\n` +
+        `• Hide this team from active standings going forward.\n` +
+        `• Replace this team's remaining matches with a BYE.\n` +
+        `\n` +
+        `You can always assign a captain to the BYE later, and they'll play in this position. Continue?`,
+      confirmText: 'Remove from Season',
       confirmVariant: 'destructive',
     });
     if (!confirmed) return;
@@ -512,12 +611,12 @@ export const TeamManagement: React.FC = () => {
         actorMemberId: currentMember.id,
       });
       toast.success(
-        `Team dropped. ${result.matchesReassigned} match${result.matchesReassigned === 1 ? '' : 'es'} reassigned to BYE; ${result.matchesForfeited} past-due forfeited.`
+        `Team removed from season. ${result.matchesReassigned} upcoming match${result.matchesReassigned === 1 ? '' : 'es'} now point at the BYE; ${result.matchesForfeited} past-due match${result.matchesForfeited === 1 ? '' : 'es'} marked as forfeit wins for the opposing team${result.matchesForfeited === 1 ? '' : 's'}.`
       );
       await refreshTeams();
     } catch (err) {
-      logger.error('Error dropping team', { error: err instanceof Error ? err.message : String(err) });
-      toast.error(err instanceof Error ? err.message : 'Failed to drop team');
+      logger.error('Error removing team', { error: err instanceof Error ? err.message : String(err) });
+      toast.error(err instanceof Error ? err.message : 'Failed to remove team');
     }
   };
 
@@ -958,6 +1057,7 @@ export const TeamManagement: React.FC = () => {
               setShowTeamEditor(false);
               setEditingTeam(null);
               setReplacingSlotTeamId(null);
+              setPendingMakeupConversions([]);
             }}
           />
         )}

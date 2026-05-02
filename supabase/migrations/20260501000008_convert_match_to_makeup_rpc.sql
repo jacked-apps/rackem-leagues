@@ -89,14 +89,21 @@ BEGIN
   FROM matches
   WHERE id = p_match_id;
 
-  -- Match-status guard: reject results-bearing matches even if their
-  -- team is now withdrawn. Without this check, an LO could accidentally
-  -- wipe a real played result by picking the wrong match.
-  IF v_match.status NOT IN ('forfeited', 'scheduled', 'postponed') THEN
-    RAISE EXCEPTION 'Match status is %, can only convert from forfeited/scheduled/postponed', v_match.status;
+  -- Match-status guard: reject in-flight scoring or pending verification.
+  -- 'completed' is allowed because the eager-forfeit-write path
+  -- (forfeit_past_bye_matches) produces 'completed' with the active
+  -- opponent as winner — those forfeits ARE candidates for makeup
+  -- conversion. The match_games score check below is the hard guard
+  -- against wiping a real played result.
+  IF v_match.status NOT IN ('completed', 'forfeited', 'scheduled', 'postponed') THEN
+    RAISE EXCEPTION 'Match status is %, can only convert from completed/forfeited/scheduled/postponed', v_match.status;
   END IF;
 
-  -- Defense-in-depth: refuse if any game scores already exist.
+  -- Defense-in-depth: refuse if any game scores already exist. A
+  -- forfeit-write ONLY sets match-level fields (winner, points, score
+  -- totals) — it never inserts match_games rows. So if this match has
+  -- any game-level scores, it was a real played match and we must not
+  -- wipe its result.
   SELECT COUNT(*) INTO v_match_games_with_scores
   FROM match_games
   WHERE match_id = p_match_id

@@ -63,8 +63,12 @@ interface TeamEditorModalProps {
    * Mutually exclusive with existingTeam.
    */
   replacingTeamId?: string;
-  /** Called when team is successfully created/updated */
-  onSuccess: () => void;
+  /**
+   * Called when team is successfully created/updated. Receives the new
+   * (or updated) team's id so the parent can chain post-create work
+   * (e.g., the post-replace makeup-conversion loop).
+   */
+  onSuccess: (teamId?: string) => void;
   /** Called when user cancels or closes modal */
   onCancel: () => void;
   /** Variant: 'operator' allows all edits, 'captain' restricts captain field */
@@ -294,6 +298,8 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
     try {
       const rosterPlayers = getAllPlayerIds();
 
+      let resultingTeamId: string | undefined;
+
       if (isEditing && existingTeam) {
         // UPDATE existing team
         await updateTeamMutation.mutateAsync({
@@ -305,11 +311,12 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
           rosterPlayerIds: rosterPlayers,
           isCaptainVariant,
         });
+        resultingTeamId = existingTeam.id;
 
       } else if (isReplacing && replacingTeamId) {
         // REPLACE: create new team AND reassign the bye/withdrawn slot's
         // remaining scheduled+postponed matches to the new team.
-        await replaceTeamMutation.mutateAsync({
+        const newTeam = await replaceTeamMutation.mutateAsync({
           seasonId,
           leagueId,
           captainId,
@@ -319,10 +326,11 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
           rosterPlayerIds: rosterPlayers,
           replacingTeamId,
         });
+        resultingTeamId = newTeam.id;
 
       } else {
         // CREATE new team
-        await createTeamMutation.mutateAsync({
+        const created = await createTeamMutation.mutateAsync({
           seasonId,
           leagueId,
           captainId,
@@ -331,10 +339,11 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
           homeVenueId: homeVenueId || null,
           rosterPlayerIds: rosterPlayers,
         });
+        resultingTeamId = created.id;
 
       }
 
-      onSuccess();
+      onSuccess(resultingTeamId);
     } catch (err) {
       logger.error('Error saving team', { error: err instanceof Error ? err.message : String(err) });
       setError(err instanceof Error ? err.message : 'Failed to save team');
