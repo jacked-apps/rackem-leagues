@@ -910,3 +910,143 @@ export async function updateMatchRunningTotals(matchId: string): Promise<void> {
     );
   }
 }
+
+/**
+ * Match-completion scoring-consistency audit (Phase 5 Unit 5.6).
+ *
+ * After a match is marked complete, recompute the running totals from
+ * `match_games` rows and compare against the stored totals on the match
+ * row. If they diverge, log a structured warning to `app_logs` for the
+ * dev to investigate. **The match record is NEVER modified** — players'
+ * witnessed scoreboard is the source of truth.
+ *
+ * Non-blocking: any read error short-circuits with a debug log; the
+ * caller's match-completion flow is never affected. Designed to be
+ * fire-and-forget at the end of the completion transaction.
+ *
+ * Reusable: callers can also invoke this from a future "audit this
+ * match" tool (out of scope for v1).
+ *
+ * @param matchId The completed match's ID.
+ * @returns The audit result, primarily for tests + on-demand callers.
+ *          Production fire-and-forget callers can ignore the return.
+ */
+export async function auditMatchScoringConsistency(
+  matchId: string,
+): Promise<{
+  ok: boolean;
+  reason?: 'audit_disabled_no_snapshot' | 'audit_read_error' | 'audit_threw';
+  discrepancies?: ReadonlyArray<unknown>;
+}> {
+  const { compareRunningTotals } = await import('./../../utils/match/auditScoringConsistency');
+  const { computeMatchRunningTotals } = await import(
+    './../../utils/match/computeMatchRunningTotals'
+  );
+  const { logger } = await import('./../../utils/logger');
+
+  try {
+    const { data: matchRow, error: matchErr } = await supabase
+      .from('matches')
+      .select(
+        'home_team_id, away_team_id, home_to_win, home_to_tie, home_to_lose, away_to_win, away_to_tie, away_to_lose, home_games_won, away_games_won, home_points_earned, away_points_earned, system_snapshot',
+      )
+      .eq('id', matchId)
+      .single();
+
+    if (matchErr || !matchRow) {
+      logger.warn('[match-audit] match read error — audit skipped', {
+        matchId,
+        tag: 'match_scoring_audit_skipped',
+        reason: 'audit_read_error',
+        error: matchErr?.message ?? null,
+      });
+      return { ok: false, reason: 'audit_read_error' };
+    }
+
+    const snapshot = (matchRow.system_snapshot ?? null) as
+      | { points_calculator: string | null; points_calculator_params: Record<string, unknown> }
+      | null;
+
+    if (!snapshot || !('points_calculator' in snapshot)) {
+      logger.warn('[match-audit] no snapshot — audit skipped (legacy match)', {
+        matchId,
+        tag: 'match_scoring_audit_skipped',
+        reason: 'audit_disabled_no_snapshot',
+      });
+      return { ok: false, reason: 'audit_disabled_no_snapshot' };
+    }
+
+    if (matchRow.home_to_win == null || matchRow.away_to_win == null) {
+      return { ok: false, reason: 'audit_read_error' };
+    }
+
+    const { data: games, error: gamesErr } = await supabase
+      .from('match_games')
+      .select(
+        'winner_team_id, loser_balls_pocketed, is_tiebreaker, confirmed_by_home, confirmed_by_away',
+      )
+      .eq('match_id', matchId);
+
+    if (gamesErr || !games) {
+      logger.warn('[match-audit] games read error — audit skipped', {
+        matchId,
+        tag: 'match_scoring_audit_skipped',
+        reason: 'audit_read_error',
+        error: gamesErr?.message ?? null,
+      });
+      return { ok: false, reason: 'audit_read_error' };
+    }
+
+    const expected = computeMatchRunningTotals({
+      homeTeamId: matchRow.home_team_id,
+      awayTeamId: matchRow.away_team_id,
+      homeThresholds: {
+        games_to_win: matchRow.home_to_win,
+        games_to_tie: matchRow.home_to_tie,
+        games_to_lose: matchRow.home_to_lose,
+      },
+      awayThresholds: {
+        games_to_win: matchRow.away_to_win,
+        games_to_tie: matchRow.away_to_tie,
+        games_to_lose: matchRow.away_to_lose,
+      },
+      games: games as Parameters<typeof computeMatchRunningTotals>[0]['games'],
+      pointsCalculator: snapshot.points_calculator ?? null,
+      pointsCalculatorParams:
+        (snapshot.points_calculator_params as Record<string, unknown>) ?? {},
+    });
+
+    const actual = {
+      home_games_won: matchRow.home_games_won ?? 0,
+      away_games_won: matchRow.away_games_won ?? 0,
+      home_points_earned: matchRow.home_points_earned ?? 0,
+      away_points_earned: matchRow.away_points_earned ?? 0,
+    };
+
+    const result = compareRunningTotals(actual, expected);
+
+    if (!result.ok) {
+      logger.warn(
+        '[match-audit] running totals diverged from match_games recompute',
+        {
+          matchId,
+          tag: 'match_scoring_divergence',
+          calculator: snapshot.points_calculator,
+          discrepancies: result.discrepancies,
+          stored: actual,
+          expected,
+        },
+      );
+    }
+
+    return result;
+  } catch (err) {
+    logger.warn('[match-audit] audit threw — match completion unaffected', {
+      matchId,
+      tag: 'match_scoring_audit_threw',
+      reason: 'audit_threw',
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return { ok: false, reason: 'audit_threw' };
+  }
+}

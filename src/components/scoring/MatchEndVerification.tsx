@@ -19,6 +19,7 @@ import { useMatchLineups, useMatchGames, useMatchWithLeagueSettings } from '@/ap
 import { useCreateMatchGames, useUpdateMatchGame, useUpdateMatch } from '@/api/hooks/useMatchMutations';
 import { useUpdateMatchLineup } from '@/api/hooks';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
+import { auditMatchScoringConsistency } from '@/api/queries/matches';
 import { determineMatchResult } from '@/utils/determineMatchResult';
 import {
   tiebreakerGameNumbers,
@@ -281,6 +282,17 @@ export function MatchEndVerification({
             matchId,
             updates,
           });
+
+          // Phase 5 Unit 5.6: post-completion scoring-consistency audit.
+          // Fire-and-forget — recomputes the running totals from
+          // match_games and logs to app_logs if they diverge from the
+          // stored match-row values. Match record is NEVER auto-corrected
+          // (player-witnessed scoreboard is the truth). Only runs when
+          // the match is genuinely completing (winnerTeamId set), not
+          // when transitioning into a tiebreaker.
+          if (winnerTeamId) {
+            void auditMatchScoringConsistency(matchId);
+          }
 
           // Anti-sandbagging rule for tiebreaker: Override all game results with winning team
           if (isTiebreakerMode && winnerTeamId) {

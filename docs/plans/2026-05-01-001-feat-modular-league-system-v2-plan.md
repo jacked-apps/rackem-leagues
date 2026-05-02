@@ -1178,7 +1178,7 @@ The original plan called for a four-strategy decomposition (`recordGameOutcome` 
 - Match row updates per-game (not just at match-end) — verified in test
 - Migrations within this unit consolidated (N/A)
 
-- [ ] **Unit 5.6: Match-end consistency audit (silent, log-only, non-blocking)**
+- [x] **Unit 5.6: Match-end consistency audit (silent, log-only, non-blocking)**
 
 **Goal:** At match completion, recompute the running totals from `match_games` rows and compare to the row's stored values. If divergent, write a diagnostic entry to `app_logs`. **The match record is NOT modified.** This is purely a canary for running-total bugs — players' witnessed scoreboard remains the truth.
 
