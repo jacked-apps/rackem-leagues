@@ -461,3 +461,62 @@ subtitle.
 - `src/components/scoring/FiveVFiveScoreboard.tsx`
 - `src/components/scoring/TenSevenScoreboard.tsx`
 - Any shared score-display component they pull from
+
+---
+
+## 11. Architectural Decision — Where Should the Live Scoreboard Read From?
+
+**Discovered:** 2026-05-02 during modular-league-system test pass
+**Severity:** Architectural — discuss with Jack before deciding
+**Branch:** discussion first; decision could be a follow-up branch
+
+**Context:**
+Phase 5 Unit 5.5 of the modular-league-system v2 plan introduced
+"match record is the source of truth" — `home_games_won` /
+`away_games_won` / `home_points_earned` / `away_points_earned`
+columns get updated per-game by `updateMatchRunningTotals` after
+every confirmed scoring mutation.
+
+The plan spec only refactored TWO consumers to read from the match
+row:
+  - `MatchEndVerification` (final-screen scoreboard)
+  - `useSpectateMatch` (third-party spectator view)
+
+The LIVE player-scoring view (`useMatchScoring` → `ScoreMatch.tsx`)
+was NOT switched. It still does an in-memory recompute from
+`match_games` rows via `getTeamStats` / `calculatePoints`. The two
+should agree (the writer keeps the match row in sync), but only
+because they're computed from the same underlying data — not because
+the live view actually reads the match row.
+
+**Tension:**
+- Pro current setup: live scoreboard is correct by construction
+  (counting rows you can see). If the writer is silent, the match
+  row is wrong but the player-witnessed scoreboard is right.
+- Con current setup: if the writer breaks, the live ticker LOOKS
+  fine but the match row is wrong — only surfaces at the
+  post-completion audit. Bit me 2026-05-02 when the calculator
+  registry was empty at runtime: live scoreboard kept ticking,
+  match row stayed at 0/0/0/0, audit flagged the divergence at
+  match-end.
+
+**What's done about the writer reliability:**
+- Calculator registry now self-registers at module load (commit
+  `042978c`). The empty-registry bug is fixed.
+- prep_match RPC also flips status to 'in_progress' so the matches
+  row reflects the right state during play (commit `80c53f6`).
+
+**Question to discuss with Jack:**
+- Keep live scoring on the in-memory recompute (option 2 — current
+  state)? "Match row is finalization truth, live ticker is derived
+  in real-time and the writer keeps them aligned."
+- OR finish the architectural refactor — switch `useMatchScoring`
+  to read from the match row too (option 1)? "One source of truth
+  end-to-end."
+
+Option 2 is what's shipped now. Option 1 is meaningful work
+(~1 hour, touches the live-scoring hot path) and adds latency
+between scoring write → DB round-trip → re-render. Audit divergence
+in dev caught the writer bug; same audit will catch any future
+writer bugs in prod, so option 2 + monitor `app_logs` may be
+enough.

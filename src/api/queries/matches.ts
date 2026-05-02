@@ -821,10 +821,13 @@ export async function updateMatchRunningTotals(matchId: string): Promise<void> {
     '@/utils/match/computeMatchRunningTotals'
   );
 
+  // matches has no `league_id` column — league_id lives on seasons,
+  // joined via match.season_id. Pull season_id here and resolve
+  // league_id only when the snapshot fallback path needs it.
   const { data: matchRow, error: matchErr } = await supabase
     .from('matches')
     .select(
-      'home_team_id, away_team_id, home_to_win, home_to_tie, home_to_lose, away_to_win, away_to_tie, away_to_lose, system_snapshot, league_id',
+      'home_team_id, away_team_id, home_to_win, home_to_tie, home_to_lose, away_to_win, away_to_tie, away_to_lose, system_snapshot, season_id',
     )
     .eq('id', matchId)
     .single();
@@ -853,14 +856,27 @@ export async function updateMatchRunningTotals(matchId: string): Promise<void> {
     pointsCalculatorParams =
       (snapshot.points_calculator_params as Record<string, unknown>) ?? {};
   } else {
-    const { data: resolved } = await supabase
-      .from('resolved_league_preferences')
-      .select('points_calculator, points_calculator_params')
-      .eq('league_id', matchRow.league_id)
+    // Fallback path: resolve league_id via season, then read live prefs.
+    // Only fires when system_snapshot wasn't populated (legacy / pre-
+    // first-scoring-event matches).
+    const { data: seasonRow } = await supabase
+      .from('seasons')
+      .select('league_id')
+      .eq('id', matchRow.season_id)
       .single();
-    pointsCalculator = resolved?.points_calculator ?? null;
-    pointsCalculatorParams =
-      (resolved?.points_calculator_params as Record<string, unknown>) ?? {};
+    if (seasonRow?.league_id) {
+      const { data: resolved } = await supabase
+        .from('resolved_league_preferences')
+        .select('points_calculator, points_calculator_params')
+        .eq('league_id', seasonRow.league_id)
+        .single();
+      pointsCalculator = resolved?.points_calculator ?? null;
+      pointsCalculatorParams =
+        (resolved?.points_calculator_params as Record<string, unknown>) ?? {};
+    } else {
+      pointsCalculator = null;
+      pointsCalculatorParams = {};
+    }
   }
 
   const { data: games, error: gamesErr } = await supabase
