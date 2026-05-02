@@ -58,32 +58,57 @@ ALTER TABLE preferences
 COMMENT ON COLUMN preferences.pairing_format IS
   'Per-pairing format. single_rack = one rack per opponent matchup (BCA / Fargo 10-7). race_to_n = each pairing plays a race-to-N match (BCAPL SL). Driven by R4 of modular-league plan.';
 
--- scoring_method: per-game scoring unit
+-- points_calculator: which points-calculation formula to use
+-- (Renamed from scoring_method per the modular-league v2 architectural
+-- reframe — supplement Section 1. The old name conflated "scoring" with
+-- the points axis specifically; the new name is honest about what this
+-- column drives. The value space also shifts: old strings like
+-- 'winner_takes_all' are no longer valid — replaced by the calculator
+-- registry's named formulas.)
+--
+-- Value space (matches src/systems/calculators/* names):
+--   'linear_above_threshold'              — three-band formula (BCA Classic 3v3 default)
+--   'accumulate_with_milestone_jumps'     — monotonic with stepped jumps (BCA Classic 5v5 default)
+--   'accumulated_per_game'                — per-game accumulation (Fargo 10-7 default)
+--   NULL                                  — don't track points at all (pure-games-won league)
 ALTER TABLE preferences
-  ADD COLUMN IF NOT EXISTS scoring_method TEXT
-  DEFAULT 'winner_takes_all'
-  CHECK (scoring_method IS NULL OR scoring_method IN (
-    'winner_takes_all',
-    'points_10_7',
-    'race_winner'
+  ADD COLUMN IF NOT EXISTS points_calculator TEXT
+  DEFAULT 'linear_above_threshold'
+  CHECK (points_calculator IS NULL OR points_calculator IN (
+    'linear_above_threshold',
+    'accumulate_with_milestone_jumps',
+    'accumulated_per_game'
   ));
 
-COMMENT ON COLUMN preferences.scoring_method IS
-  'Per-game scoring method. winner_takes_all = 1 game-win to winner. points_10_7 = winner gets winner_points (default 10), loser gets balls_pocketed (0-7). race_winner = winner of the race wins one pairing (relevant only when pairing_format=race_to_n). Driven by R5.';
+COMMENT ON COLUMN preferences.points_calculator IS
+  'Points-calculation formula name. References a calculator registered in src/systems/calculators/. Each calculator declares its math, editable parameters (stored in points_calculator_params), and per-game scoring-popup field spec. NULL means do not track points at all (pure-games-won league); standings cannot include points_earned and win_condition must be ''games''. New calculator types add themselves to the registry; the CHECK constraint is updated when new types ship. Driven by R5 (corrected) of the modular-league v2 plan.';
 
--- win_condition: when does the match end / who is declared winner
+-- points_calculator_params: editable values for the calculator
+-- (NEW — supplement Section 2. Type+params pattern: the calculator code
+-- is parameter-blind; the params blob holds the LO-editable values like
+-- multiplier, milestone percent, winner-points, counter min/max, etc.
+-- Validated at save time by zod against the calculator's paramSchema;
+-- validated again at runtime as defense-in-depth.)
+ALTER TABLE preferences
+  ADD COLUMN IF NOT EXISTS points_calculator_params JSONB
+  NOT NULL
+  DEFAULT '{}'::jsonb;
+
+COMMENT ON COLUMN preferences.points_calculator_params IS
+  'Editable parameters for the league''s points calculator. Shape varies by points_calculator type — each calculator owns its own zod schema. Empty object means use the calculator''s defaultParams (Tested Preset values). LO-edited values flow through here; the runtime is parameter-blind. Driven by R5 (corrected).';
+
+-- win_condition: which of the two always-tracked metrics decides the match
+-- (Collapsed from 4 values to 2 per the modular-league v2 reframe —
+-- supplement Section 1. We always track BOTH games_won and points_earned;
+-- this axis chooses which one decides the winner. The "first_to_X vs play
+-- all games" distinction lives in threshold values, not as a separate axis.)
 ALTER TABLE preferences
   ADD COLUMN IF NOT EXISTS win_condition TEXT
-  DEFAULT 'first_to_games'
-  CHECK (win_condition IS NULL OR win_condition IN (
-    'first_to_games',
-    'first_to_pairings',
-    'highest_after_all_games',
-    'total_points_target'
-  ));
+  DEFAULT 'games'
+  CHECK (win_condition IS NULL OR win_condition IN ('games', 'points'));
 
 COMMENT ON COLUMN preferences.win_condition IS
-  'Match-level win condition. first_to_games = first team to X games (X derived from threshold). first_to_pairings = first team to X pairing-wins (race format). highest_after_all_games = play all games, highest total wins. total_points_target = first team to reach a points target. Must be coherent with scoring_method per R14-R16.';
+  'Which metric decides the match winner. ''games'' = team with more games_won wins. ''points'' = team with more points_earned wins. Match always tracks both metrics; this axis picks which one is decisive. The "first to N" vs "play all games" distinction is encoded in the threshold values (matches.*_to_win set → can end early; NULL → play out). Driven by R6 (corrected).';
 
 -- mechanism: shape of the threshold output
 ALTER TABLE preferences

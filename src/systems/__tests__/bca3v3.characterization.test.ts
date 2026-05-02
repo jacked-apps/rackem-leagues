@@ -183,7 +183,7 @@ describe('bca3v3 SystemModule — characterization', () => {
   /**
    * The "home/away independent lookup" rule.
    *
-   * Past failures: code that derives away_games_to_win from home_games_to_win
+   * Past failures: code that derives away_to_win from home_to_win
    * (e.g., `away = 18 - home`) produces wrong values for any non-zero diff.
    * Every refactor must preserve the property that BOTH thresholds come from
    * direct chart lookups.

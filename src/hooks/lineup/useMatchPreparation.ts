@@ -233,12 +233,12 @@ export function useMatchPreparation(params: MatchPreparationParams) {
           // configurable. 10 is the standard Fargo 5v5 race today.
           const FARGO_RACE_TARGET = 10;
           thresholdPayload = {
-            home_games_to_win: FARGO_RACE_TARGET,
-            home_games_to_tie: matchData?.home_games_to_tie ?? null,
-            home_games_to_lose: matchData?.home_games_to_lose ?? null,
-            away_games_to_win: FARGO_RACE_TARGET,
-            away_games_to_tie: matchData?.away_games_to_tie ?? null,
-            away_games_to_lose: matchData?.away_games_to_lose ?? null,
+            home_to_win: FARGO_RACE_TARGET,
+            home_to_tie: matchData?.home_to_tie ?? null,
+            home_to_lose: matchData?.home_to_lose ?? null,
+            away_to_win: FARGO_RACE_TARGET,
+            away_to_tie: matchData?.away_to_tie ?? null,
+            away_to_lose: matchData?.away_to_lose ?? null,
           };
         } else {
           const { homeThresholds, awayThresholds } = await calculateHandicapThresholds(
@@ -250,12 +250,12 @@ export function useMatchPreparation(params: MatchPreparationParams) {
             handicapType
           );
           thresholdPayload = {
-            home_games_to_win: homeThresholds.games_to_win,
-            home_games_to_tie: homeThresholds.games_to_tie,
-            home_games_to_lose: homeThresholds.games_to_lose,
-            away_games_to_win: awayThresholds.games_to_win,
-            away_games_to_tie: awayThresholds.games_to_tie,
-            away_games_to_lose: awayThresholds.games_to_lose,
+            home_to_win: homeThresholds.games_to_win,
+            home_to_tie: homeThresholds.games_to_tie,
+            home_to_lose: homeThresholds.games_to_lose,
+            away_to_win: awayThresholds.games_to_win,
+            away_to_tie: awayThresholds.games_to_tie,
+            away_to_lose: awayThresholds.games_to_lose,
           };
         }
 

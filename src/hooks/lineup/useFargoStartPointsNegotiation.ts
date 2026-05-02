@@ -10,9 +10,9 @@
  *   - weakerTeam's `*_games_to_tie` = current proposed/agreed start points
  *     (the head-start the weaker team needs to "tie" the stronger team's
  *     expected output).
- *   - `home_games_to_lose` = home captain's `system_player_number` when
+ *   - `home_to_lose` = home captain's `system_player_number` when
  *     they confirm (NULL = not confirmed).
- *   - `away_games_to_lose` = away captain's `system_player_number` when
+ *   - `away_to_lose` = away captain's `system_player_number` when
  *     they confirm.
  *
  * Rules:
@@ -162,22 +162,22 @@ export function useFargoStartPointsNegotiation(
 
     const writeInitial = async () => {
       const updates: Record<string, number | null> = {
-        home_games_to_lose: null,
-        away_games_to_lose: null,
+        home_to_lose: null,
+        away_to_lose: null,
       };
       if (weakerTeam === 'home') {
-        updates.home_games_to_tie = computedDefault;
-        updates.away_games_to_tie = 0;
-        updates.home_games_to_lose = memberPlayerNumber;
+        updates.home_to_tie = computedDefault;
+        updates.away_to_tie = 0;
+        updates.home_to_lose = memberPlayerNumber;
       } else {
-        updates.away_games_to_tie = computedDefault;
-        updates.home_games_to_tie = 0;
-        updates.away_games_to_lose = memberPlayerNumber;
+        updates.away_to_tie = computedDefault;
+        updates.home_to_tie = 0;
+        updates.away_to_lose = memberPlayerNumber;
       }
 
       // Race guard: only write if the weaker team's tie column is still null.
       const weakerTieColumn =
-        weakerTeam === 'home' ? 'home_games_to_tie' : 'away_games_to_tie';
+        weakerTeam === 'home' ? 'home_to_tie' : 'away_to_tie';
 
       const { error } = await supabase
         .from('matches')
@@ -218,18 +218,18 @@ export function useFargoStartPointsNegotiation(
 
       // Editing clears BOTH confirms and stamps only the editor's side.
       const updates: Record<string, number | null> = {
-        home_games_to_lose: null,
-        away_games_to_lose: null,
+        home_to_lose: null,
+        away_to_lose: null,
       };
       if (weakerTeam === 'home') {
-        updates.home_games_to_tie = value;
+        updates.home_to_tie = value;
       } else {
-        updates.away_games_to_tie = value;
+        updates.away_to_tie = value;
       }
       if (isHomeTeam) {
-        updates.home_games_to_lose = memberPlayerNumber;
+        updates.home_to_lose = memberPlayerNumber;
       } else {
-        updates.away_games_to_lose = memberPlayerNumber;
+        updates.away_to_lose = memberPlayerNumber;
       }
 
       const { error } = await supabase
@@ -254,8 +254,8 @@ export function useFargoStartPointsNegotiation(
     if (!matchId || memberPlayerNumber === null) return;
 
     const updates = isHomeTeam
-      ? { home_games_to_lose: memberPlayerNumber }
-      : { away_games_to_lose: memberPlayerNumber };
+      ? { home_to_lose: memberPlayerNumber }
+      : { away_to_lose: memberPlayerNumber };
 
     const { error } = await supabase
       .from('matches')

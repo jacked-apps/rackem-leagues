@@ -117,21 +117,21 @@ export function useSpectateMatch(matchId: string | null | undefined) {
   // is null for Fargo matches by design.
   const homeThresholds: HandicapThresholds | null = useMemo(() => {
     if (!match) return null;
-    if (match.home_games_to_win === null || match.home_games_to_win === undefined) return null;
+    if (match.home_to_win === null || match.home_to_win === undefined) return null;
     return {
-      games_to_win: match.home_games_to_win,
-      games_to_tie: match.home_games_to_tie ?? null,
-      games_to_lose: match.home_games_to_lose ?? null,
+      games_to_win: match.home_to_win,
+      games_to_tie: match.home_to_tie ?? null,
+      games_to_lose: match.home_to_lose ?? null,
     };
   }, [match]);
 
   const awayThresholds: HandicapThresholds | null = useMemo(() => {
     if (!match) return null;
-    if (match.away_games_to_win === null || match.away_games_to_win === undefined) return null;
+    if (match.away_to_win === null || match.away_to_win === undefined) return null;
     return {
-      games_to_win: match.away_games_to_win,
-      games_to_tie: match.away_games_to_tie ?? null,
-      games_to_lose: match.away_games_to_lose ?? null,
+      games_to_win: match.away_to_win,
+      games_to_tie: match.away_to_tie ?? null,
+      games_to_lose: match.away_to_lose ?? null,
     };
   }, [match]);
 
@@ -173,8 +173,8 @@ export function useSpectateMatch(matchId: string | null | undefined) {
     ? calculateFargoMatchTotals({
         homeTeamId: match.home_team_id,
         awayTeamId: match.away_team_id,
-        homeGamesToWin: match.home_games_to_win ?? 0,
-        awayGamesToWin: match.away_games_to_win ?? 0,
+        homeGamesToWin: match.home_to_win ?? 0,
+        awayGamesToWin: match.away_to_win ?? 0,
         gameResults: filteredGameResults,
         overrides: fargoOverrides,
       })

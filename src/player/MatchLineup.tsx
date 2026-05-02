@@ -459,8 +459,8 @@ export function MatchLineup() {
       opponentLineup: opponentLineup ?? null,
       lineupSize: playerCount,
       handicapType,
-      homeGamesToLose: matchData?.home_games_to_lose ?? null,
-      awayGamesToLose: matchData?.away_games_to_lose ?? null,
+      homeGamesToLose: matchData?.home_to_lose ?? null,
+      awayGamesToLose: matchData?.away_to_lose ?? null,
       isHomeTeam,
     }),
     [
@@ -468,8 +468,8 @@ export function MatchLineup() {
       opponentLineup,
       playerCount,
       handicapType,
-      matchData?.home_games_to_lose,
-      matchData?.away_games_to_lose,
+      matchData?.home_to_lose,
+      matchData?.away_to_lose,
       isHomeTeam,
     ]
   );
@@ -548,10 +548,10 @@ export function MatchLineup() {
     homeRatings: homeRatingsForFargo,
     awayRatings: awayRatingsForFargo,
     lineupSize: playerCount,
-    homeGamesToTie: matchData?.home_games_to_tie ?? null,
-    awayGamesToTie: matchData?.away_games_to_tie ?? null,
-    homeGamesToLose: matchData?.home_games_to_lose ?? null,
-    awayGamesToLose: matchData?.away_games_to_lose ?? null,
+    homeGamesToTie: matchData?.home_to_tie ?? null,
+    awayGamesToTie: matchData?.away_to_tie ?? null,
+    homeGamesToLose: matchData?.home_to_lose ?? null,
+    awayGamesToLose: matchData?.away_to_lose ?? null,
     systemOverrides: leaguePrefs?.system_overrides,
     refetchMatch: matchQuery.refetch,
   });

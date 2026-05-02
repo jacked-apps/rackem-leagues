@@ -276,8 +276,8 @@ describe('calculateHandicapThresholds — characterization (BCA 3v3 points)', ()
 
   describe('home/away INDEPENDENT chart lookups (the recurring failure mode)', () => {
     /**
-     * The single most-broken pattern: code that derives away_games_to_win
-     * from home_games_to_win (e.g., `away = 18 - home`). For 3v3 18-game
+     * The single most-broken pattern: code that derives away_to_win
+     * from home_to_win (e.g., `away = 18 - home`). For 3v3 18-game
      * matches, the chart values do NOT sum to 18 in general (the chart is
      * empirical, not arithmetic). Naive derivation is wrong at every
      * non-zero diff.

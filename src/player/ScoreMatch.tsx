@@ -267,10 +267,10 @@ export function ScoreMatch() {
       supabase
         .from('matches')
         .update({
-          home_games_to_win: homeThresholds.games_to_win,
-          home_games_to_tie: homeThresholds.games_to_tie,
-          away_games_to_win: awayThresholds.games_to_win,
-          away_games_to_tie: awayThresholds.games_to_tie,
+          home_to_win: homeThresholds.games_to_win,
+          home_to_tie: homeThresholds.games_to_tie,
+          away_to_win: awayThresholds.games_to_win,
+          away_to_tie: awayThresholds.games_to_tie,
         })
         .eq('id', matchId)
         .then(({ error }) => {
@@ -659,8 +659,8 @@ export function ScoreMatch() {
     ? calculateFargoMatchTotals({
         homeTeamId: match.home_team_id,
         awayTeamId: match.away_team_id,
-        homeGamesToWin: match.home_games_to_win ?? 0,
-        awayGamesToWin: match.away_games_to_win ?? 0,
+        homeGamesToWin: match.home_to_win ?? 0,
+        awayGamesToWin: match.away_to_win ?? 0,
         gameResults: filteredGameResults,
         overrides: fargoOverrides,
       })

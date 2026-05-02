@@ -53,12 +53,16 @@ SELECT
   COALESCE(league_prefs.threshold_chart_id, org_prefs.threshold_chart_id)
     AS threshold_chart_id,
 
-  -- Phase 2 modular columns (new)
+  -- Phase 2 modular columns (new — names corrected per the v2 plan's
+  -- architectural reframe: scoring_method → points_calculator,
+  -- and win_condition value space collapsed from 4 values to 2)
   COALESCE(league_prefs.pairing_format, org_prefs.pairing_format, 'single_rack')
     AS pairing_format,
-  COALESCE(league_prefs.scoring_method, org_prefs.scoring_method, 'winner_takes_all')
-    AS scoring_method,
-  COALESCE(league_prefs.win_condition, org_prefs.win_condition, 'first_to_games')
+  COALESCE(league_prefs.points_calculator, org_prefs.points_calculator, 'linear_above_threshold')
+    AS points_calculator,
+  COALESCE(league_prefs.points_calculator_params, org_prefs.points_calculator_params, '{}'::jsonb)
+    AS points_calculator_params,
+  COALESCE(league_prefs.win_condition, org_prefs.win_condition, 'games')
     AS win_condition,
   COALESCE(league_prefs.mechanism, org_prefs.mechanism, 'extra_games')
     AS mechanism,
@@ -78,4 +82,4 @@ LEFT JOIN public.preferences league_prefs
   ON league_prefs.entity_type = 'league' AND league_prefs.entity_id = l.id;
 
 COMMENT ON VIEW public.resolved_league_preferences IS
-  'Final resolved preferences for each league with full fallback chain: league → org → system default. Includes original columns, Phase 1 modular columns (handicap_type, lineup_size, max_roster_size, game_generation, points_system, threshold_chart_id), and Phase 2 modular columns (pairing_format, scoring_method, win_condition, mechanism, standings_sort, tiebreaker_trigger, tiebreaker_format, race_length).';
+  'Final resolved preferences for each league with full fallback chain: league → org → system default. Includes original columns, Phase 1 modular columns (handicap_type, lineup_size, max_roster_size, game_generation, points_system, threshold_chart_id), and Phase 2 modular columns (pairing_format, points_calculator, points_calculator_params, win_condition [games|points], mechanism, standings_sort, tiebreaker_trigger, tiebreaker_format, race_length). Reflects the v2 architectural reframe.';

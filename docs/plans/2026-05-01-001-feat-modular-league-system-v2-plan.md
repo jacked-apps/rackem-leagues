@@ -668,7 +668,7 @@ Phases organized by dependency. Phase 0 research blocks Phase 3. Phase 1 (calcul
 
 ### Phase 2 — Schema corrections (REVISES original Phase 2)
 
-- [ ] **Unit 2.1: Consolidated schema migration — preferences + matches columns**
+- [x] **Unit 2.1: Consolidated schema migration — preferences + matches columns** *(completed 2026-05-01)*
 
 **Goal:** Apply the supplement Section 5 schema corrections + the architectural-review schema cleanup in a single consolidated migration. Touches both `preferences` (axis-name corrections) and `matches` (threshold-column rename + drop redundant columns).
 

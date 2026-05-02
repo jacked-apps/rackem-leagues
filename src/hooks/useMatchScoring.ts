@@ -180,11 +180,11 @@ export function useMatchScoring({
     // - games_to_lose is null for Fargo matches: Fargo uses start-points
     //   accumulation, not a games-to-lose threshold. Only games_to_win must
     //   be non-null to signal the match is prepared.
-    if (matchData && matchData.home_games_to_win !== null) {
+    if (matchData && matchData.home_to_win !== null) {
       return {
-        games_to_win: matchData.home_games_to_win,
-        games_to_tie: matchData.home_games_to_tie ?? null,
-        games_to_lose: matchData.home_games_to_lose ?? null,
+        games_to_win: matchData.home_to_win,
+        games_to_tie: matchData.home_to_tie ?? null,
+        games_to_lose: matchData.home_to_lose ?? null,
       };
     }
 
@@ -195,11 +195,11 @@ export function useMatchScoring({
     if (matchType === 'tiebreaker') return TIEBREAKER_THRESHOLDS;
 
     // See homeThresholds above — same rules apply to the away side.
-    if (matchData && matchData.away_games_to_win !== null) {
+    if (matchData && matchData.away_to_win !== null) {
       return {
-        games_to_win: matchData.away_games_to_win,
-        games_to_tie: matchData.away_games_to_tie ?? null,
-        games_to_lose: matchData.away_games_to_lose ?? null,
+        games_to_win: matchData.away_to_win,
+        games_to_tie: matchData.away_to_tie ?? null,
+        games_to_lose: matchData.away_to_lose ?? null,
       };
     }
 

@@ -821,28 +821,26 @@ export type Database = {
         Row: {
           actual_venue_id: string | null
           assigned_table_number: number | null
-          away_games_to_lose: number | null
-          away_games_to_tie: number | null
-          away_games_to_win: number | null
           away_games_won: number
           away_lineup_id: string | null
           away_points_earned: number
           away_team_id: string | null
-          away_team_score: number | null
           away_team_verified_by: string | null
           away_tiebreaker_verified_by: string | null
+          away_to_lose: number | null
+          away_to_tie: number | null
+          away_to_win: number | null
           completed_at: string | null
           created_at: string
-          home_games_to_lose: number | null
-          home_games_to_tie: number | null
-          home_games_to_win: number | null
           home_games_won: number
           home_lineup_id: string | null
           home_points_earned: number
           home_team_id: string | null
-          home_team_score: number | null
           home_team_verified_by: string | null
           home_tiebreaker_verified_by: string | null
+          home_to_lose: number | null
+          home_to_tie: number | null
+          home_to_win: number | null
           id: string
           match_number: number
           match_result: string | null
@@ -860,28 +858,26 @@ export type Database = {
         Insert: {
           actual_venue_id?: string | null
           assigned_table_number?: number | null
-          away_games_to_lose?: number | null
-          away_games_to_tie?: number | null
-          away_games_to_win?: number | null
           away_games_won?: number
           away_lineup_id?: string | null
           away_points_earned?: number
           away_team_id?: string | null
-          away_team_score?: number | null
           away_team_verified_by?: string | null
           away_tiebreaker_verified_by?: string | null
+          away_to_lose?: number | null
+          away_to_tie?: number | null
+          away_to_win?: number | null
           completed_at?: string | null
           created_at?: string
-          home_games_to_lose?: number | null
-          home_games_to_tie?: number | null
-          home_games_to_win?: number | null
           home_games_won?: number
           home_lineup_id?: string | null
           home_points_earned?: number
           home_team_id?: string | null
-          home_team_score?: number | null
           home_team_verified_by?: string | null
           home_tiebreaker_verified_by?: string | null
+          home_to_lose?: number | null
+          home_to_tie?: number | null
+          home_to_win?: number | null
           id?: string
           match_number: number
           match_result?: string | null
@@ -899,28 +895,26 @@ export type Database = {
         Update: {
           actual_venue_id?: string | null
           assigned_table_number?: number | null
-          away_games_to_lose?: number | null
-          away_games_to_tie?: number | null
-          away_games_to_win?: number | null
           away_games_won?: number
           away_lineup_id?: string | null
           away_points_earned?: number
           away_team_id?: string | null
-          away_team_score?: number | null
           away_team_verified_by?: string | null
           away_tiebreaker_verified_by?: string | null
+          away_to_lose?: number | null
+          away_to_tie?: number | null
+          away_to_win?: number | null
           completed_at?: string | null
           created_at?: string
-          home_games_to_lose?: number | null
-          home_games_to_tie?: number | null
-          home_games_to_win?: number | null
           home_games_won?: number
           home_lineup_id?: string | null
           home_points_earned?: number
           home_team_id?: string | null
-          home_team_score?: number | null
           home_team_verified_by?: string | null
           home_tiebreaker_verified_by?: string | null
+          home_to_lose?: number | null
+          home_to_tie?: number | null
+          home_to_win?: number | null
           id?: string
           match_number?: number
           match_result?: string | null
@@ -1511,10 +1505,11 @@ export type Database = {
           max_roster_size: number | null
           mechanism: string | null
           pairing_format: string | null
+          points_calculator: string | null
+          points_calculator_params: Json
           points_system: string | null
           profanity_filter_enabled: boolean | null
           race_length: number | null
-          scoring_method: string | null
           standings_sort: string[] | null
           team_format: string | null
           team_handicap_variant: string | null
@@ -1539,10 +1534,11 @@ export type Database = {
           max_roster_size?: number | null
           mechanism?: string | null
           pairing_format?: string | null
+          points_calculator?: string | null
+          points_calculator_params?: Json
           points_system?: string | null
           profanity_filter_enabled?: boolean | null
           race_length?: number | null
-          scoring_method?: string | null
           standings_sort?: string[] | null
           team_format?: string | null
           team_handicap_variant?: string | null
@@ -1567,10 +1563,11 @@ export type Database = {
           max_roster_size?: number | null
           mechanism?: string | null
           pairing_format?: string | null
+          points_calculator?: string | null
+          points_calculator_params?: Json
           points_system?: string | null
           profanity_filter_enabled?: boolean | null
           race_length?: number | null
-          scoring_method?: string | null
           standings_sort?: string[] | null
           team_format?: string | null
           team_handicap_variant?: string | null
@@ -2435,9 +2432,10 @@ export type Database = {
           mechanism: string | null
           organization_id: string | null
           pairing_format: string | null
+          points_calculator: string | null
+          points_calculator_params: Json | null
           points_system: string | null
           race_length: number | null
-          scoring_method: string | null
           standings_sort: string[] | null
           team_format: string | null
           team_handicap_variant: string | null

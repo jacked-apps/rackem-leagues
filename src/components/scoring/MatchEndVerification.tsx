@@ -201,8 +201,8 @@ export function MatchEndVerification({
     ? calculateFargoMatchTotals({
         homeTeamId,
         awayTeamId,
-        homeGamesToWin: match?.home_games_to_win ?? 0,
-        awayGamesToWin: match?.away_games_to_win ?? 0,
+        homeGamesToWin: match?.home_to_win ?? 0,
+        awayGamesToWin: match?.away_to_win ?? 0,
         gameResults: gameResultsMap,
         overrides: fargoOverrides,
       })

@@ -75,25 +75,27 @@ export interface MatchWithLeagueSettings {
    * handicap_type. The columns themselves are reused across systems — no
    * Fargo-specific columns exist on `matches`.
    *
-   * BCA points / percentage:
-   *   *_games_to_win  = games each team needs to WIN
-   *   *_games_to_tie  = games each team needs to TIE
-   *   *_games_to_lose = games above which loss is locked
+   * win_condition='games' (BCA points / percentage / games-mode):
+   *   *_to_win  = games each team needs to WIN
+   *   *_to_tie  = games each team needs to TIE
+   *   *_to_lose = games above which loss is locked
    *
-   * Fargo:
-   *   *_games_to_win  = race target (e.g. 10) — same for both teams
-   *   *_games_to_tie  = start points the weaker team needs to tie expected
-   *                      output (only weaker team's is non-zero)
-   *   *_games_to_lose = confirming captain's `system_player_number` during
-   *                      start-points negotiation (NULL = not confirmed;
-   *                      both non-null = both captains confirmed → match prep fires)
+   * win_condition='points' (Fargo 10-7 / points-mode):
+   *   *_to_win  = points target if any (NULL for play-all-games-no-target)
+   *   *_to_tie  = start-points credit the team begins the match with
+   *               (0 for stronger team, N for weaker in start_points mechanism)
+   *   *_to_lose = NULL (concept doesn't map cleanly to points mode)
+   *
+   * Renamed from `*_games_to_*` to `*_to_*` (Phase 2 Unit 2.1) — column names
+   * no longer lie about what they hold under points-mode. The
+   * ResolvedSystemConfig snapshot's `win_condition` carries the unit context.
    */
-  home_games_to_win: number | null;
-  home_games_to_tie: number | null;
-  home_games_to_lose: number | null;
-  away_games_to_win: number | null;
-  away_games_to_tie: number | null;
-  away_games_to_lose: number | null;
+  home_to_win: number | null;
+  home_to_tie: number | null;
+  home_to_lose: number | null;
+  away_to_win: number | null;
+  away_to_tie: number | null;
+  away_to_lose: number | null;
   /**
    * Tier 3 snapshot (added by migration 20260418000003). NULL for unstarted or legacy matches.
    * Populated at scheduled → in_progress transition; scoring reads from this, not live league data.

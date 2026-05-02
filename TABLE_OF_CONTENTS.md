@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-01 (Phase 1 complete — calculator registry, all three Tested Preset calculators, off-preset combinations test)
+> **Last Updated**: 2026-05-01 (Phase 2 Unit 2.1 — consolidated schema migration: preferences `scoring_method`→`points_calculator` + `points_calculator_params` JSONB + `win_condition` 4→2 values; matches `*_games_to_*`→`*_to_*` rename + `home_team_score`/`away_team_score` drop)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 

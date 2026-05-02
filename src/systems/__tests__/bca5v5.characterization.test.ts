@@ -178,7 +178,7 @@ describe('bca5v5 SystemModule — characterization', () => {
   /**
    * The "home/away independent lookup" rule.
    *
-   * Past failures: code that derives away_games_to_win from home_games_to_win
+   * Past failures: code that derives away_to_win from home_to_win
    * (e.g., `away = 25 - home`). The file header in get5v5GamesNeeded.ts is
    * explicit: "The lower team's games_to_win is NOT simply (25 - higher
    * TeamWins). Each team has its own lookup value from the BCA chart."

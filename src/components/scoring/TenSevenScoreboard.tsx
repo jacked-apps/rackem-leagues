@@ -122,7 +122,7 @@ export function TenSevenScoreboard({
   // MatchEndVerification is mode-aware internally — it already detects Fargo
   // and uses the point cascade for completion math. We still pass the "win
   // threshold" fields it expects; for points-based matches these are the
-  // start-points stored in home_games_to_win / away_games_to_win, and the
+  // start-points stored in home_to_win / away_to_win, and the
   // component's Fargo branch ignores them for win determination.
   const homeWinThresholdForVerifier = startPointsFor === 'home' ? startPoints : 0;
   const awayWinThresholdForVerifier = startPointsFor === 'away' ? startPoints : 0;

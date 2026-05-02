@@ -34,12 +34,12 @@ export interface Match {
   started_at?: string | null;
   completed_at?: string | null;
   status?: string;
-  home_games_to_win?: number;
-  away_games_to_win?: number;
-  home_games_to_tie?: number;
-  away_games_to_tie?: number;
-  home_games_to_lose?: number;
-  away_games_to_lose?: number;
+  home_to_win?: number;
+  away_to_win?: number;
+  home_to_tie?: number;
+  away_to_tie?: number;
+  home_to_lose?: number;
+  away_to_lose?: number;
   [key: string]: any; // Allow any other match fields
 }
 
@@ -75,10 +75,10 @@ export interface Match {
  * await updateMatch({
  *   matchId: '123',
  *   updates: {
- *     home_games_to_win: 8,
- *     away_games_to_win: 7,
- *     home_games_to_tie: 7,
- *     away_games_to_tie: 8
+ *     home_to_win: 8,
+ *     away_to_win: 7,
+ *     home_to_tie: 7,
+ *     away_to_tie: 8
  *   }
  * });
  */
