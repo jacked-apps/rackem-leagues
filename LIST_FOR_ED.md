@@ -4,6 +4,137 @@ Tasks and refactoring items for Ed to work on.
 
 ---
 
+## 🚨 2026-04-21 STAGING TEST — Multiple Critical Failures
+
+**Discovered:** 2026-04-21 during first real-player staging test at the league event
+**Severity:** HIGH — these blocked the test on the night and several are show-stoppers for real launch
+**Branches needed:** multiple (see each item)
+
+Context: first night with real players touching the staging app. Lineup
+preparation, invite flows, Fargo scoring, and double-duty all failed in
+different ways. Everything below needs real fixes before another live
+test, and some are hard blockers for production.
+
+### Issue 1 — Staging has no outbound email (invite flow is dead in staging)
+
+**Branch needed:** `staging-email-transport` or staging config fix
+
+**The problem:** the staging Supabase environment does not actually send
+any email. The captain's email-invite option for placeholder players
+silently goes nowhere, so captains cannot invite anyone via email on
+staging. Only Device Handoff and Share Link / QR are usable. This also
+means no email-confirmation tests can run on staging — it's a complete
+invite/auth test gap.
+
+**Fix direction:**
+- Configure staging with a real SMTP provider (Resend, SendGrid, Postmark,
+  Supabase's built-in SMTP) or at minimum route staging mail through a
+  dev-inbox service like Mailtrap or Inbucket so the flow can be tested
+  end-to-end.
+- Decide deliberately whether staging sends real external mail or only
+  captures it for inspection (usually you want the latter for safety).
+- Document the setup in memory-bank so future environments inherit it.
+
+**Until fixed:** captains cannot use the email-invite option on staging at
+all. Every test has to use in-person invite methods, which does not match
+the real production flow and leaves a whole code path untested.
+
+### Issue 2 — Fargo 5v5 is routing through the 3v3 games creator
+
+**Branch needed:** `fix-fargo-5v5-games-creation`
+
+**The problem:** when a Fargo 5v5 match reaches game-creation, it's using
+the 3v3 games creator path. Only players 1, 2, and 3 are used from each
+lineup; players 4 and 5 are dropped. The resulting game list is also laid
+out as a double round robin (3v3 pattern) instead of the Fargo 5v5
+schedule. Players 4 and 5 never appear in any game.
+
+**Why this matters:** Fargo 5v5 is the whole point of the modular
+handicap/scoring refactor that just shipped. If dispatch is picking the
+wrong creator, either the routing logic has a bug, the Fargo-5v5 creator
+is missing/not wired up, or the league preference is being read wrong.
+
+**Fix direction:**
+- Confirm which creator module is actually being invoked for this league
+  (log the dispatched creator key during match prep).
+- Verify `leagues.handicap_type` / scoring system config is what we think
+  it is for the test league.
+- Check the registration/dispatch map for the 5v5 Fargo creator — it may
+  be missing a case or falling through to the 3v3 default.
+- Add a regression test that runs match prep for a Fargo 5v5 league and
+  asserts all five players appear in the resulting match_games and the
+  schedule matches the 5v5 pattern, not 3v3.
+
+**Files likely involved:** the modular handicap/scoring dispatch added in
+PR #72 (Fargo 5v5 end-to-end), anything that calls into a games creator
+from match prep, and the 5v5 scoring registration.
+
+### Issue 3 — Double duty did not work
+
+**Branch needed:** `fix-double-duty`
+
+**The problem:** "double duty" — a single player filling two roster slots
+/ playing two games in the same match — did not function tonight. The
+exact failure mode needs reproduction (was it lineup validation refusing
+the duplicate player, was it the games creator generating bad games, was
+it scoring refusing to accept, was it something else?).
+
+**Fix direction:**
+- Reproduce with a test lineup that has one player listed in two slots.
+- Trace through lineup save → lock → games creation → scoring to see
+  where the flow breaks.
+- Add a test covering the double-duty case for at least one scoring
+  system so the regression can be caught automatically.
+
+**Why this matters:** double duty is a real league scenario when a team
+is short. Without it, short-handed teams can't even enter a legal lineup
+in the app.
+
+### Issue 4 — Fargo start-points (beginning handicap) did not work
+
+**Branch needed:** `fix-fargo-start-points`
+
+**The problem:** the Fargo start-points value — the negotiated
+beginning-games handicap for the weaker team — did not apply correctly
+during scoring. This is the feature that was just added in the
+`fargo_start_points` columns migration (captains propose/confirm a
+number, then it copies to the weaker team's `home_games_to_win` or
+`away_games_to_win` when both captains confirm).
+
+**Possible failure modes to check:**
+- Both-confirms detection not firing match-prep as expected.
+- Start-points value not actually being copied to the correct team's
+  `games_to_win` column.
+- Scoring UI reading from the wrong column or ignoring the value.
+- Interaction with Issue 2 — if the wrong games creator ran, start-points
+  may never have been applied at all.
+
+**Fix direction:**
+- Pull the actual match row from staging (match id
+  `44455346-f33f-4362-9f52-bcc1341b2c0c` — see
+  `docs/events/2026-04-21-staging-test/unlock-match-lineups.sql`) and
+  inspect the Fargo columns and games_to_win values.
+- Trace match prep to confirm the copy from `fargo_start_points` to
+  `home_games_to_win` / `away_games_to_win` actually happened.
+- If it did copy, trace scoring to confirm the value is read at match
+  end.
+
+**Why this matters:** Fargo without start-points is not Fargo. This
+blocks any meaningful Fargo league use.
+
+### Cross-cutting follow-ups
+
+- Consider a pre-launch checklist that asserts each scoring system can
+  run a full happy-path match (lineup → prep → score → complete) in a
+  smoke test environment before any real-player test.
+- Write up each failure in `docs/solutions/` once root-caused so the
+  learnings compound instead of evaporating.
+- Staging needs real observability for nights like this — logs are
+  easier to read after the fact than to debug in real time while
+  players are waiting.
+
+---
+
 ## 🚨 CRITICAL BUG: Team Deletion Destroys Matches
 
 **Discovered:** 2026-04-09 during wizard 2.0 planning
