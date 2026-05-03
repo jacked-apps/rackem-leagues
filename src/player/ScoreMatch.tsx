@@ -49,7 +49,7 @@ import { TiebreakerScoreboard } from '@/components/scoring/TiebreakerScoreboard'
 import { GamesList } from '@/components/scoring/GamesList';
 import { TableNumberBar } from '@/components/scoring/TableNumberBar';
 import { queryKeys } from '@/api/queryKeys';
-import { calculateBCAPoints, calculatePoints, getTeamStats, getPlayerStats as getPlayerStatsUtil } from '@/types';
+import { calculatePoints, getTeamStats, getPlayerStats as getPlayerStatsUtil } from '@/types';
 import { calculateFargoMatchTotals } from '@/utils/fargoMatchTotals';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
@@ -664,12 +664,17 @@ export function ScoreMatch() {
   // preferences. The 5v5 routing decision now reads `lineup_size === 5`
   // instead of the legacy `team_format === '8_man'` tag.
   const is5v5 = leaguePrefs?.lineup_size === 5;
+  const winCondition = leaguePrefs?.win_condition ?? 'games';
 
-  // Calculate BCA points for 5v5 scoreboard
+  // Team stats (wins / losses) for the scoreboard.
   const homeStats = getTeamStats(match.home_team_id, filteredGameResults);
   const awayStats = getTeamStats(match.away_team_id, filteredGameResults);
-  const homeBCAPoints = calculateBCAPoints(match.home_team_id, homeThresholds, filteredGameResults);
-  const awayBCAPoints = calculateBCAPoints(match.away_team_id, awayThresholds, filteredGameResults);
+  // Note: legacy `calculateBCAPoints` parallel computation removed —
+  // FiveVFiveScoreboard now reads `match.home_points_earned` /
+  // `match.away_points_earned` directly. Those columns are calculator-
+  // correct via `computeMatchRunningTotals` (Phase 5 Unit 5.5).
+  // The 3v3 scoreboard branch below still uses the legacy `calculatePoints`
+  // helper; switching it over is a follow-up (covered in LIST_FOR_ED #18).
 
   // Fargo totals (Unit 12): for 5v5 Fargo matches, points are running Fargo
   // totals (per-game winner/loser points + start-points credit on the weaker
@@ -781,7 +786,7 @@ export function ScoreMatch() {
           isVerifying={isVerifying}
           gameType={gameType}
         />
-      ) : handicapType === 'fargo' && fargoTotals ? (
+      ) : handicapType === 'fargo' && fargoTotals && winCondition === 'points' ? (
         <TenSevenScoreboard
           match={{
             ...match,
@@ -824,8 +829,8 @@ export function ScoreMatch() {
           awayWins={awayStats.wins}
           homeLosses={homeStats.losses}
           awayLosses={awayStats.losses}
-          homePoints={fargoTotals ? fargoTotals.homePoints : homeBCAPoints}
-          awayPoints={fargoTotals ? fargoTotals.awayPoints : awayBCAPoints}
+          homePoints={match.home_points_earned ?? 0}
+          awayPoints={match.away_points_earned ?? 0}
           allGamesComplete={allGamesComplete}
           isHomeTeam={isHomeTeam ?? false}
           onVerify={handleVerify}
@@ -908,6 +913,10 @@ export function ScoreMatch() {
         goldenBreakCountsAsWin={goldenBreakCountsAsWin}
         gameType={gameType}
         handicapType={handicapType}
+        pointsCalculator={
+          (match?.system_snapshot as { points_calculator?: string | null } | null)
+            ?.points_calculator ?? null
+        }
         breakFouled={breakFouled}
         winByForfeit={winByForfeit}
         runout={runout}
