@@ -833,3 +833,336 @@ collection once there's enough volume.
 - `src/wizards/league-v2/steps/ThresholdSourceStep.tsx` already has
   the "calibrated vs manual" classification; feedback could refine
   the classifier's confidence over time
+
+---
+
+## 18. Unified Scoreboard — One Component for All Configs
+
+**Discovered:** 2026-05-03 during 5v5 Fargo + games-won test pass
+**Severity:** Architectural / next-branch brainstorm
+**Branch:** dedicated brainstorm + plan branch (Ed flagged this as
+his next focus after the modular-league-system branch lands)
+
+**Problem:** We currently have multiple scoreboard components —
+`ThreeVThreeScoreboard`, `FiveVFiveScoreboard`, `TenSevenScoreboard`,
+`TiebreakerScoreboard` — and `ScoreMatch.tsx` routes between them
+based on `(handicap_type, lineup_size, isTiebreakerMode)`. Every
+new combo (e.g. Fargo + games-won) potentially needs either a new
+scoreboard variant or a router exception. This is the n×m matrix
+problem: it doesn't scale, and surface-area bugs (wrong numbers,
+mis-routed display, missing thresholds) compound with each new
+preset.
+
+The Fargo + games-won issue today was a symptom: the router
+checked `handicap_type === 'fargo'` first and dispatched to the
+points-mode scoreboard, even though the league uses games as the
+win condition. A small guard (`&& winCondition === 'points'`) was
+applied as a quick fix in `src/player/ScoreMatch.tsx` so testing
+can continue. The structural fix is the unified scoreboard
+described below.
+
+**Proposed approach (Ed's framing 2026-05-03):**
+
+Build ONE live scoreboard component that:
+
+1. **Always tracks both games and points** — we already have both
+   on the matches row (`home_games_won` / `home_points_earned` etc.
+   from Phase 5 Unit 5.5 running totals). No conditional data
+   gathering — every match feeds both axes.
+2. **Reads the three thresholds (to-win / to-tie / to-lose) per
+   side** from the matches row (`home_to_win`, `home_to_tie`,
+   `home_to_lose`, and the matching `away_*` set). These are
+   already populated regardless of mode — for games-mode they're
+   game counts, for points-mode they're point totals. The
+   thresholds are mode-neutral; the SCOREBOARD picks which axis
+   they apply to.
+3. **Reads `win_condition` from the resolved league preferences**
+   to decide which axis (games or points) gets the "primary"
+   display position — slightly larger / featured. The other axis
+   stays visible but smaller.
+4. **Shows both equally OR scaled by win_condition.** Either is
+   acceptable; "scaled" is Ed's preference because it matches how
+   players actually think about the match ("we need 11 to win" is
+   a single number, the points are secondary trivia).
+
+**Net effect:** one scoreboard handles BCA 3v3 (games), BCA 5v5
+(games + points), Fargo 5v5 points-mode (points + games), Fargo
+5v5 games-mode (games + points), AND every off-preset combo —
+because all of them have both axes and a `win_condition` flag.
+
+**What this kills:**
+- Per-format scoreboards (consolidate to one)
+- Routing exceptions in `ScoreMatch.tsx` (probably collapses to
+  `isTiebreakerMode ? Tiebreaker : Unified`)
+- Future "we need a new scoreboard for this combo" tickets
+
+**What this preserves / extends:**
+- Tiebreaker scoreboard stays separate (different game-set, not a
+  threshold display)
+- Mid-match "you've clinched" detection (currently unbuilt — see
+  memory `project_mid_match_clinch_detection.md`) — a unified
+  scoreboard is the natural place to surface this when built
+- Player rows / lineup interactions (swap player, vacate, etc.)
+  stay shared between unified scoreboard and tiebreaker
+
+**Adjacent calculator-feature idea (Ed 2026-05-03):**
+Add a configurable "benchmark" param to
+`accumulate_with_milestone_jumps`. Today the milestone (where the
+1.5x jump kicks in) is implicitly the tie-threshold — they're
+coupled. A benchmark param would let an LO set the jump game
+independently ("jump kicks in at game 10 regardless of where the
+tie threshold lands"). Surfaces in the wizard's calculator-params
+editor and on the unified scoreboard as the milestone-progress
+cue. Sized as "small extension" once the unified-scoreboard
+shape is settled — don't add this before the scoreboard work
+or we'll have two display paths to update.
+
+**Sibling concern — Scoring Modal (`ScoringDialog`) needs the same
+treatment (Ed 2026-05-03):**
+
+The win-confirmation modal has the same dispatch problem the
+scoreboard had: today it gates the loser-balls-pocketed input on
+`handicap_type === 'fargo'`, which over-collected for any Fargo
+league whose calculator doesn't actually consume per-game ball
+counts (e.g. Fargo + games-won + `accumulate_with_milestone_jumps`).
+A tactical guard was applied 2026-05-03: ScoringDialog now takes
+a `pointsCalculator` prop and only renders/requires the ball-count
+input when `pointsCalculator === 'accumulated_per_game'`. ScoreMatch
+reads the value from `match.system_snapshot.points_calculator`.
+
+The structural fix in this branch should generalize the modal the
+same way as the scoreboard: ONE dialog driven by the active
+calculator's declared per-game inputs, not by `handicap_type`.
+
+Ed's richer modal vision (2026-05-03):
+- Each side (winner / loser) has its own configurable point range
+  per game — e.g. winner can earn 5–20 points, loser can earn 2–12,
+  driven by inputs the LO turns on/off per league.
+- Two independent point-award systems running side-by-side, either
+  feeding one or both teams. Examples:
+    - System A: winner gets a flat point per game won.
+    - System B: bonus points for break-and-run, golden break, etc.
+    - Total awarded = A + B per side.
+- Each tracked field is on/off at the league level. Today's flags
+  (`break_and_run`, `golden_break`, `runout`, `loser_balls_pocketed`,
+  `break_fouled`, `win_by_forfeit`) become a configurable set
+  rather than a fixed list. New fields (innings, time, fouls per
+  rack, etc.) plug in via the same mechanism.
+- Modal renders only the inputs the active league/calculator
+  actually consumes — no over-collection, no submit-disabled
+  mystery for inputs that don't matter.
+
+**Plumbing implications:**
+- Calculator interface gains a `requiredPerGameInputs` declaration
+  (or similar — exact shape is the brainstorm's job). Could be a
+  static array on the calculator module, or a method that takes
+  the params and returns the input list.
+- `match_games` schema may need new generic columns or a JSONB
+  field for "calculator-specific per-game data" so the modular
+  inputs aren't pinned to today's column list.
+- League-preferences gain per-flag on/off toggles for the always-
+  visible / role-conditional fields (so an LO can turn off
+  break-and-run tracking for a league that doesn't reward it).
+
+**Why fold into the unified-scoreboard branch:**
+- Scoreboard and modal are tightly coupled (modal collects, board
+  displays). Both dispatch on `handicap_type` today; both should
+  dispatch on the active calculator + win_condition.
+- Doing them together means one schema migration, one set of
+  calculator-interface changes, and one consistent display story
+  for the BCA-pitch demo.
+- Today's `accumulated_per_game` ball-count input is the only
+  example of a calculator-driven per-game input — the brainstorm
+  is the moment to generalize before more accumulate.
+
+**Pattern: "handicap_type as proxy for scoring system" conflation
+(Ed 2026-05-03):**
+
+The same root issue surfaced three times in one testing session.
+Each time, code that should have dispatched on the active points
+calculator dispatched on `handicap_type === 'fargo'` instead —
+silently activating a Fargo-flavored legacy path even when the
+league's actual calculator was something else.
+
+Instances found:
+
+1. **Scoreboard component routing** (`src/player/ScoreMatch.tsx`
+   ~line 785) — `handicap_type === 'fargo' && fargoTotals` chose
+   TenSevenScoreboard for any Fargo league, even Fargo + games-won.
+   Fixed 2026-05-03 by adding `&& winCondition === 'points'`.
+2. **Scoring modal ball-count input** (`src/components/scoring/
+   ScoringDialog.tsx`) — `handicap_type === 'fargo'` rendered the
+   loser-balls-pocketed input (and gated Submit on it) regardless
+   of whether the active calculator actually consumed it. Fixed
+   2026-05-03 by adding a `pointsCalculator` prop and gating on
+   `pointsCalculator === 'accumulated_per_game'`.
+3. **Scoreboard points display** (`src/player/ScoreMatch.tsx`
+   ~line 682 and ~line 827) — `handicap_type === 'fargo'` ran
+   `calculateFargoMatchTotals` (the legacy 10-7 formula) regardless
+   of which calculator was active. The match row's
+   `home_points_earned` was correct (calculator-correct via
+   `computeMatchRunningTotals`), but the scoreboard prefer-read
+   the legacy `fargoTotals.homePoints`, so it displayed "10 per
+   win" for an `accumulate_with_milestone_jumps` league. Fixed
+   2026-05-03 by reading `match.home_points_earned` /
+   `match.away_points_earned` directly in the FiveVFiveScoreboard
+   branch. ThreeVThreeScoreboard branch still uses legacy
+   `calculatePoints` — same fix needed when 3v3 path is
+   exercised in the unified-scoreboard work.
+
+**Structural fix in this branch:** every display-layer dispatch
+(modal, scoreboard, end-of-match-recap) should read from the
+match row's calculator-correct fields (`home_points_earned`,
+`away_points_earned`, `home_games_won`, `away_games_won`) — those
+ARE the source of truth post-Phase 5 Unit 5.5. Legacy parallel
+computation paths (`calculateFargoMatchTotals`,
+`calculateBCAPoints`, `calculatePoints`) should be deleted, not
+kept "for compatibility." Compatibility through abstraction is
+fine; compatibility through parallel paths that drift is the bug.
+
+The mental shorthand to break: `handicap_type === 'fargo'` does
+NOT mean "this league uses 10-7 scoring." It means "this league
+applies handicap via Fargo ratings." The scoring system is the
+calculator. They're orthogonal — by design — and any code that
+treats them as synonyms is wrong.
+
+**Open questions for the brainstorm:**
+- For Fargo points-mode, do we still need to show start_points
+  prominently (the "this team starts at +X" cue at lineup lock)?
+  Yes probably — but as part of the unified scoreboard's points
+  row, not its own component.
+- Calculator-specific cues that leak onto today's scoreboards
+  should be gated behind the active `points_calculator`. Examples
+  found during 2026-05-03 testing:
+    - The `1.5` floating on the scoreboard is the
+      `multiplier_at_tie` param from `accumulate_with_milestone_jumps`
+      — only meaningful for that calculator; should be hidden for
+      `linear_above_threshold`, `accumulated_per_game`, and `null`.
+    - The "11 in the points column" for Fargo + games-won was
+      `fargoTotals.homePoints` accumulating via points-mode logic
+      even though the league decides by games. Unified scoreboard
+      should derive points from `match.home_points_earned`
+      (already maintained by the per-game running-totals pipeline)
+      and skip start-points negotiation entirely when win_condition
+      is 'games'.
+- Tied-match display: the threshold trio (to-win / to-tie / to-
+  lose) on the unified scoreboard naturally surfaces tie territory.
+  Item 13 (tied-match scoreboard should show more info) might
+  fold into this work.
+- What does the "primary axis" look like visually? Bigger font?
+  Different background? A "TO WIN" label above just the primary
+  axis? Wireframes in the brainstorm.
+- Layout footprint: 3v3 has 3 player rows, 5v5 has 5. Does the
+  unified scoreboard auto-flex or do we have layout variants per
+  lineup_size? (Probably auto-flex — the scoreboard chrome is the
+  same shape, only the player-row count differs.)
+
+**Files likely involved (when the brainstorm becomes a plan):**
+- New: `src/components/scoring/UnifiedScoreboard.tsx` (replaces
+  three of the four current scoreboards)
+- `src/player/ScoreMatch.tsx` routing collapses
+- `src/components/scoring/ThreeVThreeScoreboard.tsx`,
+  `FiveVFiveScoreboard.tsx`, `TenSevenScoreboard.tsx` — likely
+  deleted
+- `src/types/match.ts` — already has the threshold fields with
+  mode-neutral names (`home_to_win` etc.); good foundation
+- Resolved-prefs reader (`src/api/queries/leaguePreferences.ts` or
+  `useResolvedLeaguePrefs`) already exposes `win_condition` and
+  `lineup_size` — no schema work needed
+
+**Why this is the right next branch:**
+- The modular-league-system branch made the DATA layer mode-neutral
+  (mode-neutral threshold column names, both axes always tracked).
+  The DISPLAY layer is now the last place where "BCA vs Fargo vs
+  10-7" is hardcoded as separate components. Aligning the display
+  with the data is the natural finish line.
+- Item 10 (slash format confusion), Item 13 (tied-match info), and
+  the Fargo-games-won routing fix all fold into this single piece
+  of work.
+- BCA-pitch demo: a single unified scoreboard is a stronger demo
+  than "we have four scoreboards, let me show you which one fires
+  for this league."
+
+---
+
+## 19. Cross-Match State Bleed — Fresh Match Shows "Tiebreak Needed"
+
+**Discovered:** 2026-05-03 during modular-league-system testing
+**Severity:** Medium (refresh-recoverable, no data corruption)
+**Branch:** lineup/scoring transition cleanup branch — same family
+as items 12 / 14 / 15
+
+**Symptom:** Navigated from an old (abandoned) match into a freshly
+created match. Home team's view immediately showed the "tiebreak
+needed" prompt on the brand-new match — zero games scored, no tie
+possible. A hard refresh cleared it and the match looked normal.
+
+**Likely cause family** (same shape as items 12 / 14 / 15):
+- TanStack Query cache holding stale match data when navigation
+  swapped the match ID
+- Realtime subscription routing events from the previous match
+  to the new match's component instance
+- `MatchEndVerification` mounting with stale verification-flag
+  state from the previous match (both teams "verified" → triggers
+  the auto-completion path → hits the bcaResult evaluation against
+  the new match's [missing] thresholds → result === 'tie' →
+  tiebreak prompt)
+- Or some combination — fan-out of cache invalidation around
+  match navigation isn't tight enough
+
+**Why this is its own item (not folded into 12/14/15):**
+- Item 12 is mid-match flashing on a single match
+- Item 14 is the live-scoring INDEX page showing stale matches
+- Item 15 is a single completed match re-firing completion
+- This new one is CROSS-match state bleed during navigation —
+  React component / Query cache identity drift between two
+  different matches the same user touched in sequence
+
+**Repro recipe:**
+1. Open match A (any state — abandoned, in-progress, etc.)
+2. Navigate away (back to dashboard / match list)
+3. Create + open match B (fresh, no games scored)
+4. As home team: "tiebreak needed" prompt appears immediately
+
+**Fix direction (for the cleanup branch):**
+- Audit `useMatchScoring` and the React Query keys around match
+  ID transitions — make sure switching matchId fully invalidates
+  prior match data instead of layering new data on top
+- `MatchEndVerification` should refuse to evaluate completion for
+  a match it just received (defer one render, or gate on
+  match.id matching the current matchId param)
+- Realtime channel cleanup on unmount needs a strict per-match
+  scope so messages don't leak across navigation
+
+**Workaround until fixed:** hard refresh after navigating to a
+fresh match. Confirmed effective in this session's testing.
+
+**Related instance — second-verifier doesn't auto-nav at match
+completion (2026-05-03):** both teams verified the final game; the
+match completed correctly (winner persisted, status='completed'),
+but the home team's screen did not auto-navigate back to the
+dashboard. Away team navigated normally. Likely cause is in the
+same family — three plausible angles:
+
+1. The item-15 guard (`if (match?.status === 'completed') return;`)
+   firing on the second verifier's effect after realtime
+   propagated the first verifier's write. The guard was added to
+   prevent re-firing on already-completed matches but plausibly
+   blocks the second verifier's legitimate Step-3 navigation.
+2. `completionStartedRef` stuck `true` from an interrupted prior
+   attempt (any earlier transition-family bug could leave it
+   stuck), so a re-evaluated effect bails silently before Step 3.
+3. Effect dependency drift around `bothVerified` / match query
+   identity changing under realtime updates.
+
+**Fix direction (cleanup branch):** the navigation in Step 3
+should be its own concern, separated from the DB-write guarding
+in Step 2. Right now the entire `completeTheMatch` async function
+is gated by both Step-2 and Step-3 protections, so a guard
+intended to protect writes also blocks navigation. Splitting them
+(or making the navigation idempotent — "if status===completed and
+I'm on the live-scoring page, navigate to dashboard, period") fixes
+the regression without re-introducing the original 409 noise.
+
+**Workaround until fixed:** the user manually clicks back to
+dashboard. Match data is already correct on the server.
