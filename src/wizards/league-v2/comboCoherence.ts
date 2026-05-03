@@ -163,11 +163,24 @@ export function evaluateCombo(formData: LeagueWizardFormData): ComboCoherenceRes
         (pairingFormat ?? 'single_rack') === p.pairingFormat,
     );
     if (!matchesPreset) {
+      // Distinguish "off-preset but has a calibrated formula" from
+      // "off-preset and falls back to zero handicap." Fargo + games-won
+      // + extra_games has a calibrated formula (computeFargoGamesWonThresholds,
+      // validated against FargoRate's HOT chart) — don't tell the LO
+      // their handicaps will fall to zero in that case.
+      const hasCalibratedFormulaPath =
+        formData['handicap-system'] === 'fargo' &&
+        ((winCondition === 'games' &&
+          (formData['mechanism'] ?? 'extra_games') === 'extra_games') ||
+          (winCondition === 'points' &&
+            (formData['mechanism'] ?? 'start_points') === 'start_points'));
+
       warnings.push({
         severity: 'warning',
         code: 'warning.off_preset_combo',
-        message:
-          'This combination is outside the three Tested Preset bundles (BCA 3v3, BCA 5v5, Fargo 5v5). It will work, but no calibrated handicap chart exists for this exact mix — handicaps fall back to zero.',
+        message: hasCalibratedFormulaPath
+          ? 'This combination is outside the three Tested Preset bundles (BCA 3v3, BCA 5v5, Fargo 5v5). It will work — handicaps come from the FargoRate formula path. The Threshold Source step will confirm what runs at lineup lock.'
+          : 'This combination is outside the three Tested Preset bundles (BCA 3v3, BCA 5v5, Fargo 5v5). It will work, but no calibrated handicap chart exists for this exact mix — captains enter thresholds at lineup lock, or pick "Play unhandicapped" on the Threshold Source step.',
       });
     }
   }
