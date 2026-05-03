@@ -16,7 +16,7 @@
  */
 //import { watchMatchAndGames } from '@/realtime/useMatchAndGamesRealtime';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/supabaseClient';
@@ -392,9 +392,30 @@ export function ScoreMatch() {
    */
   const addToConfirmationQueue = addToConfirmationQueueFromHook;
 
+  // Stabilize the match shape passed to mutations + downstream realtime
+  // hooks. Phase 5 Unit 5.5 introduced per-game writes to the matches
+  // row (running-totals updates), which makes matchQuery refetch on
+  // every confirmation. Without this memo, every refetch produces a
+  // new `match` object identity → callback identities change → the
+  // realtime hook resubscribes → same event re-fires → flashing loop.
+  // The mutations hook only needs id + home_team_id + away_team_id;
+  // memoize on those primitives so identity is stable across refetches
+  // that don't change them.
+  const stableMatchForMutations = useMemo(
+    () =>
+      match
+        ? {
+            id: match.id,
+            home_team_id: match.home_team_id,
+            away_team_id: match.away_team_id,
+          }
+        : null,
+    [match?.id, match?.home_team_id, match?.away_team_id],
+  );
+
   // Use mutations hook for all database operations
   const mutations = useMatchScoringMutations({
-    match,
+    match: stableMatchForMutations,
     leagueId: match?.league?.id ?? null,
     gameResults,
     homeLineup,

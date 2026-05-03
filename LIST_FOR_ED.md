@@ -520,3 +520,124 @@ between scoring write → DB round-trip → re-render. Audit divergence
 in dev caught the writer bug; same audit will catch any future
 writer bugs in prod, so option 2 + monitor `app_logs` may be
 enough.
+
+---
+
+## 12. Away Team Screen Flashes / Rapidly Re-renders During Tiebreaker Setup
+
+**Discovered:** 2026-05-02 during modular-league-system test pass
+**Severity:** Medium — has a workaround (browser refresh)
+**Branch:** future bugfix branch — investigation needed
+
+**Problem:** During the tiebreaker setup flow (after both teams verify
+a tied match → system creates tiebreaker games + unlocks lineups), one
+team's screen (away team in this case — Smitty) started flashing and
+re-rendering rapidly. Browser refresh stopped the loop and the screen
+stabilized.
+
+**Hypothesis:** Realtime subscription bouncing — the lineup-unlock
+mutation triggers a realtime event → query invalidates → refetch →
+some effect re-fires → loop. Or the away-side polling fallback in
+`useMatchPreparation` is firing repeatedly when both lineups are
+unlocked but tiebreaker games haven't appeared yet (or vice versa).
+
+**Console evidence at the time:**
+- Repeated `[linear_above_threshold] params failed zod validation`
+  warnings (cosmetic only — calculator falls back to default
+  multiplier=1)
+- Stack traces showing `confirmOpponentScore` → `updateMatchRunningTotals`
+  firing repeatedly
+- `[useMatchRealtime] Cleaning up` — realtime channel teardowns
+
+**Investigation hints:**
+- Check the polling logic in `useMatchPreparation.ts` (the away-team
+  branch that watches for tiebreaker games to appear)
+- Check `useMatchRealtime` for any cycle where a subscription update
+  triggers a re-subscribe
+- The MatchEndVerification's tied-match polling block (lines ~395-440)
+  has retry-after-delay logic that could re-fire if cancellation isn't
+  clean
+
+**Files likely involved:**
+- `src/hooks/lineup/useMatchPreparation.ts`
+- `src/realtime/useMatchRealtime.ts`
+- `src/components/scoring/MatchEndVerification.tsx`
+
+---
+
+## 13. Tied-Match Scoreboard Should Show More Info
+
+**Discovered:** 2026-05-02 during modular-league-system test pass
+**Severity:** Low (UX enhancement)
+**Branch:** future bugfix branch — UI enhancement
+
+**Problem:** During the tiebreaker round (games 19/20/21 in 3v3 DRR),
+the scoreboard could surface more useful context. Right now it just
+shows the regular game count (which stays at 9-9 since tiebreaker
+games are excluded by design — Phase 5 Unit 5.5 locked invariant).
+
+**Suggestions to consider:**
+- Show "TIEBREAKER" badge / banner clearly so users know this is the
+  short-race round, not a continuation of regular games
+- Show tiebreaker game progress separately (e.g. "Tiebreaker: 1-0,
+  best of 3")
+- Show who's winning the tiebreaker round (since regular standings
+  stay tied)
+- Possibly show race-to-N target for the short-race format
+
+**Files likely involved:**
+- `src/components/scoring/ThreeVThreeScoreboard.tsx`
+- `src/components/scoring/MatchEndVerification.tsx` (the
+  TIEBREAKER REQUIRED banner could carry into the tiebreaker scoring
+  view too)
+- Any scoreboard-display helpers
+
+---
+
+## 14. Live-Scoring Page Doesn't Clear Completed Matches
+
+**Discovered:** 2026-05-02 during modular-league-system test pass
+**Severity:** Medium — visible UX bug (stale data showing)
+**Branch:** future bugfix branch — likely query invalidation gap
+
+**Problem:** After a tied match was fully resolved (regular games + 3
+tiebreaker games + final completion), the LIVE scoring page kept
+showing the completed match — including the "TIEBREAKER REQUIRED"
+banner and the tied scoreboard — even though the match had been
+moved to status='completed' in the DB.
+
+The stale view cleared when the user finished a SECOND match (a
+non-tied one), suggesting some invalidation path fires on completion
+of the OTHER match but not on the originally-completed tied match.
+
+**Hypothesis:** Query-invalidation gap. The "live matches" list (or
+its underlying TanStack Query cache) isn't being invalidated when a
+match transitions to status='completed'. The fact that another
+completion later cleared it suggests there IS an invalidation that
+fires somewhere — but it might be coupled to the user's act of
+completing the new match (e.g. fired from MatchEndVerification's
+mutation onSuccess) rather than from the tie's tiebreaker resolution
+flow specifically.
+
+**Investigation hints:**
+- Check the query key the live-scoring list uses
+  (`getLiveMatchesForLeague` / `getLiveMatchesForMember` —
+  `src/api/queries/matches.ts`)
+- Trace the post-completion invalidation in MatchEndVerification —
+  does it fire for tiebreaker-resolved completions vs regular
+  completions equivalently?
+- Check whether the tiebreaker's auto-completion path (when winner
+  emerges from 3 short-race games) goes through the same code that
+  invalidates queries on a normal completion
+
+**Pre-existing or new?** Likely pre-existing — our modular-league
+work touched MatchEndVerification's completion update + per-game
+running totals, but didn't touch the "what live matches do I have"
+query layer.
+
+**Files likely involved:**
+- `src/api/queries/matches.ts` (the live-matches queries)
+- `src/components/scoring/MatchEndVerification.tsx` (where
+  completion mutates run; check whether tiebreaker-resolution path
+  invalidates the same queries as regular completion)
+- Whatever component renders the live-scoring landing page
