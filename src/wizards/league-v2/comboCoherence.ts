@@ -105,18 +105,23 @@ export function evaluateCombo(formData: LeagueWizardFormData): ComboCoherenceRes
     return { errors, warnings };
   }
 
-  // Preserve the explicit `null` value (LO picked "None — don't track
-  // points"). `??` would coerce null → undefined and we'd lose the
-  // signal needed for the no_points_to_decide_by rule below.
-  const pointsCalculator: string | null | undefined =
+  // Migration 20260503000000: "don't track points" is now the explicit
+  // string `'none'` — null is no longer a valid stored value. Older
+  // form-data drafts may still hold null (the previous convention),
+  // so we normalize null → 'none' here for rule evaluation. undefined
+  // (LO never reached the step) stays undefined so the off-preset
+  // warning rule below can still distinguish it.
+  const rawPointsCalc =
     'points-calculator' in formData ? formData['points-calculator'] : undefined;
+  const pointsCalculator: string | undefined =
+    rawPointsCalc === null ? 'none' : rawPointsCalc;
   const winCondition = formData['win-condition'];
   const pairingFormat = formData['pairing-format'];
   const lineupSize = formData['lineup-size'];
   const gameGeneration = formData['match-format'];
 
   // ERROR: decide-by-points without a calculator
-  if (pointsCalculator === null && winCondition === 'points') {
+  if (pointsCalculator === 'none' && winCondition === 'points') {
     errors.push({
       severity: 'error',
       code: 'error.no_points_to_decide_by',
@@ -154,11 +159,16 @@ export function evaluateCombo(formData: LeagueWizardFormData): ComboCoherenceRes
 
   // WARNING: combo doesn't match a Tested Preset bundle (off-preset)
   if (typeof lineupSize === 'number' && gameGeneration && pointsCalculator !== undefined) {
+    // Tested Presets store `pointsCalculator` as null for the "no points
+    // calc" historical reason; the migration replaced that with 'none'
+    // at the runtime/data layer but the preset bundles still use null.
+    // Normalize for the equality check.
+    const normalizedCalc = pointsCalculator === 'none' ? null : pointsCalculator;
     const matchesPreset = TESTED_PRESETS.some(
       (p) =>
         p.lineupSize === lineupSize &&
         p.gameGeneration === gameGeneration &&
-        p.pointsCalculator === (pointsCalculator ?? null) &&
+        p.pointsCalculator === (normalizedCalc ?? null) &&
         p.winCondition === winCondition &&
         (pairingFormat ?? 'single_rack') === p.pairingFormat,
     );

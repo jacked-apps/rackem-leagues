@@ -139,7 +139,11 @@ export function computeMatchRunningTotals(
     else if (g.winner_team_id === awayTeamId) away_games_won += 1;
   }
 
-  if (pointsCalculator === null) {
+  // 'none' is the explicit "don't track points" sentinel (migration
+  // 20260503000000 replaced the buggy NULL convention). Both values
+  // short-circuit to zero — null appears here only for legacy match
+  // snapshots captured before the migration ran, kept defensively.
+  if (pointsCalculator === null || pointsCalculator === 'none') {
     return {
       home_games_won,
       away_games_won,

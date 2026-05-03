@@ -76,22 +76,25 @@ export function useCreateLeagueV2({ organizationId }: UseCreateLeagueV2Args) {
             game_generation: formData['match-format'] ?? 'double_round_robin',
             handicap_type: formData['handicap-system'] ?? 'points',
             pairing_format: formData['pairing-format'] ?? 'single_rack',
-            // Phase 4 Unit 4.1: writes the renamed column. NULL is a
-            // valid value (LO chose "don't track points") — empty
-            // params object means "use the calculator's defaultParams"
-            // from the registry. Editing params from the wizard arrives
-            // in Unit 4.1's PointsCalculatorStep follow-up; for now the
-            // custom path always uses defaults.
+            // Phase 4 Unit 4.1 + migration 20260503000000: writes the
+            // renamed column. The column is now NOT NULL with 'none'
+            // as the explicit "don't track points" sentinel — the
+            // wizard always sends a non-null string. Empty params
+            // object means "use the calculator's defaultParams" from
+            // the registry; per-league param editing arrives in a
+            // follow-up unit.
             //
-            // Phase 8 Unit 8.2 fix: distinguish "LO explicitly picked
-            // None" (form-data === null) from "LO never reached the
-            // step" (form-data === undefined). `??` would collapse
-            // both to the default, silently overriding the LO's
-            // explicit None choice.
-            points_calculator:
-              'points-calculator' in formData
-                ? formData['points-calculator']
-                : 'linear_above_threshold',
+            // Legacy form-data drafts may still hold null (the previous
+            // null-as-no-points convention). Coerce to 'none' on the
+            // way to the DB so a half-finished draft from before the
+            // migration still produces a valid league.
+            points_calculator: (() => {
+              if (!('points-calculator' in formData)) {
+                return 'linear_above_threshold';
+              }
+              const v = formData['points-calculator'];
+              return v === null || v === undefined ? 'none' : v;
+            })(),
             points_calculator_params: formData['points-calculator-params'] ?? {},
             win_condition: formData['win-condition'] ?? 'games',
             mechanism: mechanismOverride ?? formData['mechanism'] ?? 'extra_games',

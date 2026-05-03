@@ -116,13 +116,14 @@ const POINTS_CALCULATOR_OPTIONS: SelectableCardOption<string>[] = [
 export function PointsCalculatorStep({
   value,
   onChange,
-}: WizardStepProps<string | null | undefined, LeagueWizardFormData>) {
-  // Form-data field is `string | null | undefined`. CardSelector wants a
-  // string. Map "none" card → null on write; null → "none" on read so
-  // the step round-trips correctly.
-  const cardValue = value === null ? 'none' : (value ?? '');
+}: WizardStepProps<string | undefined, LeagueWizardFormData>) {
+  // Migration 20260503000000: 'none' is now a first-class string value
+  // (replaces the buggy NULL convention). Round-trip is straightforward —
+  // form-data and card value are the same string. Legacy null values
+  // coming from older form-data drafts are coerced to 'none' on read.
+  const cardValue = (value as string | null) === null ? 'none' : (value ?? '');
   const handleChange = (next: string) => {
-    onChange(next === 'none' ? null : next);
+    onChange(next);
   };
   return (
     <CardSelector
