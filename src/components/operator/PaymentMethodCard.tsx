@@ -28,9 +28,9 @@ export const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
         <CardTitle>Payment Method</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="border rounded-lg p-4 bg-gray-50">
-          <p className="text-sm text-gray-600 font-medium mb-2">Credit Card</p>
-          <p className="text-sm text-gray-500 mb-4">
+        <div className="border rounded-lg p-4 bg-muted">
+          <p className="text-sm text-muted-foreground font-medium mb-2">Credit Card</p>
+          <p className="text-sm text-muted-foreground mb-4">
             Credit card management will be available when Stripe integration is complete
           </p>
           <Button disabled className="w-full cursor-not-allowed opacity-50" loadingText="none">

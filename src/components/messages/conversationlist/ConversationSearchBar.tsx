@@ -16,9 +16,9 @@ interface ConversationSearchBarProps {
 
 export function ConversationSearchBar({ value, onChange }: ConversationSearchBarProps) {
   return (
-    <div className="p-3 md:p-4 border-b bg-gray-50">
+    <div className="p-3 md:p-4 border-b bg-muted">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 md:h-5 md:w-5 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
         <Input
           type="text"
           placeholder="Search conversations..."

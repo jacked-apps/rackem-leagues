@@ -111,10 +111,10 @@ export const getDuesStatusStyling = (membershipPaidDate: string | null | undefin
       };
     default:
       return {
-        bgColor: 'bg-gray-50',
-        borderColor: 'border-gray-200',
-        textColor: 'text-gray-800',
-        badgeColor: 'bg-gray-100 text-gray-800'
+        bgColor: 'bg-muted',
+        borderColor: 'border-border',
+        textColor: 'text-foreground',
+        badgeColor: 'bg-muted text-foreground'
       };
   }
 };

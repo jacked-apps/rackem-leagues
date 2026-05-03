@@ -72,18 +72,18 @@ export const WeekOffReasonModal: React.FC<WeekOffReasonModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md shadow-xl">
-        <h3 className="text-lg font-bold text-gray-900 mb-2">
+      <div className="bg-card rounded-lg p-6 max-w-md shadow-xl">
+        <h3 className="text-lg font-bold text-foreground mb-2">
           Enter Reason for Week Off
         </h3>
-        <p className="text-gray-600 text-sm mb-4">
+        <p className="text-muted-foreground text-sm mb-4">
           Provide a brief reason for this week off (e.g., "Hurricane", "Local
           Tournament", "Facility Closed")
         </p>
 
         <div className="space-y-4">
           <div>
-            <label htmlFor="reason" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="reason" className="block text-sm font-medium text-foreground mb-1">
               Reason (max 20 characters)
             </label>
             <input
@@ -98,11 +98,11 @@ export const WeekOffReasonModal: React.FC<WeekOffReasonModalProps> = ({
               placeholder="e.g., Hurricane"
               maxLength={20}
               autoFocus
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             <div className="flex justify-between text-xs mt-1">
               <span className="text-red-600">{error}</span>
-              <span className="text-gray-500">{reason.length}/20</span>
+              <span className="text-muted-foreground">{reason.length}/20</span>
             </div>
           </div>
         </div>

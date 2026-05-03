@@ -255,9 +255,9 @@ export const SeasonCreationWizard: React.FC = () => {
 
   if (state.loading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-muted py-8">
         <div className="container mx-auto px-4 max-w-2xl">
-          <div className="text-center text-gray-600">Loading...</div>
+          <div className="text-center text-muted-foreground">Loading...</div>
         </div>
       </div>
     );
@@ -265,11 +265,11 @@ export const SeasonCreationWizard: React.FC = () => {
 
   if (state.error || !state.league || !leagueId) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-muted py-8">
         <div className="container mx-auto px-4 max-w-2xl">
-          <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="bg-card rounded-xl shadow-sm p-6">
             <h3 className="text-red-600 text-lg font-semibold mb-4">Error</h3>
-            <p className="text-gray-700 mb-4">{state.error || 'League not found'}</p>
+            <p className="text-foreground mb-4">{state.error || 'League not found'}</p>
             <Button onClick={() => navigate(`/operator-dashboard/${organizationId}`)} loadingText="none">
               Back to Dashboard
             </Button>
@@ -528,8 +528,8 @@ export const SeasonCreationWizard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b">
+    <div className="min-h-screen bg-muted">
+      <div className="bg-card border-b">
         <div className="px-4 pt-3 flex justify-end">
           <Button
             variant="ghost"
@@ -568,7 +568,7 @@ export const SeasonCreationWizard: React.FC = () => {
 
           return (
             <div className="flex items-center gap-3 mt-1">
-              <span className="text-xl text-gray-600 capitalize">
+              <span className="text-xl text-muted-foreground capitalize">
                 {leagueTitle}
               </span>
               {leaguePrefs?.lineup_size === 3 && (
@@ -619,7 +619,7 @@ export const SeasonCreationWizard: React.FC = () => {
 
         {/* Guard against missing step data */}
         {!currentStepData ? (
-          <div className="text-center text-gray-600">Loading step...</div>
+          <div className="text-center text-muted-foreground">Loading step...</div>
         ) : steps[state.currentStep]?.type === 'schedule-review' ? (
           <ScheduleReview
             schedule={state.schedule}
@@ -636,15 +636,15 @@ export const SeasonCreationWizard: React.FC = () => {
         ) : (
           <>
             {/* Step Content */}
-            <div className="bg-white rounded-xl shadow-sm p-8 mb-6">
+            <div className="bg-card rounded-xl shadow-sm p-8 mb-6">
               {/* Title and subtitle (hidden for dual-date steps which render their own) */}
               {currentStepData.type !== 'dual-date' && (
             <>
-              <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+              <h2 className="text-2xl font-semibold text-foreground mb-2">
                 {currentStepData.title}
               </h2>
               {currentStepData.subtitle && (
-                <p className="text-gray-600 mb-6">{currentStepData.subtitle}</p>
+                <p className="text-muted-foreground mb-6">{currentStepData.subtitle}</p>
               )}
             </>
           )}

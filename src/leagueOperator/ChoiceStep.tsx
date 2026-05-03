@@ -55,10 +55,10 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
   error
 }) => {
   return (
-    <div className="bg-white rounded-xl shadow-lg p-8">
+    <div className="bg-card rounded-xl shadow-lg p-8">
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-4">
-          <h2 className="text-2xl font-bold text-gray-900">
+          <h2 className="text-2xl font-bold text-foreground">
             {title}
           </h2>
           {infoTitle && infoContent && (
@@ -69,7 +69,7 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
         </div>
 
         {subtitle && (
-          <p className="text-gray-600 mb-6">
+          <p className="text-muted-foreground mb-6">
             {subtitle}
           </p>
         )}
@@ -92,7 +92,7 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
                   className={`px-6 py-3 ${
                     selectedValue === choice.value
                       ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                      : 'hover:bg-gray-50'
+                      : 'hover:bg-muted'
                   }`}
                 >
                   {choice.label}

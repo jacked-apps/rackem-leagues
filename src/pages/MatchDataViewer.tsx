@@ -60,7 +60,7 @@ export function MatchDataViewer() {
       <div className="container mx-auto px-4 py-8">
         <Card>
           <CardContent className="py-8">
-            <p className="text-center text-gray-600">Loading match data...</p>
+            <p className="text-center text-muted-foreground">Loading match data...</p>
           </CardContent>
         </Card>
       </div>
@@ -84,7 +84,7 @@ export function MatchDataViewer() {
       <Card>
         <CardHeader>
           <CardTitle>Match Data Viewer</CardTitle>
-          <p className="text-sm text-gray-600 mb-4">
+          <p className="text-sm text-muted-foreground mb-4">
             Showing {matches.length} of {allMatches.length} matches • Ordered by date (most recent first)
           </p>
 
@@ -143,7 +143,7 @@ export function MatchDataViewer() {
         </CardHeader>
         <CardContent>
           {matches.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-muted-foreground">
               No {statusFilter !== 'all' ? statusFilter : ''} matches found
             </div>
           ) : (

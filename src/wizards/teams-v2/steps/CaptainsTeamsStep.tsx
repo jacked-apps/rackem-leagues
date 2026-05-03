@@ -95,7 +95,7 @@ export function CaptainsTeamsStep({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700 space-y-1">
+      <div className="rounded-lg border border-border bg-muted p-3 text-sm text-foreground space-y-1">
         <p>
           Each captain here creates a team. Count of captains = count of teams.
         </p>
@@ -115,7 +115,7 @@ export function CaptainsTeamsStep({
       </div>
 
       <div className="flex items-center gap-1">
-        <p className="font-medium text-gray-900">Team Captains</p>
+        <p className="font-medium text-foreground">Team Captains</p>
       </div>
 
       <MemberCombobox
@@ -156,7 +156,7 @@ export function CaptainsTeamsStep({
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <span className="flex-1 text-sm text-gray-600">
+                <span className="flex-1 text-sm text-muted-foreground">
                   Captain: {captain.captainName}
                 </span>
                 <Button variant="ghost" onClick={() => removeCaptain(i)}>
@@ -168,7 +168,7 @@ export function CaptainsTeamsStep({
         </div>
       )}
 
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-muted-foreground">
         {captains.length === 0 ? 'Add at least 2 captains to create teams.' :
           `${captains.length} team${captains.length === 1 ? '' : 's'} ready.`}
       </p>

@@ -38,7 +38,7 @@ export function VenueSelectionStep({
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-1">
-        <p className="font-medium text-gray-900">Which venues does this league use?</p>
+        <p className="font-medium text-foreground">Which venues does this league use?</p>
         <InfoButton title="Venues" size="sm">
           <p>
             Select the venues where league matches will be played. You
@@ -49,9 +49,9 @@ export function VenueSelectionStep({
       </div>
 
       {isLoading ? (
-        <p className="text-sm text-gray-500">Loading venues...</p>
+        <p className="text-sm text-muted-foreground">Loading venues...</p>
       ) : venues.length === 0 ? (
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-muted-foreground">
           No venues yet. Click &ldquo;Add New Venue&rdquo; below to create one.
         </p>
       ) : (
@@ -66,7 +66,7 @@ export function VenueSelectionStep({
               />
               <Label htmlFor={`venue-${venue.id}`} className="flex-1 cursor-pointer">
                 <span className="font-medium">{venue.name}</span>
-                {venue.city && <span className="text-gray-500 text-sm ml-2">{venue.city}</span>}
+                {venue.city && <span className="text-muted-foreground text-sm ml-2">{venue.city}</span>}
               </Label>
             </div>
           ))}

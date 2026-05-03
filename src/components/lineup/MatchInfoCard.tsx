@@ -48,7 +48,7 @@ export function MatchInfoCard({
       <CardContent className="px-4 py-0 space-y-1">
         {/* Date */}
         {scheduledDate && (
-          <div className="flex items-center gap-2 text-sm text-gray-600">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Calendar className="h-4 w-4" />
             <span>
               {parseLocalDate(scheduledDate).toLocaleDateString('en-US', {
@@ -62,7 +62,7 @@ export function MatchInfoCard({
         )}
 
         {/* Matchup */}
-        <div className="text-lg font-semibold text-gray-900">
+        <div className="text-lg font-semibold text-foreground">
           vs{' '}
           {opponent ? (
             <TeamNameLink teamId={opponent.id} teamName={opponent.name} />
@@ -72,7 +72,7 @@ export function MatchInfoCard({
         </div>
 
         {/* Home/Away & Venue on same line */}
-        <div className="flex items-center gap-3 text-sm text-gray-600">
+        <div className="flex items-center gap-3 text-sm text-muted-foreground">
           <span className="font-medium">
             {isHomeTeam ? 'Home Game' : 'Away Game'}
           </span>

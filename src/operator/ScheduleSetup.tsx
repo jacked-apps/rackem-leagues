@@ -274,9 +274,9 @@ export const ScheduleSetup: React.FC<ScheduleSetupProps> = ({
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="bg-card rounded-xl shadow-sm p-6">
         <div className="text-center py-8">
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
     );
@@ -284,8 +284,8 @@ export const ScheduleSetup: React.FC<ScheduleSetupProps> = ({
 
   if (positionsLocked) {
     return (
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+      <div className="bg-card rounded-xl shadow-sm p-6">
+        <h2 className="text-xl font-semibold text-foreground mb-4">
           Team Positions Locked
         </h2>
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
@@ -307,8 +307,8 @@ export const ScheduleSetup: React.FC<ScheduleSetupProps> = ({
 
   if (!hasTable) {
     return (
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+      <div className="bg-card rounded-xl shadow-sm p-6">
+        <h2 className="text-xl font-semibold text-foreground mb-4">
           Schedule Generation Not Available
         </h2>
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
@@ -327,13 +327,13 @@ export const ScheduleSetup: React.FC<ScheduleSetupProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6">
+    <div className="bg-card rounded-xl shadow-sm p-6">
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">
+        <h2 className="text-xl font-semibold text-foreground mb-2">
           Assign Team Schedule Positions
         </h2>
-        <p className="text-sm text-gray-600 mb-3">
+        <p className="text-sm text-muted-foreground mb-3">
           Assign each team a position number (1-{effectiveTeamCount}). These positions
           determine matchups throughout the season.
         </p>
@@ -373,10 +373,10 @@ export const ScheduleSetup: React.FC<ScheduleSetupProps> = ({
         {teamPositions.map((team) => (
           <div
             key={team.id}
-            className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg"
+            className="flex items-center gap-3 p-3 border border-border rounded-lg"
           >
             <div className="w-20">
-              <Label className="text-xs text-gray-600">Position</Label>
+              <Label className="text-xs text-muted-foreground">Position</Label>
               <Input
                 type="number"
                 min={1}
@@ -390,10 +390,10 @@ export const ScheduleSetup: React.FC<ScheduleSetupProps> = ({
               />
             </div>
             <div className="flex-1">
-              <p className="font-medium text-gray-900">
+              <p className="font-medium text-foreground">
                 {team.team_name}
                 {team.id === 'BYE' && (
-                  <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                  <span className="ml-2 text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded">
                     Auto-added for odd team count
                   </span>
                 )}
@@ -411,7 +411,7 @@ export const ScheduleSetup: React.FC<ScheduleSetupProps> = ({
       )}
 
       {/* Action Buttons */}
-      <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+      <div className="flex items-center justify-between pt-4 border-t border-border">
         <Button variant="outline" onClick={onCancel} disabled={generating} loadingText="none">
           Cancel
         </Button>
@@ -429,14 +429,14 @@ export const ScheduleSetup: React.FC<ScheduleSetupProps> = ({
       {/* Existing Schedule Modal */}
       {showExistingScheduleModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">
+          <div className="bg-card rounded-xl shadow-xl p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-foreground mb-3">
               Schedule Already Exists
             </h3>
-            <p className="text-gray-700 mb-4">
+            <p className="text-foreground mb-4">
               A schedule with {existingMatchCount} matches already exists for this season.
             </p>
-            <p className="text-sm text-gray-600 mb-6">
+            <p className="text-sm text-muted-foreground mb-6">
               Would you like to keep the existing schedule or create a new one? Creating a new schedule will delete all existing matches.
             </p>
             <div className="flex gap-3">

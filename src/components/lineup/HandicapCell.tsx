@@ -44,7 +44,7 @@ export function HandicapCell({
   if (isDoubleDuty) {
     return (
       <div className="w-16 text-center">
-        <div className="text-sm font-semibold text-gray-400">TBD</div>
+        <div className="text-sm font-semibold text-muted-foreground">TBD</div>
       </div>
     );
   }

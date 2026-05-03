@@ -53,7 +53,7 @@ export const PlayerAuthorizationSection: React.FC<PlayerAuthorizationSectionProp
     <div className="border rounded-lg p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <h3 className="font-semibold text-gray-900">Player Authorization</h3>
+          <h3 className="font-semibold text-foreground">Player Authorization</h3>
           <InfoButton title="Player Authorization">
             <div className="space-y-3">
               <p>Controls whether new players need authorization before playing in matches.</p>
@@ -120,7 +120,7 @@ export const PlayerAuthorizationSection: React.FC<PlayerAuthorizationSectionProp
           </label>
         </div>
       ) : (
-        <p className="text-sm text-gray-900">{authorizationDisplay}</p>
+        <p className="text-sm text-foreground">{authorizationDisplay}</p>
       )}
     </div>
   );

@@ -46,7 +46,7 @@ export function ConversationItem({
       onClick={onClick}
       className={cn(
         // Mobile-first: Larger touch targets with responsive padding
-        'w-full p-4 md:p-3 text-left border-b border-gray-200 hover:bg-gray-100 active:bg-gray-200 transition-colors',
+        'w-full p-4 md:p-3 text-left border-b border-border hover:bg-muted active:bg-accent transition-colors',
         // Min height for touch targets (60px on mobile, 56px on desktop)
         'min-h-[60px] md:min-h-[56px]',
         isSelected && 'bg-blue-50 hover:bg-blue-100'
@@ -61,12 +61,12 @@ export function ConversationItem({
             </span>
           )}
         </span>
-        <span className="text-xs md:text-xs text-gray-500 flex-shrink-0 ml-2">
+        <span className="text-xs md:text-xs text-muted-foreground flex-shrink-0 ml-2">
           {formatTimestamp(lastMessageAt)}
         </span>
       </div>
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm md:text-sm text-gray-600 truncate flex-1">
+        <p className="text-sm md:text-sm text-muted-foreground truncate flex-1">
           {lastMessagePreview || 'No messages yet'}
         </p>
         {unreadCount > 0 && (

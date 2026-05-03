@@ -59,7 +59,7 @@ export const VenueListItem: React.FC<VenueListItemProps> = ({
   const isAtCapacity = capacity !== undefined && teamsAtVenue !== undefined && teamsAtVenue >= capacity && capacity > 0;
 
   return (
-    <div className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded">
+    <div className="flex items-center gap-3 p-2 hover:bg-muted rounded">
       <input
         type="checkbox"
         checked={isAssigned}
@@ -67,14 +67,14 @@ export const VenueListItem: React.FC<VenueListItemProps> = ({
         disabled={isToggling}
       />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900 truncate">
+        <p className="text-sm font-medium text-foreground truncate">
           {venue.name}
         </p>
       </div>
       {isAssigned && (
         <>
           {capacity !== undefined && teamsAtVenue !== undefined && (
-            <span className={`text-xs ${isAtCapacity ? 'text-orange-600 font-medium' : 'text-gray-600'}`}>
+            <span className={`text-xs ${isAtCapacity ? 'text-orange-600 font-medium' : 'text-muted-foreground'}`}>
               {teamsAtVenue}/{capacity} teams
             </span>
           )}

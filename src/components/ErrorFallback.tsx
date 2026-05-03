@@ -37,30 +37,30 @@ export const ErrorFallback: React.FC<ErrorFallbackProps> = ({ error, onReset }) 
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-muted flex items-center justify-center p-4">
       <Card className="max-w-lg w-full">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-red-100 flex items-center justify-center">
             <AlertTriangle className="h-8 w-8 text-red-600" />
           </div>
-          <CardTitle className="text-xl text-gray-900">
+          <CardTitle className="text-xl text-foreground">
             Something went wrong
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-center text-gray-600">
+          <p className="text-center text-muted-foreground">
             We're sorry, but something unexpected happened. Please try refreshing
             the page or return to the home page.
           </p>
 
           {/* Show error details in development */}
           {isDev && error && (
-            <div className="mt-4 p-3 bg-gray-100 rounded-lg overflow-auto">
+            <div className="mt-4 p-3 bg-muted rounded-lg overflow-auto">
               <p className="text-sm font-mono text-red-600 break-all">
                 {error.message}
               </p>
               {error.stack && (
-                <pre className="mt-2 text-xs text-gray-500 whitespace-pre-wrap">
+                <pre className="mt-2 text-xs text-muted-foreground whitespace-pre-wrap">
                   {error.stack}
                 </pre>
               )}

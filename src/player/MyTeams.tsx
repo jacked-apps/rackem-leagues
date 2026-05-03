@@ -173,7 +173,7 @@ function TeamAccordionItem({
     <AccordionItem
       key={team.id}
       value={team.id}
-      className="bg-white border rounded-lg shadow-sm"
+      className="bg-card border rounded-lg shadow-sm"
     >
       <AccordionTrigger className="pl-4 pr-1 py-4 hover:no-underline [&[data-state=open]>svg]:rotate-180">
         <div className="flex flex-col gap-2 w-full">
@@ -186,7 +186,7 @@ function TeamAccordionItem({
 
             {/* League name (centered) */}
             <div className="text-center">
-              <h3 className="font-semibold text-lg text-gray-700">
+              <h3 className="font-semibold text-lg text-foreground">
                 {team.season.league.league_start_date ? (
                   buildLeagueTitle({
                     gameType: team.season.league.game_type,
@@ -207,7 +207,7 @@ function TeamAccordionItem({
 
           {/* Row 2: Team name - full width left aligned */}
           <div className="flex items-center gap-2 w-full text-left">
-            <h2 className="font-semibold text-xl text-gray-900">
+            <h2 className="font-semibold text-xl text-foreground">
               {team.team_name}
             </h2>
           </div>
@@ -230,7 +230,7 @@ function TeamAccordionItem({
 
               return (
                 <div key={match.id} className="flex items-center justify-between w-full">
-                  <div className="flex items-center gap-2 text-base text-gray-800">
+                  <div className="flex items-center gap-2 text-base text-foreground">
                     <span>
                       {match.season_week?.week_name || 'Week ?'} -{' '}
                       {parseLocalDate(match.scheduled_date!).toLocaleDateString('en-US', {
@@ -269,7 +269,7 @@ function TeamAccordionItem({
               );
             })
           ) : (
-            <div className="text-xs text-gray-400 italic">No upcoming matches</div>
+            <div className="text-xs text-muted-foreground italic">No upcoming matches</div>
           )}
         </div>
       </AccordionTrigger>
@@ -319,7 +319,7 @@ function TeamAccordionItem({
           {/* Home Venue with Edit Team Button (Captains Only) */}
           <div>
             <div className="flex items-center justify-between gap-2 mb-1">
-              <div className="flex items-center gap-2 text-sm font-medium text-gray-600">
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                 <MapPin className="h-4 w-4" />
                 <span>Home Venue</span>
               </div>
@@ -335,14 +335,14 @@ function TeamAccordionItem({
                 </Button>
               )}
             </div>
-            <p className="text-base text-gray-900 ml-6">
+            <p className="text-base text-foreground ml-6">
               {team.venue?.name || 'No venue assigned'}
             </p>
           </div>
 
           {/* Captain */}
           <div>
-            <div className="flex items-center gap-2 text-sm font-medium text-gray-600 mb-1">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
               <Users className="h-4 w-4" />
               <span>Captain</span>
             </div>
@@ -350,7 +350,7 @@ function TeamAccordionItem({
               className={`text-base ml-6 ${
                 team.captain.id === memberId
                   ? 'font-semibold text-blue-600'
-                  : 'text-gray-900'
+                  : 'text-foreground'
               }`}
             >
               <PlayerNameLink
@@ -456,7 +456,7 @@ export function MyTeams() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       <PageHeader
         backTo="/dashboard"
         backLabel="Back to Dashboard"
@@ -468,8 +468,8 @@ export function MyTeams() {
         {teams.length === 0 ? (
           <Card>
             <CardContent className="p-12 text-center">
-              <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">You are not currently on any teams</p>
+              <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">You are not currently on any teams</p>
             </CardContent>
           </Card>
         ) : (

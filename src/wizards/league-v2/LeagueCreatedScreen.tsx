@@ -20,7 +20,7 @@ export function LeagueCreatedScreen({ leagueId, orgId }: LeagueCreatedScreenProp
     <div className="text-center py-12 space-y-6">
       <div className="text-5xl">🎱</div>
       <h2 className="text-2xl font-bold">League Created</h2>
-      <p className="text-gray-600">
+      <p className="text-muted-foreground">
         Your league has been created. Next, set up the season schedule
         and teams to get started.
       </p>

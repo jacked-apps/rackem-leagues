@@ -239,14 +239,14 @@ export const LeagueOperatorApplication: React.FC = () => {
   // Show loading state if no current question is available
   if (!currentQuestion) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-600">Loading application form...</div>
+      <div className="min-h-screen bg-muted flex items-center justify-center">
+        <div className="text-muted-foreground">Loading application form...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       {/* Page Header with escape route */}
       <PageHeader
         backLabel="Exit Application"

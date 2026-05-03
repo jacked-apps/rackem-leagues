@@ -198,7 +198,7 @@ export const UnmergePlayerDialog: React.FC<UnmergePlayerDialogProps> = ({
                 <Synopsis synopsis={confirmingMerge.synopsis} />
               </div>
 
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 Anything {selectedTarget?.first_name} did AFTER this merge stays
                 with them. Only the rows that came from the placeholder go
                 back.
@@ -239,7 +239,7 @@ export const UnmergePlayerDialog: React.FC<UnmergePlayerDialogProps> = ({
 
             <div className="space-y-4 py-2">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Player
                 </label>
                 <MemberCombobox
@@ -256,14 +256,14 @@ export const UnmergePlayerDialog: React.FC<UnmergePlayerDialogProps> = ({
 
               {targetId && (
                 <div>
-                  <p className="text-sm font-medium text-gray-700 mb-2">
+                  <p className="text-sm font-medium text-foreground mb-2">
                     Reversible merges into{' '}
                     {selectedTarget?.first_name} {selectedTarget?.last_name}
                   </p>
                   {mergesLoading ? (
-                    <p className="text-sm text-gray-500">Loading…</p>
+                    <p className="text-sm text-muted-foreground">Loading…</p>
                   ) : merges.length === 0 ? (
-                    <p className="text-sm text-gray-500 italic">
+                    <p className="text-sm text-muted-foreground italic">
                       No reversible merges. Either no placeholder has been
                       merged into this user, or all prior merges have already
                       been undone or expired.
@@ -279,21 +279,21 @@ export const UnmergePlayerDialog: React.FC<UnmergePlayerDialogProps> = ({
                           <li key={m.archive_id} className="p-3">
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1 min-w-0">
-                                <p className="font-medium text-sm text-gray-900">
+                                <p className="font-medium text-sm text-foreground">
                                   {placeholderLabel}{' '}
-                                  <span className="text-gray-500 font-normal text-xs">
+                                  <span className="text-muted-foreground font-normal text-xs">
                                     ({m.placeholder_first_name}{' '}
                                     {m.placeholder_last_name})
                                   </span>
                                 </p>
-                                <p className="text-xs text-gray-500">
+                                <p className="text-xs text-muted-foreground">
                                   {new Date(m.created_at).toLocaleString()}
                                   {m.actor_name && <> · by {m.actor_name}</>}
                                   {m.actor_role === 'invite_accept' && (
                                     <span className="text-blue-700"> · self-claim</span>
                                   )}
                                 </p>
-                                <div className="mt-1 text-xs text-gray-600">
+                                <div className="mt-1 text-xs text-muted-foreground">
                                   <Synopsis synopsis={m.synopsis} compact />
                                 </div>
                               </div>

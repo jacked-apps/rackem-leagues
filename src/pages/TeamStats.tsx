@@ -88,7 +88,7 @@ export function TeamStats() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-card">
         <div className="container mx-auto px-4 py-8 max-w-7xl">
           <Card>
             <CardContent className="py-8">
@@ -102,7 +102,7 @@ export function TeamStats() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-card">
         <div className="container mx-auto px-4 py-8 max-w-7xl">
           <Card>
             <CardContent className="py-8">
@@ -117,7 +117,7 @@ export function TeamStats() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       <PageHeader
         hideBack
         title="Stats & Standings"
@@ -170,7 +170,7 @@ export function TeamStats() {
               {teams.map((team) => (
                 <>
                   {/* Team Header Row */}
-                  <tr key={team.teamId} className="border-b bg-gray-100">
+                  <tr key={team.teamId} className="border-b bg-muted">
                     <td className="text-center px-1 sm:px-4 py-2 font-bold text-xs sm:text-base"></td>
                     <td className="px-1 sm:px-4 py-2 font-bold text-xs sm:text-base">{team.teamName}</td>
                     <td className="text-center px-1 sm:px-4 py-2 font-bold text-xs sm:text-base">{team.matchWins}</td>
@@ -187,7 +187,7 @@ export function TeamStats() {
                     return (
                       <tr key={`${team.teamId}-${player.playerId}`} className="border-b">
                         <td className="text-center px-1 sm:px-4 py-1 text-xs">{handicap}</td>
-                        <td className="px-2 sm:px-6 py-1 text-xs text-gray-700">{player.playerName}</td>
+                        <td className="px-2 sm:px-6 py-1 text-xs text-foreground">{player.playerName}</td>
                         <td className="text-center px-1 sm:px-4 py-1 text-xs">{player.gamesWon}</td>
                         <td className="text-center px-1 sm:px-4 py-1 text-xs">{player.gamesLost}</td>
                         <td className="text-center px-1 sm:px-4 py-1 text-xs">{player.matchesPlayed}</td>

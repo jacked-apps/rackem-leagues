@@ -34,7 +34,7 @@ export const nicknameInfo = {
         <li>Then: First initial + last name (e.g., "J Doe")</li>
         <li>Last resort: First 4 letters of each (e.g., "John Smit")</li>
       </ul>
-      <p className="mt-2 text-gray-600 italic">You can change your nickname anytime from your profile page.</p>
+      <p className="mt-2 text-muted-foreground italic">You can change your nickname anytime from your profile page.</p>
     </div>
   ),
 };

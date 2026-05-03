@@ -365,9 +365,9 @@ export const SeasonScheduleManager: React.FC = () => {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-muted py-8">
         <div className="container mx-auto px-4 max-w-6xl">
-          <div className="text-center text-gray-600">Loading schedule...</div>
+          <div className="text-center text-muted-foreground">Loading schedule...</div>
         </div>
       </div>
     );
@@ -376,11 +376,11 @@ export const SeasonScheduleManager: React.FC = () => {
   // Error state
   if (error && !league) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-muted py-8">
         <div className="container mx-auto px-4 max-w-6xl">
-          <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="bg-card rounded-xl shadow-sm p-6">
             <h3 className="text-red-600 text-lg font-semibold mb-4">Error</h3>
-            <p className="text-gray-700 mb-4">{error}</p>
+            <p className="text-foreground mb-4">{error}</p>
             <Button onClick={() => navigate(`/league/${leagueId}`)} loadingText="none">
               Back to League
             </Button>
@@ -391,7 +391,7 @@ export const SeasonScheduleManager: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-muted pb-24">
       <PageHeader
         backTo={`/league/${leagueId}`}
         backLabel="Back To League"
@@ -403,7 +403,7 @@ export const SeasonScheduleManager: React.FC = () => {
         the thumb zone and does not scroll out of view on long schedule edits.
         Wrapper above adds pb-24 to keep the last row of content above the bar.
       */}
-      <div className="fixed bottom-0 inset-x-0 z-30 border-t bg-white p-3 shadow-lg">
+      <div className="fixed bottom-0 inset-x-0 z-30 border-t bg-card p-3 shadow-lg">
         <div className="mx-auto grid max-w-6xl grid-cols-2 gap-2">
           <Button
             variant="outline"
@@ -503,8 +503,8 @@ export const SeasonScheduleManager: React.FC = () => {
         )}
 
         {/* Schedule Table */}
-        <div className="lg:bg-white lg:rounded-xl lg:shadow-sm lg:p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Season Schedule</h2>
+        <div className="lg:bg-card lg:rounded-xl lg:shadow-sm lg:p-6">
+          <h2 className="text-xl font-semibold text-foreground mb-4">Season Schedule</h2>
           <ScheduleReviewTable
             schedule={schedule}
             onToggleWeekOff={handleToggleWeekOff}

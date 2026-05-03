@@ -106,7 +106,7 @@ export const ShareAppCard: React.FC<ShareAppCardProps> = ({
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
-        <div className="bg-white p-3 rounded-md border shrink-0">
+        <div className="bg-card p-3 rounded-md border shrink-0">
           <QRCodeSVG value={shareUrl} size={160} level="M" includeMargin={false} />
         </div>
         <div className="flex flex-col gap-3 w-full">

@@ -118,7 +118,7 @@ export function NewMessageModal({
       isOpen={true}
       onClose={onClose}
       title="New Message"
-      icon={<MessageSquare className="h-5 w-5 text-gray-600" />}
+      icon={<MessageSquare className="h-5 w-5 text-muted-foreground" />}
       maxWidth="2xl"
     >
       <Modal.Body className="p-0">
@@ -135,14 +135,14 @@ export function NewMessageModal({
               {selectedMembers.map((member) => (
                 <div
                   key={member.id}
-                  className="bg-white border border-blue-300 rounded-full px-3 py-1 text-sm flex items-center gap-2"
+                  className="bg-card border border-blue-300 rounded-full px-3 py-1 text-sm flex items-center gap-2"
                 >
                   <span>
                     {member.first_name} {member.last_name}
                   </span>
                   <button
                     onClick={() => handleToggleUser(member.id)}
-                    className="text-gray-500 hover:text-gray-700"
+                    className="text-muted-foreground hover:text-foreground"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -158,7 +158,7 @@ export function NewMessageModal({
                   placeholder={`Group name (e.g., "${suggestedGroupName}")`}
                   value={groupName}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGroupName(e.target.value)}
-                  className="bg-white"
+                  className="bg-card"
                 />
               </div>
             )}
@@ -168,7 +168,7 @@ export function NewMessageModal({
         {/* Search */}
         <div className="p-6 border-b">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
               type="text"
               placeholder="Search by name or member number..."

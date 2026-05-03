@@ -616,7 +616,7 @@ export default function RLSTestPage() {
           <div className="flex items-center gap-2">
             <span className="font-medium">DELETE:</span>
             {!result.insertSuccess ? (
-              <span className="text-gray-500">⊗ Skipped (no record to delete)</span>
+              <span className="text-muted-foreground">⊗ Skipped (no record to delete)</span>
             ) : result.deleteSuccess ? (
               <span className="text-green-600">✅ Success</span>
             ) : (

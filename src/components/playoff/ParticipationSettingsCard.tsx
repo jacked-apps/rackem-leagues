@@ -148,7 +148,7 @@ export const ParticipationSettingsCard: React.FC<ParticipationSettingsCardProps>
                 dispatch({ type: 'SET_QUALIFICATION_TYPE', payload: value as QualificationType })
               }
             >
-              <SelectTrigger className="w-[160px] bg-white">
+              <SelectTrigger className="w-[160px] bg-card">
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
               <SelectContent>
@@ -171,7 +171,7 @@ export const ParticipationSettingsCard: React.FC<ParticipationSettingsCardProps>
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   dispatch({ type: 'SET_FIXED_TEAM_COUNT', payload: parseInt(e.target.value) || 2 })
                 }
-                className="w-20 bg-white"
+                className="w-20 bg-card"
               />
               <span className="text-sm text-green-700">teams</span>
             </div>
@@ -189,7 +189,7 @@ export const ParticipationSettingsCard: React.FC<ParticipationSettingsCardProps>
                     dispatch({ type: 'SET_QUALIFYING_PERCENTAGE', payload: parseInt(value, 10) })
                   }
                 >
-                  <SelectTrigger className="w-[100px] bg-white">
+                  <SelectTrigger className="w-[100px] bg-card">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -214,7 +214,7 @@ export const ParticipationSettingsCard: React.FC<ParticipationSettingsCardProps>
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     dispatch({ type: 'SET_PERCENTAGE_MIN', payload: parseInt(e.target.value) || 2 })
                   }
-                  className="w-20 bg-white"
+                  className="w-20 bg-card"
                 />
                 <span className="text-sm text-green-700">teams</span>
               </div>
@@ -232,7 +232,7 @@ export const ParticipationSettingsCard: React.FC<ParticipationSettingsCardProps>
                     const val = parseInt(e.target.value);
                     dispatch({ type: 'SET_PERCENTAGE_MAX', payload: isNaN(val) ? null : val });
                   }}
-                  className="w-20 bg-white"
+                  className="w-20 bg-card"
                 />
                 <span className="text-sm text-green-700">teams (leave empty for no max)</span>
               </div>

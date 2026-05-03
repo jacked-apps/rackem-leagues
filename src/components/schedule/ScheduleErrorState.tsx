@@ -25,12 +25,12 @@ interface ScheduleErrorStateProps {
  */
 export const ScheduleErrorState: React.FC<ScheduleErrorStateProps> = ({ error, onBack }) => {
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-muted py-8">
       <div className="container mx-auto px-4 max-w-7xl">
         <Card>
           <CardContent className="p-6">
             <h3 className="text-red-600 text-lg font-semibold mb-4">Error</h3>
-            <p className="text-gray-700 mb-4">{error}</p>
+            <p className="text-foreground mb-4">{error}</p>
             <Button onClick={onBack} loadingText="none">Back to League</Button>
           </CardContent>
         </Card>

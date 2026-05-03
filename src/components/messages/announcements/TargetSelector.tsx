@@ -60,14 +60,14 @@ export function TargetSelector({
               'w-full p-4 rounded-lg border-2 transition-all text-left',
               selectedTargetIds.includes(target.id)
                 ? 'border-blue-600 bg-blue-50'
-                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                : 'border-border hover:border-border hover:bg-muted'
             )}
           >
-            <div className="font-medium text-gray-900">{target.name}</div>
+            <div className="font-medium text-foreground">{target.name}</div>
             {target.season_name && (
-              <div className="text-sm text-gray-600 mt-1">Season: {target.season_name}</div>
+              <div className="text-sm text-muted-foreground mt-1">Season: {target.season_name}</div>
             )}
-            <div className="text-xs text-gray-500 mt-1">
+            <div className="text-xs text-muted-foreground mt-1">
               {target.type === 'league' ? 'League' : 'Organization-wide'}
             </div>
           </button>

@@ -187,7 +187,7 @@ export function Messages() {
         {/* Conversation List - Hidden on mobile when message is selected */}
         <div
           className={cn(
-            'w-full md:w-80 border-r bg-gray-50 flex flex-col h-full',
+            'w-full md:w-80 border-r bg-muted flex flex-col h-full',
             // On mobile: hide when message is selected, show when no message selected
             selectedConversationId ? 'hidden md:flex' : 'flex'
           )}

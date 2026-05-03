@@ -294,14 +294,14 @@ export const ScheduleReview: React.FC<ScheduleReviewProps> = ({
   );
 
   return (
-    <div className="flex flex-col min-h-full bg-white">
+    <div className="flex flex-col min-h-full bg-card">
       <div className="flex-1 flex flex-col p-8">
         <div className="w-full mx-auto px-4">
           {/* Header */}
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          <h2 className="text-2xl font-bold text-foreground mb-2">
             Review Season Schedule
           </h2>
-          <p className="text-gray-600 mb-4">
+          <p className="text-muted-foreground mb-4">
             Review your schedule for conflicts with holidays and championships.
             You can skip weeks or ignore conflicts as needed.
           </p>

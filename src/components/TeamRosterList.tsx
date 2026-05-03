@@ -35,7 +35,7 @@ export const TeamRosterList: React.FC<TeamRosterListProps> = ({
   rosterPlayers,
 }) => {
   if (rosterPlayers.length === 0) {
-    return <p className="text-sm text-gray-500 italic">No players assigned</p>;
+    return <p className="text-sm text-muted-foreground italic">No players assigned</p>;
   }
 
   return (
@@ -47,7 +47,7 @@ export const TeamRosterList: React.FC<TeamRosterListProps> = ({
         return (
           <li
             key={tp.member_id}
-            className="text-sm text-gray-900 flex items-center gap-2"
+            className="text-sm text-foreground flex items-center gap-2"
           >
             <PlayerNameLink
               playerId={tp.member_id!}

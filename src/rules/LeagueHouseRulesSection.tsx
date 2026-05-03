@@ -72,11 +72,11 @@ export function LeagueHouseRulesSection({ leagueId }: Props) {
   }
 
   return (
-    <section className="rounded-xl bg-white p-6 shadow-sm md:col-span-2" aria-label="League house rules">
+    <section className="rounded-xl bg-card p-6 shadow-sm md:col-span-2" aria-label="League house rules">
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">House rules for this league</h2>
-          <p className="text-sm text-gray-600">
+          <h2 className="text-xl font-semibold text-foreground">House rules for this league</h2>
+          <p className="text-sm text-muted-foreground">
             Rules here apply to this league only. Org-wide rules cascade in automatically unless you opt out below.
           </p>
         </div>

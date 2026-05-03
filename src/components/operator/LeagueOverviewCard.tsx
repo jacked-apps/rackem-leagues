@@ -256,9 +256,9 @@ export const LeagueOverviewCard: React.FC<LeagueOverviewCardProps> = ({ league }
   const editOptions = getSeasonEditOptions();
 
   return (
-    <div className="lg:bg-white lg:rounded-xl lg:shadow-sm p-6 mb-6">
+    <div className="lg:bg-card lg:rounded-xl lg:shadow-sm p-6 mb-6">
       <div className="flex items-center justify-between mb-2">
-        <h2 className="text-xl font-semibold text-gray-900">League Overview</h2>
+        <h2 className="text-xl font-semibold text-foreground">League Overview</h2>
         <div className="flex gap-2">
           {/* Manage Season - shown for complete seasons (active, upcoming with schedule, completed) */}
           {editOptions.showManageSchedule && currentSeason && (
@@ -302,11 +302,11 @@ export const LeagueOverviewCard: React.FC<LeagueOverviewCardProps> = ({ league }
           )}
         </div>
       </div>
-      <h3 className="text-sm text-gray-600 mb-4">Current Season</h3>
+      <h3 className="text-sm text-muted-foreground mb-4">Current Season</h3>
 
       {loading ? (
         <div className="text-center py-8">
-          <p className="text-gray-600">Loading season...</p>
+          <p className="text-muted-foreground">Loading season...</p>
         </div>
       ) : currentSeason ? (
         <div className={`${isSeasonComplete() ? 'bg-green-50 border-green-200' : 'bg-orange-50 border-orange-200'} border rounded-lg p-4`}>

@@ -99,7 +99,7 @@ export const ExampleTeamCountCard: React.FC<ExampleTeamCountCardProps> = ({
                 dispatch({ type: 'SET_EXAMPLE_TEAM_COUNT', payload: parseInt(value, 10) })
               }
             >
-              <SelectTrigger className="w-[140px] bg-white">
+              <SelectTrigger className="w-[140px] bg-card">
                 <SelectValue placeholder="Select teams" />
               </SelectTrigger>
               <SelectContent>

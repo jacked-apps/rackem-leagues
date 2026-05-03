@@ -61,23 +61,23 @@ function FirstSeasonIntro({
 
   return (
     <>
-      <h3 className="text-xl font-bold text-gray-900">Create Your First Season</h3>
-      <p className="text-gray-700">
+      <h3 className="text-xl font-bold text-foreground">Create Your First Season</h3>
+      <p className="text-foreground">
         Here you&rsquo;ll set up the details for your first season
         — how many weeks of regular play and how playoffs are structured.
       </p>
-      <p className="text-gray-700">
+      <p className="text-foreground">
         These choices will become your defaults for future seasons.
         They can be changed season to season, so don&rsquo;t worry
         about getting it perfect the first time.
       </p>
       {startDate && (
         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-gray-800">
+          <p className="text-foreground">
             Your start date:{' '}
             <strong>{getDayOfWeekName(startDate)}, {formatDate(startDate)}</strong>
           </p>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             This will be the first day of this season. If this date is
             incorrect, you&rsquo;ll need to start over with a new league.
           </p>
@@ -90,7 +90,7 @@ function FirstSeasonIntro({
           </Button>
         </div>
       )}
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-muted-foreground">
         Click Next to set the season length and playoff format.
       </p>
     </>
@@ -100,17 +100,17 @@ function FirstSeasonIntro({
 function NextSeasonIntro() {
   return (
     <>
-      <h3 className="text-xl font-bold text-gray-900">Create Your Next Season</h3>
-      <p className="text-gray-700">
+      <h3 className="text-xl font-bold text-foreground">Create Your Next Season</h3>
+      <p className="text-foreground">
         Starting a new season. You&rsquo;ll pick a start date and
         confirm the season length and playoff format.
       </p>
-      <p className="text-gray-700">
+      <p className="text-foreground">
         Your previous season&rsquo;s settings are used as defaults.
         Adjust anything that needs to change, or just confirm and
         move on.
       </p>
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-muted-foreground">
         Click Next to get started.
       </p>
     </>

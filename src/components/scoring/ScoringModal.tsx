@@ -83,7 +83,7 @@ export function ScoringModal({
 
         <div className="space-y-4 py-4">
           <div className="text-center">
-            <p className="text-sm text-gray-500">Game {gameNumber}</p>
+            <p className="text-sm text-muted-foreground">Game {gameNumber}</p>
             <p className="text-lg font-semibold mt-2">Winner: {winnerPlayerName}</p>
           </div>
 
@@ -97,7 +97,7 @@ export function ScoringModal({
                 setBreakAndRun(e.target.checked);
                 if (e.target.checked) setGoldenBreak(false); // Uncheck golden break if B&R is checked
               }}
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              className="w-4 h-4 text-blue-600 border-border rounded focus:ring-blue-500"
             />
             <label htmlFor="breakAndRun" className="text-sm font-normal cursor-pointer">
               Break & Run
@@ -115,7 +115,7 @@ export function ScoringModal({
                   setGoldenBreak(e.target.checked);
                   if (e.target.checked) setBreakAndRun(false); // Uncheck B&R if golden break is checked
                 }}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                className="w-4 h-4 text-blue-600 border-border rounded focus:ring-blue-500"
               />
               <label htmlFor="goldenBreak" className="text-sm font-normal cursor-pointer">
                 {getGoldenBreakLabel()}

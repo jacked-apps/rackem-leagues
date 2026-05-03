@@ -24,7 +24,7 @@ export function ConversationMenuBar({
 }: ConversationMenuBarProps) {
   return (
     <div className="px-3 pb-3 pt-0 md:px-4 md:pb-4 md:pt-0 border-b bg-gray-300">
-      <div className="flex gap-2 justify-around bg-gray-50 rounded-lg p-2 shadow-sm border border-gray-200">
+      <div className="flex gap-2 justify-around bg-muted rounded-lg p-2 shadow-sm border border-border">
         {/* New Message */}
         <Button
           variant="ghost"
@@ -33,7 +33,7 @@ export function ConversationMenuBar({
           aria-label="New message"
         >
           <MessageSquarePlus className="h-5 w-5" />
-          <span className="text-[10px] text-gray-600">New</span>
+          <span className="text-[10px] text-muted-foreground">New</span>
         </Button>
 
         {/* Search Toggle */}
@@ -47,7 +47,7 @@ export function ConversationMenuBar({
           aria-label="Toggle search"
         >
           <Search className="h-5 w-5" />
-          <span className="text-[10px] text-gray-600">Search</span>
+          <span className="text-[10px] text-muted-foreground">Search</span>
         </Button>
 
         {/* Settings */}
@@ -58,7 +58,7 @@ export function ConversationMenuBar({
           aria-label="Settings"
         >
           <Settings className="h-5 w-5" />
-          <span className="text-[10px] text-gray-600">Settings</span>
+          <span className="text-[10px] text-muted-foreground">Settings</span>
         </Button>
       </div>
     </div>

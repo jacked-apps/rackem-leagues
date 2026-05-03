@@ -39,9 +39,9 @@ export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
   if (!member) return null;
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
+    <div className="bg-card rounded-lg shadow-md p-6">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Personal Information</h3>
+        <h3 className="text-lg font-semibold text-foreground">Personal Information</h3>
         {!form.isEditing && (
           <Button
             variant="outline"
@@ -142,21 +142,21 @@ export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
         <div className="space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <span className="text-sm font-medium text-gray-500">First Name</span>
-              <p className="text-gray-900">{member.first_name}</p>
+              <span className="text-sm font-medium text-muted-foreground">First Name</span>
+              <p className="text-foreground">{member.first_name}</p>
             </div>
             <div>
-              <span className="text-sm font-medium text-gray-500">Last Name</span>
-              <p className="text-gray-900">{member.last_name}</p>
+              <span className="text-sm font-medium text-muted-foreground">Last Name</span>
+              <p className="text-foreground">{member.last_name}</p>
             </div>
           </div>
           <div>
-            <span className="text-sm font-medium text-gray-500">Nickname</span>
-            <p className="text-gray-900">{member.nickname || 'None'}</p>
+            <span className="text-sm font-medium text-muted-foreground">Nickname</span>
+            <p className="text-foreground">{member.nickname || 'None'}</p>
           </div>
           <div>
-            <span className="text-sm font-medium text-gray-500">Date of Birth</span>
-            <p className="text-gray-900">{member.date_of_birth}</p>
+            <span className="text-sm font-medium text-muted-foreground">Date of Birth</span>
+            <p className="text-foreground">{member.date_of_birth}</p>
           </div>
         </div>
       )}

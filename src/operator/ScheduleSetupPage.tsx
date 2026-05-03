@@ -86,9 +86,9 @@ export const ScheduleSetupPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-muted py-8">
         <div className="container mx-auto px-4 max-w-7xl">
-          <div className="text-center text-gray-600">Loading teams...</div>
+          <div className="text-center text-muted-foreground">Loading teams...</div>
         </div>
       </div>
     );
@@ -96,11 +96,11 @@ export const ScheduleSetupPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-muted py-8">
         <div className="container mx-auto px-4 max-w-7xl">
-          <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="bg-card rounded-xl shadow-sm p-6">
             <h3 className="text-red-600 text-lg font-semibold mb-4">Error</h3>
-            <p className="text-gray-700 mb-4">{error}</p>
+            <p className="text-foreground mb-4">{error}</p>
             <div className="flex gap-3">
               <Button
                 onClick={() => {
@@ -131,7 +131,7 @@ export const ScheduleSetupPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       <PageHeader
         backTo={`/league/${leagueId}/manage-teams`}
         backLabel="Back to Team Management"

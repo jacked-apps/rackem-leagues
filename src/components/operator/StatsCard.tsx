@@ -47,8 +47,8 @@ export function StatsCard({ leagueId, seasonId }: StatsCardProps) {
           >
             <Trophy className="h-5 w-5 mb-2 text-blue-600" />
             <div className="text-left">
-              <div className="font-semibold text-gray-900">Stats & Standings</div>
-              <div className="text-sm text-gray-600">All statistics</div>
+              <div className="font-semibold text-foreground">Stats & Standings</div>
+              <div className="text-sm text-muted-foreground">All statistics</div>
             </div>
           </Button>
 
@@ -60,8 +60,8 @@ export function StatsCard({ leagueId, seasonId }: StatsCardProps) {
           >
             <Database className="h-5 w-5 mb-2 text-orange-600" />
             <div className="text-left">
-              <div className="font-semibold text-gray-900">Match Data</div>
-              <div className="text-sm text-gray-600">Verify entries</div>
+              <div className="font-semibold text-foreground">Match Data</div>
+              <div className="text-sm text-muted-foreground">Verify entries</div>
             </div>
           </Button>
         </div>

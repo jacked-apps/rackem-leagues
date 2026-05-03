@@ -44,11 +44,11 @@ export function VacateModal({
         </DialogHeader>
 
         <div className="py-4 space-y-4">
-          <p className="text-center text-sm text-gray-600">
+          <p className="text-center text-sm text-muted-foreground">
             Current winner: <span className="font-semibold">{currentWinnerName}</span>
           </p>
 
-          <p className="text-center text-sm text-gray-500">
+          <p className="text-center text-sm text-muted-foreground">
             This will request your opponent to agree to vacate this result so both teams can score it again.
           </p>
         </div>

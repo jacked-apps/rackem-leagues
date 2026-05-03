@@ -97,10 +97,10 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-8">
+    <div className="bg-card rounded-xl shadow-lg p-8">
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-4">
-          <h2 className="text-2xl font-bold text-gray-900">
+          <h2 className="text-2xl font-bold text-foreground">
             {title}
           </h2>
           {infoTitle && infoContent && (
@@ -110,7 +110,7 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
           )}
         </div>
 
-        <p className="text-gray-600 mb-6">
+        <p className="text-muted-foreground mb-6">
           {subtitle}
         </p>
 
@@ -147,7 +147,7 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                 onKeyDown={onKeyDown}
                 placeholder={placeholder}
                 className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg ${
-                  error ? 'border-red-500' : 'border-gray-300'
+                  error ? 'border-red-500' : 'border-border'
                 }`}
               />
               {error && (

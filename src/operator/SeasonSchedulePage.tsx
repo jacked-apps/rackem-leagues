@@ -74,7 +74,7 @@ function getWeekTypeStyle(weekType: string): { bgColor: string; badge: string; b
       };
     case 'blackout':
       return {
-        bgColor: 'bg-gray-100 rounded-t-xl -my-6 py-3',
+        bgColor: 'bg-muted rounded-t-xl -my-6 py-3',
         badge: 'BLACKOUT',
         badgeColor: 'bg-gray-700 text-white',
       };
@@ -86,7 +86,7 @@ function getWeekTypeStyle(weekType: string): { bgColor: string; badge: string; b
       };
     default:
       return {
-        bgColor: 'bg-gray-50 rounded-t-xl -my-6 py-3',
+        bgColor: 'bg-muted rounded-t-xl -my-6 py-3',
         badge: '',
         badgeColor: '',
       };
@@ -286,16 +286,16 @@ export const SeasonSchedulePage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-muted py-8">
         <div className="container mx-auto px-4 max-w-7xl">
-          <div className="text-center text-gray-600">Loading schedule...</div>
+          <div className="text-center text-muted-foreground">Loading schedule...</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       <PageHeader
         backTo={`/league/${leagueId}`}
         backLabel="Back"
@@ -383,7 +383,7 @@ export const SeasonSchedulePage: React.FC = () => {
                           Edit Week
                         </Button>
                       )}
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Calendar className="h-4 w-4" />
                         <span className="hidden lg:block">
                         {parseLocalDate(week.scheduled_date).toLocaleDateString('en-US', {
@@ -407,7 +407,7 @@ export const SeasonSchedulePage: React.FC = () => {
                 </CardHeader>
                 <CardContent className="p-3">
                   {matches.length === 0 ? (
-                    <p className="text-gray-500 text-center py-4">
+                    <p className="text-muted-foreground text-center py-4">
                       {week.week_type === 'playoffs'
                         ? 'Matchups TBD'
                         : week.week_type === 'regular'
@@ -421,29 +421,29 @@ export const SeasonSchedulePage: React.FC = () => {
                       return (
                       <div
                         key={match.id}
-                        className="grid grid-cols-8 border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                        className="grid grid-cols-8 border border-border rounded-lg p-4 hover:bg-muted transition-colors"
                       >
                         {/* Teams */}
                         <div className="col-span-5 flex items-center justify-between">
                           <div className="flex w-full items-center gap-4">
                             <div className="text-right flex-1 flex flex-col items-center">
-                              <span className="font-semibold text-gray-900">
+                              <span className="font-semibold text-foreground">
                                 {match.home_team?.team_name || (week.week_type === 'playoffs' ? 'TBD' : 'BYE')}
                               </span>
-                              <span className="text-xs text-gray-500 ml-2">(Home)</span>
+                              <span className="text-xs text-muted-foreground ml-2">(Home)</span>
                             </div>
-                            <div className="text-xl font-bold text-gray-400">vs</div>
+                            <div className="text-xl font-bold text-muted-foreground">vs</div>
                             <div className="text-left flex-1 flex flex-col items-center">
-                              <span className="font-semibold text-gray-900">
+                              <span className="font-semibold text-foreground">
                                 {match.away_team?.team_name || (week.week_type === 'playoffs' ? 'TBD' : 'BYE')}
                               </span>
-                              <span className="text-xs text-gray-500 ml-2">(Away)</span>
+                              <span className="text-xs text-muted-foreground ml-2">(Away)</span>
                             </div>
                           </div>
                         </div>
 
                         {/* Venue */}
-                        <div className="col-span-2 flex items-center gap-2 text-sm text-gray-600 ml-6">
+                        <div className="col-span-2 flex items-center gap-2 text-sm text-muted-foreground ml-6">
                           <MapPin className="h-4 w-4" />
                           {match.scheduled_venue ? (
                             <div>
@@ -453,15 +453,15 @@ export const SeasonSchedulePage: React.FC = () => {
                               </div>
                             </div>
                           ) : (
-                            <div className="text-gray-500 italic">Venue TBD</div>
+                            <div className="text-muted-foreground italic">Venue TBD</div>
                           )}
                         </div>
 
                         {/* Table Number - only show if venue exists */}
                         {match.scheduled_venue && tableNumber && (
                           <div className="ml-6 text-right">
-                            <div className="text-xs text-gray-500">Table</div>
-                            <div className="text-lg font-semibold text-gray-900">
+                            <div className="text-xs text-muted-foreground">Table</div>
+                            <div className="text-lg font-semibold text-foreground">
                               {tableNumber}
                             </div>
                           </div>
@@ -481,8 +481,8 @@ export const SeasonSchedulePage: React.FC = () => {
           <Card>
             <CardContent className="p-12 text-center">
               <div className="text-6xl mb-4">📅</div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No Schedule Yet</h3>
-              <p className="text-gray-600 mb-6">
+              <h3 className="text-lg font-medium text-foreground mb-2">No Schedule Yet</h3>
+              <p className="text-muted-foreground mb-6">
                 Generate your season schedule to see all matchups
               </p>
               <Button

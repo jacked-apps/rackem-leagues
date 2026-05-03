@@ -44,20 +44,20 @@ export const DeleteSeasonModal: React.FC<DeleteSeasonModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+      <div className="bg-card rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
         {/* Warning Icon */}
         <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full">
           <AlertTriangle className="w-6 h-6 text-red-600" />
         </div>
 
         {/* Title */}
-        <h2 className="text-xl font-bold text-gray-900 text-center mb-2">
+        <h2 className="text-xl font-bold text-foreground text-center mb-2">
           Delete Season?
         </h2>
 
         {/* Warning Message */}
         <div className="mb-4">
-          <p className="text-gray-700 text-center mb-4">
+          <p className="text-foreground text-center mb-4">
             You are about to permanently delete <strong>{seasonName}</strong>.
           </p>
 
@@ -71,7 +71,7 @@ export const DeleteSeasonModal: React.FC<DeleteSeasonModalProps> = ({
             </ul>
           </div>
 
-          <p className="text-gray-600 text-sm text-center mt-4">
+          <p className="text-muted-foreground text-sm text-center mt-4">
             <strong>This cannot be undone.</strong>
           </p>
         </div>

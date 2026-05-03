@@ -30,7 +30,7 @@ export function ChampionshipStep({
   return (
     <div className="space-y-6 max-w-lg">
       <div className="flex items-center gap-1">
-        <p className="font-medium text-gray-900">National Championships</p>
+        <p className="font-medium text-foreground">National Championships</p>
         <InfoButton title="Championship Conflicts" size="sm">
           <p>
             BCA and APA hold national championships each year. If your
@@ -42,13 +42,13 @@ export function ChampionshipStep({
         </InfoButton>
       </div>
 
-      <p className="text-gray-700">
+      <p className="text-foreground">
         Some leagues suspend play during national championships when
         players travel to compete. If you have a significant number
         of players who plan to attend, holding league nights during
         these events can lead to makeup matches or forfeits.
       </p>
-      <p className="text-gray-700">
+      <p className="text-foreground">
         Would you like to track these potential conflicts on your schedule?
       </p>
 
@@ -82,7 +82,7 @@ export function ChampionshipStep({
         </div>
       </div>
 
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-muted-foreground">
         Championship dates are updated annually. If dates haven&rsquo;t
         been announced yet, conflicts will appear on your schedule once
         they&rsquo;re set.

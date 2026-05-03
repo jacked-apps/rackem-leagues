@@ -97,14 +97,14 @@ export function GamesList({
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Fixed header */}
-      <div className="flex-shrink-0 px-4 pt-4 pb-2 bg-gray-50">
+      <div className="flex-shrink-0 px-4 pt-4 pb-2 bg-muted">
         <div className="text-sm font-semibold mb-4">
           Games Complete: <span className="text-lg">{getCompletedGamesCount()} / {totalGames}</span>
         </div>
         {/* Column headers - clickable to toggle display mode */}
         <button
           onClick={toggleDisplayMode}
-          className="w-full grid grid-cols-[auto_1fr_auto_1fr] gap-2 items-center text-xs text-gray-500 pb-2 hover:text-gray-700 transition-colors cursor-pointer"
+          className="w-full grid grid-cols-[auto_1fr_auto_1fr] gap-2 items-center text-xs text-muted-foreground pb-2 hover:text-foreground transition-colors cursor-pointer"
           title={`Click to switch to ${displayMode === 'break-rack' ? 'Home/Away' : 'Break/Rack'} view`}
         >
           <div></div>
@@ -174,7 +174,7 @@ export function GamesList({
             if (hasWinner) {
               // Determine styling based on confirmation status
               const winnerClass = isConfirmed ? 'bg-green-200 font-semibold' : 'bg-yellow-100 font-semibold';
-              const loserClass = 'bg-white text-gray-500';
+              const loserClass = 'bg-card text-muted-foreground';
 
               // If vacate requested, show distinctive styling
               if (isVacateRequested) {
@@ -188,7 +188,7 @@ export function GamesList({
                     <Button
                       variant="outline"
                       size="sm"
-                      className={`w-full ${leftWon ? 'bg-red-100 font-semibold' : 'bg-white text-gray-500'}`}
+                      className={`w-full ${leftWon ? 'bg-red-100 font-semibold' : 'bg-card text-muted-foreground'}`}
                       disabled={iRequestedVacate}
                       onClick={() => !iRequestedVacate && leftPlayerId && onGameClick(gameResult.game_number, leftPlayerId, leftName, leftTeamId)}
                     >
@@ -210,7 +210,7 @@ export function GamesList({
                     <Button
                       variant="outline"
                       size="sm"
-                      className={`w-full ${rightWon ? 'bg-red-100 font-semibold' : 'bg-white text-gray-500'}`}
+                      className={`w-full ${rightWon ? 'bg-red-100 font-semibold' : 'bg-card text-muted-foreground'}`}
                       disabled={iRequestedVacate}
                       onClick={() => !iRequestedVacate && rightPlayerId && onGameClick(gameResult.game_number, rightPlayerId, rightName, rightTeamId)}
                     >
@@ -233,7 +233,7 @@ export function GamesList({
                     >
                       {leftDisplayName}
                     </Button>
-                    <div className="text-center font-semibold text-gray-400">vs</div>
+                    <div className="text-center font-semibold text-muted-foreground">vs</div>
                     <Button
                       variant="outline"
                       size="sm"
@@ -286,7 +286,7 @@ export function GamesList({
                     {leftDisplayName}
                   </Button>
                 </div>
-                <div className="text-center font-semibold text-gray-400">vs</div>
+                <div className="text-center font-semibold text-muted-foreground">vs</div>
                 <div className="text-center">
                   <Button
                     variant="outline"

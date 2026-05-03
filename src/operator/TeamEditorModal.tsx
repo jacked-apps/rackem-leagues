@@ -329,23 +329,23 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
       onKeyDown={handleKeyDown}
     >
       <div
-        className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        className="bg-card rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
       >
         {/* Header */}
-        <div className="p-6 border-b border-gray-200">
+        <div className="p-6 border-b border-border">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-2xl font-bold text-gray-900">
+            <h2 className="text-2xl font-bold text-foreground">
               {isEditing ? 'Edit Team' : 'Add New Team'}
             </h2>
             <button
               onClick={onCancel}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-muted-foreground hover:text-foreground transition-colors"
               aria-label="Close"
             >
               <X className="h-6 w-6" />
             </button>
           </div>
-          <p className="text-gray-600 mb-3">Build your team</p>
+          <p className="text-muted-foreground mb-3">Build your team</p>
           <InfoButton
             title="Team Setup Guidelines"
             label="Minimum: Assign Captain"
@@ -358,7 +358,7 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
               <li>Updating the team name</li>
               <li>Selecting the home venue</li>
             </ul>
-            <p className="text-xs text-gray-600">
+            <p className="text-xs text-muted-foreground">
               As a league operator, you can make changes to any team at any time.
             </p>
           </InfoButton>
@@ -381,7 +381,7 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
               defaultCapitalize={true}
               maxLength={20}
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Maximum 20 characters ({teamName.length}/20)
             </p>
           </div>
@@ -410,7 +410,7 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
                         className={atCapacity && canSelect ? 'text-orange-600' : ''}
                       >
                         {venue.name}
-                        <span className={`ml-2 text-xs ${atCapacity ? 'text-orange-600' : 'text-gray-500'}`}>
+                        <span className={`ml-2 text-xs ${atCapacity ? 'text-orange-600' : 'text-muted-foreground'}`}>
                           ({teamsAtVenue}/{capacity} teams)
                         </span>
                         {atCapacity && !canSelect && (
@@ -421,7 +421,7 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
                   })}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Venues at capacity are disabled. Capacity is set in venue limits.
               </p>
             </div>
@@ -435,9 +435,9 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
                 type="text"
                 value={members.find(m => m.id === captainId)?.first_name + ' ' + members.find(m => m.id === captainId)?.last_name || 'Unknown'}
                 disabled
-                className="bg-gray-100 cursor-not-allowed"
+                className="bg-muted cursor-not-allowed"
               />
-              <p className="text-xs text-gray-600 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Captain cannot be changed. Contact your league operator if needed.
               </p>
             </div>
@@ -461,7 +461,7 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
             <Label className="mb-3 block">
               Roster Players (Optional - {rosterSize} max)
             </Label>
-            <p className="text-xs text-gray-600 mb-4">
+            <p className="text-xs text-muted-foreground mb-4">
               Captain is automatically added to the roster. You can add up to {rosterSize - 1} additional players.
             </p>
             <div className="space-y-3">
@@ -492,7 +492,7 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
 
                   return (
                     <div key={index}>
-                      <div className="flex h-9 w-full items-center justify-between px-3 rounded-md border border-input bg-gray-50">
+                      <div className="flex h-9 w-full items-center justify-between px-3 rounded-md border border-input bg-muted">
                         <div className="flex items-center gap-2">
                           <PlayerNameLink
                             playerId={currentMember.id}
@@ -510,7 +510,7 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
                             variant="ghost"
                             size="sm"
                             onClick={() => handlePlayerChange(index, '')}
-                            className="h-6 w-6 p-0 text-gray-400 hover:text-red-600"
+                            className="h-6 w-6 p-0 text-muted-foreground hover:text-red-600"
                             aria-label={`Remove ${getPlayerDisplayName(currentMember)}`}
                           >
                             <X className="h-4 w-4" />
@@ -544,7 +544,7 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-gray-200 bg-gray-50">
+        <div className="p-6 border-t border-border bg-muted">
           {/* Error message */}
           {(error || rosterError) && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">

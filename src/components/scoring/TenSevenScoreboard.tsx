@@ -128,7 +128,7 @@ export function TenSevenScoreboard({
   const awayWinThresholdForVerifier = startPointsFor === 'away' ? startPoints : 0;
 
   return (
-    <div className="bg-white border-b shadow-sm flex-shrink-0">
+    <div className="bg-card border-b shadow-sm flex-shrink-0">
       <div className="px-4 py-2">
         {allGamesComplete && (
           <MatchEndVerification
@@ -294,19 +294,19 @@ function PointsTeamCard({
           <div className={`font-semibold ${colors.accentText} text-3xl`}>
             {points}
           </div>
-          <div className="text-gray-600 text-xs mt-0.5">Points</div>
+          <div className="text-muted-foreground text-xs mt-0.5">Points</div>
         </div>
 
         {/* Secondary stat: games won out of scheduled. */}
         <div className="flex justify-center items-center pt-2 pb-2 gap-1">
-          <span className="font-semibold text-gray-700 text-lg">
+          <span className="font-semibold text-foreground text-lg">
             {gamesWon}
           </span>
-          <span className="text-gray-500 text-sm">/</span>
-          <span className="font-semibold text-gray-500 text-sm">
+          <span className="text-muted-foreground text-sm">/</span>
+          <span className="font-semibold text-muted-foreground text-sm">
             {totalGames}
           </span>
-          <span className="text-gray-600 text-xs ml-1">Games Won</span>
+          <span className="text-muted-foreground text-xs ml-1">Games Won</span>
         </div>
 
         {/* Collapsible player stats. Grid: HC / Name / W / L / P.
@@ -315,27 +315,27 @@ function PointsTeamCard({
         {showPlayerStats && (
           <div className={`pt-2 border-t ${colors.borderDark}`}>
             <div className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-2 text-xs">
-              <div className="font-semibold text-gray-600">HC</div>
-              <div className="font-semibold text-gray-600">Name</div>
-              <div className="font-semibold text-gray-600 text-center">W</div>
-              <div className="font-semibold text-gray-600 text-center">L</div>
-              <div className="font-semibold text-gray-600 text-center">P</div>
+              <div className="font-semibold text-muted-foreground">HC</div>
+              <div className="font-semibold text-muted-foreground">Name</div>
+              <div className="font-semibold text-muted-foreground text-center">W</div>
+              <div className="font-semibold text-muted-foreground text-center">L</div>
+              <div className="font-semibold text-muted-foreground text-center">P</div>
 
               {/* Team summary row — HC shows the start-points handicap credit
                   this team received (0 when none), not a rating sum. */}
-              <div className="font-semibold text-gray-900">
+              <div className="font-semibold text-foreground">
                 {startPointsAwarded}
               </div>
-              <div className="font-semibold text-gray-900 truncate">
+              <div className="font-semibold text-foreground truncate">
                 <TeamNameLink teamId={lineup.team_id} teamName={teamName} />
               </div>
-              <div className="font-semibold text-gray-900 text-center">
+              <div className="font-semibold text-foreground text-center">
                 {gamesWon}
               </div>
-              <div className="font-semibold text-gray-900 text-center">
+              <div className="font-semibold text-foreground text-center">
                 {gamesLost}
               </div>
-              <div className="font-semibold text-gray-900 text-center">
+              <div className="font-semibold text-foreground text-center">
                 {points}
               </div>
 
@@ -356,14 +356,14 @@ function PointsTeamCard({
                         onClick: () =>
                           onSwapPlayer(player.id!, player.position),
                         className:
-                          'flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-100 transition-colors text-left text-purple-600',
+                          'flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted transition-colors text-left text-purple-600',
                       },
                     ]
                   : [];
 
                 return (
                   <div key={`${player.id}-${player.position}`} className="contents">
-                    <div className="text-gray-700">{player.handicap}</div>
+                    <div className="text-foreground">{player.handicap}</div>
                     <div className="truncate">
                       <PlayerNameLink
                         playerId={player.id!}
@@ -371,9 +371,9 @@ function PointsTeamCard({
                         customActions={swapAction}
                       />
                     </div>
-                    <div className="text-center text-gray-700">{stats.wins}</div>
-                    <div className="text-center text-gray-700">{stats.losses}</div>
-                    <div className="text-center text-gray-700">{playerPoints}</div>
+                    <div className="text-center text-foreground">{stats.wins}</div>
+                    <div className="text-center text-foreground">{stats.losses}</div>
+                    <div className="text-center text-foreground">{playerPoints}</div>
                   </div>
                 );
               })}

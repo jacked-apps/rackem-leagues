@@ -47,19 +47,19 @@ const InviteItem: React.FC<{
   onCancel: () => void;
   isCancelling: boolean;
 }> = ({ invite, onCancel, isCancelling }) => (
-  <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
+  <div className="p-3 bg-muted rounded-md border border-border">
     <div className="flex justify-between items-start">
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-gray-900">
+        <p className="font-medium text-foreground">
           {invite.member_first_name} {invite.member_last_name}
         </p>
-        <p className="text-sm text-gray-600">{invite.email}</p>
-        <p className="text-xs text-gray-500 mt-1">
+        <p className="text-sm text-muted-foreground">{invite.email}</p>
+        <p className="text-xs text-muted-foreground mt-1">
           Invited by: {invite.team_name}
         </p>
       </div>
       <div className="flex flex-col items-end gap-2">
-        <div className="text-right text-xs text-gray-500">
+        <div className="text-right text-xs text-muted-foreground">
           <p>Sent {formatInviteDate(invite.created_at)}</p>
           {invite.expires_at && (
             <p>Expires {formatInviteDate(invite.expires_at)}</p>
@@ -92,7 +92,7 @@ export const PendingInvitesList: React.FC<PendingInvitesListProps> = ({
   const [isExpanded, setIsExpanded] = useState(false);
 
   if (invites.length === 0) {
-    return <p className="text-sm text-gray-500">No pending invites</p>;
+    return <p className="text-sm text-muted-foreground">No pending invites</p>;
   }
 
   return (

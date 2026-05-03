@@ -967,18 +967,18 @@ export function MatchLineup() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-10">
+      <header className="bg-card border-b sticky top-0 z-10">
         <div className="px-4 py-3">
           <Link
             to={`/team/${userTeamId}/schedule`}
-            className="flex items-center gap-2 text-sm text-gray-600 mb-2"
+            className="flex items-center gap-2 text-sm text-muted-foreground mb-2"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Schedule
           </Link>
-          <div className="text-4xl font-semibold text-gray-900">
+          <div className="text-4xl font-semibold text-foreground">
             Lineup Entry
           </div>
         </div>
@@ -1051,20 +1051,20 @@ export function MatchLineup() {
               {/* Header Row */}
               <div className="flex gap-3 items-center pb-1 border-b">
                 <div className="w-12 text-center">
-                  <div className="text-xs font-medium text-gray-500">
+                  <div className="text-xs font-medium text-muted-foreground">
                     Player
                   </div>
                 </div>
                 {/* Hide handicap column in tiebreaker mode */}
                 {!isTiebreakerMode && (
                   <div className={`${handicapType === 'fargo' ? 'w-16' : 'w-12'} text-center`}>
-                    <div className="text-xs font-medium text-gray-500">
+                    <div className="text-xs font-medium text-muted-foreground">
                       {handicapType === 'fargo' ? 'Fargo' : 'H/C'}
                     </div>
                   </div>
                 )}
                 <div className="flex-1">
-                  <div className="text-xs font-medium text-gray-500">
+                  <div className="text-xs font-medium text-muted-foreground">
                     Player Name
                   </div>
                 </div>
@@ -1238,13 +1238,13 @@ export function MatchLineup() {
           step is next incomplete (idempotency short-circuit in useMatchPreparation). */}
       {isPreparingMatch && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 text-center">
+          <div className="bg-card rounded-lg p-8 max-w-md w-full mx-4 text-center">
             <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">
               {isHomeTeam ? 'Setting up the match…' : 'Waiting for match to be set up…'}
             </h2>
             {preparationMessage ? (
-              <p className="text-gray-600 mb-4">{preparationMessage}</p>
+              <p className="text-muted-foreground mb-4">{preparationMessage}</p>
             ) : null}
             <Button
               variant="outline"

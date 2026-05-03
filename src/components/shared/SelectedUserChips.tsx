@@ -34,7 +34,7 @@ export function SelectedUserChips({ items, onRemove, title = 'Selected' }: Selec
         {items.map((item) => (
           <div
             key={item.id}
-            className="bg-white border border-blue-300 rounded-full px-3 py-1 text-sm flex items-center gap-2"
+            className="bg-card border border-blue-300 rounded-full px-3 py-1 text-sm flex items-center gap-2"
           >
             <span>
               {item.name}
@@ -42,7 +42,7 @@ export function SelectedUserChips({ items, onRemove, title = 'Selected' }: Selec
             </span>
             <button
               onClick={() => onRemove(item.id)}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-muted-foreground hover:text-foreground"
               aria-label={`Remove ${item.name}`}
             >
               <X className="h-3 w-3" />

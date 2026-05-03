@@ -38,7 +38,7 @@ export const WizardProgress: React.FC<WizardProgressProps> = ({
       {/* Step Counter */}
       {showStepCounter && (
         <div className="text-center">
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             {stepLabel} {currentStep + 1} of {totalSteps}
           </p>
         </div>
@@ -46,7 +46,7 @@ export const WizardProgress: React.FC<WizardProgressProps> = ({
 
       {/* Progress Bar */}
       {showProgressBar && (
-        <div className="w-full bg-gray-200 rounded-full h-2">
+        <div className="w-full bg-accent rounded-full h-2">
           <div
             className={`${progressBarColor} h-2 rounded-full transition-all duration-300`}
             style={{ width: `${progressPercentage}%` }}

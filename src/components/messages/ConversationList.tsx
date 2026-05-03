@@ -95,7 +95,7 @@ export function ConversationList({
 
       {/* Menu Bar */}
       <div className="px-3 pb-3 pt-0 md:px-4 md:pb-4 md:pt-0 border-b bg-gray-300">
-        <div className="flex gap-2 justify-around bg-gray-50 rounded-lg p-2 shadow-sm border border-gray-200">
+        <div className="flex gap-2 justify-around bg-muted rounded-lg p-2 shadow-sm border border-border">
           {/* New Message */}
           <Button
             variant="ghost"
@@ -104,7 +104,7 @@ export function ConversationList({
             aria-label="New message"
           >
             <MessageSquarePlus className="h-5 w-5" />
-            <span className="text-[10px] text-gray-600">New</span>
+            <span className="text-[10px] text-muted-foreground">New</span>
           </Button>
 
           {/* Search Toggle */}
@@ -118,7 +118,7 @@ export function ConversationList({
             aria-label="Toggle search"
           >
             <Search className="h-5 w-5" />
-            <span className="text-[10px] text-gray-600">Search</span>
+            <span className="text-[10px] text-muted-foreground">Search</span>
           </Button>
 
           {/* Settings */}
@@ -129,16 +129,16 @@ export function ConversationList({
             aria-label="Settings"
           >
             <Settings className="h-5 w-5" />
-            <span className="text-[10px] text-gray-600">Settings</span>
+            <span className="text-[10px] text-muted-foreground">Settings</span>
           </Button>
         </div>
       </div>
 
       {/* Search Bar - Collapsible */}
       {showSearch && (
-        <div className="p-3 md:p-4 border-b bg-gray-50">
+        <div className="p-3 md:p-4 border-b bg-muted">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 md:h-5 md:w-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
             <Input
               type="text"
               placeholder="Search conversations..."
@@ -172,7 +172,7 @@ export function ConversationList({
                 onClick={() => onSelectConversation(conversation.id)}
                 className={cn(
                   // Mobile-first: Larger touch targets with responsive padding
-                  'w-full p-4 md:p-3 text-left border-b border-gray-200 hover:bg-gray-100 active:bg-gray-200 transition-colors',
+                  'w-full p-4 md:p-3 text-left border-b border-border hover:bg-muted active:bg-accent transition-colors',
                   // Min height for touch targets (60px on mobile, 56px on desktop)
                   'min-h-[60px] md:min-h-[56px]',
                   selectedConversationId === conversation.id && 'bg-blue-50 hover:bg-blue-100'
@@ -187,12 +187,12 @@ export function ConversationList({
                       </span>
                     )}
                   </span>
-                  <span className="text-xs md:text-xs text-gray-500 flex-shrink-0 ml-2">
+                  <span className="text-xs md:text-xs text-muted-foreground flex-shrink-0 ml-2">
                     {formatTimestamp(conversation.lastMessageAt)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm md:text-sm text-gray-600 truncate flex-1">
+                  <p className="text-sm md:text-sm text-muted-foreground truncate flex-1">
                     {conversation.lastMessagePreview || 'No messages yet'}
                   </p>
                   {conversation.unreadCount > 0 && (

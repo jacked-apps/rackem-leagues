@@ -242,21 +242,21 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
                   <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
                     {activeWithStatsCount} playing
                   </span>
-                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
+                  <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground">
                     {noStatsCount} on team (no stats yet)
                   </span>
                 </div>
               )}
 
               {isLoading ? (
-                <p className="text-sm text-gray-500">Loading placeholders…</p>
+                <p className="text-sm text-muted-foreground">Loading placeholders…</p>
               ) : error ? (
                 <div className="flex items-start gap-2 text-sm text-red-700">
                   <AlertCircle className="h-4 w-4 mt-0.5" />
                   <span>Could not load placeholders. Refresh to retry.</span>
                 </div>
               ) : placeholders.length === 0 ? (
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   No placeholder players in your organization.
                 </p>
               ) : (
@@ -278,15 +278,15 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
                   the top-level active list. Only renders if there's
                   something to show. */}
               {archived.length > 0 && (
-                <div className="mt-6 pt-4 border-t border-gray-200">
+                <div className="mt-6 pt-4 border-t border-border">
                   <Accordion type="single" collapsible>
                     <AccordionItem value="archived" className="border-b-0">
                       <AccordionTrigger className="py-2 hover:no-underline">
                         <div className="flex items-center gap-2 text-left">
-                          <span className="text-base font-semibold text-gray-700">
+                          <span className="text-base font-semibold text-foreground">
                             Archived
                           </span>
-                          <span className="inline-flex items-center rounded-full bg-gray-200 px-2 py-0.5 text-xs text-gray-700">
+                          <span className="inline-flex items-center rounded-full bg-accent px-2 py-0.5 text-xs text-foreground">
                             {archived.length}
                           </span>
                         </div>
@@ -320,7 +320,7 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
                   <Button
                     variant="outline"
                     size="sm"
-                    className="text-gray-600"
+                    className="text-muted-foreground"
                     onClick={() => setShowUnmerge(true)}
                   >
                     Unmerge a player…
@@ -383,7 +383,7 @@ const PlaceholderRow: React.FC<{
             chips (merge priority + invite status). Everything else lives
             behind the expand. */}
         <div className="flex-1 min-w-0 flex items-center gap-2 text-left">
-          <span className="text-lg font-semibold text-gray-900 truncate">
+          <span className="text-lg font-semibold text-foreground truncate">
             {compactName}
           </span>
           {p.has_stats ? (
@@ -395,7 +395,7 @@ const PlaceholderRow: React.FC<{
               Unused
             </span>
           ) : (
-            <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 shrink-0">
+            <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-foreground shrink-0">
               No stats
             </span>
           )}
@@ -412,33 +412,33 @@ const PlaceholderRow: React.FC<{
             header — same rationale as nicknames: keep the closed list
             scannable on phones. */}
         <div className="pt-1 pb-3 space-y-1 text-sm">
-          <p className="text-gray-700">
-            <span className="text-gray-500">Name:</span>{' '}
+          <p className="text-foreground">
+            <span className="text-muted-foreground">Name:</span>{' '}
             <span className="font-medium">{fullName}</span>
             {p.system_player_number !== null && (
-              <span className="text-gray-400 ml-2">
+              <span className="text-muted-foreground ml-2">
                 #P{p.system_player_number}
               </span>
             )}
           </p>
 
           {p.email && (
-            <p className="text-gray-700">
-              <span className="text-gray-500">Email:</span>{' '}
+            <p className="text-foreground">
+              <span className="text-muted-foreground">Email:</span>{' '}
               <span className="font-medium">{p.email}</span>
             </p>
           )}
 
           {p.game_count > 0 && (
-            <p className="text-gray-700">
-              <span className="text-gray-500">Games played:</span>{' '}
+            <p className="text-foreground">
+              <span className="text-muted-foreground">Games played:</span>{' '}
               <span className="font-medium">{p.game_count}</span>
             </p>
           )}
 
           {p.teams.length > 0 && (
-            <p className="text-gray-700">
-              <span className="text-gray-500">Teams:</span>{' '}
+            <p className="text-foreground">
+              <span className="text-muted-foreground">Teams:</span>{' '}
               <span className="font-medium">
                 {p.teams
                   .map((t) => `${t.team_name}${t.is_captain ? ' (captain)' : ''}`)
@@ -448,13 +448,13 @@ const PlaceholderRow: React.FC<{
           )}
 
           {p.creator_name && (
-            <p className="text-gray-700">
-              <span className="text-gray-500">Created by:</span>{' '}
+            <p className="text-foreground">
+              <span className="text-muted-foreground">Created by:</span>{' '}
               <span className="font-medium">{p.creator_name}</span>
             </p>
           )}
 
-          <p className="text-gray-500 text-xs pt-1">
+          <p className="text-muted-foreground text-xs pt-1">
             Created {new Date(p.created_at).toLocaleDateString()}
           </p>
 
@@ -550,34 +550,34 @@ const ArchivedRow: React.FC<{
     >
       <AccordionTrigger className="py-2 hover:no-underline">
         <div className="flex-1 min-w-0 flex items-center gap-2 text-left">
-          <span className="text-base font-medium text-gray-700 truncate">
+          <span className="text-base font-medium text-foreground truncate">
             {compactName}
           </span>
-          <span className="inline-flex items-center rounded-full bg-gray-200 px-2 py-0.5 text-xs text-gray-700 shrink-0">
+          <span className="inline-flex items-center rounded-full bg-accent px-2 py-0.5 text-xs text-foreground shrink-0">
             Archived
           </span>
         </div>
       </AccordionTrigger>
       <AccordionContent>
         <div className="pt-1 pb-2 space-y-1 text-sm">
-          <p className="text-gray-700">
-            <span className="text-gray-500">Name:</span>{" "}
+          <p className="text-foreground">
+            <span className="text-muted-foreground">Name:</span>{" "}
             <span className="font-medium">{fullName}</span>
           </p>
           {p.email && (
-            <p className="text-gray-700">
-              <span className="text-gray-500">Email:</span>{" "}
+            <p className="text-foreground">
+              <span className="text-muted-foreground">Email:</span>{" "}
               <span className="font-medium">{p.email}</span>
             </p>
           )}
           {p.game_count > 0 && (
-            <p className="text-gray-700">
-              <span className="text-gray-500">Games played:</span>{" "}
+            <p className="text-foreground">
+              <span className="text-muted-foreground">Games played:</span>{" "}
               <span className="font-medium">{p.game_count}</span>
             </p>
           )}
           {p.archived_at && (
-            <p className="text-gray-500 text-xs">
+            <p className="text-muted-foreground text-xs">
               Archived {new Date(p.archived_at).toLocaleDateString()}
             </p>
           )}

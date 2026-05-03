@@ -131,23 +131,23 @@ export const getQuestionDefinitions = (
     }?`,
     content:
       state.useProfileAddress !== false && member ? (
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <h4 className="font-semibold text-gray-700 mb-2">
+        <div className="bg-muted p-4 rounded-lg">
+          <h4 className="font-semibold text-foreground mb-2">
             Profile Address:
           </h4>
-          <p className="text-gray-900">
+          <p className="text-foreground">
             {member.address}
             <br />
             {member.city}, {member.state} {member.zip_code}
           </p>
         </div>
       ) : state.useProfileAddress !== false ? (
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <p className="text-gray-600">Loading your profile address...</p>
+        <div className="bg-muted p-4 rounded-lg">
+          <p className="text-muted-foreground">Loading your profile address...</p>
         </div>
       ) : (
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <h4 className="font-semibold text-gray-700 mb-4">
+        <div className="bg-muted p-4 rounded-lg">
+          <h4 className="font-semibold text-foreground mb-4">
             Enter Organization Address:
           </h4>
           <div className="space-y-4">
@@ -293,7 +293,7 @@ export const getQuestionDefinitions = (
         </div>
 
         {/* Agreement Checkbox */}
-        <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+        <div className="mt-4 p-4 bg-muted border border-border rounded-lg">
           <label className="flex items-center space-x-3 cursor-pointer">
             <input
               type="checkbox"
@@ -304,9 +304,9 @@ export const getQuestionDefinitions = (
                   payload: e.target.checked,
                 })
               }
-              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+              className="w-4 h-4 text-blue-600 bg-muted border-border rounded focus:ring-blue-500 focus:ring-2"
             />
-            <span className="text-sm font-medium text-gray-900">
+            <span className="text-sm font-medium text-foreground">
               I agree to the terms and acknowledge that my League Operator contact information may be made public
             </span>
           </label>
@@ -332,28 +332,28 @@ export const getQuestionDefinitions = (
     content: (
       <div className="space-y-6">
         {/* Email Display */}
-        <div className="bg-gray-50 p-4 rounded-lg">
+        <div className="bg-muted p-4 rounded-lg">
           {state.useProfileEmail !== false && member ? (
             <div>
-              <h4 className="font-semibold text-gray-700 mb-2">
+              <h4 className="font-semibold text-foreground mb-2">
                 Your Profile Email:
               </h4>
-              <p className="text-gray-900 mb-4">
+              <p className="text-foreground mb-4">
                 {member.email}
               </p>
             </div>
           ) : state.useProfileEmail !== false ? (
             <div>
-              <p className="text-gray-600 mb-4">Loading your profile email...</p>
+              <p className="text-muted-foreground mb-4">Loading your profile email...</p>
             </div>
           ) : (
             <div>
-              <h4 className="font-semibold text-gray-700 mb-4">
+              <h4 className="font-semibold text-foreground mb-4">
                 Enter League Email:
               </h4>
               <div className="space-y-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-foreground mb-1">
                     League Email Address
                   </label>
                   <input
@@ -385,7 +385,7 @@ export const getQuestionDefinitions = (
                       state.leagueEmail && (() => {
                         try {
                           leagueEmailSchema.parse(state.leagueEmail);
-                          return 'border-gray-300';
+                          return 'border-border';
                         } catch {
                           return 'border-red-300 bg-red-50';
                         }
@@ -417,7 +417,7 @@ export const getQuestionDefinitions = (
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 state.useProfileEmail === true
                   ? 'bg-blue-600 text-white'
-                  : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                  : 'bg-card border border-border text-foreground hover:bg-muted'
               }`}
             >
               Use Profile Email
@@ -427,7 +427,7 @@ export const getQuestionDefinitions = (
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 state.useProfileEmail === false
                   ? 'bg-blue-600 text-white'
-                  : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                  : 'bg-card border border-border text-foreground hover:bg-muted'
               }`}
             >
               Enter New Email
@@ -473,28 +473,28 @@ export const getQuestionDefinitions = (
     content: (
       <div className="space-y-6">
         {/* Phone Display */}
-        <div className="bg-gray-50 p-4 rounded-lg">
+        <div className="bg-muted p-4 rounded-lg">
           {state.useProfilePhone !== false && member ? (
             <div>
-              <h4 className="font-semibold text-gray-700 mb-2">
+              <h4 className="font-semibold text-foreground mb-2">
                 Your Profile Phone:
               </h4>
-              <p className="text-gray-900 mb-4">
+              <p className="text-foreground mb-4">
                 {member.phone || 'No phone number in profile'}
               </p>
             </div>
           ) : state.useProfilePhone !== false ? (
             <div>
-              <p className="text-gray-600 mb-4">Loading your profile phone...</p>
+              <p className="text-muted-foreground mb-4">Loading your profile phone...</p>
             </div>
           ) : (
             <div>
-              <h4 className="font-semibold text-gray-700 mb-4">
+              <h4 className="font-semibold text-foreground mb-4">
                 Enter League Phone:
               </h4>
               <div className="space-y-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-foreground mb-1">
                     League Phone Number
                   </label>
                   <input
@@ -526,7 +526,7 @@ export const getQuestionDefinitions = (
                       state.leaguePhone && (() => {
                         try {
                           leaguePhoneSchema.parse(state.leaguePhone);
-                          return 'border-gray-300';
+                          return 'border-border';
                         } catch {
                           return 'border-red-300 bg-red-50';
                         }
@@ -558,7 +558,7 @@ export const getQuestionDefinitions = (
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 state.useProfilePhone === true
                   ? 'bg-blue-600 text-white'
-                  : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                  : 'bg-card border border-border text-foreground hover:bg-muted'
               }`}
             >
               Use Profile Phone
@@ -568,7 +568,7 @@ export const getQuestionDefinitions = (
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 state.useProfilePhone === false
                   ? 'bg-blue-600 text-white'
-                  : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                  : 'bg-card border border-border text-foreground hover:bg-muted'
               }`}
             >
               Enter New Phone

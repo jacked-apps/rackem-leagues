@@ -76,12 +76,12 @@ export function MessageSettingsModal({ onClose, onUnblocked }: MessageSettingsMo
           <Accordion type="single" collapsible className="w-full space-y-2">
             {/* Privacy & Safety Section */}
             <AccordionItem value="privacy" className="border rounded-lg">
-              <AccordionTrigger className="px-4 hover:no-underline hover:bg-gray-50">
+              <AccordionTrigger className="px-4 hover:no-underline hover:bg-muted">
                 <div className="flex items-center gap-3">
                   <Shield className="h-5 w-5 text-purple-600" />
                   <div className="text-left">
                     <div className="font-semibold">Privacy & Safety</div>
-                    <div className="text-sm text-gray-500 font-normal">
+                    <div className="text-sm text-muted-foreground font-normal">
                       Content filtering, blocked users, and reports
                     </div>
                   </div>
@@ -90,28 +90,28 @@ export function MessageSettingsModal({ onClose, onUnblocked }: MessageSettingsMo
               <AccordionContent className="px-4 pb-4 space-y-4">
                 {/* Profanity Filter */}
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                     <Shield className="h-4 w-4" />
                     Profanity Filter
                   </div>
 
                   {isLoading ? (
-                    <div className="p-3 bg-gray-50 rounded-md">
-                      <p className="text-sm text-gray-500">Loading...</p>
+                    <div className="p-3 bg-muted rounded-md">
+                      <p className="text-sm text-muted-foreground">Loading...</p>
                     </div>
                   ) : (
-                    <div className="p-3 bg-gray-50 rounded-md space-y-3">
+                    <div className="p-3 bg-muted rounded-md space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
-                            <Label className="text-sm font-medium text-gray-900">
+                            <Label className="text-sm font-medium text-foreground">
                               Filter inappropriate language
                             </Label>
                             {!canToggle && (
-                              <Lock className="h-4 w-4 text-gray-400" />
+                              <Lock className="h-4 w-4 text-muted-foreground" />
                             )}
                           </div>
-                          <p className="text-xs text-gray-500 mt-1">
+                          <p className="text-xs text-muted-foreground mt-1">
                             Control how profanity appears in your messages
                           </p>
                         </div>
@@ -127,25 +127,25 @@ export function MessageSettingsModal({ onClose, onUnblocked }: MessageSettingsMo
                       {/* Status Badge & Explanation */}
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-600 font-medium">Status:</span>
+                          <span className="text-xs text-muted-foreground font-medium">Status:</span>
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                             shouldFilter
                               ? 'bg-green-100 text-green-800'
-                              : 'bg-gray-100 text-gray-800'
+                              : 'bg-muted text-foreground'
                           }`}>
                             {shouldFilter ? 'Enabled' : 'Disabled'}
                           </span>
                         </div>
 
-                        <div className="p-2 bg-white rounded border border-gray-200">
-                          <p className="text-xs text-gray-700">
+                        <div className="p-2 bg-card rounded border border-border">
+                          <p className="text-xs text-foreground">
                             {shouldFilter ? (
                               <>
                                 <strong className="text-green-700">Enabled:</strong> Profanity in messages you receive will be replaced with asterisks (****). Other users see messages based on their own filter settings.
                               </>
                             ) : (
                               <>
-                                <strong className="text-gray-700">Disabled:</strong> Messages appear unfiltered. You will see all content exactly as it was sent, including any inappropriate language.
+                                <strong className="text-foreground">Disabled:</strong> Messages appear unfiltered. You will see all content exactly as it was sent, including any inappropriate language.
                               </>
                             )}
                           </p>
@@ -165,28 +165,28 @@ export function MessageSettingsModal({ onClose, onUnblocked }: MessageSettingsMo
                   {/* Blocked Users */}
                   <button
                     onClick={() => setShowBlockedUsersModal(true)}
-                    className="w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-md transition-colors text-left group"
+                    className="w-full flex items-center justify-between p-3 hover:bg-muted rounded-md transition-colors text-left group"
                   >
                     <div className="flex items-center gap-3">
-                      <UserX className="h-4 w-4 text-gray-400 group-hover:text-gray-600" />
+                      <UserX className="h-4 w-4 text-muted-foreground group-hover:text-muted-foreground" />
                       <div>
-                        <div className="text-sm font-medium text-gray-700">Blocked Users</div>
-                        <div className="text-xs text-gray-500">Manage blocked users list</div>
+                        <div className="text-sm font-medium text-foreground">Blocked Users</div>
+                        <div className="text-xs text-muted-foreground">Manage blocked users list</div>
                       </div>
                     </div>
-                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </button>
 
                   {/* My Reports */}
-                  <button className="w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-md transition-colors text-left group">
+                  <button className="w-full flex items-center justify-between p-3 hover:bg-muted rounded-md transition-colors text-left group">
                     <div className="flex items-center gap-3">
-                      <Flag className="h-4 w-4 text-gray-400 group-hover:text-gray-600" />
+                      <Flag className="h-4 w-4 text-muted-foreground group-hover:text-muted-foreground" />
                       <div>
-                        <div className="text-sm font-medium text-gray-700">My Reports</div>
-                        <div className="text-xs text-gray-500">View reports you've submitted</div>
+                        <div className="text-sm font-medium text-foreground">My Reports</div>
+                        <div className="text-xs text-muted-foreground">View reports you've submitted</div>
                       </div>
                     </div>
-                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </button>
                 </div>
               </AccordionContent>
@@ -196,10 +196,10 @@ export function MessageSettingsModal({ onClose, onUnblocked }: MessageSettingsMo
             <AccordionItem value="notifications" className="border rounded-lg opacity-50">
               <AccordionTrigger className="px-4 hover:no-underline cursor-not-allowed" disabled>
                 <div className="flex items-center gap-3">
-                  <div className="h-5 w-5 flex items-center justify-center text-gray-400">🔔</div>
+                  <div className="h-5 w-5 flex items-center justify-center text-muted-foreground">🔔</div>
                   <div className="text-left">
                     <div className="font-semibold">Notifications</div>
-                    <div className="text-sm text-gray-500 font-normal">
+                    <div className="text-sm text-muted-foreground font-normal">
                       Coming soon
                     </div>
                   </div>
@@ -211,10 +211,10 @@ export function MessageSettingsModal({ onClose, onUnblocked }: MessageSettingsMo
             <AccordionItem value="preferences" className="border rounded-lg opacity-50">
               <AccordionTrigger className="px-4 hover:no-underline cursor-not-allowed" disabled>
                 <div className="flex items-center gap-3">
-                  <div className="h-5 w-5 flex items-center justify-center text-gray-400">⚙️</div>
+                  <div className="h-5 w-5 flex items-center justify-center text-muted-foreground">⚙️</div>
                   <div className="text-left">
                     <div className="font-semibold">Preferences</div>
-                    <div className="text-sm text-gray-500 font-normal">
+                    <div className="text-sm text-muted-foreground font-normal">
                       Coming soon
                     </div>
                   </div>

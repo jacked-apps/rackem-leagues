@@ -25,7 +25,7 @@ import { PageHeader } from '@/components/PageHeader';
  */
 export function PlayerStats() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       <PageHeader
         backTo="/dashboard"
         backLabel="Home"
@@ -37,7 +37,7 @@ export function PlayerStats() {
           <CardHeader>
             <CardTitle>Personal stats are on the way</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm text-gray-700">
+          <CardContent className="space-y-3 text-sm text-foreground">
             <p>
               This page will eventually pull together your stats across every
               league and season you&apos;ve played in: win/loss record, breaks,
@@ -49,7 +49,7 @@ export function PlayerStats() {
               of your teams from the menu to see Standings, Top Shooters, Team
               Stats, and Feats of Excellence for that season.
             </p>
-            <p className="text-xs italic text-gray-500">
+            <p className="text-xs italic text-muted-foreground">
               (Personal stats build-out is tracked in the project backlog.)
             </p>
           </CardContent>
