@@ -369,20 +369,35 @@ export function MatchEndVerification({
 
           if (result === 'tie') {
 
-            // Tiebreaker games numbered matchTotalGames+1, +2, +3 — for
-            // BCA 3v3 DRR that's games 19/20/21. Specs are computed via
-            // tiebreakerGameSpecs so future lineup geometries get the
-            // right numbers + alternating actions automatically.
-            await createGamesMutation.mutateAsync({
-              games: tiebreakerGameSpecs(matchTotalGames).map((spec) => ({
-                match_id: matchId,
-                game_number: spec.game_number,
-                home_action: spec.home_action,
-                away_action: spec.away_action,
-                is_tiebreaker: true,
-                game_type: gameType,
-              })),
-            });
+            // Item 15 follow-up guard: skip tiebreaker-game creation if
+            // they already exist. Without this, every time the tie
+            // useEffect re-fires (re-mount, navigation back into a
+            // tied-but-unresolved match, realtime cycle) the
+            // createGamesMutation re-runs and 409s on the
+            // (match_id, game_number) unique key. The DB catches the
+            // duplicate, but the noisy "Failed to complete match" log
+            // muddies real diagnostics. Cheap O(1) check on already-
+            // loaded gamesQuery data.
+            if (tiebreakerGames.length > 0) {
+              // Tiebreaker games are already created — nothing to do.
+              // The downstream poll-and-navigate block (Step 3) will
+              // still fire and route the captains to the lineup page.
+            } else {
+              // Tiebreaker games numbered matchTotalGames+1, +2, +3 — for
+              // BCA 3v3 DRR that's games 19/20/21. Specs are computed via
+              // tiebreakerGameSpecs so future lineup geometries get the
+              // right numbers + alternating actions automatically.
+              await createGamesMutation.mutateAsync({
+                games: tiebreakerGameSpecs(matchTotalGames).map((spec) => ({
+                  match_id: matchId,
+                  game_number: spec.game_number,
+                  home_action: spec.home_action,
+                  away_action: spec.away_action,
+                  is_tiebreaker: true,
+                  game_type: gameType,
+                })),
+              });
+            }
 
             // Unlock both lineups
             if (homeLineup?.id) {
