@@ -181,18 +181,26 @@ export async function generatePlayoffBracket(
 export async function getPlayoffWeek(
   seasonId: string
 ): Promise<{ id: string; scheduled_date: string; week_name: string } | null> {
+  // .maybeSingle() returns null instead of throwing PostgREST 406 when
+  // no row matches. Used to be .single() which logged a warn-level
+  // "No playoff week found" on every league-detail load for any
+  // season that doesn't have its playoff week scheduled yet — which
+  // is the COMMON case (new leagues haven't generated playoffs).
   const { data, error } = await supabase
     .from('season_weeks')
     .select('id, scheduled_date, week_name')
     .eq('season_id', seasonId)
     .eq('week_type', 'playoffs')
-    .single();
+    .maybeSingle();
 
-  if (error || !data) {
-    logger.warn('No playoff week found for season', { seasonId, error: error?.message });
+  if (error) {
+    // Real DB error (auth, network) — keep the warn so it's visible.
+    logger.warn('Playoff week lookup error', { seasonId, error: error.message });
     return null;
   }
 
+  // No playoff week scheduled yet is the common case for new leagues —
+  // return null silently instead of warning.
   return data;
 }
 
