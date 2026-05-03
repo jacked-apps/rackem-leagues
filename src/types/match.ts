@@ -64,6 +64,12 @@ export interface MatchWithLeagueSettings {
   home_lineup_id: string | null;
   away_lineup_id: string | null;
   started_at: string | null;
+  /**
+   * Match lifecycle status. Mostly takes 'scheduled' / 'in_progress' /
+   * 'completed'. Used by MatchEndVerification's item-15 guard against
+   * re-firing completion on an already-completed match.
+   */
+  status: 'scheduled' | 'in_progress' | 'awaiting_verification' | 'completed' | 'forfeited' | 'postponed';
   match_result: 'home_win' | 'away_win' | 'tie' | null;
   scheduled_date: string;
   home_team_verified_by?: string | null;

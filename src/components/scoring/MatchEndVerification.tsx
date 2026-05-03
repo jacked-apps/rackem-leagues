@@ -220,6 +220,15 @@ export function MatchEndVerification({
   // Auto-complete match when both teams verify
   useEffect(() => {
     if (!bothVerified || isCompleting || completionStartedRef.current) return;
+    // Item 15 guard: don't re-fire completion on a match that's already
+    // completed. Without this, every time MatchEndVerification re-mounts
+    // (refresh, navigation, realtime cycle) the completion useEffect ran
+    // again — bothVerified stays true (verifications persist on the
+    // match row), so completeTheMatch attempted to update_match +
+    // create tiebreaker games, hitting a 409 on the games unique key
+    // and logging "Failed to complete match" to app_logs. The DB
+    // uniqueness caught it but the noise muddied real diagnostics.
+    if (match?.status === 'completed') return;
 
     const completeTheMatch = async () => {
       completionStartedRef.current = true;
