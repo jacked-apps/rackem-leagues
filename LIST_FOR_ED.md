@@ -531,6 +531,11 @@ enough.
 **Discovered:** 2026-05-02 during modular-league-system test pass
 **Severity:** Medium — has a workaround (browser refresh)
 **Branch:** future bugfix branch — investigation needed
+**Status:** Partial fix landed in modular-league-system branch
+(`stableMatchForMutations` in ScoreMatch.tsx, commit `825e90f`).
+Deeper investigation (MatchLineup.tsx + WebSocket container health)
+deliberately deferred from the 2026-05-02 test pass to a dedicated
+bugfix branch. Refresh remains a working manual workaround.
 
 **Problem:** During the tiebreaker flow, one team's screen flashes
 and re-renders rapidly. Two distinct moments observed:
