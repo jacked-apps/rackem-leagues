@@ -754,3 +754,82 @@ schema already allows up to 30.
 - Team creation wizard / team editor
 - `src/operator/TeamManagement.tsx` and the modal that opens for
   add/edit team
+
+---
+
+## 17. Comprehensive Warning System + LO Feedback Loop on Presets
+
+**Discovered:** 2026-05-03 conversation
+**Severity:** Future feature — far down the road
+**Branch:** dedicated future product feature
+
+**Concept:** The current combo-coherence warning system
+(`src/wizards/league-v2/comboCoherence.ts`) fires warnings based on
+hardcoded rules. The rules ARE careful (locked tests, calibrated
+formula carve-outs, etc.), but they're written from the dev team's
+imagination of what could go wrong — they don't learn from real
+operator behavior.
+
+**Two complementary pieces:**
+
+### 17a. More comprehensive warning rules
+
+Current warning set is small (off-preset combo, milestone-jumps + even
+games, race-format + per-game-ball-counter). Real-world combos likely
+surface more failure modes once leagues actually run on this code.
+
+Plan: as operators report issues / dev team observes failure patterns,
+add rules to the validator with citations to the failure that
+motivated each rule. Each warning gets:
+- A `code` (already implemented)
+- A user-facing message (already implemented)
+- A hidden-from-UI provenance note ("added 2026-XX-XX after
+  League Y reported issue Z") so future devs understand WHY each
+  rule exists
+- An optional escape hatch: "this warning fired but my league played
+  fine, dismiss it next time"
+
+### 17b. LO feedback / rating system
+
+Let operators report back when they use one of the Tested Preset
+bundles or override warnings. Lightweight in-app surface:
+
+- **On Tested Preset card click**: post-creation prompt at end of
+  first season — "Did the BCA 3v3 preset work for your league? [yes /
+  no with details]". Stars / NPS-style.
+- **On warning override**: when LO sees a warning at Review step but
+  saves anyway, capture context. After the league's first match (or
+  first season), prompt: "We warned you about the off-preset combo
+  for this league. Did it work as you expected?" If yes: that combo
+  becomes a candidate to add to Tested Presets or to suppress the
+  warning. If no: ask what they ended up doing (custom threshold
+  table, captain overrides at lineup, switched to a different combo).
+- **Aggregate dashboard for the dev team**: see which presets are
+  most successful, which combos people override warnings on (and
+  whether those overrides worked), which custom configurations
+  recur often enough to consider promoting.
+
+**Plumbing required:**
+- New table: `lo_preset_feedback` — entity_id (league), source
+  (preset_used | warning_overridden), rating (1-5 or yes/no),
+  free_text, created_at, member_id (the LO).
+- Read API: dev-team-only view that aggregates feedback per preset /
+  warning code.
+- Write API: simple insert mutation triggered by post-season prompts.
+- UI surfaces: feedback prompts (timed to when the LO has actual
+  results to report on), an in-app messaging channel back to the
+  dev team for specific issues.
+
+**Why far down the road:** needs a critical mass of real LOs
+running real leagues for the feedback to be meaningful. With one
+operator (the user) running ~3 leagues today, the signal would be
+too small to drive rule changes. Better to ship the modular system,
+get a handful of pilot operators on it, then layer feedback
+collection once there's enough volume.
+
+**Connection to current code:**
+- `src/wizards/league-v2/comboCoherence.ts` is where rules live now;
+  expansion happens here
+- `src/wizards/league-v2/steps/ThresholdSourceStep.tsx` already has
+  the "calibrated vs manual" classification; feedback could refine
+  the classifier's confidence over time
