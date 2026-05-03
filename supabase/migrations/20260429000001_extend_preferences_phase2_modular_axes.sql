@@ -70,18 +70,27 @@ COMMENT ON COLUMN preferences.pairing_format IS
 --   'linear_above_threshold'              — three-band formula (BCA Classic 3v3 default)
 --   'accumulate_with_milestone_jumps'     — monotonic with stepped jumps (BCA Classic 5v5 default)
 --   'accumulated_per_game'                — per-game accumulation (Fargo 10-7 default)
---   NULL                                  — don't track points at all (pure-games-won league)
+--   'none'                                — don't track points at all (pure-games-won league)
+--
+-- Why NOT NULL with an explicit 'none' sentinel (not NULL-as-no-points):
+-- the resolved-preferences view's COALESCE cascade (league → org →
+-- default) treats NULL as "missing" and silently collapses an explicit
+-- "no points" choice to the next level's default. Making 'none' a real
+-- string makes "don't track points" a first-class choice instead of the
+-- absence of a choice. Every league must explicitly pick one of the
+-- four values.
 ALTER TABLE preferences
-  ADD COLUMN IF NOT EXISTS points_calculator TEXT
+  ADD COLUMN IF NOT EXISTS points_calculator TEXT NOT NULL
   DEFAULT 'linear_above_threshold'
-  CHECK (points_calculator IS NULL OR points_calculator IN (
+  CHECK (points_calculator IN (
+    'none',
     'linear_above_threshold',
     'accumulate_with_milestone_jumps',
     'accumulated_per_game'
   ));
 
 COMMENT ON COLUMN preferences.points_calculator IS
-  'Points-calculation formula name. References a calculator registered in src/systems/calculators/. Each calculator declares its math, editable parameters (stored in points_calculator_params), and per-game scoring-popup field spec. NULL means do not track points at all (pure-games-won league); standings cannot include points_earned and win_condition must be ''games''. New calculator types add themselves to the registry; the CHECK constraint is updated when new types ship. Driven by R5 (corrected) of the modular-league v2 plan.';
+  'Points-calculation formula name. References a calculator registered in src/systems/calculators/. NOT NULL — every league must explicitly pick a value. Use ''none'' (a registered no-op calculator) when the league does not track points at all (standings sort cannot include points_earned and win_condition must be ''games''). The other three values are the Tested Preset calculators. New calculator types add themselves to the registry; the CHECK constraint is updated when new types ship. Driven by R5 (corrected) of the modular-league v2 plan.';
 
 -- points_calculator_params: editable values for the calculator
 -- (NEW — supplement Section 2. Type+params pattern: the calculator code
