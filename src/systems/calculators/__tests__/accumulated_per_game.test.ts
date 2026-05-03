@@ -305,16 +305,34 @@ describe('accumulated_per_game — defensive behavior', () => {
     warn.mockRestore();
   });
 
-  it('handles a fully malformed params object via fallback', () => {
+  it('handles a fully malformed params object via fallback (warns)', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const games = [game(AWAY, null, 5)];
+    // Use a non-empty object with the wrong shape — empty `{}` and
+    // `null` are treated as "no params, use defaults silently" per the
+    // wizard's common-case write pattern; only structurally-wrong
+    // params trigger the warn.
     const result = accumulatedPerGame.compute(
       { games, teamId: HOME },
-      null as unknown as AccumulatedPerGameParams,
+      { winner: 'invalid_shape', loser: 'also_invalid' } as unknown as AccumulatedPerGameParams,
     );
-    // Falls back to Fargo 10-7 defaults: home loses, home pocketed 0 (game has null winner_score from HOME's perspective; loser_score is 5 BUT the loser_score field on this game is meant for whoever loses — and in the data we built, that's HOME. Since HOME pocketed 5: clamp to [0,7] → 5).
+    // Falls back to Fargo 10-7 defaults: home loses, home pocketed 5 → clamp [0,7] → 5.
     expect(result).toBe(5);
     expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('treats empty params object as "use defaults" silently (no warn)', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const games = [game(HOME), game(HOME), game(AWAY, null, 4)];
+    const result = accumulatedPerGame.compute(
+      { games, teamId: HOME },
+      {} as AccumulatedPerGameParams,
+    );
+    // Fargo 10-7 defaults: 2 wins × 10 + 0 losses → 20 (HOME's 1 loss has loser_score=null so 0).
+    // Wait — game 3: AWAY won, loser_score=4. HOME is the loser, scored 4. So HOME total: 2 wins × 10 (from games 1+2) + 4 balls (from game 3) = 24.
+    expect(result).toBe(24);
+    expect(warn).not.toHaveBeenCalled();
     warn.mockRestore();
   });
 });

@@ -124,16 +124,26 @@ export const accumulateWithMilestoneJumps: AggregatePointsCalculator<MilestoneJu
   scoringPopupFields: () => ({ perSideInputs: null }),
 
   compute: ({ gamesWon, thresholds }, params) => {
-    const parsed = milestoneJumpsParamSchema.safeParse(params);
+    // Empty/missing params → use defaults silently. The wizard writes
+    // `{}` for leagues that didn't customize calculator params.
+    const isEmpty =
+      params == null ||
+      (typeof params === 'object' && Object.keys(params as object).length === 0);
+
     let resolvedParams: MilestoneJumpsParams;
-    if (parsed.success) {
-      resolvedParams = parsed.data;
-    } else {
-      console.warn(
-        '[accumulate_with_milestone_jumps] params failed zod validation — falling back to default params (BCA 5v5)',
-        { params, error: parsed.error.message },
-      );
+    if (isEmpty) {
       resolvedParams = MILESTONE_JUMPS_DEFAULT_PARAMS;
+    } else {
+      const parsed = milestoneJumpsParamSchema.safeParse(params);
+      if (parsed.success) {
+        resolvedParams = parsed.data;
+      } else {
+        console.warn(
+          '[accumulate_with_milestone_jumps] params failed zod validation — falling back to default params (BCA 5v5)',
+          { params, error: parsed.error.message },
+        );
+        resolvedParams = MILESTONE_JUMPS_DEFAULT_PARAMS;
+      }
     }
 
     if (thresholds.games_to_win == null) {

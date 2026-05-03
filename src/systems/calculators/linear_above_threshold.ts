@@ -149,19 +149,30 @@ export const linearAboveThreshold: AggregatePointsCalculator<LinearAboveThreshol
   scoringPopupFields: () => ({ perSideInputs: null }),
 
   compute: ({ gamesWon, thresholds }, params) => {
-    // Defensive parse. zod rejects malformed input; we substitute the
-    // default multiplier and log a warning so a bad params blob produces
-    // visible breadcrumbs rather than NaN propagating into points.
-    const parsed = linearAboveThresholdParamSchema.safeParse(params);
+    // Empty/missing params → use defaults silently. The wizard writes
+    // `{}` for leagues that didn't customize calculator params, so this
+    // is the COMMON case, not a malformed-input case.
+    const isEmpty =
+      params == null ||
+      (typeof params === 'object' && Object.keys(params as object).length === 0);
+
     let multiplier: number;
-    if (parsed.success) {
-      multiplier = parsed.data.per_extra_game_multiplier;
-    } else {
-      console.warn(
-        '[linear_above_threshold] params failed zod validation — falling back to default multiplier=1',
-        { params, error: parsed.error.message },
-      );
+    if (isEmpty) {
       multiplier = LINEAR_ABOVE_THRESHOLD_DEFAULT_PARAMS.per_extra_game_multiplier;
+    } else {
+      // Non-empty params: validate. zod rejects malformed input; we substitute
+      // the default multiplier and log a warning so a bad params blob produces
+      // visible breadcrumbs rather than NaN propagating into points.
+      const parsed = linearAboveThresholdParamSchema.safeParse(params);
+      if (parsed.success) {
+        multiplier = parsed.data.per_extra_game_multiplier;
+      } else {
+        console.warn(
+          '[linear_above_threshold] params failed zod validation — falling back to default multiplier=1',
+          { params, error: parsed.error.message },
+        );
+        multiplier = LINEAR_ABOVE_THRESHOLD_DEFAULT_PARAMS.per_extra_game_multiplier;
+      }
     }
 
     // Defensive on thresholds. Caller should pass valid thresholds; if

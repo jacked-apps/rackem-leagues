@@ -425,6 +425,9 @@ the `trigger_auto_create_match_lineups` definition.
   "Try Again" succeeded.
 - 2026-05-02 run #2 — home locked SECOND → no issue, both went in
   cleanly.
+- 2026-05-02 run #3 (post supabase restart) — home locked FIRST →
+  prep failed again, "Try Again" succeeded. Reproduces consistently
+  on first-locker.
 
 The pattern strengthens the race-condition hypothesis: it's the team
 that locks FIRST that hits the failed prep_match attempt, regardless
@@ -523,23 +526,57 @@ enough.
 
 ---
 
-## 12. Away Team Screen Flashes / Rapidly Re-renders During Tiebreaker Setup
+## 12. One-Team Screen Flashes / Rapidly Re-renders Around Tiebreaker
 
 **Discovered:** 2026-05-02 during modular-league-system test pass
 **Severity:** Medium — has a workaround (browser refresh)
 **Branch:** future bugfix branch — investigation needed
 
-**Problem:** During the tiebreaker setup flow (after both teams verify
-a tied match → system creates tiebreaker games + unlocks lineups), one
-team's screen (away team in this case — Smitty) started flashing and
-re-rendering rapidly. Browser refresh stopped the loop and the screen
-stabilized.
+**Problem:** During the tiebreaker flow, one team's screen flashes
+and re-renders rapidly. Two distinct moments observed:
 
-**Hypothesis:** Realtime subscription bouncing — the lineup-unlock
-mutation triggers a realtime event → query invalidates → refetch →
-some effect re-fires → loop. Or the away-side polling fallback in
-`useMatchPreparation` is firing repeatedly when both lineups are
-unlocked but tiebreaker games haven't appeared yet (or vice versa).
+1. **Tiebreaker SETUP (first observation 2026-05-02 run):** away team
+   (Smitty) screen flashed at the moment of tiebreaker game creation
+   (right after both teams verified the regular games and 9-9 tie was
+   detected, while the system was creating games 19/20/21 + unlocking
+   lineups). Browser refresh stabilized.
+
+2. **Tiebreaker LINEUP page (second observation, same date, run 2):**
+   home team on phone, lineup page flashed locked/not-locked while
+   player slot dropdowns were unselectable. The OTHER team's incognito
+   Chrome window worked normally — could enter players, lock, unlock at
+   will. Refresh on the phone resolved it.
+
+The asymmetry (only one team's device flashes; the other works fine) +
+refresh-as-workaround tells us: **bad client React state on one device,
+not a server-side loop.** Some hook is stuck in a stale-subscription /
+stale-effect cycle that gets reset on a fresh page load.
+
+**Partial fix applied during the same test pass:**
+`ScoreMatch.tsx` was passing the full `match` object to mutations.
+After Phase 5 Unit 5.5 added per-game writes to the matches row, every
+confirmation triggered a refetch → new `match` identity → callback
+identities changed → realtime hooks resubscribed → re-render cascade.
+Memoized `stableMatchForMutations` in commit `825e90f` to break that
+chain on the scoring page.
+
+**That fix didn't cover the lineup page.** `MatchLineup.tsx` +
+`useMatchPreparation` have their own realtime subscriptions and prop-
+threading patterns. Same family of bug expected to need similar
+treatment (memoize the props passed to lineup-page hooks, or audit
+the effect deps).
+
+**Hypothesis (still):** Realtime subscription bouncing — some prop
+identity change (likely from a realtime-driven query refetch) cycles
+through the hook deps → resubscribes → replays event → re-renders.
+
+**Console evidence from setup observation:**
+- Repeated `[linear_above_threshold] params failed zod validation`
+  warnings (cosmetic only — calculator falls back to default
+  multiplier=1)
+- Stack traces showing `confirmOpponentScore` → `updateMatchRunningTotals`
+  firing repeatedly
+- `[useMatchRealtime] Cleaning up` — realtime channel teardowns
 
 **Console evidence at the time:**
 - Repeated `[linear_above_threshold] params failed zod validation`
@@ -641,3 +678,46 @@ query layer.
   completion mutates run; check whether tiebreaker-resolution path
   invalidates the same queries as regular completion)
 - Whatever component renders the live-scoring landing page
+
+---
+
+## 15. MatchEndVerification Re-fires Completion on Already-Completed Match
+
+**Discovered:** 2026-05-02 during modular-league-system test pass
+**Severity:** Low — DB uniqueness constraint catches the duplicate, but
+console noise + potential side effects
+**Branch:** future bugfix branch — small guard fix
+
+**Problem:** When MatchEndVerification re-mounts (re-render, navigation,
+focus change) on a match where `status='completed'` already, the
+completion useEffect re-runs because `bothVerified=true` is still
+true (verification flags persist on the match row).
+
+The mutation chain re-fires:
+1. updateMatchMutation (idempotent, just rewrites the same values)
+2. createGamesMutation (NOT idempotent — fails with 409 because
+   tiebreaker games 19/20/21 already exist):
+
+```
+POST /rest/v1/match_games... 409 (Conflict)
+[ERROR] Failed to complete match
+{"error":"Failed to create match games: duplicate key value violates
+  unique constraint \"match_games_match_id_game_number_key\""}
+```
+
+**Pre-existing:** the completion useEffect has always lacked a guard
+against re-firing on completed matches. This bug isn't caused by the
+modular-league-system work, but the realtime subscription cycling
+(item 12 + WebSocket health issues) causes more re-mounts than
+normal, which surfaces this latent bug more often.
+
+**Likely fix:** add `if (match?.status === 'completed') return;` near
+the top of the completeTheMatch useEffect, before the `bothVerified`
+check. Or: keep `completionStartedRef.current` from being reset when
+the match is already completed (don't run the
+`!bothVerified && completionStartedRef.current = false` reset block
+if status is 'completed').
+
+**Files likely involved:**
+- `src/components/scoring/MatchEndVerification.tsx` (the auto-complete
+  useEffect at line ~221)

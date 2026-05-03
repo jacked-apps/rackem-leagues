@@ -149,16 +149,26 @@ export const accumulatedPerGame: PerGamePointsCalculator<AccumulatedPerGameParam
   },
 
   compute: ({ games, teamId }, params) => {
-    const parsed = accumulatedPerGameParamSchema.safeParse(params);
+    // Empty/missing params → use defaults silently. The wizard writes
+    // `{}` for leagues that didn't customize calculator params.
+    const isEmpty =
+      params == null ||
+      (typeof params === 'object' && Object.keys(params as object).length === 0);
+
     let resolvedParams: AccumulatedPerGameParams;
-    if (parsed.success) {
-      resolvedParams = parsed.data;
-    } else {
-      console.warn(
-        '[accumulated_per_game] params failed zod validation — falling back to default params (Fargo 10-7)',
-        { params, error: parsed.error.message },
-      );
+    if (isEmpty) {
       resolvedParams = ACCUMULATED_PER_GAME_DEFAULT_PARAMS;
+    } else {
+      const parsed = accumulatedPerGameParamSchema.safeParse(params);
+      if (parsed.success) {
+        resolvedParams = parsed.data;
+      } else {
+        console.warn(
+          '[accumulated_per_game] params failed zod validation — falling back to default params (Fargo 10-7)',
+          { params, error: parsed.error.message },
+        );
+        resolvedParams = ACCUMULATED_PER_GAME_DEFAULT_PARAMS;
+      }
     }
 
     let total = 0;
