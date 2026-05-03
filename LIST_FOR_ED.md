@@ -726,3 +726,31 @@ if status is 'completed').
 **Files likely involved:**
 - `src/components/scoring/MatchEndVerification.tsx` (the auto-complete
   useEffect at line ~221)
+
+---
+
+## 16. Team-Builder UX — Lineup-Size Slots + "Add Player" for Substitutes
+
+**Discovered:** 2026-05-03 during modular-league-system test pass
+**Severity:** Enhancement — current behavior renders all max_roster_size
+slots up front
+**Branch:** future UX branch
+
+**Idea:** Instead of rendering all `max_roster_size` slots at team
+creation time (now up to 20 after the cap bump), show only the
+`lineup_size` required slots initially with a "+ Add Player" button
+to add substitutes. Cleaner empty state for teams that haven't yet
+filled their substitute bench.
+
+Affects the team-creation + team-edit forms. Most BCA-style leagues
+have 5-8 active players + a few subs; a 20-slot grid up front is
+visually heavy for the typical case.
+
+**Note:** roster cap was bumped from 12 → 20 in this branch since
+the user mentioned their leagues sometimes have larger rosters. DB
+schema already allows up to 30.
+
+**Files likely involved:**
+- Team creation wizard / team editor
+- `src/operator/TeamManagement.tsx` and the modal that opens for
+  add/edit team
