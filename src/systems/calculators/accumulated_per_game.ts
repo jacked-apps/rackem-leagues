@@ -40,7 +40,6 @@ import { z } from 'zod';
 import type {
   PerGamePointsCalculator,
   ScoringPopupSideSpec,
-  DisplayHint,
 } from './types';
 
 // ============================================================================
@@ -152,32 +151,13 @@ export const accumulatedPerGame: PerGamePointsCalculator<AccumulatedPerGameParam
     };
   },
 
-  // Per-game calculators with structural param keys ('winner' | 'loser') use
-  // the `getDisplayHints` escape hatch instead of the schema-derived
-  // `displayHints` field — see the typing note in `types.ts` (Unit 1 of the
-  // unified-scoreboard plan). Each side surfaces a `progress_target` hint
-  // describing how many points are at stake (fixed value, or counter range).
-  // Default Fargo 10-7 produces: Winner: 10 (fixed), Loser: 0–7 (counter).
-  getDisplayHints: (params) => {
-    const sideHint = (
-      side: 'winner' | 'loser',
-      config: SideScoringConfig,
-    ): DisplayHint => {
-      const label = side === 'winner' ? 'Winner' : 'Loser';
-      if (config.kind === 'fixed') {
-        return { role: 'progress_target', label, value: config.points };
-      }
-      return {
-        role: 'progress_target',
-        label,
-        value: `${config.min}–${config.max}`,
-      };
-    };
-    return [
-      sideHint('winner', params.winner),
-      sideHint('loser', params.loser),
-    ];
-  },
+  // No display hints — per Ed's 2026-05-04 smoke-test feedback: the per-side
+  // per-game point amounts (winner: 10, loser: 0-7) are static scoring rules
+  // every player already knows from the league setup. Surfacing them on the
+  // live scoreboard is noise. The escape-hatch interface remains available
+  // on the calculator type if a future per-game calculator with genuinely
+  // useful display info wants it. For Fargo 10-7 default config, nothing
+  // renders.
 
   compute: ({ games, teamId }, params) => {
     // Empty/missing params → use defaults silently. The wizard writes

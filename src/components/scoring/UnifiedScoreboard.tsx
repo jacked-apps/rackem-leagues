@@ -327,11 +327,12 @@ function TeamCard({
         {drawerOpen && (
           <div className={`flex flex-wrap justify-center gap-3 text-xs text-muted-foreground pt-2 border-t ${colors.borderDark}`}>
             {winCondition === 'points' ? (
-              (thresholds.games_to_tie ?? 0) > 0 && (
-                <span>
-                  <span className="font-semibold">Starts +{thresholds.games_to_tie}</span>
-                </span>
-              )
+              // Always render for both teams (symmetry per Ed 2026-05-04
+              // pass 3). Stronger team's "+0" matches weaker team's "+N"
+              // visually so the two cards balance.
+              <span>
+                <span className="font-semibold">Starts +{thresholds.games_to_tie ?? 0}</span>
+              </span>
             ) : (
               <>
                 {thresholds.games_to_win != null && (

@@ -73,57 +73,30 @@ describe('displayHints — linear_above_threshold', () => {
 });
 
 describe('displayHints — accumulated_per_game', () => {
-  it('exposes getDisplayHints (structural keyof P)', () => {
-    expect(accumulatedPerGame.getDisplayHints).toBeDefined();
-    // No schema-derived `displayHints` — keyof P is per-side, not per-field.
+  it('declares no display hints (per-side per-game amounts are static, not live)', () => {
+    // Per Ed 2026-05-04 smoke-test feedback: the per-side scoring rules
+    // (winner: 10, loser: 0–7 for default Fargo 10-7) are static league
+    // config every player already knows. Surfacing them on the live
+    // scoreboard is noise. The escape-hatch interface remains available
+    // on the calculator type for future per-game calculators with
+    // genuinely useful display info.
+    expect(accumulatedPerGame.getDisplayHints).toBeUndefined();
     expect(accumulatedPerGame.displayHints).toBeUndefined();
   });
 
-  it('emits two progress_target hints for default Fargo 10-7 params', () => {
-    const hints = accumulatedPerGame.getDisplayHints!(
-      ACCUMULATED_PER_GAME_DEFAULT_PARAMS,
-    );
-    expect(hints).toHaveLength(2);
-    expect(hints[0]).toEqual({
-      role: 'progress_target',
-      label: 'Winner',
-      value: 10,
+  it('default params still validate (test fixture survives the hint removal)', () => {
+    // Sanity: the default params object still exists and remains valid
+    // even though we don't surface them as display hints anymore.
+    expect(ACCUMULATED_PER_GAME_DEFAULT_PARAMS.winner).toEqual({
+      kind: 'fixed',
+      points: 10,
     });
-    expect(hints[1]).toEqual({
-      role: 'progress_target',
-      label: 'Loser',
-      value: '0–7',
+    expect(ACCUMULATED_PER_GAME_DEFAULT_PARAMS.loser).toEqual({
+      kind: 'counter',
+      min: 0,
+      max: 7,
+      label: 'Balls pocketed',
     });
-  });
-
-  it('renders fixed-fixed configuration as two numeric values', () => {
-    const fixedFixedParams = {
-      winner: { kind: 'fixed' as const, points: 5 },
-      loser: { kind: 'fixed' as const, points: 1 },
-    };
-    const hints = accumulatedPerGame.getDisplayHints!(fixedFixedParams);
-    expect(hints[0].value).toBe(5);
-    expect(hints[1].value).toBe(1);
-  });
-
-  it('renders counter-counter configuration as two range strings', () => {
-    const counterCounterParams = {
-      winner: {
-        kind: 'counter' as const,
-        min: 1,
-        max: 9,
-        label: 'Winner balls',
-      },
-      loser: {
-        kind: 'counter' as const,
-        min: 0,
-        max: 7,
-        label: 'Loser balls',
-      },
-    };
-    const hints = accumulatedPerGame.getDisplayHints!(counterCounterParams);
-    expect(hints[0].value).toBe('1–9');
-    expect(hints[1].value).toBe('0–7');
   });
 });
 
@@ -145,12 +118,9 @@ describe('displayHints — registry lookup preserves declarations', () => {
     expect(calc?.getDisplayHints).toBeUndefined();
   });
 
-  it('returns accumulated_per_game with the escape hatch intact', () => {
+  it('returns accumulated_per_game without display hints', () => {
     const calc = getCalculator('accumulated_per_game');
-    expect(calc?.getDisplayHints).toBeDefined();
-    if (calc?.kind === 'per_game' && calc.getDisplayHints) {
-      const hints = calc.getDisplayHints(ACCUMULATED_PER_GAME_DEFAULT_PARAMS);
-      expect(hints).toHaveLength(2);
-    }
+    expect(calc?.getDisplayHints).toBeUndefined();
+    expect(calc?.displayHints).toBeUndefined();
   });
 });

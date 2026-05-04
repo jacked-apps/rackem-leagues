@@ -615,12 +615,11 @@ describe('UnifiedScoreboard — Fargo start-points (R22 revised 2026-05-04)', ()
     expect(screen.queryByText(/\+\d+/)).not.toBeInTheDocument();
 
     // Open the drawer to reveal the "Starts +N" label in the threshold row.
-    // Stronger team (home, to_tie=0) gets no label — hide-when-zero per
-    // Ed's smoke-test feedback. Weaker team (away, to_tie=25) shows
-    // "Starts +25" with a + sign.
+    // Both teams render their label for visual symmetry (Ed 2026-05-04
+    // pass 3): stronger team shows "Starts +0", weaker shows "Starts +25".
     await user.click(screen.getAllByText('Home Team')[0]);
     expect(screen.getByText(/Starts \+25/)).toBeInTheDocument();
-    expect(screen.queryByText(/Starts \+0/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Starts \+0/)).toBeInTheDocument();
   });
 
   it('does not render start-credit info in games-mode', () => {
