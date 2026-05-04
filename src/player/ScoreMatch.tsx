@@ -42,15 +42,13 @@ import { getPlayerStatsByPosition } from '@/hooks/usePlayerStatsByPosition';
 import { ScoringDialog } from '@/components/scoring/ScoringDialog';
 import { ConfirmationDialog } from '@/components/scoring/ConfirmationDialog';
 import { EditGameDialog } from '@/components/scoring/EditGameDialog';
-import { ThreeVThreeScoreboard } from '@/components/scoring/ThreeVThreeScoreboard';
-import { FiveVFiveScoreboard } from '@/components/scoring/FiveVFiveScoreboard';
-import { TenSevenScoreboard } from '@/components/scoring/TenSevenScoreboard';
+import { UnifiedScoreboard } from '@/components/scoring/UnifiedScoreboard';
 import { TiebreakerScoreboard } from '@/components/scoring/TiebreakerScoreboard';
 import { GamesList } from '@/components/scoring/GamesList';
 import { TableNumberBar } from '@/components/scoring/TableNumberBar';
 import { queryKeys } from '@/api/queryKeys';
-import { calculatePoints, getTeamStats, getPlayerStats as getPlayerStatsUtil } from '@/types';
-import { calculateFargoMatchTotals } from '@/utils/fargoMatchTotals';
+import { getTeamStats, getPlayerStats as getPlayerStatsUtil } from '@/types';
+import { getCalculator } from '@/systems/calculators';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
 
@@ -81,7 +79,6 @@ export function ScoreMatch() {
     homeLineup,
     awayLineup,
     gameResults,
-    homeTeamHandicap,
     homeThresholds,
     awayThresholds,
     homeTeamRoster,
@@ -659,44 +656,30 @@ export function ScoreMatch() {
       )
     : gameResults;
 
-  // Detect lineup geometry. Phase 7 Unit 7.3: `team_format` was dropped
-  // from the leagues schema; lineup size comes from the resolved
-  // preferences. The 5v5 routing decision now reads `lineup_size === 5`
-  // instead of the legacy `team_format === '8_man'` tag.
-  const is5v5 = leaguePrefs?.lineup_size === 5;
+  // Lineup size and win condition come from the resolved preferences.
+  // Per Unit 5 of the unified-scoreboard plan, the dispatch never branches
+  // on `lineup_size === 5` or `handicap_type === 'fargo'` — those would
+  // re-introduce the n×m matrix the modular system kills. The unified
+  // scoreboard renders for any lineup_size + win_condition + calculator
+  // combination, including off-preset combos.
+  const lineupSize = leaguePrefs?.lineup_size ?? 5;
   const winCondition = leaguePrefs?.win_condition ?? 'games';
 
-  // Team stats (wins / losses) for the scoreboard.
+  // Team stats (wins / losses) for the scoreboard. Wins read from match-row
+  // running totals; losses are derived (no _games_lost column on match).
   const homeStats = getTeamStats(match.home_team_id, filteredGameResults);
   const awayStats = getTeamStats(match.away_team_id, filteredGameResults);
-  // Note: legacy `calculateBCAPoints` parallel computation removed —
-  // FiveVFiveScoreboard now reads `match.home_points_earned` /
-  // `match.away_points_earned` directly. Those columns are calculator-
-  // correct via `computeMatchRunningTotals` (Phase 5 Unit 5.5).
-  // The 3v3 scoreboard branch below still uses the legacy `calculatePoints`
-  // helper; switching it over is a follow-up (covered in LIST_FOR_ED #18).
 
-  // Fargo totals (Unit 12): for 5v5 Fargo matches, points are running Fargo
-  // totals (per-game winner/loser points + start-points credit on the weaker
-  // team) instead of BCA's capped points. Using the snapshotted overrides
-  // when present so the dial values are frozen from first-scoring-event.
-  const fargoOverrides = match.system_snapshot?.overrides
-    ?? leaguePrefs?.system_overrides
-    ?? {};
-  const fargoTotals = handicapType === 'fargo'
-    ? calculateFargoMatchTotals({
-        homeTeamId: match.home_team_id,
-        awayTeamId: match.away_team_id,
-        homeGamesToWin: match.home_to_win ?? 0,
-        awayGamesToWin: match.away_to_win ?? 0,
-        gameResults: filteredGameResults,
-        overrides: fargoOverrides,
-      })
-    : null;
-
-  // Per-player running points for the 10-7 scoreboard drawer. Scoped per
-  // lineup-slot (playerId + position) so double-duty shows up on both rows.
-  // Only computed for Fargo matches; the BCA scoreboards don't use this.
+  // Per-player points closure — passed to UnifiedScoreboard ONLY when the
+  // active calculator is per-game (e.g. accumulated_per_game). For aggregate
+  // calculators the closure is unused; the player drawer hides the per-player
+  // P column entirely. Per Ed's framing during review: "if each player earns
+  // points then show points; if it's team-based then don't show it."
+  const calculatorName = match.system_snapshot?.points_calculator;
+  const activeCalculator = calculatorName ? getCalculator(calculatorName) : null;
+  const isPerGameCalculator = activeCalculator?.kind === 'per_game';
+  const fargoOverrides =
+    match.system_snapshot?.overrides ?? leaguePrefs?.system_overrides ?? {};
   const fargoWinnerPoints =
     typeof fargoOverrides.winner_points === 'number'
       ? fargoOverrides.winner_points
@@ -768,11 +751,12 @@ export function ScoreMatch() {
         spectatorLeagueId={match.league?.id ?? null}
       />
 
-      {/* Scoreboard - Fixed at top.
-          Routing: tiebreaker → TiebreakerScoreboard (isolated 3-game playoff).
-                   points-accumulation systems (currently only Fargo) →
-                     TenSevenScoreboard (generic — not Fargo-specific).
-                   games-won-against-threshold systems → per-format scoreboard. */}
+      {/* Scoreboard — Fixed at top.
+          Unit 5 of the unified-scoreboard plan collapsed the prior 4-branch
+          ternary (3v3 / 5v5 / 10-7 / tiebreaker) into a single dispatch:
+          tiebreaker stays separate (different game-set semantics), all
+          regular play flows through UnifiedScoreboard which adapts via
+          win_condition + points_calculator + lineup_size from the snapshot. */}
       {isTiebreakerMode ? (
         <TiebreakerScoreboard
           match={{
@@ -786,62 +770,8 @@ export function ScoreMatch() {
           isVerifying={isVerifying}
           gameType={gameType}
         />
-      ) : handicapType === 'fargo' && fargoTotals && winCondition === 'points' ? (
-        <TenSevenScoreboard
-          match={{
-            ...match,
-            home_team_verified_by: (match as any).home_team_verified_by ?? null,
-            away_team_verified_by: (match as any).away_team_verified_by ?? null,
-          }}
-          homeLineup={homeLineup}
-          awayLineup={awayLineup}
-          homePoints={fargoTotals.homePoints}
-          awayPoints={fargoTotals.awayPoints}
-          homeGamesWon={fargoTotals.homeGamesWon}
-          awayGamesWon={fargoTotals.awayGamesWon}
-          totalScheduledGames={filteredGameResults.size}
-          startPoints={fargoTotals.startPointsApplied}
-          startPointsFor={
-            fargoTotals.startPointsFor === 'even' ? 'none' : fargoTotals.startPointsFor
-          }
-          allGamesComplete={allGamesComplete}
-          isHomeTeam={isHomeTeam ?? false}
-          onVerify={handleVerify}
-          isVerifying={isVerifying}
-          gameType={gameType}
-          getPlayerDisplayName={getPlayerDisplayName}
-          getPlayerStats={getPlayerStats}
-          getPlayerPoints={getPlayerPoints}
-          onSwapPlayer={handleSwapPlayer}
-        />
-      ) : is5v5 ? (
-        <FiveVFiveScoreboard
-          match={{
-            ...match,
-            home_team_verified_by: (match as any).home_team_verified_by ?? null,
-            away_team_verified_by: (match as any).away_team_verified_by ?? null,
-          }}
-          homeLineup={homeLineup}
-          awayLineup={awayLineup}
-          homeThresholds={homeThresholds}
-          awayThresholds={awayThresholds}
-          homeWins={homeStats.wins}
-          awayWins={awayStats.wins}
-          homeLosses={homeStats.losses}
-          awayLosses={awayStats.losses}
-          homePoints={match.home_points_earned ?? 0}
-          awayPoints={match.away_points_earned ?? 0}
-          allGamesComplete={allGamesComplete}
-          isHomeTeam={isHomeTeam ?? false}
-          onVerify={handleVerify}
-          isVerifying={isVerifying}
-          gameType={gameType}
-          getPlayerDisplayName={getPlayerDisplayName}
-          getPlayerStats={getPlayerStats}
-          onSwapPlayer={handleSwapPlayer}
-        />
       ) : (
-        <ThreeVThreeScoreboard
+        <UnifiedScoreboard
           match={{
             ...match,
             home_team_verified_by: (match as any).home_team_verified_by ?? null,
@@ -851,21 +781,23 @@ export function ScoreMatch() {
           awayLineup={awayLineup}
           homeThresholds={homeThresholds}
           awayThresholds={awayThresholds}
-          homeWins={homeStats.wins}
-          awayWins={awayStats.wins}
           homeLosses={homeStats.losses}
           awayLosses={awayStats.losses}
-          homePoints={calculatePoints(match.home_team_id, homeThresholds, filteredGameResults)}
-          awayPoints={calculatePoints(match.away_team_id, awayThresholds, filteredGameResults)}
-          homeTeamHandicap={homeTeamHandicap}
           allGamesComplete={allGamesComplete}
           isHomeTeam={isHomeTeam ?? false}
           onVerify={handleVerify}
           isVerifying={isVerifying}
           gameType={gameType}
+          winCondition={winCondition}
+          lineupSize={lineupSize}
           getPlayerDisplayName={getPlayerDisplayName}
           getPlayerStats={getPlayerStats}
           onSwapPlayer={handleSwapPlayer}
+          // Per-player points only for per-game calculators (e.g.
+          // accumulated_per_game for Fargo 10-7). Aggregate calculators
+          // (linear_above_threshold, accumulate_with_milestone_jumps)
+          // get undefined here, hiding the P column entirely.
+          getPlayerPoints={isPerGameCalculator ? getPlayerPoints : undefined}
         />
       )}
 

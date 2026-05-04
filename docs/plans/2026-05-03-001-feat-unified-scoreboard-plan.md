@@ -430,7 +430,7 @@ UnifiedScoreboard (props -> render)
 
 ---
 
-- [ ] **Unit 5: Wire `UnifiedScoreboard` into `ScoreMatch.tsx`; remove legacy reads**
+- [x] **Unit 5: Wire `UnifiedScoreboard` into `ScoreMatch.tsx`; remove legacy reads**
 
 **Goal:** Collapse the 4-branch dispatch in `ScoreMatch.tsx` to `isTiebreakerMode ? Tiebreaker : Unified`. Remove `fargoTotals` computation, `is5v5` flag, the 3v3 BCA `calculatePoints` reads, and the imports of `calculatePoints` + `calculateFargoMatchTotals`. Pass match-row fields directly to the unified scoreboard.
 
