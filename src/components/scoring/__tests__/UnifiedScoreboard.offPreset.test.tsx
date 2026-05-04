@@ -302,10 +302,12 @@ describe('UnifiedScoreboard — off-preset combos (Unit 8)', () => {
       />,
     );
 
-    // Points are primary (large) since winCondition='points'.
+    // Points are primary (large) since winCondition='points'. Start-credit
+    // is now folded into the displayed total (post-2026-05-04 R22 revision)
+    // — fixture's home_points_earned/away_points_earned values already
+    // include their respective credits. No "+N" badge appears.
     expect(screen.getByText('75')).toBeInTheDocument();
     expect(screen.getByText('53')).toBeInTheDocument();
-    // R22 start-points badge appears for the weaker team (away has +15).
-    expect(screen.getByText(/\+15/)).toBeInTheDocument();
+    expect(screen.queryByText(/\+\d+/)).not.toBeInTheDocument();
   });
 });

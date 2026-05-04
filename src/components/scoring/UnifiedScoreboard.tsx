@@ -198,12 +198,6 @@ interface TeamCardProps {
   showPoints: boolean;
   winCondition: 'games' | 'points';
   hints: DisplayHint[];
-  /**
-   * Starting-points credit (Fargo points-mode). When > 0, renders inline as
-   * a small `+N` next to the primary points number. Null/0/undefined → no
-   * badge. Caller passes `match.home_to_tie` (or away).
-   */
-  startPointsDelta?: number | null;
   isUserTeam: boolean;
   getPlayerDisplayName: (id: string) => string;
   getPlayerStats: (
@@ -240,7 +234,6 @@ function TeamCard({
   showPoints,
   winCondition,
   hints,
-  startPointsDelta,
   isUserTeam,
   getPlayerDisplayName,
   getPlayerStats,
@@ -288,38 +281,32 @@ function TeamCard({
             showPoints ? 'grid-cols-2 gap-2' : 'grid-cols-1'
           }`}
         >
-          {/* Wins column — `wins/to_win` slash format reads as "0 of 7"
-              (LIST_FOR_ED #10 fix). When games_to_win is null (pure points-
-              mode with no game target) shows just the wins count. */}
+          {/* Wins column.
+              - games-mode: `wins/to_win` slash format reads as "0 of 7"
+                (LIST_FOR_ED #10 fix).
+              - points-mode: just the wins count, no slash. There's no
+                match-level games-to-win target in points-mode (per
+                Ed 2026-05-04 — useMatchPreparation now writes to_win=null
+                for Fargo points-mode). */}
           <div className="flex flex-col items-center">
             <span className={`font-bold ${winsClass} ${colors.accentText}`}>
-              {thresholds.games_to_win != null
+              {winCondition === 'games' && thresholds.games_to_win != null
                 ? `${wins}/${thresholds.games_to_win}`
                 : formatNumber(wins)}
             </span>
             <span className="text-[10px] text-muted-foreground">Wins</span>
           </div>
 
-          {/* Points column — hidden entirely when calculator is 'none' (R7) */}
+          {/* Points column — hidden entirely when calculator is 'none' (R7).
+              Start-credit (the Fargo handicap value) is now folded into
+              `match.home_points_earned` directly (Ed 2026-05-04 spec) so the
+              points number IS the running total including the credit; no
+              separate "+N start" badge needed. */}
           {showPoints && (
             <div className="flex flex-col items-center">
-              <div className="flex items-baseline gap-1">
-                <span className={`font-bold ${pointsClass} text-foreground`}>
-                  {formatNumber(points)}
-                </span>
-                {/* R22 — Fargo start-points credit. Inline next to the points
-                    number for the weaker team only (positive *_to_tie). */}
-                {winCondition === 'points' &&
-                  startPointsDelta != null &&
-                  startPointsDelta > 0 && (
-                    <span
-                      className="text-[10px] text-muted-foreground bg-background/40 rounded px-1 py-0.5"
-                      title="Starting points (handicap credit)"
-                    >
-                      +{startPointsDelta}
-                    </span>
-                  )}
-              </div>
+              <span className={`font-bold ${pointsClass} text-foreground`}>
+                {formatNumber(points)}
+              </span>
               <span className="text-[10px] text-muted-foreground">Points</span>
             </div>
           )}
@@ -343,23 +330,37 @@ function TeamCard({
         {/* Threshold trio (drawer-bound — appears with the drawer, hides on
             close). Revised 2026-05-04: replaces the prior chevron-toggle
             pattern. Single tap on the team name reveals BOTH the trio and
-            the player drawer. */}
+            the player drawer.
+            - games-mode: shows "X win", "X tie", "X lose" thresholds.
+            - points-mode: shows "starting X" derived from to_tie (the
+              start-credit). Per Ed's 2026-05-04 ask: lets players see
+              the gap they were given vs how much they've earned. to_win
+              and to_lose are typically null in points-mode (cleaned up
+              by useMatchPreparation post-negotiation). */}
         {drawerOpen && (
           <div className={`flex justify-center gap-3 text-xs text-muted-foreground pt-2 border-t ${colors.borderDark}`}>
-            {thresholds.games_to_win != null && (
+            {winCondition === 'points' ? (
               <span>
-                <span className="font-semibold">{thresholds.games_to_win}</span> win
+                <span className="font-semibold">starting {thresholds.games_to_tie ?? 0}</span>
               </span>
-            )}
-            {thresholds.games_to_tie != null && (
-              <span>
-                <span className="font-semibold">{thresholds.games_to_tie}</span> tie
-              </span>
-            )}
-            {thresholds.games_to_lose != null && (
-              <span>
-                <span className="font-semibold">{thresholds.games_to_lose}</span> lose
-              </span>
+            ) : (
+              <>
+                {thresholds.games_to_win != null && (
+                  <span>
+                    <span className="font-semibold">{thresholds.games_to_win}</span> win
+                  </span>
+                )}
+                {thresholds.games_to_tie != null && (
+                  <span>
+                    <span className="font-semibold">{thresholds.games_to_tie}</span> tie
+                  </span>
+                )}
+                {thresholds.games_to_lose != null && (
+                  <span>
+                    <span className="font-semibold">{thresholds.games_to_lose}</span> lose
+                  </span>
+                )}
+              </>
             )}
           </div>
         )}
@@ -534,14 +535,12 @@ export function UnifiedScoreboard({
   const showPoints = shouldShowPointsAxis(calculatorName);
   const hints = resolveDisplayHints(calculatorName, calculatorParams);
 
-  // R22 — Fargo start-points credit. In points-mode, the credit lives on
-  // *_to_tie post Phase 2 Unit 2.1. Whichever side is positive is the weaker
-  // team (gets the visible "+N start" badge). Stronger team's *_to_tie is 0
-  // → no badge.
-  const homeStartPointsDelta =
-    winCondition === 'points' ? (match.home_to_tie ?? null) : null;
-  const awayStartPointsDelta =
-    winCondition === 'points' ? (match.away_to_tie ?? null) : null;
+  // R22 (revised 2026-05-04): start-credit is now folded into
+  // match.home_points_earned / match.away_points_earned by
+  // computeMatchRunningTotals for points-mode. The displayed Points
+  // number IS the running total including the credit; no separate badge.
+  // The drawer's threshold trio surfaces "starting N" derived from
+  // *_to_tie so players still see the gap they were given.
 
   return (
     <div className="bg-card border-b shadow-sm flex-shrink-0">
@@ -585,7 +584,6 @@ export function UnifiedScoreboard({
             showPoints={showPoints}
             winCondition={winCondition}
             hints={hints}
-            startPointsDelta={homeStartPointsDelta}
             isUserTeam={isHomeTeam}
             getPlayerDisplayName={getPlayerDisplayName}
             getPlayerStats={getPlayerStats}
@@ -606,7 +604,6 @@ export function UnifiedScoreboard({
             showPoints={showPoints}
             winCondition={winCondition}
             hints={hints}
-            startPointsDelta={awayStartPointsDelta}
             isUserTeam={!isHomeTeam}
             getPlayerDisplayName={getPlayerDisplayName}
             getPlayerStats={getPlayerStats}

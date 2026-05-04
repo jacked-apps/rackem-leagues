@@ -555,27 +555,31 @@ describe('UnifiedScoreboard — primary axis flip (R9)', () => {
 });
 
 // ----------------------------------------------------------------------------
-// R22 — Fargo start-points delta inline on points line
+// R22 (revised 2026-05-04) — start-credit folded into points; "starting N"
+// label appears in the threshold drawer instead of a badge
 // ----------------------------------------------------------------------------
 
-describe('UnifiedScoreboard — Fargo start-points delta (R22)', () => {
-  it('shows "+N start" badge for the weaker side in points-mode', () => {
-    // Fargo points-mode: weaker team gets a positive *_to_tie credit.
+describe('UnifiedScoreboard — Fargo start-points (R22 revised 2026-05-04)', () => {
+  it('renders points number including the start-credit (no separate badge)', async () => {
+    // computeMatchRunningTotals folds *_to_tie into *_points_earned for
+    // points-mode. The fixture below simulates the post-fold state: weaker
+    // (away) team's earned column already includes the 25-credit.
     const match = buildMatch({
       home_games_won: 0,
       away_games_won: 0,
-      home_points_earned: 0,
-      away_points_earned: 0,
-      home_to_tie: 0, // stronger team — no badge
-      away_to_tie: 25, // weaker team — +25 start badge
-      home_to_win: 200,
-      away_to_win: 200,
+      home_points_earned: 0, // stronger team — start-credit 0
+      away_points_earned: 25, // weaker team — start-credit 25 already folded in
+      home_to_tie: 0,
+      away_to_tie: 25,
+      home_to_win: null, // points-mode with no point threshold (cleaned up by useMatchPreparation)
+      away_to_win: null,
       system_snapshot: {
         points_calculator: 'accumulated_per_game',
         points_calculator_params: {},
       },
     });
 
+    const user = userEvent.setup();
     renderWithProviders(
       <UnifiedScoreboard
         match={match}
@@ -586,8 +590,8 @@ describe('UnifiedScoreboard — Fargo start-points delta (R22)', () => {
           player5_handicap: 7,
         })}
         awayLineup={buildLineup({ team_id: 'team-away' })}
-        homeThresholds={{ games_to_win: 200, games_to_tie: 0, games_to_lose: null }}
-        awayThresholds={{ games_to_win: 200, games_to_tie: 25, games_to_lose: null }}
+        homeThresholds={{ games_to_win: null, games_to_tie: 0, games_to_lose: null }}
+        awayThresholds={{ games_to_win: null, games_to_tie: 25, games_to_lose: null }}
         homeLosses={0}
         awayLosses={0}
         allGamesComplete={false}
@@ -599,12 +603,20 @@ describe('UnifiedScoreboard — Fargo start-points delta (R22)', () => {
       />,
     );
 
-    // Away (weaker) team gets the badge; home (stronger) doesn't.
-    expect(screen.getByText(/\+25/)).toBeInTheDocument();
-    expect(screen.queryByText(/\+0/)).not.toBeInTheDocument();
+    // Points show the folded total (25 includes the start-credit).
+    // Multiple "0" elements appear (home wins, home points), so use getAllByText.
+    expect(screen.getByText('25')).toBeInTheDocument();
+    expect(screen.getAllByText('0').length).toBeGreaterThan(0);
+    // No "+N start" badge anywhere.
+    expect(screen.queryByText(/\+\d+/)).not.toBeInTheDocument();
+
+    // Open the drawer to reveal the "starting N" labels in the threshold row.
+    await user.click(screen.getAllByText('Home Team')[0]);
+    expect(screen.getAllByText(/starting 0/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/starting 25/i).length).toBeGreaterThan(0);
   });
 
-  it('does not render start-points badge in games-mode', () => {
+  it('does not render start-credit info in games-mode', () => {
     const match = buildMatch({
       home_games_won: 5,
       home_points_earned: 1,
