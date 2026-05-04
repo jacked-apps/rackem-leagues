@@ -1,17 +1,18 @@
 /**
- * @fileoverview Score Match Page - 3v3 Match Scoring
+ * @fileoverview Score Match Page — live match scoring (all formats).
  *
- * Mobile-first scoring page for 3v3 pool league matches.
- * Displays compact scoreboard with swipe navigation between teams.
- * Allows players to score games, confirm results, and track match progress.
+ * Mobile-first scoring page for any league preset. Renders through the
+ * unified scoreboard, which composes display from
+ * `lineup_size × win_condition × points_calculator` rather than the
+ * pre-Unit-7 3v3-vs-5v5-vs-Fargo dispatch.
  *
  * Flow: Lineup Entry → Score Match → (Tiebreaker if needed)
  *
  * Features:
- * - Compact scoreboard (top 1/3 of screen) with swipe left/right
- * - 18-game scoring with real-time updates
+ * - UnifiedScoreboard with calculator-driven display hints
+ * - Real-time updates via useMatchRealtime
  * - Confirmation flow (both teams must agree)
- * - Break & Run (B&R) and Golden Break (8BB) tracking
+ * - Break & Run (B&R), Golden Break (8BB), runout, foul tracking
  * - Match end detection with winner announcement
  */
 //import { watchMatchAndGames } from '@/realtime/useMatchAndGamesRealtime';

@@ -159,7 +159,7 @@ function resolveDisplayHints(
   // param shapes like accumulated_per_game).
   if (calc.getDisplayHints) {
     try {
-      return calc.getDisplayHints(resolvedParams as never);
+      return calc.getDisplayHints(resolvedParams);
     } catch {
       return [];
     }
@@ -608,14 +608,14 @@ export function UnifiedScoreboard({
   const awayPoints = match.away_points_earned ?? 0;
 
   // Snapshot reads — calculator drives display, not handicap_type or lineup_size.
-  // Pre-first-scoring-event the snapshot is empty (PR #98 captures it lazily);
+  // Pre-first-scoring-event the snapshot is null (PR #98 captures it lazily);
   // fall back to the live `pointsCalculator` prop in that case so the points
   // axis renders from match start instead of waiting for a game to be scored.
-  const snapshot = match.system_snapshot ?? {};
-  const snapshotCalculator = (snapshot as { points_calculator?: string | null }).points_calculator;
+  const snapshot = match.system_snapshot ?? null;
+  const snapshotCalculator = snapshot?.points_calculator;
   const calculatorName =
     snapshotCalculator !== undefined ? snapshotCalculator : (livePointsCalculator ?? null);
-  const rawCalculatorParams = (snapshot as { points_calculator_params?: unknown }).points_calculator_params ?? {};
+  const rawCalculatorParams = snapshot?.points_calculator_params ?? {};
   // Resolve params with empty-fallback so the schema-derived hint resolver
   // and the milestone-role renderer both see the calculator's defaults when
   // the snapshot stores `{}` (the wizard's representation for unmodified

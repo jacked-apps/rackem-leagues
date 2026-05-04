@@ -882,7 +882,11 @@ export async function updateMatchRunningTotals(matchId: string): Promise<void> {
       pointsCalculator = resolved?.points_calculator ?? null;
       pointsCalculatorParams =
         (resolved?.points_calculator_params as Record<string, unknown>) ?? {};
-      winCondition = (resolved?.win_condition as 'games' | 'points') ?? 'games';
+      // Narrow the DB-string to the win-condition union with a runtime guard.
+      // Without this, an unexpected DB value would satisfy the cast at compile
+      // time but fall through both branches at runtime, silently leaving
+      // winCondition='games' regardless of intent.
+      winCondition = resolved?.win_condition === 'points' ? 'points' : 'games';
     } else {
       pointsCalculator = null;
       pointsCalculatorParams = {};
