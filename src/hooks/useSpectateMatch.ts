@@ -112,14 +112,16 @@ export function useSpectateMatch(matchId: string | null | undefined) {
     return { wins, losses };
   };
 
-  // Thresholds from match row (populated by match preparation). Matches the
-  // rule used in useMatchScoring: games_to_win must be non-null; games_to_lose
-  // is null for Fargo matches by design.
+  // Thresholds from match row (populated by match preparation). The
+  // match-prepared signal is `started_at !== null`, mirroring useMatchScoring.
+  // Fargo points-mode legitimately stores `home_to_win = null` so the old
+  // home_to_win-based gate would hide the spectator scoreboard for the entire
+  // match life of every points-mode game.
   const homeThresholds: HandicapThresholds | null = useMemo(() => {
     if (!match) return null;
-    if (match.home_to_win === null || match.home_to_win === undefined) return null;
+    if (!match.started_at) return null;
     return {
-      games_to_win: match.home_to_win,
+      games_to_win: match.home_to_win ?? null,
       games_to_tie: match.home_to_tie ?? null,
       games_to_lose: match.home_to_lose ?? null,
     };
@@ -127,9 +129,9 @@ export function useSpectateMatch(matchId: string | null | undefined) {
 
   const awayThresholds: HandicapThresholds | null = useMemo(() => {
     if (!match) return null;
-    if (match.away_to_win === null || match.away_to_win === undefined) return null;
+    if (!match.started_at) return null;
     return {
-      games_to_win: match.away_to_win,
+      games_to_win: match.away_to_win ?? null,
       games_to_tie: match.away_to_tie ?? null,
       games_to_lose: match.away_to_lose ?? null,
     };
