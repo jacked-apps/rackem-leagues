@@ -1297,3 +1297,35 @@ the regression without re-introducing the original 409 noise.
 
 **Workaround until fixed:** the user manually clicks back to
 dashboard. Match data is already correct on the server.
+
+---
+
+## 20. Dark Mode Breaks Date Picker — For Jack
+
+**Discovered:** 2026-05-04 during unified-scoreboard smoke-testing
+**Severity:** Medium (functionally usable but visually broken)
+**Owner:** Jack (design / styling pass)
+
+**Symptom:** In dark mode, the date picker is essentially unusable —
+the day numbers in the calendar grid are invisible against the
+background. Only a single date (presumably the currently-selected or
+hovered one) is visible at a time. User can't see which dates are
+available, weekends, today's marker, etc.
+
+**Suspected cause:** the calendar component's text color likely
+hardcoded to a light value (or inherits a light theme color) without
+a dark-mode variant defined. Background-text contrast collapses in
+dark mode.
+
+**Likely fix surface:** `src/components/ui/calendar.tsx` (the shadcn
+Calendar primitive) and/or any wrapper component that uses it. Audit
+the day-cell text color tokens — should use `text-foreground` /
+`text-muted-foreground` (theme-aware) rather than a hardcoded
+`text-gray-900` or similar.
+
+**Adjacent dark-mode issue (also for Jack):** unified scoreboard's
+player-drawer name colors. Per Ed 2026-05-04 smoke-test: "in dark
+mode the away team player names in the drawer are invisible. and in
+light mode the home team is invisible." Same root cause likely — a
+hardcoded color that doesn't flip per theme. Worth folding into the
+same dark-mode pass.
