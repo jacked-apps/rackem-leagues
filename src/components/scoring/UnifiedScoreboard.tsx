@@ -360,22 +360,11 @@ function TeamCard({
                     <span className="font-semibold">{thresholds.games_to_tie}</span> tie
                   </span>
                 )}
-                {/* Hide `to_lose` when its value is >= to_win. The legacy
-                    BCA 5v5 chart formula `to_lose = opponent's to_win - 1`
-                    produces nonsense values for the lower-handicap team
-                    (e.g., to_win=12, to_lose=13 — reaching 13 wins would
-                    mean you've already won, not lost). The legacy
-                    FiveVFiveScoreboard worked around this by not showing
-                    to_lose at all; we suppress it here only when the chart
-                    value is incoherent. BCA 3v3 still shows to_lose since
-                    its values stay below to_win. */}
-                {thresholds.games_to_lose != null &&
-                  thresholds.games_to_win != null &&
-                  thresholds.games_to_lose < thresholds.games_to_win && (
-                    <span>
-                      <span className="font-semibold">{thresholds.games_to_lose}</span> lose
-                    </span>
-                  )}
+                {thresholds.games_to_lose != null && (
+                  <span>
+                    <span className="font-semibold">{thresholds.games_to_lose}</span> lose
+                  </span>
+                )}
               </>
             )}
             {hints.map((hint, i) => {
