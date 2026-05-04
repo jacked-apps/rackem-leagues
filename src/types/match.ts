@@ -94,10 +94,14 @@ export interface MatchWithLeagueSettings {
   home_team: {
     id: string;
     team_name: string;
+    captain_id: string | null;
+    status: 'active' | 'withdrawn' | 'forfeited' | 'bye';
   };
   away_team: {
     id: string;
     team_name: string;
+    captain_id: string | null;
+    status: 'active' | 'withdrawn' | 'forfeited' | 'bye';
   };
   scheduled_venue: {
     id: string;
