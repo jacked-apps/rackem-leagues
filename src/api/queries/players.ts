@@ -24,11 +24,13 @@ export async function fetchOperatorPlayerCount(
   operatorId: string,
   activeOnly: boolean = false
 ): Promise<number> {
-  // Get all teams from organization's leagues
+  // Get all teams from organization's leagues. Active-only — bye and
+  // withdrawn rows have no players to count.
   let teamsQuery = supabase
     .from('teams')
     .select('id, league:leagues!inner(organization_id), season:seasons!inner(status)')
-    .eq('league.organization_id', operatorId);
+    .eq('league.organization_id', operatorId)
+    .eq('status', 'active');
 
   // Filter by active/upcoming seasons if activeOnly
   if (activeOnly) {

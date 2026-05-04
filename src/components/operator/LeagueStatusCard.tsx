@@ -80,7 +80,7 @@ export const LeagueStatusCard: React.FC<LeagueStatusCardProps> = ({
           // These counts apply to ANY season (upcoming, active, completed) so
           // the progress bar and next-steps list reflect real state during setup.
           const [teamRes, scheduleRes, matchRes] = await Promise.all([
-            supabase.from('teams').select('*', { count: 'exact', head: true }).eq('season_id', mostRecentSeason.id),
+            supabase.from('teams').select('*', { count: 'exact', head: true }).eq('season_id', mostRecentSeason.id).eq('status', 'active'),
             supabase.from('season_weeks').select('*', { count: 'exact', head: true }).eq('season_id', mostRecentSeason.id),
             supabase.from('matches').select('*', { count: 'exact', head: true }).eq('season_id', mostRecentSeason.id),
           ]);

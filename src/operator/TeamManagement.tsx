@@ -249,11 +249,13 @@ export const TeamManagement: React.FC = () => {
     setImportingTeams(true);
 
     try {
-      // Fetch previous season's teams with rosters
+      // Fetch previous season's teams with rosters — active only,
+      // so import doesn't pull bye/withdrawn rows from last season.
       const { data: prevTeams, error: teamsError } = await supabase
         .from('teams')
         .select('*')
-        .eq('season_id', previousSeasonId);
+        .eq('season_id', previousSeasonId)
+        .eq('status', 'active');
 
       if (teamsError) throw teamsError;
 
@@ -343,30 +345,40 @@ export const TeamManagement: React.FC = () => {
   };
 
   /**
-   * Handle team deletion
+   * Handle team deletion.
    *
-   * ⚠️ CRITICAL TODO — DESTRUCTIVE CASCADE WARNING ⚠️
-   * The database schema has `ON DELETE CASCADE` on `matches.home_team_id` and
-   * `matches.away_team_id`. Deleting a team here will silently destroy ALL of
-   * that team's scheduled matches for the season, breaking other teams'
-   * weekly schedules and any season standings/history that reference them.
+   * Hard delete is allowed only when the team has zero matches (typo /
+   * pre-schedule cleanup). When matches exist, the operator is told the
+   * Drop workflow is the right tool — the database FK is RESTRICT, so the
+   * raw DELETE would fail anyway, but the pre-flight check gives a clean
+   * message instead of letting an FK error surface.
    *
-   * The current confirmation dialog warns about losing the team and roster
-   * but does NOT mention the match destruction. This needs a real fix:
-   *   - Block deletion entirely if matches exist (safest)
-   *   - Or implement soft delete / replacement workflow
-   *   - Or build a "team replacement" feature that swaps the team in matches
-   *
-   * Until that fix lands, the warning message below has been updated to
-   * honestly describe what gets destroyed. See:
-   *   - memory-bank/edsPlan.md → "CRITICAL: Team Deletion Cascade Issue"
-   *   - memory-bank/databaseSchema.md (cascade warning)
-   *   - memory-bank/plans/PLAN-wizard2.md → "Tech Debt Discovered" section
+   * The Drop workflow (mark team withdrawn + reassign matches to a bye row)
+   * ships in PR 2; until then, operators with mid-season drops should
+   * contact dev support.
    */
   const handleDeleteTeam = async (teamId: string) => {
+    const { count: matchCount, error: countError } = await supabase
+      .from('matches')
+      .select('id', { count: 'exact', head: true })
+      .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`);
+
+    if (countError) {
+      logger.error('Error counting team matches', { error: countError.message });
+      toast.error('Could not check team matches. Please try again.');
+      return;
+    }
+
+    if ((matchCount ?? 0) > 0) {
+      toast.error(
+        `This team has ${matchCount} match${matchCount === 1 ? '' : 'es'} and cannot be deleted. The Drop Team workflow (coming soon) is the right tool for mid-season departures.`
+      );
+      return;
+    }
+
     const confirmed = await confirm({
       title: 'Delete Team?',
-      message: 'WARNING: Deleting this team will permanently remove the team and its roster, AND will destroy ALL scheduled matches involving this team for the season. Other teams\' weekly schedules may be affected. Season standings and history that reference this team may be impacted. This cannot be undone.',
+      message: 'This team has no matches yet. Deleting it will permanently remove the team and its roster. This cannot be undone.',
       confirmText: 'Delete Team',
       confirmVariant: 'destructive',
     });
@@ -374,8 +386,6 @@ export const TeamManagement: React.FC = () => {
     if (!confirmed) return;
 
     try {
-      // ⚠️ TODO: This delete triggers cascade destruction of matches.
-      // See the function-level comment above for details.
       const { error: deleteError } = await supabase
         .from('teams')
         .delete()
@@ -383,7 +393,6 @@ export const TeamManagement: React.FC = () => {
 
       if (deleteError) throw deleteError;
 
-      // Refresh teams list using hook function
       await refreshTeams();
     } catch (err) {
       logger.error('Error deleting team', { error: err instanceof Error ? err.message : String(err) });

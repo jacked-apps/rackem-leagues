@@ -106,7 +106,8 @@ export const LeagueOverviewCard: React.FC<LeagueOverviewCardProps> = ({ league }
           const { count: teamCount } = await supabase
             .from('teams')
             .select('*', { count: 'exact', head: true })
-            .eq('season_id', data.id);
+            .eq('season_id', data.id)
+            .eq('status', 'active');
 
           setHasTeams((teamCount ?? 0) > 0);
 

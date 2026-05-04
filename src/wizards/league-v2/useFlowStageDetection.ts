@@ -90,7 +90,8 @@ export function useFlowStageDetection(leagueId: string | null): StageDetectionRe
           supabase
             .from('teams')
             .select('home_venue_id', { count: 'exact' })
-            .eq('season_id', season.id),
+            .eq('season_id', season.id)
+            .eq('status', 'active'),
         ]);
         hasSchedule = (weeksRes.count ?? 0) > 0;
         teamCount = teamsRes.count ?? 0;

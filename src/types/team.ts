@@ -4,9 +4,14 @@
  */
 
 /**
- * Team status types
+ * Team status types.
+ *
+ * 'bye' was added in PR 1 of the team-deletion-cascade fix to represent
+ * placeholder team rows used in odd-team-count season schedules and
+ * (after PR 2) absorbed dropped-team slots. Bye rows have no captain
+ * and no roster.
  */
-export type TeamStatus = 'active' | 'withdrawn' | 'forfeited';
+export type TeamStatus = 'active' | 'withdrawn' | 'forfeited' | 'bye';
 
 /**
  * Team player status types
@@ -21,7 +26,9 @@ export interface Team {
   id: string;
   season_id: string;
   league_id: string;
-  captain_id: string;
+  // Nullable for bye-team rows (status='bye'). Real teams always have a
+  // captain set; the operator UI enforces that invariant, not the schema.
+  captain_id: string | null;
   home_venue_id: string | null;
   team_name: string;
   roster_size: number; // 5 or 8

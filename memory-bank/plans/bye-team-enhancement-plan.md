@@ -1,5 +1,19 @@
 # BYE Team Enhancement Plan
 
+> **⚠️ STATUS: SUPERSEDED (PR 1 of team-deletion-cascade fix, 2026-05-01)**
+>
+> The bye-as-real-team work has shipped via:
+> - Brainstorm: `docs/brainstorms/team-deletion-cascade-fix-requirements.md`
+> - Plan: `docs/plans/2026-04-29-001-fix-team-cascade-deletion-plan.md`
+>
+> **Differences from this older plan:**
+> - The new work uses `teams.status = 'bye'` instead of a separate `is_bye_team` boolean column. One state column instead of two parallel flags.
+> - Configurable bye points and auto-completion of bye matches are NOT shipped here — they remain future work.
+>
+> Do not implement the `is_bye_team` column path below; it has been rejected.
+> The sections describing affected files and player-view impacts are still
+> accurate inputs for the bye-vs-real-team UI work in PR 1 / PR 2.
+
 ## Overview
 
 Currently, BYE teams are handled as temporary objects during schedule generation:
