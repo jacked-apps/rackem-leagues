@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-03 (Brainstorm doc + review pass landed: `docs/brainstorms/unified-scoreboard-requirements.md` — collapse 4 scoreboards to 1 + tiebreaker, schema-derived display hints with escape hatch, mobile-first compact mode. Document-review pass dropped sticky-thin-bar and mid-match clinch detection from scope; legacy parallel-compute helpers SURVIVE in this branch as the divergence audit's reference implementation. Depends on PR #98 merge.)
+> **Last Updated**: 2026-05-03 (Implementation plan landed: `docs/plans/2026-05-03-001-feat-unified-scoreboard-plan.md` — 8 units across 3 phases. Plan went through one document-review pass; auto-expand on R10, sticky-thin-bar, and mid-match clinch are out of scope; TeamStatsCard generalization for points-mode is in. Brainstorm: `docs/brainstorms/unified-scoreboard-requirements.md`. Depends on PR #98 merge; pin SHA before /ce:work.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -60,6 +60,7 @@
 | `docs/plans/2026-04-17-001-feat-official-rulebook-reader-plan.md` | Implementation plan for the Official Rulebook Reader | 6 units, active branch `feature/official-rulebook-reader` |
 | `docs/plans/2026-04-27-001-feat-global-header-nav-rework-plan.md` | Implementation plan for the global header & navigation rework | 9 units in 3 phases, active branch `fix/header-mobile-rework` |
 | `docs/plans/2026-04-28-001-feat-modular-league-system-plan.md` | Implementation plan for the fully modular league system | 21 units across 8 phases (Phase 0 research + 7 implementation phases); supersedes April 18 plan; covers BCAPL SL handicap, audit log R21, threshold-charts wiring, team_format drop |
+| `docs/plans/2026-05-03-001-feat-unified-scoreboard-plan.md` | Implementation plan for the unified scoreboard refactor | 8 units across 3 phases; replaces 3 legacy scoreboards with 1 + tiebreaker fix; schema-derived display hints; TeamStatsCard generalized for points-mode; depends on PR #98 merge |
 
 ### Future Work Folder
 
