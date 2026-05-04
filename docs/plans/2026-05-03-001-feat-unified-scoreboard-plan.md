@@ -310,7 +310,7 @@ AFTER:
 
 ---
 
-- [ ] **Unit 3: Build `UnifiedScoreboard` component (compact mode)**
+- [x] **Unit 3: Build `UnifiedScoreboard` component (compact mode)**
 
 **Goal:** New `src/components/scoring/UnifiedScoreboard.tsx` that renders any preset config or off-preset combo from the match row + system_snapshot, with compact-mode layout and schema-derived display hints.
 

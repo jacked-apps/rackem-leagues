@@ -20,7 +20,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { renderWithProviders, screen } from '@/test/utils';
+import { renderWithProviders, screen, userEvent } from '@/test/utils';
 import {
   registerTestedPresetCalculators,
   clearRegistry,
@@ -367,5 +367,410 @@ describe('UnifiedScoreboard — auto-flex player rows (R14)', () => {
     );
 
     expect(container.firstChild).toBeTruthy();
+  });
+});
+
+// ----------------------------------------------------------------------------
+// R6/R17 — calculator hint rendering (schema-derived + escape hatch)
+// ----------------------------------------------------------------------------
+
+describe('UnifiedScoreboard — calculator hints (R6/R17)', () => {
+  it('renders the BCA 5v5 milestone hint declared in displayHints', () => {
+    const match = buildMatch({
+      home_games_won: 8,
+      away_games_won: 5,
+      home_points_earned: 9,
+      away_points_earned: 5,
+      home_to_win: 13,
+      away_to_win: 13,
+      system_snapshot: {
+        points_calculator: 'accumulate_with_milestone_jumps',
+        points_calculator_params: {
+          per_game_increment: 0.1,
+          milestone_percent: 0.7,
+          milestone_jump_value: 1.5,
+          win_threshold_jump_value: 3.0,
+        },
+      },
+    });
+
+    renderWithProviders(
+      <UnifiedScoreboard
+        match={match}
+        homeLineup={buildLineup({
+          player4_id: 'p4',
+          player4_handicap: 6,
+          player5_id: 'p5',
+          player5_handicap: 7,
+        })}
+        awayLineup={buildLineup({ team_id: 'team-away' })}
+        homeThresholds={{ games_to_win: 13, games_to_tie: null, games_to_lose: null }}
+        awayThresholds={{ games_to_win: 13, games_to_tie: null, games_to_lose: null }}
+        homeLosses={5}
+        awayLosses={8}
+        allGamesComplete={false}
+        isHomeTeam={true}
+        gameType="9-ball"
+        winCondition="games"
+        lineupSize={5}
+        {...noopHandlers}
+      />,
+    );
+
+    // Schema-derived hint surfaces with the declared label + the resolved value.
+    expect(screen.getAllByText(/Milestone bonus/i).length).toBeGreaterThan(0);
+    // The 1.5 value renders alongside the label.
+    expect(screen.getAllByText(/1\.5/).length).toBeGreaterThan(0);
+  });
+
+  it('renders nothing extra when the calculator declares no displayHints', () => {
+    // linear_above_threshold has no displayHints (rate-only param).
+    const match = buildMatch({
+      home_games_won: 5,
+      home_points_earned: 1,
+      away_games_won: 3,
+      away_points_earned: 0,
+      home_to_win: 11,
+      away_to_win: 11,
+      system_snapshot: {
+        points_calculator: 'linear_above_threshold',
+        points_calculator_params: { per_extra_game_multiplier: 1 },
+      },
+    });
+
+    renderWithProviders(
+      <UnifiedScoreboard
+        match={match}
+        homeLineup={buildLineup()}
+        awayLineup={buildLineup({ team_id: 'team-away' })}
+        homeThresholds={bcaThresholds()}
+        awayThresholds={bcaThresholds()}
+        homeLosses={3}
+        awayLosses={5}
+        allGamesComplete={false}
+        isHomeTeam={true}
+        gameType="8-ball"
+        winCondition="games"
+        lineupSize={3}
+        {...noopHandlers}
+      />,
+    );
+
+    // No hint pills rendered — calculator is silent about display.
+    expect(screen.queryByText(/Milestone bonus/i)).not.toBeInTheDocument();
+  });
+
+  it('falls back gracefully for an unknown / unresolvable calculator', () => {
+    // Calculator name not in the registry — scoreboard renders without a
+    // crash, hints array is empty, points axis still appears since the
+    // name is not 'none'.
+    const match = buildMatch({
+      home_games_won: 3,
+      home_points_earned: 99, // unique number to assert against
+      away_games_won: 2,
+      away_points_earned: 77, // unique number to assert against
+      home_to_win: 11,
+      away_to_win: 11,
+      system_snapshot: {
+        points_calculator: 'novel_calculator_not_yet_built',
+        points_calculator_params: { exotic: 42 },
+      },
+    });
+
+    const { container } = renderWithProviders(
+      <UnifiedScoreboard
+        match={match}
+        homeLineup={buildLineup()}
+        awayLineup={buildLineup({ team_id: 'team-away' })}
+        homeThresholds={bcaThresholds()}
+        awayThresholds={bcaThresholds()}
+        homeLosses={2}
+        awayLosses={3}
+        allGamesComplete={false}
+        isHomeTeam={true}
+        gameType="8-ball"
+        winCondition="games"
+        lineupSize={3}
+        {...noopHandlers}
+      />,
+    );
+
+    expect(container.firstChild).toBeTruthy();
+    // Points still render for unknown-but-not-'none' calculators.
+    expect(screen.getByText('99')).toBeInTheDocument();
+    expect(screen.getByText('77')).toBeInTheDocument();
+  });
+});
+
+// ----------------------------------------------------------------------------
+// R9 — win-condition primary-axis flip
+// ----------------------------------------------------------------------------
+
+describe('UnifiedScoreboard — primary axis flip (R9)', () => {
+  it('renders points as primary (large) when winCondition is points', () => {
+    // Fargo 10-7 default. winCondition='points' should put points in the
+    // larger emphasis position; games becomes the secondary.
+    const match = buildMatch({
+      home_games_won: 12,
+      away_games_won: 13,
+      home_points_earned: 187,
+      away_points_earned: 175,
+      home_to_win: 200,
+      away_to_win: 200,
+      home_to_tie: 0,
+      away_to_tie: 25,
+      system_snapshot: {
+        points_calculator: 'accumulated_per_game',
+        points_calculator_params: {},
+      },
+    });
+
+    renderWithProviders(
+      <UnifiedScoreboard
+        match={match}
+        homeLineup={buildLineup({
+          player4_id: 'p4',
+          player4_handicap: 6,
+          player5_id: 'p5',
+          player5_handicap: 7,
+        })}
+        awayLineup={buildLineup({ team_id: 'team-away' })}
+        homeThresholds={{ games_to_win: 200, games_to_tie: 0, games_to_lose: null }}
+        awayThresholds={{ games_to_win: 200, games_to_tie: 25, games_to_lose: null }}
+        homeLosses={13}
+        awayLosses={12}
+        allGamesComplete={false}
+        isHomeTeam={true}
+        gameType="9-ball"
+        winCondition="points"
+        lineupSize={5}
+        {...noopHandlers}
+      />,
+    );
+
+    // Both points numbers render (they're the primary axis numbers).
+    expect(screen.getByText('187')).toBeInTheDocument();
+    expect(screen.getByText('175')).toBeInTheDocument();
+  });
+});
+
+// ----------------------------------------------------------------------------
+// R22 — Fargo start-points delta inline on points line
+// ----------------------------------------------------------------------------
+
+describe('UnifiedScoreboard — Fargo start-points delta (R22)', () => {
+  it('shows "+N start" badge for the weaker side in points-mode', () => {
+    // Fargo points-mode: weaker team gets a positive *_to_tie credit.
+    const match = buildMatch({
+      home_games_won: 0,
+      away_games_won: 0,
+      home_points_earned: 0,
+      away_points_earned: 0,
+      home_to_tie: 0, // stronger team — no badge
+      away_to_tie: 25, // weaker team — +25 start badge
+      home_to_win: 200,
+      away_to_win: 200,
+      system_snapshot: {
+        points_calculator: 'accumulated_per_game',
+        points_calculator_params: {},
+      },
+    });
+
+    renderWithProviders(
+      <UnifiedScoreboard
+        match={match}
+        homeLineup={buildLineup({
+          player4_id: 'p4',
+          player4_handicap: 6,
+          player5_id: 'p5',
+          player5_handicap: 7,
+        })}
+        awayLineup={buildLineup({ team_id: 'team-away' })}
+        homeThresholds={{ games_to_win: 200, games_to_tie: 0, games_to_lose: null }}
+        awayThresholds={{ games_to_win: 200, games_to_tie: 25, games_to_lose: null }}
+        homeLosses={0}
+        awayLosses={0}
+        allGamesComplete={false}
+        isHomeTeam={true}
+        gameType="9-ball"
+        winCondition="points"
+        lineupSize={5}
+        {...noopHandlers}
+      />,
+    );
+
+    // Away (weaker) team gets the badge; home (stronger) doesn't.
+    expect(screen.getByText(/\+25 start/)).toBeInTheDocument();
+    expect(screen.queryByText(/\+0 start/)).not.toBeInTheDocument();
+  });
+
+  it('does not render start-points badge in games-mode', () => {
+    const match = buildMatch({
+      home_games_won: 5,
+      home_points_earned: 1,
+      home_to_tie: 9,
+      away_to_tie: 9,
+      home_to_win: 11,
+      away_to_win: 11,
+      system_snapshot: {
+        points_calculator: 'linear_above_threshold',
+        points_calculator_params: {},
+      },
+    });
+
+    renderWithProviders(
+      <UnifiedScoreboard
+        match={match}
+        homeLineup={buildLineup()}
+        awayLineup={buildLineup({ team_id: 'team-away' })}
+        homeThresholds={bcaThresholds()}
+        awayThresholds={bcaThresholds()}
+        homeLosses={3}
+        awayLosses={5}
+        allGamesComplete={false}
+        isHomeTeam={true}
+        gameType="8-ball"
+        winCondition="games"
+        lineupSize={3}
+        {...noopHandlers}
+      />,
+    );
+
+    expect(screen.queryByText(/start/i)).not.toBeInTheDocument();
+  });
+});
+
+// ----------------------------------------------------------------------------
+// Per-player points column conditional (Ed's framing during review)
+// ----------------------------------------------------------------------------
+
+describe('UnifiedScoreboard — per-player points column (calculator-driven)', () => {
+  it('shows the per-player P column when getPlayerPoints is provided', async () => {
+    const match = buildMatch({
+      home_points_earned: 30,
+      away_points_earned: 25,
+      home_to_win: 11,
+      away_to_win: 11,
+      system_snapshot: {
+        points_calculator: 'accumulated_per_game',
+        points_calculator_params: {},
+      },
+    });
+    const getPlayerPoints = vi.fn(() => 10);
+
+    const user = userEvent.setup();
+    renderWithProviders(
+      <UnifiedScoreboard
+        match={match}
+        homeLineup={buildLineup()}
+        awayLineup={buildLineup({ team_id: 'team-away' })}
+        homeThresholds={bcaThresholds()}
+        awayThresholds={bcaThresholds()}
+        homeLosses={0}
+        awayLosses={0}
+        allGamesComplete={false}
+        isHomeTeam={true}
+        gameType="9-ball"
+        winCondition="points"
+        lineupSize={3}
+        {...noopHandlers}
+        getPlayerPoints={getPlayerPoints}
+      />,
+    );
+
+    // Open the home team's drawer to expose the player table.
+    await user.click(screen.getByText('Home Team'));
+    // The 'P' column header appears.
+    expect(screen.getAllByText('P').length).toBeGreaterThan(0);
+    // getPlayerPoints was called for each rendered player (3 players × 1 team
+    // opened = 3 calls minimum).
+    expect(getPlayerPoints).toHaveBeenCalled();
+  });
+
+  it('hides the per-player P column when getPlayerPoints is omitted', async () => {
+    const match = buildMatch({
+      home_points_earned: 5,
+      away_points_earned: 3,
+      home_to_win: 11,
+      away_to_win: 11,
+      system_snapshot: {
+        points_calculator: 'accumulate_with_milestone_jumps',
+        points_calculator_params: {},
+      },
+    });
+
+    const user = userEvent.setup();
+    renderWithProviders(
+      <UnifiedScoreboard
+        match={match}
+        homeLineup={buildLineup()}
+        awayLineup={buildLineup({ team_id: 'team-away' })}
+        homeThresholds={bcaThresholds()}
+        awayThresholds={bcaThresholds()}
+        homeLosses={2}
+        awayLosses={4}
+        allGamesComplete={false}
+        isHomeTeam={true}
+        gameType="8-ball"
+        winCondition="games"
+        lineupSize={3}
+        {...noopHandlers}
+        // No getPlayerPoints prop — aggregate calculator, no per-player tally.
+      />,
+    );
+
+    await user.click(screen.getByText('Home Team'));
+    // Drawer's "HC", "Name", "W", "L" headers render — but no "P" column.
+    expect(screen.getAllByText('HC').length).toBeGreaterThan(0);
+    expect(screen.queryByText('P')).not.toBeInTheDocument();
+  });
+});
+
+// ----------------------------------------------------------------------------
+// R10 — threshold trio expand/collapse interaction
+// ----------------------------------------------------------------------------
+
+describe('UnifiedScoreboard — threshold trio interaction (R10)', () => {
+  it('expands the full trio when the chevron is clicked', async () => {
+    const match = buildMatch({
+      home_games_won: 5,
+      home_to_win: 11,
+      home_to_tie: 9,
+      home_to_lose: 7,
+      away_to_win: 11,
+      away_to_tie: 9,
+      away_to_lose: 7,
+    });
+
+    const user = userEvent.setup();
+    renderWithProviders(
+      <UnifiedScoreboard
+        match={match}
+        homeLineup={buildLineup()}
+        awayLineup={buildLineup({ team_id: 'team-away' })}
+        homeThresholds={bcaThresholds()}
+        awayThresholds={bcaThresholds()}
+        homeLosses={3}
+        awayLosses={5}
+        allGamesComplete={false}
+        isHomeTeam={true}
+        gameType="8-ball"
+        winCondition="games"
+        lineupSize={3}
+        {...noopHandlers}
+      />,
+    );
+
+    // Default-collapsed: no "tie" / "lose" labels surface in the threshold band.
+    expect(screen.queryByText('tie')).not.toBeInTheDocument();
+    expect(screen.queryByText('lose')).not.toBeInTheDocument();
+
+    // Tap the chevron toggle (each team has one).
+    const toggles = screen.getAllByRole('button', { name: /toggle threshold details/i });
+    await user.click(toggles[0]);
+
+    // Now the trio (win/tie/lose) labels appear for the home team card.
+    expect(screen.getAllByText('tie').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('lose').length).toBeGreaterThan(0);
   });
 });

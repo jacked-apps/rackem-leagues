@@ -90,6 +90,22 @@ export interface UnifiedScoreboardProps {
   ) => { wins: number; losses: number };
   /** Optional swap-player handler (only used when isUserTeam). */
   onSwapPlayer?: (playerId: string, position: number) => void;
+  /**
+   * Optional per-player points getter. Provided when the active calculator
+   * awards per-player points (e.g. `accumulated_per_game`) — caller derives
+   * each player's running points total from the games array. When absent,
+   * the player drawer omits the per-player points column.
+   *
+   * Per Ed's framing during review: "if each player earns points then show
+   * points; if it's team-based then don't show it." The decision to provide
+   * this getter lives at the caller (which knows the active calculator's
+   * `kind`), keeping the scoreboard parameter-blind.
+   */
+  getPlayerPoints?: (
+    playerId: string,
+    position: number,
+    isHomeTeam: boolean,
+  ) => number;
 }
 
 // ============================================================================
@@ -174,6 +190,12 @@ interface TeamCardProps {
   showPoints: boolean;
   winCondition: 'games' | 'points';
   hints: DisplayHint[];
+  /**
+   * Starting-points credit (Fargo points-mode). When > 0, renders inline as
+   * a small `+N` next to the primary points number. Null/0/undefined → no
+   * badge. Caller passes `match.home_to_tie` (or away).
+   */
+  startPointsDelta?: number | null;
   isUserTeam: boolean;
   getPlayerDisplayName: (id: string) => string;
   getPlayerStats: (
@@ -182,6 +204,12 @@ interface TeamCardProps {
     isHomeTeam: boolean,
   ) => { wins: number; losses: number };
   onSwapPlayer?: (playerId: string, position: number) => void;
+  /** Optional per-player points getter (when calculator is per-game). */
+  getPlayerPoints?: (
+    playerId: string,
+    position: number,
+    isHomeTeam: boolean,
+  ) => number;
 }
 
 function TeamCard({
@@ -196,10 +224,12 @@ function TeamCard({
   showPoints,
   winCondition,
   hints,
+  startPointsDelta,
   isUserTeam,
   getPlayerDisplayName,
   getPlayerStats,
   onSwapPlayer,
+  getPlayerPoints,
 }: TeamCardProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [thresholdsExpanded, setThresholdsExpanded] = useState(false);
@@ -234,6 +264,20 @@ function TeamCard({
             {formatNumber(primaryValue)}
           </span>
           <span className="text-xs text-muted-foreground">{primaryLabel}</span>
+          {/* R22 — Fargo start-points delta inline on the primary line when points-mode.
+              Only shows when the credit is positive (the weaker team gets the badge;
+              stronger team's *_to_tie is 0 → no badge). */}
+          {winCondition === 'points' &&
+            showPoints &&
+            startPointsDelta != null &&
+            startPointsDelta > 0 && (
+              <span
+                className="text-[10px] text-muted-foreground bg-background/40 rounded px-1 py-0.5"
+                title="Starting points (handicap credit)"
+              >
+                +{startPointsDelta} start
+              </span>
+            )}
         </div>
 
         {/* Secondary axis (small, inline) — hidden when points axis is suppressed (R7) */}
@@ -301,14 +345,27 @@ function TeamCard({
           </div>
         )}
 
-        {/* Player drawer (collapsed by default) */}
+        {/* Player drawer (collapsed by default).
+            Per-player points column appears only when the calculator awards
+            per-player points (caller passes `getPlayerPoints`). Per Ed's
+            framing: "if each player earns points then show points; if it's
+            team-based then don't show it." */}
         {drawerOpen && (
           <div className={`pt-2 border-t ${colors.borderDark}`}>
-            <div className="grid grid-cols-[auto_1fr_auto_auto] gap-2 text-xs">
+            <div
+              className={`grid gap-2 text-xs ${
+                getPlayerPoints
+                  ? 'grid-cols-[auto_1fr_auto_auto_auto]'
+                  : 'grid-cols-[auto_1fr_auto_auto]'
+              }`}
+            >
               <div className="font-semibold text-muted-foreground">HC</div>
               <div className="font-semibold text-muted-foreground">Name</div>
               <div className="font-semibold text-muted-foreground text-center">W</div>
               <div className="font-semibold text-muted-foreground text-center">L</div>
+              {getPlayerPoints && (
+                <div className="font-semibold text-muted-foreground text-center">P</div>
+              )}
 
               {/* Team summary row */}
               <div className="font-semibold text-foreground">
@@ -319,10 +376,18 @@ function TeamCard({
               </div>
               <div className="font-semibold text-foreground text-center">{wins}</div>
               <div className="font-semibold text-foreground text-center">{losses}</div>
+              {getPlayerPoints && (
+                <div className="font-semibold text-foreground text-center">
+                  {formatNumber(points)}
+                </div>
+              )}
 
               {/* Player rows — auto-flex by lineupSize */}
               {players.map((player) => {
                 const stats = getPlayerStats(player.id, player.position, isHome);
+                const playerPoints = getPlayerPoints
+                  ? getPlayerPoints(player.id, player.position, isHome)
+                  : null;
                 const canSwap =
                   isUserTeam && stats.wins === 0 && stats.losses === 0 && !!onSwapPlayer;
                 const swapAction = canSwap
@@ -348,6 +413,11 @@ function TeamCard({
                     </div>
                     <div className="text-center text-foreground">{stats.wins}</div>
                     <div className="text-center text-foreground">{stats.losses}</div>
+                    {playerPoints != null && (
+                      <div className="text-center text-foreground">
+                        {formatNumber(playerPoints)}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -423,6 +493,7 @@ export function UnifiedScoreboard({
   getPlayerDisplayName,
   getPlayerStats,
   onSwapPlayer,
+  getPlayerPoints,
 }: UnifiedScoreboardProps) {
   // Match-row source-of-truth reads (R3, R4 contract — never recompute).
   const homeWins = match.home_games_won ?? 0;
@@ -436,6 +507,15 @@ export function UnifiedScoreboard({
   const calculatorParams = (snapshot as { points_calculator_params?: unknown }).points_calculator_params ?? {};
   const showPoints = shouldShowPointsAxis(calculatorName);
   const hints = resolveDisplayHints(calculatorName, calculatorParams);
+
+  // R22 — Fargo start-points credit. In points-mode, the credit lives on
+  // *_to_tie post Phase 2 Unit 2.1. Whichever side is positive is the weaker
+  // team (gets the visible "+N start" badge). Stronger team's *_to_tie is 0
+  // → no badge.
+  const homeStartPointsDelta =
+    winCondition === 'points' ? (match.home_to_tie ?? null) : null;
+  const awayStartPointsDelta =
+    winCondition === 'points' ? (match.away_to_tie ?? null) : null;
 
   return (
     <div className="bg-card border-b shadow-sm flex-shrink-0">
@@ -493,10 +573,12 @@ export function UnifiedScoreboard({
             showPoints={showPoints}
             winCondition={winCondition}
             hints={hints}
+            startPointsDelta={homeStartPointsDelta}
             isUserTeam={isHomeTeam}
             getPlayerDisplayName={getPlayerDisplayName}
             getPlayerStats={getPlayerStats}
             onSwapPlayer={onSwapPlayer}
+            getPlayerPoints={getPlayerPoints}
           />
           <TeamCard
             teamName={match.away_team?.team_name || 'Away'}
@@ -510,10 +592,12 @@ export function UnifiedScoreboard({
             showPoints={showPoints}
             winCondition={winCondition}
             hints={hints}
+            startPointsDelta={awayStartPointsDelta}
             isUserTeam={!isHomeTeam}
             getPlayerDisplayName={getPlayerDisplayName}
             getPlayerStats={getPlayerStats}
             onSwapPlayer={onSwapPlayer}
+            getPlayerPoints={getPlayerPoints}
           />
         </div>
       </div>
