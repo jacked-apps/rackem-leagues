@@ -11,6 +11,7 @@ import type { League } from '@/types/league';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
 import { useFlowStageDetection } from '@/wizards/league-v2/useFlowStageDetection';
+import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 
 const STAGE_BUTTON_LABELS: Record<number, string> = {
   1: 'Create Season',
@@ -58,6 +59,8 @@ export const LeagueOverviewCard: React.FC<LeagueOverviewCardProps> = ({ league }
   const [isNavigating, setIsNavigating] = useState(false);
 
   const { firstIncompleteStage } = useFlowStageDetection(league.id);
+  const { data: leaguePrefs } = useResolvedLeaguePrefs(league.id);
+  const lineupSize = leaguePrefs?.lineup_size;
   const flowComplete = firstIncompleteStage >= 5;
   const wizardButtonLabel = flowComplete
     ? 'Season Active'
@@ -332,7 +335,7 @@ export const LeagueOverviewCard: React.FC<LeagueOverviewCardProps> = ({ league }
             <div>
               <span className={isSeasonComplete() ? 'text-green-700' : 'text-orange-700'}>Format:</span>{' '}
               <span className={`${isSeasonComplete() ? 'text-green-900' : 'text-orange-900'} font-medium`}>
-                {league.team_format === '5_man' ? '5-Man' : '8-Man'}
+                {lineupSize === 3 ? '3v3' : lineupSize === 5 ? '5v5' : `${lineupSize ?? '?'}v${lineupSize ?? '?'}`}
               </span>
             </div>
             {currentSeason.team_count !== undefined && (

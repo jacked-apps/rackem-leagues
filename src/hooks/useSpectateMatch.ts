@@ -12,27 +12,27 @@
  * is scored on the players' side. No confirmation queue, no vacate detection,
  * no write mutations — this is read-only.
  *
- * Intentional duplication: several derivations (fargoTotals, getPlayerPoints,
- * getPlayerStats) mirror what useMatchScoring/ScoreMatch compute. We duplicate
- * rather than thread operator/spectator flags through the player scoring stack
- * because the reviewers on the LO feature specifically warned against that
- * coupling. Pure utilities (calculateFargoMatchTotals, calculatePoints,
- * calculateBCAPoints, getTeamStats) are reused as shared primitives.
+ * Phase 5 Unit 5.5: this hook now reads the match row's
+ * `home_points_earned` / `away_points_earned` columns directly rather
+ * than recomputing points from match_games. The columns are maintained
+ * per-game by the scoring mutations (`updateMatchRunningTotals`) so the
+ * spectator view ticks live as the players score, with no duplicated
+ * recompute logic.
+ *
+ * Intentional duplication that REMAINS: getPlayerPoints + getPlayerStats
+ * still iterate match_games for per-player breakdowns (the match row
+ * stores team-level totals only, not per-player). The team-level
+ * `calculatePoints` / `calculateBCAPoints` / `calculateFargoMatchTotals`
+ * recomputes are gone — the team totals come from the match row.
  */
 
 import { useMemo } from 'react';
 import { getPlayerNicknameById } from '@/types/member';
-import {
-  getTeamStats,
-  calculatePoints,
-  calculateBCAPoints,
-  TIEBREAKER_THRESHOLDS,
-} from '@/types';
+import { getTeamStats, TIEBREAKER_THRESHOLDS } from '@/types';
 import { useMatchWithLeagueSettings, useMatchLineups, useMatchGames } from '@/api/hooks/useMatches';
 import { useTeamDetails } from '@/api/hooks/useTeams';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { useMatchRealtime } from '@/realtime/useMatchRealtime';
-import { calculateFargoMatchTotals } from '@/utils/fargoMatchTotals';
 import type { Player, MatchGame, HandicapThresholds } from '@/types';
 
 export function useSpectateMatch(matchId: string | null | undefined) {
@@ -117,25 +117,27 @@ export function useSpectateMatch(matchId: string | null | undefined) {
   // is null for Fargo matches by design.
   const homeThresholds: HandicapThresholds | null = useMemo(() => {
     if (!match) return null;
-    if (match.home_games_to_win === null || match.home_games_to_win === undefined) return null;
+    if (match.home_to_win === null || match.home_to_win === undefined) return null;
     return {
-      games_to_win: match.home_games_to_win,
-      games_to_tie: match.home_games_to_tie ?? null,
-      games_to_lose: match.home_games_to_lose ?? null,
+      games_to_win: match.home_to_win,
+      games_to_tie: match.home_to_tie ?? null,
+      games_to_lose: match.home_to_lose ?? null,
     };
   }, [match]);
 
   const awayThresholds: HandicapThresholds | null = useMemo(() => {
     if (!match) return null;
-    if (match.away_games_to_win === null || match.away_games_to_win === undefined) return null;
+    if (match.away_to_win === null || match.away_to_win === undefined) return null;
     return {
-      games_to_win: match.away_games_to_win,
-      games_to_tie: match.away_games_to_tie ?? null,
-      games_to_lose: match.away_games_to_lose ?? null,
+      games_to_win: match.away_to_win,
+      games_to_tie: match.away_to_tie ?? null,
+      games_to_lose: match.away_to_lose ?? null,
     };
   }, [match]);
 
-  // Team stats and BCA points for non-Fargo display.
+  // Team stats from the live match_games map (used for wins/losses/ties
+  // counters that the per-player drawer also needs). Team-level POINTS
+  // come from the match row directly — see below.
   const homeStats = match
     ? getTeamStats(match.home_team_id, filteredGameResults)
     : { wins: 0, losses: 0, ties: 0 };
@@ -143,41 +145,51 @@ export function useSpectateMatch(matchId: string | null | undefined) {
     ? getTeamStats(match.away_team_id, filteredGameResults)
     : { wins: 0, losses: 0, ties: 0 };
 
-  const homeBCAPoints = match && homeThresholds
-    ? calculateBCAPoints(match.home_team_id, homeThresholds, filteredGameResults)
-    : 0;
-  const awayBCAPoints = match && awayThresholds
-    ? calculateBCAPoints(match.away_team_id, awayThresholds, filteredGameResults)
-    : 0;
-  const home3v3Points = match && homeThresholds
-    ? calculatePoints(match.home_team_id, homeThresholds, filteredGameResults)
-    : 0;
-  const away3v3Points = match && awayThresholds
-    ? calculatePoints(match.away_team_id, awayThresholds, filteredGameResults)
-    : 0;
+  // Phase 5 Unit 5.5: read points totals from the match row. The match
+  // record is the source of truth — maintained per-game by
+  // `updateMatchRunningTotals` whenever a confirmation lands. The
+  // single `points` value covers all win-condition systems (BCA-style,
+  // 5v5, Fargo, etc.) so spectators see exactly what the players see.
+  const homePoints = match?.home_points_earned ?? 0;
+  const awayPoints = match?.away_points_earned ?? 0;
+  const homeGamesWonFromRow = match?.home_games_won ?? 0;
+  const awayGamesWonFromRow = match?.away_games_won ?? 0;
+  // Per-side games-won fall back to the match-row column when populated
+  // (post-Phase-5 mutations have run for this match) and otherwise to the
+  // live recompute from getTeamStats. The fallback covers in-flight
+  // pre-existing matches that haven't had any new scoring mutations
+  // since the running-totals pipeline shipped.
+  const homeWins = homeGamesWonFromRow || homeStats.wins;
+  const awayWins = awayGamesWonFromRow || awayStats.wins;
 
-  const handicapType = leaguePrefs?.handicap_type ?? 'points';
-  const teamFormat = match?.league?.team_format || '5_man';
-  const is5v5 = teamFormat === '8_man';
+  // Cosmetic Fargo "start-points credit" breakdown for the TenSeven
+  // scoreboard. Read from the match row's repurposed
+  // `*_to_tie` columns (per Phase 2 Unit 2.1: in points-mode these hold
+  // the start-points credit for each side). Display layer only.
+  const homeStartPoints = match?.home_to_tie ?? 0;
+  const awayStartPoints = match?.away_to_tie ?? 0;
+  const startPoints = Math.max(homeStartPoints, awayStartPoints);
+  const startPointsFor: 'home' | 'away' | 'none' =
+    homeStartPoints > 0 ? 'home' : awayStartPoints > 0 ? 'away' : 'none';
+
+  // Resolved system configuration. Reads prefer the per-match
+  // `system_snapshot` so spectator displays match what was live during
+  // scoring, even if the LO edited preferences mid-match. Live prefs
+  // are the fallback for matches not yet scored (no snapshot) or
+  // legacy snapshots from before Phase 2 Unit 2.2's writer expansion.
+  const snapshot = match?.system_snapshot;
+  const handicapType = snapshot?.handicap_type ?? leaguePrefs?.handicap_type ?? 'points';
+  // Lineup-size routing decision: previously `team_format === '8_man'`.
+  // Drives 3v3-vs-5v5 scoreboard component selection in SpectateMatchCard.
+  const is5v5 = (snapshot?.lineup_size ?? leaguePrefs?.lineup_size ?? 3) === 5;
   const gameType = (match?.league?.game_type as string) || 'eight_ball';
 
-  // Fargo totals use snapshotted dials if present so late-spectate always
-  // reflects what was live at scoring time.
-  const fargoOverrides = (match as any)?.system_snapshot?.overrides
-    ?? leaguePrefs?.system_overrides
-    ?? {};
-  const fargoTotals = match && handicapType === 'fargo'
-    ? calculateFargoMatchTotals({
-        homeTeamId: match.home_team_id,
-        awayTeamId: match.away_team_id,
-        homeGamesToWin: match.home_games_to_win ?? 0,
-        awayGamesToWin: match.away_games_to_win ?? 0,
-        gameResults: filteredGameResults,
-        overrides: fargoOverrides,
-      })
-    : null;
+  const fargoOverrides = snapshot?.overrides ?? leaguePrefs?.system_overrides ?? {};
 
-  // Fargo-only per-player points helper for the TenSeven drawer.
+  // Fargo-only per-player points helper for the TenSeven drawer. Reads
+  // its winner-points config from the snapshot dial — this is per-player
+  // breakdown and remains a per-game iteration even after the team-level
+  // recompute went away (per-player totals aren't on the match row).
   const fargoWinnerPoints =
     typeof (fargoOverrides as any).winner_points === 'number'
       ? (fargoOverrides as any).winner_points
@@ -225,17 +237,15 @@ export function useSpectateMatch(matchId: string | null | undefined) {
     gameResults: filteredGameResults,
     homeThresholds,
     awayThresholds,
-    homeWins: homeStats.wins,
-    awayWins: awayStats.wins,
+    homeWins,
+    awayWins,
     homeLosses: homeStats.losses,
     awayLosses: awayStats.losses,
-    homeBCAPoints,
-    awayBCAPoints,
-    home3v3Points,
-    away3v3Points,
-    fargoTotals,
+    homePoints,
+    awayPoints,
+    startPoints,
+    startPointsFor,
     handicapType,
-    teamFormat,
     is5v5,
     gameType,
     allGamesComplete,

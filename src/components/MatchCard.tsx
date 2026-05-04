@@ -99,12 +99,10 @@ export const MatchCard: React.FC<MatchCardProps> = ({
             </div>
 
             <div className="px-4">
-              {match.status === 'completed' &&
-              match.home_team_score !== null &&
-              match.away_team_score !== null ? (
+              {match.status === 'completed' ? (
                 <div className="text-center">
                   <p className="text-2xl font-bold text-foreground">
-                    {match.home_team_score} - {match.away_team_score}
+                    {match.home_games_won} - {match.away_games_won}
                   </p>
                 </div>
               ) : (

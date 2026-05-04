@@ -35,8 +35,8 @@
  * Storage:
  *   Per-game scoring stores only `match_games.loser_balls_pocketed` — winner and
  *   loser points are derived at read time from the league's snapshotted dials.
- *   Start-points are stored on the weaker team's `matches.home_games_to_win` or
- *   `matches.away_games_to_win` column (the stronger team's gets 0).
+ *   Start-points are stored on the weaker team's `matches.home_to_win` or
+ *   `matches.away_to_win` column (the stronger team's gets 0).
  */
 
 import type {

@@ -184,10 +184,11 @@ export const ActiveLeagues: React.FC<ActiveLeaguesProps> = ({ operatorId }) => {
                     {getLeagueName(league)}
                   </h4>
                   <p className="text-sm text-muted-foreground">
-                    {league.team_format === '5_man'
-                      ? '5-Man Roster'
-                      : '8-Man Roster'}{' '}
-                    • Started{' '}
+                    {/* Phase 7 Unit 7.3: roster-format label dropped from
+                        the summary card — `team_format` no longer exists
+                        on the leagues table. The league detail page shows
+                        lineup size via the resolved preferences. */}
+                    Started{' '}
                     {parseLocalDate(
                       league.league_start_date
                     ).toLocaleDateString()}

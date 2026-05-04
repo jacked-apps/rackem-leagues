@@ -51,21 +51,23 @@ export function SpectateMatchCard({ match: seedMatch }: SpectateMatchCardProps) 
   };
 
   // Fargo: TenSevenScoreboard with point-accumulation display.
-  if (data.handicapType === 'fargo' && data.fargoTotals) {
+  // Phase 5 Unit 5.5: points + game counts come from the match row
+  // (maintained per-game by `updateMatchRunningTotals`). The
+  // start-points breakdown is the only Fargo-specific bit, derived from
+  // the match row's repurposed `*_to_tie` columns in useSpectateMatch.
+  if (data.handicapType === 'fargo') {
     return (
       <TenSevenScoreboard
         match={matchForScoreboard}
         homeLineup={data.homeLineup}
         awayLineup={data.awayLineup}
-        homePoints={data.fargoTotals.homePoints}
-        awayPoints={data.fargoTotals.awayPoints}
-        homeGamesWon={data.fargoTotals.homeGamesWon}
-        awayGamesWon={data.fargoTotals.awayGamesWon}
+        homePoints={data.homePoints}
+        awayPoints={data.awayPoints}
+        homeGamesWon={data.homeWins}
+        awayGamesWon={data.awayWins}
         totalScheduledGames={data.gameResults.size}
-        startPoints={data.fargoTotals.startPointsApplied}
-        startPointsFor={
-          data.fargoTotals.startPointsFor === 'even' ? 'none' : data.fargoTotals.startPointsFor
-        }
+        startPoints={data.startPoints}
+        startPointsFor={data.startPointsFor}
         allGamesComplete={data.allGamesComplete}
         isHomeTeam={false}
         onVerify={noop}
@@ -102,8 +104,8 @@ export function SpectateMatchCard({ match: seedMatch }: SpectateMatchCardProps) 
         awayWins={data.awayWins}
         homeLosses={data.homeLosses}
         awayLosses={data.awayLosses}
-        homePoints={data.homeBCAPoints}
-        awayPoints={data.awayBCAPoints}
+        homePoints={data.homePoints}
+        awayPoints={data.awayPoints}
         allGamesComplete={data.allGamesComplete}
         isHomeTeam={false}
         onVerify={noop}
@@ -126,8 +128,8 @@ export function SpectateMatchCard({ match: seedMatch }: SpectateMatchCardProps) 
       awayWins={data.awayWins}
       homeLosses={data.homeLosses}
       awayLosses={data.awayLosses}
-      homePoints={data.home3v3Points}
-      awayPoints={data.away3v3Points}
+      homePoints={data.homePoints}
+      awayPoints={data.awayPoints}
       homeTeamHandicap={0}
       allGamesComplete={data.allGamesComplete}
       isHomeTeam={false}

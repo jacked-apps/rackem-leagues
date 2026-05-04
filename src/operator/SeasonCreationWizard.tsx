@@ -8,6 +8,7 @@ import { useEffect, useCallback, useReducer } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/supabaseClient';
 import { useUpdateLeagueDayOfWeek, useCreateSeason } from '@/api/hooks';
+import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { useScheduleGeneration } from '@/hooks/useScheduleGeneration';
 import { useChampionshipAutoFill } from '@/hooks/useChampionshipAutoFill';
 import { getChampionshipPreferences } from '@/api/queries/seasons';
@@ -54,6 +55,7 @@ export const SeasonCreationWizard: React.FC = () => {
 
   // Centralized state management with useReducer
   const [state, dispatch] = useReducer(wizardReducer, createInitialState(leagueId));
+  const { data: leaguePrefs } = useResolvedLeaguePrefs(state.league?.id);
 
   // Get organization ID from the league (available after league is loaded)
   const organizationId = state.league?.organization_id || null;
@@ -569,7 +571,7 @@ export const SeasonCreationWizard: React.FC = () => {
               <span className="text-xl text-muted-foreground capitalize">
                 {leagueTitle}
               </span>
-              {state.league.team_format === '5_man' && (
+              {leaguePrefs?.lineup_size === 3 && (
                 <InfoButton
                   title="Double Round Robin Format"
                   label="RRx2"

@@ -16,7 +16,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createLeague } from '@/api/mutations/leagues';
 import { upsertPreference } from '@/api/mutations/preferences';
 import { formatLocalDate } from '@/utils/formatters';
-import { PRESET_MAPPINGS } from './presetMappings';
+import { PRESET_MAPPINGS, mapStandingsSort, mapTiebreaker } from './presetMappings';
 import { deriveDateFields } from './leagueWizardHelpers';
 import type { LeagueWizardFormData } from './leagueWizardTypes';
 import type { DayOfWeek, GameType } from '@/types/league';
@@ -41,25 +41,72 @@ export function useCreateLeagueV2({ organizationId }: UseCreateLeagueV2Args) {
 
       const dayOfWeek = (dateFields?.dayOfWeek?.toLowerCase() ?? 'monday') as DayOfWeek;
 
-      // 1. Create the league row (backward compat fields)
+      // 1. Create the league row (Phase 7 Unit 7.3: `team_format` removed
+      //    from the leagues schema — lineup geometry comes from
+      //    preferences.lineup_size).
       const league = await createLeague({
         operatorId: organizationId,
         gameType: (formData['game-type'] ?? 'eight_ball') as GameType,
         dayOfWeek,
-        teamFormat: preset?.legacy.teamFormat ?? '5_man',
         handicapVariant: preset?.legacy.handicapVariant ?? 'standard',
         teamHandicapVariant: preset?.legacy.teamHandicapVariant ?? 'standard',
         leagueStartDate: formData['start-date'] ?? formatLocalDate(new Date()),
         division: formData['qualifier']?.trim() || null,
       });
 
-      // 2. Upsert preferences row with modular fields
+      // 2. Upsert preferences row with modular fields.
+      //
+      // For presets, values come from PRESET_MAPPINGS (all 13 axes baked in).
+      // For custom, each axis is sourced from its wizard step. Two axes
+      // require a small key→DB-shape transform:
+      //   - standings-sort: a single preset key maps to a 3-element priority array
+      //   - tiebreaker:    a single key maps to (trigger, format) pair
+      // (See StandingsSortStep / TiebreakerStep for the user-facing options.)
+      // Phase 4 Unit 4.3: ThresholdSourceStep can override the LO's
+      // MechanismStep choice with 'none' — "play this league
+      // unhandicapped." Only fires for the custom path, only when the
+      // LO explicitly checked the toggle.
+      const mechanismOverride =
+        formData['threshold-source'] === 'unhandicapped' ? 'none' : null;
+
       const prefFields = isCustom
         ? {
             lineup_size: formData['lineup-size'] ?? 3,
             max_roster_size: formData['roster-size'] ?? 5,
             game_generation: formData['match-format'] ?? 'double_round_robin',
             handicap_type: formData['handicap-system'] ?? 'points',
+            pairing_format: formData['pairing-format'] ?? 'single_rack',
+            // Phase 4 Unit 4.1 + migration 20260503000000: writes the
+            // renamed column. The column is now NOT NULL with 'none'
+            // as the explicit "don't track points" sentinel — the
+            // wizard always sends a non-null string. Empty params
+            // object means "use the calculator's defaultParams" from
+            // the registry; per-league param editing arrives in a
+            // follow-up unit.
+            //
+            // Legacy form-data drafts may still hold null (the previous
+            // null-as-no-points convention). Coerce to 'none' on the
+            // way to the DB so a half-finished draft from before the
+            // migration still produces a valid league.
+            points_calculator: (() => {
+              if (!('points-calculator' in formData)) {
+                return 'linear_above_threshold';
+              }
+              const v = formData['points-calculator'];
+              return v === null || v === undefined ? 'none' : v;
+            })(),
+            points_calculator_params: formData['points-calculator-params'] ?? {},
+            win_condition: formData['win-condition'] ?? 'games',
+            mechanism: mechanismOverride ?? formData['mechanism'] ?? 'extra_games',
+            standings_sort: mapStandingsSort(formData['standings-sort']),
+            ...mapTiebreaker(formData['tiebreaker']),
+            // race_length defaults to NULL (single_rack); only meaningful
+            // when pairing_format='race_to_n' — captured in a follow-up
+            // unit, default 7 (race-to-7) is the BCAPL convention.
+            race_length:
+              (formData['pairing-format'] ?? 'single_rack') === 'race_to_n'
+                ? formData['race-length'] ?? 7
+                : null,
           }
         : preset?.preferences ?? {};
 

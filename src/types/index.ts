@@ -11,7 +11,6 @@ export type { Member, PartialMember, MemberForMessaging, UserRole } from './memb
 
 // League types
 export type {
-  TeamFormat,
   HandicapSystem,
   GameType,
   Season,

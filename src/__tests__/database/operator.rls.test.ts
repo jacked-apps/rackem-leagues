@@ -226,7 +226,6 @@ describe('Leagues Table - RLS Tests', () => {
           organization_id: testOrgId,
           game_type: 'nine_ball',
           day_of_week: 3, // Wednesday
-          team_format: '5_player',
           handicap_variant: 'bca',
           team_handicap_variant: 'bca',
           league_start_date: '2025-01-01',

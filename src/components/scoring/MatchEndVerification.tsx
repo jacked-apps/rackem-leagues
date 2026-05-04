@@ -19,8 +19,16 @@ import { useMatchLineups, useMatchGames, useMatchWithLeagueSettings } from '@/ap
 import { useCreateMatchGames, useUpdateMatchGame, useUpdateMatch } from '@/api/hooks/useMatchMutations';
 import { useUpdateMatchLineup } from '@/api/hooks';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
-import { calculatePoints, calculateBCAPoints } from '@/types/match';
-import { calculateFargoMatchTotals } from '@/utils/fargoMatchTotals';
+import { auditMatchScoringConsistency } from '@/api/queries/matches';
+import { determineMatchResult } from '@/utils/determineMatchResult';
+import { ManualTiebreakerDialog } from './ManualTiebreakerDialog';
+import type { ManualTiebreakerSubmission } from './ManualTiebreakerDialog';
+import {
+  tiebreakerGameNumbers,
+  tiebreakerGameToPosition,
+  tiebreakerGameSpecs,
+} from '@/utils/tiebreaker/gameNumbers';
+import { getMatchTotalGames } from '@/utils/lineup/getMatchTotalGames';
 import { logger } from '@/utils/logger';
 
 interface MatchEndVerificationProps {
@@ -60,38 +68,9 @@ interface MatchEndVerificationProps {
   gameType: string;
 }
 
-/**
- * Determine match result from scores and thresholds
- */
-function determineMatchResult(
-  homeWins: number,
-  awayWins: number,
-  homeWinThreshold: number,
-  awayWinThreshold: number,
-  homeTieThreshold: number | null,
-  awayTieThreshold: number | null
-): 'home_win' | 'away_win' | 'tie' {
-  // Check for wins first
-  if (homeWins >= homeWinThreshold) {
-    return 'home_win';
-  }
-  if (awayWins >= awayWinThreshold) {
-    return 'away_win';
-  }
-
-  // Check for tie (only if thresholds exist)
-  if (
-    homeTieThreshold !== null &&
-    awayTieThreshold !== null &&
-    homeWins === homeTieThreshold &&
-    awayWins === awayTieThreshold
-  ) {
-    return 'tie';
-  }
-
-  // Shouldn't happen if all games are complete
-  return 'tie';
-}
+// determineMatchResult extracted to src/utils/determineMatchResult.ts
+// (Phase 0b characterization tests at
+// src/utils/__tests__/determineMatchResult.characterization.test.ts).
 
 /**
  * Match end verification component
@@ -126,21 +105,40 @@ export function MatchEndVerification({
   const matchQuery = useMatchWithLeagueSettings(matchId);
   const match = matchQuery.data;
 
-  // Detect team format (5v5 vs 3v3)
-  const teamFormat = match?.league?.team_format || '5_man';
-  const is5v5 = teamFormat === '8_man';
-
-  // Unit 12: Fargo matches use a different completion math than BCA.
-  // handicap_type is resolved through the league preferences cascade.
+  // Resolved system configuration. Reads prefer the per-match
+  // `system_snapshot` (frozen at first-scoring-event by
+  // populateMatchSnapshotIfNeeded) so completion math matches what was
+  // live during play, even if the LO edited preferences mid-match.
+  // Live `useResolvedLeaguePrefs` is the fallback for matches whose
+  // snapshot pre-dates Phase 2 Unit 2.2's writer expansion (legacy
+  // shape may be missing fields) and matches still in `scheduled`
+  // status (no scoring yet, snapshot not populated).
+  //
+  // Phase 5 Unit 5.5: this component no longer recomputes points
+  // (no calculatePoints / calculateBCAPoints / calculateFargoMatchTotals).
+  // The match row's `home_points_earned` / `away_points_earned` are
+  // maintained per-game by the scoring mutations via
+  // `updateMatchRunningTotals` and read directly here. The win-condition
+  // axis (snapshot-resolved) decides whether the match outcome is
+  // determined by games-won thresholds (BCA-style — tie band possible)
+  // or by points totals (Fargo-style — never a true tie).
   const { data: leaguePrefs } = useResolvedLeaguePrefs(match?.league?.id);
-  const handicapType = leaguePrefs?.handicap_type ?? 'points';
-  const isFargoMatch = handicapType === 'fargo';
-  // Prefer the match-level snapshot (tier 3 frozen at first scoring event)
-  // over live league overrides so completion math matches what was live
-  // while the match was being played.
-  const fargoOverrides = match?.system_snapshot?.overrides
-    ?? leaguePrefs?.system_overrides
-    ?? {};
+  const snapshot = match?.system_snapshot;
+  const lineupSize = snapshot?.lineup_size ?? leaguePrefs?.lineup_size ?? 3;
+  const gameGeneration =
+    snapshot?.game_generation ?? leaguePrefs?.game_generation ?? 'double_round_robin';
+  const matchTotalGames = getMatchTotalGames({ lineupSize, gameGeneration });
+  const winCondition: 'games' | 'points' =
+    (snapshot?.win_condition as 'games' | 'points' | undefined) ??
+    (leaguePrefs?.win_condition as 'games' | 'points' | undefined) ??
+    'games';
+  // Phase 4 Unit 4.4: when the league's tiebreaker_format is 'manual',
+  // a tied match prompts the LO with ManualTiebreakerDialog instead of
+  // auto-creating short-race tiebreaker games. Read from the snapshot
+  // (frozen-at-first-score) so mid-match preference edits don't change
+  // the in-flight match's tiebreaker behavior.
+  const tiebreakerFormat: string =
+    (snapshot?.tiebreaker_format as string | undefined) ?? 'accept_tie';
 
   // Fetch lineups to get lineup IDs for unlocking
   const lineupsQuery = useMatchLineups(matchId, homeTeamId, awayTeamId, false);
@@ -154,6 +152,12 @@ export function MatchEndVerification({
 
   const [isCompleting, setIsCompleting] = useState(false);
   const completionStartedRef = useRef(false);
+  // Phase 4 Unit 4.4: manual-tiebreaker dialog state. Opens when a tie
+  // is detected on a league with `tiebreaker_format = 'manual'`. The
+  // LO picks the winner and the match completes immediately (no auto-
+  // tiebreaker games, no lineup unlock).
+  const [manualTbOpen, setManualTbOpen] = useState(false);
+  const [manualTbSubmitting, setManualTbSubmitting] = useState(false);
 
   // For BCA systems we use thresholds to determine the result (may be a
   // tie triggering the tiebreaker flow). For Fargo matches we replace this
@@ -193,59 +197,38 @@ export function MatchEndVerification({
   // Current user's team verification status
   const userTeamVerified = isHomeTeam ? homeVerified : awayVerified;
 
-  // Convert games array to Map for calculatePoints function
-  const gameResultsMap = new Map(
-    (gamesQuery.data || []).map((game) => [game.game_number, game])
-  );
+  // Phase 5 Unit 5.5: read running totals directly from the match row.
+  // These are maintained per-game by the scoring mutations
+  // (`updateMatchRunningTotals`) so they always reflect the current set
+  // of confirmed games — no recompute here. Falls back to props when
+  // the match row is still loading (transient render before the query
+  // resolves) or when the columns are 0 because the running-totals
+  // pipeline hasn't run yet on this match.
+  const homePoints = match?.home_points_earned ?? 0;
+  const awayPoints = match?.away_points_earned ?? 0;
 
-  // Calculate points using the SAME function as the scoreboard (single source of truth)
-  const homeThresholds = {
-    games_to_win: homeWinThreshold,
-    games_to_tie: homeTieThreshold,
-    games_to_lose: homeTieThreshold !== null ? homeTieThreshold - 1 : homeWinThreshold - 1,
-  };
-  const awayThresholds = {
-    games_to_win: awayWinThreshold,
-    games_to_tie: awayTieThreshold,
-    games_to_lose: awayTieThreshold !== null ? awayTieThreshold - 1 : awayWinThreshold - 1,
-  };
-
-  // Fargo matches compute totals via the fargo5v5 module (includes
-  // start-points credit + per-game winner/loser points derived from the
-  // snapshotted dials). BCA matches keep the existing calculation.
-  const fargoTotals = isFargoMatch
-    ? calculateFargoMatchTotals({
-        homeTeamId,
-        awayTeamId,
-        homeGamesToWin: match?.home_games_to_win ?? 0,
-        awayGamesToWin: match?.away_games_to_win ?? 0,
-        gameResults: gameResultsMap,
-        overrides: fargoOverrides,
-      })
-    : null;
-
-  // Use BCA points for 5v5, regular points for 3v3, Fargo points for fargo.
-  const homePoints = fargoTotals
-    ? fargoTotals.homePoints
-    : is5v5
-      ? calculateBCAPoints(homeTeamId, homeThresholds, gameResultsMap)
-      : calculatePoints(homeTeamId, homeThresholds, gameResultsMap);
-  const awayPoints = fargoTotals
-    ? fargoTotals.awayPoints
-    : is5v5
-      ? calculateBCAPoints(awayTeamId, awayThresholds, gameResultsMap)
-      : calculatePoints(awayTeamId, awayThresholds, gameResultsMap);
-
-  // Final result. Fargo uses the points → games-won cascade (always
-  // decisive); BCA uses the threshold-based determination (may be 'tie'
-  // which triggers the tiebreaker flow).
-  const result: 'home_win' | 'away_win' | 'tie' = fargoTotals
-    ? fargoTotals.winner === 'home' ? 'home_win' : 'away_win'
+  // Final result. Win-condition 'points' (Fargo-style) decides on points
+  // totals — no tie possible. Win-condition 'games' (BCA-style) decides on
+  // games-won thresholds and may produce 'tie' which triggers the
+  // tiebreaker flow.
+  const result: 'home_win' | 'away_win' | 'tie' = winCondition === 'points'
+    ? homePoints === awayPoints
+      ? homeWins >= awayWins ? 'home_win' : 'away_win'
+      : homePoints > awayPoints ? 'home_win' : 'away_win'
     : bcaResult;
 
   // Auto-complete match when both teams verify
   useEffect(() => {
     if (!bothVerified || isCompleting || completionStartedRef.current) return;
+    // Item 15 guard: don't re-fire completion on a match that's already
+    // completed. Without this, every time MatchEndVerification re-mounts
+    // (refresh, navigation, realtime cycle) the completion useEffect ran
+    // again — bothVerified stays true (verifications persist on the
+    // match row), so completeTheMatch attempted to update_match +
+    // create tiebreaker games, hitting a 409 on the games unique key
+    // and logging "Failed to complete match" to app_logs. The DB
+    // uniqueness caught it but the noise muddied real diagnostics.
+    if (match?.status === 'completed') return;
 
     const completeTheMatch = async () => {
       completionStartedRef.current = true;
@@ -279,8 +262,13 @@ export function MatchEndVerification({
             result === 'away_win' ? awayTeamId :
             null; // tie
 
-          // For tiebreaker: only update winner/verification, NOT scores/points
-          // For regular match: update everything
+          // Phase 5 Unit 5.5: completion just persists the outcome — running
+          // totals (home_games_won / away_games_won / home_points_earned /
+          // away_points_earned) are already correct on the match row
+          // because the per-game scoring mutations maintained them via
+          // updateMatchRunningTotals. The home_team_score / away_team_score
+          // columns were dropped in Phase 2 Unit 2.1 (display reads totals
+          // directly).
           const updates = isTiebreakerMode
             ? {
                 // Tiebreaker: only update result and verification fields
@@ -291,34 +279,21 @@ export function MatchEndVerification({
                 completed_at: new Date().toISOString(),
                 status: winnerTeamId ? 'completed' : 'in_progress',
               }
-            : isFargoMatch
+            : winCondition === 'points'
               ? {
-                  // Fargo match (Unit 12): team_score is the Fargo point total
-                  // (includes start-points credit + per-game winner/loser
-                  // points). points_earned mirrors team_score — same unit,
-                  // meaningful to the system. games_won is the raw game
-                  // count home/away won. No tie possible in Fargo 5v5.
-                  home_team_score: homePoints,
-                  away_team_score: awayPoints,
-                  home_games_won: homeWins,
-                  away_games_won: awayWins,
-                  home_points_earned: homePoints,
-                  away_points_earned: awayPoints,
+                  // Points-condition match (Fargo-style) — always has a
+                  // decisive winner; status goes straight to 'completed'.
                   winner_team_id: winnerTeamId,
                   match_result: result,
                   results_confirmed_by_home: true,
                   results_confirmed_by_away: true,
                   completed_at: new Date().toISOString(),
-                  status: 'completed', // Fargo always has a decisive winner
+                  status: 'completed',
                 }
               : {
-                  // BCA regular match: update scores, points, result, and verification
-                  home_team_score: homeWins,
-                  away_team_score: awayWins,
-                  home_games_won: homeWins,
-                  away_games_won: awayWins,
-                  home_points_earned: homePoints,
-                  away_points_earned: awayPoints,
+                  // Games-condition match (BCA-style) — may be a tie that
+                  // triggers tiebreaker; status stays 'in_progress' in
+                  // that case so the tiebreaker flow can complete it.
                   winner_team_id: winnerTeamId,
                   match_result: result,
                   results_confirmed_by_home: true,
@@ -332,6 +307,17 @@ export function MatchEndVerification({
             updates,
           });
 
+          // Phase 5 Unit 5.6: post-completion scoring-consistency audit.
+          // Fire-and-forget — recomputes the running totals from
+          // match_games and logs to app_logs if they diverge from the
+          // stored match-row values. Match record is NEVER auto-corrected
+          // (player-witnessed scoreboard is the truth). Only runs when
+          // the match is genuinely completing (winnerTeamId set), not
+          // when transitioning into a tiebreaker.
+          if (winnerTeamId) {
+            void auditMatchScoringConsistency(matchId);
+          }
+
           // Anti-sandbagging rule for tiebreaker: Override all game results with winning team
           if (isTiebreakerMode && winnerTeamId) {
 
@@ -339,9 +325,13 @@ export function MatchEndVerification({
             const winningLineup = winnerTeamId === homeTeamId ? homeLineup : awayLineup;
 
             if (winningLineup) {
-              // Override all 3 tiebreaker games (19, 20, 21) with winning team's players
-              for (let gameNumber = 19; gameNumber <= 21; gameNumber++) {
-                const position = gameNumber - 18;
+              // Tiebreaker game numbers start at matchTotalGames + 1.
+              // For BCA 3v3 DRR (18 regular games) that's 19, 20, 21.
+              // Sourced via tiebreakerGameNumbers/tiebreakerGameToPosition so
+              // future lineup geometries (4v4 etc.) compute their own ranges.
+              for (const gameNumber of tiebreakerGameNumbers(matchTotalGames)) {
+                // 0-indexed position from the helper; lineup fields are 1-indexed
+                const position = tiebreakerGameToPosition(matchTotalGames, gameNumber) + 1;
                 const game = tiebreakerGames.find(g => g.game_number === gameNumber);
 
                 if (!game) {
@@ -365,37 +355,49 @@ export function MatchEndVerification({
           }
 
           // Handle tie result - create tiebreaker games
+          // Phase 4 Unit 4.4: skip auto-tiebreaker creation when the
+          // league uses manual mode. The dialog rendered below handles
+          // the LO prompt + match completion directly.
+          if (result === 'tie' && tiebreakerFormat === 'manual') {
+            setManualTbOpen(true);
+            // Reset isCompleting so the dialog can take over without
+            // the "completing match" banner being stuck on screen.
+            setIsCompleting(false);
+            completionStartedRef.current = false;
+            return;
+          }
+
           if (result === 'tie') {
 
-            // Create 3 tiebreaker games
-            await createGamesMutation.mutateAsync({
-              games: [
-                {
+            // Item 15 follow-up guard: skip tiebreaker-game creation if
+            // they already exist. Without this, every time the tie
+            // useEffect re-fires (re-mount, navigation back into a
+            // tied-but-unresolved match, realtime cycle) the
+            // createGamesMutation re-runs and 409s on the
+            // (match_id, game_number) unique key. The DB catches the
+            // duplicate, but the noisy "Failed to complete match" log
+            // muddies real diagnostics. Cheap O(1) check on already-
+            // loaded gamesQuery data.
+            if (tiebreakerGames.length > 0) {
+              // Tiebreaker games are already created — nothing to do.
+              // The downstream poll-and-navigate block (Step 3) will
+              // still fire and route the captains to the lineup page.
+            } else {
+              // Tiebreaker games numbered matchTotalGames+1, +2, +3 — for
+              // BCA 3v3 DRR that's games 19/20/21. Specs are computed via
+              // tiebreakerGameSpecs so future lineup geometries get the
+              // right numbers + alternating actions automatically.
+              await createGamesMutation.mutateAsync({
+                games: tiebreakerGameSpecs(matchTotalGames).map((spec) => ({
                   match_id: matchId,
-                  game_number: 19,
-                  home_action: 'breaks',
-                  away_action: 'racks',
+                  game_number: spec.game_number,
+                  home_action: spec.home_action,
+                  away_action: spec.away_action,
                   is_tiebreaker: true,
                   game_type: gameType,
-                },
-                {
-                  match_id: matchId,
-                  game_number: 20,
-                  home_action: 'racks',
-                  away_action: 'breaks',
-                  is_tiebreaker: true,
-                  game_type: gameType,
-                },
-                {
-                  match_id: matchId,
-                  game_number: 21,
-                  home_action: 'breaks',
-                  away_action: 'racks',
-                  is_tiebreaker: true,
-                  game_type: gameType,
-                },
-              ],
-            });
+                })),
+              });
+            }
 
             // Unlock both lineups
             if (homeLineup?.id) {
@@ -481,7 +483,7 @@ export function MatchEndVerification({
     };
 
     completeTheMatch();
-  }, [bothVerified, isCompleting, matchId, homeTeamId, awayTeamId, homeWins, awayWins, homePoints, awayPoints, result, updateMatchMutation, createGamesMutation, gameType, navigate, homeVerifiedBy, awayVerifiedBy, isTiebreakerMode, tiebreakerGames, homeLineup, awayLineup, updateGameMutation, updateLineupMutation]);
+  }, [bothVerified, isCompleting, matchId, homeTeamId, awayTeamId, homeWins, awayWins, homePoints, awayPoints, result, updateMatchMutation, createGamesMutation, gameType, navigate, homeVerifiedBy, awayVerifiedBy, isTiebreakerMode, tiebreakerGames, homeLineup, awayLineup, updateGameMutation, updateLineupMutation, matchTotalGames]);
 
   return (
     <div className="bg-gradient-to-r from-blue-50 to-orange-50 border-b-2 border-border">
@@ -652,6 +654,49 @@ export function MatchEndVerification({
           </div>
         )}
       </div>
+
+      {/* Phase 4 Unit 4.4: manual-tiebreaker LO prompt. Mounted at the
+          component root so it can render over the score table. Only
+          opens when the league uses manual mode AND the match has
+          tied. Submission writes the LO-chosen winner directly. */}
+      <ManualTiebreakerDialog
+        open={manualTbOpen}
+        onCancel={() => setManualTbOpen(false)}
+        homeTeamName={homeTeamName}
+        awayTeamName={awayTeamName}
+        isSubmitting={manualTbSubmitting}
+        onSubmit={async (submission: ManualTiebreakerSubmission) => {
+          setManualTbSubmitting(true);
+          try {
+            const winnerTeamId =
+              submission.winnerTeam === 'home' ? homeTeamId : awayTeamId;
+            await updateMatchMutation.mutateAsync({
+              matchId,
+              updates: {
+                winner_team_id: winnerTeamId,
+                match_result:
+                  submission.winnerTeam === 'home' ? 'home_win' : 'away_win',
+                results_confirmed_by_home: true,
+                results_confirmed_by_away: true,
+                completed_at: new Date().toISOString(),
+                status: 'completed',
+              },
+            });
+            // Phase 5 Unit 5.6 audit also fires here — manual completion
+            // is a real match-completion event.
+            void auditMatchScoringConsistency(matchId);
+            setManualTbOpen(false);
+            navigate('/dashboard');
+          } catch (error) {
+            logger.error('Failed to record manual tiebreaker', {
+              error: error instanceof Error ? error.message : String(error),
+              matchId,
+            });
+          } finally {
+            setManualTbSubmitting(false);
+          }
+        }}
+      />
     </div>
   );
 }

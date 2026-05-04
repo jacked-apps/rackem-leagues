@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-01 (PR 1 bye-as-real-team: added 3 migrations — `teams_status_add_bye`, `teams_captain_id_nullable`, `backfill_null_bye_matches`)
+> **Last Updated**: 2026-05-02 (Phase 8 Unit 8.2 — wizard contract tests: new `useCreateLeagueV2.contract.test.ts` mirrors the prefFields resolution logic and locks the calculator-combo matrix (3 preset paths + 4 custom-path calculator picks + ThresholdSourceStep mechanism override + race_length conditional). Caught a bug: `??` was collapsing the LO's explicit `points-calculator: null` choice back to `'linear_above_threshold'` — fixed via `'points-calculator' in formData` check. New Playwright spec at `league-wizard-custom-path.spec.ts` exercises the wizard step rendering; runs via `pnpm test:e2e` like the other e2e specs)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -54,9 +54,11 @@
 | `docs/plans/2026-04-17-001-feat-official-rulebook-reader-plan.md` | Implementation plan for the Official Rulebook Reader | 6 units, active branch `feature/official-rulebook-reader` |
 | `docs/plans/2026-04-27-001-feat-e2e-test-infrastructure-plan.md` | Implementation plan for the E2E scaffolding | 10 units (8 in v1 scope), active branch `feat/e2e-test-infrastructure` |
 | `docs/brainstorms/header-mobile-rework-requirements.md` | Requirements for the global header & navigation rework | Slim sticky header, hamburger drawer with per-org operator shortcuts, drawer-internal badges |
+| `docs/brainstorms/modular-league-system-requirements.md` | Requirements for fully modular league configuration | Deprecates `5_man`/`8_man`; any-combo support; 3-layer threshold strategy; supersedes April 18 modular-handicap-scoring doc |
 | `/docs/plans/` | **CE implementation plans** | Output of `/compound-engineering:ce-plan` |
 | `docs/plans/2026-04-17-001-feat-official-rulebook-reader-plan.md` | Implementation plan for the Official Rulebook Reader | 6 units, active branch `feature/official-rulebook-reader` |
 | `docs/plans/2026-04-27-001-feat-global-header-nav-rework-plan.md` | Implementation plan for the global header & navigation rework | 9 units in 3 phases, active branch `fix/header-mobile-rework` |
+| `docs/plans/2026-04-28-001-feat-modular-league-system-plan.md` | Implementation plan for the fully modular league system | 21 units across 8 phases (Phase 0 research + 7 implementation phases); supersedes April 18 plan; covers BCAPL SL handicap, audit log R21, threshold-charts wiring, team_format drop |
 
 ### Future Work Folder
 
@@ -760,6 +762,12 @@ Reusable wizard/form step components
 - `conflictDetectionUtils.ts` - Schedule conflict detection
 - `gameOrder.ts` - Game order utilities
 
+#### Match Running Totals (`/utils/match/`)
+- `computeMatchRunningTotals.ts` - **Per-mutation running-totals calculator** (Phase 5 Unit 5.5) — pure helper that filters confirmed regular games, runs the snapshot's points calculator, and returns `{ home_games_won, away_games_won, home_points_earned, away_points_earned }`. Eager recompute on every scoring mutation keeps the match row consistent with the live scoreboard. Tiebreaker games and unconfirmed games are excluded from regular running totals.
+- `auditScoringConsistency.ts` - **Match-completion scoring-consistency audit** (Phase 5 Unit 5.6) — pure `compareRunningTotals(actual, expected)` helper that returns per-field discrepancies between the match row's stored totals and a fresh recompute. Match record is never modified — divergence is logged to `app_logs` for the dev to investigate. Reusable for on-demand audits.
+- `__tests__/computeMatchRunningTotals.test.ts` - **Running-totals tests** (10 cases): confirmation filtering, tiebreaker exclusion, linear_above_threshold above/tie/below bands, LOCKED tie-band-with-tiebreaker invariant, accumulated_per_game (Fargo 10-7), null calculator, unknown calculator
+- `__tests__/auditScoringConsistency.test.ts` - **Audit comparison tests** (7 cases): in-sync match returns ok, single-field divergence on games_won / points_earned, multi-field divergence, diff sign convention (positive = stored too high), input non-mutation
+
 #### Team & Player
 - `teamQueries.ts` - Team database queries
 - `playerQueries.ts` - Player database queries
@@ -901,13 +909,31 @@ TypeScript type definitions - **Single source of truth for all types**
 
 Preset modules implementing the `SystemModule` interface. Each shipped preset owns its rating, scoring, and threshold behavior. The resolver maps `handicap_type` string → module. See `docs/plans/2026-04-18-001-refactor-modular-handicap-scoring-systems-plan.md`.
 
-- `types.ts` - **SystemModule interface** + discriminated threshold union (BCAThreshold | FargoThreshold) + supporting types
-- `resolver.ts` - **Module resolver** — `pickModule(handicap_type)` routes to bca3v3 / bca5v5 / fargo5v5
+- `types.ts` - **SystemModule interface** + mechanism-discriminated threshold union (ExtraGamesThreshold | StartPointsThreshold | RaceLengthThreshold) + supporting types (Phase 1 Unit 1.3)
+- `resolver.ts` - **Module resolver** — `pickModule(handicap_type)` routes to bca3v3 / bca5v5 / fargo5v5; `resolveSystem(prefs, overrides)` delegates to buildSystemFromPreferences for full-preference resolution (Phase 5 Unit 5.1)
+- `buildSystemFromPreferences.ts` - **Runtime resolver** (Phase 5 Unit 5.1; updated Phase 2 Unit 2.2) — produces a SystemModule from a `ResolvedSystemConfig`. Fast-paths to one of the three shipped presets when prefs match exactly (matchPreset checks `points_calculator` axis: bca3v3=`linear_above_threshold`, bca5v5=`accumulate_with_milestone_jumps`, fargo5v5=`accumulated_per_game`); otherwise builds an ad-hoc module dispatching rating/scoring/threshold sections on the resolved axes. `pickScoring` dispatches by calculator name; aggregate calculators stub through legacy paths until Phase 5 Unit 5.5
 - `bca3v3.ts` - **BCA 3v3 module** — wraps the existing get3v3GamesNeeded chart
 - `bca5v5.ts` - **BCA 5v5 module** — wraps the existing get5v5GamesNeeded chart
 - `fargo5v5.ts` - **Fargo 5v5 module** — real math (Phase 3 Unit 10): rating validation (100-850 integer), start-points formula from `docs/research/fargorate-formula.md`, points→games-won match-result cascade
 - `__tests__/resolver.test.ts` - Resolver routing tests (15 cases including unmapped fallback)
+- `__tests__/buildSystemFromPreferences.test.ts` - **Runtime resolver tests** (Phase 5 Unit 5.1; updated Phase 2 Unit 2.2 for new `points_calculator` value space) — preset fast-path equivalence + ad-hoc combos (28 cases): teamFormat derivation, rating/scoring/threshold dispatch, mechanism dispatch (extra_games / start_points / race_length_adjustment / none), graceful fallback for not-yet-wired layers
+- `__tests__/off_preset_combos.test.ts` - **Off-preset integration tests** (Phase 8 Unit 8.1) — exercises non-Tested-Preset combos through the full pipeline (buildSystemFromPreferences + computeMatchRunningTotals): 4v4+Fargo+games-won (linear_above_threshold), 5v5+percentage+10-7, 3v3+Fargo+games-won, and `points_calculator: null`. Locks the LOCKED tie-band invariant across off-preset handicap-system swaps
 - `__tests__/fargo5v5.test.ts` - **Fargo math tests** (Phase 3 Unit 10) — validates against 1 real-match test case (56 start-points ±1) + 34 synthetic cases covering rating validation, start-points formula, scoring cascade, override behavior
+
+#### Points Calculators (`/systems/calculators/`) — Phase 1 Unit 1.1
+
+Calculator-as-type-with-params registry. Each shipped points formula implements `PointsCalculator<P>` and registers itself by name. The runtime is parameter-blind: it looks up a calculator by name (read from `preferences.points_calculator` / `match.system_snapshot.points_calculator`), feeds the right input shape, gets a points number back. Mirrors the `threshold_charts` shape pattern.
+
+- `types.ts` - **PointsCalculator interface** — discriminated union by `kind: 'aggregate' | 'per_game'`. Aggregate calculators take `(gamesWon, thresholds, params)`. Per-game calculators take `(games, teamId, params)`. Includes `ScoringPopupFieldSpec` for the per-game UI's calculator-driven fields.
+- `index.ts` - **Registry** — `registerCalculator(calc)`, `getCalculator(name)`, `listCalculators()`. Empty in Unit 1.1; populated by Units 1.2–1.4. `getCalculator(null|undefined|unknown)` returns null (graceful-degradation).
+- `__tests__/registry.test.ts` - **Registry smoke tests** (18 cases) — empty-registry behavior, lookup, registration, duplicate-rejection, discriminated-union narrowing for both kinds, scoringPopupFields adapts to params, paramSchema validates.
+- `linear_above_threshold.ts` - **`linear_above_threshold` calculator** (Phase 1 Unit 1.2) — three-band formula (above-win / tie-band / below-tie). Tested Preset value: BCA 3v3 default (multiplier=1). The TIE-BAND RULE is a locked invariant: tie-band always 0, multiplier never moves it off zero. Per-game tiebreaker filtering is the caller's responsibility (calculator is aggregate-input). `src/types/match.ts:calculatePoints` is a deprecation shim that delegates here.
+- `__tests__/linear_above_threshold.test.ts` - **Three-band formula tests** (45 cases) — supplement worked-examples table reproduced exactly, no-tie-possible variant, multiplier scaling, tie-band invariant under varying multipliers (locked tests fail loudly if a refactor moves the tie band off zero), defensive behavior on null thresholds + malformed params, characterization equivalence with legacy `calculatePoints`.
+- `accumulate_with_milestone_jumps.ts` - **`accumulate_with_milestone_jumps` calculator** (Phase 1 Unit 1.3) — monotonic with two stepped jumps. Tested Preset value: BCA 5v5 default (`per_game_increment: 0.1, milestone_percent: 0.7, milestone_jump_value: 1.5, win_threshold_jump_value: 3.0`). No tie-band rule — formula always non-decreasing. `src/types/match.ts:calculateBCAPoints` is a deprecation shim that delegates here.
+- `__tests__/accumulate_with_milestone_jumps.test.ts` - **Milestone-jumps formula tests** (34 cases) — supplement worked-examples reproduced exactly (W=13: 14→3.1, 13→3.0, 9→1.5, 8→0.8), milestone target rounding (Math.round semantics), custom params, monotonicity invariant across the full range, edge cases (W=1, per_game_increment=0), defensive behavior, characterization equivalence.
+- `accumulated_per_game.ts` - **`accumulated_per_game` calculator** (Phase 1 Unit 1.4) — per-game accumulation with the per-side fixed-or-counter pattern. Each side independently configurable: `{kind: 'fixed', points: number}` OR `{kind: 'counter', min, max, label}`. Tested Preset value: Fargo 10-7 (winner=fixed-10, loser=counter-0-7 "Balls pocketed"). Per-game `scoringPopupFields` adapts to the params. Counter values clamped to [min, max]; null score → min fallback. Tiebreaker filtering is the caller's responsibility.
+- `__tests__/accumulated_per_game.test.ts` - **Per-game accumulation tests** (31 cases) — Fargo 10-7 default with mixed game outcomes, counter clamping (above max, below min, null, NaN), winner=counter forward-extension, both-sides-fixed configs, both-sides-counter LO-driven scoring, game filtering (skip null winner, do NOT internally filter tiebreakers), defensive behavior, characterization equivalence with legacy fargo5v5 per-game accumulation.
+- `__tests__/off_preset_combinations.test.ts` - **Off-preset combination tests** (15 cases, supplement Section 8.2 mandate) — all three calculators exercised at lineup geometries other than their Tested Preset's lineup (linear at 4v4/5v5/6v6, milestone-jumps at 3v3/6v6, accumulated_per_game at 3v3/4v4 with custom 15/X scoring). Plus `registerTestedPresetCalculators()` registration verification (idempotent). Plus a "same league, three calculators" cross-test proving lineup is independent of calculator choice.
 
 ---
 

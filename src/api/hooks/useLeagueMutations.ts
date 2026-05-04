@@ -32,7 +32,8 @@ import { queryKeys } from '../queryKeys';
  *       operatorId: 'op-123',
  *       gameType: 'eight_ball',
  *       dayOfWeek: 'monday',
- *       teamFormat: '8_man',
+ *       handicapVariant: 'standard',
+ *       teamHandicapVariant: 'standard',
  *       leagueStartDate: '2025-01-15',
  *       division: 'East'
  *     });

@@ -8,7 +8,7 @@
  * `away_points_earned`).
  *
  * The start-points credit for the weaker team is read directly off the
- * match row's `home_games_to_win` / `away_games_to_win` column — whichever
+ * match row's `home_to_win` / `away_to_win` column — whichever
  * is positive identifies the weaker team, the other is 0. Captains already
  * agreed on this value via the negotiation flow (Unit 11c); we just apply
  * it here without recomputing from ratings.

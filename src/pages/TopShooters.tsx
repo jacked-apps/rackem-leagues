@@ -57,7 +57,7 @@ export function TopShooters() {
   const isOperator = member?.role === 'league_operator';
 
   // Fetch player stats with handicaps
-  const { players, isLoading, error, teamFormat } = useTopShooters(
+  const { players, isLoading, error, lineupSize } = useTopShooters(
     seasonId || ''
   );
 
@@ -170,7 +170,7 @@ export function TopShooters() {
                 <TableHead className="px-1 sm:px-4 text-xs sm:text-sm">Player</TableHead>
                 <TableHead className="w-[30px] sm:w-[50px] px-1 sm:px-4 text-center text-xs sm:text-sm">W</TableHead>
                 <TableHead className="w-[30px] sm:w-[50px] px-1 sm:px-4 text-center text-xs sm:text-sm">L</TableHead>
-                {teamFormat === '5_man' && (
+                {lineupSize === 3 && (
                   <TableHead className="w-[35px] sm:w-[60px] px-1 sm:px-4 text-center text-xs sm:text-sm">Pts</TableHead>
                 )}
                 <TableHead className="w-[45px] sm:w-[70px] px-1 sm:px-4 text-center text-xs sm:text-sm">Win%</TableHead>
@@ -191,7 +191,7 @@ export function TopShooters() {
                     </TableCell>
                     <TableCell className="font-medium px-1 sm:px-4 text-center text-xs sm:text-base">{player.gamesWon}</TableCell>
                     <TableCell className="text-center px-1 sm:px-4 text-xs sm:text-base">{player.gamesLost}</TableCell>
-                    {teamFormat === '5_man' && (
+                    {lineupSize === 3 && (
                       <TableCell className="text-center px-1 sm:px-4 text-xs sm:text-base">
                         {points > 0 ? `+${points}` : points}
                       </TableCell>

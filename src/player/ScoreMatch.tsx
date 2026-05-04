@@ -16,7 +16,7 @@
  */
 //import { watchMatchAndGames } from '@/realtime/useMatchAndGamesRealtime';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/supabaseClient';
@@ -49,7 +49,7 @@ import { TiebreakerScoreboard } from '@/components/scoring/TiebreakerScoreboard'
 import { GamesList } from '@/components/scoring/GamesList';
 import { TableNumberBar } from '@/components/scoring/TableNumberBar';
 import { queryKeys } from '@/api/queryKeys';
-import { calculateBCAPoints, calculatePoints, getTeamStats, getPlayerStats as getPlayerStatsUtil } from '@/types';
+import { calculatePoints, getTeamStats, getPlayerStats as getPlayerStatsUtil } from '@/types';
 import { calculateFargoMatchTotals } from '@/utils/fargoMatchTotals';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
@@ -267,10 +267,10 @@ export function ScoreMatch() {
       supabase
         .from('matches')
         .update({
-          home_games_to_win: homeThresholds.games_to_win,
-          home_games_to_tie: homeThresholds.games_to_tie,
-          away_games_to_win: awayThresholds.games_to_win,
-          away_games_to_tie: awayThresholds.games_to_tie,
+          home_to_win: homeThresholds.games_to_win,
+          home_to_tie: homeThresholds.games_to_tie,
+          away_to_win: awayThresholds.games_to_win,
+          away_to_tie: awayThresholds.games_to_tie,
         })
         .eq('id', matchId)
         .then(({ error }) => {
@@ -380,7 +380,7 @@ export function ScoreMatch() {
    */
   const getPlayerStats = (playerId: string, position?: number, playerIsHomeTeam?: boolean) => {
     // For 5v5 with position specified, use position-aware function
-    if (position !== undefined && teamFormat === '8_man' && playerIsHomeTeam !== undefined) {
+    if (position !== undefined && leaguePrefs?.lineup_size === 5 && playerIsHomeTeam !== undefined) {
       return getPlayerStatsByPosition(playerId, position, playerIsHomeTeam, gameResults);
     }
     // For 3v3 or no position specified, use original util
@@ -392,9 +392,30 @@ export function ScoreMatch() {
    */
   const addToConfirmationQueue = addToConfirmationQueueFromHook;
 
+  // Stabilize the match shape passed to mutations + downstream realtime
+  // hooks. Phase 5 Unit 5.5 introduced per-game writes to the matches
+  // row (running-totals updates), which makes matchQuery refetch on
+  // every confirmation. Without this memo, every refetch produces a
+  // new `match` object identity → callback identities change → the
+  // realtime hook resubscribes → same event re-fires → flashing loop.
+  // The mutations hook only needs id + home_team_id + away_team_id;
+  // memoize on those primitives so identity is stable across refetches
+  // that don't change them.
+  const stableMatchForMutations = useMemo(
+    () =>
+      match
+        ? {
+            id: match.id,
+            home_team_id: match.home_team_id,
+            away_team_id: match.away_team_id,
+          }
+        : null,
+    [match?.id, match?.home_team_id, match?.away_team_id],
+  );
+
   // Use mutations hook for all database operations
   const mutations = useMatchScoringMutations({
-    match,
+    match: stableMatchForMutations,
     leagueId: match?.league?.id ?? null,
     gameResults,
     homeLineup,
@@ -638,15 +659,22 @@ export function ScoreMatch() {
       )
     : gameResults;
 
-  // Detect team format (5v5 vs 3v3)
-  const teamFormat = match.league.team_format || '5_man';
-  const is5v5 = teamFormat === '8_man';
+  // Detect lineup geometry. Phase 7 Unit 7.3: `team_format` was dropped
+  // from the leagues schema; lineup size comes from the resolved
+  // preferences. The 5v5 routing decision now reads `lineup_size === 5`
+  // instead of the legacy `team_format === '8_man'` tag.
+  const is5v5 = leaguePrefs?.lineup_size === 5;
+  const winCondition = leaguePrefs?.win_condition ?? 'games';
 
-  // Calculate BCA points for 5v5 scoreboard
+  // Team stats (wins / losses) for the scoreboard.
   const homeStats = getTeamStats(match.home_team_id, filteredGameResults);
   const awayStats = getTeamStats(match.away_team_id, filteredGameResults);
-  const homeBCAPoints = calculateBCAPoints(match.home_team_id, homeThresholds, filteredGameResults);
-  const awayBCAPoints = calculateBCAPoints(match.away_team_id, awayThresholds, filteredGameResults);
+  // Note: legacy `calculateBCAPoints` parallel computation removed —
+  // FiveVFiveScoreboard now reads `match.home_points_earned` /
+  // `match.away_points_earned` directly. Those columns are calculator-
+  // correct via `computeMatchRunningTotals` (Phase 5 Unit 5.5).
+  // The 3v3 scoreboard branch below still uses the legacy `calculatePoints`
+  // helper; switching it over is a follow-up (covered in LIST_FOR_ED #18).
 
   // Fargo totals (Unit 12): for 5v5 Fargo matches, points are running Fargo
   // totals (per-game winner/loser points + start-points credit on the weaker
@@ -659,8 +687,8 @@ export function ScoreMatch() {
     ? calculateFargoMatchTotals({
         homeTeamId: match.home_team_id,
         awayTeamId: match.away_team_id,
-        homeGamesToWin: match.home_games_to_win ?? 0,
-        awayGamesToWin: match.away_games_to_win ?? 0,
+        homeGamesToWin: match.home_to_win ?? 0,
+        awayGamesToWin: match.away_to_win ?? 0,
         gameResults: filteredGameResults,
         overrides: fargoOverrides,
       })
@@ -758,7 +786,7 @@ export function ScoreMatch() {
           isVerifying={isVerifying}
           gameType={gameType}
         />
-      ) : handicapType === 'fargo' && fargoTotals ? (
+      ) : handicapType === 'fargo' && fargoTotals && winCondition === 'points' ? (
         <TenSevenScoreboard
           match={{
             ...match,
@@ -801,8 +829,8 @@ export function ScoreMatch() {
           awayWins={awayStats.wins}
           homeLosses={homeStats.losses}
           awayLosses={awayStats.losses}
-          homePoints={fargoTotals ? fargoTotals.homePoints : homeBCAPoints}
-          awayPoints={fargoTotals ? fargoTotals.awayPoints : awayBCAPoints}
+          homePoints={match.home_points_earned ?? 0}
+          awayPoints={match.away_points_earned ?? 0}
           allGamesComplete={allGamesComplete}
           isHomeTeam={isHomeTeam ?? false}
           onVerify={handleVerify}
@@ -885,6 +913,10 @@ export function ScoreMatch() {
         goldenBreakCountsAsWin={goldenBreakCountsAsWin}
         gameType={gameType}
         handicapType={handicapType}
+        pointsCalculator={
+          (match?.system_snapshot as { points_calculator?: string | null } | null)
+            ?.points_calculator ?? null
+        }
         breakFouled={breakFouled}
         winByForfeit={winByForfeit}
         runout={runout}

@@ -148,16 +148,16 @@ export function MatchDetailCard({ matchId }: MatchDetailCardProps) {
               <div className="grid grid-cols-3 gap-2">
                 <div>
                   <span className="text-muted-foreground">To Win:</span>
-                  <div className="font-medium">{match.home_games_to_win ?? '-'}</div>
+                  <div className="font-medium">{match.home_to_win ?? '-'}</div>
                 </div>
                 <div>
                   <span className="text-muted-foreground">To Tie:</span>
-                  <div className="font-medium">{match.home_games_to_tie ?? '-'}</div>
+                  <div className="font-medium">{match.home_to_tie ?? '-'}</div>
                 </div>
                 <div>
                   <span className="text-muted-foreground">To Lose:</span>
                   <div className="font-medium">
-                    {match.away_games_to_win ? `< ${match.away_games_to_win}` : '-'}
+                    {match.away_to_win ? `< ${match.away_to_win}` : '-'}
                   </div>
                 </div>
               </div>
@@ -194,16 +194,16 @@ export function MatchDetailCard({ matchId }: MatchDetailCardProps) {
               <div className="grid grid-cols-3 gap-2">
                 <div>
                   <span className="text-muted-foreground">To Win:</span>
-                  <div className="font-medium">{match.away_games_to_win ?? '-'}</div>
+                  <div className="font-medium">{match.away_to_win ?? '-'}</div>
                 </div>
                 <div>
                   <span className="text-muted-foreground">To Tie:</span>
-                  <div className="font-medium">{match.away_games_to_tie ?? '-'}</div>
+                  <div className="font-medium">{match.away_to_tie ?? '-'}</div>
                 </div>
                 <div>
                   <span className="text-muted-foreground">To Lose:</span>
                   <div className="font-medium">
-                    {match.home_games_to_win ? `< ${match.home_games_to_win}` : '-'}
+                    {match.home_to_win ? `< ${match.home_to_win}` : '-'}
                   </div>
                 </div>
               </div>

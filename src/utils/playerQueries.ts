@@ -129,8 +129,7 @@ export async function fetchTeamDetails(teamId: string) {
           id,
           game_type,
           day_of_week,
-          division,
-          team_format
+          division
         )
       ),
       captain:members!captain_id(
@@ -261,7 +260,6 @@ export async function fetchCaptainTeamEditData(teamId: string) {
       allTeams: allTeams || [],
       leagueId,
       seasonId,
-      teamFormat: team.season.league.team_format
     },
     error: null
   };

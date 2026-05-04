@@ -27,12 +27,13 @@ describe('computePrepBlockedReason', () => {
     expect(result).toBeNull();
   });
 
-  it('returns null when both lineups complete + Fargo both-confirmed', () => {
+  it('returns null when both lineups complete + Fargo both-confirmed (Fargo + points)', () => {
     const result = computePrepBlockedReason({
       myLineup: fullRealLineup('h', 5),
       opponentLineup: fullRealLineup('a', 5),
       lineupSize: 5,
       handicapType: 'fargo',
+      winCondition: 'points',
       homeGamesToLose: 12345,
       awayGamesToLose: 67890,
       isHomeTeam: true,
@@ -40,12 +41,13 @@ describe('computePrepBlockedReason', () => {
     expect(result).toBeNull();
   });
 
-  it('returns fargo_pending when only one side confirmed', () => {
+  it('returns fargo_pending when only one side confirmed (Fargo + points)', () => {
     const result = computePrepBlockedReason({
       myLineup: fullRealLineup('h', 5),
       opponentLineup: fullRealLineup('a', 5),
       lineupSize: 5,
       handicapType: 'fargo',
+      winCondition: 'points',
       homeGamesToLose: 12345,
       awayGamesToLose: null,
       isHomeTeam: true,
@@ -55,6 +57,20 @@ describe('computePrepBlockedReason', () => {
       expect(result.myConfirmed).toBe(true);
       expect(result.oppConfirmed).toBe(false);
     }
+  });
+
+  it('skips fargo_pending when handicap=fargo + win_condition=games (Phase 3 Unit 3.2 path — no negotiation needed)', () => {
+    const result = computePrepBlockedReason({
+      myLineup: fullRealLineup('h', 5),
+      opponentLineup: fullRealLineup('a', 5),
+      lineupSize: 5,
+      handicapType: 'fargo',
+      winCondition: 'games',
+      homeGamesToLose: null,
+      awayGamesToLose: null,
+      isHomeTeam: true,
+    });
+    expect(result).toBeNull();
   });
 
   it('returns waiting_on_sub_resolution (mine) when my lineup has only a DD sentinel', () => {
@@ -129,6 +145,7 @@ describe('computePrepBlockedReason', () => {
       opponentLineup: fullRealLineup('a', 5),
       lineupSize: 5,
       handicapType: 'fargo',
+      winCondition: 'points',
       homeGamesToLose: null,
       awayGamesToLose: null,
       isHomeTeam: true,
@@ -143,6 +160,7 @@ describe('computePrepBlockedReason', () => {
       opponentLineup: oppRow,
       lineupSize: 5,
       handicapType: 'fargo',
+      winCondition: 'points',
       homeGamesToLose: null,
       awayGamesToLose: null,
       isHomeTeam: true,
@@ -173,6 +191,7 @@ describe('computePrepBlockedReason', () => {
       opponentLineup: fullRealLineup('a', 5),
       lineupSize: 5,
       handicapType: 'fargo',
+      winCondition: 'points',
       homeGamesToLose: null,
       awayGamesToLose: 67890,
       isHomeTeam: false,

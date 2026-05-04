@@ -13,6 +13,7 @@ import { buildLeagueTitle, getTimeOfYear } from '@/utils/leagueUtils';
 import { PageHeader } from '@/components/PageHeader';
 import { InfoButton } from '@/components/InfoButton';
 import { LeagueStatusCard } from '@/components/operator/LeagueStatusCard';
+import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { logger } from '@/utils/logger';
 import { LeagueOverviewCard } from '@/components/operator/LeagueOverviewCard';
 import { TeamsCard } from '@/components/operator/TeamsCard';
@@ -41,6 +42,8 @@ export const LeagueDetail: React.FC = () => {
   const navigate = useNavigate();
 
   const [league, setLeague] = useState<League | null>(null);
+  const { data: leaguePrefs } = useResolvedLeaguePrefs(league?.id);
+  const lineupSize = leaguePrefs?.lineup_size;
   const [seasonCount, setSeasonCount] = useState(0);
   const [activeSeason, setActiveSeason] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
@@ -156,9 +159,9 @@ export const LeagueDetail: React.FC = () => {
       >
         <div className="flex items-center gap-3 mt-1">
           <span className="text-md lg:text-xl text-muted-foreground">
-            {league.team_format === '5_man' ? '5-Man Roster' : '8-Man Roster'}
+            {lineupSize === 3 ? '3v3 Lineup' : lineupSize === 5 ? '5v5 Lineup' : `${lineupSize ?? '?'}v${lineupSize ?? '?'} Lineup`}
           </span>
-          {league.team_format === '5_man' && (
+          {lineupSize === 3 && (
             <InfoButton
               title="Double Round Robin Format"
               label="RRx2"

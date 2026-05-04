@@ -33,4 +33,42 @@ export interface LeagueWizardFormData {
   'roster-size'?: number;
   'match-format'?: string;
   'handicap-system'?: string;
+
+  // Phase 4 Unit 4.1 — additional modular axes (custom path only).
+  // Each step's id matches the form-data key (canonical wizard convention).
+  /** Step: PairingFormatStep — single_rack | race_to_n */
+  'pairing-format'?: string;
+  /**
+   * Step: PointsCalculatorStep — calculator name from the registry, or
+   * null when the league does not track points.
+   * (Phase 4 Unit 4.1 rename: previously `'scoring-method'`.)
+   */
+  'points-calculator'?: string | null;
+  /**
+   * Step: PointsCalculatorStep — calculator-specific params (LO-editable).
+   * Empty object = use the calculator's defaultParams from the registry.
+   */
+  'points-calculator-params'?: Record<string, unknown>;
+  /**
+   * Step: WinConditionStep — binary `'games' | 'points'`. Phase 4 Unit
+   * 4.1 collapse: 4 values → 2.
+   */
+  'win-condition'?: 'games' | 'points';
+  /** Step: MechanismStep — extra_games | start_points | race_length_adjustment | none */
+  'mechanism'?: string;
+  /** Step: StandingsSortStep — preset key for the sort priority list */
+  'standings-sort'?: string;
+  /** Step: TiebreakerStep — combined trigger+format key (accept_tie / best_of_3 / single_short_race) */
+  'tiebreaker'?: string;
+  /** Step: PairingFormatStep — race_length (only when pairing-format === 'race_to_n') */
+  'race-length'?: number;
+  /**
+   * Step: ThresholdSourceStep — informational + opt-in. The only
+   * value that does anything today is `'unhandicapped'`, which
+   * forces `mechanism='none'` regardless of the LO's MechanismStep
+   * choice. Undefined means "use the calibrated source per the
+   * resolved combo" (the default for every Tested Preset and every
+   * combo with a generative formula).
+   */
+  'threshold-source'?: 'unhandicapped';
 }

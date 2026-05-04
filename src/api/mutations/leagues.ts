@@ -8,7 +8,7 @@
  */
 
 import { supabase } from '@/supabaseClient';
-import type { League, LeagueInsertData, DayOfWeek, GameType, TeamFormat, HandicapVariant } from '@/types/league';
+import type { League, LeagueInsertData, DayOfWeek, GameType, HandicapVariant } from '@/types/league';
 import type { SystemOverrides } from '@/types/systemOverrides';
 
 /**
@@ -18,7 +18,6 @@ export interface CreateLeagueParams {
   operatorId: string;
   gameType: GameType;
   dayOfWeek: DayOfWeek;
-  teamFormat: TeamFormat;
   handicapVariant: HandicapVariant;
   teamHandicapVariant: HandicapVariant;
   leagueStartDate: string; // ISO date string
@@ -32,7 +31,6 @@ export interface UpdateLeagueParams {
   leagueId: string;
   gameType?: GameType;
   dayOfWeek?: DayOfWeek;
-  teamFormat?: TeamFormat;
   leagueStartDate?: string;
   division?: string | null;
   status?: 'active' | 'completed' | 'abandoned';
@@ -65,7 +63,6 @@ export async function createLeague(params: CreateLeagueParams): Promise<League> 
     organization_id: params.operatorId,
     game_type: params.gameType,
     day_of_week: params.dayOfWeek,
-    team_format: params.teamFormat,
     handicap_variant: params.handicapVariant,
     team_handicap_variant: params.teamHandicapVariant,
     league_start_date: params.leagueStartDate,
@@ -98,7 +95,6 @@ export async function updateLeague(params: UpdateLeagueParams): Promise<League> 
 
   if (params.gameType !== undefined) updateData.game_type = params.gameType;
   if (params.dayOfWeek !== undefined) updateData.day_of_week = params.dayOfWeek;
-  if (params.teamFormat !== undefined) updateData.team_format = params.teamFormat;
   if (params.leagueStartDate !== undefined) updateData.league_start_date = params.leagueStartDate;
   if (params.division !== undefined) updateData.division = params.division;
   if (params.status !== undefined) updateData.status = params.status;

@@ -59,10 +59,21 @@ interface ScoringDialogProps {
   /** Game type for golden break label (8-ball, 9-ball, 10-ball, etc.) */
   gameType: string;
   /**
-   * Resolved league handicap_type. When 'fargo', the ball-count input is
-   * rendered and required before submit.
+   * Resolved league handicap_type. Historically gated the ball-count input
+   * on 'fargo' alone, but the active points calculator is the better cue
+   * for whether per-game ball counts are needed (only the
+   * `accumulated_per_game` calculator consumes them — other Fargo-handicap
+   * leagues like Fargo + games-won don't). Kept for compatibility.
    */
   handicapType?: string;
+  /**
+   * Active league `points_calculator`. The ball-count input is only
+   * rendered when this is `'accumulated_per_game'` — the only calculator
+   * that needs per-game balls-pocketed data. For all other calculators
+   * (including null = "don't track points") the input stays hidden and
+   * Submit is not gated on it.
+   */
+  pointsCalculator?: string | null;
   /** Break-fault toggle state (always visible). */
   breakFouled?: boolean;
   /** Win-by-forfeit toggle state (always visible). */
@@ -103,7 +114,7 @@ export function ScoringDialog({
   goldenBreak,
   goldenBreakCountsAsWin,
   gameType,
-  handicapType = 'points',
+  pointsCalculator = null,
   breakFouled = false,
   winByForfeit = false,
   runout = false,
@@ -124,11 +135,18 @@ export function ScoringDialog({
   const winnerWasScheduledBreaker = game.winnerWasScheduledBreaker ?? true;
   const winnerIsActualBreaker = winnerWasScheduledBreaker !== breakFouled;
 
-  const isFargo = handicapType === 'fargo';
+  // Per-game loser balls pocketed are only consumed by the
+  // `accumulated_per_game` points calculator (Fargo 10-7). Other Fargo
+  // calculators (`linear_above_threshold`, `accumulate_with_milestone_jumps`)
+  // and `null` (no points tracking) don't need this input — gating on
+  // `handicap_type === 'fargo'` alone over-collected for those leagues
+  // and (worse) blocked Submit until a fake value was tapped.
+  const requiresLoserBallCount = pointsCalculator === 'accumulated_per_game';
 
-  // Submit is blocked when Fargo matches don't yet have a ball count selected.
-  // Ball count can be 0 (valid choice), so we test for null explicitly.
-  const fargoBallCountMissing = isFargo && loserBallsPocketed === null;
+  // Submit is blocked when the active calculator requires a ball count and
+  // none has been selected. Ball count can be 0 (valid choice), so we test
+  // for null explicitly.
+  const fargoBallCountMissing = requiresLoserBallCount && loserBallsPocketed === null;
 
   // Get label for golden break based on game type
   const getGoldenBreakLabel = () => {
@@ -262,7 +280,7 @@ export function ScoringDialog({
           )}
 
           {/* Fargo-only: loser balls pocketed (0–7) */}
-          {isFargo && (
+          {requiresLoserBallCount && (
             <div className="space-y-2">
               <Label className="text-sm font-normal">
                 Loser balls pocketed

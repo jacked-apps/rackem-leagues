@@ -51,7 +51,7 @@ export const bca5v5: SystemModule = {
   },
 
   threshold: {
-    mode: 'games_to_win',
+    mode: 'extra_games',
     // Delegates to the existing hardcoded chart. No behavior change.
     compute: (handicapDiff, overrides) => {
       void overrides; // reserved for future dials (e.g. team_bonus_enabled); not consumed by chart lookup

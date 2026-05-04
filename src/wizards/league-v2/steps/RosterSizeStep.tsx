@@ -36,7 +36,7 @@ export function RosterSizeStep({
       value={currentValue}
       onChange={onChange}
       min={lineupSize}
-      max={12}
+      max={20}
     />
   );
 }

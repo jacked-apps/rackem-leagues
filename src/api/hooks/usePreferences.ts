@@ -32,7 +32,6 @@ import { STALE_TIME } from '../client';
  * if (!orgPrefs) return null;
  *
  * // Use org defaults to pre-fill wizard
- * const defaultTeamFormat = orgPrefs.team_format || '5_man';
  * const defaultHandicap = orgPrefs.handicap_variant || 'standard';
  */
 export function useOrganizationPreferences(operatorId: string | null | undefined) {
