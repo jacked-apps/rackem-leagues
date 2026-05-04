@@ -419,12 +419,13 @@ describe('UnifiedScoreboard — calculator hints (R6/R17)', () => {
     );
 
     // Default state: hints are NOT visible (they're drawer-bound now).
-    expect(screen.queryByText(/Milestone bonus/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/at \d+ wins/)).not.toBeInTheDocument();
 
-    // Open the drawer — hints render alongside the threshold trio.
+    // Open the drawer — milestone hint renders with the COMPUTED position
+    // (per-team `Math.round(games_to_win × milestone_percent)`).
+    // Home: round(13 × 0.7) = 9 → "1.5× at 9 wins".
     await user.click(screen.getAllByText('Home Team')[0]);
-    expect(screen.getAllByText(/Milestone bonus/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/1\.5/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/1\.5× at 9 wins/).length).toBeGreaterThan(0);
   });
 
   it('renders nothing extra when the calculator declares no displayHints', () => {
