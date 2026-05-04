@@ -140,11 +140,10 @@ describe('UnifiedScoreboard — off-preset combos (Unit 8)', () => {
       />,
     );
 
-    // Both teams' games-won numbers render (primary axis under
-    // winCondition='games').
-    expect(screen.getByText('7')).toBeInTheDocument();
-    expect(screen.getByText('5')).toBeInTheDocument();
-    // Points-axis renders too (secondary, since calculator is not 'none').
+    // Both teams' wins render in the new "won/to_win" slash format.
+    expect(screen.getByText('7/11')).toBeInTheDocument();
+    expect(screen.getByText('5/11')).toBeInTheDocument();
+    // Wins label appears (lowercase intentional in the small-text label).
     expect(screen.getAllByText(/wins/i).length).toBeGreaterThan(0);
   });
 
@@ -249,10 +248,10 @@ describe('UnifiedScoreboard — off-preset combos (Unit 8)', () => {
       />,
     );
 
-    // No crash. Core data still surfaces.
+    // No crash. Core data still surfaces (new slash format: won/to_win).
     expect(container.firstChild).toBeTruthy();
-    expect(screen.getByText('10')).toBeInTheDocument();
-    expect(screen.getByText('8')).toBeInTheDocument();
+    expect(screen.getByText('10/13')).toBeInTheDocument();
+    expect(screen.getByText('8/13')).toBeInTheDocument();
   });
 
   it('3v3 + Fargo handicap + points + accumulated_per_game renders cleanly', () => {
@@ -307,6 +306,6 @@ describe('UnifiedScoreboard — off-preset combos (Unit 8)', () => {
     expect(screen.getByText('75')).toBeInTheDocument();
     expect(screen.getByText('53')).toBeInTheDocument();
     // R22 start-points badge appears for the weaker team (away has +15).
-    expect(screen.getByText(/\+15 start/)).toBeInTheDocument();
+    expect(screen.getByText(/\+15/)).toBeInTheDocument();
   });
 });

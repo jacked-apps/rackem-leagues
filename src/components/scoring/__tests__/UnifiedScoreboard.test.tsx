@@ -600,8 +600,8 @@ describe('UnifiedScoreboard — Fargo start-points delta (R22)', () => {
     );
 
     // Away (weaker) team gets the badge; home (stronger) doesn't.
-    expect(screen.getByText(/\+25 start/)).toBeInTheDocument();
-    expect(screen.queryByText(/\+0 start/)).not.toBeInTheDocument();
+    expect(screen.getByText(/\+25/)).toBeInTheDocument();
+    expect(screen.queryByText(/\+0/)).not.toBeInTheDocument();
   });
 
   it('does not render start-points badge in games-mode', () => {
@@ -727,11 +727,11 @@ describe('UnifiedScoreboard — per-player points column (calculator-driven)', (
 });
 
 // ----------------------------------------------------------------------------
-// R10 — threshold trio expand/collapse interaction
+// R10 — threshold trio shows alongside the player drawer (drawer-bound)
 // ----------------------------------------------------------------------------
 
-describe('UnifiedScoreboard — threshold trio interaction (R10)', () => {
-  it('expands the full trio when the chevron is clicked', async () => {
+describe('UnifiedScoreboard — threshold trio (drawer-bound, R10 revised 2026-05-04)', () => {
+  it('hides the threshold trio by default; shows it when the team drawer opens', async () => {
     const match = buildMatch({
       home_games_won: 5,
       home_to_win: 11,
@@ -761,16 +761,21 @@ describe('UnifiedScoreboard — threshold trio interaction (R10)', () => {
       />,
     );
 
-    // Default-collapsed: no "tie" / "lose" labels surface in the threshold band.
+    // Default state: threshold "tie" / "lose" labels are NOT visible.
     expect(screen.queryByText('tie')).not.toBeInTheDocument();
     expect(screen.queryByText('lose')).not.toBeInTheDocument();
 
-    // Tap the chevron toggle (each team has one).
-    const toggles = screen.getAllByRole('button', { name: /toggle threshold details/i });
-    await user.click(toggles[0]);
+    // Tap the home team name (acts as drawer + threshold toggle). After the
+    // drawer opens, "Home Team" also appears inside via TeamNameLink — use
+    // the first match (the team-name button at the top).
+    await user.click(screen.getAllByText('Home Team')[0]);
 
-    // Now the trio (win/tie/lose) labels appear for the home team card.
+    // Now the trio (win/tie/lose) labels appear for the home card.
     expect(screen.getAllByText('tie').length).toBeGreaterThan(0);
     expect(screen.getAllByText('lose').length).toBeGreaterThan(0);
+
+    // Tap again → both trio AND drawer collapse.
+    await user.click(screen.getAllByText('Home Team')[0]);
+    expect(screen.queryByText('tie')).not.toBeInTheDocument();
   });
 });

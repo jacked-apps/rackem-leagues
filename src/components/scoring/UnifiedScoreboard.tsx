@@ -37,7 +37,7 @@ import { MatchEndVerification } from '@/components/scoring/MatchEndVerification'
 import { InfoButton } from '@/components/InfoButton';
 import { PlayerNameLink } from '@/components/PlayerNameLink';
 import { TeamNameLink } from '@/components/TeamNameLink';
-import { UserRoundPen, ChevronDown, ChevronUp } from 'lucide-react';
+import { UserRoundPen } from 'lucide-react';
 import { getTeamColors } from './scoreboardColors';
 import { getCalculator } from '@/systems/calculators';
 import type { DisplayHint } from '@/systems/calculators/types';
@@ -232,7 +232,6 @@ function TeamCard({
   getPlayerPoints,
 }: TeamCardProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [thresholdsExpanded, setThresholdsExpanded] = useState(false);
   const colors = getTeamColors(isHome);
 
   // Auto-flex player list based on lineupSize. Lineup row has player1_id..N
@@ -240,15 +239,20 @@ function TeamCard({
   // lineups in dev / pre-lock state).
   const players = collectLineupPlayers(lineup, lineupSize);
 
-  const primaryValue = winCondition === 'points' ? points : wins;
-  const secondaryValue = winCondition === 'points' ? wins : points;
-  const primaryLabel = winCondition === 'points' ? 'Points' : 'Wins';
-  const secondaryLabel = winCondition === 'points' ? 'Wins' : 'Points';
+  // Win-condition-driven size emphasis (R9). Per Ed's design framing
+  // 2026-05-04: BOTH wins and points always render side-by-side (unless
+  // calculator is 'none'). The win-condition's axis renders larger; the
+  // other stays visible at a subordinate size — most matches care about
+  // both numbers, the difference is which one decides the match.
+  const winsClass = winCondition === 'points' ? 'text-xl' : 'text-3xl';
+  const pointsClass = winCondition === 'points' ? 'text-3xl' : 'text-xl';
 
   return (
     <Card className={`${colors.border} ${colors.bg} p-0`}>
       <div className="text-sm p-2">
-        {/* Inline team identity (R8) — no separate HOME/AWAY label row */}
+        {/* Inline team identity (R8). Tap to toggle drawer + threshold trio
+            together (revised 2026-05-04 design: thresholds are bound to the
+            drawer state, not a separate chevron toggle). */}
         <button
           onClick={() => setDrawerOpen((v) => !v)}
           className={`text-base font-bold ${colors.headerText} text-center truncate border-b ${colors.borderDark} pb-1 w-full flex items-center justify-center gap-1`}
@@ -258,77 +262,51 @@ function TeamCard({
           <span className="text-xs font-normal opacity-70">{isHome ? 'Home' : 'Away'}</span>
         </button>
 
-        {/* Primary axis number (large) — R9 win-condition-driven emphasis */}
-        <div className="flex items-baseline justify-center gap-2 pt-2">
-          <span className={`font-bold text-3xl ${colors.accentText}`}>
-            {formatNumber(primaryValue)}
-          </span>
-          <span className="text-xs text-muted-foreground">{primaryLabel}</span>
-          {/* R22 — Fargo start-points delta inline on the primary line when points-mode.
-              Only shows when the credit is positive (the weaker team gets the badge;
-              stronger team's *_to_tie is 0 → no badge). */}
-          {winCondition === 'points' &&
-            showPoints &&
-            startPointsDelta != null &&
-            startPointsDelta > 0 && (
-              <span
-                className="text-[10px] text-muted-foreground bg-background/40 rounded px-1 py-0.5"
-                title="Starting points (handicap credit)"
-              >
-                +{startPointsDelta} start
-              </span>
-            )}
+        {/* Wins / Points side-by-side. Both always render (unless calculator
+            is 'none', in which case the points column collapses). Win-
+            condition determines size emphasis but both stay visible — most
+            matches care about both numbers. */}
+        <div
+          className={`grid items-baseline pt-2 ${
+            showPoints ? 'grid-cols-2 gap-2' : 'grid-cols-1'
+          }`}
+        >
+          {/* Wins column — `wins/to_win` slash format reads as "0 of 7"
+              (LIST_FOR_ED #10 fix). When games_to_win is null (pure points-
+              mode with no game target) shows just the wins count. */}
+          <div className="flex flex-col items-center">
+            <span className={`font-bold ${winsClass} ${colors.accentText}`}>
+              {thresholds.games_to_win != null
+                ? `${wins}/${thresholds.games_to_win}`
+                : formatNumber(wins)}
+            </span>
+            <span className="text-[10px] text-muted-foreground">Wins</span>
+          </div>
+
+          {/* Points column — hidden entirely when calculator is 'none' (R7) */}
+          {showPoints && (
+            <div className="flex flex-col items-center">
+              <div className="flex items-baseline gap-1">
+                <span className={`font-bold ${pointsClass} text-foreground`}>
+                  {formatNumber(points)}
+                </span>
+                {/* R22 — Fargo start-points credit. Inline next to the points
+                    number for the weaker team only (positive *_to_tie). */}
+                {winCondition === 'points' &&
+                  startPointsDelta != null &&
+                  startPointsDelta > 0 && (
+                    <span
+                      className="text-[10px] text-muted-foreground bg-background/40 rounded px-1 py-0.5"
+                      title="Starting points (handicap credit)"
+                    >
+                      +{startPointsDelta}
+                    </span>
+                  )}
+              </div>
+              <span className="text-[10px] text-muted-foreground">Points</span>
+            </div>
+          )}
         </div>
-
-        {/* Secondary axis (small, inline) — hidden when points axis is suppressed (R7) */}
-        {showPoints && (
-          <div className="flex items-baseline justify-center gap-2">
-            <span className="text-base text-foreground font-medium">
-              {formatNumber(secondaryValue)}
-            </span>
-            <span className="text-xs text-muted-foreground">{secondaryLabel}</span>
-          </div>
-        )}
-
-        {/* Inline to_win threshold (R10 default-collapsed) — `wins/to_win` reads as "8 of 11" */}
-        {thresholds.games_to_win != null && (
-          <div className="flex items-baseline justify-center gap-1 pt-1">
-            <span className="text-sm text-muted-foreground">
-              {wins}/{thresholds.games_to_win}
-            </span>
-            <span className="text-[10px] text-muted-foreground">to win</span>
-            <button
-              onClick={() => setThresholdsExpanded((v) => !v)}
-              aria-label="Toggle threshold details"
-              className="ml-1 text-muted-foreground hover:text-foreground"
-            >
-              {thresholdsExpanded ? (
-                <ChevronUp className="h-3 w-3" />
-              ) : (
-                <ChevronDown className="h-3 w-3" />
-              )}
-            </button>
-          </div>
-        )}
-
-        {/* Expanded threshold trio (R10 expand) */}
-        {thresholdsExpanded && (
-          <div className="flex justify-center gap-3 text-xs text-muted-foreground pt-1">
-            <span>
-              <span className="font-semibold">{thresholds.games_to_win}</span> win
-            </span>
-            {thresholds.games_to_tie != null && (
-              <span>
-                <span className="font-semibold">{thresholds.games_to_tie}</span> tie
-              </span>
-            )}
-            {thresholds.games_to_lose != null && (
-              <span>
-                <span className="font-semibold">{thresholds.games_to_lose}</span> lose
-              </span>
-            )}
-          </div>
-        )}
 
         {/* Calculator hints (R6/R17) — schema-derived or escape-hatch */}
         {hints.length > 0 && (
@@ -345,13 +323,37 @@ function TeamCard({
           </div>
         )}
 
-        {/* Player drawer (collapsed by default).
+        {/* Threshold trio (drawer-bound — appears with the drawer, hides on
+            close). Revised 2026-05-04: replaces the prior chevron-toggle
+            pattern. Single tap on the team name reveals BOTH the trio and
+            the player drawer. */}
+        {drawerOpen && (
+          <div className={`flex justify-center gap-3 text-xs text-muted-foreground pt-2 border-t ${colors.borderDark}`}>
+            {thresholds.games_to_win != null && (
+              <span>
+                <span className="font-semibold">{thresholds.games_to_win}</span> win
+              </span>
+            )}
+            {thresholds.games_to_tie != null && (
+              <span>
+                <span className="font-semibold">{thresholds.games_to_tie}</span> tie
+              </span>
+            )}
+            {thresholds.games_to_lose != null && (
+              <span>
+                <span className="font-semibold">{thresholds.games_to_lose}</span> lose
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Player drawer (drawer-bound, collapsed by default).
             Per-player points column appears only when the calculator awards
             per-player points (caller passes `getPlayerPoints`). Per Ed's
             framing: "if each player earns points then show points; if it's
             team-based then don't show it." */}
         {drawerOpen && (
-          <div className={`pt-2 border-t ${colors.borderDark}`}>
+          <div className="pt-2">
             <div
               className={`grid gap-2 text-xs ${
                 getPlayerPoints
@@ -409,6 +411,7 @@ function TeamCard({
                         playerId={player.id}
                         playerName={getPlayerDisplayName(player.id)}
                         customActions={swapAction}
+                        hidePlaceholderBadge
                       />
                     </div>
                     <div className="text-center text-foreground">{stats.wins}</div>
