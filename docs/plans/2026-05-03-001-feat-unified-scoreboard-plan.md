@@ -400,7 +400,7 @@ UnifiedScoreboard (props -> render)
 
 ### Phase 2 — Migration + integration
 
-- [ ] **Unit 4: Migrate `fargoMatchTotals.ts` to `*_to_tie` reads + comment cleanup**
+- [x] **Unit 4: Migrate `fargoMatchTotals.ts` to `*_to_tie` reads + comment cleanup**
 
 **Goal:** Resolve the broader R22 gap — the helper still reads from `*_to_win` for start-points credit semantics, and the caller at `ScoreMatch.tsx:690-691` maps from `match.home_to_win`/`away_to_win`. Per Phase 2 Unit 2.1, the credit lives on `*_to_tie`. Migrate both, OR delete the caller entirely if the unified scoreboard reads directly.
 
