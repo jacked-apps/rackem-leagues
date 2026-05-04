@@ -274,7 +274,7 @@ AFTER:
 
 ---
 
-- [ ] **Unit 2: Add `displayHints` to existing 3 calculators**
+- [x] **Unit 2: Add `displayHints` to existing 3 calculators**
 
 **Goal:** Wire the new metadata onto the three currently-registered calculators so the unified scoreboard has something to render.
 

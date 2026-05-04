@@ -37,7 +37,11 @@
  */
 
 import { z } from 'zod';
-import type { PerGamePointsCalculator, ScoringPopupSideSpec } from './types';
+import type {
+  PerGamePointsCalculator,
+  ScoringPopupSideSpec,
+  DisplayHint,
+} from './types';
 
 // ============================================================================
 // Params
@@ -146,6 +150,33 @@ export const accumulatedPerGame: PerGamePointsCalculator<AccumulatedPerGameParam
         loser: sideToSpec(params.loser),
       },
     };
+  },
+
+  // Per-game calculators with structural param keys ('winner' | 'loser') use
+  // the `getDisplayHints` escape hatch instead of the schema-derived
+  // `displayHints` field — see the typing note in `types.ts` (Unit 1 of the
+  // unified-scoreboard plan). Each side surfaces a `progress_target` hint
+  // describing how many points are at stake (fixed value, or counter range).
+  // Default Fargo 10-7 produces: Winner: 10 (fixed), Loser: 0–7 (counter).
+  getDisplayHints: (params) => {
+    const sideHint = (
+      side: 'winner' | 'loser',
+      config: SideScoringConfig,
+    ): DisplayHint => {
+      const label = side === 'winner' ? 'Winner' : 'Loser';
+      if (config.kind === 'fixed') {
+        return { role: 'progress_target', label, value: config.points };
+      }
+      return {
+        role: 'progress_target',
+        label,
+        value: `${config.min}–${config.max}`,
+      };
+    };
+    return [
+      sideHint('winner', params.winner),
+      sideHint('loser', params.loser),
+    ];
   },
 
   compute: ({ games, teamId }, params) => {
