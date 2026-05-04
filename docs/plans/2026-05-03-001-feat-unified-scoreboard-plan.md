@@ -473,7 +473,7 @@ UnifiedScoreboard (props -> render)
 
 ### Phase 3 — Cleanup + coverage
 
-- [ ] **Unit 6: Tiebreaker scoreboard team-name fix + R20 restraint check**
+- [x] **Unit 6: Tiebreaker scoreboard team-name fix + R20 restraint check**
 
 **Goal:** Replace `HOME` / `AWAY` labels with team names from `match.home_team.team_name` / `match.away_team.team_name`. Verify the component's structure isn't actively painting itself into a corner that would prevent a future `tiebreaker_format` axis. NO new abstraction.
 
