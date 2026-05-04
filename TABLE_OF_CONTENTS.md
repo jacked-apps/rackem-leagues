@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-03 (Implementation plan landed: `docs/plans/2026-05-03-001-feat-unified-scoreboard-plan.md` — 8 units across 3 phases. Plan went through one document-review pass; auto-expand on R10, sticky-thin-bar, and mid-match clinch are out of scope; TeamStatsCard generalization for points-mode is in. Brainstorm: `docs/brainstorms/unified-scoreboard-requirements.md`. Depends on PR #98 merge; pin SHA before /ce:work.)
+> **Last Updated**: 2026-05-04 (Unit 7 of unified-scoreboard plan: deleted three legacy scoreboards (`ThreeVThreeScoreboard.tsx`, `FiveVFiveScoreboard.tsx`, `TenSevenScoreboard.tsx`) plus the orphaned `TeamStatsCard.tsx`. `UnifiedScoreboard.tsx` is now the single live-match scoreboard for all configs; both `ScoreMatch.tsx` and `SpectateMatchCard.tsx` route through it. The `useMatchScoring().calculatePoints` hook re-export was dropped (verified zero non-test consumers). Plan: `docs/plans/2026-05-03-001-feat-unified-scoreboard-plan.md`.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -618,13 +618,15 @@ Reusable wizard/form step components
 - `TestModeToggle.tsx` - Test mode toggle
 
 #### Scoring Components (`/components/scoring/`)
-- `ScoreboardCard.tsx` - Scoreboard display
+- `UnifiedScoreboard.tsx` - **Single live-match scoreboard for all configs** (replaces former ThreeVThree / FiveVFive / TenSeven). Reads match-row source-of-truth, schema-derived display hints, calculator-driven per-player points column, R22 Fargo start-points display.
+- `TiebreakerScoreboard.tsx` - Best-of-3 tiebreaker score panel (separate component; team-name labels per R18)
+- `MatchEndVerification.tsx` - End-of-match dual-team verify-and-confirm flow (mode-aware internally)
 - `GamesList.tsx` - Games list
-- `MatchScoreboard.tsx` - Swipeable match scoreboard with team/player stats (extracted from ScoreMatch)
 - `GameButtonRow.tsx` - Game row with breaker vs racker buttons (extracted from ScoreMatch)
 - `ScoringDialog.tsx` - Game winner selection with B&R and Golden Break (extracted from ScoreMatch)
 - `ConfirmationDialog.tsx` - Opponent score confirmation and vacate requests (extracted from ScoreMatch)
 - `EditGameDialog.tsx` - Vacate winner request dialog (extracted from ScoreMatch)
+- `scoreboardColors.ts` - Single source of truth for team colors (home: blue, away: orange)
 
 #### Messaging Components (`/components/messages/`)
 - `MessageView.tsx` - Main message view

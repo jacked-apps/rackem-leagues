@@ -1,22 +1,27 @@
 /**
  * @fileoverview Single-match scoreboard card for the spectator page.
  *
- * Renders the correct scoreboard variant (ThreeVThree / FiveVFive / TenSeven)
- * for one match in read-only spectator mode. Mounts its own data + realtime
- * subscription via useSpectateMatch so each card ticks live independently.
+ * Renders one match in read-only spectator mode through the same
+ * `UnifiedScoreboard` that the live scoring page uses. Mounts its own
+ * data + realtime subscription via `useSpectateMatch` so each card ticks
+ * live independently.
  *
- * This component is deliberately dumb — it doesn't know who's watching, what
- * team they're on, or whether they have any relationship to this match. It
- * just fetches state and renders. isHomeTeam is hard-coded to false so no
- * player-team-only affordances leak through; onVerify/onSwapPlayer are
- * no-ops and never visually surface in read-only paths.
+ * This component is deliberately dumb — it doesn't know who's watching,
+ * what team they're on, or whether they have any relationship to this
+ * match. It just fetches state and renders. `isHomeTeam` is hard-coded to
+ * false so no player-team-only affordances leak through; onVerify /
+ * onSwapPlayer are no-ops and never visually surface in read-only paths.
+ *
+ * Pre-Unit-7-of-unified-scoreboard-plan, this component had its own
+ * 3-way dispatch (Fargo / 5v5 / 3v3). Unit 7 collapsed that to a single
+ * UnifiedScoreboard call, mirroring the live scoring page's collapse in
+ * Unit 5.
  */
 
 import { Loader2 } from 'lucide-react';
-import { ThreeVThreeScoreboard } from '@/components/scoring/ThreeVThreeScoreboard';
-import { FiveVFiveScoreboard } from '@/components/scoring/FiveVFiveScoreboard';
-import { TenSevenScoreboard } from '@/components/scoring/TenSevenScoreboard';
+import { UnifiedScoreboard } from '@/components/scoring/UnifiedScoreboard';
 import { useSpectateMatch } from '@/hooks/useSpectateMatch';
+import { getCalculator } from '@/systems/calculators';
 import type { MatchWithDetails } from '@/types';
 
 interface SpectateMatchCardProps {
@@ -42,47 +47,6 @@ export function SpectateMatchCard({ match: seedMatch }: SpectateMatchCardProps) 
     );
   }
 
-  // Cast seedMatch.table_number etc. aren't needed here — the scoreboards
-  // read what they need from the match + lineups they receive.
-  const matchForScoreboard = {
-    ...data.match,
-    home_team_verified_by: (data.match as any).home_team_verified_by ?? null,
-    away_team_verified_by: (data.match as any).away_team_verified_by ?? null,
-  };
-
-  // Fargo: TenSevenScoreboard with point-accumulation display.
-  // Phase 5 Unit 5.5: points + game counts come from the match row
-  // (maintained per-game by `updateMatchRunningTotals`). The
-  // start-points breakdown is the only Fargo-specific bit, derived from
-  // the match row's repurposed `*_to_tie` columns in useSpectateMatch.
-  if (data.handicapType === 'fargo') {
-    return (
-      <TenSevenScoreboard
-        match={matchForScoreboard}
-        homeLineup={data.homeLineup}
-        awayLineup={data.awayLineup}
-        homePoints={data.homePoints}
-        awayPoints={data.awayPoints}
-        homeGamesWon={data.homeWins}
-        awayGamesWon={data.awayWins}
-        totalScheduledGames={data.gameResults.size}
-        startPoints={data.startPoints}
-        startPointsFor={data.startPointsFor}
-        allGamesComplete={data.allGamesComplete}
-        isHomeTeam={false}
-        onVerify={noop}
-        isVerifying={false}
-        gameType={data.gameType}
-        getPlayerDisplayName={data.getPlayerDisplayName}
-        getPlayerStats={data.getPlayerStats}
-        getPlayerPoints={data.getPlayerPoints}
-        // onSwapPlayer omitted — the 10-7 card only shows the swap action on
-        // the current user's team and we're spectating, so it stays hidden.
-      />
-    );
-  }
-
-  // BCA systems — fall through to format-specific scoreboard.
   if (!data.homeThresholds || !data.awayThresholds) {
     return (
       <div className="border-y bg-card py-6 text-center text-sm text-muted-foreground">
@@ -92,52 +56,40 @@ export function SpectateMatchCard({ match: seedMatch }: SpectateMatchCardProps) 
     );
   }
 
-  if (data.is5v5) {
-    return (
-      <FiveVFiveScoreboard
-        match={matchForScoreboard}
-        homeLineup={data.homeLineup}
-        awayLineup={data.awayLineup}
-        homeThresholds={data.homeThresholds}
-        awayThresholds={data.awayThresholds}
-        homeWins={data.homeWins}
-        awayWins={data.awayWins}
-        homeLosses={data.homeLosses}
-        awayLosses={data.awayLosses}
-        homePoints={data.homePoints}
-        awayPoints={data.awayPoints}
-        allGamesComplete={data.allGamesComplete}
-        isHomeTeam={false}
-        onVerify={noop}
-        isVerifying={false}
-        gameType={data.gameType}
-        getPlayerDisplayName={data.getPlayerDisplayName}
-        getPlayerStats={data.getPlayerStats}
-      />
-    );
-  }
+  // Same per-game-calculator gate as ScoreMatch.tsx — only pass
+  // getPlayerPoints when the calculator awards per-player points (e.g.
+  // accumulated_per_game). Aggregate calculators get undefined and the
+  // P column hides.
+  const calculatorName = data.match.system_snapshot?.points_calculator;
+  const activeCalculator = calculatorName ? getCalculator(calculatorName) : null;
+  const isPerGameCalculator = activeCalculator?.kind === 'per_game';
+
+  const matchForScoreboard = {
+    ...data.match,
+    home_team_verified_by: (data.match as any).home_team_verified_by ?? null,
+    away_team_verified_by: (data.match as any).away_team_verified_by ?? null,
+  };
 
   return (
-    <ThreeVThreeScoreboard
+    <UnifiedScoreboard
       match={matchForScoreboard}
       homeLineup={data.homeLineup}
       awayLineup={data.awayLineup}
       homeThresholds={data.homeThresholds}
       awayThresholds={data.awayThresholds}
-      homeWins={data.homeWins}
-      awayWins={data.awayWins}
       homeLosses={data.homeLosses}
       awayLosses={data.awayLosses}
-      homePoints={data.homePoints}
-      awayPoints={data.awayPoints}
-      homeTeamHandicap={0}
       allGamesComplete={data.allGamesComplete}
       isHomeTeam={false}
       onVerify={noop}
       isVerifying={false}
       gameType={data.gameType}
+      winCondition={data.winCondition}
+      lineupSize={data.lineupSize}
       getPlayerDisplayName={data.getPlayerDisplayName}
       getPlayerStats={data.getPlayerStats}
+      // onSwapPlayer omitted — read-only spectator view has no swap UX.
+      getPlayerPoints={isPerGameCalculator ? data.getPlayerPoints : undefined}
     />
   );
 }

@@ -505,7 +505,7 @@ UnifiedScoreboard (props -> render)
 
 ---
 
-- [ ] **Unit 7: Delete legacy scoreboard component files + TOC update**
+- [x] **Unit 7: Delete legacy scoreboard component files + TOC update**
 
 **Goal:** Remove `ThreeVThreeScoreboard.tsx`, `FiveVFiveScoreboard.tsx`, `TenSevenScoreboard.tsx` from the codebase. Update `TABLE_OF_CONTENTS.md` to reflect deletions and the new `UnifiedScoreboard.tsx` entry.
 

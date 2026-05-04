@@ -10,14 +10,13 @@ import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { calculateTeamHandicap } from '@/utils/handicapCalculations';
 import { shouldGoldenBreakCount } from '@/utils/goldenBreakRules';
 import { getPlayerNicknameById } from '@/types/member';
-import { getTeamStats, getPlayerStats, getCompletedGamesCount, calculatePoints, TIEBREAKER_THRESHOLDS } from '@/types';
+import { getTeamStats, getPlayerStats, getCompletedGamesCount, TIEBREAKER_THRESHOLDS } from '@/types';
 import { useMatchWithLeagueSettings, useMatchLineups, useMatchGames } from '@/api/hooks/useMatches';
 import { useUserTeamInMatch, useTeamDetails } from '@/api/hooks/useTeams';
 import { useMatchRealtime } from '@/realtime/useMatchRealtime';
 import { logger } from '@/utils/logger';
 import type {
   Player,
-  HandicapThresholds,
   MatchGame,
   ConfirmationQueueItem,
   MatchType,
@@ -266,12 +265,11 @@ export function useMatchScoring({
     return getCompletedGamesCount(gameResults);
   }, [gameResults]);
 
-  /**
-   * Calculate points for a team
-   */
-  const calculatePointsCallback = useCallback((teamId: string, thresholds: HandicapThresholds | null) => {
-    return calculatePoints(teamId, thresholds, gameResults);
-  }, [gameResults]);
+  // Note: the legacy `calculatePointsCallback` re-export was dropped in
+  // Unit 7 of the unified-scoreboard plan. Verified zero non-test consumers
+  // before removal. The legacy `calculatePoints` helper itself survives
+  // (src/types/match.ts) for the characterization tests + divergence audit
+  // — see `feedback_two_paths_audit_pattern.md` in the user-memory.
 
   // ============================================================================
   // DATA PROCESSING
@@ -436,7 +434,6 @@ export function useMatchScoring({
     getTeamStats: getTeamStatsCallback,
     getPlayerStats: getPlayerStatsCallback,
     getCompletedGamesCount: getCompletedGamesCountCallback,
-    calculatePoints: calculatePointsCallback,
 
     // Confirmation queue
     confirmationQueue,

@@ -179,9 +179,13 @@ export function useSpectateMatch(matchId: string | null | undefined) {
   // legacy snapshots from before Phase 2 Unit 2.2's writer expansion.
   const snapshot = match?.system_snapshot;
   const handicapType = snapshot?.handicap_type ?? leaguePrefs?.handicap_type ?? 'points';
-  // Lineup-size routing decision: previously `team_format === '8_man'`.
-  // Drives 3v3-vs-5v5 scoreboard component selection in SpectateMatchCard.
-  const is5v5 = (snapshot?.lineup_size ?? leaguePrefs?.lineup_size ?? 3) === 5;
+  // Lineup geometry + win condition feed UnifiedScoreboard's auto-flex
+  // rendering. Pre-Unit-7-of-unified-scoreboard-plan we exposed `is5v5` for
+  // 3v3-vs-5v5 component selection; that boolean is gone now since the
+  // unified scoreboard renders any lineup_size + win_condition combination.
+  const lineupSize = snapshot?.lineup_size ?? leaguePrefs?.lineup_size ?? 3;
+  const winCondition: 'games' | 'points' =
+    snapshot?.win_condition ?? leaguePrefs?.win_condition ?? 'games';
   const gameType = (match?.league?.game_type as string) || 'eight_ball';
 
   const fargoOverrides = snapshot?.overrides ?? leaguePrefs?.system_overrides ?? {};
@@ -246,7 +250,8 @@ export function useSpectateMatch(matchId: string | null | undefined) {
     startPoints,
     startPointsFor,
     handicapType,
-    is5v5,
+    lineupSize,
+    winCondition,
     gameType,
     allGamesComplete,
     getPlayerDisplayName,
