@@ -384,21 +384,27 @@ export function useMatchPreparation(params: MatchPreparationParams) {
             // to be scored. For points-mode this folds the start-credit
             // (from *_to_tie) into home_points_earned/away_points_earned;
             // for games-mode it writes 0/0 (the calculator's output for 0
-            // games). Failure here is non-fatal — the next score event
-            // will repopulate. Per Ed 2026-05-04: "the inital points show
-            // up at the beginning ... in all the matches where points are
-            // counted."
-            try {
-              const { updateMatchRunningTotals } = await import(
-                '@/api/queries/matches'
-              );
-              await updateMatchRunningTotals(matchId);
-            } catch (seedErr) {
-              logger.warn('Failed to seed initial running totals at prep_match', {
-                matchId,
-                error: seedErr instanceof Error ? seedErr.message : String(seedErr),
-              });
-            }
+            // games). Per Ed 2026-05-04: "the inital points show up at the
+            // beginning ... in all the matches where points are counted."
+            //
+            // Fire-and-forget: the seed write is non-fatal (the next score
+            // event will repopulate if it fails) and serial-awaiting it
+            // here blocks navigation by ~2-4 Supabase round-trips. The
+            // realtime subscription on the scoring page picks up the seed
+            // when it lands.
+            void (async () => {
+              try {
+                const { updateMatchRunningTotals } = await import(
+                  '@/api/queries/matches'
+                );
+                await updateMatchRunningTotals(matchId);
+              } catch (seedErr) {
+                logger.warn('Failed to seed initial running totals at prep_match', {
+                  matchId,
+                  error: seedErr instanceof Error ? seedErr.message : String(seedErr),
+                });
+              }
+            })();
             setIsPreparingMatch?.(false);
             navigate(`/match/${matchId}/score`);
             return;

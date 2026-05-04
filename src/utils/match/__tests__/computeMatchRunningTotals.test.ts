@@ -84,6 +84,7 @@ describe('computeMatchRunningTotals', () => {
         games,
         pointsCalculator: 'linear_above_threshold',
         pointsCalculatorParams: {},
+        winCondition: 'games',
       });
 
       expect(result.home_games_won).toBe(2);
@@ -99,6 +100,7 @@ describe('computeMatchRunningTotals', () => {
         games: [unconfirmedGame(HOME), unconfirmedGame(AWAY)],
         pointsCalculator: 'linear_above_threshold',
         pointsCalculatorParams: {},
+        winCondition: 'games',
       });
 
       expect(result.home_games_won).toBe(0);
@@ -131,6 +133,7 @@ describe('computeMatchRunningTotals', () => {
         games,
         pointsCalculator: 'linear_above_threshold',
         pointsCalculatorParams: {},
+        winCondition: 'games',
       });
 
       expect(result.home_games_won).toBe(2);
@@ -151,6 +154,7 @@ describe('computeMatchRunningTotals', () => {
         games,
         pointsCalculator: 'linear_above_threshold',
         pointsCalculatorParams: {},
+        winCondition: 'games',
       });
 
       expect(result.home_games_won).toBe(11);
@@ -170,6 +174,7 @@ describe('computeMatchRunningTotals', () => {
         games,
         pointsCalculator: 'linear_above_threshold',
         pointsCalculatorParams: {},
+        winCondition: 'games',
       });
 
       expect(result.home_games_won).toBe(9);
@@ -197,6 +202,7 @@ describe('computeMatchRunningTotals', () => {
         games,
         pointsCalculator: 'linear_above_threshold',
         pointsCalculatorParams: {},
+        winCondition: 'games',
       });
 
       expect(result.home_games_won).toBe(9);
@@ -217,6 +223,7 @@ describe('computeMatchRunningTotals', () => {
         games,
         pointsCalculator: 'linear_above_threshold',
         pointsCalculatorParams: {},
+        winCondition: 'games',
       });
 
       expect(result.home_points_earned).toBe(-2);
@@ -240,6 +247,7 @@ describe('computeMatchRunningTotals', () => {
         games,
         pointsCalculator: 'accumulated_per_game',
         pointsCalculatorParams: {},
+        winCondition: 'games',
       });
 
       expect(result.home_games_won).toBe(2);
@@ -314,6 +322,7 @@ describe('computeMatchRunningTotals', () => {
         games,
         pointsCalculator: null,
         pointsCalculatorParams: {},
+        winCondition: 'games',
       });
 
       expect(result.home_games_won).toBe(2);
@@ -336,6 +345,7 @@ describe('computeMatchRunningTotals', () => {
         games,
         pointsCalculator: 'experimental_calc_not_registered',
         pointsCalculatorParams: {},
+        winCondition: 'games',
       });
 
       expect(result.home_games_won).toBe(1);

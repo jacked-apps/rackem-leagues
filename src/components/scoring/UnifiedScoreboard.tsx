@@ -33,6 +33,7 @@
 
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { MatchEndVerification } from '@/components/scoring/MatchEndVerification';
 import { PlayerNameLink } from '@/components/PlayerNameLink';
 import { TeamNameLink } from '@/components/TeamNameLink';
@@ -297,14 +298,16 @@ function TeamCard({
         {/* Inline team identity (R8). Tap to toggle drawer + threshold trio
             together (revised 2026-05-04 design: thresholds are bound to the
             drawer state, not a separate chevron toggle). */}
-        <button
+        <Button
+          type="button"
+          variant="ghost"
           onClick={onToggleDrawer}
-          className={`text-base font-bold ${colors.headerText} text-center truncate border-b ${colors.borderDark} pb-1 w-full flex items-center justify-center gap-1`}
+          className={`h-auto rounded-none px-0 py-1 hover:bg-transparent text-base font-bold ${colors.headerText} text-center truncate border-b ${colors.borderDark} w-full flex items-center justify-center gap-1`}
         >
           <span className="truncate">{teamName}</span>
           <span className="text-xs font-normal opacity-70">·</span>
           <span className="text-xs font-normal opacity-70">{isHome ? 'Home' : 'Away'}</span>
-        </button>
+        </Button>
 
         {/* Wins / Points side-by-side. Both always render (unless calculator
             is 'none', in which case the points column collapses). Win-

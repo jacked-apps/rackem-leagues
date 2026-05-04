@@ -110,17 +110,24 @@ export function useMatchRealtime(
     gameUpdateOptions,
   } = options;
 
-  // Use refs to avoid re-subscribing when callbacks change
+  // Use refs to avoid re-subscribing when callbacks or option bag change.
+  // gameUpdateOptions is an object literal at the call site (built fresh
+  // every render), so without a ref it would trip the subscription effect's
+  // dep comparison on every parent re-render. Phase 5 introduced
+  // updateMatchRunningTotals which mutates the match row on every scored
+  // game, so a refetch-on-write loop would tear down and re-subscribe the
+  // realtime channel after every score event without this ref.
   const onMatchUpdateRef = useRef(onMatchUpdate);
   const onLineupUpdateRef = useRef(onLineupUpdate);
   const onGamesUpdateRef = useRef(onGamesUpdate);
+  const gameUpdateOptionsRef = useRef(gameUpdateOptions);
 
-  // Update refs when callbacks change
   useEffect(() => {
     onMatchUpdateRef.current = onMatchUpdate;
     onLineupUpdateRef.current = onLineupUpdate;
     onGamesUpdateRef.current = onGamesUpdate;
-  }, [onMatchUpdate, onLineupUpdate, onGamesUpdate]);
+    gameUpdateOptionsRef.current = gameUpdateOptions;
+  }, [onMatchUpdate, onLineupUpdate, onGamesUpdate, gameUpdateOptions]);
 
   useEffect(() => {
     if (!matchId) return;
@@ -174,8 +181,11 @@ export function useMatchRealtime(
           // Always refetch games
           onGamesUpdateRef.current?.();
 
-          // Handle confirmation queue logic if options provided (scoring page)
-          if (gameUpdateOptions && (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') && payload.new) {
+          // Handle confirmation queue logic if options provided (scoring page).
+          // Read through the ref so the option bag's per-render identity does
+          // not invalidate the subscription effect.
+          const liveOptions = gameUpdateOptionsRef.current;
+          if (liveOptions && (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') && payload.new) {
             const {
               match,
               userTeamId,
@@ -185,7 +195,7 @@ export function useMatchRealtime(
               editingGame = null,
               autoConfirm = false,
               confirmOpponentScore,
-            } = gameUpdateOptions;
+            } = liveOptions;
 
             if (!match || !userTeamId) return;
 
@@ -267,5 +277,5 @@ export function useMatchRealtime(
       console.log(`[useMatchRealtime] Cleaning up subscription for match ${matchId}`);
       supabase.removeChannel(channel);
     };
-  }, [matchId, gameUpdateOptions]);
+  }, [matchId]);
 }
