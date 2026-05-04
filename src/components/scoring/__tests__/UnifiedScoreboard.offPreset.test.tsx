@@ -25,7 +25,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { renderWithProviders, screen } from '@/test/utils';
+import { renderWithProviders, screen, userEvent } from '@/test/utils';
 import {
   registerTestedPresetCalculators,
   clearRegistry,
@@ -147,7 +147,7 @@ describe('UnifiedScoreboard — off-preset combos (Unit 8)', () => {
     expect(screen.getAllByText(/wins/i).length).toBeGreaterThan(0);
   });
 
-  it('4v4 Fargo games-mode + accumulate_with_milestone_jumps renders milestone hint', () => {
+  it('4v4 Fargo games-mode + accumulate_with_milestone_jumps renders milestone hint', async () => {
     // Validates that the milestone hint surfaces for ANY lineup size, not
     // just 5v5. Pre-Unit-7, the 1.5x marker was hardcoded inside
     // FiveVFiveScoreboard's TeamStatsCard with `mode === '5v5'`. Now it's
@@ -174,6 +174,7 @@ describe('UnifiedScoreboard — off-preset combos (Unit 8)', () => {
       },
     });
 
+    const user = userEvent.setup();
     renderWithProviders(
       <UnifiedScoreboard
         match={match}
@@ -198,7 +199,9 @@ describe('UnifiedScoreboard — off-preset combos (Unit 8)', () => {
       />,
     );
 
-    // Milestone hint renders for the off-preset 4v4 combo.
+    // Milestone hint is drawer-bound (smoke-test 2026-05-04 feedback) — open
+    // the drawer first to see it.
+    await user.click(screen.getAllByText('Home')[0]);
     expect(screen.getAllByText(/Milestone bonus/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/1\.5/).length).toBeGreaterThan(0);
   });

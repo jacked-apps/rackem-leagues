@@ -375,7 +375,7 @@ describe('UnifiedScoreboard — auto-flex player rows (R14)', () => {
 // ----------------------------------------------------------------------------
 
 describe('UnifiedScoreboard — calculator hints (R6/R17)', () => {
-  it('renders the BCA 5v5 milestone hint declared in displayHints', () => {
+  it('renders the BCA 5v5 milestone hint declared in displayHints (drawer-bound)', async () => {
     const match = buildMatch({
       home_games_won: 8,
       away_games_won: 5,
@@ -394,6 +394,7 @@ describe('UnifiedScoreboard — calculator hints (R6/R17)', () => {
       },
     });
 
+    const user = userEvent.setup();
     renderWithProviders(
       <UnifiedScoreboard
         match={match}
@@ -417,9 +418,12 @@ describe('UnifiedScoreboard — calculator hints (R6/R17)', () => {
       />,
     );
 
-    // Schema-derived hint surfaces with the declared label + the resolved value.
+    // Default state: hints are NOT visible (they're drawer-bound now).
+    expect(screen.queryByText(/Milestone bonus/i)).not.toBeInTheDocument();
+
+    // Open the drawer — hints render alongside the threshold trio.
+    await user.click(screen.getAllByText('Home Team')[0]);
     expect(screen.getAllByText(/Milestone bonus/i).length).toBeGreaterThan(0);
-    // The 1.5 value renders alongside the label.
     expect(screen.getAllByText(/1\.5/).length).toBeGreaterThan(0);
   });
 
@@ -610,10 +614,13 @@ describe('UnifiedScoreboard — Fargo start-points (R22 revised 2026-05-04)', ()
     // No "+N start" badge anywhere.
     expect(screen.queryByText(/\+\d+/)).not.toBeInTheDocument();
 
-    // Open the drawer to reveal the "starting N" labels in the threshold row.
+    // Open the drawer to reveal the "Starts +N" label in the threshold row.
+    // Stronger team (home, to_tie=0) gets no label — hide-when-zero per
+    // Ed's smoke-test feedback. Weaker team (away, to_tie=25) shows
+    // "Starts +25" with a + sign.
     await user.click(screen.getAllByText('Home Team')[0]);
-    expect(screen.getAllByText(/starting 0/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/starting 25/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Starts \+25/)).toBeInTheDocument();
+    expect(screen.queryByText(/Starts \+0/)).not.toBeInTheDocument();
   });
 
   it('does not render start-credit info in games-mode', () => {

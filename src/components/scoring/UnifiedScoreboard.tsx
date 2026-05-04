@@ -312,37 +312,26 @@ function TeamCard({
           )}
         </div>
 
-        {/* Calculator hints (R6/R17) — schema-derived or escape-hatch */}
-        {hints.length > 0 && (
-          <div className="flex flex-wrap justify-center gap-2 pt-1">
-            {hints.map((hint, i) => (
-              <span
-                key={`${hint.role}-${hint.paramKey ?? i}`}
-                className="text-[10px] text-muted-foreground bg-background/40 rounded px-1.5 py-0.5"
-                title={`role: ${hint.role}`}
-              >
-                {hint.label}: <span className="font-semibold">{String(hint.value)}</span>
-              </span>
-            ))}
-          </div>
-        )}
-
-        {/* Threshold trio (drawer-bound — appears with the drawer, hides on
-            close). Revised 2026-05-04: replaces the prior chevron-toggle
-            pattern. Single tap on the team name reveals BOTH the trio and
-            the player drawer.
-            - games-mode: shows "X win", "X tie", "X lose" thresholds.
-            - points-mode: shows "starting X" derived from to_tie (the
-              start-credit). Per Ed's 2026-05-04 ask: lets players see
-              the gap they were given vs how much they've earned. to_win
-              and to_lose are typically null in points-mode (cleaned up
-              by useMatchPreparation post-negotiation). */}
+        {/* Threshold trio + calculator-hints row (drawer-bound — appears
+            with the drawer, hides on close). Revised 2026-05-04 (and again
+            with smoke-test feedback): single tap on the team name reveals
+            this row + the player drawer together.
+            - games-mode: shows "X win" / "X tie" / "X lose" thresholds.
+            - points-mode: shows "Starts +N" derived from to_tie (the
+              start-credit), only when N > 0. Stronger team's row stays
+              clean (they started at 0, no need to label it).
+            - Calculator hints (e.g. "Milestone bonus: 1.5" for BCA 5v5,
+              the per-side rules for Fargo 10-7) render to the right
+              alongside the thresholds. Static reference info belongs in
+              the drawer, not on the at-a-glance scoreboard. */}
         {drawerOpen && (
-          <div className={`flex justify-center gap-3 text-xs text-muted-foreground pt-2 border-t ${colors.borderDark}`}>
+          <div className={`flex flex-wrap justify-center gap-3 text-xs text-muted-foreground pt-2 border-t ${colors.borderDark}`}>
             {winCondition === 'points' ? (
-              <span>
-                <span className="font-semibold">starting {thresholds.games_to_tie ?? 0}</span>
-              </span>
+              (thresholds.games_to_tie ?? 0) > 0 && (
+                <span>
+                  <span className="font-semibold">Starts +{thresholds.games_to_tie}</span>
+                </span>
+              )
             ) : (
               <>
                 {thresholds.games_to_win != null && (
@@ -362,6 +351,14 @@ function TeamCard({
                 )}
               </>
             )}
+            {hints.map((hint, i) => (
+              <span
+                key={`${hint.role}-${hint.paramKey ?? i}`}
+                title={`role: ${hint.role}`}
+              >
+                {hint.label}: <span className="font-semibold">{String(hint.value)}</span>
+              </span>
+            ))}
           </div>
         )}
 
