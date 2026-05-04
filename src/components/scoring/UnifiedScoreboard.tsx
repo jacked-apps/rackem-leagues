@@ -119,13 +119,36 @@ export interface UnifiedScoreboardProps {
 // ============================================================================
 
 /**
+ * Resolve calculator params: when the snapshot stores an empty object `{}`
+ * (the wizard's default for unmodified-from-defaults leagues), fall back to
+ * the calculator's `defaultParams`. Mirrors the same fallback logic the
+ * calculator's own `compute()` already does, so display + math agree.
+ */
+function resolveCalculatorParams(
+  calculatorName: string | null | undefined,
+  params: unknown,
+): unknown {
+  if (!calculatorName || calculatorName === 'none') return params;
+  const calc = getCalculator(calculatorName);
+  if (!calc) return params;
+  const isEmpty =
+    params == null ||
+    (typeof params === 'object' && Object.keys(params as object).length === 0);
+  return isEmpty ? calc.defaultParams : params;
+}
+
+/**
  * Resolve the active calculator's display hints to a flat runtime list. Tries
  * the imperative escape hatch first; falls back to the schema-derived form.
  * Returns an empty array when no calculator / no hints are declared.
+ *
+ * `params` should be the RESOLVED params (empty-fallback already applied via
+ * `resolveCalculatorParams`); the schema-derived path looks up values keyed
+ * by paramKey, so empty params would produce zero hints.
  */
 function resolveDisplayHints(
   calculatorName: string | null | undefined,
-  params: unknown,
+  resolvedParams: unknown,
 ): DisplayHint[] {
   if (!calculatorName || calculatorName === 'none') return [];
   const calc = getCalculator(calculatorName);
@@ -134,10 +157,6 @@ function resolveDisplayHints(
   // Imperative escape hatch wins when present (canonical for structural
   // param shapes like accumulated_per_game).
   if (calc.getDisplayHints) {
-    const resolvedParams =
-      params == null || (typeof params === 'object' && Object.keys(params as object).length === 0)
-        ? calc.defaultParams
-        : params;
     try {
       return calc.getDisplayHints(resolvedParams as never);
     } catch {
@@ -145,10 +164,10 @@ function resolveDisplayHints(
     }
   }
 
-  // Schema-derived path: read displayHints, look up each key in params.
-  if (calc.displayHints && params && typeof params === 'object') {
+  // Schema-derived path: read displayHints, look up each key in resolvedParams.
+  if (calc.displayHints && resolvedParams && typeof resolvedParams === 'object') {
     const out: DisplayHint[] = [];
-    const paramRecord = params as Record<string, unknown>;
+    const paramRecord = resolvedParams as Record<string, unknown>;
     const hintEntries = Object.entries(calc.displayHints) as Array<
       [string, { role: string; label?: string } | undefined]
     >;
@@ -577,7 +596,12 @@ export function UnifiedScoreboard({
   const snapshotCalculator = (snapshot as { points_calculator?: string | null }).points_calculator;
   const calculatorName =
     snapshotCalculator !== undefined ? snapshotCalculator : (livePointsCalculator ?? null);
-  const calculatorParams = (snapshot as { points_calculator_params?: unknown }).points_calculator_params ?? {};
+  const rawCalculatorParams = (snapshot as { points_calculator_params?: unknown }).points_calculator_params ?? {};
+  // Resolve params with empty-fallback so the schema-derived hint resolver
+  // and the milestone-role renderer both see the calculator's defaults when
+  // the snapshot stores `{}` (the wizard's representation for unmodified
+  // leagues). Mirrors the calculator's own `compute()` empty-fallback.
+  const calculatorParams = resolveCalculatorParams(calculatorName, rawCalculatorParams);
   const showPoints = shouldShowPointsAxis(calculatorName);
   const hints = resolveDisplayHints(calculatorName, calculatorParams);
 
