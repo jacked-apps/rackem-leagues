@@ -550,6 +550,19 @@ export const TeamManagement: React.FC = () => {
 
     // Pre-flight: count matches so we can pick the right verb and craft
     // meaningful confirmation copy.
+   * Handle team deletion.
+   *
+   * Hard delete is allowed only when the team has zero matches (typo /
+   * pre-schedule cleanup). When matches exist, the operator is told the
+   * Drop workflow is the right tool — the database FK is RESTRICT, so the
+   * raw DELETE would fail anyway, but the pre-flight check gives a clean
+   * message instead of letting an FK error surface.
+   *
+   * The Drop workflow (mark team withdrawn + reassign matches to a bye row)
+   * ships in PR 2; until then, operators with mid-season drops should
+   * contact dev support.
+   */
+  const handleDeleteTeam = async (teamId: string) => {
     const { count: matchCount, error: countError } = await supabase
       .from('matches')
       .select('id', { count: 'exact', head: true })
@@ -601,6 +614,17 @@ export const TeamManagement: React.FC = () => {
         `\n` +
         `You can always assign a captain to the BYE later, and they'll play in this position. Continue?`,
       confirmText: 'Remove from Season',
+    if ((matchCount ?? 0) > 0) {
+      toast.error(
+        `This team has ${matchCount} match${matchCount === 1 ? '' : 'es'} and cannot be deleted. The Drop Team workflow (coming soon) is the right tool for mid-season departures.`
+      );
+      return;
+    }
+
+    const confirmed = await confirm({
+      title: 'Delete Team?',
+      message: 'This team has no matches yet. Deleting it will permanently remove the team and its roster. This cannot be undone.',
+      confirmText: 'Delete Team',
       confirmVariant: 'destructive',
     });
     if (!confirmed) return;
@@ -613,6 +637,13 @@ export const TeamManagement: React.FC = () => {
       toast.success(
         `Team removed from season. ${result.matchesReassigned} upcoming match${result.matchesReassigned === 1 ? '' : 'es'} now point at the BYE; ${result.matchesForfeited} past-due match${result.matchesForfeited === 1 ? '' : 'es'} marked as forfeit wins for the opposing team${result.matchesForfeited === 1 ? '' : 's'}.`
       );
+      const { error: deleteError } = await supabase
+        .from('teams')
+        .delete()
+        .eq('id', teamId);
+
+      if (deleteError) throw deleteError;
+
       await refreshTeams();
     } catch (err) {
       logger.error('Error removing team', { error: err instanceof Error ? err.message : String(err) });
