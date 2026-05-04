@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-02 (Phase 8 Unit 8.2 — wizard contract tests: new `useCreateLeagueV2.contract.test.ts` mirrors the prefFields resolution logic and locks the calculator-combo matrix (3 preset paths + 4 custom-path calculator picks + ThresholdSourceStep mechanism override + race_length conditional). Caught a bug: `??` was collapsing the LO's explicit `points-calculator: null` choice back to `'linear_above_threshold'` — fixed via `'points-calculator' in formData` check. New Playwright spec at `league-wizard-custom-path.spec.ts` exercises the wizard step rendering; runs via `pnpm test:e2e` like the other e2e specs)
+> **Last Updated**: 2026-05-03 (Brainstorm doc + review pass landed: `docs/brainstorms/unified-scoreboard-requirements.md` — collapse 4 scoreboards to 1 + tiebreaker, schema-derived display hints with escape hatch, mobile-first compact mode. Document-review pass dropped sticky-thin-bar and mid-match clinch detection from scope; legacy parallel-compute helpers SURVIVE in this branch as the divergence audit's reference implementation. Depends on PR #98 merge.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -55,6 +55,7 @@
 | `docs/plans/2026-04-27-001-feat-e2e-test-infrastructure-plan.md` | Implementation plan for the E2E scaffolding | 10 units (8 in v1 scope), active branch `feat/e2e-test-infrastructure` |
 | `docs/brainstorms/header-mobile-rework-requirements.md` | Requirements for the global header & navigation rework | Slim sticky header, hamburger drawer with per-org operator shortcuts, drawer-internal badges |
 | `docs/brainstorms/modular-league-system-requirements.md` | Requirements for fully modular league configuration | Deprecates `5_man`/`8_man`; any-combo support; 3-layer threshold strategy; supersedes April 18 modular-handicap-scoring doc |
+| `docs/brainstorms/unified-scoreboard-requirements.md` | Requirements for collapsing 4 scoreboards to 1 + tiebreaker | Schema-derived display hints (escape hatch), mobile-first compact mode, "stadium not sportsbook" focus; depends on PR #98 merge |
 | `/docs/plans/` | **CE implementation plans** | Output of `/compound-engineering:ce-plan` |
 | `docs/plans/2026-04-17-001-feat-official-rulebook-reader-plan.md` | Implementation plan for the Official Rulebook Reader | 6 units, active branch `feature/official-rulebook-reader` |
 | `docs/plans/2026-04-27-001-feat-global-header-nav-rework-plan.md` | Implementation plan for the global header & navigation rework | 9 units in 3 phases, active branch `fix/header-mobile-rework` |
