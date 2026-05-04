@@ -60,8 +60,8 @@ export const OperatorDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-muted">
       <PageHeader
-        backTo="/dashboard"
-        backLabel="Back to Player Dashboard"
+        backTo="/my-teams"
+        backLabel="Back to My Teams"
         title={`${organization.organization_name} Dashboard`}
         subtitle={`Welcome back, ${member?.first_name}! Manage your leagues and grow the pool community.`}
       />

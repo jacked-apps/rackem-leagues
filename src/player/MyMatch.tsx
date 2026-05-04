@@ -33,7 +33,7 @@ export function MyMatch() {
   return (
     <div className="min-h-screen bg-muted">
       <PageHeader
-        backTo="/dashboard"
+        backTo="/my-teams"
         backLabel="Home"
         title="My Match"
         subtitle="Live-match jump-in — coming soon"

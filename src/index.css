@@ -52,6 +52,15 @@
      via ResizeObserver on mount; production never renders the banner, so
      the 0px default applies. See src/components/EnvironmentBanner.tsx. */
   --env-banner-height: 0px;
+
+  /* Height of the mobile bottom tab bar. Used by MemberLayout for bottom
+     padding and by fixed action bar pages to position above the tabs.
+     Only relevant below the lg breakpoint; desktop uses the sidebar. */
+  --tab-bar-height: 4rem;
+
+  /* Width of the desktop persistent sidebar. Used by MemberLayout for
+     left margin on page content at lg+ breakpoints. */
+  --sidebar-width: 16rem;
 }
 
 a {

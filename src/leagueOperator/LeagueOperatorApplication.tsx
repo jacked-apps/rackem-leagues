@@ -264,7 +264,7 @@ export const LeagueOperatorApplication: React.FC = () => {
           } catch (error) {
             logger.warn('Failed to clear saved progress on exit', { error: error instanceof Error ? error.message : String(error) });
           }
-          navigate('/dashboard');
+          navigate('/my-teams');
         }}
         title="Become a League Operator"
         subtitle={`Step ${currentStep + 1} of ${questions.length}`}

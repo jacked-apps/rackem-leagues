@@ -26,7 +26,11 @@ import { PersonalInfoSection } from './PersonalInfoSection';
 import { ContactInfoSection } from './ContactInfoSection';
 import { AddressSection } from './AddressSection';
 import { PrivacySettingsSection } from './PrivacySettingsSection';
+import { Link } from 'react-router-dom';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
+import { ShareAppCard } from '@/components/ShareAppCard';
 
 /**
  * Member Profile Page Component
@@ -97,8 +101,6 @@ export const Profile: React.FC = () => {
   return (
     <div className="min-h-screen bg-muted">
       <PageHeader
-        backTo="/dashboard"
-        backLabel="Dashboard"
         title="Player Settings"
         subtitle="Manage your personal information and account details"
       />
@@ -158,6 +160,30 @@ export const Profile: React.FC = () => {
               </div>
             </div>
           </div>
+          {/* Share the app with teammates */}
+          <ShareAppCard
+            title="Invite teammates"
+            description="Scan the QR code or share the link to get your teammates on Rack'em Leagues."
+          />
+
+          {/* Become League Operator CTA — only for regular players */}
+          {member.role === 'player' && (
+            <Card>
+              <CardContent className="p-6">
+                <h3 className="font-semibold text-foreground mb-2">
+                  Run Your Own League?
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Become a league operator and manage pool leagues at your local venue
+                </p>
+                <Link to="/become-league-operator">
+                  <Button variant="outline" loadingText="none" className="w-full">
+                    Learn More
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

@@ -38,6 +38,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { AppDrawer } from '@/components/layout/AppDrawer';
+import { OrgSwitcher } from '@/components/OrgSwitcher';
 import { useOrganization } from '@/api/hooks/useOrganizations';
 import { useUser } from '@/context/useUser';
 import { useUserProfile } from '@/api/hooks/useUserProfile';
@@ -45,6 +46,16 @@ import { useUserProfile } from '@/api/hooks/useUserProfile';
 /** Routes where the right-slot Sign-in button is suppressed (rendering it
  *  would be redundant on the login page or contextually wrong on the other
  *  auth-flow pages). The hamburger menu itself remains available. */
+/** Route patterns where the org-switcher dropdown appears in the header. */
+const OPERATOR_ROUTE_PATTERNS: readonly RegExp[] = [
+  /^\/operator-/,
+  /^\/league\//,
+  /^\/venues\//,
+  /^\/manage-/,
+  /^\/create-league\//,
+  /^\/league-rules\//,
+];
+
 const AUTH_FLOW_ROUTES: readonly string[] = [
   '/login',
   '/register',
@@ -147,26 +158,37 @@ export function PageHeader({
 
         <h1 className="flex-1 truncate text-lg font-semibold text-foreground lg:text-3xl">{title}</h1>
 
+        {/* Org switcher — shown only on operator routes */}
+        {OPERATOR_ROUTE_PATTERNS.some((p) => p.test(location.pathname)) ? (
+          <OrgSwitcher />
+        ) : null}
+
+        {/* Promote IdentitySlot into the sticky bar when there's no SubHeader
+            to host it (avoids an empty stripe below the bar on pages like
+            /messages that have no scrollable subtitle area). */}
         {!hasSubHeaderLeftContent ? (
           <IdentitySlot pathname={location.pathname} />
         ) : null}
 
-        <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-          <SheetTrigger asChild>
-            <button
-              type="button"
-              aria-label="Open menu"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md hover:bg-accent"
-            >
-              <Menu className="h-5 w-5" />
-            </button>
-          </SheetTrigger>
-          <SheetContent side="right">
-            {drawerOpen ? (
-              <AppDrawer open={drawerOpen} onOpenChange={setDrawerOpen} />
-            ) : null}
-          </SheetContent>
-        </Sheet>
+        {/* Hamburger menu — hidden on desktop where the persistent sidebar takes over */}
+        <div className="lg:hidden">
+          <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+            <SheetTrigger asChild>
+              <button
+                type="button"
+                aria-label="Open menu"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md hover:bg-accent"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+            </SheetTrigger>
+            <SheetContent side="right">
+              {drawerOpen ? (
+                <AppDrawer open={drawerOpen} onOpenChange={setDrawerOpen} />
+              ) : null}
+            </SheetContent>
+          </Sheet>
+        </div>
       </header>
 
       {hasSubHeaderLeftContent ? (

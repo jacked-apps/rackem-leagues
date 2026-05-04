@@ -22,7 +22,7 @@ export const Login: React.FC = () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/dashboard`,
+        redirectTo: `${window.location.origin}/my-teams`,
       },
     });
     if (error) {
@@ -45,7 +45,7 @@ export const Login: React.FC = () => {
     } else {
       setMessage('Login successful!');
       setLoading(false);
-      navigate('/dashboard');
+      navigate('/my-teams');
     }
   };
 

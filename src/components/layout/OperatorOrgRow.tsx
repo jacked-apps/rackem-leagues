@@ -19,7 +19,6 @@
 
 import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
-import { SheetClose } from '@/components/ui/sheet';
 import { usePendingReportsCount } from '@/hooks/usePendingReportsCount';
 
 interface OperatorOrgRowProps {
@@ -43,34 +42,28 @@ export function OperatorOrgRow({ orgId, orgName, mode }: OperatorOrgRowProps) {
   const links = (
     <ul className="space-y-0.5">
       <li>
-        <SheetClose asChild>
-          <Link
-            to={`/operator-dashboard/${orgId}`}
-            className="flex min-h-11 items-center rounded-md px-3 py-2 text-sm hover:bg-accent"
-          >
-            Dashboard
-          </Link>
-        </SheetClose>
+        <Link
+          to={`/operator-dashboard/${orgId}`}
+          className="flex min-h-11 items-center rounded-md px-3 py-2 text-sm hover:bg-accent"
+        >
+          Dashboard
+        </Link>
       </li>
       <li>
-        <SheetClose asChild>
-          <Link
-            to={`/create-league/${orgId}`}
-            className="flex min-h-11 items-center rounded-md px-3 py-2 text-sm hover:bg-accent"
-          >
-            Create League
-          </Link>
-        </SheetClose>
+        <Link
+          to={`/create-league/${orgId}`}
+          className="flex min-h-11 items-center rounded-md px-3 py-2 text-sm hover:bg-accent"
+        >
+          Create League
+        </Link>
       </li>
       <li>
-        <SheetClose asChild>
-          <Link
-            to={`/operator-reports/${orgId}`}
-            className="flex min-h-11 items-center rounded-md px-3 py-2 text-sm hover:bg-accent"
-          >
-            {reportsLabel}
-          </Link>
-        </SheetClose>
+        <Link
+          to={`/operator-reports/${orgId}`}
+          className="flex min-h-11 items-center rounded-md px-3 py-2 text-sm hover:bg-accent"
+        >
+          {reportsLabel}
+        </Link>
       </li>
     </ul>
   );

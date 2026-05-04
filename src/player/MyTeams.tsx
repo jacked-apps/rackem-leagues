@@ -458,8 +458,6 @@ export function MyTeams() {
   return (
     <div className="min-h-screen bg-muted">
       <PageHeader
-        backTo="/dashboard"
-        backLabel="Back to Dashboard"
         title="My Teams"
       />
 
