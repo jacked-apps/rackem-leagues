@@ -204,6 +204,14 @@ interface TeamCardProps {
     isHomeTeam: boolean,
   ) => { wins: number; losses: number };
   onSwapPlayer?: (playerId: string, position: number) => void;
+  /**
+   * Drawer-open state — lifted to UnifiedScoreboard so both team cards
+   * share one toggle (per Ed's 2026-05-04 framing: "either both teams
+   * stats show or none"). Tapping either team name flips this for both.
+   */
+  drawerOpen: boolean;
+  /** Drawer toggle handler — flips the shared state for both team cards. */
+  onToggleDrawer: () => void;
   /** Optional per-player points getter (when calculator is per-game). */
   getPlayerPoints?: (
     playerId: string,
@@ -229,9 +237,10 @@ function TeamCard({
   getPlayerDisplayName,
   getPlayerStats,
   onSwapPlayer,
+  drawerOpen,
+  onToggleDrawer,
   getPlayerPoints,
 }: TeamCardProps) {
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const colors = getTeamColors(isHome);
 
   // Auto-flex player list based on lineupSize. Lineup row has player1_id..N
@@ -254,7 +263,7 @@ function TeamCard({
             together (revised 2026-05-04 design: thresholds are bound to the
             drawer state, not a separate chevron toggle). */}
         <button
-          onClick={() => setDrawerOpen((v) => !v)}
+          onClick={onToggleDrawer}
           className={`text-base font-bold ${colors.headerText} text-center truncate border-b ${colors.borderDark} pb-1 w-full flex items-center justify-center gap-1`}
         >
           <span className="truncate">{teamName}</span>
@@ -498,6 +507,12 @@ export function UnifiedScoreboard({
   onSwapPlayer,
   getPlayerPoints,
 }: UnifiedScoreboardProps) {
+  // Shared drawer state — both team cards open and close together. Per Ed
+  // 2026-05-04: "when the drawer is opened BOTH teams should show up. i
+  // should either be able to see both teams' stats or none."
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const toggleDrawer = () => setDrawerOpen((v) => !v);
+
   // Match-row source-of-truth reads (R3, R4 contract — never recompute).
   const homeWins = match.home_games_won ?? 0;
   const awayWins = match.away_games_won ?? 0;
@@ -581,6 +596,8 @@ export function UnifiedScoreboard({
             getPlayerDisplayName={getPlayerDisplayName}
             getPlayerStats={getPlayerStats}
             onSwapPlayer={onSwapPlayer}
+            drawerOpen={drawerOpen}
+            onToggleDrawer={toggleDrawer}
             getPlayerPoints={getPlayerPoints}
           />
           <TeamCard
@@ -600,6 +617,8 @@ export function UnifiedScoreboard({
             getPlayerDisplayName={getPlayerDisplayName}
             getPlayerStats={getPlayerStats}
             onSwapPlayer={onSwapPlayer}
+            drawerOpen={drawerOpen}
+            onToggleDrawer={toggleDrawer}
             getPlayerPoints={getPlayerPoints}
           />
         </div>

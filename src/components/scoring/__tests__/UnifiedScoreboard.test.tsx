@@ -778,4 +778,49 @@ describe('UnifiedScoreboard — threshold trio (drawer-bound, R10 revised 2026-0
     await user.click(screen.getAllByText('Home Team')[0]);
     expect(screen.queryByText('tie')).not.toBeInTheDocument();
   });
+
+  it('opens both teams\' drawers when either team name is tapped (shared state)', async () => {
+    const match = buildMatch({
+      home_team: { team_name: 'Sharks' },
+      away_team: { team_name: 'Jets' },
+      home_games_won: 5,
+      home_to_win: 11,
+      home_to_tie: 9,
+      home_to_lose: 7,
+      away_to_win: 11,
+      away_to_tie: 9,
+      away_to_lose: 7,
+    });
+
+    const user = userEvent.setup();
+    renderWithProviders(
+      <UnifiedScoreboard
+        match={match}
+        homeLineup={buildLineup()}
+        awayLineup={buildLineup({ team_id: 'team-away' })}
+        homeThresholds={bcaThresholds()}
+        awayThresholds={bcaThresholds()}
+        homeLosses={3}
+        awayLosses={5}
+        allGamesComplete={false}
+        isHomeTeam={true}
+        gameType="8-ball"
+        winCondition="games"
+        lineupSize={3}
+        {...noopHandlers}
+      />,
+    );
+
+    // Default: neither drawer is open. The "tie" threshold label only
+    // surfaces inside the drawer-bound trio.
+    expect(screen.queryByText('tie')).not.toBeInTheDocument();
+
+    // Tap the AWAY team. Both drawers should open per Ed's framing.
+    await user.click(screen.getByText('Jets'));
+
+    // Both teams' threshold trios are now visible (one per team — at least
+    // 2 "tie" labels, one per side). If only one side opened we'd see 1.
+    expect(screen.getAllByText('tie').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText('lose').length).toBeGreaterThanOrEqual(2);
+  });
 });
