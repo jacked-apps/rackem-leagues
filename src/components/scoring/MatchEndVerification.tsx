@@ -20,7 +20,7 @@ import { useCreateMatchGames, useUpdateMatchGame, useUpdateMatch } from '@/api/h
 import { useUpdateMatchLineup } from '@/api/hooks';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { auditMatchScoringConsistency } from '@/api/queries/matches';
-import { determineMatchResult } from '@/utils/determineMatchResult';
+import { determineMatchResult, type MatchResultOutcome } from '@/utils/determineMatchResult';
 import { ManualTiebreakerDialog } from './ManualTiebreakerDialog';
 import type { ManualTiebreakerSubmission } from './ManualTiebreakerDialog';
 import {
@@ -46,10 +46,14 @@ interface MatchEndVerificationProps {
   homeWins: number;
   /** Away team wins count */
   awayWins: number;
-  /** Home team win threshold */
-  homeWinThreshold: number;
-  /** Away team win threshold */
-  awayWinThreshold: number;
+  /**
+   * Home team win threshold. Nullable for points-mode matches with no
+   * point target (e.g., Fargo 10-7 plays all games, totals decide).
+   * The verifier is mode-aware internally and tolerates null here.
+   */
+  homeWinThreshold: number | null;
+  /** Away team win threshold. See homeWinThreshold for null semantics. */
+  awayWinThreshold: number | null;
   /** Home team tie threshold (null for formats without ties) */
   homeTieThreshold: number | null;
   /** Away team tie threshold (null for formats without ties) */
@@ -163,14 +167,21 @@ export function MatchEndVerification({
   // tie triggering the tiebreaker flow). For Fargo matches we replace this
   // later with the cascade winner from fargo5v5.scoring.computeMatchResult
   // — Fargo 5v5 never produces a true tie.
-  const bcaResult = determineMatchResult(
-    homeWins,
-    awayWins,
-    homeWinThreshold,
-    awayWinThreshold,
-    homeTieThreshold,
-    awayTieThreshold
-  );
+  // Points-mode matches without an explicit point target have null win
+  // thresholds; in that case bcaResult is meaningless and gets replaced
+  // by the Fargo cascade later. Default to 'tie' to bypass the BCA
+  // result-determination logic safely.
+  const bcaResult: MatchResultOutcome =
+    homeWinThreshold === null || awayWinThreshold === null
+      ? 'tie'
+      : determineMatchResult(
+          homeWins,
+          awayWins,
+          homeWinThreshold,
+          awayWinThreshold,
+          homeTieThreshold,
+          awayTieThreshold,
+        );
 
   // Get fresh match data to access tiebreaker verification columns
   const freshMatch = matchQuery.data;

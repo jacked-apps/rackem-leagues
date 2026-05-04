@@ -239,7 +239,16 @@ export interface Player {
  * Based on handicap difference between teams
  */
 export interface HandicapThresholds {
-  games_to_win: number;
+  /**
+   * Games or points target to win the match.
+   * - games-mode (BCA): non-null integer (games count needed to win).
+   * - points-mode without explicit point target (Fargo 10-7): null —
+   *   match plays all games and totals decide.
+   * - points-mode with explicit threshold ("first to 100 points"): the
+   *   point target.
+   * The unit semantic depends on `win_condition` in the match snapshot.
+   */
+  games_to_win: number | null;
   games_to_tie: number | null;
   // Fargo matches set this to null — Fargo scores by point accumulation, not
   // by a games-to-lose threshold. BCA systems always return a non-null number.
