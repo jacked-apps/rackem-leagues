@@ -238,7 +238,7 @@ AFTER:
 
 ### Phase 1 — Foundation (interface + calculator wiring)
 
-- [ ] **Unit 1: Extend `CalculatorBase` with `displayHints` field**
+- [x] **Unit 1: Extend `CalculatorBase` with `displayHints` field**
 
 **Goal:** Add the optional sibling `displayHints` field to the calculator interface; define the initial `display_role` taxonomy and the generic-fallback rendering contract.
 
