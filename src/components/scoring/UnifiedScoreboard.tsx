@@ -79,6 +79,13 @@ export interface UnifiedScoreboardProps {
   winCondition: 'games' | 'points';
   /** Number of player rows to render (R14 auto-flex). */
   lineupSize: number;
+  /**
+   * Live calculator name from league preferences. Used as a pre-snapshot
+   * fallback so the points axis renders from match start instead of waiting
+   * for the first scoring event to populate `system_snapshot`. Snapshot
+   * still wins when populated (preserves R3 source-of-truth ordering).
+   */
+  pointsCalculator?: string | null;
   /** Get player display name by id. */
   getPlayerDisplayName: (playerId: string) => string;
   /** Get per-player stats (W/L) for the player drawer. */
@@ -509,6 +516,7 @@ export function UnifiedScoreboard({
   gameType,
   winCondition,
   lineupSize,
+  pointsCalculator: livePointsCalculator,
   getPlayerDisplayName,
   getPlayerStats,
   onSwapPlayer,
@@ -527,8 +535,13 @@ export function UnifiedScoreboard({
   const awayPoints = match.away_points_earned ?? 0;
 
   // Snapshot reads — calculator drives display, not handicap_type or lineup_size.
+  // Pre-first-scoring-event the snapshot is empty (PR #98 captures it lazily);
+  // fall back to the live `pointsCalculator` prop in that case so the points
+  // axis renders from match start instead of waiting for a game to be scored.
   const snapshot = match.system_snapshot ?? {};
-  const calculatorName = (snapshot as { points_calculator?: string | null }).points_calculator;
+  const snapshotCalculator = (snapshot as { points_calculator?: string | null }).points_calculator;
+  const calculatorName =
+    snapshotCalculator !== undefined ? snapshotCalculator : (livePointsCalculator ?? null);
   const calculatorParams = (snapshot as { points_calculator_params?: unknown }).points_calculator_params ?? {};
   const showPoints = shouldShowPointsAxis(calculatorName);
   const hints = resolveDisplayHints(calculatorName, calculatorParams);

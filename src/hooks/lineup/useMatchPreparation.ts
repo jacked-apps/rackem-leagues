@@ -379,6 +379,26 @@ export function useMatchPreparation(params: MatchPreparationParams) {
             p_game_rows: gameRows,
           });
           if (!error) {
+            // Seed initial running totals so the scoreboard shows correct
+            // values from match start instead of waiting for the first game
+            // to be scored. For points-mode this folds the start-credit
+            // (from *_to_tie) into home_points_earned/away_points_earned;
+            // for games-mode it writes 0/0 (the calculator's output for 0
+            // games). Failure here is non-fatal — the next score event
+            // will repopulate. Per Ed 2026-05-04: "the inital points show
+            // up at the beginning ... in all the matches where points are
+            // counted."
+            try {
+              const { updateMatchRunningTotals } = await import(
+                '@/api/queries/matches'
+              );
+              await updateMatchRunningTotals(matchId);
+            } catch (seedErr) {
+              logger.warn('Failed to seed initial running totals at prep_match', {
+                matchId,
+                error: seedErr instanceof Error ? seedErr.message : String(seedErr),
+              });
+            }
             setIsPreparingMatch?.(false);
             navigate(`/match/${matchId}/score`);
             return;

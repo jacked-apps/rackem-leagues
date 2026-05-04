@@ -86,6 +86,7 @@ export function SpectateMatchCard({ match: seedMatch }: SpectateMatchCardProps) 
       gameType={data.gameType}
       winCondition={data.winCondition}
       lineupSize={data.lineupSize}
+      pointsCalculator={calculatorName ?? null}
       getPlayerDisplayName={data.getPlayerDisplayName}
       getPlayerStats={data.getPlayerStats}
       // onSwapPlayer omitted — read-only spectator view has no swap UX.

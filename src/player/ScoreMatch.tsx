@@ -808,6 +808,7 @@ export function ScoreMatch() {
           gameType={gameType}
           winCondition={winCondition}
           lineupSize={lineupSize}
+          pointsCalculator={leaguePrefs?.points_calculator ?? null}
           getPlayerDisplayName={getPlayerDisplayName}
           getPlayerStats={getPlayerStats}
           onSwapPlayer={handleSwapPlayer}
