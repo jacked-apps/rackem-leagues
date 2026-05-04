@@ -1,8 +1,9 @@
 ---
 title: "feat: Unified Scoreboard — Replace 4 scoreboards with 1 + tiebreaker"
 type: feat
-status: active
+status: complete
 date: 2026-05-03
+completed: 2026-05-04
 origin: docs/brainstorms/unified-scoreboard-requirements.md
 ---
 
@@ -535,7 +536,7 @@ UnifiedScoreboard (props -> render)
 
 ---
 
-- [ ] **Unit 8: Off-preset characterization test**
+- [x] **Unit 8: Off-preset characterization test**
 
 **Goal:** Add at least one render test that exercises a non-Tested-Preset combo to prove the unified scoreboard isn't preset-coupled. Per architectural-reframe §8.2: "characterization tests on the 3 Tested Presets prove backwards compatibility but DO NOT prove modular composition works."
 
