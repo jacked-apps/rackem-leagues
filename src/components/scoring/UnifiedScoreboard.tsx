@@ -359,69 +359,80 @@ function TeamCard({
               alongside the thresholds. Static reference info belongs in
               the drawer, not on the at-a-glance scoreboard. */}
         {drawerOpen && (
-          <div className={`flex flex-wrap justify-center gap-3 text-xs text-muted-foreground pt-2 border-t ${colors.borderDark}`}>
-            {winCondition === 'points' ? (
-              // Always render for both teams (symmetry per Ed 2026-05-04
-              // pass 3). Stronger team's "+0" matches weaker team's "+N"
-              // visually so the two cards balance.
-              <span>
-                <span className="font-semibold">Starts +{thresholds.games_to_tie ?? 0}</span>
-              </span>
-            ) : (
-              <>
-                {thresholds.games_to_win != null && (
-                  <span>
-                    <span className="font-semibold">{thresholds.games_to_win}</span> win
-                  </span>
-                )}
-                {thresholds.games_to_tie != null && (
-                  <span>
-                    <span className="font-semibold">{thresholds.games_to_tie}</span> tie
-                  </span>
-                )}
-                {thresholds.games_to_lose != null && (
-                  <span>
-                    <span className="font-semibold">{thresholds.games_to_lose}</span> lose
-                  </span>
-                )}
-              </>
-            )}
-            {hints.map((hint, i) => {
-              // Milestone-role rendering is computed: the player wants to know
-              // WHERE the bonus kicks in (game number), not just the multiplier
-              // value. We combine the calculator's milestone_percent param with
-              // the match-row games_to_win to produce e.g. "1.5× at 9 wins".
-              if (
-                hint.role === 'milestone' &&
-                typeof hint.value === 'number' &&
-                thresholds.games_to_win != null &&
-                typeof (calculatorParams as Record<string, unknown>).milestone_percent === 'number'
-              ) {
-                const milestonePercent = (calculatorParams as { milestone_percent: number })
-                  .milestone_percent;
-                const position = Math.round(thresholds.games_to_win * milestonePercent);
-                return (
-                  <span
-                    key={`${hint.role}-${hint.paramKey ?? i}`}
-                    title={`role: ${hint.role}`}
-                  >
-                    <span className="font-semibold">
-                      {hint.value}× at {position} wins
-                    </span>
-                  </span>
-                );
-              }
-              // Generic fallback: label + value pair
-              return (
-                <span
-                  key={`${hint.role}-${hint.paramKey ?? i}`}
-                  title={`role: ${hint.role}`}
-                >
-                  {hint.label}: <span className="font-semibold">{String(hint.value)}</span>
+          <>
+            {/* Threshold row — win/tie/lose for games-mode, "Starts +N" for
+                points-mode. */}
+            <div className={`flex flex-wrap justify-center gap-3 text-xs text-muted-foreground pt-2 border-t ${colors.borderDark}`}>
+              {winCondition === 'points' ? (
+                // Always render for both teams (symmetry per Ed 2026-05-04
+                // pass 3). Stronger team's "+0" matches weaker team's "+N"
+                // visually so the two cards balance.
+                <span>
+                  <span className="font-semibold">Starts +{thresholds.games_to_tie ?? 0}</span>
                 </span>
-              );
-            })}
-          </div>
+              ) : (
+                <>
+                  {thresholds.games_to_win != null && (
+                    <span>
+                      <span className="font-semibold">{thresholds.games_to_win}</span> win
+                    </span>
+                  )}
+                  {thresholds.games_to_tie != null && (
+                    <span>
+                      <span className="font-semibold">{thresholds.games_to_tie}</span> tie
+                    </span>
+                  )}
+                  {thresholds.games_to_lose != null && (
+                    <span>
+                      <span className="font-semibold">{thresholds.games_to_lose}</span> lose
+                    </span>
+                  )}
+                </>
+              )}
+            </div>
+            {/* Calculator hints row — separate line below the thresholds (per
+                Ed 2026-05-04: "1.5 is always on its own line. it is a
+                separate thing and deserves its own spot"). */}
+            {hints.length > 0 && (
+              <div className="flex flex-wrap justify-center gap-3 text-xs text-muted-foreground pt-1">
+                {hints.map((hint, i) => {
+                  // Milestone-role rendering is computed: the player wants to
+                  // know WHERE the bonus kicks in (game number), not just the
+                  // multiplier value. Combines milestone_percent param with
+                  // the match-row games_to_win to produce e.g. "1.5× at 9 wins".
+                  if (
+                    hint.role === 'milestone' &&
+                    typeof hint.value === 'number' &&
+                    thresholds.games_to_win != null &&
+                    typeof (calculatorParams as Record<string, unknown>).milestone_percent === 'number'
+                  ) {
+                    const milestonePercent = (calculatorParams as { milestone_percent: number })
+                      .milestone_percent;
+                    const position = Math.round(thresholds.games_to_win * milestonePercent);
+                    return (
+                      <span
+                        key={`${hint.role}-${hint.paramKey ?? i}`}
+                        title={`role: ${hint.role}`}
+                      >
+                        <span className="font-semibold">
+                          {hint.value}× at {position} wins
+                        </span>
+                      </span>
+                    );
+                  }
+                  // Generic fallback: label + value pair
+                  return (
+                    <span
+                      key={`${hint.role}-${hint.paramKey ?? i}`}
+                      title={`role: ${hint.role}`}
+                    >
+                      {hint.label}: <span className="font-semibold">{String(hint.value)}</span>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+          </>
         )}
 
         {/* Player drawer (drawer-bound, collapsed by default).
