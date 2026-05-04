@@ -34,7 +34,6 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { MatchEndVerification } from '@/components/scoring/MatchEndVerification';
-import { InfoButton } from '@/components/InfoButton';
 import { PlayerNameLink } from '@/components/PlayerNameLink';
 import { TeamNameLink } from '@/components/TeamNameLink';
 import { UserRoundPen } from 'lucide-react';
@@ -569,24 +568,10 @@ export function UnifiedScoreboard({
           />
         )}
 
-        {/* Corner info button (R12 — no center "VS" column). */}
-        <div className="flex justify-end pb-1">
-          <InfoButton title="Scoring Tips">
-            <p className="text-sm mb-2">
-              <strong>Player Stats:</strong> Click either team name to view individual player
-              stats for the lineup. Click again to close.
-            </p>
-            <p className="text-sm mb-2">
-              <strong>Thresholds:</strong> The chevron next to "to win" reveals the full
-              tie/lose thresholds (when applicable).
-            </p>
-            <p className="text-sm">
-              <strong>Calculator hints:</strong> Markers like "Milestone bonus" come from the
-              league's points calculator. They appear only when the calculator declares them.
-            </p>
-          </InfoButton>
-        </div>
-
+        {/* Scoring-tips info button is rendered by the parent page via
+            TableNumberBar's leftSlot — keeps the bar visually balanced
+            with the spectator "Live" link on the right. UnifiedScoreboard
+            itself stays focused on score display. */}
         <div className="grid grid-cols-2 gap-2">
           <TeamCard
             teamName={match.home_team?.team_name || 'Home'}

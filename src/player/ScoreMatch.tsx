@@ -743,12 +743,30 @@ export function ScoreMatch() {
         </div>
       </div>
 
-      {/* Table Number Bar - clickable to change. Also hosts the spectator
-          icon(s) on the right side when we have a league ID. */}
+      {/* Table Number Bar — clickable to change. Hosts the scoring-tips info
+          button on the LEFT (mirrors the spectator "Live" link on the right
+          for visual balance) and the spectator link on the right when we
+          have a league ID. */}
       <TableNumberBar
         matchId={matchId!}
         tableNumber={match.assigned_table_number}
         spectatorLeagueId={match.league?.id ?? null}
+        leftSlot={
+          <InfoButton title="Scoring Tips">
+            <p className="text-sm mb-2">
+              <strong>Player Stats:</strong> Tap either team name to view individual player
+              stats for the lineup. Tap again to close.
+            </p>
+            <p className="text-sm mb-2">
+              <strong>Thresholds:</strong> The win/tie/lose thresholds appear inside the player
+              drawer alongside the team rows.
+            </p>
+            <p className="text-sm">
+              <strong>Calculator hints:</strong> Markers like "Milestone bonus" come from the
+              league's points calculator. They appear only when the calculator declares them.
+            </p>
+          </InfoButton>
+        }
       />
 
       {/* Scoreboard — Fixed at top.
