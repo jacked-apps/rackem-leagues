@@ -303,6 +303,135 @@ export async function createByeTeam(params: CreateByeTeamParams): Promise<Team> 
 }
 
 /**
+ * Parameters for dropping a team mid-season.
+ */
+export interface DropTeamParams {
+  teamId: string;
+  /**
+   * Caller's member id. Cross-checked against auth.uid() inside the RPC
+   * to prevent impersonation; included so the RPC can record who acted
+   * in any future audit log.
+   */
+  actorMemberId: string;
+}
+
+/**
+ * Result returned by the drop_team RPC.
+ */
+export interface DropTeamResult {
+  newByeTeamId: string;
+  matchesReassigned: number;
+  matchesForfeited: number;
+}
+
+/**
+ * Drop a team mid-season via the drop_team Postgres RPC.
+ *
+ * The RPC is atomic: marks the team withdrawn, clears the roster,
+ * creates a fresh bye row to absorb future matches, forfeits past-due
+ * matches the bye now owns, and cancels pending invites — all in one
+ * transaction with a row lock and idempotency check.
+ *
+ * @throws Error with the RPC's error_message on validation/auth failure.
+ */
+export async function dropTeam(params: DropTeamParams): Promise<DropTeamResult> {
+  const { data, error } = await supabase.rpc('drop_team', {
+    p_team_id: params.teamId,
+    p_actor_member_id: params.actorMemberId,
+  });
+
+  if (error) {
+    throw new Error(`drop_team RPC failed: ${error.message}`);
+  }
+
+  // RPC returns RETURNS TABLE(...), so data is an array (length 1).
+  const row = Array.isArray(data) ? data[0] : data;
+
+  if (!row || !row.success) {
+    throw new Error(row?.error_message ?? 'Drop failed');
+  }
+
+  return {
+    newByeTeamId: row.new_bye_team_id,
+    matchesReassigned: row.matches_reassigned,
+    matchesForfeited: row.matches_forfeited,
+  };
+}
+
+/**
+ * Parameters for replacing a bye / withdrawn slot with a new active team.
+ */
+export interface ReplaceTeamParams {
+  /** Season the new team joins. */
+  seasonId: string;
+  /** League the new team belongs to. */
+  leagueId: string;
+  /** Captain member id for the new team. */
+  captainId: string;
+  /** Display name for the new team. */
+  teamName: string;
+  /** Roster size (5 or 8). */
+  rosterSize: number;
+  /** Optional home venue for the new team. */
+  homeVenueId?: string | null;
+  /** Member ids to add to the new team's roster (must include captainId). */
+  rosterPlayerIds: string[];
+  /** The bye / withdrawn team whose remaining matches transfer to the new team. */
+  replacingTeamId: string;
+}
+
+/**
+ * Replace a bye / withdrawn slot with a brand-new active team.
+ *
+ * Multi-step orchestration (no DB transaction wrapping the two calls — at
+ * v1 the LO won't race themselves; if cross-call failure modes become a
+ * problem, promote this to a single Postgres RPC):
+ *   1. createTeam — inserts the new active team row plus its roster.
+ *   2. UPDATE matches.home_team_id / away_team_id from the
+ *      bye/withdrawn row to the new team for status IN
+ *      ('scheduled', 'postponed'). Existing
+ *      trigger_sync_match_lineups_on_update propagates to match_lineups.
+ *
+ * The bye/withdrawn row stays as a frozen historical artifact — it
+ * owns whatever matches the LO chose NOT to reassign (locked-in forfeit
+ * losses) plus any past completed matches if the row was a dropped
+ * real team.
+ */
+export async function replaceTeam(params: ReplaceTeamParams): Promise<Team> {
+  const newTeam = await createTeam({
+    seasonId: params.seasonId,
+    leagueId: params.leagueId,
+    captainId: params.captainId,
+    teamName: params.teamName,
+    rosterSize: params.rosterSize,
+    homeVenueId: params.homeVenueId,
+    rosterPlayerIds: params.rosterPlayerIds,
+  });
+
+  const { error: homeError } = await supabase
+    .from('matches')
+    .update({ home_team_id: newTeam.id })
+    .eq('home_team_id', params.replacingTeamId)
+    .in('status', ['scheduled', 'postponed']);
+
+  if (homeError) {
+    throw new Error(`Failed to reassign home matches to new team: ${homeError.message}`);
+  }
+
+  const { error: awayError } = await supabase
+    .from('matches')
+    .update({ away_team_id: newTeam.id })
+    .eq('away_team_id', params.replacingTeamId)
+    .in('status', ['scheduled', 'postponed']);
+
+  if (awayError) {
+    throw new Error(`Failed to reassign away matches to new team: ${awayError.message}`);
+  }
+
+  return newTeam;
+}
+
+/**
  * Delete a team (soft delete by setting status to 'withdrawn')
  *
  * This does NOT delete team_players records - they remain for historical data.

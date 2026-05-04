@@ -10,7 +10,7 @@
  */
 import React, { useState, useMemo } from 'react';
 import { X } from 'lucide-react';
-import { useCreateTeam, useUpdateTeam, useInviteStatuses } from '@/api/hooks';
+import { useCreateTeam, useUpdateTeam, useReplaceTeam, useInviteStatuses } from '@/api/hooks';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -55,8 +55,20 @@ interface TeamEditorModalProps {
     home_venue_id: string | null;
     roster_size: number;
   } | null;
-  /** Called when team is successfully created/updated */
-  onSuccess: () => void;
+  /**
+   * If set, the modal runs in "replace mode": creating a brand-new team
+   * AND reassigning the named bye/withdrawn team's remaining
+   * scheduled+postponed matches to the new team in a single operation
+   * (via replaceTeam mutation). Used by the Inactive Slots section.
+   * Mutually exclusive with existingTeam.
+   */
+  replacingTeamId?: string;
+  /**
+   * Called when team is successfully created/updated. Receives the new
+   * (or updated) team's id so the parent can chain post-create work
+   * (e.g., the post-replace makeup-conversion loop).
+   */
+  onSuccess: (teamId?: string) => void;
   /** Called when user cancels or closes modal */
   onCancel: () => void;
   /** Variant: 'operator' allows all edits, 'captain' restricts captain field */
@@ -82,11 +94,13 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
   defaultTeamName,
   allTeams,
   existingTeam,
+  replacingTeamId,
   onSuccess,
   onCancel,
   variant = 'operator',
 }) => {
   const isEditing = !!existingTeam;
+  const isReplacing = !!replacingTeamId;
   const isCaptainVariant = variant === 'captain';
 
   /**
@@ -160,8 +174,9 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
   // Mutation hooks
   const createTeamMutation = useCreateTeam();
   const updateTeamMutation = useUpdateTeam();
+  const replaceTeamMutation = useReplaceTeam();
 
-  const saving = createTeamMutation.isPending || updateTeamMutation.isPending;
+  const saving = createTeamMutation.isPending || updateTeamMutation.isPending || replaceTeamMutation.isPending;
 
   // Check if operator has profanity filter enabled
   const { shouldValidate: operatorProfanityFilterEnabled } = useOperatorProfanityFilter(leagueId);
@@ -283,6 +298,8 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
     try {
       const rosterPlayers = getAllPlayerIds();
 
+      let resultingTeamId: string | undefined;
+
       if (isEditing && existingTeam) {
         // UPDATE existing team
         await updateTeamMutation.mutateAsync({
@@ -294,10 +311,26 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
           rosterPlayerIds: rosterPlayers,
           isCaptainVariant,
         });
+        resultingTeamId = existingTeam.id;
+
+      } else if (isReplacing && replacingTeamId) {
+        // REPLACE: create new team AND reassign the bye/withdrawn slot's
+        // remaining scheduled+postponed matches to the new team.
+        const newTeam = await replaceTeamMutation.mutateAsync({
+          seasonId,
+          leagueId,
+          captainId,
+          teamName: teamName.trim(),
+          rosterSize,
+          homeVenueId: homeVenueId || null,
+          rosterPlayerIds: rosterPlayers,
+          replacingTeamId,
+        });
+        resultingTeamId = newTeam.id;
 
       } else {
         // CREATE new team
-        await createTeamMutation.mutateAsync({
+        const created = await createTeamMutation.mutateAsync({
           seasonId,
           leagueId,
           captainId,
@@ -306,10 +339,11 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
           homeVenueId: homeVenueId || null,
           rosterPlayerIds: rosterPlayers,
         });
+        resultingTeamId = created.id;
 
       }
 
-      onSuccess();
+      onSuccess(resultingTeamId);
     } catch (err) {
       logger.error('Error saving team', { error: err instanceof Error ? err.message : String(err) });
       setError(err instanceof Error ? err.message : 'Failed to save team');

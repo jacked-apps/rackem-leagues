@@ -216,6 +216,43 @@ export async function createMatch(
   return match;
 }
 
+/**
+ * Mark a match as completed with a winner. Used by the team-drop tests
+ * to set up "this team has played matches" state so the dialog flow
+ * exercises the has-results branch.
+ */
+export async function markMatchCompleted(matchId: string, winnerTeamId: string) {
+  const supabase = getServiceClient();
+  const { error } = await supabase
+    .from('matches')
+    .update({
+      status: 'completed',
+      winner_team_id: winnerTeamId,
+      home_points_earned: 2.0,
+      away_points_earned: 0,
+      completed_at: new Date().toISOString(),
+    })
+    .eq('id', matchId);
+  if (error) throw new Error(`markMatchCompleted failed: ${error.message}`);
+}
+
+/**
+ * Force a match's season_week to a past date so it counts as "past-due"
+ * for the forfeit_past_bye_matches helper. The helper's predicate is
+ * `season_weeks.scheduled_date < CURRENT_DATE`, so we set it to
+ * yesterday.
+ */
+export async function backdateSeasonWeek(seasonWeekId: string, daysAgo = 1) {
+  const supabase = getServiceClient();
+  const past = new Date();
+  past.setUTCDate(past.getUTCDate() - daysAgo);
+  const { error } = await supabase
+    .from('season_weeks')
+    .update({ scheduled_date: past.toISOString().slice(0, 10) })
+    .eq('id', seasonWeekId);
+  if (error) throw new Error(`backdateSeasonWeek failed: ${error.message}`);
+}
+
 export interface CreateMatchReadyForLineupOpts {
   homeCaptain: UserKey;
   awayCaptain: UserKey;

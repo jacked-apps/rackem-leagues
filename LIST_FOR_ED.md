@@ -4,7 +4,25 @@ Tasks and refactoring items for Ed to work on.
 
 ---
 
-## 🚨 CRITICAL BUG: Team Deletion Destroys Matches
+## ✅ RESOLVED: Team Deletion Destroys Matches (was Critical Bug)
+
+**Resolved:** 2026-05-01 via 3-PR sequence (PRs #95, #96, plus the
+team-drop-replace-workflow PR landing this item).
+- PR #95 (`fix-team-cascade-deletion`): flipped three FKs from
+  `ON DELETE CASCADE` to `ON DELETE RESTRICT`. Cascade is physically
+  impossible at the DB level. Adds UI guard.
+- PR #96 (`bye-as-real-team`): byes become real `teams` rows
+  (`status='bye'`); old NULL-team_id representation gone. Filter audit
+  defaults all team-list queries to active-only.
+- PR (this branch, `team-drop-replace-workflow`): full operator
+  workflow — `drop_team` and `convert_match_to_makeup` RPCs, branched
+  Drop/Delete UI, Inactive Slots section, multi-bye warning,
+  Close-Past-Byes sweep.
+
+Plan: `docs/plans/2026-04-29-001-fix-team-cascade-deletion-plan.md`
+Brainstorm: `docs/brainstorms/team-deletion-cascade-fix-requirements.md`
+
+**Original entry preserved below for history:**
 
 **Discovered:** 2026-04-09 during wizard 2.0 planning
 **Severity:** HIGH — could destroy season data with one click
