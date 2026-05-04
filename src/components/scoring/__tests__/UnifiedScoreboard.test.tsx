@@ -419,13 +419,65 @@ describe('UnifiedScoreboard — calculator hints (R6/R17)', () => {
     );
 
     // Default state: hints are NOT visible (they're drawer-bound now).
-    expect(screen.queryByText(/at \d+ wins/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/1\.5/)).not.toBeInTheDocument();
 
-    // Open the drawer — milestone hint renders with the COMPUTED position
-    // (per-team `Math.round(games_to_win × milestone_percent)`).
-    // Home: round(13 × 0.7) = 9 → "1.5× at 9 wins".
+    // Open the drawer — milestone hint renders progress-aware:
+    // home (8 wins, position round(13×0.7)=9, not yet reached) → "1.5 - 8/9"
+    // away (5 wins, same position 9) → "1.5 - 5/9"
     await user.click(screen.getAllByText('Home Team')[0]);
-    expect(screen.getAllByText(/1\.5× at 9 wins/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/1\.5 - 8\/9/)).toBeInTheDocument();
+    expect(screen.getByText(/1\.5 - 5\/9/)).toBeInTheDocument();
+  });
+
+  it('renders milestone as "1.5 ✓" once the team reaches the position', async () => {
+    // Home has 10 wins, position = round(13×0.7) = 9, reached → "1.5 ✓".
+    const match = buildMatch({
+      home_games_won: 10,
+      away_games_won: 4,
+      home_points_earned: 12,
+      away_points_earned: 4,
+      home_to_win: 13,
+      away_to_win: 13,
+      system_snapshot: {
+        points_calculator: 'accumulate_with_milestone_jumps',
+        points_calculator_params: {
+          per_game_increment: 0.1,
+          milestone_percent: 0.7,
+          milestone_jump_value: 1.5,
+          win_threshold_jump_value: 3.0,
+        },
+      },
+    });
+
+    const user = userEvent.setup();
+    renderWithProviders(
+      <UnifiedScoreboard
+        match={match}
+        homeLineup={buildLineup({
+          player4_id: 'p4',
+          player4_handicap: 6,
+          player5_id: 'p5',
+          player5_handicap: 7,
+        })}
+        awayLineup={buildLineup({ team_id: 'team-away' })}
+        homeThresholds={{ games_to_win: 13, games_to_tie: null, games_to_lose: null }}
+        awayThresholds={{ games_to_win: 13, games_to_tie: null, games_to_lose: null }}
+        homeLosses={4}
+        awayLosses={10}
+        allGamesComplete={false}
+        isHomeTeam={true}
+        gameType="9-ball"
+        winCondition="games"
+        lineupSize={5}
+        {...noopHandlers}
+      />,
+    );
+
+    await user.click(screen.getAllByText('Home Team')[0]);
+    // Home reached the milestone (10 ≥ 9) → "1.5 ✓"
+    expect(screen.getByText(/1\.5 ✓/)).toBeInTheDocument();
+    // Away still in progress (4 wins, needs 9) → "1.5 - 4/9"
+    expect(screen.getByText(/1\.5 - 4\/9/)).toBeInTheDocument();
   });
 
   it('renders nothing extra when the calculator declares no displayHints', () => {

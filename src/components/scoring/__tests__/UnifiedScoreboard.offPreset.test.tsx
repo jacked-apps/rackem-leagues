@@ -199,11 +199,12 @@ describe('UnifiedScoreboard — off-preset combos (Unit 8)', () => {
       />,
     );
 
-    // Milestone hint is drawer-bound (smoke-test 2026-05-04 feedback) — open
-    // the drawer first to see it. Milestone-role rendering computes the
-    // per-team position: round(11 × 0.7) = 8 → "1.5× at 8 wins".
+    // Milestone hint is drawer-bound + progress-aware. Position computes
+    // per-team: round(11 × 0.7) = 8. Home has 8 wins (≥ 8) → "1.5 ✓".
+    // Away has 5 wins (< 8) → "1.5 - 5/8".
     await user.click(screen.getAllByText('Home')[0]);
-    expect(screen.getAllByText(/1\.5× at 8 wins/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/1\.5 ✓/)).toBeInTheDocument();
+    expect(screen.getByText(/1\.5 - 5\/8/)).toBeInTheDocument();
   });
 
   it('hypothetical 6v6 lineup renders without preset-coupled crashes', () => {

@@ -396,10 +396,13 @@ function TeamCard({
             {hints.length > 0 && (
               <div className="flex flex-wrap justify-center gap-3 text-xs text-muted-foreground pt-1">
                 {hints.map((hint, i) => {
-                  // Milestone-role rendering is computed: the player wants to
-                  // know WHERE the bonus kicks in (game number), not just the
-                  // multiplier value. Combines milestone_percent param with
-                  // the match-row games_to_win to produce e.g. "1.5× at 9 wins".
+                  // Milestone-role rendering is progress-aware. Combines the
+                  // calculator's milestone_percent with the match-row
+                  // games_to_win to compute the position, then renders:
+                  //   pre-milestone:  "1.5 - X/N"   (progress toward bonus)
+                  //   at/post:        "1.5 ✓"      (bonus active, no counter)
+                  // Per Ed 2026-05-04: dynamic, matches the wins-axis slash
+                  // format, and clears the counter once the marker is hit.
                   if (
                     hint.role === 'milestone' &&
                     typeof hint.value === 'number' &&
@@ -409,13 +412,15 @@ function TeamCard({
                     const milestonePercent = (calculatorParams as { milestone_percent: number })
                       .milestone_percent;
                     const position = Math.round(thresholds.games_to_win * milestonePercent);
+                    const reached = wins >= position;
                     return (
                       <span
                         key={`${hint.role}-${hint.paramKey ?? i}`}
                         title={`role: ${hint.role}`}
                       >
                         <span className="font-semibold">
-                          {hint.value}× at {position} wins
+                          {hint.value}
+                          {reached ? ' ✓' : ` - ${wins}/${position}`}
                         </span>
                       </span>
                     );
