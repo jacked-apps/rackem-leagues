@@ -167,8 +167,17 @@ function resolveDisplayHints(
 /**
  * Should the points axis render at all?
  *   - `'none'` sentinel: no
- *   - `null` (legacy snapshot): no
+ *   - `null` / `undefined` (legacy snapshot OR pre-first-game state): no
  *   - any other calculator name: yes
+ *
+ * **Pre-first-game behavior (verified 2026-05-04):** PR #98 captures
+ * `system_snapshot` at the first scoring event, so before any games are
+ * scored the snapshot is null/empty and this function returns false. The
+ * points column is hidden until the first game is recorded. Points then
+ * appear as soon as the snapshot freezes with the calculator name. This
+ * is intentional — accepted by Ed during smoke-testing rather than adding
+ * a live-preferences fallback. Future-readers: don't add a fallback path
+ * unless this design decision changes.
  */
 function shouldShowPointsAxis(calculatorName: string | null | undefined): boolean {
   return calculatorName != null && calculatorName !== 'none';
