@@ -126,14 +126,7 @@ function MatchLineupBody() {
   // In-flight prep state. Drives the "Setting up match…" indicator
   // under the Lock/Unlock buttons (LineupActions.isPreparing) and
   // disables Unlock during the prep_match RPC window.
-  // setPreparationMessage is preserved for hooks that pass it down,
-  // but the message itself isn't surfaced anywhere in the UI now that
-  // the Path B overlay is gone.
-  const {
-    isPreparingMatch,
-    setIsPreparingMatch,
-    setPreparationMessage,
-  } = usePreparationStatus();
+  const { isPreparingMatch, setIsPreparingMatch } = usePreparationStatus();
 
   // Resolved preferences — lazy-migrates legacy leagues on first access
   const leagueId = matchData?.league?.id;
@@ -590,9 +583,7 @@ function MatchLineupBody() {
     player4Handicap: handicaps.player4Handicap,
     player5Handicap: handicaps.player5Handicap,
     setIsPreparingMatch,
-    setPreparationMessage,
     refetchLineups: lineupsQuery.refetch,
-    refetchGames: matchGamesQuery.refetch,
   });
 
   // Load lineup ID and data from database (auto-created by trigger)

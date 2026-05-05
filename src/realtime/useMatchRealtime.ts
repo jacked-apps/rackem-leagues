@@ -110,17 +110,27 @@ export function useMatchRealtime(
     gameUpdateOptions,
   } = options;
 
-  // Use refs to avoid re-subscribing when callbacks change
+  // Use refs to avoid re-subscribing when callbacks or options change.
+  // gameUpdateOptions in particular is constructed as an inline object
+  // literal by callers (useMatchScoring), so it gets a fresh reference
+  // on every render. Without the ref pattern, the subscription useEffect
+  // below would tear down and rebuild the Supabase channel on every
+  // render — silently dropping any realtime event arriving in the
+  // 100-400ms reconnect window, including opponent score-confirmation
+  // events. The ref pattern reads the latest value at event-fire time
+  // without putting it in the effect dep array.
   const onMatchUpdateRef = useRef(onMatchUpdate);
   const onLineupUpdateRef = useRef(onLineupUpdate);
   const onGamesUpdateRef = useRef(onGamesUpdate);
+  const gameUpdateOptionsRef = useRef(gameUpdateOptions);
 
   // Update refs when callbacks change
   useEffect(() => {
     onMatchUpdateRef.current = onMatchUpdate;
     onLineupUpdateRef.current = onLineupUpdate;
     onGamesUpdateRef.current = onGamesUpdate;
-  }, [onMatchUpdate, onLineupUpdate, onGamesUpdate]);
+    gameUpdateOptionsRef.current = gameUpdateOptions;
+  }, [onMatchUpdate, onLineupUpdate, onGamesUpdate, gameUpdateOptions]);
 
   useEffect(() => {
     if (!matchId) return;
@@ -174,8 +184,12 @@ export function useMatchRealtime(
           // Always refetch games
           onGamesUpdateRef.current?.();
 
-          // Handle confirmation queue logic if options provided (scoring page)
-          if (gameUpdateOptions && (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') && payload.new) {
+          // Handle confirmation queue logic if options provided (scoring page).
+          // Read from the ref so we always see the latest values without
+          // putting gameUpdateOptions in the subscription useEffect's dep
+          // array — see the ref-pattern note above for why.
+          const currentGameUpdateOptions = gameUpdateOptionsRef.current;
+          if (currentGameUpdateOptions && (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') && payload.new) {
             const {
               match,
               userTeamId,
@@ -185,7 +199,7 @@ export function useMatchRealtime(
               editingGame = null,
               autoConfirm = false,
               confirmOpponentScore,
-            } = gameUpdateOptions;
+            } = currentGameUpdateOptions;
 
             if (!match || !userTeamId) return;
 
@@ -267,5 +281,9 @@ export function useMatchRealtime(
       console.log(`[useMatchRealtime] Cleaning up subscription for match ${matchId}`);
       supabase.removeChannel(channel);
     };
-  }, [matchId, gameUpdateOptions]);
+    // gameUpdateOptions is intentionally NOT in this dep array — the
+    // ref pattern above keeps it accessible at event-fire time without
+    // causing the subscription to tear down on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matchId]);
 }

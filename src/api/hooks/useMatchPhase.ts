@@ -53,20 +53,44 @@ export type { MatchPhase };
  * @param matchId - Match's primary key. Hook is disabled if null/undefined.
  * @returns TanStack query result for `MatchPhase`.
  */
+/** Polling cadence in milliseconds while status='scheduled'. */
+export const PHASE_POLL_MS = 7000;
+
+/**
+ * Pure function that decides the polling interval given the current
+ * cached data. Returns `PHASE_POLL_MS` while status='scheduled' (the
+ * lineup phase, where a dropped realtime tick is the failure mode
+ * Defense 7 backstops); returns `false` (stop polling) for every other
+ * status and when data is undefined.
+ *
+ * Exported for unit tests so the cadence contract is verifiable
+ * without mounting a TanStack Query client.
+ */
+export function computePhaseRefetchInterval(
+  data: MatchPhase | undefined
+): number | false {
+  if (!data) return false;
+  if (data.status === 'scheduled') return PHASE_POLL_MS;
+  return false;
+}
+
 export function useMatchPhase(matchId: string | null | undefined) {
   return useQuery({
     // Distinct cache key from useMatchById — see file header for why.
     queryKey: [...queryKeys.matches.detail(matchId || ''), 'phase'],
-    queryFn: () => getMatchPhase(matchId!),
+    queryFn: () => {
+      // Defensive — `enabled: !!matchId` should already prevent this
+      // path, but throwing inside queryFn rather than relying on the
+      // non-null assertion keeps the contract explicit if the hook is
+      // ever called from a code path that bypasses the enabled guard.
+      if (!matchId) throw new Error('useMatchPhase: matchId is required');
+      return getMatchPhase(matchId);
+    },
     enabled: !!matchId,
     staleTime: STALE_TIME.MATCH_LIVE,
     refetchOnMount: 'always',
     retry: 1,
     // Defense 7 — foreground polling backstop for dropped realtime ticks.
-    // While status='scheduled' (lineup phase, waiting for prep_match), poll
-    // every 7s. The moment status flips, the function returns false and
-    // polling stops automatically.
-    refetchInterval: (query) =>
-      query.state.data?.status === 'scheduled' ? 7000 : false,
+    refetchInterval: (query) => computePhaseRefetchInterval(query.state.data),
   });
 }

@@ -69,7 +69,14 @@ function ScoreMatchBody() {
   const [isVerifying, setIsVerifying] = useState(false);
 
   // Ref to store mutations for use in real-time subscription
-  const mutationsRef = useRef<any>(null);
+  // Holds the latest `mutations` object returned by useMatchScoringMutations
+  // so the realtime subscription's confirmOpponentScore callback can call
+  // it without having `mutations` itself in the callback's closure (which
+  // would force the realtime channel to re-subscribe on every render).
+  // Type is the return shape of useMatchScoringMutations — using
+  // ReturnType keeps the ref aligned automatically if the hook's return
+  // changes shape.
+  const mutationsRef = useRef<ReturnType<typeof useMatchScoringMutations> | null>(null);
 
   // Use central scoring hook (replaces all manual data fetching)
   const {
@@ -235,9 +242,18 @@ function ScoreMatchBody() {
 
   // Detect when all games are complete (works for any format: 3, 18, 25, etc.)
   // Total games = count of games in database
+  //
+  // The `totalGames > 0` guard is load-bearing: without it, an empty
+  // gameResults map (initial render before games load) makes
+  // `0 === 0 === true`, and the prevRef below initializes to true.
+  // When games subsequently arrive, the effect sees a complete→incomplete
+  // transition and spuriously CLEARS home_team_verified_by /
+  // away_team_verified_by on the matches row. This was a pre-existing
+  // bug that the deletion of the wait-for-prep loop made more reachable
+  // — ScoreMatchBody now renders before games load instead of spinning.
   const totalGames = gameResults.size;
   const completedGames = getCompletedGamesCount(gameResults);
-  const allGamesComplete = completedGames === totalGames;
+  const allGamesComplete = totalGames > 0 && completedGames === totalGames;
 
   // Debug: Log team identification and verification status
   // useEffect(() => {
@@ -519,21 +535,14 @@ function ScoreMatchBody() {
   }
 
   if (error) {
-    // If lineups aren't locked, redirect to lineup page instead of showing error
-    if (error.includes('lineups must be locked')) {
-      navigate(`/match/${matchId}/lineup`);
-      return (
-        <div className="min-h-screen bg-muted flex items-center justify-center">
-          <div className="text-center">
-            <div className="text-lg font-semibold text-foreground">
-              Redirecting to lineup page...
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // Show error for other types of errors
+    // The "lineups must be locked" branch that used to navigate back to
+    // /match/:id/lineup from here was deleted: the route guard
+    // (MatchPhaseGuard) is now the authoritative redirect mechanism, and
+    // calling navigate() during render is a React anti-pattern that
+    // could create an oscillating /score↔/lineup loop if matches.status
+    // happens to be 'in_progress' while a lineup is unlocked. Surface
+    // any error here as the regular error card; the guard handles
+    // routing on the next mount.
     return (
       <div className="min-h-screen bg-muted flex items-center justify-center p-4">
         <Card className="max-w-md w-full">

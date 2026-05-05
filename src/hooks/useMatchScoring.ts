@@ -405,6 +405,16 @@ export function useMatchScoring({
    * stability is the right idiom and keeps the ref-update effect from
    * firing on every parent render.
    */
+  // Partial-key invalidation on matches.detail(matchId) cascades to all
+  // children: useMatchById (bare key), useMatchWithLeagueSettings
+  // ('leagueSettings' suffix), useMatchPhase ('phase' suffix), AND
+  // useMatchLineups, useMatchGames. The latter two have dedicated
+  // handlers (handleLineupInvalidate / handleGamesInvalidate) below —
+  // the cascade hits them too on every matches event, which is wasteful
+  // but not incorrect. The cost is acceptable: matches-row updates are
+  // rare events (lock, prep_match, completion), not per-game scoring
+  // events. Narrowing the key to exclude lineup/games is tempting but
+  // would also exclude phase, which is wrong.
   const handleMatchInvalidate = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: queryKeys.matches.detail(matchId || '') });
   }, [queryClient, matchId]);

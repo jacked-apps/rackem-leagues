@@ -30,6 +30,16 @@
  * league-night-practical register, not generic SaaS softening — captains
  * are at a pool table on a Tuesday night and need to know what's wrong
  * and what to do, not "Match Setup Hit a Hiccup."
+ *
+ * ## Note on file size
+ *
+ * This file exceeds the project's ~100-line target. The size comes from
+ * the per-reason copy table (data, not logic) and the per-button conditional
+ * rendering (each branch is short but adds up). Splitting RECOVERY_COPY
+ * into its own constants file was considered; it would cost an import
+ * with no comprehension benefit since the map is consumed by exactly
+ * one component. Kept inline; flagged here so future maintainers know
+ * the size is by choice.
  */
 
 import { useCallback, useEffect, useState } from 'react';
@@ -91,8 +101,11 @@ interface MatchTransitionRecoveryProps {
   reason: RecoveryReason;
   /** Set true after a soft refetch fails — unlocks the destructive Hard Reset. */
   softRetryFailed: boolean;
-  /** Soft refetch — preserves wrapped body's in-progress form state. */
-  onTryAgainSoft: () => void;
+  /** Soft refetch — preserves wrapped body's in-progress form state.
+   *  May be async (the parent guard awaits the refetch internally);
+   *  the recovery surface fires it without awaiting and lets the guard's
+   *  re-render unmount this surface naturally on success. */
+  onTryAgainSoft: () => void | Promise<void>;
   /** Hard Reset — bumps `recoveryEpoch` on the guard, full subtree remount. */
   onTryAgainHard: () => void;
   /** Whether the back-to-lineup button should render (false when on lineup). */
@@ -131,20 +144,40 @@ export function MatchTransitionRecovery({
     return () => window.clearTimeout(t);
   }, [isReChecking]);
 
+  /**
+   * Soft Try Again click handler. Latches the 400ms minimum-disabled
+   * window via `isReChecking` and delegates to the parent's
+   * `onTryAgainSoft`, which re-runs the status query without remounting
+   * the wrapped subtree (preserves form state).
+   */
   const handleSoftClick = useCallback(() => {
     setIsReChecking(true);
     onTryAgainSoft();
   }, [onTryAgainSoft]);
 
+  /**
+   * Confirms the destructive Hard Reset action. Closes the AlertDialog
+   * and delegates to the parent's `onTryAgainHard`, which bumps
+   * `recoveryEpoch` on the guard and triggers a full subtree remount.
+   */
   const handleHardConfirm = useCallback(() => {
     setHardConfirmOpen(false);
     onTryAgainHard();
   }, [onTryAgainHard]);
 
+  /**
+   * Navigates back to the lineup page for this match. Only rendered
+   * when `availableActions.canBackToLineup` is true (typically when
+   * the recovery surface is being shown on the scoring page).
+   */
   const handleBackToLineup = useCallback(() => {
     navigate(`/match/${matchId}/lineup`);
   }, [navigate, matchId]);
 
+  /**
+   * Navigates to the user's team-schedule page if `userTeamId` is
+   * known; otherwise falls back to the dashboard. Always rendered.
+   */
   const handleBackToSchedule = useCallback(() => {
     if (userTeamId) {
       navigate(`/team/${userTeamId}/schedule`);

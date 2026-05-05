@@ -55,10 +55,12 @@
 | `docs/plans/2026-04-27-001-feat-e2e-test-infrastructure-plan.md` | Implementation plan for the E2E scaffolding | 10 units (8 in v1 scope), active branch `feat/e2e-test-infrastructure` |
 | `docs/brainstorms/header-mobile-rework-requirements.md` | Requirements for the global header & navigation rework | Slim sticky header, hamburger drawer with per-org operator shortcuts, drawer-internal badges |
 | `docs/brainstorms/modular-league-system-requirements.md` | Requirements for fully modular league configuration | Deprecates `5_man`/`8_man`; any-combo support; 3-layer threshold strategy; supersedes April 18 modular-handicap-scoring doc |
+| `docs/brainstorms/lineup-to-scoring-transition-requirements.md` | Requirements for the lineup → scoring transition stability fix | 7-defense architecture; supersedes cache/recovery aspects of the prior race-condition brainstorm; closes LIST_FOR_ED #21/#22 |
 | `/docs/plans/` | **CE implementation plans** | Output of `/compound-engineering:ce-plan` |
 | `docs/plans/2026-04-17-001-feat-official-rulebook-reader-plan.md` | Implementation plan for the Official Rulebook Reader | 6 units, active branch `feature/official-rulebook-reader` |
 | `docs/plans/2026-04-27-001-feat-global-header-nav-rework-plan.md` | Implementation plan for the global header & navigation rework | 9 units in 3 phases, active branch `fix/header-mobile-rework` |
 | `docs/plans/2026-04-28-001-feat-modular-league-system-plan.md` | Implementation plan for the fully modular league system | 21 units across 8 phases (Phase 0 research + 7 implementation phases); supersedes April 18 plan; covers BCAPL SL handicap, audit log R21, threshold-charts wiring, team_format drop |
+| `docs/plans/2026-05-04-001-fix-lineup-to-scoring-transition-stability-plan.md` | Implementation plan for the lineup → scoring transition stability fix | 7 implementation units across 3 phases; new MatchPhaseGuard + MatchTransitionRecovery + useMatchPhase; hardened prep_match RPC; foreground polling backstop; deletes 6-month-old retry loop |
 
 ### Future Work Folder
 
@@ -1042,6 +1044,7 @@ Supabase local configuration and migrations
 | `supabase/migrations/20260501000003_teams_captain_id_nullable.sql` | **PR 1 bye-as-real-team** — drops NOT NULL on `teams.captain_id` so bye rows (no captain) can be inserted. |
 | `supabase/migrations/20260501000004_backfill_null_bye_matches.sql` | **PR 1 bye-as-real-team** — one-time backfill: replaces NULL `home_team_id`/`away_team_id` on legacy matches with real per-season bye-team rows. Includes pre-flight DO block enumerating abort conditions. |
 | `supabase/migrations/20260501000001_team_fks_cascade_to_restrict.sql` | **PR 0 cascade safety net** — flips `matches.home_team_id`, `matches.away_team_id`, and `match_lineups.team_id` from `ON DELETE CASCADE` to `ON DELETE RESTRICT` so deleting a team can no longer silently destroy match/lineup history. See `docs/plans/2026-04-29-001-fix-team-cascade-deletion-plan.md`. |
+| `supabase/migrations/20260504000000_harden_prep_match_write_guards.sql` | **Lineup→scoring transition stability fix** — replaces `prep_match` body so ALL writes (thresholds, status, started_at) are guarded by `WHERE status = 'scheduled'`; drops `IF NOT FOUND` exception and wraps INSERT in `IF FOUND` so race-loser calls are true no-ops. See `docs/plans/2026-05-04-001-fix-lineup-to-scoring-transition-stability-plan.md`. |
 | `supabase/seed.sql` | Full local dev DB dump — auto-applied on `supabase db reset`. **Local only, never runs against production.** |
 | `supabase/seed_test_users.sql` | 4 synthetic test auth users (player/operator/captain/owner, password `test-password-123`). **Dev-only — run manually via `docker exec ... psql`.** |
 | `supabase/seed_members.sql` | 20 placeholder players (no `user_id`) spanning Fargo 300–580 ratings for wizard/team-management testing. **Dev-only — not wired into auto-seed; run manually when the local DB needs a bench of fake members.** |

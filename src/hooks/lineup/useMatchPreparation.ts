@@ -8,19 +8,21 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/supabaseClient';
+import { queryKeys } from '@/api/queryKeys';
 import { calculateHandicapThresholds } from '@/utils/calculateHandicapThresholds';
 import { computeFargoGamesWonThresholds } from '@/utils/handicap/fargoGamesWonThresholds';
 import { generateGameOrder } from '@/utils/gameOrder';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
+import type { MatchPhase } from '@/api/queries/matches';
 import type { SystemOverrides } from '@/types/systemOverrides';
 import { isDoubleDutySentinel, type PrepBlockedReason } from '@/utils/lineup';
 
 export function usePreparationStatus() {
   const [isPreparingMatch, setIsPreparingMatch] = useState(false);
-  const [preparationMessage, setPreparationMessage] = useState('');
-  return { isPreparingMatch, setIsPreparingMatch, preparationMessage, setPreparationMessage };
+  return { isPreparingMatch, setIsPreparingMatch };
 }
 
 interface MatchPreparationParams {
@@ -81,9 +83,7 @@ interface MatchPreparationParams {
   player4Handicap?: number; // 5v5 only
   player5Handicap?: number; // 5v5 only
   setIsPreparingMatch?: (preparing: boolean) => void;
-  setPreparationMessage?: (message: string) => void;
   refetchLineups?: () => Promise<any>;
-  refetchGames?: () => Promise<any>;
 }
 
 export function useMatchPreparation(params: MatchPreparationParams) {
@@ -111,14 +111,29 @@ export function useMatchPreparation(params: MatchPreparationParams) {
     player4Handicap,
     player5Handicap,
     setIsPreparingMatch,
-    setPreparationMessage,
-    refetchGames,
   } = params;
 
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const matchPreparedRef = useRef(false);
-  const awayRetryCountRef = useRef(0);
-  const awayToastIdRef = useRef<string | number | null>(null);
+
+  /**
+   * Prime the phase cache to 'in_progress' BEFORE navigating so
+   * `MatchPhaseGuard` reads the fresh status when the scoring page
+   * mounts. Without this, the guard reads its cached 'scheduled'
+   * value and bounces the user back to /lineup until the realtime
+   * tick lands ~100-500ms later. Synchronous cache write; no
+   * await needed.
+   */
+  const primePhaseAsInProgress = (id: string) => {
+    queryClient.setQueryData<MatchPhase | undefined>(
+      [...queryKeys.matches.detail(id), 'phase'],
+      (old) =>
+        old
+          ? { ...old, status: 'in_progress', started_at: old.started_at ?? new Date().toISOString() }
+          : { id, status: 'in_progress', started_at: new Date().toISOString() }
+    );
+  };
 
   // Auto-navigate to scoring when both lineups are locked and the gate is clear.
   // Only HOME team runs the transactional prep_match RPC; AWAY team waits on
@@ -146,11 +161,10 @@ export function useMatchPreparation(params: MatchPreparationParams) {
     if (typeof currentGamesCount === 'number' && currentGamesCount > 0) {
       if (!matchPreparedRef.current) {
         matchPreparedRef.current = true;
-        if (awayToastIdRef.current !== null) {
-          toast.dismiss(awayToastIdRef.current);
-          awayToastIdRef.current = null;
-        }
         setIsPreparingMatch?.(false);
+        // Prime the phase cache to 'in_progress' before navigating so
+        // MatchPhaseGuard reads fresh status when the scoring page mounts.
+        primePhaseAsInProgress(matchId);
         navigate(`/match/${matchId}/score`);
       }
       return;
@@ -159,65 +173,25 @@ export function useMatchPreparation(params: MatchPreparationParams) {
     // useful for future logic (e.g. tiebreaker count assertions).
     void expectedGameCount;
 
-    // Away team: watch for games to appear via realtime. The effect re-runs
-    // every time currentGamesCount changes (realtime triggers matchGamesQuery
-    // refetch → prop update → re-run). When count crosses expectedGameCount,
-    // the short-circuit above fires and we navigate. While waiting, show
-    // the overlay and run a 10s fallback loop that refetches on each tick —
-    // NEVER navigates speculatively. After 3 fruitless refetches, surface
-    // a persistent toast and dismiss the overlay.
+    // Away team: just signal "preparing" and let the canonical backstop
+    // handle discovery. MatchPhaseGuard's 7-second poll on
+    // matches.status (Defense 7) is the single dropped-realtime
+    // recovery mechanism after this branch; the prior 3-retry/10s
+    // fallback loop in this hook is gone — it duplicated the guard's
+    // polling, fired a "longer than expected" toast that could appear
+    // moments before the guard's auto-redirect (mixed signal), and
+    // was an artifact of the pre-guard architecture. The synchronous
+    // short-circuit above still fires the moment matchGamesQuery's
+    // count flips > 0 via realtime, navigating cleanly.
     if (!isHomeTeam) {
       setIsPreparingMatch?.(true);
-      setPreparationMessage?.('Waiting for match to be set up...');
-
-      const MAX_RETRIES = 3;
-      const FALLBACK_MS = 10_000;
-      let cancelled = false;
-      let pendingTimer: number | null = null;
-
-      const scheduleNext = () => {
-        if (cancelled) return;
-        pendingTimer = window.setTimeout(async () => {
-          if (cancelled) return;
-          awayRetryCountRef.current += 1;
-          // Always do a fresh refetch on each tick.
-          await refetchGames?.();
-          if (cancelled) return;
-          if (awayRetryCountRef.current > MAX_RETRIES) {
-            // Surface the toast and dismiss the overlay — but DO NOT cancel
-            // the underlying realtime subscription. If games eventually
-            // appear, the next currentGamesCount change re-runs this effect
-            // and the synchronous short-circuit above navigates us
-            // (auto-dismissing the toast).
-            setIsPreparingMatch?.(false);
-            if (awayToastIdRef.current === null) {
-              awayToastIdRef.current = toast.error(
-                "Match setup is taking longer than expected. Refresh if it doesn't appear soon.",
-                { duration: Infinity }
-              );
-            }
-            // Keep the timer alive so we can still pick up late realtime
-            // events that lead to a successful navigation.
-            scheduleNext();
-            return;
-          }
-          scheduleNext();
-        }, FALLBACK_MS);
-      };
-      scheduleNext();
-
-      return () => {
-        cancelled = true;
-        if (pendingTimer !== null) window.clearTimeout(pendingTimer);
-      };
+      return;
     }
 
     // Home team: transactional prep via prep_match RPC with 3-attempt retry.
     const prepareAndNavigate = async () => {
       if (!matchData || !opponentLineup) return;
-      matchPreparedRef.current = true;
       setIsPreparingMatch?.(true);
-      setPreparationMessage?.('Setting up the match...');
 
       try {
         // Snapshot MY lineup from the latest props — caller has already
@@ -370,7 +344,19 @@ export function useMatchPreparation(params: MatchPreparationParams) {
             p_game_rows: gameRows,
           });
           if (!error) {
+            // Latch the ref ONLY after a successful RPC. The previous
+            // version set it before the first attempt, which combined
+            // with the synchronous currentGamesCount > 0 short-circuit
+            // could fire a spurious second navigate() if a realtime
+            // tick landed while the RPC was in flight (REL-004).
+            matchPreparedRef.current = true;
             setIsPreparingMatch?.(false);
+            // Prime the phase cache so MatchPhaseGuard reads the fresh
+            // 'in_progress' status when the scoring page mounts. Without
+            // this, the guard's redirect effect sees a stale 'scheduled'
+            // and bounces the user back to /lineup until the realtime
+            // tick lands ~100-500ms later (C-01).
+            primePhaseAsInProgress(matchId);
             navigate(`/match/${matchId}/score`);
             return;
           }

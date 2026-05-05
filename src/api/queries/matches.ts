@@ -44,9 +44,16 @@ export interface WeekSchedule {
  * (always-fresh server reads) while dashboard cards consuming `getMatchById`
  * deliberately cache for 10 minutes.
  */
+export type MatchStatus =
+  | 'scheduled'
+  | 'in_progress'
+  | 'completed'
+  | 'forfeited'
+  | 'postponed';
+
 export interface MatchPhase {
   id: string;
-  status: string;
+  status: MatchStatus;
   started_at: string | null;
 }
 
@@ -60,7 +67,16 @@ export async function getMatchPhase(matchId: string): Promise<MatchPhase> {
   if (error) {
     throw error;
   }
+  if (!data) {
+    // .single() should reject with PGRST116 in this case; defensive
+    // belt-and-suspenders for the route guard's reason-derivation logic.
+    throw new Error('getMatchPhase: empty result for match ' + matchId);
+  }
 
+  // Note: data.status is typed as string by Supabase generated types.
+  // The runtime value is constrained by the matches.status CHECK constraint
+  // to one of the MatchStatus union members; the route guard treats unknown
+  // values as 'unknown_status' for safety.
   return data as MatchPhase;
 }
 
