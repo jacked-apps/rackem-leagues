@@ -11,7 +11,7 @@
  */
 
 import { Button } from '@/components/ui/button';
-import { Lock, CheckCircle, UserX, Users } from 'lucide-react';
+import { Lock, CheckCircle, UserX, Users, Loader2 } from 'lucide-react';
 
 type OpponentStatus = 'absent' | 'choosing' | 'ready';
 
@@ -23,6 +23,14 @@ interface LineupActionsProps {
   canUnlock: boolean; // Opponent hasn't locked yet
   onLock: () => void;
   onUnlock: () => void;
+  /**
+   * True while prep_match is in flight (or while we're waiting for it to
+   * be in flight on the home device, in the away-team case). Disables
+   * Unlock and shows a "Setting up match…" indicator under the buttons.
+   * The route guard navigates away as soon as status flips, so this state
+   * is typically visible for ~1–3 seconds.
+   */
+  isPreparing?: boolean;
 }
 
 /**
@@ -41,6 +49,7 @@ export function LineupActions({
   canUnlock,
   onLock,
   onUnlock,
+  isPreparing = false,
 }: LineupActionsProps) {
   return (
     <div className="space-y-4">
@@ -104,7 +113,7 @@ export function LineupActions({
         ) : (
           <Button
             onClick={onUnlock}
-            disabled={!canUnlock}
+            disabled={!canUnlock || isPreparing}
             variant="outline"
             className="w-full"
             size="lg"
@@ -113,6 +122,16 @@ export function LineupActions({
           </Button>
         )}
       </div>
+
+      {/* Prep-in-flight indicator (Defense 7's polling + the route
+          guard's status redirect navigate away as soon as match.status
+          flips, so this is typically visible for ~1–3 seconds). */}
+      {isPreparing && (
+        <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-2">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          Setting up match…
+        </p>
+      )}
 
       {/* Helper Text */}
       {!locked && !canLock && (

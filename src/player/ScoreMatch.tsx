@@ -71,11 +71,6 @@ function ScoreMatchBody() {
   // Ref to store mutations for use in real-time subscription
   const mutationsRef = useRef<any>(null);
 
-  // Wait time for match preparation (give home team time to prepare)
-  const [waitingForPreparation, setWaitingForPreparation] = useState(true);
-  const [retryCount, setRetryCount] = useState(0);
-  const MAX_RETRIES = 10; // Wait up to 10 seconds
-
   // Use central scoring hook (replaces all manual data fetching)
   const {
     match,
@@ -505,31 +500,12 @@ function ScoreMatchBody() {
     denyLineupChangeMutation.mutate(opponentLineup.id);
   };
 
-  // Auto-retry mechanism: Wait for match preparation to complete
-  // MUST be before any early returns to comply with Rules of Hooks
-  useEffect(() => {
-    const dataReady = match && homeLineup && awayLineup && homeThresholds && awayThresholds;
-
-    if (!dataReady && waitingForPreparation && retryCount < MAX_RETRIES) {
-      const timer = setTimeout(() => {
-        setRetryCount(prev => prev + 1);
-        // Invalidate queries to force refetch
-        queryClient.invalidateQueries({ queryKey: ['match', matchId] });
-      }, 1000); // Wait 1 second between retries
-
-      return () => clearTimeout(timer);
-    }
-
-    if (dataReady && waitingForPreparation) {
-      setWaitingForPreparation(false);
-    }
-
-    if (retryCount >= MAX_RETRIES) {
-      setWaitingForPreparation(false);
-    }
-  }, [match, homeLineup, awayLineup, homeThresholds, awayThresholds, retryCount, waitingForPreparation, matchId, queryClient, MAX_RETRIES]);
-
-  // Early returns for loading/error states
+  // Early returns for loading/error states.
+  // Match-prepared readiness is handled upstream by MatchPhaseGuard
+  // (see src/components/match/MatchPhaseGuard.tsx). The guard only
+  // renders this body when matches.status='in_progress', so the prior
+  // 10-retry waiting loop here was redundant once the guard wired in
+  // and is now removed.
   if (loading) {
     return (
       <div className="min-h-screen bg-muted flex items-center justify-center">
@@ -575,70 +551,21 @@ function ScoreMatchBody() {
     );
   }
 
-  // Show loading screen while waiting for preparation
-  if (waitingForPreparation && retryCount < MAX_RETRIES) {
+  // Match-prepared data is guaranteed by MatchPhaseGuard before this
+  // body renders. If a downstream query genuinely fails (network, RLS,
+  // server error), the guard's MatchTransitionRecovery surface fires
+  // — not a bespoke error card here.
+  //
+  // The narrowing return below mostly satisfies TypeScript: with the
+  // guard upstream, none of these should be null in practice. If they
+  // somehow are, render a brief loading spinner so the body doesn't
+  // attempt to deref nulls. This is a fallback, not a normal path.
+  if (!match || !homeLineup || !awayLineup || !homeThresholds || !awayThresholds) {
     return (
       <div className="min-h-screen bg-muted flex items-center justify-center">
         <div className="text-center">
-          <div className="text-lg font-semibold text-foreground mb-4">
-            Preparing Match...
-          </div>
-          <div className="text-sm text-muted-foreground mb-4">
-            Setting up handicap thresholds and game order
-          </div>
-          <div className="flex justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          </div>
-          <div className="text-xs text-muted-foreground mt-4">
-            Attempt {retryCount + 1} of {MAX_RETRIES}
-          </div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" />
         </div>
-      </div>
-    );
-  }
-
-  // After retries exhausted, show error if data still missing
-  if (
-    !match ||
-    !homeLineup ||
-    !awayLineup ||
-    !homeThresholds ||
-    !awayThresholds
-  ) {
-    return (
-      <div className="min-h-screen bg-muted flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <div className="text-lg font-semibold text-red-600 mb-2">
-                Match Preparation Failed
-              </div>
-              <div className="text-muted-foreground mb-4">
-                The match could not be prepared after {MAX_RETRIES} attempts.
-              </div>
-              <div className="text-sm text-muted-foreground mb-4">
-                {!match && <div>• Match data not loaded</div>}
-                {!homeLineup && <div>• Home lineup not available</div>}
-                {!awayLineup && <div>• Away lineup not available</div>}
-                {!homeThresholds && <div>• Home thresholds not set</div>}
-                {!awayThresholds && <div>• Away thresholds not set</div>}
-              </div>
-              <div className="text-xs text-muted-foreground mb-4">
-                This usually means the home team's lineup lock failed to prepare the match.
-                Both teams should go back to lineup and try again.
-              </div>
-              <Button onClick={() => window.location.reload()} loadingText="none">Try Again</Button>
-              <Button
-                variant="outline"
-                onClick={() => navigate(`/match/${matchId}/lineup`)}
-                className="ml-2"
-                loadingText="none"
-              >
-                Back to Lineup
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     );
   }

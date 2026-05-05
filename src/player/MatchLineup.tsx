@@ -9,13 +9,12 @@
  */
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/api/queryKeys';
 import { MatchPhaseGuard } from '@/components/match/MatchPhaseGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Users } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import {
   useCurrentMember,
   useMatchWithLeagueSettings,
@@ -61,7 +60,6 @@ import {
   computePrepBlockedReason,
 } from '@/utils/lineup';
 import { useMatchRealtime } from '@/realtime/useMatchRealtime';
-import { Loader2 } from 'lucide-react';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { shouldUseTeamBonus } from '@/utils/calculateHandicapThresholds';
 import { logger } from '@/utils/logger';
@@ -75,7 +73,6 @@ const DOUBLE_DUTY_VALUE = '__double_duty__';
 
 function MatchLineupBody() {
   const { matchId } = useParams<{ matchId: string }>();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   // TanStack Query: Get current member data
@@ -126,11 +123,15 @@ function MatchLineupBody() {
 
   // Note: Mutation hooks (useUpdateMatch, useUpdateMatchLineup) are now used inside hooks
 
-  // Preparation status for loading screen
+  // In-flight prep state. Drives the "Setting up match…" indicator
+  // under the Lock/Unlock buttons (LineupActions.isPreparing) and
+  // disables Unlock during the prep_match RPC window.
+  // setPreparationMessage is preserved for hooks that pass it down,
+  // but the message itself isn't surfaced anywhere in the UI now that
+  // the Path B overlay is gone.
   const {
     isPreparingMatch,
     setIsPreparingMatch,
-    preparationMessage,
     setPreparationMessage,
   } = usePreparationStatus();
 
@@ -1241,6 +1242,7 @@ function MatchLineupBody() {
               canUnlock={opponentStatus !== 'ready'}
               onLock={handleLockLineup}
               onUnlock={handleUnlockLineup}
+              isPreparing={isPreparingMatch}
               // No manual Proceed button — useMatchPreparation auto-navigates
               // once both lineups are locked (and for Fargo, once start-points
               // are mutually confirmed). A manual button could navigate early,
@@ -1250,32 +1252,6 @@ function MatchLineupBody() {
           </CardContent>
         </Card>
       </main>
-
-      {/* Loading Overlay — Back-to-Schedule lets captains escape without
-          killing the flow. DB state persists; returning resumes from whichever
-          step is next incomplete (idempotency short-circuit in useMatchPreparation). */}
-      {isPreparingMatch && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-card rounded-lg p-8 max-w-md w-full mx-4 text-center">
-            <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">
-              {isHomeTeam ? 'Setting up the match…' : 'Waiting for match to be set up…'}
-            </h2>
-            {preparationMessage ? (
-              <p className="text-muted-foreground mb-4">{preparationMessage}</p>
-            ) : null}
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsPreparingMatch(false);
-                if (userTeamId) navigate(`/team/${userTeamId}/schedule`);
-              }}
-            >
-              Back to Schedule
-            </Button>
-          </div>
-        </div>
-      )}
 
       {/* Opponent Substitute Modal - 5v5 Only */}
       {opponentLineup && (

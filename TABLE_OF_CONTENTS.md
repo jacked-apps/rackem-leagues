@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-02 (Phase 8 Unit 8.2 — wizard contract tests: new `useCreateLeagueV2.contract.test.ts` mirrors the prefFields resolution logic and locks the calculator-combo matrix (3 preset paths + 4 custom-path calculator picks + ThresholdSourceStep mechanism override + race_length conditional). Caught a bug: `??` was collapsing the LO's explicit `points-calculator: null` choice back to `'linear_above_threshold'` — fixed via `'points-calculator' in formData` check. New Playwright spec at `league-wizard-custom-path.spec.ts` exercises the wizard step rendering; runs via `pnpm test:e2e` like the other e2e specs)
+> **Last Updated**: 2026-05-04 (lineup → scoring transition stability: new `MatchPhaseGuard` route guard wraps `MatchLineup` and `ScoreMatch`; reads `matches.status` via the new minimal `useMatchPhase` query hook, redirects between lineup/scoring on status mismatch, polls every 7s as a dropped-realtime backstop, and renders the new `MatchTransitionRecovery` surface on errors. Deleted the 6-month-old 10-retry loop in `ScoreMatch` and the Path B "Back to Schedule" overlay in `MatchLineup`; the lineup-page Lock/Unlock area now shows a small "Setting up match…" indicator while `prep_match` is in flight. New migration `20260504000000_harden_prep_match_write_guards.sql` makes the RPC fully idempotent on multi-device race losers.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -660,6 +660,10 @@ Reusable wizard/form step components
 - `PlayoffWeeksCard.tsx` - Playoff weeks selector with add weeks modal and payment method options
 - `WildcardSettingsCard.tsx` - Wildcard spots configuration for random selection from non-qualifying teams
 
+#### Match Components (`/components/match/`)
+- `MatchPhaseGuard.tsx` - Server-state route guard. Reads `matches.status` via `useMatchPhase`, dispatches lineup vs scoring vs recovery rendering, holds the compound `key={matchId:recoveryEpoch}` that drives in-place subtree remounts on Hard Reset.
+- `MatchTransitionRecovery.tsx` - Unified recovery surface for the lineup → scoring transition. Reason-aware copy (connection / match_not_found / auth_expired / server_error / unknown_status), two-level Try Again (soft refetch first, Hard Reset only after soft fails — with confirmation dialog).
+
 #### Player Components (`/components/player/`)
 - `TeamCard.tsx` - Player team card ⚠️ **DUPLICATE** (also in `/components`)
 
@@ -839,6 +843,7 @@ High-level business logic services
 - `useInviteStatuses.ts` - **✅ Invite statuses hook** (batch fetch invite statuses for PP cards in TeamEditorModal)
 - `useUserProfile.ts` - **✅ User profile hook** (full member data + role utilities)
 - `useOperatorId.ts` - **✅ Operator ID hook** (operator lookup with caching)
+- `useMatchPhase.ts` - **✅ Match-phase status query** (minimal id/status/started_at slice; staleTime: 0; foreground 7s polling while status='scheduled' as Defense 7 backstop for dropped realtime). Distinct cache key from `useMatchById` — see file header for rationale.
 - `index.ts` - Central export point for all hooks
 
 **Migration Status**: Phase 1 Complete (foundation), Phase 2 Next (migrate member/user data)
