@@ -33,6 +33,38 @@ export interface WeekSchedule {
 }
 
 /**
+ * Minimal match-phase slice — id, status, started_at only.
+ *
+ * Used by the route guard (`useMatchPhase` → `MatchPhaseGuard`) to dispatch
+ * lineup vs scoring vs recovery rendering on every match-scoped page. The
+ * route guard runs on every mount and re-runs on a refetchInterval, so this
+ * function is intentionally narrow — no joins, no nested teams/venues/weeks.
+ *
+ * Separate from `getMatchById` because the route guard needs `staleTime: 0`
+ * (always-fresh server reads) while dashboard cards consuming `getMatchById`
+ * deliberately cache for 10 minutes.
+ */
+export interface MatchPhase {
+  id: string;
+  status: string;
+  started_at: string | null;
+}
+
+export async function getMatchPhase(matchId: string): Promise<MatchPhase> {
+  const { data, error } = await supabase
+    .from('matches')
+    .select('id, status, started_at')
+    .eq('id', matchId)
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data as MatchPhase;
+}
+
+/**
  * Fetch match by ID with all details
  *
  * Gets complete match record with team, venue, and week details.
