@@ -7,6 +7,7 @@
 
 import { useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MemberCombobox } from '@/components/MemberCombobox';
@@ -31,12 +32,17 @@ export function CaptainsTeamsStep({
   // and would re-enter addCaptain with stale state) is a no-op.
   const justAddedIdsRef = useRef<Set<string>>(new Set());
 
-  // Resolve the current LO's primary org so the picker is scoped — only
-  // their org's placeholders + all registered users + BCA-elevated
-  // placeholders globally. Until we know the org we don't fire the
-  // members query, to avoid showing the unfiltered list briefly.
+  // Resolve the org we're scoping the picker to: the wizard's URL is
+  // /create-league/:orgId, so route params are the canonical source.
+  // Fall back to currentMember.organization_id if a future caller mounts
+  // this step outside the create-league route — but that field is only
+  // populated for placeholders, NOT for registered LOs (they have
+  // organization_id = NULL on members and reach orgs via
+  // organization_staff). Without the route fallback, any registered LO
+  // would see an empty member dropdown because the query stayed disabled.
+  const { orgId: routeOrgId } = useParams<{ orgId: string }>();
   const { data: currentMember } = useCurrentMember();
-  const orgId = currentMember?.organization_id ?? undefined;
+  const orgId = routeOrgId ?? currentMember?.organization_id ?? undefined;
 
   const { data: fetchedMembers = [] } = useQuery({
     queryKey: [...queryKeys.members.all, 'org', orgId ?? 'none'],
