@@ -125,6 +125,21 @@ function ScoreMatchBody() {
   const { data: leaguePrefs } = useResolvedLeaguePrefs(match?.league?.id);
   const handicapType = leaguePrefs?.handicap_type ?? 'points';
 
+  // Resolve the active points calculator name with live-prefs fallback.
+  // Mirrors src/components/scoring/UnifiedScoreboard.tsx:614-617. The snapshot
+  // is captured lazily at the first scoring event (PR #98), so on game 1 it's
+  // null — falling back to the live league preference avoids hiding calculator-
+  // aware modal sections (LIST_FOR_ED #23). Uses `!== undefined` (not `??`) so
+  // a deliberately-null snapshot value (a league opting out of points tracking)
+  // is preserved.
+  const snapshotPointsCalculator = (
+    match?.system_snapshot as { points_calculator?: string | null } | null
+  )?.points_calculator;
+  const resolvedPointsCalculator =
+    snapshotPointsCalculator !== undefined
+      ? snapshotPointsCalculator
+      : (leaguePrefs?.points_calculator ?? null);
+
   // Get handicaps for roster players (for lineup change requests)
   const rosterPlayerIds = teamRoster.map((tp: any) => tp.member_id).filter(Boolean);
   const { handicaps: rosterHandicaps } = usePlayerHandicaps({
@@ -802,10 +817,7 @@ function ScoreMatchBody() {
         goldenBreakCountsAsWin={goldenBreakCountsAsWin}
         gameType={gameType}
         handicapType={handicapType}
-        pointsCalculator={
-          (match?.system_snapshot as { points_calculator?: string | null } | null)
-            ?.points_calculator ?? null
-        }
+        pointsCalculator={resolvedPointsCalculator}
         breakFouled={breakFouled}
         winByForfeit={winByForfeit}
         runout={runout}
