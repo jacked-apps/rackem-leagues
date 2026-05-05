@@ -33,10 +33,11 @@
  * a real production consumer.
  */
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Dialog,
   DialogContent,
@@ -47,6 +48,14 @@ import {
 } from '@/components/ui/dialog';
 import { getCalculator } from '@/systems/calculators';
 import { AdaptiveCounter } from './AdaptiveCounter';
+
+/**
+ * Discriminator for the achievement RadioGroup. 'none' is the explicit
+ * "no achievement" option that preserves the deselect-by-tap path the
+ * prior checkbox UX supported (radio buttons can't be deselected by
+ * re-tapping the same option natively).
+ */
+type AchievementRadioValue = 'none' | 'break_and_run' | 'golden_break' | 'runout';
 
 interface ScoringDialogProps {
   /** Whether dialog is open */
@@ -229,6 +238,51 @@ export function ScoringDialog({
     }
   };
 
+  // Aria-live announcement region. Updated when an auto-clear cascade
+  // happens (currently only Forfeit clears a selected achievement). Locked
+  // copy template per Branch A plan: "[Achievement Name] cleared because
+  // forfeit was selected."
+  const [liveAnnouncement, setLiveAnnouncement] = useState('');
+
+  // Derive the achievement RadioGroup's current value from the existing
+  // boolean state. This keeps the source-of-truth on the per-event booleans
+  // (so existing callers that pass them as props don't need to change) while
+  // letting the RadioGroup render with proper screen-reader semantics.
+  const achievementValue: AchievementRadioValue = breakAndRun
+    ? 'break_and_run'
+    : goldenBreak
+      ? 'golden_break'
+      : runout
+        ? 'runout'
+        : 'none';
+
+  // Map a RadioGroup value back to the per-event boolean callbacks.
+  // Setting any non-'none' value clears the others and sets the chosen one.
+  const handleAchievementChange = (value: string) => {
+    const next = value as AchievementRadioValue;
+    onBreakAndRunChange(next === 'break_and_run');
+    onGoldenBreakChange(next === 'golden_break');
+    onRunoutChange?.(next === 'runout');
+  };
+
+  // Wraps the forfeit Switch's onCheckedChange. When forfeit toggles ON
+  // and an achievement was selected, clear it AND announce the cascade.
+  // (Forfeit OFF does NOT restore the prior selection — once cleared, it
+  // stays cleared. Per the Branch A plan.)
+  const handleWinByForfeitChange = (checked: boolean) => {
+    onWinByForfeitChange?.(checked);
+    if (checked && achievementValue !== 'none') {
+      const labelMap: Record<Exclude<AchievementRadioValue, 'none'>, string> = {
+        break_and_run: 'Break & Run',
+        golden_break: getGoldenBreakLabel(),
+        runout: 'Runout',
+      };
+      const previousLabel = labelMap[achievementValue];
+      handleAchievementChange('none');
+      setLiveAnnouncement(`${previousLabel} cleared because forfeit was selected.`);
+    }
+  };
+
   return (
     <Dialog open={open}>
       <DialogContent
@@ -244,6 +298,13 @@ export function ScoringDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          {/* Aria-live region for cascade announcements. Visually hidden;
+              screen readers announce the message when it changes (e.g.,
+              "Break & Run cleared because forfeit was selected"). */}
+          <div role="status" aria-live="polite" className="sr-only">
+            {liveAnnouncement}
+          </div>
+
           <div className="text-center">
             <p className="text-sm text-muted-foreground">Game {game.gameNumber}</p>
             <p className="text-lg font-semibold mt-2">
@@ -281,69 +342,54 @@ export function ScoringDialog({
             </p>
           )}
 
-          {/* Section 2: role-conditional achievements (B&R / Golden Break
-              for breaker; Runout for non-breaker). Branch B will replace
-              this group with a RadioGroup for screen-reader-correct
-              mutual-exclusion semantics. */}
-          {winnerIsActualBreaker && (
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="breakAndRun"
-                checked={breakAndRun}
-                onChange={(e) => {
-                  onBreakAndRunChange(e.target.checked);
-                  if (e.target.checked) onGoldenBreakChange(false);
-                }}
-                className="w-4 h-4 text-blue-600 border-border rounded focus:ring-blue-500"
-              />
-              <label
-                htmlFor="breakAndRun"
-                className="text-sm font-normal cursor-pointer"
-              >
-                Break &amp; Run
-              </label>
-            </div>
-          )}
-
-          {winnerIsActualBreaker && goldenBreakCountsAsWin && (
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="goldenBreak"
-                checked={goldenBreak}
-                onChange={(e) => {
-                  onGoldenBreakChange(e.target.checked);
-                  if (e.target.checked) onBreakAndRunChange(false);
-                }}
-                className="w-4 h-4 text-blue-600 border-border rounded focus:ring-blue-500"
-              />
-              <label
-                htmlFor="goldenBreak"
-                className="text-sm font-normal cursor-pointer"
-              >
-                {getGoldenBreakLabel()}
-              </label>
-            </div>
-          )}
-
-          {!winnerIsActualBreaker && (
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="runout"
-                checked={runout}
-                onChange={(e) => onRunoutChange?.(e.target.checked)}
-                className="w-4 h-4 text-blue-600 border-border rounded focus:ring-blue-500"
-              />
-              <label
-                htmlFor="runout"
-                className="text-sm font-normal cursor-pointer"
-              >
-                Runout
-              </label>
-            </div>
-          )}
+          {/* Section 2: role-conditional achievements as a RadioGroup with
+              proper screen-reader semantics. The achievements (B&R, Golden
+              Break, Runout) are mutually exclusive — radio semantics
+              communicate that natively. Includes an explicit "None" option
+              so sighted users can deselect by tapping (radio buttons can't
+              be deselected by re-tapping the same option). */}
+          <div className="space-y-2">
+            <Label className="text-sm font-normal">Achievement</Label>
+            <RadioGroup
+              value={achievementValue}
+              onValueChange={handleAchievementChange}
+              className="space-y-2"
+            >
+              <div className="flex items-center gap-3">
+                <RadioGroupItem value="none" id="achievement-none" />
+                <Label htmlFor="achievement-none" className="font-normal">
+                  None
+                </Label>
+              </div>
+              {winnerIsActualBreaker && (
+                <div className="flex items-center gap-3">
+                  <RadioGroupItem value="break_and_run" id="achievement-break-and-run" />
+                  <Label htmlFor="achievement-break-and-run" className="font-normal">
+                    Break &amp; Run
+                  </Label>
+                </div>
+              )}
+              {winnerIsActualBreaker && goldenBreakCountsAsWin && (
+                <div className="flex items-center gap-3">
+                  <RadioGroupItem value="golden_break" id="achievement-golden-break" />
+                  <Label htmlFor="achievement-golden-break" className="font-normal">
+                    {getGoldenBreakLabel()}
+                  </Label>
+                </div>
+              )}
+              {!winnerIsActualBreaker && (
+                <div className="flex items-center gap-3">
+                  <RadioGroupItem value="runout" id="achievement-runout" />
+                  <Label htmlFor="achievement-runout" className="font-normal">
+                    Runout
+                  </Label>
+                </div>
+              )}
+            </RadioGroup>
+            <p className="text-xs text-muted-foreground">
+              Tap None to clear a selection.
+            </p>
+          </div>
 
           {/* Section 3: state modifiers — rare events that change game
               mechanics (re-rack semantics) or stat attribution. Bottom
@@ -367,7 +413,7 @@ export function ScoringDialog({
               <Switch
                 id="winByForfeit"
                 checked={winByForfeit}
-                onCheckedChange={(checked) => onWinByForfeitChange?.(checked)}
+                onCheckedChange={handleWinByForfeitChange}
               />
             </div>
             {winByForfeit && loserPlayerName && (
