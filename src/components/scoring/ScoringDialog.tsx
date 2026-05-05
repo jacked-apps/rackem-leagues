@@ -111,6 +111,14 @@ interface ScoringDialogProps {
    * calculators with a winner-side counter populate this.
    */
   winnerValue?: number | null;
+  /**
+   * Display name of the losing player. When provided and `winByForfeit` is
+   * true, the modal renders an inline attribution disclosure ("Recorded as
+   * [Loser Name]") below the forfeit Switch so scorers see which player is
+   * being attributed the loss-by-forfeit. Optional — when null/undefined,
+   * attribution disclosure is omitted (graceful degradation).
+   */
+  loserPlayerName?: string | null;
   /** Handler for Break & Run checkbox change */
   onBreakAndRunChange: (checked: boolean) => void;
   /** Handler for Golden Break checkbox change */
@@ -152,6 +160,7 @@ export function ScoringDialog({
   runout = false,
   loserValue = null,
   winnerValue = null,
+  loserPlayerName = null,
   onBreakAndRunChange,
   onGoldenBreakChange,
   onBreakFouledChange,
@@ -228,9 +237,9 @@ export function ScoringDialog({
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
         <DialogHeader>
-          <DialogTitle>Select Game Winner</DialogTitle>
+          <DialogTitle>Confirm Game Result</DialogTitle>
           <DialogDescription>
-            Select any special achievements for this game.
+            Confirm the game outcome and any special achievements.
           </DialogDescription>
         </DialogHeader>
 
@@ -242,30 +251,40 @@ export function ScoringDialog({
             </p>
           </div>
 
-          {/* Always-tracked toggles */}
-          <div className="flex items-center justify-between">
-            <Label htmlFor="breakFouled" className="text-sm font-normal">
-              Break foul (re-rack)
-            </Label>
-            <Switch
-              id="breakFouled"
-              checked={breakFouled}
-              onCheckedChange={handleBreakFouledChange}
+          {/* Section 1: per-side scoring inputs. Most-tapped section for
+              calculators that declare counters — moved to the top so
+              scorers don't have to scroll past rare modifiers. The spec's
+              `kind` drives rendering: 'counter' shows an AdaptiveCounter;
+              'fixed' shows nothing (calculator handles fixed implicitly).
+              Aggregate calculators (no perSideInputs) produce nothing. */}
+          {winnerSpec?.kind === 'counter' && (
+            <AdaptiveCounter
+              min={winnerSpec.min}
+              max={winnerSpec.max}
+              label={winnerSpec.label}
+              value={winnerValue}
+              onChange={(v) => onWinnerValueChange?.(v)}
             />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <Label htmlFor="winByForfeit" className="text-sm font-normal">
-              Win by forfeit
-            </Label>
-            <Switch
-              id="winByForfeit"
-              checked={winByForfeit}
-              onCheckedChange={(checked) => onWinByForfeitChange?.(checked)}
+          )}
+          {loserSpec?.kind === 'counter' && (
+            <AdaptiveCounter
+              min={loserSpec.min}
+              max={loserSpec.max}
+              label={loserSpec.label}
+              value={loserValue}
+              onChange={(v) => onLoserValueChange?.(v)}
             />
-          </div>
+          )}
+          {counterValueMissing && (
+            <p className="text-xs text-muted-foreground">
+              Tap a value to continue.
+            </p>
+          )}
 
-          {/* Role-conditional achievements */}
+          {/* Section 2: role-conditional achievements (B&R / Golden Break
+              for breaker; Runout for non-breaker). Branch B will replace
+              this group with a RadioGroup for screen-reader-correct
+              mutual-exclusion semantics. */}
           {winnerIsActualBreaker && (
             <div className="flex items-center space-x-2">
               <input
@@ -326,34 +345,37 @@ export function ScoringDialog({
             </div>
           )}
 
-          {/* Calculator-declared per-side inputs. The spec's `kind` drives
-              the rendering: 'counter' shows an AdaptiveCounter; 'fixed'
-              shows nothing (the calculator handles fixed values implicitly
-              at compute time). Aggregate calculators (no perSideInputs)
-              produce no rendering here. */}
-          {winnerSpec?.kind === 'counter' && (
-            <AdaptiveCounter
-              min={winnerSpec.min}
-              max={winnerSpec.max}
-              label={winnerSpec.label}
-              value={winnerValue}
-              onChange={(v) => onWinnerValueChange?.(v)}
+          {/* Section 3: state modifiers — rare events that change game
+              mechanics (re-rack semantics) or stat attribution. Bottom
+              of the modal because they're tapped infrequently. */}
+          <div className="flex items-center justify-between">
+            <Label htmlFor="breakFouled" className="text-sm font-normal">
+              Break foul (re-rack)
+            </Label>
+            <Switch
+              id="breakFouled"
+              checked={breakFouled}
+              onCheckedChange={handleBreakFouledChange}
             />
-          )}
-          {loserSpec?.kind === 'counter' && (
-            <AdaptiveCounter
-              min={loserSpec.min}
-              max={loserSpec.max}
-              label={loserSpec.label}
-              value={loserValue}
-              onChange={(v) => onLoserValueChange?.(v)}
-            />
-          )}
-          {counterValueMissing && (
-            <p className="text-xs text-muted-foreground">
-              Tap a value to continue.
-            </p>
-          )}
+          </div>
+
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="winByForfeit" className="text-sm font-normal">
+                Win by forfeit
+              </Label>
+              <Switch
+                id="winByForfeit"
+                checked={winByForfeit}
+                onCheckedChange={(checked) => onWinByForfeitChange?.(checked)}
+              />
+            </div>
+            {winByForfeit && loserPlayerName && (
+              <p className="text-xs text-muted-foreground">
+                Recorded as {loserPlayerName}
+              </p>
+            )}
+          </div>
         </div>
 
         <DialogFooter>
@@ -365,7 +387,7 @@ export function ScoringDialog({
             loadingText="Saving..."
             disabled={counterValueMissing}
           >
-            Select Winner
+            Save Game
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -409,6 +409,28 @@ function ScoreMatchBody() {
   const getPlayerDisplayName = getPlayerDisplayNameFromHook;
 
   /**
+   * Resolve the loser's display name for the currently-open scoring modal.
+   * The modal opens with a winner already selected; the loser is whichever
+   * player on that game's row is NOT the winner. Used by the scoring modal
+   * to surface attribution disclosure ("Recorded as [Loser Name]") on
+   * loss-cause events like Win-by-forfeit.
+   *
+   * Returns null when scoringGame is null (modal closed), the game record
+   * isn't loaded yet, or the loser's player_id is unavailable. Modal
+   * gracefully omits the attribution text in those cases.
+   */
+  const loserPlayerName = (() => {
+    if (!scoringGame) return null;
+    const game = gameResults.get(scoringGame.gameNumber);
+    if (!game) return null;
+    const loserPlayerId =
+      scoringGame.winnerPlayerId === game.home_player_id
+        ? game.away_player_id
+        : game.home_player_id;
+    return loserPlayerId ? getPlayerDisplayName(loserPlayerId) : null;
+  })();
+
+  /**
    * Get player stats (wins/losses) for a specific player and position
    * For 5v5: Filters by position to handle double duty players correctly
    * For 3v3: Position parameter ignored (uses getPlayerStatsUtil)
@@ -839,6 +861,7 @@ function ScoreMatchBody() {
         runout={runout}
         loserValue={loserValue}
         winnerValue={winnerValue}
+        loserPlayerName={loserPlayerName}
         onBreakAndRunChange={(checked) => {
           setBreakAndRun(checked);
           if (checked) setGoldenBreak(false);
