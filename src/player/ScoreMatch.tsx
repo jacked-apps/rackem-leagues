@@ -200,11 +200,12 @@ function ScoreMatchBody() {
   const [breakAndRun, setBreakAndRun] = useState(false);
   const [goldenBreak, setGoldenBreak] = useState(false);
   // Unit 11b: configurable scoring fields. All default false/null; Fargo
-  // matches require `loserBallsPocketed` before submit (0 is a valid pick).
+  // matches require `loserValue` before submit (0 is a valid pick).
   const [breakFouled, setBreakFouled] = useState(false);
   const [winByForfeit, setWinByForfeit] = useState(false);
   const [runout, setRunout] = useState(false);
-  const [loserBallsPocketed, setLoserBallsPocketed] = useState<number | null>(null);
+  const [loserValue, setLoserValue] = useState<number | null>(null);
+  const [winnerValue, setWinnerValue] = useState<number | null>(null);
 
   // Opponent confirmation modal state
   const [confirmationGame, setConfirmationGame] = useState<{
@@ -215,7 +216,8 @@ function ScoreMatchBody() {
     breakFouled: boolean;
     runout: boolean;
     winByForfeit: boolean;
-    loserBallsPocketed: number | null;
+    winnerValue: number | null;
+    loserValue: number | null;
     isResetRequest?: boolean; // True if this is a request to reset the game
   } | null>(null);
 
@@ -652,8 +654,8 @@ function ScoreMatchBody() {
       const teamId = playerIsHomeTeam ? match.home_team_id : match.away_team_id;
       if (game.winner_team_id === teamId) {
         total += fargoWinnerPoints;
-      } else if (game.loser_balls_pocketed !== null && game.loser_balls_pocketed !== undefined) {
-        total += game.loser_balls_pocketed;
+      } else if (game.loser_value !== null && game.loser_value !== undefined) {
+        total += game.loser_value;
       }
     }
     return total;
@@ -797,7 +799,8 @@ function ScoreMatchBody() {
               breakFouled: game.break_fouled,
               runout: game.runout,
               winByForfeit: game.win_by_forfeit,
-              loserBallsPocketed: game.loser_balls_pocketed,
+              winnerValue: game.winner_value,
+              loserValue: game.loser_value,
               isResetRequest: true,
             });
           }
@@ -821,7 +824,8 @@ function ScoreMatchBody() {
         breakFouled={breakFouled}
         winByForfeit={winByForfeit}
         runout={runout}
-        loserBallsPocketed={loserBallsPocketed}
+        loserValue={loserValue}
+        winnerValue={winnerValue}
         onBreakAndRunChange={(checked) => {
           setBreakAndRun(checked);
           if (checked) setGoldenBreak(false);
@@ -833,7 +837,8 @@ function ScoreMatchBody() {
         onBreakFouledChange={setBreakFouled}
         onWinByForfeitChange={setWinByForfeit}
         onRunoutChange={setRunout}
-        onLoserBallsPocketedChange={setLoserBallsPocketed}
+        onLoserValueChange={setLoserValue}
+        onWinnerValueChange={setWinnerValue}
         onCancel={() => {
           setScoringGame(null);
           setBreakAndRun(false);
@@ -841,7 +846,8 @@ function ScoreMatchBody() {
           setBreakFouled(false);
           setWinByForfeit(false);
           setRunout(false);
-          setLoserBallsPocketed(null);
+          setLoserValue(null);
+          setWinnerValue(null);
         }}
         onConfirm={() => {
           if (scoringGame) {
@@ -856,9 +862,10 @@ function ScoreMatchBody() {
                 setBreakFouled(false);
                 setWinByForfeit(false);
                 setRunout(false);
-                setLoserBallsPocketed(null);
+                setLoserValue(null);
+                setWinnerValue(null);
               },
-              { breakFouled, runout, winByForfeit, loserBallsPocketed }
+              { breakFouled, runout, winByForfeit, winnerValue, loserValue }
             );
           }
         }}

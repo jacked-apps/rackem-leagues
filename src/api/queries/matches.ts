@@ -951,7 +951,7 @@ export async function updateMatchRunningTotals(matchId: string): Promise<void> {
   const { data: games, error: gamesErr } = await supabase
     .from('match_games')
     .select(
-      'winner_team_id, loser_balls_pocketed, is_tiebreaker, confirmed_by_home, confirmed_by_away',
+      'winner_team_id, winner_value, loser_value, is_tiebreaker, confirmed_by_home, confirmed_by_away',
     )
     .eq('match_id', matchId);
 
@@ -1075,7 +1075,7 @@ export async function auditMatchScoringConsistency(
     const { data: games, error: gamesErr } = await supabase
       .from('match_games')
       .select(
-        'winner_team_id, loser_balls_pocketed, is_tiebreaker, confirmed_by_home, confirmed_by_away',
+        'winner_team_id, winner_value, loser_value, is_tiebreaker, confirmed_by_home, confirmed_by_away',
       )
       .eq('match_id', matchId);
 

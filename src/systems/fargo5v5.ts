@@ -33,8 +33,9 @@
  *   to catch any drift from the official number.
  *
  * Storage:
- *   Per-game scoring stores only `match_games.loser_balls_pocketed` — winner and
- *   loser points are derived at read time from the league's snapshotted dials.
+ *   Per-game scoring stores only `match_games.loser_value` (renamed from
+ *   `loser_balls_pocketed` by Branch A) — winner and loser points are derived
+ *   at read time from the league's snapshotted dials.
  *   Start-points are stored on the weaker team's `matches.home_to_win` or
  *   `matches.away_to_win` column (the stronger team's gets 0).
  */
@@ -170,19 +171,22 @@ function recordGameOutcome(
   outcome: GameOutcome,
   overrides: SystemOverrides,
 ): GameRecordFields {
-  // Per the revised schema, Fargo stores only loser_balls_pocketed. Winner points
-  // and loser points are derived at read time from the snapshotted dials.
-  const loserBalls = clampLoserBalls(outcome.loserBallsPocketed, overrides);
+  // Per the revised schema, Fargo stores only the loser-side value (renamed from
+  // loser_balls_pocketed to loser_value by Branch A). Winner points and loser
+  // points are derived at read time from the snapshotted dials. winner_value
+  // stays null for today's calculators (kind: 'fixed' on winner side).
+  const loserBalls = clampLoserBalls(outcome.loserValue, overrides);
   return {
     winner_points: null,
     loser_points: null,
-    loser_balls_pocketed: loserBalls,
+    winner_value: null,
+    loser_value: loserBalls,
   };
 }
 
 /** Derive loser points for a stored game based on the league's loser_points_method dial. */
 function deriveLoserPoints(
-  loserBallsPocketed: number | null,
+  loserValue: number | null,
   overrides: SystemOverrides,
 ): number {
   const method = overrides.loser_points_method ?? DEFAULT_LOSER_POINTS_METHOD;
@@ -192,7 +196,7 @@ function deriveLoserPoints(
     return overrides.loser_points_max ?? DEFAULT_LOSER_POINTS_MAX;
   }
   // 'balls_pocketed' — read the stored value (0 if not recorded for some reason)
-  return loserBallsPocketed ?? 0;
+  return loserValue ?? 0;
 }
 
 function computeMatchResult(
@@ -208,7 +212,7 @@ function computeMatchResult(
   let awayGames = 0;
 
   for (const g of games) {
-    const loserPoints = deriveLoserPoints(g.loser_balls_pocketed, overrides);
+    const loserPoints = deriveLoserPoints(g.loser_value, overrides);
     if (g.winner_team === 'home') {
       homePoints += winnerPoints;
       awayPoints += loserPoints;

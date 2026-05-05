@@ -80,8 +80,19 @@ interface ScoringDialogProps {
   winByForfeit?: boolean;
   /** Runout state (role-conditional on winner = non-breaker). */
   runout?: boolean;
-  /** Loser balls pocketed 0–7 (Fargo only). null = unselected. */
-  loserBallsPocketed?: number | null;
+  /**
+   * Calculator-driven per-game input value for the losing side. For Fargo
+   * 10-7 (accumulated_per_game), this is the number of balls the loser
+   * pocketed (0–7). null = unselected. Renamed from loserBallsPocketed
+   * by Branch A.
+   */
+  loserValue?: number | null;
+  /**
+   * Calculator-driven per-game input value for the winning side. NULL when
+   * the calculator declares winner side as kind: 'fixed' (no input). Future
+   * calculators with a winner-side counter populate this.
+   */
+  winnerValue?: number | null;
   /** Handler for Break & Run checkbox change */
   onBreakAndRunChange: (checked: boolean) => void;
   /** Handler for Golden Break checkbox change */
@@ -92,8 +103,10 @@ interface ScoringDialogProps {
   onWinByForfeitChange?: (checked: boolean) => void;
   /** Handler for runout toggle */
   onRunoutChange?: (checked: boolean) => void;
-  /** Handler for ball-count tap (Fargo only) */
-  onLoserBallsPocketedChange?: (value: number) => void;
+  /** Handler for loser-side per-game value change */
+  onLoserValueChange?: (value: number) => void;
+  /** Handler for winner-side per-game value change (when calculator declares winner counter) */
+  onWinnerValueChange?: (value: number) => void;
   /** Handler for cancel button */
   onCancel: () => void;
   /** Handler for confirm button */
@@ -118,13 +131,15 @@ export function ScoringDialog({
   breakFouled = false,
   winByForfeit = false,
   runout = false,
-  loserBallsPocketed = null,
+  loserValue = null,
+  winnerValue: _winnerValue = null,
   onBreakAndRunChange,
   onGoldenBreakChange,
   onBreakFouledChange,
   onWinByForfeitChange,
   onRunoutChange,
-  onLoserBallsPocketedChange,
+  onLoserValueChange,
+  onWinnerValueChange: _onWinnerValueChange,
   onCancel,
   onConfirm,
 }: ScoringDialogProps) {
@@ -146,7 +161,7 @@ export function ScoringDialog({
   // Submit is blocked when the active calculator requires a ball count and
   // none has been selected. Ball count can be 0 (valid choice), so we test
   // for null explicitly.
-  const fargoBallCountMissing = requiresLoserBallCount && loserBallsPocketed === null;
+  const fargoBallCountMissing = requiresLoserBallCount && loserValue === null;
 
   // Get label for golden break based on game type
   const getGoldenBreakLabel = () => {
@@ -287,14 +302,14 @@ export function ScoringDialog({
               </Label>
               <div className="grid grid-cols-8 gap-1">
                 {[0, 1, 2, 3, 4, 5, 6, 7].map((n) => {
-                  const selected = loserBallsPocketed === n;
+                  const selected = loserValue === n;
                   return (
                     <Button
                       key={n}
                       type="button"
                       size="sm"
                       variant={selected ? 'default' : 'outline'}
-                      onClick={() => onLoserBallsPocketedChange?.(n)}
+                      onClick={() => onLoserValueChange?.(n)}
                       loadingText="none"
                     >
                       {n}

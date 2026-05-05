@@ -47,7 +47,8 @@ function game(overrides: Partial<MatchGame>): MatchGame {
     break_fouled: false,
     runout: false,
     win_by_forfeit: false,
-    loser_balls_pocketed: null,
+    winner_value: null,
+    loser_value: null,
     ...overrides,
   };
 }
@@ -93,7 +94,7 @@ describe('calculateFargoMatchTotals — characterization (running scoreboard)', 
           id: 'g2',
           game_number: 2,
           winner_team_id: HOME,
-          loser_balls_pocketed: 3,
+          loser_value: 3,
         }),
       ];
       const result = calculateFargoMatchTotals({
@@ -114,7 +115,7 @@ describe('calculateFargoMatchTotals — characterization (running scoreboard)', 
           id: 'g1',
           game_number: 1,
           winner_team_id: HOME,
-          loser_balls_pocketed: 3,
+          loser_value: 3,
           confirmed_by_home: false,
           confirmed_by_away: true,
         }),
@@ -122,7 +123,7 @@ describe('calculateFargoMatchTotals — characterization (running scoreboard)', 
           id: 'g2',
           game_number: 2,
           winner_team_id: HOME,
-          loser_balls_pocketed: 3,
+          loser_value: 3,
         }),
       ];
       const result = calculateFargoMatchTotals({
@@ -142,7 +143,7 @@ describe('calculateFargoMatchTotals — characterization (running scoreboard)', 
           id: 'g1',
           game_number: 1,
           winner_team_id: HOME,
-          loser_balls_pocketed: 3,
+          loser_value: 3,
           confirmed_by_home: true,
           confirmed_by_away: false,
         }),
@@ -150,7 +151,7 @@ describe('calculateFargoMatchTotals — characterization (running scoreboard)', 
           id: 'g2',
           game_number: 2,
           winner_team_id: HOME,
-          loser_balls_pocketed: 3,
+          loser_value: 3,
         }),
       ];
       const result = calculateFargoMatchTotals({
@@ -168,7 +169,7 @@ describe('calculateFargoMatchTotals — characterization (running scoreboard)', 
   describe('winner-team-id → home/away mapping', () => {
     it('maps winner_team_id === homeTeamId to home win', () => {
       const games = [
-        game({ winner_team_id: HOME, loser_balls_pocketed: 0 }),
+        game({ winner_team_id: HOME, loser_value: 0 }),
       ];
       const result = calculateFargoMatchTotals({
         homeTeamId: HOME,
@@ -184,7 +185,7 @@ describe('calculateFargoMatchTotals — characterization (running scoreboard)', 
 
     it('maps winner_team_id === awayTeamId to away win', () => {
       const games = [
-        game({ winner_team_id: AWAY, loser_balls_pocketed: 0 }),
+        game({ winner_team_id: AWAY, loser_value: 0 }),
       ];
       const result = calculateFargoMatchTotals({
         homeTeamId: HOME,
@@ -202,7 +203,7 @@ describe('calculateFargoMatchTotals — characterization (running scoreboard)', 
       // This is the file's own defensive fallback; the test locks it so a
       // refactor doesn't accidentally change the fallback direction.
       const games = [
-        game({ winner_team_id: 'someone-else', loser_balls_pocketed: 0 }),
+        game({ winner_team_id: 'someone-else', loser_value: 0 }),
       ];
       const result = calculateFargoMatchTotals({
         homeTeamId: HOME,
@@ -266,9 +267,9 @@ describe('calculateFargoMatchTotals — characterization (running scoreboard)', 
   describe('running totals — partial scoring (mid-match scoreboard)', () => {
     it('after 3 games (2 home wins, 1 away win), totals reflect played games only', () => {
       const games = [
-        game({ id: 'g1', game_number: 1, winner_team_id: HOME, loser_balls_pocketed: 3 }),
-        game({ id: 'g2', game_number: 2, winner_team_id: HOME, loser_balls_pocketed: 5 }),
-        game({ id: 'g3', game_number: 3, winner_team_id: AWAY, loser_balls_pocketed: 2 }),
+        game({ id: 'g1', game_number: 1, winner_team_id: HOME, loser_value: 3 }),
+        game({ id: 'g2', game_number: 2, winner_team_id: HOME, loser_value: 5 }),
+        game({ id: 'g3', game_number: 3, winner_team_id: AWAY, loser_value: 2 }),
         // Game 4 unscored
         game({ id: 'g4', game_number: 4, winner_team_id: null }),
       ];
@@ -292,7 +293,7 @@ describe('calculateFargoMatchTotals — characterization (running scoreboard)', 
 
     it('start-points credit is added on TOP of game-derived points', () => {
       const games = [
-        game({ id: 'g1', game_number: 1, winner_team_id: HOME, loser_balls_pocketed: 0 }),
+        game({ id: 'g1', game_number: 1, winner_team_id: HOME, loser_value: 0 }),
       ];
       const result = calculateFargoMatchTotals({
         homeTeamId: HOME,
@@ -313,8 +314,8 @@ describe('calculateFargoMatchTotals — characterization (running scoreboard)', 
   describe('Map vs Array input', () => {
     it('accepts a Map<number, MatchGame> with the same result as an array', () => {
       const arr = [
-        game({ id: 'g1', game_number: 1, winner_team_id: HOME, loser_balls_pocketed: 3 }),
-        game({ id: 'g2', game_number: 2, winner_team_id: AWAY, loser_balls_pocketed: 5 }),
+        game({ id: 'g1', game_number: 1, winner_team_id: HOME, loser_value: 3 }),
+        game({ id: 'g2', game_number: 2, winner_team_id: AWAY, loser_value: 5 }),
       ];
       const map = new Map<number, MatchGame>([
         [1, arr[0]],
@@ -336,7 +337,7 @@ describe('calculateFargoMatchTotals — characterization (running scoreboard)', 
   describe('overrides plumb through to fargo5v5 scoring', () => {
     it('winner_points override changes per-game points awarded', () => {
       const games = [
-        game({ id: 'g1', game_number: 1, winner_team_id: HOME, loser_balls_pocketed: 3 }),
+        game({ id: 'g1', game_number: 1, winner_team_id: HOME, loser_value: 3 }),
       ];
       const def = calculateFargoMatchTotals({
         homeTeamId: HOME,
@@ -363,7 +364,7 @@ describe('calculateFargoMatchTotals — characterization (running scoreboard)', 
 
     it('undefined overrides treated as empty object', () => {
       const games = [
-        game({ id: 'g1', game_number: 1, winner_team_id: HOME, loser_balls_pocketed: 3 }),
+        game({ id: 'g1', game_number: 1, winner_team_id: HOME, loser_value: 3 }),
       ];
       const result = calculateFargoMatchTotals({
         homeTeamId: HOME,
