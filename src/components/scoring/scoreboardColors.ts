@@ -3,9 +3,13 @@
  *
  * Single source of truth for team colors used across scoreboard components.
  * Change these values to update colors in:
- * - TeamStatsCard (5v5 scoreboard team stats)
+ * - UnifiedScoreboard (live-match team cards — all formats)
+ * - TiebreakerScoreboard (tiebreaker score panels)
  * - GameButtonRow (game scoring buttons)
- * - MatchScoreboard (3v3 scoreboard) - future
+ *
+ * Pre-Unit-7-of-unified-scoreboard-plan, this file also fed TeamStatsCard /
+ * ThreeVThreeScoreboard / FiveVFiveScoreboard / TenSevenScoreboard. Those
+ * components were deleted when UnifiedScoreboard absorbed their roles.
  */
 
 /**

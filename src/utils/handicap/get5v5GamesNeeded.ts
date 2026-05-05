@@ -74,15 +74,26 @@ export function get5v5GamesNeeded(handicapDiff: number): HandicapThresholds {
   // Look up the correct value based on whether this team is higher or lower handicap
   // Each team has its own games_to_win value from the BCA chart
   const gamesNeeded = isHigherHandicap ? range.higherTeamWins : range.lowerTeamWins;
-
-  // games_to_lose = the number of wins that would make you lose
-  // If you need 14 to win, opponent needs 12, so you lose if opponent gets 12
-  // games_to_lose = opponent's games_to_win - 1 (they win at that threshold)
   const opponentGamesNeeded = isHigherHandicap ? range.lowerTeamWins : range.higherTeamWins;
 
+  // games_to_lose = my wins when I've decisively lost the match. When my
+  // opponent reaches their games_to_win (and the match ends), I have
+  // exactly (totalGames - opponent's games_to_win) wins. That's the
+  // "you've lost" number for me.
+  //
+  // Example (BCA 5v5, 25 games, handicap diff 15-40):
+  //   higher team: w=14, opponent's w=12, my to_lose = 25 - 12 = 13
+  //   lower team:  w=12, opponent's w=14, my to_lose = 25 - 14 = 11
+  //
+  // Pre-2026-05-04 this used `opponent's_to_win - 1`, which produced
+  // semantically-meaningless values (e.g., lower team's w=12, l=13 —
+  // reaching 13 wins would mean you've already won, not lost). Verified
+  // against the BCA 3v3 hardcoded chart: for diff 0 with 18 total games,
+  // w=10 and l=8 — i.e., l = 18 - 10 = totalGames - opponent's_to_win. ✓
+  const TOTAL_GAMES_5V5_SINGLE_RR = 25;
   return {
     games_to_win: gamesNeeded,
     games_to_tie: null, // No ties in 25-game format
-    games_to_lose: opponentGamesNeeded - 1,
+    games_to_lose: TOTAL_GAMES_5V5_SINGLE_RR - opponentGamesNeeded,
   };
 }

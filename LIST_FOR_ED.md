@@ -1297,3 +1297,141 @@ the regression without re-introducing the original 409 noise.
 
 **Workaround until fixed:** the user manually clicks back to
 dashboard. Match data is already correct on the server.
+
+---
+
+## 20. Dark Mode Breaks Date Picker — For Jack
+
+**Discovered:** 2026-05-04 during unified-scoreboard smoke-testing
+**Severity:** Medium (functionally usable but visually broken)
+**Owner:** Jack (design / styling pass)
+
+**Symptom:** In dark mode, the date picker is essentially unusable —
+the day numbers in the calendar grid are invisible against the
+background. Only a single date (presumably the currently-selected or
+hovered one) is visible at a time. User can't see which dates are
+available, weekends, today's marker, etc.
+
+**Suspected cause:** the calendar component's text color likely
+hardcoded to a light value (or inherits a light theme color) without
+a dark-mode variant defined. Background-text contrast collapses in
+dark mode.
+
+**Likely fix surface:** `src/components/ui/calendar.tsx` (the shadcn
+Calendar primitive) and/or any wrapper component that uses it. Audit
+the day-cell text color tokens — should use `text-foreground` /
+`text-muted-foreground` (theme-aware) rather than a hardcoded
+`text-gray-900` or similar.
+
+**Adjacent dark-mode issue (also for Jack):** unified scoreboard's
+player-drawer name colors. Per Ed 2026-05-04 smoke-test: "in dark
+mode the away team player names in the drawer are invisible. and in
+light mode the home team is invisible." Same root cause likely — a
+hardcoded color that doesn't flip per theme. Worth folding into the
+same dark-mode pass.
+
+---
+
+## 21. Match-Prep Failure Routes to "Back to Schedule" Instead of Try-Again
+
+**Discovered:** 2026-05-04 during unified-scoreboard smoke-testing,
+multi-device captain scenario.
+**Severity:** Medium (recoverable but confusing UX; user can't tell
+what went wrong)
+**Owner:** unassigned
+
+**Symptom:** With a third captain logged in on a phone alongside the
+two team captains on other devices, the phone's prep_match attempt
+landed at a "go back to schedule" error UX instead of the usual
+"try again / back to lineup" recovery options. The phone never left
+the lineup screen. The opposing team's captain entered scoring
+normally on their device.
+
+**Notes:**
+- Likely a pre-existing edge case in the prep_match error handler,
+  not a regression from the unified-scoreboard branch (the
+  fire-and-forget seed-running-totals call runs *after* prep_match
+  succeeds; this failure happened before that point).
+- Three concurrent captain devices on the same match prep flow may
+  exercise a captain-confirmation race the normal two-captain flow
+  doesn't hit.
+
+**Investigation start point:** the prep_match RPC error branch in
+`src/hooks/lineup/useMatchPreparation.ts` — figure out which error
+classifications route to "back to schedule" vs "try again", and
+whether a successful opponent-side prep can leave the loser side in
+an unrecoverable state.
+
+---
+
+## 22. Re-asks for Fargo Initial-Points Confirmation After Going Back to Lineup
+
+**Discovered:** 2026-05-04 during unified-scoreboard smoke-testing,
+multi-device captain scenario.
+**Severity:** Medium (annoying but not data-corrupting)
+**Owner:** unassigned
+
+**Symptom:** After hitting the issue-21 prep failure and routing
+back to schedule → back to lineup, the lineup page asked the user
+to re-confirm the Fargo initial points credit, even though the
+opposing captain had already confirmed it (and was already in the
+scoring page on their device).
+
+**Why this is wrong:** captain-confirmation is a *negotiation* on
+the start-points credit between the two teams. Once both sides have
+agreed and prep_match has run, the credit is locked into the match
+row's `*_to_tie` columns. Re-prompting after a return-to-lineup
+suggests the confirmation flag isn't being read from the match row
+on lineup-page mount, or it's being cleared somewhere it shouldn't
+be.
+
+**Possible angles:**
+- Lineup page reads confirmation state from local component state
+  rather than from the match row.
+- The match-prep cleanup that nulls `to_lose` on prep success
+  (Phase 4-of-unified-scoreboard branch) accidentally cleared a
+  confirmation marker it shouldn't have.
+- The captain-confirmation hook isn't reading "match already
+  prepped" as a cue to skip the prompt.
+
+**Investigation start point:** the captain-confirmation flow in
+`src/hooks/lineup/` — verify the initial-state derivation reads
+from the match row, not just component state, and that "match
+already started" short-circuits the confirmation prompt.
+
+---
+
+## 23. First Winner-Selection Modal Missing Loser-Points Selector (Fargo)
+
+**Discovered:** 2026-05-04 during unified-scoreboard smoke-testing.
+**Severity:** Medium-High (silent loss of loser points on game 1 of
+every Fargo points-mode match unless user manually edits afterward)
+**Owner:** unassigned
+
+**Symptom:** On the very first game of a Fargo 10-7 match, the
+winner-selection modal opened without the loser-balls-pocketed
+selector. The second game's modal had it. No way to award the loser
+their balls-pocketed points on game 1.
+
+**Likely root cause:** `system_snapshot` is captured *lazily at the
+first scoring event*, so on game 1 the snapshot is null. Any UI
+element that reads the calculator from the snapshot will see "no
+calculator known" on game 1 only.
+
+The unified scoreboard got a live-prefs fallback for this in commit
+`289e338` (this branch) — when the snapshot is null, it falls back
+to `leaguePrefs.points_calculator`. The score-entry modal probably
+needs the same fallback applied.
+
+**Suspected fix surface:**
+- The score-entry / winner-selection modal component (likely under
+  `src/components/scoring/` — find the one that renders the loser-
+  balls-pocketed input).
+- Trace where it reads calculator info from. If it reads from
+  `match.system_snapshot.points_calculator` directly, add the same
+  null-fallback to live `leaguePrefs.points_calculator` that
+  UnifiedScoreboard uses.
+
+**Workaround until fixed:** vacate-and-rescore game 1 after a
+second game has run (which populates the snapshot). Annoying but
+recoverable.

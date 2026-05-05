@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-02 (Phase 8 Unit 8.2 — wizard contract tests: new `useCreateLeagueV2.contract.test.ts` mirrors the prefFields resolution logic and locks the calculator-combo matrix (3 preset paths + 4 custom-path calculator picks + ThresholdSourceStep mechanism override + race_length conditional). Caught a bug: `??` was collapsing the LO's explicit `points-calculator: null` choice back to `'linear_above_threshold'` — fixed via `'points-calculator' in formData` check. New Playwright spec at `league-wizard-custom-path.spec.ts` exercises the wizard step rendering; runs via `pnpm test:e2e` like the other e2e specs)
+> **Last Updated**: 2026-05-04 (Unit 7 of unified-scoreboard plan: deleted three legacy scoreboards (`ThreeVThreeScoreboard.tsx`, `FiveVFiveScoreboard.tsx`, `TenSevenScoreboard.tsx`) plus the orphaned `TeamStatsCard.tsx`. `UnifiedScoreboard.tsx` is now the single live-match scoreboard for all configs; both `ScoreMatch.tsx` and `SpectateMatchCard.tsx` route through it. The `useMatchScoring().calculatePoints` hook re-export was dropped (verified zero non-test consumers). Plan: `docs/plans/2026-05-03-001-feat-unified-scoreboard-plan.md`.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -55,10 +55,12 @@
 | `docs/plans/2026-04-27-001-feat-e2e-test-infrastructure-plan.md` | Implementation plan for the E2E scaffolding | 10 units (8 in v1 scope), active branch `feat/e2e-test-infrastructure` |
 | `docs/brainstorms/header-mobile-rework-requirements.md` | Requirements for the global header & navigation rework | Slim sticky header, hamburger drawer with per-org operator shortcuts, drawer-internal badges |
 | `docs/brainstorms/modular-league-system-requirements.md` | Requirements for fully modular league configuration | Deprecates `5_man`/`8_man`; any-combo support; 3-layer threshold strategy; supersedes April 18 modular-handicap-scoring doc |
+| `docs/brainstorms/unified-scoreboard-requirements.md` | Requirements for collapsing 4 scoreboards to 1 + tiebreaker | Schema-derived display hints (escape hatch), mobile-first compact mode, "stadium not sportsbook" focus; depends on PR #98 merge |
 | `/docs/plans/` | **CE implementation plans** | Output of `/compound-engineering:ce-plan` |
 | `docs/plans/2026-04-17-001-feat-official-rulebook-reader-plan.md` | Implementation plan for the Official Rulebook Reader | 6 units, active branch `feature/official-rulebook-reader` |
 | `docs/plans/2026-04-27-001-feat-global-header-nav-rework-plan.md` | Implementation plan for the global header & navigation rework | 9 units in 3 phases, active branch `fix/header-mobile-rework` |
 | `docs/plans/2026-04-28-001-feat-modular-league-system-plan.md` | Implementation plan for the fully modular league system | 21 units across 8 phases (Phase 0 research + 7 implementation phases); supersedes April 18 plan; covers BCAPL SL handicap, audit log R21, threshold-charts wiring, team_format drop |
+| `docs/plans/2026-05-03-001-feat-unified-scoreboard-plan.md` | Implementation plan for the unified scoreboard refactor | 8 units across 3 phases; replaces 3 legacy scoreboards with 1 + tiebreaker fix; schema-derived display hints; TeamStatsCard generalized for points-mode; depends on PR #98 merge |
 
 ### Future Work Folder
 
@@ -616,13 +618,15 @@ Reusable wizard/form step components
 - `TestModeToggle.tsx` - Test mode toggle
 
 #### Scoring Components (`/components/scoring/`)
-- `ScoreboardCard.tsx` - Scoreboard display
+- `UnifiedScoreboard.tsx` - **Single live-match scoreboard for all configs** (replaces former ThreeVThree / FiveVFive / TenSeven). Reads match-row source-of-truth, schema-derived display hints, calculator-driven per-player points column, R22 Fargo start-points display.
+- `TiebreakerScoreboard.tsx` - Best-of-3 tiebreaker score panel (separate component; team-name labels per R18)
+- `MatchEndVerification.tsx` - End-of-match dual-team verify-and-confirm flow (mode-aware internally)
 - `GamesList.tsx` - Games list
-- `MatchScoreboard.tsx` - Swipeable match scoreboard with team/player stats (extracted from ScoreMatch)
 - `GameButtonRow.tsx` - Game row with breaker vs racker buttons (extracted from ScoreMatch)
 - `ScoringDialog.tsx` - Game winner selection with B&R and Golden Break (extracted from ScoreMatch)
 - `ConfirmationDialog.tsx` - Opponent score confirmation and vacate requests (extracted from ScoreMatch)
 - `EditGameDialog.tsx` - Vacate winner request dialog (extracted from ScoreMatch)
+- `scoreboardColors.ts` - Single source of truth for team colors (home: blue, away: orange)
 
 #### Messaging Components (`/components/messages/`)
 - `MessageView.tsx` - Main message view

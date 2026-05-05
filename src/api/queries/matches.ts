@@ -842,21 +842,28 @@ export async function updateMatchRunningTotals(matchId: string): Promise<void> {
     return;
   }
 
-  if (matchRow.home_to_win == null || matchRow.away_to_win == null) {
-    return;
-  }
-
+  // Points-mode matches with no match-level point threshold legitimately
+  // have *_to_win = null (the match plays all games and totals decide).
+  // Skip the early-out for those — running totals still need to update so
+  // the start-credit fold-in (per Ed's 2026-05-04 spec) lands on the
+  // points columns.
   const snapshot = (matchRow.system_snapshot ?? null) as
-    | { points_calculator: string | null; points_calculator_params: Record<string, unknown> }
+    | {
+        points_calculator: string | null;
+        points_calculator_params: Record<string, unknown>;
+        win_condition?: 'games' | 'points';
+      }
     | null;
 
   let pointsCalculator: string | null;
   let pointsCalculatorParams: Record<string, unknown>;
+  let winCondition: 'games' | 'points' = 'games';
 
   if (snapshot && 'points_calculator' in snapshot) {
     pointsCalculator = snapshot.points_calculator ?? null;
     pointsCalculatorParams =
       (snapshot.points_calculator_params as Record<string, unknown>) ?? {};
+    winCondition = snapshot.win_condition ?? 'games';
   } else {
     // Fallback path: resolve league_id via season, then read live prefs.
     // Only fires when system_snapshot wasn't populated (legacy / pre-
@@ -869,16 +876,28 @@ export async function updateMatchRunningTotals(matchId: string): Promise<void> {
     if (seasonRow?.league_id) {
       const { data: resolved } = await supabase
         .from('resolved_league_preferences')
-        .select('points_calculator, points_calculator_params')
+        .select('points_calculator, points_calculator_params, win_condition')
         .eq('league_id', seasonRow.league_id)
         .single();
       pointsCalculator = resolved?.points_calculator ?? null;
       pointsCalculatorParams =
         (resolved?.points_calculator_params as Record<string, unknown>) ?? {};
+      // Narrow the DB-string to the win-condition union with a runtime guard.
+      // Without this, an unexpected DB value would satisfy the cast at compile
+      // time but fall through both branches at runtime, silently leaving
+      // winCondition='games' regardless of intent.
+      winCondition = resolved?.win_condition === 'points' ? 'points' : 'games';
     } else {
       pointsCalculator = null;
       pointsCalculatorParams = {};
     }
+  }
+
+  // Games-mode requires both *_to_win to be populated (the threshold trio
+  // drives game-band placement). Points-mode tolerates *_to_win = null
+  // (matches that play all games to totals).
+  if (winCondition === 'games' && (matchRow.home_to_win == null || matchRow.away_to_win == null)) {
+    return;
   }
 
   const { data: games, error: gamesErr } = await supabase
@@ -912,6 +931,7 @@ export async function updateMatchRunningTotals(matchId: string): Promise<void> {
     games: games as Parameters<typeof computeMatchRunningTotals>[0]['games'],
     pointsCalculator,
     pointsCalculatorParams,
+    winCondition,
   });
 
   const { error: writeErr } = await supabase
@@ -980,7 +1000,11 @@ export async function auditMatchScoringConsistency(
     }
 
     const snapshot = (matchRow.system_snapshot ?? null) as
-      | { points_calculator: string | null; points_calculator_params: Record<string, unknown> }
+      | {
+          points_calculator: string | null;
+          points_calculator_params: Record<string, unknown>;
+          win_condition?: 'games' | 'points';
+        }
       | null;
 
     if (!snapshot || !('points_calculator' in snapshot)) {
@@ -992,7 +1016,11 @@ export async function auditMatchScoringConsistency(
       return { ok: false, reason: 'audit_disabled_no_snapshot' };
     }
 
-    if (matchRow.home_to_win == null || matchRow.away_to_win == null) {
+    const auditWinCondition: 'games' | 'points' = snapshot.win_condition ?? 'games';
+
+    // Games-mode requires both *_to_win to be populated. Points-mode tolerates
+    // *_to_win = null (matches that play all games to totals).
+    if (auditWinCondition === 'games' && (matchRow.home_to_win == null || matchRow.away_to_win == null)) {
       return { ok: false, reason: 'audit_read_error' };
     }
 
@@ -1030,6 +1058,7 @@ export async function auditMatchScoringConsistency(
       pointsCalculator: snapshot.points_calculator ?? null,
       pointsCalculatorParams:
         (snapshot.points_calculator_params as Record<string, unknown>) ?? {},
+      winCondition: auditWinCondition,
     });
 
     const actual = {

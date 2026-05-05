@@ -10,14 +10,13 @@ import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { calculateTeamHandicap } from '@/utils/handicapCalculations';
 import { shouldGoldenBreakCount } from '@/utils/goldenBreakRules';
 import { getPlayerNicknameById } from '@/types/member';
-import { getTeamStats, getPlayerStats, getCompletedGamesCount, calculatePoints, TIEBREAKER_THRESHOLDS } from '@/types';
+import { getTeamStats, getPlayerStats, getCompletedGamesCount, TIEBREAKER_THRESHOLDS } from '@/types';
 import { useMatchWithLeagueSettings, useMatchLineups, useMatchGames } from '@/api/hooks/useMatches';
 import { useUserTeamInMatch, useTeamDetails } from '@/api/hooks/useTeams';
 import { useMatchRealtime } from '@/realtime/useMatchRealtime';
 import { logger } from '@/utils/logger';
 import type {
   Player,
-  HandicapThresholds,
   MatchGame,
   ConfirmationQueueItem,
   MatchType,
@@ -171,16 +170,23 @@ export function useMatchScoring({
     return gamesMap;
   }, [gamesData]);
 
-  // Get handicap thresholds from match data (saved during lineup)
+  // Get handicap thresholds from match data (saved during lineup).
+  //
+  // Detection signal: `started_at !== null` means prep_match has run for
+  // this match (it sets `started_at = COALESCE(started_at, NOW())`).
+  // Pre-2026-05-04 this used `home_to_win !== null` as the signal, but
+  // that broke for Fargo points-mode where `home_to_win` is legitimately
+  // null (no match-level point threshold — match plays all games to
+  // totals). `started_at` is mode-independent.
+  //
+  // - games_to_win: null in points-mode (legitimate); non-null in games-mode.
+  // - games_to_tie: null when a tie is impossible OR when no start-credit
+  //   applies (BCA matches with odd total games / no handicap).
+  // - games_to_lose: null for Fargo matches (no decisive-loss threshold).
   const homeThresholds = useMemo(() => {
     if (matchType === 'tiebreaker') return TIEBREAKER_THRESHOLDS;
 
-    // Get thresholds from match table (saved during lineup lock).
-    // - games_to_tie is null when a tie is impossible (e.g., 10+9=19 > 18 games).
-    // - games_to_lose is null for Fargo matches: Fargo uses start-points
-    //   accumulation, not a games-to-lose threshold. Only games_to_win must
-    //   be non-null to signal the match is prepared.
-    if (matchData && matchData.home_to_win !== null) {
+    if (matchData && matchData.started_at !== null) {
       return {
         games_to_win: matchData.home_to_win,
         games_to_tie: matchData.home_to_tie ?? null,
@@ -194,8 +200,7 @@ export function useMatchScoring({
   const awayThresholds = useMemo(() => {
     if (matchType === 'tiebreaker') return TIEBREAKER_THRESHOLDS;
 
-    // See homeThresholds above — same rules apply to the away side.
-    if (matchData && matchData.away_to_win !== null) {
+    if (matchData && matchData.started_at !== null) {
       return {
         games_to_win: matchData.away_to_win,
         games_to_tie: matchData.away_to_tie ?? null,
@@ -266,12 +271,11 @@ export function useMatchScoring({
     return getCompletedGamesCount(gameResults);
   }, [gameResults]);
 
-  /**
-   * Calculate points for a team
-   */
-  const calculatePointsCallback = useCallback((teamId: string, thresholds: HandicapThresholds | null) => {
-    return calculatePoints(teamId, thresholds, gameResults);
-  }, [gameResults]);
+  // Note: the legacy `calculatePointsCallback` re-export was dropped in
+  // Unit 7 of the unified-scoreboard plan. Verified zero non-test consumers
+  // before removal. The legacy `calculatePoints` helper itself survives
+  // (src/types/match.ts) for the characterization tests + divergence audit
+  // — see `feedback_two_paths_audit_pattern.md` in the user-memory.
 
   // ============================================================================
   // DATA PROCESSING
@@ -436,7 +440,6 @@ export function useMatchScoring({
     getTeamStats: getTeamStatsCallback,
     getPlayerStats: getPlayerStatsCallback,
     getCompletedGamesCount: getCompletedGamesCountCallback,
-    calculatePoints: calculatePointsCallback,
 
     // Confirmation queue
     confirmationQueue,

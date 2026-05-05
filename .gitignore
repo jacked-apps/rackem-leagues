@@ -40,3 +40,6 @@ database_backups/
 /playwright-report/
 /playwright/.cache/
 /tests/e2e/.auth/
+
+# Compound-engineering pipeline artifacts (ce-review JSON, run scratch)
+.context/

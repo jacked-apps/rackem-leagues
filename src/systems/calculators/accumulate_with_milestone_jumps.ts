@@ -123,6 +123,17 @@ export const accumulateWithMilestoneJumps: AggregatePointsCalculator<MilestoneJu
   // winner picker. Achievement fields are league-preference-driven, separate.
   scoringPopupFields: () => ({ perSideInputs: null }),
 
+  // Schema-derived display hints (Unit 1 of unified-scoreboard plan).
+  // The 1.5x bonus marker on BCA 5v5 maps to `milestone_jump_value`. The
+  // unified scoreboard's `milestone` role-renderer reads this value and
+  // computes the in-game milestone position from `milestone_percent` ×
+  // current `to_win` threshold (rendering decision lives in Unit 3).
+  // Other params (`per_game_increment`, `win_threshold_jump_value`) are not
+  // worth surfacing as live cues — they're rate parameters, not visual landmarks.
+  displayHints: {
+    milestone_jump_value: { role: 'milestone', label: 'Milestone bonus' },
+  },
+
   compute: ({ gamesWon, thresholds }, params) => {
     // Empty/missing params → use defaults silently. The wizard writes
     // `{}` for leagues that didn't customize calculator params.

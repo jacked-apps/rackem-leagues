@@ -8,14 +8,13 @@
  * Source: CUSTOM_5MAN_HANDICAP_SYSTEM.md
  */
 
-export interface HandicapThresholds {
-  games_to_win: number;
-  games_to_tie: number | null;
-  // Fargo matches set this to null — Fargo scores by point accumulation, not
-  // by a games-to-lose threshold. BCA systems (points, percentage) always
-  // return a non-null number.
-  games_to_lose: number | null;
-}
+// Re-export from the central match types so the chart-helpers and the
+// match-row consumers share one type. BCA chart lookups always return a
+// non-null `games_to_win`, but the broader type (nullable) covers
+// points-mode matches with no explicit point target — the chart values
+// flow into the broader type without coercion.
+import type { HandicapThresholds } from '@/types/match';
+export type { HandicapThresholds };
 
 /**
  * Static handicap chart for 3v3 matches

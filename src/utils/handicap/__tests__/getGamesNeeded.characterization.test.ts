@@ -84,22 +84,29 @@ describe('getGamesNeeded — characterization (points/3v3)', () => {
 describe('getGamesNeeded — characterization (percentage/5v5)', () => {
   // The 5v5 chart is range-based on absolute diff. These snapshots cover all
   // range boundaries plus negative-diff handling (lower-handicap team lookup).
+  // games_to_lose semantic (revised 2026-05-04 per Ed's smoke-test feedback):
+  // games_to_lose = totalGames - opponent's games_to_win = my wins when
+  // opponent has reached their threshold and I've decisively lost. Pre-revision
+  // the chart used `opponent's games_to_win - 1` which produced semantically-
+  // wrong values (e.g., lower team w=12, l=13 — reaching 13 wins would mean
+  // you've already won, not lost). Verified against BCA 3v3 chart's hardcoded
+  // values (diff 0: w=10, l=8 → 18 - 10 = 8 ✓).
   describe('positive diffs (higher-handicap team)', () => {
     it.each([
-      [0, { games_to_win: 13, games_to_tie: null, games_to_lose: 12 }], // 0-14 range, even match
+      [0, { games_to_win: 13, games_to_tie: null, games_to_lose: 12 }], // 0-14 range, even match (25-13=12)
       [14, { games_to_win: 13, games_to_tie: null, games_to_lose: 12 }], // end of 0-14
-      [15, { games_to_win: 14, games_to_tie: null, games_to_lose: 11 }], // start of 15-40
-      [40, { games_to_win: 14, games_to_tie: null, games_to_lose: 11 }], // end of 15-40
-      [41, { games_to_win: 15, games_to_tie: null, games_to_lose: 10 }], // start of 41-66
-      [66, { games_to_win: 15, games_to_tie: null, games_to_lose: 10 }], // end of 41-66
-      [67, { games_to_win: 16, games_to_tie: null, games_to_lose: 9 }],  // start of 67-92
-      [92, { games_to_win: 16, games_to_tie: null, games_to_lose: 9 }],  // end of 67-92
-      [93, { games_to_win: 17, games_to_tie: null, games_to_lose: 8 }],  // start of 93-118
-      [118, { games_to_win: 17, games_to_tie: null, games_to_lose: 8 }], // end of 93-118
-      [119, { games_to_win: 18, games_to_tie: null, games_to_lose: 7 }], // start of 119-144
-      [144, { games_to_win: 18, games_to_tie: null, games_to_lose: 7 }], // end of 119-144
-      [145, { games_to_win: 19, games_to_tie: null, games_to_lose: 6 }], // start of 145+
-      [500, { games_to_win: 19, games_to_tie: null, games_to_lose: 6 }], // extreme gap, capped
+      [15, { games_to_win: 14, games_to_tie: null, games_to_lose: 13 }], // 15-40 (25-12=13)
+      [40, { games_to_win: 14, games_to_tie: null, games_to_lose: 13 }],
+      [41, { games_to_win: 15, games_to_tie: null, games_to_lose: 14 }], // 41-66 (25-11=14)
+      [66, { games_to_win: 15, games_to_tie: null, games_to_lose: 14 }],
+      [67, { games_to_win: 16, games_to_tie: null, games_to_lose: 15 }], // 67-92 (25-10=15)
+      [92, { games_to_win: 16, games_to_tie: null, games_to_lose: 15 }],
+      [93, { games_to_win: 17, games_to_tie: null, games_to_lose: 16 }], // 93-118 (25-9=16)
+      [118, { games_to_win: 17, games_to_tie: null, games_to_lose: 16 }],
+      [119, { games_to_win: 18, games_to_tie: null, games_to_lose: 17 }], // 119-144 (25-8=17)
+      [144, { games_to_win: 18, games_to_tie: null, games_to_lose: 17 }],
+      [145, { games_to_win: 19, games_to_tie: null, games_to_lose: 18 }], // 145+ (25-7=18)
+      [500, { games_to_win: 19, games_to_tie: null, games_to_lose: 18 }],
     ])('getGamesNeeded(%i, "percentage") matches baseline', (diff, expected) => {
       expect(getGamesNeeded(diff, 'percentage')).toEqual(expected);
     });
@@ -107,11 +114,11 @@ describe('getGamesNeeded — characterization (percentage/5v5)', () => {
 
   describe('negative diffs (lower-handicap team)', () => {
     it.each([
-      [-14, { games_to_win: 13, games_to_tie: null, games_to_lose: 12 }], // even range reversed
-      [-15, { games_to_win: 12, games_to_tie: null, games_to_lose: 13 }], // lower team at 15-40
-      [-40, { games_to_win: 12, games_to_tie: null, games_to_lose: 13 }],
-      [-41, { games_to_win: 11, games_to_tie: null, games_to_lose: 14 }],
-      [-145, { games_to_win: 7, games_to_tie: null, games_to_lose: 18 }], // extreme lower
+      [-14, { games_to_win: 13, games_to_tie: null, games_to_lose: 12 }], // even reversed (25-13=12)
+      [-15, { games_to_win: 12, games_to_tie: null, games_to_lose: 11 }], // lower team at 15-40 (25-14=11)
+      [-40, { games_to_win: 12, games_to_tie: null, games_to_lose: 11 }],
+      [-41, { games_to_win: 11, games_to_tie: null, games_to_lose: 10 }], // 41-66 (25-15=10)
+      [-145, { games_to_win: 7, games_to_tie: null, games_to_lose: 6 }], // 145+ (25-19=6)
     ])('getGamesNeeded(%i, "percentage") matches baseline', (diff, expected) => {
       expect(getGamesNeeded(diff, 'percentage')).toEqual(expected);
     });

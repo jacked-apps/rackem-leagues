@@ -27,11 +27,18 @@
  * `compute` signature based on `kind`. An aggregate calculator can't be
  * given per-game input by accident (and vice versa) — the compiler enforces.
  *
- * Display metadata for the wizard (formula text, worked examples, descriptions)
- * deliberately lives ELSEWHERE — see the wizard's `CALCULATOR_DESCRIPTIONS`
- * map. Keeping the runtime interface narrow honors the plan's scope-guardian
- * finding: documentation/UX strings are wizard-layer concerns, not runtime
- * contract concerns.
+ * Display metadata splits along strings vs. structural-meta lines:
+ *   - **Display STRINGS** for the wizard (formula text, worked examples,
+ *     long descriptions) live elsewhere — wizard-layer concern, never on
+ *     the calculator module.
+ *   - **Display META** describing how the scoreboard should render params
+ *     (e.g. "this param is a milestone marker") lives on the calculator
+ *     itself via `displayHints` / `getDisplayHints`. This is structural
+ *     meta-data ABOUT params (closer to `paramSchema`'s existing role)
+ *     rather than UX strings.
+ *
+ * @see docs/plans/2026-05-03-001-feat-unified-scoreboard-plan.md (Unit 1
+ *   Key Decision: "displayHints as a sibling field on CalculatorBase").
  *
  * @see docs/plans/2026-05-01-001-feat-modular-league-system-v2-plan.md (Unit 1.1)
  */
@@ -141,6 +148,77 @@ export interface ScoringPopupFieldSpec {
 }
 
 // ============================================================================
+// Display hints — schema-derived markers the scoreboard renders
+// ============================================================================
+
+/**
+ * Per-param display-hint declaration. Attached to a calculator's params via the
+ * `displayHints` field on `CalculatorBase`. Tells the scoreboard "this param
+ * represents a `role` (e.g. milestone marker); please render it according to
+ * that role's renderer."
+ *
+ * `role` is an open enum (`string`) so future calculators can introduce new
+ * roles without breaking existing types. The scoreboard recognizes a known set
+ * (e.g. `'milestone'`) and falls back to a generic "label + value" rendering
+ * for unknown roles — never crashes on an unrecognized role string.
+ *
+ * `label` is optional. When omitted, the scoreboard derives a default label
+ * from the param key. Provide it when the param key alone wouldn't read well
+ * to a player (e.g. `multiplier_at_tie` → "1.5x at tie").
+ *
+ * @example
+ *   // accumulate_with_milestone_jumps declares its multiplier_at_tie param
+ *   // is a milestone marker:
+ *   displayHints: {
+ *     multiplier_at_tie: { role: 'milestone', label: '1.5x at tie' },
+ *   }
+ */
+export interface ParamDisplayHint {
+  /**
+   * Open-enum role string. Known roles get specialized rendering; unknown
+   * roles fall back to a generic "label + value" treatment. Add a new role
+   * only when a calculator actually needs one — avoid pre-designing for
+   * theoretical calculators.
+   */
+  role: string;
+
+  /**
+   * Optional human-readable label shown alongside the rendered hint. When
+   * omitted, the scoreboard derives a label from the param key.
+   */
+  label?: string;
+}
+
+/**
+ * Runtime shape the scoreboard receives after resolving display hints against
+ * the active calculator's params. The scoreboard renders these without
+ * caring whether they came from the schema-derived `displayHints` field or
+ * the imperative `getDisplayHints` escape hatch.
+ *
+ * `value` covers the common cases (number / string / boolean). For weirder
+ * shapes a calculator should use the `getDisplayHints` escape hatch and
+ * encode the structure into `label` + `value` as a string. Keeps the
+ * scoreboard renderer's contract simple.
+ */
+export interface DisplayHint {
+  /** Role from `ParamDisplayHint.role` (or directly from the escape hatch). */
+  role: string;
+
+  /** Resolved label (either from `ParamDisplayHint.label` or a derived default). */
+  label: string;
+
+  /** The param value being rendered (number is the common case). */
+  value: number | string | boolean;
+
+  /**
+   * Origin-param key, set when the hint was schema-derived. Unset when the
+   * hint came from `getDisplayHints` (since escape-hatch hints aren't tied
+   * to a single param). Mostly useful for debugging / dev-mode display.
+   */
+  paramKey?: string;
+}
+
+// ============================================================================
 // PointsCalculator (discriminated union by kind)
 // ============================================================================
 
@@ -176,6 +254,45 @@ interface CalculatorBase<P> {
    * counter / fixed-points spec.
    */
   scoringPopupFields: (params: P) => ScoringPopupFieldSpec;
+
+  /**
+   * Optional schema-derived display hints. Maps each (or some) param key to a
+   * `ParamDisplayHint` declaring the param's display role. The unified
+   * scoreboard reads this to know which params should surface as visual
+   * markers (e.g. "1.5x at tie" milestone) and how to render them.
+   *
+   * **When to use this form:** aggregate calculators with primitive param
+   * keys whose values are direct numeric targets the scoreboard can render
+   * via a known role. The canonical example is
+   * `accumulate_with_milestone_jumps`'s `multiplier_at_tie` param marked
+   * `{ role: 'milestone' }`.
+   *
+   * **When to use `getDisplayHints` instead:** calculators with structural
+   * param shapes where `keyof P` doesn't map to per-display-element targets
+   * — e.g. `accumulated_per_game` whose `keyof P` is `'winner' | 'loser'`
+   * (whole-side configs, not per-field markers). Those calculators leave
+   * `displayHints` undefined and use the escape hatch instead.
+   *
+   * Calculators that have no visual markers worth declaring leave both
+   * fields undefined; the scoreboard renders nothing extra (no crash).
+   */
+  displayHints?: { [K in keyof P]?: ParamDisplayHint };
+
+  /**
+   * Optional escape hatch: returns 0+ runtime `DisplayHint` objects derived
+   * from the calculator's current `params`. Use this when:
+   *   - The calculator's param shape doesn't fit `displayHints`'s
+   *     `Record<keyof P, ...>` mold (e.g. `accumulated_per_game`).
+   *   - The hint needs values computed from multiple params (rare).
+   *   - The hint needs a transformed label or non-primitive value the
+   *     schema-derived path can't express cleanly.
+   *
+   * The default behavior is schema-derived (`displayHints`). Only use this
+   * when the schema-derived path is genuinely insufficient. The scoreboard
+   * prefers `getDisplayHints` output when both forms are present, but most
+   * calculators should pick one or the other (not both).
+   */
+  getDisplayHints?: (params: P) => DisplayHint[];
 }
 
 /**
