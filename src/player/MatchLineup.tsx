@@ -12,6 +12,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/api/queryKeys';
+import { MatchPhaseGuard } from '@/components/match/MatchPhaseGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -72,7 +73,7 @@ import { toast } from 'sonner';
 const ANON_SUB_VALUE = '__anonymous_sub__';
 const DOUBLE_DUTY_VALUE = '__double_duty__';
 
-export function MatchLineup() {
+function MatchLineupBody() {
   const { matchId } = useParams<{ matchId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -1288,5 +1289,19 @@ export function MatchLineup() {
         />
       )}
     </div>
+  );
+}
+
+/**
+ * Public export. The route guard reads `matches.status` and dispatches
+ * lineup vs scoring vs recovery; on a status flip it navigates the user
+ * to the right surface. Children receive a compound `key` so cross-match
+ * navigation and Hard Reset both fully remount this body.
+ */
+export function MatchLineup() {
+  return (
+    <MatchPhaseGuard>
+      <MatchLineupBody />
+    </MatchPhaseGuard>
   );
 }

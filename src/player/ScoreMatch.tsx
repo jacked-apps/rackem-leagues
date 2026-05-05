@@ -53,8 +53,9 @@ import { calculatePoints, getTeamStats, getPlayerStats as getPlayerStatsUtil } f
 import { calculateFargoMatchTotals } from '@/utils/fargoMatchTotals';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
+import { MatchPhaseGuard } from '@/components/match/MatchPhaseGuard';
 
-export function ScoreMatch() {
+function ScoreMatchBody() {
   const { matchId } = useParams<{ matchId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -1050,5 +1051,19 @@ export function ScoreMatch() {
       />
 
     </div>
+  );
+}
+
+/**
+ * Public export. The route guard reads `matches.status` and dispatches
+ * lineup vs scoring vs recovery; on a status flip it navigates the user
+ * to the right surface. Children receive a compound `key` so cross-match
+ * navigation and Hard Reset both fully remount this body.
+ */
+export function ScoreMatch() {
+  return (
+    <MatchPhaseGuard>
+      <ScoreMatchBody />
+    </MatchPhaseGuard>
   );
 }
