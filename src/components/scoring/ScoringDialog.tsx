@@ -4,10 +4,10 @@
  * Single-step confirmation dialog for scoring a game. The same component
  * drives all three scoring systems (BCA points, BCA percentage, Fargo) —
  * rendering is configurable: always-tracked flags, role-conditional
- * achievement buttons, and system-specific per-game inputs all render in
- * one Submit action.
+ * achievement buttons, and calculator-declared per-game inputs all render
+ * in one Submit action.
  *
- * Field rules (Unit 11b):
+ * Field rules:
  * - Break-fault toggle: always visible. When true, the actual breaker flips
  *   to the scheduled racker — so BR/GB and runout swap which side is
  *   eligible.
@@ -16,14 +16,24 @@
  * - GB (Golden Break / 8-on-the-break): visible when winner = actual breaker
  *   AND the league has `golden_break_counts_as_win = true`.
  * - Runout: visible when winner = non-breaker.
- * - Ball count (0–7): visible only when `handicapType === 'fargo'`. No
- *   default selection; Submit is disabled until a value is tapped (0 is a
- *   valid explicit choice).
+ * - Per-side scoring inputs: driven by the active calculator's
+ *   `scoringPopupFields()` spec (see `src/systems/calculators/types.ts`).
+ *   When the spec declares `kind: 'counter'` for a side, an AdaptiveCounter
+ *   renders for that side. `kind: 'fixed'` sides render nothing (the
+ *   calculator handles them implicitly at compute time). When the
+ *   calculator name is null, unknown, or the spec has no per-side inputs
+ *   (aggregate calculators), no scoring inputs render.
  *
  * Winner points and loser points are NOT captured here — they derive at
- * read time from the league's snapshotted dials + the stored ball count.
+ * read time from the league's snapshotted calculator + params.
+ *
+ * Branch A Unit 4 replaced the prior hardcoded
+ * `pointsCalculator === 'accumulated_per_game'` string check with this
+ * spec-driven path. The dormant `scoringPopupFields()` interface is now
+ * a real production consumer.
  */
 
+import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -35,6 +45,8 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { getCalculator } from '@/systems/calculators';
+import { AdaptiveCounter } from './AdaptiveCounter';
 
 interface ScoringDialogProps {
   /** Whether dialog is open */
@@ -67,13 +79,19 @@ interface ScoringDialogProps {
    */
   handicapType?: string;
   /**
-   * Active league `points_calculator`. The ball-count input is only
-   * rendered when this is `'accumulated_per_game'` — the only calculator
-   * that needs per-game balls-pocketed data. For all other calculators
-   * (including null = "don't track points") the input stays hidden and
-   * Submit is not gated on it.
+   * Active league `points_calculator` name. Looked up via `getCalculator()`
+   * to retrieve the calculator instance whose `scoringPopupFields(params)`
+   * spec drives per-side input rendering. `null` (no points tracking) or
+   * an unknown name skips per-side rendering.
    */
   pointsCalculator?: string | null;
+  /**
+   * Active league `points_calculator_params`. Passed to the calculator's
+   * `scoringPopupFields(params)` to produce the per-side input spec. The
+   * calculator handles empty params (`{}`) by falling back to its defaults
+   * — the modal does not interpret the params itself.
+   */
+  pointsCalculatorParams?: Record<string, unknown> | null;
   /** Break-fault toggle state (always visible). */
   breakFouled?: boolean;
   /** Win-by-forfeit toggle state (always visible). */
@@ -128,18 +146,19 @@ export function ScoringDialog({
   goldenBreakCountsAsWin,
   gameType,
   pointsCalculator = null,
+  pointsCalculatorParams = null,
   breakFouled = false,
   winByForfeit = false,
   runout = false,
   loserValue = null,
-  winnerValue: _winnerValue = null,
+  winnerValue = null,
   onBreakAndRunChange,
   onGoldenBreakChange,
   onBreakFouledChange,
   onWinByForfeitChange,
   onRunoutChange,
   onLoserValueChange,
-  onWinnerValueChange: _onWinnerValueChange,
+  onWinnerValueChange,
   onCancel,
   onConfirm,
 }: ScoringDialogProps) {
@@ -150,18 +169,31 @@ export function ScoringDialog({
   const winnerWasScheduledBreaker = game.winnerWasScheduledBreaker ?? true;
   const winnerIsActualBreaker = winnerWasScheduledBreaker !== breakFouled;
 
-  // Per-game loser balls pocketed are only consumed by the
-  // `accumulated_per_game` points calculator (Fargo 10-7). Other Fargo
-  // calculators (`linear_above_threshold`, `accumulate_with_milestone_jumps`)
-  // and `null` (no points tracking) don't need this input — gating on
-  // `handicap_type === 'fargo'` alone over-collected for those leagues
-  // and (worse) blocked Submit until a fake value was tapped.
-  const requiresLoserBallCount = pointsCalculator === 'accumulated_per_game';
+  // Resolve the active calculator and its scoringPopupFields spec. The spec
+  // tells the modal whether each side needs a counter input (kind: 'counter')
+  // or contributes a fixed implicit value (kind: 'fixed', no input shown).
+  // Aggregate calculators return `{ perSideInputs: null }` and produce no
+  // per-side inputs at all.
+  const spec = useMemo(() => {
+    if (!pointsCalculator) return null;
+    const calc = getCalculator(pointsCalculator);
+    if (!calc) {
+      console.warn(`[ScoringDialog] Unknown calculator name: ${pointsCalculator}`);
+      return null;
+    }
+    return calc.scoringPopupFields((pointsCalculatorParams ?? {}) as never);
+  }, [pointsCalculator, pointsCalculatorParams]);
 
-  // Submit is blocked when the active calculator requires a ball count and
-  // none has been selected. Ball count can be 0 (valid choice), so we test
-  // for null explicitly.
-  const fargoBallCountMissing = requiresLoserBallCount && loserValue === null;
+  const winnerSpec = spec?.perSideInputs?.winner;
+  const loserSpec = spec?.perSideInputs?.loser;
+  const winnerNeedsCounter = winnerSpec?.kind === 'counter';
+  const loserNeedsCounter = loserSpec?.kind === 'counter';
+
+  // Submit is blocked when any side declares 'counter' and the value is
+  // still null. value === 0 is a valid explicit choice (current Fargo UX).
+  const counterValueMissing =
+    (winnerNeedsCounter && winnerValue === null) ||
+    (loserNeedsCounter && loserValue === null);
 
   // Get label for golden break based on game type
   const getGoldenBreakLabel = () => {
@@ -294,30 +326,33 @@ export function ScoringDialog({
             </div>
           )}
 
-          {/* Fargo-only: loser balls pocketed (0–7) */}
-          {requiresLoserBallCount && (
-            <div className="space-y-2">
-              <Label className="text-sm font-normal">
-                Loser balls pocketed
-              </Label>
-              <div className="grid grid-cols-8 gap-1">
-                {[0, 1, 2, 3, 4, 5, 6, 7].map((n) => {
-                  const selected = loserValue === n;
-                  return (
-                    <Button
-                      key={n}
-                      type="button"
-                      size="sm"
-                      variant={selected ? 'default' : 'outline'}
-                      onClick={() => onLoserValueChange?.(n)}
-                      loadingText="none"
-                    >
-                      {n}
-                    </Button>
-                  );
-                })}
-              </div>
-            </div>
+          {/* Calculator-declared per-side inputs. The spec's `kind` drives
+              the rendering: 'counter' shows an AdaptiveCounter; 'fixed'
+              shows nothing (the calculator handles fixed values implicitly
+              at compute time). Aggregate calculators (no perSideInputs)
+              produce no rendering here. */}
+          {winnerSpec?.kind === 'counter' && (
+            <AdaptiveCounter
+              min={winnerSpec.min}
+              max={winnerSpec.max}
+              label={winnerSpec.label}
+              value={winnerValue}
+              onChange={(v) => onWinnerValueChange?.(v)}
+            />
+          )}
+          {loserSpec?.kind === 'counter' && (
+            <AdaptiveCounter
+              min={loserSpec.min}
+              max={loserSpec.max}
+              label={loserSpec.label}
+              value={loserValue}
+              onChange={(v) => onLoserValueChange?.(v)}
+            />
+          )}
+          {counterValueMissing && (
+            <p className="text-xs text-muted-foreground">
+              Tap a value to continue.
+            </p>
           )}
         </div>
 
@@ -328,7 +363,7 @@ export function ScoringDialog({
           <Button
             onClick={onConfirm}
             loadingText="Saving..."
-            disabled={fargoBallCountMissing}
+            disabled={counterValueMissing}
           >
             Select Winner
           </Button>

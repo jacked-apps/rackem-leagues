@@ -140,6 +140,18 @@ function ScoreMatchBody() {
       ? snapshotPointsCalculator
       : (leaguePrefs?.points_calculator ?? null);
 
+  // Resolve the active calculator's params with the same snapshot-vs-live
+  // fallback. The calculator's scoringPopupFields(params) reads these to
+  // produce the per-side input spec. Empty params (`{}`) cause the
+  // calculator to use its defaults — the modal does not interpret params.
+  const snapshotPointsCalculatorParams = (
+    match?.system_snapshot as { points_calculator_params?: Record<string, unknown> | null } | null
+  )?.points_calculator_params;
+  const resolvedPointsCalculatorParams =
+    snapshotPointsCalculatorParams !== undefined
+      ? snapshotPointsCalculatorParams
+      : (leaguePrefs?.points_calculator_params as Record<string, unknown> | null | undefined) ?? null;
+
   // Get handicaps for roster players (for lineup change requests)
   const rosterPlayerIds = teamRoster.map((tp: any) => tp.member_id).filter(Boolean);
   const { handicaps: rosterHandicaps } = usePlayerHandicaps({
@@ -821,6 +833,7 @@ function ScoreMatchBody() {
         gameType={gameType}
         handicapType={handicapType}
         pointsCalculator={resolvedPointsCalculator}
+        pointsCalculatorParams={resolvedPointsCalculatorParams}
         breakFouled={breakFouled}
         winByForfeit={winByForfeit}
         runout={runout}
