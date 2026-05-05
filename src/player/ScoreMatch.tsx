@@ -52,8 +52,9 @@ import { getTeamStats, getPlayerStats as getPlayerStatsUtil } from '@/types';
 import { getCalculator } from '@/systems/calculators';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
+import { MatchPhaseGuard } from '@/components/match/MatchPhaseGuard';
 
-export function ScoreMatch() {
+function ScoreMatchBody() {
   const { matchId } = useParams<{ matchId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -67,12 +68,14 @@ export function ScoreMatch() {
   const [isVerifying, setIsVerifying] = useState(false);
 
   // Ref to store mutations for use in real-time subscription
-  const mutationsRef = useRef<any>(null);
-
-  // Wait time for match preparation (give home team time to prepare)
-  const [waitingForPreparation, setWaitingForPreparation] = useState(true);
-  const [retryCount, setRetryCount] = useState(0);
-  const MAX_RETRIES = 10; // Wait up to 10 seconds
+  // Holds the latest `mutations` object returned by useMatchScoringMutations
+  // so the realtime subscription's confirmOpponentScore callback can call
+  // it without having `mutations` itself in the callback's closure (which
+  // would force the realtime channel to re-subscribe on every render).
+  // Type is the return shape of useMatchScoringMutations — using
+  // ReturnType keeps the ref aligned automatically if the hook's return
+  // changes shape.
+  const mutationsRef = useRef<ReturnType<typeof useMatchScoringMutations> | null>(null);
 
   // Use central scoring hook (replaces all manual data fetching)
   const {
@@ -237,9 +240,18 @@ export function ScoreMatch() {
 
   // Detect when all games are complete (works for any format: 3, 18, 25, etc.)
   // Total games = count of games in database
+  //
+  // The `totalGames > 0` guard is load-bearing: without it, an empty
+  // gameResults map (initial render before games load) makes
+  // `0 === 0 === true`, and the prevRef below initializes to true.
+  // When games subsequently arrive, the effect sees a complete→incomplete
+  // transition and spuriously CLEARS home_team_verified_by /
+  // away_team_verified_by on the matches row. This was a pre-existing
+  // bug that the deletion of the wait-for-prep loop made more reachable
+  // — ScoreMatchBody now renders before games load instead of spinning.
   const totalGames = gameResults.size;
   const completedGames = getCompletedGamesCount(gameResults);
-  const allGamesComplete = completedGames === totalGames;
+  const allGamesComplete = totalGames > 0 && completedGames === totalGames;
 
   // Debug: Log team identification and verification status
   // useEffect(() => {
@@ -502,31 +514,12 @@ export function ScoreMatch() {
     denyLineupChangeMutation.mutate(opponentLineup.id);
   };
 
-  // Auto-retry mechanism: Wait for match preparation to complete
-  // MUST be before any early returns to comply with Rules of Hooks
-  useEffect(() => {
-    const dataReady = match && homeLineup && awayLineup && homeThresholds && awayThresholds;
-
-    if (!dataReady && waitingForPreparation && retryCount < MAX_RETRIES) {
-      const timer = setTimeout(() => {
-        setRetryCount(prev => prev + 1);
-        // Invalidate queries to force refetch
-        queryClient.invalidateQueries({ queryKey: ['match', matchId] });
-      }, 1000); // Wait 1 second between retries
-
-      return () => clearTimeout(timer);
-    }
-
-    if (dataReady && waitingForPreparation) {
-      setWaitingForPreparation(false);
-    }
-
-    if (retryCount >= MAX_RETRIES) {
-      setWaitingForPreparation(false);
-    }
-  }, [match, homeLineup, awayLineup, homeThresholds, awayThresholds, retryCount, waitingForPreparation, matchId, queryClient, MAX_RETRIES]);
-
-  // Early returns for loading/error states
+  // Early returns for loading/error states.
+  // Match-prepared readiness is handled upstream by MatchPhaseGuard
+  // (see src/components/match/MatchPhaseGuard.tsx). The guard only
+  // renders this body when matches.status='in_progress', so the prior
+  // 10-retry waiting loop here was redundant once the guard wired in
+  // and is now removed.
   if (loading) {
     return (
       <div className="min-h-screen bg-muted flex items-center justify-center">
@@ -540,21 +533,14 @@ export function ScoreMatch() {
   }
 
   if (error) {
-    // If lineups aren't locked, redirect to lineup page instead of showing error
-    if (error.includes('lineups must be locked')) {
-      navigate(`/match/${matchId}/lineup`);
-      return (
-        <div className="min-h-screen bg-muted flex items-center justify-center">
-          <div className="text-center">
-            <div className="text-lg font-semibold text-foreground">
-              Redirecting to lineup page...
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // Show error for other types of errors
+    // The "lineups must be locked" branch that used to navigate back to
+    // /match/:id/lineup from here was deleted: the route guard
+    // (MatchPhaseGuard) is now the authoritative redirect mechanism, and
+    // calling navigate() during render is a React anti-pattern that
+    // could create an oscillating /score↔/lineup loop if matches.status
+    // happens to be 'in_progress' while a lineup is unlocked. Surface
+    // any error here as the regular error card; the guard handles
+    // routing on the next mount.
     return (
       <div className="min-h-screen bg-muted flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
@@ -572,70 +558,21 @@ export function ScoreMatch() {
     );
   }
 
-  // Show loading screen while waiting for preparation
-  if (waitingForPreparation && retryCount < MAX_RETRIES) {
+  // Match-prepared data is guaranteed by MatchPhaseGuard before this
+  // body renders. If a downstream query genuinely fails (network, RLS,
+  // server error), the guard's MatchTransitionRecovery surface fires
+  // — not a bespoke error card here.
+  //
+  // The narrowing return below mostly satisfies TypeScript: with the
+  // guard upstream, none of these should be null in practice. If they
+  // somehow are, render a brief loading spinner so the body doesn't
+  // attempt to deref nulls. This is a fallback, not a normal path.
+  if (!match || !homeLineup || !awayLineup || !homeThresholds || !awayThresholds) {
     return (
       <div className="min-h-screen bg-muted flex items-center justify-center">
         <div className="text-center">
-          <div className="text-lg font-semibold text-foreground mb-4">
-            Preparing Match...
-          </div>
-          <div className="text-sm text-muted-foreground mb-4">
-            Setting up handicap thresholds and game order
-          </div>
-          <div className="flex justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          </div>
-          <div className="text-xs text-muted-foreground mt-4">
-            Attempt {retryCount + 1} of {MAX_RETRIES}
-          </div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" />
         </div>
-      </div>
-    );
-  }
-
-  // After retries exhausted, show error if data still missing
-  if (
-    !match ||
-    !homeLineup ||
-    !awayLineup ||
-    !homeThresholds ||
-    !awayThresholds
-  ) {
-    return (
-      <div className="min-h-screen bg-muted flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <div className="text-lg font-semibold text-red-600 mb-2">
-                Match Preparation Failed
-              </div>
-              <div className="text-muted-foreground mb-4">
-                The match could not be prepared after {MAX_RETRIES} attempts.
-              </div>
-              <div className="text-sm text-muted-foreground mb-4">
-                {!match && <div>• Match data not loaded</div>}
-                {!homeLineup && <div>• Home lineup not available</div>}
-                {!awayLineup && <div>• Away lineup not available</div>}
-                {!homeThresholds && <div>• Home thresholds not set</div>}
-                {!awayThresholds && <div>• Away thresholds not set</div>}
-              </div>
-              <div className="text-xs text-muted-foreground mb-4">
-                This usually means the home team's lineup lock failed to prepare the match.
-                Both teams should go back to lineup and try again.
-              </div>
-              <Button onClick={() => window.location.reload()} loadingText="none">Try Again</Button>
-              <Button
-                variant="outline"
-                onClick={() => navigate(`/match/${matchId}/lineup`)}
-                className="ml-2"
-                loadingText="none"
-              >
-                Back to Lineup
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     );
   }
@@ -1002,5 +939,19 @@ export function ScoreMatch() {
       />
 
     </div>
+  );
+}
+
+/**
+ * Public export. The route guard reads `matches.status` and dispatches
+ * lineup vs scoring vs recovery; on a status flip it navigates the user
+ * to the right surface. Children receive a compound `key` so cross-match
+ * navigation and Hard Reset both fully remount this body.
+ */
+export function ScoreMatch() {
+  return (
+    <MatchPhaseGuard>
+      <ScoreMatchBody />
+    </MatchPhaseGuard>
   );
 }

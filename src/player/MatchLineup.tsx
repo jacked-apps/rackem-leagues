@@ -8,11 +8,13 @@
  * Flow: Team Schedule → Score Match → Lineup Entry
  */
 
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/api/queryKeys';
+import { MatchPhaseGuard } from '@/components/match/MatchPhaseGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Users } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import {
   useCurrentMember,
   useMatchWithLeagueSettings,
@@ -58,7 +60,6 @@ import {
   computePrepBlockedReason,
 } from '@/utils/lineup';
 import { useMatchRealtime } from '@/realtime/useMatchRealtime';
-import { Loader2 } from 'lucide-react';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { shouldUseTeamBonus } from '@/utils/calculateHandicapThresholds';
 import { logger } from '@/utils/logger';
@@ -70,9 +71,9 @@ import { toast } from 'sonner';
 const ANON_SUB_VALUE = '__anonymous_sub__';
 const DOUBLE_DUTY_VALUE = '__double_duty__';
 
-export function MatchLineup() {
+function MatchLineupBody() {
   const { matchId } = useParams<{ matchId: string }>();
-  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   // TanStack Query: Get current member data
   const memberQuery = useCurrentMember();
@@ -122,13 +123,10 @@ export function MatchLineup() {
 
   // Note: Mutation hooks (useUpdateMatch, useUpdateMatchLineup) are now used inside hooks
 
-  // Preparation status for loading screen
-  const {
-    isPreparingMatch,
-    setIsPreparingMatch,
-    preparationMessage,
-    setPreparationMessage,
-  } = usePreparationStatus();
+  // In-flight prep state. Drives the "Setting up match…" indicator
+  // under the Lock/Unlock buttons (LineupActions.isPreparing) and
+  // disables Unlock during the prep_match RPC window.
+  const { isPreparingMatch, setIsPreparingMatch } = usePreparationStatus();
 
   // Resolved preferences — lazy-migrates legacy leagues on first access
   const leagueId = matchData?.league?.id;
@@ -585,9 +583,7 @@ export function MatchLineup() {
     player4Handicap: handicaps.player4Handicap,
     player5Handicap: handicaps.player5Handicap,
     setIsPreparingMatch,
-    setPreparationMessage,
     refetchLineups: lineupsQuery.refetch,
-    refetchGames: matchGamesQuery.refetch,
   });
 
   // Load lineup ID and data from database (auto-created by trigger)
@@ -689,12 +685,26 @@ export function MatchLineup() {
     });
   }, [handicapType, lineupsQuery.data, isHomeTeam, playerCount]);
 
-  // Unified real-time subscription for match, lineups, and games
-  // Watches all three tables throughout entire match flow (lineup + tiebreaker + scoring)
+  // Unified real-time subscription for match, lineups, and games.
+  // Watches all three tables throughout entire match flow (lineup + tiebreaker + scoring).
+  //
+  // Each handler invalidates the relevant cache entry rather than calling
+  // refetch directly. See `useMatchScoring.ts` for rationale — same contract.
+  // Wrapped in useCallback so identities stay stable across renders.
+  const handleMatchInvalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.matches.detail(matchId || '') });
+  }, [queryClient, matchId]);
+  const handleLineupInvalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.matches.lineup(matchId || '') });
+  }, [queryClient, matchId]);
+  const handleGamesInvalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.matches.games(matchId || '') });
+  }, [queryClient, matchId]);
+
   useMatchRealtime(matchId, {
-    onMatchUpdate: () => matchQuery.refetch(),
-    onLineupUpdate: () => lineupsQuery.refetch(),
-    onGamesUpdate: () => matchGamesQuery.refetch(),
+    onMatchUpdate: handleMatchInvalidate,
+    onLineupUpdate: handleLineupInvalidate,
+    onGamesUpdate: handleGamesInvalidate,
   });
 
   // 5v5 Substitute Modal State
@@ -1223,6 +1233,7 @@ export function MatchLineup() {
               canUnlock={opponentStatus !== 'ready'}
               onLock={handleLockLineup}
               onUnlock={handleUnlockLineup}
+              isPreparing={isPreparingMatch}
               // No manual Proceed button — useMatchPreparation auto-navigates
               // once both lineups are locked (and for Fargo, once start-points
               // are mutually confirmed). A manual button could navigate early,
@@ -1232,32 +1243,6 @@ export function MatchLineup() {
           </CardContent>
         </Card>
       </main>
-
-      {/* Loading Overlay — Back-to-Schedule lets captains escape without
-          killing the flow. DB state persists; returning resumes from whichever
-          step is next incomplete (idempotency short-circuit in useMatchPreparation). */}
-      {isPreparingMatch && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-card rounded-lg p-8 max-w-md w-full mx-4 text-center">
-            <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">
-              {isHomeTeam ? 'Setting up the match…' : 'Waiting for match to be set up…'}
-            </h2>
-            {preparationMessage ? (
-              <p className="text-muted-foreground mb-4">{preparationMessage}</p>
-            ) : null}
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsPreparingMatch(false);
-                if (userTeamId) navigate(`/team/${userTeamId}/schedule`);
-              }}
-            >
-              Back to Schedule
-            </Button>
-          </div>
-        </div>
-      )}
 
       {/* Opponent Substitute Modal - 5v5 Only */}
       {opponentLineup && (
@@ -1271,5 +1256,19 @@ export function MatchLineup() {
         />
       )}
     </div>
+  );
+}
+
+/**
+ * Public export. The route guard reads `matches.status` and dispatches
+ * lineup vs scoring vs recovery; on a status flip it navigates the user
+ * to the right surface. Children receive a compound `key` so cross-match
+ * navigation and Hard Reset both fully remount this body.
+ */
+export function MatchLineup() {
+  return (
+    <MatchPhaseGuard>
+      <MatchLineupBody />
+    </MatchPhaseGuard>
   );
 }

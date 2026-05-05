@@ -10,7 +10,9 @@ import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { calculateTeamHandicap } from '@/utils/handicapCalculations';
 import { shouldGoldenBreakCount } from '@/utils/goldenBreakRules';
 import { getPlayerNicknameById } from '@/types/member';
-import { getTeamStats, getPlayerStats, getCompletedGamesCount, TIEBREAKER_THRESHOLDS } from '@/types';
+import { getTeamStats, getPlayerStats, getCompletedGamesCount, calculatePoints, TIEBREAKER_THRESHOLDS } from '@/types';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/api/queryKeys';
 import { useMatchWithLeagueSettings, useMatchLineups, useMatchGames } from '@/api/hooks/useMatches';
 import { useUserTeamInMatch, useTeamDetails } from '@/api/hooks/useTeams';
 import { useMatchRealtime } from '@/realtime/useMatchRealtime';
@@ -42,6 +44,8 @@ export function useMatchScoring({
   autoConfirm = false,
   confirmOpponentScore
 }: UseMatchScoringOptions) {
+  const queryClient = useQueryClient();
+
   // ============================================================================
   // TANSTACK QUERY HOOKS
   // ============================================================================
@@ -51,7 +55,6 @@ export function useMatchScoring({
     data: matchData,
     isLoading: matchLoading,
     error: matchError,
-    refetch: refetchMatch
   } = useMatchWithLeagueSettings(matchId);
 
   // Fetch lineups (needs team IDs from match data)
@@ -81,7 +84,6 @@ export function useMatchScoring({
   const {
     data: gamesData = [],
     isLoading: gamesLoading,
-    refetch: refetchGames,
   } = useMatchGames(matchId);
 
   // Fetch FULL team rosters (not just lineup players)
@@ -389,14 +391,48 @@ export function useMatchScoring({
   // ============================================================================
 
   /**
-   * Unified real-time subscription to matches, match_lineups, and match_games
-   * Listens for INSERT/UPDATE/DELETE events and refreshes data
-   * Handles confirmation queue logic for opponent score updates
+   * Unified real-time subscription to matches, match_lineups, and match_games.
+   *
+   * Each handler invalidates the relevant cache entry rather than calling
+   * `query.refetch()` directly. Refetch respects `staleTime` and silently
+   * no-ops when the cache is still considered fresh; invalidate forces the
+   * cache to refetch regardless. After the staleTime fix in
+   * `useMatchWithLeagueSettings` (set to MATCH_LIVE = 0), the two are
+   * functionally equivalent for this query — but invalidate is the
+   * correct verb and matches the cascade behavior we want for sibling
+   * queries (lineup, games, useMatchPhase) keyed under
+   * `matches.detail(matchId)`.
+   *
+   * The handlers are wrapped in `useCallback` so their identities stay
+   * stable across renders. `useMatchRealtime` stores them in refs so
+   * identity churn wouldn't tear down the subscription anyway, but
+   * stability is the right idiom and keeps the ref-update effect from
+   * firing on every parent render.
    */
+  // Partial-key invalidation on matches.detail(matchId) cascades to all
+  // children: useMatchById (bare key), useMatchWithLeagueSettings
+  // ('leagueSettings' suffix), useMatchPhase ('phase' suffix), AND
+  // useMatchLineups, useMatchGames. The latter two have dedicated
+  // handlers (handleLineupInvalidate / handleGamesInvalidate) below —
+  // the cascade hits them too on every matches event, which is wasteful
+  // but not incorrect. The cost is acceptable: matches-row updates are
+  // rare events (lock, prep_match, completion), not per-game scoring
+  // events. Narrowing the key to exclude lineup/games is tempting but
+  // would also exclude phase, which is wrong.
+  const handleMatchInvalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.matches.detail(matchId || '') });
+  }, [queryClient, matchId]);
+  const handleLineupInvalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.matches.lineup(matchId || '') });
+  }, [queryClient, matchId]);
+  const handleGamesInvalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.matches.games(matchId || '') });
+  }, [queryClient, matchId]);
+
   useMatchRealtime(matchId, {
-    onMatchUpdate: refetchMatch,
-    onLineupUpdate: refetchLineups,
-    onGamesUpdate: refetchGames,
+    onMatchUpdate: handleMatchInvalidate,
+    onLineupUpdate: handleLineupInvalidate,
+    onGamesUpdate: handleGamesInvalidate,
     gameUpdateOptions: {
       match,
       userTeamId,

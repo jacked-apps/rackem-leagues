@@ -182,10 +182,11 @@ export function useMatchRealtime(
           onGamesUpdateRef.current?.();
 
           // Handle confirmation queue logic if options provided (scoring page).
-          // Read through the ref so the option bag's per-render identity does
-          // not invalidate the subscription effect.
-          const liveOptions = gameUpdateOptionsRef.current;
-          if (liveOptions && (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') && payload.new) {
+          // Read from the ref so we always see the latest values without
+          // putting gameUpdateOptions in the subscription useEffect's dep
+          // array — see the ref-pattern note above for why.
+          const currentGameUpdateOptions = gameUpdateOptionsRef.current;
+          if (currentGameUpdateOptions && (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') && payload.new) {
             const {
               match,
               userTeamId,
@@ -195,7 +196,7 @@ export function useMatchRealtime(
               editingGame = null,
               autoConfirm = false,
               confirmOpponentScore,
-            } = liveOptions;
+            } = currentGameUpdateOptions;
 
             if (!match || !userTeamId) return;
 
@@ -277,5 +278,9 @@ export function useMatchRealtime(
       console.log(`[useMatchRealtime] Cleaning up subscription for match ${matchId}`);
       supabase.removeChannel(channel);
     };
+    // gameUpdateOptions is intentionally NOT in this dep array — the
+    // ref pattern above keeps it accessible at event-fire time without
+    // causing the subscription to tear down on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matchId]);
 }

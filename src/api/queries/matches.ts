@@ -33,6 +33,54 @@ export interface WeekSchedule {
 }
 
 /**
+ * Minimal match-phase slice — id, status, started_at only.
+ *
+ * Used by the route guard (`useMatchPhase` → `MatchPhaseGuard`) to dispatch
+ * lineup vs scoring vs recovery rendering on every match-scoped page. The
+ * route guard runs on every mount and re-runs on a refetchInterval, so this
+ * function is intentionally narrow — no joins, no nested teams/venues/weeks.
+ *
+ * Separate from `getMatchById` because the route guard needs `staleTime: 0`
+ * (always-fresh server reads) while dashboard cards consuming `getMatchById`
+ * deliberately cache for 10 minutes.
+ */
+export type MatchStatus =
+  | 'scheduled'
+  | 'in_progress'
+  | 'completed'
+  | 'forfeited'
+  | 'postponed';
+
+export interface MatchPhase {
+  id: string;
+  status: MatchStatus;
+  started_at: string | null;
+}
+
+export async function getMatchPhase(matchId: string): Promise<MatchPhase> {
+  const { data, error } = await supabase
+    .from('matches')
+    .select('id, status, started_at')
+    .eq('id', matchId)
+    .single();
+
+  if (error) {
+    throw error;
+  }
+  if (!data) {
+    // .single() should reject with PGRST116 in this case; defensive
+    // belt-and-suspenders for the route guard's reason-derivation logic.
+    throw new Error('getMatchPhase: empty result for match ' + matchId);
+  }
+
+  // Note: data.status is typed as string by Supabase generated types.
+  // The runtime value is constrained by the matches.status CHECK constraint
+  // to one of the MatchStatus union members; the route guard treats unknown
+  // values as 'unknown_status' for safety.
+  return data as MatchPhase;
+}
+
+/**
  * Fetch match by ID with all details
  *
  * Gets complete match record with team, venue, and week details.
