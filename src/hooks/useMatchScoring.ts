@@ -10,7 +10,7 @@ import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { calculateTeamHandicap } from '@/utils/handicapCalculations';
 import { shouldGoldenBreakCount } from '@/utils/goldenBreakRules';
 import { getPlayerNicknameById } from '@/types/member';
-import { getTeamStats, getPlayerStats, getCompletedGamesCount, calculatePoints, TIEBREAKER_THRESHOLDS } from '@/types';
+import { getTeamStats, getPlayerStats, getCompletedGamesCount, TIEBREAKER_THRESHOLDS } from '@/types';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/api/queryKeys';
 import { useMatchWithLeagueSettings, useMatchLineups, useMatchGames } from '@/api/hooks/useMatches';

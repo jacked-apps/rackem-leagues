@@ -29,7 +29,7 @@
 import { useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getPlayerNicknameById } from '@/types/member';
-import { getTeamStats, TIEBREAKER_THRESHOLDS } from '@/types';
+import { getTeamStats } from '@/types';
 import { queryKeys } from '@/api/queryKeys';
 import { useMatchWithLeagueSettings, useMatchLineups, useMatchGames } from '@/api/hooks/useMatches';
 import { useTeamDetails } from '@/api/hooks/useTeams';
