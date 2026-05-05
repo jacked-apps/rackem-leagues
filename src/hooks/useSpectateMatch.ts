@@ -26,9 +26,11 @@
  * recomputes are gone — the team totals come from the match row.
  */
 
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { getPlayerNicknameById } from '@/types/member';
 import { getTeamStats, TIEBREAKER_THRESHOLDS } from '@/types';
+import { queryKeys } from '@/api/queryKeys';
 import { useMatchWithLeagueSettings, useMatchLineups, useMatchGames } from '@/api/hooks/useMatches';
 import { useTeamDetails } from '@/api/hooks/useTeams';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
@@ -36,6 +38,7 @@ import { useMatchRealtime } from '@/realtime/useMatchRealtime';
 import type { Player, MatchGame, HandicapThresholds } from '@/types';
 
 export function useSpectateMatch(matchId: string | null | undefined) {
+  const queryClient = useQueryClient();
   const matchQuery = useMatchWithLeagueSettings(matchId);
   const match = matchQuery.data ?? null;
 
@@ -56,10 +59,23 @@ export function useSpectateMatch(matchId: string | null | undefined) {
   const { data: leaguePrefs } = useResolvedLeaguePrefs(match?.league?.id);
 
   // Live updates so the scoreboard reflects scoring as it happens.
+  // Each handler invalidates the relevant cache entry rather than calling
+  // refetch directly. See `useMatchScoring.ts` for the rationale — same
+  // contract here.
+  const handleMatchInvalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.matches.detail(matchId || '') });
+  }, [queryClient, matchId]);
+  const handleLineupInvalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.matches.lineup(matchId || '') });
+  }, [queryClient, matchId]);
+  const handleGamesInvalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.matches.games(matchId || '') });
+  }, [queryClient, matchId]);
+
   useMatchRealtime(matchId, {
-    onMatchUpdate: matchQuery.refetch,
-    onLineupUpdate: lineupsQuery.refetch,
-    onGamesUpdate: gamesQuery.refetch,
+    onMatchUpdate: handleMatchInvalidate,
+    onLineupUpdate: handleLineupInvalidate,
+    onGamesUpdate: handleGamesInvalidate,
   });
 
   // Build a Map keyed by game_number for the same shape downstream helpers expect.

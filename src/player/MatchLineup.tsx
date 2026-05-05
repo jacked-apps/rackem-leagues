@@ -8,8 +8,10 @@
  * Flow: Team Schedule → Score Match → Lineup Entry
  */
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/api/queryKeys';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -73,6 +75,7 @@ const DOUBLE_DUTY_VALUE = '__double_duty__';
 export function MatchLineup() {
   const { matchId } = useParams<{ matchId: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   // TanStack Query: Get current member data
   const memberQuery = useCurrentMember();
@@ -689,12 +692,26 @@ export function MatchLineup() {
     });
   }, [handicapType, lineupsQuery.data, isHomeTeam, playerCount]);
 
-  // Unified real-time subscription for match, lineups, and games
-  // Watches all three tables throughout entire match flow (lineup + tiebreaker + scoring)
+  // Unified real-time subscription for match, lineups, and games.
+  // Watches all three tables throughout entire match flow (lineup + tiebreaker + scoring).
+  //
+  // Each handler invalidates the relevant cache entry rather than calling
+  // refetch directly. See `useMatchScoring.ts` for rationale — same contract.
+  // Wrapped in useCallback so identities stay stable across renders.
+  const handleMatchInvalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.matches.detail(matchId || '') });
+  }, [queryClient, matchId]);
+  const handleLineupInvalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.matches.lineup(matchId || '') });
+  }, [queryClient, matchId]);
+  const handleGamesInvalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.matches.games(matchId || '') });
+  }, [queryClient, matchId]);
+
   useMatchRealtime(matchId, {
-    onMatchUpdate: () => matchQuery.refetch(),
-    onLineupUpdate: () => lineupsQuery.refetch(),
-    onGamesUpdate: () => matchGamesQuery.refetch(),
+    onMatchUpdate: handleMatchInvalidate,
+    onLineupUpdate: handleLineupInvalidate,
+    onGamesUpdate: handleGamesInvalidate,
   });
 
   // 5v5 Substitute Modal State
