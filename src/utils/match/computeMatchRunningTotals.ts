@@ -80,6 +80,15 @@ export interface ComputeMatchRunningTotalsArgs {
    * registered calculator's `compute` method without inspection.
    */
   pointsCalculatorParams: Record<string, unknown>;
+  /**
+   * Match win condition (from `match.system_snapshot.win_condition` or live
+   * preferences fallback). When `'points'`, the start-credit stored on
+   * `*_to_tie` is folded into the points total (per Ed's 2026-05-04 spec:
+   * "the lower team gets +50 they start the game 50 ... these are EARNED
+   * points like a win gives you 10"). When `'games'`, start-credit is
+   * irrelevant and points are pure calculator output.
+   */
+  winCondition: 'games' | 'points';
 }
 
 export interface MatchRunningTotals {
@@ -122,6 +131,7 @@ export function computeMatchRunningTotals(
     games,
     pointsCalculator,
     pointsCalculatorParams,
+    winCondition,
   } = args;
 
   const confirmedRegular = games.filter(
@@ -192,6 +202,18 @@ export function computeMatchRunningTotals(
       { games: inputGames, teamId: awayTeamId },
       pointsCalculatorParams,
     );
+  }
+
+  // Points-mode start-credit fold-in (per Ed's 2026-05-04 spec). The credit
+  // stored on *_to_tie is treated as part of the team's points total — match
+  // begins with weaker team at +N, opponent at 0, and per-game wins add on
+  // top. Games-mode matches don't have a start-credit semantic, so this
+  // fold-in is points-mode-only.
+  if (winCondition === 'points') {
+    const homeStartCredit = homeThresholds.games_to_tie ?? 0;
+    const awayStartCredit = awayThresholds.games_to_tie ?? 0;
+    home_points_earned += homeStartCredit;
+    away_points_earned += awayStartCredit;
   }
 
   return {

@@ -110,21 +110,18 @@ export function useMatchRealtime(
     gameUpdateOptions,
   } = options;
 
-  // Use refs to avoid re-subscribing when callbacks or options change.
-  // gameUpdateOptions in particular is constructed as an inline object
-  // literal by callers (useMatchScoring), so it gets a fresh reference
-  // on every render. Without the ref pattern, the subscription useEffect
-  // below would tear down and rebuild the Supabase channel on every
-  // render — silently dropping any realtime event arriving in the
-  // 100-400ms reconnect window, including opponent score-confirmation
-  // events. The ref pattern reads the latest value at event-fire time
-  // without putting it in the effect dep array.
+  // Use refs to avoid re-subscribing when callbacks or option bag change.
+  // gameUpdateOptions is an object literal at the call site (built fresh
+  // every render), so without a ref it would trip the subscription effect's
+  // dep comparison on every parent re-render. Phase 5 introduced
+  // updateMatchRunningTotals which mutates the match row on every scored
+  // game, so a refetch-on-write loop would tear down and re-subscribe the
+  // realtime channel after every score event without this ref.
   const onMatchUpdateRef = useRef(onMatchUpdate);
   const onLineupUpdateRef = useRef(onLineupUpdate);
   const onGamesUpdateRef = useRef(onGamesUpdate);
   const gameUpdateOptionsRef = useRef(gameUpdateOptions);
 
-  // Update refs when callbacks change
   useEffect(() => {
     onMatchUpdateRef.current = onMatchUpdate;
     onLineupUpdateRef.current = onLineupUpdate;

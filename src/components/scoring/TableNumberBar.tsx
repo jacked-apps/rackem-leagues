@@ -27,6 +27,13 @@ interface TableNumberBarProps {
    *  three icon-variants render on the right side so Ed can pick which he
    *  likes. The others will be removed once selected. */
   spectatorLeagueId?: string | null;
+  /**
+   * Optional content rendered on the LEFT side of the bar (mirrors the
+   * spectator button's right-side absolute positioning). Used by the scoring
+   * page to surface a scoring-tips info button — keeps the table bar
+   * visually balanced when the right side has the spectator "Live" link.
+   */
+  leftSlot?: React.ReactNode;
 }
 
 /**
@@ -38,7 +45,7 @@ interface TableNumberBarProps {
  * - No restrictions on what number can be entered
  * - Leave empty to clear the assignment
  */
-export function TableNumberBar({ matchId, tableNumber, spectatorLeagueId }: TableNumberBarProps) {
+export function TableNumberBar({ matchId, tableNumber, spectatorLeagueId, leftSlot }: TableNumberBarProps) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -113,6 +120,14 @@ export function TableNumberBar({ matchId, tableNumber, spectatorLeagueId }: Tabl
             {tableNumber ? `Table ${tableNumber}` : 'Set Table Number'}
           </span>
         </button>
+
+        {/* Left-side slot mirrors the right-side spectator button's absolute
+            positioning so the table-number button stays centered. */}
+        {leftSlot && (
+          <div className="absolute top-0 left-0 h-full flex items-center pl-2 pointer-events-none">
+            <div className="pointer-events-auto">{leftSlot}</div>
+          </div>
+        )}
 
         {spectatorLeagueId && (
           <div className="absolute top-0 right-0 h-full flex items-center pr-2 pointer-events-none">

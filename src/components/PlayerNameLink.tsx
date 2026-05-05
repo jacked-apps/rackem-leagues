@@ -67,6 +67,14 @@ interface PlayerNameLinkProps {
   onReportUser?: (playerId: string) => void;
   onBlockUser?: (playerId: string) => void;
   customActions?: CustomAction[];
+  /**
+   * Hide the inline `PlaceholderBadge` next to the trigger name. The badge
+   * still appears inside the popover header (where surface area allows).
+   * Useful in tight contexts like the unified scoreboard's player drawer
+   * where the badge would visually dominate a small column.
+   * @default false
+   */
+  hidePlaceholderBadge?: boolean;
 }
 
 export function PlayerNameLink({
@@ -81,6 +89,7 @@ export function PlayerNameLink({
   onReportUser,
   onBlockUser,
   customActions = [],
+  hidePlaceholderBadge = false,
 }: PlayerNameLinkProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -311,8 +320,12 @@ export function PlayerNameLink({
                 scoring screen, etc. gets it for free. memberData may
                 still be loading; isPlaceholder defaults to false until
                 we know, so the badge fades in once the lookup resolves
-                rather than flashing on first render. */}
-            {isPlaceholder && <PlaceholderBadge size="sm" />}
+                rather than flashing on first render.
+                Callers in tight visual contexts (e.g. the unified
+                scoreboard's player drawer) can suppress the inline
+                badge via `hidePlaceholderBadge` — the popover header
+                still shows it where surface area is plentiful. */}
+            {isPlaceholder && !hidePlaceholderBadge && <PlaceholderBadge size="sm" />}
           </button>
         </PopoverTrigger>
         <PopoverContent className="w-56 p-0" align="start">

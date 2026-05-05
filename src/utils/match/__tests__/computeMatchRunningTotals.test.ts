@@ -84,6 +84,7 @@ describe('computeMatchRunningTotals', () => {
         games,
         pointsCalculator: 'linear_above_threshold',
         pointsCalculatorParams: {},
+        winCondition: 'games',
       });
 
       expect(result.home_games_won).toBe(2);
@@ -99,6 +100,7 @@ describe('computeMatchRunningTotals', () => {
         games: [unconfirmedGame(HOME), unconfirmedGame(AWAY)],
         pointsCalculator: 'linear_above_threshold',
         pointsCalculatorParams: {},
+        winCondition: 'games',
       });
 
       expect(result.home_games_won).toBe(0);
@@ -131,6 +133,7 @@ describe('computeMatchRunningTotals', () => {
         games,
         pointsCalculator: 'linear_above_threshold',
         pointsCalculatorParams: {},
+        winCondition: 'games',
       });
 
       expect(result.home_games_won).toBe(2);
@@ -151,6 +154,7 @@ describe('computeMatchRunningTotals', () => {
         games,
         pointsCalculator: 'linear_above_threshold',
         pointsCalculatorParams: {},
+        winCondition: 'games',
       });
 
       expect(result.home_games_won).toBe(11);
@@ -170,6 +174,7 @@ describe('computeMatchRunningTotals', () => {
         games,
         pointsCalculator: 'linear_above_threshold',
         pointsCalculatorParams: {},
+        winCondition: 'games',
       });
 
       expect(result.home_games_won).toBe(9);
@@ -197,6 +202,7 @@ describe('computeMatchRunningTotals', () => {
         games,
         pointsCalculator: 'linear_above_threshold',
         pointsCalculatorParams: {},
+        winCondition: 'games',
       });
 
       expect(result.home_games_won).toBe(9);
@@ -217,6 +223,7 @@ describe('computeMatchRunningTotals', () => {
         games,
         pointsCalculator: 'linear_above_threshold',
         pointsCalculatorParams: {},
+        winCondition: 'games',
       });
 
       expect(result.home_points_earned).toBe(-2);
@@ -240,12 +247,66 @@ describe('computeMatchRunningTotals', () => {
         games,
         pointsCalculator: 'accumulated_per_game',
         pointsCalculatorParams: {},
+        winCondition: 'games',
       });
 
       expect(result.home_games_won).toBe(2);
       expect(result.away_games_won).toBe(1);
       expect(result.home_points_earned).toBe(20 + 2);
       expect(result.away_points_earned).toBe(10 + 3 + 5);
+    });
+  });
+
+  describe('points-mode start-credit fold-in (Ed 2026-05-04 spec)', () => {
+    it('folds *_to_tie into points totals when winCondition === points', () => {
+      // Fargo 10-7 fixture: weaker (away) team has +25 start-credit on
+      // away_to_tie. Per Ed's spec, that 25 should land in
+      // away_points_earned alongside per-game contributions.
+      const games: MinimalMatchGame[] = [
+        regularGame(HOME, 3), // home wins, away loses (3 balls pocketed)
+        regularGame(AWAY, 2), // away wins, home loses (2 balls pocketed)
+      ];
+
+      const result = computeMatchRunningTotals({
+        homeTeamId: HOME,
+        awayTeamId: AWAY,
+        homeThresholds: { games_to_win: null, games_to_tie: 0, games_to_lose: null },
+        awayThresholds: { games_to_win: null, games_to_tie: 25, games_to_lose: null },
+        games,
+        pointsCalculator: 'accumulated_per_game',
+        pointsCalculatorParams: {},
+        winCondition: 'points',
+      });
+
+      expect(result.home_games_won).toBe(1);
+      expect(result.away_games_won).toBe(1);
+      // Home: 1 win × 10 + 1 loss × 2 balls + 0 start-credit = 12
+      expect(result.home_points_earned).toBe(10 + 2 + 0);
+      // Away: 1 win × 10 + 1 loss × 3 balls + 25 start-credit = 38
+      expect(result.away_points_earned).toBe(10 + 3 + 25);
+    });
+
+    it('does NOT fold start-credit when winCondition === games', () => {
+      // Same fixture but games-mode — start-credit should NOT be folded in.
+      // Used to lock down the games-mode-doesn't-add-credit invariant.
+      const games: MinimalMatchGame[] = [regularGame(HOME)];
+
+      const result = computeMatchRunningTotals({
+        homeTeamId: HOME,
+        awayTeamId: AWAY,
+        homeThresholds: HOME_THRESHOLDS,
+        awayThresholds: { games_to_win: 11, games_to_tie: 9, games_to_lose: 7 },
+        games,
+        pointsCalculator: 'linear_above_threshold',
+        pointsCalculatorParams: {},
+        winCondition: 'games',
+      });
+
+      // No start-credit added; home points = pure calculator output for
+      // 1 win against the threshold.
+      // (linear_above_threshold for 1 win, to_win=11, to_tie=9: under tie,
+      // so points = (gamesWon - games_to_tie) * 1 = -8)
+      expect(result.home_points_earned).toBe(-8);
     });
   });
 
@@ -261,6 +322,7 @@ describe('computeMatchRunningTotals', () => {
         games,
         pointsCalculator: null,
         pointsCalculatorParams: {},
+        winCondition: 'games',
       });
 
       expect(result.home_games_won).toBe(2);
@@ -283,6 +345,7 @@ describe('computeMatchRunningTotals', () => {
         games,
         pointsCalculator: 'experimental_calc_not_registered',
         pointsCalculatorParams: {},
+        winCondition: 'games',
       });
 
       expect(result.home_games_won).toBe(1);

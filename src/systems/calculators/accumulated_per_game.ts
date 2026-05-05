@@ -37,7 +37,10 @@
  */
 
 import { z } from 'zod';
-import type { PerGamePointsCalculator, ScoringPopupSideSpec } from './types';
+import type {
+  PerGamePointsCalculator,
+  ScoringPopupSideSpec,
+} from './types';
 
 // ============================================================================
 // Params
@@ -147,6 +150,14 @@ export const accumulatedPerGame: PerGamePointsCalculator<AccumulatedPerGameParam
       },
     };
   },
+
+  // No display hints — per Ed's 2026-05-04 smoke-test feedback: the per-side
+  // per-game point amounts (winner: 10, loser: 0-7) are static scoring rules
+  // every player already knows from the league setup. Surfacing them on the
+  // live scoreboard is noise. The escape-hatch interface remains available
+  // on the calculator type if a future per-game calculator with genuinely
+  // useful display info wants it. For Fargo 10-7 default config, nothing
+  // renders.
 
   compute: ({ games, teamId }, params) => {
     // Empty/missing params → use defaults silently. The wizard writes

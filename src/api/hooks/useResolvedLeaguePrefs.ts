@@ -45,6 +45,14 @@ export interface ResolvedLeaguePrefs {
    */
   mechanism?: 'extra_games' | 'start_points' | 'race_length_adjustment' | 'none';
   /**
+   * Active points calculator name (registry key — e.g.
+   * `'linear_above_threshold'`, `'accumulate_with_milestone_jumps'`,
+   * `'accumulated_per_game'`, or the `'none'` sentinel). Optional because
+   * legacy resolved-preferences views may not select it; consumers fall
+   * back to null when absent.
+   */
+  points_calculator?: string | null;
+  /**
    * Per-league dial overrides from `leagues.system_overrides` (not part of the
    * preferences cascade — stored directly on the league row). Always an object;
    * `{}` if no overrides are set. Merged over SystemModule defaults at read time.
@@ -61,7 +69,7 @@ async function fetchResolvedLeaguePrefs(leagueId: string): Promise<ResolvedLeagu
   const [viewRes, leagueRes] = await Promise.all([
     supabase
       .from('resolved_league_preferences')
-      .select('handicap_type, lineup_size, max_roster_size, game_generation, points_system, threshold_chart_id, win_condition, mechanism')
+      .select('handicap_type, lineup_size, max_roster_size, game_generation, points_system, threshold_chart_id, win_condition, mechanism, points_calculator')
       .eq('league_id', leagueId)
       .single(),
     supabase

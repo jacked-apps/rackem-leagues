@@ -230,19 +230,28 @@ export function useMatchPreparation(params: MatchPreparationParams) {
           // written the agreed start points to the weaker team's
           // *_to_tie column and stamped both *_to_lose with confirming
           // captain numbers (that's what gated us through
-          // blockedReason). prep_match only needs to fill in the race
-          // target on *_to_win; we leave to_tie / to_lose untouched.
+          // blockedReason). prep_match cleans up the negotiation pollution
+          // here: per Ed 2026-05-04, the negotiation flow uses
+          // home_to_lose / away_to_lose as scratch state for "this captain
+          // confirmed" flags (storing the captain's player number); once
+          // we're at prep_match both have confirmed and the scratch state
+          // can clear out, leaving the match row with clean threshold-trio
+          // semantics for points-mode: to_win = null (no match-level point
+          // threshold for Fargo 10-7 — match plays all games to totals),
+          // to_tie = start-credit (preserved), to_lose = null.
           //
-          // TODO: pull race target from prefs once Fargo race-to-N
-          // becomes configurable. 10 is the standard Fargo 5v5 race today.
-          const FARGO_RACE_TARGET = 10;
+          // The per-game race target (10 in standard Fargo 5v5) is a
+          // calculator config concern — it lives on points_calculator_params
+          // and feeds the scoring modal via calculator.scoringPopupFields().
+          // It does NOT belong on home_to_win / away_to_win which are match-
+          // state thresholds, not per-game config.
           thresholdPayload = {
-            home_to_win: FARGO_RACE_TARGET,
+            home_to_win: null,
             home_to_tie: matchData?.home_to_tie ?? null,
-            home_to_lose: matchData?.home_to_lose ?? null,
-            away_to_win: FARGO_RACE_TARGET,
+            home_to_lose: null,
+            away_to_win: null,
             away_to_tie: matchData?.away_to_tie ?? null,
-            away_to_lose: matchData?.away_to_lose ?? null,
+            away_to_lose: null,
           };
         } else if (isFargoGamesWon) {
           // Fargo + games-won: derive per-team games-to-win thresholds
@@ -350,6 +359,32 @@ export function useMatchPreparation(params: MatchPreparationParams) {
             // could fire a spurious second navigate() if a realtime
             // tick landed while the RPC was in flight (REL-004).
             matchPreparedRef.current = true;
+            // Seed initial running totals so the scoreboard shows correct
+            // values from match start instead of waiting for the first game
+            // to be scored. For points-mode this folds the start-credit
+            // (from *_to_tie) into home_points_earned/away_points_earned;
+            // for games-mode it writes 0/0 (the calculator's output for 0
+            // games). Per Ed 2026-05-04: "the inital points show up at the
+            // beginning ... in all the matches where points are counted."
+            //
+            // Fire-and-forget: the seed write is non-fatal (the next score
+            // event will repopulate if it fails) and serial-awaiting it
+            // here blocks navigation by ~2-4 Supabase round-trips. The
+            // realtime subscription on the scoring page picks up the seed
+            // when it lands.
+            void (async () => {
+              try {
+                const { updateMatchRunningTotals } = await import(
+                  '@/api/queries/matches'
+                );
+                await updateMatchRunningTotals(matchId);
+              } catch (seedErr) {
+                logger.warn('Failed to seed initial running totals at prep_match', {
+                  matchId,
+                  error: seedErr instanceof Error ? seedErr.message : String(seedErr),
+                });
+              }
+            })();
             setIsPreparingMatch?.(false);
             // Prime the phase cache so MatchPhaseGuard reads the fresh
             // 'in_progress' status when the scoring page mounts. Without
