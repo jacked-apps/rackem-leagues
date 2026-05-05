@@ -44,13 +44,32 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { queryKeys } from '@/api/queryKeys';
 import { useMatchPhase } from '@/api/hooks/useMatchPhase';
+import {
+  MatchTransitionRecovery,
+  type RecoveryReason,
+} from '@/components/match/MatchTransitionRecovery';
 
 interface MatchPhaseGuardProps {
   children: ReactNode;
+}
+
+/**
+ * Maps a Supabase/network error onto a `RecoveryReason` so the recovery
+ * surface can show actionable copy instead of a generic "something
+ * failed". Defaults to `'connection'` because that's the most common
+ * cause of an unexpected error in this surface.
+ */
+function deriveReasonFromError(error: unknown): RecoveryReason {
+  if (!error || typeof error !== 'object') return 'connection';
+  const e = error as { code?: string; status?: number; message?: string };
+  if (e.code === 'PGRST116') return 'match_not_found';
+  if (e.status === 401 || e.code === '401' || /jwt expired/i.test(e.message || '')) {
+    return 'auth_expired';
+  }
+  if (typeof e.status === 'number' && e.status >= 500) return 'server_error';
+  return 'connection';
 }
 
 /**
@@ -63,8 +82,13 @@ export function MatchPhaseGuard({ children }: MatchPhaseGuardProps) {
   const location = useLocation();
   const queryClient = useQueryClient();
 
-  // Bump on Try Again — compound key forces a full subtree remount.
+  // Two-level recovery state.
+  //   - recoveryEpoch: bumped by Hard Reset → compound key change → full
+  //     subtree remount. Reload-equivalent.
+  //   - softRetryFailed: flips true after a soft refetch comes back still
+  //     errored. Unlocks the Hard Reset button on the recovery surface.
   const [recoveryEpoch, setRecoveryEpoch] = useState(0);
+  const [softRetryFailed, setSoftRetryFailed] = useState(false);
 
   const phase = useMatchPhase(matchId);
 
@@ -94,13 +118,36 @@ export function MatchPhaseGuard({ children }: MatchPhaseGuardProps) {
     }
   }, [phase.data, location.pathname, matchId, navigate]);
 
-  const handleTryAgain = useCallback(() => {
+  // Soft retry: refetch the status query without remounting the
+  // subtree. The wrapped lineup/scoring body keeps its in-progress
+  // form state. If the refetch resolves cleanly, the recovery surface
+  // unmounts naturally because phase.isError flips to false. If the
+  // refetch fails again, softRetryFailed flips and the Hard Reset
+  // button appears.
+  const handleTryAgainSoft = useCallback(async () => {
+    const result = await phase.refetch();
+    if (result.isError) {
+      setSoftRetryFailed(true);
+    } else {
+      setSoftRetryFailed(false);
+    }
+  }, [phase]);
+
+  // Hard reset: bump the compound key. Children remount from scratch.
+  // Reset softRetryFailed so the next failure cycle starts fresh.
+  const handleTryAgainHard = useCallback(() => {
+    setSoftRetryFailed(false);
     setRecoveryEpoch((e) => e + 1);
   }, []);
 
-  const handleBackToSchedule = useCallback(() => {
-    navigate('/dashboard');
-  }, [navigate]);
+  // When phase transitions back to a non-error state on its own (e.g.
+  // realtime tick resolved the issue mid-recovery), reset the
+  // softRetryFailed latch so the next error cycle starts clean.
+  useEffect(() => {
+    if (!phase.isError && softRetryFailed) {
+      setSoftRetryFailed(false);
+    }
+  }, [phase.isError, softRetryFailed]);
 
   // Loading: fullscreen spinner, no children visible.
   if (phase.isPending) {
@@ -114,29 +161,21 @@ export function MatchPhaseGuard({ children }: MatchPhaseGuardProps) {
     );
   }
 
-  // Error: fullscreen recovery surface (inline placeholder; Unit 4
-  // swaps in `MatchTransitionRecovery` with reason-aware copy and the
-  // soft/hard Try Again split).
-  if (phase.isError) {
+  // Error: fullscreen recovery surface with reason-aware copy and the
+  // two-level Try Again contract.
+  if (phase.isError && matchId) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-muted p-4">
-        <Card className="max-w-md w-full">
-          <CardContent className="pt-6 text-center space-y-4">
-            <p className="text-lg font-semibold">Match Setup Hit a Hiccup</p>
-            <p className="text-sm text-muted-foreground">
-              We couldn't reach the server. Tap Try Again when your signal's back.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-2 justify-center pt-2">
-              <Button variant="default" loadingText="none" onClick={handleTryAgain}>
-                Try Again
-              </Button>
-              <Button variant="outline" onClick={handleBackToSchedule}>
-                Back to Schedule
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <MatchTransitionRecovery
+        matchId={matchId}
+        userTeamId={null}
+        reason={deriveReasonFromError(phase.error)}
+        softRetryFailed={softRetryFailed}
+        onTryAgainSoft={handleTryAgainSoft}
+        onTryAgainHard={handleTryAgainHard}
+        availableActions={{
+          canBackToLineup: !location.pathname.endsWith('/lineup'),
+        }}
+      />
     );
   }
 
