@@ -9,7 +9,7 @@
  */
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/api/queryKeys';
 import { MatchPhaseGuard } from '@/components/match/MatchPhaseGuard';
@@ -74,6 +74,7 @@ const DOUBLE_DUTY_VALUE = '__double_duty__';
 function MatchLineupBody() {
   const { matchId } = useParams<{ matchId: string }>();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   // TanStack Query: Get current member data
   const memberQuery = useCurrentMember();
@@ -100,6 +101,21 @@ function MatchLineupBody() {
     matchData?.away_team_id
   );
   const userTeamData = userTeamQuery.data;
+
+  // Boot non-team-members back to /my-teams. If a player gets removed
+  // from a team's roster mid-match-night and then taps a match link
+  // from a stale schedule view, we don't want to leave them on a
+  // generic error card with a Go-Back button that could land them
+  // back on /lineup → status='in_progress' → /score → error → loop.
+  // /my-teams is the safe destination because it doesn't presume a
+  // teamId; /team/:id/schedule would just throw the same membership
+  // error from another angle.
+  useEffect(() => {
+    const msg = userTeamQuery.error?.message ?? '';
+    if (msg.includes('not on either team')) {
+      navigate('/my-teams', { replace: true });
+    }
+  }, [userTeamQuery.error, navigate]);
 
   // Derive team info early for next query
   const userTeamId = userTeamData?.team_id;

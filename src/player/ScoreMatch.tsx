@@ -114,6 +114,19 @@ function ScoreMatchBody() {
     },
   });
 
+  // Boot non-team-members back to /my-teams. Symmetric to the same
+  // check on the lineup body — a player who got removed from a team
+  // and lands on /score (typically by following the lineup → score
+  // status redirect) shouldn't see the generic error card. /my-teams
+  // is the safe destination because it doesn't presume a teamId;
+  // /team/:id/schedule would just throw the same membership error
+  // from another angle.
+  useEffect(() => {
+    if (error?.includes('not on either team')) {
+      navigate('/my-teams', { replace: true });
+    }
+  }, [error, navigate]);
+
   // Get user's team roster from the hook (already fetched for both teams)
   const teamRoster = isHomeTeam ? homeTeamRoster : awayTeamRoster;
 
