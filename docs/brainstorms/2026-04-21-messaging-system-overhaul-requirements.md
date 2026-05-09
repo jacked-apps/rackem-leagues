@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-21
 **Branch:** `messaging-system-overhaul`
-**Status:** Requirements captured, reviewed (7 personas, 1 refinement pass), ready for planning
+**Status:** Requirements captured, reviewed (7 personas, 1 refinement pass). Refined 2026-05-09 — quiet-hours bypass for live matches, notification pause picker, image-attachment contradiction removed. Ready for planning.
 
 ---
 
@@ -105,7 +105,7 @@ The earlier "50% of coordination happens in Rackem" goal is replaced — the app
 | D10 | **Match-night chats include full rosters of both teams.** | Captains alone may be absent or on vacation; scorekeepers aren't identified in data. Full rosters ensures someone relevant is always in the chat. |
 | D11 | **Match-night chat captains cannot mute/leave it; other players can.** | Captains are accountable for match-night coordination. Other players can opt out per-match if they want to. |
 | D12 | **Match-night chats are created at 00:00 local league time on match day**, not when the match is originally scheduled (which can be weeks ahead during season schedule generation). | Avoids dozens of empty chats sitting in everyone's inbox for weeks. Creation is silent (no notification). |
-| D13 | **Match-night chats archive 2 hours after match completion** (score submitted). Forfeits archive 2hr after forfeit recorded. Cancellations archive immediately with a system message. | Gives room for "good game" exchanges and dispute resolution without lingering indefinitely. |
+| D13 | **Match-night chats archive 1 hour after match completion** (score submitted). Forfeits archive 1hr after forfeit recorded. Cancellations archive immediately with a system message. | Gives a brief window for "good game" exchanges and quick dispute clarification without lingering. *(Revised 2026-05-09 from original 2-hour window — user feedback that 2hr was longer than needed.)* |
 | D14 | **Global per-user opt-out: "Don't include me in match chats."** If enabled, the user is never added to any match-night chat for their team. | Lets users beg off the whole match-chat experience. Captains can opt out too, with the caveat that they then have no match-night coordination surface (flagged in settings UI). |
 | D15 | **All four feature themes in scope** (social polish, match-context, notification sophistication, moderation completion). Phase depth, not features. Watch for diminishing returns. | User directive. |
 | D16 | **Risk-first phasing.** Validate the hypothesis "captains will use Rackem chat over SMS" at Phase 3 (match-night chats) before investing in Phase 4/5 polish. A measurable gate separates Phase 3 from Phase 4. | Four reviewers independently flagged that shipping polish before the hypothesis is tested is inverted risk. User invited expertise-based phasing decision. |
@@ -118,6 +118,9 @@ The earlier "50% of coordination happens in Rackem" goal is replaced — the app
 | D23 | **Past-member representation uses `conversation_participants.left_at` timestamp** (column already exists). RLS allows SELECT on messages where `inserted_at <= left_at`; INSERT is blocked. UI shows a "Past member — read only" banner replacing the composer. | Simplest schema change (none), explicit time-boundary for RLS, reuses existing column. |
 | D24 | **Captain lifecycle:** captaincy transfer sets old captain's `left_at` (becomes past member), adds new captain as active with cannot-leave flag. Captain account deletion preserves participant row with `left_at`. Captain suspension follows the same flow. | Prevents ghost members and orphan locks. Aligns with D23 past-member model. |
 | D25 | **Multi-team player support:** one `conversation_participants` row per `(conversation_id, user_id)` — naturally dedups. A player on teams A and B has two team-chat memberships; if both play the same night they have two match-chat memberships. Accepted as design. | Simpler than cross-team chat dedup logic. Each chat is its own context. |
+| D26 | **Quiet-hours bypass for live matches** *(added 2026-05-09)* — for any user whose team has an active match, push notifications from their match chat, team chat, and captain chat bypass the hardcoded 10pm–7am quiet hours. Other users are unaffected. Per-user, scoped to that user's own team's match. | Pool league nights regularly run past 10pm — sometimes past midnight. Suppressing match-coordination pings during the actual match defeats messaging's whole purpose. Per-user scoping ensures captains whose own team isn't playing tonight don't get pinged for other captains' matches (cross-cutting needs are covered by `@mention`, which always bypasses). |
+| D27 | **Bypass cutoff timing** *(added 2026-05-09)* — match chat: bypass active until the chat archives (1hr post-match per revised D13). Team chat & captain chat: bypass ends the moment the user's match completes (no grace period; chats stay alive but resume normal quiet-hours behavior immediately). | Match chat is the active match-coordination surface and stays warm for 1hr post-match for cleanup chatter; team and captain chats are season-long surfaces and should snap back to normal as soon as the match is done so users aren't woken at midnight by routine team chatter. |
+| D28 | **Notification pause feature** *(added 2026-05-09)* — extends the existing global "all notifications off" toggle into a duration picker: 1 hour, until tomorrow morning (7am local), until a chosen date, or until manually re-enabled. Pause overrides everything: per-chat tri-state, mentions, and live-match bypass. | Covers vacation mode, "I'm not at the pool hall tonight," and other temporary opt-outs without forcing per-chat micromanagement. Small UI surface on top of the toggle that already exists in spec. |
 
 ---
 
@@ -178,7 +181,10 @@ The earlier "50% of coordination happens in Rackem" goal is replaced — the app
   - Default behavior: first message after 15+ minutes of inactivity → notify. Subsequent messages within 15 min → silent. Reset after 15 min idle.
   - Exception: `@mention` or `@staff` tag always notifies (respects global off).
   - Direct messages (1-on-1) always notify (no rate limit).
-- Quiet hours (global, per-user, default 10pm–7am local): no push notifications during window; in-app tray still accumulates. Mentions bypass.
+- Quiet hours (global, default 10pm–7am local, hardcoded for v1 per D17): no push notifications during window; in-app tray still accumulates. Bypass rules:
+  - `@mentions` always bypass (existing behavior).
+  - **Live-match bypass (D26/D27):** if the user's own team has an active match (chat-creation through chat-archive window), push from their match chat, team chat, and captain chat bypass quiet hours. Cutoff: match chat = chat-archive (1hr post-match per D13); team/captain chat = match completion.
+  - **Notification pause (D28):** when the user has paused notifications via the global toggle's duration picker (1hr / until 7am / until chosen date / until manually re-enabled), pause overrides *everything* — per-chat settings, mentions, and live-match bypass.
 
 ### 5.2 Onboarding prompt (first Messages open)
 
@@ -204,7 +210,7 @@ Both are immediately editable in Messages settings. If dismissed without choosin
 - Creation trigger runs at midnight local league time on match day — see §5.5 open questions for scheduler mechanism (pg_cron vs Supabase scheduled Edge Function).
 - Members: full rosters of both teams (respecting D14 global opt-out).
 - **Captains are force-members and cannot mute or leave the match chat.** Other players may mute and/or leave per-match (per D11).
-- Archive 2 hours post match completion / forfeit / immediately on cancellation. For matches that never reach a completion/forfeit state (stuck in dispute, never scored): archive at end-of-match-day + 24 hours via the same scheduler that handles creation.
+- Archive 1 hour post match completion / forfeit / immediately on cancellation (per revised D13). For matches that never reach a completion/forfeit state (stuck in dispute, never scored): archive at end-of-match-day + 24 hours via the same scheduler that handles creation.
 - **Match rich cards in chat** — when a match is referenced in any chat (e.g., captains chat), a card renders showing the two teams, date, venue, and tap-through to match page. Implemented as a content-type alongside text. Nice-to-have; defer if scope pressure.
 
 ### 5.5 Staff oversight (decided: transparent observer model)
@@ -284,7 +290,6 @@ Revisit if user wants a different feel (e.g., more game-like, or more utilitaria
     - If moved to the *same day* (e.g., weather → different venue) → reuse existing chat, add system message noting the change.
     - If moved to a *day that is already past or today* → create chat immediately on reschedule entry.
     - If the old chat was already archived when the reschedule happens → do not resurrect; create fresh.
-11. Images are the only attachment type initially; no video, audio, or files. (In-scope status is a **live contradiction** — see findings §R.)
 
 ---
 
@@ -340,9 +345,9 @@ Each phase is independently shippable — if we stop after any phase, users stil
 
 **Client controls:**
 - Per-chat tri-state UI (Notify / Mentions only / Mute) — wires up the Phase 1 column.
-- Global "all notifications off" toggle.
+- Global "all notifications off" toggle, **with duration picker (D28):** 1hr / until 7am tomorrow / until chosen date / until manually re-enabled. New column on `members`: `notifications_paused_until TIMESTAMPTZ NULL`. Pause overrides everything (mentions and live-match bypass included).
 - Rate-limit (15-min idle window) — per `(conversation, user)` `last_notified_at` state, server-side.
-- Quiet hours hardcoded 10pm–7am local (D17) — no UI.
+- Quiet hours hardcoded 10pm–7am local (D17) — no UI. At this phase, only `@mention` bypass exists; the live-match bypass (D26/D27) ships in Phase 3 once match chats exist.
 - `@mention` notification-bypass routing (no autocomplete UI yet — that's Phase 4; but the notification fan-out logic that distinguishes "routine message" from "mention" must exist now because Phase 3 needs it).
 - Permission-denial UX: detect denied / dismissed / unsupported / iOS-needs-PWA states; in-app banner with appropriate next-step copy.
 - Push onboarding prompt fires on first message received while app not focused, or at season start for newly-active users.
@@ -360,7 +365,8 @@ Each phase is independently shippable — if we stop after any phase, users stil
 - Match-night chat creation at 00:00 venue-local on match day.
 - Full rosters of both teams (D10), captain force-membership (D11), global opt-out (D14 with promotion-time warning per §5.6).
 - Edge cases: nil venue falls back to org timezone; empty roster after opt-outs still creates chat with remaining members; reschedule lifecycle per §7(10); forfeit / no-completion archive rules per §5.4.
-- Archive 2hr post-completion; 24hr end-of-day for never-scored.
+- Archive 1hr post-completion (per revised D13); 24hr end-of-day for never-scored.
+- **Live-match quiet-hours bypass (D26/D27):** dispatch worker checks at notify time whether the recipient's own team has a live match (= an unarchived `match_chat` exists for a match they're rostered on). If yes, push from match/team/captain chats bypasses quiet hours. Cutoff: match chat = chat-archive (1hr post-match); team/captain = match completion. Notification pause (D28) still overrides the bypass.
 - System-message banners for lifecycle events (created, rescheduled, archived).
 - "Share match to SMS" button on match detail page — generates deep-link back to Rackem match chat. Treats SMS as a *capture tool for dragging coordination back into Rackem*, not a competitor.
 - Captain season-start onboarding nudge: "You have a team chat — post your first message."
@@ -408,6 +414,8 @@ Explicit cuts so planning doesn't silently resurrect them:
 - `@staff` scoped group tag (D18)
 - Image / media attachments (D19)
 - User-tunable quiet hours UI (D17)
+- User-tunable live-match bypass duration (e.g., "extend my bypass 30 min after match end" or "shorten it") — defer; default rule per D26/D27 covers the common case
+- "Always notify, ignore quiet hours" mode — defer; rare use case, easy add later
 - Email notifications, digest or transactional (original non-goal)
 - Voice/video calling (original non-goal)
 - Org-enforced profanity filter (original non-goal)
