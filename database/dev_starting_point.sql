@@ -35,7 +35,7 @@
 --               (Florida-spread pool to fill rosters / test player search).
 --   [x] Step 5: League 1 — "3v3 old school" (8-Ball Tuesday) starting
 --               today. 16-week season + break + playoffs, 4 teams (each
---               rostered captain + 4 placeholders = 5), 34 matches.
+--               rostered captain + 6 placeholders = 7), 34 matches.
 --   [x] Step 6: League 2 — "Standard 5v5" (8-Ball Wednesday) starting
 --               today+1. Same shape as League 1 but lineup_size=5,
 --               handicap_type=percentage, points_system=bca_tiered,
@@ -584,9 +584,12 @@ BEGIN
   );
 
   -- Modular preference fields (empty row was auto-created by trigger).
+  -- max_roster_size = 8 leaves headroom over the seeded 7-player rosters
+  -- (1 captain + 6 placeholders) so the LO can add subs in tests without
+  -- hitting the cap. 8 is the same cap leagues 2/3 use.
   UPDATE preferences
     SET lineup_size = 3,
-        max_roster_size = 5,
+        max_roster_size = 8,
         game_generation = 'double_round_robin',
         handicap_type = 'points',
         points_system = 'differential'
@@ -682,8 +685,11 @@ BEGIN
 
   ----------------------------------------------------------------------------
   -- Roster filling: 4 placeholders per team (16 total) from the 130-pool.
-  -- Pick the first 16 by stable email ordering so re-runs assign the
-  -- same placeholders every time.
+  -- Pick the first 24 by stable email ordering (4 teams × 6 placeholders)
+  -- so re-runs assign the same placeholders every time. The 7-player
+  -- roster (captain + 6) gives enough alternates to work around random
+  -- nickname collisions in the placeholder pool — 4-player rosters
+  -- starved 3v3 lineups whenever two roster members shared a nickname.
   ----------------------------------------------------------------------------
 
   SELECT array_agg(id ORDER BY email) INTO v_placeholders
@@ -691,11 +697,11 @@ BEGIN
     SELECT id, email FROM members
     WHERE email LIKE '%@example.com'
     ORDER BY email
-    LIMIT 16
+    LIMIT 24
   ) p;
 
   FOR v_i IN 1..4 LOOP
-    FOR v_j IN 1..4 LOOP
+    FOR v_j IN 1..6 LOOP
       INSERT INTO team_players (team_id, season_id, member_id, is_captain, status)
       VALUES (v_team_ids[v_i], v_season_id, v_placeholders[v_pidx], FALSE, 'active');
       v_pidx := v_pidx + 1;
@@ -825,7 +831,7 @@ DECLARE
   v_team_formats       TEXT[] := ARRAY['8_man', '5_man'];
   v_handicap_types     TEXT[] := ARRAY['percentage', 'fargo'];
   v_points_systems     TEXT[] := ARRAY['bca_tiered', 'differential'];
-  v_placeholder_offsets INT[] := ARRAY[16, 32];          -- skip placeholders used by League 1 / 1+2
+  v_placeholder_offsets INT[] := ARRAY[24, 48];          -- skip placeholders used by League 1 / 1+2 (24 per league: 4 teams × 6 placeholders)
 
   -- Per-iteration locals
   v_l           INT;
@@ -953,11 +959,12 @@ BEGIN
     END LOOP;
 
     --------------------------------------------------------------------------
-    -- Roster filling: 16 placeholders for this league, drawn from a
-    -- distinct slice of the placeholder pool so no member is double-
-    -- rostered across leagues.
-    --   League 2: placeholders #17–32 (OFFSET 16, LIMIT 16)
-    --   League 3: placeholders #33–48 (OFFSET 32, LIMIT 16)
+    -- Roster filling: 24 placeholders per league (4 teams × 6 placeholders),
+    -- drawn from a distinct slice of the placeholder pool so no member is
+    -- double-rostered across leagues. The 7-player roster (1 captain + 6
+    -- placeholders) leaves alternates for nickname-collision workarounds.
+    --   League 2: placeholders #25–48 (OFFSET 24, LIMIT 24)
+    --   League 3: placeholders #49–72 (OFFSET 48, LIMIT 24)
     --------------------------------------------------------------------------
 
     SELECT array_agg(id ORDER BY email) INTO v_placeholders
@@ -966,11 +973,11 @@ BEGIN
       WHERE email LIKE '%@example.com'
       ORDER BY email
       OFFSET v_placeholder_offsets[v_l]
-      LIMIT 16
+      LIMIT 24
     ) p;
 
     FOR v_i IN 1..4 LOOP
-      FOR v_j IN 1..4 LOOP
+      FOR v_j IN 1..6 LOOP
         INSERT INTO team_players (team_id, season_id, member_id, is_captain, status)
         VALUES (v_team_ids[v_i], v_season_ids[v_l], v_placeholders[v_pidx], FALSE, 'active');
         v_pidx := v_pidx + 1;
@@ -1064,10 +1071,10 @@ BEGIN
   RAISE NOTICE '    L1 "3v3 old school"     — Tuesday   — starts %', CURRENT_DATE;
   RAISE NOTICE '    L2 "Standard 5v5"       — Wednesday — starts %', CURRENT_DATE + 1;
   RAISE NOTICE '    L3 "Fargo 5v5"          — Thursday  — starts %', CURRENT_DATE + 2;
-  RAISE NOTICE '  Each league: 16 regular weeks + break + playoffs, 4 teams, captain+4 roster';
+  RAISE NOTICE '  Each league: 16 regular weeks + break + playoffs, 4 teams, captain+6 roster';
   RAISE NOTICE '  % teams across the 3 leagues', v_team_count;
   RAISE NOTICE '  % matches scheduled (auto match_lineups via trigger)', v_match_count;
-  RAISE NOTICE '  % placeholder members in the pool (48 rostered, rest free for tests)', v_placeholder_count;
+  RAISE NOTICE '  % placeholder members in the pool (72 rostered, rest free for tests)', v_placeholder_count;
   RAISE NOTICE '';
   RAISE NOTICE 'Sign in at /login as dev@test.com to land on the LO dashboard.';
 END $$;
