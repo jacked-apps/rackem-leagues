@@ -283,6 +283,61 @@ export type Database = {
         }
         Relationships: []
       }
+      game_events: {
+        Row: {
+          attributed_player_id: string | null
+          created_at: string
+          event_name: string
+          game_id: string
+          id: string
+          match_id: string
+          updated_at: string
+          value: number | null
+        }
+        Insert: {
+          attributed_player_id?: string | null
+          created_at?: string
+          event_name: string
+          game_id: string
+          id?: string
+          match_id: string
+          updated_at?: string
+          value?: number | null
+        }
+        Update: {
+          attributed_player_id?: string | null
+          created_at?: string
+          event_name?: string
+          game_id?: string
+          id?: string
+          match_id?: string
+          updated_at?: string
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_events_attributed_player_id_fkey"
+            columns: ["attributed_player_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_events_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "match_games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_events_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       handicap_chart_3vs3: {
         Row: {
           games_to_lose: number
@@ -574,7 +629,6 @@ export type Database = {
           away_action: string
           away_player_id: string | null
           away_position: number | null
-          break_and_run: boolean
           break_fouled: boolean
           confirmed_at: string | null
           confirmed_by_away: string | null
@@ -582,7 +636,6 @@ export type Database = {
           created_at: string
           game_number: number
           game_type: string
-          golden_break: boolean
           home_action: string
           home_player_id: string | null
           home_position: number | null
@@ -590,10 +643,8 @@ export type Database = {
           is_tiebreaker: boolean
           loser_value: number | null
           match_id: string
-          runout: boolean
           updated_at: string
           vacate_requested_by: string | null
-          win_by_forfeit: boolean
           winner_player_id: string | null
           winner_team_id: string | null
           winner_value: number | null
@@ -602,7 +653,6 @@ export type Database = {
           away_action: string
           away_player_id?: string | null
           away_position?: number | null
-          break_and_run?: boolean
           break_fouled?: boolean
           confirmed_at?: string | null
           confirmed_by_away?: string | null
@@ -610,7 +660,6 @@ export type Database = {
           created_at?: string
           game_number: number
           game_type: string
-          golden_break?: boolean
           home_action: string
           home_player_id?: string | null
           home_position?: number | null
@@ -618,10 +667,8 @@ export type Database = {
           is_tiebreaker?: boolean
           loser_value?: number | null
           match_id: string
-          runout?: boolean
           updated_at?: string
           vacate_requested_by?: string | null
-          win_by_forfeit?: boolean
           winner_player_id?: string | null
           winner_team_id?: string | null
           winner_value?: number | null
@@ -630,7 +677,6 @@ export type Database = {
           away_action?: string
           away_player_id?: string | null
           away_position?: number | null
-          break_and_run?: boolean
           break_fouled?: boolean
           confirmed_at?: string | null
           confirmed_by_away?: string | null
@@ -638,7 +684,6 @@ export type Database = {
           created_at?: string
           game_number?: number
           game_type?: string
-          golden_break?: boolean
           home_action?: string
           home_player_id?: string | null
           home_position?: number | null
@@ -646,10 +691,8 @@ export type Database = {
           is_tiebreaker?: boolean
           loser_value?: number | null
           match_id?: string
-          runout?: boolean
           updated_at?: string
           vacate_requested_by?: string | null
-          win_by_forfeit?: boolean
           winner_player_id?: string | null
           winner_team_id?: string | null
           winner_value?: number | null
@@ -1505,7 +1548,7 @@ export type Database = {
           max_roster_size: number | null
           mechanism: string | null
           pairing_format: string | null
-          points_calculator: string | null
+          points_calculator: string
           points_calculator_params: Json
           points_system: string | null
           profanity_filter_enabled: boolean | null
@@ -1533,7 +1576,7 @@ export type Database = {
           max_roster_size?: number | null
           mechanism?: string | null
           pairing_format?: string | null
-          points_calculator?: string | null
+          points_calculator?: string
           points_calculator_params?: Json
           points_system?: string | null
           profanity_filter_enabled?: boolean | null
@@ -1561,7 +1604,7 @@ export type Database = {
           max_roster_size?: number | null
           mechanism?: string | null
           pairing_format?: string | null
-          points_calculator?: string | null
+          points_calculator?: string
           points_calculator_params?: Json
           points_system?: string | null
           profanity_filter_enabled?: boolean | null
@@ -1942,7 +1985,7 @@ export type Database = {
       }
       teams: {
         Row: {
-          captain_id: string
+          captain_id: string | null
           created_at: string | null
           games_lost: number | null
           games_won: number | null
@@ -1960,7 +2003,7 @@ export type Database = {
           wins: number | null
         }
         Insert: {
-          captain_id: string
+          captain_id?: string | null
           created_at?: string | null
           games_lost?: number | null
           games_won?: number | null
@@ -1978,7 +2021,7 @@ export type Database = {
           wins?: number | null
         }
         Update: {
-          captain_id?: string
+          captain_id?: string | null
           created_at?: string | null
           games_lost?: number | null
           games_won?: number | null
@@ -2470,6 +2513,10 @@ export type Database = {
       assign_tables_for_week: {
         Args: { p_season_week_id: string }
         Returns: undefined
+      }
+      can_write_game_event: {
+        Args: { target_game_id: string }
+        Returns: boolean
       }
       can_write_house_rule_org: {
         Args: { target_org_id: string }
