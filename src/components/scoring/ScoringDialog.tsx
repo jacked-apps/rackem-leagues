@@ -7,15 +7,24 @@
  * achievement buttons, and calculator-declared per-game inputs all render
  * in one Submit action.
  *
+ * Field order (top to bottom): achievements → state modifiers →
+ * per-side scoring inputs (counter, just above Save). The counter sits
+ * last because it's the deliberate input the scorer lands on after
+ * scanning past the achievement checkboxes.
+ *
  * Field rules:
- * - Break-fault toggle: always visible. When true, the actual breaker flips
- *   to the scheduled racker — so BR/GB and runout swap which side is
- *   eligible.
- * - Win-by-forfeit toggle: always visible.
- * - BR (Break & Run): visible when winner = actual breaker.
- * - GB (Golden Break / 8-on-the-break): visible when winner = actual breaker
- *   AND the league has `golden_break_counts_as_win = true`.
- * - Runout: visible when winner = non-breaker.
+ * - Achievements (compact inline checkboxes, role-conditional):
+ *   - BR (Break & Run): visible when winner = actual breaker.
+ *   - GB (Golden Break / 8-on-the-break): visible when winner = actual
+ *     breaker AND the league has `golden_break_counts_as_win = true`.
+ *     Mutually exclusive with BR — checking one auto-unchecks the other.
+ *   - Runout: visible when winner = non-breaker.
+ * - State modifiers (Switches, always visible):
+ *   - Break-fault toggle: when true, the actual breaker flips to the
+ *     scheduled racker — so BR/GB and runout swap which side is eligible.
+ *   - Win-by-forfeit: when toggled on, any checked achievement is
+ *     auto-cleared (cascade announced via aria-live) and an attribution
+ *     line ("Recorded as [Loser Name]") renders below the switch.
  * - Per-side scoring inputs: driven by the active calculator's
  *   `scoringPopupFields()` spec (see `src/systems/calculators/types.ts`).
  *   When the spec declares `kind: 'counter'` for a side, an AdaptiveCounter
@@ -36,8 +45,8 @@
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Dialog,
   DialogContent,
@@ -49,14 +58,6 @@ import {
 import { getCalculator } from '@/systems/calculators';
 import { resolveCalculatorParams } from '@/systems/calculators/resolveParams';
 import { AdaptiveCounter } from './AdaptiveCounter';
-
-/**
- * Discriminator for the achievement RadioGroup. 'none' is the explicit
- * "no achievement" option that preserves the deselect-by-tap path the
- * prior checkbox UX supported (radio buttons can't be deselected by
- * re-tapping the same option natively).
- */
-type AchievementRadioValue = 'none' | 'break_and_run' | 'golden_break' | 'runout';
 
 interface ScoringDialogProps {
   /** Whether dialog is open */
@@ -248,47 +249,47 @@ export function ScoringDialog({
   };
 
   // Aria-live announcement region. Updated when an auto-clear cascade
-  // happens (currently only Forfeit clears a selected achievement). Locked
-  // copy template per Branch A plan: "[Achievement Name] cleared because
-  // forfeit was selected."
+  // happens (currently only Forfeit clears a checked achievement). Locked
+  // copy template: "[Achievement Name] cleared because forfeit was selected."
   const [liveAnnouncement, setLiveAnnouncement] = useState('');
 
-  // Derive the achievement RadioGroup's current value from the existing
-  // boolean state. This keeps the source-of-truth on the per-event booleans
-  // (so existing callers that pass them as props don't need to change) while
-  // letting the RadioGroup render with proper screen-reader semantics.
-  const achievementValue: AchievementRadioValue = breakAndRun
-    ? 'break_and_run'
-    : goldenBreak
-      ? 'golden_break'
-      : runout
-        ? 'runout'
-        : 'none';
-
-  // Map a RadioGroup value back to the per-event boolean callbacks.
-  // Setting any non-'none' value clears the others and sets the chosen one.
-  const handleAchievementChange = (value: string) => {
-    const next = value as AchievementRadioValue;
-    onBreakAndRunChange(next === 'break_and_run');
-    onGoldenBreakChange(next === 'golden_break');
-    onRunoutChange?.(next === 'runout');
+  // Mutual-exclusion handlers for the achievement checkboxes. B&R and Golden
+  // Break are mutually exclusive on the breaker side; checking one auto-
+  // unchecks the other. Runout (non-breaker side) doesn't conflict with
+  // either since it only renders when winner is non-breaker.
+  const handleBreakAndRunCheck = (checked: boolean) => {
+    onBreakAndRunChange(checked);
+    if (checked && goldenBreak) onGoldenBreakChange(false);
+  };
+  const handleGoldenBreakCheck = (checked: boolean) => {
+    onGoldenBreakChange(checked);
+    if (checked && breakAndRun) onBreakAndRunChange(false);
   };
 
-  // Wraps the forfeit Switch's onCheckedChange. When forfeit toggles ON
-  // and an achievement was selected, clear it AND announce the cascade.
-  // (Forfeit OFF does NOT restore the prior selection — once cleared, it
-  // stays cleared. Per the Branch A plan.)
+  // Wraps the forfeit Switch's onCheckedChange. When forfeit toggles ON and
+  // any achievement is checked, clear it AND announce the cascade. Forfeit
+  // OFF does NOT restore the prior selection — once cleared, it stays
+  // cleared (per the Branch A plan).
   const handleWinByForfeitChange = (checked: boolean) => {
     onWinByForfeitChange?.(checked);
-    if (checked && achievementValue !== 'none') {
-      const labelMap: Record<Exclude<AchievementRadioValue, 'none'>, string> = {
-        break_and_run: 'Break & Run',
-        golden_break: getGoldenBreakLabel(),
-        runout: 'Runout',
-      };
-      const previousLabel = labelMap[achievementValue];
-      handleAchievementChange('none');
-      setLiveAnnouncement(`${previousLabel} cleared because forfeit was selected.`);
+    if (checked) {
+      const cleared: string[] = [];
+      if (breakAndRun) {
+        onBreakAndRunChange(false);
+        cleared.push('Break & Run');
+      }
+      if (goldenBreak) {
+        onGoldenBreakChange(false);
+        cleared.push(getGoldenBreakLabel());
+      }
+      if (runout) {
+        onRunoutChange?.(false);
+        cleared.push('Runout');
+      }
+      if (cleared.length > 0) {
+        const list = cleared.join(' and ');
+        setLiveAnnouncement(`${list} cleared because forfeit was selected.`);
+      }
     }
   };
 
@@ -321,88 +322,56 @@ export function ScoringDialog({
             </p>
           </div>
 
-          {/* Section 1: per-side scoring inputs. Most-tapped section for
-              calculators that declare counters — moved to the top so
-              scorers don't have to scroll past rare modifiers. The spec's
-              `kind` drives rendering: 'counter' shows an AdaptiveCounter;
-              'fixed' shows nothing (calculator handles fixed implicitly).
-              Aggregate calculators (no perSideInputs) produce nothing. */}
-          {winnerSpec?.kind === 'counter' && (
-            <AdaptiveCounter
-              min={winnerSpec.min}
-              max={winnerSpec.max}
-              label={winnerSpec.label}
-              value={winnerValue}
-              onChange={(v) => onWinnerValueChange?.(v)}
-            />
-          )}
-          {loserSpec?.kind === 'counter' && (
-            <AdaptiveCounter
-              min={loserSpec.min}
-              max={loserSpec.max}
-              label={loserSpec.label}
-              value={loserValue}
-              onChange={(v) => onLoserValueChange?.(v)}
-            />
-          )}
-          {counterValueMissing && (
-            <p className="text-xs text-muted-foreground">
-              Tap a value to continue.
-            </p>
-          )}
-
-          {/* Section 2: role-conditional achievements as a RadioGroup with
-              proper screen-reader semantics. The achievements (B&R, Golden
-              Break, Runout) are mutually exclusive — radio semantics
-              communicate that natively. Includes an explicit "None" option
-              so sighted users can deselect by tapping (radio buttons can't
-              be deselected by re-tapping the same option). */}
-          <div className="space-y-2">
-            <Label className="text-sm font-normal">Achievement</Label>
-            <RadioGroup
-              value={achievementValue}
-              onValueChange={handleAchievementChange}
-              className="space-y-2"
-            >
-              <div className="flex items-center gap-3">
-                <RadioGroupItem value="none" id="achievement-none" />
-                <Label htmlFor="achievement-none" className="font-normal">
-                  None
+          {/* Section 1: role-conditional achievements as compact inline
+              checkboxes. Most leagues see at most 2 visible at a time
+              (B&R + Golden Break for breaker-side wins, or just Runout
+              for non-breaker wins). One horizontal row, scannable, easy
+              to skip past when no achievement applies. B&R and Golden
+              Break are mutually exclusive — checking one auto-unchecks
+              the other (handlers do the work). */}
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            {winnerIsActualBreaker && (
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="breakAndRun"
+                  checked={breakAndRun}
+                  onCheckedChange={(c) => handleBreakAndRunCheck(c === true)}
+                />
+                <Label htmlFor="breakAndRun" className="text-sm font-normal cursor-pointer">
+                  Break &amp; Run
                 </Label>
               </div>
-              {winnerIsActualBreaker && (
-                <div className="flex items-center gap-3">
-                  <RadioGroupItem value="break_and_run" id="achievement-break-and-run" />
-                  <Label htmlFor="achievement-break-and-run" className="font-normal">
-                    Break &amp; Run
-                  </Label>
-                </div>
-              )}
-              {winnerIsActualBreaker && goldenBreakCountsAsWin && (
-                <div className="flex items-center gap-3">
-                  <RadioGroupItem value="golden_break" id="achievement-golden-break" />
-                  <Label htmlFor="achievement-golden-break" className="font-normal">
-                    {getGoldenBreakLabel()}
-                  </Label>
-                </div>
-              )}
-              {!winnerIsActualBreaker && (
-                <div className="flex items-center gap-3">
-                  <RadioGroupItem value="runout" id="achievement-runout" />
-                  <Label htmlFor="achievement-runout" className="font-normal">
-                    Runout
-                  </Label>
-                </div>
-              )}
-            </RadioGroup>
-            <p className="text-xs text-muted-foreground">
-              Tap None to clear a selection.
-            </p>
+            )}
+            {winnerIsActualBreaker && goldenBreakCountsAsWin && (
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="goldenBreak"
+                  checked={goldenBreak}
+                  onCheckedChange={(c) => handleGoldenBreakCheck(c === true)}
+                />
+                <Label htmlFor="goldenBreak" className="text-sm font-normal cursor-pointer">
+                  {getGoldenBreakLabel()}
+                </Label>
+              </div>
+            )}
+            {!winnerIsActualBreaker && (
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="runout"
+                  checked={runout}
+                  onCheckedChange={(c) => onRunoutChange?.(c === true)}
+                />
+                <Label htmlFor="runout" className="text-sm font-normal cursor-pointer">
+                  Runout
+                </Label>
+              </div>
+            )}
           </div>
 
-          {/* Section 3: state modifiers — rare events that change game
-              mechanics (re-rack semantics) or stat attribution. Bottom
-              of the modal because they're tapped infrequently. */}
+          {/* Section 2: state modifiers — rare events that change game
+              mechanics (re-rack semantics) or stat attribution. Middle
+              section because they're tapped infrequently but matter when
+              they do. */}
           <div className="flex items-center justify-between">
             <Label htmlFor="breakFouled" className="text-sm font-normal">
               Break foul (re-rack)
@@ -431,6 +400,37 @@ export function ScoringDialog({
               </p>
             )}
           </div>
+
+          {/* Section 3: per-side scoring inputs at the bottom, just above
+              the action buttons. The counter is the deliberate input —
+              users scan past achievements/modifiers and land here as the
+              last step before saving. The spec's `kind` drives rendering:
+              'counter' shows an AdaptiveCounter; 'fixed' shows nothing
+              (calculator handles fixed implicitly). Aggregate calculators
+              (no perSideInputs) produce nothing here. */}
+          {winnerSpec?.kind === 'counter' && (
+            <AdaptiveCounter
+              min={winnerSpec.min}
+              max={winnerSpec.max}
+              label={winnerSpec.label}
+              value={winnerValue}
+              onChange={(v) => onWinnerValueChange?.(v)}
+            />
+          )}
+          {loserSpec?.kind === 'counter' && (
+            <AdaptiveCounter
+              min={loserSpec.min}
+              max={loserSpec.max}
+              label={loserSpec.label}
+              value={loserValue}
+              onChange={(v) => onLoserValueChange?.(v)}
+            />
+          )}
+          {counterValueMissing && (
+            <p className="text-xs text-muted-foreground">
+              Tap a value to continue.
+            </p>
+          )}
         </div>
 
         <DialogFooter>
