@@ -87,7 +87,7 @@ export function AdaptiveCounter({
   return (
     <div className="space-y-2">
       <Label className="text-sm font-normal text-center block">{label}</Label>
-      <div className="flex justify-center gap-2.5">
+      <div className="flex gap-2.5">
         {values.map((n) => {
           const selected = value === n;
           return (
@@ -97,7 +97,7 @@ export function AdaptiveCounter({
               variant={selected ? 'default' : 'outline'}
               disabled={disabled}
               onClick={() => onChange(n)}
-              className="min-h-[44px] min-w-[40px] px-[5px] text-xl font-semibold"
+              className="flex-1 min-h-[44px] px-[5px] text-xl font-semibold"
               loadingText="none"
             >
               {n}
