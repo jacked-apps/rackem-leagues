@@ -85,9 +85,9 @@ export function AdaptiveCounter({
   for (let n = min; n <= max; n += 1) values.push(n);
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 w-full">
       <Label className="text-sm font-normal text-center block">{label}</Label>
-      <div className="flex gap-2.5">
+      <div className="flex w-full gap-2.5">
         {values.map((n) => {
           const selected = value === n;
           return (
