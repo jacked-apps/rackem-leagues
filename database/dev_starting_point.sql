@@ -573,12 +573,12 @@ BEGIN
 
   INSERT INTO leagues (
     id, organization_id, game_type, day_of_week, division,
-    team_format, league_start_date, status,
+    league_start_date, status,
     handicap_variant, team_handicap_variant, handicap_level,
     golden_break_counts_as_win
   ) VALUES (
     v_league_id, v_org_id, 'eight_ball', 'tuesday', '3v3 old school',
-    '5_man', CURRENT_DATE, 'active',
+    CURRENT_DATE, 'active',
     'standard', 'standard', 'standard',
     FALSE
   );
@@ -860,12 +860,12 @@ BEGIN
 
     INSERT INTO leagues (
       id, organization_id, game_type, day_of_week, division,
-      team_format, league_start_date, status,
+      league_start_date, status,
       handicap_variant, team_handicap_variant, handicap_level,
       golden_break_counts_as_win
     ) VALUES (
       v_league_ids[v_l], v_org_id, 'eight_ball', v_days_of_week[v_l], v_divisions[v_l],
-      v_team_formats[v_l], v_start_date, 'active',
+      v_start_date, 'active',
       'standard', 'standard', 'standard',
       FALSE
     );
