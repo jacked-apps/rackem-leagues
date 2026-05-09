@@ -47,6 +47,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { getCalculator } from '@/systems/calculators';
+import { resolveCalculatorParams } from '@/systems/calculators/resolveParams';
 import { AdaptiveCounter } from './AdaptiveCounter';
 
 /**
@@ -192,6 +193,13 @@ export function ScoringDialog({
   // or contributes a fixed implicit value (kind: 'fixed', no input shown).
   // Aggregate calculators return `{ perSideInputs: null }` and produce no
   // per-side inputs at all.
+  //
+  // Params go through resolveCalculatorParams first: when the league hasn't
+  // customized params, the snapshot stores `{}` and the calculator's
+  // scoringPopupFields() expects the canonical params shape (it doesn't have
+  // its own empty-fallback like compute() does). Without resolution, the
+  // calculator throws "cannot read properties of undefined" on the first
+  // line that touches `params.winner` / `params.loser`.
   const spec = useMemo(() => {
     if (!pointsCalculator) return null;
     const calc = getCalculator(pointsCalculator);
@@ -199,7 +207,8 @@ export function ScoringDialog({
       console.warn(`[ScoringDialog] Unknown calculator name: ${pointsCalculator}`);
       return null;
     }
-    return calc.scoringPopupFields((pointsCalculatorParams ?? {}) as never);
+    const resolvedParams = resolveCalculatorParams(pointsCalculator, pointsCalculatorParams);
+    return calc.scoringPopupFields(resolvedParams as never);
   }, [pointsCalculator, pointsCalculatorParams]);
 
   const winnerSpec = spec?.perSideInputs?.winner;

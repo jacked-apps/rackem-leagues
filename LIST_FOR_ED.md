@@ -1435,3 +1435,51 @@ needs the same fallback applied.
 **Workaround until fixed:** vacate-and-rescore game 1 after a
 second game has run (which populates the snapshot). Annoying but
 recoverable.
+
+---
+
+## 24. Fargo Initial-Points Confirmation Only Requires One Side (Consider Removing Entirely)
+
+**Discovered:** 2026-05-09
+**Severity:** Low-Medium (working "well enough" but the design isn't
+doing what it claims to do)
+**Owner:** unassigned
+
+**Symptom:** The Fargo initial start-points credit is supposed to be
+a *two-team negotiation* — both captains need to confirm before the
+match proceeds. In practice, only one side's confirmation is being
+required (or only one side's confirmation is being read), and the
+match proceeds anyway. The gating mechanism isn't actually gating.
+
+**Proposed direction (Ed's call, 2026-05-09):** rather than chase the
+bug to make confirmation work as designed, remove the confirmation
+requirement entirely. Compute the start-points credit from the lineup
+ratings, apply it, let the match proceed. If we ever find out the
+auto-computed value is wrong, fix it as a per-match adjustment after
+the fact (vacate-and-rescore-style intervention) rather than gating
+every match on a confirmation prompt.
+
+**Rationale:**
+- The two-side confirmation only matters when teams actually disagree
+  on the right credit. In practice, captains aren't second-guessing
+  the math; they're confirming what the system already computed. The
+  confirmation step is theater, not a real safety net.
+- The current half-broken confirmation creates UX friction (re-prompts
+  after return-to-lineup, see #22) without actually achieving the
+  negotiation it's named for.
+- Trusting the computed value and adjusting after-the-fact is a
+  smaller surface area: one path, no race conditions between two
+  devices, no captain-confirmation hook to maintain.
+
+**What removing it would touch:**
+- The captain-confirmation prompt on the lineup page.
+- The `*_to_lose` scratch-state columns currently used to flag captain
+  confirmations (per the `useMatchPreparation.ts` comment block, those
+  columns are repurposed as scratch state for "this captain confirmed
+  with player number X").
+- `prep_match`'s logic that gates on confirmation flags.
+- Possibly relates to and supersedes issues #21 and #22.
+
+**When to revisit:** if a real-world case surfaces where the
+auto-computed start-points value was wrong AND the captain-
+confirmation step would've caught it. So far that hasn't happened.
