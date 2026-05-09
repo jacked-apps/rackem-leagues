@@ -87,7 +87,10 @@ export function AdaptiveCounter({
   return (
     <div className="space-y-2 w-full">
       <Label className="text-sm font-normal text-center block">{label}</Label>
-      <div className="flex w-full gap-2.5">
+      <div
+        className="grid w-full gap-2.5"
+        style={{ gridTemplateColumns: `repeat(${values.length}, minmax(0, 1fr))` }}
+      >
         {values.map((n) => {
           const selected = value === n;
           return (
@@ -97,7 +100,7 @@ export function AdaptiveCounter({
               variant={selected ? 'default' : 'outline'}
               disabled={disabled}
               onClick={() => onChange(n)}
-              className="flex-1 min-h-[44px] px-[5px] text-xl font-semibold"
+              className="min-h-[44px] w-full px-[5px] text-xl font-semibold"
               loadingText="none"
             >
               {n}
