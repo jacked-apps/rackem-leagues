@@ -1435,3 +1435,43 @@ needs the same fallback applied.
 **Workaround until fixed:** vacate-and-rescore game 1 after a
 second game has run (which populates the snapshot). Annoying but
 recoverable.
+
+---
+
+## 24. Flaky Captain Black Mark
+
+**Branch needed:** `captain-flake-flag`
+**Discovered:** 2026-04-28
+**Priority:** Low — nice-to-have, not blocking
+
+**Problem:** When a team drops mid-season, it's almost always the captain's
+fault — they've broken their commitment to keep the team running. Today there
+is no signal to a different LO later that this person has flaked before. They
+can be made captain again and repeat the pattern with no warning.
+
+**Solution:** Track a flake count (or flag) on the member, and surface it in
+any captain-selection UI as a soft warning ("This member has been recorded as
+flaking on a captain role X time(s). Consider another captain.").
+
+**Possible shapes:**
+1. **Simple counter** — add `captain_flake_count int default 0` to `members`.
+   Increment when a team is marked withdrawn while they were captain.
+2. **Flag table** — `member_flags` table with `member_id`, `flag_type`,
+   `season_id`, `notes`, `created_by`. Richer, supports other flag types
+   later (skipped payment, behavior issues, etc.).
+
+**Recommended:** Option 2 (flag table). More flexible, supports future flag
+types without further schema changes. One row per incident keeps history.
+
+**Where the warning should appear:**
+- Captain dropdown in team creation/edit
+- Anywhere an LO assigns a captain
+- Should be a soft warning (informational), not a block
+
+**When to write a flag:**
+- Automatically when a team is set to `status = 'withdrawn'` mid-season —
+  write a flag row for the captain at that moment
+- Manually by an LO via a "report flake" button (optional, future)
+
+**Tied to:** Item above this section (mid-season team-drop / soft-delete
+work). The flag write happens inside the same drop-team flow.
