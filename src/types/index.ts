@@ -57,7 +57,7 @@ export type {
   Player,
   HandicapThresholds,
   MatchGame,
-  ScoringOptions,
+  MatchGameEvent,
   ConfirmationQueueItem,
   TeamStats,
   PlayerStats

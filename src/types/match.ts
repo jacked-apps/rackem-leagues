@@ -279,16 +279,15 @@ export interface MatchGame {
   winner_player_id: string | null;
   home_action: 'breaks' | 'racks';
   away_action: 'breaks' | 'racks';
-  break_and_run: boolean;
-  golden_break: boolean;
   confirmed_by_home: boolean;
   confirmed_by_away: boolean;
   is_tiebreaker: boolean;
-  // Per-game achievement / break-state flags (added by migration 20260418000004).
-  // Always tracked across all scoring systems. Default false.
+  // Break-fault state modifier — kept as a flat column for synchronous reads
+  // every modal render (drives B&R / runout role-gating). Branch B Phase 1
+  // dropped break_and_run / golden_break / runout / win_by_forfeit; those now
+  // live as rows in the game_events table driven by the TypeScript event
+  // registry (src/systems/game-events/).
   break_fouled: boolean;
-  runout: boolean;
-  win_by_forfeit: boolean;
   // Calculator-driven per-game input values (renamed from loser_balls_pocketed by
   // migration 20260505000000). Each side's value meaning is determined by the
   // active calculator's scoringPopupFields() spec — could be points, ball count,
@@ -300,11 +299,19 @@ export interface MatchGame {
 }
 
 /**
- * Scoring options for a game
+ * One row in the game_events child table. Replaces the 4 boolean event
+ * columns (break_and_run, golden_break, runout, win_by_forfeit) Branch B
+ * Phase 1 dropped from match_games.
  */
-export interface ScoringOptions {
-  breakAndRun?: boolean;
-  goldenBreak?: boolean;
+export interface MatchGameEvent {
+  id: string;
+  game_id: string;
+  match_id: string;
+  event_name: string;
+  attributed_player_id: string | null;
+  value: number | null;
+  created_at: string;
+  updated_at: string;
 }
 
 /**
@@ -313,15 +320,18 @@ export interface ScoringOptions {
 export interface ConfirmationQueueItem {
   gameNumber: number;
   winnerPlayerName: string;
-  // Always-tracked game modifiers. The confirmation dialog renders each one
-  // that is truthy; the entry point is responsible for passing the full set
-  // from the match_games row — the dialog stays dumb and displays whatever
-  // it receives. No per-league filtering happens here.
-  breakAndRun: boolean;
-  goldenBreak: boolean;
+  // Event names recorded for this game (e.g., ['break_and_run', 'win_by_forfeit']).
+  // The confirmation dialog renders one badge per name using the registry's
+  // label. Branch B Phase 1 replaced the 4 individual boolean props with this
+  // events array — empty array means no special events.
+  events: string[];
+  // Break-fault state modifier — stays as a flat column on match_games AND
+  // gets a game_events row for stat attribution. Surfaced in the confirmation
+  // dialog directly because callers already read it from the match_games row.
   breakFouled: boolean;
-  runout: boolean;
-  winByForfeit: boolean;
+  // True when the queue item represents a vacate-request the opponent is
+  // asking the current user to confirm (vs a normal score they're confirming).
+  isResetRequest?: boolean;
   // Calculator-driven per-game input values (renamed from loserBallsPocketed
   // by Branch A). For Fargo 10-7 the loser side is 0–7 ball count; future
   // calculators may declare arbitrary ranges. NULL for BCA matches and any

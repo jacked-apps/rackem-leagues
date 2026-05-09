@@ -70,7 +70,8 @@ export function clearRegistry(): void {
 
 // Re-export types for ergonomic imports.
 export type { GameEventDefinition, AttributedTo } from './types';
-export { resolveEnabledEvents } from './resolveEnabledEvents';
+export { resolveEnabledEvents, resolveEnabledEventDefinitions } from './resolveEnabledEvents';
+export { buildScoringEventsPayload } from './buildScoringEventsPayload';
 
 // ============================================================================
 // Seed event registration

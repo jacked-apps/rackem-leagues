@@ -43,16 +43,13 @@ interface UseMatchScoringMutationsParams {
   // gameType: string;
   /** Auto-confirm setting (skip confirmation modal) */
   autoConfirm: boolean;
-  /** Add confirmation to queue. Forwards the full match_games snapshot so
-   *  the confirmation dialog can show every field the scorer entered. */
+  /** Add confirmation to queue. Forwards the full match_games snapshot plus
+   *  the event names recorded for the game (sourced from game_events). */
   addToConfirmationQueue: (confirmation: {
     gameNumber: number;
     winnerPlayerName: string;
-    breakAndRun: boolean;
-    goldenBreak: boolean;
+    events: string[];
     breakFouled: boolean;
-    runout: boolean;
-    winByForfeit: boolean;
     winnerValue: number | null;
     loserValue: number | null;
   }) => void;
@@ -88,7 +85,7 @@ export function useMatchScoringMutations({
    * Opens appropriate modal based on game state.
    */
   const handlePlayerClick = useCallback(
-    (
+    async (
       gameNumber: number,
       playerId: string,
       playerName: string,
@@ -135,16 +132,22 @@ export function useMatchScoringMutations({
             return;
           }
 
-          // Add to confirmation queue (will show immediately or queue if modal is open).
-          // Forward every scored field — the dialog displays whatever is truthy.
+          // Add to confirmation queue. The events list is fetched from
+          // game_events for this specific game — Branch B Phase 1 dropped the
+          // boolean columns from match_games, so events live in the child
+          // table and must be queried explicitly. Cheap (single index lookup
+          // on (game_id)).
+          const { data: eventRows } = await supabase
+            .from('game_events')
+            .select('event_name')
+            .eq('game_id', existingGame.id);
+          const events = (eventRows ?? []).map(row => row.event_name);
+
           addToConfirmationQueue({
             gameNumber,
             winnerPlayerName: getPlayerDisplayName(existingGame.winner_player_id),
-            breakAndRun: existingGame.break_and_run,
-            goldenBreak: existingGame.golden_break,
+            events,
             breakFouled: existingGame.break_fouled,
-            runout: existingGame.runout,
-            winByForfeit: existingGame.win_by_forfeit,
             loserValue: existingGame.loser_value,
             winnerValue: existingGame.winner_value,
           });
@@ -211,27 +214,20 @@ export function useMatchScoringMutations({
         const isHomeTeam = userTeamId === match.home_team_id;
 
         if (isVacateRequest) {
-          // For vacate requests, clear the game entirely (accept the vacate)
-          // Also clear the vacate_requested_by flag
-          const { error } = await supabase
-            .from('match_games')
-            .update({
-              winner_team_id: null,
-              winner_player_id: null,
-              break_and_run: false,
-              golden_break: false,
-              break_fouled: false,
-              runout: false,
-              win_by_forfeit: false,
-              winner_value: null,
-              loser_value: null,
-              confirmed_by_home: null,
-              confirmed_by_away: null,
-              vacate_requested_by: null,
-            })
-            .eq('id', existingGame.id);
+          // Vacate-accept: atomically clear the score and delete game_events
+          // rows for this game via the clear_game_with_events rpc. Then
+          // separately clear the vacate_requested_by flag (auxiliary; not
+          // part of the atomic dual-write contract).
+          const { error: clearError } = await supabase.rpc('clear_game_with_events', {
+            p_game_id: existingGame.id,
+          });
+          if (clearError) throw clearError;
 
-          if (error) throw error;
+          const { error: vacateFlagError } = await supabase
+            .from('match_games')
+            .update({ vacate_requested_by: null })
+            .eq('id', existingGame.id);
+          if (vacateFlagError) throw vacateFlagError;
         } else {
           // Normal score confirmation - only update OUR confirmation, don't touch opponent's
           const updateData = isHomeTeam
@@ -300,26 +296,20 @@ export function useMatchScoringMutations({
 
           if (error) throw error;
         } else {
-          // Deny normal score: reset the game back to unscored state
-          const { error } = await supabase
-            .from('match_games')
-            .update({
-              winner_team_id: null,
-              winner_player_id: null,
-              break_and_run: false,
-              golden_break: false,
-              break_fouled: false,
-              runout: false,
-              win_by_forfeit: false,
-              winner_value: null,
-              loser_value: null,
-              confirmed_by_home: null,
-              confirmed_by_away: null,
-              confirmed_at: null,
-            })
-            .eq('id', existingGame.id);
+          // Deny normal score: reset the game back to unscored state via
+          // the clear_game_with_events rpc (atomic clear of match_games
+          // scoring fields + DELETE from game_events). Then clear
+          // confirmed_at separately (auxiliary field).
+          const { error: clearError } = await supabase.rpc('clear_game_with_events', {
+            p_game_id: existingGame.id,
+          });
+          if (clearError) throw clearError;
 
-          if (error) throw error;
+          const { error: confirmedAtError } = await supabase
+            .from('match_games')
+            .update({ confirmed_at: null })
+            .eq('id', existingGame.id);
+          if (confirmedAtError) throw confirmedAtError;
         }
 
         // Phase 5 Unit 5.5: denial / vacate-deny clears confirmations or
@@ -339,10 +329,17 @@ export function useMatchScoringMutations({
   );
 
   /**
-   * Confirm game score and save to database
+   * Confirm game score and save to database via the score_game_with_events rpc.
    *
-   * Handles both insert (new game) and update (existing game).
-   * Validates mutual exclusivity of Break & Run and Golden Break.
+   * The rpc atomically: (1) updates the match_games row with winner / values /
+   * break_fouled / confirmed_by, (2) replaces game_events for this game with
+   * the provided event payload. Any failure rolls both back — the dual-write
+   * (break_fouled column AND break_fouled event row) cannot drift.
+   *
+   * Branch B Phase 1: callers pass a single `events` array of
+   * `{event_name, attributed_player_id}` objects instead of individual
+   * boolean props. The parent (ScoreMatch.tsx) builds this array from the
+   * registry's attribution rules + the modal's winner/loser/breaker context.
    */
   const handleConfirmScore = useCallback(
     async (
@@ -352,18 +349,10 @@ export function useMatchScoringMutations({
         winnerPlayerId: string;
         winnerPlayerName: string;
       },
-      breakAndRun: boolean,
-      goldenBreak: boolean,
+      events: ReadonlyArray<{ event_name: string; attributed_player_id: string | null }>,
       onSuccess: () => void,
-      /**
-       * Always-tracked + system-specific extras added in Unit 11b. Defaults
-       * preserve prior behavior (all flags false, ball count null) so legacy
-       * callers that don't pass this object continue to work unchanged.
-       */
       extras: {
         breakFouled?: boolean;
-        runout?: boolean;
-        winByForfeit?: boolean;
         winnerValue?: number | null;
         loserValue?: number | null;
       } = {}
@@ -371,8 +360,6 @@ export function useMatchScoringMutations({
       if (!scoringGame || !match || !homeLineup || !awayLineup) return;
 
       const breakFouled = extras.breakFouled ?? false;
-      const runout = extras.runout ?? false;
-      const winByForfeit = extras.winByForfeit ?? false;
       const winnerValue = extras.winnerValue ?? null;
       const loserValue = extras.loserValue ?? null;
 
@@ -388,12 +375,6 @@ export function useMatchScoringMutations({
         // Determine if this is home or away team confirming (based on WHO is scoring, not who won)
         const isHomeTeamScoring = userTeamId === match.home_team_id;
 
-        // Check for mutual exclusivity of B&R and golden break
-        if (breakAndRun && goldenBreak) {
-          toast.error('A game cannot have both Break & Run and Golden Break.');
-          return;
-        }
-
         // Get the existing game record from the database
         const existingGame = gameResults.get(scoringGame.gameNumber);
         if (!existingGame) {
@@ -401,99 +382,42 @@ export function useMatchScoringMutations({
           return;
         }
 
-        // Read player IDs and actions directly from the game record
-        // (Works for all game types: regular, tiebreaker, 5v5, etc.)
-        const homePlayerId = existingGame.home_player_id || '';
-        const awayPlayerId = existingGame.away_player_id || '';
-        const homeAction = existingGame.home_action || 'breaks';
-        const awayAction = existingGame.away_action || 'racks';
+        // Atomic write via score_game_with_events rpc.
+        const { error } = await supabase.rpc('score_game_with_events', {
+          p_game_id: existingGame.id,
+          p_winner_team_id: scoringGame.winnerTeamId,
+          p_winner_player_id: scoringGame.winnerPlayerId,
+          p_winner_value: winnerValue,
+          p_loser_value: loserValue,
+          p_break_fouled: breakFouled,
+          // Pass the caller's member_id only on the side they represent.
+          // The rpc COALESCEs against the existing value so the other side's
+          // confirmation (if any) is preserved.
+          p_confirmed_by_home: isHomeTeamScoring ? memberId : null,
+          p_confirmed_by_away: !isHomeTeamScoring ? memberId : null,
+          p_events: events,
+        });
 
-        // Prepare game data
-        const gameData = {
-          match_id: match.id,
-          game_number: scoringGame.gameNumber,
-          home_player_id: homePlayerId,
-          away_player_id: awayPlayerId,
-          home_action: homeAction,
-          away_action: awayAction,
-          winner_team_id: scoringGame.winnerTeamId,
-          winner_player_id: scoringGame.winnerPlayerId,
-          break_and_run: breakAndRun,
-          golden_break: goldenBreak,
-          break_fouled: breakFouled,
-          runout,
-          win_by_forfeit: winByForfeit,
-          winner_value: winnerValue,
-          loser_value: loserValue,
-          confirmed_by_home: isHomeTeamScoring ? memberId : null,
-          confirmed_by_away: !isHomeTeamScoring ? memberId : null,
-        };
-
-        // Check if game already exists (using same game we fetched earlier)
-        if (existingGame) {
-          // Update existing game
-          const updateData = {
-            winner_team_id: gameData.winner_team_id,
-            winner_player_id: gameData.winner_player_id,
-            break_and_run: gameData.break_and_run,
-            golden_break: gameData.golden_break,
-            break_fouled: gameData.break_fouled,
-            runout: gameData.runout,
-            win_by_forfeit: gameData.win_by_forfeit,
-            winner_value: gameData.winner_value,
-            loser_value: gameData.loser_value,
-            confirmed_by_home: isHomeTeamScoring
-              ? memberId
-              : existingGame.confirmed_by_home,
-            confirmed_by_away: !isHomeTeamScoring
-              ? memberId
-              : existingGame.confirmed_by_away,
-          };
-
-          const { data, error } = await supabase
-            .from('match_games')
-            .update(updateData)
-            .eq('id', existingGame.id)
-            .select();
-
-          if (error) {
-            logger.error('Update error', { error: error.message });
-            throw error;
-          }
-
-          if (!data || data.length === 0) {
-            logger.error('No rows updated - possible RLS policy blocking update');
-            toast.error(
-              'Failed to update game. You may not have permission to score for this team.'
-            );
-            return;
-          }
-        } else {
-          // Insert new game (includes game_type from league)
-          const { error } = await supabase.from('match_games').insert(gameData);
-
-          if (error) throw error;
+        if (error) {
+          logger.error('score_game_with_events failed', { error: error.message });
+          toast.error(`Failed to save game score: ${error.message}`);
+          return;
         }
 
         // Phase 5 Unit 5.5: eagerly recompute the match row's running totals
-        // from the current set of confirmed match_games. The new game write
-        // may flip a previously-confirmed game (re-score after auto-confirm
-        // overlap) or add a freshly-pending one — recompute handles both
-        // safely (only fully-confirmed games count toward the totals).
+        // from the current set of confirmed match_games.
         if (match?.id) {
           await updateMatchRunningTotals(match.id);
         }
 
-        // Note: Real-time subscription will automatically refresh game results
-
-        // Close modal and reset state
+        // Real-time subscription refreshes downstream game results.
         onSuccess();
       } catch (err: any) {
         logger.error('Error saving game score', { error: err instanceof Error ? err.message : String(err) });
         toast.error(`Failed to save game score: ${err.message}`);
       }
     },
-    [match, homeLineup, awayLineup, userTeamId, gameResults]
+    [match, homeLineup, awayLineup, userTeamId, gameResults, leagueId, memberId]
   );
 
   return {
