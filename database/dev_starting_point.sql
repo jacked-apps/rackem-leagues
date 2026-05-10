@@ -587,12 +587,18 @@ BEGIN
   -- max_roster_size = 8 leaves headroom over the seeded 7-player rosters
   -- (1 captain + 6 placeholders) so the LO can add subs in tests without
   -- hitting the cap. 8 is the same cap leagues 2/3 use.
+  --
+  -- League 1 is the BCA 3v3 points format. linear_above_threshold is the
+  -- right calculator (and the trigger default), but we set it explicitly
+  -- so the seed documents its intent.
   UPDATE preferences
     SET lineup_size = 3,
         max_roster_size = 8,
         game_generation = 'double_round_robin',
         handicap_type = 'points',
-        points_system = 'differential'
+        points_system = 'differential',
+        points_calculator = 'linear_above_threshold',
+        points_calculator_params = '{}'::jsonb
     WHERE entity_type = 'league' AND entity_id = v_league_id;
 
   ----------------------------------------------------------------------------
@@ -881,7 +887,18 @@ BEGIN
           max_roster_size = 8,
           game_generation = 'single_round_robin',
           handicap_type = v_handicap_types[v_l],
-          points_system = v_points_systems[v_l]
+          points_system = v_points_systems[v_l],
+          -- Calculator picks the per-game scoring math:
+          --   League 2 (BCA percentage): accumulate_with_milestone_jumps
+          --     defaults give 0.1 per game with 1.5x bonus at 70%.
+          --   League 3 (Fargo 10-7): accumulated_per_game
+          --     defaults give winner=10 fixed, loser=0-7 counter (the
+          --     loser-balls grid in the scoring modal).
+          points_calculator = CASE v_l
+            WHEN 1 THEN 'accumulate_with_milestone_jumps'
+            WHEN 2 THEN 'accumulated_per_game'
+          END,
+          points_calculator_params = '{}'::jsonb
       WHERE entity_type = 'league' AND entity_id = v_league_ids[v_l];
 
     --------------------------------------------------------------------------
