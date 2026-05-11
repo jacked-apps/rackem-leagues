@@ -218,6 +218,7 @@ export function ScoringDialogEditMode({
                   onCheckedChange={(checked) => handleToggle(event.name, checked)}
                   disabled={saving}
                   aria-label={`Toggle ${event.label}`}
+                  className="data-[state=unchecked]:bg-muted-foreground/40 dark:data-[state=unchecked]:bg-muted-foreground/30"
                 />
                 {hasExplicitOverride && (
                   <Button

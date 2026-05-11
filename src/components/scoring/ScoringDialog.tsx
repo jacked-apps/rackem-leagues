@@ -462,7 +462,11 @@ export function ScoringDialog({
               to skip past when no achievement applies. B&R and Golden
               Break are mutually exclusive — checking one auto-unchecks
               the other (handlers do the work). */}
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+          {/* Each achievement on its own row for clearer touch targets +
+              visual breathing room. checkboxClass / switchClass bump the
+              border contrast so unchecked controls aren't almost-invisible
+              against the dialog background. */}
+          <div className="flex flex-col gap-3">
             {winnerIsActualBreaker && enabledEvents.has('break_and_run') && (
               <div className="flex items-center gap-2">
                 <Checkbox
@@ -470,6 +474,7 @@ export function ScoringDialog({
                   checked={breakAndRun}
                   onCheckedChange={(c) => handleBreakAndRunCheck(c === true)}
                   disabled={isPreview}
+                  className="border-2 border-foreground/50"
                 />
                 <Label htmlFor="breakAndRun" className="text-sm font-normal cursor-pointer">
                   Break &amp; Run
@@ -483,6 +488,7 @@ export function ScoringDialog({
                   checked={goldenBreak}
                   onCheckedChange={(c) => handleGoldenBreakCheck(c === true)}
                   disabled={isPreview}
+                  className="border-2 border-foreground/50"
                 />
                 <Label htmlFor="goldenBreak" className="text-sm font-normal cursor-pointer">
                   {getGoldenBreakLabel()}
@@ -496,6 +502,7 @@ export function ScoringDialog({
                   checked={runout}
                   onCheckedChange={(c) => onRunoutChange?.(c === true)}
                   disabled={isPreview}
+                  className="border-2 border-foreground/50"
                 />
                 <Label htmlFor="runout" className="text-sm font-normal cursor-pointer">
                   Runout
@@ -518,6 +525,7 @@ export function ScoringDialog({
                 checked={breakFouled}
                 onCheckedChange={handleBreakFouledChange}
                 disabled={isPreview}
+                className="data-[state=unchecked]:bg-muted-foreground/40 dark:data-[state=unchecked]:bg-muted-foreground/30"
               />
             </div>
           )}
@@ -533,6 +541,7 @@ export function ScoringDialog({
                 checked={winByForfeit}
                 onCheckedChange={handleWinByForfeitChange}
                 disabled={isPreview}
+                className="data-[state=unchecked]:bg-muted-foreground/40 dark:data-[state=unchecked]:bg-muted-foreground/30"
               />
             </div>
             {winByForfeit && loserPlayerName && (
