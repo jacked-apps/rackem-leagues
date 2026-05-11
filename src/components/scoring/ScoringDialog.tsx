@@ -545,9 +545,14 @@ export function ScoringDialog({
               />
             </div>
             {winByForfeit && loserPlayerName && (
-              <p className="text-xs text-muted-foreground">
-                Recorded as {loserPlayerName}
-              </p>
+              <div
+                role="alert"
+                className="mt-2 rounded-md border-2 border-destructive bg-destructive/10 px-3 py-2 text-center"
+              >
+                <p className="text-sm font-bold uppercase tracking-wide text-destructive">
+                  {loserPlayerName} forfeits the game!
+                </p>
+              </div>
             )}
           </div>
           )}

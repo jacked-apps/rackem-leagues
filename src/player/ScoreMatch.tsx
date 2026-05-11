@@ -96,6 +96,7 @@ function ScoreMatchBody() {
     goldenBreakCountsAsWin,
     gameType,
     getPlayerDisplayName: getPlayerDisplayNameFromHook,
+    players,
     confirmationQueue,
     addToConfirmationQueue: addToConfirmationQueueFromHook,
     removeFromConfirmationQueue,
@@ -474,6 +475,12 @@ function ScoreMatchBody() {
    * isn't loaded yet, or the loser's player_id is unavailable. Modal
    * gracefully omits the attribution text in those cases.
    */
+  // Loser's display name for the forfeit attribution. Branch B Phase 2:
+  // returns the FULL name (first + last) — never the nickname. Forfeits
+  // carry real consequences (potential suspension, dues penalties) so
+  // the attribution must be unambiguous. Short nicknames like "Al" can
+  // visually collide ("Al" vs "AI") in sans-serif fonts; full name
+  // forces clarity.
   const loserPlayerName = (() => {
     if (!scoringGame) return null;
     const game = gameResults.get(scoringGame.gameNumber);
@@ -482,7 +489,10 @@ function ScoreMatchBody() {
       scoringGame.winnerPlayerId === game.home_player_id
         ? game.away_player_id
         : game.home_player_id;
-    return loserPlayerId ? getPlayerDisplayName(loserPlayerId) : null;
+    if (!loserPlayerId) return null;
+    const player = players.get(loserPlayerId);
+    if (!player) return null;
+    return `${player.first_name} ${player.last_name}`;
   })();
 
   /**
