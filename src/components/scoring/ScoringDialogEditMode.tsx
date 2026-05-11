@@ -41,14 +41,14 @@ interface ScoringDialogEditModeProps {
    */
   resolvedOverrides: Record<string, boolean>;
   /**
-   * Events that are force-locked to a state by ANOTHER preference outside
-   * the enabled_events cascade. The Switch for each entry is disabled and
-   * the reason shows below the row. Example: when the league has
-   * `golden_break_counts_as_win = false`, the 'golden_break' event row
-   * shows disabled with the reason text — toggling enabled_events for it
-   * would have no effect because a different gate hides it.
+   * Events that are LINKED to another preference: a toggle in this list
+   * also updates the linked preference when Save is called. The inline
+   * note on the row tells the LO their toggle has a broader effect than
+   * just enabled_events. Example: `golden_break` is linked to
+   * `leagues.golden_break_counts_as_win` because we can't track GB as a
+   * stat without it counting as a win.
    */
-  forceDisabled?: Record<string, string>;
+  inlineNotes?: Record<string, string>;
   /**
    * Called when the LO taps Save. Receives the FULL desired override map
    * for the scope being edited (league or org). Parent applies it via
@@ -69,7 +69,7 @@ interface ScoringDialogEditModeProps {
 export function ScoringDialogEditMode({
   gameType,
   resolvedOverrides,
-  forceDisabled = {},
+  inlineNotes = {},
   onSave,
   onCancel,
 }: ScoringDialogEditModeProps) {
@@ -143,20 +143,17 @@ export function ScoringDialogEditMode({
             ? localOverrides[event.name]
             : currentlyResolved.has(event.name);
           const inheritedValue = registryDefaults.has(event.name);
-          const forceDisabledReason = forceDisabled[event.name];
-          const isForceDisabled = Boolean(forceDisabledReason);
+          const inlineNote = inlineNotes[event.name];
 
           return (
             <div
               key={event.name}
-              className={`flex items-start gap-3 rounded-md border border-border p-3 ${
-                isForceDisabled ? 'bg-muted/50' : 'bg-card'
-              }`}
+              className="flex items-start gap-3 rounded-md border border-border bg-card p-3"
             >
               <div className="flex-1 min-w-0">
                 <Label
                   htmlFor={`event-switch-${event.name}`}
-                  className={`text-sm font-medium ${isForceDisabled ? '' : 'cursor-pointer'}`}
+                  className="text-sm font-medium cursor-pointer"
                 >
                   {event.label}
                   {event.abbreviation && (
@@ -170,12 +167,12 @@ export function ScoringDialogEditMode({
                     Winner must be the {event.winnerRequired === 'breaker' ? 'breaker' : 'non-breaker'}
                   </p>
                 )}
-                {isForceDisabled && (
+                {inlineNote && (
                   <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
-                    {forceDisabledReason}
+                    {inlineNote}
                   </p>
                 )}
-                {!hasExplicitOverride && !isForceDisabled && (
+                {!hasExplicitOverride && (
                   <p className="text-xs text-muted-foreground mt-0.5 italic">
                     Inherited (default: {inheritedValue ? 'enabled' : 'disabled'})
                   </p>
@@ -187,10 +184,10 @@ export function ScoringDialogEditMode({
                   id={`event-switch-${event.name}`}
                   checked={effectiveValue}
                   onCheckedChange={(checked) => handleToggle(event.name, checked)}
-                  disabled={saving || isForceDisabled}
+                  disabled={saving}
                   aria-label={`Toggle ${event.label}`}
                 />
-                {hasExplicitOverride && !isForceDisabled && (
+                {hasExplicitOverride && (
                   <Button
                     variant="ghost"
                     size="icon"

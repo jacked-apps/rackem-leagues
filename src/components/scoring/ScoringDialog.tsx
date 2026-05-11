@@ -379,18 +379,14 @@ export function ScoringDialog({
           <ScoringDialogEditMode
             gameType={gameType as GameType}
             resolvedOverrides={enabledEventsOverride}
-            // Events the LO can't toggle because a separate league preference
-            // hides them regardless. Today only golden_break has this kind
-            // of secondary gate (legacy `golden_break_counts_as_win`).
-            // Future legacy prefs that hide events can extend this map.
-            forceDisabled={
-              goldenBreakCountsAsWin
-                ? {}
-                : {
-                    golden_break:
-                      'Disabled at league level (Golden Break counts as win = off)',
-                  }
-            }
+            // Events that are LINKED to another preference: toggling them in
+            // edit mode also updates the linked preference at save time. The
+            // inline note tells the LO their toggle has a broader effect.
+            // Today only golden_break is linked (to leagues.golden_break_counts_as_win).
+            inlineNotes={{
+              golden_break:
+                "Linked: toggling this also updates the league's 'Golden Break counts as win' preference.",
+            }}
             onSave={async (next) => {
               await onSaveEnabledEvents?.(next);
               onModeChange?.(editReturnMode);

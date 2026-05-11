@@ -249,6 +249,29 @@ function ScoreMatchBody() {
       entity_id: match.league.id,
       enabled_events: next,
     });
+
+    // Linked-preference sync: golden_break in enabled_events is tied to
+    // the leagues.golden_break_counts_as_win column. Tracking GB as a stat
+    // requires it to count as a win — the two booleans encode the same
+    // decision. Sync the leagues row whenever GB's effective state changes.
+    const desiredGoldenBreak =
+      'golden_break' in next
+        ? next.golden_break
+        : undefined; // omitted = inherit from cascade; skip update
+    if (desiredGoldenBreak !== undefined) {
+      const { error } = await supabase
+        .from('leagues')
+        .update({ golden_break_counts_as_win: desiredGoldenBreak })
+        .eq('id', match.league.id);
+      if (error) {
+        // Don't roll back the enabled_events write — the user's intent
+        // is captured. Just surface the partial-success.
+        logger.warn('Failed to sync leagues.golden_break_counts_as_win', {
+          leagueId: match.league.id,
+          error: error.message,
+        });
+      }
+    }
   };
 
   // Opponent confirmation modal state. Branch B Phase 1: events are now an

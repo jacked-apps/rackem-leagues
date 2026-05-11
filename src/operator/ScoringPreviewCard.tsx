@@ -25,6 +25,8 @@ import { ScoringDialog } from '@/components/scoring/ScoringDialog';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { useUpsertPreference } from '@/api/hooks/usePreferenceMutations';
 import { useIsLeagueOperatorOf, useIsOrganizationOperatorOf } from '@/hooks/useIsLeagueOperatorOf';
+import { supabase } from '@/supabaseClient';
+import { logger } from '@/utils/logger';
 import type { GameType } from '@/types/league';
 
 type Scope =
@@ -78,6 +80,25 @@ export function ScoringPreviewCard(props: ScoringPreviewCardProps) {
             enabled_events: next,
           },
     );
+
+    // League-scope only: keep leagues.golden_break_counts_as_win in sync
+    // with enabled_events.golden_break. The two encode the same decision
+    // (tracking the event requires it to count as a win); diverging them
+    // creates the confusing "switch says on but modal hides it" state Ed
+    // surfaced during smoke testing. Org-scope edits don't touch any
+    // specific leagues row.
+    if (props.target.scope === 'league' && 'golden_break' in next) {
+      const { error } = await supabase
+        .from('leagues')
+        .update({ golden_break_counts_as_win: next.golden_break })
+        .eq('id', props.target.leagueId);
+      if (error) {
+        logger.warn('Failed to sync leagues.golden_break_counts_as_win', {
+          leagueId: props.target.leagueId,
+          error: error.message,
+        });
+      }
+    }
   };
 
   // Synthetic game context for the preview render. The modal expects a
