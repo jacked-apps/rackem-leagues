@@ -49,6 +49,7 @@ import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { ScoringDialogEditMode } from './ScoringDialogEditMode';
+import { resolveEnabledEvents } from '@/systems/game-events';
 import type { GameType } from '@/types/league';
 import {
   Dialog,
@@ -236,6 +237,16 @@ export function ScoringDialog({
   // score-mode UI so an LO sees exactly what scorers see.
   const isPreview = mode === 'preview';
 
+  // Branch B Phase 2: resolve which events are enabled for this game type
+  // based on the registry defaults + the LO's cascade overrides. The
+  // score-mode body uses this set to gate each event row — so an LO who
+  // toggles an event off in edit mode actually sees the modal change on
+  // re-open. Cheap memoization: resolves once per gameType + override map.
+  const enabledEvents = useMemo(
+    () => resolveEnabledEvents(enabledEventsOverride, gameType as GameType),
+    [enabledEventsOverride, gameType],
+  );
+
   // Derive the actual breaker role of the game-of-record. A break foul
   // means the scheduled racker breaks again (re-rack), so role flips.
   const winnerWasScheduledBreaker = game.winnerWasScheduledBreaker ?? true;
@@ -368,6 +379,18 @@ export function ScoringDialog({
           <ScoringDialogEditMode
             gameType={gameType as GameType}
             resolvedOverrides={enabledEventsOverride}
+            // Events the LO can't toggle because a separate league preference
+            // hides them regardless. Today only golden_break has this kind
+            // of secondary gate (legacy `golden_break_counts_as_win`).
+            // Future legacy prefs that hide events can extend this map.
+            forceDisabled={
+              goldenBreakCountsAsWin
+                ? {}
+                : {
+                    golden_break:
+                      'Disabled at league level (Golden Break counts as win = off)',
+                  }
+            }
             onSave={async (next) => {
               await onSaveEnabledEvents?.(next);
               onModeChange?.(editReturnMode);
@@ -437,7 +460,7 @@ export function ScoringDialog({
               Break are mutually exclusive — checking one auto-unchecks
               the other (handlers do the work). */}
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-            {winnerIsActualBreaker && (
+            {winnerIsActualBreaker && enabledEvents.has('break_and_run') && (
               <div className="flex items-center gap-2">
                 <Checkbox
                   id="breakAndRun"
@@ -450,7 +473,7 @@ export function ScoringDialog({
                 </Label>
               </div>
             )}
-            {winnerIsActualBreaker && goldenBreakCountsAsWin && (
+            {winnerIsActualBreaker && goldenBreakCountsAsWin && enabledEvents.has('golden_break') && (
               <div className="flex items-center gap-2">
                 <Checkbox
                   id="goldenBreak"
@@ -463,7 +486,7 @@ export function ScoringDialog({
                 </Label>
               </div>
             )}
-            {!winnerIsActualBreaker && (
+            {!winnerIsActualBreaker && enabledEvents.has('runout') && (
               <div className="flex items-center gap-2">
                 <Checkbox
                   id="runout"
@@ -481,19 +504,22 @@ export function ScoringDialog({
           {/* Section 2: state modifiers — rare events that change game
               mechanics (re-rack semantics) or stat attribution. Middle
               section because they're tapped infrequently but matter when
-              they do. */}
-          <div className="flex items-center justify-between">
-            <Label htmlFor="breakFouled" className="text-sm font-normal">
-              Break foul (re-rack)
-            </Label>
-            <Switch
-              id="breakFouled"
-              checked={breakFouled}
-              onCheckedChange={handleBreakFouledChange}
-              disabled={isPreview}
-            />
-          </div>
+              they do. Gated by enabled_events so LO can hide them. */}
+          {enabledEvents.has('break_fouled') && (
+            <div className="flex items-center justify-between">
+              <Label htmlFor="breakFouled" className="text-sm font-normal">
+                Break foul (re-rack)
+              </Label>
+              <Switch
+                id="breakFouled"
+                checked={breakFouled}
+                onCheckedChange={handleBreakFouledChange}
+                disabled={isPreview}
+              />
+            </div>
+          )}
 
+          {enabledEvents.has('win_by_forfeit') && (
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <Label htmlFor="winByForfeit" className="text-sm font-normal">
@@ -512,6 +538,7 @@ export function ScoringDialog({
               </p>
             )}
           </div>
+          )}
 
           {/* Section 3: per-side scoring inputs at the bottom, just above
               the action buttons. The counter is the deliberate input —
