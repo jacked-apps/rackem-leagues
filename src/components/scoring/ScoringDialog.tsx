@@ -387,6 +387,13 @@ export function ScoringDialog({
               golden_break:
                 "Linked: toggling this also updates the league's 'Golden Break counts as win' preference.",
             }}
+            // golden_break's effective state in the modal depends on BOTH
+            // enabled_events.golden_break AND goldenBreakCountsAsWin. The
+            // switch should reflect what the modal actually shows, not just
+            // what the cascade resolves to.
+            linkedEffectiveState={{
+              golden_break: goldenBreakCountsAsWin,
+            }}
             onSave={async (next) => {
               await onSaveEnabledEvents?.(next);
               onModeChange?.(editReturnMode);

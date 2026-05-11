@@ -50,6 +50,18 @@ interface ScoringDialogEditModeProps {
    */
   inlineNotes?: Record<string, string>;
   /**
+   * Override the effective state shown on a row, regardless of what the
+   * enabled_events cascade resolves to. Used for events whose effective
+   * state depends on a SECOND preference outside the cascade (e.g.,
+   * `golden_break` effective state must factor in
+   * `leagues.golden_break_counts_as_win`). Without this, the switch can
+   * read "ON" from the registry default while the modal hides the event
+   * due to the linked preference — confusing the LO. When the LO toggles
+   * a row with this override, the Save handler is responsible for
+   * updating BOTH enabled_events and the linked preference.
+   */
+  linkedEffectiveState?: Record<string, boolean>;
+  /**
    * Called when the LO taps Save. Receives the FULL desired override map
    * for the scope being edited (league or org). Parent applies it via
    * `usePreferenceMutations.upsertPreference`. Resolves to indicate success.
@@ -70,6 +82,7 @@ export function ScoringDialogEditMode({
   gameType,
   resolvedOverrides,
   inlineNotes = {},
+  linkedEffectiveState = {},
   onSave,
   onCancel,
 }: ScoringDialogEditModeProps) {
@@ -139,9 +152,28 @@ export function ScoringDialogEditMode({
       <div className="space-y-2 max-h-[55vh] overflow-y-auto">
         {applicableEvents.map(event => {
           const hasExplicitOverride = event.name in localOverrides;
-          const effectiveValue = hasExplicitOverride
-            ? localOverrides[event.name]
-            : currentlyResolved.has(event.name);
+          // Effective state for the switch. Priority order:
+          //   1. If LO is mid-edit (touched the switch this session), use
+          //      their local choice — they're seeing what they're about
+          //      to commit.
+          //   2. Else if a linked preference dictates the effective state
+          //      (e.g., goldenBreakCountsAsWin gates golden_break),
+          //      use that — the switch reflects what the modal will
+          //      ACTUALLY show, not just what the cascade resolves.
+          //   3. Else fall back to the cascade-resolved state.
+          const hasLocallyChanged =
+            hasExplicitOverride &&
+            localOverrides[event.name] !== resolvedOverrides[event.name];
+          let effectiveValue: boolean;
+          if (hasLocallyChanged) {
+            effectiveValue = localOverrides[event.name];
+          } else if (event.name in linkedEffectiveState) {
+            effectiveValue = linkedEffectiveState[event.name];
+          } else {
+            effectiveValue = hasExplicitOverride
+              ? localOverrides[event.name]
+              : currentlyResolved.has(event.name);
+          }
           const inheritedValue = registryDefaults.has(event.name);
           const inlineNote = inlineNotes[event.name];
 
