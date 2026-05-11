@@ -43,10 +43,13 @@
  */
 
 import { useMemo, useState } from 'react';
+import { Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { ScoringDialogEditMode } from './ScoringDialogEditMode';
+import type { GameType } from '@/types/league';
 import {
   Dialog,
   DialogContent,
@@ -148,6 +151,44 @@ interface ScoringDialogProps {
   onCancel: () => void;
   /** Handler for confirm button */
   onConfirm: () => void;
+
+  // ----- Branch B Phase 2: mode prop + LO edit/preview flows --------------
+
+  /**
+   * Modal rendering mode. Default 'score' = existing scoring UX
+   * (mutations land on Save). 'edit' = LO-only configuration list of
+   * registry events with Switch + Reset per row. 'preview' = score-mode
+   * body rendered read-only (used on the operator office preferences page).
+   * Existing callers omit this; behavior is unchanged.
+   */
+  mode?: 'score' | 'edit' | 'preview';
+  /** Tells parent to flip modes (Edit button tap, Save/Cancel inside edit body). */
+  onModeChange?: (next: 'score' | 'edit' | 'preview') => void;
+  /**
+   * Whether the current user is authorized to open edit mode. The Edit
+   * button only renders when this is true. Caller computes via
+   * useIsLeagueOperatorOf or useIsOrganizationOperatorOf.
+   */
+  canEditEvents?: boolean;
+  /**
+   * Current cascade-resolved enabled_events for the scope being edited
+   * (league for inline live-game edit; org or league for office preview).
+   * Passed to EditMode body as starting state. Optional; defaults to {}.
+   */
+  enabledEventsOverride?: Record<string, boolean>;
+  /**
+   * Save handler invoked when LO taps Save inside edit mode. Receives the
+   * full desired override map; parent persists via upsertPreference and
+   * resolves on success. EditMode body shows the error if this rejects.
+   */
+  onSaveEnabledEvents?: (overrides: Record<string, boolean>) => Promise<void>;
+  /**
+   * Which mode to flip back to after the LO taps Save or Cancel inside
+   * edit mode. Defaults to 'score' for the inline-during-live-match flow.
+   * The operator office preview card passes 'preview' so the LO returns
+   * to the read-only preview after their edits commit.
+   */
+  editReturnMode?: 'score' | 'preview';
 }
 
 /**
@@ -181,8 +222,19 @@ export function ScoringDialog({
   onWinnerValueChange,
   onCancel,
   onConfirm,
+  mode = 'score',
+  onModeChange,
+  canEditEvents = false,
+  enabledEventsOverride = {},
+  onSaveEnabledEvents,
+  editReturnMode = 'score',
 }: ScoringDialogProps) {
   if (!game) return null;
+
+  // Branch B Phase 2: in preview mode, every interactive control is disabled
+  // and the footer becomes a single Close button. The body still renders the
+  // score-mode UI so an LO sees exactly what scorers see.
+  const isPreview = mode === 'preview';
 
   // Derive the actual breaker role of the game-of-record. A break foul
   // means the scheduled racker breaks again (re-rack), so role flips.
@@ -293,6 +345,41 @@ export function ScoringDialog({
     }
   };
 
+  // Branch B Phase 2: when mode='edit', the body is a registry-driven list
+  // of events with Switch + per-row Reset. Save persists via parent's
+  // onSaveEnabledEvents; Cancel flips back to the prior mode without
+  // mutating preferences. The header still renders so the LO has context
+  // about which match they're configuring against.
+  if (mode === 'edit') {
+    return (
+      <Dialog open={open}>
+        <DialogContent
+          showCloseButton={false}
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle>Configure Events</DialogTitle>
+            <DialogDescription>
+              Toggle which events scorers can record for this league. Changes
+              apply when scorers open their next game modal.
+            </DialogDescription>
+          </DialogHeader>
+          <ScoringDialogEditMode
+            gameType={gameType as GameType}
+            resolvedOverrides={enabledEventsOverride}
+            onSave={async (next) => {
+              await onSaveEnabledEvents?.(next);
+              onModeChange?.(editReturnMode);
+            }}
+            onCancel={() => onModeChange?.(editReturnMode)}
+            returnMode={editReturnMode}
+          />
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={open}>
       <DialogContent
@@ -301,10 +388,30 @@ export function ScoringDialog({
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
         <DialogHeader>
-          <DialogTitle>Confirm Game Result</DialogTitle>
-          <DialogDescription>
-            Confirm the game outcome and any special achievements.
-          </DialogDescription>
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <DialogTitle>
+                {isPreview ? 'Scoring Modal Preview' : 'Confirm Game Result'}
+              </DialogTitle>
+              <DialogDescription>
+                {isPreview
+                  ? 'A read-only preview of what scorers see when they tap a winner.'
+                  : 'Confirm the game outcome and any special achievements.'}
+              </DialogDescription>
+            </div>
+            {canEditEvents && onModeChange && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onModeChange('edit')}
+                aria-label="Edit events"
+                className="shrink-0"
+              >
+                <Pencil className="h-4 w-4 lg:mr-2" aria-hidden="true" />
+                <span className="hidden lg:inline">Edit Events</span>
+              </Button>
+            )}
+          </div>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
@@ -336,6 +443,7 @@ export function ScoringDialog({
                   id="breakAndRun"
                   checked={breakAndRun}
                   onCheckedChange={(c) => handleBreakAndRunCheck(c === true)}
+                  disabled={isPreview}
                 />
                 <Label htmlFor="breakAndRun" className="text-sm font-normal cursor-pointer">
                   Break &amp; Run
@@ -348,6 +456,7 @@ export function ScoringDialog({
                   id="goldenBreak"
                   checked={goldenBreak}
                   onCheckedChange={(c) => handleGoldenBreakCheck(c === true)}
+                  disabled={isPreview}
                 />
                 <Label htmlFor="goldenBreak" className="text-sm font-normal cursor-pointer">
                   {getGoldenBreakLabel()}
@@ -360,6 +469,7 @@ export function ScoringDialog({
                   id="runout"
                   checked={runout}
                   onCheckedChange={(c) => onRunoutChange?.(c === true)}
+                  disabled={isPreview}
                 />
                 <Label htmlFor="runout" className="text-sm font-normal cursor-pointer">
                   Runout
@@ -380,6 +490,7 @@ export function ScoringDialog({
               id="breakFouled"
               checked={breakFouled}
               onCheckedChange={handleBreakFouledChange}
+              disabled={isPreview}
             />
           </div>
 
@@ -392,6 +503,7 @@ export function ScoringDialog({
                 id="winByForfeit"
                 checked={winByForfeit}
                 onCheckedChange={handleWinByForfeitChange}
+                disabled={isPreview}
               />
             </div>
             {winByForfeit && loserPlayerName && (
@@ -415,6 +527,7 @@ export function ScoringDialog({
               label={winnerSpec.label}
               value={winnerValue}
               onChange={(v) => onWinnerValueChange?.(v)}
+              disabled={isPreview}
             />
           )}
           {loserSpec?.kind === 'counter' && (
@@ -424,6 +537,7 @@ export function ScoringDialog({
               label={loserSpec.label}
               value={loserValue}
               onChange={(v) => onLoserValueChange?.(v)}
+              disabled={isPreview}
             />
           )}
           {counterValueMissing && (
@@ -434,16 +548,24 @@ export function ScoringDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onCancel} loadingText="none">
-            Cancel
-          </Button>
-          <Button
-            onClick={onConfirm}
-            loadingText="Saving..."
-            disabled={counterValueMissing}
-          >
-            Save Game
-          </Button>
+          {isPreview ? (
+            <Button variant="outline" onClick={onCancel}>
+              Close
+            </Button>
+          ) : (
+            <>
+              <Button variant="outline" onClick={onCancel} loadingText="none">
+                Cancel
+              </Button>
+              <Button
+                onClick={onConfirm}
+                loadingText="Saving..."
+                disabled={counterValueMissing}
+              >
+                Save Game
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
