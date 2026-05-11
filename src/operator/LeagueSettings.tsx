@@ -115,26 +115,37 @@ export const LeagueSettings: React.FC = () => {
         title="League Settings"
         subtitle={getLeagueName(league)}
       />
-      <div className="container mx-auto px-4 max-w-6xl py-8">
-        <div className="grid md:grid-cols-2 gap-6">
-          <PreferencesCard
-            entityType="league"
-            entityId={league.id}
-          />
+      <div className="container mx-auto px-4 max-w-6xl py-8 space-y-6">
+        {/*
+          Two flex columns on desktop, stacked on mobile. Each column
+          holds its own cards — no CSS grid row-height matching, so a
+          tall card on one side doesn't leave white space below short
+          cards on the other side. As preferences grow, place cards
+          intentionally on either side to balance heights.
+        */}
+        <div className="flex flex-col md:flex-row gap-6 items-start">
+          <div className="flex-1 space-y-6 min-w-0">
+            <PreferencesCard
+              entityType="league"
+              entityId={league.id}
+            />
+          </div>
+          <div className="flex-1 space-y-6 min-w-0">
+            <ScoringPreviewCard target={{ scope: 'league', leagueId: league.id }} />
 
-          <ScoringPreviewCard target={{ scope: 'league', leagueId: league.id }} />
-
-          <DashboardCard
-            icon={<Building2 className="h-6 w-6" />}
-            iconColor="text-blue-600"
-            title="Venue Management"
-            description="Assign venues and set table limits for this league"
-            buttonText="Manage Venues"
-            linkTo={`/venues/${league.organization_id}?leagueId=${league.id}`}
-          />
-
-          <LeagueHouseRulesSection leagueId={league.id} />
+            <DashboardCard
+              icon={<Building2 className="h-6 w-6" />}
+              iconColor="text-blue-600"
+              title="Venue Management"
+              description="Assign venues and set table limits for this league"
+              buttonText="Manage Venues"
+              linkTo={`/venues/${league.organization_id}?leagueId=${league.id}`}
+            />
+          </div>
         </div>
+
+        {/* Full-width row below — House Rules is wider than a single column */}
+        <LeagueHouseRulesSection leagueId={league.id} />
       </div>
     </div>
   );
