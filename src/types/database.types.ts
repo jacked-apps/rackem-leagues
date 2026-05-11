@@ -1536,6 +1536,7 @@ export type Database = {
         Row: {
           allow_unauthorized_players: boolean | null
           created_at: string | null
+          enabled_events: Json
           entity_id: string
           entity_type: string
           game_generation: string | null
@@ -1564,6 +1565,7 @@ export type Database = {
         Insert: {
           allow_unauthorized_players?: boolean | null
           created_at?: string | null
+          enabled_events?: Json
           entity_id: string
           entity_type: string
           game_generation?: string | null
@@ -1592,6 +1594,7 @@ export type Database = {
         Update: {
           allow_unauthorized_players?: boolean | null
           created_at?: string | null
+          enabled_events?: Json
           entity_id?: string
           entity_type?: string
           game_generation?: string | null
@@ -2461,6 +2464,8 @@ export type Database = {
       }
       resolved_league_preferences: {
         Row: {
+          allow_unauthorized_players: boolean | null
+          enabled_events: Json | null
           game_generation: string | null
           game_history_limit: number | null
           golden_break_counts_as_win: boolean | null
@@ -2475,6 +2480,7 @@ export type Database = {
           points_calculator: string | null
           points_calculator_params: Json | null
           points_system: string | null
+          profanity_filter_enabled: boolean | null
           race_length: number | null
           standings_sort: string[] | null
           team_handicap_variant: string | null
@@ -2522,6 +2528,10 @@ export type Database = {
         Args: { target_org_id: string }
         Returns: boolean
       }
+      can_write_preferences: {
+        Args: { p_entity_id: string; p_entity_type: string }
+        Returns: boolean
+      }
       can_write_threshold_chart: {
         Args: { p_entity_id: string; p_entity_type: string }
         Returns: boolean
@@ -2538,6 +2548,10 @@ export type Database = {
           success: boolean
           team_id: string
         }[]
+      }
+      clear_game_with_events: {
+        Args: { p_game_id: string }
+        Returns: undefined
       }
       create_announcement_conversation: {
         Args: { p_member_ids: string[]; p_season_id: string; p_title: string }
@@ -2746,6 +2760,20 @@ export type Database = {
           error_message: string
           success: boolean
         }[]
+      }
+      score_game_with_events: {
+        Args: {
+          p_break_fouled: boolean
+          p_confirmed_by_away: string
+          p_confirmed_by_home: string
+          p_events: Json
+          p_game_id: string
+          p_loser_value: number
+          p_winner_player_id: string
+          p_winner_team_id: string
+          p_winner_value: number
+        }
+        Returns: undefined
       }
       search_placeholder_matches: {
         Args: {
