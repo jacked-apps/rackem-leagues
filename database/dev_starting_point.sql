@@ -584,21 +584,25 @@ BEGIN
   );
 
   -- Modular preference fields (empty row was auto-created by trigger).
-  -- max_roster_size = 8 leaves headroom over the seeded 7-player rosters
-  -- (1 captain + 6 placeholders) so the LO can add subs in tests without
-  -- hitting the cap. 8 is the same cap leagues 2/3 use.
-  --
-  -- League 1 is the BCA 3v3 points format. linear_above_threshold is the
-  -- right calculator (and the trigger default), but we set it explicitly
-  -- so the seed documents its intent.
+  -- Values mirror the `standard_3v3` preset in
+  -- src/wizards/league-v2/presetMappings.ts — same shape the wizard
+  -- produces when an LO picks the BCA 3v3 pre-packaged league.
+  -- max_roster_size bumped from preset's 5 → 8 so seeded 7-player rosters
+  -- (1 captain + 6 placeholders) fit with headroom for added subs.
   UPDATE preferences
     SET lineup_size = 3,
         max_roster_size = 8,
         game_generation = 'double_round_robin',
         handicap_type = 'points',
         points_system = 'differential',
+        pairing_format = 'single_rack',
         points_calculator = 'linear_above_threshold',
-        points_calculator_params = '{}'::jsonb
+        points_calculator_params = '{}'::jsonb,
+        win_condition = 'games',
+        mechanism = 'extra_games',
+        standings_sort = ARRAY['match_wins', 'games_won', 'points_earned'],
+        tiebreaker_trigger = 'even_total_games_only',
+        tiebreaker_format = 'best_of_3_short_race'
     WHERE entity_type = 'league' AND entity_id = v_league_id;
 
   ----------------------------------------------------------------------------
@@ -882,23 +886,43 @@ BEGIN
       FALSE
     );
 
+    -- Values mirror the `standard_5v5` (v_l=1) and `fargo_5v5` (v_l=2)
+    -- presets in src/wizards/league-v2/presetMappings.ts — same shape the
+    -- wizard produces when an LO picks those pre-packaged leagues.
+    --
+    -- BCA 5v5 percentage: games-mode (race to game count), milestone-jumps
+    --   calculator (0.1/game with 1.5x bonus at 70%).
+    -- Fargo 5v5 10-7: points-mode with start_points mechanism (weaker team
+    --   gets head-start points), accumulated_per_game calculator
+    --   (winner=10 fixed, loser=0-7 counter). win_condition='points' is
+    --   what gates the Fargo start-points negotiation flow — without it,
+    --   prep_match fires without waiting for the captains to confirm.
     UPDATE preferences
       SET lineup_size = 5,
           max_roster_size = 8,
           game_generation = 'single_round_robin',
           handicap_type = v_handicap_types[v_l],
           points_system = v_points_systems[v_l],
-          -- Calculator picks the per-game scoring math:
-          --   League 2 (BCA percentage): accumulate_with_milestone_jumps
-          --     defaults give 0.1 per game with 1.5x bonus at 70%.
-          --   League 3 (Fargo 10-7): accumulated_per_game
-          --     defaults give winner=10 fixed, loser=0-7 counter (the
-          --     loser-balls grid in the scoring modal).
+          pairing_format = 'single_rack',
           points_calculator = CASE v_l
             WHEN 1 THEN 'accumulate_with_milestone_jumps'
             WHEN 2 THEN 'accumulated_per_game'
           END,
-          points_calculator_params = '{}'::jsonb
+          points_calculator_params = '{}'::jsonb,
+          win_condition = CASE v_l
+            WHEN 1 THEN 'games'
+            WHEN 2 THEN 'points'
+          END,
+          mechanism = CASE v_l
+            WHEN 1 THEN 'extra_games'
+            WHEN 2 THEN 'start_points'
+          END,
+          standings_sort = CASE v_l
+            WHEN 1 THEN ARRAY['match_wins', 'games_won', 'points_earned']
+            WHEN 2 THEN ARRAY['points_earned', 'match_wins', 'games_won']
+          END,
+          tiebreaker_trigger = 'never',
+          tiebreaker_format = 'accept_tie'
       WHERE entity_type = 'league' AND entity_id = v_league_ids[v_l];
 
     --------------------------------------------------------------------------
