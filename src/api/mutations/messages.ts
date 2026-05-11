@@ -19,6 +19,14 @@ export interface SendMessageParams {
 }
 
 /**
+ * Parameters for posting a system-generated message
+ */
+export interface PostSystemMessageParams {
+  conversationId: string;
+  content: string;
+}
+
+/**
  * Parameters for updating last read timestamp
  */
 export interface UpdateLastReadParams {
@@ -77,6 +85,53 @@ export async function sendMessage(params: SendMessageParams) {
 
   if (error) {
     throw new Error(`Failed to send message: ${error.message}`);
+  }
+
+  return data;
+}
+
+/**
+ * Post a system-generated message into a conversation
+ *
+ * Used by trigger-driven flows (Unit 4 season-activation trigger posts
+ * opening messages; Unit 5 roster triggers post "X joined the team" lines)
+ * and by any future operator-side flow that needs to inject narration into
+ * a chat without a human sender.
+ *
+ * System messages have `is_system = true` and `sender_id = NULL` per the
+ * messages_is_system_shape CHECK constraint (added in Unit 2 of the
+ * messaging overhaul). They render with a distinct visual variant (Unit 7)
+ * and do NOT increment unread badges.
+ *
+ * @param params - Conversation ID and the system message text
+ * @returns The created system message row
+ * @throws Error if the insert fails (e.g., FK violation, CHECK violation)
+ *
+ * @example
+ * await postSystemMessage({
+ *   conversationId: 'conv-123',
+ *   content: 'Sally Anderson joined the team.'
+ * });
+ */
+export async function postSystemMessage(params: PostSystemMessageParams) {
+  const { conversationId, content } = params;
+
+  const { data, error } = await supabase
+    .from('messages')
+    .insert([
+      {
+        conversation_id: conversationId,
+        sender_id: null,
+        content,
+        is_system: true,
+        created_at: new Date().toISOString(),
+      },
+    ])
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to post system message: ${error.message}`);
   }
 
   return data;
