@@ -22,6 +22,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/supabaseClient';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
+import { useIsLeagueOperatorOf } from '@/hooks/useIsLeagueOperatorOf';
+import { useUpsertPreference } from '@/api/hooks/usePreferenceMutations';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -220,6 +222,34 @@ function ScoreMatchBody() {
   const [runout, setRunout] = useState(false);
   const [loserValue, setLoserValue] = useState<number | null>(null);
   const [winnerValue, setWinnerValue] = useState<number | null>(null);
+
+  // Branch B Phase 2: scoring modal mode state. Default 'score'. When the
+  // LO taps the Edit button on the modal, mode flips to 'edit' and the
+  // modal renders the registry-driven event configuration list. Save
+  // commits to preferences via upsertEventsMutation below.
+  const [scoringModalMode, setScoringModalMode] = useState<'score' | 'edit' | 'preview'>('score');
+
+  // Branch B Phase 2: authorization for the Edit button. Only the LO of
+  // this match's league sees it. Player accounts (even captains) get
+  // false here — they can score but cannot configure.
+  const canEditEvents = useIsLeagueOperatorOf(match?.league?.id ?? null);
+
+  // Branch B Phase 2: mutation handler for saving the LO's enabled-events
+  // override map. Writes a league-scope preferences row (or updates the
+  // existing one) with the full desired override map. The resolver hook
+  // invalidates the league prefs cache on success so the modal re-renders
+  // with the new resolution next time it opens.
+  const upsertEventsMutation = useUpsertPreference();
+  const handleSaveEnabledEvents = async (next: Record<string, boolean>) => {
+    if (!match?.league?.id) {
+      throw new Error('Cannot save event preferences: league id missing');
+    }
+    await upsertEventsMutation.mutateAsync({
+      entity_type: 'league',
+      entity_id: match.league.id,
+      enabled_events: next,
+    });
+  };
 
   // Opponent confirmation modal state. Branch B Phase 1: events are now an
   // array of registry event names, sourced from game_events instead of
@@ -860,6 +890,11 @@ function ScoreMatchBody() {
         loserValue={loserValue}
         winnerValue={winnerValue}
         loserPlayerName={loserPlayerName}
+        mode={scoringModalMode}
+        onModeChange={setScoringModalMode}
+        canEditEvents={canEditEvents}
+        enabledEventsOverride={leaguePrefs?.enabled_events ?? {}}
+        onSaveEnabledEvents={handleSaveEnabledEvents}
         onBreakAndRunChange={(checked) => {
           setBreakAndRun(checked);
           if (checked) setGoldenBreak(false);

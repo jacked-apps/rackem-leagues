@@ -12,6 +12,7 @@ import { parseLocalDate } from '@/utils/formatters';
 import { buildLeagueTitle, getTimeOfYear } from '@/utils/leagueUtils';
 import { PageHeader } from '@/components/PageHeader';
 import { PreferencesCard } from '@/components/operator/PreferencesCard';
+import { ScoringPreviewCard } from './ScoringPreviewCard';
 import { DashboardCard } from '@/components/operator/DashboardCard';
 import { Building2 } from 'lucide-react';
 import { LeagueHouseRulesSection } from '@/rules/LeagueHouseRulesSection';
@@ -120,6 +121,8 @@ export const LeagueSettings: React.FC = () => {
             entityType="league"
             entityId={league.id}
           />
+
+          <ScoringPreviewCard target={{ scope: 'league', leagueId: league.id }} />
 
           <DashboardCard
             icon={<Building2 className="h-6 w-6" />}
