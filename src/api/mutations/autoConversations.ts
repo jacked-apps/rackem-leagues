@@ -151,3 +151,198 @@ export async function createTeamChat(
 
   return { conversationId: conversation.id, created: true };
 }
+
+
+// ============================================================================
+// createCaptainChat
+// ============================================================================
+
+/**
+ * Parameters for createCaptainChat
+ */
+export interface CreateCaptainChatParams {
+  seasonId: string;
+  leagueId: string;
+}
+
+/**
+ * Result of createCaptainChat — same shape as createTeamChat.
+ */
+export interface CreateCaptainChatResult {
+  conversationId: string;
+  created: boolean;
+}
+
+/**
+ * Create the auto-managed captain's chat for a given season, idempotently.
+ *
+ * One captain's chat per (league, season) pair — since each season belongs
+ * to exactly one league, the chat is scoped by `(scope_type='season',
+ * scope_id=seasonId)` and `conversation_type='captains_chat'`. Members are
+ * the union of:
+ *   - All current team captains for that season (one row per UNIQUE
+ *     captain — captains running multiple teams in the same season only
+ *     appear once). Captains have `cannot_leave = true` (D6).
+ *   - All organization staff (owner / admin / league_rep) for the league's
+ *     org. Per D6, staff CAN leave the captain chat, so `cannot_leave =
+ *     false` for staff-only members.
+ *   - A member who is BOTH a captain AND staff is deduplicated to one row
+ *     with `cannot_leave = true` (the captain rule wins — D24 captain
+ *     lifecycle says captains cannot leave the captain chat).
+ *
+ * Opens with a system message.
+ *
+ * @param params - Season and league identifiers
+ * @returns The conversation id plus a `created` flag (idempotency signal)
+ * @throws Error if the season doesn't exist, doesn't belong to the named
+ *   league, or any underlying insert fails
+ *
+ * @example
+ * const { conversationId } = await createCaptainChat({
+ *   seasonId: activeSeason.id,
+ *   leagueId: activeSeason.league_id,
+ * });
+ */
+export async function createCaptainChat(
+  params: CreateCaptainChatParams
+): Promise<CreateCaptainChatResult> {
+  const { seasonId, leagueId } = params;
+
+  // 1. Idempotency check
+  const { data: existing, error: lookupError } = await supabase
+    .from('conversations')
+    .select('id')
+    .eq('scope_type', 'season')
+    .eq('scope_id', seasonId)
+    .eq('conversation_type', 'captains_chat')
+    .eq('auto_managed', true)
+    .maybeSingle();
+
+  if (lookupError) {
+    throw new Error(`Failed to look up existing captain chat: ${lookupError.message}`);
+  }
+  if (existing) {
+    return { conversationId: existing.id, created: false };
+  }
+
+  // 2. Load season → verify league membership + get league_id
+  const { data: season, error: seasonError } = await supabase
+    .from('seasons')
+    .select('id, league_id')
+    .eq('id', seasonId)
+    .single();
+
+  if (seasonError || !season) {
+    throw new Error(
+      `Season not found for createCaptainChat (seasonId=${seasonId}): ${seasonError?.message ?? 'no row'}`
+    );
+  }
+  if (season.league_id !== leagueId) {
+    throw new Error(
+      `Season ${seasonId} belongs to league ${season.league_id}, not ${leagueId}`
+    );
+  }
+
+  // 3. Load league → get organization_id + a label for the title
+  const { data: league, error: leagueError } = await supabase
+    .from('leagues')
+    .select('id, organization_id, division, day_of_week')
+    .eq('id', leagueId)
+    .single();
+
+  if (leagueError || !league) {
+    throw new Error(
+      `League not found for createCaptainChat (leagueId=${leagueId}): ${leagueError?.message ?? 'no row'}`
+    );
+  }
+
+  // 4. Captains for this season — DISTINCT to dedupe a captain running
+  //    multiple teams (rare but possible).
+  const { data: captainRows, error: captainsError } = await supabase
+    .from('teams')
+    .select('captain_id')
+    .eq('season_id', seasonId)
+    .not('captain_id', 'is', null);
+
+  if (captainsError) {
+    throw new Error(`Failed to load captains: ${captainsError.message}`);
+  }
+  const captainIds = new Set<string>(
+    (captainRows ?? []).map((r) => r.captain_id as string).filter(Boolean)
+  );
+
+  // 5. Org staff for this league's organization
+  const { data: staffRows, error: staffError } = await supabase
+    .from('organization_staff')
+    .select('member_id')
+    .eq('organization_id', league.organization_id);
+
+  if (staffError) {
+    throw new Error(`Failed to load org staff: ${staffError.message}`);
+  }
+  const staffIds = new Set<string>((staffRows ?? []).map((r) => r.member_id as string));
+
+  // 6. Insert the conversation
+  const titleLabel = league.division
+    ? `${league.division} Captains Chat`
+    : `${league.day_of_week} Captains Chat`;
+
+  const { data: conversation, error: convError } = await supabase
+    .from('conversations')
+    .insert({
+      title: titleLabel,
+      auto_managed: true,
+      conversation_type: 'captains_chat',
+      scope_type: 'season',
+      scope_id: seasonId,
+    })
+    .select('id')
+    .single();
+
+  if (convError || !conversation) {
+    throw new Error(
+      `Failed to insert captain chat conversation: ${convError?.message ?? 'no row returned'}`
+    );
+  }
+
+  // 7. Build participant rows — captain rule wins on the cannot_leave flag
+  //    for dual members (captain + staff). Use a Map keyed by member_id so
+  //    duplicates dedup automatically.
+  const participantsByMember = new Map<string, { conversation_id: string; user_id: string; cannot_leave: boolean }>();
+  for (const cap of captainIds) {
+    participantsByMember.set(cap, {
+      conversation_id: conversation.id,
+      user_id: cap,
+      cannot_leave: true,
+    });
+  }
+  for (const staff of staffIds) {
+    if (!participantsByMember.has(staff)) {
+      // Staff-only: can leave
+      participantsByMember.set(staff, {
+        conversation_id: conversation.id,
+        user_id: staff,
+        cannot_leave: false,
+      });
+    }
+    // else: already in the map as a captain; captain rule wins (cannot_leave=true)
+  }
+
+  if (participantsByMember.size > 0) {
+    const { error: partError } = await supabase
+      .from('conversation_participants')
+      .insert(Array.from(participantsByMember.values()));
+
+    if (partError) {
+      throw new Error(`Failed to add participants to captain chat: ${partError.message}`);
+    }
+  }
+
+  // 8. Opening system message
+  await postSystemMessage({
+    conversationId: conversation.id,
+    content: 'Captains chat created.',
+  });
+
+  return { conversationId: conversation.id, created: true };
+}
