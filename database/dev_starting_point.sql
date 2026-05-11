@@ -1076,6 +1076,38 @@ BEGIN
 END $$;
 
 -- ============================================================================
+-- Step 8: random starting handicaps for League 1 + League 2 rosters
+-- ============================================================================
+--
+-- Gives every rostered member in each handicap-using league a plausible
+-- random handicap so lineups have variation. Fargo league members get
+-- nothing — Fargo ratings are entered at lineup time, not stored on the
+-- members row.
+--
+--   League 1 (BCA 3v3 points):       starting_handicap_3v3 in [-2, 2]
+--   League 2 (BCA 5v5 percentage):   starting_handicap_5v5 in [30, 80]
+--
+-- Random per row so each re-seed shuffles. Deterministic-by-design is
+-- nice but not needed for handicap variation in dev.
+-- ============================================================================
+
+UPDATE members m
+SET starting_handicap_3v3 = floor(random() * 5) - 2
+FROM team_players tp
+JOIN teams t ON t.id = tp.team_id
+JOIN seasons s ON s.id = t.season_id
+WHERE m.id = tp.member_id
+  AND s.league_id = '0c0c0c0c-1111-1111-1111-0c0c0c0c0c0c';
+
+UPDATE members m
+SET starting_handicap_5v5 = 30 + floor(random() * 51)
+FROM team_players tp
+JOIN teams t ON t.id = tp.team_id
+JOIN seasons s ON s.id = t.season_id
+WHERE m.id = tp.member_id
+  AND s.league_id = '0c0c0c0c-1111-2222-2222-0c0c0c0c0c0c';
+
+-- ============================================================================
 -- Summary
 -- ============================================================================
 
