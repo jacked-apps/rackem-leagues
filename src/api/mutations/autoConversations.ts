@@ -346,3 +346,153 @@ export async function createCaptainChat(
 
   return { conversationId: conversation.id, created: true };
 }
+
+
+// ============================================================================
+// createSeasonAnnouncementsChat
+// ============================================================================
+
+/**
+ * Parameters for createSeasonAnnouncementsChat
+ */
+export interface CreateSeasonAnnouncementsChatParams {
+  seasonId: string;
+}
+
+/**
+ * Result of createSeasonAnnouncementsChat.
+ */
+export interface CreateSeasonAnnouncementsChatResult {
+  conversationId: string;
+  created: boolean;
+}
+
+/**
+ * Create the auto-managed season-announcements chat for a given season.
+ *
+ * One announcements channel per season. Members are every distinct player
+ * rostered on any team in the season. Per the brainstorm §5.1:
+ *   - Players cannot LEAVE (cannot_leave = true) — they can only mute
+ *     (notification_mode change, handled in Phase 2 UI)
+ *   - Only LO / staff can POST. Phase 1 stores this as a convention; the
+ *     RLS gate that enforces post-permission comes with the RLS-enablement
+ *     project. AnnouncementModal (existing) already restricts posting at
+ *     the UI layer.
+ *
+ * @param params - Season identifier
+ * @returns Conversation id + created flag
+ * @throws Error if season missing or inserts fail
+ *
+ * @example
+ * await createSeasonAnnouncementsChat({ seasonId: activeSeason.id });
+ */
+export async function createSeasonAnnouncementsChat(
+  params: CreateSeasonAnnouncementsChatParams
+): Promise<CreateSeasonAnnouncementsChatResult> {
+  const { seasonId } = params;
+
+  // 1. Idempotency
+  const { data: existing, error: lookupError } = await supabase
+    .from('conversations')
+    .select('id')
+    .eq('scope_type', 'season')
+    .eq('scope_id', seasonId)
+    .eq('conversation_type', 'announcements')
+    .eq('auto_managed', true)
+    .maybeSingle();
+
+  if (lookupError) {
+    throw new Error(`Failed to look up existing season announcements chat: ${lookupError.message}`);
+  }
+  if (existing) {
+    return { conversationId: existing.id, created: false };
+  }
+
+  // 2. Verify the season exists, pull division for the chat title
+  const { data: season, error: seasonError } = await supabase
+    .from('seasons')
+    .select('id, season_name, league_id')
+    .eq('id', seasonId)
+    .single();
+
+  if (seasonError || !season) {
+    throw new Error(
+      `Season not found for createSeasonAnnouncementsChat (seasonId=${seasonId}): ${seasonError?.message ?? 'no row'}`
+    );
+  }
+
+  // 3. DISTINCT players in this season (joins team_players → teams to filter
+  //    by season — team_players has its own season_id but the join is the
+  //    canonical "who plays this season" query).
+  const playerRows = await executeRosterQuery(seasonId);
+
+  // 4. Insert the conversation
+  const { data: conversation, error: convError } = await supabase
+    .from('conversations')
+    .insert({
+      title: season.season_name
+        ? `${season.season_name} — Announcements`
+        : 'Season Announcements',
+      auto_managed: true,
+      conversation_type: 'announcements',
+      scope_type: 'season',
+      scope_id: seasonId,
+    })
+    .select('id')
+    .single();
+
+  if (convError || !conversation) {
+    throw new Error(
+      `Failed to insert season announcements conversation: ${convError?.message ?? 'no row returned'}`
+    );
+  }
+
+  // 5. Insert participants — every distinct player gets cannot_leave=true
+  //    (D14 opt-out is for match chats, NOT announcements).
+  const participantRows = playerRows.map((p) => ({
+    conversation_id: conversation.id,
+    user_id: p,
+    cannot_leave: true,
+  }));
+
+  if (participantRows.length > 0) {
+    const { error: partError } = await supabase
+      .from('conversation_participants')
+      .insert(participantRows);
+
+    if (partError) {
+      throw new Error(`Failed to add participants to season announcements: ${partError.message}`);
+    }
+  }
+
+  // 6. Opening system message
+  await postSystemMessage({
+    conversationId: conversation.id,
+    content: 'Season announcements channel created. Only league staff can post here.',
+  });
+
+  return { conversationId: conversation.id, created: true };
+}
+
+
+/**
+ * Internal: return distinct member_ids who play any team in a season.
+ *
+ * Uses the supabase client (not raw SQL) so the function is portable across
+ * environments and exercises the same client path the rest of the helpers
+ * use. The teams join is the canonical "players in this season" query.
+ */
+async function executeRosterQuery(seasonId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('team_players')
+    .select('member_id, teams!inner(season_id)')
+    .eq('teams.season_id', seasonId);
+
+  if (error) {
+    throw new Error(`Failed to load season roster: ${error.message}`);
+  }
+
+  // Dedup at the JS layer — DISTINCT in PostgREST is awkward
+  const uniqueMembers = new Set<string>((data ?? []).map((r) => r.member_id as string));
+  return Array.from(uniqueMembers);
+}
