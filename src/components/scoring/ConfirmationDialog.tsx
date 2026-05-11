@@ -54,6 +54,9 @@ export function ConfirmationDialog({
   if (!game) return null;
 
   const isVacateRequest = game.isResetRequest;
+  // Forfeit case gets its own visually-prominent layout (loser name big,
+  // winner demoted) because it's rare and consequential.
+  const isForfeit = game.events.includes('win_by_forfeit');
 
   // Get game-type-specific golden_break label.
   const getGoldenBreakLabel = () => {
@@ -141,6 +144,32 @@ export function ConfirmationDialog({
                   allow both teams to score this game again.
                 </p>
               </div>
+            </>
+          ) : isForfeit && game.loserPlayerName ? (
+            // Forfeit case: invert visual hierarchy. The forfeit attribution
+            // dominates; the winner is secondary. Forfeits are rare and
+            // carry real consequences — losing player must SEE this.
+            <>
+              <p className="text-center text-muted-foreground text-sm">
+                Opponent recorded for game {game.gameNumber}:
+              </p>
+
+              <div
+                role="alert"
+                className="rounded-md border-2 border-destructive bg-destructive/10 px-3 py-3 text-center"
+              >
+                <p className="text-lg font-bold uppercase tracking-wide text-destructive">
+                  {game.loserPlayerName} forfeits the game!
+                </p>
+              </div>
+
+              <p className="text-center text-sm text-muted-foreground">
+                Win recorded for {game.winnerPlayerName}
+              </p>
+
+              <p className="text-center mt-2 text-muted-foreground">
+                Do you agree with this result?
+              </p>
             </>
           ) : (
             <>

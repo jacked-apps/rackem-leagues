@@ -552,6 +552,10 @@ function ScoreMatchBody() {
     autoConfirm,
     addToConfirmationQueue,
     getPlayerDisplayName,
+    getPlayerFullName: (playerId) => {
+      const p = players.get(playerId);
+      return p ? `${p.first_name} ${p.last_name}` : null;
+    },
   });
 
   // Store mutations in ref for use in real-time subscription callback
@@ -898,9 +902,21 @@ function ScoreMatchBody() {
               .select('event_name')
               .eq('game_id', game.id);
             const events = (eventRows ?? []).map(row => row.event_name);
+            // Derive loser's full name from the players Map for the
+            // forfeit banner (events array carries 'win_by_forfeit' if
+            // applicable).
+            const loserId =
+              game.winner_player_id === game.home_player_id
+                ? game.away_player_id
+                : game.home_player_id;
+            const loserP = loserId ? players.get(loserId) : null;
+            const loserFullName = loserP
+              ? `${loserP.first_name} ${loserP.last_name}`
+              : undefined;
             setConfirmationGame({
               gameNumber,
               winnerPlayerName: winnerName,
+              loserPlayerName: loserFullName,
               events,
               breakFouled: game.break_fouled,
               winnerValue: game.winner_value,

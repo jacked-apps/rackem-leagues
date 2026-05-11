@@ -450,22 +450,36 @@ export function ScoringDialog({
 
           <div className="text-center">
             <p className="text-sm text-muted-foreground">Game {game.gameNumber}</p>
-            <p className="text-lg font-semibold mt-2">
-              Winner: {game.winnerPlayerName}
-            </p>
+            {winByForfeit && loserPlayerName ? (
+              <>
+                {/* Forfeit hierarchy: loser FORFEIT prominent, winner small. */}
+                <div
+                  role="alert"
+                  className="mt-2 rounded-md border-2 border-destructive bg-destructive/10 px-3 py-3"
+                >
+                  <p className="text-lg font-bold uppercase tracking-wide text-destructive">
+                    {loserPlayerName} forfeits the game!
+                  </p>
+                </div>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Win recorded for {game.winnerPlayerName}
+                </p>
+              </>
+            ) : (
+              <p className="text-lg font-semibold mt-2">
+                Winner: {game.winnerPlayerName}
+              </p>
+            )}
           </div>
 
-          {/* Section 1: role-conditional achievements as compact inline
-              checkboxes. Most leagues see at most 2 visible at a time
-              (B&R + Golden Break for breaker-side wins, or just Runout
-              for non-breaker wins). One horizontal row, scannable, easy
-              to skip past when no achievement applies. B&R and Golden
-              Break are mutually exclusive — checking one auto-unchecks
-              the other (handlers do the work). */}
-          {/* Each achievement on its own row for clearer touch targets +
-              visual breathing room. checkboxClass / switchClass bump the
-              border contrast so unchecked controls aren't almost-invisible
-              against the dialog background. */}
+          {/* Section 1: role-conditional achievements. Each on its own
+              row for touch targets + breathing room. Bumped border
+              contrast so unchecked controls are visible. B&R and Golden
+              Break are mutually exclusive. The ENTIRE section is hidden
+              when winByForfeit is on — a forfeit means no game was
+              played, so achievements are meaningless. The big red
+              "Player X FORFEITS" banner becomes the dominant visual. */}
+          {!winByForfeit && (
           <div className="flex flex-col gap-3">
             {winnerIsActualBreaker && enabledEvents.has('break_and_run') && (
               <div className="flex items-center gap-2">
@@ -510,12 +524,12 @@ export function ScoringDialog({
               </div>
             )}
           </div>
+          )}
 
-          {/* Section 2: state modifiers — rare events that change game
-              mechanics (re-rack semantics) or stat attribution. Middle
-              section because they're tapped infrequently but matter when
-              they do. Gated by enabled_events so LO can hide them. */}
-          {enabledEvents.has('break_fouled') && (
+          {/* Section 2: state modifiers — also hidden when forfeit is on.
+              Break-fault implies a game was played; forfeit implies the
+              opposite. Keep the modifiers clean from the forfeit case. */}
+          {!winByForfeit && enabledEvents.has('break_fouled') && (
             <div className="flex items-center justify-between">
               <Label htmlFor="breakFouled" className="text-sm font-normal">
                 Break foul (re-rack)
@@ -544,16 +558,10 @@ export function ScoringDialog({
                 className="data-[state=unchecked]:bg-muted-foreground/40 dark:data-[state=unchecked]:bg-muted-foreground/30"
               />
             </div>
-            {winByForfeit && loserPlayerName && (
-              <div
-                role="alert"
-                className="mt-2 rounded-md border-2 border-destructive bg-destructive/10 px-3 py-2 text-center"
-              >
-                <p className="text-sm font-bold uppercase tracking-wide text-destructive">
-                  {loserPlayerName} forfeits the game!
-                </p>
-              </div>
-            )}
+            {/* Forfeit banner now lives at the top of the modal body so it
+                dominates the visual hierarchy when toggled. No second
+                banner here — the switch itself + the top banner are the
+                visible feedback. */}
           </div>
           )}
 
@@ -563,8 +571,9 @@ export function ScoringDialog({
               last step before saving. The spec's `kind` drives rendering:
               'counter' shows an AdaptiveCounter; 'fixed' shows nothing
               (calculator handles fixed implicitly). Aggregate calculators
-              (no perSideInputs) produce nothing here. */}
-          {winnerSpec?.kind === 'counter' && (
+              (no perSideInputs) produce nothing here. Hidden when forfeit
+              is on — no game played = no points pocketed. */}
+          {!winByForfeit && winnerSpec?.kind === 'counter' && (
             <AdaptiveCounter
               min={winnerSpec.min}
               max={winnerSpec.max}
@@ -574,7 +583,7 @@ export function ScoringDialog({
               disabled={isPreview}
             />
           )}
-          {loserSpec?.kind === 'counter' && (
+          {!winByForfeit && loserSpec?.kind === 'counter' && (
             <AdaptiveCounter
               min={loserSpec.min}
               max={loserSpec.max}
