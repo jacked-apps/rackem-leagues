@@ -19,7 +19,14 @@ import {
 /** Shared cache invalidation for all preference mutations */
 function invalidatePreferenceCache(queryClient: ReturnType<typeof useQueryClient>) {
   queryClient.invalidateQueries({ queryKey: ['preferences'] });
+  // Two keys: the legacy underscore key (in case anything still uses it)
+  // and the actual hyphen-cased key used by useResolvedLeaguePrefs. The
+  // hook's key was diverging silently — preference upserts ran but the
+  // resolver cache stayed stale, so UIs reading enabled_events / other
+  // resolved fields didn't refresh until manual page reload. Fixed
+  // during Branch B Phase 2.
   queryClient.invalidateQueries({ queryKey: ['resolved_league_preferences'] });
+  queryClient.invalidateQueries({ queryKey: ['resolved-league-preferences'] });
 }
 
 /** Create a new preference record */

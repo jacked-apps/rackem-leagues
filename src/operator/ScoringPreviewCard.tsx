@@ -19,6 +19,7 @@
 
 import { useState } from 'react';
 import { Eye, Pencil } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScoringDialog } from '@/components/scoring/ScoringDialog';
@@ -65,6 +66,7 @@ export function ScoringPreviewCard(props: ScoringPreviewCardProps) {
   );
   const canEditEvents = props.target.scope === 'league' ? isLeagueOp : isOrgOp;
 
+  const queryClient = useQueryClient();
   const upsertMutation = useUpsertPreference();
   const handleSaveEnabledEvents = async (next: Record<string, boolean>) => {
     await upsertMutation.mutateAsync(
@@ -97,6 +99,13 @@ export function ScoringPreviewCard(props: ScoringPreviewCardProps) {
           leagueId: props.target.leagueId,
           error: error.message,
         });
+      } else {
+        // Invalidate any cached match-detail queries that hold this league's
+        // golden_break_counts_as_win. Broad invalidation (no specific
+        // matchId here on the office page) — TanStack handles the
+        // fan-out across detail subkeys.
+        queryClient.invalidateQueries({ queryKey: ['matches'] });
+        queryClient.invalidateQueries({ queryKey: ['leagues'] });
       }
     }
   };

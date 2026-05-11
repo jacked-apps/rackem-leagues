@@ -270,6 +270,15 @@ function ScoreMatchBody() {
           leagueId: match.league.id,
           error: error.message,
         });
+      } else {
+        // The match cache holds match.league.golden_break_counts_as_win
+        // (used by useMatchScoring -> goldenBreakCountsAsWin -> modal's
+        // GB rendering gate). Without explicit invalidation here, the
+        // score-mode body keeps the stale gate value and the GB checkbox
+        // doesn't render until manual page reload.
+        if (matchId) {
+          queryClient.invalidateQueries({ queryKey: queryKeys.matches.detail(matchId) });
+        }
       }
     }
   };
