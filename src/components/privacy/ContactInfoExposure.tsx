@@ -99,10 +99,10 @@ const getVisibilityColors = (level: ContactVisibilityLevel) => {
       };
     default:
       return {
-        bg: 'bg-gray-50',
-        border: 'border-gray-200',
-        text: 'text-gray-800',
-        accent: 'text-gray-600'
+        bg: 'bg-muted',
+        border: 'border-border',
+        text: 'text-foreground',
+        accent: 'text-muted-foreground'
       };
   }
 };
@@ -174,12 +174,12 @@ export const ContactInfoExposure: React.FC<ContactInfoExposureProps> = ({
     <div className="space-y-4">
       {/* Header */}
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-1">
+        <h3 className="text-lg font-semibold text-foreground mb-1">
           {displayTitle}
           {required && <span className="text-red-500 ml-1">*</span>}
         </h3>
         {helpText && (
-          <p className="text-sm text-gray-600">{helpText}</p>
+          <p className="text-sm text-muted-foreground">{helpText}</p>
         )}
       </div>
 

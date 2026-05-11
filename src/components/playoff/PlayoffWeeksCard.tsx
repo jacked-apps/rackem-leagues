@@ -136,7 +136,7 @@ export const PlayoffWeeksCard: React.FC<PlayoffWeeksCardProps> = ({
                   dispatch({ type: 'SET_PLAYOFF_WEEKS', payload: parseInt(value, 10) });
                 }}
               >
-                <SelectTrigger className="w-[140px] bg-white">
+                <SelectTrigger className="w-[140px] bg-card">
                   <SelectValue placeholder="Select weeks" />
                 </SelectTrigger>
                 <SelectContent>
@@ -187,19 +187,19 @@ export const PlayoffWeeksCard: React.FC<PlayoffWeeksCardProps> = ({
             </div>
 
             {/* Price calculation */}
-            <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-              <div className="text-xs text-gray-500 mb-2">Example pricing based on {exampleTeamCount} teams:</div>
+            <div className="bg-muted rounded-lg p-4 space-y-2">
+              <div className="text-xs text-muted-foreground mb-2">Example pricing based on {exampleTeamCount} teams:</div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Price per team per week:</span>
+                <span className="text-muted-foreground">Price per team per week:</span>
                 <span className="font-medium">$2.00</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Teams × Weeks:</span>
+                <span className="text-muted-foreground">Teams × Weeks:</span>
                 <span className="font-medium">{exampleTeamCount} × {weeksToAdd}</span>
               </div>
               <div className="border-t pt-2 mt-2">
                 <div className="flex justify-between">
-                  <span className="font-medium text-gray-700">Example total:</span>
+                  <span className="font-medium text-foreground">Example total:</span>
                   <span className="font-bold text-purple-600">
                     ${(exampleTeamCount * weeksToAdd * 2).toFixed(2)}
                   </span>
@@ -217,20 +217,20 @@ export const PlayoffWeeksCard: React.FC<PlayoffWeeksCardProps> = ({
                 }
                 className="space-y-2"
               >
-                <div className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50">
+                <div className="flex items-center space-x-3 p-3 rounded-lg border border-border hover:bg-muted">
                   <RadioGroupItem value="automatic" id="automatic" />
                   <Label htmlFor="automatic" className="flex-1 cursor-pointer">
                     <div className="font-medium">Charge automatically</div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-muted-foreground">
                       Amount will be charged to your payment method during playoff weeks
                     </div>
                   </Label>
                 </div>
-                <div className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50">
+                <div className="flex items-center space-x-3 p-3 rounded-lg border border-border hover:bg-muted">
                   <RadioGroupItem value="manual" id="manual" />
                   <Label htmlFor="manual" className="flex-1 cursor-pointer">
                     <div className="font-medium">Pay manually</div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-muted-foreground">
                       You will receive an invoice to pay before playoff weeks begin
                     </div>
                   </Label>

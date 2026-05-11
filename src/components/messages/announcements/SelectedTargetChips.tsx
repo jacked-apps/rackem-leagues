@@ -34,7 +34,7 @@ export function SelectedTargetChips({ selectedTargets, onRemove }: SelectedTarge
         {selectedTargets.map((target) => (
           <div
             key={target.id}
-            className="bg-white border border-blue-300 rounded-full px-3 py-1 text-sm flex items-center gap-2"
+            className="bg-card border border-blue-300 rounded-full px-3 py-1 text-sm flex items-center gap-2"
           >
             <span>
               {target.name}
@@ -42,7 +42,7 @@ export function SelectedTargetChips({ selectedTargets, onRemove }: SelectedTarge
             </span>
             <button
               onClick={() => onRemove(target.id)}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-muted-foreground hover:text-foreground"
             >
               <X className="h-3 w-3" />
             </button>

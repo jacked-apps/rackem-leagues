@@ -333,18 +333,18 @@ export const VenueLimitModal: React.FC<VenueLimitModalProps> = ({
       onKeyDown={handleKeyDown}
     >
       <div
-        className="bg-white rounded-xl shadow-xl max-w-md w-full"
+        className="bg-card rounded-xl shadow-xl max-w-md w-full"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-6 border-b border-border">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Table Limits</h2>
-            <p className="text-sm text-gray-600 mt-1">{venue.name}</p>
+            <h2 className="text-xl font-bold text-foreground">Table Limits</h2>
+            <p className="text-sm text-muted-foreground mt-1">{venue.name}</p>
           </div>
           <button
             onClick={onCancel}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-muted-foreground hover:text-muted-foreground transition-colors"
             aria-label="Close"
           >
             <X className="h-5 w-5" />
@@ -391,7 +391,7 @@ export const VenueLimitModal: React.FC<VenueLimitModalProps> = ({
                       <TableSizeLabel sizeKey={key} />
                     </label>
                     {hasTablesOfSize && (
-                      <span className="text-xs text-gray-500">({tableCount})</span>
+                      <span className="text-xs text-muted-foreground">({tableCount})</span>
                     )}
                   </div>
                 );
@@ -413,7 +413,7 @@ export const VenueLimitModal: React.FC<VenueLimitModalProps> = ({
                   checked={fillOrder === 'ascending'}
                   onCheckedChange={() => handleFillOrderChange('ascending')}
                 />
-                <label htmlFor="fill-ascending" className="text-sm text-gray-700">
+                <label htmlFor="fill-ascending" className="text-sm text-foreground">
                   Ascending
                 </label>
               </div>
@@ -423,7 +423,7 @@ export const VenueLimitModal: React.FC<VenueLimitModalProps> = ({
                   checked={fillOrder === 'descending'}
                   onCheckedChange={() => handleFillOrderChange('descending')}
                 />
-                <label htmlFor="fill-descending" className="text-sm text-gray-700">
+                <label htmlFor="fill-descending" className="text-sm text-foreground">
                   Descending
                 </label>
               </div>
@@ -433,7 +433,7 @@ export const VenueLimitModal: React.FC<VenueLimitModalProps> = ({
                   checked={fillOrder === 'custom'}
                   onCheckedChange={() => handleFillOrderChange('custom')}
                 />
-                <label htmlFor="fill-custom" className="text-sm text-gray-700">
+                <label htmlFor="fill-custom" className="text-sm text-foreground">
                   Custom
                 </label>
               </div>
@@ -565,7 +565,7 @@ export const VenueLimitModal: React.FC<VenueLimitModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
+        <div className="flex items-center justify-end gap-3 p-6 border-t border-border bg-muted">
           <Button variant="outline" onClick={onCancel} disabled={updateLeagueVenueMutation.isPending}>
             Cancel
           </Button>

@@ -189,11 +189,58 @@ serve(async (req) => {
       );
     }
 
-    // Call the merge function
+    // Resolve the invite's organization_id for merge_v2's authz parameter.
+    // Priority:
+    //   1. Placeholder's members.organization_id (populated by the trigger for
+    //      all new placeholders — handles auto-invites without team_id).
+    //   2. Fallback: invite.team_id -> teams -> seasons -> leagues. Covers
+    //      legacy invites that predate the org column.
+    // Sourcing server-side means a caller cannot spoof a different org — the
+    // invite itself pins which org the merge belongs to.
+    let organizationId: string | null = null;
+
+    const { data: placeholderRow } = await supabaseAdmin
+      .from("members")
+      .select("organization_id")
+      .eq("id", placeholderMemberId)
+      .maybeSingle();
+    organizationId = placeholderRow?.organization_id ?? null;
+
+    if (!organizationId && tokenData.team_id) {
+      const { data: teamRow } = await supabaseAdmin
+        .from("teams")
+        .select("seasons!inner(leagues!inner(organization_id))")
+        .eq("id", tokenData.team_id)
+        .single();
+      // deno-lint-ignore no-explicit-any
+      organizationId = (teamRow as any)?.seasons?.leagues?.organization_id ?? null;
+    }
+
+    if (!organizationId) {
+      console.error("Failed to resolve organization_id for invite", {
+        placeholderMemberId,
+        team_id: tokenData.team_id,
+      });
+      return new Response(
+        JSON.stringify({
+          error: "Could not resolve invite organization",
+          details: "Placeholder has no org and the invite has no team. Ask your league operator.",
+        }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Call the snapshot-capturing v2 merge. actor_member_id is the caller (the
+    // invited user self-claiming); actor_role is 'invite_accept'. organization_id
+    // comes from the invite, not from client input, so the authz check inside
+    // the RPC re-verifies the placeholder belongs to that org via its team chain.
     const { data: mergeResult, error: mergeError } = await supabaseAdmin
-      .rpc("merge_placeholder_into_member", {
+      .rpc("merge_placeholder_into_member_v2", {
         p_placeholder_member_id: placeholderMemberId,
-        p_target_member_id: userMember.id
+        p_target_member_id: userMember.id,
+        p_actor_member_id: userMember.id,
+        p_actor_role: "invite_accept",
+        p_organization_id: organizationId,
       });
 
     if (mergeError) {
@@ -213,15 +260,31 @@ serve(async (req) => {
       );
     }
 
+    // Build a stats breakdown for the UI by reading the archive's transferred_rows.
+    // Shape is preserved (teamsJoined / gamesTransferred / lineupsTransferred) so
+    // the existing ClaimPlayer.tsx display keeps working during the Phase D rollout.
+    const { data: archive } = await supabaseAdmin
+      .from("archived_placeholders")
+      .select("transferred_rows")
+      .eq("id", result.archive_id)
+      .single();
+
+    // deno-lint-ignore no-explicit-any
+    const rows: any[] = Array.isArray(archive?.transferred_rows) ? archive.transferred_rows : [];
+    const teamsJoined = rows.filter((r) => r?.t === "team_players" && r?.op === "inserted_for_target").length;
+    const lineupsTransferred = rows.filter((r) => r?.t === "match_lineups" && r?.op === "rewritten").length;
+    const gamesTransferred = rows.filter((r) => r?.t === "match_games" && r?.op === "rewritten").length;
+
     return new Response(
       JSON.stringify({
         success: true,
         message: "Placeholder successfully merged into your account!",
+        archive_id: result.archive_id,
         stats: {
-          teamsJoined: result.teams_updated,
-          gamesTransferred: result.games_updated,
-          lineupsTransferred: result.lineups_updated
-        }
+          teamsJoined,
+          gamesTransferred,
+          lineupsTransferred,
+        },
       }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );

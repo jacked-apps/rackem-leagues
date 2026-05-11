@@ -62,7 +62,7 @@ export function PlayerSelectionRow({
   return (
     <div className="flex gap-2 items-center">
       <div className="w-12 text-center">
-        <div className="text-sm font-semibold text-gray-700">{position}</div>
+        <div className="text-sm font-semibold text-foreground">{position}</div>
       </div>
 
       {!hideHandicap && (

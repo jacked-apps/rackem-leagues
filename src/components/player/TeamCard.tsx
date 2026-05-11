@@ -117,7 +117,7 @@ export function TeamCard({
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-2xl">{teamName}</CardTitle>
-            <p className="text-base text-gray-700 dark:text-gray-300 mt-1 font-medium">
+            <p className="text-base text-foreground dark:text-gray-300 mt-1 font-medium">
               {formatGameType(season.league.game_type as any)} • {formatDayOfWeek(season.league.day_of_week as any)}
               {season.league.division && ` • ${season.league.division}`}
             </p>
@@ -159,14 +159,14 @@ export function TeamCard({
       <CardContent className="space-y-4">
         {/* Home Venue */}
         <div>
-          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Home Venue</p>
-          <p className="text-base text-gray-900 dark:text-gray-100">{venue?.name || 'No venue assigned'}</p>
+          <p className="text-sm font-medium text-muted-foreground dark:text-muted-foreground">Home Venue</p>
+          <p className="text-base text-foreground dark:text-gray-100">{venue?.name || 'No venue assigned'}</p>
         </div>
 
         {/* Captain */}
         <div>
-          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Captain</p>
-          <div className={`text-base ${captain.id === currentUserId ? 'font-semibold text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-gray-100'}`}>
+          <p className="text-sm font-medium text-muted-foreground dark:text-muted-foreground">Captain</p>
+          <div className={`text-base ${captain.id === currentUserId ? 'font-semibold text-blue-600 dark:text-blue-400' : 'text-foreground dark:text-gray-100'}`}>
             <PlayerNameLink
               playerId={captain.id}
               playerName={`${captain.first_name} ${captain.last_name}`}
@@ -178,7 +178,7 @@ export function TeamCard({
 
         {/* Roster (excluding captain) */}
         <div>
-          <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+          <p className="text-sm font-medium text-muted-foreground dark:text-muted-foreground mb-2">
             Roster ({players.length}/{rosterSize})
           </p>
           <ul className="space-y-1">
@@ -189,8 +189,8 @@ export function TeamCard({
                   slot.type === 'player' && slot.player.member_id === currentUserId
                     ? 'font-semibold text-blue-600 dark:text-blue-400'
                     : slot.type === 'empty'
-                    ? 'text-gray-400 dark:text-gray-600 italic'
-                    : 'text-gray-900 dark:text-gray-100'
+                    ? 'text-muted-foreground dark:text-muted-foreground italic'
+                    : 'text-foreground dark:text-gray-100'
                 }`}
               >
                 {slot.type === 'player' ? (

@@ -115,11 +115,11 @@ export function TeamNameLink({
       </PopoverTrigger>
       <PopoverContent className="w-64 p-2" align="start">
         {loading ? (
-          <div className="px-2 py-4 text-center text-sm text-gray-600">
+          <div className="px-2 py-4 text-center text-sm text-muted-foreground">
             Loading roster...
           </div>
         ) : players.length === 0 ? (
-          <div className="px-2 py-4 text-center text-sm text-gray-600">
+          <div className="px-2 py-4 text-center text-sm text-muted-foreground">
             No players on this team
           </div>
         ) : (
@@ -127,7 +127,7 @@ export function TeamNameLink({
             {players.map((player) => (
               <div
                 key={player.member_id}
-                className="px-2 py-1.5 hover:bg-gray-50 rounded transition-colors"
+                className="px-2 py-1.5 hover:bg-muted rounded transition-colors"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -136,7 +136,7 @@ export function TeamNameLink({
                       playerName={`${player.members.first_name} ${player.members.last_name}`}
                       className="text-sm"
                     />
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-muted-foreground">
                       {formatPartialMemberNumber(player.members)}
                     </span>
                   </div>

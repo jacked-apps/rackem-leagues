@@ -47,20 +47,20 @@ export function SelectableCard<T>({
         'w-full text-left rounded-lg border-2 p-4 transition-all',
         'focus:outline-none focus:ring-2 focus:ring-blue-400',
         option.disabled
-          ? 'opacity-50 cursor-not-allowed border-gray-200 bg-gray-50'
+          ? 'opacity-50 cursor-not-allowed border-border bg-muted'
           : isSelected
             ? 'border-blue-500 bg-blue-50 shadow-sm'
-            : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm',
+            : 'border-border bg-card hover:border-border hover:shadow-sm',
       ].join(' ')}
     >
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="font-medium">{option.title}</p>
           {option.description && (
-            <p className="text-sm text-gray-600 mt-1">{option.description}</p>
+            <p className="text-sm text-muted-foreground mt-1">{option.description}</p>
           )}
           {option.disabled && option.disabledMessage && (
-            <p className="text-xs text-gray-400 mt-1 italic">{option.disabledMessage}</p>
+            <p className="text-xs text-muted-foreground mt-1 italic">{option.disabledMessage}</p>
           )}
         </div>
         {option.infoButton && (

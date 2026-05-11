@@ -65,7 +65,7 @@ export const VisibilityChoiceCard: React.FC<VisibilityChoiceCardProps> = ({
       {/* Choice Option */}
       <div
         className={`p-2 cursor-pointer transition-all duration-200 rounded-md ${
-          isSelected ? '' : 'hover:bg-gray-50'
+          isSelected ? '' : 'hover:bg-muted'
         }`}
         onClick={() => onSelect(option.value)}
         role="radio"
@@ -85,11 +85,11 @@ export const VisibilityChoiceCard: React.FC<VisibilityChoiceCardProps> = ({
               className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
                 isSelected
                   ? 'border-blue-500 bg-blue-500'
-                  : 'border-gray-300 bg-white'
+                  : 'border-border bg-card'
               }`}
             >
               {isSelected && (
-                <div className="w-2 h-2 rounded-full bg-white"></div>
+                <div className="w-2 h-2 rounded-full bg-card"></div>
               )}
             </div>
           </div>
@@ -99,7 +99,7 @@ export const VisibilityChoiceCard: React.FC<VisibilityChoiceCardProps> = ({
             {option.icon && (
               <span className="text-lg">{option.icon}</span>
             )}
-            <span className="font-medium text-gray-900">
+            <span className="font-medium text-foreground">
               {option.label}
             </span>
           </div>

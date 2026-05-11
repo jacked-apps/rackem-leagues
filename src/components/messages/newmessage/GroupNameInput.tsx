@@ -23,7 +23,7 @@ export function GroupNameInput({ value, onChange, suggestedName }: GroupNameInpu
         placeholder={`Group name (e.g., "${suggestedName}")`}
         value={value}
         onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
-        className="bg-white"
+        className="bg-card"
       />
     </div>
   );

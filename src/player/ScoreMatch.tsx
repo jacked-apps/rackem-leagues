@@ -1,22 +1,23 @@
 /**
- * @fileoverview Score Match Page - 3v3 Match Scoring
+ * @fileoverview Score Match Page — live match scoring (all formats).
  *
- * Mobile-first scoring page for 3v3 pool league matches.
- * Displays compact scoreboard with swipe navigation between teams.
- * Allows players to score games, confirm results, and track match progress.
+ * Mobile-first scoring page for any league preset. Renders through the
+ * unified scoreboard, which composes display from
+ * `lineup_size × win_condition × points_calculator` rather than the
+ * pre-Unit-7 3v3-vs-5v5-vs-Fargo dispatch.
  *
  * Flow: Lineup Entry → Score Match → (Tiebreaker if needed)
  *
  * Features:
- * - Compact scoreboard (top 1/3 of screen) with swipe left/right
- * - 18-game scoring with real-time updates
+ * - UnifiedScoreboard with calculator-driven display hints
+ * - Real-time updates via useMatchRealtime
  * - Confirmation flow (both teams must agree)
- * - Break & Run (B&R) and Golden Break (8BB) tracking
+ * - Break & Run (B&R), Golden Break (8BB), runout, foul tracking
  * - Match end detection with winner announcement
  */
 //import { watchMatchAndGames } from '@/realtime/useMatchAndGamesRealtime';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/supabaseClient';
@@ -42,19 +43,18 @@ import { getPlayerStatsByPosition } from '@/hooks/usePlayerStatsByPosition';
 import { ScoringDialog } from '@/components/scoring/ScoringDialog';
 import { ConfirmationDialog } from '@/components/scoring/ConfirmationDialog';
 import { EditGameDialog } from '@/components/scoring/EditGameDialog';
-import { ThreeVThreeScoreboard } from '@/components/scoring/ThreeVThreeScoreboard';
-import { FiveVFiveScoreboard } from '@/components/scoring/FiveVFiveScoreboard';
-import { TenSevenScoreboard } from '@/components/scoring/TenSevenScoreboard';
+import { UnifiedScoreboard } from '@/components/scoring/UnifiedScoreboard';
 import { TiebreakerScoreboard } from '@/components/scoring/TiebreakerScoreboard';
 import { GamesList } from '@/components/scoring/GamesList';
 import { TableNumberBar } from '@/components/scoring/TableNumberBar';
 import { queryKeys } from '@/api/queryKeys';
-import { calculateBCAPoints, calculatePoints, getTeamStats, getPlayerStats as getPlayerStatsUtil } from '@/types';
-import { calculateFargoMatchTotals } from '@/utils/fargoMatchTotals';
+import { getTeamStats, getPlayerStats as getPlayerStatsUtil } from '@/types';
+import { getCalculator } from '@/systems/calculators';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
+import { MatchPhaseGuard } from '@/components/match/MatchPhaseGuard';
 
-export function ScoreMatch() {
+function ScoreMatchBody() {
   const { matchId } = useParams<{ matchId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -68,12 +68,14 @@ export function ScoreMatch() {
   const [isVerifying, setIsVerifying] = useState(false);
 
   // Ref to store mutations for use in real-time subscription
-  const mutationsRef = useRef<any>(null);
-
-  // Wait time for match preparation (give home team time to prepare)
-  const [waitingForPreparation, setWaitingForPreparation] = useState(true);
-  const [retryCount, setRetryCount] = useState(0);
-  const MAX_RETRIES = 10; // Wait up to 10 seconds
+  // Holds the latest `mutations` object returned by useMatchScoringMutations
+  // so the realtime subscription's confirmOpponentScore callback can call
+  // it without having `mutations` itself in the callback's closure (which
+  // would force the realtime channel to re-subscribe on every render).
+  // Type is the return shape of useMatchScoringMutations — using
+  // ReturnType keeps the ref aligned automatically if the hook's return
+  // changes shape.
+  const mutationsRef = useRef<ReturnType<typeof useMatchScoringMutations> | null>(null);
 
   // Use central scoring hook (replaces all manual data fetching)
   const {
@@ -81,7 +83,6 @@ export function ScoreMatch() {
     homeLineup,
     awayLineup,
     gameResults,
-    homeTeamHandicap,
     homeThresholds,
     awayThresholds,
     homeTeamRoster,
@@ -239,9 +240,18 @@ export function ScoreMatch() {
 
   // Detect when all games are complete (works for any format: 3, 18, 25, etc.)
   // Total games = count of games in database
+  //
+  // The `totalGames > 0` guard is load-bearing: without it, an empty
+  // gameResults map (initial render before games load) makes
+  // `0 === 0 === true`, and the prevRef below initializes to true.
+  // When games subsequently arrive, the effect sees a complete→incomplete
+  // transition and spuriously CLEARS home_team_verified_by /
+  // away_team_verified_by on the matches row. This was a pre-existing
+  // bug that the deletion of the wait-for-prep loop made more reachable
+  // — ScoreMatchBody now renders before games load instead of spinning.
   const totalGames = gameResults.size;
   const completedGames = getCompletedGamesCount(gameResults);
-  const allGamesComplete = completedGames === totalGames;
+  const allGamesComplete = totalGames > 0 && completedGames === totalGames;
 
   // Debug: Log team identification and verification status
   // useEffect(() => {
@@ -267,10 +277,10 @@ export function ScoreMatch() {
       supabase
         .from('matches')
         .update({
-          home_games_to_win: homeThresholds.games_to_win,
-          home_games_to_tie: homeThresholds.games_to_tie,
-          away_games_to_win: awayThresholds.games_to_win,
-          away_games_to_tie: awayThresholds.games_to_tie,
+          home_to_win: homeThresholds.games_to_win,
+          home_to_tie: homeThresholds.games_to_tie,
+          away_to_win: awayThresholds.games_to_win,
+          away_to_tie: awayThresholds.games_to_tie,
         })
         .eq('id', matchId)
         .then(({ error }) => {
@@ -380,7 +390,7 @@ export function ScoreMatch() {
    */
   const getPlayerStats = (playerId: string, position?: number, playerIsHomeTeam?: boolean) => {
     // For 5v5 with position specified, use position-aware function
-    if (position !== undefined && teamFormat === '8_man' && playerIsHomeTeam !== undefined) {
+    if (position !== undefined && leaguePrefs?.lineup_size === 5 && playerIsHomeTeam !== undefined) {
       return getPlayerStatsByPosition(playerId, position, playerIsHomeTeam, gameResults);
     }
     // For 3v3 or no position specified, use original util
@@ -392,9 +402,30 @@ export function ScoreMatch() {
    */
   const addToConfirmationQueue = addToConfirmationQueueFromHook;
 
+  // Stabilize the match shape passed to mutations + downstream realtime
+  // hooks. Phase 5 Unit 5.5 introduced per-game writes to the matches
+  // row (running-totals updates), which makes matchQuery refetch on
+  // every confirmation. Without this memo, every refetch produces a
+  // new `match` object identity → callback identities change → the
+  // realtime hook resubscribes → same event re-fires → flashing loop.
+  // The mutations hook only needs id + home_team_id + away_team_id;
+  // memoize on those primitives so identity is stable across refetches
+  // that don't change them.
+  const stableMatchForMutations = useMemo(
+    () =>
+      match
+        ? {
+            id: match.id,
+            home_team_id: match.home_team_id,
+            away_team_id: match.away_team_id,
+          }
+        : null,
+    [match?.id, match?.home_team_id, match?.away_team_id],
+  );
+
   // Use mutations hook for all database operations
   const mutations = useMatchScoringMutations({
-    match,
+    match: stableMatchForMutations,
     leagueId: match?.league?.id ?? null,
     gameResults,
     homeLineup,
@@ -483,36 +514,17 @@ export function ScoreMatch() {
     denyLineupChangeMutation.mutate(opponentLineup.id);
   };
 
-  // Auto-retry mechanism: Wait for match preparation to complete
-  // MUST be before any early returns to comply with Rules of Hooks
-  useEffect(() => {
-    const dataReady = match && homeLineup && awayLineup && homeThresholds && awayThresholds;
-
-    if (!dataReady && waitingForPreparation && retryCount < MAX_RETRIES) {
-      const timer = setTimeout(() => {
-        setRetryCount(prev => prev + 1);
-        // Invalidate queries to force refetch
-        queryClient.invalidateQueries({ queryKey: ['match', matchId] });
-      }, 1000); // Wait 1 second between retries
-
-      return () => clearTimeout(timer);
-    }
-
-    if (dataReady && waitingForPreparation) {
-      setWaitingForPreparation(false);
-    }
-
-    if (retryCount >= MAX_RETRIES) {
-      setWaitingForPreparation(false);
-    }
-  }, [match, homeLineup, awayLineup, homeThresholds, awayThresholds, retryCount, waitingForPreparation, matchId, queryClient, MAX_RETRIES]);
-
-  // Early returns for loading/error states
+  // Early returns for loading/error states.
+  // Match-prepared readiness is handled upstream by MatchPhaseGuard
+  // (see src/components/match/MatchPhaseGuard.tsx). The guard only
+  // renders this body when matches.status='in_progress', so the prior
+  // 10-retry waiting loop here was redundant once the guard wired in
+  // and is now removed.
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-muted flex items-center justify-center">
         <div className="text-center">
-          <div className="text-lg font-semibold text-gray-700">
+          <div className="text-lg font-semibold text-foreground">
             Loading match...
           </div>
         </div>
@@ -521,30 +533,23 @@ export function ScoreMatch() {
   }
 
   if (error) {
-    // If lineups aren't locked, redirect to lineup page instead of showing error
-    if (error.includes('lineups must be locked')) {
-      navigate(`/match/${matchId}/lineup`);
-      return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center">
-            <div className="text-lg font-semibold text-gray-700">
-              Redirecting to lineup page...
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // Show error for other types of errors
+    // The "lineups must be locked" branch that used to navigate back to
+    // /match/:id/lineup from here was deleted: the route guard
+    // (MatchPhaseGuard) is now the authoritative redirect mechanism, and
+    // calling navigate() during render is a React anti-pattern that
+    // could create an oscillating /score↔/lineup loop if matches.status
+    // happens to be 'in_progress' while a lineup is unlocked. Surface
+    // any error here as the regular error card; the guard handles
+    // routing on the next mount.
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-muted flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
           <CardContent className="pt-6">
             <div className="text-center">
               <div className="text-lg font-semibold text-red-600 mb-2">
                 Error
               </div>
-              <div className="text-gray-700 mb-4">{error}</div>
+              <div className="text-foreground mb-4">{error}</div>
               <Button loadingText="none" onClick={() => navigate(-1)}>Go Back</Button>
             </div>
           </CardContent>
@@ -553,70 +558,21 @@ export function ScoreMatch() {
     );
   }
 
-  // Show loading screen while waiting for preparation
-  if (waitingForPreparation && retryCount < MAX_RETRIES) {
+  // Match-prepared data is guaranteed by MatchPhaseGuard before this
+  // body renders. If a downstream query genuinely fails (network, RLS,
+  // server error), the guard's MatchTransitionRecovery surface fires
+  // — not a bespoke error card here.
+  //
+  // The narrowing return below mostly satisfies TypeScript: with the
+  // guard upstream, none of these should be null in practice. If they
+  // somehow are, render a brief loading spinner so the body doesn't
+  // attempt to deref nulls. This is a fallback, not a normal path.
+  if (!match || !homeLineup || !awayLineup || !homeThresholds || !awayThresholds) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-muted flex items-center justify-center">
         <div className="text-center">
-          <div className="text-lg font-semibold text-gray-700 mb-4">
-            Preparing Match...
-          </div>
-          <div className="text-sm text-gray-600 mb-4">
-            Setting up handicap thresholds and game order
-          </div>
-          <div className="flex justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          </div>
-          <div className="text-xs text-gray-500 mt-4">
-            Attempt {retryCount + 1} of {MAX_RETRIES}
-          </div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" />
         </div>
-      </div>
-    );
-  }
-
-  // After retries exhausted, show error if data still missing
-  if (
-    !match ||
-    !homeLineup ||
-    !awayLineup ||
-    !homeThresholds ||
-    !awayThresholds
-  ) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <div className="text-lg font-semibold text-red-600 mb-2">
-                Match Preparation Failed
-              </div>
-              <div className="text-gray-600 mb-4">
-                The match could not be prepared after {MAX_RETRIES} attempts.
-              </div>
-              <div className="text-sm text-gray-500 mb-4">
-                {!match && <div>• Match data not loaded</div>}
-                {!homeLineup && <div>• Home lineup not available</div>}
-                {!awayLineup && <div>• Away lineup not available</div>}
-                {!homeThresholds && <div>• Home thresholds not set</div>}
-                {!awayThresholds && <div>• Away thresholds not set</div>}
-              </div>
-              <div className="text-xs text-gray-500 mb-4">
-                This usually means the home team's lineup lock failed to prepare the match.
-                Both teams should go back to lineup and try again.
-              </div>
-              <Button onClick={() => window.location.reload()} loadingText="none">Try Again</Button>
-              <Button
-                variant="outline"
-                onClick={() => navigate(`/match/${matchId}/lineup`)}
-                className="ml-2"
-                loadingText="none"
-              >
-                Back to Lineup
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     );
   }
@@ -638,37 +594,30 @@ export function ScoreMatch() {
       )
     : gameResults;
 
-  // Detect team format (5v5 vs 3v3)
-  const teamFormat = match.league.team_format || '5_man';
-  const is5v5 = teamFormat === '8_man';
+  // Lineup size and win condition come from the resolved preferences.
+  // Per Unit 5 of the unified-scoreboard plan, the dispatch never branches
+  // on `lineup_size === 5` or `handicap_type === 'fargo'` — those would
+  // re-introduce the n×m matrix the modular system kills. The unified
+  // scoreboard renders for any lineup_size + win_condition + calculator
+  // combination, including off-preset combos.
+  const lineupSize = leaguePrefs?.lineup_size ?? 5;
+  const winCondition = leaguePrefs?.win_condition ?? 'games';
 
-  // Calculate BCA points for 5v5 scoreboard
+  // Team stats (wins / losses) for the scoreboard. Wins read from match-row
+  // running totals; losses are derived (no _games_lost column on match).
   const homeStats = getTeamStats(match.home_team_id, filteredGameResults);
   const awayStats = getTeamStats(match.away_team_id, filteredGameResults);
-  const homeBCAPoints = calculateBCAPoints(match.home_team_id, homeThresholds, filteredGameResults);
-  const awayBCAPoints = calculateBCAPoints(match.away_team_id, awayThresholds, filteredGameResults);
 
-  // Fargo totals (Unit 12): for 5v5 Fargo matches, points are running Fargo
-  // totals (per-game winner/loser points + start-points credit on the weaker
-  // team) instead of BCA's capped points. Using the snapshotted overrides
-  // when present so the dial values are frozen from first-scoring-event.
-  const fargoOverrides = match.system_snapshot?.overrides
-    ?? leaguePrefs?.system_overrides
-    ?? {};
-  const fargoTotals = handicapType === 'fargo'
-    ? calculateFargoMatchTotals({
-        homeTeamId: match.home_team_id,
-        awayTeamId: match.away_team_id,
-        homeGamesToWin: match.home_games_to_win ?? 0,
-        awayGamesToWin: match.away_games_to_win ?? 0,
-        gameResults: filteredGameResults,
-        overrides: fargoOverrides,
-      })
-    : null;
-
-  // Per-player running points for the 10-7 scoreboard drawer. Scoped per
-  // lineup-slot (playerId + position) so double-duty shows up on both rows.
-  // Only computed for Fargo matches; the BCA scoreboards don't use this.
+  // Per-player points closure — passed to UnifiedScoreboard ONLY when the
+  // active calculator is per-game (e.g. accumulated_per_game). For aggregate
+  // calculators the closure is unused; the player drawer hides the per-player
+  // P column entirely. Per Ed's framing during review: "if each player earns
+  // points then show points; if it's team-based then don't show it."
+  const calculatorName = match.system_snapshot?.points_calculator;
+  const activeCalculator = calculatorName ? getCalculator(calculatorName) : null;
+  const isPerGameCalculator = activeCalculator?.kind === 'per_game';
+  const fargoOverrides =
+    match.system_snapshot?.overrides ?? leaguePrefs?.system_overrides ?? {};
   const fargoWinnerPoints =
     typeof fargoOverrides.winner_points === 'number'
       ? fargoOverrides.winner_points
@@ -696,9 +645,9 @@ export function ScoreMatch() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className="h-screen flex flex-col bg-muted">
       {/* Header with back button, team name, and auto-confirm */}
-      <div className="bg-white border-b px-4 py-2">
+      <div className="bg-card border-b px-4 py-2">
         <div className="flex items-center justify-between">
           <Button
             variant="ghost"
@@ -710,11 +659,11 @@ export function ScoreMatch() {
             Dashboard
           </Button>
           {/* Team Name */}
-          <div className="text-lg font-semibold text-gray-800">
+          <div className="text-lg font-semibold text-foreground">
             {isHomeTeam ? match.home_team?.team_name : match.away_team?.team_name}
           </div>
           <div className="flex items-center gap-2">
-            <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+            <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
               <input
                 type="checkbox"
                 checked={autoConfirm}
@@ -732,17 +681,38 @@ export function ScoreMatch() {
         </div>
       </div>
 
-      {/* Table Number Bar - clickable to change */}
+      {/* Table Number Bar — clickable to change. Hosts the scoring-tips info
+          button on the LEFT (mirrors the spectator "Live" link on the right
+          for visual balance) and the spectator link on the right when we
+          have a league ID. */}
       <TableNumberBar
         matchId={matchId!}
         tableNumber={match.assigned_table_number}
+        spectatorLeagueId={match.league?.id ?? null}
+        leftSlot={
+          <InfoButton title="Scoring Tips">
+            <p className="text-sm mb-2">
+              <strong>Player Stats:</strong> Tap either team name to view individual player
+              stats for the lineup. Tap again to close.
+            </p>
+            <p className="text-sm mb-2">
+              <strong>Thresholds:</strong> The win/tie/lose thresholds appear inside the player
+              drawer alongside the team rows.
+            </p>
+            <p className="text-sm">
+              <strong>Calculator hints:</strong> Markers like "Milestone bonus" come from the
+              league's points calculator. They appear only when the calculator declares them.
+            </p>
+          </InfoButton>
+        }
       />
 
-      {/* Scoreboard - Fixed at top.
-          Routing: tiebreaker → TiebreakerScoreboard (isolated 3-game playoff).
-                   points-accumulation systems (currently only Fargo) →
-                     TenSevenScoreboard (generic — not Fargo-specific).
-                   games-won-against-threshold systems → per-format scoreboard. */}
+      {/* Scoreboard — Fixed at top.
+          Unit 5 of the unified-scoreboard plan collapsed the prior 4-branch
+          ternary (3v3 / 5v5 / 10-7 / tiebreaker) into a single dispatch:
+          tiebreaker stays separate (different game-set semantics), all
+          regular play flows through UnifiedScoreboard which adapts via
+          win_condition + points_calculator + lineup_size from the snapshot. */}
       {isTiebreakerMode ? (
         <TiebreakerScoreboard
           match={{
@@ -756,62 +726,8 @@ export function ScoreMatch() {
           isVerifying={isVerifying}
           gameType={gameType}
         />
-      ) : handicapType === 'fargo' && fargoTotals ? (
-        <TenSevenScoreboard
-          match={{
-            ...match,
-            home_team_verified_by: (match as any).home_team_verified_by ?? null,
-            away_team_verified_by: (match as any).away_team_verified_by ?? null,
-          }}
-          homeLineup={homeLineup}
-          awayLineup={awayLineup}
-          homePoints={fargoTotals.homePoints}
-          awayPoints={fargoTotals.awayPoints}
-          homeGamesWon={fargoTotals.homeGamesWon}
-          awayGamesWon={fargoTotals.awayGamesWon}
-          totalScheduledGames={filteredGameResults.size}
-          startPoints={fargoTotals.startPointsApplied}
-          startPointsFor={
-            fargoTotals.startPointsFor === 'even' ? 'none' : fargoTotals.startPointsFor
-          }
-          allGamesComplete={allGamesComplete}
-          isHomeTeam={isHomeTeam ?? false}
-          onVerify={handleVerify}
-          isVerifying={isVerifying}
-          gameType={gameType}
-          getPlayerDisplayName={getPlayerDisplayName}
-          getPlayerStats={getPlayerStats}
-          getPlayerPoints={getPlayerPoints}
-          onSwapPlayer={handleSwapPlayer}
-        />
-      ) : is5v5 ? (
-        <FiveVFiveScoreboard
-          match={{
-            ...match,
-            home_team_verified_by: (match as any).home_team_verified_by ?? null,
-            away_team_verified_by: (match as any).away_team_verified_by ?? null,
-          }}
-          homeLineup={homeLineup}
-          awayLineup={awayLineup}
-          homeThresholds={homeThresholds}
-          awayThresholds={awayThresholds}
-          homeWins={homeStats.wins}
-          awayWins={awayStats.wins}
-          homeLosses={homeStats.losses}
-          awayLosses={awayStats.losses}
-          homePoints={fargoTotals ? fargoTotals.homePoints : homeBCAPoints}
-          awayPoints={fargoTotals ? fargoTotals.awayPoints : awayBCAPoints}
-          allGamesComplete={allGamesComplete}
-          isHomeTeam={isHomeTeam ?? false}
-          onVerify={handleVerify}
-          isVerifying={isVerifying}
-          gameType={gameType}
-          getPlayerDisplayName={getPlayerDisplayName}
-          getPlayerStats={getPlayerStats}
-          onSwapPlayer={handleSwapPlayer}
-        />
       ) : (
-        <ThreeVThreeScoreboard
+        <UnifiedScoreboard
           match={{
             ...match,
             home_team_verified_by: (match as any).home_team_verified_by ?? null,
@@ -821,21 +737,24 @@ export function ScoreMatch() {
           awayLineup={awayLineup}
           homeThresholds={homeThresholds}
           awayThresholds={awayThresholds}
-          homeWins={homeStats.wins}
-          awayWins={awayStats.wins}
           homeLosses={homeStats.losses}
           awayLosses={awayStats.losses}
-          homePoints={calculatePoints(match.home_team_id, homeThresholds, filteredGameResults)}
-          awayPoints={calculatePoints(match.away_team_id, awayThresholds, filteredGameResults)}
-          homeTeamHandicap={homeTeamHandicap}
           allGamesComplete={allGamesComplete}
           isHomeTeam={isHomeTeam ?? false}
           onVerify={handleVerify}
           isVerifying={isVerifying}
           gameType={gameType}
+          winCondition={winCondition}
+          lineupSize={lineupSize}
+          pointsCalculator={leaguePrefs?.points_calculator ?? null}
           getPlayerDisplayName={getPlayerDisplayName}
           getPlayerStats={getPlayerStats}
           onSwapPlayer={handleSwapPlayer}
+          // Per-player points only for per-game calculators (e.g.
+          // accumulated_per_game for Fargo 10-7). Aggregate calculators
+          // (linear_above_threshold, accumulate_with_milestone_jumps)
+          // get undefined here, hiding the P column entirely.
+          getPlayerPoints={isPerGameCalculator ? getPlayerPoints : undefined}
         />
       )}
 
@@ -883,6 +802,10 @@ export function ScoreMatch() {
         goldenBreakCountsAsWin={goldenBreakCountsAsWin}
         gameType={gameType}
         handicapType={handicapType}
+        pointsCalculator={
+          (match?.system_snapshot as { points_calculator?: string | null } | null)
+            ?.points_calculator ?? null
+        }
         breakFouled={breakFouled}
         winByForfeit={winByForfeit}
         runout={runout}
@@ -1016,5 +939,19 @@ export function ScoreMatch() {
       />
 
     </div>
+  );
+}
+
+/**
+ * Public export. The route guard reads `matches.status` and dispatches
+ * lineup vs scoring vs recovery; on a status flip it navigates the user
+ * to the right surface. Children receive a compound `key` so cross-match
+ * navigation and Hard Reset both fully remount this body.
+ */
+export function ScoreMatch() {
+  return (
+    <MatchPhaseGuard>
+      <ScoreMatchBody />
+    </MatchPhaseGuard>
   );
 }

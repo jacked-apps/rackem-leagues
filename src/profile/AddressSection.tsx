@@ -39,9 +39,9 @@ export const AddressSection: React.FC<AddressSectionProps> = ({
   if (!member) return null;
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
+    <div className="bg-card rounded-lg shadow-md p-6">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Address Information</h3>
+        <h3 className="text-lg font-semibold text-foreground">Address Information</h3>
         {!form.isEditing && (
           <Button
             variant="outline"
@@ -145,21 +145,21 @@ export const AddressSection: React.FC<AddressSectionProps> = ({
         // Display Mode
         <div className="space-y-3">
           <div>
-            <span className="text-sm font-medium text-gray-500">Street Address</span>
-            <p className="text-gray-900">{member.address}</p>
+            <span className="text-sm font-medium text-muted-foreground">Street Address</span>
+            <p className="text-foreground">{member.address}</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <span className="text-sm font-medium text-gray-500">City</span>
-              <p className="text-gray-900">{member.city}</p>
+              <span className="text-sm font-medium text-muted-foreground">City</span>
+              <p className="text-foreground">{member.city}</p>
             </div>
             <div>
-              <span className="text-sm font-medium text-gray-500">State</span>
-              <p className="text-gray-900">{member.state}</p>
+              <span className="text-sm font-medium text-muted-foreground">State</span>
+              <p className="text-foreground">{member.state}</p>
             </div>
             <div>
-              <span className="text-sm font-medium text-gray-500">ZIP Code</span>
-              <p className="text-gray-900">{member.zip_code}</p>
+              <span className="text-sm font-medium text-muted-foreground">ZIP Code</span>
+              <p className="text-foreground">{member.zip_code}</p>
             </div>
           </div>
         </div>

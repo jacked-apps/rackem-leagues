@@ -105,9 +105,9 @@ export function ReviewStep({ formData, onBack }: WizardStepProps<unknown, Matchu
   );
 
   if (!seasonId || !leagueId) return <p className="text-red-600">Missing league/season ID from flow context.</p>;
-  if (generateMutation.isPending) return <p className="text-sm text-gray-600">Generating schedule...</p>;
+  if (generateMutation.isPending) return <p className="text-sm text-muted-foreground">Generating schedule...</p>;
   if (genError) return <p className="text-red-600">Error generating schedule: {genError}</p>;
-  if (scheduleLoading) return <p className="text-sm text-gray-500">Loading schedule...</p>;
+  if (scheduleLoading) return <p className="text-sm text-muted-foreground">Loading schedule...</p>;
 
   const regularWeeks = schedule.filter(({ week }) => week.week_type === 'regular');
 
@@ -174,7 +174,7 @@ export function ReviewStep({ formData, onBack }: WizardStepProps<unknown, Matchu
         }
         return (
           <Card key={week.id}>
-            <CardHeader className="bg-gray-50 rounded-t-xl -my-6 py-3">
+            <CardHeader className="bg-muted rounded-t-xl -my-6 py-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">{week.week_name}</CardTitle>
                 <div className="flex items-center gap-3">
@@ -182,7 +182,7 @@ export function ReviewStep({ formData, onBack }: WizardStepProps<unknown, Matchu
                     <Pencil className="h-4 w-4 mr-1" />
                     Edit Week
                   </Button>
-                  <div className="flex items-center gap-1 text-sm text-gray-600">
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
                     <Calendar className="h-4 w-4" />
                     <span>{parseLocalDate(week.scheduled_date).toLocaleDateString()}</span>
                   </div>
@@ -194,10 +194,10 @@ export function ReviewStep({ formData, onBack }: WizardStepProps<unknown, Matchu
                 <div key={m.id} className="flex items-center justify-between p-3 border rounded-lg text-sm">
                   <div className="flex items-center gap-3">
                     <span className="font-medium">{m.home_team?.team_name ?? 'BYE'}</span>
-                    <span className="text-gray-400">vs</span>
+                    <span className="text-muted-foreground">vs</span>
                     <span className="font-medium">{m.away_team?.team_name ?? 'BYE'}</span>
                   </div>
-                  <span className="text-xs text-gray-500">{m.scheduled_venue?.name ?? 'Venue TBD'}</span>
+                  <span className="text-xs text-muted-foreground">{m.scheduled_venue?.name ?? 'Venue TBD'}</span>
                 </div>
               ))}
             </CardContent>
@@ -205,7 +205,7 @@ export function ReviewStep({ formData, onBack }: WizardStepProps<unknown, Matchu
         );
       })}
       {regularWeeks.length === 0 && (
-        <p className="text-sm text-gray-500">No regular-season weeks found.</p>
+        <p className="text-sm text-muted-foreground">No regular-season weeks found.</p>
       )}
 
       {regularWeeks.length > 0 && (

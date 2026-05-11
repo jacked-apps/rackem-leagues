@@ -249,6 +249,60 @@ export async function updateTeam(params: UpdateTeamParams): Promise<Team> {
 }
 
 /**
+ * Parameters for creating a bye-team row.
+ */
+export interface CreateByeTeamParams {
+  seasonId: string;
+  leagueId: string;
+  rosterSize: number;
+  /**
+   * Display name for the bye row. Defaults to 'BYE' for original
+   * schedule-generation byes; the drop_team RPC (PR 2) uses descriptive
+   * names like 'BYE — replaced Sharks wk 6' for drop-created byes.
+   */
+  teamName?: string;
+}
+
+/**
+ * Create a bye-team row for a season.
+ *
+ * Bye teams are placeholders used when the schedule has an odd number of
+ * real teams, OR (after PR 2) when a real team is dropped mid-season and
+ * its scheduled matches are reassigned to a fresh bye slot. They have:
+ *   - status = 'bye'
+ *   - captain_id = NULL (the column is nullable as of PR 1 Unit 1.1)
+ *   - no team_players (no roster)
+ *
+ * Bye rows are filtered out of active team lists by the read-side helpers
+ * in `src/api/queries/teams.ts` (use `includeInactive: true` to opt in).
+ *
+ * @param params - Bye-team parameters
+ * @returns The newly created bye team row
+ * @throws Error if database operation fails
+ */
+export async function createByeTeam(params: CreateByeTeamParams): Promise<Team> {
+  const { data: byeTeam, error } = await supabase
+    .from('teams')
+    .insert({
+      season_id: params.seasonId,
+      league_id: params.leagueId,
+      captain_id: null,
+      team_name: params.teamName ?? 'BYE',
+      roster_size: params.rosterSize,
+      status: 'bye',
+      home_venue_id: null,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to create bye team: ${error.message}`);
+  }
+
+  return byeTeam;
+}
+
+/**
  * Delete a team (soft delete by setting status to 'withdrawn')
  *
  * This does NOT delete team_players records - they remain for historical data.

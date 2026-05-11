@@ -98,7 +98,7 @@ export const VenueSelect: React.FC<VenueSelectProps> = ({
       <SelectContent>
         {/* No venue option */}
         <SelectItem value="__NONE__">
-          <span className="text-gray-500 italic">No venue</span>
+          <span className="text-muted-foreground italic">No venue</span>
         </SelectItem>
 
         {/* Venue options */}
@@ -107,7 +107,7 @@ export const VenueSelect: React.FC<VenueSelectProps> = ({
             <div className="flex flex-col">
               <span>{venue.name}</span>
               {(venue.city || venue.state) && (
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-muted-foreground">
                   {[venue.city, venue.state].filter(Boolean).join(', ')}
                 </span>
               )}

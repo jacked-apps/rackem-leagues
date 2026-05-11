@@ -1,76 +1,99 @@
 /**
  * @fileoverview Substitute Player Helpers
  *
- * Constants and utility functions for handling substitute players in lineups.
- * Substitutes use special UUIDs to identify home/away team subs.
+ * Sentinel UUIDs encode the substitute type directly:
+ *   - ANON sentinels mean "anonymous sub — final state, captain-entered handicap"
+ *   - DD sentinels mean "double-duty — awaits opposing captain's OpponentSubstituteModal"
+ *
+ * This lets both clients discriminate sub type from persisted lineup state alone,
+ * without a new column or ephemeral React state.
  */
 
-// Special substitute member IDs
-export const SUB_HOME_ID = '00000000-0000-0000-0000-000000000001';
-export const SUB_AWAY_ID = '00000000-0000-0000-0000-000000000002';
+// Anonymous-sub sentinels (canonical = current DB values; legacy aliases kept below)
+export const SUB_HOME_ANON_ID = '00000000-0000-0000-0000-000000000001';
+export const SUB_AWAY_ANON_ID = '00000000-0000-0000-0000-000000000002';
 
-/**
- * Check if a player ID is a substitute
- */
-export function isSubstitute(playerId: string): boolean {
-  return playerId === SUB_HOME_ID || playerId === SUB_AWAY_ID;
+// Double-duty sentinels (new)
+export const SUB_HOME_DD_ID = '00000000-0000-0000-0000-000000000011';
+export const SUB_AWAY_DD_ID = '00000000-0000-0000-0000-000000000012';
+
+// Legacy aliases kept for untouched callers. Prefer the helpers below for new code.
+export const SUB_HOME_ID = SUB_HOME_ANON_ID;
+export const SUB_AWAY_ID = SUB_AWAY_ANON_ID;
+
+export function isAnonSubSentinel(playerId: string | null | undefined): boolean {
+  return playerId === SUB_HOME_ANON_ID || playerId === SUB_AWAY_ANON_ID;
 }
 
-/**
- * Get the substitute ID for a team
- */
+export function isDoubleDutySentinel(playerId: string | null | undefined): boolean {
+  return playerId === SUB_HOME_DD_ID || playerId === SUB_AWAY_DD_ID;
+}
+
+export function isAnySubSentinel(playerId: string | null | undefined): boolean {
+  return isAnonSubSentinel(playerId) || isDoubleDutySentinel(playerId);
+}
+
+/** Legacy: kept for callers that haven't been migrated. New code: use isAnySubSentinel. */
+export function isSubstitute(playerId: string | null | undefined): boolean {
+  return isAnySubSentinel(playerId);
+}
+
+export function getAnonSubId(isHomeTeam: boolean): string {
+  return isHomeTeam ? SUB_HOME_ANON_ID : SUB_AWAY_ANON_ID;
+}
+
+export function getDoubleDutySubId(isHomeTeam: boolean): string {
+  return isHomeTeam ? SUB_HOME_DD_ID : SUB_AWAY_DD_ID;
+}
+
+/** Legacy: returns the ANON sentinel for this team. Prefer the explicit helpers above. */
 export function getSubstituteId(isHomeTeam: boolean): string {
-  return isHomeTeam ? SUB_HOME_ID : SUB_AWAY_ID;
+  return getAnonSubId(isHomeTeam);
 }
 
 /**
- * Check if any player in the lineup is a substitute
+ * Does any slot in this lineup hold a sub sentinel (anon or DD)?
+ * Iterates positions 1..lineupSize from a lineup-row-shaped object.
  */
 export function lineupHasSubstitute(
-  player1Id: string,
-  player2Id: string,
-  player3Id: string
+  lineupRow: Record<string, unknown>,
+  lineupSize: number
 ): boolean {
-  return (
-    isSubstitute(player1Id) ||
-    isSubstitute(player2Id) ||
-    isSubstitute(player3Id)
-  );
+  for (let pos = 1; pos <= lineupSize; pos++) {
+    const id = lineupRow[`player${pos}_id`];
+    if (typeof id === 'string' && isAnySubSentinel(id)) return true;
+  }
+  return false;
+}
+
+/** Does any slot hold an unresolved double-duty placeholder? */
+export function lineupHasDoubleDuty(
+  lineupRow: Record<string, unknown>,
+  lineupSize: number
+): boolean {
+  for (let pos = 1; pos <= lineupSize; pos++) {
+    const id = lineupRow[`player${pos}_id`];
+    if (typeof id === 'string' && isDoubleDutySentinel(id)) return true;
+  }
+  return false;
 }
 
 /**
- * Calculate the handicap for a substitute player
+ * Calculate the handicap for an anonymous substitute player.
  *
- * Rule: Sub handicap = MAX(selected sub value, highest unused player handicap)
- *
- * @param usedPlayerIds - Array of player IDs currently in the lineup (excluding subs)
- * @param allPlayers - All players on the team with their handicaps
- * @param subHandicapValue - The manually selected substitute handicap value
- * @returns The calculated handicap for the substitute
- *
- * @example
- * // Team has players with handicaps: [2, 1, 0, -1]
- * // Lineup uses players with handicaps: [2, 1]
- * // Unused players have handicaps: [0, -1]
- * // Highest unused = 0
- * // Sub value selected = -1
- * calculateSubstituteHandicap(['id1', 'id2'], allPlayers, -1)
- * // Returns: 0 (MAX(-1, 0))
+ * Rule: Sub handicap = MAX(captain-entered value, highest unused player handicap).
+ * Prevents captains from sandbagging by picking a very low sub value while keeping
+ * a high-handicap player on the bench.
  */
 export function calculateSubstituteHandicap(
   usedPlayerIds: string[],
   allPlayers: Array<{ id: string; handicap?: number }>,
   subHandicapValue: number
 ): number {
-  // Filter out substitute IDs and find unused players
-  const nonSubUsedIds = usedPlayerIds.filter(id => !isSubstitute(id));
-  const unusedPlayers = allPlayers.filter(p => !nonSubUsedIds.includes(p.id));
-
-  // Find highest handicap among unused players
+  const nonSubUsedIds = usedPlayerIds.filter((id) => !isAnySubSentinel(id));
+  const unusedPlayers = allPlayers.filter((p) => !nonSubUsedIds.includes(p.id));
   const highestUnused = unusedPlayers.length > 0
-    ? Math.max(...unusedPlayers.map(p => p.handicap || 0))
+    ? Math.max(...unusedPlayers.map((p) => p.handicap || 0))
     : 0;
-
-  // Return the higher of the two values
   return Math.max(subHandicapValue, highestUnused);
 }

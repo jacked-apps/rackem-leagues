@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-04-19 (Phase 3 Units 11-12 Fargo scoring; merged main's wizard-v2 cleanup)
+> **Last Updated**: 2026-05-04 (Unit 7 of unified-scoreboard plan: deleted three legacy scoreboards (`ThreeVThreeScoreboard.tsx`, `FiveVFiveScoreboard.tsx`, `TenSevenScoreboard.tsx`) plus the orphaned `TeamStatsCard.tsx`. `UnifiedScoreboard.tsx` is now the single live-match scoreboard for all configs; both `ScoreMatch.tsx` and `SpectateMatchCard.tsx` route through it. The `useMatchScoring().calculatePoints` hook re-export was dropped (verified zero non-test consumers). Plan: `docs/plans/2026-05-03-001-feat-unified-scoreboard-plan.md`.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -13,6 +13,7 @@
 - [Configuration Files](#%EF%B8%8F-configuration-files)
 - [Memory Bank](#-memory-bank-project-intelligence)
 - [Database Schema & Migrations](#-database-schema--migrations)
+- [End-to-End Testing (`/tests/e2e/`)](#-end-to-end-testing-testse2e)
 - [Source Code (`/src`)](#-source-code-src)
 - [Reference Code](#-reference-code)
 - [Build & Distribution](#-build--distribution)
@@ -46,6 +47,22 @@
 | `docs/BCA_HANDICAP_SYSTEM.md` | BCA handicap system documentation | Official BCA handicap rules and calculations |
 | `docs/CUSTOM_5MAN_HANDICAP_SYSTEM.md` | Custom 5-man handicap system | Proprietary handicap system for 5-man format |
 | `docs/LEAGUE_MANAGEMENT_PLAN.md` | League management system architecture | System hierarchy and database schema |
+| `/docs/brainstorms/` | **CE brainstorm requirements docs** | Output of `/compound-engineering:ce-brainstorm` |
+| `docs/brainstorms/official-rulebook-reader-requirements.md` | Requirements for the Official Rulebook Reader feature | Branch 1 of the rules-feature family |
+| `docs/brainstorms/e2e-test-infrastructure-requirements.md` | Requirements for the Playwright E2E scaffolding (foundation seed + factories + multi-user auth + demo mode) | Active branch `feat/e2e-test-infrastructure` |
+| `/docs/plans/` | **CE implementation plans** | Output of `/compound-engineering:ce-plan` |
+| `docs/plans/2026-04-17-001-feat-official-rulebook-reader-plan.md` | Implementation plan for the Official Rulebook Reader | 6 units, active branch `feature/official-rulebook-reader` |
+| `docs/plans/2026-04-27-001-feat-e2e-test-infrastructure-plan.md` | Implementation plan for the E2E scaffolding | 10 units (8 in v1 scope), active branch `feat/e2e-test-infrastructure` |
+| `docs/brainstorms/header-mobile-rework-requirements.md` | Requirements for the global header & navigation rework | Slim sticky header, hamburger drawer with per-org operator shortcuts, drawer-internal badges |
+| `docs/brainstorms/modular-league-system-requirements.md` | Requirements for fully modular league configuration | Deprecates `5_man`/`8_man`; any-combo support; 3-layer threshold strategy; supersedes April 18 modular-handicap-scoring doc |
+| `docs/brainstorms/lineup-to-scoring-transition-requirements.md` | Requirements for the lineup → scoring transition stability fix | 7-defense architecture; supersedes cache/recovery aspects of the prior race-condition brainstorm; closes LIST_FOR_ED #21/#22 |
+| `docs/brainstorms/unified-scoreboard-requirements.md` | Requirements for collapsing 4 scoreboards to 1 + tiebreaker | Schema-derived display hints (escape hatch), mobile-first compact mode, "stadium not sportsbook" focus; depends on PR #98 merge |
+| `/docs/plans/` | **CE implementation plans** | Output of `/compound-engineering:ce-plan` |
+| `docs/plans/2026-04-17-001-feat-official-rulebook-reader-plan.md` | Implementation plan for the Official Rulebook Reader | 6 units, active branch `feature/official-rulebook-reader` |
+| `docs/plans/2026-04-27-001-feat-global-header-nav-rework-plan.md` | Implementation plan for the global header & navigation rework | 9 units in 3 phases, active branch `fix/header-mobile-rework` |
+| `docs/plans/2026-04-28-001-feat-modular-league-system-plan.md` | Implementation plan for the fully modular league system | 21 units across 8 phases (Phase 0 research + 7 implementation phases); supersedes April 18 plan; covers BCAPL SL handicap, audit log R21, threshold-charts wiring, team_format drop |
+| `docs/plans/2026-05-04-001-fix-lineup-to-scoring-transition-stability-plan.md` | Implementation plan for the lineup → scoring transition stability fix | 7 implementation units across 3 phases; new MatchPhaseGuard + MatchTransitionRecovery + useMatchPhase; hardened prep_match RPC; foreground polling backstop; deletes 6-month-old retry loop |
+| `docs/plans/2026-05-03-001-feat-unified-scoreboard-plan.md` | Implementation plan for the unified scoreboard refactor | 8 units across 3 phases; replaces 3 legacy scoreboards with 1 + tiebreaker fix; schema-derived display hints; TeamStatsCard generalized for points-mode; depends on PR #98 merge |
 
 ### Future Work Folder
 
@@ -95,6 +112,24 @@
 | `pnpm-lock.yaml` | **pnpm dependency lock** (primary) |
 | `pnpm-workspace.yaml` | pnpm workspace configuration |
 | `index.html` | Vite HTML entry point |
+
+### Operator Scripts (`/scripts/`)
+
+Node-only tooling the operator runs manually (not part of the app bundle).
+
+| File | Purpose |
+|------|---------|
+| `scripts/clean-rulebook.ts` | Orchestrator — turns the CSI rulebook PDF into committed TS data modules under `src/officalBCARulebook/cleaned/`. Usage: `pnpm tsx scripts/clean-rulebook.ts --pdf "<abs-path>"` |
+| `scripts/clean-rulebook/extractPdfText.ts` | `pdfjs-dist` wrapper: PDF → per-page text |
+| `scripts/clean-rulebook/scrubText.ts` | Strip running headers, normalize whitespace (preserves double-space markers) |
+| `scripts/clean-rulebook/splitSections.ts` | Slice scrubbed text at "RULES SECTION N" markers |
+| `scripts/clean-rulebook/splitRules.ts` | Slice a section into `Rule[]` using double-space delimiters; filters figure noise |
+| `scripts/clean-rulebook/writeModules.ts` | Emit the `index.ts` + per-game `.ts` modules |
+| `scripts/clean-rulebook/verifyRulebook.ts` | Pre-commit sanity checks on the cleaned data |
+| `scripts/clean-rulebook/games.ts` | Canonical list of games (slug, display name, section number) |
+| `scripts/e2e-setup.mjs` | E2E foundation seed runner. Wired to `pnpm e2e:setup`. Validates `E2E_LOCAL_OK=true`, then pipes `database/e2e_seed.sql` into local Supabase via the `pg` client. |
+| `scripts/e2e-verify-auth.mjs` | E2E bcrypt-hash verification gate. Wired to `pnpm e2e:verify-auth`. Confirms the committed hash matches `E2E_PW` via Postgres `crypt()`. |
+| `scripts/e2e-verify-factories.ts` | E2E factory smoke-check. Wired to `pnpm e2e:verify-factories`. Calls each factory and asserts the resulting DB rows. |
 
 ### Orphaned/Unknown Files
 
@@ -263,6 +298,8 @@
 | `migrations/add_match_results_tracking.sql` | Migration: Add match results tracking system |
 | `scoring3x3/add_game_type_to_match_games.sql` | **Add game_type column to match_games (denormalized for performance)** |
 | `tests/` | Database test files |
+| `e2e_seed.sql` | **E2E test foundation seed** — local-only sandbox (1 test org, 1 venue, 5 foundation users with auth.identities + non-NULL token columns for GoTrue compatibility). Idempotent. Double-guarded against running anywhere but local Supabase. |
+| `dev_starting_point.sql` | **THE dev seed.** Single-paste setup for local dev: 4 logins (dev@test.com + 3 captains, all password "password"), Tester Org with mock Stripe, Sams's Billiards venue, 3 leagues (3v3 Tuesday, Standard 5v5 Wednesday, Fargo 5v5 Thursday — start dates today/today+1/today+2), 12 teams with full rosters (captain + 4 placeholders), ~102 matches, 130 placeholder members. Idempotent. Documented in the root README's "Local development setup" section. |
 | `README_DATABASE_INTEGRATION.md` | Database integration guide |
 | `MESSAGING_AND_REPORTING_COMPLETE.md` | Messaging/reporting completion notes |
 
@@ -271,7 +308,6 @@
 | File | Purpose |
 |------|---------|
 | `rebuild_all_tables.sql` | Complete database rebuild script |
-| `seed_test_users.sql` | Test user data |
 | `seed_fake_members.sql` | Fake member data for testing |
 | `seed_fake_members.sql.backup` | Backup of seed data |
 | `add_member_insert_policy.sql` | Member insert RLS policy |
@@ -287,6 +323,41 @@
 
 ---
 
+## 🎭 End-to-End Testing (`/tests/e2e/`)
+
+Playwright-based browser tests. Local-only for v1. Two purposes:
+regression coverage + raw demo video for sales reels (via slow-motion
++ headed run mode). The scaffolding is designed so future plans can
+include "do test stuff" as a unit and have it materially mean
+"compose factories + drive UI in 10–30 lines per spec."
+
+See `tests/e2e/README.md` for the runbook (one-time setup, run modes,
+how to add a new test, demo recording, cleanup model).
+
+### Configuration & Setup
+
+| File | Purpose |
+|------|---------|
+| `playwright.config.ts` | Playwright config. Drives `E2E_DEMO=1` slow-motion mode, the `setup` → `chromium` project chain, the non-localhost startup guard. |
+| `tests/e2e/README.md` | Runbook for the E2E scaffolding. |
+| `tests/e2e/auth.setup.ts` | Multi-user auth setup. Iterates the foundation palette, drives UI login per user, saves per-user storage states under `tests/e2e/.auth/`. |
+
+### Fixtures (Shared Test Primitives)
+
+| File | Purpose |
+|------|---------|
+| `tests/e2e/fixtures/users.ts` | Foundation user palette. Exports `E2E_USERS`, `E2E_ORG_ID`, `E2E_VENUE_ID`, `getStorageState(key)`, `getMemberId(key)`. The starting point every spec imports from. |
+| `tests/e2e/fixtures/serviceClient.ts` | Local-only Supabase service-role client (bypasses RLS for setup operations). Hardcoded demo JWT, never replaced with a real key. |
+| `tests/e2e/fixtures/factories.ts` | Test data factories: `createLeague`, `createSeason`, `createTeam`, `createMatch`, `createMatchReadyForLineup`. The bit that makes future tests cheap. |
+
+### Specs
+
+| File | Purpose |
+|------|---------|
+| `tests/e2e/dashboard.spec.ts` | Smoke: dashboard renders for a foundation user (captain-1). |
+| `tests/e2e/specs/lineup-flow.spec.ts` | Reference example: single-captain pattern (captain reaches a match's lineup page). Copy this shape for future captain-side feature tests. |
+| `tests/e2e/specs/wizard-tour.spec.ts` | Reference example: LO multi-stage tour. Doubles as the demo-recording target (`pnpm test:e2e:demo --grep wizard-tour`). |
+
 ## 💻 Source Code (`/src`)
 
 > **Total**: 270 TypeScript/TSX files
@@ -300,6 +371,8 @@
 | `main.tsx` | Application entry point |
 | `supabaseClient.ts` | Supabase client configuration |
 | `vite-env.d.ts` | Vite TypeScript definitions |
+| `config/environment.ts` | App environment detection (dev/staging/prod) + banner config |
+| `components/EnvironmentBanner.tsx` | Top-of-app banner labeling non-production builds |
 
 ---
 
@@ -308,11 +381,28 @@
 #### Integration Tests (`/__tests__/integration/`)
 - `SeasonCreationWizard.critical.test.tsx` - Critical path tests
 - `SeasonCreationWizard.smoke.test.tsx` - Smoke tests
+- `RulesPage.test.tsx` - `/rules` landing: filter chips, search, zero-results, clear actions
+- `RuleDetailPage.test.tsx` - `/rules/:game/:ruleId`: happy path, drawer, unknown-ID fallback
+- `RulesPageHouseRules.test.tsx` - House rules chip, scope picker, merged search, TOC interleave, differences-only, discovery nudge
+- `HouseRuleDetailPage.test.tsx` - `/rules/house/:scope/:scopeId/:ruleId`: happy path, drawer, CSI backlink, standalone variant, unknown-ID fallback
+- `LeagueRulesPage.test.tsx` - Org-wide house rules manager: render, Add/Cancel form, delete-with-Undo
 
 #### Unit Tests (`/__tests__/unit/`)
 - `messageQueries.test.ts` - Message query utilities
 - `profanityFilter.test.ts` - Profanity filter
 - `scheduleUtils.test.ts` - Schedule utilities
+- `cleanup.smoke.test.ts` - Rulebook cleanup output smoke checks (18 tests)
+- `resolveRuleId.test.ts` - Deep-link rule resolver
+- `useRulebookSearch.test.ts` - In-memory substring search hook
+- `searchSnippet.test.ts` - Snippet extraction + highlight helpers
+- `copyLinkButton.test.tsx` - Share-link clipboard button
+- `searchHouseRules.test.ts` - Pure substring search over house-rule title + body
+- `groupHouseRules.test.ts` - TOC interleave grouping: standalones, override pairing, specificity ordering
+- `houseRuleForm.test.tsx` - HouseRuleForm: validation, effect-type switch, CSI suggestions, snippet picker, dirty state
+
+#### Database Tests (`/__tests__/database/`)
+- `rulesPageEvents.rls.test.ts` - `rules_page_events` RLS + constraints (requires local Supabase)
+- `houseRules.rls.test.ts` - `house_rules` RLS probes (requires local Supabase; full coverage deferred until seed fixtures land)
 
 #### Test Utilities (`/test/`)
 - `setup.ts` - Test environment setup
@@ -330,7 +420,9 @@
 
 #### Player Pages (`/player/`)
 - `MatchLineup.tsx` - Match lineup editor
+- `MyMatch.tsx` - Live-match jump-in landing page (PLACEHOLDER — real detection + jump-in is a backlog item)
 - `MyTeams.tsx` - Player's teams overview
+- `PlayerStats.tsx` - Personal stats landing page (PLACEHOLDER — real build-out is a backlog item)
 - `ScoreMatch.tsx` - Match scoring interface
 - `TeamSchedule.tsx` - Team schedule view
 
@@ -418,6 +510,48 @@
 - `EightManFormatDetails.tsx` - 8-man format details
 - `FiveManFormatDetails.tsx` - 5-man format details
 
+#### Official Rulebook Reader (`/rules/`)
+
+Public feature at `/rules`. Reads the cleaned CSI rulebook from `/src/officalBCARulebook/cleaned/` and renders it as a searchable, mobile-first document. Rule detail lives at `/rules/:game/:ruleId`.
+
+- `RulesPage.tsx` - `/rules` landing: filter chips, search, TOC / All-games accordion
+- `RuleDetailPage.tsx` - `/rules/:game/:ruleId`: full rule text, drawer, Copy-link, attribution
+- `RuleView.tsx` - Pure rule renderer (heading + body paragraphs)
+- `GameTOC.tsx` - Ordered rule list inside a single-game view
+- `AllGamesAccordion.tsx` - Cover-to-cover reader (every game as collapsible section)
+- `RuleCard.tsx` - One clickable rule row in the TOC
+- `SearchInput.tsx` - Sticky debounced search with "/" keyboard shortcut
+- `SearchResults.tsx` - Results list + zero-results state (Clear filter / Clear search)
+- `SearchSnippet.tsx` - Snippet extraction + <mark> highlighting
+- `Attribution.tsx` - R11 footer linking to CSI's hosted PDF
+- `CopyLinkButton.tsx` - One-tap clipboard share with sonner toast
+- `RulesSkeleton.tsx` - Suspense fallback matching the page layout
+- `RulesErrorBoundary.tsx` - Branded error boundary for data-load failures
+- `useRulebook.ts` - Typed loader singleton (merges cleaned game modules)
+- `useRulebookSearch.ts` - In-memory substring search (hook + pure function)
+- `resolveRuleId.ts` - O(1) deep-link resolver
+- `useRulesEvents.ts` - Fire-and-forget usage events (page_open / search / deep_link / house_filter / differences_only / house_rule_opened / scope_changed)
+- `rulebook.types.ts` - Shared types: `Rule`, `Game`, `Rulebook`, `RulebookIndex`
+
+#### League House Rules (part of `/rules/`)
+
+LO-authored rules layered on top of the CSI rulebook. Org-wide rules cascade into every league unless the league opts out. Reader interleaves matching house rules beneath their CSI counterparts.
+
+- `HouseRuleDetailPage.tsx` - `/rules/house/:scope/:scopeId/:ruleId`: full rule + scope attribution + CSI backlink
+- `HouseRuleCard.tsx` - Clickable house-rule row with scope badge
+- `HouseRuleForm.tsx` - Shared add/edit form: effect-type radios, CSI picker, CSI preview with per-snippet "+ Add", dirty-state reporting
+- `HouseRulesList.tsx` - Reusable list with inline Add/Edit and delete-with-Undo (preserves `id`)
+- `HouseRulesScopePicker.tsx` - Sheet for picking which league's rules to overlay on the reader
+- `CsiRulePicker.tsx` - shadcn Command palette over the in-bundle rulebook
+- `CsiSuggestions.tsx` - Live "similar official rules?" panel under the title input
+- `LeagueHouseRulesSection.tsx` - League-scoped list + "Use official CSI rulebook only" opt-out toggle for LeagueSettings
+- `useHouseRules.ts` - Loader hooks: by memberships, by single id, and cascade-aware for a single scope
+- `useMyMemberships.ts` - Derives player + staff org/league memberships for scope defaulting
+- `useActiveLeague.ts` - Per-device active-league state with localStorage + sign-out clear
+- `searchHouseRules.ts` - Pure substring search across house-rule title + body
+- `groupHouseRules.ts` - Interleave helper: pairs house rules to their CSI counterparts + pulls out standalones
+- `house-rules.types.ts` - Shared types: `HouseRule`, `HouseRuleScope`, `ScopeSelection`, memberships, etc.
+
 ---
 
 ### 🧩 Components
@@ -445,6 +579,8 @@
 | `textarea.tsx` | Multiline text input |
 | `capitalize-input.tsx` | Auto-capitalize input |
 | `password-input.tsx` | Password input with toggle |
+| `filter-chip.tsx` | **ALL filter chip buttons** — extracted from MemberSearchCombobox |
+| `sheet.tsx` | Side-anchored drawer (shadcn Sheet, built on Radix Dialog) |
 
 #### Shared UI Components (`/components/shared/`)
 - `EmptyState.tsx` - Empty state component
@@ -484,13 +620,15 @@ Reusable wizard/form step components
 - `TestModeToggle.tsx` - Test mode toggle
 
 #### Scoring Components (`/components/scoring/`)
-- `ScoreboardCard.tsx` - Scoreboard display
+- `UnifiedScoreboard.tsx` - **Single live-match scoreboard for all configs** (replaces former ThreeVThree / FiveVFive / TenSeven). Reads match-row source-of-truth, schema-derived display hints, calculator-driven per-player points column, R22 Fargo start-points display.
+- `TiebreakerScoreboard.tsx` - Best-of-3 tiebreaker score panel (separate component; team-name labels per R18)
+- `MatchEndVerification.tsx` - End-of-match dual-team verify-and-confirm flow (mode-aware internally)
 - `GamesList.tsx` - Games list
-- `MatchScoreboard.tsx` - Swipeable match scoreboard with team/player stats (extracted from ScoreMatch)
 - `GameButtonRow.tsx` - Game row with breaker vs racker buttons (extracted from ScoreMatch)
 - `ScoringDialog.tsx` - Game winner selection with B&R and Golden Break (extracted from ScoreMatch)
 - `ConfirmationDialog.tsx` - Opponent score confirmation and vacate requests (extracted from ScoreMatch)
 - `EditGameDialog.tsx` - Vacate winner request dialog (extracted from ScoreMatch)
+- `scoreboardColors.ts` - Single source of truth for team colors (home: blue, away: orange)
 
 #### Messaging Components (`/components/messages/`)
 - `MessageView.tsx` - Main message view
@@ -527,6 +665,10 @@ Reusable wizard/form step components
 - `ParticipationSettingsCard.tsx` - Playoff participation/qualification settings with collapsible edit controls
 - `PlayoffWeeksCard.tsx` - Playoff weeks selector with add weeks modal and payment method options
 - `WildcardSettingsCard.tsx` - Wildcard spots configuration for random selection from non-qualifying teams
+
+#### Match Components (`/components/match/`)
+- `MatchPhaseGuard.tsx` - Server-state route guard. Reads `matches.status` via `useMatchPhase`, dispatches lineup vs scoring vs recovery rendering, holds the compound `key={matchId:recoveryEpoch}` that drives in-place subtree remounts on Hard Reset.
+- `MatchTransitionRecovery.tsx` - Unified recovery surface for the lineup → scoring transition. Reason-aware copy (connection / match_not_found / auth_expired / server_error / unknown_status), two-level Try Again (soft refetch first, Hard Reset only after soft fails — with confirmation dialog).
 
 #### Player Components (`/components/player/`)
 - `TeamCard.tsx` - Player team card ⚠️ **DUPLICATE** (also in `/components`)
@@ -630,6 +772,12 @@ Reusable wizard/form step components
 - `conflictDetectionUtils.ts` - Schedule conflict detection
 - `gameOrder.ts` - Game order utilities
 
+#### Match Running Totals (`/utils/match/`)
+- `computeMatchRunningTotals.ts` - **Per-mutation running-totals calculator** (Phase 5 Unit 5.5) — pure helper that filters confirmed regular games, runs the snapshot's points calculator, and returns `{ home_games_won, away_games_won, home_points_earned, away_points_earned }`. Eager recompute on every scoring mutation keeps the match row consistent with the live scoreboard. Tiebreaker games and unconfirmed games are excluded from regular running totals.
+- `auditScoringConsistency.ts` - **Match-completion scoring-consistency audit** (Phase 5 Unit 5.6) — pure `compareRunningTotals(actual, expected)` helper that returns per-field discrepancies between the match row's stored totals and a fresh recompute. Match record is never modified — divergence is logged to `app_logs` for the dev to investigate. Reusable for on-demand audits.
+- `__tests__/computeMatchRunningTotals.test.ts` - **Running-totals tests** (10 cases): confirmation filtering, tiebreaker exclusion, linear_above_threshold above/tie/below bands, LOCKED tie-band-with-tiebreaker invariant, accumulated_per_game (Fargo 10-7), null calculator, unknown calculator
+- `__tests__/auditScoringConsistency.test.ts` - **Audit comparison tests** (7 cases): in-sync match returns ok, single-field divergence on games_won / points_earned, multi-field divergence, diff sign convention (positive = stored too high), input non-mutation
+
 #### Team & Player
 - `teamQueries.ts` - Team database queries
 - `playerQueries.ts` - Player database queries
@@ -701,6 +849,7 @@ High-level business logic services
 - `useInviteStatuses.ts` - **✅ Invite statuses hook** (batch fetch invite statuses for PP cards in TeamEditorModal)
 - `useUserProfile.ts` - **✅ User profile hook** (full member data + role utilities)
 - `useOperatorId.ts` - **✅ Operator ID hook** (operator lookup with caching)
+- `useMatchPhase.ts` - **✅ Match-phase status query** (minimal id/status/started_at slice; staleTime: 0; foreground 7s polling while status='scheduled' as Defense 7 backstop for dropped realtime). Distinct cache key from `useMatchById` — see file header for rationale.
 - `index.ts` - Central export point for all hooks
 
 **Migration Status**: Phase 1 Complete (foundation), Phase 2 Next (migrate member/user data)
@@ -712,6 +861,13 @@ High-level business logic services
 #### Wizard Step Definitions (`/data/`)
 - `seasonWizardSteps.tsx` - Season wizard steps
 - `mockVenues.ts` - Mock venue data
+
+#### Official Rulebook Data (`/officalBCARulebook/`)
+Source and cleaned data for the Rules Reader feature. Note the legacy folder-name typo ("offical") — kept as-is to avoid a cross-cutting rename.
+- `bca_rules_sections.json` - **LEGACY** raw PDF-to-text dump (no longer read at runtime; kept until post-launch cleanup)
+- `BCA Rules Figure 2-1.png` - **LEGACY** figure asset (not rendered in v1; retained for a future figures pass)
+- `cleaned/index.ts` - Edition metadata + games list + `(game, ruleId)` → ref `idMap` (auto-generated)
+- `cleaned/8-ball.ts` through `cleaned/scotch-doubles.ts` - Per-game `Rule[]` modules (auto-generated, 9 files total, 135 rules)
 
 #### Matchup Tables (`/data/matchupTables/`)
 
@@ -764,13 +920,31 @@ TypeScript type definitions - **Single source of truth for all types**
 
 Preset modules implementing the `SystemModule` interface. Each shipped preset owns its rating, scoring, and threshold behavior. The resolver maps `handicap_type` string → module. See `docs/plans/2026-04-18-001-refactor-modular-handicap-scoring-systems-plan.md`.
 
-- `types.ts` - **SystemModule interface** + discriminated threshold union (BCAThreshold | FargoThreshold) + supporting types
-- `resolver.ts` - **Module resolver** — `pickModule(handicap_type)` routes to bca3v3 / bca5v5 / fargo5v5
+- `types.ts` - **SystemModule interface** + mechanism-discriminated threshold union (ExtraGamesThreshold | StartPointsThreshold | RaceLengthThreshold) + supporting types (Phase 1 Unit 1.3)
+- `resolver.ts` - **Module resolver** — `pickModule(handicap_type)` routes to bca3v3 / bca5v5 / fargo5v5; `resolveSystem(prefs, overrides)` delegates to buildSystemFromPreferences for full-preference resolution (Phase 5 Unit 5.1)
+- `buildSystemFromPreferences.ts` - **Runtime resolver** (Phase 5 Unit 5.1; updated Phase 2 Unit 2.2) — produces a SystemModule from a `ResolvedSystemConfig`. Fast-paths to one of the three shipped presets when prefs match exactly (matchPreset checks `points_calculator` axis: bca3v3=`linear_above_threshold`, bca5v5=`accumulate_with_milestone_jumps`, fargo5v5=`accumulated_per_game`); otherwise builds an ad-hoc module dispatching rating/scoring/threshold sections on the resolved axes. `pickScoring` dispatches by calculator name; aggregate calculators stub through legacy paths until Phase 5 Unit 5.5
 - `bca3v3.ts` - **BCA 3v3 module** — wraps the existing get3v3GamesNeeded chart
 - `bca5v5.ts` - **BCA 5v5 module** — wraps the existing get5v5GamesNeeded chart
 - `fargo5v5.ts` - **Fargo 5v5 module** — real math (Phase 3 Unit 10): rating validation (100-850 integer), start-points formula from `docs/research/fargorate-formula.md`, points→games-won match-result cascade
 - `__tests__/resolver.test.ts` - Resolver routing tests (15 cases including unmapped fallback)
+- `__tests__/buildSystemFromPreferences.test.ts` - **Runtime resolver tests** (Phase 5 Unit 5.1; updated Phase 2 Unit 2.2 for new `points_calculator` value space) — preset fast-path equivalence + ad-hoc combos (28 cases): teamFormat derivation, rating/scoring/threshold dispatch, mechanism dispatch (extra_games / start_points / race_length_adjustment / none), graceful fallback for not-yet-wired layers
+- `__tests__/off_preset_combos.test.ts` - **Off-preset integration tests** (Phase 8 Unit 8.1) — exercises non-Tested-Preset combos through the full pipeline (buildSystemFromPreferences + computeMatchRunningTotals): 4v4+Fargo+games-won (linear_above_threshold), 5v5+percentage+10-7, 3v3+Fargo+games-won, and `points_calculator: null`. Locks the LOCKED tie-band invariant across off-preset handicap-system swaps
 - `__tests__/fargo5v5.test.ts` - **Fargo math tests** (Phase 3 Unit 10) — validates against 1 real-match test case (56 start-points ±1) + 34 synthetic cases covering rating validation, start-points formula, scoring cascade, override behavior
+
+#### Points Calculators (`/systems/calculators/`) — Phase 1 Unit 1.1
+
+Calculator-as-type-with-params registry. Each shipped points formula implements `PointsCalculator<P>` and registers itself by name. The runtime is parameter-blind: it looks up a calculator by name (read from `preferences.points_calculator` / `match.system_snapshot.points_calculator`), feeds the right input shape, gets a points number back. Mirrors the `threshold_charts` shape pattern.
+
+- `types.ts` - **PointsCalculator interface** — discriminated union by `kind: 'aggregate' | 'per_game'`. Aggregate calculators take `(gamesWon, thresholds, params)`. Per-game calculators take `(games, teamId, params)`. Includes `ScoringPopupFieldSpec` for the per-game UI's calculator-driven fields.
+- `index.ts` - **Registry** — `registerCalculator(calc)`, `getCalculator(name)`, `listCalculators()`. Empty in Unit 1.1; populated by Units 1.2–1.4. `getCalculator(null|undefined|unknown)` returns null (graceful-degradation).
+- `__tests__/registry.test.ts` - **Registry smoke tests** (18 cases) — empty-registry behavior, lookup, registration, duplicate-rejection, discriminated-union narrowing for both kinds, scoringPopupFields adapts to params, paramSchema validates.
+- `linear_above_threshold.ts` - **`linear_above_threshold` calculator** (Phase 1 Unit 1.2) — three-band formula (above-win / tie-band / below-tie). Tested Preset value: BCA 3v3 default (multiplier=1). The TIE-BAND RULE is a locked invariant: tie-band always 0, multiplier never moves it off zero. Per-game tiebreaker filtering is the caller's responsibility (calculator is aggregate-input). `src/types/match.ts:calculatePoints` is a deprecation shim that delegates here.
+- `__tests__/linear_above_threshold.test.ts` - **Three-band formula tests** (45 cases) — supplement worked-examples table reproduced exactly, no-tie-possible variant, multiplier scaling, tie-band invariant under varying multipliers (locked tests fail loudly if a refactor moves the tie band off zero), defensive behavior on null thresholds + malformed params, characterization equivalence with legacy `calculatePoints`.
+- `accumulate_with_milestone_jumps.ts` - **`accumulate_with_milestone_jumps` calculator** (Phase 1 Unit 1.3) — monotonic with two stepped jumps. Tested Preset value: BCA 5v5 default (`per_game_increment: 0.1, milestone_percent: 0.7, milestone_jump_value: 1.5, win_threshold_jump_value: 3.0`). No tie-band rule — formula always non-decreasing. `src/types/match.ts:calculateBCAPoints` is a deprecation shim that delegates here.
+- `__tests__/accumulate_with_milestone_jumps.test.ts` - **Milestone-jumps formula tests** (34 cases) — supplement worked-examples reproduced exactly (W=13: 14→3.1, 13→3.0, 9→1.5, 8→0.8), milestone target rounding (Math.round semantics), custom params, monotonicity invariant across the full range, edge cases (W=1, per_game_increment=0), defensive behavior, characterization equivalence.
+- `accumulated_per_game.ts` - **`accumulated_per_game` calculator** (Phase 1 Unit 1.4) — per-game accumulation with the per-side fixed-or-counter pattern. Each side independently configurable: `{kind: 'fixed', points: number}` OR `{kind: 'counter', min, max, label}`. Tested Preset value: Fargo 10-7 (winner=fixed-10, loser=counter-0-7 "Balls pocketed"). Per-game `scoringPopupFields` adapts to the params. Counter values clamped to [min, max]; null score → min fallback. Tiebreaker filtering is the caller's responsibility.
+- `__tests__/accumulated_per_game.test.ts` - **Per-game accumulation tests** (31 cases) — Fargo 10-7 default with mixed game outcomes, counter clamping (above max, below min, null, NaN), winner=counter forward-extension, both-sides-fixed configs, both-sides-counter LO-driven scoring, game filtering (skip null winner, do NOT internally filter tiebreakers), defensive behavior, characterization equivalence with legacy fargo5v5 per-game accumulation.
+- `__tests__/off_preset_combinations.test.ts` - **Off-preset combination tests** (15 cases, supplement Section 8.2 mandate) — all three calculators exercised at lineup geometries other than their Tested Preset's lineup (linear at 4v4/5v5/6v6, milestone-jumps at 3v3/6v6, accumulated_per_game at 3v3/4v4 with custom 15/X scoring). Plus `registerTestedPresetCalculators()` registration verification (idempotent). Plus a "same league, three calculators" cross-test proving lineup is independent of calculator choice.
 
 ---
 
@@ -859,12 +1033,22 @@ Supabase local configuration and migrations
 |------|---------|
 | `supabase/config.toml` | Supabase local configuration |
 | `supabase/migrations/20251218000000_venue_table_counts_optional.sql` | Fix venue total_tables computed column for array columns |
+| `supabase/migrations/20260419000000_rules_page_events.sql` | `rules_page_events` table + RLS (anon INSERT, developer-only SELECT) |
+| `supabase/migrations/20260419120000_house_rules.sql` | `house_rules` table, `house_rules_with_scope_name` view, `can_write_house_rule_org` SECURITY DEFINER, RLS policies |
+| `supabase/migrations/20260420120000_leagues_ignore_org_house_rules.sql` | `leagues.ignore_org_house_rules` column for per-league pure-CSI opt-out |
+| `database/dev_bootstrap_lo.sql` | DEV-ONLY: given an email, upserts member + org (owner via trigger) + one empty league. Paste into Studio. |
+| `database/dev_bootstrap_full.sql` | DEV-ONLY: full fixture — org + venue + league + active 12-week season + 4 teams with 5-player rosters + full round-robin schedule. Paste into Studio. |
 | `supabase/migrations/20260418000000_add_leagues_system_overrides.sql` | **Phase 2 Unit 4** — adds `leagues.system_overrides JSONB` for per-league dial overrides |
 | `supabase/migrations/20260418000001_add_fargo_match_columns.sql` | **Phase 2 Unit 5** — adds `matches.fargo_start_points` + `match_games.winner_points`/`loser_points`/`loser_balls_pocketed` |
 | `supabase/migrations/20260418000002_lock_tier1_preferences.sql` | **Phase 2 Unit 6** — DB trigger blocking UPDATE of `handicap_type` and `lineup_size` on league preferences (tier 1 mutability) |
 | `supabase/migrations/20260418000003_add_matches_system_snapshot.sql` | **Phase 2 Unit 7** — adds `matches.system_snapshot JSONB` for per-match frozen tier-2 dials (tier 3 mutability) |
 | `supabase/migrations/20260418000004_revise_fargo_columns.sql` | **Phase 2 revision** — drops 3 redundant Fargo columns (fargo_start_points, winner_points, loser_points); adds 3 always-tracked per-game flags (break_fouled, runout, win_by_forfeit). Fargo start-points now reuses home/away_games_to_win. |
 | `supabase/migrations/20260419000000_add_fargo_start_points_negotiation.sql` | **Phase 3 Unit 11c** — adds `matches.fargo_start_points` + home/away confirm columns for the captain-negotiated start-points value |
+| `supabase/migrations/20260501000002_teams_status_add_bye.sql` | **PR 1 bye-as-real-team** — adds `'bye'` to `teams_status_check` so byes can be represented as real teams rows. |
+| `supabase/migrations/20260501000003_teams_captain_id_nullable.sql` | **PR 1 bye-as-real-team** — drops NOT NULL on `teams.captain_id` so bye rows (no captain) can be inserted. |
+| `supabase/migrations/20260501000004_backfill_null_bye_matches.sql` | **PR 1 bye-as-real-team** — one-time backfill: replaces NULL `home_team_id`/`away_team_id` on legacy matches with real per-season bye-team rows. Includes pre-flight DO block enumerating abort conditions. |
+| `supabase/migrations/20260501000001_team_fks_cascade_to_restrict.sql` | **PR 0 cascade safety net** — flips `matches.home_team_id`, `matches.away_team_id`, and `match_lineups.team_id` from `ON DELETE CASCADE` to `ON DELETE RESTRICT` so deleting a team can no longer silently destroy match/lineup history. See `docs/plans/2026-04-29-001-fix-team-cascade-deletion-plan.md`. |
+| `supabase/migrations/20260504000000_harden_prep_match_write_guards.sql` | **Lineup→scoring transition stability fix** — replaces `prep_match` body so ALL writes (thresholds, status, started_at) are guarded by `WHERE status = 'scheduled'`; drops `IF NOT FOUND` exception and wraps INSERT in `IF FOUND` so race-loser calls are true no-ops. See `docs/plans/2026-05-04-001-fix-lineup-to-scoring-transition-stability-plan.md`. |
 | `supabase/seed.sql` | Full local dev DB dump — auto-applied on `supabase db reset`. **Local only, never runs against production.** |
 | `supabase/seed_test_users.sql` | 4 synthetic test auth users (player/operator/captain/owner, password `test-password-123`). **Dev-only — run manually via `docker exec ... psql`.** |
 | `supabase/seed_members.sql` | 20 placeholder players (no `user_id`) spanning Fargo 300–580 ratings for wizard/team-management testing. **Dev-only — not wired into auto-seed; run manually when the local DB needs a bench of fake members.** |
@@ -914,6 +1098,8 @@ See [RESTRUCTURE_PLAN.md](RESTRUCTURE_PLAN.md) for complete list of 20 organizat
 | **Scoring (3x3)** | `/player`, `/components/scoring`, `/hooks`, `/database/scoring3x3` | `ScoreMatch.tsx`, `useMatchScoring.ts`, `match_games.sql` |
 | **Messaging** | `/pages`, `/components/messages`, `/hooks`, `/utils`, `/database/messaging` | `Messages.tsx`, `useMessages.ts`, `messageQueries.ts` |
 | **Venues** | `/operator`, `/components/operator` | `VenueManagement.tsx`, `VenueCard.tsx`, `venues.sql` |
+| **Official Rulebook Reader** | `/rules`, `/officalBCARulebook/cleaned`, `/scripts/clean-rulebook` | `RulesPage.tsx`, `RuleDetailPage.tsx`, `useRulebook.ts`, `scripts/clean-rulebook.ts`, `rules_page_events.sql` |
+| **League House Rules** | `/rules` (reader overlay), `/rules/house/:scope/:scopeId/:ruleId`, `/league-rules/:orgId`, `/league-settings/:leagueId` (authoring) | `HouseRuleForm.tsx`, `HouseRulesList.tsx`, `HouseRuleDetailPage.tsx`, `LeagueHouseRulesSection.tsx`, `useHouseRules.ts`, `house_rules.sql`, `leagues_ignore_org_house_rules.sql` |
 | **Player Registration** | `/newPlayer` | `NewPlayerForm.tsx`, `usePlayerFormSubmission.ts` |
 | **Reporting** | `/operator`, `/pages`, `/database/reporting` | `ReportsManagement.tsx`, `AdminReports.tsx`, `user_reports.sql` |
 | **Wizards/Forms** | `/wizards`, `/components/wizard`, `/components/forms`, `/data`, `/flows` | `WizardFlowShell.tsx`, `createNewLeagueFlow.ts`, `seasonWizardSteps.tsx` |

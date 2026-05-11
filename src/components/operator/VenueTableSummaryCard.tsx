@@ -78,7 +78,7 @@ export const VenueTableSummaryCard: React.FC<VenueTableSummaryCardProps> = ({
         <div className="flex flex-wrap gap-2">
           {allTables.map((table, index) => (
             <div key={`${table.sizeLabel}-${table.number}-${index}`} className="flex flex-col items-center">
-              <span className="inline-flex items-center justify-center w-8 h-8 text-sm font-medium bg-white text-blue-700 rounded border border-blue-300">
+              <span className="inline-flex items-center justify-center w-8 h-8 text-sm font-medium bg-card text-blue-700 rounded border border-blue-300">
                 {table.number}
               </span>
               <span className="text-[10px] text-blue-600 mt-0.5">

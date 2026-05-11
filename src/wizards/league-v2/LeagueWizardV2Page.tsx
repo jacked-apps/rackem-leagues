@@ -28,7 +28,7 @@ export default function LeagueWizardV2Page() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 max-w-4xl py-8 text-center text-gray-500">
+      <div className="container mx-auto px-4 max-w-4xl py-8 text-center text-muted-foreground">
         Loading...
       </div>
     );

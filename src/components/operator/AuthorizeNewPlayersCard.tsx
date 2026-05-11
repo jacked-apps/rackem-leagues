@@ -293,7 +293,7 @@ export const AuthorizeNewPlayersCard: React.FC<AuthorizeNewPlayersCardProps> = (
                     </InfoButton>
                   </div>
                 </div>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   {isLoading
                     ? 'Loading...'
                     : `${playerCount} player${playerCount !== 1 ? 's' : ''} need authorization`}
@@ -301,16 +301,16 @@ export const AuthorizeNewPlayersCard: React.FC<AuthorizeNewPlayersCardProps> = (
               </div>
             </div>
             {isOpen ? (
-              <ChevronUp className="h-5 w-5 text-gray-400" />
+              <ChevronUp className="h-5 w-5 text-muted-foreground" />
             ) : (
-              <ChevronDown className="h-5 w-5 text-gray-400" />
+              <ChevronDown className="h-5 w-5 text-muted-foreground" />
             )}
           </div>
         </CardHeader>
         {isOpen && (
           <CardContent className="p-4 lg:p-6 pt-0">
             {isLoading ? (
-              <div className="flex items-center justify-center gap-2 py-4 text-gray-500">
+              <div className="flex items-center justify-center gap-2 py-4 text-muted-foreground">
                 <Loader2 className="h-5 w-5 animate-spin" />
                 <p className="text-sm">Loading...</p>
               </div>
@@ -322,7 +322,7 @@ export const AuthorizeNewPlayersCard: React.FC<AuthorizeNewPlayersCardProps> = (
             ) : !hasLoadedGameCounts ? (
               // Initial state - show button to load game counts
               <div className="space-y-4">
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   {unauthorizedPlayers.length} player{unauthorizedPlayers.length !== 1 ? 's' : ''}{' '}
                   need authorization. Load player details to see game counts and set handicaps.
                 </p>
@@ -367,7 +367,7 @@ export const AuthorizeNewPlayersCard: React.FC<AuthorizeNewPlayersCardProps> = (
                   </Button>
                 </div>
 
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   Set starting handicaps for players below, or use "Check for Established" to
                   auto-authorize any players with 15+ games.
                 </p>
@@ -376,13 +376,13 @@ export const AuthorizeNewPlayersCard: React.FC<AuthorizeNewPlayersCardProps> = (
                 {displayPlayers.map((player) => (
                   <div
                     key={player.id}
-                    className="flex items-center justify-between p-3 rounded-lg border bg-gray-50 border-gray-200"
+                    className="flex items-center justify-between p-3 rounded-lg border bg-muted border-border"
                   >
                     <div>
-                      <p className="font-medium text-gray-900">
+                      <p className="font-medium text-foreground">
                         {player.first_name} {player.last_name}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-muted-foreground">
                         #{player.system_player_number?.toString().padStart(5, '0')}
                         {player.bca_member_number && ` • BCA: ${player.bca_member_number}`}
                         <span
@@ -453,7 +453,7 @@ export const AuthorizeNewPlayersCard: React.FC<AuthorizeNewPlayersCardProps> = (
             <div>
               <Label htmlFor="modal-handicap5v5">
                 Starting Handicap (5v5)
-                <span className="text-xs text-gray-500 ml-2">(0 to 100)</span>
+                <span className="text-xs text-muted-foreground ml-2">(0 to 100)</span>
               </Label>
               <Input
                 id="modal-handicap5v5"

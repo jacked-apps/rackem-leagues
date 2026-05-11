@@ -90,11 +90,18 @@ export function useLineupValidation(
     return all.slice(0, playerCount);
   }, [player1Id, player2Id, player3Id, player4Id, player5Id, playerCount]);
 
-  // Check if lineup has a substitute (check first 3 positions - subs only in 3v3)
-  const hasSub = useMemo(
-    () => lineupHasSubstitute(player1Id, player2Id, player3Id),
-    [player1Id, player2Id, player3Id]
-  );
+  // Check if any active slot (per lineupSize) holds a sub sentinel —
+  // anonymous or double-duty. Format-agnostic: works for any lineup size.
+  const hasSub = useMemo(() => {
+    const row = {
+      player1_id: player1Id,
+      player2_id: player2Id,
+      player3_id: player3Id,
+      player4_id: player4Id,
+      player5_id: player5Id,
+    };
+    return lineupHasSubstitute(row, playerCount);
+  }, [player1Id, player2Id, player3Id, player4Id, player5Id, playerCount]);
 
   // Check if lineup is complete (all positions filled)
   const isComplete = useMemo(() => {

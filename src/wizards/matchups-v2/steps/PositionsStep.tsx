@@ -91,6 +91,7 @@ export function PositionsStep({
         .from('teams')
         .select('id, team_name, home_venue_id')
         .eq('season_id', seasonId!)
+        .eq('status', 'active')
         // Preserve the order the LO added captains during the Teams step,
         // regardless of any subsequent team-name renames.
         .order('created_at', { ascending: true });
@@ -141,7 +142,7 @@ export function PositionsStep({
   };
 
   if (!seasonId) return <p className="text-red-600">Missing season ID from flow context.</p>;
-  if (isLoading) return <p className="text-sm text-gray-500">Loading teams...</p>;
+  if (isLoading) return <p className="text-sm text-muted-foreground">Loading teams...</p>;
   if (teams.length < 2) return <p className="text-red-600">Need at least 2 teams to generate matchups.</p>;
 
   return (
@@ -154,7 +155,7 @@ export function PositionsStep({
         {positions.map((team) => (
           <div key={team.id} className="flex items-center gap-3 p-3 border rounded-lg">
             <div className="w-20">
-              <Label className="text-xs text-gray-600">Position</Label>
+              <Label className="text-xs text-muted-foreground">Position</Label>
               <PositionInput
                 value={team.schedule_position}
                 max={positions.length}
@@ -165,7 +166,7 @@ export function PositionsStep({
             <p className="flex-1 font-medium">
               {team.team_name}
               {team.id === 'BYE' && (
-                <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                <span className="ml-2 text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded">
                   Auto-added for odd team count
                 </span>
               )}

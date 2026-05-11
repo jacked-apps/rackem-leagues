@@ -82,11 +82,11 @@ export const DualDateStep: React.FC<DualDateStepProps> = ({
   const displayError = error || localError;
 
   return (
-    <div className="flex flex-col min-h-full bg-white">
+    <div className="flex flex-col min-h-full bg-card">
       <div className="flex-1 flex flex-col items-center p-8">
         <div className="w-full max-w-lg">
           {/* Title */}
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">{title}</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-4">{title}</h2>
 
           {/* Info Button on separate line */}
           {infoTitle && infoContent && (
@@ -98,12 +98,12 @@ export const DualDateStep: React.FC<DualDateStepProps> = ({
           )}
 
           {/* Subtitle */}
-          {subtitle && <div className="text-gray-600 mb-8">{subtitle}</div>}
+          {subtitle && <div className="text-muted-foreground mb-8">{subtitle}</div>}
 
           {/* Date Inputs */}
           <div className="space-y-6 mb-8">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 Start Date
               </label>
               <Calendar
@@ -117,7 +117,7 @@ export const DualDateStep: React.FC<DualDateStepProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 End Date
               </label>
               <Calendar
@@ -164,7 +164,7 @@ export const DualDateStep: React.FC<DualDateStepProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={onCancel}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-muted-foreground hover:text-foreground"
               >
                 Cancel and return to dashboard
               </Button>

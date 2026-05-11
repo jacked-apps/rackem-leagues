@@ -71,15 +71,15 @@ export const SeasonStatusCard: React.FC<SeasonStatusCardProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6 mb-6 mt-6">
-      <h3 className="text-sm font-semibold text-gray-700 mb-3">Configuration</h3>
+    <div className="bg-card rounded-xl shadow-sm p-6 mb-6 mt-6">
+      <h3 className="text-sm font-semibold text-foreground mb-3">Configuration</h3>
 
       <div className="space-y-2">
         {/* Start Date */}
         <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-600">Start Date:</span>
+          <span className="text-sm text-muted-foreground">Start Date:</span>
           <div className="flex items-center gap-3">
-            <span className={`text-sm ${startDate ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>
+            <span className={`text-sm ${startDate ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
               {formatDate(startDate)}
             </span>
             {onEdit && (
@@ -97,9 +97,9 @@ export const SeasonStatusCard: React.FC<SeasonStatusCardProps> = ({
 
         {/* Season Length */}
         <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-600">Season Length:</span>
+          <span className="text-sm text-muted-foreground">Season Length:</span>
           <div className="flex items-center gap-3">
-            <span className={`text-sm ${seasonLength ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>
+            <span className={`text-sm ${seasonLength ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
               {seasonLength ? `${seasonLength} weeks` : 'Not set'}
             </span>
             {onEdit && (
@@ -117,9 +117,9 @@ export const SeasonStatusCard: React.FC<SeasonStatusCardProps> = ({
 
         {/* BCA Championship */}
         <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-600">BCA Championship:</span>
+          <span className="text-sm text-muted-foreground">BCA Championship:</span>
           <div className="flex items-center gap-3">
-            <span className={`text-sm ${bcaIgnored ? 'text-gray-400' : bcaStartDate ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>
+            <span className={`text-sm ${bcaIgnored ? 'text-muted-foreground' : bcaStartDate ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
               {bcaIgnored ? 'Ignored' : formatDateRange(bcaStartDate, bcaEndDate)}
             </span>
             {onEdit && (
@@ -137,9 +137,9 @@ export const SeasonStatusCard: React.FC<SeasonStatusCardProps> = ({
 
         {/* APA Championship */}
         <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-600">APA Championship:</span>
+          <span className="text-sm text-muted-foreground">APA Championship:</span>
           <div className="flex items-center gap-3">
-            <span className={`text-sm ${apaIgnored ? 'text-gray-400' : apaStartDate ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>
+            <span className={`text-sm ${apaIgnored ? 'text-muted-foreground' : apaStartDate ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
               {apaIgnored ? 'Ignored' : formatDateRange(apaStartDate, apaEndDate)}
             </span>
             {onEdit && (

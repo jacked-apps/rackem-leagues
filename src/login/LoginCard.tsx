@@ -9,7 +9,7 @@ interface LoginCardProps {
 
 export const LoginCard: React.FC<LoginCardProps> = ({ title, description, children }) => {
   return (
-    <Card className="w-full lg:w-1/2 lg:mx-auto mt-25 p-4 lg:shadow-lg lg:bg-gray-100">
+    <Card className="w-full lg:w-1/2 lg:mx-auto mt-25 p-4 lg:shadow-lg lg:bg-muted">
       <CardHeader>
         <CardTitle className="text-xl font-bold">{title}</CardTitle>
         {description && <CardDescription>{description}</CardDescription>}

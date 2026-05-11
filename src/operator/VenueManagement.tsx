@@ -166,16 +166,16 @@ export const VenueManagement: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-muted py-8">
         <div className="container mx-auto px-4 max-w-7xl">
-          <div className="text-center text-gray-600">Loading venues...</div>
+          <div className="text-center text-muted-foreground">Loading venues...</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       <PageHeader
         backTo={backTo}
         backLabel={backLabel}
@@ -208,10 +208,10 @@ export const VenueManagement: React.FC = () => {
 
         {/* Venues List */}
         {venues.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm p-12 text-center">
+          <div className="bg-card rounded-xl shadow-sm p-12 text-center">
             <div className="text-6xl mb-4">🏢</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Venues Yet</h3>
-            <p className="text-gray-600 mb-6">
+            <h3 className="text-lg font-medium text-foreground mb-2">No Venues Yet</h3>
+            <p className="text-muted-foreground mb-6">
               Add your first venue to start organizing league play locations.
             </p>
             <Button onClick={() => setShowModal(true)} loadingText="none">
@@ -231,7 +231,7 @@ export const VenueManagement: React.FC = () => {
                 >
                   {/* League assignment controls */}
                   {leagueId && (
-                    <div className={`absolute top-0 left-0 right-0 z-10 p-3 rounded-t-xl ${assigned ? 'bg-green-50' : 'bg-gray-50'}`}>
+                    <div className={`absolute top-0 left-0 right-0 z-10 p-3 rounded-t-xl ${assigned ? 'bg-green-50' : 'bg-muted'}`}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Switch
@@ -242,7 +242,7 @@ export const VenueManagement: React.FC = () => {
                           />
                           <Label
                             htmlFor={`assign-${venue.id}`}
-                            className={`text-sm font-medium ${assigned ? 'text-green-700' : 'text-gray-600'}`}
+                            className={`text-sm font-medium ${assigned ? 'text-green-700' : 'text-muted-foreground'}`}
                           >
                             {assigned ? 'Assigned' : 'Not Assigned'}
                           </Label>

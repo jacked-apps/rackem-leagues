@@ -31,19 +31,19 @@ export const OperatorWelcome: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 py-12">
       <div className="container mx-auto px-4 max-w-4xl">
-        <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12">
+        <div className="bg-card rounded-2xl shadow-xl p-8 md:p-12">
           {/* Hero Section */}
           <div className="text-center mb-8">
             <div className="mb-6">
               <span className="text-6xl">🎉</span>
             </div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            <h1 className="text-4xl font-bold text-foreground mb-4">
               Congratulations!
             </h1>
             <h2 className="text-2xl text-blue-600 font-semibold mb-4">
               You're Now a League Operator!
             </h2>
-            <p className="text-lg text-gray-600 leading-relaxed max-w-2xl mx-auto">
+            <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
               Your application has been approved and you now have access to all league operator features.
               You can create leagues, manage tournaments, and grow the pool community in your area!
             </p>
@@ -51,28 +51,28 @@ export const OperatorWelcome: React.FC = () => {
 
           {/* What's New Section */}
           <div className="mb-10">
-            <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">
+            <h3 className="text-2xl font-bold text-foreground mb-6 text-center">
               What You Can Do Now
             </h3>
             <div className="grid md:grid-cols-3 gap-6">
               <div className="text-center p-6 bg-blue-50 rounded-xl">
                 <div className="text-3xl mb-3">🏆</div>
-                <h4 className="font-semibold text-gray-900 mb-2">Create Leagues</h4>
-                <p className="text-sm text-gray-600">
+                <h4 className="font-semibold text-foreground mb-2">Create Leagues</h4>
+                <p className="text-sm text-muted-foreground">
                   Set up 8-ball, 9-ball, or custom tournaments at your favorite venues
                 </p>
               </div>
               <div className="text-center p-6 bg-green-50 rounded-xl">
                 <div className="text-3xl mb-3">👥</div>
-                <h4 className="font-semibold text-gray-900 mb-2">Manage Players</h4>
-                <p className="text-sm text-gray-600">
+                <h4 className="font-semibold text-foreground mb-2">Manage Players</h4>
+                <p className="text-sm text-muted-foreground">
                   Handle registrations, track standings, and communicate with your league members
                 </p>
               </div>
               <div className="text-center p-6 bg-purple-50 rounded-xl">
                 <div className="text-3xl mb-3">📊</div>
-                <h4 className="font-semibold text-gray-900 mb-2">Track Results</h4>
-                <p className="text-sm text-gray-600">
+                <h4 className="font-semibold text-foreground mb-2">Track Results</h4>
+                <p className="text-sm text-muted-foreground">
                   Record match results, generate reports, and maintain official BCA standings
                 </p>
               </div>
@@ -132,7 +132,7 @@ export const OperatorWelcome: React.FC = () => {
             <Link to="/dashboard">
               <Button
                 variant="outline"
-                className="w-full sm:w-auto px-8 py-3 text-lg border-gray-300"
+                className="w-full sm:w-auto px-8 py-3 text-lg border-border"
               >
                 Return to Main Dashboard
               </Button>
@@ -140,8 +140,8 @@ export const OperatorWelcome: React.FC = () => {
           </div>
 
           {/* Support Info */}
-          <div className="mt-10 pt-8 border-t border-gray-200 text-center">
-            <p className="text-gray-600 mb-4">
+          <div className="mt-10 pt-8 border-t border-border text-center">
+            <p className="text-muted-foreground mb-4">
               Need help getting started? We're here to support you!
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center text-sm">

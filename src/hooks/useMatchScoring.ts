@@ -10,14 +10,16 @@ import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { calculateTeamHandicap } from '@/utils/handicapCalculations';
 import { shouldGoldenBreakCount } from '@/utils/goldenBreakRules';
 import { getPlayerNicknameById } from '@/types/member';
-import { getTeamStats, getPlayerStats, getCompletedGamesCount, calculatePoints, TIEBREAKER_THRESHOLDS } from '@/types';
+import { getTeamStats, getPlayerStats, getCompletedGamesCount, TIEBREAKER_THRESHOLDS } from '@/types';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/api/queryKeys';
 import { useMatchWithLeagueSettings, useMatchLineups, useMatchGames } from '@/api/hooks/useMatches';
 import { useUserTeamInMatch, useTeamDetails } from '@/api/hooks/useTeams';
+import { useMembersByIds } from '@/api/hooks/useCurrentMember';
 import { useMatchRealtime } from '@/realtime/useMatchRealtime';
 import { logger } from '@/utils/logger';
 import type {
   Player,
-  HandicapThresholds,
   MatchGame,
   ConfirmationQueueItem,
   MatchType,
@@ -43,6 +45,8 @@ export function useMatchScoring({
   autoConfirm = false,
   confirmOpponentScore
 }: UseMatchScoringOptions) {
+  const queryClient = useQueryClient();
+
   // ============================================================================
   // TANSTACK QUERY HOOKS
   // ============================================================================
@@ -52,7 +56,6 @@ export function useMatchScoring({
     data: matchData,
     isLoading: matchLoading,
     error: matchError,
-    refetch: refetchMatch
   } = useMatchWithLeagueSettings(matchId);
 
   // Fetch lineups (needs team IDs from match data)
@@ -82,7 +85,6 @@ export function useMatchScoring({
   const {
     data: gamesData = [],
     isLoading: gamesLoading,
-    refetch: refetchGames,
   } = useMatchGames(matchId);
 
   // Fetch FULL team rosters (not just lineup players)
@@ -132,37 +134,60 @@ export function useMatchScoring({
     return shouldGoldenBreakCount(gameType, matchData?.league.golden_break_counts_as_win);
   }, [gameType, matchData?.league.golden_break_counts_as_win]);
 
-  // Build players Map from FULL team rosters (not just lineup players)
-  // This allows getPlayerDisplayName to find ANY player on either team, including swap candidates
+  // Build players Map from the UNION of (a) every member ID that appears
+  // in either team's roster (team_players) and (b) every member ID that
+  // appears in either lineup row.
+  //
+  // Why we don't just rely on the team_players(members(*)) nested join
+  // anymore: that join can return a null `members` field for a roster
+  // row even when the member exists — RLS quirks, FK pointing at a
+  // post-merge ghost ID, or transient cache shapes have all been
+  // observed in production. When that happens, the lookup returns
+  // "Unknown" in the drawer for a player whose full name resolves
+  // perfectly via the direct getMemberById query elsewhere in the app.
+  // Building the Map from `members WHERE id IN (...)` against the
+  // raw IDs we actually need to render is bulletproof against those
+  // edge cases.
+  //
+  // Includes lineup IDs explicitly so any player who appears in a
+  // lineup (regular roster, sub, double-duty assignment, post-merge
+  // ghost reference) is always resolvable by the drawer / scoring UI.
+  // Includes roster IDs so swap candidates (who are on the team but
+  // not in the current lineup) still resolve.
+  const memberIdsToFetch = useMemo(() => {
+    const ids = new Set<string>();
+    const collectFromLineup = (lineup: any) => {
+      if (!lineup) return;
+      for (let n = 1; n <= 5; n++) {
+        const id = lineup[`player${n}_id`];
+        if (typeof id === 'string' && id.length > 0) ids.add(id);
+      }
+    };
+    collectFromLineup(lineupsData?.homeLineup);
+    collectFromLineup(lineupsData?.awayLineup);
+    homeTeamData?.team_players?.forEach((tp: any) => {
+      if (typeof tp.member_id === 'string' && tp.member_id) ids.add(tp.member_id);
+    });
+    awayTeamData?.team_players?.forEach((tp: any) => {
+      if (typeof tp.member_id === 'string' && tp.member_id) ids.add(tp.member_id);
+    });
+    return Array.from(ids);
+  }, [lineupsData, homeTeamData, awayTeamData]);
+
+  const membersQuery = useMembersByIds(memberIdsToFetch);
+
   const players = useMemo(() => {
     const playerMap = new Map<string, Player>();
-
-    // Add all home team roster players
-    homeTeamData?.team_players?.forEach((tp: any) => {
-      if (tp.members) {
-        playerMap.set(tp.members.id, {
-          id: tp.members.id,
-          first_name: tp.members.first_name,
-          last_name: tp.members.last_name,
-          nickname: tp.members.nickname,
-        });
-      }
+    membersQuery.data?.forEach((m: any) => {
+      playerMap.set(m.id, {
+        id: m.id,
+        first_name: m.first_name,
+        last_name: m.last_name,
+        nickname: m.nickname,
+      });
     });
-
-    // Add all away team roster players
-    awayTeamData?.team_players?.forEach((tp: any) => {
-      if (tp.members) {
-        playerMap.set(tp.members.id, {
-          id: tp.members.id,
-          first_name: tp.members.first_name,
-          last_name: tp.members.last_name,
-          nickname: tp.members.nickname,
-        });
-      }
-    });
-
     return playerMap;
-  }, [homeTeamData, awayTeamData]);
+  }, [membersQuery.data]);
 
   // Transform games array to Map for O(1) lookups (needs useMemo - expensive transformation)
   const gameResults = useMemo(() => {
@@ -171,20 +196,27 @@ export function useMatchScoring({
     return gamesMap;
   }, [gamesData]);
 
-  // Get handicap thresholds from match data (saved during lineup)
+  // Get handicap thresholds from match data (saved during lineup).
+  //
+  // Detection signal: `started_at !== null` means prep_match has run for
+  // this match (it sets `started_at = COALESCE(started_at, NOW())`).
+  // Pre-2026-05-04 this used `home_to_win !== null` as the signal, but
+  // that broke for Fargo points-mode where `home_to_win` is legitimately
+  // null (no match-level point threshold — match plays all games to
+  // totals). `started_at` is mode-independent.
+  //
+  // - games_to_win: null in points-mode (legitimate); non-null in games-mode.
+  // - games_to_tie: null when a tie is impossible OR when no start-credit
+  //   applies (BCA matches with odd total games / no handicap).
+  // - games_to_lose: null for Fargo matches (no decisive-loss threshold).
   const homeThresholds = useMemo(() => {
     if (matchType === 'tiebreaker') return TIEBREAKER_THRESHOLDS;
 
-    // Get thresholds from match table (saved during lineup lock).
-    // - games_to_tie is null when a tie is impossible (e.g., 10+9=19 > 18 games).
-    // - games_to_lose is null for Fargo matches: Fargo uses start-points
-    //   accumulation, not a games-to-lose threshold. Only games_to_win must
-    //   be non-null to signal the match is prepared.
-    if (matchData && matchData.home_games_to_win !== null) {
+    if (matchData && matchData.started_at !== null) {
       return {
-        games_to_win: matchData.home_games_to_win,
-        games_to_tie: matchData.home_games_to_tie ?? null,
-        games_to_lose: matchData.home_games_to_lose ?? null,
+        games_to_win: matchData.home_to_win,
+        games_to_tie: matchData.home_to_tie ?? null,
+        games_to_lose: matchData.home_to_lose ?? null,
       };
     }
 
@@ -194,12 +226,11 @@ export function useMatchScoring({
   const awayThresholds = useMemo(() => {
     if (matchType === 'tiebreaker') return TIEBREAKER_THRESHOLDS;
 
-    // See homeThresholds above — same rules apply to the away side.
-    if (matchData && matchData.away_games_to_win !== null) {
+    if (matchData && matchData.started_at !== null) {
       return {
-        games_to_win: matchData.away_games_to_win,
-        games_to_tie: matchData.away_games_to_tie ?? null,
-        games_to_lose: matchData.away_games_to_lose ?? null,
+        games_to_win: matchData.away_to_win,
+        games_to_tie: matchData.away_to_tie ?? null,
+        games_to_lose: matchData.away_to_lose ?? null,
       };
     }
 
@@ -266,12 +297,11 @@ export function useMatchScoring({
     return getCompletedGamesCount(gameResults);
   }, [gameResults]);
 
-  /**
-   * Calculate points for a team
-   */
-  const calculatePointsCallback = useCallback((teamId: string, thresholds: HandicapThresholds | null) => {
-    return calculatePoints(teamId, thresholds, gameResults);
-  }, [gameResults]);
+  // Note: the legacy `calculatePointsCallback` re-export was dropped in
+  // Unit 7 of the unified-scoreboard plan. Verified zero non-test consumers
+  // before removal. The legacy `calculatePoints` helper itself survives
+  // (src/types/match.ts) for the characterization tests + divergence audit
+  // — see `feedback_two_paths_audit_pattern.md` in the user-memory.
 
   // ============================================================================
   // DATA PROCESSING
@@ -385,14 +415,48 @@ export function useMatchScoring({
   // ============================================================================
 
   /**
-   * Unified real-time subscription to matches, match_lineups, and match_games
-   * Listens for INSERT/UPDATE/DELETE events and refreshes data
-   * Handles confirmation queue logic for opponent score updates
+   * Unified real-time subscription to matches, match_lineups, and match_games.
+   *
+   * Each handler invalidates the relevant cache entry rather than calling
+   * `query.refetch()` directly. Refetch respects `staleTime` and silently
+   * no-ops when the cache is still considered fresh; invalidate forces the
+   * cache to refetch regardless. After the staleTime fix in
+   * `useMatchWithLeagueSettings` (set to MATCH_LIVE = 0), the two are
+   * functionally equivalent for this query — but invalidate is the
+   * correct verb and matches the cascade behavior we want for sibling
+   * queries (lineup, games, useMatchPhase) keyed under
+   * `matches.detail(matchId)`.
+   *
+   * The handlers are wrapped in `useCallback` so their identities stay
+   * stable across renders. `useMatchRealtime` stores them in refs so
+   * identity churn wouldn't tear down the subscription anyway, but
+   * stability is the right idiom and keeps the ref-update effect from
+   * firing on every parent render.
    */
+  // Partial-key invalidation on matches.detail(matchId) cascades to all
+  // children: useMatchById (bare key), useMatchWithLeagueSettings
+  // ('leagueSettings' suffix), useMatchPhase ('phase' suffix), AND
+  // useMatchLineups, useMatchGames. The latter two have dedicated
+  // handlers (handleLineupInvalidate / handleGamesInvalidate) below —
+  // the cascade hits them too on every matches event, which is wasteful
+  // but not incorrect. The cost is acceptable: matches-row updates are
+  // rare events (lock, prep_match, completion), not per-game scoring
+  // events. Narrowing the key to exclude lineup/games is tempting but
+  // would also exclude phase, which is wrong.
+  const handleMatchInvalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.matches.detail(matchId || '') });
+  }, [queryClient, matchId]);
+  const handleLineupInvalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.matches.lineup(matchId || '') });
+  }, [queryClient, matchId]);
+  const handleGamesInvalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.matches.games(matchId || '') });
+  }, [queryClient, matchId]);
+
   useMatchRealtime(matchId, {
-    onMatchUpdate: refetchMatch,
-    onLineupUpdate: refetchLineups,
-    onGamesUpdate: refetchGames,
+    onMatchUpdate: handleMatchInvalidate,
+    onLineupUpdate: handleLineupInvalidate,
+    onGamesUpdate: handleGamesInvalidate,
     gameUpdateOptions: {
       match,
       userTeamId,
@@ -436,7 +500,6 @@ export function useMatchScoring({
     getTeamStats: getTeamStatsCallback,
     getPlayerStats: getPlayerStatsCallback,
     getCompletedGamesCount: getCompletedGamesCountCallback,
-    calculatePoints: calculatePointsCallback,
 
     // Confirmation queue
     confirmationQueue,

@@ -72,11 +72,11 @@ export const BlackoutDatesCard: React.FC<BlackoutDatesCardProps> = ({
         {/* BCA Preference */}
         <div className="border rounded-lg p-3">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-600 font-medium">BCA Championship</span>
+            <span className="text-sm text-muted-foreground font-medium">BCA Championship</span>
             {!bcaEditor.isEditing ? (
               <button
                 onClick={bcaEditor.startEditing}
-                className="text-xs px-2 py-1 border border-gray-300 rounded hover:bg-gray-50"
+                className="text-xs px-2 py-1 border border-border rounded hover:bg-muted"
               >
                 {bcaPreference?.championship ? 'Edit' : 'Add'}
               </button>
@@ -107,7 +107,7 @@ export const BlackoutDatesCard: React.FC<BlackoutDatesCardProps> = ({
             <div className="space-y-2 mb-2">
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">Start Date</label>
+                  <label className="block text-xs text-muted-foreground mb-1">Start Date</label>
                   <Calendar
                     value={bcaEditor.startDate}
                     onChange={bcaEditor.setStartDate}
@@ -115,7 +115,7 @@ export const BlackoutDatesCard: React.FC<BlackoutDatesCardProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">End Date</label>
+                  <label className="block text-xs text-muted-foreground mb-1">End Date</label>
                   <Calendar
                     value={bcaEditor.endDate}
                     onChange={bcaEditor.setEndDate}
@@ -126,11 +126,11 @@ export const BlackoutDatesCard: React.FC<BlackoutDatesCardProps> = ({
             </div>
           ) : bcaPreference && bcaPreference.championship ? (
             <>
-              <div className="text-sm text-gray-900 mb-2">
+              <div className="text-sm text-foreground mb-2">
                 {parseLocalDate(bcaPreference.championship.start_date).toLocaleDateString()} - {parseLocalDate(bcaPreference.championship.end_date).toLocaleDateString()}
               </div>
               <div className="flex items-center gap-2">
-                <label className="flex items-center gap-2 text-sm text-gray-600">
+                <label className="flex items-center gap-2 text-sm text-muted-foreground">
                   <input
                     type="checkbox"
                     checked={bcaPreference.preference?.preference_action === 'ignore'}
@@ -146,18 +146,18 @@ export const BlackoutDatesCard: React.FC<BlackoutDatesCardProps> = ({
               </div>
             </>
           ) : (
-            <span className="text-sm text-gray-400 italic">Not set</span>
+            <span className="text-sm text-muted-foreground italic">Not set</span>
           )}
         </div>
 
         {/* APA Preference */}
         <div className="border rounded-lg p-3">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-600 font-medium">APA Championship</span>
+            <span className="text-sm text-muted-foreground font-medium">APA Championship</span>
             {!apaEditor.isEditing ? (
               <button
                 onClick={apaEditor.startEditing}
-                className="text-xs px-2 py-1 border border-gray-300 rounded hover:bg-gray-50"
+                className="text-xs px-2 py-1 border border-border rounded hover:bg-muted"
               >
                 {apaPreference?.championship ? 'Edit' : 'Add'}
               </button>
@@ -188,7 +188,7 @@ export const BlackoutDatesCard: React.FC<BlackoutDatesCardProps> = ({
             <div className="space-y-2 mb-2">
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">Start Date</label>
+                  <label className="block text-xs text-muted-foreground mb-1">Start Date</label>
                   <Calendar
                     value={apaEditor.startDate}
                     onChange={apaEditor.setStartDate}
@@ -196,7 +196,7 @@ export const BlackoutDatesCard: React.FC<BlackoutDatesCardProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">End Date</label>
+                  <label className="block text-xs text-muted-foreground mb-1">End Date</label>
                   <Calendar
                     value={apaEditor.endDate}
                     onChange={apaEditor.setEndDate}
@@ -207,11 +207,11 @@ export const BlackoutDatesCard: React.FC<BlackoutDatesCardProps> = ({
             </div>
           ) : apaPreference && apaPreference.championship ? (
             <>
-              <div className="text-sm text-gray-900 mb-2">
+              <div className="text-sm text-foreground mb-2">
                 {parseLocalDate(apaPreference.championship.start_date).toLocaleDateString()} - {parseLocalDate(apaPreference.championship.end_date).toLocaleDateString()}
               </div>
               <div className="flex items-center gap-2">
-                <label className="flex items-center gap-2 text-sm text-gray-600">
+                <label className="flex items-center gap-2 text-sm text-muted-foreground">
                   <input
                     type="checkbox"
                     checked={apaPreference.preference?.preference_action === 'ignore'}
@@ -227,7 +227,7 @@ export const BlackoutDatesCard: React.FC<BlackoutDatesCardProps> = ({
               </div>
             </>
           ) : (
-            <span className="text-sm text-gray-400 italic">Not set</span>
+            <span className="text-sm text-muted-foreground italic">Not set</span>
           )}
         </div>
       </CardContent>

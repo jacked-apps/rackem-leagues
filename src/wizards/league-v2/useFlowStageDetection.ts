@@ -27,7 +27,6 @@ interface StageDetectionResult {
     leagueStartDate?: string;
     leagueName?: string;
     gameType?: string;
-    leagueFormat?: string;
     lineupSize?: number;
     rosterSize?: number;
     handicapType?: string;
@@ -55,7 +54,7 @@ export function useFlowStageDetection(leagueId: string | null): StageDetectionRe
       // Fetch league details (needed by Season wizard + summary display)
       const { data: league } = await supabase
         .from('leagues')
-        .select('league_start_date, game_type, team_format, division, day_of_week')
+        .select('league_start_date, game_type, division, day_of_week')
         .eq('id', leagueId)
         .single();
 
@@ -91,7 +90,8 @@ export function useFlowStageDetection(leagueId: string | null): StageDetectionRe
           supabase
             .from('teams')
             .select('home_venue_id', { count: 'exact' })
-            .eq('season_id', season.id),
+            .eq('season_id', season.id)
+            .eq('status', 'active'),
         ]);
         hasSchedule = (weeksRes.count ?? 0) > 0;
         teamCount = teamsRes.count ?? 0;
@@ -119,7 +119,6 @@ export function useFlowStageDetection(leagueId: string | null): StageDetectionRe
         leagueStartDate: league?.league_start_date ?? null,
         leagueName: leagueName || null,
         gameType: gameType || null,
-        leagueFormat: league?.team_format ?? null,
         lineupSize: prefs?.lineup_size ?? null,
         rosterSize: prefs?.max_roster_size ?? null,
         handicapType: prefs?.handicap_type ?? null,
@@ -153,7 +152,6 @@ export function useFlowStageDetection(leagueId: string | null): StageDetectionRe
   const leagueStartDate = data?.leagueStartDate ?? undefined;
   const leagueName = data?.leagueName ?? undefined;
   const gameType = data?.gameType ?? undefined;
-  const leagueFormat = data?.leagueFormat ?? undefined;
   const lineupSize = data?.lineupSize ?? undefined;
   const rosterSize = data?.rosterSize ?? undefined;
   const handicapType = data?.handicapType ?? undefined;
@@ -162,7 +160,7 @@ export function useFlowStageDetection(leagueId: string | null): StageDetectionRe
   const division = data?.division ?? undefined;
 
   const baseCtx = {
-    leagueId, leagueStartDate, leagueName, gameType, leagueFormat,
+    leagueId, leagueStartDate, leagueName, gameType,
     lineupSize, rosterSize, handicapType, matchFormat,
     dayOfWeek, division,
   };

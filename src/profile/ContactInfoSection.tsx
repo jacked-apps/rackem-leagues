@@ -42,9 +42,9 @@ export const ContactInfoSection: React.FC<ContactInfoSectionProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
+    <div className="bg-card rounded-lg shadow-md p-6">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Contact Information</h3>
+        <h3 className="text-lg font-semibold text-foreground">Contact Information</h3>
         {!form.isEditing && (
           <Button
             variant="outline"
@@ -91,7 +91,7 @@ export const ContactInfoSection: React.FC<ContactInfoSectionProps> = ({
             {form.errors.phone && (
               <p className="text-red-500 text-sm mt-1">{form.errors.phone}</p>
             )}
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Phone number will be formatted automatically as you type
             </p>
           </div>
@@ -110,12 +110,12 @@ export const ContactInfoSection: React.FC<ContactInfoSectionProps> = ({
         // Display Mode
         <div className="space-y-3">
           <div>
-            <span className="text-sm font-medium text-gray-500">Email Address</span>
-            <p className="text-gray-900">{member.email}</p>
+            <span className="text-sm font-medium text-muted-foreground">Email Address</span>
+            <p className="text-foreground">{member.email}</p>
           </div>
           <div>
-            <span className="text-sm font-medium text-gray-500">Phone Number</span>
-            <p className="text-gray-900">{member.phone}</p>
+            <span className="text-sm font-medium text-muted-foreground">Phone Number</span>
+            <p className="text-foreground">{member.phone}</p>
           </div>
         </div>
       )}

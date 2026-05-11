@@ -30,3 +30,19 @@ dist-ssr
 
 # Database backups (contain sensitive auth data)
 database_backups/
+
+# Claude Code per-developer settings (permissions, approvals)
+# Shared .claude/settings.json stays tracked; this local override does not.
+.claude/settings.local.json
+
+# Playwright E2E test outputs and auth state
+/test-results/
+/playwright-report/
+/playwright/.cache/
+/tests/e2e/.auth/
+
+# Compound-engineering pipeline artifacts (ce-review JSON, run scratch)
+.context/
+
+# Git worktrees (per-developer)
+.worktrees

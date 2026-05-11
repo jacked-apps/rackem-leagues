@@ -30,15 +30,18 @@ export { get5v5GamesNeeded } from './get5v5GamesNeeded';
 export function getGamesNeeded(handicapDiff: number, handicapType: string): HandicapThresholds {
   const { threshold } = pickModule(handicapType);
 
-  // BCA modules have games_to_win threshold mode — the contract this adapter serves.
-  if (threshold.mode === 'games_to_win') {
+  // BCA modules have extra_games threshold mode — the contract this adapter serves.
+  // (Renamed from 'games_to_win' in Phase 1 Unit 1.3 — the discriminator now
+  // describes the mechanism rather than the output field name.)
+  if (threshold.mode === 'extra_games') {
     return threshold.compute(handicapDiff, {});
   }
 
-  // Unreachable in practice: Fargo (start_points mode) never calls getGamesNeeded().
-  // Defensive fallback preserves the legacy "everything non-points routes to 5v5" behavior.
+  // Unreachable in practice: Fargo (start_points mode) and BCAPL SL (race_length_adjustment)
+  // never call getGamesNeeded(). Defensive fallback preserves the legacy
+  // "everything non-points routes to 5v5" behavior.
   console.warn(
-    `[handicap] getGamesNeeded reached a start_points threshold module for handicap_type="${handicapType}" — falling back to 5v5 chart directly`,
+    `[handicap] getGamesNeeded reached a non-extra_games threshold module (mode="${threshold.mode}") for handicap_type="${handicapType}" — falling back to 5v5 chart directly`,
   );
   return get5v5GamesNeededChart(handicapDiff);
 }

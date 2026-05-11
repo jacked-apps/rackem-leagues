@@ -127,13 +127,13 @@ function PlaceholderStage({
     <div className="text-center py-12 space-y-4">
       <h3 className="text-xl font-semibold">{stage.title}</h3>
       {stage.description && (
-        <p className="text-gray-600 max-w-md mx-auto">
+        <p className="text-muted-foreground max-w-md mx-auto">
           {typeof stage.description === 'function'
             ? stage.description(context)
             : stage.description}
         </p>
       )}
-      <p className="text-sm text-gray-400">Your progress is saved.</p>
+      <p className="text-sm text-muted-foreground">Your progress is saved.</p>
       <div className="flex justify-center gap-3">
         {onCancel && (
           <Button variant="outline" onClick={onCancel}>
@@ -150,7 +150,7 @@ function PlaceholderStage({
           <Button
             variant="ghost"
             onClick={() => onStageComplete()}
-            className="text-xs text-gray-400"
+            className="text-xs text-muted-foreground"
           >
             Skip (dev only)
           </Button>

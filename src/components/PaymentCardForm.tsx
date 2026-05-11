@@ -189,10 +189,10 @@ export const PaymentCardForm: React.FC<PaymentCardFormProps> = ({
       </div>
 
       {/* Payment Form */}
-      <div className="bg-gray-50 p-6 rounded-lg border">
+      <div className="bg-muted p-6 rounded-lg border">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Card Number
             </label>
             <div className="relative">
@@ -201,19 +201,19 @@ export const PaymentCardForm: React.FC<PaymentCardFormProps> = ({
                 placeholder="1234 5678 9012 3456"
                 value={formData.cardNumber}
                 onChange={handleCardNumberChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 maxLength={19}
                 disabled={loading || isVerifying}
               />
               <div className="absolute right-3 top-2">
-                <span className="text-xs text-gray-500">VISA/MC/AMEX</span>
+                <span className="text-xs text-muted-foreground">VISA/MC/AMEX</span>
               </div>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Expiry Date
               </label>
               <input
@@ -221,13 +221,13 @@ export const PaymentCardForm: React.FC<PaymentCardFormProps> = ({
                 placeholder="MM/YY"
                 value={formData.expiryDate}
                 onChange={handleExpiryChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 maxLength={5}
                 disabled={loading || isVerifying}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 CVV
               </label>
               <input
@@ -235,7 +235,7 @@ export const PaymentCardForm: React.FC<PaymentCardFormProps> = ({
                 placeholder="123"
                 value={formData.cvv}
                 onChange={handleCvvChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 maxLength={4}
                 disabled={loading || isVerifying}
               />
@@ -243,7 +243,7 @@ export const PaymentCardForm: React.FC<PaymentCardFormProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Billing ZIP Code
             </label>
             <input
@@ -251,7 +251,7 @@ export const PaymentCardForm: React.FC<PaymentCardFormProps> = ({
               placeholder="12345"
               value={formData.billingZip}
               onChange={handleBillingZipChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               maxLength={10}
               disabled={loading || isVerifying}
             />

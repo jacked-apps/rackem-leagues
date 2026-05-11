@@ -13,6 +13,7 @@ import { buildLeagueTitle, getTimeOfYear } from '@/utils/leagueUtils';
 import { PageHeader } from '@/components/PageHeader';
 import { InfoButton } from '@/components/InfoButton';
 import { LeagueStatusCard } from '@/components/operator/LeagueStatusCard';
+import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { logger } from '@/utils/logger';
 import { LeagueOverviewCard } from '@/components/operator/LeagueOverviewCard';
 import { TeamsCard } from '@/components/operator/TeamsCard';
@@ -41,6 +42,8 @@ export const LeagueDetail: React.FC = () => {
   const navigate = useNavigate();
 
   const [league, setLeague] = useState<League | null>(null);
+  const { data: leaguePrefs } = useResolvedLeaguePrefs(league?.id);
+  const lineupSize = leaguePrefs?.lineup_size;
   const [seasonCount, setSeasonCount] = useState(0);
   const [activeSeason, setActiveSeason] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
@@ -119,9 +122,9 @@ export const LeagueDetail: React.FC = () => {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-muted py-8">
         <div className="container mx-auto px-4 max-w-7xl">
-          <div className="text-center text-gray-600">Loading league details...</div>
+          <div className="text-center text-muted-foreground">Loading league details...</div>
         </div>
       </div>
     );
@@ -130,11 +133,11 @@ export const LeagueDetail: React.FC = () => {
   // Error state
   if (error || !league) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-muted py-8">
         <div className="container mx-auto px-4 max-w-7xl">
-          <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="bg-card rounded-xl shadow-sm p-6">
             <h3 className="text-red-600 text-lg font-semibold mb-4">Error</h3>
-            <p className="text-gray-700 mb-4">{error || 'League not found'}</p>
+            <p className="text-foreground mb-4">{error || 'League not found'}</p>
             <button
               onClick={() => navigate(league?.organization_id ? `/operator-dashboard/${league.organization_id}` : '/dashboard')}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg"
@@ -148,17 +151,17 @@ export const LeagueDetail: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       <PageHeader
         backTo={`/operator-dashboard/${league.organization_id}`}
         backLabel="Back to Dashboard"
         title={getLeagueName(league)}
       >
         <div className="flex items-center gap-3 mt-1">
-          <span className="text-md lg:text-xl text-gray-600">
-            {league.team_format === '5_man' ? '5-Man Roster' : '8-Man Roster'}
+          <span className="text-md lg:text-xl text-muted-foreground">
+            {lineupSize === 3 ? '3v3 Lineup' : lineupSize === 5 ? '5v5 Lineup' : `${lineupSize ?? '?'}v${lineupSize ?? '?'} Lineup`}
           </span>
-          {league.team_format === '5_man' && (
+          {lineupSize === 3 && (
             <InfoButton
               title="Double Round Robin Format"
               label="RRx2"
@@ -171,7 +174,7 @@ export const LeagueDetail: React.FC = () => {
               </div>
             </InfoButton>
           )}
-          <span className="text-md lg:text-xl text-gray-600">
+          <span className="text-md lg:text-xl text-muted-foreground">
             • Started {parseLocalDate(league.league_start_date).toLocaleDateString()}
           </span>
         </div>
@@ -250,12 +253,12 @@ function ActionCard({
   const nextStageName = STAGE_LABELS[firstIncompleteStage] ?? 'Setup';
 
   return (
-    <div className="lg:bg-white lg:rounded-xl lg:shadow-sm p-6 flex flex-col items-center justify-center">
+    <div className="lg:bg-card lg:rounded-xl lg:shadow-sm p-6 flex flex-col items-center justify-center">
       <div className="text-6xl mb-4">🚀</div>
-      <h3 className="text-lg font-semibold text-gray-900 mb-2 text-center">
+      <h3 className="text-lg font-semibold text-foreground mb-2 text-center">
         {showContinueSetup ? 'Setup In Progress' : 'Ready to Begin?'}
       </h3>
-      <p className="text-sm text-gray-600 mb-6 text-center">
+      <p className="text-sm text-muted-foreground mb-6 text-center">
         {showContinueSetup
           ? `Next step: ${nextStageName} (Stage ${firstIncompleteStage + 1} of 5)`
           : seasonCount === 0

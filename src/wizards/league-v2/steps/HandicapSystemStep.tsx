@@ -40,6 +40,16 @@ const HANDICAP_OPTIONS: SelectableCardOption<string>[] = [
     },
   },
   {
+    value: 'skill_level',
+    title: 'BCAPL Skill Level',
+    description: 'Integer 1–9 skill level with race-length adjustment chart',
+    infoButton: {
+      title: 'BCAPL Skill Level',
+      content:
+        'The BCA Pool League\'s national headline handicap. Each player carries a Skill Level from 1 (beginner) to 9 (advanced). The published Playing Handicap Chart maps each (SL_home, SL_away) pair to the race lengths each player needs to win. Pair with the Race-to-N pairing format and Race Winner scoring.',
+    },
+  },
+  {
     value: 'none',
     title: 'No Handicap',
     description: 'All players compete on equal terms',

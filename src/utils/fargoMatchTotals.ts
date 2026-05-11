@@ -7,11 +7,20 @@
  * `matches.home_team_score` / `away_team_score` / `home_points_earned` /
  * `away_points_earned`).
  *
- * The start-points credit for the weaker team is read directly off the
- * match row's `home_games_to_win` / `away_games_to_win` column — whichever
- * is positive identifies the weaker team, the other is 0. Captains already
- * agreed on this value via the negotiation flow (Unit 11c); we just apply
- * it here without recomputing from ratings.
+ * The start-points credit for the weaker team lives on the match row's
+ * `home_to_tie` / `away_to_tie` column post Phase 2 Unit 2.1 (the
+ * modular-league-system v2 column rename). Whichever side is positive
+ * identifies the weaker team; the other is 0. Captains already agreed on
+ * this value via the negotiation flow (Unit 11c); we just apply it here
+ * without recomputing from ratings.
+ *
+ * Historical note: pre-Phase-2-Unit-2.1, this credit lived on `*_to_win`
+ * (which was a misnomer — the values were tie thresholds, not win targets).
+ * The helper's parameter names (`homeGamesToWin` / `awayGamesToWin`) are
+ * descriptively-named labels for whatever the caller passes; nothing in
+ * this helper reads database columns directly. Callers that still mapped
+ * from `*_to_win` were migrated to `*_to_tie` in Unit 5 of the
+ * unified-scoreboard plan.
  */
 
 import { fargo5v5 } from '@/systems/fargo5v5';

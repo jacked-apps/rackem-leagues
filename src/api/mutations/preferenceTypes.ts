@@ -15,7 +15,6 @@ export interface PreferenceFields {
   handicap_variant?: string | null;
   team_handicap_variant?: string | null;
   game_history_limit?: number | null;
-  team_format?: string | null;
   golden_break_counts_as_win?: boolean | null;
   allow_unauthorized_players?: boolean | null;
   profanity_filter_enabled?: boolean | null;
@@ -27,6 +26,49 @@ export interface PreferenceFields {
   handicap_type?: string | null;
   points_system?: string | null;
   threshold_chart_id?: string | null;
+
+  // Phase 2 Unit 2.1 modular columns
+  pairing_format?: 'single_rack' | 'race_to_n' | string | null;
+  /**
+   * Calculator name from the registry (Phase 2 Unit 2.1 rename:
+   * `scoring_method` → `points_calculator`). NULL = league does not
+   * track points; standings sort cannot include `points_earned` and
+   * `win_condition` must be `'games'`.
+   */
+  points_calculator?:
+    | 'linear_above_threshold'
+    | 'accumulate_with_milestone_jumps'
+    | 'accumulated_per_game'
+    | string
+    | null;
+  /**
+   * Calculator-specific parameter object (Phase 2 Unit 2.1 new column).
+   * Shape varies by calculator type — each calculator owns its own zod
+   * schema. Empty object means "use the calculator's defaultParams"
+   * (Tested Preset values).
+   */
+  points_calculator_params?: Record<string, unknown> | null;
+  /**
+   * Phase 2 Unit 2.1 collapse: 4-value union → binary `'games' | 'points'`.
+   */
+  win_condition?: 'games' | 'points' | string | null;
+  mechanism?:
+    | 'extra_games'
+    | 'start_points'
+    | 'race_length_adjustment'
+    | 'none'
+    | string
+    | null;
+  standings_sort?: ('match_wins' | 'games_won' | 'points_earned')[] | null;
+  tiebreaker_trigger?: 'even_total_games_only' | 'never' | string | null;
+  tiebreaker_format?:
+    | 'best_of_3_short_race'
+    | 'single_short_race'
+    | 'accept_tie'
+    | 'manual'
+    | string
+    | null;
+  race_length?: number | null;
 }
 
 /** Full preference record as returned from the database */

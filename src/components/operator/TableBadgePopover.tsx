@@ -129,7 +129,7 @@ export function TableBadgePopover({
           >
             <span
               className={cn(
-                'inline-flex items-center justify-center w-8 h-8 text-sm font-medium bg-white rounded border transition-colors',
+                'inline-flex items-center justify-center w-8 h-8 text-sm font-medium bg-card rounded border transition-colors',
                 isAvailable
                   ? 'text-blue-700 border-blue-300 group-hover:border-blue-500'
                   : 'text-red-700 border-red-300 group-hover:border-red-500'
@@ -150,14 +150,14 @@ export function TableBadgePopover({
         <PopoverContent className="w-48 p-0" align="center">
           <div className="flex flex-col">
             {/* Header */}
-            <div className="px-4 py-3 border-b bg-gray-50 flex items-start justify-between">
+            <div className="px-4 py-3 border-b bg-muted flex items-start justify-between">
               <div>
-                <div className="font-semibold text-gray-900">Table {tableNumber}</div>
-                <div className="text-xs text-gray-500">{sizeLabel}</div>
+                <div className="font-semibold text-foreground">Table {tableNumber}</div>
+                <div className="text-xs text-muted-foreground">{sizeLabel}</div>
               </div>
               <button
                 onClick={() => setOpen(false)}
-                className="text-gray-400 hover:text-gray-600 -mr-1 -mt-1"
+                className="text-muted-foreground hover:text-muted-foreground -mr-1 -mt-1"
                 aria-label="Close"
               >
                 <XIcon className="h-4 w-4" />
@@ -174,7 +174,7 @@ export function TableBadgePopover({
                     'flex items-center gap-3 px-4 py-3 text-sm transition-colors text-left',
                     isFirst
                       ? 'text-gray-300 cursor-not-allowed'
-                      : 'text-gray-700 hover:bg-gray-100'
+                      : 'text-foreground hover:bg-muted'
                   )}
                 >
                   <ChevronUp className="h-4 w-4" />
@@ -187,13 +187,13 @@ export function TableBadgePopover({
                     'flex items-center gap-3 px-4 py-3 text-sm transition-colors text-left',
                     isLast
                       ? 'text-gray-300 cursor-not-allowed'
-                      : 'text-gray-700 hover:bg-gray-100'
+                      : 'text-foreground hover:bg-muted'
                   )}
                 >
                   <ChevronDown className="h-4 w-4" />
                   <span>Move Down</span>
                 </button>
-                <div className="border-t border-gray-200" />
+                <div className="border-t border-border" />
               </>
             )}
 
@@ -201,7 +201,7 @@ export function TableBadgePopover({
             <button
               onClick={handleToggle}
               className={cn(
-                'flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-100 transition-colors text-left',
+                'flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted transition-colors text-left',
                 isAvailable ? 'text-red-600' : 'text-green-600'
               )}
             >
@@ -245,10 +245,10 @@ export function TableBadgePopover({
             {/* Option 1: Add just this table */}
             <button
               onClick={handleAddSingleTable}
-              className="w-full text-left p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+              className="w-full text-left p-3 border rounded-lg hover:bg-muted transition-colors"
             >
-              <div className="font-medium text-gray-900">Add only Table {tableNumber}</div>
-              <div className="text-sm text-gray-500 mt-1">
+              <div className="font-medium text-foreground">Add only Table {tableNumber}</div>
+              <div className="text-sm text-muted-foreground mt-1">
                 Keep {sizeLabel} tables disabled, but add this single table to available.
               </div>
             </button>
@@ -256,10 +256,10 @@ export function TableBadgePopover({
             {/* Option 2: Enable all tables of this size */}
             <button
               onClick={handleEnableSizeConfirm}
-              className="w-full text-left p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+              className="w-full text-left p-3 border rounded-lg hover:bg-muted transition-colors"
             >
-              <div className="font-medium text-gray-900">Enable all {sizeLabel} tables</div>
-              <div className="text-sm text-gray-500 mt-1">
+              <div className="font-medium text-foreground">Enable all {sizeLabel} tables</div>
+              <div className="text-sm text-muted-foreground mt-1">
                 Re-enable the {sizeLabel} checkbox and add all tables of this size. You can then remove individual tables.
               </div>
             </button>

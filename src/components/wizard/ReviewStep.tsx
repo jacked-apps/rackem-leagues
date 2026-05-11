@@ -13,7 +13,7 @@ import type { WizardStepProps } from './types';
 export function ReviewStep<TFormData>(_props: WizardStepProps<unknown, TFormData>) {
   return (
     <div className="space-y-4">
-      <p className="text-gray-700">
+      <p className="text-foreground">
         Please check that the information below is correct.
       </p>
     </div>

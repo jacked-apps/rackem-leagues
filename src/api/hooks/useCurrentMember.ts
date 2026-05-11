@@ -143,7 +143,11 @@ export function useIsCaptain() {
 export function useAllMembers(excludeMemberId?: string) {
   return useQuery({
     queryKey: [...queryKeys.members.all, 'messageable', excludeMemberId || 'none'],
-    queryFn: () => getAllMembers(excludeMemberId),
+    // Messaging context: callers want every registered user (and any
+    // BCA-elevated placeholder) regardless of org. Pass undefined for
+    // organizationId so the org-scope filter is skipped — registered
+    // users span orgs, and messaging needs all of them findable.
+    queryFn: () => getAllMembers(undefined, excludeMemberId),
     staleTime: 5 * 60 * 1000, // 5 minutes - member list doesn't change often
     retry: 1,
   });

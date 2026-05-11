@@ -28,7 +28,8 @@ export function isLineupComplete(
   const playersSelected = !!(player1Id && player2Id && player3Id);
 
   // If there's a sub, handicap must be selected (unless in tiebreaker mode)
-  if (lineupHasSubstitute(player1Id, player2Id, player3Id) && !isTiebreakerMode) {
+  const row = { player1_id: player1Id, player2_id: player2Id, player3_id: player3Id };
+  if (lineupHasSubstitute(row, 3) && !isTiebreakerMode) {
     return playersSelected && !!subHandicap;
   }
 

@@ -249,11 +249,13 @@ export const TeamManagement: React.FC = () => {
     setImportingTeams(true);
 
     try {
-      // Fetch previous season's teams with rosters
+      // Fetch previous season's teams with rosters — active only,
+      // so import doesn't pull bye/withdrawn rows from last season.
       const { data: prevTeams, error: teamsError } = await supabase
         .from('teams')
         .select('*')
-        .eq('season_id', previousSeasonId);
+        .eq('season_id', previousSeasonId)
+        .eq('status', 'active');
 
       if (teamsError) throw teamsError;
 
@@ -343,30 +345,40 @@ export const TeamManagement: React.FC = () => {
   };
 
   /**
-   * Handle team deletion
+   * Handle team deletion.
    *
-   * ⚠️ CRITICAL TODO — DESTRUCTIVE CASCADE WARNING ⚠️
-   * The database schema has `ON DELETE CASCADE` on `matches.home_team_id` and
-   * `matches.away_team_id`. Deleting a team here will silently destroy ALL of
-   * that team's scheduled matches for the season, breaking other teams'
-   * weekly schedules and any season standings/history that reference them.
+   * Hard delete is allowed only when the team has zero matches (typo /
+   * pre-schedule cleanup). When matches exist, the operator is told the
+   * Drop workflow is the right tool — the database FK is RESTRICT, so the
+   * raw DELETE would fail anyway, but the pre-flight check gives a clean
+   * message instead of letting an FK error surface.
    *
-   * The current confirmation dialog warns about losing the team and roster
-   * but does NOT mention the match destruction. This needs a real fix:
-   *   - Block deletion entirely if matches exist (safest)
-   *   - Or implement soft delete / replacement workflow
-   *   - Or build a "team replacement" feature that swaps the team in matches
-   *
-   * Until that fix lands, the warning message below has been updated to
-   * honestly describe what gets destroyed. See:
-   *   - memory-bank/edsPlan.md → "CRITICAL: Team Deletion Cascade Issue"
-   *   - memory-bank/databaseSchema.md (cascade warning)
-   *   - memory-bank/plans/PLAN-wizard2.md → "Tech Debt Discovered" section
+   * The Drop workflow (mark team withdrawn + reassign matches to a bye row)
+   * ships in PR 2; until then, operators with mid-season drops should
+   * contact dev support.
    */
   const handleDeleteTeam = async (teamId: string) => {
+    const { count: matchCount, error: countError } = await supabase
+      .from('matches')
+      .select('id', { count: 'exact', head: true })
+      .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`);
+
+    if (countError) {
+      logger.error('Error counting team matches', { error: countError.message });
+      toast.error('Could not check team matches. Please try again.');
+      return;
+    }
+
+    if ((matchCount ?? 0) > 0) {
+      toast.error(
+        `This team has ${matchCount} match${matchCount === 1 ? '' : 'es'} and cannot be deleted. The Drop Team workflow (coming soon) is the right tool for mid-season departures.`
+      );
+      return;
+    }
+
     const confirmed = await confirm({
       title: 'Delete Team?',
-      message: 'WARNING: Deleting this team will permanently remove the team and its roster, AND will destroy ALL scheduled matches involving this team for the season. Other teams\' weekly schedules may be affected. Season standings and history that reference this team may be impacted. This cannot be undone.',
+      message: 'This team has no matches yet. Deleting it will permanently remove the team and its roster. This cannot be undone.',
       confirmText: 'Delete Team',
       confirmVariant: 'destructive',
     });
@@ -374,8 +386,6 @@ export const TeamManagement: React.FC = () => {
     if (!confirmed) return;
 
     try {
-      // ⚠️ TODO: This delete triggers cascade destruction of matches.
-      // See the function-level comment above for details.
       const { error: deleteError } = await supabase
         .from('teams')
         .delete()
@@ -383,7 +393,6 @@ export const TeamManagement: React.FC = () => {
 
       if (deleteError) throw deleteError;
 
-      // Refresh teams list using hook function
       await refreshTeams();
     } catch (err) {
       logger.error('Error deleting team', { error: err instanceof Error ? err.message : String(err) });
@@ -448,9 +457,9 @@ export const TeamManagement: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-muted py-8">
         <div className="container mx-auto px-4 max-w-7xl">
-          <div className="text-center text-gray-600">Loading...</div>
+          <div className="text-center text-muted-foreground">Loading...</div>
         </div>
       </div>
     );
@@ -458,11 +467,11 @@ export const TeamManagement: React.FC = () => {
 
   if (error || !league) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-muted py-8">
         <div className="container mx-auto px-4 max-w-7xl">
-          <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="bg-card rounded-xl shadow-sm p-6">
             <h3 className="text-red-600 text-lg font-semibold mb-4">Error</h3>
-            <p className="text-gray-700 mb-4">{error || 'League not found'}</p>
+            <p className="text-foreground mb-4">{error || 'League not found'}</p>
             <Button
               onClick={() => {
                 setIsNavigating(true);
@@ -481,61 +490,68 @@ export const TeamManagement: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen bg-muted ${teams.length > 0 && seasonId ? 'pb-24' : ''}`}>
       <PageHeader
         backTo={`/league/${leagueId}`}
         backLabel="Back to League"
         title="Manage Teams"
         subtitle="Assign venues and create teams for your league"
       >
-        <div className="mt-2 flex flex-col gap-4">
+        <div className="mt-2">
           <InfoButton title="Quick Tip" label="Team Management Tips">
             <div className="space-y-3">
-              <p className="text-sm text-gray-700">
+              <p className="text-sm text-foreground">
                 All you have to do is pick a captain for each team.
                 After that, the captain can fill in the rest—team name, venue, and players.
               </p>
-              <p className="text-sm text-gray-700">
+              <p className="text-sm text-foreground">
                 Feel free to add more info if you have it, but it's optional.
               </p>
-              <p className="text-sm text-gray-700">
+              <p className="text-sm text-foreground">
                 If a team ever wants to change captains, that's something only you can do.
               </p>
             </div>
           </InfoButton>
-          {teams.length > 0 && seasonId && (
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                className="w-full"
-                size="lg"
-                variant="outline"
-                onClick={() => {
-                  setIsNavigating(true);
-                  navigate(`/league/${leagueId}`);
-                }}
-                disabled={isNavigating}
-                isLoading={isNavigating}
-                loadingText="Loading..."
-              >
-                Save & Exit
-              </Button>
-              <Button
-                className="w-full"
-                size="lg"
-                onClick={() => {
-                  setIsNavigating(true);
-                  navigate(`/league/${leagueId}/season/${seasonId}/playoffs-setup`);
-                }}
-                disabled={isNavigating}
-                isLoading={isNavigating}
-                loadingText="Loading..."
-              >
-                Save & Continue →
-                </Button>
-              </div>
-            )}
-          </div>
+        </div>
       </PageHeader>
+      {/*
+        Save & Exit / Save & Continue pair lives in a fixed bottom bar (R6a)
+        so it stays in the thumb zone and does not scroll out of view. Only
+        rendered when there are teams to save and a seasonId is in scope.
+      */}
+      {teams.length > 0 && seasonId && (
+        <div className="fixed bottom-0 inset-x-0 z-30 border-t bg-card p-3 shadow-lg">
+          <div className="mx-auto grid max-w-4xl grid-cols-2 gap-2">
+            <Button
+              className="w-full"
+              size="lg"
+              variant="outline"
+              onClick={() => {
+                setIsNavigating(true);
+                navigate(`/league/${leagueId}`);
+              }}
+              disabled={isNavigating}
+              isLoading={isNavigating}
+              loadingText="Loading..."
+            >
+              Save & Exit
+            </Button>
+            <Button
+              className="w-full"
+              size="lg"
+              onClick={() => {
+                setIsNavigating(true);
+                navigate(`/league/${leagueId}/season/${seasonId}/playoffs-setup`);
+              }}
+              disabled={isNavigating}
+              isLoading={isNavigating}
+              loadingText="Loading..."
+            >
+              Save & Continue →
+            </Button>
+          </div>
+        </div>
+      )}
 
       <div className="container mx-auto px-4 max-w-7xl py-3 lg:py-8">
         {/* Layout: Venues (left) and Teams (right) */}
@@ -543,28 +559,28 @@ export const TeamManagement: React.FC = () => {
           {/* Left Column */}
           <div className="col-span-1 lg:col-span-4 space-y-3">
             {/* Status Card */}
-            <div className="bg-white rounded-xl shadow-sm p-4">
-              <h3 className="text-base font-semibold text-gray-900 mb-3">Setup Summary</h3>
+            <div className="bg-card rounded-xl shadow-sm p-4">
+              <h3 className="text-base font-semibold text-foreground mb-3">Setup Summary</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Type:</span>
-                  <span className="font-medium text-gray-900">
+                  <span className="text-muted-foreground">Type:</span>
+                  <span className="font-medium text-foreground">
                     {isTraveling ? 'Traveling' : isInHouse ? 'In-House' : 'Not Set'}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Venues:</span>
-                  <span className="font-medium text-gray-900">{leagueVenues.length}</span>
+                  <span className="text-muted-foreground">Venues:</span>
+                  <span className="font-medium text-foreground">{leagueVenues.length}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Tables Available:</span>
-                  <span className="font-medium text-gray-900">
+                  <span className="text-muted-foreground">Tables Available:</span>
+                  <span className="font-medium text-foreground">
                     {leagueVenues.reduce((sum, lv) => sum + (lv.available_table_numbers?.length ?? 0), 0)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-gray-600">Teams:</span>
+                    <span className="text-muted-foreground">Teams:</span>
                     <InfoButton title="Max Teams Explained" size="sm">
                       {isInHouse ? (
                         <p>In-house leagues can have 2 teams per table since both teams play at the same venue.</p>
@@ -573,7 +589,7 @@ export const TeamManagement: React.FC = () => {
                       )}
                     </InfoButton>
                   </div>
-                  <span className={`font-medium ${isAtMaxTeams ? 'text-orange-600' : 'text-gray-900'}`}>
+                  <span className={`font-medium ${isAtMaxTeams ? 'text-orange-600' : 'text-foreground'}`}>
                     {teams.length}/{maxTeams}
                   </span>
                 </div>
@@ -581,9 +597,9 @@ export const TeamManagement: React.FC = () => {
             </div>
 
             {/* Venue Assignment Section */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
+            <div className="bg-card rounded-xl shadow-sm p-6">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-semibold text-gray-900">League Venues</h2>
+                <h2 className="text-lg font-semibold text-foreground">League Venues</h2>
                 {venues.length > 0 && (
                   <Button
                     size="sm"
@@ -596,13 +612,13 @@ export const TeamManagement: React.FC = () => {
                   </Button>
                 )}
               </div>
-              <p className="text-xs text-gray-600 mb-4">
+              <p className="text-xs text-muted-foreground mb-4">
                 Select venues teams can use and adjust number of tables actually available
               </p>
 
               {/* Select All Checkbox */}
               {venues.length > 0 && (
-                <div className="flex items-center gap-3 p-2 bg-gray-50 rounded mb-2">
+                <div className="flex items-center gap-3 p-2 bg-muted rounded mb-2">
                   <input
                     type="checkbox"
                     checked={areAllVenuesAssigned()}
@@ -610,7 +626,7 @@ export const TeamManagement: React.FC = () => {
                     disabled={selectingAll}
                     className="mt-0"
                   />
-                  <span className="text-sm font-medium text-gray-700">
+                  <span className="text-sm font-medium text-foreground">
                     {selectingAll ? 'Updating...' : 'Select All'}
                   </span>
                 </div>
@@ -618,7 +634,7 @@ export const TeamManagement: React.FC = () => {
 
             {venues.length === 0 ? (
               <div className="text-center py-6">
-                <p className="text-sm text-gray-600 mb-3">No venues yet</p>
+                <p className="text-sm text-muted-foreground mb-3">No venues yet</p>
                 <Button
                   size="sm"
                   onClick={() => setShowVenueCreation(true)}
@@ -661,9 +677,9 @@ export const TeamManagement: React.FC = () => {
           </div>
 
           {/* Teams Section - Main Right Area */}
-          <div className="lg:col-span-8 bg-white rounded-xl shadow-sm p-6">
+          <div className="lg:col-span-8 bg-card rounded-xl shadow-sm p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">Teams</h2>
+              <h2 className="text-xl font-semibold text-foreground">Teams</h2>
               <div className="flex gap-2">
                 {previousSeasonId && teams.length === 0 && (
                   <Button
@@ -704,8 +720,8 @@ export const TeamManagement: React.FC = () => {
             ) : teams.length === 0 ? (
               <div className="text-center py-8">
                 <div className="text-6xl mb-4">🎱</div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No Teams Yet</h3>
-                <p className="text-gray-600 mb-6">
+                <h3 className="text-lg font-medium text-foreground mb-2">No Teams Yet</h3>
+                <p className="text-muted-foreground mb-6">
                   Add your first team to get started
                 </p>
               </div>

@@ -22,7 +22,8 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import type { PartialMember } from '@/types/member';
-import { getPlayerDisplayName } from '@/types/member';
+import { getPlayerDisplayName, isPlaceholderMember } from '@/types/member';
+import { PlaceholderBadge } from '@/components/PlaceholderBadge';
 import { fetchOperatorPlayers } from '@/api/queries/players';
 import { useAllMembers } from '@/api/hooks';
 
@@ -176,7 +177,7 @@ export const PlayerCombobox: React.FC<PlayerComboboxProps> = ({
   return (
     <div className={className}>
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-foreground mb-1">
           {label}
         </label>
       )}
@@ -190,10 +191,13 @@ export const PlayerCombobox: React.FC<PlayerComboboxProps> = ({
               disabled={disabled}
               className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <span className="truncate">
-                {selectedPlayer
-                  ? getPlayerDisplayName(selectedPlayer)
-                  : placeholder}
+              <span className="truncate flex items-center gap-1.5">
+                {selectedPlayer ? (
+                  <>
+                    <span className="truncate">{getPlayerDisplayName(selectedPlayer)}</span>
+                    {isPlaceholderMember(selectedPlayer) && <PlaceholderBadge size="sm" />}
+                  </>
+                ) : placeholder}
               </span>
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </button>
@@ -211,7 +215,7 @@ export const PlayerCombobox: React.FC<PlayerComboboxProps> = ({
                       className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
                         activeFilter === filter.type
                           ? 'bg-orange-500 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          : 'bg-muted text-foreground hover:bg-accent'
                       }`}
                     >
                       {filter.label}
@@ -230,7 +234,7 @@ export const PlayerCombobox: React.FC<PlayerComboboxProps> = ({
                 <CommandEmpty>No player found.</CommandEmpty>
                 <CommandGroup>
                   {players.length === 0 ? (
-                    <div className="p-2 text-sm text-gray-500">No players available</div>
+                    <div className="p-2 text-sm text-muted-foreground">No players available</div>
                   ) : (
                     filteredPlayers.map((player) => (
                       <CommandItem
@@ -242,7 +246,10 @@ export const PlayerCombobox: React.FC<PlayerComboboxProps> = ({
                           setOpen(false);
                         }}
                       >
-                        {getPlayerDisplayName(player)}
+                        <span className="flex items-center gap-1.5">
+                          {getPlayerDisplayName(player)}
+                          {isPlaceholderMember(player) && <PlaceholderBadge size="sm" />}
+                        </span>
                         <Check
                           className={`ml-auto h-4 w-4 ${
                             player.id === value ? 'opacity-100' : 'opacity-0'
@@ -261,10 +268,10 @@ export const PlayerCombobox: React.FC<PlayerComboboxProps> = ({
             type="button"
             onClick={() => onValueChange('')}
             disabled={disabled}
-            className="flex h-10 items-center justify-center px-3 rounded-md border border-input bg-background hover:bg-gray-100 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-10 items-center justify-center px-3 rounded-md border border-input bg-background hover:bg-muted transition-colors disabled:cursor-not-allowed disabled:opacity-50"
             title="Clear selection"
           >
-            <X className="h-4 w-4 text-gray-600" />
+            <X className="h-4 w-4 text-muted-foreground" />
           </button>
         )}
       </div>

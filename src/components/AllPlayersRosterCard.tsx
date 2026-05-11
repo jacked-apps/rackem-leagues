@@ -51,8 +51,8 @@ export const AllPlayersRosterCard: React.FC<AllPlayersRosterCardProps> = ({ team
     const playersMap = new Map<string, PlayerInfo>();
 
     teams.forEach((team) => {
-      // Add captain
-      if (team.captain) {
+      // Add captain. Bye teams have NULL captain_id; skip them.
+      if (team.captain && team.captain_id) {
         const captain = team.captain as Member;
         playersMap.set(team.captain_id, {
           memberId: team.captain_id,
@@ -100,23 +100,23 @@ export const AllPlayersRosterCard: React.FC<AllPlayersRosterCardProps> = ({ team
 
   if (players.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-sm p-4">
-        <h3 className="text-base font-semibold text-gray-900 mb-3">All Players</h3>
-        <p className="text-sm text-gray-600">No players assigned yet</p>
+      <div className="bg-card rounded-xl shadow-sm p-4">
+        <h3 className="text-base font-semibold text-foreground mb-3">All Players</h3>
+        <p className="text-sm text-muted-foreground">No players assigned yet</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-4">
-      <h3 className="text-base font-semibold text-gray-900 mb-3">
+    <div className="bg-card rounded-xl shadow-sm p-4">
+      <h3 className="text-base font-semibold text-foreground mb-3">
         All Players ({players.length})
       </h3>
       <div className="space-y-1 max-h-96 overflow-y-auto">
         {players.map((player) => (
           <div
             key={player.memberId}
-            className="flex items-center justify-between py-1.5 px-2 hover:bg-gray-50 rounded text-sm"
+            className="flex items-center justify-between py-1.5 px-2 hover:bg-muted rounded text-sm"
           >
             <div className="flex items-center gap-2">
               <PlayerNameLink
@@ -143,7 +143,7 @@ export const AllPlayersRosterCard: React.FC<AllPlayersRosterCardProps> = ({ team
                 </>
               )}
             </div>
-            <span className="text-gray-600 text-xs">{player.playerNumber}</span>
+            <span className="text-muted-foreground text-xs">{player.playerNumber}</span>
           </div>
         ))}
       </div>

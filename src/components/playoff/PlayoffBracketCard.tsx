@@ -158,8 +158,8 @@ const MatchupDisplay: React.FC<MatchupDisplayProps> = ({
   const awayDisplay = getTeamDisplay(awaySeed, awayTeam);
 
   return (
-    <div className="border-2 border-gray-300 rounded-lg p-4 bg-white shadow-sm">
-      <div className="text-sm text-gray-700 font-medium mb-2 text-center">
+    <div className="border-2 border-border rounded-lg p-4 bg-card shadow-sm">
+      <div className="text-sm text-foreground font-medium mb-2 text-center">
         Match {matchNumber}
       </div>
       <div className="space-y-3">
@@ -173,24 +173,24 @@ const MatchupDisplay: React.FC<MatchupDisplayProps> = ({
               <div
                 className={`font-semibold ${
                   homeDisplay.isPlaceholder || !isSeasonComplete
-                    ? 'text-gray-500 italic'
-                    : 'text-gray-900'
+                    ? 'text-muted-foreground italic'
+                    : 'text-foreground'
                 }`}
               >
                 {homeDisplay.name}
               </div>
               {homeDisplay.record && (
-                <div className="text-xs text-gray-500">{homeDisplay.record}</div>
+                <div className="text-xs text-muted-foreground">{homeDisplay.record}</div>
               )}
             </div>
           </div>
           <div className="text-xs text-blue-600 font-medium">HOME</div>
         </div>
 
-        <div className="text-center text-gray-600 text-sm font-semibold">vs</div>
+        <div className="text-center text-muted-foreground text-sm font-semibold">vs</div>
 
         {/* Away team (lower seed) */}
-        <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+        <div className="flex items-center justify-between bg-muted rounded-lg p-3">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-gray-600 text-white flex items-center justify-center font-bold text-sm">
               {awaySeed > 0 && awaySeed < 100 ? awaySeed : '?'}
@@ -199,18 +199,18 @@ const MatchupDisplay: React.FC<MatchupDisplayProps> = ({
               <div
                 className={`font-semibold ${
                   awayDisplay.isPlaceholder || !isSeasonComplete
-                    ? 'text-gray-500 italic'
-                    : 'text-gray-900'
+                    ? 'text-muted-foreground italic'
+                    : 'text-foreground'
                 }`}
               >
                 {awayDisplay.name}
               </div>
               {awayDisplay.record && (
-                <div className="text-xs text-gray-500">{awayDisplay.record}</div>
+                <div className="text-xs text-muted-foreground">{awayDisplay.record}</div>
               )}
             </div>
           </div>
-          <div className="text-xs text-gray-500 font-medium">AWAY</div>
+          <div className="text-xs text-muted-foreground font-medium">AWAY</div>
         </div>
       </div>
     </div>
@@ -297,7 +297,7 @@ export const PlayoffBracketCard: React.FC<PlayoffBracketCardProps> = ({
               <SelectItem value="seeded">
                 <div className="flex flex-col">
                   <span>Seeded</span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-muted-foreground">
                     {getMatchupStyleDescription('seeded')}
                   </span>
                 </div>
@@ -305,7 +305,7 @@ export const PlayoffBracketCard: React.FC<PlayoffBracketCardProps> = ({
               <SelectItem value="ranked">
                 <div className="flex flex-col">
                   <span>Ranked</span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-muted-foreground">
                     {getMatchupStyleDescription('ranked')}
                   </span>
                 </div>
@@ -313,7 +313,7 @@ export const PlayoffBracketCard: React.FC<PlayoffBracketCardProps> = ({
               <SelectItem value="random">
                 <div className="flex flex-col">
                   <span>Random Draw</span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-muted-foreground">
                     {getMatchupStyleDescription('random')}
                   </span>
                 </div>
@@ -321,7 +321,7 @@ export const PlayoffBracketCard: React.FC<PlayoffBracketCardProps> = ({
               <SelectItem value="bracket">
                 <div className="flex flex-col">
                   <span>Bracket Progression</span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-muted-foreground">
                     {getMatchupStyleDescription('bracket')}
                   </span>
                 </div>
@@ -330,7 +330,7 @@ export const PlayoffBracketCard: React.FC<PlayoffBracketCardProps> = ({
           </Select>
         </div>
         {/* Style description below title */}
-        <p className="text-sm text-gray-500 mt-2">
+        <p className="text-sm text-muted-foreground mt-2">
           {getMatchupStyleLabel(matchupStyle)}:{' '}
           {getMatchupStyleDescription(matchupStyle)}
         </p>

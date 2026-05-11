@@ -54,7 +54,7 @@ export const SimpleRadioChoice: React.FC<SimpleRadioChoiceProps> = ({
       {(title || (infoTitle && infoContent)) && (
         <div className="flex items-center gap-3 mb-6">
           {title && (
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-lg font-semibold text-foreground">
               {title}
             </h3>
           )}
@@ -67,7 +67,7 @@ export const SimpleRadioChoice: React.FC<SimpleRadioChoiceProps> = ({
       )}
 
       {subtitle && (
-        <p className="text-gray-600 mb-6">
+        <p className="text-muted-foreground mb-6">
           {subtitle}
         </p>
       )}
@@ -82,7 +82,7 @@ export const SimpleRadioChoice: React.FC<SimpleRadioChoiceProps> = ({
                 <InfoButton title={choice.infoTitle}>
                   {choice.infoContent}
                 </InfoButton>
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-foreground">
                   {choice.label} Explanation
                 </span>
               </div>
@@ -108,7 +108,7 @@ export const SimpleRadioChoice: React.FC<SimpleRadioChoiceProps> = ({
                     {/* Radio Button - Selected */}
                     <div className="flex-shrink-0">
                       <div className="w-4 h-4 rounded-full border-2 border-blue-500 bg-blue-500 flex items-center justify-center">
-                        <div className="w-2 h-2 rounded-full bg-white"></div>
+                        <div className="w-2 h-2 rounded-full bg-card"></div>
                       </div>
                     </div>
 
@@ -119,7 +119,7 @@ export const SimpleRadioChoice: React.FC<SimpleRadioChoiceProps> = ({
 
                     {/* Choice Label and Subtitle */}
                     <div className="flex items-center space-x-2 flex-1">
-                      <span className="text-gray-900 font-medium">{choice.label}</span>
+                      <span className="text-foreground font-medium">{choice.label}</span>
                       {choice.subtitle && (
                         <span className="text-sm text-blue-600 font-medium">
                           {choice.subtitle}
@@ -150,7 +150,7 @@ export const SimpleRadioChoice: React.FC<SimpleRadioChoiceProps> = ({
             ) : (
               // Unselected: Plain text, no card
               <div
-                className="p-3 cursor-pointer transition-all duration-200 rounded-md hover:bg-gray-50"
+                className="p-3 cursor-pointer transition-all duration-200 rounded-md hover:bg-muted"
                 onClick={() => onSelect(choice.value)}
                 role="radio"
                 aria-checked={false}
@@ -165,7 +165,7 @@ export const SimpleRadioChoice: React.FC<SimpleRadioChoiceProps> = ({
                 <div className="flex items-center space-x-3">
                   {/* Radio Button - Unselected */}
                   <div className="flex-shrink-0">
-                    <div className="w-4 h-4 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center">
+                    <div className="w-4 h-4 rounded-full border-2 border-border bg-card flex items-center justify-center">
                     </div>
                   </div>
 
@@ -176,7 +176,7 @@ export const SimpleRadioChoice: React.FC<SimpleRadioChoiceProps> = ({
 
                   {/* Choice Label and Subtitle */}
                   <div className="flex items-center space-x-2 flex-1">
-                    <span className="text-gray-900 font-medium">{choice.label}</span>
+                    <span className="text-foreground font-medium">{choice.label}</span>
                     {choice.subtitle && (
                       <span className="text-sm text-blue-600 font-medium">
                         {choice.subtitle}

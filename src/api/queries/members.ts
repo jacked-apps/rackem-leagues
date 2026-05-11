@@ -198,24 +198,52 @@ export async function getIsCaptain(memberId: string): Promise<boolean> {
 /**
  * Fetch all members with user accounts
  *
- * Returns all members who have linked user accounts (can log in).
- * Used for messaging - showing list of people user can message.
+ * Returns members visible to the caller for use in player pickers
+ * (rosters, captain selection, attach/unmerge target, etc).
  *
+ * Org-scope rules:
+ *   - Registered users (user_id IS NOT NULL): always included. A real
+ *     player can play in multiple leagues across organizations.
+ *   - Placeholders in the caller's organization: included.
+ *   - Placeholders elsewhere with a BCA member number: included. BCA# is
+ *     the cross-org sanctioning identifier; a placeholder carrying one is
+ *     globally findable by intent.
+ *   - Placeholders in other orgs without a BCA#: excluded. Other LOs'
+ *     working drafts shouldn't leak into your dropdowns.
+ *   - Archived rows (archived_at IS NOT NULL): always excluded.
+ *
+ * @param organizationId - The caller's organization scope. Required when
+ *                         placeholder visibility matters; omit only for
+ *                         contexts that explicitly want every member
+ *                         (admin/dev tooling). Most app callers should pass it.
  * @param excludeMemberId - Optional member ID to exclude from results (e.g., current user)
  * @returns Array of member objects with basic info
  * @throws Error for database errors
- *
- * @example
- * const members = await getAllMembers(currentUserId);
- * // Returns all members except current user
  */
-export async function getAllMembers(excludeMemberId?: string): Promise<PartialMember[]> {
+export async function getAllMembers(
+  organizationId?: string,
+  excludeMemberId?: string,
+): Promise<PartialMember[]> {
   let query = supabase
     .from('members')
-    .select('id, first_name, last_name, system_player_number, bca_member_number, user_id')
-    // Note: user_id is included to detect placeholder players (user_id = null)
-    // Placeholder players are real people who haven't registered yet
+    .select('id, first_name, last_name, system_player_number, bca_member_number, user_id, organization_id')
+    .is('archived_at', null)
     .order('last_name', { ascending: true });
+
+  // Org-scope filter — applied via PostgREST `or` so all three include
+  // paths union into one server-side query.
+  if (organizationId) {
+    query = query.or(
+      [
+        // 1. Registered users span orgs
+        'user_id.not.is.null',
+        // 2. Placeholders attributed to this org
+        `organization_id.eq.${organizationId}`,
+        // 3. BCA-elevated placeholders are cross-org by design
+        'bca_member_number.not.is.null',
+      ].join(','),
+    );
+  }
 
   if (excludeMemberId) {
     query = query.neq('id', excludeMemberId);
@@ -225,7 +253,18 @@ export async function getAllMembers(excludeMemberId?: string): Promise<PartialMe
 
   if (error) throw error;
 
-  return data as PartialMember[] || [];
+  // Defensive client-side BCA# trim — empty strings shouldn't count as a
+  // BCA#. PostgREST `not.is.null` doesn't catch ''.
+  const rows = (data ?? []) as PartialMember[];
+  if (!organizationId) return rows;
+
+  return rows.filter((m) => {
+    if (m.user_id) return true;
+    // deno-lint-ignore no-explicit-any
+    if ((m as any).organization_id === organizationId) return true;
+    const bca = m.bca_member_number?.trim();
+    return !!bca;
+  });
 }
 
 /**

@@ -483,12 +483,12 @@ async function recalculateMatchThresholds(matchId: string): Promise<void> {
   const { error: updateError } = await supabase
     .from('matches')
     .update({
-      home_games_to_win: homeThresholds.games_to_win,
-      home_games_to_tie: homeThresholds.games_to_tie,
-      home_games_to_lose: homeThresholds.games_to_lose,
-      away_games_to_win: awayThresholds.games_to_win,
-      away_games_to_tie: awayThresholds.games_to_tie,
-      away_games_to_lose: awayThresholds.games_to_lose,
+      home_to_win: homeThresholds.games_to_win,
+      home_to_tie: homeThresholds.games_to_tie,
+      home_to_lose: homeThresholds.games_to_lose,
+      away_to_win: awayThresholds.games_to_win,
+      away_to_tie: awayThresholds.games_to_tie,
+      away_to_lose: awayThresholds.games_to_lose,
     })
     .eq('id', matchId);
 

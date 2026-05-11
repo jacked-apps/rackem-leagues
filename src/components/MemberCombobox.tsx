@@ -25,6 +25,7 @@ import type { PartialMember } from '@/types/member';
 import { getPlayerDisplayName, isPlaceholderMember } from '@/types/member';
 import { logger } from '@/utils/logger';
 import { CreatePlaceholderModal } from '@/components/CreatePlaceholderModal';
+import { PlaceholderBadge } from '@/components/PlaceholderBadge';
 
 interface MemberComboboxProps {
   /** List of members to choose from (only needs id, name, player number) */
@@ -49,10 +50,14 @@ interface MemberComboboxProps {
   allowCreatePlaceholder?: boolean;
   /** Callback when a new placeholder is created - should refresh the members list */
   onPlaceholderCreated?: (member: PartialMember) => void;
-  /** Default city to pre-fill in placeholder creation modal */
-  defaultCity?: string;
-  /** Default state to pre-fill in placeholder creation modal */
-  defaultState?: string;
+  /** Optional team context — when provided, creating a placeholder with
+   *  an email also fires send-invite for email delivery. Without this,
+   *  the trigger-created invite_token is still saved and the recipient
+   *  gets it via the dashboard pending-invites modal on next login. */
+  teamId?: string;
+  invitedByMemberId?: string;
+  teamName?: string;
+  captainName?: string;
   /** Prevent clearing placeholder members (used in captain mode) */
   preventClearPlaceholders?: boolean;
 }
@@ -75,8 +80,10 @@ export const MemberCombobox: React.FC<MemberComboboxProps> = ({
   excludeIds = [],
   allowCreatePlaceholder = false,
   onPlaceholderCreated,
-  defaultCity = '',
-  defaultState = '',
+  teamId,
+  invitedByMemberId,
+  teamName,
+  captainName,
   preventClearPlaceholders = false,
 }) => {
   const [open, setOpen] = useState(false);
@@ -110,7 +117,7 @@ export const MemberCombobox: React.FC<MemberComboboxProps> = ({
   return (
     <div className={className}>
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-foreground mb-1">
           {label}
         </label>
       )}
@@ -124,9 +131,14 @@ export const MemberCombobox: React.FC<MemberComboboxProps> = ({
               disabled={disabled}
               className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <span className="truncate">
+              <span className="truncate flex items-center gap-1.5">
                 {selectedMember
-                  ? getPlayerDisplayName(selectedMember)
+                  ? (
+                    <>
+                      <span className="truncate">{getPlayerDisplayName(selectedMember)}</span>
+                      {isPlaceholderMember(selectedMember) && <PlaceholderBadge size="sm" />}
+                    </>
+                  )
                   : placeholder}
               </span>
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -167,13 +179,13 @@ export const MemberCombobox: React.FC<MemberComboboxProps> = ({
               <button className="px-3 py-1 text-xs font-medium rounded-full bg-orange-500 text-white">
                 All
               </button>
-              <button className="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200">
+              <button className="px-3 py-1 text-xs font-medium rounded-full bg-muted text-foreground hover:bg-accent">
                 My Org
               </button>
-              <button className="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200">
+              <button className="px-3 py-1 text-xs font-medium rounded-full bg-muted text-foreground hover:bg-accent">
                 State
               </button>
-              <button className="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200">
+              <button className="px-3 py-1 text-xs font-medium rounded-full bg-muted text-foreground hover:bg-accent">
                 Operators
               </button>
             </div>
@@ -182,7 +194,7 @@ export const MemberCombobox: React.FC<MemberComboboxProps> = ({
               <CommandEmpty>No member found.</CommandEmpty>
               <CommandGroup>
                 {members.length === 0 ? (
-                  <div className="p-2 text-sm text-gray-500">No members available</div>
+                  <div className="p-2 text-sm text-muted-foreground">No members available</div>
                 ) : (
                   filteredMembers.map((member) => (
                     <CommandItem
@@ -194,7 +206,10 @@ export const MemberCombobox: React.FC<MemberComboboxProps> = ({
                         setOpen(false);
                       }}
                     >
-                      {getPlayerDisplayName(member)}
+                      <span className="flex items-center gap-1.5">
+                        {getPlayerDisplayName(member)}
+                        {isPlaceholderMember(member) && <PlaceholderBadge size="sm" />}
+                      </span>
                       <Check
                         className={`ml-auto h-4 w-4 ${
                           member.id === value ? 'opacity-100' : 'opacity-0'
@@ -218,12 +233,12 @@ export const MemberCombobox: React.FC<MemberComboboxProps> = ({
             type="button"
             onClick={() => !clearDisabled && onValueChange('')}
             disabled={clearDisabled}
-            className="flex h-10 items-center justify-center px-3 rounded-md border border-input bg-background hover:bg-gray-100 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-10 items-center justify-center px-3 rounded-md border border-input bg-background hover:bg-muted transition-colors disabled:cursor-not-allowed disabled:opacity-50"
             title={clearDisabled && isSelectedPlaceholder
               ? "Placeholder players can only be removed by a league operator"
               : "Clear selection"}
           >
-            <X className="h-4 w-4 text-gray-600" />
+            <X className="h-4 w-4 text-muted-foreground" />
           </button>
         );
       })()}
@@ -234,8 +249,10 @@ export const MemberCombobox: React.FC<MemberComboboxProps> = ({
         <CreatePlaceholderModal
           open={showPlaceholderModal}
           onOpenChange={setShowPlaceholderModal}
-          defaultCity={defaultCity}
-          defaultState={defaultState}
+          teamId={teamId}
+          invitedByMemberId={invitedByMemberId}
+          teamName={teamName}
+          captainName={captainName}
           onCreated={(newMember) => {
             // Call the callback so parent can refresh the members list
             if (onPlaceholderCreated) {

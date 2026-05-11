@@ -5,12 +5,16 @@
  * MemberCombobox with placeholder creation for unregistered captains.
  */
 
-import { useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MemberCombobox } from '@/components/MemberCombobox';
 import { getAllMembers } from '@/api/queries/members';
+import { queryKeys } from '@/api/queryKeys';
+import { useCurrentMember } from '@/api/hooks';
+import type { PartialMember } from '@/types/member';
 import type { WizardStepProps } from '@/components/wizard';
 import type { TeamsWizardFormData, TeamCaptainEntry } from '../teamsWizardTypes';
 
@@ -21,24 +25,73 @@ export function CaptainsTeamsStep({
   const captains = value ?? [];
   const [selectedMemberId, setSelectedMemberId] = useState('');
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [newPlaceholders, setNewPlaceholders] = useState<PartialMember[]>([]);
 
-  const { data: allMembers = [] } = useQuery({
-    queryKey: ['all-members'],
-    queryFn: () => getAllMembers(),
+  // Tracks IDs added via handlePlaceholderCreated so the follow-up
+  // onValueChange from MemberCombobox (which fires in the same sync tick
+  // and would re-enter addCaptain with stale state) is a no-op.
+  const justAddedIdsRef = useRef<Set<string>>(new Set());
+
+  // Resolve the org we're scoping the picker to: the wizard's URL is
+  // /create-league/:orgId, so route params are the canonical source.
+  // Fall back to currentMember.organization_id if a future caller mounts
+  // this step outside the create-league route — but that field is only
+  // populated for placeholders, NOT for registered LOs (they have
+  // organization_id = NULL on members and reach orgs via
+  // organization_staff). Without the route fallback, any registered LO
+  // would see an empty member dropdown because the query stayed disabled.
+  const { orgId: routeOrgId } = useParams<{ orgId: string }>();
+  const { data: currentMember } = useCurrentMember();
+  const orgId = routeOrgId ?? currentMember?.organization_id ?? undefined;
+
+  const { data: fetchedMembers = [] } = useQuery({
+    queryKey: [...queryKeys.members.all, 'org', orgId ?? 'none'],
+    queryFn: () => getAllMembers(orgId),
+    enabled: !!orgId,
   });
+
+  // Merge fetched members with locally-created placeholders so newly-added
+  // placeholders appear in the dropdown immediately, before TanStack Query's
+  // background refetch lands. Dedup guards against the moment both sources
+  // contain the same member.
+  const allMembers = useMemo(() => {
+    const existingIds = new Set(fetchedMembers.map((m) => m.id));
+    const uniqueNew = newPlaceholders.filter((p) => !existingIds.has(p.id));
+    return [...fetchedMembers, ...uniqueNew];
+  }, [fetchedMembers, newPlaceholders]);
 
   const excludeIds = captains.map((c) => c.captainId);
 
-  const addCaptain = (memberId: string) => {
-    const member = allMembers.find((m) => m.id === memberId);
-    if (!member) return;
+  // Shared add path: takes the full member object so callers who already
+  // have it (e.g. placeholder creation) don't depend on the allMembers
+  // memo having refreshed yet.
+  const addCaptainFromMember = (member: PartialMember) => {
+    if (captains.some((c) => c.captainId === member.id)) return;
     const captainName = `${member.first_name} ${member.last_name}`;
     const teamNumber = captains.length + 1;
     onChange([
       ...captains,
-      { captainId: memberId, captainName, teamName: `Team ${teamNumber}` },
+      { captainId: member.id, captainName, teamName: `Team ${teamNumber}` },
     ]);
     setSelectedMemberId('');
+  };
+
+  const addCaptain = (memberId: string) => {
+    // Skip if this ID was just added via placeholder creation in the
+    // same sync tick. Consume the sentinel so later real selections work.
+    if (justAddedIdsRef.current.has(memberId)) {
+      justAddedIdsRef.current.delete(memberId);
+      return;
+    }
+    const member = allMembers.find((m) => m.id === memberId);
+    if (!member) return;
+    addCaptainFromMember(member);
+  };
+
+  const handlePlaceholderCreated = (newMember: PartialMember) => {
+    setNewPlaceholders((prev) => [...prev, newMember]);
+    justAddedIdsRef.current.add(newMember.id);
+    addCaptainFromMember(newMember);
   };
 
   const removeCaptain = (i: number) => onChange(captains.filter((_, idx) => idx !== i));
@@ -48,7 +101,7 @@ export function CaptainsTeamsStep({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700 space-y-1">
+      <div className="rounded-lg border border-border bg-muted p-3 text-sm text-foreground space-y-1">
         <p>
           Each captain here creates a team. Count of captains = count of teams.
         </p>
@@ -68,7 +121,7 @@ export function CaptainsTeamsStep({
       </div>
 
       <div className="flex items-center gap-1">
-        <p className="font-medium text-gray-900">Team Captains</p>
+        <p className="font-medium text-foreground">Team Captains</p>
       </div>
 
       <MemberCombobox
@@ -78,6 +131,7 @@ export function CaptainsTeamsStep({
         placeholder="Search for a registered player..."
         excludeIds={excludeIds}
         allowCreatePlaceholder={true}
+        onPlaceholderCreated={handlePlaceholderCreated}
       />
 
       {captains.length > 0 && (
@@ -108,7 +162,7 @@ export function CaptainsTeamsStep({
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <span className="flex-1 text-sm text-gray-600">
+                <span className="flex-1 text-sm text-muted-foreground">
                   Captain: {captain.captainName}
                 </span>
                 <Button variant="ghost" onClick={() => removeCaptain(i)}>
@@ -120,7 +174,7 @@ export function CaptainsTeamsStep({
         </div>
       )}
 
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-muted-foreground">
         {captains.length === 0 ? 'Add at least 2 captains to create teams.' :
           `${captains.length} team${captains.length === 1 ? '' : 's'} ready.`}
       </p>

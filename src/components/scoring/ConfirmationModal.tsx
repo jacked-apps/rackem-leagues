@@ -77,14 +77,14 @@ export function ConfirmationModal({
           {isVacateRequest ? (
             // Vacate request mode
             <>
-              <p className="text-center text-gray-700 font-semibold">
+              <p className="text-center text-foreground font-semibold">
                 Game {gameNumber}
               </p>
               <div className="text-center text-lg font-semibold text-orange-600">
                 Current winner: {winnerPlayerName}
               </div>
               <div className="bg-orange-50 border border-orange-200 rounded p-3 mt-4">
-                <p className="text-center text-sm text-gray-700">
+                <p className="text-center text-sm text-foreground">
                   Agreeing will <span className="font-semibold">vacate this winner</span> and allow both teams to score this game again.
                 </p>
               </div>
@@ -92,7 +92,7 @@ export function ConfirmationModal({
           ) : (
             // Normal confirmation mode
             <>
-              <p className="text-center text-gray-500 text-sm">
+              <p className="text-center text-muted-foreground text-sm">
                 Opponent recorded for game {gameNumber}:
               </p>
               {/* Dynamic result message based on what was selected */}
@@ -111,7 +111,7 @@ export function ConfirmationModal({
                   </div>
                 )}
               </div>
-              <p className="text-center mt-4 text-gray-600">
+              <p className="text-center mt-4 text-muted-foreground">
                 Do you agree with this result?
               </p>
             </>

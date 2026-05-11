@@ -22,7 +22,8 @@ import {
 } from '@/components/ui/popover';
 import { useMemberSearch, type MemberSearchFilter } from '@/api/hooks';
 import type { PartialMember } from '@/types/member';
-import { getPlayerDisplayName } from '@/types/member';
+import { getPlayerDisplayName, isPlaceholderMember } from '@/types/member';
+import { PlaceholderBadge } from '@/components/PlaceholderBadge';
 
 interface MemberSearchComboboxProps {
   /** Currently selected member ID */
@@ -102,7 +103,7 @@ export const MemberSearchCombobox: React.FC<MemberSearchComboboxProps> = ({
   return (
     <div className={className}>
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-foreground mb-1">
           {label}
         </label>
       )}
@@ -116,10 +117,13 @@ export const MemberSearchCombobox: React.FC<MemberSearchComboboxProps> = ({
               disabled={disabled}
               className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <span className="truncate">
-                {selectedMember
-                  ? getPlayerDisplayName(selectedMember)
-                  : placeholder}
+              <span className="truncate flex items-center gap-1.5">
+                {selectedMember ? (
+                  <>
+                    <span className="truncate">{getPlayerDisplayName(selectedMember)}</span>
+                    {isPlaceholderMember(selectedMember) && <PlaceholderBadge size="sm" />}
+                  </>
+                ) : placeholder}
               </span>
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </button>
@@ -136,7 +140,7 @@ export const MemberSearchCombobox: React.FC<MemberSearchComboboxProps> = ({
                     className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
                       activeFilter === filter.id
                         ? 'bg-orange-500 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        : 'bg-muted text-foreground hover:bg-accent'
                     }`}
                   >
                     {filter.label}
@@ -152,7 +156,7 @@ export const MemberSearchCombobox: React.FC<MemberSearchComboboxProps> = ({
               />
               <CommandList>
                 {isLoading ? (
-                  <div className="p-4 text-sm text-gray-500 text-center">Searching...</div>
+                  <div className="p-4 text-sm text-muted-foreground text-center">Searching...</div>
                 ) : (
                   <>
                     <CommandEmpty>
@@ -175,7 +179,10 @@ export const MemberSearchCombobox: React.FC<MemberSearchComboboxProps> = ({
                               setOpen(false);
                             }}
                           >
-                            {displayName}
+                            <span className="flex items-center gap-1.5">
+                              {displayName}
+                              {isPlaceholderMember(member) && <PlaceholderBadge size="sm" />}
+                            </span>
                             <Check
                               className={`ml-auto h-4 w-4 ${
                                 member.id === value ? 'opacity-100' : 'opacity-0'
@@ -196,10 +203,10 @@ export const MemberSearchCombobox: React.FC<MemberSearchComboboxProps> = ({
             type="button"
             onClick={() => onValueChange('')}
             disabled={disabled}
-            className="flex h-10 items-center justify-center px-3 rounded-md border border-input bg-background hover:bg-gray-100 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-10 items-center justify-center px-3 rounded-md border border-input bg-background hover:bg-muted transition-colors disabled:cursor-not-allowed disabled:opacity-50"
             title="Clear selection"
           >
-            <X className="h-4 w-4 text-gray-600" />
+            <X className="h-4 w-4 text-muted-foreground" />
           </button>
         )}
       </div>

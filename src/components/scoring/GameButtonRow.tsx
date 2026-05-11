@@ -74,7 +74,7 @@ export function GameButtonRow({
   // Pending state: Buttons with winner highlighted
   if (state === 'pending') {
     const winnerClass = 'bg-yellow-100 font-semibold';
-    const loserClass = 'bg-white text-gray-500';
+    const loserClass = 'bg-card text-muted-foreground';
 
     return (
       <div className="grid grid-cols-[auto_1fr_auto_1fr] gap-2 items-center text-sm py-2 border-b">
@@ -116,7 +116,7 @@ export function GameButtonRow({
   // Confirmed state: Divs with trophy and Vacate button
   if (state === 'confirmed') {
     const winnerClass = 'bg-green-200 font-semibold';
-    const loserClass = 'bg-white text-gray-500';
+    const loserClass = 'bg-card text-muted-foreground';
 
     return (
       <div className="grid grid-cols-[auto_1fr_auto_1fr] gap-2 items-center text-sm py-2 border-b">
@@ -172,7 +172,7 @@ export function GameButtonRow({
           {breakerName}
         </Button>
       </div>
-      <div className="text-center font-semibold text-gray-400">vs</div>
+      <div className="text-center font-semibold text-muted-foreground">vs</div>
       <div className="text-center">
         <Button
           variant="outline"

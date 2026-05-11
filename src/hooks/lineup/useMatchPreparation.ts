@@ -8,19 +8,21 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/supabaseClient';
-import { useUpdateMatch } from '@/api/hooks';
+import { queryKeys } from '@/api/queryKeys';
 import { calculateHandicapThresholds } from '@/utils/calculateHandicapThresholds';
+import { computeFargoGamesWonThresholds } from '@/utils/handicap/fargoGamesWonThresholds';
 import { generateGameOrder } from '@/utils/gameOrder';
-import { fargo5v5 } from '@/systems/fargo5v5';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
+import type { MatchPhase } from '@/api/queries/matches';
 import type { SystemOverrides } from '@/types/systemOverrides';
+import { isDoubleDutySentinel, type PrepBlockedReason } from '@/utils/lineup';
 
 export function usePreparationStatus() {
   const [isPreparingMatch, setIsPreparingMatch] = useState(false);
-  const [preparationMessage, setPreparationMessage] = useState('');
-  return { isPreparingMatch, setIsPreparingMatch, preparationMessage, setPreparationMessage };
+  return { isPreparingMatch, setIsPreparingMatch };
 }
 
 interface MatchPreparationParams {
@@ -31,15 +33,45 @@ interface MatchPreparationParams {
   isHomeTeam: boolean;
   lineupSize: number;
   handicapType: string;
+  /**
+   * Win-condition axis from the resolved preferences. Drives threshold
+   * dispatch — Fargo + win_condition='games' + mechanism='extra_games'
+   * routes through `computeFargoGamesWonThresholds`; Fargo +
+   * win_condition='points' + mechanism='start_points' uses the existing
+   * negotiation path. Phase 3 Unit 3.2 of the v2 plan. Defaults to
+   * 'games' when omitted (matches the typical BCA-preset default).
+   */
+  winCondition?: 'games' | 'points';
+  /**
+   * Threshold-mechanism axis. Combined with `winCondition` to pick the
+   * right threshold computation. 'extra_games' (BCA / Fargo-games-won),
+   * 'start_points' (Fargo-points), 'race_length_adjustment' (BCAPL SL,
+   * not yet wired here), 'none' (no handicap).
+   */
+  mechanism?: 'extra_games' | 'start_points' | 'race_length_adjustment' | 'none';
   /** Resolved per-league dial overrides. Used by Fargo threshold compute. */
   systemOverrides?: SystemOverrides;
   /**
-   * Unit 11c: when handicap_type='fargo' and the captains have not both
-   * confirmed the start-points value, match preparation must not run.
-   * Caller passes `true` while the negotiation card is showing and
-   * flips it to `false` once both confirms are present.
+   * Discriminated reason for blocking match preparation. When non-null, the
+   * effect short-circuits — the UI renders the corresponding waiting state.
+   * Supersedes the prior `fargoNegotiationBlocking` flag and covers all
+   * blocking conditions (Step 1 completeness, sub resolution, Fargo).
    */
-  fargoNegotiationBlocking?: boolean;
+  blockedReason?: PrepBlockedReason;
+  /**
+   * game_generation preference from useResolvedLeaguePrefs. Drives
+   * expectedGameCount for both the home team's insert count and the away
+   * team's realtime wait condition. Defaults to 'double_round_robin' if
+   * omitted — matches the historical 3v3 behavior.
+   */
+  gameGeneration?: string;
+  /**
+   * Cached length of matchGamesQuery.data at render time. The home-team
+   * idempotency short-circuit reads this synchronously before firing any
+   * side effects, so browser-back re-entry after successful prep skips
+   * the overlay entirely and redirects to scoring.
+   */
+  currentGamesCount?: number;
   player1Id: string;
   player2Id: string;
   player3Id: string;
@@ -51,9 +83,7 @@ interface MatchPreparationParams {
   player4Handicap?: number; // 5v5 only
   player5Handicap?: number; // 5v5 only
   setIsPreparingMatch?: (preparing: boolean) => void;
-  setPreparationMessage?: (message: string) => void;
   refetchLineups?: () => Promise<any>;
-  refetchGames?: () => Promise<any>;
 }
 
 export function useMatchPreparation(params: MatchPreparationParams) {
@@ -65,8 +95,11 @@ export function useMatchPreparation(params: MatchPreparationParams) {
     isHomeTeam,
     lineupSize,
     handicapType,
-    systemOverrides,
-    fargoNegotiationBlocking,
+    winCondition,
+    mechanism,
+    blockedReason,
+    gameGeneration,
+    currentGamesCount,
     player1Id,
     player2Id,
     player3Id,
@@ -78,346 +111,318 @@ export function useMatchPreparation(params: MatchPreparationParams) {
     player4Handicap,
     player5Handicap,
     setIsPreparingMatch,
-    setPreparationMessage,
-    refetchLineups,
-    refetchGames,
   } = params;
 
   const navigate = useNavigate();
-  const updateMatchMutation = useUpdateMatch();
+  const queryClient = useQueryClient();
   const matchPreparedRef = useRef(false);
 
-  // Auto-navigate to scoring page when both lineups are locked - useEffect MUST be before early returns
-  // IMPORTANT: Only HOME team prepares the match to avoid race conditions
+  /**
+   * Prime the phase cache to 'in_progress' BEFORE navigating so
+   * `MatchPhaseGuard` reads the fresh status when the scoring page
+   * mounts. Without this, the guard reads its cached 'scheduled'
+   * value and bounces the user back to /lineup until the realtime
+   * tick lands ~100-500ms later. Synchronous cache write; no
+   * await needed.
+   */
+  const primePhaseAsInProgress = (id: string) => {
+    queryClient.setQueryData<MatchPhase | undefined>(
+      [...queryKeys.matches.detail(id), 'phase'],
+      (old) =>
+        old
+          ? { ...old, status: 'in_progress', started_at: old.started_at ?? new Date().toISOString() }
+          : { id, status: 'in_progress', started_at: new Date().toISOString() }
+    );
+  };
+
+  // Auto-navigate to scoring when both lineups are locked and the gate is clear.
+  // Only HOME team runs the transactional prep_match RPC; AWAY team waits on
+  // realtime row visibility (see Unit 5 below) and navigates when games appear.
   useEffect(() => {
-    // Unit 11c: Fargo matches wait until start-points negotiation is
-    // both-confirmed. When blocking, skip entirely — the lineup page shows
-    // the negotiation card instead. When the caller flips this to false
-    // (both captains confirmed), this effect fires normally.
-    if (fargoNegotiationBlocking) return;
-    if (lineupLocked && opponentLineup?.locked && !matchPreparedRef.current) {
-      // Only home team prepares the match data to avoid both teams doing it simultaneously
-      if (!isHomeTeam) {
-        const awayTeamNavigate = async () => {
-          matchPreparedRef.current = true;
-          setIsPreparingMatch?.(true);
+    // Gate: blockedReason covers completeness + sub resolution + Fargo consensus.
+    if (blockedReason !== null && blockedReason !== undefined) return;
+    if (!lineupLocked || !opponentLineup?.locked) return;
+    if (matchPreparedRef.current) return;
+    if (!matchId) return;
 
-          // STEP 1: Verify both lineups are actually locked with FRESH data
-          setPreparationMessage?.('Verifying lineups are locked...');
-          if (!refetchLineups) {
-            logger.error('refetchLineups not available', { matchId });
-            setIsPreparingMatch?.(false);
-            matchPreparedRef.current = false;
-            return;
-          }
+    // Compute expectedGameCount from prefs — deterministic from lineupSize
+    // + gameGeneration. No hardcoded 18/25.
+    const useDoubleRoundRobin = (gameGeneration ?? 'double_round_robin') === 'double_round_robin';
+    const expectedGameCount = generateGameOrder(lineupSize, useDoubleRoundRobin).length;
 
-          let bothLineupsLocked = false;
-          let attempts = 0;
-          const maxAttempts = 20; // 10 seconds max
-
-          while (!bothLineupsLocked && attempts < maxAttempts) {
-            const { data: freshLineups } = await refetchLineups();
-
-            if (freshLineups &&
-                freshLineups.homeLineup?.locked &&
-                freshLineups.awayLineup?.locked) {
-              bothLineupsLocked = true;
-            } else {
-              attempts++;
-              await new Promise(resolve => setTimeout(resolve, 500));
-            }
-          }
-
-          if (!bothLineupsLocked) {
-            logger.error('Timeout: Both lineups not locked', { matchId });
-            setIsPreparingMatch?.(false);
-            matchPreparedRef.current = false;
-            return;
-          }
-
-          // STEP 2: Check if this is tiebreaker or regular mode with FRESH data
-          setPreparationMessage?.('Checking match type...');
-          let isTiebreaker = false;
-          if (refetchGames) {
-            const { data: existingGames } = await refetchGames();
-            isTiebreaker = existingGames && existingGames.length > 0;
-          }
-
-          // STEP 3: For regular matches, wait for home team to create games
-          if (!isTiebreaker) {
-            setPreparationMessage?.('Waiting for match setup...');
-            await new Promise(resolve => setTimeout(resolve, 2000));
-          }
-
-          // STEP 4: Final verification before navigation
-          setPreparationMessage?.('Final verification...');
-          await new Promise(resolve => setTimeout(resolve, 500));
-
-          setIsPreparingMatch?.(false);
-          navigate(`/match/${matchId}/score`);
-        };
-
-        awayTeamNavigate();
-        return;
+    // Synchronous idempotency / ready short-circuit. Fires for both home and
+    // away whenever games exist for this match.
+    //
+    // We use `> 0` rather than `>= expectedGameCount` because prep_match is
+    // atomic — either zero rows or the full set. If any rows exist, all of
+    // them do. Using a strict equality risks missing the navigation if
+    // home/away compute different expected counts (e.g. resolved-prefs
+    // staleness on one side).
+    if (typeof currentGamesCount === 'number' && currentGamesCount > 0) {
+      if (!matchPreparedRef.current) {
+        matchPreparedRef.current = true;
+        setIsPreparingMatch?.(false);
+        // Prime the phase cache to 'in_progress' before navigating so
+        // MatchPhaseGuard reads fresh status when the scoring page mounts.
+        primePhaseAsInProgress(matchId);
+        navigate(`/match/${matchId}/score`);
       }
+      return;
+    }
+    // Touch expectedGameCount so eslint sees it as referenced; it's still
+    // useful for future logic (e.g. tiebreaker count assertions).
+    void expectedGameCount;
 
-      const prepareMatchAndNavigate = async () => {
-        if (!matchId || !matchData || !opponentLineup) return;
+    // Away team: just signal "preparing" and let the canonical backstop
+    // handle discovery. MatchPhaseGuard's 7-second poll on
+    // matches.status (Defense 7) is the single dropped-realtime
+    // recovery mechanism after this branch; the prior 3-retry/10s
+    // fallback loop in this hook is gone — it duplicated the guard's
+    // polling, fired a "longer than expected" toast that could appear
+    // moments before the guard's auto-redirect (mixed signal), and
+    // was an artifact of the pre-guard architecture. The synchronous
+    // short-circuit above still fires the moment matchGamesQuery's
+    // count flips > 0 via realtime, navigating cleanly.
+    if (!isHomeTeam) {
+      setIsPreparingMatch?.(true);
+      return;
+    }
 
-        setIsPreparingMatch?.(true);
+    // Home team: transactional prep via prep_match RPC with 3-attempt retry.
+    const prepareAndNavigate = async () => {
+      if (!matchData || !opponentLineup) return;
+      setIsPreparingMatch?.(true);
 
-        try {
-          matchPreparedRef.current = true;
+      try {
+        // Snapshot MY lineup from the latest props — caller has already
+        // re-read lineups via the blockedReason gate, so state is fresh.
+        const myLineup: Record<string, unknown> = {
+          player1_id: player1Id || null,
+          player1_handicap: player1Handicap,
+          player2_id: player2Id || null,
+          player2_handicap: player2Handicap,
+          player3_id: player3Id || null,
+          player3_handicap: player3Handicap,
+        };
+        if (lineupSize >= 4) {
+          myLineup.player4_id = player4Id || null;
+          myLineup.player4_handicap = player4Handicap ?? 0;
+        }
+        if (lineupSize >= 5) {
+          myLineup.player5_id = player5Id || null;
+          myLineup.player5_handicap = player5Handicap ?? 0;
+        }
 
-          // STEP 1: Verify both lineups are actually locked with FRESH data
-          setPreparationMessage?.('Verifying lineups are locked...');
-          if (!refetchLineups) {
-            logger.error('refetchLineups not available', { matchId });
-            setIsPreparingMatch?.(false);
-            matchPreparedRef.current = false;
-            return;
+        // Compute threshold payload per handicap system. Phase 3 Unit
+        // 3.2: dispatches on (handicapType + winCondition + mechanism)
+        // rather than just handicapType so a Fargo-rated league with
+        // games-won win condition gets the right thresholds.
+        let thresholdPayload: Record<string, number | null>;
+
+        const isFargoStartPoints =
+          handicapType === 'fargo' &&
+          (mechanism === 'start_points' || winCondition === 'points');
+        const isFargoGamesWon =
+          handicapType === 'fargo' && !isFargoStartPoints;
+
+        if (isFargoStartPoints) {
+          // Fargo + points: by this point the negotiation has already
+          // written the agreed start points to the weaker team's
+          // *_to_tie column and stamped both *_to_lose with confirming
+          // captain numbers (that's what gated us through
+          // blockedReason). prep_match cleans up the negotiation pollution
+          // here: per Ed 2026-05-04, the negotiation flow uses
+          // home_to_lose / away_to_lose as scratch state for "this captain
+          // confirmed" flags (storing the captain's player number); once
+          // we're at prep_match both have confirmed and the scratch state
+          // can clear out, leaving the match row with clean threshold-trio
+          // semantics for points-mode: to_win = null (no match-level point
+          // threshold for Fargo 10-7 — match plays all games to totals),
+          // to_tie = start-credit (preserved), to_lose = null.
+          //
+          // The per-game race target (10 in standard Fargo 5v5) is a
+          // calculator config concern — it lives on points_calculator_params
+          // and feeds the scoring modal via calculator.scoringPopupFields().
+          // It does NOT belong on home_to_win / away_to_win which are match-
+          // state thresholds, not per-game config.
+          thresholdPayload = {
+            home_to_win: null,
+            home_to_tie: matchData?.home_to_tie ?? null,
+            home_to_lose: null,
+            away_to_win: null,
+            away_to_tie: matchData?.away_to_tie ?? null,
+            away_to_lose: null,
+          };
+        } else if (isFargoGamesWon) {
+          // Fargo + games-won: derive per-team games-to-win thresholds
+          // from the lineup ratings using the canonical
+          // T = 2^(rating/100) primitive. See
+          // docs/research/fargo-games-won-threshold.md for the formula
+          // and FargoRate HOT-chart calibration.
+          const homeLineupForFargo = isHomeTeam ? myLineup : opponentLineup;
+          const awayLineupForFargo = isHomeTeam ? opponentLineup : myLineup;
+          const homeRatings = [1, 2, 3, 4, 5]
+            .map((n) => (homeLineupForFargo as any)[`player${n}_handicap`])
+            .filter((h): h is number => typeof h === 'number');
+          const awayRatings = [1, 2, 3, 4, 5]
+            .map((n) => (awayLineupForFargo as any)[`player${n}_handicap`])
+            .filter((h): h is number => typeof h === 'number');
+
+          const totalGames = generateGameOrder(lineupSize, useDoubleRoundRobin).length;
+          const fargoThresholds = computeFargoGamesWonThresholds({
+            homeRatings,
+            awayRatings,
+            totalGames,
+          });
+
+          thresholdPayload = {
+            home_to_win: fargoThresholds.home.games_to_win,
+            home_to_tie: fargoThresholds.home.games_to_tie,
+            home_to_lose: fargoThresholds.home.games_to_lose,
+            away_to_win: fargoThresholds.away.games_to_win,
+            away_to_tie: fargoThresholds.away.games_to_tie,
+            away_to_lose: fargoThresholds.away.games_to_lose,
+          };
+        } else {
+          const { homeThresholds, awayThresholds } = await calculateHandicapThresholds(
+            myLineup as any,
+            opponentLineup,
+            matchData.home_team_id,
+            matchData.away_team_id,
+            matchData.season_id,
+            handicapType
+          );
+          thresholdPayload = {
+            home_to_win: homeThresholds.games_to_win,
+            home_to_tie: homeThresholds.games_to_tie,
+            home_to_lose: homeThresholds.games_to_lose,
+            away_to_win: awayThresholds.games_to_win,
+            away_to_tie: awayThresholds.games_to_tie,
+            away_to_lose: awayThresholds.games_to_lose,
+          };
+        }
+
+        // Build game rows from fresh lineup data. Do NOT use stale component props.
+        const allGames = generateGameOrder(lineupSize, useDoubleRoundRobin);
+        const homeLineup = isHomeTeam ? myLineup : opponentLineup;
+        const awayLineup = isHomeTeam ? opponentLineup : myLineup;
+        const gameRows = allGames.map((game) => ({
+          game_number: game.gameNumber,
+          game_type: matchData?.league?.game_type || 'eight_ball',
+          home_player_id: (homeLineup as any)[`player${game.homePlayerPosition}_id`],
+          away_player_id: (awayLineup as any)[`player${game.awayPlayerPosition}_id`],
+          home_position: game.homePlayerPosition,
+          away_position: game.awayPlayerPosition,
+          home_action: game.homeAction,
+          away_action: game.awayAction,
+        }));
+
+        // Pre-insert guard: ONLY double-duty placeholders should be impossible
+        // at this point — anonymous sub sentinels are legitimate final values
+        // (the captain entered a handicap; we just don't know who the player
+        // is). The Step 1 / blockedReason gate should already have prevented
+        // any unresolved DD sentinel from reaching here.
+        const hasDoubleDutyPlaceholder = gameRows.some(
+          (r) => isDoubleDutySentinel(r.home_player_id) || isDoubleDutySentinel(r.away_player_id)
+        );
+        if (hasDoubleDutyPlaceholder) {
+          logger.error('prep_match guard tripped: unresolved double-duty sentinel in gameRows', {
+            matchId,
+            sampleRow: gameRows.find(
+              (r) => isDoubleDutySentinel(r.home_player_id) || isDoubleDutySentinel(r.away_player_id)
+            ),
+          });
+          toast.error('Match setup hit an unexpected state — please report this. Returning to lineup.');
+          setIsPreparingMatch?.(false);
+          matchPreparedRef.current = false;
+          return;
+        }
+
+        // Call the transactional RPC with 3-attempt exponential backoff.
+        // Each attempt is atomic — failures leave zero partial state.
+        const MAX_ATTEMPTS = 3;
+        let rpcError: string | null = null;
+        for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+          if (attempt > 0) {
+            const backoffMs = 300 * Math.pow(2, attempt - 1); // 300, 600, 1200
+            await new Promise((r) => setTimeout(r, backoffMs));
           }
-
-          let bothLineupsLocked = false;
-          let attempts = 0;
-          const maxAttempts = 20; // 10 seconds max
-
-          while (!bothLineupsLocked && attempts < maxAttempts) {
-            const { data: freshLineups } = await refetchLineups();
-
-            if (freshLineups &&
-                freshLineups.homeLineup?.locked &&
-                freshLineups.awayLineup?.locked) {
-              bothLineupsLocked = true;
-            } else {
-              attempts++;
-              await new Promise(resolve => setTimeout(resolve, 500));
-            }
-          }
-
-          if (!bothLineupsLocked) {
-            logger.error('Timeout: Both lineups not locked', { matchId });
+          const { error } = await supabase.rpc('prep_match', {
+            p_match_id: matchId,
+            p_thresholds: thresholdPayload,
+            p_game_rows: gameRows,
+          });
+          if (!error) {
+            // Latch the ref ONLY after a successful RPC. The previous
+            // version set it before the first attempt, which combined
+            // with the synchronous currentGamesCount > 0 short-circuit
+            // could fire a spurious second navigate() if a realtime
+            // tick landed while the RPC was in flight (REL-004).
+            matchPreparedRef.current = true;
+            // Seed initial running totals so the scoreboard shows correct
+            // values from match start instead of waiting for the first game
+            // to be scored. For points-mode this folds the start-credit
+            // (from *_to_tie) into home_points_earned/away_points_earned;
+            // for games-mode it writes 0/0 (the calculator's output for 0
+            // games). Per Ed 2026-05-04: "the inital points show up at the
+            // beginning ... in all the matches where points are counted."
+            //
+            // Fire-and-forget: the seed write is non-fatal (the next score
+            // event will repopulate if it fails) and serial-awaiting it
+            // here blocks navigation by ~2-4 Supabase round-trips. The
+            // realtime subscription on the scoring page picks up the seed
+            // when it lands.
+            void (async () => {
+              try {
+                const { updateMatchRunningTotals } = await import(
+                  '@/api/queries/matches'
+                );
+                await updateMatchRunningTotals(matchId);
+              } catch (seedErr) {
+                logger.warn('Failed to seed initial running totals at prep_match', {
+                  matchId,
+                  error: seedErr instanceof Error ? seedErr.message : String(seedErr),
+                });
+              }
+            })();
             setIsPreparingMatch?.(false);
-            matchPreparedRef.current = false;
-            return;
-          }
-
-          // STEP 2: Check if this is tiebreaker or regular mode with FRESH data
-          setPreparationMessage?.('Checking match type...');
-          if (!refetchGames) {
-            logger.error('refetchGames not available', { matchId });
-            setIsPreparingMatch?.(false);
-            matchPreparedRef.current = false;
-            return;
-          }
-
-          const { data: existingGames } = await refetchGames();
-          const isTiebreaker = existingGames && existingGames.length > 0;
-
-          // STEP 3: If tiebreaker mode, verify games exist and navigate
-          if (isTiebreaker) {
-            setPreparationMessage?.('Final verification...');
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            setIsPreparingMatch?.(false);
+            // Prime the phase cache so MatchPhaseGuard reads the fresh
+            // 'in_progress' status when the scoring page mounts. Without
+            // this, the guard's redirect effect sees a stale 'scheduled'
+            // and bounces the user back to /lineup until the realtime
+            // tick lands ~100-500ms later (C-01).
+            primePhaseAsInProgress(matchId);
             navigate(`/match/${matchId}/score`);
             return;
           }
-
-          // STEP 4: Regular match - create games and thresholds
-          // Build current user's lineup object from state
-          // Supports both 3v3 (player1-3) and 5v5 (player1-5)
-          const myLineup: any = {
-            player1_id: player1Id,
-            player1_handicap: player1Handicap,
-            player2_id: player2Id,
-            player2_handicap: player2Handicap,
-            player3_id: player3Id,
-            player3_handicap: player3Handicap,
-          };
-
-          // Add player4/5 based on actual lineup size
-          if (lineupSize >= 4) {
-            myLineup.player4_id = player4Id || null;
-            myLineup.player4_handicap = player4Handicap || 0;
-          }
-          if (lineupSize >= 5) {
-            myLineup.player5_id = player5Id || null;
-            myLineup.player5_handicap = player5Handicap || 0;
-          }
-
-          // Calculate and save handicap thresholds.
-          //
-          // BCA systems (points, percentage): compute games-to-win/tie/lose
-          // from the existing chart lookup; write all six threshold columns.
-          //
-          // Fargo system: the start-points value is NOT computed here — it
-          // has already been agreed on by both captains via the start-points
-          // negotiation flow (Unit 11c). We just read the confirmed value
-          // out of `matches.fargo_start_points` and copy it to the weaker
-          // team's `home_games_to_win` / `away_games_to_win`. The weaker
-          // team is determined structurally from the locked lineup ratings
-          // (not from the agreed number, which captains may have overridden
-          // to match BCA's FargoRate app).
-          if (handicapType === 'fargo') {
-            setPreparationMessage?.('Saving Fargo start points...');
-
-            // Re-derive weaker team from the locked lineups so we know
-            // which side receives the agreed start-points value.
-            const homeLineup = isHomeTeam ? myLineup : opponentLineup;
-            const awayLineup = isHomeTeam ? opponentLineup : myLineup;
-
-            const gatherRatings = (lineup: any): number[] => {
-              const out: number[] = [];
-              for (let i = 1; i <= lineupSize; i++) {
-                const rating = Number(lineup?.[`player${i}_handicap`]);
-                if (Number.isFinite(rating) && rating > 0) out.push(rating);
-              }
-              return out;
-            };
-
-            const homeRatings = gatherRatings(homeLineup);
-            const awayRatings = gatherRatings(awayLineup);
-
-            // Default: use the confirmed value from the match row. Fall
-            // back to a live compute if the negotiation never set one
-            // (defensive; shouldn't happen because match prep only runs
-            // once both confirms are present, which requires a value).
-            let startPointsValue: number | null =
-              matchData?.fargo_start_points ?? null;
-            let weakerTeam: 'home' | 'away' | 'even' | null = null;
-
-            if (
-              homeRatings.length === lineupSize &&
-              awayRatings.length === lineupSize
-            ) {
-              if (fargo5v5.threshold.mode !== 'start_points') {
-                throw new Error('fargo5v5 threshold must be start_points mode');
-              }
-              const computed = fargo5v5.threshold.compute(
-                homeRatings,
-                awayRatings,
-                systemOverrides ?? {}
-              );
-              weakerTeam = computed.weakerTeam;
-              if (startPointsValue === null) {
-                startPointsValue = computed.startPointsForWeakerTeam;
-              }
-            } else {
-              // Missing ratings — log and fall back to zeros so the match
-              // can still proceed. Negotiation should have blocked us here,
-              // but be defensive.
-              logger.error('Fargo match prep without complete ratings', {
-                matchId,
-                homeRatingsCount: homeRatings.length,
-                awayRatingsCount: awayRatings.length,
-                expected: lineupSize,
-              });
-              startPointsValue = startPointsValue ?? 0;
-            }
-
-            await updateMatchMutation.mutateAsync({
-              matchId,
-              updates: {
-                home_games_to_win:
-                  weakerTeam === 'home' ? startPointsValue ?? 0 : 0,
-                home_games_to_tie: null,
-                home_games_to_lose: null,
-                away_games_to_win:
-                  weakerTeam === 'away' ? startPointsValue ?? 0 : 0,
-                away_games_to_tie: null,
-                away_games_to_lose: null,
-              },
-            });
-          } else {
-            setPreparationMessage?.('Calculating handicap thresholds...');
-            const { homeThresholds, awayThresholds } =
-              await calculateHandicapThresholds(
-                myLineup as any,
-                opponentLineup,
-                matchData.home_team_id,
-                matchData.away_team_id,
-                matchData.season_id,
-                handicapType,
-              );
-
-            setPreparationMessage?.('Saving match settings...');
-            await updateMatchMutation.mutateAsync({
-              matchId,
-              updates: {
-                home_games_to_win: homeThresholds.games_to_win,
-                home_games_to_tie: homeThresholds.games_to_tie,
-                home_games_to_lose: homeThresholds.games_to_lose,
-                away_games_to_win: awayThresholds.games_to_win,
-                away_games_to_tie: awayThresholds.games_to_tie,
-                away_games_to_lose: awayThresholds.games_to_lose,
-              },
-            });
-          }
-
-          // Create all game rows in match_games table
-          setPreparationMessage?.('Creating games...');
-          const useDoubleRoundRobin = lineupSize === 3; // TODO: read from game_generation pref
-
-          const allGames = generateGameOrder(
-            lineupSize,
-            useDoubleRoundRobin
-          );
-
-          const homeLineup = isHomeTeam ? myLineup : opponentLineup;
-          const awayLineup = isHomeTeam ? opponentLineup : myLineup;
-
-          const gameRows = allGames.map((game) => ({
-            match_id: matchId,
-            game_number: game.gameNumber,
-            game_type: matchData?.league.game_type || 'eight_ball',
-            home_player_id: (homeLineup as any)[
-              `player${game.homePlayerPosition}_id`
-            ],
-            away_player_id: (awayLineup as any)[
-              `player${game.awayPlayerPosition}_id`
-            ],
-            home_position: game.homePlayerPosition, // Track position for double duty players
-            away_position: game.awayPlayerPosition, // Track position for double duty players
-            home_action: game.homeAction,
-            away_action: game.awayAction,
-          }));
-
-          const { error: gamesError } = await supabase
-            .from('match_games')
-            .insert(gameRows);
-
-          if (gamesError) {
-            if (!gamesError.message.includes('duplicate key')) {
-              throw new Error(`Failed to create games: ${gamesError.message}`);
-            }
-          }
-
-          // STEP 5: Final verification and cache propagation before navigation
-          setPreparationMessage?.('Final verification...');
-          await new Promise(resolve => setTimeout(resolve, 500));
-
-          setIsPreparingMatch?.(false);
-          navigate(`/match/${matchId}/score`);
-        } catch (error: any) {
-          logger.error('Error preparing match', {
-            error: error instanceof Error ? error.message : String(error),
-            matchId,
-            isHomeTeam
-          });
-          setIsPreparingMatch?.(false);
-          toast.error(`Failed to prepare match: ${error.message}`);
-          matchPreparedRef.current = false;
+          rpcError = error.message;
+          logger.error('prep_match attempt failed', { matchId, attempt, error: rpcError });
         }
-      };
 
-      prepareMatchAndNavigate();
-    }
+        // All retries exhausted.
+        logger.error('prep_match failed after all retries', { matchId, error: rpcError });
+        toast.error('Match setup failed — please try again.');
+        setIsPreparingMatch?.(false);
+        matchPreparedRef.current = false;
+      } catch (error: any) {
+        logger.error('Error preparing match', {
+          error: error instanceof Error ? error.message : String(error),
+          matchId,
+          isHomeTeam,
+        });
+        toast.error(`Failed to prepare match: ${error.message ?? 'unknown error'}`);
+        setIsPreparingMatch?.(false);
+        matchPreparedRef.current = false;
+      }
+    };
+
+    prepareAndNavigate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
+    blockedReason,
     lineupLocked,
     opponentLineup,
     matchId,
-    fargoNegotiationBlocking,
+    currentGamesCount,
   ]);
 }

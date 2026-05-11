@@ -72,7 +72,7 @@ export const HandicapSettingsSection: React.FC<HandicapSettingsSectionProps> = (
     <div className="border rounded-lg p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <h3 className="font-semibold text-gray-900">Handicap Settings</h3>
+          <h3 className="font-semibold text-foreground">Handicap Settings</h3>
           <InfoButton title="Handicap Settings">
             Controls how player and team handicaps are calculated.
             {isLeague ? ' Set to use organization default or override for this league.' : ' These can be overridden per league.'}
@@ -135,7 +135,7 @@ export const HandicapSettingsSection: React.FC<HandicapSettingsSectionProps> = (
               min={50}
               max={500}
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Number of recent games to include (50-500)
             </p>
           </div>
@@ -143,16 +143,16 @@ export const HandicapSettingsSection: React.FC<HandicapSettingsSectionProps> = (
       ) : (
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-gray-600">Player Handicap:</span>
-            <span className="font-medium text-gray-900">{playerHandicapDisplay}</span>
+            <span className="text-muted-foreground">Player Handicap:</span>
+            <span className="font-medium text-foreground">{playerHandicapDisplay}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600">Team Handicap:</span>
-            <span className="font-medium text-gray-900">{teamHandicapDisplay}</span>
+            <span className="text-muted-foreground">Team Handicap:</span>
+            <span className="font-medium text-foreground">{teamHandicapDisplay}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600">Game History Limit:</span>
-            <span className="font-medium text-gray-900">{gameHistoryDisplay}</span>
+            <span className="text-muted-foreground">Game History Limit:</span>
+            <span className="font-medium text-foreground">{gameHistoryDisplay}</span>
           </div>
         </div>
       )}

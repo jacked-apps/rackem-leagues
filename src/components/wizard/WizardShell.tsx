@@ -67,7 +67,7 @@ export function WizardShell<TFormData>(props: WizardShellProps<TFormData>) {
       <div>
         <h2 className="text-2xl font-semibold mb-1">{currentStep.title}</h2>
         {currentStep.subtitle && (
-          <p className="text-sm text-gray-600 mb-4">{currentStep.subtitle}</p>
+          <p className="text-sm text-muted-foreground mb-4">{currentStep.subtitle}</p>
         )}
 
         <StepComponent {...stepProps} />

@@ -148,8 +148,8 @@ describe('Matches Table - RLS Tests', () => {
       const { error } = await client
         .from('matches')
         .update({
-          home_games_to_win: 10,
-          away_games_to_win: 5,
+          home_to_win: 10,
+          away_to_win: 5,
         })
         .eq('id', testMatchId);
 

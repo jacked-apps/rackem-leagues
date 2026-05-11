@@ -139,7 +139,7 @@ export function PlayerProfile() {
   if (loading) {
     return (
       <div className="container mx-auto p-6">
-        <p className="text-center text-gray-500">Loading player profile...</p>
+        <p className="text-center text-muted-foreground">Loading player profile...</p>
       </div>
     );
   }
@@ -172,7 +172,7 @@ export function PlayerProfile() {
           <CardTitle className="text-3xl">
             {player.first_name} {player.last_name}
           </CardTitle>
-          <p className="text-lg text-gray-600">
+          <p className="text-lg text-muted-foreground">
             Player #{player.system_player_number.toString().padStart(5, '0')}
           </p>
         </CardHeader>
@@ -180,7 +180,7 @@ export function PlayerProfile() {
           {/* Email */}
           {player.email && (
             <div className="flex items-center gap-2">
-              <Mail className="h-4 w-4 text-gray-600" />
+              <Mail className="h-4 w-4 text-muted-foreground" />
               <a
                 href={`mailto:${player.email}`}
                 className="text-blue-600 hover:underline"
@@ -196,23 +196,23 @@ export function PlayerProfile() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-gray-600" />
+            <Users className="h-5 w-5 text-muted-foreground" />
             <CardTitle>Current Teams</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
           {teams.length === 0 ? (
-            <p className="text-gray-500">Not currently on any teams</p>
+            <p className="text-muted-foreground">Not currently on any teams</p>
           ) : (
             <ul className="space-y-3">
               {teams.map((teamData) => (
                 <li
                   key={teamData.team.id}
-                  className="p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                  className="p-3 border rounded-lg hover:bg-muted transition-colors"
                 >
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="font-semibold text-gray-900">
+                      <p className="font-semibold text-foreground">
                         {teamData.team.team_name}
                         {teamData.is_captain && (
                           <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
@@ -220,13 +220,13 @@ export function PlayerProfile() {
                           </span>
                         )}
                       </p>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-muted-foreground">
                         {formatGameType(teamData.season.league.game_type as any)} •{' '}
                         {formatDayOfWeek(teamData.season.league.day_of_week as any)}
                         {teamData.season.league.division &&
                           ` • ${teamData.season.league.division}`}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-muted-foreground">
                         {teamData.season.season_name}
                       </p>
                     </div>
@@ -249,7 +249,7 @@ export function PlayerProfile() {
       <Card className="mt-6">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Award className="h-5 w-5 text-gray-600" />
+            <Award className="h-5 w-5 text-muted-foreground" />
             <CardTitle>BCA Membership Status</CardTitle>
           </div>
         </CardHeader>
@@ -257,10 +257,10 @@ export function PlayerProfile() {
           {player.bca_member_number ? (
             <div className="flex items-center gap-2">
               <span className="text-sm bg-green-100 text-green-800 px-2 py-1 rounded">Active</span>
-              <span className="text-gray-700">Member #{player.bca_member_number}</span>
+              <span className="text-foreground">Member #{player.bca_member_number}</span>
             </div>
           ) : (
-            <p className="text-gray-500">No BCA membership on file</p>
+            <p className="text-muted-foreground">No BCA membership on file</p>
           )}
         </CardContent>
       </Card>

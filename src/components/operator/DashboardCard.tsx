@@ -64,17 +64,17 @@ export const DashboardCard: React.FC<DashboardCardProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
+    <div className="bg-card rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
       <div className="flex items-center gap-3 mb-2">
         <div className={iconColor}>{icon}</div>
-        <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+        <h3 className="font-semibold text-foreground flex items-center gap-2">
           {title}
           {badgeCount !== undefined && badgeCount > 0 && (
             <Badge variant="destructive">{badgeCount}</Badge>
           )}
         </h3>
       </div>
-      <p className="text-sm text-gray-600 mb-4">{description}</p>
+      <p className="text-sm text-muted-foreground mb-4">{description}</p>
 
       <Button
         variant={variant}

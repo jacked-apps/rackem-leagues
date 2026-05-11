@@ -19,9 +19,10 @@ import {
 } from '@/components/ui/accordion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, MapPin, ArrowLeft, Trophy, AlertCircle, EyeOff, Eye } from 'lucide-react';
+import { Calendar, MapPin, Trophy, AlertCircle, EyeOff, Eye } from 'lucide-react';
 import { parseLocalDate } from '@/utils/formatters';
 import { MatchDetailCard } from '@/components/MatchDetailCard';
+import { PageHeader } from '@/components/PageHeader';
 
 export function TeamSchedule() {
   const { teamId } = useParams<{ teamId: string }>();
@@ -52,15 +53,15 @@ export function TeamSchedule() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <p className="text-gray-600">Loading schedule...</p>
+      <div className="min-h-screen flex items-center justify-center bg-muted">
+        <p className="text-muted-foreground">Loading schedule...</p>
       </div>
     );
   }
 
   if (error || !team) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4">
+      <div className="min-h-screen bg-muted p-4">
         <Card>
           <CardContent className="p-6">
             <p className="text-red-600">{error || 'Team not found'}</p>
@@ -127,51 +128,43 @@ export function TeamSchedule() {
     : matches;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header - Mobile First */}
-      <header className="bg-white border-b sticky top-0 z-10">
-        <div className="px-4 py-3">
-          <Link to="/my-teams" className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to My Teams
-          </Link>
-          <div className="text-4xl font-semibold text-gray-900">{team.team_name}</div>
-          {dayOfWeek && (
-            <p className="text-xl text-gray-600">{dayOfWeek}s</p>
-          )}
-
-          {/* Hide Completed Toggle */}
-          <div className="mt-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setHideCompleted(!hideCompleted)}
-              className="w-full sm:w-auto"
-              loadingText="none"
-            >
-              {hideCompleted ? (
-                <>
-                  <Eye className="h-4 w-4 mr-2" />
-                  Show Completed
-                </>
-              ) : (
-                <>
-                  <EyeOff className="h-4 w-4 mr-2" />
-                  Hide Completed
-                </>
-              )}
-            </Button>
-          </div>
+    <div className="min-h-screen bg-muted">
+      <PageHeader
+        backTo="/my-teams"
+        backLabel="Back to My Teams"
+        title={team.team_name}
+        subtitle={dayOfWeek ? `${dayOfWeek}s` : undefined}
+      >
+        <div className="mt-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setHideCompleted(!hideCompleted)}
+            className="w-full sm:w-auto"
+            loadingText="none"
+          >
+            {hideCompleted ? (
+              <>
+                <Eye className="h-4 w-4 mr-2" />
+                Show Completed
+              </>
+            ) : (
+              <>
+                <EyeOff className="h-4 w-4 mr-2" />
+                Hide Completed
+              </>
+            )}
+          </Button>
         </div>
-      </header>
+      </PageHeader>
 
       {/* Main Content */}
       <main className="px-4 py-6 max-w-2xl mx-auto">
         {displayedMatches.length === 0 ? (
           <Card>
             <CardContent className="p-12 text-center">
-              <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">
+              <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">
                 {hideCompleted ? 'No upcoming matches' : 'No matches scheduled yet'}
               </p>
             </CardContent>
@@ -182,6 +175,11 @@ export function TeamSchedule() {
               const teamRole = getTeamRole(match);
               const opponent =
                 teamRole === 'home' ? match.away_team : match.home_team;
+              // A "real" opponent is an active team. A bye/withdrawn opponent
+              // (or a legacy NULL one before the backfill ran) means this is
+              // a bye week — no lineup, no Score Match button.
+              const hasRealOpponent =
+                !!opponent && opponent.status === 'active';
               const isMakeup = needsMakeup(match);
               const isUpcoming = match.id === upcomingMatchId || match.status === 'in_progress';
 
@@ -196,7 +194,7 @@ export function TeamSchedule() {
                       ? 'bg-orange-50 border-orange-600'
                       : isUpcoming
                       ? 'bg-blue-50 border-blue-600'
-                      : 'bg-white'
+                      : 'bg-card'
                   }`}
                 >
                   <AccordionTrigger className="px-4 py-4 hover:no-underline">
@@ -205,12 +203,12 @@ export function TeamSchedule() {
                         {/* Week Number & Date */}
                         <div className={`flex items-center gap-2 text-sm ${
                           match.status === 'completed'
-                            ? 'text-gray-800'
+                            ? 'text-foreground'
                             : isMakeup
-                            ? 'text-gray-800'
+                            ? 'text-foreground'
                             : isUpcoming
-                            ? 'text-gray-800'
-                            : 'text-gray-600'
+                            ? 'text-foreground'
+                            : 'text-muted-foreground'
                         }`}>
                           <span className="font-medium">
                             {match.season_week?.week_name || 'Week ?'}
@@ -226,18 +224,20 @@ export function TeamSchedule() {
                               )}
                             </span>
                           ) : (
-                            <span className="text-gray-400 italic">Date TBD</span>
+                            <span className="text-muted-foreground italic">Date TBD</span>
                           )}
                         </div>
                         {/* Matchup */}
                         <div className={`font-semibold text-base ${
-                          match.status === 'completed' ? 'text-gray-900' : 'text-gray-900'
+                          match.status === 'completed' ? 'text-foreground' : 'text-foreground'
                         }`}>
                           vs{' '}
-                          {opponent ? (
-                            <span className="text-gray-900">{opponent.team_name}</span>
+                          {hasRealOpponent && opponent ? (
+                            <span className="text-foreground">{opponent.team_name}</span>
                           ) : (
-                            'BYE'
+                            // Bye / withdrawn / NULL-legacy: render the
+                            // descriptive bye name when available, else "BYE".
+                            opponent?.team_name ?? 'BYE'
                           )}
                         </div>
                       </div>
@@ -279,7 +279,7 @@ export function TeamSchedule() {
                       /* Show simple info for scheduled/in-progress matches */
                       <div className="space-y-4 pt-2">
                         {/* Home/Away Indicator */}
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-muted-foreground">
                           <span className="font-medium">
                             {teamRole === 'home' ? 'Home Game' : 'Away Game'}
                           </span>
@@ -298,9 +298,9 @@ export function TeamSchedule() {
                               )}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="block hover:bg-gray-100 rounded-lg p-2 -m-2 transition-colors"
+                              className="block hover:bg-muted rounded-lg p-2 -m-2 transition-colors"
                             >
-                              <div className="flex items-center gap-2 text-sm font-medium text-gray-600 mb-1">
+                              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
                                 <MapPin className="h-4 w-4 text-blue-600" />
                                 <span>Venue</span>
                                 {isOverflow && (
@@ -309,7 +309,7 @@ export function TeamSchedule() {
                                 <span className="text-xs text-blue-600">(tap for directions)</span>
                               </div>
                               <div className="ml-6">
-                                <p className="text-base text-gray-900">
+                                <p className="text-base text-foreground">
                                   {venue.name}
                                   {match.assigned_table_number && (
                                     <span className="ml-2 text-sm font-medium text-blue-700">
@@ -317,7 +317,7 @@ export function TeamSchedule() {
                                     </span>
                                   )}
                                 </p>
-                                <p className="text-sm text-gray-600">
+                                <p className="text-sm text-muted-foreground">
                                   {venue.city}, {venue.state}
                                 </p>
                               </div>
@@ -325,12 +325,9 @@ export function TeamSchedule() {
                           );
                         })()}
 
-                        {/* Action Button */}
-                        {/* TODO: BYE Match Guard - Currently we check !opponent to detect BYE weeks.
-                            When BYE team enhancement is implemented (actual BYE team records),
-                            this check should change to opponent?.is_bye_team === true.
-                            See: memory-bank/plans/bye-team-enhancement-plan.md */}
-                        {match.status === 'scheduled' && opponent && (
+                        {/* Action Button — hidden for bye weeks (no real
+                            opponent → no lineup to score). */}
+                        {match.status === 'scheduled' && hasRealOpponent && (
                           <Link to={`/match/${match.id}/lineup`} className="block pt-2">
                             <Button className="w-full" loadingText="none">
                               <Trophy className="h-4 w-4 mr-2" />
@@ -338,7 +335,7 @@ export function TeamSchedule() {
                             </Button>
                           </Link>
                         )}
-                        {match.status === 'in_progress' && opponent && (
+                        {match.status === 'in_progress' && hasRealOpponent && (
                           <Link to={`/match/${match.id}/lineup`} className="block pt-2">
                             <Button className="w-full" loadingText="none">
                               <Trophy className="h-4 w-4 mr-2" />

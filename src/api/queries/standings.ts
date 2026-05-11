@@ -74,10 +74,13 @@ export async function fetchSeasonStandings(seasonId: string): Promise<TeamStandi
     if (match.away_team_id) teamIds.add(match.away_team_id);
   });
 
-  // Fetch team names
+  // Fetch team names — exclude bye / withdrawn / forfeited rows so they
+  // don't appear as standings entries (their matches still get counted
+  // toward the active opponent's record).
   const { data: teams, error: teamsError } = await supabase
     .from('teams')
     .select('id, team_name')
+    .eq('status', 'active')
     .in('id', Array.from(teamIds));
 
   if (teamsError) {

@@ -369,22 +369,22 @@ export function InvitePlayerModal({
             <DialogHeader>
               <DialogTitle>Invite Player</DialogTitle>
               <DialogDescription>
-                Help <span className="font-medium text-gray-900">{playerName}</span> create their account and claim their profile
+                Help <span className="font-medium text-foreground">{playerName}</span> create their account and claim their profile
               </DialogDescription>
             </DialogHeader>
 
             <div className="flex-1 overflow-y-auto -mx-6 px-6" style={{ maxHeight: '55vh' }}>
               <div className="space-y-6 py-2">
               {/* Email Section - Top Priority */}
-              <div className="space-y-3 p-4 bg-gray-50 rounded-lg border">
+              <div className="space-y-3 p-4 bg-muted rounded-lg border">
                 <Label className="text-sm font-medium">Player's Email</Label>
 
                 {/* Display mode - email already exists on PP */}
                 {!isEditingEmail && emailSaved && email ? (
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between gap-2 p-2 bg-white rounded border">
+                    <div className="flex items-center justify-between gap-2 p-2 bg-card rounded border">
                       <div className="flex items-center gap-2 min-w-0">
-                        <Mail className="h-4 w-4 text-gray-500 shrink-0" />
+                        <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
                         <span className="text-sm truncate">{email}</span>
                       </div>
                       {/* Only allow editing if there's no pending invite */}
@@ -409,7 +409,7 @@ export function InvitePlayerModal({
                           Email locked. League Operator must cancel invite to change email.
                         </p>
                         {teamCount > 1 && (
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-muted-foreground">
                             This player is on {teamCount} teams. Accepting the invite will link all teams to their account.
                           </p>
                         )}
@@ -424,7 +424,7 @@ export function InvitePlayerModal({
                 ) : (
                   /* Edit mode - no email or user clicked edit */
                   <>
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-muted-foreground">
                       Enter the player's email to enable invite options and allow them to be on multiple teams.
                     </p>
                     <div className="flex gap-2">
@@ -475,21 +475,21 @@ export function InvitePlayerModal({
               <div className="space-y-3">
                 <div>
                   <Label className="text-sm font-medium">Email Invite</Label>
-                  <p className="text-xs text-gray-600 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Send an email or message to connect this profile to a registered or new player. This is the only method to connect existing accounts.
                   </p>
                 </div>
 
                 {/* Show warning if team context is missing */}
                 {!hasTeamContext && (
-                  <div className="p-3 rounded-lg border bg-gray-50 border-gray-200">
+                  <div className="p-3 rounded-lg border bg-muted border-border">
                     <div className="flex items-center gap-2 text-sm">
-                      <AlertTriangle className="h-4 w-4 text-gray-500" />
-                      <span className="text-gray-600">
+                      <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">
                         Email invites must be sent from a team context.
                       </span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       To send an email invite, open this player from Team Management.
                     </p>
                   </div>
@@ -564,7 +564,7 @@ export function InvitePlayerModal({
                     {hasExistingInvite ? 'Invited' : 'Invite Only'}
                   </Button>
                 </div>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   "Invite Only" creates the invite without sending a notification. Share the link below manually.
                 </p>
 
@@ -578,14 +578,14 @@ export function InvitePlayerModal({
                   <span className="w-full border-t" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-2 text-gray-500">or for new players</span>
+                  <span className="bg-card px-2 text-muted-foreground">or for new players</span>
                 </div>
               </div>
 
               {/* Option 2: In-Person Device Handoff */}
               <div className="space-y-3">
                 <Label className="text-sm font-medium">In-Person Registration</Label>
-                <p className="text-xs text-gray-600">
+                <p className="text-xs text-muted-foreground">
                   Hand your device to the player so they can register right now.
                 </p>
                 <Button
@@ -604,7 +604,7 @@ export function InvitePlayerModal({
                   <span className="w-full border-t" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-2 text-gray-500">or share link</span>
+                  <span className="bg-card px-2 text-muted-foreground">or share link</span>
                 </div>
               </div>
 
@@ -626,7 +626,7 @@ export function InvitePlayerModal({
                 <button
                   type="button"
                   onClick={handleBackToOptions}
-                  className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                  className="p-1 hover:bg-muted rounded-md transition-colors"
                   aria-label="Go back"
                 >
                   <ArrowLeft className="h-4 w-4" />
@@ -634,7 +634,7 @@ export function InvitePlayerModal({
                 <DialogTitle>Device Handoff</DialogTitle>
               </div>
               <DialogDescription>
-                Hand your device to <span className="font-medium text-gray-900">{playerName}</span> to complete registration
+                Hand your device to <span className="font-medium text-foreground">{playerName}</span> to complete registration
               </DialogDescription>
             </DialogHeader>
 

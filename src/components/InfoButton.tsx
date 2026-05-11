@@ -1,8 +1,14 @@
 /**
  * @fileoverview InfoButton Component
- * Reusable info button that shows helpful explanations in a floating popup
+ *
+ * Reusable info-bubble button that pops a help panel near the trigger.
+ * Positions itself robustly: measures the popup after mount, clamps to
+ * the viewport on both axes, and flips above the button when there
+ * isn't enough room below. Survives close-to-edge placement on phones,
+ * inside collapsed accordions, and dense card layouts where the older
+ * "always below + manual align" version was clipping off-screen.
  */
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 
 interface InfoButtonProps {
   title: string;
@@ -11,90 +17,98 @@ interface InfoButtonProps {
   className?: string;
   /** Size variant: 'sm' for smaller inline use, 'default' for standard size */
   size?: 'sm' | 'default';
-  /** Force popup alignment: 'left', 'right', or 'center'. If not set, auto-detects based on viewport. */
+  /** Force popup horizontal alignment. If unset, auto-clamps to viewport.
+   *  (Vertical placement is always automatic — flips above when below
+   *  doesn't have enough room.) */
   align?: 'left' | 'right' | 'center';
 }
 
-/**
- * InfoButton Component
- *
- * Shows a small question mark button that toggles a floating popup
- *
- * @param title - Title for the info popup
- * @param children - Content to display in the info popup (can be JSX)
- * @param label - Optional text to display before the ? button
- * @param className - Additional CSS classes for the container
- * @param size - Size variant: 'sm' (16px) or 'default' (24px)
- * @param align - Force popup alignment: 'left', 'right', or 'center'. Auto-detects if not set.
- */
-/** Calculate fixed position for the popup based on button location and alignment */
-function getPopupStyle(
-  button: HTMLButtonElement | null,
-  position: 'left' | 'right' | 'center',
-): React.CSSProperties {
-  if (!button) return {};
-  const rect = button.getBoundingClientRect();
-  const popupWidth = 320;
-  const topOffset = rect.bottom + 4; // 4px gap below button
-
-  if (position === 'left') {
-    return { top: topOffset, left: Math.max(8, rect.left) };
-  }
-  if (position === 'right') {
-    return { top: topOffset, right: Math.max(8, window.innerWidth - rect.right) };
-  }
-  // Center
-  const centerLeft = rect.left + rect.width / 2 - popupWidth / 2;
-  return { top: topOffset, left: Math.max(8, Math.min(centerLeft, window.innerWidth - popupWidth - 8)) };
-}
+const VIEWPORT_MARGIN = 8;
+const BUTTON_GAP = 4;
 
 export const InfoButton: React.FC<InfoButtonProps> = ({
   title,
   children,
   label,
-  className = "",
+  className = '',
   size = 'default',
   align,
 }) => {
   const [showInfo, setShowInfo] = useState(false);
-  const [popupPosition, setPopupPosition] = useState<'left' | 'right' | 'center'>('center');
+  const [style, setStyle] = useState<React.CSSProperties>({
+    visibility: 'hidden',
+  });
   const buttonRef = useRef<HTMLButtonElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
 
-  // Calculate popup position to keep it on screen (unless align prop is set)
-  useEffect(() => {
-    if (align) {
-      // Use forced alignment
-      setPopupPosition(align);
-    } else if (showInfo && buttonRef.current) {
-      // Auto-detect based on viewport
-      const buttonRect = buttonRef.current.getBoundingClientRect();
-      const viewportWidth = window.innerWidth;
-      const popupWidth = 320; // w-80 = 320px
-      const buttonCenter = buttonRect.left + buttonRect.width / 2;
+  // Measure-and-place after the popup mounts. useLayoutEffect runs before
+  // paint, so the user never sees an unpositioned flash.
+  useLayoutEffect(() => {
+    if (!showInfo || !buttonRef.current || !popupRef.current) return;
 
-      // Check if centering the popup would go off screen
-      const popupLeft = buttonCenter - popupWidth / 2;
-      const popupRight = buttonCenter + popupWidth / 2;
+    const button = buttonRef.current.getBoundingClientRect();
+    const popup = popupRef.current.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
 
-      if (popupLeft < 0) {
-        // Too far left, align to left edge
-        setPopupPosition('left');
-      } else if (popupRight > viewportWidth) {
-        // Too far right, align to right edge
-        setPopupPosition('right');
-      } else {
-        // Fits centered
-        setPopupPosition('center');
-      }
+    // ---- Horizontal: clamp into viewport. Honor `align` when set,
+    //      otherwise prefer center.
+    let left: number;
+    if (align === 'left') {
+      left = button.left;
+    } else if (align === 'right') {
+      left = button.right - popup.width;
+    } else {
+      left = button.left + button.width / 2 - popup.width / 2;
     }
+    // Clamp so we never spill off either edge.
+    left = Math.max(
+      VIEWPORT_MARGIN,
+      Math.min(left, vw - popup.width - VIEWPORT_MARGIN),
+    );
+
+    // ---- Vertical: prefer below; flip above when there isn't room.
+    const spaceBelow = vh - button.bottom;
+    const spaceAbove = button.top;
+    const needed = popup.height + BUTTON_GAP + VIEWPORT_MARGIN;
+    let top: number;
+    if (spaceBelow >= needed || spaceBelow >= spaceAbove) {
+      // Below is fine, OR neither side is great and below has more room.
+      top = button.bottom + BUTTON_GAP;
+      // Final safety clamp so the popup at least starts on-screen.
+      top = Math.min(top, vh - popup.height - VIEWPORT_MARGIN);
+      top = Math.max(top, VIEWPORT_MARGIN);
+    } else {
+      // Above has more room — anchor the popup's bottom just above the button.
+      top = button.top - popup.height - BUTTON_GAP;
+      top = Math.max(top, VIEWPORT_MARGIN);
+    }
+
+    setStyle({ position: 'fixed', top, left, visibility: 'visible' });
   }, [showInfo, align]);
 
-  // Close popup when clicking outside
+  // Recompute on resize / scroll while open so a viewport change doesn't
+  // strand the popup off-screen.
   useEffect(() => {
+    if (!showInfo) return;
+    const reposition = () => {
+      // Re-trigger the layout effect by toggling a no-op style. Simpler than
+      // duplicating the math: just force a re-render.
+      setStyle((prev) => ({ ...prev }));
+    };
+    window.addEventListener('resize', reposition);
+    window.addEventListener('scroll', reposition, true);
+    return () => {
+      window.removeEventListener('resize', reposition);
+      window.removeEventListener('scroll', reposition, true);
+    };
+  }, [showInfo]);
+
+  // Click-outside dismiss
+  useEffect(() => {
+    if (!showInfo) return;
     const handleClickOutside = (event: MouseEvent) => {
       if (
-        showInfo &&
         popupRef.current &&
         buttonRef.current &&
         !popupRef.current.contains(event.target as Node) &&
@@ -103,22 +117,21 @@ export const InfoButton: React.FC<InfoButtonProps> = ({
         setShowInfo(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showInfo]);
 
+  // Reset visibility when reopening so we don't paint a stale position.
   const togglePopup = () => {
-    setShowInfo(!showInfo);
+    setShowInfo((prev) => !prev);
+    setStyle({ visibility: 'hidden' });
   };
 
   return (
     <div className={`relative ${className}`}>
       <div className="flex items-center gap-1">
         {label && (
-          <span className="text-gray-700 text-sm font-medium">
-            {label}
-          </span>
+          <span className="text-foreground text-sm font-medium">{label}</span>
         )}
         <button
           ref={buttonRef}
@@ -135,21 +148,20 @@ export const InfoButton: React.FC<InfoButtonProps> = ({
       {showInfo && (
         <div
           ref={popupRef}
-          className="fixed z-50 w-80 p-4 bg-white border border-gray-200 rounded-lg shadow-lg"
-          style={getPopupStyle(buttonRef.current, popupPosition)}
+          className="fixed z-50 w-80 max-h-[80vh] overflow-y-auto p-4 bg-card border border-border rounded-lg shadow-lg"
+          style={style}
         >
           <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold text-gray-900">{title}</h3>
+            <h3 className="font-semibold text-foreground">{title}</h3>
             <button
               onClick={togglePopup}
-              className="w-5 h-5 text-gray-400 hover:text-gray-600"
+              className="w-5 h-5 text-muted-foreground hover:text-muted-foreground"
+              aria-label="Close"
             >
               ×
             </button>
           </div>
-          <div className="text-gray-700 text-sm">
-            {children}
-          </div>
+          <div className="text-foreground text-sm">{children}</div>
         </div>
       )}
     </div>

@@ -17,6 +17,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '../queryKeys';
 import { fetchSeasonStandings, type TeamStanding } from '../queries/standings';
+import { sortStandings } from '@/utils/standings/sortStandings';
 
 /**
  * Return type for useStandings hook
@@ -87,25 +88,14 @@ export function useStandings(seasonId: string): UseStandingsResult {
     };
   }
 
-  // Sort by ranking logic: wins → points → games
-  // TODO: For 8-man (5v5) format, sort by points first, then games won
-  // 8-man leagues use BCA points system where points are primary ranking metric
-  // Current sort: matchWins → points → gamesWon (correct for 5-man/3v3)
-  // Needed for 8-man: points → gamesWon (matchWins not relevant in BCA scoring)
-  const sortedStandings = [...standingsData].sort((a, b) => {
-    // Primary: Most match wins
-    if (b.matchWins !== a.matchWins) {
-      return b.matchWins - a.matchWins;
-    }
-
-    // Tiebreaker 1: Most points
-    if (b.points !== a.points) {
-      return b.points - a.points;
-    }
-
-    // Tiebreaker 2: Most games won
-    return b.gamesWon - a.gamesWon;
-  });
+  // Delegates to the shared helper at @/utils/standings/sortStandings.
+  // Default priority: [match_wins, games_won, points_earned] — matches
+  // the prior inline behavior. R10 of the modular-league plan promotes
+  // standings_sort to a per-league preference; a future PR will pass
+  // the resolved priority list here instead of using the default.
+  // (Phase 5 Unit 5.3 — duplicate sort logic at this site and in
+  // playoffGenerator.ts has been consolidated into one helper.)
+  const sortedStandings = sortStandings(standingsData);
 
   return {
     standings: sortedStandings,

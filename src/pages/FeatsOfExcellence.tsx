@@ -45,7 +45,7 @@ export function FeatsOfExcellence() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-muted">
         <div className="container mx-auto px-4 py-8 max-w-7xl">
           <Card>
             <CardContent className="py-8">
@@ -59,7 +59,7 @@ export function FeatsOfExcellence() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-card">
         <div className="container mx-auto px-4 py-8 max-w-7xl">
           <Card>
             <CardContent className="py-8">
@@ -74,7 +74,7 @@ export function FeatsOfExcellence() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       <PageHeader
         hideBack
         title="Stats & Standings"
@@ -141,7 +141,7 @@ export function FeatsOfExcellence() {
                   </table>
                 </div>
               ) : (
-                <div className="text-center text-gray-500 py-4">
+                <div className="text-center text-muted-foreground py-4">
                   No break & runs recorded this season
                 </div>
               )}
@@ -178,7 +178,7 @@ export function FeatsOfExcellence() {
                   </table>
                 </div>
               ) : (
-                <div className="text-center text-gray-500 py-4">
+                <div className="text-center text-muted-foreground py-4">
                   No golden breaks recorded this season
                 </div>
               )}
@@ -220,7 +220,7 @@ export function FeatsOfExcellence() {
                   </table>
                 </div>
               ) : (
-                <div className="text-center text-gray-500 py-4">
+                <div className="text-center text-muted-foreground py-4">
                   No flawless matches recorded this season
                 </div>
               )}

@@ -66,7 +66,7 @@ export const bca3v3: SystemModule = {
   },
 
   threshold: {
-    mode: 'games_to_win',
+    mode: 'extra_games',
     // Delegates to the existing hardcoded chart. No behavior change — the
     // characterization tests in src/utils/handicap/__tests__/getGamesNeeded.characterization.test.ts
     // guarantee this path returns the same values as before the refactor.

@@ -11,6 +11,7 @@ import type { League } from '@/types/league';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
 import { useFlowStageDetection } from '@/wizards/league-v2/useFlowStageDetection';
+import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 
 const STAGE_BUTTON_LABELS: Record<number, string> = {
   1: 'Create Season',
@@ -58,6 +59,8 @@ export const LeagueOverviewCard: React.FC<LeagueOverviewCardProps> = ({ league }
   const [isNavigating, setIsNavigating] = useState(false);
 
   const { firstIncompleteStage } = useFlowStageDetection(league.id);
+  const { data: leaguePrefs } = useResolvedLeaguePrefs(league.id);
+  const lineupSize = leaguePrefs?.lineup_size;
   const flowComplete = firstIncompleteStage >= 5;
   const wizardButtonLabel = flowComplete
     ? 'Season Active'
@@ -103,7 +106,8 @@ export const LeagueOverviewCard: React.FC<LeagueOverviewCardProps> = ({ league }
           const { count: teamCount } = await supabase
             .from('teams')
             .select('*', { count: 'exact', head: true })
-            .eq('season_id', data.id);
+            .eq('season_id', data.id)
+            .eq('status', 'active');
 
           setHasTeams((teamCount ?? 0) > 0);
 
@@ -253,9 +257,9 @@ export const LeagueOverviewCard: React.FC<LeagueOverviewCardProps> = ({ league }
   const editOptions = getSeasonEditOptions();
 
   return (
-    <div className="lg:bg-white lg:rounded-xl lg:shadow-sm p-6 mb-6">
+    <div className="lg:bg-card lg:rounded-xl lg:shadow-sm p-6 mb-6">
       <div className="flex items-center justify-between mb-2">
-        <h2 className="text-xl font-semibold text-gray-900">League Overview</h2>
+        <h2 className="text-xl font-semibold text-foreground">League Overview</h2>
         <div className="flex gap-2">
           {/* Manage Season - shown for complete seasons (active, upcoming with schedule, completed) */}
           {editOptions.showManageSchedule && currentSeason && (
@@ -299,11 +303,11 @@ export const LeagueOverviewCard: React.FC<LeagueOverviewCardProps> = ({ league }
           )}
         </div>
       </div>
-      <h3 className="text-sm text-gray-600 mb-4">Current Season</h3>
+      <h3 className="text-sm text-muted-foreground mb-4">Current Season</h3>
 
       {loading ? (
         <div className="text-center py-8">
-          <p className="text-gray-600">Loading season...</p>
+          <p className="text-muted-foreground">Loading season...</p>
         </div>
       ) : currentSeason ? (
         <div className={`${isSeasonComplete() ? 'bg-green-50 border-green-200' : 'bg-orange-50 border-orange-200'} border rounded-lg p-4`}>
@@ -331,7 +335,7 @@ export const LeagueOverviewCard: React.FC<LeagueOverviewCardProps> = ({ league }
             <div>
               <span className={isSeasonComplete() ? 'text-green-700' : 'text-orange-700'}>Format:</span>{' '}
               <span className={`${isSeasonComplete() ? 'text-green-900' : 'text-orange-900'} font-medium`}>
-                {league.team_format === '5_man' ? '5-Man' : '8-Man'}
+                {lineupSize === 3 ? '3v3' : lineupSize === 5 ? '5v5' : `${lineupSize ?? '?'}v${lineupSize ?? '?'}`}
               </span>
             </div>
             {currentSeason.team_count !== undefined && (

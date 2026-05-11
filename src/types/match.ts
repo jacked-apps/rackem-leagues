@@ -4,19 +4,28 @@
  */
 
 import type { HandicapVariant } from '@/utils/handicapCalculations';
-import type { SystemOverrides } from './systemOverrides';
+import type { ResolvedSystemConfig } from './resolvedSystemConfig';
+import { linearAboveThreshold } from '@/systems/calculators/linear_above_threshold';
+import { accumulateWithMilestoneJumps } from '@/systems/calculators/accumulate_with_milestone_jumps';
 
 /**
- * Per-match frozen snapshot of tier 2 dials + threshold chart selection.
- * Populated at scheduled → in_progress transition and never mutated after.
+ * Per-match frozen snapshot of the full resolved system configuration.
+ * Populated at the first scoring event and never mutated after.
  * Stored as `matches.system_snapshot JSONB`. See migration
  * 20260418000003_add_matches_system_snapshot.sql.
+ *
+ * As of Phase 2 Unit 2.2 (2026-04-29) this is the full `ResolvedSystemConfig`
+ * shape — all 13 modular axes plus per-league override dials. The Phase-1
+ * shape (just `{ overrides, threshold_chart_id, snapshot_at }`) is a strict
+ * subset; readers that only check `.overrides` or `.threshold_chart_id`
+ * keep working unchanged. New readers can access the full configuration
+ * (lineup_size, mechanism, points_calculator, etc.) via the wider shape.
+ *
+ * NOTE: legacy matches scored before the writer expansion will still have
+ * the smaller Phase-1 shape on disk. Readers must tolerate missing fields
+ * (`field ?? defaultFromLivePrefs ?? hardcodedDefault`).
  */
-export interface MatchSystemSnapshot {
-  overrides: SystemOverrides;
-  threshold_chart_id: string | null;
-  snapshot_at: string; // ISO 8601 timestamp
-}
+export type MatchSystemSnapshot = ResolvedSystemConfig;
 
 /**
  * Match type - determines format and scoring rules
@@ -55,49 +64,71 @@ export interface MatchWithLeagueSettings {
   home_lineup_id: string | null;
   away_lineup_id: string | null;
   started_at: string | null;
+  /**
+   * Match lifecycle status. Mostly takes 'scheduled' / 'in_progress' /
+   * 'completed'. Used by MatchEndVerification's item-15 guard against
+   * re-firing completion on an already-completed match.
+   */
+  status: 'scheduled' | 'in_progress' | 'awaiting_verification' | 'completed' | 'forfeited' | 'postponed';
   match_result: 'home_win' | 'away_win' | 'tie' | null;
   scheduled_date: string;
   home_team_verified_by?: string | null;
   away_team_verified_by?: string | null;
   home_tiebreaker_verified_by?: string | null;
   away_tiebreaker_verified_by?: string | null;
-  home_games_to_win: number | null;
-  home_games_to_tie: number | null;
-  home_games_to_lose: number | null;
-  away_games_to_win: number | null;
-  away_games_to_tie: number | null;
-  away_games_to_lose: number | null;
   /**
-   * Fargo start-points negotiation (Unit 11c). Captains must agree on the
-   * start-points value before the scoring page opens. `fargo_start_points`
-   * holds the current proposed or agreed value; the two confirm columns
-   * track which captain(s) have accepted it. Editing the value clears both
-   * confirms. Once both are non-null, the value is copied to the weaker
-   * team's home_games_to_win / away_games_to_win and match preparation
-   * runs. NULL on non-Fargo matches (and on Fargo matches before the first
-   * proposal is written).
+   * Six threshold columns whose semantics depend on the league's
+   * handicap_type. The columns themselves are reused across systems — no
+   * Fargo-specific columns exist on `matches`.
+   *
+   * win_condition='games' (BCA points / percentage / games-mode):
+   *   *_to_win  = games each team needs to WIN
+   *   *_to_tie  = games each team needs to TIE
+   *   *_to_lose = games above which loss is locked
+   *
+   * win_condition='points' (Fargo 10-7 / points-mode):
+   *   *_to_win  = points target if any (NULL for play-all-games-no-target)
+   *   *_to_tie  = start-points credit the team begins the match with
+   *               (0 for stronger team, N for weaker in start_points mechanism)
+   *   *_to_lose = NULL (concept doesn't map cleanly to points mode)
+   *
+   * Renamed from `*_games_to_*` to `*_to_*` (Phase 2 Unit 2.1) — column names
+   * no longer lie about what they hold under points-mode. The
+   * ResolvedSystemConfig snapshot's `win_condition` carries the unit context.
    */
-  fargo_start_points: number | null;
-  fargo_start_points_confirmed_by_home: string | null;
-  fargo_start_points_confirmed_by_away: string | null;
+  home_to_win: number | null;
+  home_to_tie: number | null;
+  home_to_lose: number | null;
+  away_to_win: number | null;
+  away_to_tie: number | null;
+  away_to_lose: number | null;
+  /**
+   * Per-mutation running totals (Phase 5 Unit 5.5). Maintained by
+   * `updateMatchRunningTotals` after every match_games write — the match
+   * row is the source of truth for the live scoreboard. Display layers
+   * read these directly rather than recomputing from match_games.
+   */
+  home_games_won: number;
+  away_games_won: number;
+  home_points_earned: number;
+  away_points_earned: number;
   /**
    * Tier 3 snapshot (added by migration 20260418000003). NULL for unstarted or legacy matches.
    * Populated at scheduled → in_progress transition; scoring reads from this, not live league data.
-   *
-   * Note: Fargo start-points for the weaker team are stored directly in
-   * home_games_to_win / away_games_to_win (per-system semantic — BCA's "games needed to win"
-   * and Fargo's "start points awarded" share the shape and column family; handicap_type
-   * tells code how to interpret them).
    */
   system_snapshot: MatchSystemSnapshot | null;
   assigned_table_number: number | null;
   home_team: {
     id: string;
     team_name: string;
+    captain_id: string | null;
+    status: 'active' | 'withdrawn' | 'forfeited' | 'bye';
   };
   away_team: {
     id: string;
     team_name: string;
+    captain_id: string | null;
+    status: 'active' | 'withdrawn' | 'forfeited' | 'bye';
   };
   scheduled_venue: {
     id: string;
@@ -120,7 +151,6 @@ export interface MatchWithLeagueSettings {
     team_handicap_variant: HandicapVariant;
     golden_break_counts_as_win: boolean;
     game_type: string;
-    team_format: '5_man' | '8_man';
   };
 }
 
@@ -160,7 +190,6 @@ export interface MatchForLineup {
     handicap_variant: HandicapVariant;
     team_handicap_variant: HandicapVariant;
     game_type: 'eight_ball' | 'nine_ball' | 'ten_ball';
-    team_format: '5_man' | '8_man';
   };
 }
 
@@ -210,7 +239,16 @@ export interface Player {
  * Based on handicap difference between teams
  */
 export interface HandicapThresholds {
-  games_to_win: number;
+  /**
+   * Games or points target to win the match.
+   * - games-mode (BCA): non-null integer (games count needed to win).
+   * - points-mode without explicit point target (Fargo 10-7): null —
+   *   match plays all games and totals decide.
+   * - points-mode with explicit threshold ("first to 100 points"): the
+   *   point target.
+   * The unit semantic depends on `win_condition` in the match snapshot.
+   */
+  games_to_win: number | null;
   games_to_tie: number | null;
   // Fargo matches set this to null — Fargo scores by point accumulation, not
   // by a games-to-lose threshold. BCA systems always return a non-null number.
@@ -395,21 +433,22 @@ export function getCompletedGamesCount(gameResults: Map<number, MatchGame>): num
 }
 
 /**
- * Calculate current points for a team (3v3 system)
+ * Calculate current points for a team using the linear-above-threshold formula.
  *
- * Points calculation logic:
- * - Positive points: wins above games_to_win (e.g., 11 wins when you need 10 = +1 point)
- * - Zero points: wins between games_to_tie and games_to_win (inclusive)
- * - Negative points: wins below games_to_tie
+ * @deprecated Phase 5 Unit 5.5 will route per-game scoring through the
+ * calculator registry directly. This function is kept temporarily for
+ * existing callers (the scoreboard's running display path) and now
+ * delegates to the standalone `linearAboveThreshold` calculator at
+ * `src/systems/calculators/linear_above_threshold.ts`. Behavior is
+ * unchanged. Once Phase 5 Unit 5.5 ships, callers will read the running
+ * total from the match row directly and this shim can be deleted.
  *
- * When ties are possible:
- * - Win exactly what you need (games_to_win) = 0 points
- * - Tie (games_to_tie) = 0 points for both teams
- * - Win more than needed = positive points
- * - Below tie threshold = negative points
- *
- * When no tie possible (games_to_tie = null):
- * - Uses games_to_win as the baseline for all calculations
+ * Points calculation logic (preserved from the original):
+ * - Above-win band: (wins - games_to_win) * multiplier  [multiplier=1 here]
+ * - Tie band: T <= wins <= W → 0 (always 0)
+ * - Below-tie band: (wins - games_to_tie) * multiplier
+ * - When games_to_tie is null: tie band collapses; formula reduces to
+ *   (wins - games_to_win) * multiplier
  *
  * @param teamId - Team's ID to calculate points for
  * @param thresholds - Handicap thresholds (win/tie/lose game counts)
@@ -433,23 +472,10 @@ export function calculatePoints(
 ): number {
   if (!thresholds) return 0;
   const { wins } = getTeamStats(teamId, gameResults);
-
-  // If ties are possible
-  if (thresholds.games_to_tie !== null) {
-    // Positive points: wins above games_to_win
-    if (wins > thresholds.games_to_win) {
-      return wins - thresholds.games_to_win;
-    }
-    // Zero points: in the tie range (games_to_tie to games_to_win, inclusive)
-    if (wins >= thresholds.games_to_tie && wins <= thresholds.games_to_win) {
-      return 0;
-    }
-    // Negative points: below tie threshold
-    return wins - thresholds.games_to_tie;
-  }
-
-  // No tie possible: use games_to_win as baseline
-  return wins - thresholds.games_to_win;
+  return linearAboveThreshold.compute(
+    { gamesWon: wins, thresholds },
+    linearAboveThreshold.defaultParams,
+  );
 }
 
 /**
@@ -473,6 +499,14 @@ export function calculatePoints(
  * // 13 wins: 3.0 points (bonus jump!)
  * // 14 wins: 3.1 points
  */
+/**
+ * @deprecated Phase 5 Unit 5.5 will route per-game scoring through the
+ * calculator registry directly. This function is now a thin shim that
+ * delegates to the standalone `accumulateWithMilestoneJumps` calculator at
+ * `src/systems/calculators/accumulate_with_milestone_jumps.ts`. Behavior is
+ * unchanged. Once Phase 5 Unit 5.5 ships, callers will read the running
+ * total from the match row directly and this shim can be deleted.
+ */
 export function calculateBCAPoints(
   teamId: string,
   thresholds: HandicapThresholds | null,
@@ -480,22 +514,8 @@ export function calculateBCAPoints(
 ): number {
   if (!thresholds) return 0;
   const { wins } = getTeamStats(teamId, gameResults);
-
-  // Calculate 70% threshold for 1.5 bonus jump (straight round, not round up)
-  const bonus70Threshold = Math.round(thresholds.games_to_win * 0.7);
-
-  // Reached win threshold: 3 points + 0.1 for each game beyond
-  if (wins >= thresholds.games_to_win) {
-    const gamesOverThreshold = wins - thresholds.games_to_win;
-    return 3.0 + (gamesOverThreshold * 0.1);
-  }
-
-  // Reached 70% threshold: 1.5 points + 0.1 for each game beyond
-  if (wins >= bonus70Threshold) {
-    const gamesBeyond70 = wins - bonus70Threshold;
-    return 1.5 + (gamesBeyond70 * 0.1);
-  }
-
-  // Below 70%: 0.1 points per game
-  return wins * 0.1;
+  return accumulateWithMilestoneJumps.compute(
+    { gamesWon: wins, thresholds },
+    accumulateWithMilestoneJumps.defaultParams,
+  );
 }

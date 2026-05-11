@@ -12,7 +12,7 @@ export const EightManFormatDetails: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-muted py-12 px-4 sm:px-6 lg:px-8">
       {/* Sticky Back Button */}
       <div className="fixed top-20 right-4 z-50">
         <Button
@@ -29,18 +29,18 @@ export const EightManFormatDetails: React.FC = () => {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+          <h1 className="text-4xl font-bold text-foreground mb-2">
             8-Man Team Format: Complete Guide
           </h1>
-          <p className="text-xl text-gray-600">
+          <p className="text-xl text-muted-foreground">
             The traditional BCA standard format familiar to experienced league players
           </p>
         </div>
 
         {/* Overview */}
         <Card className="p-6 mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Overview</h2>
-          <p className="text-gray-700 mb-4">
+          <h2 className="text-2xl font-bold text-foreground mb-4">Overview</h2>
+          <p className="text-foreground mb-4">
             The 8-man team format is the traditional BCA (Billiard Congress of America) standard that has been
             used for decades in pool leagues across the country. It's familiar to experienced players and
             follows well-established rules and handicap systems.
@@ -59,12 +59,12 @@ export const EightManFormatDetails: React.FC = () => {
 
         {/* How It Works */}
         <Card className="p-6 mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">How It Works</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-4">How It Works</h2>
 
           <div className="space-y-4">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Team Structure</h3>
-              <ul className="list-disc ml-5 text-gray-700 space-y-1">
+              <h3 className="text-lg font-semibold text-foreground mb-2">Team Structure</h3>
+              <ul className="list-disc ml-5 text-foreground space-y-1">
                 <li><strong>Roster Size:</strong> 8+ players per team (often 10-12 for coverage)</li>
                 <li><strong>Active Players:</strong> 5 players compete on match night</li>
                 <li><strong>Substitutions:</strong> Larger roster provides more coverage for absences</li>
@@ -72,8 +72,8 @@ export const EightManFormatDetails: React.FC = () => {
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Match Format</h3>
-              <ul className="list-disc ml-5 text-gray-700 space-y-1">
+              <h3 className="text-lg font-semibold text-foreground mb-2">Match Format</h3>
+              <ul className="list-disc ml-5 text-foreground space-y-1">
                 <li><strong>Format:</strong> Single round robin (everyone plays everyone once)</li>
                 <li><strong>Games per Player:</strong> 5 games each</li>
                 <li><strong>Total Games:</strong> 25 games per match</li>
@@ -81,12 +81,12 @@ export const EightManFormatDetails: React.FC = () => {
               </ul>
             </div>
 
-            <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
-              <h4 className="font-semibold text-gray-900 mb-2">Example Match Night:</h4>
-              <p className="text-sm text-gray-700 mb-3">
+            <div className="bg-muted p-4 rounded-md border border-border">
+              <h4 className="font-semibold text-foreground mb-2">Example Match Night:</h4>
+              <p className="text-sm text-foreground mb-3">
                 Team A sends 5 players, Team B sends 5 players (10 total shooters).
               </p>
-              <p className="text-sm text-gray-700">
+              <p className="text-sm text-foreground">
                 Each player from Team A plays one game against each player from Team B.
                 With 5 opponents, each player shoots 5 games total, resulting in 25 games per match.
               </p>
@@ -96,10 +96,10 @@ export const EightManFormatDetails: React.FC = () => {
 
         {/* Handicap System */}
         <Card className="p-6 mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">BCA Standard Handicap System</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-4">BCA Standard Handicap System</h2>
 
           <div className="space-y-4">
-            <p className="text-gray-700">
+            <p className="text-foreground">
               The 8-man format uses the BCA standard handicap system with skill levels typically ranging
               from 2 to 7, based on demonstrated ability and performance.
             </p>
@@ -124,12 +124,12 @@ export const EightManFormatDetails: React.FC = () => {
 
         {/* Who This Format Works For */}
         <Card className="p-6 mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Who This Format Works For</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-4">Who This Format Works For</h2>
 
           <div className="space-y-4">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Best Suited For:</h3>
-              <ul className="list-disc ml-5 text-gray-700 space-y-2">
+              <h3 className="text-lg font-semibold text-foreground mb-2">Best Suited For:</h3>
+              <ul className="list-disc ml-5 text-foreground space-y-2">
                 <li><strong>Established Leagues:</strong> Players already familiar with BCA format and expectations</li>
                 <li><strong>Large Player Pools:</strong> Venues with enough players to support 8+ person rosters</li>
                 <li><strong>Traditional Players:</strong> Those who prefer the familiar BCA standard approach</li>

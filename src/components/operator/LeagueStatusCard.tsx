@@ -80,7 +80,7 @@ export const LeagueStatusCard: React.FC<LeagueStatusCardProps> = ({
           // These counts apply to ANY season (upcoming, active, completed) so
           // the progress bar and next-steps list reflect real state during setup.
           const [teamRes, scheduleRes, matchRes] = await Promise.all([
-            supabase.from('teams').select('*', { count: 'exact', head: true }).eq('season_id', mostRecentSeason.id),
+            supabase.from('teams').select('*', { count: 'exact', head: true }).eq('season_id', mostRecentSeason.id).eq('status', 'active'),
             supabase.from('season_weeks').select('*', { count: 'exact', head: true }).eq('season_id', mostRecentSeason.id),
             supabase.from('matches').select('*', { count: 'exact', head: true }).eq('season_id', mostRecentSeason.id),
           ]);
@@ -225,11 +225,11 @@ export const LeagueStatusCard: React.FC<LeagueStatusCardProps> = ({
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="bg-card rounded-xl shadow-sm p-6">
         <div className="animate-pulse">
-          <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
-          <div className="h-2 bg-gray-200 rounded mb-2"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          <div className="h-6 bg-accent rounded w-1/3 mb-4"></div>
+          <div className="h-2 bg-accent rounded mb-2"></div>
+          <div className="h-4 bg-accent rounded w-1/2"></div>
         </div>
       </div>
     );
@@ -238,9 +238,9 @@ export const LeagueStatusCard: React.FC<LeagueStatusCardProps> = ({
   // Card variant (for dashboard)
   if (variant === 'card') {
     return (
-      <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="bg-card rounded-xl shadow-sm p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Status</h3>
+          <h3 className="text-lg font-semibold text-foreground">Status</h3>
           <span className={`px-3 py-1 ${statusBadge.classes} text-sm font-medium rounded-full`}>
             {statusBadge.label}
           </span>
@@ -257,9 +257,9 @@ export const LeagueStatusCard: React.FC<LeagueStatusCardProps> = ({
 
   // Section variant (for detail page)
   return (
-    <div className="lg:col-span-2 bg-white lg:rounded-xl shadow-sm p-6">
+    <div className="lg:col-span-2 bg-card lg:rounded-xl shadow-sm p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-gray-900">
+        <h2 className="text-xl font-semibold text-foreground">
           {activeSeason ? 'Season Status' : 'League Status'}
         </h2>
         <span className={`px-4 py-2 ${statusBadge.classes} text-sm font-medium rounded-full`}>

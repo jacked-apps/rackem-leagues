@@ -328,9 +328,9 @@ export const PlayoffTemplateSelector: React.FC<PlayoffTemplateSelectorProps> = (
           // Unmodified state: show template description and optional "Set as Default" button
           <>
             {selectedTemplate?.description ? (
-              <p className="text-sm text-gray-600">{selectedTemplate.description}</p>
+              <p className="text-sm text-muted-foreground">{selectedTemplate.description}</p>
             ) : (
-              <p className="text-sm text-gray-400 italic">
+              <p className="text-sm text-muted-foreground italic">
                 Select a playoff format to see its description.
               </p>
             )}

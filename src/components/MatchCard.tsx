@@ -50,7 +50,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
 
   // Status badge styling
   const statusColors = {
-    scheduled: 'bg-gray-100 text-gray-700',
+    scheduled: 'bg-muted text-foreground',
     in_progress: 'bg-blue-100 text-blue-700',
     awaiting_verification: 'bg-purple-100 text-purple-700',
     completed: 'bg-green-100 text-green-700',
@@ -61,13 +61,13 @@ export const MatchCard: React.FC<MatchCardProps> = ({
   const statusColor = statusColors[match.status] || statusColors.scheduled;
 
   return (
-    <div className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
+    <div className="border border-border rounded-lg p-4 hover:border-border transition-colors">
       {/* Week Info (optional) */}
       {showWeek && match.season_week && (
-        <div className="flex items-center gap-2 text-xs text-gray-600 mb-2">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
           <Calendar className="h-3 w-3" />
           <span>{match.season_week.week_name}</span>
-          <span className="text-gray-400">•</span>
+          <span className="text-muted-foreground">•</span>
           <span>
             {new Date(match.season_week.scheduled_date).toLocaleDateString()}
           </span>
@@ -77,7 +77,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
       {/* Match Info */}
       {isBye ? (
         <div className="text-center py-4">
-          <p className="text-gray-500 text-sm">
+          <p className="text-muted-foreground text-sm">
             {homeTeam?.team_name || awayTeam?.team_name} has a BYE week
           </p>
         </div>
@@ -90,25 +90,23 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                 className={`font-semibold ${
                   highlightTeamId === homeTeam?.id
                     ? 'text-blue-600'
-                    : 'text-gray-900'
+                    : 'text-foreground'
                 }`}
               >
                 {homeTeam?.team_name || 'Unknown'}
               </p>
-              <p className="text-xs text-gray-500">Home</p>
+              <p className="text-xs text-muted-foreground">Home</p>
             </div>
 
             <div className="px-4">
-              {match.status === 'completed' &&
-              match.home_team_score !== null &&
-              match.away_team_score !== null ? (
+              {match.status === 'completed' ? (
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-gray-900">
-                    {match.home_team_score} - {match.away_team_score}
+                  <p className="text-2xl font-bold text-foreground">
+                    {match.home_games_won} - {match.away_games_won}
                   </p>
                 </div>
               ) : (
-                <div className="text-gray-400 text-2xl font-light">vs</div>
+                <div className="text-muted-foreground text-2xl font-light">vs</div>
               )}
             </div>
 
@@ -117,18 +115,18 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                 className={`font-semibold ${
                   highlightTeamId === awayTeam?.id
                     ? 'text-blue-600'
-                    : 'text-gray-900'
+                    : 'text-foreground'
                 }`}
               >
                 {awayTeam?.team_name || 'Unknown'}
               </p>
-              <p className="text-xs text-gray-500">Away</p>
+              <p className="text-xs text-muted-foreground">Away</p>
             </div>
           </div>
 
           {/* Venue */}
           {venue && (
-            <div className="flex items-center gap-2 text-sm text-gray-600 pt-2 border-t border-gray-100">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2 border-t border-gray-100">
               <MapPin className="h-4 w-4" />
               <span>{venue.name}</span>
               {match.actual_venue_id && (

@@ -65,7 +65,7 @@ export function MatchDetailCard({ matchId }: MatchDetailCardProps) {
   if (isLoading) {
     return (
       <Card className="overflow-hidden">
-        <div className="p-8 text-center text-gray-600">Loading match data...</div>
+        <div className="p-8 text-center text-muted-foreground">Loading match data...</div>
       </Card>
     );
   }
@@ -86,12 +86,12 @@ export function MatchDetailCard({ matchId }: MatchDetailCardProps) {
   return (
     <Card className="overflow-hidden">
       {/* Header Row - Match Info */}
-      <div className="bg-gray-50 px-4 py-2 border-b flex flex-wrap items-center gap-4 text-sm">
+      <div className="bg-muted px-4 py-2 border-b flex flex-wrap items-center gap-4 text-sm">
         <div className="font-semibold">Match #{match.match_number}</div>
-        <div className="text-gray-600">
+        <div className="text-muted-foreground">
           {match.season_week?.week_name || 'Week ?'}
         </div>
-        <div className="text-gray-600">
+        <div className="text-muted-foreground">
           {match.season_week?.scheduled_date
             ? new Date(match.season_week.scheduled_date).toLocaleDateString()
             : 'Date TBD'
@@ -121,7 +121,7 @@ export function MatchDetailCard({ matchId }: MatchDetailCardProps) {
           {/* Home Team Column */}
           <div className={`space-y-2 ${winner === 'home' ? 'bg-green-50 p-3 rounded-lg border-2 border-green-200' : ''}`}>
             <div className="flex items-center justify-between mb-2">
-              <h3 className={`font-bold text-lg ${winner === 'home' ? 'text-green-800' : 'text-gray-900'}`}>
+              <h3 className={`font-bold text-lg ${winner === 'home' ? 'text-green-800' : 'text-foreground'}`}>
                 🏠 {match.home_team?.team_name || 'Home TBD'}
               </h3>
               {winner === 'home' && (
@@ -131,11 +131,11 @@ export function MatchDetailCard({ matchId }: MatchDetailCardProps) {
 
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div>
-                <span className="text-gray-600">Games Won:</span>
+                <span className="text-muted-foreground">Games Won:</span>
                 <div className="font-bold text-xl">{match.home_games_won ?? '-'}</div>
               </div>
               <div>
-                <span className="text-gray-600">Points Earned:</span>
+                <span className="text-muted-foreground">Points Earned:</span>
                 <div className="font-bold text-xl text-blue-600">
                   {match.home_points_earned ?? '-'}
                 </div>
@@ -143,21 +143,21 @@ export function MatchDetailCard({ matchId }: MatchDetailCardProps) {
             </div>
 
             {/* Handicap Thresholds */}
-            <div className="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-600">
+            <div className="mt-3 pt-3 border-t border-border text-xs text-muted-foreground">
               <div className="font-semibold mb-1">Thresholds (Handicapped):</div>
               <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <span className="text-gray-500">To Win:</span>
-                  <div className="font-medium">{match.home_games_to_win ?? '-'}</div>
+                  <span className="text-muted-foreground">To Win:</span>
+                  <div className="font-medium">{match.home_to_win ?? '-'}</div>
                 </div>
                 <div>
-                  <span className="text-gray-500">To Tie:</span>
-                  <div className="font-medium">{match.home_games_to_tie ?? '-'}</div>
+                  <span className="text-muted-foreground">To Tie:</span>
+                  <div className="font-medium">{match.home_to_tie ?? '-'}</div>
                 </div>
                 <div>
-                  <span className="text-gray-500">To Lose:</span>
+                  <span className="text-muted-foreground">To Lose:</span>
                   <div className="font-medium">
-                    {match.away_games_to_win ? `< ${match.away_games_to_win}` : '-'}
+                    {match.away_to_win ? `< ${match.away_to_win}` : '-'}
                   </div>
                 </div>
               </div>
@@ -167,7 +167,7 @@ export function MatchDetailCard({ matchId }: MatchDetailCardProps) {
           {/* Away Team Column */}
           <div className={`space-y-2 ${winner === 'away' ? 'bg-blue-50 p-3 rounded-lg border-2 border-blue-200' : ''}`}>
             <div className="flex items-center justify-between mb-2">
-              <h3 className={`font-bold text-lg ${winner === 'away' ? 'text-blue-800' : 'text-gray-900'}`}>
+              <h3 className={`font-bold text-lg ${winner === 'away' ? 'text-blue-800' : 'text-foreground'}`}>
                 ✈️ {match.away_team?.team_name || 'Away TBD'}
               </h3>
               {winner === 'away' && (
@@ -177,11 +177,11 @@ export function MatchDetailCard({ matchId }: MatchDetailCardProps) {
 
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div>
-                <span className="text-gray-600">Games Won:</span>
+                <span className="text-muted-foreground">Games Won:</span>
                 <div className="font-bold text-xl">{match.away_games_won ?? '-'}</div>
               </div>
               <div>
-                <span className="text-gray-600">Points Earned:</span>
+                <span className="text-muted-foreground">Points Earned:</span>
                 <div className="font-bold text-xl text-blue-600">
                   {match.away_points_earned ?? '-'}
                 </div>
@@ -189,21 +189,21 @@ export function MatchDetailCard({ matchId }: MatchDetailCardProps) {
             </div>
 
             {/* Handicap Thresholds */}
-            <div className="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-600">
+            <div className="mt-3 pt-3 border-t border-border text-xs text-muted-foreground">
               <div className="font-semibold mb-1">Thresholds (Handicapped):</div>
               <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <span className="text-gray-500">To Win:</span>
-                  <div className="font-medium">{match.away_games_to_win ?? '-'}</div>
+                  <span className="text-muted-foreground">To Win:</span>
+                  <div className="font-medium">{match.away_to_win ?? '-'}</div>
                 </div>
                 <div>
-                  <span className="text-gray-500">To Tie:</span>
-                  <div className="font-medium">{match.away_games_to_tie ?? '-'}</div>
+                  <span className="text-muted-foreground">To Tie:</span>
+                  <div className="font-medium">{match.away_to_tie ?? '-'}</div>
                 </div>
                 <div>
-                  <span className="text-gray-500">To Lose:</span>
+                  <span className="text-muted-foreground">To Lose:</span>
                   <div className="font-medium">
-                    {match.home_games_to_win ? `< ${match.home_games_to_win}` : '-'}
+                    {match.home_to_win ? `< ${match.home_to_win}` : '-'}
                   </div>
                 </div>
               </div>
@@ -213,12 +213,12 @@ export function MatchDetailCard({ matchId }: MatchDetailCardProps) {
 
         {/* Match Summary Row */}
         {hasScores && (
-          <div className="mt-4 pt-4 border-t border-gray-200 text-center">
-            <div className="text-sm text-gray-600">Final Score</div>
+          <div className="mt-4 pt-4 border-t border-border text-center">
+            <div className="text-sm text-muted-foreground">Final Score</div>
             <div className="text-3xl font-bold font-mono mt-1">
               {match.home_games_won} - {match.away_games_won}
             </div>
-            <div className="text-sm text-gray-600 mt-1">
+            <div className="text-sm text-muted-foreground mt-1">
               Game Differential: {Math.abs((match.home_games_won ?? 0) - (match.away_games_won ?? 0))}
             </div>
           </div>

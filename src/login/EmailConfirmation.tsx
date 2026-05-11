@@ -58,7 +58,7 @@ export const EmailConfirmation: React.FC = () => {
     <LoginCard title="Email Confirmation">
       <div className="text-center">
         {status === 'loading' && (
-          <div className="text-gray-600">{message}</div>
+          <div className="text-muted-foreground">{message}</div>
         )}
         {status === 'success' && (
           <div className="text-green-600">{message}</div>

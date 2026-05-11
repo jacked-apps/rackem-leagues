@@ -32,6 +32,7 @@ import {
   Clock,
   Loader2,
   CheckCircle,
+  XCircle,
 } from 'lucide-react';
 import { logger } from '@/utils/logger';
 import { useUser } from '@/context/useUser';
@@ -54,6 +55,15 @@ interface TeamInfo {
   team_name: string;
 }
 
+/** Extended placeholder context shown on the confirmation screen — lets the
+ * invited user recognize (or reject) the record before any merge fires. */
+interface PlaceholderExtras {
+  nickname: string | null;
+  hasPlayed: boolean;
+  handicap3v3: number | null;
+  handicap5v5: number | null;
+}
+
 /** State for the claim process */
 type ClaimState =
   | 'loading'
@@ -63,6 +73,7 @@ type ClaimState =
   | 'invalid'
   | 'already_claimed'
   | 'success'
+  | 'rejected'
   | 'error';
 
 /**
@@ -105,6 +116,12 @@ export const ClaimPlayer: React.FC = () => {
   } | null>(null);
   /** All teams the placeholder player belongs to */
   const [allTeams, setAllTeams] = useState<TeamInfo[]>([]);
+  /** Placeholder context (nickname, has-played flag, handicaps) shown on the
+   * confirmation screen so the invited user can visually verify the record. */
+  const [placeholderExtras, setPlaceholderExtras] = useState<PlaceholderExtras | null>(null);
+  /** Tracks the in-flight "This isn't me" request so we can disable both
+   * buttons while it's running. */
+  const [isRejecting, setIsRejecting] = useState(false);
 
   /**
    * Fetch invite details when component mounts
@@ -192,6 +209,28 @@ export const ClaimPlayer: React.FC = () => {
               team_name: tp.teams.team_name,
             }));
           setAllTeams(teams);
+        }
+
+        // Fetch extras (nickname + handicaps) plus the has-played flag so the
+        // confirmation screen can show "John 'Lefty' Smith has played 8 games,
+        // handicap 42". Failures here degrade gracefully — the page still works
+        // without these enriched details.
+        const [extrasResp, hasPlayedResp] = await Promise.all([
+          supabase
+            .from('members')
+            .select('nickname, starting_handicap_3v3, starting_handicap_5v5')
+            .eq('id', details.member_id)
+            .single(),
+          supabase.rpc('placeholder_has_stats', { p_member_id: details.member_id }),
+        ]);
+
+        if (!extrasResp.error && extrasResp.data) {
+          setPlaceholderExtras({
+            nickname: extrasResp.data.nickname,
+            hasPlayed: Boolean(hasPlayedResp.data),
+            handicap3v3: extrasResp.data.starting_handicap_3v3,
+            handicap5v5: extrasResp.data.starting_handicap_5v5,
+          });
         }
 
         setClaimState('valid');
@@ -286,6 +325,59 @@ export const ClaimPlayer: React.FC = () => {
     }
   };
 
+  /**
+   * Handle the "This isn't me" action. Calls the reject-invite Edge Function
+   * which marks the token rejected — no merge fires, the placeholder stays
+   * in the LO's queue, and the token can't be reused by a stolen link.
+   */
+  const handleReject = async () => {
+    if (!token || !user) return;
+
+    setIsRejecting(true);
+    setErrorMessage('');
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const jwt = sessionData?.session?.access_token;
+      if (!jwt) {
+        setIsRejecting(false);
+        setClaimState('error');
+        setErrorMessage('Session expired. Please log in again.');
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/reject-invite`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${jwt}`,
+          },
+          body: JSON.stringify({ token }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        logger.error('Reject failed', { status: response.status, result });
+        setIsRejecting(false);
+        setClaimState('error');
+        setErrorMessage(result.details || result.error || 'Could not reject invite.');
+        return;
+      }
+
+      logger.info('Invite rejected', { token });
+      setClaimState('rejected');
+    } catch (err) {
+      logger.error('Network error during reject', { error: err });
+      setIsRejecting(false);
+      setClaimState('error');
+      setErrorMessage('Network error. Please check your connection and try again.');
+    }
+  };
+
   // Loading state
   if (claimState === 'loading' || userLoading) {
     return (
@@ -311,7 +403,7 @@ export const ClaimPlayer: React.FC = () => {
           <div className="flex justify-center">
             <Users className="h-16 w-16 text-primary" />
           </div>
-          <p className="text-gray-700">
+          <p className="text-foreground">
             You need to be logged in to claim your player history.
           </p>
           <Button
@@ -337,8 +429,8 @@ export const ClaimPlayer: React.FC = () => {
           <div className="flex justify-center">
             <AlertTriangle className="h-16 w-16 text-amber-500" />
           </div>
-          <p className="text-gray-700">{errorMessage}</p>
-          <p className="text-gray-600 text-sm">
+          <p className="text-foreground">{errorMessage}</p>
+          <p className="text-muted-foreground text-sm">
             Please contact your team captain for a new invite link.
           </p>
         </div>
@@ -357,10 +449,10 @@ export const ClaimPlayer: React.FC = () => {
           <div className="flex justify-center">
             <Clock className="h-16 w-16 text-amber-500" />
           </div>
-          <p className="text-gray-700">
+          <p className="text-foreground">
             The invite to join <strong>{inviteDetails.team_name}</strong> has expired.
           </p>
-          <p className="text-gray-600 text-sm">
+          <p className="text-muted-foreground text-sm">
             Please ask{' '}
             {inviteDetails.captain_name ? (
               <strong>{inviteDetails.captain_name}</strong>
@@ -385,14 +477,14 @@ export const ClaimPlayer: React.FC = () => {
           <div className="flex justify-center">
             <UserCheck className="h-16 w-16 text-green-600" />
           </div>
-          <p className="text-gray-700">
+          <p className="text-foreground">
             The player profile for{' '}
             <strong>
               {inviteDetails.placeholder_first_name} {inviteDetails.placeholder_last_name}
             </strong>{' '}
             has already been claimed.
           </p>
-          <p className="text-gray-600 text-sm">
+          <p className="text-muted-foreground text-sm">
             If this was you, your history should already be in your account.
           </p>
         </div>
@@ -411,7 +503,7 @@ export const ClaimPlayer: React.FC = () => {
           <div className="flex justify-center">
             <CheckCircle className="h-16 w-16 text-green-600" />
           </div>
-          <p className="text-gray-700">
+          <p className="text-foreground">
             You've successfully joined <strong>{inviteDetails.team_name}</strong>!
           </p>
           {mergeStats && (
@@ -440,6 +532,33 @@ export const ClaimPlayer: React.FC = () => {
     );
   }
 
+  // Rejected state — user clicked "This isn't me"
+  if (claimState === 'rejected') {
+    return (
+      <LoginCard
+        title="Thanks for letting us know"
+        description="The invite has been marked as not-a-match"
+      >
+        <div className="text-center space-y-4">
+          <div className="flex justify-center">
+            <XCircle className="h-16 w-16 text-muted-foreground" />
+          </div>
+          <p className="text-foreground">
+            We've flagged that this invite wasn't meant for you. No account
+            history has been moved.
+          </p>
+          <p className="text-muted-foreground text-sm">
+            Your league operator will see the placeholder still needs a match
+            and can reach out if needed.
+          </p>
+          <Button className="w-full" loadingText="none" onClick={() => navigate('/dashboard')}>
+            Go to Dashboard
+          </Button>
+        </div>
+      </LoginCard>
+    );
+  }
+
   // Error state
   if (claimState === 'error') {
     return (
@@ -448,7 +567,7 @@ export const ClaimPlayer: React.FC = () => {
           <div className="flex justify-center">
             <AlertTriangle className="h-16 w-16 text-red-500" />
           </div>
-          <p className="text-gray-700">{errorMessage}</p>
+          <p className="text-foreground">{errorMessage}</p>
           <Button variant="outline" onClick={() => setClaimState('valid')}>
             Try Again
           </Button>
@@ -505,13 +624,30 @@ export const ClaimPlayer: React.FC = () => {
             </div>
           </div>
 
-          {/* Player profile being claimed */}
+          {/* Player profile being claimed — richer details let the invited
+              user recognize (or reject) the record before any merge fires. */}
           <div className="text-center">
-            <p className="text-sm text-gray-600 mb-1">Claiming player profile:</p>
+            <p className="text-sm text-muted-foreground mb-1">Claiming player profile:</p>
             <p className="text-lg font-semibold">
-              {inviteDetails.placeholder_first_name} {inviteDetails.placeholder_last_name}
+              {inviteDetails.placeholder_first_name}
+              {placeholderExtras?.nickname ? ` "${placeholderExtras.nickname}" ` : ' '}
+              {inviteDetails.placeholder_last_name}
             </p>
-            <p className="text-xs text-gray-500 mt-2">
+            {placeholderExtras && (
+              <div className="mt-2 inline-flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground">
+                <span className="rounded-full bg-muted px-2 py-0.5">
+                  {placeholderExtras.hasPlayed
+                    ? 'Has played games'
+                    : 'No game history yet'}
+                </span>
+                {placeholderExtras.handicap5v5 !== null && (
+                  <span className="rounded-full bg-muted px-2 py-0.5">
+                    Handicap: {placeholderExtras.handicap5v5}
+                  </span>
+                )}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground mt-2">
               Your game history and stats will be merged into your account.
             </p>
           </div>
@@ -539,6 +675,25 @@ export const ClaimPlayer: React.FC = () => {
             onClaim={handleClaim}
             isClaiming={isClaiming}
           />
+
+          {/* "This isn't me" escape hatch — for when the invited user opens
+              the link, looks at the placeholder's name/handicap/history, and
+              realizes it's someone else's record. No merge fires. */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full text-muted-foreground hover:text-foreground"
+            onClick={handleReject}
+            disabled={isClaiming || isRejecting}
+            isLoading={isRejecting}
+            loadingText="Sending..."
+          >
+            This isn't me
+          </Button>
+          <p className="text-xs text-center text-muted-foreground -mt-2">
+            Clicking this won't move any history. Your league operator will see
+            the placeholder still needs a match.
+          </p>
         </div>
       </LoginCard>
     );

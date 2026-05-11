@@ -112,14 +112,14 @@ export function ConfirmationDialog({
         <div className="py-4 space-y-4">
           {isVacateRequest ? (
             <>
-              <p className="text-center text-gray-700 font-semibold">
+              <p className="text-center text-foreground font-semibold">
                 Game {game.gameNumber}
               </p>
               <div className="text-center text-lg font-semibold text-orange-600">
                 Current winner: {game.winnerPlayerName}
               </div>
               <div className="bg-orange-50 border border-orange-200 rounded p-3 mt-4">
-                <p className="text-center text-sm text-gray-700">
+                <p className="text-center text-sm text-foreground">
                   Agreeing will{' '}
                   <span className="font-semibold">vacate this winner</span> and
                   allow both teams to score this game again.
@@ -128,7 +128,7 @@ export function ConfirmationDialog({
             </>
           ) : (
             <>
-              <p className="text-center text-gray-500 text-sm">
+              <p className="text-center text-muted-foreground text-sm">
                 Opponent recorded for game {game.gameNumber}:
               </p>
 
@@ -158,7 +158,7 @@ export function ConfirmationDialog({
                   </div>
                 )}
                 {game.winByForfeit && (
-                  <div className="text-gray-700">Won by forfeit</div>
+                  <div className="text-foreground">Won by forfeit</div>
                 )}
                 {game.breakFouled && (
                   <div className="text-amber-700">
@@ -166,7 +166,7 @@ export function ConfirmationDialog({
                   </div>
                 )}
                 {game.loserBallsPocketed !== null && (
-                  <div className="text-gray-700">
+                  <div className="text-foreground">
                     Opponent pocketed{' '}
                     <span className="font-semibold">
                       {game.loserBallsPocketed}
@@ -176,7 +176,7 @@ export function ConfirmationDialog({
                 )}
               </div>
 
-              <p className="text-center mt-4 text-gray-600">
+              <p className="text-center mt-4 text-muted-foreground">
                 Do you agree with this result?
               </p>
             </>

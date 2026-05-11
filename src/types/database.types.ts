@@ -34,6 +34,93 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_logs: {
+        Row: {
+          context: Json | null
+          created_at: string | null
+          id: string
+          level: string
+          message: string
+          url: string | null
+          user_id: string | null
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string | null
+          id?: string
+          level: string
+          message: string
+          url?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string | null
+          id?: string
+          level?: string
+          message?: string
+          url?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      archived_placeholders: {
+        Row: {
+          actor_member_id: string
+          actor_role: string
+          created_at: string
+          expires_at: string
+          id: string
+          member_snapshot: Json
+          organization_id: string
+          placeholder_member_id: string
+          target_member_id: string
+          transferred_rows: Json
+          undone_at: string | null
+        }
+        Insert: {
+          actor_member_id: string
+          actor_role: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          member_snapshot: Json
+          organization_id: string
+          placeholder_member_id: string
+          target_member_id: string
+          transferred_rows: Json
+          undone_at?: string | null
+        }
+        Update: {
+          actor_member_id?: string
+          actor_role?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          member_snapshot?: Json
+          organization_id?: string
+          placeholder_member_id?: string
+          target_member_id?: string
+          transferred_rows?: Json
+          undone_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "archived_placeholders_actor_member_id_fkey"
+            columns: ["actor_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "archived_placeholders_target_member_id_fkey"
+            columns: ["target_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blocked_users: {
         Row: {
           blocked_at: string
@@ -217,12 +304,149 @@ export type Database = {
         }
         Relationships: []
       }
+      house_rules: {
+        Row: {
+          body: string[]
+          created_at: string
+          effect_type: string
+          game: string
+          id: string
+          league_id: string | null
+          organization_id: string | null
+          related_rule_id: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          body?: string[]
+          created_at?: string
+          effect_type: string
+          game: string
+          id?: string
+          league_id?: string | null
+          organization_id?: string | null
+          related_rule_id?: string | null
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          body?: string[]
+          created_at?: string
+          effect_type?: string
+          game?: string
+          id?: string
+          league_id?: string | null
+          organization_id?: string | null
+          related_rule_id?: string | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "house_rules_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "house_rules_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "resolved_league_playoff_config"
+            referencedColumns: ["league_id"]
+          },
+          {
+            foreignKeyName: "house_rules_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "resolved_league_preferences"
+            referencedColumns: ["league_id"]
+          },
+          {
+            foreignKeyName: "house_rules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invite_tokens: {
+        Row: {
+          claimed_at: string | null
+          claimed_by_user_id: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by_member_id: string | null
+          member_id: string | null
+          status: string
+          team_id: string | null
+          token: string
+        }
+        Insert: {
+          claimed_at?: string | null
+          claimed_by_user_id?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by_member_id?: string | null
+          member_id?: string | null
+          status?: string
+          team_id?: string | null
+          token?: string
+        }
+        Update: {
+          claimed_at?: string | null
+          claimed_by_user_id?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by_member_id?: string | null
+          member_id?: string | null
+          status?: string
+          team_id?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invite_tokens_invited_by_member_id_fkey"
+            columns: ["invited_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invite_tokens_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invite_tokens_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       league_venues: {
         Row: {
           added_at: string | null
-          available_bar_box_tables: number
-          available_regulation_tables: number
+          available_bar_box_tables: number | null
+          available_regulation_tables: number | null
+          available_table_numbers: number[] | null
           available_total_tables: number | null
+          capacity: number | null
           id: string
           league_id: string
           updated_at: string | null
@@ -230,9 +454,11 @@ export type Database = {
         }
         Insert: {
           added_at?: string | null
-          available_bar_box_tables?: number
-          available_regulation_tables?: number
+          available_bar_box_tables?: number | null
+          available_regulation_tables?: number | null
+          available_table_numbers?: number[] | null
           available_total_tables?: number | null
+          capacity?: number | null
           id?: string
           league_id: string
           updated_at?: string | null
@@ -240,9 +466,11 @@ export type Database = {
         }
         Update: {
           added_at?: string | null
-          available_bar_box_tables?: number
-          available_regulation_tables?: number
+          available_bar_box_tables?: number | null
+          available_regulation_tables?: number | null
+          available_table_numbers?: number[] | null
           available_total_tables?: number | null
+          capacity?: number | null
           id?: string
           league_id?: string
           updated_at?: string | null
@@ -255,6 +483,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "leagues"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "league_venues_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "resolved_league_playoff_config"
+            referencedColumns: ["league_id"]
           },
           {
             foreignKeyName: "league_venues_league_id_fkey"
@@ -282,10 +517,11 @@ export type Database = {
           handicap_level: string
           handicap_variant: string
           id: string
+          ignore_org_house_rules: boolean
           league_start_date: string
           organization_id: string
           status: string
-          team_format: string
+          system_overrides: Json
           team_handicap_variant: string
           updated_at: string | null
         }
@@ -298,10 +534,11 @@ export type Database = {
           handicap_level?: string
           handicap_variant?: string
           id?: string
+          ignore_org_house_rules?: boolean
           league_start_date: string
           organization_id: string
           status?: string
-          team_format: string
+          system_overrides?: Json
           team_handicap_variant?: string
           updated_at?: string | null
         }
@@ -314,10 +551,11 @@ export type Database = {
           handicap_level?: string
           handicap_variant?: string
           id?: string
+          ignore_org_house_rules?: boolean
           league_start_date?: string
           organization_id?: string
           status?: string
-          team_format?: string
+          system_overrides?: Json
           team_handicap_variant?: string
           updated_at?: string | null
         }
@@ -337,6 +575,7 @@ export type Database = {
           away_player_id: string | null
           away_position: number | null
           break_and_run: boolean
+          break_fouled: boolean
           confirmed_at: string | null
           confirmed_by_away: string | null
           confirmed_by_home: string | null
@@ -349,9 +588,12 @@ export type Database = {
           home_position: number | null
           id: string
           is_tiebreaker: boolean
+          loser_balls_pocketed: number | null
           match_id: string
+          runout: boolean
           updated_at: string
           vacate_requested_by: string | null
+          win_by_forfeit: boolean
           winner_player_id: string | null
           winner_team_id: string | null
         }
@@ -360,6 +602,7 @@ export type Database = {
           away_player_id?: string | null
           away_position?: number | null
           break_and_run?: boolean
+          break_fouled?: boolean
           confirmed_at?: string | null
           confirmed_by_away?: string | null
           confirmed_by_home?: string | null
@@ -372,9 +615,12 @@ export type Database = {
           home_position?: number | null
           id?: string
           is_tiebreaker?: boolean
+          loser_balls_pocketed?: number | null
           match_id: string
+          runout?: boolean
           updated_at?: string
           vacate_requested_by?: string | null
+          win_by_forfeit?: boolean
           winner_player_id?: string | null
           winner_team_id?: string | null
         }
@@ -383,6 +629,7 @@ export type Database = {
           away_player_id?: string | null
           away_position?: number | null
           break_and_run?: boolean
+          break_fouled?: boolean
           confirmed_at?: string | null
           confirmed_by_away?: string | null
           confirmed_by_home?: string | null
@@ -395,9 +642,12 @@ export type Database = {
           home_position?: number | null
           id?: string
           is_tiebreaker?: boolean
+          loser_balls_pocketed?: number | null
           match_id?: string
+          runout?: boolean
           updated_at?: string
           vacate_requested_by?: string | null
+          win_by_forfeit?: boolean
           winner_player_id?: string | null
           winner_team_id?: string | null
         }
@@ -450,7 +700,11 @@ export type Database = {
           player4_id: string | null
           player5_handicap: number | null
           player5_id: string | null
-          team_id: string
+          swap_new_player_handicap: number | null
+          swap_new_player_id: string | null
+          swap_position: number | null
+          swap_requested_at: string | null
+          team_id: string | null
           updated_at: string
         }
         Insert: {
@@ -470,7 +724,11 @@ export type Database = {
           player4_id?: string | null
           player5_handicap?: number | null
           player5_id?: string | null
-          team_id: string
+          swap_new_player_handicap?: number | null
+          swap_new_player_id?: string | null
+          swap_position?: number | null
+          swap_requested_at?: string | null
+          team_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -490,7 +748,11 @@ export type Database = {
           player4_id?: string | null
           player5_handicap?: number | null
           player5_id?: string | null
-          team_id?: string
+          swap_new_player_handicap?: number | null
+          swap_new_player_id?: string | null
+          swap_position?: number | null
+          swap_requested_at?: string | null
+          team_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -499,6 +761,48 @@ export type Database = {
             columns: ["match_id"]
             isOneToOne: false
             referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_lineups_player1_id_fkey"
+            columns: ["player1_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_lineups_player2_id_fkey"
+            columns: ["player2_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_lineups_player3_id_fkey"
+            columns: ["player3_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_lineups_player4_id_fkey"
+            columns: ["player4_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_lineups_player5_id_fkey"
+            columns: ["player5_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_lineups_swap_new_player_id_fkey"
+            columns: ["swap_new_player_id"]
+            isOneToOne: false
+            referencedRelation: "members"
             referencedColumns: ["id"]
           },
           {
@@ -513,28 +817,27 @@ export type Database = {
       matches: {
         Row: {
           actual_venue_id: string | null
-          away_games_to_lose: number | null
-          away_games_to_tie: number | null
-          away_games_to_win: number | null
+          assigned_table_number: number | null
           away_games_won: number
           away_lineup_id: string | null
           away_points_earned: number
           away_team_id: string | null
-          away_team_score: number | null
           away_team_verified_by: string | null
           away_tiebreaker_verified_by: string | null
+          away_to_lose: number | null
+          away_to_tie: number | null
+          away_to_win: number | null
           completed_at: string | null
           created_at: string
-          home_games_to_lose: number | null
-          home_games_to_tie: number | null
-          home_games_to_win: number | null
           home_games_won: number
           home_lineup_id: string | null
           home_points_earned: number
           home_team_id: string | null
-          home_team_score: number | null
           home_team_verified_by: string | null
           home_tiebreaker_verified_by: string | null
+          home_to_lose: number | null
+          home_to_tie: number | null
+          home_to_win: number | null
           id: string
           match_number: number
           match_result: string | null
@@ -545,33 +848,33 @@ export type Database = {
           season_week_id: string
           started_at: string | null
           status: string
+          system_snapshot: Json | null
           updated_at: string
           winner_team_id: string | null
         }
         Insert: {
           actual_venue_id?: string | null
-          away_games_to_lose?: number | null
-          away_games_to_tie?: number | null
-          away_games_to_win?: number | null
+          assigned_table_number?: number | null
           away_games_won?: number
           away_lineup_id?: string | null
           away_points_earned?: number
           away_team_id?: string | null
-          away_team_score?: number | null
           away_team_verified_by?: string | null
           away_tiebreaker_verified_by?: string | null
+          away_to_lose?: number | null
+          away_to_tie?: number | null
+          away_to_win?: number | null
           completed_at?: string | null
           created_at?: string
-          home_games_to_lose?: number | null
-          home_games_to_tie?: number | null
-          home_games_to_win?: number | null
           home_games_won?: number
           home_lineup_id?: string | null
           home_points_earned?: number
           home_team_id?: string | null
-          home_team_score?: number | null
           home_team_verified_by?: string | null
           home_tiebreaker_verified_by?: string | null
+          home_to_lose?: number | null
+          home_to_tie?: number | null
+          home_to_win?: number | null
           id?: string
           match_number: number
           match_result?: string | null
@@ -582,33 +885,33 @@ export type Database = {
           season_week_id: string
           started_at?: string | null
           status?: string
+          system_snapshot?: Json | null
           updated_at?: string
           winner_team_id?: string | null
         }
         Update: {
           actual_venue_id?: string | null
-          away_games_to_lose?: number | null
-          away_games_to_tie?: number | null
-          away_games_to_win?: number | null
+          assigned_table_number?: number | null
           away_games_won?: number
           away_lineup_id?: string | null
           away_points_earned?: number
           away_team_id?: string | null
-          away_team_score?: number | null
           away_team_verified_by?: string | null
           away_tiebreaker_verified_by?: string | null
+          away_to_lose?: number | null
+          away_to_tie?: number | null
+          away_to_win?: number | null
           completed_at?: string | null
           created_at?: string
-          home_games_to_lose?: number | null
-          home_games_to_tie?: number | null
-          home_games_to_win?: number | null
           home_games_won?: number
           home_lineup_id?: string | null
           home_points_earned?: number
           home_team_id?: string | null
-          home_team_score?: number | null
           home_team_verified_by?: string | null
           home_tiebreaker_verified_by?: string | null
+          home_to_lose?: number | null
+          home_to_tie?: number | null
+          home_to_win?: number | null
           id?: string
           match_number?: number
           match_result?: string | null
@@ -619,6 +922,7 @@ export type Database = {
           season_week_id?: string
           started_at?: string | null
           status?: string
+          system_snapshot?: Json | null
           updated_at?: string
           winner_team_id?: string | null
         }
@@ -718,69 +1022,102 @@ export type Database = {
       }
       members: {
         Row: {
-          address: string
+          address: string | null
+          archived_at: string | null
           bca_member_number: string | null
           city: string
           created_at: string | null
-          date_of_birth: string
-          email: string
+          created_by_member_id: string | null
+          date_of_birth: string | null
+          email: string | null
+          fargo_rating: number | null
           first_name: string
           id: string
           last_name: string
           membership_paid_date: string | null
           nickname: string | null
-          phone: string
+          organization_id: string | null
+          phone: string | null
           profanity_filter_enabled: boolean | null
           role: Database["public"]["Enums"]["user_role"] | null
+          starting_handicap_3v3: number | null
+          starting_handicap_5v5: number | null
           state: string
           system_player_number: number
           updated_at: string | null
           user_id: string | null
-          zip_code: string
+          zip_code: string | null
         }
         Insert: {
-          address: string
+          address?: string | null
+          archived_at?: string | null
           bca_member_number?: string | null
           city: string
           created_at?: string | null
-          date_of_birth: string
-          email: string
+          created_by_member_id?: string | null
+          date_of_birth?: string | null
+          email?: string | null
+          fargo_rating?: number | null
           first_name: string
           id?: string
           last_name: string
           membership_paid_date?: string | null
           nickname?: string | null
-          phone: string
+          organization_id?: string | null
+          phone?: string | null
           profanity_filter_enabled?: boolean | null
           role?: Database["public"]["Enums"]["user_role"] | null
+          starting_handicap_3v3?: number | null
+          starting_handicap_5v5?: number | null
           state: string
           system_player_number?: number
           updated_at?: string | null
           user_id?: string | null
-          zip_code: string
+          zip_code?: string | null
         }
         Update: {
-          address?: string
+          address?: string | null
+          archived_at?: string | null
           bca_member_number?: string | null
           city?: string
           created_at?: string | null
-          date_of_birth?: string
-          email?: string
+          created_by_member_id?: string | null
+          date_of_birth?: string | null
+          email?: string | null
+          fargo_rating?: number | null
           first_name?: string
           id?: string
           last_name?: string
           membership_paid_date?: string | null
           nickname?: string | null
-          phone?: string
+          organization_id?: string | null
+          phone?: string | null
           profanity_filter_enabled?: boolean | null
           role?: Database["public"]["Enums"]["user_role"] | null
+          starting_handicap_3v3?: number | null
+          starting_handicap_5v5?: number | null
           state?: string
           system_player_number?: number
           updated_at?: string | null
           user_id?: string | null
-          zip_code?: string
+          zip_code?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "members_created_by_member_id_fkey"
+            columns: ["created_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "members_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       messages: {
         Row: {
@@ -1028,42 +1365,267 @@ export type Database = {
           },
         ]
       }
+      placeholder_audit_log: {
+        Row: {
+          action: string
+          actor_member_id: string
+          affected_tables: Json | null
+          archive_id: string | null
+          created_at: string
+          id: string
+          organization_id: string
+          placeholder_member_id: string | null
+          target_member_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_member_id: string
+          affected_tables?: Json | null
+          archive_id?: string | null
+          created_at?: string
+          id?: string
+          organization_id: string
+          placeholder_member_id?: string | null
+          target_member_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_member_id?: string
+          affected_tables?: Json | null
+          archive_id?: string | null
+          created_at?: string
+          id?: string
+          organization_id?: string
+          placeholder_member_id?: string | null
+          target_member_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "placeholder_audit_log_actor_member_id_fkey"
+            columns: ["actor_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "placeholder_audit_log_archive_id_fkey"
+            columns: ["archive_id"]
+            isOneToOne: false
+            referencedRelation: "archived_placeholders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "placeholder_audit_log_target_member_id_fkey"
+            columns: ["target_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      playoff_configurations: {
+        Row: {
+          auto_generate: boolean
+          created_at: string
+          description: string | null
+          entity_id: string
+          entity_type: string
+          fixed_team_count: number | null
+          id: string
+          is_default: boolean | null
+          name: string
+          payment_method: string
+          percentage_max: number | null
+          percentage_min: number | null
+          playoff_weeks: number
+          qualification_type: string
+          qualifying_percentage: number | null
+          updated_at: string
+          week_matchup_styles: string[]
+          wildcard_spots: number
+        }
+        Insert: {
+          auto_generate?: boolean
+          created_at?: string
+          description?: string | null
+          entity_id: string
+          entity_type: string
+          fixed_team_count?: number | null
+          id?: string
+          is_default?: boolean | null
+          name: string
+          payment_method?: string
+          percentage_max?: number | null
+          percentage_min?: number | null
+          playoff_weeks?: number
+          qualification_type?: string
+          qualifying_percentage?: number | null
+          updated_at?: string
+          week_matchup_styles?: string[]
+          wildcard_spots?: number
+        }
+        Update: {
+          auto_generate?: boolean
+          created_at?: string
+          description?: string | null
+          entity_id?: string
+          entity_type?: string
+          fixed_team_count?: number | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          payment_method?: string
+          percentage_max?: number | null
+          percentage_min?: number | null
+          playoff_weeks?: number
+          qualification_type?: string
+          qualifying_percentage?: number | null
+          updated_at?: string
+          week_matchup_styles?: string[]
+          wildcard_spots?: number
+        }
+        Relationships: []
+      }
       preferences: {
         Row: {
+          allow_unauthorized_players: boolean | null
           created_at: string | null
           entity_id: string
           entity_type: string
+          game_generation: string | null
           game_history_limit: number | null
           golden_break_counts_as_win: boolean | null
+          handicap_type: string | null
           handicap_variant: string | null
           id: string
-          team_format: string | null
+          lineup_size: number | null
+          max_roster_size: number | null
+          mechanism: string | null
+          pairing_format: string | null
+          points_calculator: string | null
+          points_calculator_params: Json
+          points_system: string | null
+          profanity_filter_enabled: boolean | null
+          race_length: number | null
+          standings_sort: string[] | null
           team_handicap_variant: string | null
+          threshold_chart_id: string | null
+          tiebreaker_format: string | null
+          tiebreaker_trigger: string | null
           updated_at: string | null
+          win_condition: string | null
         }
         Insert: {
+          allow_unauthorized_players?: boolean | null
           created_at?: string | null
           entity_id: string
           entity_type: string
+          game_generation?: string | null
           game_history_limit?: number | null
           golden_break_counts_as_win?: boolean | null
+          handicap_type?: string | null
           handicap_variant?: string | null
           id?: string
-          team_format?: string | null
+          lineup_size?: number | null
+          max_roster_size?: number | null
+          mechanism?: string | null
+          pairing_format?: string | null
+          points_calculator?: string | null
+          points_calculator_params?: Json
+          points_system?: string | null
+          profanity_filter_enabled?: boolean | null
+          race_length?: number | null
+          standings_sort?: string[] | null
           team_handicap_variant?: string | null
+          threshold_chart_id?: string | null
+          tiebreaker_format?: string | null
+          tiebreaker_trigger?: string | null
           updated_at?: string | null
+          win_condition?: string | null
         }
         Update: {
+          allow_unauthorized_players?: boolean | null
           created_at?: string | null
           entity_id?: string
           entity_type?: string
+          game_generation?: string | null
           game_history_limit?: number | null
           golden_break_counts_as_win?: boolean | null
+          handicap_type?: string | null
           handicap_variant?: string | null
           id?: string
-          team_format?: string | null
+          lineup_size?: number | null
+          max_roster_size?: number | null
+          mechanism?: string | null
+          pairing_format?: string | null
+          points_calculator?: string | null
+          points_calculator_params?: Json
+          points_system?: string | null
+          profanity_filter_enabled?: boolean | null
+          race_length?: number | null
+          standings_sort?: string[] | null
           team_handicap_variant?: string | null
+          threshold_chart_id?: string | null
+          tiebreaker_format?: string | null
+          tiebreaker_trigger?: string | null
           updated_at?: string | null
+          win_condition?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "preferences_threshold_chart_id_fkey"
+            columns: ["threshold_chart_id"]
+            isOneToOne: false
+            referencedRelation: "threshold_charts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rating_edit_audit_log: {
+        Row: {
+          actor_type: string
+          actor_user_id: string | null
+          after_value: string | null
+          before_value: string | null
+          created_at: string
+          id: string
+          organization_id: string | null
+          rating_system: string
+          reason: string | null
+          scope: string
+          source: string
+          target_match_lineup_id: string | null
+          target_member_id: string | null
+        }
+        Insert: {
+          actor_type?: string
+          actor_user_id?: string | null
+          after_value?: string | null
+          before_value?: string | null
+          created_at?: string
+          id?: string
+          organization_id?: string | null
+          rating_system: string
+          reason?: string | null
+          scope: string
+          source?: string
+          target_match_lineup_id?: string | null
+          target_member_id?: string | null
+        }
+        Update: {
+          actor_type?: string
+          actor_user_id?: string | null
+          after_value?: string | null
+          before_value?: string | null
+          created_at?: string
+          id?: string
+          organization_id?: string | null
+          rating_system?: string
+          reason?: string | null
+          scope?: string
+          source?: string
+          target_match_lineup_id?: string | null
+          target_member_id?: string | null
         }
         Relationships: []
       }
@@ -1163,6 +1725,39 @@ export type Database = {
           },
         ]
       }
+      rules_page_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          game: string | null
+          id: string
+          result_count: number | null
+          rule_id: string | null
+          scope_id: string | null
+          scope_type: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          game?: string | null
+          id?: string
+          result_count?: number | null
+          rule_id?: string | null
+          scope_id?: string | null
+          scope_type?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          game?: string | null
+          id?: string
+          result_count?: number | null
+          rule_id?: string | null
+          scope_id?: string | null
+          scope_type?: string | null
+        }
+        Relationships: []
+      }
       season_weeks: {
         Row: {
           created_at: string | null
@@ -1218,6 +1813,7 @@ export type Database = {
           season_name: string
           start_date: string
           status: string
+          threshold_chart_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -1230,6 +1826,7 @@ export type Database = {
           season_name: string
           start_date: string
           status?: string
+          threshold_chart_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -1242,6 +1839,7 @@ export type Database = {
           season_name?: string
           start_date?: string
           status?: string
+          threshold_chart_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -1256,8 +1854,22 @@ export type Database = {
             foreignKeyName: "seasons_league_id_fkey"
             columns: ["league_id"]
             isOneToOne: false
+            referencedRelation: "resolved_league_playoff_config"
+            referencedColumns: ["league_id"]
+          },
+          {
+            foreignKeyName: "seasons_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
             referencedRelation: "resolved_league_preferences"
             referencedColumns: ["league_id"]
+          },
+          {
+            foreignKeyName: "seasons_threshold_chart_id_fkey"
+            columns: ["threshold_chart_id"]
+            isOneToOne: false
+            referencedRelation: "threshold_charts"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1406,6 +2018,13 @@ export type Database = {
             foreignKeyName: "teams_league_id_fkey"
             columns: ["league_id"]
             isOneToOne: false
+            referencedRelation: "resolved_league_playoff_config"
+            referencedColumns: ["league_id"]
+          },
+          {
+            foreignKeyName: "teams_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
             referencedRelation: "resolved_league_preferences"
             referencedColumns: ["league_id"]
           },
@@ -1417,6 +2036,92 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      threshold_chart_rows: {
+        Row: {
+          chart_id: string
+          comp_1: number
+          comp_2: number | null
+          created_at: string
+          id: string
+          result_1: number
+          result_2: number | null
+          result_3: number
+          sort_order: number
+        }
+        Insert: {
+          chart_id: string
+          comp_1: number
+          comp_2?: number | null
+          created_at?: string
+          id?: string
+          result_1: number
+          result_2?: number | null
+          result_3: number
+          sort_order?: number
+        }
+        Update: {
+          chart_id?: string
+          comp_1?: number
+          comp_2?: number | null
+          created_at?: string
+          id?: string
+          result_1?: number
+          result_2?: number | null
+          result_3?: number
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "threshold_chart_rows_chart_id_fkey"
+            columns: ["chart_id"]
+            isOneToOne: false
+            referencedRelation: "threshold_charts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      threshold_charts: {
+        Row: {
+          chart_type: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          entity_id: string
+          entity_type: string
+          id: string
+          is_default: boolean | null
+          lookup_mode: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          chart_type: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          is_default?: boolean | null
+          lookup_mode?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          chart_type?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          is_default?: boolean | null
+          lookup_mode?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       user_reports: {
         Row: {
@@ -1529,10 +2234,12 @@ export type Database = {
       }
       venues: {
         Row: {
-          bar_box_tables: number
+          bar_box_table_numbers: number[] | null
+          bar_box_tables: number | null
           business_hours: string | null
           city: string
           created_at: string | null
+          eight_foot_table_numbers: number[] | null
           id: string
           is_active: boolean
           league_contact_email: string | null
@@ -1544,7 +2251,8 @@ export type Database = {
           phone: string
           proprietor_name: string | null
           proprietor_phone: string | null
-          regulation_tables: number
+          regulation_table_numbers: number[] | null
+          regulation_tables: number | null
           state: string
           street_address: string
           total_tables: number | null
@@ -1554,10 +2262,12 @@ export type Database = {
           zip_code: string
         }
         Insert: {
-          bar_box_tables?: number
+          bar_box_table_numbers?: number[] | null
+          bar_box_tables?: number | null
           business_hours?: string | null
           city: string
           created_at?: string | null
+          eight_foot_table_numbers?: number[] | null
           id?: string
           is_active?: boolean
           league_contact_email?: string | null
@@ -1569,7 +2279,8 @@ export type Database = {
           phone: string
           proprietor_name?: string | null
           proprietor_phone?: string | null
-          regulation_tables?: number
+          regulation_table_numbers?: number[] | null
+          regulation_tables?: number | null
           state: string
           street_address: string
           total_tables?: number | null
@@ -1579,10 +2290,12 @@ export type Database = {
           zip_code: string
         }
         Update: {
-          bar_box_tables?: number
+          bar_box_table_numbers?: number[] | null
+          bar_box_tables?: number | null
           business_hours?: string | null
           city?: string
           created_at?: string | null
+          eight_foot_table_numbers?: number[] | null
           id?: string
           is_active?: boolean
           league_contact_email?: string | null
@@ -1594,7 +2307,8 @@ export type Database = {
           phone?: string
           proprietor_name?: string | null
           proprietor_phone?: string | null
-          regulation_tables?: number
+          regulation_table_numbers?: number[] | null
+          regulation_tables?: number | null
           state?: string
           street_address?: string
           total_tables?: number | null
@@ -1622,15 +2336,106 @@ export type Database = {
       }
     }
     Views: {
-      resolved_league_preferences: {
+      house_rules_with_scope_name: {
         Row: {
-          game_history_limit: number | null
-          golden_break_counts_as_win: boolean | null
-          handicap_variant: string | null
+          body: string[] | null
+          created_at: string | null
+          effect_type: string | null
+          game: string | null
+          id: string | null
           league_id: string | null
           organization_id: string | null
-          team_format: string | null
+          parent_org_name: string | null
+          related_rule_id: string | null
+          scope_name: string | null
+          scope_type: string | null
+          title: string | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "house_rules_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "house_rules_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "resolved_league_playoff_config"
+            referencedColumns: ["league_id"]
+          },
+          {
+            foreignKeyName: "house_rules_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "resolved_league_preferences"
+            referencedColumns: ["league_id"]
+          },
+          {
+            foreignKeyName: "house_rules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resolved_league_playoff_config: {
+        Row: {
+          auto_generate: boolean | null
+          config_id: string | null
+          config_source: string | null
+          description: string | null
+          fixed_team_count: number | null
+          league_id: string | null
+          name: string | null
+          organization_id: string | null
+          payment_method: string | null
+          percentage_max: number | null
+          percentage_min: number | null
+          playoff_weeks: number | null
+          qualification_type: string | null
+          qualifying_percentage: number | null
+          week_matchup_styles: string[] | null
+          wildcard_spots: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leagues_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resolved_league_preferences: {
+        Row: {
+          game_generation: string | null
+          game_history_limit: number | null
+          golden_break_counts_as_win: boolean | null
+          handicap_type: string | null
+          handicap_variant: string | null
+          league_id: string | null
+          lineup_size: number | null
+          max_roster_size: number | null
+          mechanism: string | null
+          organization_id: string | null
+          pairing_format: string | null
+          points_calculator: string | null
+          points_calculator_params: Json | null
+          points_system: string | null
+          race_length: number | null
+          standings_sort: string[] | null
           team_handicap_variant: string | null
+          threshold_chart_id: string | null
+          tiebreaker_format: string | null
+          tiebreaker_trigger: string | null
+          win_condition: string | null
         }
         Relationships: [
           {
@@ -1644,6 +2449,46 @@ export type Database = {
       }
     }
     Functions: {
+      archive_placeholder: {
+        Args: {
+          p_actor_member_id: string
+          p_member_id: string
+          p_organization_id: string
+        }
+        Returns: {
+          error_message: string
+          success: boolean
+        }[]
+      }
+      assign_tables_for_season: {
+        Args: { p_season_id: string }
+        Returns: undefined
+      }
+      assign_tables_for_week: {
+        Args: { p_season_week_id: string }
+        Returns: undefined
+      }
+      can_write_house_rule_org: {
+        Args: { target_org_id: string }
+        Returns: boolean
+      }
+      can_write_threshold_chart: {
+        Args: { p_entity_id: string; p_entity_type: string }
+        Returns: boolean
+      }
+      can_write_threshold_chart_via_id: {
+        Args: { p_chart_id: string }
+        Returns: boolean
+      }
+      claim_invite_token: {
+        Args: { p_token: string; p_user_id: string }
+        Returns: {
+          error_message: string
+          member_id: string
+          success: boolean
+          team_id: string
+        }[]
+      }
       create_announcement_conversation: {
         Args: { p_member_ids: string[]; p_season_id: string; p_title: string }
         Returns: string
@@ -1664,11 +2509,293 @@ export type Database = {
         }
         Returns: string
       }
+      daitch_mokotoff: { Args: { "": string }; Returns: string[] }
+      delete_unused_placeholder: {
+        Args: {
+          p_actor_member_id: string
+          p_member_id: string
+          p_organization_id: string
+        }
+        Returns: {
+          error_message: string
+          success: boolean
+        }[]
+      }
+      dmetaphone: { Args: { "": string }; Returns: string }
+      dmetaphone_alt: { Args: { "": string }; Returns: string }
       get_current_member_id: { Args: never; Returns: string }
+      get_invite_details: {
+        Args: { p_token: string }
+        Returns: {
+          captain_name: string
+          error_message: string
+          expires_at: string
+          is_valid: boolean
+          member_id: string
+          placeholder_first_name: string
+          placeholder_last_name: string
+          team_name: string
+        }[]
+      }
+      get_merges_into_member: {
+        Args: { p_org_id: string; p_target_member_id: string }
+        Returns: {
+          actor_name: string
+          actor_role: string
+          archive_id: string
+          created_at: string
+          expires_at: string
+          placeholder_first_name: string
+          placeholder_last_name: string
+          placeholder_member_id: string
+          placeholder_nickname: string
+          synopsis: Json
+        }[]
+      }
+      get_my_pending_invites: {
+        Args: never
+        Returns: {
+          captain_name: string
+          creator_name: string
+          expires_at: string
+          game_count: number
+          invited_at: string
+          is_expired: boolean
+          member_id: string
+          organization_name: string
+          organization_owner_name: string
+          placeholder_first_name: string
+          placeholder_last_name: string
+          placeholder_nickname: string
+          starting_handicap_5v5: number
+          team_name: string
+          token: string
+        }[]
+      }
+      get_operator_placeholders: { Args: { p_org_id: string }; Returns: Json }
+      get_operator_player_stats: { Args: { p_org_id: string }; Returns: Json }
       get_operator_stats: { Args: { operator_id_param: string }; Returns: Json }
+      get_org_placeholders_for_merge: {
+        Args: { p_include_archived?: boolean; p_org_id: string }
+        Returns: {
+          archived_at: string
+          created_at: string
+          creator_name: string
+          email: string
+          first_name: string
+          game_count: number
+          has_pending_invite: boolean
+          has_stats: boolean
+          is_archived: boolean
+          last_name: string
+          member_id: string
+          nickname: string
+          system_player_number: number
+          teams: Json
+        }[]
+      }
+      get_placeholder_remove_context: {
+        Args: { p_member_id: string }
+        Returns: {
+          first_name: string
+          found: boolean
+          has_bca: boolean
+          has_stats: boolean
+          is_archived: boolean
+          is_placeholder: boolean
+          nickname: string
+          team_count: number
+        }[]
+      }
+      get_team_verification_options: {
+        Args: { p_decoy_count?: number; p_member_id: string }
+        Returns: {
+          is_correct: boolean
+          team_name: string
+        }[]
+      }
       is_conversation_participant: {
         Args: { conv_id: string; uid: string }
         Returns: boolean
+      }
+      lookup_placeholder_by_system_number: {
+        Args: { p_system_number: number }
+        Returns: {
+          city: string
+          first_name: string
+          id: string
+          last_name: string
+          nickname: string
+          state: string
+          system_player_number: number
+        }[]
+      }
+      lookup_threshold: {
+        Args: { p_chart_id: string; p_comp_1: number; p_comp_2?: number }
+        Returns: {
+          result_1: number
+          result_2: number
+          result_3: number
+          was_swapped: boolean
+        }[]
+      }
+      merge_placeholder_into_member: {
+        Args: { p_placeholder_member_id: string; p_target_member_id: string }
+        Returns: {
+          error_message: string
+          success: boolean
+          tables_updated: number
+          total_rows_updated: number
+        }[]
+      }
+      merge_placeholder_into_member_v2: {
+        Args: {
+          p_actor_member_id: string
+          p_actor_role: string
+          p_organization_id: string
+          p_placeholder_member_id: string
+          p_target_member_id: string
+        }
+        Returns: {
+          archive_id: string
+          error_message: string
+          success: boolean
+          tables_updated: number
+          total_rows_updated: number
+        }[]
+      }
+      placeholder_has_stats: { Args: { p_member_id: string }; Returns: boolean }
+      prep_match: {
+        Args: { p_game_rows: Json; p_match_id: string; p_thresholds: Json }
+        Returns: undefined
+      }
+      recompute_member_rating: {
+        Args: {
+          p_member_id: string
+          p_new_value: number
+          p_rating_system: string
+          p_source?: string
+        }
+        Returns: string
+      }
+      remove_placeholder_from_team: {
+        Args: { p_member_id: string; p_org_id: string; p_team_id: string }
+        Returns: Json
+      }
+      resolve_member_primary_org: {
+        Args: { p_member_id: string }
+        Returns: string
+      }
+      restore_placeholder: {
+        Args: {
+          p_actor_member_id: string
+          p_member_id: string
+          p_organization_id: string
+        }
+        Returns: {
+          error_message: string
+          success: boolean
+        }[]
+      }
+      search_placeholder_matches: {
+        Args: {
+          p_city?: string
+          p_first_name: string
+          p_last_name: string
+          p_limit?: number
+          p_min_score?: number
+          p_state?: string
+        }
+        Returns: {
+          city: string
+          city_score: number
+          first_name: string
+          first_name_score: number
+          id: string
+          last_name: string
+          last_name_score: number
+          nickname: string
+          state: string
+          state_match: boolean
+          system_player_number: number
+          total_score: number
+        }[]
+      }
+      search_placeholder_matches_v2: {
+        Args: {
+          p_captain_first_name?: string
+          p_captain_last_name?: string
+          p_captain_player_number?: number
+          p_city?: string
+          p_has_not_played_yet?: boolean
+          p_last_opponent_first_name?: string
+          p_last_opponent_last_name?: string
+          p_limit?: number
+          p_operator_first_name?: string
+          p_operator_last_name?: string
+          p_operator_player_number?: number
+          p_play_night?: string
+          p_state?: string
+          p_system_first_name?: string
+          p_system_last_name?: string
+          p_system_nickname?: string
+          p_system_player_number?: number
+          p_team_name?: string
+        }
+        Returns: {
+          captain_name: string
+          city: string
+          first_name: string
+          grade: string
+          last_name: string
+          matched_fields: string[]
+          member_id: string
+          nickname: string
+          operator_name: string
+          state: string
+          system_player_number: number
+          team_name: string
+          total_score: number
+        }[]
+      }
+      set_match_lineup_rating: {
+        Args: {
+          p_match_lineup_id: string
+          p_member_id: string
+          p_rating_value: number
+          p_reason?: string
+        }
+        Returns: string
+      }
+      set_member_starting_handicap: {
+        Args: {
+          p_member_id: string
+          p_new_value: number
+          p_rating_system: string
+          p_reason?: string
+        }
+        Returns: string
+      }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
+      soundex: { Args: { "": string }; Returns: string }
+      text_soundex: { Args: { "": string }; Returns: string }
+      undo_merge_placeholder: {
+        Args: {
+          p_actor_member_id: string
+          p_archive_id: string
+          p_caller_org_id: string
+        }
+        Returns: {
+          error_message: string
+          missing_rows: number
+          rows_restored: number
+          success: boolean
+        }[]
+      }
+      vacate_and_rescore_audit_marker: {
+        Args: { p_match_id: string; p_reason?: string }
+        Returns: string
       }
     }
     Enums: {

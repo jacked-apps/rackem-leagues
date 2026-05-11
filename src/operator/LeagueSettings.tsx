@@ -13,7 +13,8 @@ import { buildLeagueTitle, getTimeOfYear } from '@/utils/leagueUtils';
 import { PageHeader } from '@/components/PageHeader';
 import { PreferencesCard } from '@/components/operator/PreferencesCard';
 import { DashboardCard } from '@/components/operator/DashboardCard';
-import { BookOpen, Building2 } from 'lucide-react';
+import { Building2 } from 'lucide-react';
+import { LeagueHouseRulesSection } from '@/rules/LeagueHouseRulesSection';
 import { logger } from '@/utils/logger';
 
 /**
@@ -77,9 +78,9 @@ export const LeagueSettings: React.FC = () => {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-muted py-8">
         <div className="container mx-auto px-4 max-w-6xl">
-          <div className="text-center text-gray-600">Loading league settings...</div>
+          <div className="text-center text-muted-foreground">Loading league settings...</div>
         </div>
       </div>
     );
@@ -88,11 +89,11 @@ export const LeagueSettings: React.FC = () => {
   // Error state
   if (error || !league) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-muted py-8">
         <div className="container mx-auto px-4 max-w-6xl">
-          <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="bg-card rounded-xl shadow-sm p-6">
             <h3 className="text-red-600 text-lg font-semibold mb-4">Error</h3>
-            <p className="text-gray-700 mb-4">{error || 'League not found'}</p>
+            <p className="text-foreground mb-4">{error || 'League not found'}</p>
             <button
               onClick={() => navigate(-1)}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg"
@@ -106,7 +107,7 @@ export const LeagueSettings: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       <PageHeader
         backTo={`/league/${league.id}`}
         backLabel="Back to League"
@@ -121,15 +122,6 @@ export const LeagueSettings: React.FC = () => {
           />
 
           <DashboardCard
-            icon={<BookOpen className="h-6 w-6" />}
-            iconColor="text-teal-600"
-            title="League Rules"
-            description="Access official BCA rules and manage optional house rules for your leagues"
-            buttonText="View Rules"
-            linkTo={`/league-rules/${league.id}`}
-          />
-
-          <DashboardCard
             icon={<Building2 className="h-6 w-6" />}
             iconColor="text-blue-600"
             title="Venue Management"
@@ -137,6 +129,8 @@ export const LeagueSettings: React.FC = () => {
             buttonText="Manage Venues"
             linkTo={`/venues/${league.organization_id}?leagueId=${league.id}`}
           />
+
+          <LeagueHouseRulesSection leagueId={league.id} />
         </div>
       </div>
     </div>

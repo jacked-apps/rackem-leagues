@@ -6,12 +6,16 @@
  * - Completed leagues: BLOCKED (preserve historical stats)
  * - Empty/upcoming leagues: Standard warning
  *
- * Database cascade will delete:
- * - All seasons for this league
- * - All teams in those seasons
- * - All matches in those seasons
- * - All season weeks
- * - League-venue relationships
+ * Teardown order (matters under FK RESTRICT on team-referencing FKs):
+ * 1. DELETE matches WHERE season_id IN (...) — cascades match_lineups + match_games
+ * 2. DELETE FROM leagues — cascades seasons, season_weeks, team_players,
+ *    teams (via teams.season_id and teams.league_id), and league_venues
+ *
+ * Step 1 must run first because matches.home_team_id, matches.away_team_id,
+ * and match_lineups.team_id are now ON DELETE RESTRICT — Postgres no
+ * longer guarantees an order that lets the leagues cascade chain wipe
+ * matches before it tries to wipe teams. Pre-deleting matches removes
+ * the RESTRICT-bearing rows so the leagues cascade has nothing to trip on.
  */
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/supabaseClient';
@@ -135,14 +139,39 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
   }, [isOpen, leagueId]);
 
   /**
-   * Handle delete confirmation
+   * Handle delete confirmation.
+   *
+   * Two-step teardown required under FK RESTRICT on team-referencing FKs:
+   * step 1 deletes matches (which cascades their lineups + games) so step 2's
+   * leagues cascade can safely delete teams without tripping the team RESTRICTs.
+   * See file header for the full FK rationale.
    */
   const handleDelete = async () => {
     setDeleting(true);
     setError(null);
 
     try {
-      // Delete the league (cascade will handle all related data)
+      // Step 1: collect season IDs and delete matches first.
+      const { data: seasonRows, error: seasonsError } = await supabase
+        .from('seasons')
+        .select('id')
+        .eq('league_id', leagueId);
+
+      if (seasonsError) throw seasonsError;
+
+      const seasonIds = (seasonRows ?? []).map(s => s.id);
+
+      if (seasonIds.length > 0) {
+        const { error: matchesError } = await supabase
+          .from('matches')
+          .delete()
+          .in('season_id', seasonIds);
+
+        if (matchesError) throw matchesError;
+      }
+
+      // Step 2: delete the league. Cascades handle league_venues, seasons,
+      // season_weeks, team_players, and teams now that matches are gone.
       const { error: deleteError } = await supabase
         .from('leagues')
         .delete()
@@ -165,8 +194,8 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 max-w-md w-full">
-          <p className="text-center text-gray-600">Loading league information...</p>
+        <div className="bg-card rounded-lg p-6 max-w-md w-full">
+          <p className="text-center text-muted-foreground">Loading league information...</p>
         </div>
       </div>
     );
@@ -176,9 +205,9 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
   if (error && !stats) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 max-w-md w-full">
+        <div className="bg-card rounded-lg p-6 max-w-md w-full">
           <h3 className="text-lg font-semibold text-red-600 mb-4">Error</h3>
-          <p className="text-gray-700 mb-4">{error}</p>
+          <p className="text-foreground mb-4">{error}</p>
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={onCancel}>
               Close
@@ -193,7 +222,7 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
   if (stats?.hasCompletedSeasons) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 max-w-lg w-full">
+        <div className="bg-card rounded-lg p-6 max-w-lg w-full">
           <div className="flex items-start gap-3 mb-4">
             <XCircle className="h-6 w-6 text-red-600 flex-shrink-0 mt-1" />
             <div>
@@ -219,14 +248,14 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
             </p>
           </div>
 
-          <div className="bg-gray-50 rounded-lg p-3 mb-4">
-            <p className="text-sm text-gray-700">
+          <div className="bg-muted rounded-lg p-3 mb-4">
+            <p className="text-sm text-foreground">
               <strong>League:</strong> {leagueName}
             </p>
-            <p className="text-sm text-gray-700">
+            <p className="text-sm text-foreground">
               <strong>Seasons:</strong> {stats.totalSeasons} ({stats.hasCompletedSeasons ? 'includes completed' : 'all active/upcoming'})
             </p>
-            <p className="text-sm text-gray-700">
+            <p className="text-sm text-foreground">
               <strong>Total Matches:</strong> {stats.totalMatches}
             </p>
           </div>
@@ -247,7 +276,7 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 max-w-lg w-full">
+        <div className="bg-card rounded-lg p-6 max-w-lg w-full">
           <div className="flex items-start gap-3 mb-4">
             <AlertTriangle className="h-6 w-6 text-orange-600 flex-shrink-0 mt-1" />
             <div>
@@ -271,18 +300,18 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
             </ul>
           </div>
 
-          <div className="bg-gray-50 rounded-lg p-3 mb-4">
-            <p className="text-sm text-gray-700 mb-2">
+          <div className="bg-muted rounded-lg p-3 mb-4">
+            <p className="text-sm text-foreground mb-2">
               <strong>League:</strong> {leagueName}
             </p>
-            <p className="text-sm text-gray-600 italic">
+            <p className="text-sm text-muted-foreground italic">
               💡 Tip: If the season is over, mark it as "Completed" to preserve the data instead of deleting.
             </p>
           </div>
 
           <div className="mb-4">
-            <Label htmlFor="confirm-delete" className="text-sm font-medium text-gray-700">
-              Type <span className="font-mono bg-gray-100 px-1">DELETE</span> to confirm:
+            <Label htmlFor="confirm-delete" className="text-sm font-medium text-foreground">
+              Type <span className="font-mono bg-muted px-1">DELETE</span> to confirm:
             </Label>
             <Input
               id="confirm-delete"
@@ -323,7 +352,7 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
   if (stats?.hasSeasons || stats?.hasMatches) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 max-w-lg w-full">
+        <div className="bg-card rounded-lg p-6 max-w-lg w-full">
           <div className="flex items-start gap-3 mb-4">
             <AlertTriangle className="h-6 w-6 text-yellow-600 flex-shrink-0 mt-1" />
             <div>
@@ -342,8 +371,8 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
             </ul>
           </div>
 
-          <div className="bg-gray-50 rounded-lg p-3 mb-4">
-            <p className="text-sm text-gray-700">
+          <div className="bg-muted rounded-lg p-3 mb-4">
+            <p className="text-sm text-foreground">
               <strong>League:</strong> {leagueName}
             </p>
           </div>
@@ -376,15 +405,15 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
   // INFO: Empty league
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full">
+      <div className="bg-card rounded-lg p-6 max-w-md w-full">
         <div className="flex items-start gap-3 mb-4">
           <Info className="h-6 w-6 text-blue-600 flex-shrink-0 mt-1" />
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Delete Empty League?</h3>
+            <h3 className="text-lg font-semibold text-foreground">Delete Empty League?</h3>
           </div>
         </div>
 
-        <p className="text-gray-700 mb-4">
+        <p className="text-foreground mb-4">
           Are you sure you want to delete <strong>{leagueName}</strong>?
         </p>
 

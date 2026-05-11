@@ -32,7 +32,7 @@ export function AnnouncementTextInput({
         onChange={(e) => onChange(e.target.value.slice(0, maxLength))}
         maxLength={maxLength}
       />
-      <p className="text-xs text-gray-600 mt-1">
+      <p className="text-xs text-muted-foreground mt-1">
         {value.length}/{maxLength} characters
       </p>
     </div>

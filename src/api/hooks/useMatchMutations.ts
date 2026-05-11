@@ -52,7 +52,7 @@ export interface MatchMutationOptions {
  * const updateMatchMutation = useUpdateMatch({ invalidate: false });
  * await updateMatchMutation.mutateAsync({
  *   matchId: 'match-123',
- *   updates: { home_games_to_win: 8 }
+ *   updates: { home_to_win: 8 }
  * });
  */
 export function useUpdateMatch(options: MatchMutationOptions = {}) {

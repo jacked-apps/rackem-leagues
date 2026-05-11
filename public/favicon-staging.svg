@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="64" height="64">
+  <defs>
+    <radialGradient id="ballGradient-staging" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="white"/>
+      <stop offset="50%" stop-color="#F5F5F5"/>
+      <stop offset="100%" stop-color="#CCCCCC"/>
+    </radialGradient>
+    <linearGradient id="stripeGradient-staging" x1="0" y1="40%" x2="100%" y2="60%">
+      <stop offset="0%" stop-color="#FFEF7A"/>
+      <stop offset="50%" stop-color="#FFD700"/>
+      <stop offset="100%" stop-color="#E0B800"/>
+    </linearGradient>
+    <radialGradient id="highlight-staging" cx="35%" cy="25%" r="25%">
+      <stop offset="0%" stop-color="white" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="50" cy="50" r="48" fill="url(#ballGradient-staging)" stroke="#F59E0B" stroke-width="2"/>
+  <ellipse cx="50" cy="50" rx="60" ry="26" fill="url(#stripeGradient-staging)"/>
+  <path d="M -10,50 A 60,26 0 0 1 110,50" fill="none" stroke="grey" stroke-width="0.5"/>
+  <circle cx="50" cy="50" r="55" fill="none" stroke="#F59E0B" stroke-width="16"/>
+  <circle cx="50" cy="50" r="14" fill="white" stroke="#F59E0B" stroke-width="2"/>
+  <text x="50" y="55" text-anchor="middle" font-size="14" font-family="Arial, Helvetica, sans-serif" font-weight="700" fill="#F59E0B">B</text>
+  <circle cx="38" cy="38" r="15" fill="url(#highlight-staging)"/>
+</svg>
