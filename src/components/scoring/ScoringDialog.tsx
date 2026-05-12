@@ -42,7 +42,7 @@
  * a real production consumer.
  */
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -314,10 +314,29 @@ export function ScoringDialog({
     }
   };
 
-  // Aria-live announcement region. Updated when an auto-clear cascade
-  // happens (currently only Forfeit clears a checked achievement). Locked
-  // copy template: "[Achievement Name] cleared because forfeit was selected."
+  // Aria-live announcement region. Updated when:
+  //   - An auto-clear cascade happens (Forfeit clears a checked achievement).
+  //     Locked template: "[Achievement] cleared because forfeit was selected."
+  //   - Mode transitions (score ↔ edit ↔ preview). Screen readers don't
+  //     auto-announce title changes on an already-open dialog, so we
+  //     announce mode flips manually.
   const [liveAnnouncement, setLiveAnnouncement] = useState('');
+
+  // Mode-transition announcements. Track previous mode in a ref so the
+  // initial render doesn't fire (we don't want to announce "scoring mode"
+  // on dialog open — Radix Dialog already announces the DialogTitle).
+  const previousModeRef = useRef(mode);
+  useEffect(() => {
+    if (previousModeRef.current === mode) return;
+    previousModeRef.current = mode;
+    if (mode === 'edit') {
+      setLiveAnnouncement('Switched to event configuration. Toggle which events scorers can record.');
+    } else if (mode === 'preview') {
+      setLiveAnnouncement('Returned to scoring modal preview. Read-only.');
+    } else {
+      setLiveAnnouncement('Returned to scoring.');
+    }
+  }, [mode]);
 
   // Mutual-exclusion handlers for the achievement checkboxes. B&R and Golden
   // Break are mutually exclusive on the breaker side; checking one auto-
@@ -379,6 +398,13 @@ export function ScoringDialog({
               apply when scorers open their next game modal.
             </DialogDescription>
           </DialogHeader>
+          {/* Aria-live region for mode-transition announcements. Mirrors
+              the one in the score/preview branch so the announcement
+              text reaches the screen reader regardless of which branch
+              is rendering when the mode flips. */}
+          <div role="status" aria-live="polite" className="sr-only">
+            {liveAnnouncement}
+          </div>
           <ScoringDialogEditMode
             gameType={gameType as GameType}
             resolvedOverrides={enabledEventsOverride}
