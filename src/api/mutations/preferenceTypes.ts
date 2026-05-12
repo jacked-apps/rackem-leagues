@@ -15,7 +15,7 @@ export interface PreferenceFields {
   handicap_variant?: string | null;
   team_handicap_variant?: string | null;
   game_history_limit?: number | null;
-  golden_break_counts_as_win?: boolean | null;
+  // golden_break_counts_as_win removed 2026-05-12 — see enabled_events.
   allow_unauthorized_players?: boolean | null;
   profanity_filter_enabled?: boolean | null;
 

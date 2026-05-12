@@ -536,7 +536,7 @@ export default function RLSTestPage() {
         handicap_variant: 'reduced',
         team_handicap_variant: 'standard',
         game_history_limit: 150,
-        golden_break_counts_as_win: false,
+        // golden_break_counts_as_win removed 2026-05-12.
       });
 
       preferenceId = preference.id;

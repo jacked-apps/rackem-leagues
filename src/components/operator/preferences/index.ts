@@ -7,6 +7,7 @@
 
 export { HandicapSettingsSection } from './HandicapSettingsSection';
 export { RosterSettingsSection } from './RosterSettingsSection';
-export { MatchRulesSection } from './MatchRulesSection';
+// MatchRulesSection removed 2026-05-12 — its only content was the Golden Break
+// picker, now exclusively configured via the scoring modal's edit mode.
 export { PlayerAuthorizationSection } from './PlayerAuthorizationSection';
 export { ContentModerationSection } from './ContentModerationSection';

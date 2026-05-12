@@ -574,14 +574,15 @@ BEGIN
   INSERT INTO leagues (
     id, organization_id, game_type, day_of_week, division,
     league_start_date, status,
-    handicap_variant, team_handicap_variant, handicap_level,
-    golden_break_counts_as_win
+    handicap_variant, team_handicap_variant, handicap_level
   ) VALUES (
     v_league_id, v_org_id, 'eight_ball', 'tuesday', '3v3 old school',
     CURRENT_DATE, 'active',
-    'standard', 'standard', 'standard',
-    FALSE
+    'standard', 'standard', 'standard'
   );
+  -- Golden Break enablement is now expressed via enabled_events.golden_break
+  -- on the preferences row. For BCA Standard 3v3, leave it unset (registry
+  -- default is false for 8-ball — matches BCA rules).
 
   -- Modular preference fields (empty row was auto-created by trigger).
   -- Values mirror the `standard_3v3` preset in
@@ -877,14 +878,14 @@ BEGIN
     INSERT INTO leagues (
       id, organization_id, game_type, day_of_week, division,
       league_start_date, status,
-      handicap_variant, team_handicap_variant, handicap_level,
-      golden_break_counts_as_win
+      handicap_variant, team_handicap_variant, handicap_level
     ) VALUES (
       v_league_ids[v_l], v_org_id, 'eight_ball', v_days_of_week[v_l], v_divisions[v_l],
       v_start_date, 'active',
-      'standard', 'standard', 'standard',
-      FALSE
+      'standard', 'standard', 'standard'
     );
+    -- Golden Break configuration moved to enabled_events on preferences
+    -- (registry default = false for 8-ball, matching BCA Standard).
 
     -- Values mirror the `standard_5v5` (v_l=1) and `fargo_5v5` (v_l=2)
     -- presets in src/wizards/league-v2/presetMappings.ts — same shape the

@@ -69,9 +69,13 @@ describe('Phase 1 enabledByDefault matrix — zero user-visible behavior change'
     expect(event.enabledByDefault.ten_ball).toBe(true);
   });
 
-  it('golden_break defaults to true on 8-ball only (today: 8-ball only)', () => {
+  it('golden_break defaults to FALSE everywhere (BCA Standard: 8-ball GB does NOT count)', () => {
+    // Updated 2026-05-12: deprecating leagues.golden_break_counts_as_win
+    // collapsed the two booleans into one. Registry default now matches
+    // BCA Standard rules (false for 8-ball). LO opts in via edit mode if
+    // their league has different house rules.
     const event = listGameEvents().find(e => e.name === 'golden_break')!;
-    expect(event.enabledByDefault.eight_ball).toBe(true);
+    expect(event.enabledByDefault.eight_ball).toBe(false);
     expect(event.enabledByDefault.nine_ball).toBe(false);
     expect(event.enabledByDefault.ten_ball).toBe(false);
   });

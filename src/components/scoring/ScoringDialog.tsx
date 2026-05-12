@@ -408,21 +408,6 @@ export function ScoringDialog({
           <ScoringDialogEditMode
             gameType={gameType as GameType}
             resolvedOverrides={enabledEventsOverride}
-            // Events that are LINKED to another preference: toggling them in
-            // edit mode also updates the linked preference at save time. The
-            // inline note tells the LO their toggle has a broader effect.
-            // Today only golden_break is linked (to leagues.golden_break_counts_as_win).
-            inlineNotes={{
-              golden_break:
-                "Linked: toggling this also updates the league's 'Golden Break counts as win' preference.",
-            }}
-            // golden_break's effective state in the modal depends on BOTH
-            // enabled_events.golden_break AND goldenBreakCountsAsWin. The
-            // switch should reflect what the modal actually shows, not just
-            // what the cascade resolves to.
-            linkedEffectiveState={{
-              golden_break: goldenBreakCountsAsWin,
-            }}
             onSave={async (next) => {
               await onSaveEnabledEvents?.(next);
               onModeChange?.(editReturnMode);
@@ -524,7 +509,7 @@ export function ScoringDialog({
                 </Label>
               </div>
             )}
-            {winnerIsActualBreaker && goldenBreakCountsAsWin && enabledEvents.has('golden_break') && (
+            {winnerIsActualBreaker && enabledEvents.has('golden_break') && (
               <div className="flex items-center gap-2">
                 <Checkbox
                   id="goldenBreak"

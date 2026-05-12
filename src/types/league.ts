@@ -48,7 +48,8 @@ export interface League {
   handicap_variant: HandicapVariant; // Main handicap control (affects both player and team handicaps)
   team_handicap_variant: HandicapVariant | null; // Optional override for team bonus only (null = use organization default, then handicap_variant)
   game_history_limit: number | null; // Optional override for handicap calculation history (null = use organization default of 200)
-  golden_break_counts_as_win: boolean;
+  // golden_break_counts_as_win removed 2026-05-12 — now expressed via
+  // enabled_events.golden_break on the preferences cascade.
   league_start_date: string; // ISO date string
   /**
    * Per-league dial overrides (tier 2 mutability — editable between seasons, locked during active season).

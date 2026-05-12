@@ -149,7 +149,6 @@ export interface MatchWithLeagueSettings {
     id: string;
     handicap_variant: HandicapVariant;
     team_handicap_variant: HandicapVariant;
-    golden_break_counts_as_win: boolean;
     game_type: string;
   };
 }

@@ -16,20 +16,29 @@ describe('resolveEnabledEvents', () => {
     registerSeedGameEvents();
   });
 
-  describe('Phase 1 defaults — match today\'s modal exactly', () => {
-    it('eight_ball with empty cascade enables exactly the events today\'s modal renders', () => {
+  describe('Registry defaults — BCA Standard rules', () => {
+    it('eight_ball with empty cascade matches BCA Standard rules', () => {
       const enabled = resolveEnabledEvents({}, 'eight_ball');
-      // Today's modal: B&R, Golden Break, Runout, Win by Forfeit, Break Foul.
-      // Phase 1 net-new events ship dormant (early_8, scratch_on_8, eight_wrong_pocket).
+      // BCA Standard: B&R, Runout, Win by Forfeit, Break Foul enabled by
+      // default. Golden Break is NOT in BCA Standard for 8-ball — LO opts
+      // in via the modal's edit mode if their league counts it.
+      // Net-new events (early_8, scratch_on_8, eight_wrong_pocket) ship
+      // dormant; activated via the modal edit mode.
       expect(enabled).toEqual(
         new Set([
           'break_and_run',
-          'golden_break',
           'runout',
           'win_by_forfeit',
           'break_fouled',
         ]),
       );
+    });
+
+    it('eight_ball with golden_break override enables it', () => {
+      // LO who runs a league that DOES count golden break toggles it on
+      // via edit mode. Cascade override flips the default.
+      const enabled = resolveEnabledEvents({ golden_break: true }, 'eight_ball');
+      expect(enabled.has('golden_break')).toBe(true);
     });
 
     it('nine_ball with empty cascade enables only events that apply to 9-ball', () => {

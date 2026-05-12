@@ -21,7 +21,6 @@ import { logger } from '@/utils/logger';
 import {
   HandicapSettingsSection,
   RosterSettingsSection,
-  MatchRulesSection,
   PlayerAuthorizationSection,
   ContentModerationSection,
 } from './preferences';
@@ -48,7 +47,7 @@ export const PreferencesCard: React.FC<PreferencesCardProps> = ({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [editingSection, setEditingSection] = useState<'handicap' | 'roster' | 'rules' | 'authorization' | 'moderation' | null>(null);
+  const [editingSection, setEditingSection] = useState<'handicap' | 'roster' | 'authorization' | 'moderation' | null>(null);
 
   // Local edit state
   const [handicapVariant, setHandicapVariant] = useState<HandicapVariant | 'default'>('default');
@@ -56,7 +55,7 @@ export const PreferencesCard: React.FC<PreferencesCardProps> = ({
   const [gameHistoryLimit, setGameHistoryLimit] = useState<number>(200);
   const [maxRosterSize, setMaxRosterSize] = useState<string>('');
   const [useOrgDefaultMaxRoster, setUseOrgDefaultMaxRoster] = useState<boolean>(false);
-  const [goldenBreakSetting, setGoldenBreakSetting] = useState<'bca_standard' | 'always' | 'never'>('bca_standard');
+  // Golden Break setting moved to the scoring modal's edit mode 2026-05-12.
   const [allowUnauthorizedPlayers, setAllowUnauthorizedPlayers] = useState<boolean>(true);
   const [profanityFilterEnabled, setProfanityFilterEnabled] = useState<boolean>(false);
   const [isUsingOrgDefault, setIsUsingOrgDefault] = useState(false);
@@ -126,14 +125,6 @@ export const PreferencesCard: React.FC<PreferencesCardProps> = ({
     const rosterRaw = (prefs as any).max_roster_size;
     setMaxRosterSize(rosterRaw == null ? '' : String(rosterRaw));
     setUseOrgDefaultMaxRoster(rosterRaw == null);
-    // Map boolean/null to our three-way setting
-    if (prefs.golden_break_counts_as_win === null) {
-      setGoldenBreakSetting('bca_standard');
-    } else if (prefs.golden_break_counts_as_win === true) {
-      setGoldenBreakSetting('always');
-    } else {
-      setGoldenBreakSetting('never');
-    }
     setAllowUnauthorizedPlayers(prefs.allow_unauthorized_players ?? SYSTEM_DEFAULTS.allow_unauthorized_players);
     setProfanityFilterEnabled(prefs.profanity_filter_enabled ?? SYSTEM_DEFAULTS.profanity_filter_enabled);
     setIsUsingOrgDefault(prefs.allow_unauthorized_players === null);
@@ -141,7 +132,7 @@ export const PreferencesCard: React.FC<PreferencesCardProps> = ({
   };
 
   // Start editing a section
-  const startEditing = (section: 'handicap' | 'roster' | 'rules' | 'authorization' | 'moderation') => {
+  const startEditing = (section: 'handicap' | 'roster' | 'authorization' | 'moderation') => {
     if (preferences) {
       syncLocalState(preferences);
     }
@@ -226,42 +217,10 @@ export const PreferencesCard: React.FC<PreferencesCardProps> = ({
     setSaving(false);
   };
 
-  // Save rules settings
-  const saveRules = async () => {
-    if (!preferences) return;
-
-    setSaving(true);
-    setError(null);
-
-    // Convert three-way setting to boolean/null for database
-    let goldenBreakValue: boolean | null;
-    if (goldenBreakSetting === 'bca_standard') {
-      goldenBreakValue = null;
-    } else if (goldenBreakSetting === 'always') {
-      goldenBreakValue = true;
-    } else {
-      goldenBreakValue = false;
-    }
-
-    const { error: updateError } = await supabase
-      .from('preferences')
-      .update({
-        golden_break_counts_as_win: goldenBreakValue,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', preferences.id);
-
-    if (updateError) {
-      setError('Failed to update rules settings');
-      logger.error('Error updating preferences', { error: updateError.message });
-    } else {
-      setEditingSection(null);
-      await fetchPreferences();
-      onUpdate?.();
-    }
-
-    setSaving(false);
-  };
+  // saveRules removed 2026-05-12 — the only rules field this saved
+  // (golden_break_counts_as_win) was deprecated in favor of
+  // enabled_events.golden_break, configured via the scoring modal's
+  // edit mode.
 
   // Save authorization settings
   const saveAuthorization = async () => {
@@ -341,11 +300,7 @@ export const PreferencesCard: React.FC<PreferencesCardProps> = ({
     return `${value} per match`;
   };
 
-  // Get golden break display value
-  const getGoldenBreakDisplay = (value: boolean | null): string => {
-    if (value === null) return 'Not set';
-    return value ? 'Always Count' : 'Never Count';
-  };
+  // getGoldenBreakDisplay removed 2026-05-12 — see saveRules note above.
 
   // Get authorization display value
   const getAuthorizationDisplay = (value: boolean | null): string => {
@@ -455,18 +410,9 @@ export const PreferencesCard: React.FC<PreferencesCardProps> = ({
           onCancel={cancelEditing}
         />
 
-        {/* Rules Settings Section */}
-        <MatchRulesSection
-          isLeague={isLeague}
-          isEditing={editingSection === 'rules'}
-          saving={saving}
-          goldenBreakSetting={goldenBreakSetting}
-          goldenBreakDisplay={getGoldenBreakDisplay(preferences.golden_break_counts_as_win)}
-          onGoldenBreakChange={setGoldenBreakSetting}
-          onStartEditing={() => startEditing('rules')}
-          onSave={saveRules}
-          onCancel={cancelEditing}
-        />
+        {/* Match Rules section removed 2026-05-12 — its only content was
+            the Golden Break picker, now exclusively configured via the
+            scoring modal's edit mode (see ScoringPreviewCard on this page). */}
 
         {/* Player Authorization Section */}
         <PlayerAuthorizationSection

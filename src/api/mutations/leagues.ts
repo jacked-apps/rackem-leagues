@@ -67,7 +67,9 @@ export async function createLeague(params: CreateLeagueParams): Promise<League> 
     team_handicap_variant: params.teamHandicapVariant,
     league_start_date: params.leagueStartDate,
     division: params.division || null,
-    golden_break_counts_as_win: false, // Default to false if not specified
+    // golden_break_counts_as_win removed 2026-05-12 — Golden Break is now
+    // configured via enabled_events.golden_break on the preferences
+    // cascade (registry default = false for 8-ball / BCA Standard).
   };
 
   const { data: newLeague, error } = await supabase

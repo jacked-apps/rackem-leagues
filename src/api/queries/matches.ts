@@ -467,7 +467,6 @@ export async function getMatchWithLeagueSettings(matchId: string): Promise<Match
           id,
           handicap_variant,
           team_handicap_variant,
-          golden_break_counts_as_win,
           game_type
         )
       )
@@ -527,7 +526,7 @@ export async function getMatchWithLeagueSettings(matchId: string): Promise<Match
       id: leagueData?.id || '',
       handicap_variant: (leagueData?.handicap_variant || 'standard') as any,
       team_handicap_variant: (leagueData?.team_handicap_variant || 'standard') as any,
-      golden_break_counts_as_win: leagueData?.golden_break_counts_as_win ?? false,
+      // golden_break_counts_as_win removed 2026-05-12 — see enabled_events.
       game_type: leagueData?.game_type || '8-ball',
     },
   };
