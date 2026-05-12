@@ -29,6 +29,19 @@ The doc serves three jobs:
 
 > **Mirror invariant.** This block is the canonical source. The `## League System Naming Taxonomy` section in the project `CLAUDE.md` mirrors it verbatim. Any edit here must land in the same commit as the matching `CLAUDE.md` update. See `## League System Doc Policy` in `CLAUDE.md` for the full enforcement rules.
 
+### Brand naming: BCA vs BCAPL {#brand-naming}
+
+Per CSI's *BCA Pool League Operators' Handbook* (June 2020, p.41 "Name Guidelines"), the league brand is **BCAPL** or **BCA Pool League** — never "BCA" alone. "BCA" refers to the Billiard Congress of America, a standards body that is **not** the league operator. CSI (CueSports International) runs BCAPL.
+
+| Form | Verdict | Use for |
+|---|---|---|
+| **BCAPL** | Correct | Internal references, code identifiers, prose |
+| **BCA Pool League** | Correct | Long-form references, public-facing copy |
+| **CSI** | Correct | The operator (separate from the league brand) |
+| **BCA** alone | **Incorrect** per CSI | Avoid; refers to the standards body, not the league |
+
+**Code-identifier implication.** The current `bca3v3` / `bca5v5` / `fargo5v5` SystemModule keys reflect pre-2020 branding that CSI's own handbook explicitly deprecates. Step 2's renames (`bca3v3` → `points_3man`, `bca5v5` → `percentage_5man`, `fargo5v5` → `fargo_10pt_5man`) bring the codebase into compliance with CSI's published guidance — independent of the also-true motivation that the new names better describe what each Division actually is.
+
 ### Bundle and building-block words
 
 | Concept | Word we use | Source |
