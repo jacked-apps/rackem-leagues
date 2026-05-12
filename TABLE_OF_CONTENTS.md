@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-12 (TOC catch-up: indexed the previously-missing Unit 1 + Unit 2 messaging migrations, plus six Phase 1 messaging test files (Unit 1 schema verification, Unit 2 schema verification, and the four remaining Unit 3 helper tests — `postSystemMessage`, `createCaptainChat`, `createSeasonAnnouncementsChat`, `createOrgAnnouncementsChat`). The Phase 1 messaging row in the migrations table now reads in time order. Earlier today: vitest project split, plus Unit 5 trigger + tests.)
+> **Last Updated**: 2026-05-12 (Messaging Phase 1 / Unit 6: added `ReadOnlyBanner.tsx`, `useMessageComposerStatus.ts`, banner RTL test, and the wiring change in `MessageView.tsx`. RLS portion of Unit 6 deferred to the project-wide RLS-enablement effort per `LIST_FOR_ED.md` #29.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -413,6 +413,15 @@ how to add a new test, demo recording, cleanup model).
 - `messaging-phase1-createCaptainChat.test.ts` - **Messaging Phase 1 / Unit 3 helper 3/5** — DB-backed coverage of `createCaptainChat()`: dedups captains-also-on-staff (captain rule wins on `cannot_leave`), idempotent, posts opening message.
 - `messaging-phase1-createSeasonAnnouncementsChat.test.ts` - **Messaging Phase 1 / Unit 3 helper 4/5** — DB-backed coverage of `createSeasonAnnouncementsChat()`: every distinct rostered player as `cannot_leave=true` participant, idempotent.
 - `messaging-phase1-createOrgAnnouncementsChat.test.ts` - **Messaging Phase 1 / Unit 3 helper 5/5** — DB-backed coverage of `createOrgAnnouncementsChat()`: every distinct player across currently-active seasons in the org, past-season players excluded, idempotent.
+
+#### Messaging UI Components (`/components/messages/`)
+- `ReadOnlyBanner.tsx` - **Messaging Phase 1 / Unit 6** — shadcn `Alert` that renders in place of the message composer when the current user can read but not post. Two reasons covered: `past-member` (left_at non-NULL) and `announcement-non-staff` (announcements channel viewed by a non-staff member). The composer is unmounted by `MessageView`, not just hidden by CSS.
+- `__tests__/ReadOnlyBanner.test.tsx` - RTL test covering both `reason` values render distinct copy.
+- `CreateTeamChatPrompt.tsx` - **Messaging Phase 1 / Unit 3 helper 6/6** — captain manual-fallback prompt above the Messages conversation list. Shows one card per captained active-season team that lacks an auto-managed chat. Clicking creates the chat via `createTeamChat()` and auto-selects it.
+
+#### Messaging Hooks (`/api/hooks/`)
+- `useMessageComposerStatus.ts` - **Messaging Phase 1 / Unit 6** — TanStack Query hook. Returns `{ readOnly, reason }` for a conversation. Looks up the current user's participant row + (for announcement channels) their `organization_staff` membership. Consumed by `MessageView` to choose between `MessageInput` and `ReadOnlyBanner`.
+- `useCaptainTeamsMissingChat.ts` - **Messaging Phase 1 / Unit 3 helper 6/6** — TanStack Query hook. Returns the list of teams the current user captains in an active season that lack an auto-managed team chat. Used by `CreateTeamChatPrompt`.
 - `messaging-phase1-season-activation.rls.test.ts` - **Messaging Phase 1 / Unit 4** — DB-backed coverage of the season-activation trigger: team chats per team, captain chat, season + org announcements, idempotent re-fire, no-fire on non-status UPDATEs, no-fire when status flips away from active.
 - `messaging-phase1-roster-triggers.rls.test.ts` - **Messaging Phase 1 / Unit 5** — DB-backed coverage of the four roster/captain lifecycle triggers: INSERT (join + msg only on real inserts), DELETE (deferred constraint trigger; sets `left_at` and posts "left" only on real removals, silent on wholesale-replace), captain change (cannot_leave flip in team + captain chats; multi-team captain edge case), member soft-delete. **Note:** the three messaging DB-backed test files race each other under default vitest file parallelism — run with `--no-file-parallelism` when executing the full directory. See `LIST_FOR_ED.md` #27.
 

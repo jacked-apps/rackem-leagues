@@ -288,3 +288,5 @@ export { usePlayerTeamCount } from './usePlayerTeamCount';
 export type { PlayerTeam } from './usePlayerTeamCount';
 export { useCaptainTeamsMissingChat } from './useCaptainTeamsMissingChat';
 export type { CaptainTeamMissingChat } from './useCaptainTeamsMissingChat';
+export { useMessageComposerStatus } from './useMessageComposerStatus';
+export type { ComposerLockReason, ComposerStatus } from './useMessageComposerStatus';

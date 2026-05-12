@@ -14,8 +14,9 @@ import { useState, useRef, useEffect } from 'react';
 import { ConversationHeader } from './ConversationHeader';
 import { MessageBubble } from './MessageBubble';
 import { MessageInput } from './MessageInput';
+import { ReadOnlyBanner } from './ReadOnlyBanner';
 import { useConversationParticipants } from '@/hooks/useConversationParticipants';
-import { useConversationMessages, useSendMessage, useUpdateLastRead, useConversationMessagesRealtime, useLeaveConversation, useBlockUser } from '@/api/hooks';
+import { useConversationMessages, useSendMessage, useUpdateLastRead, useConversationMessagesRealtime, useLeaveConversation, useBlockUser, useMessageComposerStatus } from '@/api/hooks';
 import { supabase } from '@/supabaseClient';
 import { LoadingState, EmptyState, ConfirmDialog } from '@/components/shared';
 import { MessageSquare } from 'lucide-react';
@@ -60,6 +61,11 @@ export function MessageView({ conversationId, currentUserId, onBack, onLeaveConv
 
   // Real-time subscriptions (auto-manages channels and cleanup)
   useConversationMessagesRealtime(conversationId, currentUserId, updateLastReadMutation);
+
+  // R5 + Phase-1 announcement-feels-one-way decision: gate the composer.
+  // Returns { readOnly, reason } when the current user is a past-member of
+  // this chat OR is a non-staff viewer of an announcements channel.
+  const { data: composerStatus } = useMessageComposerStatus(conversationId);
 
   const { recipientName, recipientLastRead } = useConversationParticipants(
     conversationId,
@@ -261,7 +267,14 @@ export function MessageView({ conversationId, currentUserId, onBack, onLeaveConv
         <div ref={messagesEndRef} />
       </div>
 
-      <MessageInput onSend={handleSendMessage} />
+      {/* Composer OR read-only banner — never both, and the composer is
+          unmounted (not hidden) when locked so it stays out of tab order
+          and screen-reader output. */}
+      {composerStatus?.readOnly && composerStatus.reason ? (
+        <ReadOnlyBanner reason={composerStatus.reason} />
+      ) : (
+        <MessageInput onSend={handleSendMessage} />
+      )}
     </div>
   );
 }

@@ -1576,6 +1576,121 @@ fix is sufficient.
 
 ---
 
+## 29. Messaging Unit 6 — Past-Member + Announcement-Read-Only RLS (deferred)
+
+**Discovered:** 2026-05-12 while implementing Unit 6
+**Severity:** MEDIUM — defense-in-depth gap until the RLS-enablement project ships
+
+**Context:** Unit 6 of the Phase 1 messaging plan calls for both a UI
+banner AND a set of Postgres RLS policies that enforce read-only at
+the data layer. Per the existing project decision to defer all RLS
+work to a dedicated "RLS-enablement project" (see
+[[project_rls_disabled_in_dev]]), only the UI portion shipped on
+2026-05-12. This entry captures what needs to land at the data layer
+whenever the RLS project gets picked up, so nothing has to be
+re-derived from the plan.
+
+**The gap:** Today a sophisticated user could bypass the
+`ReadOnlyBanner` by making a direct `supabase-js .insert()` call from
+the browser console, posting a message into an announcements chat or
+into a chat they've been removed from. The UI prevents the casual
+case; the data layer doesn't prevent the determined case.
+
+**Policies to add when RLS gets enabled** (against tables `messages`
+and `conversation_participants`):
+
+1. **`messages` SELECT policy** — past-members can read messages
+   posted up to and including their `left_at` timestamp:
+   ```
+   EXISTS (
+     SELECT 1 FROM conversation_participants cp
+     WHERE cp.conversation_id = messages.conversation_id
+       AND cp.user_id = get_current_member_id()
+       AND (cp.left_at IS NULL OR messages.created_at <= cp.left_at)
+   )
+   ```
+   Use `get_current_member_id()` (returns `members.id`); do NOT
+   compare `members.id` to `auth.uid()` directly — the
+   `auth.uid() → members.user_id` indirection is handled inside the
+   helper.
+
+2. **`messages` INSERT policy** — active participants only:
+   ```
+   EXISTS (
+     SELECT 1 FROM conversation_participants cp
+     WHERE cp.conversation_id = messages.conversation_id
+       AND cp.user_id = get_current_member_id()
+       AND cp.left_at IS NULL
+   )
+   ```
+
+3. **Announcements INSERT gate** — only `organization_staff` may
+   INSERT into a conversation whose `conversation_type='announcements'`:
+   ```
+   EXISTS (
+     SELECT 1
+     FROM conversations c
+     LEFT JOIN seasons s ON s.id = c.scope_id AND c.scope_type = 'season'
+     LEFT JOIN leagues l ON l.id = s.league_id
+     JOIN organization_staff os
+       ON os.organization_id = COALESCE(
+            CASE WHEN c.scope_type = 'organization' THEN c.scope_id END,
+            l.organization_id
+          )
+     WHERE c.id = messages.conversation_id
+       AND c.conversation_type = 'announcements'
+       AND os.member_id = get_current_member_id()
+   )
+   ```
+   Combine with the active-participant INSERT policy via `OR` — or
+   build it as a separate explicit policy that augments INSERT only
+   for announcement conversations. The plan author's note: be careful
+   the staff-only gate doesn't accidentally close the door on
+   non-announcement chats (use a `conversation_type='announcements'`
+   guard).
+
+4. **`conversation_participants` UPDATE/DELETE lockdown** — only
+   triggers (SECURITY DEFINER) and `service_role` may set `left_at`.
+   Without this, a malicious user could push their own `left_at` into
+   the future to keep reading post-removal messages, or set it to NULL
+   to lift the INSERT block:
+   ```
+   REVOKE UPDATE (left_at), DELETE ON conversation_participants
+     FROM authenticated;
+   GRANT UPDATE (notification_mode, last_read_at, is_muted,
+                 notifications_enabled, unread_count)
+     ON conversation_participants TO authenticated;
+   ```
+
+5. **Required test scenarios** (from the plan):
+   - Past-member SELECT before `left_at` succeeds; after `left_at` blocked
+   - Past-member INSERT blocked
+   - Active member SELECT + INSERT normal
+   - Boundary: `left_at = messages.created_at` is INCLUSIVE on SELECT
+   - Non-participant SELECT blocked
+   - User attempts to UPDATE their own `left_at` → blocked
+   - Test against a user whose `auth.uid() != any members.id` they
+     ever appear in (catches the production-bug class of using
+     `members.id = auth.uid()` instead of `members.user_id`)
+
+**Migration filename slot (reserved):**
+`supabase/migrations/<future_date>_messaging_phase1_past_member_rls.sql`
+
+**Existing tests to keep passing:**
+`src/__tests__/database/messaging.rls.test.ts`,
+`src/__tests__/database/members.rls.test.ts`.
+
+**Why it was deferred 2026-05-12:** Ed has historically had
+poor experiences debugging Supabase RLS policies that "don't even make
+sense" and pays the iteration cost upfront on every feature. The
+project's working pattern is "build features RLS-off, harden with RLS
+later in one dedicated pass." This entry exists so when that pass
+happens, none of the design work above has to be re-derived from the
+plan.
+
+
+---
+
 ## 28. Optional LO-Created Org-Wide Group Chat
 
 **Discovered:** 2026-05-12 while finalizing the messaging Phase 1 chat model
