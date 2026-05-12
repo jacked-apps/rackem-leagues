@@ -1636,3 +1636,116 @@ can keep score for the team for the night.
   (not just locked-lineup players) — `supabase/migrations/20260511000000_broaden_can_write_game_event.sql`.
 - Related: `can_write_house_rule_org` pattern for the
   captain-or-LO-grants-this authorization shape.
+
+## 27. -13 Starting Points Bug in BCA 3v3 Handicap Calc
+
+**Discovered:** 2026-05-10 during Branch B smoke testing.
+**Severity:** HIGH — silent handicap-math regression. Pre-existing
+(predates Branch B work).
+**Owner:** unassigned
+
+**Symptom:** in the BCA 3v3 points league, the lineup-locked starting-
+points handicap should be a POSITIVE number awarded to ONE TEAM (the
+weaker side). What Ed observed was -13 applied to BOTH teams. The sign
+is wrong AND the both-teams behavior is wrong.
+
+**Confirmed not Branch B:**
+
+- `match_lineups.home_team_modifier` defaults to 0.0 on all rows
+  (verified in DB).
+- Branch B did not touch any calculator code, lineup-lock flow, or
+  the modifier column.
+- Likely regression from an earlier commit (candidates per `git log`:
+  `ea25c98 feat(scoring): UX revisions per real-use feedback`, or
+  even older).
+
+**Where the math lives:**
+
+- `src/utils/handicapCalculations.ts:238` — sums lineup handicaps +
+  applies team bonus.
+- `src/utils/calculateHandicapThresholds.ts:22` — computes home/away
+  thresholds. The `home_to_tie` value (start-points credit) is computed
+  here for points-mode leagues.
+- `src/hooks/lineup/useLineupPersistence.ts` writes
+  `home_team_modifier: teamHandicap` on lock — that's the value flowing
+  into the modifier column.
+
+**Investigation starting points:**
+
+1. Replicate via the dev seed (3v3 BCA league has random handicaps in
+   the -2..2 range; create a lineup and lock to see the threshold).
+2. Add logging at the lineup-lock site to capture inputs to the
+   `getTeamHandicapBonus` call.
+3. Check sign convention: is the "weaker team gets positive points"
+   convention being respected, or did something invert the sign?
+4. Check that the bonus is only applied to the WEAKER team's threshold,
+   not both.
+
+**Out of scope for Branch B's series of PRs.** Own branch.
+
+---
+
+## 28. Player Profile Lookup From Anywhere (Long-Press / Hover / Click on Nickname)
+
+**Discovered:** 2026-05-12 during Branch B Phase 2 forfeit UX work.
+**Severity:** Feature request — quality-of-life across the entire app.
+**Owner:** unassigned
+
+**The idea:** anywhere in the app a player's nickname is rendered, the
+user should be able to long-press (mobile), hover (desktop), or click
+to see a profile card with the player's full identity:
+
+- Full first + last name (system of record).
+- BCA / CSI / Fargo member numbers once the integration ships.
+- Maybe a small stats summary (current handicap, recent form).
+- Distinguishes confusable nicknames in fonts where lowercase-L and
+  uppercase-I look identical ("Al" vs "AI" was the prompting case).
+
+**Why this matters strategically:**
+
+- Identity + accountability is something the upcoming BCA/CSI/Fargo
+  partnerships will care about. A nickname can be changed at will,
+  even depending on mood. The system-of-record name is the locked
+  identity for stats / handicap / dues purposes.
+- Future: BCA member number could lock in an "official" name from
+  BCA's records, separate from the user-editable display name. A new
+  table coinciding with BCA-source-of-truth info may be needed once
+  the integration is real.
+
+**Out of scope right now** — BCA integration isn't here yet, and the
+lookup UX is its own brainstorm. Capturing so it doesn't get lost.
+
+---
+
+## 29. Preference Axis Review / Consolidation Pass
+
+**Discovered:** 2026-05-12 during Branch B Phase 2 cleanup.
+**Severity:** Architectural housekeeping — schedule after all major
+feature work lands.
+**Owner:** unassigned
+
+**The problem:** preferences are scattered across multiple tables and
+shapes (leagues row, preferences row, system_overrides jsonb,
+points_calculator_params jsonb, enabled_events jsonb). The
+`golden_break_counts_as_win` cleanup in this branch was one example —
+two fields encoded the same decision and we collapsed them. There are
+probably more.
+
+**The work:**
+
+1. **Inventory.** Enumerate every preference axis, where it's stored,
+   what reads/writes it.
+2. **Look for duplicates.** Any pair of fields that encode the same
+   decision (the GB collapse pattern).
+3. **Look for gaps.** Decisions a league should be able to express
+   that don't have a clean field today.
+4. **Look for shape inconsistency.** Some axes are scalar columns,
+   some are jsonb keys, some are on leagues directly vs on
+   preferences. Standardize where it makes sense.
+5. **Document.** Once consolidated, write a "preferences inventory"
+   doc so future feature work knows where to put new fields.
+
+**Schedule:** after the current feature work (modal + LO config) is
+shipped and stable. Doing this in the middle of active feature work
+would create conflicts.
+
