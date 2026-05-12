@@ -1504,3 +1504,37 @@ behavior — manual-in, manual-out).
 **Deferred from:** Phase 1 Unit 3 (captain manual-fallback button) on
 2026-05-12. Out of scope for that unit; logged here so it isn't lost.
 
+---
+
+## 26. Adversarial Failure-Isolation Test for Season-Activation Trigger
+
+**Discovered:** 2026-05-12 while writing Unit 4 tests
+**Severity:** LOW — the safety mechanism exists in code, but lacks a runtime test
+
+**The issue:** The plan's Unit 4 calls for an adversarial test that forces
+one team chat to fail and asserts the trigger's `BEGIN/EXCEPTION` blocks
+isolate the failure (other chats still create, season UPDATE still
+succeeds). The current schema has FK constraints strict enough that
+manufacturing a synthetic per-chat failure from outside the function
+requires destructive setup (deleting members cascades the roster;
+bypassing FKs via `session_replication_role = replica` is too hacky for
+a test fixture).
+
+**The risk:** Low. The `BEGIN/EXCEPTION WHEN OTHERS THEN RAISE WARNING`
+pattern is present in the function source, and the logic is short enough
+to verify by inspection. But there's no runtime evidence that a real
+failure stays isolated.
+
+**Possible test approaches when revisiting:**
+1. Add a small helper SQL function that raises an exception, called from
+   a fork of `auto_create_season_conversations` wired up in the test
+   only. Heavy.
+2. Use a custom Postgres role with constrained INSERT privileges so the
+   function fails on a specific block. Cleaner but needs RLS / role setup.
+3. Refactor the function to take an injectable "force-failure-for-team"
+   debug param. Adds prod surface for a test-only need.
+
+**Where this came from:** `docs/plans/2026-05-09-001-feat-messaging-overhaul-phase-1-plan.md`,
+the *Adversarial* test scenario under Unit 4. The trigger ships with
+the EXCEPTION blocks; this is purely a test-coverage gap.
+

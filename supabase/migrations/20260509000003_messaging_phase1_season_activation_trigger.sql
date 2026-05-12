@@ -109,7 +109,7 @@ BEGIN
         -- clients see the participant rows first; the message broadcast is
         -- the inbox-refresh trigger.
         INSERT INTO messages (conversation_id, sender_id, is_system, content)
-        VALUES (v_conv_id, NULL, true, 'Team chat created');
+        VALUES (v_conv_id, NULL, true, 'Team chat created.');
       END IF;
     EXCEPTION WHEN OTHERS THEN
       RAISE WARNING 'auto_create_season_conversations: team chat failed for team_id=% (%): %', v_team.team_id, v_team.team_name, SQLERRM;

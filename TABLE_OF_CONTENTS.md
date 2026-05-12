@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-12 (Messaging Phase 1 / Unit 4: added `supabase/migrations/20260509000003_messaging_phase1_season_activation_trigger.sql` — season-activation trigger + auto-creation SQL function for the four chat types. Note: the Unit 1 and Unit 2 migrations from earlier in this phase are NOT yet indexed here; a bulk catch-up pass is pending.)
+> **Last Updated**: 2026-05-12 (Messaging Phase 1 / Unit 4: added `supabase/migrations/20260509000003_messaging_phase1_season_activation_trigger.sql` plus DB-backed test files `messaging-phase1-createTeamChat.test.ts` (Unit 3) and `messaging-phase1-season-activation.rls.test.ts` (Unit 4). Note: the Unit 1 and Unit 2 migrations from earlier in this phase are NOT yet indexed here; a bulk catch-up pass is pending.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -403,6 +403,8 @@ how to add a new test, demo recording, cleanup model).
 #### Database Tests (`/__tests__/database/`)
 - `rulesPageEvents.rls.test.ts` - `rules_page_events` RLS + constraints (requires local Supabase)
 - `houseRules.rls.test.ts` - `house_rules` RLS probes (requires local Supabase; full coverage deferred until seed fixtures land)
+- `messaging-phase1-createTeamChat.test.ts` - **Messaging Phase 1 / Unit 3** — DB-backed coverage of `createTeamChat()` (idempotency, roster→participants, captain `cannot_leave`, opening system message, FK errors).
+- `messaging-phase1-season-activation.rls.test.ts` - **Messaging Phase 1 / Unit 4** — DB-backed coverage of the season-activation trigger: team chats per team, captain chat, season + org announcements, idempotent re-fire, no-fire on non-status UPDATEs, no-fire when status flips away from active.
 
 #### Test Utilities (`/test/`)
 - `setup.ts` - Test environment setup
