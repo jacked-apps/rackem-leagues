@@ -1475,3 +1475,32 @@ types without further schema changes. One row per incident keeps history.
 
 **Tied to:** Item above this section (mid-season team-drop / soft-delete
 work). The flag write happens inside the same drop-team flow.
+
+---
+
+## 25. Team Chat — Allow Manual Adds of Non-Team Members (Phase 2+)
+
+**Discovered:** 2026-05-12 during Unit 3 captain-fallback button scoping
+**Severity:** LOW — enhancement, not a bug
+
+**Idea:** Today the auto-managed team chat is locked to the team roster
+(roster triggers in Unit 5 will keep membership in sync with `team_players`).
+Ed asked whether a captain could manually add a non-team member to the team
+chat — e.g., a player's spouse who wants to see league updates. Schema-wise
+this is already possible (`conversation_participants.user_id` doesn't require
+team membership), but there's no UI for it and Unit 5's roster triggers would
+ignore the outsider on roster changes (which is actually the desired
+behavior — manual-in, manual-out).
+
+**Scope when picked up:**
+- "Add member" UI inside the team chat conversation view, captain-only
+- Distinguish "auto-managed roster member" from "manually added outsider"
+  visually (e.g., small "guest" badge) so the captain knows roster triggers
+  won't sweep them
+- Make sure Unit 5 roster triggers only touch participants whose user_id
+  matches a current team roster member — outsiders are left alone
+- Add a "remove" affordance for captains on guest entries
+
+**Deferred from:** Phase 1 Unit 3 (captain manual-fallback button) on
+2026-05-12. Out of scope for that unit; logged here so it isn't lost.
+

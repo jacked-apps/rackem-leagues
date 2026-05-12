@@ -20,6 +20,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
 import { ConversationList } from '@/components/messages/ConversationList';
+import { CreateTeamChatPrompt } from '@/components/messages/CreateTeamChatPrompt';
 import { MessageView } from '@/components/messages/MessageView';
 import { MessagesEmptyState } from '@/components/messages/MessagesEmptyState';
 import { NewMessageModal } from '@/components/messages/NewMessageModal';
@@ -193,16 +194,19 @@ export function Messages() {
           )}
         >
           {memberId && (
-            <ConversationList
-              userId={memberId}
-              selectedConversationId={selectedConversationId}
-              onSelectConversation={setSelectedConversationId}
-              onNewMessage={handleNewMessage}
-              showAnnouncements={isCaptain || canAccessLeagueOperatorFeatures()}
-              onAnnouncements={handleAnnouncements}
-              onSettings={() => setShowSettingsModal(true)}
-              onExit={() => navigate('/dashboard')}
-            />
+            <>
+              <CreateTeamChatPrompt onChatCreated={setSelectedConversationId} />
+              <ConversationList
+                userId={memberId}
+                selectedConversationId={selectedConversationId}
+                onSelectConversation={setSelectedConversationId}
+                onNewMessage={handleNewMessage}
+                showAnnouncements={isCaptain || canAccessLeagueOperatorFeatures()}
+                onAnnouncements={handleAnnouncements}
+                onSettings={() => setShowSettingsModal(true)}
+                onExit={() => navigate('/dashboard')}
+              />
+            </>
           )}
         </div>
 

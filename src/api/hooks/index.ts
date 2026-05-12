@@ -286,3 +286,5 @@ export { useInviteStatuses } from './useInviteStatuses';
 export type { InviteStatus } from './useInviteStatuses';
 export { usePlayerTeamCount } from './usePlayerTeamCount';
 export type { PlayerTeam } from './usePlayerTeamCount';
+export { useCaptainTeamsMissingChat } from './useCaptainTeamsMissingChat';
+export type { CaptainTeamMissingChat } from './useCaptainTeamsMissingChat';
