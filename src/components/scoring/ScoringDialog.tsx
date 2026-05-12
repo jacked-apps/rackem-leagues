@@ -288,9 +288,12 @@ export function ScoringDialog({
 
   // Get label for golden break based on game type
   const getGoldenBreakLabel = () => {
-    if (gameType === '8-ball') return '8 on the Break';
-    if (gameType === '9-ball') return '9 on the Break';
-    if (gameType === '10-ball') return '10 on the Break';
+    // game_type values in this codebase are the snake_case form
+    // (eight_ball / nine_ball / ten_ball). The hyphenated form is an
+    // older convention some places still use — accept both to be safe.
+    if (gameType === 'eight_ball' || gameType === '8-ball') return '8 on the Break';
+    if (gameType === 'nine_ball' || gameType === '9-ball') return '9 on the Break';
+    if (gameType === 'ten_ball' || gameType === '10-ball') return '10 on the Break';
     return 'Golden Break';
   };
 
