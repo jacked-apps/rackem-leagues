@@ -1644,44 +1644,120 @@ can keep score for the team for the night.
 (predates Branch B work).
 **Owner:** unassigned
 
-**Symptom:** in the BCA 3v3 points league, the lineup-locked starting-
-points handicap should be a POSITIVE number awarded to ONE TEAM (the
-weaker side). What Ed observed was -13 applied to BOTH teams. The sign
-is wrong AND the both-teams behavior is wrong.
+**Symptom:** in the BCA 3v3 points league, the lineup-locked
+starting-points handicap should be a POSITIVE number shown to ONE TEAM
+only (the weaker side gets a head start). What Ed observed was **-13
+shown to BOTH teams** on the scoreboard. Both the sign is wrong AND the
+both-teams behavior is wrong.
 
-**Confirmed not Branch B:**
+### How team handicap is supposed to work (points-mode)
 
-- `match_lineups.home_team_modifier` defaults to 0.0 on all rows
-  (verified in DB).
-- Branch B did not touch any calculator code, lineup-lock flow, or
-  the modifier column.
-- Likely regression from an earlier commit (candidates per `git log`:
+Only the `points` handicap_type uses team handicap. Other types
+(`percentage`, `fargo`, `none`) skip it entirely. From the live code:
+
+1. Each player has a handicap integer (typically -2..2 for BCA).
+2. `getTeamHandicapBonus(home, away, season, 'points')` —
+   `floor((home_wins - away_wins) / 2)` from **completed matches in
+   the season**. On a fresh season with zero completed matches, this
+   returns 0.
+3. `calculateHandicapThresholds`:
+   - `homeHandicapTotal = sum(home lineup handicaps) + teamBonus`
+   - `awayHandicapTotal = sum(away lineup handicaps)` (team bonus
+     applied to home only, by design)
+   - `homeThresholds = getHandicapThresholds(home - away, 'points')`
+   - `awayThresholds = getHandicapThresholds(away - home, 'points')`
+4. Whichever side has the negative diff is the weaker side and gets
+   the start-points credit in its threshold object.
+
+So on a fresh seed season, `teamBonus = 0` and the only thing driving
+the threshold is `sum(home_handicaps) - sum(away_handicaps)`. If
+lineups are roughly balanced (handicaps in -2..2 range), the diff
+should be in roughly the same range — **nowhere near 13**.
+
+### Where the math lives
+
+- `src/utils/handicapCalculations.ts` (261 lines) — older
+  handicap helpers; `getTeamHandicapBonus` lives in its own file now
+  (`src/utils/getTeamHandicapBonus.ts`).
+- `src/utils/calculateHandicapThresholds.ts` (56 lines) — the main
+  computation path. Read this first; it's small and clear.
+- `src/utils/getTeamHandicapBonus.ts` — completed-match win
+  differential lookup.
+- `src/api/queries/handicaps.ts` — `getHandicapThresholds(diff,
+  handicapType)` does the lookup-table mapping. **Suspect this lookup
+  table** — if the points-mode table has stale or wrong rows, a small
+  diff could return -13.
+- `src/hooks/lineup/useLineupPersistence.ts` (319 lines) — lineup-lock
+  writes `home_team_modifier: teamHandicap` onto the
+  `match_lineups` row. **Note:** Ed verified
+  `match_lineups.home_team_modifier = 0.0` on all rows in the DB. So
+  whatever -13 he saw is **NOT in the modifier column**; it's coming
+  from a threshold lookup or from a display-time calculation.
+
+### Confirmed NOT Branch B
+
+- `home_team_modifier` defaults to 0.0 on every row Ed checked.
+- Branch B (PRs #105/#106/#107) only touched scoring/registry/events
+  code. No calculator, lineup-lock, threshold, or modifier code was
+  touched.
+- Regression candidates from `git log` predate Branch B (e.g. commit
   `ea25c98 feat(scoring): UX revisions per real-use feedback`, or
   even older).
 
-**Where the math lives:**
+### Reproduction
 
-- `src/utils/handicapCalculations.ts:238` — sums lineup handicaps +
-  applies team bonus.
-- `src/utils/calculateHandicapThresholds.ts:22` — computes home/away
-  thresholds. The `home_to_tie` value (start-points credit) is computed
-  here for points-mode leagues.
-- `src/hooks/lineup/useLineupPersistence.ts` writes
-  `home_team_modifier: teamHandicap` on lock — that's the value flowing
-  into the modifier column.
+Dev seed (`database/dev_starting_point.sql`) seeds a BCA 3v3 points
+league with 7-player rosters and random handicaps in roughly -2..2.
 
-**Investigation starting points:**
+1. `pnpm run db:reset` (or however Ed re-seeds locally).
+2. Sign in as the LO/captain of one of the 3v3 BCA points teams.
+3. Build a lineup, lock it.
+4. Open the live scoreboard for that match. Observe the starting
+   points / threshold display.
+5. Expected: one side shows a small positive head-start (or both
+   show 0 if perfectly matched). Observed: -13 on both sides.
 
-1. Replicate via the dev seed (3v3 BCA league has random handicaps in
-   the -2..2 range; create a lineup and lock to see the threshold).
-2. Add logging at the lineup-lock site to capture inputs to the
-   `getTeamHandicapBonus` call.
-3. Check sign convention: is the "weaker team gets positive points"
-   convention being respected, or did something invert the sign?
-4. Check that the bonus is only applied to the WEAKER team's threshold,
-   not both.
+### Investigation roadmap (suggested order)
 
-**Out of scope for Branch B's series of PRs.** Own branch.
+1. **Display layer first.** Search for where threshold/start-points
+   is rendered on the live scoreboard. The fact that the same -13 is
+   shown to BOTH teams suggests it's being read from one place and
+   displayed twice with no sign flip — that's a display bug, not a
+   math bug.
+2. **Then the lookup table.** Open `getHandicapThresholds` and
+   inspect the points-mode entries. If there's a row keyed by a diff
+   that the test seed happens to hit, and that row has a -13
+   somewhere, you've found it.
+3. **Only then the math.** If neither of the above explains it,
+   instrument `calculateHandicapThresholds` to log
+   `homeHandicapTotal`, `awayHandicapTotal`, `teamBonus`, and the
+   returned threshold objects. Trigger a fresh lineup-lock and
+   inspect.
+4. **Sign convention.** Whatever the bug is, check that "weaker team
+   gets positive head-start" still holds end-to-end. The code
+   convention uses signed differentials; somewhere between the math
+   and the UI, the sign needs to flip for the weaker side.
+
+### Important context (memory)
+
+- **Team handicap is a single-league feature.** Per memory
+  `project_team_handicap_preference.md`, only one of Ed's leagues
+  uses points-mode team handicap. Don't generalize a fix into a
+  universal scoring flow — keep it scoped to points-mode.
+- **Disposable test data.** No production users; safe to
+  reset/reseed.
+
+### Branch strategy
+
+**Branch off `main`, not stacked on Branch B.** The -13 bug lives in
+calculator/lineup-lock/display code that Branch B never touched. Suggested
+branch name: `fix/3v3-starting-points-handicap`.
+
+### Out of scope (don't pull in)
+
+- Don't refactor the handicap system. Find the bug, fix it, move on.
+- Don't touch `home_team_modifier` schema; it's not the problem.
+- Don't generalize team-handicap UI — it's one league's feature.
 
 ---
 
