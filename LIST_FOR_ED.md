@@ -1475,3 +1475,345 @@ types without further schema changes. One row per incident keeps history.
 
 **Tied to:** Item above this section (mid-season team-drop / soft-delete
 work). The flag write happens inside the same drop-team flow.
+
+---
+
+## 25. Inline LO-Edit Mode in Scoring Modal (Branch B Architecture Requirement)
+
+**Discovered:** 2026-05-09 (during Branch A modal verification).
+**Severity:** Feature request — must be designed-into Branch B from
+the start, not bolted on later.
+**Owner:** unassigned
+
+**The idea:** the scoring modal should support an LO-only inline edit
+mode that lets a league operator hide/show specific events directly
+from within the modal, without leaving the live-scoring page. Same
+component is also reused as a live-preview-and-edit surface in the
+operator office's preferences page. One component, two entry points,
+same persistence.
+
+### UX flow
+
+1. While viewing the scoring modal as an LO of this match's league,
+   a pencil/edit icon appears in the top-right corner of the modal
+   (only visible to LOs of this specific league).
+2. Tapping the pencil flips the modal into "LO edit" shape:
+   instead of the normal scoring controls, the body shows a list of
+   every registry event with a "hide / achievement" checkbox column:
+
+   ```
+   hide   achievement
+   [ ]    Break and Run
+   [ ]    Win by forfeit
+   [x]    Scratch on 8        ← currently hidden for this league
+   [ ]    Early 8
+   ...
+   ```
+
+3. Toggling a checkbox writes to `event_preferences` immediately
+   (or commits via a Save action — UX call). LO exits edit mode →
+   modal returns to normal scoring shape with the new visibility set.
+4. Same component, called with `mode='preview'`, is what the
+   operator office's preferences page renders so the LO sees a
+   live representation of "what scorers will see in the modal" while
+   they configure the league.
+
+### Why this is the right shape
+
+- **Edit-where-you-look.** LO sees a checkbox they don't want during
+  a live match → taps pencil → hides → done. No menu-diving.
+- **8-on-the-break is the canonical example.** BCA = not a win;
+  APA = tracked; many bar-leagues = auto-win. Same event, three
+  different LO preferences. Inline edit makes this trivial.
+- **Component reuse as preferences preview.** The LO office's
+  preferences page would otherwise be a separate UI rendering of
+  "current toggles." Sharing the modal component as the preview
+  means what they see in office matches what scorers see at
+  game time — no drift, no double-implementation.
+
+### Architecture requirements for Branch B (must be designed-in)
+
+Branch B's `game_events` registry + `event_preferences` table work
+needs to reckon with this from the start, not bolt it on later:
+
+1. **`event_preferences` schema must support per-league toggles
+   that the LO can write from anywhere they have permission.**
+   Org-level vs league-level is the natural granularity — both
+   should be writable. (Org-level toggle = "apply to all my
+   leagues"; league-level toggle = "this league only.")
+2. **The scoring modal component must accept a `mode` prop**
+   (`'score' | 'edit' | 'preview'`) from day one of Branch B. The
+   `score` mode is what scorers see; `edit` is what LOs see when
+   they tap the pencil; `preview` is the office-page render. All
+   three share the same registry rendering — they differ in which
+   controls are interactive and what writes happen on toggle.
+3. **Authorization gating: LO of this match's league.** Pencil
+   only renders when:
+   - Current user has `league_operator` (or `developer`) role, AND
+   - The match's league belongs to an org this LO administrates.
+   An LO of a different league should NOT see the pencil on this
+   match.
+4. **Realtime propagation across active scorers** is preferred but
+   acceptable to defer. When LO toggles "Scratch on 8" off mid-
+   match, scorers' open modals can either update live (Supabase
+   realtime subscription on `event_preferences`) or update on
+   next-modal-open (acceptable; explicit). Pick one and document.
+5. **The "preview" entry point lives on the operator office's
+   preferences page** as the visual representation of which events
+   are toggled. Office form for the LO to configure events should
+   reuse this rendering, not build a parallel form.
+
+### Out of scope for this item (don't conflate)
+
+- Editing event NAMES / labels (e.g., changing "Loser balls
+  pocketed" → "Points earned"). That's calculator-params territory
+  (the calculator's params already have a `label` field) and is its
+  own LO surface.
+- Editing event APPLICABILITY rules (e.g., "show Runout when winner
+  is breaker too"). That's registry-definition territory, owned by
+  developers, not per-league config.
+
+### Cross-references
+
+- Branch A's planned scope: docs/plans/2026-05-05-001-feat-scoring-modal-plumbing-plan.md
+- Branch B not yet planned. When Branch B's brainstorm/plan is written,
+  this item must be a first-class requirement, not a future-considerations
+  bullet.
+- Related: project_lo_inline_placeholder_handling memory (similar
+  edit-from-where-you-look pattern for placeholder players).
+
+## 26. Team-Granted Scorekeeper Rights (Non-Roster Users)
+
+**Discovered:** 2026-05-11 during Branch B Phase 1 smoke testing.
+**Severity:** Feature request — small clean addition; defer to its own branch.
+**Owner:** unassigned
+
+**The idea:** let a team's captain (or the LO) grant a registered user
+"scorekeeper rights" for the team, WITHOUT putting them on the team's
+roster. Example: Ed's wife comes to watch and hang out at the bar but
+she's not on any team. Ed (captain) grants her scorekeeper rights, she
+can keep score for the team for the night.
+
+**Architecture sketch:**
+
+- New small table `team_scorekeepers` with `(team_id, member_id,
+  granted_by, granted_at)`. Optional `expires_at` if we want one-night
+  grants vs permanent.
+- `can_write_game_event` SECURITY DEFINER function gains a third branch:
+  caller is in `team_scorekeepers` for either team in the match. The
+  existing two branches (roster member of either team, org owner/admin)
+  stay unchanged.
+- Authorization to grant/revoke: team captain OR org owner/admin. Mirrors
+  the can_write_house_rule_org pattern.
+- UI: a "Scorekeepers" section on the team-settings page (next to or
+  inside the roster panel). LO can also manage via the operator office.
+
+**Edge cases worth thinking about:**
+
+- A scorekeeper shouldn't get player stats — they're recording, not
+  playing. Stats queries already gate on `attributed_player_id`, so this
+  is implicit, but worth confirming.
+- Should one-night grants exist, or only permanent? Permanent is
+  simpler; one-night needs a UI for "grant for this match only" plus an
+  expiry mechanism.
+- Should grants be team-scoped (this team only) or league-scoped (any
+  team in this league)? Team-scoped matches the mental model.
+
+**Cross-references:**
+
+- The two-tier `can_write_game_event` was introduced in Branch B Phase 1
+  (plan: `docs/plans/2026-05-09-001-feat-scoring-event-registry-plan.md`,
+  migration: `supabase/migrations/20260509000000_game_events_table_phase1.sql`).
+- Followup migration broadened branch (a) to all active roster members
+  (not just locked-lineup players) — `supabase/migrations/20260511000000_broaden_can_write_game_event.sql`.
+- Related: `can_write_house_rule_org` pattern for the
+  captain-or-LO-grants-this authorization shape.
+
+## 27. -13 Starting Points Bug in BCA 3v3 Handicap Calc
+
+**Discovered:** 2026-05-10 during Branch B smoke testing.
+**Severity:** HIGH — silent handicap-math regression. Pre-existing
+(predates Branch B work).
+**Owner:** unassigned
+
+**Symptom:** in the BCA 3v3 points league, the lineup-locked
+starting-points handicap should be a POSITIVE number shown to ONE TEAM
+only (the weaker side gets a head start). What Ed observed was **-13
+shown to BOTH teams** on the scoreboard. Both the sign is wrong AND the
+both-teams behavior is wrong.
+
+### How team handicap is supposed to work (points-mode)
+
+Only the `points` handicap_type uses team handicap. Other types
+(`percentage`, `fargo`, `none`) skip it entirely. From the live code:
+
+1. Each player has a handicap integer (typically -2..2 for BCA).
+2. `getTeamHandicapBonus(home, away, season, 'points')` —
+   `floor((home_wins - away_wins) / 2)` from **completed matches in
+   the season**. On a fresh season with zero completed matches, this
+   returns 0.
+3. `calculateHandicapThresholds`:
+   - `homeHandicapTotal = sum(home lineup handicaps) + teamBonus`
+   - `awayHandicapTotal = sum(away lineup handicaps)` (team bonus
+     applied to home only, by design)
+   - `homeThresholds = getHandicapThresholds(home - away, 'points')`
+   - `awayThresholds = getHandicapThresholds(away - home, 'points')`
+4. Whichever side has the negative diff is the weaker side and gets
+   the start-points credit in its threshold object.
+
+So on a fresh seed season, `teamBonus = 0` and the only thing driving
+the threshold is `sum(home_handicaps) - sum(away_handicaps)`. If
+lineups are roughly balanced (handicaps in -2..2 range), the diff
+should be in roughly the same range — **nowhere near 13**.
+
+### Where the math lives
+
+- `src/utils/handicapCalculations.ts` (261 lines) — older
+  handicap helpers; `getTeamHandicapBonus` lives in its own file now
+  (`src/utils/getTeamHandicapBonus.ts`).
+- `src/utils/calculateHandicapThresholds.ts` (56 lines) — the main
+  computation path. Read this first; it's small and clear.
+- `src/utils/getTeamHandicapBonus.ts` — completed-match win
+  differential lookup.
+- `src/api/queries/handicaps.ts` — `getHandicapThresholds(diff,
+  handicapType)` does the lookup-table mapping. **Suspect this lookup
+  table** — if the points-mode table has stale or wrong rows, a small
+  diff could return -13.
+- `src/hooks/lineup/useLineupPersistence.ts` (319 lines) — lineup-lock
+  writes `home_team_modifier: teamHandicap` onto the
+  `match_lineups` row. **Note:** Ed verified
+  `match_lineups.home_team_modifier = 0.0` on all rows in the DB. So
+  whatever -13 he saw is **NOT in the modifier column**; it's coming
+  from a threshold lookup or from a display-time calculation.
+
+### Confirmed NOT Branch B
+
+- `home_team_modifier` defaults to 0.0 on every row Ed checked.
+- Branch B (PRs #105/#106/#107) only touched scoring/registry/events
+  code. No calculator, lineup-lock, threshold, or modifier code was
+  touched.
+- Regression candidates from `git log` predate Branch B (e.g. commit
+  `ea25c98 feat(scoring): UX revisions per real-use feedback`, or
+  even older).
+
+### Reproduction
+
+Dev seed (`database/dev_starting_point.sql`) seeds a BCA 3v3 points
+league with 7-player rosters and random handicaps in roughly -2..2.
+
+1. `pnpm run db:reset` (or however Ed re-seeds locally).
+2. Sign in as the LO/captain of one of the 3v3 BCA points teams.
+3. Build a lineup, lock it.
+4. Open the live scoreboard for that match. Observe the starting
+   points / threshold display.
+5. Expected: one side shows a small positive head-start (or both
+   show 0 if perfectly matched). Observed: -13 on both sides.
+
+### Investigation roadmap (suggested order)
+
+1. **Display layer first.** Search for where threshold/start-points
+   is rendered on the live scoreboard. The fact that the same -13 is
+   shown to BOTH teams suggests it's being read from one place and
+   displayed twice with no sign flip — that's a display bug, not a
+   math bug.
+2. **Then the lookup table.** Open `getHandicapThresholds` and
+   inspect the points-mode entries. If there's a row keyed by a diff
+   that the test seed happens to hit, and that row has a -13
+   somewhere, you've found it.
+3. **Only then the math.** If neither of the above explains it,
+   instrument `calculateHandicapThresholds` to log
+   `homeHandicapTotal`, `awayHandicapTotal`, `teamBonus`, and the
+   returned threshold objects. Trigger a fresh lineup-lock and
+   inspect.
+4. **Sign convention.** Whatever the bug is, check that "weaker team
+   gets positive head-start" still holds end-to-end. The code
+   convention uses signed differentials; somewhere between the math
+   and the UI, the sign needs to flip for the weaker side.
+
+### Important context (memory)
+
+- **Team handicap is a single-league feature.** Per memory
+  `project_team_handicap_preference.md`, only one of Ed's leagues
+  uses points-mode team handicap. Don't generalize a fix into a
+  universal scoring flow — keep it scoped to points-mode.
+- **Disposable test data.** No production users; safe to
+  reset/reseed.
+
+### Branch strategy
+
+**Branch off `main`, not stacked on Branch B.** The -13 bug lives in
+calculator/lineup-lock/display code that Branch B never touched. Suggested
+branch name: `fix/3v3-starting-points-handicap`.
+
+### Out of scope (don't pull in)
+
+- Don't refactor the handicap system. Find the bug, fix it, move on.
+- Don't touch `home_team_modifier` schema; it's not the problem.
+- Don't generalize team-handicap UI — it's one league's feature.
+
+---
+
+## 28. Player Profile Lookup From Anywhere (Long-Press / Hover / Click on Nickname)
+
+**Discovered:** 2026-05-12 during Branch B Phase 2 forfeit UX work.
+**Severity:** Feature request — quality-of-life across the entire app.
+**Owner:** unassigned
+
+**The idea:** anywhere in the app a player's nickname is rendered, the
+user should be able to long-press (mobile), hover (desktop), or click
+to see a profile card with the player's full identity:
+
+- Full first + last name (system of record).
+- BCA / CSI / Fargo member numbers once the integration ships.
+- Maybe a small stats summary (current handicap, recent form).
+- Distinguishes confusable nicknames in fonts where lowercase-L and
+  uppercase-I look identical ("Al" vs "AI" was the prompting case).
+
+**Why this matters strategically:**
+
+- Identity + accountability is something the upcoming BCA/CSI/Fargo
+  partnerships will care about. A nickname can be changed at will,
+  even depending on mood. The system-of-record name is the locked
+  identity for stats / handicap / dues purposes.
+- Future: BCA member number could lock in an "official" name from
+  BCA's records, separate from the user-editable display name. A new
+  table coinciding with BCA-source-of-truth info may be needed once
+  the integration is real.
+
+**Out of scope right now** — BCA integration isn't here yet, and the
+lookup UX is its own brainstorm. Capturing so it doesn't get lost.
+
+---
+
+## 29. Preference Axis Review / Consolidation Pass
+
+**Discovered:** 2026-05-12 during Branch B Phase 2 cleanup.
+**Severity:** Architectural housekeeping — schedule after all major
+feature work lands.
+**Owner:** unassigned
+
+**The problem:** preferences are scattered across multiple tables and
+shapes (leagues row, preferences row, system_overrides jsonb,
+points_calculator_params jsonb, enabled_events jsonb). The
+`golden_break_counts_as_win` cleanup in this branch was one example —
+two fields encoded the same decision and we collapsed them. There are
+probably more.
+
+**The work:**
+
+1. **Inventory.** Enumerate every preference axis, where it's stored,
+   what reads/writes it.
+2. **Look for duplicates.** Any pair of fields that encode the same
+   decision (the GB collapse pattern).
+3. **Look for gaps.** Decisions a league should be able to express
+   that don't have a clean field today.
+4. **Look for shape inconsistency.** Some axes are scalar columns,
+   some are jsonb keys, some are on leagues directly vs on
+   preferences. Standardize where it makes sense.
+5. **Document.** Once consolidated, write a "preferences inventory"
+   doc so future feature work knows where to put new fields.
+
+**Schedule:** after the current feature work (modal + LO config) is
+shipped and stable. Doing this in the middle of active feature work
+would create conflicts.
+
