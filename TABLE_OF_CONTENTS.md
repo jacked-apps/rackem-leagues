@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-12 (Messaging Phase 1 / Unit 5 part 2: added `messaging-phase1-roster-triggers.rls.test.ts` DB-backed test for the Unit 5 triggers. Earlier in the same day: Unit 5 part 1 (`20260509000004_messaging_phase1_roster_captain_triggers.sql`), Unit 4 trigger + tests, and Unit 3 createTeamChat tests indexed. Note: the Unit 1 and Unit 2 migrations from earlier in this phase are still NOT indexed here; a bulk catch-up pass is pending.)
+> **Last Updated**: 2026-05-12 (Test infrastructure: split `vitest.config.ts` into `unit` + `db` projects so DB-backed tests auto-run sequentially without flags. Added `src/__tests__/README.md` documenting the placement convention. Indexed in the Test Documentation section above. Note: the Unit 1 and Unit 2 messaging migrations from earlier in this phase are still NOT indexed here; a bulk catch-up pass is pending.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -399,6 +399,9 @@ how to add a new test, demo recording, cleanup model).
 - `searchHouseRules.test.ts` - Pure substring search over house-rule title + body
 - `groupHouseRules.test.ts` - TOC interleave grouping: standalones, override pairing, specificity ordering
 - `houseRuleForm.test.tsx` - HouseRuleForm: validation, effect-type switch, CSI suggestions, snippet picker, dirty state
+
+#### Test Documentation
+- `__tests__/README.md` - **Test directory conventions.** Explains the vitest `unit` vs `db` project split, where to put new tests, the one rule that matters (`db`-touching tests go under `__tests__/database/`), and how to run them. Read this before adding a new test file.
 
 #### Database Tests (`/__tests__/database/`)
 - `rulesPageEvents.rls.test.ts` - `rules_page_events` RLS + constraints (requires local Supabase)
