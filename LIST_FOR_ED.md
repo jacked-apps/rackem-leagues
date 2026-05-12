@@ -1570,3 +1570,34 @@ For now, **CI / pre-commit hooks should run with `--no-file-parallelism`
 when this directory is touched**. Document this in the contributing
 guide whenever it gets written.
 
+---
+
+## 28. Optional LO-Created Org-Wide Group Chat
+
+**Discovered:** 2026-05-12 while finalizing the messaging Phase 1 chat model
+**Severity:** LOW — future feature, not Phase 1
+
+**The idea:** Today, the four auto-created chats per season are:
+captain chat, team chats, season announcements (one-way), org
+announcements (one-way). There is intentionally no auto-created
+back-and-forth "everyone in the org" chat — a 200-player free-for-all
+is a moderation disaster.
+
+But: an LO may someday want a deliberate, opt-in, org-wide group chat
+("the league's clubhouse"). The current data model already supports it
+— the existing `createGroupConversation` SECURITY DEFINER function
+handles arbitrary group chats. All this feature needs is:
+
+1. An LO-only UI button: **"Start an org-wide chat"**
+2. On click, call `createGroupConversation` with `member_ids` = every
+   player currently active across the org's active seasons (same query
+   as `createOrgAnnouncementsChat`'s participants snapshot).
+3. The new chat is a normal back-and-forth `conversations` row —
+   not `auto_managed=true`, so it doesn't get re-created by any
+   trigger. The LO owns its lifecycle (rename, leave, delete).
+4. Probably hide the button until the LO has at least, say, 5 active
+   members in the org — guard against accidental creation in an empty
+   org.
+
+**Out of scope for Phase 1.** No schema change required when this lands.
+
