@@ -223,6 +223,20 @@ function ScoreMatchBody() {
   const [runout, setRunout] = useState(false);
   const [loserValue, setLoserValue] = useState<number | null>(null);
   const [winnerValue, setWinnerValue] = useState<number | null>(null);
+  // Branch B Phase 2: loss-cause events (early_8, scratch_on_8,
+  // eight_wrong_pocket, plus any future loss-cause events the LO enables).
+  // Modal renders one checkbox per enabled loss-cause; mutual exclusion is
+  // enforced at the toggle handler. Stored as a Set keyed by registry name
+  // so adding new loss-cause events requires zero state changes here.
+  const [lossCauseEvents, setLossCauseEvents] = useState<Set<string>>(() => new Set());
+  const handleLossCauseEventChange = (eventName: string, checked: boolean) => {
+    setLossCauseEvents((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(eventName);
+      else next.delete(eventName);
+      return next;
+    });
+  };
 
   // Branch B Phase 2: scoring modal mode state. Default 'score'. When the
   // LO taps the Edit button on the modal, mode flips to 'edit' and the
@@ -938,6 +952,8 @@ function ScoreMatchBody() {
         onRunoutChange={setRunout}
         onLoserValueChange={setLoserValue}
         onWinnerValueChange={setWinnerValue}
+        lossCauseEvents={lossCauseEvents}
+        onLossCauseEventChange={handleLossCauseEventChange}
         onCancel={() => {
           setScoringGame(null);
           setBreakAndRun(false);
@@ -947,6 +963,7 @@ function ScoreMatchBody() {
           setRunout(false);
           setLoserValue(null);
           setWinnerValue(null);
+          setLossCauseEvents(new Set());
         }}
         onConfirm={() => {
           if (scoringGame) {
@@ -961,6 +978,7 @@ function ScoreMatchBody() {
               runout,
               winByForfeit,
               breakFouled,
+              lossCauseEvents,
               winnerPlayerId: scoringGame.winnerPlayerId,
               winnerWasScheduledBreaker: scoringGame.winnerWasScheduledBreaker,
               homePlayerId: gameResults.get(scoringGame.gameNumber)?.home_player_id ?? null,
@@ -979,6 +997,7 @@ function ScoreMatchBody() {
                 setRunout(false);
                 setLoserValue(null);
                 setWinnerValue(null);
+                setLossCauseEvents(new Set());
               },
               { breakFouled, winnerValue, loserValue }
             );
