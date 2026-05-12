@@ -475,6 +475,154 @@ export async function createSeasonAnnouncementsChat(
 }
 
 
+// ============================================================================
+// createOrgAnnouncementsChat
+// ============================================================================
+
+/**
+ * Parameters for createOrgAnnouncementsChat
+ */
+export interface CreateOrgAnnouncementsChatParams {
+  organizationId: string;
+}
+
+/**
+ * Result of createOrgAnnouncementsChat.
+ */
+export interface CreateOrgAnnouncementsChatResult {
+  conversationId: string;
+  created: boolean;
+}
+
+/**
+ * Create the auto-managed organization-wide announcements chat.
+ *
+ * One announcements channel per organization. Members are every distinct
+ * player rostered on any team in any ACTIVE season belonging to the org
+ * (per brainstorm §5.1: "excludes past players"). Players cannot leave
+ * (cannot_leave=true) — only mute via notification_mode (Phase 2 UI).
+ *
+ * Only LO / staff can post. Same Phase-1 caveat as createSeasonAnnouncements:
+ * post-permission is a Phase-5 / RLS-enablement concern; this helper just
+ * sets up the participants.
+ *
+ * @param params - Organization identifier
+ * @returns Conversation id + created flag
+ * @throws Error if org missing or inserts fail
+ *
+ * @example
+ * await createOrgAnnouncementsChat({ organizationId: org.id });
+ */
+export async function createOrgAnnouncementsChat(
+  params: CreateOrgAnnouncementsChatParams
+): Promise<CreateOrgAnnouncementsChatResult> {
+  const { organizationId } = params;
+
+  // 1. Idempotency
+  const { data: existing, error: lookupError } = await supabase
+    .from('conversations')
+    .select('id')
+    .eq('scope_type', 'organization')
+    .eq('scope_id', organizationId)
+    .eq('conversation_type', 'announcements')
+    .eq('auto_managed', true)
+    .maybeSingle();
+
+  if (lookupError) {
+    throw new Error(`Failed to look up existing org announcements chat: ${lookupError.message}`);
+  }
+  if (existing) {
+    return { conversationId: existing.id, created: false };
+  }
+
+  // 2. Verify the org exists
+  const { data: org, error: orgError } = await supabase
+    .from('organizations')
+    .select('id, organization_name')
+    .eq('id', organizationId)
+    .single();
+
+  if (orgError || !org) {
+    throw new Error(
+      `Organization not found for createOrgAnnouncementsChat (organizationId=${organizationId}): ${orgError?.message ?? 'no row'}`
+    );
+  }
+
+  // 3. DISTINCT players across all ACTIVE seasons in this org.
+  //    Chain: team_players → teams → seasons (filter status='active') →
+  //    leagues (filter organization_id). Past players (whose season is no
+  //    longer 'active') are excluded per the brainstorm.
+  const playerIds = await loadActiveOrgPlayers(organizationId);
+
+  // 4. Insert the conversation
+  const { data: conversation, error: convError } = await supabase
+    .from('conversations')
+    .insert({
+      title: org.organization_name
+        ? `${org.organization_name} — Announcements`
+        : 'Organization Announcements',
+      auto_managed: true,
+      conversation_type: 'announcements',
+      scope_type: 'organization',
+      scope_id: organizationId,
+    })
+    .select('id')
+    .single();
+
+  if (convError || !conversation) {
+    throw new Error(
+      `Failed to insert org announcements conversation: ${convError?.message ?? 'no row returned'}`
+    );
+  }
+
+  // 5. Insert participants — players cannot leave (same as season variant)
+  const participantRows = playerIds.map((p) => ({
+    conversation_id: conversation.id,
+    user_id: p,
+    cannot_leave: true,
+  }));
+
+  if (participantRows.length > 0) {
+    const { error: partError } = await supabase
+      .from('conversation_participants')
+      .insert(participantRows);
+
+    if (partError) {
+      throw new Error(`Failed to add participants to org announcements: ${partError.message}`);
+    }
+  }
+
+  // 6. Opening system message
+  await postSystemMessage({
+    conversationId: conversation.id,
+    content: 'Organization announcements channel created. Only league staff can post here.',
+  });
+
+  return { conversationId: conversation.id, created: true };
+}
+
+
+/**
+ * Internal: distinct member_ids playing in any ACTIVE season in the org.
+ * Past players are excluded — they were rostered in seasons whose status
+ * is no longer 'active'.
+ */
+async function loadActiveOrgPlayers(organizationId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('team_players')
+    .select('member_id, teams!inner(season_id, seasons!inner(status, league_id, leagues!inner(organization_id)))')
+    .eq('teams.seasons.status', 'active')
+    .eq('teams.seasons.leagues.organization_id', organizationId);
+
+  if (error) {
+    throw new Error(`Failed to load active org players: ${error.message}`);
+  }
+
+  const unique = new Set<string>((data ?? []).map((r) => r.member_id as string));
+  return Array.from(unique);
+}
+
+
 /**
  * Internal: return distinct member_ids who play any team in a season.
  *
