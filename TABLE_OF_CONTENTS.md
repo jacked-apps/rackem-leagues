@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-12 (Messaging Phase 1 / Unit 5 part 1: added `supabase/migrations/20260509000004_messaging_phase1_roster_captain_triggers.sql` — four roster/captain lifecycle trigger functions on `team_players`, `teams`, and `members`. Unit 4 / Unit 3 migrations + tests indexed previously. Note: the Unit 1 and Unit 2 migrations from earlier in this phase are still NOT indexed here; a bulk catch-up pass is pending.)
+> **Last Updated**: 2026-05-12 (Messaging Phase 1 / Unit 5 part 2: added `messaging-phase1-roster-triggers.rls.test.ts` DB-backed test for the Unit 5 triggers. Earlier in the same day: Unit 5 part 1 (`20260509000004_messaging_phase1_roster_captain_triggers.sql`), Unit 4 trigger + tests, and Unit 3 createTeamChat tests indexed. Note: the Unit 1 and Unit 2 migrations from earlier in this phase are still NOT indexed here; a bulk catch-up pass is pending.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -405,6 +405,7 @@ how to add a new test, demo recording, cleanup model).
 - `houseRules.rls.test.ts` - `house_rules` RLS probes (requires local Supabase; full coverage deferred until seed fixtures land)
 - `messaging-phase1-createTeamChat.test.ts` - **Messaging Phase 1 / Unit 3** — DB-backed coverage of `createTeamChat()` (idempotency, roster→participants, captain `cannot_leave`, opening system message, FK errors).
 - `messaging-phase1-season-activation.rls.test.ts` - **Messaging Phase 1 / Unit 4** — DB-backed coverage of the season-activation trigger: team chats per team, captain chat, season + org announcements, idempotent re-fire, no-fire on non-status UPDATEs, no-fire when status flips away from active.
+- `messaging-phase1-roster-triggers.rls.test.ts` - **Messaging Phase 1 / Unit 5** — DB-backed coverage of the four roster/captain lifecycle triggers: INSERT (join + msg only on real inserts), DELETE (deferred constraint trigger; sets `left_at` and posts "left" only on real removals, silent on wholesale-replace), captain change (cannot_leave flip in team + captain chats; multi-team captain edge case), member soft-delete. **Note:** the three messaging DB-backed test files race each other under default vitest file parallelism — run with `--no-file-parallelism` when executing the full directory. See `LIST_FOR_ED.md` #27.
 
 #### Test Utilities (`/test/`)
 - `setup.ts` - Test environment setup

@@ -1538,3 +1538,35 @@ failure stays isolated.
 the *Adversarial* test scenario under Unit 4. The trigger ships with
 the EXCEPTION blocks; this is purely a test-coverage gap.
 
+---
+
+## 27. DB-Backed Messaging Tests Cannot Run in Parallel
+
+**Discovered:** 2026-05-12 while wrapping up Unit 5
+**Severity:** LOW — known constraint, just needs a one-line workaround
+
+**The issue:** The three messaging DB-backed test files
+(`messaging-phase1-createTeamChat.test.ts`,
+`messaging-phase1-season-activation.rls.test.ts`,
+`messaging-phase1-roster-triggers.rls.test.ts`) all share one local
+Postgres and pick fixtures off the same seeded teams/seasons. Vitest's
+default file-level parallelism races them — one test deletes the team
+chat while another expects it to exist, etc.
+
+**Workaround when running them together:**
+```
+pnpm test:run --no-file-parallelism src/__tests__/database/
+```
+Individually each file passes 100%. The flag forces sequential file
+execution; ~10 seconds slower for the whole suite.
+
+**Long-term fixes (not urgent):**
+1. Have each test pick a DIFFERENT fixture team (so they don't overlap)
+2. Wrap each test in a Postgres transaction with rollback
+3. Mark the DB-backed test directory as `pool: 'forks', singleFork: true`
+   in a vitest workspace config
+
+For now, **CI / pre-commit hooks should run with `--no-file-parallelism`
+when this directory is touched**. Document this in the contributing
+guide whenever it gets written.
+
