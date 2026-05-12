@@ -135,6 +135,12 @@ EXECUTE FUNCTION public.trg_team_players_insert_to_team_chat();
 -- ----------------------------------------------------------------------------
 -- 2. team_players AFTER DELETE → past-member the team chat row + maybe msg
 -- ----------------------------------------------------------------------------
+-- DEFERRED constraint trigger: the operator UI's updateTeam() does a
+-- wholesale wipe-and-replace of every team_players row on each "Save team"
+-- click. An immediate trigger here would post N "X left" messages on every
+-- no-op save. By deferring to end-of-transaction we can check whether the
+-- player is back in team_players (wholesale-replace) or really gone
+-- (genuine removal) and only narrate the real removals.
 
 CREATE OR REPLACE FUNCTION public.trg_team_players_delete_from_team_chat()
 RETURNS trigger
@@ -147,7 +153,21 @@ DECLARE
   v_first_name text;
   v_last_name text;
   v_rows_updated integer;
+  v_still_on_team boolean;
 BEGIN
+  -- End-of-transaction check: is the player back on the team (i.e., was
+  -- this DELETE part of a wholesale-replace that re-INSERTED them)?
+  -- If yes, the participant row stays active and we say nothing.
+  SELECT EXISTS (
+    SELECT 1 FROM team_players
+    WHERE team_id = OLD.team_id AND member_id = OLD.member_id
+  ) INTO v_still_on_team;
+
+  IF v_still_on_team THEN
+    RETURN OLD;
+  END IF;
+
+  -- Real removal path. Find the team's auto-managed chat (no-op if absent).
   SELECT id INTO v_conv_id
   FROM conversations
   WHERE scope_type = 'team'
@@ -190,9 +210,13 @@ $$;
 REVOKE ALL ON FUNCTION public.trg_team_players_delete_from_team_chat() FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.trg_team_players_delete_from_team_chat() FROM authenticated;
 
+-- CONSTRAINT TRIGGER + DEFERRABLE INITIALLY DEFERRED: fires at commit time
+-- rather than immediately on DELETE, so the function above can ask "is the
+-- player still in team_players?" and silence wholesale-replace patterns.
 DROP TRIGGER IF EXISTS trg_team_players_delete_chat ON team_players;
-CREATE TRIGGER trg_team_players_delete_chat
+CREATE CONSTRAINT TRIGGER trg_team_players_delete_chat
 AFTER DELETE ON team_players
+DEFERRABLE INITIALLY DEFERRED
 FOR EACH ROW
 EXECUTE FUNCTION public.trg_team_players_delete_from_team_chat();
 
