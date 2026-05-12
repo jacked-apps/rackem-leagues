@@ -1540,35 +1540,39 @@ the EXCEPTION blocks; this is purely a test-coverage gap.
 
 ---
 
-## 27. DB-Backed Messaging Tests Cannot Run in Parallel
+## 27. DB-Backed Messaging Tests Cannot Run in Parallel — FIXED 2026-05-12
 
-**Discovered:** 2026-05-12 while wrapping up Unit 5
-**Severity:** LOW — known constraint, just needs a one-line workaround
+**Discovered + resolved:** 2026-05-12 while wrapping up Unit 5
 
-**The issue:** The three messaging DB-backed test files
-(`messaging-phase1-createTeamChat.test.ts`,
+**The issue (kept for institutional memory):** The three messaging
+DB-backed test files (`messaging-phase1-createTeamChat.test.ts`,
 `messaging-phase1-season-activation.rls.test.ts`,
 `messaging-phase1-roster-triggers.rls.test.ts`) all share one local
 Postgres and pick fixtures off the same seeded teams/seasons. Vitest's
-default file-level parallelism races them — one test deletes the team
-chat while another expects it to exist, etc.
+default file-level parallelism raced them — one test deleted a team
+chat while another expected it to exist, etc.
 
-**Workaround when running them together:**
-```
-pnpm test:run --no-file-parallelism src/__tests__/database/
-```
-Individually each file passes 100%. The flag forces sequential file
-execution; ~10 seconds slower for the whole suite.
+**The fix:** `vitest.config.ts` now uses two `test.projects`:
+- `unit`: every other test file. Parallel, happy-dom.
+- `db`: `src/__tests__/database/**`. **Sequential**
+  (`fileParallelism: false`), jsdom.
 
-**Long-term fixes (not urgent):**
-1. Have each test pick a DIFFERENT fixture team (so they don't overlap)
-2. Wrap each test in a Postgres transaction with rollback
-3. Mark the DB-backed test directory as `pool: 'forks', singleFork: true`
-   in a vitest workspace config
+Vitest picks the right project per file automatically based on the path.
+No flag needed. `pnpm test:run` runs both projects with the right
+parallelism rules out of the box. Future CI workflows that invoke
+`pnpm test:run` inherit the behavior with zero config.
 
-For now, **CI / pre-commit hooks should run with `--no-file-parallelism`
-when this directory is touched**. Document this in the contributing
-guide whenever it gets written.
+**If you ever add another set of DB-backed tests** (outside
+`src/__tests__/database/`), add their path to the `db` project's
+`include` array in `vitest.config.ts` — or move them under that
+directory so they're auto-picked-up.
+
+**Future enhancement (not urgent):** the per-test fixture-overlap
+problem could be solved more cleanly by having each file pick a
+disjoint test team, or by transaction-wrapping each test with rollback.
+Either would let DB tests run in parallel again. Until the test suite
+gets big enough to make sequential DB tests painful, the project-pin
+fix is sufficient.
 
 ---
 
