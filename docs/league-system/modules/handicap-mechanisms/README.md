@@ -40,15 +40,36 @@ If a proposed feature changes *what kind of advantage the weaker side gets durin
 
 Any Handicap Mechanism should be **composable** with any Handicap System, any Threshold Chart, and any Scoring System (assuming a calibrated chart exists for the specific encoding-mechanism pair). The current codebase has wiring for specific combinations only — see variant pages for what's wired vs unwired. **This is an implementation status, not architectural intent.** Future work will fill in the gaps.
 
-## Variants index
+## Variants index — the 2x2 fundamental taxonomy
 
-Three active mechanisms, plus the `'none'` case. Listed as peers — no variant is the "default."
+The fundamental kinds of handicap mechanism are organized by two axes:
 
-| Variant | Code value | In-match effect |
+- **Data axis** — does the mechanism modify the *games* or the *points* dimension of match data?
+- **Shape** — does it move the *start line* (head-start: weaker side starts ahead) or the *finish line* (extended-finish: stronger side has farther to go)?
+
+That gives **four fundamental cells**. Each cell can host multiple variant implementations that differ on **mode flags** (scope, termination); see below the grid.
+
+| | **Games axis** | **Points axis** |
 |---|---|---|
-| [**Extra Games**](extra-games.md) | `'extra_games'` | Stronger team's target wins > weaker team's target wins |
-| [**Start Points**](start-points.md) | `'start_points'` | Weaker team starts with bonus points already scored |
-| [**Race Length Adjustment**](race-length-adjustment.md) | `'race_length_adjustment'` | Per-pairing race lengths differ by individual skill gap |
+| **Head-start** *(start line varies)* | *Future:* games on the wire | [**Start Points**](start-points.md) — `start_points` *(current)* |
+| **Extended-finish** *(finish line varies)* | [**Extra Games**](extra-games.md) — `extra_games` *(current)* <br> [**Race Length Adjustment**](race-length-adjustment.md) — `race_length_adjustment` *(current)* | *Future:* extra_points |
+
+### Mode flags within a cell
+
+Variants within the same cell share the fundamental mechanism shape but differ on:
+
+- **Scope** — *team-aggregate* (sum team handicaps, apply to the whole team match) vs *per-pairing* (use individual handicap, apply per head-to-head). Scope is just an aggregation choice at the input stage; the downstream sequence (find diff → apply formula → produce target) is the same.
+- **Termination** — *threshold* (play to a fixed game count and evaluate at end) vs *race* (match ends when someone hits the target).
+
+Currently-shipping variant implementations:
+
+| Variant | Cell | Scope | Termination |
+|---|---|---|---|
+| `extra_games` | Games / Extended-finish | team | threshold |
+| `start_points` | Points / Head-start | team | threshold |
+| `race_length_adjustment` | Games / Extended-finish | per-pairing | race |
+
+So `extra_games` and `race_length_adjustment` are **siblings within the same cell** — same fundamental mechanism, different mode flags.
 
 ### The `'none'` case
 
@@ -64,7 +85,8 @@ Mechanisms sit in the middle of the handicap chain:
 
 ## Future possibilities
 
-- **Games on the wire** (head-start in games-won) — the gambler's framing of handicapping. The weaker team starts the match with N games already credited (e.g., "race to 9, but the weaker team starts with 3 wins"). Mathematically equivalent in effect to `extra_games`' asymmetric targets, but presented as a head-start rather than asymmetric goals. Common in gambling/league contexts; worth shipping when LO-customization UI lands.
+- **Games on the wire** (Games / Head-start) — head-start on the games axis. The weaker team starts the match with N games already credited (e.g., "race to 9, but the weaker team starts with 3 wins"). The gambler's framing of handicapping. Same shape as `start_points` but on the games axis instead of the points axis.
+- **Extra points** (Points / Extended-finish) — extended finish on the points axis. Both teams start at zero; the stronger team needs to reach a higher points target to win the match (e.g., "race to 100, but the stronger team needs 120"). Same shape as `extra_games` but on the points axis instead of the games axis. Completes the 2x2 taxonomy.
 - **Hybrid mechanisms** — partial start_points + partial race-length adjustment; or extra_games at the team-aggregate level combined with race_length_adjustment at the pairing level.
 - **LO-defined custom mechanisms** — operators wanting a non-standard advantage (e.g., extra time per shot, sequence-of-play priority, additional racks added back) would invent new mechanisms outside the currently-shipped three.
 - **Winner-takes-all variants** — a mechanism that gives the weaker team a single high-stakes advantage (e.g., one match-deciding game) rather than spreading the advantage across the whole match.

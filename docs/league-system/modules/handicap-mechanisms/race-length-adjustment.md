@@ -13,7 +13,14 @@ A peer variant of the **[Handicap Mechanisms](README.md)** Module. **Reserved**:
 
 ## What it is
 
-The mechanism gives the weaker player in each **individual head-to-head pairing** a shorter race-to target than the stronger player. Each pairing has its own asymmetric race length, set from the rating gap between the two paired players (not the team-vs-team aggregate). This is fundamentally different from the other mechanisms, which apply at the *team* level — race_length_adjustment applies at the *pairing* level.
+The mechanism gives the weaker player in each **individual head-to-head pairing** a shorter race-to target than the stronger player. Each pairing has its own asymmetric race length, set from the rating gap between the two paired players (not the team-vs-team aggregate).
+
+**Same fundamental shape as `extra_games`.** Race Length Adjustment and Extra Games both live in the *Games / Extended-finish* cell of the [Module's 2x2 taxonomy](README.md#variants-index--the-2x2-fundamental-taxonomy) — same fundamental mechanism (stronger side has a farther finish line on the games axis). The differences are **mode flags**, not kind:
+
+- **Scope**: per-pairing (this variant) vs team-aggregate (`extra_games`). Per-pairing means each individual matchup gets its own asymmetric finish lines, computed from the *individual* rating pair rather than the team-sum difference.
+- **Termination**: race (this variant — pairing ends when either player hits their target) vs threshold (`extra_games` — play all games to the team-level fixed count, evaluate at end).
+
+Both of these are aggregation/timing choices on top of the same fundamental shape, not different kinds of mechanism.
 
 **Picture this** (for the novice-explanation case): An APA SL7 vs SL5 matchup. With a standard race-to of 5 for both players, the SL5 has almost no chance. With Race Length Adjustment, a chart says SL7 must win 5 games of their head-to-head while SL5 needs only 3. APA's well-known "SL race chart" is exactly this pattern — different cells for every possible (your-SL, their-SL) pair. The mechanism applies per matchup; team-level victory is then aggregated from the pairing outcomes.
 
