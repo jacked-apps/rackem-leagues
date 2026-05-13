@@ -10,32 +10,17 @@
  * - Mobile-optimized input area
  */
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { ConversationHeader } from './ConversationHeader';
-import { MessageBubble } from './MessageBubble';
 import { MessageInput } from './MessageInput';
 import { ReadOnlyBanner } from './ReadOnlyBanner';
+import { MessageList, type Message } from './messageview/MessageList';
 import { useConversationParticipants } from '@/hooks/useConversationParticipants';
 import { useConversationMessages, useSendMessage, useUpdateLastRead, useConversationMessagesRealtime, useLeaveConversation, useBlockUser, useMessageComposerStatus } from '@/api/hooks';
 import { supabase } from '@/supabaseClient';
-import { LoadingState, EmptyState, ConfirmDialog } from '@/components/shared';
-import { MessageSquare } from 'lucide-react';
+import { ConfirmDialog } from '@/components/shared';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
-
-interface Message {
-  id: string;
-  content: string;
-  created_at: string;
-  edited_at: string | null;
-  is_edited: boolean;
-  sender: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    system_player_number: number;
-  };
-}
 
 interface MessageViewProps {
   conversationId: string;
@@ -49,11 +34,10 @@ export function MessageView({ conversationId, currentUserId, onBack, onLeaveConv
   const [otherUserId, setOtherUserId] = useState<string | null>(null);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [showBlockConfirm, setShowBlockConfirm] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // TanStack Query hooks
   const { data: messagesData = [], isLoading: loading } = useConversationMessages(conversationId);
-  const messages = messagesData as any as Message[];
+  const messages = messagesData as unknown as Message[];
   const sendMessageMutation = useSendMessage();
   const updateLastReadMutation = useUpdateLastRead();
   const leaveConversationMutation = useLeaveConversation();
@@ -119,11 +103,6 @@ export function MessageView({ conversationId, currentUserId, onBack, onLeaveConv
       });
     }
   }, [conversationId, currentUserId, messages.length]);
-
-  // Auto-scroll to bottom when messages change
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
 
   const handleSendMessage = async (content: string) => {
     sendMessageMutation.mutate(
@@ -227,44 +206,16 @@ export function MessageView({ conversationId, currentUserId, onBack, onLeaveConv
         variant="destructive"
       />
 
-      {/* Messages - Mobile-optimized padding */}
+      {/* Messages — list rendering, loading, empty state, auto-scroll,
+          system-message variant, and per-bubble profanity filter all live
+          in <MessageList>. */}
       <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-3 md:space-y-4 bg-muted">
-        {loading ? (
-          <div className="flex items-center justify-center h-full">
-            <LoadingState message="Loading messages..." />
-          </div>
-        ) : messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <EmptyState
-              icon={MessageSquare}
-              title="No messages yet"
-              description="Start the conversation!"
-            />
-          </div>
-        ) : (
-          messages.map((message) => {
-            if (!message.sender) {
-              return null;
-            }
-
-            const isCurrentUser = message.sender.id === currentUserId;
-            const senderName = `${message.sender.first_name} ${message.sender.last_name}`;
-
-            return (
-              <MessageBubble
-                key={message.id}
-                content={message.content}
-                createdAt={message.created_at}
-                isEdited={message.is_edited}
-                isCurrentUser={isCurrentUser}
-                senderName={!isCurrentUser ? senderName : undefined}
-                senderId={!isCurrentUser ? message.sender.id : undefined}
-                recipientLastRead={recipientLastRead}
-              />
-            );
-          })
-        )}
-        <div ref={messagesEndRef} />
+        <MessageList
+          messages={messages}
+          currentUserId={currentUserId}
+          recipientLastRead={recipientLastRead}
+          loading={loading}
+        />
       </div>
 
       {/* Composer OR read-only banner — never both, and the composer is

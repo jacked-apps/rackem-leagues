@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-13 (Messaging Phase 1 / Unit 7 polish — new migration `20260513000001_messaging_phase1_unit7_polish.sql` reworks the `members.profanity_filter_enabled` COMMENT for the DOB-optional reality and adds an explicit `is_system` early-return to `increment_unread_count()`. Verification test: `messaging-phase1-unit7-polish.rls.test.ts`. Awaits local DB apply — Docker wasn't running this session.)
+> **Last Updated**: 2026-05-13 (Messaging Phase 1 / Unit 7 live-path fix — `MessageView.tsx` was rendering messages with its own inline loop, bypassing the `messageview/MessageList.tsx` component the system-message variant was wired into. Refactored `MessageView` to use `MessageList`, dropping ~50 lines and 1 useEffect + ref + local Message interface. Deleted the now-and-always-orphan `messageview/useConversationDetails.ts`. Unit 7's system-message variant now actually reaches the UI.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -655,9 +655,10 @@ Reusable wizard/form step components
 - `scoreboardColors.ts` - Single source of truth for team colors (home: blue, away: orange)
 
 #### Messaging Components (`/components/messages/`)
-- `MessageView.tsx` - Main message view
+- `MessageView.tsx` - Main message view — orchestrates header, message list (via `MessageList`), composer / read-only banner, leave + block dialogs.
 - `MessageInput.tsx` - Message input
-- `MessageBubble.tsx` - Message bubble
+- `MessageBubble.tsx` - Message bubble — default user-to-user variant + Unit 7 centered/italic system-message variant.
+- `messageview/MessageList.tsx` - Scrollable message list extracted from `MessageView`. Owns the `Message` interface (exported), loading + empty states, auto-scroll, and the system-message branch (`is_system → MessageBubble isSystem`).
 - `ConversationList.tsx` - Conversation list
 - `ConversationHeader.tsx` - Conversation header
 - `MessagesEmptyState.tsx` - Empty state

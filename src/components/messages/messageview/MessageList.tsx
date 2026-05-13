@@ -10,7 +10,7 @@ import { MessageSquare } from 'lucide-react';
 import { LoadingState, EmptyState } from '@/components/shared';
 import { MessageBubble } from '../MessageBubble';
 
-interface Message {
+export interface Message {
   id: string;
   content: string;
   created_at: string;
