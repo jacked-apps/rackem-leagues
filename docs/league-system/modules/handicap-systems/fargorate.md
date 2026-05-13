@@ -33,6 +33,17 @@ The team-level handicap is not a simple sum. FargoRate's published formula uses 
 - Team `T_sum = sum of player T values`
 - Match win-expectancy = `T_home_sum / (T_home_sum + T_away_sum)` — the probability the home team wins a head-to-head match between these specific lineups
 
+**What the formula means in practice.** FargoRate is a **log-2 scale** of strength: every 100-point rating gap *doubles* the stronger player's odds.
+
+| Rating gap | Odds ratio | Stronger wins ~X% of head-to-head games |
+|---|---|---|
+| 100 | 2:1 | 67% (~2/3) |
+| 200 | 4:1 | 80% (~4/5) |
+| 300 | 8:1 | 89% (~8/9) |
+| 400 | 16:1 | 94% |
+
+So a 500-vs-400 matchup → the 500 wins ~67% of head-to-head games. A 700-vs-400 matchup → the 700 wins ~89%. This is the same principle ELO uses for chess (just with different constants). The exponential transform is what makes the rating gap behave linearly in log-odds — a useful property when you're trying to design fair handicap mechanisms downstream.
+
 The win-expectancy is *this variant's output* to downstream Modules. What downstream does with it — starting points for the weaker team, race-length adjustments per pairing, game targets per side, something else entirely — is decided by the chosen mechanism + chart + scoring combination, not by this variant. See [Interactions](#interactions) for the current shipping pairings.
 
 ## When you'd use it / pros
