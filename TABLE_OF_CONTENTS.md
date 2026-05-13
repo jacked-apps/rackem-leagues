@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-12 (Messaging Phase 1 / Unit 6: added `ReadOnlyBanner.tsx`, `useMessageComposerStatus.ts`, banner RTL test, and the wiring change in `MessageView.tsx`. RLS portion of Unit 6 deferred to the project-wide RLS-enablement effort per `LIST_FOR_ED.md` #29.)
+> **Last Updated**: 2026-05-13 (Messaging Phase 1 / Unit 7 prep — minor-enforcement foundation: added `src/utils/age.ts` + `__tests__/age.test.ts`, `src/hooks/__tests__/useProfanityFilter.test.ts`; extended `members.profanity_filter_enabled` query to also return `date_of_birth` and wired `isMinor()` into `useProfanityFilter`.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -763,7 +763,8 @@ Reusable wizard/form step components
 - `useRosterEditor.ts` - Roster editing
 
 #### Form & Validation
-- `useProfanityFilter.ts` - Profanity filtering
+- `useProfanityFilter.ts` - Profanity filtering — two-tier rule: when `isMinor(date_of_birth)` is true the filter is forced ON and `canToggle: false` (R4 under-18 enforcement); otherwise respects `members.profanity_filter_enabled`. DOB is optional, so unknown-age falls back to the user's stored preference.
+- `__tests__/useProfanityFilter.test.ts` - **Profanity filter hook tests** (10 cases) — loading state, fail-open on error / no data, forced ON for known minors (incl. day-before-18th-birthday boundary), adult preference both directions, null DOB respects preference, null `profanity_filter_enabled` coerces to false.
 - `useOperatorProfanityFilter.ts` - Operator profanity filter
 - `useChampionshipAutoFill.ts` - Championship date autofill
 
@@ -783,6 +784,8 @@ Reusable wizard/form step components
 > **CRITICAL**: Always use `formatters.ts` for timezone-safe date handling
 
 - `formatters.ts` - **Timezone-safe date utilities** (parseLocalDate, formatLocalDate, etc.)
+- `age.ts` - **Age calculation utilities** — `calculateAge(dob)` and `isMinor(dob)` built on `parseLocalDate` so DOB strings anchor to the local calendar (avoids the UTC off-by-one-day bug). Consumed by `useProfanityFilter` for R4 under-18 enforcement; returns `null` / `false` for missing or malformed DOB.
+- `__tests__/age.test.ts` - **Age util tests** (10 cases) — `calculateAge` null/malformed/whole-years/birthday-not-yet/birthday-today; `isMinor` unknown DOB → false, clear minors → true, day-before-18 → true, exact 18th birthday → false, adults → false. Uses `vi.setSystemTime` to pin "today" to 2026-05-12.
 - `holidayUtils.ts` - Holiday detection and handling
 
 #### Schedule & Matchup
