@@ -41,12 +41,18 @@ export default defineConfig({
           globals: true,
           environment: 'happy-dom',
           setupFiles: ['./src/test/setup.ts'],
-          include: ['**/*.{test,spec}.{ts,tsx}'],
+          // Anchored to `src/` so the unit project doesn't sweep into
+          // sibling git worktrees (`.worktrees/<other-branch>/src/...`)
+          // and run stale test files from unrelated branches. All real
+          // test files live under `src/`; if that changes, widen this
+          // include rather than reverting to a project-root glob.
+          include: ['src/**/*.{test,spec}.{ts,tsx}'],
           exclude: [
             'node_modules',
             'dist',
             '.next',
             '.cache',
+            '.worktrees/**',
             'src/__tests__/database/**',
           ],
         },
