@@ -67,7 +67,12 @@ The team-level handicap is a sum of the active lineup's individual ratings. The 
 
 ## Current code state
 
-Used by the **`standard_3v3`** wizard preset (a.k.a. **Points 3-Man Division**). Implemented as the `bca3v3` SystemModule.
+This handicap system shows up at two code layers, both used by the **Points 3-Man Division** (the LO-facing name for the bundle of choices that picks this system):
+
+- **`standard_3v3`** (in `src/wizards/league-v2/presetMappings.ts`) is the **wizard preset key** — the LO-facing "bundle" of 7 Module choices that gets picked during league creation. The preset expands into preferences (`handicap_type='points'`, plus the values for the other 6 Modules).
+- **`bca3v3`** (in `src/systems/bca3v3.ts`) is the **SystemModule key** — the runtime code object that does the rating math (validation, formula, threshold lookup).
+
+The two layers connect via `handicap_type='points'`: the wizard preset sets the preference; `src/systems/resolver.ts` (lines 42–55) then maps that preference back to the `bca3v3` SystemModule at runtime. Step 2 collapses both names into `points_3man` for consistency across layers.
 
 - Code anchors today: `src/systems/bca3v3.ts` (SystemModule); `src/utils/calculatePlayerHandicap.ts` (history-based computation, lines ~78–90); `src/utils/handicap/get3v3GamesNeeded.ts` (threshold chart lookup)
 - DB: `'points'` allowed value in `preferences.handicap_type` CHECK (`supabase/migrations/20260410000000_extend_preferences_modular.sql:58`)
