@@ -13,9 +13,9 @@ A peer variant of the **[Handicap Systems](README.md)** Module — specifically 
 
 ## What it is
 
-A **0–100 win-rate percentage** representing the share of games a player wins over a rolling history window. Higher = stronger. The percentage IS the handicap value — it gets summed across the lineup and the team-vs-team difference feeds the threshold chart.
+A **0–100 win-rate percentage** representing the share of games a player wins over a rolling history window. Higher = stronger. The percentage IS the handicap value — it gets summed across the lineup, and the team-vs-team difference is this variant's *output* to downstream Modules.
 
-**Picture this** (for the novice-explanation case): every player carries a number between 0 and 100 — their personal win-rate over recent games. A 75 means they win 75% of their games. Stronger players have higher numbers. Team handicap is the sum of the active lineup's percentages; the team-vs-team difference feeds a chart that yields per-team target wins.
+**Picture this** (for the novice-explanation case): every player carries a number between 0 and 100 — their personal win-rate over recent games. A 75 means they win 75% of their games. Stronger players have higher numbers. Team handicap is the sum of the active lineup's percentages; the team-vs-team **difference** is what the rest of the league system uses to balance the match. What that balancing actually looks like (more games to win? bonus starting points? a different race length?) is decided by **other Modules**, not by this one.
 
 ## How it works / how it's calculated
 
@@ -36,7 +36,7 @@ The reduced variant is one point on a broader **handicap-strength scaling** spec
 
 The 0% case is achieved by *not using a handicap system at all* (a different `handicap_type` choice), not by configuring this variant. See the [Module README's Future Possibilities](README.md#future-possibilities) for the 75% and 150% LMS scaling factors we might add.
 
-The team handicap is the sum of active-lineup ratings. The match-level difference between team sums is fed to a [threshold chart](../threshold-charts/5v5-games-needed.md) that yields per-team target wins.
+The team handicap is the sum of active-lineup ratings. The match-level difference between team sums is *this variant's output*. What downstream Modules do with the difference (which mechanism applies it, which chart or formula maps it to a concrete in-match adjustment, how match victory is decided) is outside this variant. See [Interactions](#interactions) for the current shipping pairings.
 
 ## Not the same as CSI's "Average Handicapping"
 
@@ -58,19 +58,24 @@ CSI's *LO Handbook 2020* (page 38) names a method called **Average Handicapping*
 
 - **Compatible with [`extra_games`](../handicap-mechanisms/extra-games.md) mechanism** (current usage in the [Percentage 5-Man Division](../../divisions/percentage-5man.md)).
 - **No current chart for [`start_points`](../handicap-mechanisms/start-points.md)** with Percentage handicap.
-- **Compatible with [1-Point Scoring System](../scoring-systems/one-point-scoring.md)** (the Race-To wins-only model).
+- **Compatible with [1-Point Scoring System](../scoring-systems/one-point-scoring.md)**.
 - **Pairs with [5v5 games-needed chart](../threshold-charts/5v5-games-needed.md)** today.
 
 ## Possible modifications
 
 - **Different range** — the *reduced* variant uses `0–50` (input is `winPct / 2`)
-- **Different chart granularity** — re-bucket which percentage spreads map to which target wins
+- **Different chart granularity** — re-bucket which percentage spreads map to which threshold values
 - **History-window adjustment** — currently uses up to 200 most-recent games; configurable per-league cap
 - **Switch source from win-rate to true points-average** — would migrate this variant toward CSI's Average Handicapping (would need a different name and different chart)
 
 ## Current code state
 
-Used by the **`standard_5v5`** wizard preset (a.k.a. **Percentage 5-Man Division**). Implemented as the `bca5v5` SystemModule.
+This handicap system shows up at two code layers, both used by the **Percentage 5-Man Division** (the LO-facing name for the bundle of choices that picks this system):
+
+- **`standard_5v5`** (in `src/wizards/league-v2/presetMappings.ts`) is the **wizard preset key** — the LO-facing "bundle" of 7 Module choices that gets picked during league creation. The preset expands into preferences (`handicap_type='percentage'`, plus the values for the other 6 Modules).
+- **`bca5v5`** (in `src/systems/bca5v5.ts`) is the **SystemModule key** — the runtime code object that does the rating math (validation, formula, threshold lookup).
+
+The two layers connect via `handicap_type='percentage'`: the wizard preset sets the preference; `src/systems/resolver.ts` (lines 42–55) then maps that preference back to the `bca5v5` SystemModule at runtime. Step 2 collapses both names into `percentage_5man` for consistency across layers.
 
 - Code anchors today: `src/systems/bca5v5.ts` (SystemModule); `src/utils/calculatePlayerHandicap.ts` (history-based computation, lines ~93–95); `src/utils/handicap/get5v5GamesNeeded.ts` (threshold chart lookup)
 - DB: `'percentage'` allowed value in `preferences.handicap_type` CHECK (`supabase/migrations/20260410000000_extend_preferences_modular.sql:59`)

@@ -31,8 +31,9 @@ The team-level handicap is not a simple sum. FargoRate's published formula uses 
 
 - `T_player = 2^(rating / 100)` — converts the rating to a relative-strength scalar
 - Team `T_sum = sum of player T values`
-- Match win-expectancy = `T_home_sum / (T_home_sum + T_away_sum)`
-- This expectancy feeds the **[Fargo formula chart](../threshold-charts/fargo-formula.md)** to compute starting points for the weaker team
+- Match win-expectancy = `T_home_sum / (T_home_sum + T_away_sum)` — the probability the home team wins a head-to-head match between these specific lineups
+
+The win-expectancy is *this variant's output* to downstream Modules. What downstream does with it — starting points for the weaker team, race-length adjustments per pairing, game targets per side, something else entirely — is decided by the chosen mechanism + chart + scoring combination, not by this variant. See [Interactions](#interactions) for the current shipping pairings.
 
 ## When you'd use it / pros
 
@@ -53,7 +54,7 @@ The team-level handicap is not a simple sum. FargoRate's published formula uses 
 - **Compatible with [`start_points`](../handicap-mechanisms/start-points.md) mechanism** (current usage in the [FargoRate 10-Point 5-Man Division](../../divisions/fargo-10pt-5man.md)).
 - **Compatible with [10-Point Scoring System](../scoring-systems/ten-point-scoring.md)** — CSI's published Fargo+10-Point combo is the most prominent BCAPL handicapped configuration today.
 - **Could also pair with [1-Point Scoring System](../scoring-systems/one-point-scoring.md)** (CSI has signaled future "FargoRate + Race-To" division formats — see the strategic brainstorm `modular-league-system-requirements.md`).
-- **Compatible with [`race_length_adjustment`](../handicap-mechanisms/race-length-adjustment.md) mechanism** in theory (per-pairing race lengths derived from rating spread); no current shipping configuration uses this combo.
+- **Compatible with [`race_length_adjustment`](../handicap-mechanisms/race-length-adjustment.md) mechanism** in theory; no current shipping configuration uses this combo.
 - **Pairs with [Fargo formula chart](../threshold-charts/fargo-formula.md)** today.
 
 ## Possible modifications
@@ -62,7 +63,12 @@ The FargoRate rating itself is locked to FargoRate's spec — no in-variant modi
 
 ## Current code state
 
-Used by the **`fargo_5v5`** wizard preset (a.k.a. **FargoRate 10-Point 5-Man Division**). Implemented as the `fargo5v5` SystemModule.
+This handicap system shows up at two code layers, both used by the **FargoRate 10-Point 5-Man Division** (the LO-facing name for the bundle of choices that picks this system):
+
+- **`fargo_5v5`** (in `src/wizards/league-v2/presetMappings.ts`) is the **wizard preset key** — the LO-facing "bundle" of 7 Module choices that gets picked during league creation. The preset expands into preferences (`handicap_type='fargo'`, plus the values for the other 6 Modules).
+- **`fargo5v5`** (in `src/systems/fargo5v5.ts`) is the **SystemModule key** — the runtime code object that does the rating handling (validation, the `2^(rating/100)` transform, the win-expectancy computation, plus — for the current shipping pairing — start-points math).
+
+The two layers connect via `handicap_type='fargo'`: the wizard preset sets the preference; `src/systems/resolver.ts` (lines 42–55) then maps that preference back to the `fargo5v5` SystemModule at runtime. Step 2 collapses both names into `fargo_10pt_5man` for consistency across layers. *Note:* the `fargo5v5` SystemModule today bundles rating math AND start-points math in one file; if a future Division uses FargoRate with a different mechanism, the start-points-specific code should be pulled out to keep the rating variant clean.
 
 - Code anchors today: `src/systems/fargo5v5.ts` (SystemModule — rating validation, `2^(rating/100)` transform, start-points formula); `src/utils/calculatePlayerHandicap.ts:110+` (`calculateFargoHandicap` three-step fallback); `src/utils/handicap/fargoGamesWonThresholds.ts` (formula chart)
 - DB: `'fargo'` allowed value in `preferences.handicap_type` CHECK (`supabase/migrations/20260410000000_extend_preferences_modular.sql:60`)

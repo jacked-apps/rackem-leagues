@@ -15,7 +15,7 @@ A peer variant of the **[Handicap Systems](README.md)** Module — specifically 
 
 An integer rating from **-2 to +2** representing player strength relative to a notional center (0 = average for the league). Higher numbers = stronger players. The 5-grade range is intentionally coarse — easy to assign qualitatively, easy to do mental math with at the table.
 
-**Picture this** (for the novice-explanation case): a 5-grade skill scale where 0 is average for your league, +2 is your strongest players, and -2 is your weakest. Everyone falls on one of those five integers. When two teams meet, you sum each team's lineup ratings; the difference (e.g., team A is +3 over team B) tells a chart how many games each side needs to win for a fair match.
+**Picture this** (for the novice-explanation case): a 5-grade skill scale where 0 is average for your league, +2 is your strongest players, and -2 is your weakest. Everyone falls on one of those five integers. When two teams meet, you sum each team's lineup ratings to get a team rating; the team-vs-team **difference** (e.g., team A is +3 over team B) is what the rest of the league system uses to balance the match. What that balancing actually looks like — more games for the stronger team to win? bonus starting points for the weaker team? a different race length? — is decided by **other Modules**, not by this one.
 
 ## How it works / how it's calculated
 
@@ -37,12 +37,12 @@ The reduced variant is one point on a broader **handicap-strength scaling** spec
 
 The 0% case is achieved by *not using a handicap system at all* (a different `handicap_type` choice), not by configuring this variant. See the [Module README's Future Possibilities](README.md#future-possibilities) for the 75% and 150% LMS scaling factors we might add.
 
-The team-level handicap is a sum of the active lineup's individual ratings. The match-level handicap is the **difference** between team sums; that difference is fed to a [threshold chart](../threshold-charts/3v3-games-needed.md) which yields per-team target wins.
+The team-level handicap is the sum of the active lineup's individual ratings. The match-level handicap is the **difference** between team sums — and *that is this variant's output*. What downstream Modules do with the difference (which mechanism applies it, which chart or formula maps it to a concrete in-match adjustment, how match victory is decided) is outside this variant. See [Interactions](#interactions) for the current shipping pairings.
 
 ## When you'd use it / pros
 
 - **Small leagues** where players are well-known and an LO can assign ratings qualitatively without a long history requirement.
-- **Operators who want simple, transparent integer math** — handing a team "+3 difference → race to X" without a calculator.
+- **Operators who want simple, transparent integer math** — a +3 difference is easy to communicate to players, easy to look up, easy to reason about mentally.
 - **3-person team play** where the small lineup makes coarse grades work cleanly.
 
 ## When you wouldn't / cons
@@ -55,8 +55,8 @@ The team-level handicap is a sum of the active lineup's individual ratings. The 
 
 - **Compatible with [`extra_games`](../handicap-mechanisms/extra-games.md) mechanism** (current usage in the [Points 3-Man Division](../../divisions/points-3man.md)).
 - **No current chart for [`start_points`](../handicap-mechanisms/start-points.md)** with Points handicap — combination is not blocked at the schema level but no calibrated chart exists, so it would not produce sensible values.
-- **Compatible with [1-Point Scoring System](../scoring-systems/one-point-scoring.md)** (the Race-To wins-only model).
-- **Pairs with [3v3 games-needed chart](../threshold-charts/3v3-games-needed.md)** today; could pair with any chart that maps integer differences to game targets.
+- **Compatible with [1-Point Scoring System](../scoring-systems/one-point-scoring.md)**.
+- **Pairs with [3v3 games-needed chart](../threshold-charts/3v3-games-needed.md)** today. Could pair with any threshold chart that consumes integer differences.
 
 ## Possible modifications
 
