@@ -28,9 +28,9 @@ The docs are written for:
 
 The docs are NOT written for:
 
-- Pool players (that's L4 — future work)
-- League operators choosing a Division (that's L3 — future work)
-- CSI / Ozzy-level evaluators (that's L2 — future work)
+- Pool players (separate future docs surface, in-app)
+- League operators choosing a Division (separate future docs surface, in the wizard)
+- CSI / Ozzy-level evaluators (separate future docs surface, polished pitch material)
 
 But — and this is load-bearing — **a fresh Claude reading any L1 file should be able to extract a novice-friendly explanation** for a player or operator on demand. The docs themselves can be dense and jargon-laden; the meaning underneath must be recoverable.
 
