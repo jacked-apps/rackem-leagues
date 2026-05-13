@@ -1475,3 +1475,66 @@ types without further schema changes. One row per incident keeps history.
 
 **Tied to:** Item above this section (mid-season team-drop / soft-delete
 work). The flag write happens inside the same drop-team flow.
+
+---
+
+## 🗂️ 2026-05-13 Loss-cause event registry — needs a future home
+
+**Discovered/raised:** during Unit 4 (Scoring Systems) planning of the
+L1 docs branch (`docs/league-system-l1`)
+**Severity:** LOW for now — explicitly out of scope per Ed; flagged
+here so it doesn't get lost
+**Branches affected:** code lives on `refactor/golden-break-single-source`
+(commit `aebb6bb`), specifically `src/systems/game-events/`. Not on
+this branch base.
+
+**What loss-cause events are:** a registry of reasons a game can end
+with a specific loss type. Three known events from the registry today:
+
+- `early_8` — player pockets the 8-ball before clearing all their
+  group balls (instant loss in standard 8-ball rules)
+- `scratch_on_8` — player scratches (cue ball in pocket) on the
+  8-ball shot (instant loss)
+- `eight_wrong_pocket` — player pockets the 8-ball in the wrong
+  pocket (instant loss)
+
+These are the standard 8-ball "instant-loss" events. The registry
+has `enabledByDefault: false` flags so leagues can selectively
+enable/disable specific events.
+
+**What the L1 docs plan originally called for:** Unit 4
+(`scoring-systems/README.md`) was supposed to include a sub-section
+documenting this registry — what the events are, how they're recorded,
+how they integrate with 10-Point Scoring's per-game point allocation,
+their `enabledByDefault: false` state, and the `src/systems/game-events/`
+code anchor.
+
+**Why I removed it from Unit 4 scope (per Ed):** Ed's call during
+planning was that loss-cause events are a **stats concern, not a
+scoring concern**. Quote: *"we care that you won not how you won.
+that is a separate metric for stats and should not affect the
+'score'."* So the registry doesn't belong in the Scoring Systems
+Module — it's about how a game ended (metadata for stats), not how
+the per-game points or match victory are determined.
+
+**What likely needs to happen:**
+
+1. Loss-cause events may eventually deserve a **Stats / Analytics
+   Module** (currently doesn't exist in the L1 plan or the cheat
+   sheet's 7 Modules). When that Module is brainstormed and planned,
+   the registry lives there.
+2. If the events DO end up affecting scoring in any league
+   configuration (e.g., "loser gets 0 points instead of 0–7 if they
+   scratched on the 8"), then the relationship between Stats and
+   Scoring becomes load-bearing and the architecture needs another
+   look.
+3. Until then: the code on `refactor/golden-break-single-source`
+   continues to exist; no L1 docs reference it; no Module owns it.
+
+**Tracked in task list:** task #19 (`Future home for loss-cause
+registry (stats/analytics, not scoring)`).
+
+**To revisit:** when (a) `refactor/golden-break-single-source`
+merges to main, (b) the Stats/Analytics Module is brainstormed, or
+(c) you decide loss-cause events DO need a relationship with
+Scoring Systems after all.
