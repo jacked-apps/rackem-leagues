@@ -29,7 +29,7 @@ The mechanism's output is a pair `(start_points_for_weaker_team, which_team_is_w
 
 ## When you wouldn't / cons
 
-- **Requires a points-based scoring system** — start_points is meaningless when match victory is decided purely by games-won (no point accumulator to add to).
+- **As currently implemented, requires a points-based scoring system** — the start_points value is in points, and there's nowhere to put it if match victory is decided purely by games-won. The underlying *idea* (head-start in whatever unit the scoring system uses) could be generalized — e.g., a future variant could credit the weaker team with N games-already-won for a games-based scoring system. No such generalization exists today.
 - **The weaker team's lead can feel "given" rather than "earned"** — some players dislike starting matches at a deficit even when mathematically justified.
 - **Requires a calibrated formula or chart for the Handicap System used** — without one, the bonus amount is undefined.
 
