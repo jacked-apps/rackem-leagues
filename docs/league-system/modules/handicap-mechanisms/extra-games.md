@@ -28,7 +28,7 @@ The mechanism's output is a pair of per-team target wins (`target_home`, `target
 ## When you'd use it / pros
 
 - **Operators preferring a "you have to earn it" feel** — the stronger team can't coast; they have to outperform the rating gap on the table.
-- **Pairs naturally with games-based scoring** — the mechanism plugs directly into a "first to N wins" scoring system without complicated point accumulation.
+- **Pairs naturally with a game-counting Win Calculator** — when match victory is decided by reaching game-win targets (currently `win_condition='games'`), extra_games' asymmetric targets directly determine the winner. If the Win Calculator instead consults accumulated points, the asymmetric targets are recorded but don't decide the match.
 - **Clear and intuitive for players** — "your team needs to win 8 games, theirs needs 5" is easy to communicate at lineup time.
 
 ## When you wouldn't / cons

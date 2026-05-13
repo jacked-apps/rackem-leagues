@@ -23,13 +23,13 @@ The mechanism's output is a pair `(start_points_for_weaker_team, which_team_is_w
 
 ## When you'd use it / pros
 
-- **Pairs naturally with points-based scoring systems** — the bonus is in the same unit (points) as the scoring system, so the integration is mathematically clean.
+- **Pairs naturally with a points-consulting Win Calculator** — when match victory is decided by accumulated points (currently `win_condition='points'`), start_points' initial bonus is directly factored into the winner determination. If the Win Calculator instead consults game-win counts, the bonus is recorded but doesn't decide the match.
 - **Feels less punitive than asymmetric goals** — the stronger team isn't forced to win extra games; they just face a starting deficit. The framing is "the weaker team has a leg up" rather than "the stronger team has to work harder."
 - **Smooth across a wide skill range** — start_points scales continuously (e.g., 12 points, 56 points, 200 points) rather than in discrete game-target steps. Useful when handicaps are fine-grained.
 
 ## When you wouldn't / cons
 
-- **As currently implemented, requires a points-based scoring system** — the start_points value is in points, and there's nowhere to put it if match victory is decided purely by games-won. The underlying *idea* (head-start in whatever unit the scoring system uses) could be generalized — e.g., a future variant could credit the weaker team with N games-already-won for a games-based scoring system. No such generalization exists today.
+- **As currently implemented, requires a points-consulting Win Calculator** — the start_points value is in points, so the bonus is meaningless if match victory is decided purely by game-win counts. The underlying *idea* (head-start in whatever unit the Win Calculator consults) could be generalized — e.g., a future variant could credit the weaker team with N games-already-won for a game-counting Win Calculator. That generalization is captured as the "**games on the wire**" entry in the [Module README's Future Possibilities](README.md#future-possibilities).
 - **The weaker team's lead can feel "given" rather than "earned"** — some players dislike starting matches at a deficit even when mathematically justified.
 - **Requires a calibrated formula or chart for the Handicap System used** — without one, the bonus amount is undefined.
 

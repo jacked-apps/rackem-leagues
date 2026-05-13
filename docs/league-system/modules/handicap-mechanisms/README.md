@@ -9,11 +9,16 @@ audience: developer + AI sessions
 
 ## Essence
 
-A **handicap mechanism** is *how* the league applies a handicap difference during actual play — the in-match adjustment that makes the match competitive between unequal sides. Mechanisms can apply at the **team** level (one team gets an asymmetric goal or bonus relative to the other) or at the **per-pairing** level (each individual head-to-head matchup gets its own asymmetric race length). The [Handicap Systems](../handicap-systems/README.md) Module produces a **number** (each player's encoded strength); this Module is what turns that number into an **advantage** for the weaker side, whether "side" means a team or a paired player.
+A **handicap mechanism** declares the *kind of asymmetry* the handicap creates in a match's setup — what shape the advantage to the weaker side takes. Mechanisms operate on different data axes:
+
+- **Games axis** — asymmetric game-win targets (`extra_games`), or asymmetric per-pairing race lengths (`race_length_adjustment`)
+- **Points axis** — asymmetric initial point totals (`start_points`)
+
+The [Handicap Systems](../handicap-systems/README.md) Module produces a **number** (each player's encoded strength); this Module declares the *kind* of benchmark that number drives in match setup. The actual benchmark **values** come from a [Threshold Chart](../threshold-charts/README.md). The mechanism does NOT decide who wins the match — that's the responsibility of a separate concern called the **Win Calculator** (currently the binary `win_condition` axis; see [How this Module interacts](#how-this-module-interacts) for the separation). Mechanisms can declare benchmarks at the **team** level or the **per-pairing** level depending on the variant.
 
 ## Why mechanisms exist
 
-Without a mechanism, a handicap encoding is inert — it's just a number stored against each player with no effect on how a match plays out. The mechanism is the *thing that actually happens* because the handicap encoding says two sides (whether team-vs-team or player-vs-player) are unequal. There are multiple ways a league can choose to apply that inequality:
+Without a mechanism, a handicap encoding is inert — it's just a number stored against each player with no effect on the match. The mechanism is the *kind of benchmark* the handicap drives in match setup, so that two sides (whether team-vs-team or player-vs-player) play to different targets, starting positions, or per-pairing race lengths. The mechanism *declares* the asymmetry; the match plays out under that asymmetry; the Win Calculator (separate concern) consults the played data plus benchmarks to decide the winner. There are multiple ways a league can choose to shape that asymmetry:
 
 - Give the weaker side fewer games to win (asymmetric goals — *extra_games*)
 - Give the weaker side bonus points at the start (asymmetric initial state — *start_points*)
@@ -55,12 +60,13 @@ Mechanisms sit in the middle of the handicap chain:
 
 - **Upstream**: [Handicap Systems](../handicap-systems/README.md) produce encoded strength values. The **difference** that feeds a mechanism is computed at the appropriate scope — team-vs-team for team-level mechanisms (`extra_games`, `start_points`), individual player-vs-player for per-pairing mechanisms (`race_length_adjustment`). For some encodings, the upstream input may be a derived value (e.g., FargoRate's win-expectancy probability) rather than a raw difference.
 - **Internal partner**: [Threshold Charts](../threshold-charts/README.md) produce the actual numbers a mechanism needs — target wins (for extra_games), starting points (for start_points), per-pairing race lengths (for race_length_adjustment). A mechanism with no calibrated chart (or formula) for the encoding-side has nothing meaningful to apply. *Note:* "chart" is shorthand — a **formula** can fill the same role (e.g., FargoRate's start-points uses the `2^(rating/100)` formula in place of a lookup table; the 3v3 hardcoded chart could likewise be expressed as a formula). Charts and formulas are interconvertible expressions of the same mapping; the Threshold Charts Module covers both shapes. **Formulas are generally preferred** for their versatility — continuous coverage, easier LO customization, can generate any specific chart on demand.
-- **Downstream**: [Scoring Systems](../scoring-systems/README.md) decide match victory based on accumulated games/points. The mechanism's effect (asymmetric goal, bonus head-start, structural difference) shapes what the scoring system reads at match end.
+- **Downstream**: A separate concern — the **Win Calculator** — examines the collected match data (games won per side, accumulated points per side) plus the benchmarks the mechanism declared, and decides who wins the match. Currently this lives as the binary `win_condition` axis (games | points) inside the [Scoring Systems](../scoring-systems/README.md) Module; a future Module restructure may extract it. **The mechanism does NOT decide the winner** — it declares the benchmark; what's done with the benchmark plus played data is the Win Calculator's job.
 
 ## Future possibilities
 
+- **Games on the wire** (head-start in games-won) — the gambler's framing of handicapping. The weaker team starts the match with N games already credited (e.g., "race to 9, but the weaker team starts with 3 wins"). Mathematically equivalent in effect to `extra_games`' asymmetric targets, but presented as a head-start rather than asymmetric goals. Common in gambling/league contexts; worth shipping when LO-customization UI lands.
 - **Hybrid mechanisms** — partial start_points + partial race-length adjustment; or extra_games at the team-aggregate level combined with race_length_adjustment at the pairing level.
-- **LO-defined custom mechanisms** — operators wanting a non-standard advantage (e.g., extra time per shot, sequence-of-play priority, additional racks added back) would invent new mechanisms outside the current three.
+- **LO-defined custom mechanisms** — operators wanting a non-standard advantage (e.g., extra time per shot, sequence-of-play priority, additional racks added back) would invent new mechanisms outside the currently-shipped three.
 - **Winner-takes-all variants** — a mechanism that gives the weaker team a single high-stakes advantage (e.g., one match-deciding game) rather than spreading the advantage across the whole match.
 
 ## Source of truth
