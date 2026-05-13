@@ -203,6 +203,10 @@ docs/league-system/
 
 ## Division index
 
+A **Division** is a pre-configured bundle of the 7 Module choices — *not* a first-class architectural concept. The 7 Modules are the building blocks; Divisions are convenient starting-point bundles. The three Divisions below are what we ship today; each is a Module combination that has been **tested and works in practice**.
+
+The modular system technically allows other Module combinations beyond these three. Those untested combinations are not validated — pairing arbitrary handicap + mechanism + chart + scoring choices can produce matches that aren't fair, aren't competitive, or aren't mathematically sensible. Stick with shipped Divisions unless you're prepared to validate a new combo.
+
 | Short Nickname | Synthesis page |
 |---|---|
 | Points 3-Man | [`divisions/points-3man.md`](divisions/points-3man.md) |
