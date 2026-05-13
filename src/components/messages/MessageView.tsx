@@ -105,22 +105,22 @@ export function MessageView({ conversationId, currentUserId, onBack, onLeaveConv
   }, [conversationId, currentUserId, messages.length]);
 
   const handleSendMessage = async (content: string) => {
-    sendMessageMutation.mutate(
-      {
+    // Use mutateAsync so a send failure propagates up to MessageInput,
+    // which surfaces it as a retryable failed-bubble (Unit 8). Don't
+    // manually fetch — realtime delivers the confirmed message to the
+    // list when the send succeeds.
+    try {
+      await sendMessageMutation.mutateAsync({
         conversationId,
         senderId: currentUserId,
         content,
-      },
-      {
-        onError: (error) => {
-          logger.error('Error sending message', { error: error instanceof Error ? error.message : String(error) });
-          toast.error('Failed to send message. Please try again.');
-        },
-      }
-    );
-
-    // Don't manually fetch - let realtime subscription handle it
-    // The message will appear via the realtime subscription
+      });
+    } catch (error) {
+      logger.error('Error sending message', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
   };
 
   const handleLeaveClick = () => {

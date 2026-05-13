@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-13 (Messaging Phase 1 / Unit 7 live-path fix — `MessageView.tsx` was rendering messages with its own inline loop, bypassing the `messageview/MessageList.tsx` component the system-message variant was wired into. Refactored `MessageView` to use `MessageList`, dropping ~50 lines and 1 useEffect + ref + local Message interface. Deleted the now-and-always-orphan `messageview/useConversationDetails.ts`. Unit 7's system-message variant now actually reaches the UI.)
+> **Last Updated**: 2026-05-13 (Messaging Phase 1 / Unit 8 — composer failed-send recovery: `MessageInput.tsx` now catches `onSend` rejections and renders a stack of failed-state `MessageBubble`s above the input with inline error + Retry button. `MessageBubble.tsx` gains the destructive failed variant. `MessageView.tsx` switched from silent `mutate + toast` to `mutateAsync` so failures propagate to the composer. Added `__tests__/MessageInput.failed-send.test.tsx`.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -420,6 +420,7 @@ how to add a new test, demo recording, cleanup model).
 - `__tests__/ReadOnlyBanner.test.tsx` - RTL test covering both `reason` values render distinct copy.
 - `__tests__/ConversationList.profanity.test.tsx` - **Messaging Phase 1 / Unit 7** — RTL test covering the last-message-preview filter: filter ON censors profane previews while leaving clean ones and surrounding chrome intact, filter OFF renders raw, null/empty preview falls back to "No messages yet", unread-count badge is unaffected.
 - `__tests__/MessageBubble.system-message.test.tsx` - **Messaging Phase 1 / Unit 7** — RTL test for the `isSystem` render branch: centered/italic/muted-foreground wrapper, no sender link / no timestamp / no read receipt even when those props are passed, profanity filter applies defensively when enabled, default variant unchanged when `isSystem` is omitted.
+- `__tests__/MessageInput.failed-send.test.tsx` - **Messaging Phase 1 / Unit 8** — RTL test for the failed-send recovery surface: successful send clears composer with no failed bubble, failed `onSend` shows a failed bubble with original content + error reason (with fallback to "Failed to send" when the rejection has no message), Retry button re-runs `onSend` and removes the bubble on success / re-shows it on persistent failure, multiple failures stack independently, composer is independent (user can type new drafts while failed bubble is showing, and a brand-new successful send doesn't disturb the prior failed bubble). 8 cases.
 - `CreateTeamChatPrompt.tsx` - **Messaging Phase 1 / Unit 3 helper 6/6** — captain manual-fallback prompt above the Messages conversation list. Shows one card per captained active-season team that lacks an auto-managed chat. Clicking creates the chat via `createTeamChat()` and auto-selects it.
 
 #### Messaging Hooks (`/api/hooks/`)
@@ -656,8 +657,8 @@ Reusable wizard/form step components
 
 #### Messaging Components (`/components/messages/`)
 - `MessageView.tsx` - Main message view — orchestrates header, message list (via `MessageList`), composer / read-only banner, leave + block dialogs.
-- `MessageInput.tsx` - Message input
-- `MessageBubble.tsx` - Message bubble — default user-to-user variant + Unit 7 centered/italic system-message variant.
+- `MessageInput.tsx` - Message input — composer + Unit 8 failed-send recovery surface. On `onSend` rejection the message is stashed locally and rendered as a failed-state `MessageBubble` above the input with a Retry button; composer clears so the user can keep typing.
+- `MessageBubble.tsx` - Message bubble — three variants: default user-to-user, Unit 7 centered/italic system-message, Unit 8 destructive failed-send with inline error text + Retry button.
 - `messageview/MessageList.tsx` - Scrollable message list extracted from `MessageView`. Owns the `Message` interface (exported), loading + empty states, auto-scroll, and the system-message branch (`is_system → MessageBubble isSystem`).
 - `ConversationList.tsx` - Conversation list
 - `ConversationHeader.tsx` - Conversation header
