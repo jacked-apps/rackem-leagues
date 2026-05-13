@@ -7,11 +7,15 @@ audience: developer + AI sessions
 
 # Points Handicap
 
-A peer variant of the **[Handicap Systems](README.md)** Module.
+A peer variant of the **[Handicap Systems](README.md)** Module — specifically an [**Internally-Computed Rating**](README.md#internally-computed-ratings) (the app derives the rating from match history in the league's own database).
+
+> **Reading this cold?** A handicap system encodes how strong a player is — as a number or grade — so the league can fairly match uneven players. This page describes the **Points** variant: integer ratings -2 to +2, computed by the app from a player's win/loss history. Other variants exist (see the [Module README](README.md) for the full picture).
 
 ## What it is
 
 An integer rating from **-2 to +2** representing player strength relative to a notional center (0 = average for the league). Higher numbers = stronger players. The 5-grade range is intentionally coarse — easy to assign qualitatively, easy to do mental math with at the table.
+
+**Picture this** (for the novice-explanation case): a 5-grade skill scale where 0 is average for your league, +2 is your strongest players, and -2 is your weakest. Everyone falls on one of those five integers. When two teams meet, you sum each team's lineup ratings; the difference (e.g., team A is +3 over team B) tells a chart how many games each side needs to win for a fair match.
 
 ## How it works / how it's calculated
 

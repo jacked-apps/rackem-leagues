@@ -7,11 +7,15 @@ audience: developer + AI sessions
 
 # Skill Level Handicap
 
-A peer variant of the **[Handicap Systems](README.md)** Module. **Reserved**: schema present, wizard card currently visible, **step 2 hides the wizard card** until a usable implementation lands.
+A peer variant of the **[Handicap Systems](README.md)** Module — specifically an [**Externally-Sourced Rating**](README.md#externally-sourced-ratings) (APA computes the rating; the app could only import). **Reserved**: schema present, wizard card currently visible, **step 2 hides the wizard card** until a usable implementation lands.
+
+> **Reading this cold?** A handicap system encodes how strong a player is — as a number or grade — so the league can fairly match uneven players. This page describes the **Skill Level** variant: APA's national SL1–SL9 grade. The app does not currently support this variant operationally — schema is reserved for future. Other variants exist (see the [Module README](README.md) for the full picture).
 
 ## What it is
 
 Integer grades **1 – 9** representing player skill, as defined by the **APA (American Poolplayers Association)** national rating system (commonly called *SL1–SL9*). The encoding is widely recognized in U.S. league play; BCAPL has historically used various skill-level schemes at the local-chapter level, though CSI now mandates FargoRate for handicapped BCAPL World Championship divisions.
+
+**Picture this** (for the novice-explanation case): APA grades each player on a 1–9 scale — SL1 is brand new, SL9 is pro-level. The grade comes from APA's proprietary algorithm tracking innings-per-game. Only APA can compute it; if our app supports this variant in the future, it would be by **manual entry** — players bring their APA-issued grade and the LO enters it.
 
 ## How it works / how it's calculated
 

@@ -7,11 +7,15 @@ audience: developer + AI sessions
 
 # Percentage Handicap
 
-A peer variant of the **[Handicap Systems](README.md)** Module.
+A peer variant of the **[Handicap Systems](README.md)** Module — specifically an [**Internally-Computed Rating**](README.md#internally-computed-ratings) (the app derives the rating from match history in the league's own database).
+
+> **Reading this cold?** A handicap system encodes how strong a player is — as a number or grade — so the league can fairly match uneven players. This page describes the **Percentage** variant: a 0–100 win-rate, computed by the app from a player's own match history. Other variants exist (see the [Module README](README.md) for the full picture).
 
 ## What it is
 
 A **0–100 win-rate percentage** representing the share of games a player wins over a rolling history window. Higher = stronger. The percentage IS the handicap value — it gets summed across the lineup and the team-vs-team difference feeds the threshold chart.
+
+**Picture this** (for the novice-explanation case): every player carries a number between 0 and 100 — their personal win-rate over recent games. A 75 means they win 75% of their games. Stronger players have higher numbers. Team handicap is the sum of the active lineup's percentages; the team-vs-team difference feeds a chart that yields per-team target wins.
 
 ## How it works / how it's calculated
 

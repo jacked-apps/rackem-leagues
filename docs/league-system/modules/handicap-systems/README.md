@@ -11,6 +11,18 @@ audience: developer + AI sessions
 
 A **handicap system** encodes a player's relative strength as a numeric or categorical value, used by the rest of the league system to compute fair matchups. The system specifies the *encoding* — the value range, the computation rule (or "manually entered"), and the meaning of higher vs lower values.
 
+## Why handicapping exists
+
+Pool players have a wide range of skill. A brand-new beginner vs. a 700-Fargo league regular is a foregone-conclusion match — and foregone-conclusion matches kill league competitiveness over a season. **Handicapping** is the umbrella term for any system that adjusts match conditions to make matches between unequal players genuinely competitive: the weaker player or team gets some kind of advantage (extra games to win, a head start in points, a shorter race) so that effort and improvement matter more than the raw skill gap.
+
+A league can choose to run **without** handicapping (`handicap_type='none'`). That is a valid choice — it just produces a *different kind of league*, where players self-select into divisions roughly matched to their skill (Bronze / Silver / Platinum tiers, etc.). Handicapping replaces self-sorting with active equalization.
+
+This Module is the **first piece** of the handicapping chain. It answers a single question: *how is each player's strength encoded as a number or grade?* Once you have that encoding, three other Modules act on it:
+
+- [**Handicap Mechanisms**](../handicap-mechanisms/README.md) applies the strength difference during play (extra games, start points, race-length adjustment).
+- [**Threshold Charts**](../threshold-charts/README.md) converts a difference value into a concrete target (e.g., "team A needs 8 wins, team B needs 5").
+- [**Scoring Systems**](../scoring-systems/README.md) decides who wins the match based on accumulated games or points.
+
 ## Boundary
 
 A handicap system is **only** the strength encoding. It is **not**:
@@ -33,16 +45,43 @@ Everything else, including this app's `points` (-2 to +2 integer) and `percentag
 - We do not pretend our coined names (Points, Percentage) are CSI-official. They are coined.
 - Our `percentage` system is **not** CSI's "Average Handicapping" — ours is a *win-rate* average (binary wins / total games), not a *points-per-game* average. Adjacent concept; distinct mechanic.
 
-## Variants index (peers — no canonical/default)
+## Variants index — two sub-categories {#variants-index}
 
-| Variant | Code value | Range | Origin |
+The variants split along one fundamental axis: **who computes the rating**. This is not a presentation choice — it is the most consequential decision an LO makes inside this Module. Two of our four variants are internally-computed; two are externally-sourced.
+
+### Internally-Computed Ratings {#internally-computed-ratings}
+
+*The app derives the rating from match history in the league's own database. The league owns the math.*
+
+| Variant | Code value | Range |
+|---|---|---|
+| [**Points**](points.md) | `'points'` | -2 to +2 (integer) |
+| [**Percentage**](percentage.md) | `'percentage'` | 0 – 100 |
+
+### Externally-Sourced Ratings {#externally-sourced-ratings}
+
+*An outside organization computes the rating. The app imports it via API, manual entry, or fallback to a stored value. The league does not own the math.*
+
+| Variant | Code value | Range | External source |
 |---|---|---|---|
-| [**Points**](points.md) | `'points'` | -2 to +2 (integer) | Coined |
-| [**Percentage**](percentage.md) | `'percentage'` | 0 – 100 | Coined |
-| [**FargoRate**](fargorate.md) | `'fargo'` | 100 – 850 | CSI / FargoRate official |
-| [**Skill Level**](skill-level.md) | `'skill_level'` | 1 – 9 (APA grade) | APA national system; **reserved** — schema present, wizard card hidden in step 2 until usable implementation lands |
+| [**FargoRate**](fargorate.md) | `'fargo'` | 100 – 850 | FargoRate (CSI-mandated for BCAPL Handicapped Worlds) |
+| [**Skill Level**](skill-level.md) | `'skill_level'` | 1 – 9 (APA grade) | APA — **reserved** (schema present; wizard card hidden in step 2 until usable implementation lands) |
 
-Plus the `'none'` value (no handicapping). Covered briefly in this README rather than its own page.
+### The `'none'` value
+
+No handicapping. Used when a league runs without any equalization mechanism (Bronze/Silver/Platinum-tier self-sorting). Covered in this README rather than its own page.
+
+## Why this split matters operationally
+
+Choosing internal vs external is a real LO decision with real consequences. Each consequence flows in the same direction across all variants in a group — these are *group properties*, not per-variant traits.
+
+- **Cross-league portability.** *Internal*: none. Every league is its own world; a player's rating only means something inside that league. *External*: yes. Players carry their rating between leagues — a 491 FargoRate or an APA SL5 means the same thing nationally.
+- **LO control over the math.** *Internal*: full. The LO can choose the chart, the variant range, the history window. *External*: none. The outside org's algorithm is locked.
+- **Onboarding friction.** *Internal*: low. New players just start playing; ratings derive from observed play. *External*: higher. Players need an APA card, a FargoRate, or some path to an existing rating.
+- **Updates.** *Internal*: automatic; ratings evolve game-by-game from match history. *External*: manual entry or via API; depends on the external source's update cadence.
+- **World-championship pathway.** *Internal*: none for handicapped CSI/BCAPL events. *External*: yes — FargoRate specifically is CSI-mandated for BCAPL Handicapped World Championship divisions.
+
+Operators choosing a Division are really choosing one of these *worlds*. The doc should not hide that.
 
 ## How this Module interacts
 

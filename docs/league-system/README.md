@@ -54,15 +54,22 @@ Per CSI's *BCA Pool League Operators' Handbook* (June 2020, p.41 "Name Guideline
 
 ### Handicap Systems
 
-Three handicap systems ship. CSI has no formal name for the first two; we coin clean parallel labels.
+Three handicap systems ship today, split into two sub-categories by **who computes the rating**. CSI has no formal name for the internally-computed ones; we coin clean parallel labels.
+
+**Internally-Computed Ratings** — *the app derives the rating from match history in the league's own database. The league owns the math.*
 
 | Code | Display Name | Range | Source of name |
 |---|---|---|---|
 | `points` | **Points** | -2 to +2 (integer) | Coined (operator colloquialism, no CSI brand) |
 | `percentage` | **Percentage** | 0 – 100 | Coined (descriptive, no CSI brand) |
+
+**Externally-Sourced Ratings** — *an outside organization computes the rating; the app imports it. The league does not own the math.*
+
+| Code | Display Name | Range | Source of name |
+|---|---|---|---|
 | `fargo` | **FargoRate** | 100 – 850 | CSI / FargoRate official |
 
-**`skill_level` — reserved.** Schema, DB CHECK, stub branch, and `HandicapType` union member exist. Wizard card is currently visible but step 2 hides it until a usable implementation lands. See `modules/handicap-systems/skill-level.md` for the full rationale.
+**`skill_level` — reserved.** Schema, DB CHECK, stub branch, and `HandicapType` union member exist. Wizard card is currently visible but step 2 hides it until a usable implementation lands. Belongs to the **Externally-Sourced** category (APA owns the math). See `modules/handicap-systems/skill-level.md` for the full rationale.
 
 ### Scoring Systems
 

@@ -7,11 +7,15 @@ audience: developer + AI sessions
 
 # FargoRate Handicap
 
-A peer variant of the **[Handicap Systems](README.md)** Module.
+A peer variant of the **[Handicap Systems](README.md)** Module — specifically an [**Externally-Sourced Rating**](README.md#externally-sourced-ratings) (FargoRate, an external organization, computes the rating; the app imports it).
+
+> **Reading this cold?** A handicap system encodes how strong a player is — as a number or grade — so the league can fairly match uneven players. This page describes the **FargoRate** variant: a 100–850 national rating maintained by FargoRate (not by this app). Other variants exist (see the [Module README](README.md) for the full picture).
 
 ## What it is
 
 A player's **FargoRate** — an integer rating from **100 to 850** (effective range; the full FargoRate scale extends lower for beginners) maintained externally by FargoRate. Higher = stronger. This is the only variant in this Module whose name and computation come from a published external authority; CSI mandates FargoRate for BCAPL handicapped divisions per [their 2020 announcement](https://www.playcsipool.com/csinews/how-fargorate-improves-the-1-point-scoring-system-for-pool-leagues).
+
+**Picture this** (for the novice-explanation case): FargoRate is to pool what an ELO rating is to chess — a single national number that says how good you are. A 350 is a beginner; a 500 is a solid league player; a 700 is a tournament shark. The number lives at fargorate.com and updates automatically as a player plays rated events. Our app reads the number; it does not compute it.
 
 ## How it works / how it's calculated
 
