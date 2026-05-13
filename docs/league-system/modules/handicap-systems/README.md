@@ -33,6 +33,12 @@ A handicap system is **only** the strength encoding. It is **not**:
 
 If a proposed feature changes how a player's strength number is *computed* or *expressed*, it belongs here. If it changes how that number gets *applied during play*, it belongs in Handicap Mechanisms.
 
+### Architectural intent: modules are orthogonal
+
+Any Handicap System variant should be **composable** with any Mechanism, any Threshold Chart, and any Scoring System (assuming a calibrated chart exists for the specific encoding-mechanism pair). Encodings are interconvertible in principle — e.g., a Percentage rating could be bucketed into Points ranges (0–20% = -2, 21–40% = -1, etc.) and fed into any chart that accepts Points-style integer differences; FargoRate values could similarly be bucketed.
+
+The current codebase has historical bundlings — `bca3v3` calls a specific threshold chart directly, `fargo5v5` bundles rating math with start-points math, and similar patterns elsewhere. These are **implementation artifacts from before the modular axes were fully separated** — NOT statements of intended architecture. Future refactors will progressively decouple them so any rating encoding can pair with any downstream Module. Variant pages flag the specific bundlings in their *Current code state* sections; this Module-level note establishes the principle once so individual variant pages don't need to re-justify it.
+
 ## CSI's published taxonomy (context)
 
 The *BCAPL LO Handbook 2020* (page 38, "Popular League Handicapping Methods") enumerates only **two** named handicap methods:

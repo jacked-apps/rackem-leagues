@@ -73,7 +73,7 @@ CSI's *LO Handbook 2020* (page 38) names a method called **Average Handicapping*
 This handicap system shows up at two code layers, both used by the **Percentage 5-Man Division** (the LO-facing name for the bundle of choices that picks this system):
 
 - **`standard_5v5`** (in `src/wizards/league-v2/presetMappings.ts`) is the **wizard preset key** — the LO-facing "bundle" of 7 Module choices that gets picked during league creation. The preset expands into preferences (`handicap_type='percentage'`, plus the values for the other 6 Modules).
-- **`bca5v5`** (in `src/systems/bca5v5.ts`) is the **SystemModule key** — the runtime code object that does the rating math (validation, formula, threshold lookup).
+- **`bca5v5`** (in `src/systems/bca5v5.ts`) is the **SystemModule key** — the runtime code object handling the Percentage rating math (validation, history-based computation). The same file *also* currently calls the [5v5 games-needed chart](../threshold-charts/5v5-games-needed.md) directly — that's a separate Module's concern (Threshold Charts) bundled into this file for historical reasons. The bundling is an **implementation artifact, not architectural intent**: future refactors should decouple so any rating encoding can pair with any chart. See the [Module README → Boundary](README.md#boundary) for the orthogonality intent.
 
 The two layers connect via `handicap_type='percentage'`: the wizard preset sets the preference; `src/systems/resolver.ts` (lines 42–55) then maps that preference back to the `bca5v5` SystemModule at runtime. Step 2 collapses both names into `percentage_5man` for consistency across layers.
 

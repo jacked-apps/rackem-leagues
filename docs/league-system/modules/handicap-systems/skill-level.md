@@ -13,19 +13,19 @@ A peer variant of the **[Handicap Systems](README.md)** Module — specifically 
 
 ## What it is
 
-Integer grades **1 – 9** representing player skill, as defined by the **APA (American Poolplayers Association)** national rating system (commonly called *SL1–SL9*). The encoding is widely recognized in U.S. league play; BCAPL has historically used various skill-level schemes at the local-chapter level, though CSI now mandates FargoRate for handicapped BCAPL World Championship divisions.
+Integer grades on APA's **SL1–SL9** scale for 9-ball, per their [published Equalizer chart](https://poolplayers.com/equalizer/). For 8-ball, APA's main page references SL3-through-SL6 in examples without stating a definitive published range; operators commonly report 8-ball as SL2–SL7 in practice (no SL1, SL8, or SL9 in 8-ball). The encoding is widely recognized in U.S. league play. BCAPL has historically used various skill-level schemes at the local-chapter level, though CSI now mandates FargoRate for handicapped BCAPL World Championship divisions.
 
-**Picture this** (for the novice-explanation case): APA grades each player on a 1–9 scale — SL1 is brand new, SL9 is pro-level. The grade comes from APA's proprietary algorithm tracking innings-per-game. Only APA can compute it; if our app supports this variant in the future, it would be by **manual entry** — players bring their APA-issued grade and the LO enters it.
+**Picture this** (for the novice-explanation case): APA grades each player on a 1–9 scale (8-ball uses a narrower subset, typically 2–7). A higher number means a stronger player. **All new players start at SL3** per APA's own rules — there is no sex-based or game-based difference in the starting grade. Their first match establishes the rating going forward; there is no waiting period. The algorithm and grade come from APA. Only APA can compute it; if our app supports this variant in the future, it would be by **manual entry** — players bring their APA-issued grade and the LO enters it.
 
 ## How it works / how it's calculated
 
-**The APA algorithm is proprietary.** The app does not — and cannot — compute APA skill levels. What is publicly known:
+**The APA algorithm is proprietary.** The app does not — and cannot — compute APA skill levels. What is publicly known from APA's [Equalizer page](https://poolplayers.com/equalizer/):
 
-- APA tracks each match's **innings per game** (the count of turns at the table).
-- Their algorithm processes a recent-match window with proprietary weighting.
-- The output is a grade `SL1` (weakest) through `SL9` (strongest).
+- The algorithm processes **weekly scoresheets, win/loss records, Higher Level Tournament performance**, plus **qualitative judgment by APA's Handicap Advisory Committees**. This last point is notable — APA's system has an explicit *human* component, unlike purely-algorithmic systems such as FargoRate.
+- New players start at **SL3**. There is no waiting period: *"As a result of your first match, a skill level is established and reported for you"* (APA, [Equalizer](https://poolplayers.com/equalizer/)).
+- The output is a grade in the **SL1–SL9** range (9-ball) or the narrower **SL2–SL7** range that operators report for 8-ball.
 
-For authoritative material, see [APA's player rating page](https://poolplayers.com/about-the-apa/equalizer-handicap-system/). The app does not replicate, approximate, or synthesize APA's calculation — doing so would be wrong and would mislead users.
+The Equalizer page does not publish the algorithm's specific input weighting, the volatility profile, or the input parameters (e.g., whether innings-per-game is a primary input — that's a commonly-cited operator characterization but not stated on the page). For authoritative material, see [APA's Equalizer page](https://poolplayers.com/equalizer/) and the [APA rulebook handicap section](https://rules.poolplayers.com/the-equalizer-handicap-system/). The app does not replicate, approximate, or synthesize APA's calculation — doing so would be wrong and would mislead users.
 
 **For this app to support Skill Level operationally**, one of these would need to exist:
 
