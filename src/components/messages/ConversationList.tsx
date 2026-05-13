@@ -16,6 +16,8 @@ import { Button } from '@/components/ui/button';
 import { Search, MessageSquarePlus, Settings, Megaphone, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useConversations, useConversationsRealtime } from '@/api/hooks';
+import { useProfanityFilter } from '@/hooks/useProfanityFilter';
+import { censorProfanity } from '@/utils/profanityFilter';
 import { formatDistanceToNow } from 'date-fns';
 import { LoadingState, EmptyState } from '@/components/shared';
 
@@ -60,6 +62,12 @@ export function ConversationList({
 
   // Real-time subscriptions (auto-manages channels and cleanup)
   useConversationsRealtime(userId);
+
+  // R4 (Unit 7): apply the user's profanity filter to the last-message
+  // preview snippet. The DB row + unread-count badge stay unaffected —
+  // this is a display-only transform. When the filter is off, the
+  // preview renders raw.
+  const { shouldFilter } = useProfanityFilter();
 
   // Filter conversations based on search
   const filteredConversations = conversations.filter((conv) => {
@@ -165,6 +173,9 @@ export function ConversationList({
           filteredConversations.map((conversation) => {
             const isAnnouncement = conversation.conversationType === 'announcements';
             const displayTitle = conversation.title || 'Direct Message';
+            const rawPreview = conversation.lastMessagePreview;
+            const preview =
+              rawPreview && shouldFilter ? censorProfanity(rawPreview) : rawPreview;
 
             return (
               <button
@@ -193,7 +204,7 @@ export function ConversationList({
                 </div>
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-sm md:text-sm text-muted-foreground truncate flex-1">
-                    {conversation.lastMessagePreview || 'No messages yet'}
+                    {preview || 'No messages yet'}
                   </p>
                   {conversation.unreadCount > 0 && (
                     <span className="ml-2 bg-blue-600 text-white text-xs font-medium rounded-full h-6 w-6 md:h-5 md:w-5 flex items-center justify-center flex-shrink-0">

@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-13 (Messaging Phase 1 / Unit 7 prep — minor-enforcement foundation: added `src/utils/age.ts` + `__tests__/age.test.ts`, `src/hooks/__tests__/useProfanityFilter.test.ts`; extended `members.profanity_filter_enabled` query to also return `date_of_birth` and wired `isMinor()` into `useProfanityFilter`.)
+> **Last Updated**: 2026-05-13 (Messaging Phase 1 / Unit 7 — ConversationList preview filter: `ConversationList.tsx` now applies `censorProfanity` to the last-message snippet when `useProfanityFilter` says so; raw row + unread badge unaffected. Added `__tests__/ConversationList.profanity.test.tsx`.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -417,6 +417,7 @@ how to add a new test, demo recording, cleanup model).
 #### Messaging UI Components (`/components/messages/`)
 - `ReadOnlyBanner.tsx` - **Messaging Phase 1 / Unit 6** — shadcn `Alert` that renders in place of the message composer when the current user can read but not post. Two reasons covered: `past-member` (left_at non-NULL) and `announcement-non-staff` (announcements channel viewed by a non-staff member). The composer is unmounted by `MessageView`, not just hidden by CSS.
 - `__tests__/ReadOnlyBanner.test.tsx` - RTL test covering both `reason` values render distinct copy.
+- `__tests__/ConversationList.profanity.test.tsx` - **Messaging Phase 1 / Unit 7** — RTL test covering the last-message-preview filter: filter ON censors profane previews while leaving clean ones and surrounding chrome intact, filter OFF renders raw, null/empty preview falls back to "No messages yet", unread-count badge is unaffected.
 - `CreateTeamChatPrompt.tsx` - **Messaging Phase 1 / Unit 3 helper 6/6** — captain manual-fallback prompt above the Messages conversation list. Shows one card per captained active-season team that lacks an auto-managed chat. Clicking creates the chat via `createTeamChat()` and auto-selects it.
 
 #### Messaging Hooks (`/api/hooks/`)
