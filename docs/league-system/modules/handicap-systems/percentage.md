@@ -24,7 +24,9 @@ Each player carries a `percentage` rating. **New players start with a default st
 The starting handicap holds for the first **~15 games** (about 3 weekly match nights for a 5v5 team). See the [Module README's Rating Confidence section](README.md#rating-confidence) for the cross-variant context — the same starting-window concept applies to all variants in different forms. Once a player has sufficient match history (≥15 games on file in the league):
 
 - `winPercentage = (wins / gamesPlayed) × 100`
-- Round to nearest integer, clamp to `0–100` (or `0–50` in the *reduced* variant, which halves the input first)
+- Round to nearest integer, clamp to `0–100` (or `0–50` in the *reduced* variant, which halves the input first — see below)
+
+**About the *reduced* variant.** Halving the input before clamping (`0–50` final range) cuts the handicap's impact in half. Use it for a middle ground between **full handicapping** ("level the playing field — even the weakest player has a real shot") and **no handicapping at all** ("pure skill — the better player wins"). With reduced, stronger players still spot weaker ones, but only half as much. The reduced variant is a **handicap-strength scaling** concept — FargoRate's LMS supports a broader spectrum (50% / 75% / 100% / 150%, where 100% is the default and 150% is *stronger*, more equalizing). We currently ship only the 50% (`reduced`) and 100% (default) points along that spectrum. See the [Module README's Future Possibilities](README.md#future-possibilities) for the additional factors we might add.
 
 The team handicap is the sum of active-lineup ratings. The match-level difference between team sums is fed to a [threshold chart](../threshold-charts/5v5-games-needed.md) that yields per-team target wins.
 
