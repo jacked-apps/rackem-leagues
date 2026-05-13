@@ -83,6 +83,18 @@ Choosing internal vs external is a real LO decision with real consequences. Each
 
 Operators choosing a Division are really choosing one of these *worlds*. The doc should not hide that.
 
+## Rating confidence and the starting-handicap window {#rating-confidence}
+
+A real concept across **every** variant in this Module: a player's rating is more trustworthy when it's based on more games. FargoRate has formalized this as **Robustness** — a number representing how much data backs a player's rating, where low-robustness ratings are provisional and shift quickly while high-robustness ratings are stable.
+
+This app applies the same idea differently per variant:
+
+- **[Internally-Computed variants](#internally-computed-ratings) ([Points](points.md), [Percentage](percentage.md)).** A new player starts with a **default starting handicap** (`0` for Points, `40` for Percentage). The LO can **optionally** override this default if they know the player from outside this league (e.g., they've played in the LO's other leagues, or the LO knows them from tournaments). The starting handicap holds for the first **~15 games** (roughly 3 weekly match nights for a 3-person team), after which the formula takes over and the rating is computed from observed wins/losses inside this league.
+- **[FargoRate](fargorate.md) (Externally-Sourced).** FargoRate maintains its own Robustness metric on their side. We just import the rating value; we don't compute or display robustness ourselves. A player's "starting Fargo" — and how quickly it firms up — is whatever FargoRate gives us when we look them up.
+- **[Skill Level](skill-level.md) (Externally-Sourced, reserved).** APA's algorithm presumably has its own confidence-with-data behavior; we don't compute or import it. When the variant is revived for manual entry, the LO would enter whatever current grade APA reports.
+
+The 15-game threshold for internally-computed variants is **hardcoded today**. A future Module-customization pass could expose it as an LO-configurable dial.
+
 ## How this Module interacts
 
 Handicap Systems feed **two** downstream Modules:

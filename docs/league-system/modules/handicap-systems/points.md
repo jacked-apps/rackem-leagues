@@ -19,7 +19,9 @@ An integer rating from **-2 to +2** representing player strength relative to a n
 
 ## How it works / how it's calculated
 
-Each player carries a `points` rating. For pickup matches without history, an LO assigns the rating manually. For players with sufficient game history (≥15 games on file in the league), the system computes:
+Each player carries a `points` rating. **New players start with a default starting handicap of `0`** (the middle of the scale). The LO can **optionally** override this default if they know the player from outside this league (e.g., from a different league the LO runs, or from regional tournament play).
+
+The starting handicap holds for the first **~15 games** (about 3 weekly match nights for a 3v3 team). See the [Module README's Rating Confidence section](README.md#rating-confidence) for the cross-variant context — the same starting-window concept applies to all variants in different forms. Once a player has sufficient match history (≥15 games on file in the league), the formula takes over:
 
 - `weeksPlayed = gamesPlayed / 6` (assumes 6 games/week — a 3v3 standard week)
 - `rawHandicap = (wins − losses) / weeksPlayed`

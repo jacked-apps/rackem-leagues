@@ -19,7 +19,9 @@ A **0–100 win-rate percentage** representing the share of games a player wins 
 
 ## How it works / how it's calculated
 
-Each player carries a `percentage` rating. For pickup matches without history, an LO assigns it manually. For players with sufficient game history (≥15 games on file in the league):
+Each player carries a `percentage` rating. **New players start with a default starting handicap of `40`** (slightly below middle). The LO can **optionally** override this default if they know the player from outside this league (e.g., from a different league the LO runs, or from regional tournament play).
+
+The starting handicap holds for the first **~15 games** (about 3 weekly match nights for a 5v5 team). See the [Module README's Rating Confidence section](README.md#rating-confidence) for the cross-variant context — the same starting-window concept applies to all variants in different forms. Once a player has sufficient match history (≥15 games on file in the league):
 
 - `winPercentage = (wins / gamesPlayed) × 100`
 - Round to nearest integer, clamp to `0–100` (or `0–50` in the *reduced* variant, which halves the input first)
