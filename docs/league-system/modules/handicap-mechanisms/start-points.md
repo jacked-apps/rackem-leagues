@@ -9,11 +9,13 @@ audience: developer + AI sessions
 
 A peer variant of the **[Handicap Mechanisms](README.md)** Module.
 
-> **Reading this cold?** A handicap mechanism is *how* the league applies a strength difference during actual play. This page describes the **Start Points** variant: the weaker team starts the match with bonus points already on the scoreboard. Other variants exist (see the [Module README](README.md) for the full picture).
+> **Reading this cold?** A handicap mechanism is *how* the league applies a strength difference between teams or players. (If the sides are evenly matched, no handicap is applied.) This page describes the **Start Points** variant: the weaker team starts the match with bonus points already on the scoreboard — a head-start on the *points* axis. (The parallel head-start on the *games* axis is the future "[games on the wire](README.md#future-possibilities)" variant.) Other variants exist (see the [Module README](README.md) for the full picture).
 
 ## What it is
 
-The mechanism gives the weaker team a **head start** — a number of points credited to the weaker team's match total *before* any games are played. Both teams then play normally; per-game points accumulate as usual. The bonus contributes to the final tally. The size of the head start depends on the strength gap: bigger rating gap = more bonus points.
+The mechanism gives the weaker team a **head start** on the points axis — a number of points credited to the weaker team's match total *before* any games are played. Both teams then play normally; per-game points accumulate as usual. The bonus contributes to the final tally. The size of the head start depends on the strength gap: bigger rating gap = more bonus points.
+
+**Conceptual parallel.** Start Points is the points-axis sibling of the (future) "[games on the wire](README.md#future-possibilities)" variant — both are head-start mechanisms, just on different axes. Where Start Points credits the weaker team with N bonus *points* at the start, games-on-the-wire would credit them with N games-already-won. Same framing, different unit.
 
 **Picture this** (for the novice-explanation case): FargoRate team A (rating sum 2750) plays team B (rating sum 2250). FargoRate's formula computes that the rating gap is worth, say, 56 points. Team B starts the match with 56 points already in their column; team A starts at 0. Now both teams play games; per-game points accumulate normally; whoever has the higher total at the end wins. The weaker team enters with a tangible cushion, but still has to play well enough to defend it.
 

@@ -9,7 +9,7 @@ audience: developer + AI sessions
 
 A peer variant of the **[Handicap Mechanisms](README.md)** Module.
 
-> **Reading this cold?** A handicap mechanism is *how* the league applies a strength difference during actual play. This page describes the **Extra Games** variant: the stronger team must win more games than the weaker team to win the match. Other variants exist (see the [Module README](README.md) for the full picture).
+> **Reading this cold?** A handicap mechanism is *how* the league applies a strength difference between teams or players. (If the sides are evenly matched, no handicap is applied.) This page describes the **Extra Games** variant: the stronger team must win more games than the weaker team to win the match. Other variants exist (see the [Module README](README.md) for the full picture).
 
 ## What it is
 
