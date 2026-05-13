@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-13 (Messaging Phase 1 / Unit 7 — ConversationList preview filter: `ConversationList.tsx` now applies `censorProfanity` to the last-message snippet when `useProfanityFilter` says so; raw row + unread badge unaffected. Added `__tests__/ConversationList.profanity.test.tsx`.)
+> **Last Updated**: 2026-05-13 (Messaging Phase 1 cleanup — removed three dead components and the now-empty folder: `src/components/messages/conversationlist/{ConversationItem,ConversationMenuBar,ConversationSearchBar}.tsx`. All three were defined but never imported; the live render path is inline in `ConversationList.tsx`. None were indexed in this TOC, so no entry updates — just noting the removal.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
