@@ -26,7 +26,15 @@ The starting handicap holds for the first **~15 games** (about 3 weekly match ni
 - `winPercentage = (wins / gamesPlayed) × 100`
 - Round to nearest integer, clamp to `0–100` (or `0–50` in the *reduced* variant, which halves the input first — see below)
 
-**About the *reduced* variant.** Halving the input before clamping (`0–50` final range) cuts the handicap's impact in half. Use it for a middle ground between **full handicapping** ("level the playing field — even the weakest player has a real shot") and **no handicapping at all** ("pure skill — the better player wins"). With reduced, stronger players still spot weaker ones, but only half as much. The reduced variant is a **handicap-strength scaling** concept — FargoRate's LMS supports a broader spectrum (50% / 75% / 100% / 150%, where 100% is the default and 150% is *stronger*, more equalizing). We currently ship only the 50% (`reduced`) and 100% (default) points along that spectrum. See the [Module README's Future Possibilities](README.md#future-possibilities) for the additional factors we might add.
+**About the *reduced* variant.** Halving the input before clamping (`0–50` final range) cuts the handicap's impact in half. Use it for a middle ground between **full handicapping** ("level the playing field — even the weakest player has a real shot") and **no handicapping at all** ("pure skill — the better player wins"). With reduced, stronger players still spot weaker ones, but only half as much.
+
+The reduced variant is one point on a broader **handicap-strength scaling** spectrum — FargoRate's LMS uses 50% / 75% / 100% / 150% (where 100% is the default and 150% is *stronger*, more equalizing). Today we ship **three** points along this spectrum:
+
+- **0%** — `handicap_type='none'` at the Module level (no handicap system at all; Bronze/Silver/Platinum-tier self-sorting)
+- **50%** — `handicap_variant='reduced'` within Percentage (this variant page)
+- **100%** — `handicap_variant='standard'` within Percentage (the default)
+
+The 0% case is achieved by *not using a handicap system at all* (a different `handicap_type` choice), not by configuring this variant. See the [Module README's Future Possibilities](README.md#future-possibilities) for the 75% and 150% LMS scaling factors we might add.
 
 The team handicap is the sum of active-lineup ratings. The match-level difference between team sums is fed to a [threshold chart](../threshold-charts/5v5-games-needed.md) that yields per-team target wins.
 

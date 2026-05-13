@@ -106,7 +106,7 @@ Each variant ships with a *known-compatible* mechanism and chart pairing today. 
 
 ## Future possibilities {#future-possibilities}
 
-- **Additional handicap-strength scaling factors** — we currently ship 100% (default) and 50% (the *reduced* variant per system) for Points and Percentage. FargoRate's LMS supports a 4-point spectrum (50% / 75% / 100% / 150%) where higher = more aggressive equalization. Adding 75% (lighter than default but less light than reduced) and 150% (stronger, more equalizing) would give LOs finer control over how much the handicap "works." This is a per-system modification, not a new variant — each existing variant could ship additional scaling-factor options.
+- **Additional handicap-strength scaling factors** — we currently ship **three** points along this spectrum: **0%** (`handicap_type='none'` at the Module level — no handicap system), **50%** (the *reduced* variant within each internal system), and **100%** (the default for each system). FargoRate's LMS supports a 4-point intra-variant spectrum (50% / 75% / 100% / 150%) where higher = more aggressive equalization. Adding 75% (lighter than default but less light than reduced) and 150% (stronger, more equalizing) would give LOs finer control. The 75%/150% additions are per-system modifications within a chosen variant, not new Module-level variants — they'd live as additional `handicap_variant` values.
 - **LO-defined custom rating** — operator-set rating system (e.g., a regional 1-10 grade scheme) with operator-supplied chart.
 - **USAPL Skill Levels** — adjacent to APA's; would require its own variant page.
 - **Hybrid systems** — e.g., FargoRate as primary with manual override range, or Points-derived-from-Fargo bucketing.
