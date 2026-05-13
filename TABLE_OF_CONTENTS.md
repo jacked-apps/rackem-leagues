@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-13 (Messaging Phase 1 cleanup — removed three dead components and the now-empty folder: `src/components/messages/conversationlist/{ConversationItem,ConversationMenuBar,ConversationSearchBar}.tsx`. All three were defined but never imported; the live render path is inline in `ConversationList.tsx`. None were indexed in this TOC, so no entry updates — just noting the removal.)
+> **Last Updated**: 2026-05-13 (Messaging Phase 1 / Unit 7 — MessageBubble system-message variant: `is_system` flag now flows from `getConversationMessages` → `MessageList` → `MessageBubble`, which renders trigger-driven lines like "Sally joined the team" in a centered/italic/muted variant. Defensive profanity filter applies. Added `__tests__/MessageBubble.system-message.test.tsx`.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -418,6 +418,7 @@ how to add a new test, demo recording, cleanup model).
 - `ReadOnlyBanner.tsx` - **Messaging Phase 1 / Unit 6** — shadcn `Alert` that renders in place of the message composer when the current user can read but not post. Two reasons covered: `past-member` (left_at non-NULL) and `announcement-non-staff` (announcements channel viewed by a non-staff member). The composer is unmounted by `MessageView`, not just hidden by CSS.
 - `__tests__/ReadOnlyBanner.test.tsx` - RTL test covering both `reason` values render distinct copy.
 - `__tests__/ConversationList.profanity.test.tsx` - **Messaging Phase 1 / Unit 7** — RTL test covering the last-message-preview filter: filter ON censors profane previews while leaving clean ones and surrounding chrome intact, filter OFF renders raw, null/empty preview falls back to "No messages yet", unread-count badge is unaffected.
+- `__tests__/MessageBubble.system-message.test.tsx` - **Messaging Phase 1 / Unit 7** — RTL test for the `isSystem` render branch: centered/italic/muted-foreground wrapper, no sender link / no timestamp / no read receipt even when those props are passed, profanity filter applies defensively when enabled, default variant unchanged when `isSystem` is omitted.
 - `CreateTeamChatPrompt.tsx` - **Messaging Phase 1 / Unit 3 helper 6/6** — captain manual-fallback prompt above the Messages conversation list. Shows one card per captained active-season team that lacks an auto-managed chat. Clicking creates the chat via `createTeamChat()` and auto-selects it.
 
 #### Messaging Hooks (`/api/hooks/`)

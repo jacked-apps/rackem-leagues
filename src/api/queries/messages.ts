@@ -194,6 +194,7 @@ export async function getConversationMessages(conversationId: string) {
       created_at,
       edited_at,
       is_edited,
+      is_system,
       sender:members!sender_id(
         id,
         first_name,

@@ -4,11 +4,24 @@
  * Single responsibility: Display a single message with read receipts.
  * Reusable component for rendering individual messages in a conversation.
  *
+ * Two render variants:
+ *  - Default bubble (user-to-user): colored bubble, sender link, timestamp,
+ *    read receipt.
+ *  - System bubble (trigger-driven "Sally joined the team" lines, marked
+ *    `is_system = true` and `sender_id IS NULL` per the messages_is_system_shape
+ *    CHECK constraint): centered, italic, muted-foreground; no avatar, no
+ *    sender link, no timestamp, no read receipt.
+ *
  * Profanity Filtering:
  * - Applies display-time filtering based on viewer's profanity filter setting
- * - Users under 18 always see filtered content (forced ON)
- * - Users 18+ see filtered content only if they have filter enabled
- * - Original message content stored uncensored in database
+ *   (see `useProfanityFilter`).
+ * - Filter is forced ON when the viewer's `members.date_of_birth` is on file
+ *   AND `isMinor()` is true — DOB is optional, so when it's unknown the
+ *   filter falls back to the viewer's stored preference.
+ * - Original message content stored uncensored in DB; transform is render-only.
+ * - System messages also pass through the filter (defensive — covers cases
+ *   like a player whose name itself contains profanity in a "X joined the
+ *   team" notification).
  */
 
 import { Check, CheckCheck } from 'lucide-react';
@@ -26,6 +39,8 @@ interface MessageBubbleProps {
   senderName?: string;
   senderId?: string;
   recipientLastRead: string | null;
+  /** When true, renders the centered/italic/muted system-message variant. */
+  isSystem?: boolean;
 }
 
 export function MessageBubble({
@@ -36,12 +51,23 @@ export function MessageBubble({
   senderName,
   senderId,
   recipientLastRead,
+  isSystem = false,
 }: MessageBubbleProps) {
-  // Get user's profanity filter setting (forced ON for under 18, optional for 18+)
   const { shouldFilter } = useProfanityFilter();
-
-  // Apply profanity filter if user has it enabled (or is under 18)
   const displayContent = shouldFilter ? censorProfanity(content) : content;
+
+  if (isSystem) {
+    return (
+      <div
+        data-testid="system-message"
+        className="flex justify-center my-2"
+      >
+        <p className="text-sm italic text-muted-foreground text-center max-w-md px-4 whitespace-pre-wrap">
+          {displayContent}
+        </p>
+      </div>
+    );
+  }
 
   const formatTimestamp = (dateString: string) => {
     try {

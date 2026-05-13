@@ -16,12 +16,14 @@ interface Message {
   created_at: string;
   edited_at: string | null;
   is_edited: boolean;
+  is_system: boolean;
+  // Null for system messages (sender_id IS NULL by CHECK constraint).
   sender: {
     id: string;
     first_name: string;
     last_name: string;
     system_player_number: number;
-  };
+  } | null;
 }
 
 interface MessageListProps {
@@ -62,6 +64,25 @@ export function MessageList({ messages, currentUserId, recipientLastRead, loadin
   return (
     <>
       {messages.map((message) => {
+        // System messages (sender_id IS NULL by CHECK constraint) render
+        // in a distinct centered/italic variant; no sender → no avatar,
+        // no read receipt, no isCurrentUser concept.
+        if (message.is_system) {
+          return (
+            <MessageBubble
+              key={message.id}
+              content={message.content}
+              createdAt={message.created_at}
+              isEdited={message.is_edited}
+              isCurrentUser={false}
+              isSystem
+              recipientLastRead={null}
+            />
+          );
+        }
+
+        // Non-system messages with a missing sender row would be a data
+        // bug (CHECK constraint violation); skip rather than crash.
         if (!message.sender) {
           return null;
         }
