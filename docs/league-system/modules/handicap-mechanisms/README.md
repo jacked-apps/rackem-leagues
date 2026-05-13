@@ -9,11 +9,11 @@ audience: developer + AI sessions
 
 ## Essence
 
-A **handicap mechanism** is *how* the league applies a handicap difference during actual play — the in-match adjustment given to the weaker side to make the match competitive. The [Handicap Systems](../handicap-systems/README.md) Module produces a **number** (each player's encoded strength). This Module is what turns that number into an **advantage** for the weaker side once a match starts.
+A **handicap mechanism** is *how* the league applies a handicap difference during actual play — the in-match adjustment that makes the match competitive between unequal sides. Mechanisms can apply at the **team** level (one team gets an asymmetric goal or bonus relative to the other) or at the **per-pairing** level (each individual head-to-head matchup gets its own asymmetric race length). The [Handicap Systems](../handicap-systems/README.md) Module produces a **number** (each player's encoded strength); this Module is what turns that number into an **advantage** for the weaker side, whether "side" means a team or a paired player.
 
 ## Why mechanisms exist
 
-Without a mechanism, a handicap encoding is inert — it's just a number stored against each player with no effect on how a match plays out. The mechanism is the *thing that actually happens* because the handicap encoding says two teams are unequal. There are multiple ways a league can choose to apply that inequality:
+Without a mechanism, a handicap encoding is inert — it's just a number stored against each player with no effect on how a match plays out. The mechanism is the *thing that actually happens* because the handicap encoding says two sides (whether team-vs-team or player-vs-player) are unequal. There are multiple ways a league can choose to apply that inequality:
 
 - Give the weaker side fewer games to win (asymmetric goals — *extra_games*)
 - Give the weaker side bonus points at the start (asymmetric initial state — *start_points*)
@@ -53,8 +53,8 @@ No mechanism applied. Used when `handicap_type='none'` (the league runs without 
 
 Mechanisms sit in the middle of the handicap chain:
 
-- **Upstream**: [Handicap Systems](../handicap-systems/README.md) produce encoded strength values. A team-vs-team **difference** (or FargoRate's win-expectancy) is what feeds a mechanism.
-- **Internal partner**: [Threshold Charts](../threshold-charts/README.md) produce the actual numbers a mechanism needs — target wins (for extra_games), starting points (for start_points), per-pairing race lengths (for race_length_adjustment). A mechanism with no calibrated chart for the encoding-side has nothing meaningful to apply.
+- **Upstream**: [Handicap Systems](../handicap-systems/README.md) produce encoded strength values. The **difference** that feeds a mechanism is computed at the appropriate scope — team-vs-team for team-level mechanisms (`extra_games`, `start_points`), individual player-vs-player for per-pairing mechanisms (`race_length_adjustment`). For some encodings, the upstream input may be a derived value (e.g., FargoRate's win-expectancy probability) rather than a raw difference.
+- **Internal partner**: [Threshold Charts](../threshold-charts/README.md) produce the actual numbers a mechanism needs — target wins (for extra_games), starting points (for start_points), per-pairing race lengths (for race_length_adjustment). A mechanism with no calibrated chart (or formula) for the encoding-side has nothing meaningful to apply. *Note:* "chart" is shorthand — a **formula** can fill the same role (e.g., FargoRate's start-points uses the `2^(rating/100)` formula in place of a lookup table; the 3v3 hardcoded chart could likewise be expressed as a formula). Charts and formulas are interconvertible expressions of the same mapping; the Threshold Charts Module covers both shapes. **Formulas are generally preferred** for their versatility — continuous coverage, easier LO customization, can generate any specific chart on demand.
 - **Downstream**: [Scoring Systems](../scoring-systems/README.md) decide match victory based on accumulated games/points. The mechanism's effect (asymmetric goal, bonus head-start, structural difference) shapes what the scoring system reads at match end.
 
 ## Future possibilities
