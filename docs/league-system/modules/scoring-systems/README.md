@@ -48,10 +48,12 @@ The Points System is a **composition of small single-purpose sub-mechanisms** th
 
 ### The composable sub-mechanism types
 
-- **(A) Per-game allocator** — ONE generic mechanism, configurable per side. On each game, give winner X and loser Y. Each side can be:
-  - `fixed` — a set number (e.g., winner = 10)
-  - `counter` — a range with per-game user input (e.g., loser = 0–7, balls pocketed)
-  - `formula` — derived from game data (e.g., `10 + opponent's remaining balls`) — *not yet supported in code; the calculator interface would need a `formula` kind*
+- **(A) Per-game allocator** — ONE generic mechanism, configurable per side. On each game, give winner X and loser Y. Each side's value can be expressed as:
+  - **Integer** — a set number, no input needed (e.g., `winner = 10`)
+  - **Array `[min, max]`** — a range; the scorer inputs the actual value per game (e.g., `loser = [0, 7]` for balls pocketed)
+  - **Formula** — derived from game data (e.g., `winner = 10 + (7 − loser)` — the 17-Point case where winner gets 10 plus opponent's remaining balls). *Not yet supported in code; the calculator interface would need a `formula` kind.*
+
+  The data shape implies the input behavior — integer = no input, array = scorer input, formula = computed. No explicit `input` or `formula` flags needed.
 - **(B) Threshold trigger** — at games-threshold N, change or add to the running point total. Multiple triggers can stack (one at threshold X, another at threshold Y, etc.). Currently bundled inside the `accumulate_with_milestone_jumps` calculator.
 - **(C) Initial points** — given once at match start, handicap-driven amount. Currently lives as the [`start_points`](../handicap-mechanisms/start-points.md) Handicap Mechanism; its output feeds the Points System's running totals. (start_points is *both* a handicap mechanism in the current taxonomy AND a Points System sub-mechanism architecturally.)
 - **(D) End-of-match aggregate** — alternative to per-game accumulation. Computes team_points = f(games_won, threshold) once at match end, rather than accumulating per-game. Implementation: the `linear_above_threshold` calculator.
@@ -60,9 +62,9 @@ The Points System is a **composition of small single-purpose sub-mechanisms** th
 
 | CSI Name | Per-game allocator config |
 |---|---|
-| [**1-Point Scoring System**](one-point-scoring.md) (a.k.a. *Race To*) | winner=`fixed:1`, loser=`fixed:0`. ***Degenerate*** — match-total points always equals games-won; functionally equivalent to just counting games. CSI gives it a name; in our system it's effectively `win_condition='games'` with no separate calculator. |
-| [**10-Point Scoring System**](ten-point-scoring.md) | winner=`fixed:10`, loser=`counter:0–7` (balls pocketed). |
-| **17-Point Scoring System** *(reference only)* | winner=`formula: 10 + opponent's remaining balls`, loser=`counter:0–7`. **Key difference from 10-Point:** winner amount VARIES (10 + remaining); 10-Point's winner is FIXED at 10. Per-game total always = 17 (vs 10–17 in 10-Point). Not yet implementable — needs the `formula` kind. |
+| [**1-Point Scoring System**](one-point-scoring.md) (a.k.a. *Race To*) | `winner = 1, loser = 0`. ***Degenerate*** — match-total points always equals games-won; functionally equivalent to just counting games. CSI gives it a name; in our system it's effectively `win_condition='games'` with no separate calculator. |
+| [**10-Point Scoring System**](ten-point-scoring.md) | `winner = 10, loser = [0, 7]` (balls pocketed; scorer input per game). |
+| **17-Point Scoring System** *(reference only)* | `winner = 10 + (7 − loser), loser = [0, 7]`. **Key difference from 10-Point:** winner is a FORMULA (10 + opponent's remaining balls); 10-Point's winner is FIXED at 10. Per-game total always = 17 (vs 10–17 in 10-Point). Not yet implementable — needs the `formula` shape. |
 
 CSI's main use case for 17-Point: incentivizes the loser to keep pocketing balls even after the win is locked, since each ball they fail to pocket adds to the winner's score.
 
