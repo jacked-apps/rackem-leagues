@@ -73,8 +73,8 @@ CSI's main use case for 17-Point: incentivizes the loser to keep pocketing balls
 | Division | Composition |
 |---|---|
 | Points 3-Man (`standard_3v3`) | **(D)** `points = games_won − threshold` |
-| Percentage 5-Man (`standard_5v5`) | **(A)** winner=`fixed:0.1`, loser=`fixed:0` + **(B)** milestone trigger 1: jump to 1.5 at games-X + **(B)** milestone trigger 2: jump to 3 at games-Y |
-| FargoRate 10-Point 5-Man (`fargo_5v5`) | **(C)** handicap-driven start_points + **(A)** winner=`fixed:10`, loser=`counter:0–7` (CSI's 10-Point Scoring System) |
+| Percentage 5-Man (`standard_5v5`) | **(A)** `winner = 0.1, loser = 0` + **(B)** milestone trigger 1: jump to 1.5 at games-X + **(B)** milestone trigger 2: jump to 3 at games-Y |
+| FargoRate 10-Point 5-Man (`fargo_5v5`) | **(C)** handicap-driven start_points + **(A)** `winner = 10, loser = [0, 7]` (CSI's 10-Point Scoring System) |
 
 The compositions above are **conceptual**. Current code bundles them differently — see the calculator implementations table below.
 
