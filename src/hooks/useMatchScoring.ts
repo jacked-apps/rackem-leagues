@@ -10,11 +10,12 @@ import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { calculateTeamHandicap } from '@/utils/handicapCalculations';
 import { shouldGoldenBreakCount } from '@/utils/goldenBreakRules';
 import { getPlayerNicknameById } from '@/types/member';
-import { getTeamStats, getPlayerStats, getCompletedGamesCount, calculatePoints, TIEBREAKER_THRESHOLDS } from '@/types';
+import { getTeamStats, getPlayerStats, getCompletedGamesCount, TIEBREAKER_THRESHOLDS } from '@/types';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/api/queryKeys';
 import { useMatchWithLeagueSettings, useMatchLineups, useMatchGames } from '@/api/hooks/useMatches';
 import { useUserTeamInMatch, useTeamDetails } from '@/api/hooks/useTeams';
+import { useMembersByIds } from '@/api/hooks/useCurrentMember';
 import { useMatchRealtime } from '@/realtime/useMatchRealtime';
 import { logger } from '@/utils/logger';
 import type {
@@ -133,37 +134,60 @@ export function useMatchScoring({
     return shouldGoldenBreakCount(gameType, matchData?.league.golden_break_counts_as_win);
   }, [gameType, matchData?.league.golden_break_counts_as_win]);
 
-  // Build players Map from FULL team rosters (not just lineup players)
-  // This allows getPlayerDisplayName to find ANY player on either team, including swap candidates
+  // Build players Map from the UNION of (a) every member ID that appears
+  // in either team's roster (team_players) and (b) every member ID that
+  // appears in either lineup row.
+  //
+  // Why we don't just rely on the team_players(members(*)) nested join
+  // anymore: that join can return a null `members` field for a roster
+  // row even when the member exists — RLS quirks, FK pointing at a
+  // post-merge ghost ID, or transient cache shapes have all been
+  // observed in production. When that happens, the lookup returns
+  // "Unknown" in the drawer for a player whose full name resolves
+  // perfectly via the direct getMemberById query elsewhere in the app.
+  // Building the Map from `members WHERE id IN (...)` against the
+  // raw IDs we actually need to render is bulletproof against those
+  // edge cases.
+  //
+  // Includes lineup IDs explicitly so any player who appears in a
+  // lineup (regular roster, sub, double-duty assignment, post-merge
+  // ghost reference) is always resolvable by the drawer / scoring UI.
+  // Includes roster IDs so swap candidates (who are on the team but
+  // not in the current lineup) still resolve.
+  const memberIdsToFetch = useMemo(() => {
+    const ids = new Set<string>();
+    const collectFromLineup = (lineup: any) => {
+      if (!lineup) return;
+      for (let n = 1; n <= 5; n++) {
+        const id = lineup[`player${n}_id`];
+        if (typeof id === 'string' && id.length > 0) ids.add(id);
+      }
+    };
+    collectFromLineup(lineupsData?.homeLineup);
+    collectFromLineup(lineupsData?.awayLineup);
+    homeTeamData?.team_players?.forEach((tp: any) => {
+      if (typeof tp.member_id === 'string' && tp.member_id) ids.add(tp.member_id);
+    });
+    awayTeamData?.team_players?.forEach((tp: any) => {
+      if (typeof tp.member_id === 'string' && tp.member_id) ids.add(tp.member_id);
+    });
+    return Array.from(ids);
+  }, [lineupsData, homeTeamData, awayTeamData]);
+
+  const membersQuery = useMembersByIds(memberIdsToFetch);
+
   const players = useMemo(() => {
     const playerMap = new Map<string, Player>();
-
-    // Add all home team roster players
-    homeTeamData?.team_players?.forEach((tp: any) => {
-      if (tp.members) {
-        playerMap.set(tp.members.id, {
-          id: tp.members.id,
-          first_name: tp.members.first_name,
-          last_name: tp.members.last_name,
-          nickname: tp.members.nickname,
-        });
-      }
+    membersQuery.data?.forEach((m: any) => {
+      playerMap.set(m.id, {
+        id: m.id,
+        first_name: m.first_name,
+        last_name: m.last_name,
+        nickname: m.nickname,
+      });
     });
-
-    // Add all away team roster players
-    awayTeamData?.team_players?.forEach((tp: any) => {
-      if (tp.members) {
-        playerMap.set(tp.members.id, {
-          id: tp.members.id,
-          first_name: tp.members.first_name,
-          last_name: tp.members.last_name,
-          nickname: tp.members.nickname,
-        });
-      }
-    });
-
     return playerMap;
-  }, [homeTeamData, awayTeamData]);
+  }, [membersQuery.data]);
 
   // Transform games array to Map for O(1) lookups (needs useMemo - expensive transformation)
   const gameResults = useMemo(() => {

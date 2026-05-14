@@ -29,10 +29,11 @@
 import { useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getPlayerNicknameById } from '@/types/member';
-import { getTeamStats, TIEBREAKER_THRESHOLDS } from '@/types';
+import { getTeamStats } from '@/types';
 import { queryKeys } from '@/api/queryKeys';
 import { useMatchWithLeagueSettings, useMatchLineups, useMatchGames } from '@/api/hooks/useMatches';
 import { useTeamDetails } from '@/api/hooks/useTeams';
+import { useMembersByIds } from '@/api/hooks/useCurrentMember';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { useMatchRealtime } from '@/realtime/useMatchRealtime';
 import type { Player, MatchGame, HandicapThresholds } from '@/types';
@@ -85,15 +86,38 @@ export function useSpectateMatch(matchId: string | null | undefined) {
     return map;
   }, [games]);
 
-  // Team rosters — used to resolve player display names and per-slot stats
-  // for the expandable drawer inside each scoreboard.
+  // Build the player Map from the UNION of every member ID that
+  // appears in either lineup row or either team's roster, fetched
+  // directly from `members`. The previous version relied on the
+  // team_players(members(*)) nested join, which can return null for
+  // a row even when the member exists (RLS quirks, post-merge
+  // ghost FK references) and produces "Unknown" in the drawer.
+  // See useMatchScoring.ts for the matching scoring-side fix.
+  const memberIdsToFetch = useMemo(() => {
+    const ids = new Set<string>();
+    const collect = (lineup: any) => {
+      if (!lineup) return;
+      for (let n = 1; n <= 5; n++) {
+        const id = lineup[`player${n}_id`];
+        if (typeof id === 'string' && id.length > 0) ids.add(id);
+      }
+    };
+    collect(homeLineup);
+    collect(awayLineup);
+    homeTeamQuery.data?.team_players?.forEach((tp: any) => {
+      if (typeof tp.member_id === 'string' && tp.member_id) ids.add(tp.member_id);
+    });
+    awayTeamQuery.data?.team_players?.forEach((tp: any) => {
+      if (typeof tp.member_id === 'string' && tp.member_id) ids.add(tp.member_id);
+    });
+    return Array.from(ids);
+  }, [homeLineup, awayLineup, homeTeamQuery.data, awayTeamQuery.data]);
+
+  const membersQuery = useMembersByIds(memberIdsToFetch);
+
   const players = useMemo(() => {
     const map = new Map<string, Player>();
-    const home = homeTeamQuery.data?.team_players ?? [];
-    const away = awayTeamQuery.data?.team_players ?? [];
-    for (const tp of [...home, ...away] as any[]) {
-      const m = tp.members;
-      if (!m) continue;
+    membersQuery.data?.forEach((m: any) => {
       map.set(m.id, {
         id: m.id,
         nickname: m.nickname,
@@ -101,9 +125,9 @@ export function useSpectateMatch(matchId: string | null | undefined) {
         last_name: m.last_name,
         handicap: 0, // Handicap lives on the match_lineup row per-slot; not needed for display lookup.
       });
-    }
+    });
     return map;
-  }, [homeTeamQuery.data, awayTeamQuery.data]);
+  }, [membersQuery.data]);
 
   const getPlayerDisplayName = (playerId: string): string =>
     getPlayerNicknameById(playerId, players) || 'Unknown';

@@ -120,6 +120,20 @@ export function PlayerNameLink({
   const isPlaceholder = memberData?.user_id === null;
   const playerEmail = memberData?.email;
 
+  // Defensive display fallback: if the parent passed "Unknown" (or an
+  // empty string) — which happens when their player Map missed this ID
+  // — fall back to memberData.nickname (or full name) from our own
+  // useMemberById fetch. The "real" fix lives upstream in the Map
+  // builders (useMatchScoring / useSpectateMatch now query members
+  // directly by ID). This is a belt-and-suspenders so any future
+  // caller that doesn't pre-resolve the name still renders correctly.
+  const displayName =
+    (playerName && playerName !== 'Unknown')
+      ? playerName
+      : memberData
+        ? memberData.nickname || `${memberData.first_name} ${memberData.last_name}`
+        : playerName;
+
   // Check if user is blocked (only fetch when popover is open)
   // Note: We can't conditionally enable this hook based on `open` state because hooks can't be conditional.
   // The hook itself already has `enabled: !!userId && !!otherUserId` built-in.
@@ -219,7 +233,7 @@ export function PlayerNameLink({
         blockedUserId: playerId,
       });
 
-      toast.success(`${playerName} has been blocked. You won't see messages from them.`);
+      toast.success(`${displayName} has been blocked. You won't see messages from them.`);
     } catch (error) {
       logger.error('Error blocking user', { error: error instanceof Error ? error.message : String(error) });
       toast.error('Failed to block user. Please try again.');
@@ -235,7 +249,7 @@ export function PlayerNameLink({
         blockedUserId: playerId,
       });
 
-      toast.success(`${playerName} has been unblocked.`);
+      toast.success(`${displayName} has been unblocked.`);
     } catch (error) {
       logger.error('Error unblocking user', { error: error instanceof Error ? error.message : String(error) });
       toast.error('Failed to unblock user. Please try again.');
@@ -257,7 +271,7 @@ export function PlayerNameLink({
       queryClient.invalidateQueries({ queryKey: queryKeys.members.detail(playerId) });
       queryClient.invalidateQueries({ queryKey: ['unauthorizedPlayers'] });
       queryClient.invalidateQueries({ queryKey: ['playerDetails'] });
-      toast.success(`Starting handicaps set for ${playerName}!`);
+      toast.success(`Starting handicaps set for ${displayName}!`);
       setShowHandicapModal(false);
     },
     onError: (error) => {
@@ -313,7 +327,7 @@ export function PlayerNameLink({
               className
             )}
           >
-            <span>{playerName}</span>
+            <span>{displayName}</span>
             {/* Universal "Placeholder" tag rendered everywhere a player's
                 name renders through PlayerNameLink. Single source of
                 truth for the visual marker — every roster, lineup,
@@ -452,7 +466,7 @@ export function PlayerNameLink({
       {showReportModal && (
         <ReportUserModal
           reportedUserId={playerId}
-          reportedUserName={playerName}
+          reportedUserName={displayName}
           onClose={() => setShowReportModal(false)}
         />
       )}
@@ -462,7 +476,7 @@ export function PlayerNameLink({
         open={showBlockConfirm}
         onOpenChange={setShowBlockConfirm}
         title="Block User?"
-        description={`Are you sure you want to block ${playerName}? You won't be able to message each other.`}
+        description={`Are you sure you want to block ${displayName}? You won't be able to message each other.`}
         confirmLabel="Block"
         cancelLabel="Cancel"
         onConfirm={handleBlockConfirm}
@@ -474,7 +488,7 @@ export function PlayerNameLink({
         open={showUnblockConfirm}
         onOpenChange={setShowUnblockConfirm}
         title="Unblock User?"
-        description={`Unblock ${playerName}? You'll be able to message each other again.`}
+        description={`Unblock ${displayName}? You'll be able to message each other again.`}
         confirmLabel="Unblock"
         cancelLabel="Cancel"
         onConfirm={handleUnblockConfirm}
@@ -486,7 +500,7 @@ export function PlayerNameLink({
         open={showDuesModal}
         onOpenChange={setShowDuesModal}
         playerId={playerId}
-        playerName={playerName}
+        playerName={displayName}
         hasPaid={hasMembershipPaid}
       />
 
@@ -496,7 +510,7 @@ export function PlayerNameLink({
           <DialogHeader>
             <DialogTitle>Set Starting Handicaps</DialogTitle>
             <DialogDescription>
-              Set starting handicaps for {playerName}.
+              Set starting handicaps for {displayName}.
             </DialogDescription>
           </DialogHeader>
 

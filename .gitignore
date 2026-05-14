@@ -43,3 +43,6 @@ database_backups/
 
 # Compound-engineering pipeline artifacts (ce-review JSON, run scratch)
 .context/
+
+# Git worktrees (per-developer)
+.worktrees
