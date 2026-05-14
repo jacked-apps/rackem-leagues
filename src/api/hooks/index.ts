@@ -248,6 +248,7 @@ export {
 // Member mutations
 export {
   useUpdateProfanityFilter,
+  useMarkProfanityOnboardingComplete,
   useCreateMember,
   useDeleteMember,
 } from './useMemberMutations';

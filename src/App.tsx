@@ -18,6 +18,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { Toaster } from './components/ui/sonner';
 import { PWAUpdatePrompt } from './components/PWAUpdatePrompt';
 import { EnvironmentBanner } from './components/EnvironmentBanner';
+import { AuthOnboarding } from './components/onboarding/AuthOnboarding';
 
 const App: React.FC = () => {
   return (
@@ -35,6 +36,10 @@ const App: React.FC = () => {
           <EnvironmentBanner />
           <UserProvider>
             <RouterProvider router={router} />
+            {/* Post-auth one-time onboarding prompts (Unit 9 profanity
+                modal, future push-permission ask, etc.). Renders nothing
+                until member data resolves so returning users don't see a flash. */}
+            <AuthOnboarding />
           </UserProvider>
           <Toaster position="top-right" />
           <PWAUpdatePrompt />

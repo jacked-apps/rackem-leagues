@@ -36,6 +36,10 @@ export interface Member {
   starting_handicap_3v3: number | null; // Starting handicap for 3v3 format. NULL = not yet authorized.
   starting_handicap_5v5: number | null; // Starting handicap for 5v5 format. NULL = not yet authorized.
   profanity_filter_enabled?: boolean; // User's profanity filter preference
+  // NULL until the user explicitly answers the Unit 9 onboarding modal
+  // (either Yes or No). NULL value triggers the modal at app first-load.
+  // "Decide later" leaves this NULL; only an explicit Yes/No writes a timestamp.
+  profanity_onboarding_completed_at?: string | null;
   fargo_rating: number | null; // FargoRate rating (100-850). NULL = not set.
   organization_id: string | null; // Placeholder-only: org the placeholder belongs to. NULL for registered members (they span orgs).
   archived_at: string | null; // Placeholder-only: when the LO archived this row. NULL means active.

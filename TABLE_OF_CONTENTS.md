@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-13 (Messaging Phase 1 / Unit 8 redesign — switched from stacked failure area to **inline-in-conversation** pattern matching iMessage / WhatsApp / Slack. New `useOutgoingMessages` hook holds optimistic sends; `MessageView` adds a pending entry per send and either removes it on success or flips to failed on error; `MessageList` renders pending entries as normal bubbles and failed entries as the destructive variant inline at the bottom of the thread. `MessageInput` rolled back to simple "just sends" (~70 fewer lines). Deleted obsolete `MessageInput.failed-send.test.tsx`; added `useOutgoingMessages.test.ts` + `MessageList.outgoing.test.tsx`.)
+> **Last Updated**: 2026-05-13 (Messaging Phase 1 / Unit 9 — profanity onboarding modal + legacy SQL cleanup. New `ProfanityOnboardingModal` + `AuthOnboarding` mount component shown once per member at app first-load while `members.profanity_onboarding_completed_at IS NULL`. New `markProfanityOnboardingComplete` mutation + `useMarkProfanityOnboardingComplete` hook. Archived legacy `database/messaging/user_reports.sql` and `database/reporting/user_reports.sql` to `archive/` (live schema lives in baseline migration). 6 new tests.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -259,7 +259,6 @@ Node-only tooling the operator runs manually (not part of the app bundle).
 | `conversation_participants.sql` | Participant relationships |
 | `messages.sql` | Message data |
 | `blocked_users.sql` | Blocked user relationships |
-| `user_reports.sql` | User reporting system |
 | `messaging_rls_policies.sql` | Row-level security policies |
 | `enable_realtime.sql` | Realtime subscription setup |
 | `create_conversation_function.sql` | Create conversation function |
@@ -670,6 +669,11 @@ Reusable wizard/form step components
 - `MessageSettingsModal.tsx` - Settings modal
 - `BlockedUsersModal.tsx` - Blocked users modal
 - `UserListItem.tsx` - User list item
+
+#### Onboarding Components (`/components/onboarding/`)
+- `ProfanityOnboardingModal.tsx` - **Messaging Phase 1 / Unit 9** — shadcn `Dialog` shown once per member while `members.profanity_onboarding_completed_at IS NULL`. Three actions: "Yes, filter profanity" (sets enabled=true + completed=now()), "No, show me everything" (enabled=false + completed=now()), "Decide later" (closes without writing — modal returns on next app load). Escape / backdrop / X all behave as "Decide later." Calls `useMarkProfanityOnboardingComplete`.
+- `AuthOnboarding.tsx` - Top-level mount component sitting inside `UserProvider` in `App.tsx`. Gates on `useUser` + `useCurrentMember` resolving (no flash for returning users), then renders `ProfanityOnboardingModal` iff `profanity_onboarding_completed_at IS NULL` and the user hasn't dismissed it this session. Structured to host future one-time onboarding prompts (push permission ask, etc.).
+- `__tests__/ProfanityOnboardingModal.test.tsx` - **Messaging Phase 1 / Unit 9** — RTL test: explanatory copy + three actions render, Yes calls mutation with `filterEnabled=true`, No with `filterEnabled=false`, Decide later closes without calling mutation, Escape behaves as Decide later, modal stays open if mutation rejects (user can retry). 6 cases.
 
 #### Operator Components (`/components/operator/`)
 - `ActiveLeagues.tsx` - Active leagues overview (uses LeagueStatusCard)
@@ -1137,7 +1141,7 @@ See [RESTRUCTURE_PLAN.md](RESTRUCTURE_PLAN.md) for complete list of 20 organizat
 | **Official Rulebook Reader** | `/rules`, `/officalBCARulebook/cleaned`, `/scripts/clean-rulebook` | `RulesPage.tsx`, `RuleDetailPage.tsx`, `useRulebook.ts`, `scripts/clean-rulebook.ts`, `rules_page_events.sql` |
 | **League House Rules** | `/rules` (reader overlay), `/rules/house/:scope/:scopeId/:ruleId`, `/league-rules/:orgId`, `/league-settings/:leagueId` (authoring) | `HouseRuleForm.tsx`, `HouseRulesList.tsx`, `HouseRuleDetailPage.tsx`, `LeagueHouseRulesSection.tsx`, `useHouseRules.ts`, `house_rules.sql`, `leagues_ignore_org_house_rules.sql` |
 | **Player Registration** | `/newPlayer` | `NewPlayerForm.tsx`, `usePlayerFormSubmission.ts` |
-| **Reporting** | `/operator`, `/pages`, `/database/reporting` | `ReportsManagement.tsx`, `AdminReports.tsx`, `user_reports.sql` |
+| **Reporting** | `/operator`, `/pages` | `ReportsManagement.tsx`, `AdminReports.tsx` (live schema in `supabase/migrations/20251130010824_baseline.sql`; legacy drafts archived 2026-05-13) |
 | **Wizards/Forms** | `/wizards`, `/components/wizard`, `/components/forms`, `/data`, `/flows` | `WizardFlowShell.tsx`, `createNewLeagueFlow.ts`, `seasonWizardSteps.tsx` |
 
 ---

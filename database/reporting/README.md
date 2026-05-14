@@ -1,5 +1,12 @@
 # User Reporting System
 
+> **2026-05-13 — `user_reports.sql` archived.** The live schema for the
+> `user_reports` table now lives in
+> `supabase/migrations/20251130010824_baseline.sql`. The legacy draft was
+> moved to `archive/database-reporting-user_reports.sql` for historical
+> reference; do not run it against any environment. (Messaging Phase 1 /
+> Unit 9 cleanup.)
+
 ## Overview
 
 A comprehensive, legally-compliant reporting system for handling user misconduct. Designed with accountability, evidence preservation, and proper escalation workflows.
