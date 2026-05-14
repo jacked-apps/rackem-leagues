@@ -100,6 +100,26 @@ A chart is a discretized formula; a formula is a continuous chart. The Threshold
 
 Some Handicap Mechanisms (`extra_games`, `start_points`) operate at the team-aggregate level — the difference between team-sum ratings drives the asymmetry. Others (`race_length_adjustment`) operate at the per-pairing level — each individual head-to-head matchup uses the rating gap between the two paired players. Module-level statements that universally say "team-vs-team" exclude per-pairing mechanisms; use scope-aware language ("two sides," "team-vs-team or player-vs-player").
 
+## Emerging architectural model: the 3-layer view
+
+*Surfaced during Unit 4 cold-read review with Ed. This is the architectural mental model the doc is converging toward — **not a locked structure**. The current Module structure (the 7 cheat-sheet Modules) predates this model; the two coexist, and a future dedicated branch may restructure to align them.*
+
+The league scoring architecture has three layers, each with a distinct job:
+
+- **Layer 1 — Mechanisms.** Concrete, single-purpose tasks. Examples: `extra_games` (asymmetric game targets), `start_points` (initial point bonus), the per-game point allocator, the win-condition check. A mechanism does *one thing*.
+- **Layer 2 — Sub-systems.** Groupings of mechanisms by purpose:
+  - **Handicap System** — encodes player strength.
+  - **Game System** — mechanisms operating on the *games* metric (`extra_games`, games-on-the-wire, `race_length_adjustment`).
+  - **Point System** — mechanisms operating on the *points* metric (per-game allocator, `start_points`, threshold triggers, end-of-match aggregate).
+  - **Win System** — decides the match winner from the collected metrics.
+- **Layer 3 — Scoring System.** The orchestrator. Composes the sub-systems and defines how they work together to score a match.
+
+**Vocabulary note.** This model's **"Mechanism"** (Layer 1) is distinct from the cheat sheet's **"Module"** (an LO-facing configuration axis — there are 7). When the docs say "Module" they mean the cheat-sheet sense; "Mechanism" means a Layer-1 concrete task. The two map imperfectly because the 7-Module structure was locked (in the brainstorm) before this 3-layer model emerged.
+
+**Why this model matters.** It explains how the pieces *compose*. The current Module structure splits things by **origin** (handicap-driven vs not); the 3-layer model splits by **metric** (games vs points) and by **job** (do a task / group tasks / orchestrate). The 3-layer model aligns with the actual data model — every match tracks two metrics (games and points), and mechanisms operate on those metrics. Handicap is just a config *input* to some mechanisms, not a categorization axis.
+
+**Status: documented as architectural intent.** The current 7-Module structure and this 3-layer model coexist. L1 docs reflect the current Module structure (so they match the code and the brainstorm) while acknowledging this deeper architecture — the implementation-vs-intent pattern applied at the structural level. A future restructure branch may align the Modules to the 3-layer model; that's a separately-planned effort, not part of step 1.
+
 ## Concrete rules / templates
 
 ### Module README template (8–9 sections)
