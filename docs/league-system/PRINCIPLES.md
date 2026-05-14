@@ -110,9 +110,9 @@ A **Module** is any bounded, well-defined thing with **strict borders** (a clear
 
 This is the core unit of the whole architecture, and it directly embodies the project's central principle: **strict borders = anti-conflation; room to grow = not constriction.**
 
-**Modules nest recursively.** A Module can contain other Modules. `extra_games` is a Module; the "Handicap Mechanisms" Module contains it; the whole Scoring System is a Module containing those.
+**Modules nest recursively.** A Module can contain other Modules. The composition of a set of Modules — with rules for how they fit together — is itself a Module. `extra_games` is a Module; the "Handicap Mechanisms" Module contains it; the whole **Scoring System** is a Module containing those.
 
-**The 7 cheat-sheet "Modules" are the 7 _top-level_ Modules** — the LO-facing configuration categories (Handicap Systems, Handicap Mechanisms, Scoring Systems, Threshold Charts, Team Geometry, Match Format, Standings & Tiebreakers). They are the top of the hierarchy; everything nested inside them is also a Module. (Cheat-sheet wording: read "the 7 Modules" as "the 7 top-level Modules.")
+**The Scoring System is the top-level Module** of the rule-structure hierarchy — the complete, configured rule set that scores a match. The component Modules (Handicap System, Handicap Mechanisms, Points System, Win Calculator, Threshold Charts, Team Geometry, Match Format, Standings & Tiebreakers) nest *inside* it. *(The brainstorm cheat sheet's "7 Modules" framing is being revised — see "A Scoring System is the whole thing" below.)*
 
 **Data is not a Module.** A Module has walls around a *responsibility* — it does something, or organizes something. Data has a type but no responsibility. Games, Points, threshold values, player ratings — these are **data that flows between Modules**, not Modules themselves.
 
@@ -120,12 +120,22 @@ This is the core unit of the whole architecture, and it directly embodies the pr
 
 "Mechanism," "System," "Variant," and "Chart" are not separate things from Modules — they describe **what kind of Module** something is, or **what role** it plays:
 
-- **Mechanism** — a Module that performs a single functional task. (`extra_games`, `start_points`, the per-game allocator.)
-- **System** — a Module that is a composition of other Modules. (The Scoring System; the Points System.)
-- **Variant** — a Module serving as one of several (currently) mutually-exclusive options within a parent Module. (Points is a Variant within the Handicap Systems Module.)
+- **Mechanism** — a Module that performs a single functional task (an *atom*). (`extra_games`, a threshold computation, a trigger.)
+- **System** — a Module that is a composition of other Modules (a *set*), with rules for how they fit together. (The Scoring System; the Handicap System; the Points System.) **When you need a word for "a set of Modules," the word is _System_.**
+- **Variant** — a Module serving as one of several (currently) mutually-exclusive options within a parent Module. (Points is a Variant within the Handicap System.)
 - **Chart / Formula** — a Module used as a *tool* by another Module to do a computation. A chart is discrete; a formula is continuous; they are interconvertible.
 
-So "Module" is the noun; these are its kinds/roles.
+So "Module" is the noun; these are its kinds/roles. **Mechanism** and **System** are the two reached for most — *atom* vs. *set*.
+
+### How Modules connect: data flows between them
+
+Modules connect by passing **data** — not by passing Modules. The canonical example, the handicap-to-trigger chain:
+
+1. The **Handicap System** (a Module) produces handicap **data** (rating values).
+2. A **threshold Mechanism** takes that data in, does its math (using a Chart or Formula as a tool), and produces threshold **data**.
+3. A **trigger Mechanism** takes the threshold data in, performs a task, and usually produces **data to be saved**.
+
+The composite — Handicap System + threshold + trigger — is itself a **System** (a Module composed of Modules). Each step is a bounded Module; data is what flows between them.
 
 ### The two metrics
 
@@ -154,11 +164,18 @@ Each handicap-side mechanism **uses a Chart or Formula** (a tool Module) to do t
 
 ### Win Calculator
 
-The **Win Calculator** is a Module of its own — a separate concern from the mechanisms. It consults the collected metrics (games + points) plus any benchmarks the mechanisms declared, and declares the match winner. It does not produce a metric; it decides.
+The **Win Calculator** is a component Module of its own. It consults the collected metrics (Games + Points) plus any benchmarks the mechanisms declared, and declares the match winner. It does not produce a metric; it decides.
 
-### A Division's scoring system is a composition
+### A Scoring System is the whole thing
 
-A Division's full scoring behavior is a **composition** of Modules — single-responsibility Mechanisms stacked explicitly. Explicit composition beats derived composition: if the "instruction manual" sees N distinct Mechanisms each with its own trigger, it reads the structure directly — no derivation step.
+A **Scoring System** is the complete, configured rule set that scores a match — a top-level System composing the component Modules. A Scoring System's behavior is built by **explicit composition**: if the "instruction manual" sees N distinct Mechanisms each with its own trigger, it reads the structure directly — no derivation step.
+
+Two terms get retired/relocated here:
+
+- **"Division" is dropped.** It was a CSI-inherited conflation that mixed up *a league* (a recurring competition) with *a scoring configuration* (a rule set) — two fundamentally different kinds of thing sharing one word. What the brainstorm called a "Division" is a **prepackaged Scoring System**. The competition hierarchy is **Organization → League → Season**; a League runs a Scoring System. "Division" appears nowhere.
+- **The brainstorm's "Scoring Systems Module"** (one of the original 7) was a mis-categorization — it tried to make "the whole thing" into one sibling part. It splits into two real component Modules: **Points System** (per-game point allocation) and **Win Calculator** (victory determination). The component-Module count goes 7 → 8.
+
+This restructure is **policy-gated** and not yet propagated to the cheat sheet / folders / cross-links — it is mapped and executed as a deliberate, separate step (see task tracker).
 
 ### Scope: this branch defines the ideal
 
