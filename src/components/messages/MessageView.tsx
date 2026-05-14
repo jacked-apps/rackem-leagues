@@ -15,6 +15,7 @@ import { ConversationHeader } from './ConversationHeader';
 import { MessageInput } from './MessageInput';
 import { ReadOnlyBanner } from './ReadOnlyBanner';
 import { MessageList, type Message } from './messageview/MessageList';
+import { useOutgoingMessages } from './messageview/useOutgoingMessages';
 import { useConversationParticipants } from '@/hooks/useConversationParticipants';
 import { useConversationMessages, useSendMessage, useUpdateLastRead, useConversationMessagesRealtime, useLeaveConversation, useBlockUser, useMessageComposerStatus } from '@/api/hooks';
 import { supabase } from '@/supabaseClient';
@@ -39,6 +40,10 @@ export function MessageView({ conversationId, currentUserId, onBack, onLeaveConv
   const { data: messagesData = [], isLoading: loading } = useConversationMessages(conversationId);
   const messages = messagesData as unknown as Message[];
   const sendMessageMutation = useSendMessage();
+
+  // Unit 8 inline-failed-send: optimistic outgoing-messages state that
+  // MessageList renders alongside the confirmed messages.
+  const { outgoing, addPending, markPending, markFailed, remove } = useOutgoingMessages();
   const updateLastReadMutation = useUpdateLastRead();
   const leaveConversationMutation = useLeaveConversation();
   const blockUserMutation = useBlockUser();
@@ -104,23 +109,35 @@ export function MessageView({ conversationId, currentUserId, onBack, onLeaveConv
     }
   }, [conversationId, currentUserId, messages.length]);
 
-  const handleSendMessage = async (content: string) => {
-    // Use mutateAsync so a send failure propagates up to MessageInput,
-    // which surfaces it as a retryable failed-bubble (Unit 8). Don't
-    // manually fetch — realtime delivers the confirmed message to the
-    // list when the send succeeds.
+  // Submit a message: add an optimistic bubble to the conversation,
+  // fire the mutation, and either remove the bubble on success (realtime
+  // delivers the authoritative server-side row) or transition it to
+  // failed state on error (the bubble stays inline with a Retry button).
+  // Swallows the error here — failure is visible via the inline bubble,
+  // not via re-thrown exceptions to MessageInput.
+  const sendWithOptimistic = async (clientId: string, content: string) => {
     try {
       await sendMessageMutation.mutateAsync({
         conversationId,
         senderId: currentUserId,
         content,
       });
+      remove(clientId);
     } catch (error) {
-      logger.error('Error sending message', {
-        error: error instanceof Error ? error.message : String(error),
-      });
-      throw error;
+      const msg = error instanceof Error ? error.message : String(error);
+      logger.error('Error sending message', { error: msg });
+      markFailed(clientId, msg || 'Failed to send');
     }
+  };
+
+  const handleSendMessage = async (content: string) => {
+    const clientId = addPending(content);
+    await sendWithOptimistic(clientId, content);
+  };
+
+  const handleRetryOutgoing = async (clientId: string, content: string) => {
+    markPending(clientId);
+    await sendWithOptimistic(clientId, content);
   };
 
   const handleLeaveClick = () => {
@@ -215,6 +232,8 @@ export function MessageView({ conversationId, currentUserId, onBack, onLeaveConv
           currentUserId={currentUserId}
           recipientLastRead={recipientLastRead}
           loading={loading}
+          outgoingMessages={outgoing}
+          onRetryOutgoing={handleRetryOutgoing}
         />
       </div>
 
