@@ -70,15 +70,16 @@ export async function fetchFeatsStats(seasonId: string): Promise<FeatsStats> {
     };
   }
 
-  // Step 2: Fetch all games for these matches (excluding tiebreakers)
+  // Step 2: Fetch all games for these matches (excluding tiebreakers).
+  // Branch B Phase 1 dropped the break_and_run / golden_break boolean
+  // columns. Flawless Nights still derives from per-game winner/home/away
+  // player IDs on this row, so we keep this query for that purpose.
   const { data: games, error: gamesError } = await supabase
     .from('match_games')
     .select(`
       id,
       match_id,
       winner_player_id,
-      break_and_run,
-      golden_break,
       is_tiebreaker,
       home_player_id,
       away_player_id,
@@ -101,23 +102,57 @@ export async function fetchFeatsStats(seasonId: string): Promise<FeatsStats> {
     };
   }
 
-  // Step 3: Calculate Break & Runs
-  const breakAndRunCounts = new Map<string, number>();
-  games.forEach(game => {
-    if (game.break_and_run && game.winner_player_id) {
-      const count = breakAndRunCounts.get(game.winner_player_id) || 0;
-      breakAndRunCounts.set(game.winner_player_id, count + 1);
-    }
-  });
+  // Step 3: Count Break & Runs from game_events. Scoped to this season's
+  // matches via match_id (denormalized on the events row for this exact
+  // pattern). Excludes tiebreakers via the join condition.
+  const tiebreakerGameIds = new Set(games.filter(g => g.is_tiebreaker).map(g => g.id));
+  const eligibleGameIds = games.filter(g => !g.is_tiebreaker).map(g => g.id);
 
-  // Step 4: Calculate Golden Breaks
+  const breakAndRunCounts = new Map<string, number>();
   const goldenBreakCounts = new Map<string, number>();
-  games.forEach(game => {
-    if (game.golden_break && game.winner_player_id) {
-      const count = goldenBreakCounts.get(game.winner_player_id) || 0;
-      goldenBreakCounts.set(game.winner_player_id, count + 1);
+
+  if (eligibleGameIds.length > 0) {
+    const { data: brEvents, error: brError } = await supabase
+      .from('game_events')
+      .select('attributed_player_id')
+      .eq('event_name', 'break_and_run')
+      .in('game_id', eligibleGameIds)
+      .not('attributed_player_id', 'is', null);
+
+    if (brError) {
+      throw new Error(`Failed to fetch break_and_run events: ${brError.message}`);
     }
-  });
+
+    (brEvents ?? []).forEach(row => {
+      if (row.attributed_player_id) {
+        const count = breakAndRunCounts.get(row.attributed_player_id) || 0;
+        breakAndRunCounts.set(row.attributed_player_id, count + 1);
+      }
+    });
+
+    const { data: gbEvents, error: gbError } = await supabase
+      .from('game_events')
+      .select('attributed_player_id')
+      .eq('event_name', 'golden_break')
+      .in('game_id', eligibleGameIds)
+      .not('attributed_player_id', 'is', null);
+
+    if (gbError) {
+      throw new Error(`Failed to fetch golden_break events: ${gbError.message}`);
+    }
+
+    (gbEvents ?? []).forEach(row => {
+      if (row.attributed_player_id) {
+        const count = goldenBreakCounts.get(row.attributed_player_id) || 0;
+        goldenBreakCounts.set(row.attributed_player_id, count + 1);
+      }
+    });
+  }
+
+  // tiebreakerGameIds is unused at runtime but the variable's existence
+  // serves as a structural reminder that the events query above must
+  // exclude tiebreakers — eligibleGameIds is the filter that achieves it.
+  void tiebreakerGameIds;
 
   // Step 5: Calculate Flawless Nights (matches where player won every game they played)
   // Group games by match, player, AND position (for 5v5 double duty players)

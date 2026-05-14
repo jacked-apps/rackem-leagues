@@ -14,27 +14,18 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { getGameEvent } from '@/systems/game-events';
+import type { ConfirmationQueueItem } from '@/types/match';
 
 interface ConfirmationDialogProps {
   /** Whether dialog is open */
   open: boolean;
-  /** Game needing confirmation. The dialog is "dumb" — it renders each
-   *  modifier that is truthy (or each non-null numeric field) regardless of
-   *  which league or scoring system produced it. Caller passes the full
-   *  match_games snapshot; the scoring dialog upstream is responsible for
-   *  only letting relevant fields be set in the first place. */
-  game: {
-    gameNumber: number;
-    winnerPlayerName: string;
-    breakAndRun: boolean;
-    goldenBreak: boolean;
-    breakFouled: boolean;
-    runout: boolean;
-    winByForfeit: boolean;
-    winnerValue: number | null;
-    loserValue: number | null;
-    isResetRequest?: boolean;
-  } | null;
+  /** Game needing confirmation. The dialog is "dumb" — it renders one badge
+   *  per recorded event using the registry's label, plus the numeric
+   *  per-side values (loserValue, winnerValue) and the break_fouled state
+   *  modifier. Caller is responsible for fetching events from game_events
+   *  and passing the array; this dialog never queries the database. */
+  game: ConfirmationQueueItem | null;
   /** Game type for golden break label (8-ball, 9-ball, 10-ball, etc.) */
   gameType: string;
   /** Handler for confirm/agree button */
@@ -64,12 +55,36 @@ export function ConfirmationDialog({
 
   const isVacateRequest = game.isResetRequest;
 
-  // Get golden break label based on game type
+  // Get game-type-specific golden_break label.
   const getGoldenBreakLabel = () => {
-    if (gameType === '8-ball') return 'an 8 on the Break!';
-    if (gameType === '9-ball') return 'a 9 on the Break!';
-    if (gameType === '10-ball') return 'a 10 on the Break!';
+    if (gameType === '8-ball' || gameType === 'eight_ball') return 'an 8 on the Break!';
+    if (gameType === '9-ball' || gameType === 'nine_ball') return 'a 9 on the Break!';
+    if (gameType === '10-ball' || gameType === 'ten_ball') return 'a 10 on the Break!';
     return 'a Golden Break!';
+  };
+
+  // Branch B Phase 1: render one row per recorded event using registry label.
+  // Two events have special display copy preserved from before the rewrite
+  // (golden_break gets the game-type-specific phrasing; runout gets the
+  // "after opponent's break" suffix). All others fall back to the registry
+  // label as-is.
+  const renderEventLabel = (eventName: string): { text: string; className: string } => {
+    if (eventName === 'golden_break') {
+      return { text: getGoldenBreakLabel(), className: 'text-green-600 font-semibold' };
+    }
+    if (eventName === 'break_and_run') {
+      return { text: 'Break & Run', className: 'text-blue-600 font-semibold' };
+    }
+    if (eventName === 'runout') {
+      return { text: "Runout after opponent's break", className: 'text-purple-600 font-semibold' };
+    }
+    if (eventName === 'win_by_forfeit') {
+      return { text: 'Won by forfeit', className: 'text-foreground' };
+    }
+    // Registry-driven fallback (covers Phase 2 LO-toggleable events like
+    // early_8, scratch_on_8, eight_wrong_pocket once they're enabled).
+    const definition = getGameEvent(eventName);
+    return { text: definition?.label ?? eventName, className: 'text-foreground' };
   };
 
   const handleConfirm = () => {
@@ -138,29 +153,24 @@ export function ConfirmationDialog({
                 {game.winnerPlayerName} won the game
               </div>
 
-              {/* Modifiers — render each truthy flag on its own line so the
-                  opponent sees every detail the scorer entered. Order runs
-                  from most-celebratory to most-routine; presentation is
-                  dumb and does not filter by league. */}
+              {/* Events + state modifiers — render one row per registry event
+                  the scorer recorded, plus the break-fault state modifier and
+                  the loser's per-game value (calculator-driven). Branch B
+                  Phase 1 reads from the events array (sourced from game_events
+                  by the caller); the dialog itself stays "dumb." */}
               <div className="text-center space-y-1 text-sm">
-                {game.breakAndRun && (
-                  <div className="text-blue-600 font-semibold">
-                    Break &amp; Run
-                  </div>
-                )}
-                {game.goldenBreak && (
-                  <div className="text-green-600 font-semibold">
-                    {getGoldenBreakLabel()}
-                  </div>
-                )}
-                {game.runout && (
-                  <div className="text-purple-600 font-semibold">
-                    Runout after opponent&apos;s break
-                  </div>
-                )}
-                {game.winByForfeit && (
-                  <div className="text-foreground">Won by forfeit</div>
-                )}
+                {game.events
+                  // break_fouled is shown via its dedicated row below for the
+                  // longer "(re-rack with opposite breaker)" copy; skip it here.
+                  .filter(eventName => eventName !== 'break_fouled')
+                  .map(eventName => {
+                    const { text, className } = renderEventLabel(eventName);
+                    return (
+                      <div key={eventName} className={className}>
+                        {text}
+                      </div>
+                    );
+                  })}
                 {game.breakFouled && (
                   <div className="text-amber-700">
                     Break was fouled (re-rack with opposite breaker)

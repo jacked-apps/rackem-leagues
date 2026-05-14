@@ -43,6 +43,7 @@ import { useEffect, useRef } from 'react';
 import { supabase } from '@/supabaseClient';
 import { getPlayerNicknameById } from '@/types/member';
 import type { MatchBasic, Player, MatchGame } from '@/types';
+import { fetchGameEventsForConfirmation } from './fetchGameEventsForConfirmation';
 
 interface GameUpdateOptions {
   /** Match data with team IDs */
@@ -54,15 +55,15 @@ interface GameUpdateOptions {
   /** Ref tracking vacate requests initiated by current user */
   myVacateRequests: React.MutableRefObject<Set<number>>;
   /** Function to add confirmation to queue. Accepts the full confirmation
-   *  payload so the dialog can render every field the scorer entered. */
+   *  payload so the dialog can render every field the scorer entered.
+   *  Branch B Phase 1: `events` is the array of event names recorded for
+   *  the game (sourced from game_events) — replaces the prior boolean
+   *  fields. */
   addToConfirmationQueue: (confirmation: {
     gameNumber: number;
     winnerPlayerName: string;
-    breakAndRun: boolean;
-    goldenBreak: boolean;
+    events: string[];
     breakFouled: boolean;
-    runout: boolean;
-    winByForfeit: boolean;
     winnerValue: number | null;
     loserValue: number | null;
     isResetRequest?: boolean;
@@ -220,17 +221,21 @@ export function useMatchRealtime(
               }
 
               // This is from opponent - show the confirmation modal.
-              // Forward every scored field — dumb dialog renders whatever is truthy.
+              // Branch B Phase 1: events are no longer columns on match_games.
+              // Fetch them from game_events with bounded retry against
+              // cross-table realtime ordering (see fetchGameEventsForConfirmation).
               if (updatedGame.winner_player_id) {
                 const winnerName = getPlayerNicknameById(updatedGame.winner_player_id, players);
+                const events = await fetchGameEventsForConfirmation(
+                  supabase,
+                  updatedGame.id,
+                  true, // expectNonEmpty — retry if empty on a winner-confirmed game
+                );
                 addToConfirmationQueue({
                   gameNumber: updatedGame.game_number,
                   winnerPlayerName: winnerName,
-                  breakAndRun: updatedGame.break_and_run,
-                  goldenBreak: updatedGame.golden_break,
+                  events,
                   breakFouled: updatedGame.break_fouled,
-                  runout: updatedGame.runout,
-                  winByForfeit: updatedGame.win_by_forfeit,
                   loserValue: updatedGame.loser_value,
                   winnerValue: updatedGame.winner_value,
                   isResetRequest: true,
@@ -255,15 +260,17 @@ export function useMatchRealtime(
                 }
 
                 const winnerName = getPlayerNicknameById(updatedGame.winner_player_id, players);
-                // Forward every scored field — dumb dialog renders whatever is truthy.
+                // Branch B Phase 1: events fetched from game_events with retry.
+                const events = await fetchGameEventsForConfirmation(
+                  supabase,
+                  updatedGame.id,
+                  true,
+                );
                 addToConfirmationQueue({
                   gameNumber: updatedGame.game_number,
                   winnerPlayerName: winnerName,
-                  breakAndRun: updatedGame.break_and_run,
-                  goldenBreak: updatedGame.golden_break,
+                  events,
                   breakFouled: updatedGame.break_fouled,
-                  runout: updatedGame.runout,
-                  winByForfeit: updatedGame.win_by_forfeit,
                   loserValue: updatedGame.loser_value,
                   winnerValue: updatedGame.winner_value,
                   isResetRequest: false,

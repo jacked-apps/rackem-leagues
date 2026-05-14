@@ -1589,3 +1589,50 @@ needs to reckon with this from the start, not bolt it on later:
   bullet.
 - Related: project_lo_inline_placeholder_handling memory (similar
   edit-from-where-you-look pattern for placeholder players).
+
+## 26. Team-Granted Scorekeeper Rights (Non-Roster Users)
+
+**Discovered:** 2026-05-11 during Branch B Phase 1 smoke testing.
+**Severity:** Feature request — small clean addition; defer to its own branch.
+**Owner:** unassigned
+
+**The idea:** let a team's captain (or the LO) grant a registered user
+"scorekeeper rights" for the team, WITHOUT putting them on the team's
+roster. Example: Ed's wife comes to watch and hang out at the bar but
+she's not on any team. Ed (captain) grants her scorekeeper rights, she
+can keep score for the team for the night.
+
+**Architecture sketch:**
+
+- New small table `team_scorekeepers` with `(team_id, member_id,
+  granted_by, granted_at)`. Optional `expires_at` if we want one-night
+  grants vs permanent.
+- `can_write_game_event` SECURITY DEFINER function gains a third branch:
+  caller is in `team_scorekeepers` for either team in the match. The
+  existing two branches (roster member of either team, org owner/admin)
+  stay unchanged.
+- Authorization to grant/revoke: team captain OR org owner/admin. Mirrors
+  the can_write_house_rule_org pattern.
+- UI: a "Scorekeepers" section on the team-settings page (next to or
+  inside the roster panel). LO can also manage via the operator office.
+
+**Edge cases worth thinking about:**
+
+- A scorekeeper shouldn't get player stats — they're recording, not
+  playing. Stats queries already gate on `attributed_player_id`, so this
+  is implicit, but worth confirming.
+- Should one-night grants exist, or only permanent? Permanent is
+  simpler; one-night needs a UI for "grant for this match only" plus an
+  expiry mechanism.
+- Should grants be team-scoped (this team only) or league-scoped (any
+  team in this league)? Team-scoped matches the mental model.
+
+**Cross-references:**
+
+- The two-tier `can_write_game_event` was introduced in Branch B Phase 1
+  (plan: `docs/plans/2026-05-09-001-feat-scoring-event-registry-plan.md`,
+  migration: `supabase/migrations/20260509000000_game_events_table_phase1.sql`).
+- Followup migration broadened branch (a) to all active roster members
+  (not just locked-lineup players) — `supabase/migrations/20260511000000_broaden_can_write_game_event.sql`.
+- Related: `can_write_house_rule_org` pattern for the
+  captain-or-LO-grants-this authorization shape.

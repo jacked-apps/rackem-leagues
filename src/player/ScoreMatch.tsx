@@ -49,7 +49,9 @@ import { GamesList } from '@/components/scoring/GamesList';
 import { TableNumberBar } from '@/components/scoring/TableNumberBar';
 import { queryKeys } from '@/api/queryKeys';
 import { getTeamStats, getPlayerStats as getPlayerStatsUtil } from '@/types';
+import type { ConfirmationQueueItem } from '@/types/match';
 import { getCalculator } from '@/systems/calculators';
+import { buildScoringEventsPayload } from '@/systems/game-events';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
 import { MatchPhaseGuard } from '@/components/match/MatchPhaseGuard';
@@ -219,19 +221,10 @@ function ScoreMatchBody() {
   const [loserValue, setLoserValue] = useState<number | null>(null);
   const [winnerValue, setWinnerValue] = useState<number | null>(null);
 
-  // Opponent confirmation modal state
-  const [confirmationGame, setConfirmationGame] = useState<{
-    gameNumber: number;
-    winnerPlayerName: string;
-    breakAndRun: boolean;
-    goldenBreak: boolean;
-    breakFouled: boolean;
-    runout: boolean;
-    winByForfeit: boolean;
-    winnerValue: number | null;
-    loserValue: number | null;
-    isResetRequest?: boolean; // True if this is a request to reset the game
-  } | null>(null);
+  // Opponent confirmation modal state. Branch B Phase 1: events are now an
+  // array of registry event names, sourced from game_events instead of
+  // individual boolean columns on match_games.
+  const [confirmationGame, setConfirmationGame] = useState<ConfirmationQueueItem | null>(null);
 
   // Edit game modal state
   const [editingGame, setEditingGame] = useState<{
@@ -820,19 +813,24 @@ function ScoreMatchBody() {
             currentWinnerName: winnerName,
           });
         }}
-        onVacateRequestClick={(gameNumber, winnerName) => {
-          // When opponent clicks "Vacate Request" button, open confirmation dialog.
-          // Forward every scored field so the dialog can show the full detail.
+        onVacateRequestClick={async (gameNumber, winnerName) => {
+          // When opponent clicks "Vacate Request" button, open confirmation
+          // dialog. Branch B Phase 1: events come from game_events, not
+          // boolean columns on match_games. Quick fetch on click is fine
+          // (no realtime race here — the user is acting on already-confirmed
+          // data).
           const game = gameResults.get(gameNumber);
           if (game) {
+            const { data: eventRows } = await supabase
+              .from('game_events')
+              .select('event_name')
+              .eq('game_id', game.id);
+            const events = (eventRows ?? []).map(row => row.event_name);
             setConfirmationGame({
               gameNumber,
               winnerPlayerName: winnerName,
-              breakAndRun: game.break_and_run,
-              goldenBreak: game.golden_break,
+              events,
               breakFouled: game.break_fouled,
-              runout: game.runout,
-              winByForfeit: game.win_by_forfeit,
               winnerValue: game.winner_value,
               loserValue: game.loser_value,
               isResetRequest: true,
@@ -887,10 +885,26 @@ function ScoreMatchBody() {
         }}
         onConfirm={() => {
           if (scoringGame) {
-            mutations.handleConfirmScore(
-              scoringGame,
+            // Build the events payload for the score_game_with_events rpc.
+            // Branch B Phase 1 reads the registry to attribute each truthy
+            // event to the correct player based on the registry's
+            // `attributedTo` rule. Phase 1 maps the existing modal state
+            // (4 booleans + break_fouled) onto registry event names.
+            const events = buildScoringEventsPayload({
               breakAndRun,
               goldenBreak,
+              runout,
+              winByForfeit,
+              breakFouled,
+              winnerPlayerId: scoringGame.winnerPlayerId,
+              winnerWasScheduledBreaker: scoringGame.winnerWasScheduledBreaker,
+              homePlayerId: gameResults.get(scoringGame.gameNumber)?.home_player_id ?? null,
+              awayPlayerId: gameResults.get(scoringGame.gameNumber)?.away_player_id ?? null,
+              homeAction: gameResults.get(scoringGame.gameNumber)?.home_action ?? 'breaks',
+            });
+            mutations.handleConfirmScore(
+              scoringGame,
+              events,
               () => {
                 setScoringGame(null);
                 setBreakAndRun(false);
@@ -901,7 +915,7 @@ function ScoreMatchBody() {
                 setLoserValue(null);
                 setWinnerValue(null);
               },
-              { breakFouled, runout, winByForfeit, winnerValue, loserValue }
+              { breakFouled, winnerValue, loserValue }
             );
           }
         }}

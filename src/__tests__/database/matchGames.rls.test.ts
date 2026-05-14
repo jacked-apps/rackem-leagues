@@ -149,33 +149,9 @@ describe('Match Games Table - RLS Tests', () => {
       expect(error).toBeNull();
     });
 
-    it('should allow marking break and run', async () => {
-      if (!testGameId) {
-        console.warn('⚠️ No test game found, skipping test');
-        return;
-      }
-
-      const { error } = await client
-        .from('match_games')
-        .update({ break_and_run: true })
-        .eq('id', testGameId);
-
-      expect(error).toBeNull();
-    });
-
-    it('should allow marking golden break', async () => {
-      if (!testGameId) {
-        console.warn('⚠️ No test game found, skipping test');
-        return;
-      }
-
-      const { error } = await client
-        .from('match_games')
-        .update({ golden_break: true })
-        .eq('id', testGameId);
-
-      expect(error).toBeNull();
-    });
+    // NOTE: Tests for break_and_run / golden_break column updates removed
+    // 2026-05-09 (Branch B Phase 1) — those columns dropped from match_games
+    // and replaced by game_events row writes. See gameEvents.rls.test.ts.
 
     it('should allow requesting vacate', async () => {
       if (!testGameId) {
@@ -215,8 +191,6 @@ describe('Match Games Table - RLS Tests', () => {
           game_number: 999, // Test game number
           home_action: 'breaks',
           away_action: 'racks',
-          break_and_run: false,
-          golden_break: false,
           confirmed_by_home: false,
           confirmed_by_away: false,
           is_tiebreaker: true,
