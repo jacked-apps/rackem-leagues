@@ -26,8 +26,8 @@ export interface Preferences {
   team_handicap_variant: HandicapVariant | null;
   game_history_limit: number | null;
 
-  // Match Rules (NULL = use next level default)
-  golden_break_counts_as_win: boolean | null;
+  // golden_break_counts_as_win removed 2026-05-12 — now expressed via
+  // enabled_events.golden_break (cascade-resolved against the registry).
 
   // Player Authorization (NULL = use next level default, system default: true)
   allow_unauthorized_players: boolean | null;
@@ -58,7 +58,6 @@ export type PreferencesInsertData = {
   handicap_variant?: HandicapVariant | null;
   team_handicap_variant?: HandicapVariant | null;
   game_history_limit?: number | null;
-  golden_break_counts_as_win?: boolean | null;
   allow_unauthorized_players?: boolean | null;
   profanity_filter_enabled?: boolean | null;
   lineup_size?: number | null;
@@ -114,7 +113,7 @@ export interface ResolvedLeaguePreferences {
   handicap_variant: HandicapVariant;
   team_handicap_variant: HandicapVariant;
   game_history_limit: number;
-  golden_break_counts_as_win: boolean;
+  // golden_break_counts_as_win removed 2026-05-12; see PreferencesUpdateData.
   allow_unauthorized_players: boolean;
   profanity_filter_enabled: boolean;
 
@@ -135,7 +134,7 @@ export const SYSTEM_DEFAULTS = {
   handicap_variant: 'standard' as HandicapVariant,
   team_handicap_variant: 'standard' as HandicapVariant,
   game_history_limit: 200,
-  golden_break_counts_as_win: true,
+  // golden_break_counts_as_win removed 2026-05-12 — see registry default.
   allow_unauthorized_players: true,
   profanity_filter_enabled: false,
 

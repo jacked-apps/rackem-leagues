@@ -49,7 +49,7 @@ import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { ScoringDialogEditMode } from './ScoringDialogEditMode';
-import { resolveEnabledEvents } from '@/systems/game-events';
+import { resolveEnabledEvents, listGameEvents } from '@/systems/game-events';
 import type { GameType } from '@/types/league';
 import {
   Dialog,
@@ -148,6 +148,20 @@ interface ScoringDialogProps {
   onLoserValueChange?: (value: number) => void;
   /** Handler for winner-side per-game value change (when calculator declares winner counter) */
   onWinnerValueChange?: (value: number) => void;
+  /**
+   * Set of loss-cause event names currently checked (events whose registry
+   * attribution is 'loser' — early_8, scratch_on_8, eight_wrong_pocket,
+   * plus any future loss-cause events the LO enables). The modal renders
+   * one checkbox per enabled loss-cause event; they're mutually exclusive
+   * (a game ends because of one specific event, not multiple).
+   */
+  lossCauseEvents?: ReadonlySet<string>;
+  /**
+   * Handler for loss-cause event toggles. Receives the event name and the
+   * new checked state. Parent is responsible for the mutual-exclusion
+   * state update (checking one clears the others).
+   */
+  onLossCauseEventChange?: (eventName: string, checked: boolean) => void;
   /** Handler for cancel button */
   onCancel: () => void;
   /** Handler for confirm button */
@@ -221,6 +235,8 @@ export function ScoringDialog({
   onRunoutChange,
   onLoserValueChange,
   onWinnerValueChange,
+  lossCauseEvents,
+  onLossCauseEventChange,
   onCancel,
   onConfirm,
   mode = 'score',
@@ -408,21 +424,6 @@ export function ScoringDialog({
           <ScoringDialogEditMode
             gameType={gameType as GameType}
             resolvedOverrides={enabledEventsOverride}
-            // Events that are LINKED to another preference: toggling them in
-            // edit mode also updates the linked preference at save time. The
-            // inline note tells the LO their toggle has a broader effect.
-            // Today only golden_break is linked (to leagues.golden_break_counts_as_win).
-            inlineNotes={{
-              golden_break:
-                "Linked: toggling this also updates the league's 'Golden Break counts as win' preference.",
-            }}
-            // golden_break's effective state in the modal depends on BOTH
-            // enabled_events.golden_break AND goldenBreakCountsAsWin. The
-            // switch should reflect what the modal actually shows, not just
-            // what the cascade resolves to.
-            linkedEffectiveState={{
-              golden_break: goldenBreakCountsAsWin,
-            }}
             onSave={async (next) => {
               await onSaveEnabledEvents?.(next);
               onModeChange?.(editReturnMode);
@@ -524,7 +525,7 @@ export function ScoringDialog({
                 </Label>
               </div>
             )}
-            {winnerIsActualBreaker && goldenBreakCountsAsWin && enabledEvents.has('golden_break') && (
+            {winnerIsActualBreaker && enabledEvents.has('golden_break') && (
               <div className="flex items-center gap-2">
                 <Checkbox
                   id="goldenBreak"
@@ -593,6 +594,68 @@ export function ScoringDialog({
                 visible feedback. */}
           </div>
           )}
+
+          {/* Section 2b: loss-cause events. Registry-driven — iterates any
+              enabled event whose attributedTo='loser'. Today seeded with
+              early_8, scratch_on_8, eight_wrong_pocket; LO toggles
+              activate them per league. Mutually exclusive within the
+              group (a game ends because of one specific cause). Hidden
+              when forfeit is on (no game played). */}
+          {!winByForfeit && (() => {
+            const lossCauseDefs = listGameEvents().filter(
+              (e) =>
+                e.attributedTo === 'loser' &&
+                enabledEvents.has(e.name) &&
+                e.gameTypes.includes(gameType as GameType),
+            );
+            if (lossCauseDefs.length === 0) return null;
+            return (
+              <div className="space-y-2">
+                <Label className="text-sm font-normal text-muted-foreground">
+                  Loss cause (optional)
+                </Label>
+                <div className="flex flex-col gap-2">
+                  {lossCauseDefs.map((def) => {
+                    const isChecked = lossCauseEvents?.has(def.name) ?? false;
+                    return (
+                      <div key={def.name} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`loss-cause-${def.name}`}
+                          checked={isChecked}
+                          onCheckedChange={(c) => {
+                            const checked = c === true;
+                            // Mutual exclusion: checking one clears the
+                            // others. Parent handles the state update.
+                            if (checked) {
+                              for (const peer of lossCauseDefs) {
+                                if (peer.name !== def.name && (lossCauseEvents?.has(peer.name) ?? false)) {
+                                  onLossCauseEventChange?.(peer.name, false);
+                                }
+                              }
+                            }
+                            onLossCauseEventChange?.(def.name, checked);
+                          }}
+                          disabled={isPreview}
+                          className="border-2 border-foreground/50"
+                        />
+                        <Label
+                          htmlFor={`loss-cause-${def.name}`}
+                          className="text-sm font-normal cursor-pointer"
+                        >
+                          {def.label}
+                          {loserPlayerName && isChecked && (
+                            <span className="ml-2 text-xs text-muted-foreground">
+                              ({loserPlayerName})
+                            </span>
+                          )}
+                        </Label>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Section 3: per-side scoring inputs at the bottom, just above
               the action buttons. The counter is the deliberate input —

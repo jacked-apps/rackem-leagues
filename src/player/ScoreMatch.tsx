@@ -223,6 +223,20 @@ function ScoreMatchBody() {
   const [runout, setRunout] = useState(false);
   const [loserValue, setLoserValue] = useState<number | null>(null);
   const [winnerValue, setWinnerValue] = useState<number | null>(null);
+  // Branch B Phase 2: loss-cause events (early_8, scratch_on_8,
+  // eight_wrong_pocket, plus any future loss-cause events the LO enables).
+  // Modal renders one checkbox per enabled loss-cause; mutual exclusion is
+  // enforced at the toggle handler. Stored as a Set keyed by registry name
+  // so adding new loss-cause events requires zero state changes here.
+  const [lossCauseEvents, setLossCauseEvents] = useState<Set<string>>(() => new Set());
+  const handleLossCauseEventChange = (eventName: string, checked: boolean) => {
+    setLossCauseEvents((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(eventName);
+      else next.delete(eventName);
+      return next;
+    });
+  };
 
   // Branch B Phase 2: scoring modal mode state. Default 'score'. When the
   // LO taps the Edit button on the modal, mode flips to 'edit' and the
@@ -250,38 +264,10 @@ function ScoreMatchBody() {
       entity_id: match.league.id,
       enabled_events: next,
     });
-
-    // Linked-preference sync: golden_break in enabled_events is tied to
-    // the leagues.golden_break_counts_as_win column. Tracking GB as a stat
-    // requires it to count as a win — the two booleans encode the same
-    // decision. Sync the leagues row whenever GB's effective state changes.
-    const desiredGoldenBreak =
-      'golden_break' in next
-        ? next.golden_break
-        : undefined; // omitted = inherit from cascade; skip update
-    if (desiredGoldenBreak !== undefined) {
-      const { error } = await supabase
-        .from('leagues')
-        .update({ golden_break_counts_as_win: desiredGoldenBreak })
-        .eq('id', match.league.id);
-      if (error) {
-        // Don't roll back the enabled_events write — the user's intent
-        // is captured. Just surface the partial-success.
-        logger.warn('Failed to sync leagues.golden_break_counts_as_win', {
-          leagueId: match.league.id,
-          error: error.message,
-        });
-      } else {
-        // The match cache holds match.league.golden_break_counts_as_win
-        // (used by useMatchScoring -> goldenBreakCountsAsWin -> modal's
-        // GB rendering gate). Without explicit invalidation here, the
-        // score-mode body keeps the stale gate value and the GB checkbox
-        // doesn't render until manual page reload.
-        if (matchId) {
-          queryClient.invalidateQueries({ queryKey: queryKeys.matches.detail(matchId) });
-        }
-      }
-    }
+    // useUpsertPreference invalidates the resolved-preferences cache,
+    // which is the single source of truth for enabled_events.golden_break.
+    // No linked-preference sync needed — the legacy
+    // leagues.golden_break_counts_as_win column was dropped 2026-05-12.
   };
 
   // Opponent confirmation modal state. Branch B Phase 1: events are now an
@@ -966,6 +952,8 @@ function ScoreMatchBody() {
         onRunoutChange={setRunout}
         onLoserValueChange={setLoserValue}
         onWinnerValueChange={setWinnerValue}
+        lossCauseEvents={lossCauseEvents}
+        onLossCauseEventChange={handleLossCauseEventChange}
         onCancel={() => {
           setScoringGame(null);
           setBreakAndRun(false);
@@ -975,6 +963,7 @@ function ScoreMatchBody() {
           setRunout(false);
           setLoserValue(null);
           setWinnerValue(null);
+          setLossCauseEvents(new Set());
         }}
         onConfirm={() => {
           if (scoringGame) {
@@ -989,6 +978,7 @@ function ScoreMatchBody() {
               runout,
               winByForfeit,
               breakFouled,
+              lossCauseEvents,
               winnerPlayerId: scoringGame.winnerPlayerId,
               winnerWasScheduledBreaker: scoringGame.winnerWasScheduledBreaker,
               homePlayerId: gameResults.get(scoringGame.gameNumber)?.home_player_id ?? null,
@@ -1007,6 +997,7 @@ function ScoreMatchBody() {
                 setRunout(false);
                 setLoserValue(null);
                 setWinnerValue(null);
+                setLossCauseEvents(new Set());
               },
               { breakFouled, winnerValue, loserValue }
             );

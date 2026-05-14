@@ -8,7 +8,8 @@
  */
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { calculateTeamHandicap } from '@/utils/handicapCalculations';
-import { shouldGoldenBreakCount } from '@/utils/goldenBreakRules';
+import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
+import { resolveEnabledEvents } from '@/systems/game-events';
 import { getPlayerNicknameById } from '@/types/member';
 import { getTeamStats, getPlayerStats, getCompletedGamesCount, calculatePoints, TIEBREAKER_THRESHOLDS } from '@/types';
 import { useQueryClient } from '@tanstack/react-query';
@@ -128,10 +129,22 @@ export function useMatchScoring({
   const isHomeTeam = userTeamData?.isHomeTeam ?? null; // Use ?? instead of || to preserve false
   const gameType = (matchData?.league.game_type || 'eight_ball') as GameType;
 
-  // Determine if golden break counts based on preference and game type (BCA Standard rules)
+  // Branch B Phase 2 cleanup: pull the league's cascade-resolved
+  // enabled_events so we can derive goldenBreakCountsAsWin below.
+  // TanStack dedupes the query with ScoreMatch's own call.
+  const { data: leaguePrefs } = useResolvedLeaguePrefs(matchData?.league?.id ?? null);
+
+  // Branch B Phase 2 cleanup: golden break enablement is now a single
+  // decision encoded in enabled_events.golden_break (cascade-resolved with
+  // registry default). The legacy leagues.golden_break_counts_as_win
+  // column was dropped 2026-05-12. Resolve from the registry + LO cascade
+  // and surface as a boolean that the scoring dialog still consumes.
   const goldenBreakCountsAsWin = useMemo(() => {
-    return shouldGoldenBreakCount(gameType, matchData?.league.golden_break_counts_as_win);
-  }, [gameType, matchData?.league.golden_break_counts_as_win]);
+    return resolveEnabledEvents(
+      leaguePrefs?.enabled_events ?? {},
+      gameType,
+    ).has('golden_break');
+  }, [gameType, leaguePrefs?.enabled_events]);
 
   // Build players Map from FULL team rosters (not just lineup players)
   // This allows getPlayerDisplayName to find ANY player on either team, including swap candidates

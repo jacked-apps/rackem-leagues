@@ -31,6 +31,12 @@ interface ScoringContext {
   runout: boolean;
   winByForfeit: boolean;
   breakFouled: boolean;
+  /**
+   * Loss-cause event names currently checked (events whose attribution is
+   * 'loser': early_8, scratch_on_8, eight_wrong_pocket, and future ones).
+   * Iterated as-is — the registry decides attribution.
+   */
+  lossCauseEvents: ReadonlySet<string>;
   /** UUID of the winning player (selected in the modal). */
   winnerPlayerId: string;
   /** True if the winner is the scheduled breaker for this game. Combined with breakFouled to determine actual breaker. */
@@ -100,6 +106,19 @@ export function buildScoringEventsPayload(ctx: ScoringContext): ScoringEventRow[
     if (!definition) continue; // registry not populated; defensive
     events.push({
       event_name: name,
+      attributed_player_id: resolveAttribution(definition.attributedTo),
+    });
+  }
+
+  // Loss-cause events (registry-driven; iterates whatever the LO has
+  // enabled in this league). Today seeded with early_8, scratch_on_8,
+  // eight_wrong_pocket; future loss-cause events can be added to the
+  // registry without touching this code.
+  for (const eventName of ctx.lossCauseEvents) {
+    const definition = getGameEvent(eventName);
+    if (!definition) continue;
+    events.push({
+      event_name: eventName,
       attributed_player_id: resolveAttribution(definition.attributedTo),
     });
   }

@@ -66,7 +66,6 @@ export function ScoringPreviewCard(props: ScoringPreviewCardProps) {
   );
   const canEditEvents = props.target.scope === 'league' ? isLeagueOp : isOrgOp;
 
-  const queryClient = useQueryClient();
   const upsertMutation = useUpsertPreference();
   const handleSaveEnabledEvents = async (next: Record<string, boolean>) => {
     await upsertMutation.mutateAsync(
@@ -82,32 +81,10 @@ export function ScoringPreviewCard(props: ScoringPreviewCardProps) {
             enabled_events: next,
           },
     );
-
-    // League-scope only: keep leagues.golden_break_counts_as_win in sync
-    // with enabled_events.golden_break. The two encode the same decision
-    // (tracking the event requires it to count as a win); diverging them
-    // creates the confusing "switch says on but modal hides it" state Ed
-    // surfaced during smoke testing. Org-scope edits don't touch any
-    // specific leagues row.
-    if (props.target.scope === 'league' && 'golden_break' in next) {
-      const { error } = await supabase
-        .from('leagues')
-        .update({ golden_break_counts_as_win: next.golden_break })
-        .eq('id', props.target.leagueId);
-      if (error) {
-        logger.warn('Failed to sync leagues.golden_break_counts_as_win', {
-          leagueId: props.target.leagueId,
-          error: error.message,
-        });
-      } else {
-        // Invalidate any cached match-detail queries that hold this league's
-        // golden_break_counts_as_win. Broad invalidation (no specific
-        // matchId here on the office page) — TanStack handles the
-        // fan-out across detail subkeys.
-        queryClient.invalidateQueries({ queryKey: ['matches'] });
-        queryClient.invalidateQueries({ queryKey: ['leagues'] });
-      }
-    }
+    // useUpsertPreference invalidates the resolved-preferences cache —
+    // single source of truth for enabled_events. The legacy
+    // leagues.golden_break_counts_as_win column was dropped 2026-05-12,
+    // so no secondary sync needed anymore.
   };
 
   // Synthetic game context for the preview render. The modal expects a

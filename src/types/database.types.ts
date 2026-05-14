@@ -568,7 +568,6 @@ export type Database = {
           day_of_week: string
           division: string | null
           game_type: string
-          golden_break_counts_as_win: boolean
           handicap_level: string
           handicap_variant: string
           id: string
@@ -585,7 +584,6 @@ export type Database = {
           day_of_week: string
           division?: string | null
           game_type: string
-          golden_break_counts_as_win?: boolean
           handicap_level?: string
           handicap_variant?: string
           id?: string
@@ -602,7 +600,6 @@ export type Database = {
           day_of_week?: string
           division?: string | null
           game_type?: string
-          golden_break_counts_as_win?: boolean
           handicap_level?: string
           handicap_variant?: string
           id?: string
@@ -1541,7 +1538,6 @@ export type Database = {
           entity_type: string
           game_generation: string | null
           game_history_limit: number | null
-          golden_break_counts_as_win: boolean | null
           handicap_type: string | null
           handicap_variant: string | null
           id: string
@@ -1570,7 +1566,6 @@ export type Database = {
           entity_type: string
           game_generation?: string | null
           game_history_limit?: number | null
-          golden_break_counts_as_win?: boolean | null
           handicap_type?: string | null
           handicap_variant?: string | null
           id?: string
@@ -1599,7 +1594,6 @@ export type Database = {
           entity_type?: string
           game_generation?: string | null
           game_history_limit?: number | null
-          golden_break_counts_as_win?: boolean | null
           handicap_type?: string | null
           handicap_variant?: string | null
           id?: string
@@ -2468,7 +2462,6 @@ export type Database = {
           enabled_events: Json | null
           game_generation: string | null
           game_history_limit: number | null
-          golden_break_counts_as_win: boolean | null
           handicap_type: string | null
           handicap_variant: string | null
           league_id: string | null
