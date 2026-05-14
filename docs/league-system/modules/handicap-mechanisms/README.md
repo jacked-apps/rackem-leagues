@@ -32,7 +32,7 @@ A handicap mechanism is **only** the in-match application of a strength differen
 
 - The strength encoding itself — that's a **[Handicap System](../handicap-systems/README.md)** (Points, Percentage, FargoRate, Skill Level).
 - The lookup table or formula that maps a difference value to a target/spot — that's a **[Threshold Chart](../threshold-charts/README.md)**. Mechanisms *consume* a chart's output; they don't compute it.
-- The rule that decides who wins the match — that's a **[Scoring System](../scoring-systems/README.md)**.
+- The rule that decides who wins the match — that's a **[Scoring System](../points-system/README.md)**.
 
 If a proposed feature changes *what kind of advantage the weaker side gets during play*, it belongs here. If it changes how that advantage is *computed from the strength gap*, it belongs in Threshold Charts. If it changes how match victory is determined, it belongs in Scoring Systems.
 
@@ -81,7 +81,7 @@ Mechanisms sit in the middle of the handicap chain:
 
 - **Upstream**: [Handicap Systems](../handicap-systems/README.md) produce encoded strength values. The **difference** that feeds a mechanism is computed at the appropriate scope — team-vs-team for team-level mechanisms (`extra_games`, `start_points`), individual player-vs-player for per-pairing mechanisms (`race_length_adjustment`). For some encodings, the upstream input may be a derived value (e.g., FargoRate's win-expectancy probability) rather than a raw difference.
 - **Internal partner**: [Threshold Charts](../threshold-charts/README.md) produce the actual numbers a mechanism needs — target wins (for extra_games), starting points (for start_points), per-pairing race lengths (for race_length_adjustment). A mechanism with no calibrated chart (or formula) for the encoding-side has nothing meaningful to apply. *Note:* "chart" is shorthand — a **formula** can fill the same role (e.g., FargoRate's start-points uses the `2^(rating/100)` formula in place of a lookup table; the 3v3 hardcoded chart could likewise be expressed as a formula). Charts and formulas are interconvertible expressions of the same mapping; the Threshold Charts Module covers both shapes. **Formulas are generally preferred** for their versatility — continuous coverage, easier LO customization, can generate any specific chart on demand.
-- **Downstream**: A separate concern — the **Win Calculator** — examines the collected match data (games won per side, accumulated points per side) plus the benchmarks the mechanism declared, and decides who wins the match. Currently this lives as the binary `win_condition` axis (games | points) inside the [Scoring Systems](../scoring-systems/README.md) Module; a future Module restructure may extract it. **The mechanism does NOT decide the winner** — it declares the benchmark; what's done with the benchmark plus played data is the Win Calculator's job.
+- **Downstream**: A separate concern — the **Win Calculator** — examines the collected match data (games won per side, accumulated points per side) plus the benchmarks the mechanism declared, and decides who wins the match. Currently this lives as the binary `win_condition` axis (games | points) inside the [Scoring Systems](../points-system/README.md) Module; a future Module restructure may extract it. **The mechanism does NOT decide the winner** — it declares the benchmark; what's done with the benchmark plus played data is the Win Calculator's job.
 
 ## Future possibilities
 

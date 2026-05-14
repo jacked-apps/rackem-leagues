@@ -58,7 +58,7 @@ CSI's *LO Handbook 2020* (page 38) names a method called **Average Handicapping*
 
 - **Compatible with [`extra_games`](../handicap-mechanisms/extra-games.md) mechanism** (current usage in the [Percentage 5-Man Division](../../divisions/percentage-5man.md)).
 - **No current chart for [`start_points`](../handicap-mechanisms/start-points.md)** with Percentage handicap.
-- **Compatible with [1-Point Scoring System](../scoring-systems/one-point-scoring.md)**.
+- **Compatible with [1-Point Scoring System](../points-system/one-point-scoring.md)**.
 - **Pairs with [5v5 games-needed chart](../threshold-charts/5v5-games-needed.md)** today.
 
 ## Possible modifications

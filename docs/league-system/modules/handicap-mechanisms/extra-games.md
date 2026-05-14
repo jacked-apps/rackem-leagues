@@ -41,7 +41,7 @@ The mechanism's output is a pair of per-team target wins (`target_home`, `target
 
 - **Upstream**: works with [any Handicap System](../handicap-systems/README.md) whose chart can produce a per-team target-wins pair.
 - **Currently wired in code** for [Points](../handicap-systems/points.md) (via [3v3 games-needed chart](../threshold-charts/3v3-games-needed.md)) and [Percentage](../handicap-systems/percentage.md) (via [5v5 games-needed chart](../threshold-charts/5v5-games-needed.md)). Unwired for FargoRate and Skill Level — those combos would need calibrated extra_games charts.
-- **Compatible with [1-Point Scoring System](../scoring-systems/one-point-scoring.md)** — the asymmetric target wins map cleanly to a "first team to its target" victory rule.
+- **Compatible with [1-Point Scoring System](../points-system/one-point-scoring.md)** — the asymmetric target wins map cleanly to a "first team to its target" victory rule.
 
 ## Possible modifications
 

@@ -63,8 +63,8 @@ The win-expectancy is *this variant's output* to downstream Modules. What downst
 ## Interactions
 
 - **Compatible with [`start_points`](../handicap-mechanisms/start-points.md) mechanism** (current usage in the [FargoRate 10-Point 5-Man Division](../../divisions/fargo-10pt-5man.md)).
-- **Compatible with [10-Point Scoring System](../scoring-systems/ten-point-scoring.md)** — CSI's published Fargo+10-Point combo is the most prominent BCAPL handicapped configuration today.
-- **Could also pair with [1-Point Scoring System](../scoring-systems/one-point-scoring.md)** (CSI has signaled future "FargoRate + Race-To" division formats — see the strategic brainstorm `modular-league-system-requirements.md`).
+- **Compatible with [10-Point Scoring System](../points-system/ten-point-scoring.md)** — CSI's published Fargo+10-Point combo is the most prominent BCAPL handicapped configuration today.
+- **Could also pair with [1-Point Scoring System](../points-system/one-point-scoring.md)** (CSI has signaled future "FargoRate + Race-To" division formats — see the strategic brainstorm `modular-league-system-requirements.md`).
 - **Compatible with [`race_length_adjustment`](../handicap-mechanisms/race-length-adjustment.md) mechanism** in theory; no current shipping configuration uses this combo.
 - **Pairs with [Fargo formula chart](../threshold-charts/fargo-formula.md)** today.
 

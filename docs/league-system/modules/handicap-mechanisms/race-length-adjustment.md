@@ -46,7 +46,7 @@ A [Threshold Chart](../threshold-charts/README.md) keyed on individual rating pa
 
 - **Upstream**: works with [any Handicap System](../handicap-systems/README.md) whose chart can produce per-pairing race lengths from individual rating pairs.
 - **No current shipping pairing.** Theoretically pairs naturally with [Skill Level](../handicap-systems/skill-level.md) — APA's SL race chart is the canonical real-world example of this mechanism. Could also pair with [FargoRate](../handicap-systems/fargorate.md) (FargoRate has chart precedent for per-pairing matchups in their "HOT race chart").
-- **Compatible with [1-Point Scoring System](../scoring-systems/one-point-scoring.md)** — pairing-level race-to outcomes map cleanly to a Win Calculator rule that counts how many pairings each side won and declares the team with more pairing wins the match winner.
+- **Compatible with [1-Point Scoring System](../points-system/one-point-scoring.md)** — pairing-level race-to outcomes map cleanly to a Win Calculator rule that counts how many pairings each side won and declares the team with more pairing wins the match winner.
 
 ## Possible modifications
 

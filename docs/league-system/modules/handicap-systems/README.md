@@ -21,7 +21,7 @@ This Module is the **first piece** of the handicapping chain. It answers a singl
 
 - [**Handicap Mechanisms**](../handicap-mechanisms/README.md) applies the strength difference during play (extra games, start points, race-length adjustment).
 - [**Threshold Charts**](../threshold-charts/README.md) converts a difference value into a concrete target (e.g., "team A needs 8 wins, team B needs 5").
-- [**Scoring Systems**](../scoring-systems/README.md) decides who wins the match based on accumulated games or points.
+- [**Scoring Systems**](../points-system/README.md) decides who wins the match based on accumulated games or points.
 
 ## Boundary
 
@@ -29,7 +29,7 @@ A handicap system is **only** the strength encoding. It is **not**:
 
 - The rule that turns the strength difference into an in-match adjustment — that is a **[Handicap Mechanism](../handicap-mechanisms/README.md)** (extra games, start points, race-length adjustment).
 - The lookup that maps a difference value to a target — that is a **[Threshold Chart](../threshold-charts/README.md)**.
-- The rule that decides who wins the match — that is a **[Scoring System](../scoring-systems/README.md)**.
+- The rule that decides who wins the match — that is a **[Scoring System](../points-system/README.md)**.
 
 If a proposed feature changes how a player's strength number is *computed* or *expressed*, it belongs here. If it changes how that number gets *applied during play*, it belongs in Handicap Mechanisms.
 

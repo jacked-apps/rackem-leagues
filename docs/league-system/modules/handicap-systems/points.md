@@ -55,7 +55,7 @@ The team-level handicap is the sum of the active lineup's individual ratings. Th
 
 - **Compatible with [`extra_games`](../handicap-mechanisms/extra-games.md) mechanism** (current usage in the [Points 3-Man Division](../../divisions/points-3man.md)).
 - **No current chart for [`start_points`](../handicap-mechanisms/start-points.md)** with Points handicap — combination is not blocked at the schema level but no calibrated chart exists, so it would not produce sensible values.
-- **Compatible with [1-Point Scoring System](../scoring-systems/one-point-scoring.md)**.
+- **Compatible with [1-Point Scoring System](../points-system/one-point-scoring.md)**.
 - **Pairs with [3v3 games-needed chart](../threshold-charts/3v3-games-needed.md)** today. Could pair with any threshold chart that consumes integer differences.
 
 ## Possible modifications

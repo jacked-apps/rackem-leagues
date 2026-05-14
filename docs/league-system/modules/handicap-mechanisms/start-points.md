@@ -39,7 +39,7 @@ The mechanism's output is a pair `(start_points_for_weaker_team, which_team_is_w
 
 - **Upstream**: works with [any Handicap System](../handicap-systems/README.md) whose chart or formula can produce a point-bonus value from the strength gap.
 - **Currently wired in code** for [FargoRate](../handicap-systems/fargorate.md) (via the [Fargo formula chart](../threshold-charts/fargo-formula.md)). Unwired for Points, Percentage, and Skill Level — those combos would need calibrated start_points charts.
-- **Compatible with [10-Point Scoring System](../scoring-systems/ten-point-scoring.md)** — CSI's flagship handicapped configuration uses FargoRate + Start Points + 10-Point Scoring as a bundled combo.
+- **Compatible with [10-Point Scoring System](../points-system/ten-point-scoring.md)** — CSI's flagship handicapped configuration uses FargoRate + Start Points + 10-Point Scoring as a bundled combo.
 
 ## Possible modifications
 

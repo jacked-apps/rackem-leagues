@@ -92,7 +92,7 @@ Future possibility: **17-Point Scoring System** (CSI also names this; not yet im
 
 ### The 7 Modules
 
-The 13 raw configuration axes group into 7 user-facing Modules. There is also a 14th persisted-but-unconsumed column (`points_system`) that no scoring runtime reads; see `modules/scoring-systems/README.md`.
+The 13 raw configuration axes group into 7 user-facing Modules. There is also a 14th persisted-but-unconsumed column (`points_system`) that no scoring runtime reads; see `modules/points-system/README.md`.
 
 | # | Module | Wraps axes |
 |---|---|---|
@@ -123,7 +123,7 @@ Use this when Ed proposes a new feature, rule, or behavior — *before* writing 
    → **Handicap Mechanism.** See `modules/handicap-mechanisms/`.
 
 3. **Does it change how match victory is decided** — what counts as the win condition, how per-game results aggregate into a match outcome?
-   → **Scoring System.** See `modules/scoring-systems/`.
+   → **Scoring System.** See `modules/points-system/`.
 
 4. **Does it change how the handicap difference becomes a target threshold value** (target wins, starting points)? Is it a lookup-table or formula change?
    → **Threshold Chart.** See `modules/threshold-charts/`.
@@ -164,7 +164,7 @@ Walk the list:
 2. Strength application during play? **No.**
 3. **Match victory decision / per-game point allocation?** **Yes.** The change is in *how* per-game points accumulate — exactly what the Scoring Systems Module covers.
 
-**Result:** fits in **Scoring Systems**. Specifically: it is a **modification of the 10-Point Scoring System variant** (changing the winner amount from 10 to 12 while preserving the per-game-allocation core mechanic). Document under `modules/scoring-systems/ten-point-scoring.md` → "Possible modifications" section. Not a new variant (the core mechanic is unchanged); not a new Module.
+**Result:** fits in **Scoring Systems**. Specifically: it is a **modification of the 10-Point Scoring System variant** (changing the winner amount from 10 to 12 while preserving the per-game-allocation core mechanic). Document under `modules/points-system/ten-point-scoring.md` → "Possible modifications" section. Not a new variant (the core mechanic is unchanged); not a new Module.
 
 > **Boundary tip.** A *modification* changes parameters within the variant's core mechanic. A *new variant* changes the core mechanic itself (e.g., simple-winner-only with no loser points at all). A *new Module* introduces a category the existing seven don't cover.
 
@@ -179,7 +179,7 @@ docs/league-system/
   modules/
     handicap-systems/                ← Folder: README + 4 variant files
     handicap-mechanisms/             ← Folder: README + 3 variant files (none = covered in README)
-    scoring-systems/                 ← Folder: README + variant files
+    points-system/                 ← Folder: README + variant files
     threshold-charts/                ← Folder: README + per-chart variant files
     team-geometry.md                 ← Single file (no significant variants)
     match-format.md                  ← Single file
@@ -195,7 +195,7 @@ docs/league-system/
 |---|---|---|
 | Handicap Systems | [`modules/handicap-systems/`](modules/handicap-systems/README.md) | How a player's strength is encoded |
 | Handicap Mechanisms | [`modules/handicap-mechanisms/`](modules/handicap-mechanisms/README.md) | How the strength difference is applied during play |
-| Scoring Systems | [`modules/scoring-systems/`](modules/scoring-systems/README.md) | How match victory is decided |
+| Scoring Systems | [`modules/points-system/`](modules/points-system/README.md) | How match victory is decided |
 | Threshold Charts | [`modules/threshold-charts/`](modules/threshold-charts/README.md) | How handicap-differences map to in-match targets |
 | Team Geometry | [`modules/team-geometry.md`](modules/team-geometry.md) | Lineup size, roster size, game-generation |
 | Match Format | [`modules/match-format.md`](modules/match-format.md) | Pairing format, race length |
