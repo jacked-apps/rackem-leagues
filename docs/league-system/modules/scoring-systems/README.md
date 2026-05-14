@@ -20,8 +20,8 @@ These are bundled here because CSI presents them together, but they're architect
 
 Every match produces two streams of data: **games** (winner/loser per game) and **points** (per-game point allocations). The scoring system answers two questions about that data:
 
-- *How are per-game points calculated?* — A scoring system specifies how many points each side gets per game (e.g., 1-Point: winner 1, loser 0; 10-Point: winner 10, loser 0–7).
-- *Which metric decides match victory?* — A Win Calculator consults either the games-won counts, the accumulated points, or some combination, to declare a winner.
+- *How are per-game points calculated?* — The **Points System** sub-concern specifies how many points each side gets per game (e.g., 1-Point: winner 1, loser 0; 10-Point: winner 10, loser 0–7). The Points System ONLY allocates points. It does not decide who won the match.
+- *Which metric decides match victory?* — The **Win Calculator** sub-concern consults the games-won counts, the accumulated points, or some combination, to declare a winner. *Match victory is exclusively the Win Calculator's job — never the Points System's.*
 
 Without a scoring system, you have raw per-game outcomes but no way to translate them into a match result.
 
@@ -59,6 +59,8 @@ The Points System is a **composition of small single-purpose sub-mechanisms** th
 - **(D) End-of-match aggregate** — alternative to per-game accumulation. Computes team_points = f(games_won, threshold) once at match end, rather than accumulating per-game. Implementation: the `linear_above_threshold` calculator.
 
 ### CSI's named scoring systems are configurations of (A)
+
+**Vocabulary note (anti-conflation).** CSI uses the term **"Scoring System"** for what we architecturally call a **Points System per-game allocator rule** — i.e., just the per-game point-allocation piece. CSI's "Scoring System" does NOT include the Win Calculator (CSI implicitly assumes "highest accumulated total wins"). Our Module is named *Scoring Systems* because we adopted CSI's vocabulary for the bundle, but our Module's scope is strictly broader: it bundles BOTH the per-game allocator (= CSI's "Scoring System") AND the Win Calculator. When you read CSI documentation referencing "Scoring System," they mean our (A) per-game allocator only.
 
 | CSI Name | Per-game allocator config |
 |---|---|
