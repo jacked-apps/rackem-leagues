@@ -44,30 +44,48 @@ The current Win Calculator implementation is **primitive**: a binary `win_condit
 
 ## Sub-concern 1: Points System (per-game point allocation) {#points-system}
 
-This is the per-game scoring rule: how many points does each side get for a given game outcome?
+The Points System is a **composition of small single-purpose sub-mechanisms** that combine to produce per-team match-total points. A Division's full Points System is a configured stack of these sub-mechanisms.
 
-**CSI's published named systems** (variant pages exist for the two we ship; 17-Point referenced below):
+### The composable sub-mechanism types
 
-| CSI Name | Per-game allocation |
+- **(A) Per-game allocator** — ONE generic mechanism, configurable per side. On each game, give winner X and loser Y. Each side can be:
+  - `fixed` — a set number (e.g., winner = 10)
+  - `counter` — a range with per-game user input (e.g., loser = 0–7, balls pocketed)
+  - `formula` — derived from game data (e.g., `10 + opponent's remaining balls`) — *not yet supported in code; the calculator interface would need a `formula` kind*
+- **(B) Threshold trigger** — at games-threshold N, change or add to the running point total. Multiple triggers can stack (one at threshold X, another at threshold Y, etc.). Currently bundled inside the `accumulate_with_milestone_jumps` calculator.
+- **(C) Initial points** — given once at match start, handicap-driven amount. Currently lives as the [`start_points`](../handicap-mechanisms/start-points.md) Handicap Mechanism; its output feeds the Points System's running totals. (start_points is *both* a handicap mechanism in the current taxonomy AND a Points System sub-mechanism architecturally.)
+- **(D) End-of-match aggregate** — alternative to per-game accumulation. Computes team_points = f(games_won, threshold) once at match end, rather than accumulating per-game. Implementation: the `linear_above_threshold` calculator.
+
+### CSI's named scoring systems are configurations of (A)
+
+| CSI Name | Per-game allocator config |
 |---|---|
-| [**1-Point Scoring System**](one-point-scoring.md) (a.k.a. *Race To*) | Winner 1, loser 0. Match-total points = games won. |
-| [**10-Point Scoring System**](ten-point-scoring.md) | Winner 10, loser 0–7 (typically based on balls pocketed). |
-| **17-Point Scoring System** *(reference only — see below)* | Winner gets 10 + opponent's remaining balls; loser gets balls pocketed. Combined always sums to 17. |
+| [**1-Point Scoring System**](one-point-scoring.md) (a.k.a. *Race To*) | winner=`fixed:1`, loser=`fixed:0`. ***Degenerate*** — match-total points always equals games-won; functionally equivalent to just counting games. CSI gives it a name; in our system it's effectively `win_condition='games'` with no separate calculator. |
+| [**10-Point Scoring System**](ten-point-scoring.md) | winner=`fixed:10`, loser=`counter:0–7` (balls pocketed). |
+| **17-Point Scoring System** *(reference only)* | winner=`formula: 10 + opponent's remaining balls`, loser=`counter:0–7`. **Key difference from 10-Point:** winner amount VARIES (10 + remaining); 10-Point's winner is FIXED at 10. Per-game total always = 17 (vs 10–17 in 10-Point). Not yet implementable — needs the `formula` kind. |
 
-**Our coined calculator implementations** (the actual code):
+CSI's main use case for 17-Point: incentivizes the loser to keep pocketing balls even after the win is locked, since each ball they fail to pocket adds to the winner's score.
 
-| Calculator name | Pattern | Used by Division |
+### Each Division's Points System composition
+
+| Division | Composition |
+|---|---|
+| Points 3-Man (`standard_3v3`) | **(D)** `points = games_won − threshold` |
+| Percentage 5-Man (`standard_5v5`) | **(A)** winner=`fixed:0.1`, loser=`fixed:0` + **(B)** milestone trigger 1: jump to 1.5 at games-X + **(B)** milestone trigger 2: jump to 3 at games-Y |
+| FargoRate 10-Point 5-Man (`fargo_5v5`) | **(C)** handicap-driven start_points + **(A)** winner=`fixed:10`, loser=`counter:0–7` (CSI's 10-Point Scoring System) |
+
+The compositions above are **conceptual**. Current code bundles them differently — see the calculator implementations table below.
+
+### Our coined calculator implementations (current code)
+
+| Calculator (in code) | What it actually contains | Used by Division |
 |---|---|---|
-| `accumulated_per_game` | Per-game accumulation (winner fixed value, loser counter input). Direct match for CSI's 10-Point Scoring System with default params. | FargoRate 10-Point 5-Man (`fargo_5v5`) |
-| `linear_above_threshold` | Aggregate calculation — points are a linear function of (games_won − threshold). Below threshold = 0 points. Coined; no direct CSI name match. | Points 3-Man (`standard_3v3`) |
-| `accumulate_with_milestone_jumps` | Aggregate calculation — points accumulate with milestone bonuses (e.g., multiplier at tie). Coined; no direct CSI name match. | Percentage 5-Man (`standard_5v5`) |
-| `none` | No-op calculator. Used when the league does not track points at all. | None today (selectable for new leagues) |
+| `accumulated_per_game` | (A) generic per-game allocator | FargoRate 10-Point 5-Man (also wired with start_points logic in `fargo5v5.ts`) |
+| `accumulate_with_milestone_jumps` | (A) + (B) bundled into one calculator | Percentage 5-Man |
+| `linear_above_threshold` | (D) end-of-match aggregate | Points 3-Man |
+| `none` | No-op (no points tracked at all) | None today (selectable for new leagues) |
 
-The CSI-named systems describe **rules**; our calculator implementations are the **runtime code** that implements those rules (or coined alternatives). Variant pages cover the CSI rules; the calculator names are documented here as the implementation layer.
-
-### 17-Point Scoring System (reference only)
-
-CSI also names a **17-Point Scoring System**: winner gets 10 points plus one point per ball the opponent has remaining; loser gets one point per ball pocketed (0–7); combined always sums to 17. CSI's main use case is encouraging losers to play out games to maximize their score even after the win is locked. The app does not currently ship a Division using 17-Point. The same `accumulated_per_game` calculator could implement it with different params (winner formula = `10 + balls_remaining_on_table`); no calibrated chart or shipping Division does so today. No dedicated variant page — this paragraph is the reference.
+**Implementation artifact, not architectural intent.** The current per-Division bundling means the "calculator" picked in the wizard is a pre-built combination matching that Division. Architecturally, a future refactor should decouple these into composable sub-mechanisms — so an LO could mix-and-match (e.g., milestone triggers stacked on top of any per-game allocator config; start_points combined with any per-game allocator; new compositions for new Divisions without writing new calculator types).
 
 ## Sub-concern 2: Win Calculator (decides match victory) {#win-calculator}
 
