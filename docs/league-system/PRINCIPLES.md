@@ -100,25 +100,69 @@ A chart is a discretized formula; a formula is a continuous chart. The Threshold
 
 Some Handicap Mechanisms (`extra_games`, `start_points`) operate at the team-aggregate level — the difference between team-sum ratings drives the asymmetry. Others (`race_length_adjustment`) operate at the per-pairing level — each individual head-to-head matchup uses the rating gap between the two paired players. Module-level statements that universally say "team-vs-team" exclude per-pairing mechanisms; use scope-aware language ("two sides," "team-vs-team or player-vs-player").
 
-## Emerging architectural model: the 3-layer view
+## The architectural model
 
-*Surfaced during Unit 4 cold-read review with Ed. This is the architectural mental model the doc is converging toward — **not a locked structure**. The current Module structure (the 7 cheat-sheet Modules) predates this model; the two coexist, and a future dedicated branch may restructure to align them.*
+*Settled during Unit 4 cold-read review with Ed. This supersedes an earlier "3-layer view" — the model converged through iterative refinement and is now codified.*
 
-The league scoring architecture has three layers, each with a distinct job:
+### Module — the universal unit
 
-- **Layer 1 — Mechanisms.** Concrete, single-purpose tasks. Examples: `extra_games` (asymmetric game targets), `start_points` (initial point bonus), the per-game point allocator, the win-condition check. A mechanism does *one thing*.
-- **Layer 2 — Sub-systems.** Groupings of mechanisms by purpose:
-  - **Handicap System** — encodes player strength.
-  - **Game System** — mechanisms operating on the *games* metric (`extra_games`, games-on-the-wire, `race_length_adjustment`).
-  - **Point System** — mechanisms operating on the *points* metric (per-game allocator, `start_points`, threshold triggers, end-of-match aggregate).
-  - **Win System** — decides the match winner from the collected metrics.
-- **Layer 3 — Scoring System.** The orchestrator. Composes the sub-systems and defines how they work together to score a match.
+A **Module** is any bounded, well-defined thing with **strict borders** (a clear definition of what it is and isn't) and **room to grow** inside those borders (it can become as powerful and flexible as it needs to be). It is a "cage" placed around a single responsibility.
 
-**Vocabulary note.** This model's **"Mechanism"** (Layer 1) is distinct from the cheat sheet's **"Module"** (an LO-facing configuration axis — there are 7). When the docs say "Module" they mean the cheat-sheet sense; "Mechanism" means a Layer-1 concrete task. The two map imperfectly because the 7-Module structure was locked (in the brainstorm) before this 3-layer model emerged.
+This is the core unit of the whole architecture, and it directly embodies the project's central principle: **strict borders = anti-conflation; room to grow = not constriction.**
 
-**Why this model matters.** It explains how the pieces *compose*. The current Module structure splits things by **origin** (handicap-driven vs not); the 3-layer model splits by **metric** (games vs points) and by **job** (do a task / group tasks / orchestrate). The 3-layer model aligns with the actual data model — every match tracks two metrics (games and points), and mechanisms operate on those metrics. Handicap is just a config *input* to some mechanisms, not a categorization axis.
+**Modules nest recursively.** A Module can contain other Modules. `extra_games` is a Module; the "Handicap Mechanisms" Module contains it; the whole Scoring System is a Module containing those.
 
-**Status: documented as architectural intent.** The current 7-Module structure and this 3-layer model coexist. L1 docs reflect the current Module structure (so they match the code and the brainstorm) while acknowledging this deeper architecture — the implementation-vs-intent pattern applied at the structural level. A future restructure branch may align the Modules to the 3-layer model; that's a separately-planned effort, not part of step 1.
+**The 7 cheat-sheet "Modules" are the 7 _top-level_ Modules** — the LO-facing configuration categories (Handicap Systems, Handicap Mechanisms, Scoring Systems, Threshold Charts, Team Geometry, Match Format, Standings & Tiebreakers). They are the top of the hierarchy; everything nested inside them is also a Module. (Cheat-sheet wording: read "the 7 Modules" as "the 7 top-level Modules.")
+
+**Data is not a Module.** A Module has walls around a *responsibility* — it does something, or organizes something. Data has a type but no responsibility. Games, Points, threshold values, player ratings — these are **data that flows between Modules**, not Modules themselves.
+
+### Kinds of Module
+
+"Mechanism," "System," "Variant," and "Chart" are not separate things from Modules — they describe **what kind of Module** something is, or **what role** it plays:
+
+- **Mechanism** — a Module that performs a single functional task. (`extra_games`, `start_points`, the per-game allocator.)
+- **System** — a Module that is a composition of other Modules. (The Scoring System; the Points System.)
+- **Variant** — a Module serving as one of several (currently) mutually-exclusive options within a parent Module. (Points is a Variant within the Handicap Systems Module.)
+- **Chart / Formula** — a Module used as a *tool* by another Module to do a computation. A chart is discrete; a formula is continuous; they are interconvertible.
+
+So "Module" is the noun; these are its kinds/roles.
+
+### The two metrics
+
+Every match tracks exactly two metrics — these are **data**, not Modules:
+
+- **Games** — *primary* data. Each game's winner/loser is recorded directly.
+- **Points** — *derived* data. Points do not exist until a Module computes them.
+
+This asymmetry (games recorded, points computed) is structural: there is nothing to "compute" about games without a handicap — you just count the records.
+
+### Mechanism classification
+
+Mechanism-kind Modules classify on two axes:
+
+|  | **Games** | **Points** |
+|---|---|---|
+| **Handicap-side** *(consumes the handicap)* | threshold + head-start mechanisms, games axis | threshold + head-start mechanisms, points axis |
+| **Scoring-side** *(no handicap)* | *(empty — games are recorded, not computed)* | per-game allocators, threshold triggers, end-of-match aggregates |
+
+**Handicap-side mechanisms** further split by *application type*:
+
+- **Threshold mechanism** — applies the handicap-derived value to the **finish line** (`extra_games`, `extra_points`).
+- **Head-start mechanism** — applies it to the **starting position** (`start_points`, `games on the wire`). "On the wire" is the domain/gambling synonym.
+
+Each handicap-side mechanism **uses a Chart or Formula** (a tool Module) to do the handicaps→value computation. The chart/formula is the single point where the handicap is consumed directly; everything downstream works with the derived value.
+
+### Win Calculator
+
+The **Win Calculator** is a Module of its own — a separate concern from the mechanisms. It consults the collected metrics (games + points) plus any benchmarks the mechanisms declared, and declares the match winner. It does not produce a metric; it decides.
+
+### A Division's scoring system is a composition
+
+A Division's full scoring behavior is a **composition** of Modules — single-responsibility Mechanisms stacked explicitly. Explicit composition beats derived composition: if the "instruction manual" sees N distinct Mechanisms each with its own trigger, it reads the structure directly — no derivation step.
+
+### Scope: this branch defines the ideal
+
+Step 1 (this branch) **defines** — boundaries, definitions, categories. Where the current code diverges from the now-clarified definitions, that divergence is *noted, not fixed here*. Step 2+ branches do the code restructure to match. The docs describe the ideal; the code catches up.
 
 ## Concrete rules / templates
 
