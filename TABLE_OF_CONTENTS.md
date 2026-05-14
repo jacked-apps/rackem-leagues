@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-13 (Messaging Phase 1 / Unit 9 — profanity onboarding modal + legacy SQL cleanup. New `ProfanityOnboardingModal` + `AuthOnboarding` mount component shown once per member at app first-load while `members.profanity_onboarding_completed_at IS NULL`. New `markProfanityOnboardingComplete` mutation + `useMarkProfanityOnboardingComplete` hook. Archived legacy `database/messaging/user_reports.sql` and `database/reporting/user_reports.sql` to `archive/` (live schema lives in baseline migration). 6 new tests.)
+> **Last Updated**: 2026-05-14 (Messaging Phase 1 / Unit 9 redesign — moved the profanity onboarding modal from app first-load to first Messages-page open, and reframed it as a one-time, defaulted-ON prompt: "the filter is on by default — want to turn it off?" Every exit path (incl. dismiss) records a choice so it never reappears. Deleted `AuthOnboarding.tsx` (App.tsx mount); the modal now mounts inside `Messages.tsx`. `ProfanityOnboardingModal` rewritten with the new copy + two-button design; tests updated to 7 cases.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -484,7 +484,7 @@ how to add a new test, demo recording, cleanup model).
 
 #### Standalone Pages (`/pages/`)
 - `AdminReports.tsx` - Admin reports dashboard
-- `Messages.tsx` - Messaging page
+- `Messages.tsx` - Messaging page — also mounts the Unit 9 `ProfanityOnboardingModal` on first open (gated by NULL `profanity_onboarding_completed_at`).
 - `PlayerProfile.tsx` - Player profile page
 
 #### Auth Pages (`/login/`)
@@ -671,9 +671,8 @@ Reusable wizard/form step components
 - `UserListItem.tsx` - User list item
 
 #### Onboarding Components (`/components/onboarding/`)
-- `ProfanityOnboardingModal.tsx` - **Messaging Phase 1 / Unit 9** — shadcn `Dialog` shown once per member while `members.profanity_onboarding_completed_at IS NULL`. Three actions: "Yes, filter profanity" (sets enabled=true + completed=now()), "No, show me everything" (enabled=false + completed=now()), "Decide later" (closes without writing — modal returns on next app load). Escape / backdrop / X all behave as "Decide later." Calls `useMarkProfanityOnboardingComplete`.
-- `AuthOnboarding.tsx` - Top-level mount component sitting inside `UserProvider` in `App.tsx`. Gates on `useUser` + `useCurrentMember` resolving (no flash for returning users), then renders `ProfanityOnboardingModal` iff `profanity_onboarding_completed_at IS NULL` and the user hasn't dismissed it this session. Structured to host future one-time onboarding prompts (push permission ask, etc.).
-- `__tests__/ProfanityOnboardingModal.test.tsx` - **Messaging Phase 1 / Unit 9** — RTL test: explanatory copy + three actions render, Yes calls mutation with `filterEnabled=true`, No with `filterEnabled=false`, Decide later closes without calling mutation, Escape behaves as Decide later, modal stays open if mutation rejects (user can retry). 6 cases.
+- `ProfanityOnboardingModal.tsx` - **Messaging Phase 1 / Unit 9** — shadcn `Dialog` shown once, the first time a member opens the Messages page (gated by a NULL `members.profanity_onboarding_completed_at`). One-time, defaulted-ON framing: copy explains the filter is on by default and changeable in Settings, then asks if they'd like to turn it off. Two buttons ("Turn filter off" → enabled=false, "Keep filter on" → enabled=true); dismissing (Escape / backdrop / X) is treated as "keep on" (enabled=true). Every exit path writes `completed=now()` so it never reappears. Calls `useMarkProfanityOnboardingComplete`; `onResolved` fires only on a successful write (a rejected mutation leaves the modal open for retry).
+- `__tests__/ProfanityOnboardingModal.test.tsx` - **Messaging Phase 1 / Unit 9** — RTL test: copy + two buttons render, "Keep filter on" persists `filterEnabled=true`, "Turn filter off" persists `false`, Escape defaults to `true`, `onResolved` fires once per success, rejected mutation does NOT resolve (retry works), choice-then-dismiss only resolves once. 7 cases.
 
 #### Operator Components (`/components/operator/`)
 - `ActiveLeagues.tsx` - Active leagues overview (uses LeagueStatusCard)

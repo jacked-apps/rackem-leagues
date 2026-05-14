@@ -26,6 +26,7 @@ import { MessagesEmptyState } from '@/components/messages/MessagesEmptyState';
 import { NewMessageModal } from '@/components/messages/NewMessageModal';
 import { AnnouncementModal } from '@/components/messages/AnnouncementModal';
 import { MessageSettingsModal } from '@/components/messages/MessageSettingsModal';
+import { ProfanityOnboardingModal } from '@/components/onboarding/ProfanityOnboardingModal';
 import {
   useCurrentMember,
   useUserProfile,
@@ -53,6 +54,18 @@ export function Messages() {
   const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const { data: isCaptain = false } = useIsCaptain();
+
+  // Unit 9: one-time profanity-filter onboarding. Shown the first time a
+  // member opens Messages (detected by a NULL
+  // profanity_onboarding_completed_at). The modal records a choice on
+  // every exit path, so once resolved it never reappears; the local
+  // flag just prevents a re-render flash before the member cache
+  // refetches with the new timestamp.
+  const [onboardingResolved, setOnboardingResolved] = useState(false);
+  const showProfanityOnboarding =
+    !!member?.user_id &&
+    member.profanity_onboarding_completed_at == null &&
+    !onboardingResolved;
 
   // Mutation hooks
   const createOrOpenConversationMutation = useCreateOrOpenConversation();
@@ -267,6 +280,14 @@ export function Messages() {
           onUnblocked={() => {
             // Cache auto-refreshed by unblock mutation
           }}
+        />
+      )}
+
+      {/* Profanity onboarding — first Messages open only (Unit 9) */}
+      {showProfanityOnboarding && member?.user_id && (
+        <ProfanityOnboardingModal
+          userId={member.user_id}
+          onResolved={() => setOnboardingResolved(true)}
         />
       )}
     </div>
