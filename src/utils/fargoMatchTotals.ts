@@ -79,15 +79,17 @@ export function calculateFargoMatchTotals(
         : g.winner_team_id === awayTeamId
           ? 'away'
           : 'home'; // defensive — should never hit
-    // Fargo stores only `loser_balls_pocketed` on match_games — winner and
-    // loser points are derived at read time inside `computeMatchResult` from
-    // the snapshotted dials, so the StoredGameRecord's `winner_points` /
-    // `loser_points` fields are passed as null.
+    // Fargo stores only `loser_value` on match_games (renamed from
+    // loser_balls_pocketed by Branch A) — winner and loser points are derived
+    // at read time inside `computeMatchResult` from the snapshotted dials, so
+    // the StoredGameRecord's `winner_points` / `loser_points` fields are
+    // passed as null. winner_value stays null for today's calculators.
     storedGames.push({
       winner_team: winner,
       winner_points: null,
       loser_points: null,
-      loser_balls_pocketed: g.loser_balls_pocketed ?? null,
+      winner_value: null,
+      loser_value: g.loser_value ?? null,
     });
   }
 

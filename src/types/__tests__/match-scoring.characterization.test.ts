@@ -61,7 +61,8 @@ function game(overrides: Partial<MatchGame>): MatchGame {
     break_fouled: false,
     runout: false,
     win_by_forfeit: false,
-    loser_balls_pocketed: null,
+    winner_value: null,
+    loser_value: null,
     ...overrides,
   };
 }
