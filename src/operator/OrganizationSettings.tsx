@@ -15,6 +15,7 @@ import { OrganizationBasicInfoCard } from '@/components/operator/OrganizationBas
 import { ContactInfoCard } from '@/components/operator/ContactInfoCard';
 import { PaymentMethodCard } from '@/components/operator/PaymentMethodCard';
 import { OrganizationPreferencesCard } from '@/components/operator/OrganizationPreferencesCard';
+import { ScoringPreviewCard } from './ScoringPreviewCard';
 import { BlackoutDatesCard } from '@/components/operator/BlackoutDatesCard';
 
 /**
@@ -107,6 +108,9 @@ export const OrganizationSettings: React.FC = () => {
             organizationId={organization.id}
             onUpdate={() => refetchOrganization()}
           />
+
+          {/* Branch B Phase 2: scoring modal preview + event configuration */}
+          <ScoringPreviewCard target={{ scope: 'organization', orgId: organization.id }} />
 
           {/* House Rules Card — org-wide manager */}
           <DashboardCard

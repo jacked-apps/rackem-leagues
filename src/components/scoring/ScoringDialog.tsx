@@ -42,11 +42,15 @@
  * a real production consumer.
  */
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { ScoringDialogEditMode } from './ScoringDialogEditMode';
+import { resolveEnabledEvents } from '@/systems/game-events';
+import type { GameType } from '@/types/league';
 import {
   Dialog,
   DialogContent,
@@ -148,6 +152,44 @@ interface ScoringDialogProps {
   onCancel: () => void;
   /** Handler for confirm button */
   onConfirm: () => void;
+
+  // ----- Branch B Phase 2: mode prop + LO edit/preview flows --------------
+
+  /**
+   * Modal rendering mode. Default 'score' = existing scoring UX
+   * (mutations land on Save). 'edit' = LO-only configuration list of
+   * registry events with Switch + Reset per row. 'preview' = score-mode
+   * body rendered read-only (used on the operator office preferences page).
+   * Existing callers omit this; behavior is unchanged.
+   */
+  mode?: 'score' | 'edit' | 'preview';
+  /** Tells parent to flip modes (Edit button tap, Save/Cancel inside edit body). */
+  onModeChange?: (next: 'score' | 'edit' | 'preview') => void;
+  /**
+   * Whether the current user is authorized to open edit mode. The Edit
+   * button only renders when this is true. Caller computes via
+   * useIsLeagueOperatorOf or useIsOrganizationOperatorOf.
+   */
+  canEditEvents?: boolean;
+  /**
+   * Current cascade-resolved enabled_events for the scope being edited
+   * (league for inline live-game edit; org or league for office preview).
+   * Passed to EditMode body as starting state. Optional; defaults to {}.
+   */
+  enabledEventsOverride?: Record<string, boolean>;
+  /**
+   * Save handler invoked when LO taps Save inside edit mode. Receives the
+   * full desired override map; parent persists via upsertPreference and
+   * resolves on success. EditMode body shows the error if this rejects.
+   */
+  onSaveEnabledEvents?: (overrides: Record<string, boolean>) => Promise<void>;
+  /**
+   * Which mode to flip back to after the LO taps Save or Cancel inside
+   * edit mode. Defaults to 'score' for the inline-during-live-match flow.
+   * The operator office preview card passes 'preview' so the LO returns
+   * to the read-only preview after their edits commit.
+   */
+  editReturnMode?: 'score' | 'preview';
 }
 
 /**
@@ -181,8 +223,29 @@ export function ScoringDialog({
   onWinnerValueChange,
   onCancel,
   onConfirm,
+  mode = 'score',
+  onModeChange,
+  canEditEvents = false,
+  enabledEventsOverride = {},
+  onSaveEnabledEvents,
+  editReturnMode = 'score',
 }: ScoringDialogProps) {
   if (!game) return null;
+
+  // Branch B Phase 2: in preview mode, every interactive control is disabled
+  // and the footer becomes a single Close button. The body still renders the
+  // score-mode UI so an LO sees exactly what scorers see.
+  const isPreview = mode === 'preview';
+
+  // Branch B Phase 2: resolve which events are enabled for this game type
+  // based on the registry defaults + the LO's cascade overrides. The
+  // score-mode body uses this set to gate each event row — so an LO who
+  // toggles an event off in edit mode actually sees the modal change on
+  // re-open. Cheap memoization: resolves once per gameType + override map.
+  const enabledEvents = useMemo(
+    () => resolveEnabledEvents(enabledEventsOverride, gameType as GameType),
+    [enabledEventsOverride, gameType],
+  );
 
   // Derive the actual breaker role of the game-of-record. A break foul
   // means the scheduled racker breaks again (re-rack), so role flips.
@@ -225,9 +288,12 @@ export function ScoringDialog({
 
   // Get label for golden break based on game type
   const getGoldenBreakLabel = () => {
-    if (gameType === '8-ball') return '8 on the Break';
-    if (gameType === '9-ball') return '9 on the Break';
-    if (gameType === '10-ball') return '10 on the Break';
+    // game_type values in this codebase are the snake_case form
+    // (eight_ball / nine_ball / ten_ball). The hyphenated form is an
+    // older convention some places still use — accept both to be safe.
+    if (gameType === 'eight_ball' || gameType === '8-ball') return '8 on the Break';
+    if (gameType === 'nine_ball' || gameType === '9-ball') return '9 on the Break';
+    if (gameType === 'ten_ball' || gameType === '10-ball') return '10 on the Break';
     return 'Golden Break';
   };
 
@@ -248,10 +314,29 @@ export function ScoringDialog({
     }
   };
 
-  // Aria-live announcement region. Updated when an auto-clear cascade
-  // happens (currently only Forfeit clears a checked achievement). Locked
-  // copy template: "[Achievement Name] cleared because forfeit was selected."
+  // Aria-live announcement region. Updated when:
+  //   - An auto-clear cascade happens (Forfeit clears a checked achievement).
+  //     Locked template: "[Achievement] cleared because forfeit was selected."
+  //   - Mode transitions (score ↔ edit ↔ preview). Screen readers don't
+  //     auto-announce title changes on an already-open dialog, so we
+  //     announce mode flips manually.
   const [liveAnnouncement, setLiveAnnouncement] = useState('');
+
+  // Mode-transition announcements. Track previous mode in a ref so the
+  // initial render doesn't fire (we don't want to announce "scoring mode"
+  // on dialog open — Radix Dialog already announces the DialogTitle).
+  const previousModeRef = useRef(mode);
+  useEffect(() => {
+    if (previousModeRef.current === mode) return;
+    previousModeRef.current = mode;
+    if (mode === 'edit') {
+      setLiveAnnouncement('Switched to event configuration. Toggle which events scorers can record.');
+    } else if (mode === 'preview') {
+      setLiveAnnouncement('Returned to scoring modal preview. Read-only.');
+    } else {
+      setLiveAnnouncement('Returned to scoring.');
+    }
+  }, [mode]);
 
   // Mutual-exclusion handlers for the achievement checkboxes. B&R and Golden
   // Break are mutually exclusive on the breaker side; checking one auto-
@@ -293,6 +378,63 @@ export function ScoringDialog({
     }
   };
 
+  // Branch B Phase 2: when mode='edit', the body is a registry-driven list
+  // of events with Switch + per-row Reset. Save persists via parent's
+  // onSaveEnabledEvents; Cancel flips back to the prior mode without
+  // mutating preferences. The header still renders so the LO has context
+  // about which match they're configuring against.
+  if (mode === 'edit') {
+    return (
+      <Dialog open={open}>
+        <DialogContent
+          showCloseButton={false}
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle>Configure Events</DialogTitle>
+            <DialogDescription>
+              Toggle which events scorers can record for this league. Changes
+              apply when scorers open their next game modal.
+            </DialogDescription>
+          </DialogHeader>
+          {/* Aria-live region for mode-transition announcements. Mirrors
+              the one in the score/preview branch so the announcement
+              text reaches the screen reader regardless of which branch
+              is rendering when the mode flips. */}
+          <div role="status" aria-live="polite" className="sr-only">
+            {liveAnnouncement}
+          </div>
+          <ScoringDialogEditMode
+            gameType={gameType as GameType}
+            resolvedOverrides={enabledEventsOverride}
+            // Events that are LINKED to another preference: toggling them in
+            // edit mode also updates the linked preference at save time. The
+            // inline note tells the LO their toggle has a broader effect.
+            // Today only golden_break is linked (to leagues.golden_break_counts_as_win).
+            inlineNotes={{
+              golden_break:
+                "Linked: toggling this also updates the league's 'Golden Break counts as win' preference.",
+            }}
+            // golden_break's effective state in the modal depends on BOTH
+            // enabled_events.golden_break AND goldenBreakCountsAsWin. The
+            // switch should reflect what the modal actually shows, not just
+            // what the cascade resolves to.
+            linkedEffectiveState={{
+              golden_break: goldenBreakCountsAsWin,
+            }}
+            onSave={async (next) => {
+              await onSaveEnabledEvents?.(next);
+              onModeChange?.(editReturnMode);
+            }}
+            onCancel={() => onModeChange?.(editReturnMode)}
+            returnMode={editReturnMode}
+          />
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={open}>
       <DialogContent
@@ -301,10 +443,30 @@ export function ScoringDialog({
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
         <DialogHeader>
-          <DialogTitle>Confirm Game Result</DialogTitle>
-          <DialogDescription>
-            Confirm the game outcome and any special achievements.
-          </DialogDescription>
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <DialogTitle>
+                {isPreview ? 'Scoring Modal Preview' : 'Confirm Game Result'}
+              </DialogTitle>
+              <DialogDescription>
+                {isPreview
+                  ? 'A read-only preview of what scorers see when they tap a winner.'
+                  : 'Confirm the game outcome and any special achievements.'}
+              </DialogDescription>
+            </div>
+            {canEditEvents && onModeChange && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onModeChange('edit')}
+                aria-label="Edit events"
+                className="shrink-0"
+              >
+                <Pencil className="h-4 w-4 lg:mr-2" aria-hidden="true" />
+                <span className="hidden lg:inline">Edit Events</span>
+              </Button>
+            )}
+          </div>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
@@ -317,49 +479,73 @@ export function ScoringDialog({
 
           <div className="text-center">
             <p className="text-sm text-muted-foreground">Game {game.gameNumber}</p>
-            <p className="text-lg font-semibold mt-2">
-              Winner: {game.winnerPlayerName}
-            </p>
+            {winByForfeit && loserPlayerName ? (
+              <>
+                {/* Forfeit hierarchy: loser FORFEIT prominent, winner small. */}
+                <div
+                  role="alert"
+                  className="mt-2 rounded-md border-2 border-destructive bg-destructive/10 px-3 py-3"
+                >
+                  <p className="text-lg font-bold uppercase tracking-wide text-destructive">
+                    {loserPlayerName} forfeits the game!
+                  </p>
+                </div>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Win recorded for {game.winnerPlayerName}
+                </p>
+              </>
+            ) : (
+              <p className="text-lg font-semibold mt-2">
+                Winner: {game.winnerPlayerName}
+              </p>
+            )}
           </div>
 
-          {/* Section 1: role-conditional achievements as compact inline
-              checkboxes. Most leagues see at most 2 visible at a time
-              (B&R + Golden Break for breaker-side wins, or just Runout
-              for non-breaker wins). One horizontal row, scannable, easy
-              to skip past when no achievement applies. B&R and Golden
-              Break are mutually exclusive — checking one auto-unchecks
-              the other (handlers do the work). */}
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-            {winnerIsActualBreaker && (
+          {/* Section 1: role-conditional achievements. Each on its own
+              row for touch targets + breathing room. Bumped border
+              contrast so unchecked controls are visible. B&R and Golden
+              Break are mutually exclusive. The ENTIRE section is hidden
+              when winByForfeit is on — a forfeit means no game was
+              played, so achievements are meaningless. The big red
+              "Player X FORFEITS" banner becomes the dominant visual. */}
+          {!winByForfeit && (
+          <div className="flex flex-col gap-3">
+            {winnerIsActualBreaker && enabledEvents.has('break_and_run') && (
               <div className="flex items-center gap-2">
                 <Checkbox
                   id="breakAndRun"
                   checked={breakAndRun}
                   onCheckedChange={(c) => handleBreakAndRunCheck(c === true)}
+                  disabled={isPreview}
+                  className="border-2 border-foreground/50"
                 />
                 <Label htmlFor="breakAndRun" className="text-sm font-normal cursor-pointer">
                   Break &amp; Run
                 </Label>
               </div>
             )}
-            {winnerIsActualBreaker && goldenBreakCountsAsWin && (
+            {winnerIsActualBreaker && goldenBreakCountsAsWin && enabledEvents.has('golden_break') && (
               <div className="flex items-center gap-2">
                 <Checkbox
                   id="goldenBreak"
                   checked={goldenBreak}
                   onCheckedChange={(c) => handleGoldenBreakCheck(c === true)}
+                  disabled={isPreview}
+                  className="border-2 border-foreground/50"
                 />
                 <Label htmlFor="goldenBreak" className="text-sm font-normal cursor-pointer">
                   {getGoldenBreakLabel()}
                 </Label>
               </div>
             )}
-            {!winnerIsActualBreaker && (
+            {!winnerIsActualBreaker && enabledEvents.has('runout') && (
               <div className="flex items-center gap-2">
                 <Checkbox
                   id="runout"
                   checked={runout}
                   onCheckedChange={(c) => onRunoutChange?.(c === true)}
+                  disabled={isPreview}
+                  className="border-2 border-foreground/50"
                 />
                 <Label htmlFor="runout" className="text-sm font-normal cursor-pointer">
                   Runout
@@ -367,22 +553,27 @@ export function ScoringDialog({
               </div>
             )}
           </div>
+          )}
 
-          {/* Section 2: state modifiers — rare events that change game
-              mechanics (re-rack semantics) or stat attribution. Middle
-              section because they're tapped infrequently but matter when
-              they do. */}
-          <div className="flex items-center justify-between">
-            <Label htmlFor="breakFouled" className="text-sm font-normal">
-              Break foul (re-rack)
-            </Label>
-            <Switch
-              id="breakFouled"
-              checked={breakFouled}
-              onCheckedChange={handleBreakFouledChange}
-            />
-          </div>
+          {/* Section 2: state modifiers — also hidden when forfeit is on.
+              Break-fault implies a game was played; forfeit implies the
+              opposite. Keep the modifiers clean from the forfeit case. */}
+          {!winByForfeit && enabledEvents.has('break_fouled') && (
+            <div className="flex items-center justify-between">
+              <Label htmlFor="breakFouled" className="text-sm font-normal">
+                Break foul (re-rack)
+              </Label>
+              <Switch
+                id="breakFouled"
+                checked={breakFouled}
+                onCheckedChange={handleBreakFouledChange}
+                disabled={isPreview}
+                className="data-[state=unchecked]:bg-muted-foreground/40 dark:data-[state=unchecked]:bg-muted-foreground/30"
+              />
+            </div>
+          )}
 
+          {enabledEvents.has('win_by_forfeit') && (
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <Label htmlFor="winByForfeit" className="text-sm font-normal">
@@ -392,14 +583,16 @@ export function ScoringDialog({
                 id="winByForfeit"
                 checked={winByForfeit}
                 onCheckedChange={handleWinByForfeitChange}
+                disabled={isPreview}
+                className="data-[state=unchecked]:bg-muted-foreground/40 dark:data-[state=unchecked]:bg-muted-foreground/30"
               />
             </div>
-            {winByForfeit && loserPlayerName && (
-              <p className="text-xs text-muted-foreground">
-                Recorded as {loserPlayerName}
-              </p>
-            )}
+            {/* Forfeit banner now lives at the top of the modal body so it
+                dominates the visual hierarchy when toggled. No second
+                banner here — the switch itself + the top banner are the
+                visible feedback. */}
           </div>
+          )}
 
           {/* Section 3: per-side scoring inputs at the bottom, just above
               the action buttons. The counter is the deliberate input —
@@ -407,23 +600,26 @@ export function ScoringDialog({
               last step before saving. The spec's `kind` drives rendering:
               'counter' shows an AdaptiveCounter; 'fixed' shows nothing
               (calculator handles fixed implicitly). Aggregate calculators
-              (no perSideInputs) produce nothing here. */}
-          {winnerSpec?.kind === 'counter' && (
+              (no perSideInputs) produce nothing here. Hidden when forfeit
+              is on — no game played = no points pocketed. */}
+          {!winByForfeit && winnerSpec?.kind === 'counter' && (
             <AdaptiveCounter
               min={winnerSpec.min}
               max={winnerSpec.max}
               label={winnerSpec.label}
               value={winnerValue}
               onChange={(v) => onWinnerValueChange?.(v)}
+              disabled={isPreview}
             />
           )}
-          {loserSpec?.kind === 'counter' && (
+          {!winByForfeit && loserSpec?.kind === 'counter' && (
             <AdaptiveCounter
               min={loserSpec.min}
               max={loserSpec.max}
               label={loserSpec.label}
               value={loserValue}
               onChange={(v) => onLoserValueChange?.(v)}
+              disabled={isPreview}
             />
           )}
           {counterValueMissing && (
@@ -434,16 +630,24 @@ export function ScoringDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onCancel} loadingText="none">
-            Cancel
-          </Button>
-          <Button
-            onClick={onConfirm}
-            loadingText="Saving..."
-            disabled={counterValueMissing}
-          >
-            Save Game
-          </Button>
+          {isPreview ? (
+            <Button variant="outline" onClick={onCancel}>
+              Close
+            </Button>
+          ) : (
+            <>
+              <Button variant="outline" onClick={onCancel} loadingText="none">
+                Cancel
+              </Button>
+              <Button
+                onClick={onConfirm}
+                loadingText="Saving..."
+                disabled={counterValueMissing}
+              >
+                Save Game
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

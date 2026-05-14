@@ -62,6 +62,7 @@ interface GameUpdateOptions {
   addToConfirmationQueue: (confirmation: {
     gameNumber: number;
     winnerPlayerName: string;
+    loserPlayerName?: string;
     events: string[];
     breakFouled: boolean;
     winnerValue: number | null;
@@ -226,6 +227,17 @@ export function useMatchRealtime(
               // cross-table realtime ordering (see fetchGameEventsForConfirmation).
               if (updatedGame.winner_player_id) {
                 const winnerName = getPlayerNicknameById(updatedGame.winner_player_id, players);
+                // Derive loser's full name (first + last, NOT nickname) for
+                // the forfeit banner — short nicknames like "Al" can visually
+                // collide with "AI" in sans-serif fonts.
+                const loserPlayerId =
+                  updatedGame.winner_player_id === updatedGame.home_player_id
+                    ? updatedGame.away_player_id
+                    : updatedGame.home_player_id;
+                const loserPlayer = loserPlayerId ? players.get(loserPlayerId) : null;
+                const loserFullName = loserPlayer
+                  ? `${loserPlayer.first_name} ${loserPlayer.last_name}`
+                  : undefined;
                 const events = await fetchGameEventsForConfirmation(
                   supabase,
                   updatedGame.id,
@@ -234,6 +246,7 @@ export function useMatchRealtime(
                 addToConfirmationQueue({
                   gameNumber: updatedGame.game_number,
                   winnerPlayerName: winnerName,
+                  loserPlayerName: loserFullName,
                   events,
                   breakFouled: updatedGame.break_fouled,
                   loserValue: updatedGame.loser_value,
@@ -260,6 +273,14 @@ export function useMatchRealtime(
                 }
 
                 const winnerName = getPlayerNicknameById(updatedGame.winner_player_id, players);
+                const loserPlayerId =
+                  updatedGame.winner_player_id === updatedGame.home_player_id
+                    ? updatedGame.away_player_id
+                    : updatedGame.home_player_id;
+                const loserPlayer = loserPlayerId ? players.get(loserPlayerId) : null;
+                const loserFullName = loserPlayer
+                  ? `${loserPlayer.first_name} ${loserPlayer.last_name}`
+                  : undefined;
                 // Branch B Phase 1: events fetched from game_events with retry.
                 const events = await fetchGameEventsForConfirmation(
                   supabase,
@@ -269,6 +290,7 @@ export function useMatchRealtime(
                 addToConfirmationQueue({
                   gameNumber: updatedGame.game_number,
                   winnerPlayerName: winnerName,
+                  loserPlayerName: loserFullName,
                   events,
                   breakFouled: updatedGame.break_fouled,
                   loserValue: updatedGame.loser_value,

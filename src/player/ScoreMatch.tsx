@@ -22,6 +22,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/supabaseClient';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
+import { useIsLeagueOperatorOf } from '@/hooks/useIsLeagueOperatorOf';
+import { useUpsertPreference } from '@/api/hooks/usePreferenceMutations';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -94,6 +96,7 @@ function ScoreMatchBody() {
     goldenBreakCountsAsWin,
     gameType,
     getPlayerDisplayName: getPlayerDisplayNameFromHook,
+    players,
     confirmationQueue,
     addToConfirmationQueue: addToConfirmationQueueFromHook,
     removeFromConfirmationQueue,
@@ -220,6 +223,66 @@ function ScoreMatchBody() {
   const [runout, setRunout] = useState(false);
   const [loserValue, setLoserValue] = useState<number | null>(null);
   const [winnerValue, setWinnerValue] = useState<number | null>(null);
+
+  // Branch B Phase 2: scoring modal mode state. Default 'score'. When the
+  // LO taps the Edit button on the modal, mode flips to 'edit' and the
+  // modal renders the registry-driven event configuration list. Save
+  // commits to preferences via upsertEventsMutation below.
+  const [scoringModalMode, setScoringModalMode] = useState<'score' | 'edit' | 'preview'>('score');
+
+  // Branch B Phase 2: authorization for the Edit button. Only the LO of
+  // this match's league sees it. Player accounts (even captains) get
+  // false here — they can score but cannot configure.
+  const canEditEvents = useIsLeagueOperatorOf(match?.league?.id ?? null);
+
+  // Branch B Phase 2: mutation handler for saving the LO's enabled-events
+  // override map. Writes a league-scope preferences row (or updates the
+  // existing one) with the full desired override map. The resolver hook
+  // invalidates the league prefs cache on success so the modal re-renders
+  // with the new resolution next time it opens.
+  const upsertEventsMutation = useUpsertPreference();
+  const handleSaveEnabledEvents = async (next: Record<string, boolean>) => {
+    if (!match?.league?.id) {
+      throw new Error('Cannot save event preferences: league id missing');
+    }
+    await upsertEventsMutation.mutateAsync({
+      entity_type: 'league',
+      entity_id: match.league.id,
+      enabled_events: next,
+    });
+
+    // Linked-preference sync: golden_break in enabled_events is tied to
+    // the leagues.golden_break_counts_as_win column. Tracking GB as a stat
+    // requires it to count as a win — the two booleans encode the same
+    // decision. Sync the leagues row whenever GB's effective state changes.
+    const desiredGoldenBreak =
+      'golden_break' in next
+        ? next.golden_break
+        : undefined; // omitted = inherit from cascade; skip update
+    if (desiredGoldenBreak !== undefined) {
+      const { error } = await supabase
+        .from('leagues')
+        .update({ golden_break_counts_as_win: desiredGoldenBreak })
+        .eq('id', match.league.id);
+      if (error) {
+        // Don't roll back the enabled_events write — the user's intent
+        // is captured. Just surface the partial-success.
+        logger.warn('Failed to sync leagues.golden_break_counts_as_win', {
+          leagueId: match.league.id,
+          error: error.message,
+        });
+      } else {
+        // The match cache holds match.league.golden_break_counts_as_win
+        // (used by useMatchScoring -> goldenBreakCountsAsWin -> modal's
+        // GB rendering gate). Without explicit invalidation here, the
+        // score-mode body keeps the stale gate value and the GB checkbox
+        // doesn't render until manual page reload.
+        if (matchId) {
+          queryClient.invalidateQueries({ queryKey: queryKeys.matches.detail(matchId) });
+        }
+      }
+    }
+  };
 
   // Opponent confirmation modal state. Branch B Phase 1: events are now an
   // array of registry event names, sourced from game_events instead of
@@ -412,6 +475,12 @@ function ScoreMatchBody() {
    * isn't loaded yet, or the loser's player_id is unavailable. Modal
    * gracefully omits the attribution text in those cases.
    */
+  // Loser's display name for the forfeit attribution. Branch B Phase 2:
+  // returns the FULL name (first + last) — never the nickname. Forfeits
+  // carry real consequences (potential suspension, dues penalties) so
+  // the attribution must be unambiguous. Short nicknames like "Al" can
+  // visually collide ("Al" vs "AI") in sans-serif fonts; full name
+  // forces clarity.
   const loserPlayerName = (() => {
     if (!scoringGame) return null;
     const game = gameResults.get(scoringGame.gameNumber);
@@ -420,7 +489,10 @@ function ScoreMatchBody() {
       scoringGame.winnerPlayerId === game.home_player_id
         ? game.away_player_id
         : game.home_player_id;
-    return loserPlayerId ? getPlayerDisplayName(loserPlayerId) : null;
+    if (!loserPlayerId) return null;
+    const player = players.get(loserPlayerId);
+    if (!player) return null;
+    return `${player.first_name} ${player.last_name}`;
   })();
 
   /**
@@ -480,6 +552,10 @@ function ScoreMatchBody() {
     autoConfirm,
     addToConfirmationQueue,
     getPlayerDisplayName,
+    getPlayerFullName: (playerId) => {
+      const p = players.get(playerId);
+      return p ? `${p.first_name} ${p.last_name}` : null;
+    },
   });
 
   // Store mutations in ref for use in real-time subscription callback
@@ -826,9 +902,21 @@ function ScoreMatchBody() {
               .select('event_name')
               .eq('game_id', game.id);
             const events = (eventRows ?? []).map(row => row.event_name);
+            // Derive loser's full name from the players Map for the
+            // forfeit banner (events array carries 'win_by_forfeit' if
+            // applicable).
+            const loserId =
+              game.winner_player_id === game.home_player_id
+                ? game.away_player_id
+                : game.home_player_id;
+            const loserP = loserId ? players.get(loserId) : null;
+            const loserFullName = loserP
+              ? `${loserP.first_name} ${loserP.last_name}`
+              : undefined;
             setConfirmationGame({
               gameNumber,
               winnerPlayerName: winnerName,
+              loserPlayerName: loserFullName,
               events,
               breakFouled: game.break_fouled,
               winnerValue: game.winner_value,
@@ -860,6 +948,11 @@ function ScoreMatchBody() {
         loserValue={loserValue}
         winnerValue={winnerValue}
         loserPlayerName={loserPlayerName}
+        mode={scoringModalMode}
+        onModeChange={setScoringModalMode}
+        canEditEvents={canEditEvents}
+        enabledEventsOverride={leaguePrefs?.enabled_events ?? {}}
+        onSaveEnabledEvents={handleSaveEnabledEvents}
         onBreakAndRunChange={(checked) => {
           setBreakAndRun(checked);
           if (checked) setGoldenBreak(false);

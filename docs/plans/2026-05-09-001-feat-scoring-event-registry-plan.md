@@ -1,8 +1,9 @@
 ---
 title: Scoring Event Registry — game_events Table, LO-Toggleable Events, Multi-Mode Modal
 type: feat
-status: active
+status: complete
 date: 2026-05-09
+completed: 2026-05-12
 origin: docs/brainstorms/2026-05-05-scoring-modal-rework-requirements.md
 ---
 
@@ -409,7 +410,7 @@ Unit 10p2 (polish) — independent
 
 ---
 
-- [ ] **Unit 1: Event registry module + seed events + stats query sketches** — **Phase 1**
+- [x] **Unit 1: Event registry module + seed events + stats query sketches** — **Phase 1**
 
 **Goal:** Build the TypeScript event registry with self-registration, the resolveEnabledEvents helper (used by Phase 2 but cheap to ship in Phase 1 — it defaults to "all events on" when given an empty cascade map), and the eight seed event definitions. Document five sample stats queries inline in the plan to sanity-check schema shape before Unit 2 locks the table.
 
@@ -474,7 +475,7 @@ Unit 10p2 (polish) — independent
 
 ---
 
-- [ ] **Unit 2 (Phase 1): Schema migration — game_events table, drop 4 booleans, RLS** — **Phase 1**
+- [x] **Unit 2 (Phase 1): Schema migration — game_events table, drop 4 booleans, RLS** — **Phase 1**
 
 **Goal:** Phase 1 migration creates `game_events` (with denormalized `match_id`, RLS via `can_write_game_event`, indexes), drops the 4 boolean columns from `match_games`. Regenerate `database.types.ts`.
 
@@ -482,7 +483,7 @@ Unit 10p2 (polish) — independent
 
 **Phase 2 reference (do NOT include in Phase 1's migration):**
 
-- [ ] **Unit 2 (Phase 2): Schema continuation — enabled_events jsonb + preferences RLS + view rebuild** — **Phase 2**
+- [x] **Unit 2 (Phase 2): Schema continuation — enabled_events jsonb + preferences RLS + view rebuild** — **Phase 2**
 
 Phase 2 migration adds `enabled_events jsonb` to `preferences`, enables RLS on `preferences` with `can_write_preferences`, drops and recreates `resolved_league_preferences` with the per-key `||` jsonb merge. Detailed planning lives in this plan's Architecture section but execution-level test scenarios for Phase 2 will be re-detailed when Phase 2 is replanned closer to its start date. The full migration body in the §Approach below shows ALL steps for context — implementer of Phase 1 uses only the labeled Phase 1 steps.
 
@@ -551,7 +552,7 @@ Phase 2 migration adds `enabled_events jsonb` to `preferences`, enables RLS on `
 
 ---
 
-- [ ] **Unit 3: useResolvedLeaguePrefs + enabled_events resolver helper** — **Phase 2**
+- [x] **Unit 3: useResolvedLeaguePrefs + enabled_events resolver helper** — **Phase 2**
 
 **Goal:** Extend the resolver hook to expose `enabled_events` from the view; pair with the registry's `resolveEnabledEvents` helper from Unit 1. Fix the existing `points_calculator_params` SELECT gap in passing.
 
@@ -587,7 +588,7 @@ Phase 2 migration adds `enabled_events jsonb` to `preferences`, enables RLS on `
 
 ---
 
-- [ ] **Unit 4: useIsLeagueOperatorOf authorization helper** — **Phase 2**
+- [x] **Unit 4: useIsLeagueOperatorOf authorization helper** — **Phase 2**
 
 **Goal:** Build the missing per-league authorization hook used by the modal Edit-button gate and the office preview Edit gate.
 
@@ -627,7 +628,7 @@ Phase 2 migration adds `enabled_events jsonb` to `preferences`, enables RLS on `
 
 ---
 
-- [ ] **Unit 5 (Phase 1): ScoringDialog rewrite — registry-driven events map (no mode prop yet)** — **Phase 1**
+- [x] **Unit 5 (Phase 1): ScoringDialog rewrite — registry-driven events map (no mode prop yet)** — **Phase 1**
 
 **Phase 1 goal:** Rewrite `ScoringDialog` so its event handling is registry-driven instead of using individual `breakAndRun` / `goldenBreak` / `runout` / `winByForfeit` boolean props with separate `onXChange` callbacks. The modal accepts a single `events: Record<string, boolean>` prop and a single `onEventChange(name: string, checked: boolean)` callback. Mutual exclusion and forfeit suppression consume the registry's declarations at modal-render time. Score-mode behavior is unchanged for users — the same checkboxes appear in the same order, with the same handlers, just driven by registry data instead of hardcoded strings.
 
@@ -642,7 +643,7 @@ Phase 2 migration adds `enabled_events jsonb` to `preferences`, enables RLS on `
 
 ---
 
-- [ ] **Unit 5 (Phase 2): mode prop + section extraction + edit-mode rendering** — **Phase 2**
+- [x] **Unit 5 (Phase 2): mode prop + section extraction + edit-mode rendering** — **Phase 2**
 
 **Phase 2 goal:** Add the `mode: 'score' | 'edit' | 'preview'` prop. Extract the existing scoring sections into a sub-component (or factor inline cleanly) so the modal stays under reasonable size with three modes. Build the edit-mode rendering: a hide/show list of every applicable registry event with per-row Switch + per-row Reset button. Build the preview-mode rendering: the score-mode UI but read-only (Save button hidden, all toggles disabled).
 
@@ -693,7 +694,7 @@ Phase 2 migration adds `enabled_events jsonb` to `preferences`, enables RLS on `
 
 ---
 
-- [ ] **Unit 6: Scoring mutations rewrite — game_events insert + break_fouled dual-write + vacate cascade** — **Phase 1**
+- [x] **Unit 6: Scoring mutations rewrite — game_events insert + break_fouled dual-write + vacate cascade** — **Phase 1**
 
 **Goal:** Rewrite `useMatchScoringMutations` to write `game_events` rows during scoring (one row per truthy event with attribution), keep `break_fouled` as a column-AND-event-row dual-write atomic in the same mutation, and extend the vacate-accept path to DELETE `game_events` rows for the vacated game.
 
@@ -739,7 +740,7 @@ Phase 2 migration adds `enabled_events jsonb` to `preferences`, enables RLS on `
 
 ---
 
-- [ ] **Unit 7: Realtime extension — game_events channel + ConfirmationDialog rewrite** — **Phase 1**
+- [x] **Unit 7: Realtime extension — game_events channel + ConfirmationDialog rewrite** — **Phase 1**
 
 **Goal:** Extend the realtime hooks to subscribe to `game_events` filtered by `match_id`. Rewrite the confirmation queue payload to derive the event set from `game_events` queries rather than the dropped boolean columns from `match_games` payloads. Verify whether `useMatchGamesRealtime.ts` is still in use; if not, delete.
 
@@ -785,7 +786,7 @@ Phase 2 migration adds `enabled_events jsonb` to `preferences`, enables RLS on `
 
 ---
 
-- [ ] **Unit 8: featsStats rewrite + type cleanup** — **Phase 1**
+- [x] **Unit 8: featsStats rewrite + type cleanup** — **Phase 1**
 
 **Goal:** Rewrite `src/api/queries/featsStats.ts` to query `game_events` directly via COUNT-by-event_name. Update the per-row TypeScript types that previously carried the 4 dropped booleans. The consumer page (`FeatsOfExcellence.tsx`) consumes the same `FeatsStats` shape and should require zero changes.
 
@@ -827,7 +828,7 @@ Phase 2 migration adds `enabled_events jsonb` to `preferences`, enables RLS on `
 
 ---
 
-- [ ] **Unit 9: Office-page integration — ScoringPreviewCard mounts ScoringDialog in 'preview' mode** — **Phase 2**
+- [x] **Unit 9: Office-page integration — ScoringPreviewCard mounts ScoringDialog in 'preview' mode** — **Phase 2**
 
 **Goal:** Add a "Scoring Preview" card to `LeagueSettings.tsx` and `OrganizationSettings.tsx` preferences pages that mounts `ScoringDialog` in `'preview'` mode with an Edit button. The Edit button flips to `'edit'` mode where the LO toggles events for the relevant scope (league or org). Save writes to the appropriate `preferences` row.
 
@@ -871,7 +872,7 @@ Phase 2 migration adds `enabled_events jsonb` to `preferences`, enables RLS on `
 
 ---
 
-- [ ] **Unit 10: Polish, characterization tests, RLS test, documentation** — **Phase 1 + Phase 2 (tagged below)**
+- [x] **Unit 10: Polish, characterization tests, RLS test, documentation** — **Phase 1 + Phase 2 (tagged below)**
 
 **Goal:** Round out the branch. RLS test for `game_events` table, characterization-fixture cleanup, plan-document updates, and a final grep audit confirming the 4 dropped column names appear only in the registry and the migration.
 

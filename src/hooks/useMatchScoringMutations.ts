@@ -48,6 +48,7 @@ interface UseMatchScoringMutationsParams {
   addToConfirmationQueue: (confirmation: {
     gameNumber: number;
     winnerPlayerName: string;
+    loserPlayerName?: string;
     events: string[];
     breakFouled: boolean;
     winnerValue: number | null;
@@ -55,6 +56,13 @@ interface UseMatchScoringMutationsParams {
   }) => void;
   /** Get player display name by ID */
   getPlayerDisplayName: (playerId: string) => string;
+  /**
+   * Get player's FULL name (first + last, never nickname). Used for
+   * forfeit attribution where short nicknames like "Al" can collide
+   * visually with "AI". Optional; falls back to omitting the loser
+   * banner when not provided.
+   */
+  getPlayerFullName?: (playerId: string) => string | null;
 }
 
 /**
@@ -76,6 +84,7 @@ export function useMatchScoringMutations({
   autoConfirm,
   addToConfirmationQueue,
   getPlayerDisplayName,
+  getPlayerFullName,
 }: UseMatchScoringMutationsParams) {
   const queryClient = useQueryClient();
   /**
@@ -143,9 +152,22 @@ export function useMatchScoringMutations({
             .eq('game_id', existingGame.id);
           const events = (eventRows ?? []).map(row => row.event_name);
 
+          // Derive loser's full name for the forfeit banner (if win_by_forfeit
+          // is in the events). getPlayerFullName is optional — if not
+          // provided, the banner falls back to the smaller event chip.
+          const loserPlayerId =
+            existingGame.winner_player_id === existingGame.home_player_id
+              ? existingGame.away_player_id
+              : existingGame.home_player_id;
+          const loserFullName =
+            loserPlayerId && getPlayerFullName
+              ? getPlayerFullName(loserPlayerId) ?? undefined
+              : undefined;
+
           addToConfirmationQueue({
             gameNumber,
             winnerPlayerName: getPlayerDisplayName(existingGame.winner_player_id),
+            loserPlayerName: loserFullName,
             events,
             breakFouled: existingGame.break_fouled,
             loserValue: existingGame.loser_value,

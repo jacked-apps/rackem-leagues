@@ -61,6 +61,15 @@ export interface ResolvedLeaguePrefs {
    */
   points_calculator_params?: Record<string, unknown> | null;
   /**
+   * Branch B Phase 2: cascade-resolved enabled-events override map.
+   * Sparse `{ event_name: boolean }` where present keys force the event
+   * on/off and absent keys fall through to the TypeScript registry's
+   * `enabledByDefault` per game type (see
+   * `src/systems/game-events/resolveEnabledEvents.ts`). Always defined as
+   * an object — empty `{}` is the "no overrides" shape.
+   */
+  enabled_events: Record<string, boolean>;
+  /**
    * Per-league dial overrides from `leagues.system_overrides` (not part of the
    * preferences cascade — stored directly on the league row). Always an object;
    * `{}` if no overrides are set. Merged over SystemModule defaults at read time.
@@ -77,7 +86,7 @@ async function fetchResolvedLeaguePrefs(leagueId: string): Promise<ResolvedLeagu
   const [viewRes, leagueRes] = await Promise.all([
     supabase
       .from('resolved_league_preferences')
-      .select('handicap_type, lineup_size, max_roster_size, game_generation, points_system, threshold_chart_id, win_condition, mechanism, points_calculator')
+      .select('handicap_type, lineup_size, max_roster_size, game_generation, points_system, threshold_chart_id, win_condition, mechanism, points_calculator, points_calculator_params, enabled_events')
       .eq('league_id', leagueId)
       .single(),
     supabase
@@ -102,11 +111,25 @@ async function fetchResolvedLeaguePrefs(leagueId: string): Promise<ResolvedLeagu
       game_generation: 'double_round_robin',
       points_system: 'differential',
       threshold_chart_id: null,
+      enabled_events: {},
       system_overrides: systemOverrides,
     };
   }
 
-  return { ...resolved, system_overrides: systemOverrides } as ResolvedLeaguePrefs;
+  // Coerce enabled_events to a plain Record<string, boolean>. The view
+  // guarantees a jsonb object (the column is NOT NULL DEFAULT '{}'::jsonb)
+  // but TypeScript's generated row type is loosely typed as any.
+  const enabledEvents =
+    (resolved as { enabled_events?: unknown })?.enabled_events &&
+    typeof resolved.enabled_events === 'object'
+      ? (resolved.enabled_events as Record<string, boolean>)
+      : {};
+
+  return {
+    ...resolved,
+    enabled_events: enabledEvents,
+    system_overrides: systemOverrides,
+  } as ResolvedLeaguePrefs;
 }
 
 /**

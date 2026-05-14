@@ -320,6 +320,13 @@ export interface MatchGameEvent {
 export interface ConfirmationQueueItem {
   gameNumber: number;
   winnerPlayerName: string;
+  /**
+   * Loser's FULL name (first + last, never nickname). Forfeits use this
+   * for the prominent "X FORFEITS THE GAME" banner. Optional because
+   * not every entry needs it — non-forfeit confirmations omit the
+   * loser banner entirely.
+   */
+  loserPlayerName?: string;
   // Event names recorded for this game (e.g., ['break_and_run', 'win_by_forfeit']).
   // The confirmation dialog renders one badge per name using the registry's
   // label. Branch B Phase 1 replaced the 4 individual boolean props with this

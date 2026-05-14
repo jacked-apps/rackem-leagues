@@ -69,6 +69,13 @@ export interface PreferenceFields {
     | string
     | null;
   race_length?: number | null;
+  /**
+   * Branch B Phase 2: per-event override map against the TypeScript
+   * registry at `src/systems/game-events/`. Sparse `{ event_name: boolean }`
+   * — present keys force the event on/off, absent keys inherit from the
+   * cascade tier (org → registry default). Never stores NULL.
+   */
+  enabled_events?: Record<string, boolean>;
 }
 
 /** Full preference record as returned from the database */
