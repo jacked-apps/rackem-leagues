@@ -59,13 +59,10 @@
 -- 1. Reword members.profanity_filter_enabled comment
 -- ----------------------------------------------------------------------------
 
-COMMENT ON COLUMN public.members.profanity_filter_enabled IS
-  'Personal profanity filter preference for message display. ' ||
-  'Forced ON for known minors (date_of_birth on file AND age < 18); ' ||
-  'toggleable by adults and members with no DOB on file. Enforcement ' ||
-  'happens client-side via useProfanityFilter (sees DOB) — this column ' ||
-  'stores the user preference and is only consulted when the minor ' ||
-  'override does not apply.';
+-- COMMENT ON COLUMN's IS clause requires a single string literal — `||`
+-- concatenation isn't allowed there (SQL grammar treats this slot as a
+-- string-constant context, not an expression). Keep the body on one line.
+COMMENT ON COLUMN public.members.profanity_filter_enabled IS 'Personal profanity filter preference for message display. Forced ON for known minors (date_of_birth on file AND age < 18); toggleable by adults and members with no DOB on file. Enforcement happens client-side via useProfanityFilter (sees DOB) — this column stores the user preference and is only consulted when the minor override does not apply.';
 
 
 -- ----------------------------------------------------------------------------
