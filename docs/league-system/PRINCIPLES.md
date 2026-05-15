@@ -108,10 +108,10 @@ Some Handicap Mechanisms (`extra_games`, `start_points`) operate at the team-agg
 
 A **Module** is any bordered unit of league-system behavior with a typed external contract and a defined design space inside. Every Module is exactly one of four kinds:
 
-- **Mechanism** — atom. Does one functional task; no internal Modules. *(See [Mechanism — Deep Dive](#mechanism--deep-dive).)*
-- **System** — set. Composed of other Modules with rules for how they fit together. *(See [System — Deep Dive](#system--deep-dive).)*
-- **Chart** — data-shaped. Passive lookup queried by other Modules; can be a discrete table or a continuous formula. *(See [Chart — Deep Dive](#chart--deep-dive).)*
-- **Converter** — adapter. Bridges two mismatched type contracts so otherwise-incompatible Modules can compose. *(See [Converter — Deep Dive](#converter--deep-dive).)*
+- **Mechanism** — atom. Does one functional task; no internal Modules. *The work-doing unit at the leaves of the architecture's tree.* (See [Mechanism — Deep Dive](#mechanism--deep-dive).)
+- **System** — set. Composed of other Modules with rules for how they fit together. *The orchestrator that composes Mechanisms (and other Systems) into something larger.* (See [System — Deep Dive](#system--deep-dive).)
+- **Chart** — data-shaped. Passive lookup queried by other Modules; can be a discrete table or a continuous formula. *The reference data Mechanisms consume to do their work.* (See [Chart — Deep Dive](#chart--deep-dive).)
+- **Converter** — adapter. Bridges two mismatched type contracts so otherwise-incompatible Modules can compose. *The type-bridge that makes "any A pairs with any B" claims real.* (See [Converter — Deep Dive](#converter--deep-dive).)
 
 For the foundational treatment of Module itself (essence, boundary, tweak classification, recursion, I/O contracts, page pattern, and cross-Module enforcement), see [Module — Deep Dive](#module--deep-dive) below.
 
