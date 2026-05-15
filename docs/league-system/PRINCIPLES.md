@@ -511,6 +511,127 @@ The Mechanism stays "stupid" about its place in the larger structure. This is wh
 
 **Anti-conflation note on naming.** "Mechanism" the kind is the same word as "mechanism" the everyday-English noun. Be precise in docs: when you write *"the threshold mechanism"* lowercase, you mean any threshold-shaped mechanism in the abstract. When you write *"the Threshold Mechanism"* title-case, you mean a specific named Module. The capitalization signals the precision.
 
+## System — Deep Dive
+
+*System is the **set** kind of Module — composed of other Modules with rules for how the parts fit together. Where Mechanism is the leaf, System is the orchestrator. This deep-dive applies the Module primitives (Essence / Boundary / Design space / Typed I/O / Implementation-vs-intent flag) to the System kind specifically, and addresses two patterns of composition (selection vs chain) plus the trigger pattern (canonical System example) deferred from the Mechanism deep-dive.*
+
+### 1. Essence
+
+**A System is a Module that is composed of other Modules, with rules for how those Modules fit together.** The "set" kind, distinguishing it from the "atom" kind (Mechanism).
+
+If you can describe a Module's job as *"orchestrate these N parts to produce a result"* — pick alternatives, chain components, declare ordering — you're looking at a System.
+
+If the Module's job is one functional task with no internal Modules, you're looking at a Mechanism.
+
+**Examples of Systems:**
+
+- **Scoring System** (top-level) — composed of 8 component Modules (Handicap Systems, Handicap Mechanisms, Points System, Win Calculator, Threshold Charts, Team Geometry, Match Format, Standings & Tiebreakers).
+- **Handicap Mechanisms** (umbrella for one of the 8 components) — composed of alternative handicap-mechanism Mechanisms (`extra_games`, `start_points`, `race_length_adjustment`); the league picks one.
+- **Trigger** (when made explicit) — composed of an event-acceptor Mechanism, an event-detector Mechanism, a task-performer Mechanism, and a re-armer Mechanism.
+
+A System has BOTH an external contract (the System's input → output to its consumers) AND an internal composition (how its component Modules wire together). Both must be documented; both must be verified.
+
+### 2. Why "System" is its own kind
+
+Could we just call all set Modules "Modules" and skip the System label? Yes — but the label carries information:
+
+- **Composition signal.** When you read "System," you know there are parts inside. Anyone reading or modifying needs to look at the composition, not just the external contract.
+- **Orchestration signal.** Systems orchestrate; they don't do the leaf work themselves. The actual computation happens in the composed Mechanisms; the System's job is wiring and ordering.
+- **Reach-for-it second.** After Mechanism, System is the most-reached-for kind. The first classification question for any new Module is *"Mechanism or System?"* — atom or set.
+
+### 3. Boundary: what's NOT a System
+
+A Module is NOT a System if:
+
+- **It performs one functional task with no internal Modules** → it's a **Mechanism** (the atom kind). Internal logic is fine; internal *Modules* are what makes it a System.
+- **It's data-shaped** (a lookup table or formula consumed by another Module) → it's a **Chart**.
+- **It bridges mismatched type contracts** so two otherwise-incompatible Modules can compose → it's a **Converter**.
+
+A Module is exactly one of the four kinds. A System is never also a Mechanism (you can't be both a composition and an atom simultaneously); the four kinds are mutually exclusive.
+
+**A System may contain other Systems.** Systems nest recursively (see [Section 7: Recursion + IoC](#7-recursion--inversion-of-control-at-the-system-level)). A top-level Scoring System contains a Handicap Mechanisms System; that system in turn contains Mechanism atoms. Each level is a Module of the appropriate kind.
+
+### 4. Two composition patterns: selection vs chain
+
+Systems compose their internal Modules in one of two patterns. Knowing which pattern a System uses is critical for understanding what it does.
+
+**Selection pattern** — the System offers N alternatives; exactly ONE is active per league configuration. The LO picks one; the others are inactive.
+
+- *Handicap Mechanisms* (System) — offers `extra_games`, `start_points`, `race_length_adjustment` Mechanisms; the league picks one of the three.
+- *Handicap Systems* (System) — offers Points, Percentage, FargoRate, Skill Level Mechanisms; the league picks one.
+- *Threshold Charts* (System) — offers various calibrated charts; the league picks one.
+
+**Naming for selection-pattern Systems is plural** ("Handicap Mechanisms," "Handicap Systems," "Threshold Charts") — the plural reflects the *coexistence* of the alternatives as named options.
+
+**Chain pattern** — the System composes N components in sequence; ALL are active, each contributing to the result.
+
+- *Scoring System* (top-level System) — chains 8 component Modules; all 8 run together as part of every match.
+- A *Trigger* (when explicit) — chains an event-acceptor → detector → performer → re-armer; all four run together as part of the trigger lifecycle.
+- *Points System* — chains a per-game allocator + (optional) threshold trigger + (optional) initial-points + (optional) end-of-match aggregate.
+
+**Naming for chain-pattern Systems is singular** ("Scoring System," "Win Calculator," "Points System") — the singular reflects the *single act* the chain produces, even though multiple components contribute.
+
+**A single System can use both patterns.** The Scoring System uses chain composition (all 8 components run together) AND one of those 8 components — Handicap Mechanisms — internally uses selection (the league picks one of three). Recursion makes this natural.
+
+**The naming rule from Module § 9 reflects this distinction.** Plural names = selection pattern; singular names = chain pattern. The plural-vs-singular test is really asking *"which composition pattern does this System use?"*
+
+### 5. Triggers as canonical System example
+
+A **Trigger** is a System pattern composed of four sub-Mechanisms:
+
+| Sub-Mechanism | Job |
+|---|---|
+| **Event acceptor** | Configures what event/condition to watch for (e.g., `games_played === 11`) |
+| **Event detector** | Does the watching — observes the runtime state and matches against the condition |
+| **Task performer** | The action that fires when the condition is met |
+| **Re-armer** | Manages whether the trigger fires again (single-shot, periodic, manual reset, etc.) |
+
+Each sub-Mechanism is its own atom (one job, no internal Modules). The Trigger composes them — that composition makes the Trigger a System.
+
+**Why triggers are Systems, not Mechanisms.** A trigger has multiple distinct concerns (configure / detect / act / manage re-firing). Each is a separate job. By the atom-vs-set rule, multiple distinct concerns composed together = a System. Triggers belong here in the System deep-dive, not in the Mechanism deep-dive.
+
+**Implicit vs explicit triggers (current code state).** Today, the trigger pattern is mostly *implicit* — bundled into how a parent System dispatches to its components. The parent System has dispatch logic that reads *"when game-scored event arrives, call the per-game allocator"* — the event detection and task dispatch are baked into the System's wiring rather than carried as a named Trigger System composing the four sub-Mechanisms. The trigger is real but not surfaced as its own Module. **This is implementation artifact, not architectural intent.** A future LO-customizable trigger UI (where operators define *what fires on what events*) would likely require unbundling implicit triggers into explicit Trigger Systems with their constituent Mechanisms named and swappable. See task tracker for the deferred decision.
+
+**Stackable triggers.** A parent System can compose multiple Trigger Systems — one watching for `games_played = 10`, another for `games_played = 20`. Each Trigger System is independent; each runs its own four-sub-Mechanism chain. Multiple Trigger Systems inside a parent, not one System with multiple conditions.
+
+### 6. I/O contract for Systems
+
+Per [Module Deep Dive § 8](#8-io-contracts-at-module-boundaries), every Module declares typed input and typed output. Systems specifically have **two layers** of contract:
+
+- **External contract** — the System's input → output as it appears to outside consumers. The Scoring System's external contract is *"match data → match result."* Outside consumers (the season runner, the standings calculator) only see this.
+- **Internal contracts** — each composed Module has its own contract. The composition is valid only if every internal contract chains correctly: Module A's output type must match Module B's input type for them to wire together (or a Converter must bridge the mismatch).
+
+**Verifying a System's contract = verifying both layers.** Mechanisms only have to verify the external contract (input X → output Y, no internals). Systems have to verify the external promise AND the internal chain holds. This is the substantive difference between Mechanism and System contracts.
+
+**Selection-pattern Systems** have a special contract pattern: the external output type is the *category* (e.g., "handicap value," "benchmark declaration") shared by all the alternatives, but the actual specific shape depends on which alternative is active (per [Module Deep Dive § 8 — Variant-specific output shapes](#8-io-contracts-at-module-boundaries)). The contract is "outputs one of these named shapes, with a tag identifying which."
+
+**Chain-pattern Systems** have a more straightforward contract: external output is whatever the last station in the chain produces.
+
+### 7. Recursion + inversion of control at the System level
+
+**Systems can contain other Systems.** Recursion is how the architecture scales:
+
+- A top-level *Scoring System* (chain) contains *Handicap Mechanisms* (selection) which contains atom Mechanisms (`extra_games`, etc.).
+- A future explicit *Trigger System* (chain of 4 sub-Mechanisms) might be composed inside the *Points System* (chain) which is composed inside the *Scoring System* (chain).
+
+Each level is a Module; only the *kind* (Mechanism / System / Chart / Converter) varies by node. The Module-page pattern and I/O contract pattern apply at every level — same template, scoped to the level (per [Module Deep Dive § 7](#7-the-recursive-property)).
+
+**Inversion of control at the System level: a System orchestrates its internals but doesn't know its own composer.** The Scoring System orchestrates its 8 components but has no awareness of what wraps it (the League → Season → Scoring System hierarchy is one level up; the Scoring System never asks *"who composed me?"*). Same way a Mechanism doesn't know which System composed it.
+
+**This inversion is what makes Systems composable into bigger Systems.** A Trigger System can be composed into a Points System, which is composed into a Scoring System, which is composed into a League — and each layer just orchestrates its own contents. No layer needs to know about layers above it. Same reusability principle as Mechanisms (per [Mechanism § 6](#6-how-mechanisms-compose-into-systems)), applied recursively.
+
+### 8. Naming Systems
+
+- **System code identifiers:** snake_case — `scoring_system`, `handicap_mechanisms_module`, `points_system`, `trigger`. (Implementation may vary; the convention is snake_case for code identifiers per repo standards.)
+- **System display names (in docs):** Title Case with spaces — *Scoring System*, *Handicap Mechanisms*, *Points System*, *Win Calculator*.
+- **Plural vs singular** — per [Module Deep Dive § 9](#9-naming-rule-plural-vs-singular):
+  - **Plural** for selection-pattern Systems (variants coexist as named alternatives) — *Handicap Mechanisms*, *Handicap Systems*, *Threshold Charts*.
+  - **Singular** for chain-pattern Systems (one wrapping act with parameter variation) — *Scoring System*, *Win Calculator*, *Points System*, *Match Format*.
+  - The plural-vs-singular test from Module § 9 directly maps to which composition pattern the System uses (per [Section 4](#4-two-composition-patterns-selection-vs-chain) above).
+- **Domain-canonical names:** if a System corresponds to an externally-recognized concept with a published name, preserve it (we don't have many examples for Systems specifically — most are coined by us).
+
+**Anti-conflation note on naming.** "System" the kind shares the everyday-English word "system" — and CSI uses "Scoring System" to mean specifically the per-game point allocation rule, not the whole composed thing. Be precise: when we write *"a System"* in docs, we mean any Module of the set kind. When we write *"the Scoring System"* title-case, we mean the specific top-level Module. CSI's "Scoring System" is now what we call the **Points System** (per the historical restructure that split the old "Scoring Systems" Module into Points System + Win Calculator).
+
 ## Concrete rules / templates
 
 ### Module README template (8–9 sections)
