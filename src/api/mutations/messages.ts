@@ -51,14 +51,34 @@ export interface UnblockUserParams {
 }
 
 /**
+ * Maximum time to wait for a send-message round-trip before treating the
+ * attempt as a failure. Unit 16: bounded send. Required because supabase-
+ * js doesn't impose a default timeout — on a stalled network (offline /
+ * very slow connection), `.insert()` will hang indefinitely without
+ * rejecting, which leaves the composer locked and the optimistic bubble
+ * in `'sending'` state forever (no rejection for `useOutgoingMessages` to
+ * mark failed).
+ *
+ * 10 seconds: long enough to absorb normal slow-network jitter, short
+ * enough that a hung send becomes a retryable failed bubble within a
+ * reasonable user-attention window.
+ */
+export const SEND_TIMEOUT_MS = 10_000;
+
+/**
  * Send a message in a conversation
  *
  * Creates a new message record and updates conversation's last_message_at.
  * Real-time subscriptions will notify other participants.
  *
+ * Aborts (and rejects) if the request hasn't completed within
+ * {@link SEND_TIMEOUT_MS}. The thrown error message distinguishes a
+ * client-side timeout from a server-side failure so the UI can surface
+ * the right reason in the failed-bubble's inline error text.
+ *
  * @param params - Message sending parameters
  * @returns The created message record
- * @throws Error if message sending fails
+ * @throws Error if message sending fails or the timeout elapses
  *
  * @example
  * const message = await sendMessage({
@@ -70,24 +90,43 @@ export interface UnblockUserParams {
 export async function sendMessage(params: SendMessageParams) {
   const { conversationId, senderId, content } = params;
 
-  const { data, error } = await supabase
-    .from('messages')
-    .insert([
-      {
-        conversation_id: conversationId,
-        sender_id: senderId,
-        content,
-        created_at: new Date().toISOString(),
-      },
-    ])
-    .select()
-    .single();
+  // AbortController forces the in-flight supabase-js fetch to reject if
+  // the timer elapses before the server responds (or before the request
+  // even leaves the browser, in the offline case).
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), SEND_TIMEOUT_MS);
 
-  if (error) {
-    throw new Error(`Failed to send message: ${error.message}`);
+  try {
+    const { data, error } = await supabase
+      .from('messages')
+      .insert([
+        {
+          conversation_id: conversationId,
+          sender_id: senderId,
+          content,
+          created_at: new Date().toISOString(),
+        },
+      ])
+      .select()
+      .single()
+      .abortSignal(controller.signal);
+
+    if (error) {
+      // If our timer aborted, the error here will be the abort error —
+      // surface a clearer "timed out" message instead of the generic
+      // network noise. (The UI shows this string under the failed bubble.)
+      if (controller.signal.aborted) {
+        throw new Error(
+          `Send timed out after ${SEND_TIMEOUT_MS / 1000}s — check your connection.`,
+        );
+      }
+      throw new Error(`Failed to send message: ${error.message}`);
+    }
+
+    return data;
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  return data;
 }
 
 /**

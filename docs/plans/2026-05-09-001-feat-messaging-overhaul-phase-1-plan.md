@@ -33,6 +33,7 @@ end-to-end test pass before merge.
 | 13 | **Emoji messages + composer picker (12-emoji curated set)** | ⬜ not started |
 | 14 | **Season-end trigger — release `cannot_leave` on completion** | ⬜ not started |
 | 15 | **Auto-rename propagation — team / league / season / org renames update matching chat titles** | ⬜ not started |
+| 16 | **Bounded send — AbortController + 10s timeout in `sendMessage`** | ✅ shipped |
 
 **Branch:** `messaging-system-overhaul`.
 **Awaits:** Units 10–14 build + final end-to-end test pass (`pnpm db:reset && pnpm test:run` + manual dev-app smoke walkthrough).
@@ -923,6 +924,65 @@ updates without losing membership or messages.
 (`supabase/migrations/20260509000004_…roster_captain_triggers.sql`)
 for trigger shape, security wrapper, and the `IS DISTINCT FROM`
 guard idiom.
+
+---
+
+- [x] **Unit 16: Bounded send — AbortController + 10s timeout in `sendMessage`**
+
+**Goal:** Make a stalled send (offline / very slow network) reject
+within 10 seconds so Unit 8's failed-bubble path actually fires.
+supabase-js doesn't impose a default request timeout, and Chrome's
+DevTools "Offline" mode silently stalls localhost fetches without
+rejecting — so without an explicit timeout, the optimistic bubble
+sits in `'sending'` state forever and the composer stays locked.
+
+**Dependencies:** Unit 8 (the inline-failed-send recovery UX that
+this timeout feeds into).
+
+**Files (shipped):**
+- Modify: `src/api/mutations/messages.ts` — `sendMessage` now wraps
+  its supabase-js insert with an `AbortController`. New exported
+  constant `SEND_TIMEOUT_MS = 10_000`. When the timer fires before
+  the server responds, the controller aborts the in-flight fetch
+  and `sendMessage` throws a distinct "Send timed out after Xs —
+  check your connection." error.
+- New test: `src/api/mutations/__tests__/sendMessage.timeout.test.ts`
+  — uses `vi.useFakeTimers()` and a chained query-builder mock
+  whose terminal `.abortSignal()` returns a promise that only
+  resolves when the signal aborts. Advances time past
+  `SEND_TIMEOUT_MS` and asserts the throw.
+
+**Approach:**
+- Standard AbortController + setTimeout pattern. The timer is
+  cleared in a `finally` block so a fast happy-path send doesn't
+  leak the timeout.
+- supabase-js v2's `.abortSignal(signal)` query-builder method is
+  the abort integration point — it forwards the signal to the
+  underlying `fetch()`.
+- Discovered via manual testing of Unit 8 during the Phase 1 test
+  pass — when the user clicks Send while offline, the optimistic
+  bubble appears, the composer locks (`sending = true`), and the
+  promise hangs forever. With Unit 16, the same scenario rejects
+  after 10s and the bubble flips to red with a clear "timed out"
+  reason.
+
+**Test scenarios:**
+- *Stalled request:* advance fake timers past 10s → sendMessage
+  rejects with a `timed out` message. ✓
+- (Future) *Fast happy path:* request resolves before timeout →
+  promise resolves with the inserted row, timer is cleared.
+  Covered implicitly by the rest of the messaging test suite which
+  continues to pass; not explicitly retested here.
+- (Future) *Server error:* server returns an error before the
+  timeout → sendMessage throws the original supabase error message,
+  NOT the "timed out" string. Covered implicitly by the existing
+  `useSendMessage` flow tests.
+
+**Verification:** test green; `pnpm exec tsc --noEmit` clean.
+Manually re-test Unit 8 with the dev app — toggle DevTools Offline
+or block the URL, send → bubble should turn red within 10s with
+the "Send timed out" reason. Composer re-enables when the bubble
+flips.
 
 ---
 
