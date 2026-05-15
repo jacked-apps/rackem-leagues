@@ -735,7 +735,7 @@ The Chart doesn't know what consumer asked it; it just answers. The Mechanism do
 
 **A Converter is a Module whose entire job is translating one type into another so two Modules with mismatched contracts can compose.** Input is whatever the upstream Module produces; output is whatever the downstream Module expects.
 
-A Converter doesn't add business logic, doesn't compose other Modules, doesn't provide reference data. It just bridges the type gap.
+A Converter doesn't compose other Modules and doesn't provide reference data. Its purpose is bridging the type gap. (Internal complexity is fine — same as any Module per Mechanism § 1; what matters is the external contract and the Module's reason for existing.)
 
 **Examples of Converters (committed roadmap; no current implementations):**
 
@@ -749,7 +749,7 @@ Each Converter handles ONE direction. A bidirectional translation = two separate
 
 Could we just call adapters "Mechanisms" and skip the Converter label? Yes — but the label carries information:
 
-- **Adapter signal.** When you read "Converter," you know it's pure type bridging — no business logic, no domain decisions. Just *"upstream type X → downstream type Y."*
+- **Adapter signal.** When you read "Converter," you know its *purpose* is type bridging — *"upstream type X → downstream type Y."* What goes on inside to fulfill that translation is implementation (could be simple math, could be re-derivation from upstream data); the kind label tells you what the Module is FOR.
 - **Orthogonality-enabler signal.** Converters are what make composition claims like *"any Handicap System pairs with any Threshold Chart"* actually true. Without them, those claims are overstated (per Module § 8 implication). The kind label flags "this Module exists to make composition work where types don't naturally line up."
 - **Limited-scope signal.** A Converter has the smallest possible job — translate one value. Reading "Converter" tells you *"don't expect anything beyond the translation."*
 
@@ -757,7 +757,7 @@ Could we just call adapters "Mechanisms" and skip the Converter label? Yes — b
 
 A Module is NOT a Converter if:
 
-- **It does business work, transforms domain state, or has side effects** → it's a **Mechanism** (the atom kind for work-doers). A Converter does pure type translation; if there's domain logic involved, it's a Mechanism.
+- **It exists to do work that isn't type translation** → it's a **Mechanism** (the atom kind for work-doers). The distinction is **purpose**, not internal complexity. A Converter exists specifically to bridge a type mismatch; a Mechanism exists to do some other kind of work (compute a handicap, allocate per-game points, declare a benchmark, etc.). Both kinds may have substantial internal logic — what distinguishes them is *why the Module exists*.
 - **It composes other Modules** → it's a **System** (the set kind for compositions). A Converter is itself an atom — it doesn't have other Modules inside.
 - **It provides organized reference data via lookup** → it's a **Chart** (the data-shaped kind). A Converter computes a translation; a Chart provides looked-up values. (The line is subtle — see below.)
 
@@ -782,6 +782,13 @@ A Module is exactly one of the four kinds. A Converter is never also a Chart, Me
 
 This honest framing should appear on every Converter's doc page (when the Modules get documented) and in any LO-facing UI that exposes Converter selection.
 
+**Implementation strategy and chain placement (design space).** A Converter's accuracy depends on what data it has access to, which depends on where it sits in the chain:
+
+- **Naive implementation at boundary placement.** Converter sits at the type-mismatch boundary (e.g., right before the Chart that needs the converted input). Only has the upstream Module's output value (e.g., a Points handicap value of `+1`). Translation is a coarse mapping — the only data available.
+- **Smart implementation at earlier-chain placement.** Converter sits closer to the original data source (game records, raw history). Can re-derive the target encoding from the underlying data rather than from the already-coarsened upstream output. Example: instead of `Points → Percentage` via a 5-bucket scaling, the smart Converter pulls the player's actual game records and recomputes a real Percentage value (continuous, not bucketed). Substantially more accurate; requires reaching back to source data.
+
+**Where to place a Converter is a real design decision, not a doctrine.** Boundary placement is simpler; earlier placement is more accurate. The right choice depends on which Modules the league composes and what data is available at which point in the chain. This is implementation territory — captured in a separate task; not constrained by the L1 docs.
+
 ### 5. I/O contract for Converters
 
 Per [Module Deep Dive § 8](#8-io-contracts-at-module-boundaries), every Module declares typed input and typed output. Converters specifically:
@@ -800,7 +807,7 @@ A Converter's contract is the simplest of all the kinds: input X → output Y, n
 - **Code identifiers:** lowercase-kebab using `<from>-to-<to>` convention — `points-to-fargo`, `percentage-to-fargo`, `fargo-to-points`.
 - **Display names:** Title Case with arrow or "to" — *Points-to-Fargo Converter*, *Percentage-to-Fargo Converter*.
 - **Filenames:** lowercase-kebab — `points-to-fargo.md`, etc.
-- **Umbrella name** (the parent Module that wraps Converters as alternatives): plural noun phrase — *Converters* (selection-pattern System; each league configuration picks which Converters to include in its pipeline).
+- **Collective name for the kind:** *Converters* (plural). Unlike Handicap Mechanisms or Threshold Charts (which DO have parent Modules wrapping selectable alternatives), there is no parent "Converters" Module — each Converter is inserted at a specific type-mismatch boundary, and multiple Converters typically appear in different parts of the same pipeline simultaneously (e.g., a `percentage-to-fargo` Converter at one boundary, a `points-to-fargo` Converter at another). "Converters" is the collective name for the kind, not a Module name.
 
 The `<from>-to-<to>` convention makes the direction explicit — critical because each direction is a separate Converter and the naming has to disambiguate.
 
