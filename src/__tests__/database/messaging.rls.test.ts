@@ -60,22 +60,28 @@ describe('Conversations Table - RLS Tests', () => {
       expect(data).toBeDefined();
     });
 
-    it('should allow viewing DM conversations', async () => {
+    it('should allow viewing direct-message conversations', async () => {
+      // conversation_type values per the schema CHECK:
+      //   'direct' | 'team_chat' | 'captains_chat' | 'announcements'
+      // (No 'dm' / 'group' / 'announcement' values exist.)
       const { data, error } = await client
         .from('conversations')
         .select('*')
-        .eq('conversation_type', 'dm')
+        .eq('conversation_type', 'direct')
         .limit(5);
 
       expect(error).toBeNull();
       expect(data).toBeDefined();
     });
 
-    it('should allow viewing group conversations', async () => {
+    it('should allow viewing manual group conversations (conversation_type IS NULL)', async () => {
+      // Manual (non-auto-managed) groups have conversation_type = NULL
+      // per the valid_auto_managed CHECK constraint. Filtering for them
+      // means an IS NULL test, not an equality check.
       const { data, error } = await client
         .from('conversations')
         .select('*')
-        .eq('conversation_type', 'group')
+        .is('conversation_type', null)
         .limit(5);
 
       expect(error).toBeNull();
@@ -86,7 +92,7 @@ describe('Conversations Table - RLS Tests', () => {
       const { data, error } = await client
         .from('conversations')
         .select('*')
-        .eq('conversation_type', 'announcement')
+        .eq('conversation_type', 'announcements')
         .limit(5);
 
       expect(error).toBeNull();
@@ -95,7 +101,8 @@ describe('Conversations Table - RLS Tests', () => {
   });
 
   describe('UPDATE Operations', () => {
-    it('should allow updating conversation name', async () => {
+    it('should allow updating conversation title', async () => {
+      // The display-name column is `title`, not `name`.
       if (!testConversationId) {
         console.warn('⚠️ No test conversation found, skipping test');
         return;
@@ -103,13 +110,13 @@ describe('Conversations Table - RLS Tests', () => {
 
       const { data: before } = await client
         .from('conversations')
-        .select('name')
+        .select('title')
         .eq('id', testConversationId)
         .single();
 
       const { error } = await client
         .from('conversations')
-        .update({ name: 'Updated Name' })
+        .update({ title: 'Updated Title' })
         .eq('id', testConversationId);
 
       expect(error).toBeNull();
@@ -118,7 +125,7 @@ describe('Conversations Table - RLS Tests', () => {
       if (before) {
         await client
           .from('conversations')
-          .update({ name: before.name })
+          .update({ title: before.title })
           .eq('id', testConversationId);
       }
     });
@@ -359,9 +366,12 @@ describe('Messages Table - RLS Tests', () => {
 });
 
 describe('Conversation Participants Table - RLS Tests', () => {
+  // Schema note: conversation_participants has NO `id` column. The primary
+  // key is composite `(conversation_id, user_id)`. The participant-ref
+  // column is `user_id` (not `member_id`); it FKs to `members.id`.
   let client: SupabaseClient<Database>;
   let testConversationId: string;
-  let testMemberId: string;
+  let testUserId: string;
 
   beforeAll(async () => {
     client = createTestClient();
@@ -369,13 +379,13 @@ describe('Conversation Participants Table - RLS Tests', () => {
     // Get a test participant
     const { data: participant } = await client
       .from('conversation_participants')
-      .select('conversation_id, member_id')
+      .select('conversation_id, user_id')
       .limit(1)
       .single();
 
     if (participant) {
       testConversationId = participant.conversation_id;
-      testMemberId = participant.member_id;
+      testUserId = participant.user_id;
     }
   });
 
@@ -412,40 +422,32 @@ describe('Conversation Participants Table - RLS Tests', () => {
 
   describe('UPDATE Operations - Read Receipts', () => {
     it('should allow updating last read timestamp', async () => {
-      if (!testConversationId || !testMemberId) {
+      if (!testConversationId || !testUserId) {
         console.warn('⚠️ No test data found, skipping test');
         return;
       }
-
-      const { data: participant } = await client
-        .from('conversation_participants')
-        .select('id')
-        .eq('conversation_id', testConversationId)
-        .eq('member_id', testMemberId)
-        .single();
-
-      if (!participant) return;
 
       const now = new Date().toISOString();
       const { error } = await client
         .from('conversation_participants')
         .update({ last_read_at: now })
-        .eq('id', participant.id);
+        .eq('conversation_id', testConversationId)
+        .eq('user_id', testUserId);
 
       expect(error).toBeNull();
     });
 
     it('should allow resetting unread count', async () => {
-      if (!testConversationId || !testMemberId) {
+      if (!testConversationId || !testUserId) {
         console.warn('⚠️ No test data found, skipping test');
         return;
       }
 
       const { data: participant } = await client
         .from('conversation_participants')
-        .select('id, unread_count')
+        .select('unread_count')
         .eq('conversation_id', testConversationId)
-        .eq('member_id', testMemberId)
+        .eq('user_id', testUserId)
         .single();
 
       if (!participant) return;
@@ -453,7 +455,8 @@ describe('Conversation Participants Table - RLS Tests', () => {
       const { error } = await client
         .from('conversation_participants')
         .update({ unread_count: 0 })
-        .eq('id', participant.id);
+        .eq('conversation_id', testConversationId)
+        .eq('user_id', testUserId);
 
       expect(error).toBeNull();
 
@@ -461,7 +464,8 @@ describe('Conversation Participants Table - RLS Tests', () => {
       await client
         .from('conversation_participants')
         .update({ unread_count: participant.unread_count })
-        .eq('id', participant.id);
+        .eq('conversation_id', testConversationId)
+        .eq('user_id', testUserId);
     });
   });
 
@@ -475,10 +479,10 @@ describe('Conversation Participants Table - RLS Tests', () => {
       // Get existing participants
       const { data: existing } = await client
         .from('conversation_participants')
-        .select('member_id')
+        .select('user_id')
         .eq('conversation_id', testConversationId);
 
-      const excludeIds = existing?.map(p => p.member_id) ?? [];
+      const excludeIds = existing?.map(p => p.user_id) ?? [];
 
       // Get a member not in this conversation
       const { data: member } = await client
@@ -497,7 +501,7 @@ describe('Conversation Participants Table - RLS Tests', () => {
         .from('conversation_participants')
         .insert({
           conversation_id: testConversationId,
-          member_id: member.id,
+          user_id: member.id,
         })
         .select()
         .single();
@@ -505,12 +509,13 @@ describe('Conversation Participants Table - RLS Tests', () => {
       expect(error).toBeNull();
       expect(newParticipant).toBeDefined();
 
-      // Clean up
+      // Clean up via composite key (no `id` column on this table).
       if (newParticipant) {
         await client
           .from('conversation_participants')
           .delete()
-          .eq('id', newParticipant.id);
+          .eq('conversation_id', newParticipant.conversation_id)
+          .eq('user_id', newParticipant.user_id);
       }
     });
   });
@@ -522,10 +527,18 @@ describe('Conversation Participants Table - RLS Tests', () => {
         return;
       }
 
-      // Create test participant
+      // Pick a member NOT already on this conversation so the INSERT
+      // doesn't trip the composite primary key.
+      const { data: existing } = await client
+        .from('conversation_participants')
+        .select('user_id')
+        .eq('conversation_id', testConversationId);
+      const excludeIds = existing?.map(p => p.user_id) ?? [];
+
       const { data: member } = await client
         .from('members')
         .select('id')
+        .not('id', 'in', `(${excludeIds.join(',')})`)
         .limit(1)
         .single();
 
@@ -535,26 +548,28 @@ describe('Conversation Participants Table - RLS Tests', () => {
         .from('conversation_participants')
         .insert({
           conversation_id: testConversationId,
-          member_id: member.id,
+          user_id: member.id,
         })
         .select()
         .single();
 
       if (!testParticipant) return;
 
-      // Remove them
+      // Remove them via composite key.
       const { error } = await client
         .from('conversation_participants')
         .delete()
-        .eq('id', testParticipant.id);
+        .eq('conversation_id', testParticipant.conversation_id)
+        .eq('user_id', testParticipant.user_id);
 
       expect(error).toBeNull();
 
-      // Verify deletion
+      // Verify deletion.
       const { data: deleted } = await client
         .from('conversation_participants')
         .select('*')
-        .eq('id', testParticipant.id)
+        .eq('conversation_id', testParticipant.conversation_id)
+        .eq('user_id', testParticipant.user_id)
         .single();
 
       expect(deleted).toBeNull();
