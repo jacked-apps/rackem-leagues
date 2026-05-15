@@ -201,6 +201,8 @@ Trying to support that variation with hardcoded variants is unsustainable: every
 
 **The hidden cost that makes this work.** Borders MUST be hard. Without strict Module borders, modularity collapses into one-big-blob "settings" no one understands. With strict borders, each Module is comprehensible in isolation, combinations are predictable, and broken combinations are diagnosable. Strict borders are the *price of admission* for the modular promise to function — not a limitation of it.
 
+**Architectural posture: design as if drag-and-drop; ship wizards.** The mental model for the architecture is a node-graph editor — Modules as puzzle pieces, typed contracts as connector shapes, Converters as adapters that bridge mismatched shapes. We are NOT planning to build that UI (node editors are hard to design well, and most LOs will never want one). The actual delivery is wizards (guided question-and-answer flows) and dials editors. **The drag-and-drop frame is discipline, not a roadmap** — it forces contracts to stay clean and Module borders to stay crisp, because in that frame sloppy contracts immediately break the visual UI. Whether the LO ever sees a node graph (probably never), a wizard (the plan), or a dials editor doesn't matter for the architecture; the *shape* of the system is the same either way.
+
 ### 2. Essence
 
 **A Module is a bounded unit of league-system behavior with a clear external contract and a defined design space inside its borders.**
@@ -473,6 +475,7 @@ These three rules together preserve the borders. Without them, the modular syste
 - *"Charts and formulas are interconvertible expressions of the same mapping."*
 - *"The system is an assembly line of Modules. Each station adds a piece to the end product."* — Ed, 2026-05-15. The Module-chain framing for I/O contracts.
 - *"A Module's identity is its act, not its variant inventory."* — the singular-vs-plural test from Module § 9.
+- *"Design as if drag-and-drop; ship wizards."* — Ed, 2026-05-15. The architectural posture: code so the system *could* be a node-graph UI even though the actual delivery is wizards. Forces clean contracts.
 
 ## Cold-read process
 
