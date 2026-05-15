@@ -182,6 +182,8 @@ This restructure is **policy-gated** and not yet propagated to the cheat sheet /
 
 Step 1 (this branch) **defines** — boundaries, definitions, categories. Where the current code diverges from the now-clarified definitions, that divergence is *noted, not fixed here*. Step 2+ branches do the code restructure to match. The docs describe the ideal; the code catches up.
 
+**Honest reminder.** These principles are *forward-looking*. The existing codebase was written before they existed. **You cannot follow a guideline that hasn't been written yet, and you cannot retroactively judge current code by principles we "intend to enforce going forward" by looking back.** Divergence in existing code is a given — not evidence of carelessness. The audit-and-align work to bring existing code into compliance is its own substantial undertaking and lives in step 2+ branches, not in this doc.
+
 ## Module — Deep Dive
 
 *Module is the load-bearing primitive of this whole architecture. Every other concept (Mechanism, System, Variant, Chart, Converter) is a kind of Module. This section codifies Module rigorously — Essence, Boundary, design space, contracts, and the rules for how Modules compose. Every per-kind deep-dive that follows builds on the definitions here. If anything in this section is wrong, everything downstream of it is wrong.*
@@ -224,8 +226,8 @@ Module has two properties that sound simple individually but are load-bearing on
 **Room to grow.** Within the strictly-bounded responsibility, the design space is *intentionally open*. New variants can be added. Parameters can be exposed. Sub-mechanisms can compose. The Module can become as powerful as it needs to be inside its borders without changing what those borders are.
 
 **Why both together:**
-- Strict-only suffocates. Without room to grow, a Module becomes a frozen artifact. Every new league requirement forces a new Module, the system fragments, anti-conflation work becomes useless because everything is its own special case.
-- Flexible-only dissolves. Without strict borders, "flexibility" means everything-can-do-everything, which means nothing has a meaningful contract. Two unrelated essences drift into the same Module. Anti-conflation work collapses.
+- Strict-only suffocates. Without room to grow, a Module becomes a frozen artifact. Every new league requirement forces a new Module, the system fragments into hundreds of one-off pieces, and Module borders stop helping (everything is its own special case anyway).
+- Flexible-only dissolves. Without strict borders, "flexibility" means everything-can-do-everything, which means nothing has a meaningful contract. Two unrelated ideas end up jammed in one Module, and the borders dissolve.
 - **Both together = the design pattern that allows growth without losing structure.** Every Module decision tests against both: does this preserve the borders AND keep the design space open?
 
 This is the operational restatement of *"Fix conflation, not constriction"* — the borders fix conflation; the open interior prevents constriction.
@@ -297,7 +299,7 @@ Worked example (the one we just did, May 2026):
 
 **Other drift signals:**
 - The Module's *name* no longer accurately describes everything inside it. (You find yourself adding parenthetical clarifiers: "Scoring Systems (which also includes win-condition logic).")
-- Two variants of the Module have non-overlapping I/O contracts. (One produces points, another produces a winner — different output types means different essences.)
+- Two variants of the Module produce **different KINDS of output** (not just different shapes of the same kind). Different shapes within one kind is healthy — Handicap Systems' variants legitimately produce Points integers, Percentage values, FargoRate integers; all are *handicap*-kind. But if one variant produces a handicap and another produces a winner declaration, those are different *kinds* — that's the drift smell. (When downstream needs a different shape than upstream gives, the answer is a Converter, not a Module split.)
 - Cross-Module references blur — the Module is being cited from contexts that don't share its essence.
 - Variant pages start defining things that should live in a different Module's territory.
 
@@ -400,7 +402,7 @@ Every Module's documentation page MUST contain the following elements. This is t
 2. **Boundary** — what is NOT in this Module. Adjacent Modules with bare cross-links. The anti-conflation classifier.
 3. **Design space** — within the bounded responsibility, what variation is possible. Variants index for parent Modules; parameters/sub-mechanisms for atomic Modules.
 4. **How it interacts (typed I/O)** — typed input contract, typed output contract, upstream/downstream Module references. The I/O declaration is mandatory; without it the Module cannot be composed against.
-5. **Implementation-vs-intent flag** — where current code state diverges from the architectural intent stated in this Module's design space, the divergence is *flagged* (not silently fixed in the doc). The flag uses the phrase *"implementation artifact, not architectural intent"* and links to the source-of-truth code anchors.
+5. **Implementation-vs-intent flag** — where current code state diverges from the architectural intent stated in this Module's design space, the divergence is *flagged* (not silently fixed in the doc; not pretended to be already aligned). The flag uses the phrase *"implementation artifact, not architectural intent"* and links to the source-of-truth code anchors. **If a Module's code already matches its intent, the section says so in one line and moves on** — the rule is "flag if divergent," not "always include a flag." Existing code predates these principles; divergence is expected, not evidence of carelessness. The audit-and-align pass that closes those gaps lives in step 2+ branches (see *Scope: this branch defines the ideal* above).
 
 **Why each element is required:**
 
@@ -419,6 +421,8 @@ Module borders are enforced through three rules:
 **Rule 2 — Intra-Module references may have brief inline glosses.** Variants within the same Module can be glossed inline ("Points handicap, the -2 to +2 integer system") because no boundary is crossed. The rule against inlining applies *across* boundaries, not within.
 
 **Rule 3 — Type contracts are enforced at every boundary.** A Module that consumes another Module's output MUST consume the declared output type. If two Modules' types don't naturally line up, insert a Converter — don't let the receiving Module silently accept a type it isn't contracted for. (See [Section 8: I/O contracts](#8-io-contracts-at-module-boundaries).)
+
+*These contracts are enforced, not optional. Three layers do the work in practice: the TypeScript build catches code-level mismatches, doc discipline catches design-stage violations, and cold-reads catch the subtle stuff the other two miss. The point is THAT the contracts hold — the layers are just how that happens.*
 
 These three rules together preserve the borders. Without them, the modular system collapses back into the one-big-blob it exists to escape.
 
@@ -476,6 +480,7 @@ These three rules together preserve the borders. Without them, the modular syste
 - *"The system is an assembly line of Modules. Each station adds a piece to the end product."* — Ed, 2026-05-15. The Module-chain framing for I/O contracts.
 - *"A Module's identity is its act, not its variant inventory."* — the singular-vs-plural test from Module § 9.
 - *"Design as if drag-and-drop; ship wizards."* — Ed, 2026-05-15. The architectural posture: code so the system *could* be a node-graph UI even though the actual delivery is wizards. Forces clean contracts.
+- *"You cannot follow a guideline that hasn't been written yet."* — Ed, 2026-05-15. Why existing code is expected to diverge from these principles; the audit-and-align pass closes the gap, not retroactive judgment.
 
 ## Cold-read process
 
