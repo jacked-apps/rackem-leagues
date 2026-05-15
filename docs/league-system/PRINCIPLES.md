@@ -329,6 +329,8 @@ Every Module declares a typed input and a typed output. This is the Module's ext
 
 **Think of the system as an assembly line.** Each Module is a station with a specific function — it accepts a piece of data, adds something to it (or transforms it), and passes the result down the line. The fully-configured Scoring System is the end product the line assembles. Type contracts are the connection points between stations: if station N's output type doesn't match station N+1's input type, the line breaks — unless you insert a Converter station to bridge the gap. Adding a new feature usually means designing a new station that fits cleanly into an existing connection point, not redesigning the line.
 
+**One Module = one external output type.** A Module's external contract has ONE output. That output may be a structured value with multiple fields (e.g., `{games_target_a, games_target_b}`), or a discriminated union with multiple shapes (per *Variant-specific output shapes* below) — but it is conceptually ONE thing: the *answer to the Module's job*. If you find yourself wanting a Module to produce two unrelated outputs (e.g., *"spits out both win-expectancy AND games-needed threshold"*), that's two Modules — one per output. Internal computation may produce intermediate values en route to the final output; those intermediates are implementation details, not part of the external contract. A Module that genuinely needs two distinct outputs gets restructured as a System composing two Modules (each with their own single output).
+
 **The Module is "stupid"; the variant is smart.** The Module's contract is a pure type signature: input type → output type. *How* the data arrives (DB query, external API call, in-memory lookup, LO inline entry) is internal-to-the-variant, not part of the Module's external promise. This separation matters: it lets the contract be checked statically without knowing implementation, and it lets variants be swapped without breaking downstream consumers.
 
 Three architectural layers:
@@ -644,7 +646,7 @@ Each level is a Module; only the *kind* (Mechanism / System / Chart / Converter)
 
 - **3v3 games-needed chart** — input: handicap difference; output: target wins per side
 - **5v5 games-needed chart** — input: handicap difference; output: target wins per side
-- **FargoRate formula** — input: rating difference; output: win-expectancy / games-needed value (a Chart in formula shape rather than discrete table shape)
+- **FargoRate formula** — input: rating difference; output: games-needed threshold value (a Chart in formula shape rather than discrete table shape)
 
 A Chart is *organized knowledge* with a contract. Data flowing between Modules has no contract; a Chart is data shaped into a Module by giving it a typed input/output interface.
 
@@ -655,7 +657,6 @@ Could we just call data-shaped Modules "Mechanisms" and skip the Chart label? Ye
 - **Passive signal.** When you read "Chart," you know it's a passive lookup, not an active processor. It doesn't *do* anything until queried.
 - **Reference-data signal.** Charts hold organized knowledge. Mechanisms do work; Charts provide the reference values that work consumes.
 - **Formula-or-discrete signal.** A Chart can be implemented as a discrete table OR a continuous formula (see [Section 4](#4-formula-first-charts-are-derived)). The "Chart" label covers both shapes.
-- **Reusable signal.** Multiple Mechanisms can consume the same Chart — the Chart doesn't care who's asking. (Mechanisms are reusable too, but the reusability of a passive lookup is structurally different from reusability of an active processor.)
 
 ### 3. Boundary: what's NOT a Chart
 
@@ -722,7 +723,7 @@ The Chart doesn't know what consumer asked it; it just answers. The Mechanism do
 
 - **Umbrella name** (the parent Module that wraps multiple Chart alternatives): plural noun phrase per [Module Deep Dive § 9](#9-naming-rule-plural-vs-singular) and the selection-pattern naming rule from [System § 4](#4-two-composition-patterns-selection-vs-chain) — *Threshold Charts* (plural; offers alternatives the league picks one of).
 - **Specific Chart names** — function-name style, describing what the Chart maps: *3v3-games-needed*, *5v5-games-needed*, *fargo-formula*. Lowercase-kebab for filenames; Title Case for display names.
-- **Formula vs discrete in names:** the name doesn't typically encode the shape (formula or discrete) — both shapes are valid Chart kinds. *fargo-formula* is named that way because "formula" is part of the canonical CSI/FargoRate vocabulary, not because the name needs to flag the shape.
+- **Formula vs discrete in names:** the name doesn't typically encode the shape (formula or discrete) — both shapes are valid Chart kinds.
 
 **Anti-conflation note.** "Chart" the kind shares the everyday-English word "chart." Be precise in docs: when you write *"the threshold chart"* lowercase, you mean any threshold-shaped Chart in the abstract. When you write *"the 3v3 Games-Needed Chart"* title-case, you mean the specific named Module. The capitalization signals the precision.
 
