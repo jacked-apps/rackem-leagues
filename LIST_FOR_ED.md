@@ -1880,3 +1880,88 @@ pass + merge).
 this entry from `LIST_FOR_ED.md` when the plan doc is written and
 committed. The plan doc + its branch will then be the working record.
 
+
+## 32. Pre-existing DB-Test Drift — 4 RLS Test Files Reference Dead Columns / Stale Embeds
+
+**Discovered:** 2026-05-15 during Phase 1 end-to-end test pass
+**Severity:** MEDIUM — tests are silently broken on main; nothing in
+production is wrong, but the test suite gives a false sense of
+coverage on the affected tables until fixed.
+
+**Branch suggested:** `fix-drifted-rls-tests` (a small, scoped branch
+— probably 30–60 min of mechanical edits).
+
+**Context:** When the Phase 1 messaging-overhaul work cleaned up the
+vitest config to stop sweeping `.worktrees/` (commit `41c4038`), the
+full `pnpm test:run` got a real signal for the first time in a while
+— and surfaced 15 failures spread across 4 non-messaging test files.
+None are new failures from messaging work; all are pre-existing main
+bugs where a migration renamed/dropped a column (or restructured a
+relationship) and the corresponding test file was never updated. The
+failures were hidden previously because the worktree noise drowned
+the signal.
+
+The messaging-side equivalent of this drift was fixed inline on the
+messaging branch (commit `61794ca`, file `messaging.rls.test.ts`).
+The 4 files below are non-messaging and were left for a separate fix
+branch per scope.
+
+**Files + drift:**
+
+1. `src/__tests__/database/matchLineups.rls.test.ts` (**7 failures**)
+   References `lineup_position` and `player_id` on `match_lineups`,
+   which were renamed by the Phase 2 modular-system rename family
+   (look at the `home_to_win` / `home_to_tie` rename migration
+   `20260502000002_prep_match_rpc_renamed_columns.sql` and related
+   commits — the lineup column names changed in that family).
+   Fix: read the current `match_lineups` schema in
+   `20251130010824_baseline.sql` (+ any later ALTERs), update the
+   test's `.select` / `.update` / `.insert` column names to match.
+
+2. `src/__tests__/database/operator.rls.test.ts` (**6 failures**)
+   PostgREST ambiguous-embedding error:
+   `PGRST201 — Could not embed because more than one relationship
+   was found for 'organizations' and 'members'`. Two FKs now connect
+   the tables: `members.organization_id` (placeholder org
+   attribution) AND `organizations.created_by` → `members.id` (LO
+   creator). PostgREST refuses to auto-pick.
+   Fix: in any `.select(\`*, members(...)\`)` style embed in the
+   test, disambiguate with the explicit FK syntax PostgREST
+   suggests: `members!members_organization_id_fkey(...)` or
+   `members!organizations_created_by_fkey(...)` depending on
+   which side the test means.
+
+3. `src/__tests__/database/matches.rls.test.ts` (**1 failure**)
+   References `match_date` column on `matches`, which doesn't exist
+   (the actual column is likely `scheduled_at` or similar — check
+   the baseline migration).
+   Fix: one-line rename in the INSERT around test file line 216.
+
+4. `src/__tests__/database/venues.rls.test.ts` (**1 failure**)
+   References `venues.address` column, which doesn't exist on the
+   current `venues` table (the venue-table-configuration migrations
+   restructured this).
+   Fix: read the current `venues` columns and update the test's
+   embed/select.
+
+**How to verify a fix:**
+
+```
+pnpm db:reset
+# paste database/dev_starting_point.sql in Studio SQL editor → Run
+pnpm test:run > test-output.log 2>&1
+```
+
+Expected after fix: zero failures across all 4 files.
+
+**Note on RLS posture:** Per project memory
+`project_rls_disabled_in_dev`, RLS is currently DISABLED on most
+tables in dev. So these files are functioning as schema-CRUD smoke
+tests today, not actual RLS enforcement tests. Fixing the column
+drift now means they'll start *actually testing* what they claim to
+as soon as the RLS-enablement project (LIST_FOR_ED #29) gets picked
+up. This work and the RLS enablement are independent — either can
+ship first.
+
+
+
