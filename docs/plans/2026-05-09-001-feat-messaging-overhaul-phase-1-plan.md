@@ -32,6 +32,7 @@ end-to-end test pass before merge.
 | 12 | **Leave button respects `cannot_leave`** | ⬜ not started |
 | 13 | **Emoji messages + composer picker (12-emoji curated set)** | ⬜ not started |
 | 14 | **Season-end trigger — release `cannot_leave` on completion** | ⬜ not started |
+| 15 | **Auto-rename propagation — team / league / season / org renames update matching chat titles** | ⬜ not started |
 
 **Branch:** `messaging-system-overhaul`.
 **Awaits:** Units 10–14 build + final end-to-end test pass (`pnpm db:reset && pnpm test:run` + manual dev-app smoke walkthrough).
@@ -851,6 +852,77 @@ mirror). Unit 5 (cannot_leave flag + roster triggers).
 
 **Verification:** DB test green; `pnpm db:reset` runs cleanly with the
 new migration applied.
+
+---
+
+- [ ] **Unit 15: Auto-rename propagation — team / league / season / org renames update matching chat titles**
+
+**Goal:** Every chat type took a snapshot of an entity name at creation
+time (`'<team> — Team Chat'`, `'<league> Captains Chat'`,
+`'<season> — Announcements'`, `'<organization> — Announcements'`).
+If the underlying entity is later renamed, those titles go stale. Same
+architectural pattern as Unit 5's roster + captain triggers, but for
+the *display name* attribute instead of membership / cannot_leave.
+
+Trigger-driven so it works regardless of which caller (UI, RPC, raw
+SQL) does the rename.
+
+**Dependencies:** Unit 1 (conversations table + scope_type/scope_id),
+Unit 3 (chat-creation utilities that established the title patterns),
+Unit 4 (season-activation trigger that wires them up).
+
+**Files:**
+- New migration: `supabase/migrations/<date>_messaging_phase1_auto_rename_chat_titles.sql`
+  — 4 trigger functions + 4 trigger statements (one per scope).
+- Test: `src/__tests__/database/messaging-phase1-auto-rename-triggers.rls.test.ts`
+  — DB-backed, follows the existing Phase 1 trigger-test pattern.
+
+**Approach:**
+
+For each of `teams`, `leagues`, `seasons`, `organizations`, create a
+`SECURITY DEFINER` function that updates the matching chat's `title`
+when the entity is renamed, scoped by `(scope_type, scope_id)`:
+
+| Trigger on | Column(s) watched | Updates | Title pattern |
+|---|---|---|---|
+| `teams` | `name` | `conversations` where `scope_type='team' AND scope_id=NEW.id AND conversation_type='team_chat'` | `NEW.name \|\| ' — Team Chat'` |
+| `leagues` | `division`, `day_of_week` | `conversations` where `scope_type='league' AND scope_id=NEW.id AND conversation_type='captains_chat'` | `COALESCE(NEW.division, NEW.day_of_week, 'League') \|\| ' Captains Chat'` |
+| `seasons` | `name` | `conversations` where `scope_type='season' AND scope_id=NEW.id AND conversation_type='announcements'` | `COALESCE(NEW.name, 'Season') \|\| ' — Announcements'` |
+| `organizations` | `name` | `conversations` where `scope_type='organization' AND scope_id=NEW.id AND conversation_type='announcements'` | `COALESCE(NEW.name, 'Organization') \|\| ' — Announcements'` |
+
+Each trigger:
+- `AFTER UPDATE OF <columns> ON <table>` with a `WHEN` clause guarding
+  on `OLD.<col> IS DISTINCT FROM NEW.<col>` so unrelated UPDATEs are
+  no-ops.
+- `SECURITY DEFINER`, explicit `search_path = public, pg_catalog`,
+  REVOKE PUBLIC / authenticated — same security shape as Unit 4/5
+  triggers.
+- Idempotent: re-firing with the same name is a no-op.
+
+**Test scenarios** (one DB-backed file with cases per scope):
+
+- Rename a team → team chat title updates; other teams' chats
+  untouched; participants + cannot_leave flags unaffected.
+- Rename a league → captains chat title updates per the
+  division/day_of_week priority rule.
+- Rename a season → that season's announcements chat title updates;
+  other seasons' announcement chats untouched.
+- Rename an organization → org-wide announcements chat title updates;
+  no per-season chats touched.
+- UPDATE that doesn't change the relevant column → no chat title
+  change (WHEN clause sanity check).
+- Manual conversations (`auto_managed = FALSE`, scope_type='none')
+  with the same scope_id are NOT touched — only auto-managed chats
+  matching the (scope_type, scope_id, conversation_type) tuple update.
+
+**Verification:** tests green; smoke check in dev — rename a team in
+the operator UI, refresh the conversation list, confirm the title
+updates without losing membership or messages.
+
+**Patterns to follow:** Unit 5 roster/captain triggers
+(`supabase/migrations/20260509000004_…roster_captain_triggers.sql`)
+for trigger shape, security wrapper, and the `IS DISTINCT FROM`
+guard idiom.
 
 ---
 
