@@ -527,7 +527,7 @@ If the Module's job is one functional task with no internal Modules, you're look
 
 - **Scoring System** (top-level) — composed of 8 component Modules (Handicap Systems, Handicap Mechanisms, Points System, Win Calculator, Threshold Charts, Team Geometry, Match Format, Standings & Tiebreakers).
 - **Handicap Mechanisms** (umbrella for one of the 8 components) — composed of alternative handicap-mechanism Mechanisms (`extra_games`, `start_points`, `race_length_adjustment`); the league picks one.
-- **Trigger** (when made explicit) — composed of an event-acceptor Mechanism, an event-detector Mechanism, a task-performer Mechanism, and a re-armer Mechanism.
+- **Trigger** — composed of an event-acceptor Mechanism, an event-detector Mechanism, a task-performer Mechanism, and a re-armer Mechanism.
 
 A System has BOTH an external contract (the System's input → output to its consumers) AND an internal composition (how its component Modules wire together). Both must be documented; both must be verified.
 
@@ -566,12 +566,12 @@ Systems compose their internal Modules in one of two patterns. Knowing which pat
 **Chain pattern** — the System composes N components in sequence; ALL are active, each contributing to the result.
 
 - *Scoring System* (top-level System) — chains 8 component Modules; all 8 run together as part of every match.
-- A *Trigger* (when explicit) — chains an event-acceptor → detector → performer → re-armer; all four run together as part of the trigger lifecycle.
+- A *Trigger* — chains an event-acceptor → detector → performer → re-armer; all four run together as part of the trigger lifecycle.
 - *Points System* — chains a per-game allocator + (optional) threshold trigger + (optional) initial-points + (optional) end-of-match aggregate.
 
 **Naming for chain-pattern Systems is singular** ("Scoring System," "Win Calculator," "Points System") — the singular reflects the *single act* the chain produces, even though multiple components contribute.
 
-**A single System can use both patterns.** The Scoring System uses chain composition (all 8 components run together) AND one of those 8 components — Handicap Mechanisms — internally uses selection (the league picks one of three). Recursion makes this natural.
+**Nesting is natural — chain composition often embeds selection slots.** A chain-pattern System's individual slots can themselves be selection-pattern Systems. The Scoring System uses chain composition (all 8 components run together) — and several of those slots are themselves selection-pattern Systems internally: Handicap Mechanisms (league picks one of three), Handicap Systems (league picks one of four), Threshold Charts (league picks one of several). The patterns aren't mutually exclusive at the System level; the natural case is chain composition WITH selection slots embedded at one or more stations.
 
 **The naming rule from Module § 9 reflects this distinction.** Plural names = selection pattern; singular names = chain pattern. The plural-vs-singular test is really asking *"which composition pattern does this System use?"*
 
