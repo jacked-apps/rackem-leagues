@@ -124,7 +124,7 @@ This is the core unit of the whole architecture, and it directly embodies the pr
 - **System** — a Module that is a composition of other Modules (a *set*), with rules for how they fit together. (The Scoring System; the Handicap System; the Points System.) **When you need a word for "a set of Modules," the word is _System_.**
 - **Variant** — a Module serving as one of several (currently) mutually-exclusive options within a parent Module. (Points is a Variant within the Handicap System.)
 - **Chart / Formula** — a Module used as a *tool* by another Module to do a computation. A chart is discrete; a formula is continuous; they are interconvertible.
-- **Converter** — a Module whose entire job is bridging two mismatched type contracts so two otherwise-incompatible Modules can compose. (Example: a `Points → Fargo equivalent` Converter would let a Fargo-calibrated Threshold Chart consume a Points handicap. Design-space addition; no current code instances.)
+- **Converter** — a Module whose entire job is bridging two mismatched type contracts so two otherwise-incompatible Modules can compose. (Example: a `Points → Fargo equivalent` Converter would let a Fargo-calibrated Threshold Chart consume a Points handicap. Committed roadmap; currently zero implementations — required for the modular system to deliver on its orthogonality promise.)
 
 So "Module" is the noun; these are its kinds/roles. **Mechanism** and **System** are the two reached for most — *atom* vs. *set*. **Converter** is the kind that makes Module orthogonality real wherever types don't naturally line up — without Converters, "any A pairs with any B" claims are overstated. See the Module — Deep Dive section below for the full treatment, and the per-kind deep-dives that follow it.
 
@@ -203,7 +203,7 @@ Trying to support that variation with hardcoded variants is unsustainable: every
 
 ### 2. Essence
 
-**A Module is a bounded unit of league-system behavior or knowledge with a clear external contract and a defined design space inside its borders.**
+**A Module is a bounded unit of league-system behavior with a clear external contract and a defined design space inside its borders.**
 
 That sentence carries the architecture. Three things to notice:
 
@@ -234,20 +234,20 @@ Not everything in the league system is a Module. Things that look Module-ish but
 
 - **Data is not a Module.** A handicap value (485), a game record (winner/loser/balls-pocketed), a points total (143) — these are data. Modules *consume* data, *produce* data, *transform* data. Data has a type but no responsibility. (See [Section 8: I/O contracts](#8-io-contracts-at-module-boundaries).)
 - **A single code file is not necessarily a Module.** A file might implement part of a Module, an entire Module, or multiple Modules. The file system is one possible *manifestation* of Modules; it is not the test for "what is a Module."
-- **A function is not a Module.** Functions are implementation tools. A Module might be implemented as one function, many functions, or none (a config-only Module). The function is not the Module; the bounded responsibility + contract is.
+- **A function is not (automatically) a Module.** Same shape, *context* determines. A function might implement part of a Module, an entire Module, or be unrelated to the modular system altogether. A function that fits inside this system AND serves a place in the chain *also* earns the title Module — and with it the Module-level requirements (typed external contract, bordered responsibility, design-space documentation). Outside the system → just a function. Inside and serving → both function (in code) and Module (in the architecture). The bounded responsibility + contract is what promotes a function into a Module, not the function itself.
 - **A UI element is not a Module.** A wizard step, a button, a form field — these are UI projections of Module choices. A wizard step that lets the LO pick a Handicap System is *driven by* the Handicap System Module; it is not itself a Module.
 - **A database column is not a Module.** `points_calculator` is a column. The Points System Module *uses* that column to persist its variant choice; the Module isn't the column.
-- **An event is not a Module.** "Game completed," "match scored" — these are events. Modules *respond to* events or *produce* events. The event is data flowing through the system, not a Module.
+- **An event is not a Module.** "Game completed," "match scored" — these are events, which are *a kind of data* (timed, labeled, often carrying a payload). Modules *respond to* events or *produce* events. Events flow through the system between Modules, just like other data.
 - **A configuration value or parameter is not a Module.** `winner_points = 10` is a parameter inside a Module's variant. The parameter is data the Module reads; it isn't itself a Module.
 - **A brand name is not a Module.** "BCAPL," "FargoRate," "APA" — these are brand names. They may appear *inside* a Module (e.g., FargoRate is the source-of-record name for a Handicap Systems variant), but the brand isn't the Module.
 
-The pattern: a Module is a bounded unit of *responsibility* (or *organized knowledge*, in the case of Charts). Data, code structure, UI elements, brand names — those are expressions of, inputs to, or implementation details inside a Module. Not Modules themselves.
+The pattern: a Module is a bounded unit of *responsibility*. Data, code structure, UI elements, brand names — those are expressions of, inputs to, or implementation details inside a Module. Not Modules themselves.
 
 ### 5. Tweak classification: parameter, variant, or new Module?
 
 When an LO (or anyone) wants to "tweak" Module X, the tweak falls into one of three categories. **Test in this order — the first match wins.**
 
-**Layer 1 — Parameter / setting.** Same mechanic, different number/range/selection. The mechanic is unchanged; only a value moves.
+**Layer 1 — Parameter / setting.** Same mechanic (the way the Module's work gets done), different number/range/selection. The mechanic is unchanged; only a value moves.
 
 | Example tweak | Why it's a parameter |
 |---|---|
@@ -322,6 +322,8 @@ Modules nest inside Modules. A System-kind Module composes other Modules. A Mech
 
 Every Module declares a typed input and a typed output. This is the Module's external contract — its promise to anything that uses it. Modules compose by chaining contracts: Module A's output type becomes Module B's input type; if the types don't line up, they don't compose without a Converter.
 
+**Think of the system as an assembly line.** Each Module is a station with a specific function — it accepts a piece of data, adds something to it (or transforms it), and passes the result down the line. The fully-configured Scoring System is the end product the line assembles. Type contracts are the connection points between stations: if station N's output type doesn't match station N+1's input type, the line breaks — unless you insert a Converter station to bridge the gap. Adding a new feature usually means designing a new station that fits cleanly into an existing connection point, not redesigning the line.
+
 **The Module is "stupid"; the variant is smart.** The Module's contract is a pure type signature: input type → output type. *How* the data arrives (DB query, external API call, in-memory lookup, LO inline entry) is internal-to-the-variant, not part of the Module's external promise. This separation matters: it lets the contract be checked statically without knowing implementation, and it lets variants be swapped without breaking downstream consumers.
 
 Three architectural layers:
@@ -370,6 +372,8 @@ Module names (folders, page titles, prose references) follow a real distinction:
 
 **Edge case (Win Calculator).** Today Win Calculator is primitive (a binary `win_condition`). The future picture (axis selection + termination semantics + tie resolution + cross-axis conditions + per-game evaluation cadence) hints that Win Calculator might *grow into* a composition of sub-Modules. Even so, the wrapping concept is one act ("decide the winner") — singular fits. If the future composition produces multiple distinct decision-rule mechanisms that LOs pick between, a rename to plural would be on the table.
 
+**The rule admits friction.** For some Modules both readings genuinely defend — Win Calculator can be argued plural ("each setup is its own win calculator") OR singular ("one wrapping concept that declares a winner"). When both readings work, **prefer the framing that names the wrapping concept's essence as a single act over the framing that names the coexistence of alternatives.** That framing usually wins because the Module's identity is its *act*, not its *variant inventory*. A Module that one day has 3 variants and the next day has 7 hasn't changed *what it is*; whether the variants are 3 or 7 is interior detail.
+
 ### 10. Kinds of Module — pointer
 
 Five kinds are recognized today. Each gets its own deep-dive section after this one (deep-dives pending — Module first, then Mechanism / System / Variant / Chart / Converter).
@@ -380,7 +384,7 @@ Five kinds are recognized today. Each gets its own deep-dive section after this 
 | **System** | Set Module — composes other Modules into a configured whole | Handicap System, Scoring System (top-level), Points System |
 | **Variant** | Role within a parent Module — one of several mutually-exclusive options | FargoRate (variant of Handicap Systems), 10-Point (variant of Points System) |
 | **Chart** | Tool Module — data-shaped lookup or formula consumed by another Module | 3v3-games-needed chart, FargoRate formula chart |
-| **Converter** | Adapter Module — translates one type into another so two otherwise-incompatible Modules can compose | Points→Fargo (design-space addition; no current code instances) |
+| **Converter** | Adapter Module — translates one type into another so two otherwise-incompatible Modules can compose | Points→Fargo (committed roadmap; currently zero implementations — Converter capability is required for the modular system to deliver on its orthogonality promise) |
 
 The two reached for most are Mechanism and System — the *atom vs set* distinction. Variant is a *role* description (a Module that happens to be one option within a parent). Chart is *data-shaped* (a lookup table or formula another Module consumes). Converter is the *adapter* that makes orthogonality real where types don't naturally line up.
 
@@ -467,6 +471,8 @@ These three rules together preserve the borders. Without them, the modular syste
 - *"Reading this cold?"* — the self-bootstrapping callout convention on every variant page.
 - *"Variants are peers — no canonical, no default."*
 - *"Charts and formulas are interconvertible expressions of the same mapping."*
+- *"The system is an assembly line of Modules. Each station adds a piece to the end product."* — Ed, 2026-05-15. The Module-chain framing for I/O contracts.
+- *"A Module's identity is its act, not its variant inventory."* — the singular-vs-plural test from Module § 9.
 
 ## Cold-read process
 
