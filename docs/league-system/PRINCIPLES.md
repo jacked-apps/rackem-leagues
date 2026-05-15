@@ -118,15 +118,16 @@ This is the core unit of the whole architecture, and it directly embodies the pr
 
 ### Kinds of Module
 
-"Mechanism," "System," "Variant," "Chart," and "Converter" are not separate things from Modules — they describe **what kind of Module** something is, or **what role** it plays:
+"Mechanism," "System," "Chart," and "Converter" are not separate things from Modules — they describe **what kind of Module** something is structurally:
 
 - **Mechanism** — a Module that performs a single functional task (an *atom*). (`extra_games`, a threshold computation, a trigger.)
 - **System** — a Module that is a composition of other Modules (a *set*), with rules for how they fit together. (The Scoring System; the Handicap System; the Points System.) **When you need a word for "a set of Modules," the word is _System_.**
-- **Variant** — a Module serving as one of several (currently) mutually-exclusive options within a parent Module. (Points is a Variant within the Handicap System.)
 - **Chart / Formula** — a Module used as a *tool* by another Module to do a computation. A chart is discrete; a formula is continuous; they are interconvertible.
 - **Converter** — a Module whose entire job is bridging two mismatched type contracts so two otherwise-incompatible Modules can compose. (Example: a `Points → Fargo equivalent` Converter would let a Fargo-calibrated Threshold Chart consume a Points handicap. Committed roadmap; currently zero implementations — required for the modular system to deliver on its orthogonality promise.)
 
-So "Module" is the noun; these are its kinds/roles. **Mechanism** and **System** are the two reached for most — *atom* vs. *set*. **Converter** is the kind that makes Module orthogonality real wherever types don't naturally line up — without Converters, "any A pairs with any B" claims are overstated. See the Module — Deep Dive section below for the full treatment, and the per-kind deep-dives that follow it.
+So "Module" is the noun; these are its **four kinds**. Every Module is exactly one of those four. **Mechanism** and **System** are the two reached for most — *atom* vs. *set*. **Converter** is the kind that makes Module orthogonality real wherever types don't naturally line up — without Converters, "any A pairs with any B" claims are overstated. See the Module — Deep Dive section below for the full treatment, and the per-kind deep-dives that follow it.
+
+> **"Variant" is casual shorthand, not a kind.** You'll see "variant" used loosely throughout these docs to mean "a Module the parent offers as one of several alternatives" (e.g., *"the Points variant of Handicap Systems"*). That's fine as everyday vocabulary, but **Variant is NOT a separate architectural kind** — there are only the four kinds above. Whether a Module is offered as an LO-pickable alternative is documented at the parent level, not as a structural property of the Module itself.
 
 ### How Modules connect: data flows between them
 
@@ -186,7 +187,7 @@ Step 1 (this branch) **defines** — boundaries, definitions, categories. Where 
 
 ## Module — Deep Dive
 
-*Module is the load-bearing primitive of this whole architecture. Every other concept (Mechanism, System, Variant, Chart, Converter) is a kind of Module. This section codifies Module rigorously — Essence, Boundary, design space, contracts, and the rules for how Modules compose. Every per-kind deep-dive that follows builds on the definitions here. If anything in this section is wrong, everything downstream of it is wrong.*
+*Module is the load-bearing primitive of this whole architecture. Every Module is exactly one of four kinds: Mechanism, System, Chart, or Converter. This section codifies Module rigorously — Essence, Boundary, design space, contracts, and the rules for how Modules compose. Every per-kind deep-dive that follows builds on the definitions here. If anything in this section is wrong, everything downstream of it is wrong.*
 
 ### 1. Why a modular system exists
 
@@ -221,7 +222,7 @@ Module is a CONCEPT we apply to organize the system, not a physical thing in the
 
 Module has two properties that sound simple individually but are load-bearing only when held *together*:
 
-**Strict borders.** The Module's responsibility is precisely defined. Anything that doesn't fit inside that responsibility is OUT — full stop. No fudging, no "well, kinda also." When something doesn't fit, it forces the question: is this a parameter? a new variant? a new Module? (See [Section 5: Tweak classification](#5-tweak-classification-parameter-variant-or-new-module).) The strictness is what makes the *type contract* trustworthy and what keeps two unrelated essences from drifting into the same Module.
+**Strict borders.** The Module's responsibility is precisely defined. Anything that doesn't fit inside that responsibility is OUT — full stop. No fudging, no "well, kinda also." When something doesn't fit, it forces the question: is this a parameter? a new variant? a new Module? (See [Section 5: Tweak classification](#5-tweak-classification-parameter-new-mechanism-or-new-module).) The strictness is what makes the *type contract* trustworthy and what keeps two unrelated essences from drifting into the same Module.
 
 **Room to grow.** Within the strictly-bounded responsibility, the design space is *intentionally open*. New variants can be added. Parameters can be exposed. Sub-mechanisms can compose. The Module can become as powerful as it needs to be inside its borders without changing what those borders are.
 
@@ -247,7 +248,7 @@ Not everything in the league system is a Module. Things that look Module-ish but
 
 The pattern: a Module is a bounded unit of *responsibility*. Data, code structure, UI elements, brand names — those are expressions of, inputs to, or implementation details inside a Module. Not Modules themselves.
 
-### 5. Tweak classification: parameter, variant, or new Module?
+### 5. Tweak classification: parameter, new Mechanism, or new Module?
 
 When an LO (or anyone) wants to "tweak" Module X, the tweak falls into one of three categories. **Test in this order — the first match wins.**
 
@@ -262,15 +263,15 @@ When an LO (or anyone) wants to "tweak" Module X, the tweak falls into one of th
 
 Implementation: the variant exposes configurable parameters; the LO adjusts in the wizard. **No new code; no new variant; no new Module.**
 
-**Layer 2 — New variant within the existing Module.** The *shape* of the mechanic changes, but the essence still belongs to the same Module.
+**Layer 2 — New Mechanism within the existing parent Module.** A new alternative implementation that fits inside the same parent Module. Different mechanic shape, but the essence still belongs to the same parent.
 
-| Example tweak | Why it's a new variant |
+| Example tweak | Why it's a new Mechanism in the same parent |
 |---|---|
-| 17-Point Scoring (winner gets `10 + opponent_remaining`, formula instead of integer) | Mechanic shape changes (formula vs integer), but essence (per-game point allocation) is still Points System |
-| A new "single-elimination per match" pairing rule | Mechanic shape changes, but essence (pairing format) is still Match Format |
-| A new handicap encoding (e.g., USAPL Skill Levels) | Mechanic shape changes (different range, different math), but essence (encode player strength) is still Handicap Systems |
+| 17-Point Scoring (winner gets `10 + opponent_remaining`, formula instead of integer) | Different mechanic shape (formula vs integer), but it's still a per-game-point-allocation Mechanism — fits inside Points System |
+| A new "single-elimination per match" pairing rule | Different mechanic shape, but still a pairing Mechanism — fits inside Match Format |
+| A new handicap encoding (e.g., USAPL Skill Levels) | Different mechanic shape (different range, different math), but still a handicap-encoding Mechanism — fits inside Handicap Systems |
 
-Implementation: new variant page + new code path inside the same Module. Existing variants are untouched. **No new Module.**
+Implementation: new Mechanism page + new code path inside the same parent Module. Existing Mechanisms in that parent are untouched. **No new Module.**
 
 **Layer 3 — New Module.** A new *kind of concern* no existing Module covers.
 
@@ -284,7 +285,7 @@ Implementation: new Module folder, new design-space mapping, new wizard surface 
 
 **The walkthrough in `README.md#how-to-classify-a-new-idea` only handles Layer 3 (new Module).** Most day-to-day LO tweaks are Layer 1 or 2; both deserve the same anti-conflation rigor.
 
-**Module-design implication.** A Module's *internal* design determines how often LOs hit Layer 2 vs Layer 1. A Module designed for *composable sub-mechanisms* (Points System, with its per-game allocator + threshold trigger + initial points + end-of-match aggregate) pushes more tweaks into the parameter/composition layer (Layer 1), fewer into new-variant territory (Layer 2). A Module designed for *mutually-exclusive variants* (Handicap Mechanisms with extra_games / start_points / race_length_adjustment) pushes more tweaks toward new variants. Neither is wrong — the design choice should match the Module's expected variation pattern.
+**Module-design implication.** A parent Module's *internal* design determines how often LOs hit Layer 2 vs Layer 1. A parent designed for *composable sub-Mechanisms* (Points System, with its per-game allocator + threshold trigger + initial points + end-of-match aggregate) pushes more tweaks into the parameter/composition layer (Layer 1), fewer into new-Mechanism territory (Layer 2). A parent designed for *mutually-exclusive alternatives* (Handicap Mechanisms with extra_games / start_points / race_length_adjustment) pushes more tweaks toward new Mechanisms. Neither is wrong — the design choice should match the parent's expected variation pattern.
 
 ### 6. Drift / split detection
 
@@ -305,7 +306,7 @@ Worked example (the one we just did, May 2026):
 
 **When you spot drift:**
 1. Name both essences explicitly.
-2. Decide if both belong in the system (sometimes one is just a misclassification — see [Section 5](#5-tweak-classification-parameter-variant-or-new-module)).
+2. Decide if both belong in the system (sometimes one is just a misclassification — see [Section 5](#5-tweak-classification-parameter-new-mechanism-or-new-module)).
 3. If both belong, plan a split — a new sibling Module for the second essence, with the first Module narrowed to its single essence.
 4. Update cross-references; verify no inline definitions cross the new boundary.
 
@@ -315,7 +316,7 @@ A split is policy-gated under Principle 7 (canonical-docs-as-policy) — naming 
 
 Modules nest inside Modules. A System-kind Module composes other Modules. A Mechanism-kind Module may have sub-Mechanisms. The Scoring System (top-level Module) composes the 8 component Modules; the Handicap Systems Module contains 4 variants (each a Module); each variant may have parameter sub-structures.
 
-**This is why we need a universal noun.** Without "Module" as the umbrella term, every level of nesting would force a new word: "the Mechanism that contains a Mechanism inside the System inside the Scoring System..." The recursive structure becomes unparseable. With "Module," every node in the tree is a Module — only the *kind* (Mechanism / System / Variant / Chart / Converter) varies by node.
+**This is why we need a universal noun.** Without "Module" as the umbrella term, every level of nesting would force a new word: "the Mechanism that contains a Mechanism inside the System inside the Scoring System..." The recursive structure becomes unparseable. With "Module," every node in the tree is a Module — only the *kind* (Mechanism / System / Chart / Converter) varies by node.
 
 **Two practical consequences:**
 
@@ -380,21 +381,22 @@ Module names (folders, page titles, prose references) follow a real distinction:
 
 ### 10. Kinds of Module — pointer
 
-Five kinds are recognized today. Each gets its own deep-dive section after this one (deep-dives pending — Module first, then Mechanism / System / Variant / Chart / Converter).
+Four kinds are recognized. Every Module is exactly one of them. Each kind gets its own deep-dive section after this one (deep-dives pending — Module first, then Mechanism / System / Chart / Converter).
 
 | Kind | One-liner essence | Example |
 |---|---|---|
 | **Mechanism** | Atomic Module — does one specific thing | `extra_games`, `start_points`, a threshold computation |
 | **System** | Set Module — composes other Modules into a configured whole | Handicap System, Scoring System (top-level), Points System |
-| **Variant** | Role within a parent Module — one of several mutually-exclusive options | FargoRate (variant of Handicap Systems), 10-Point (variant of Points System) |
 | **Chart** | Tool Module — data-shaped lookup or formula consumed by another Module | 3v3-games-needed chart, FargoRate formula chart |
 | **Converter** | Adapter Module — translates one type into another so two otherwise-incompatible Modules can compose | Points→Fargo (committed roadmap; currently zero implementations — Converter capability is required for the modular system to deliver on its orthogonality promise) |
 
-The two reached for most are Mechanism and System — the *atom vs set* distinction. Variant is a *role* description (a Module that happens to be one option within a parent). Chart is *data-shaped* (a lookup table or formula another Module consumes). Converter is the *adapter* that makes orthogonality real where types don't naturally line up.
+The two reached for most are Mechanism and System — the *atom vs set* distinction. Chart is *data-shaped* (a lookup table or formula another Module consumes). Converter is the *adapter* that makes orthogonality real where types don't naturally line up.
+
+> **Reminder: "Variant" is not a fifth kind.** It's casual shorthand for "a Module the parent offers as one of several alternatives." See the *"Variant" is casual shorthand* note in the Architectural Model's Kinds-of-Module subsection above.
 
 ### 11. The Module-page pattern
 
-Every Module's documentation page MUST contain the following elements. This is the universal shape — whether the Module is a System, Mechanism, Variant, Chart, or Converter. The full Module README template at *Concrete rules / templates → Module README template* below is one specific expression of these required elements; variant pages are another (with `Reading this cold?` callouts added). The required elements are universal; the section structure adapts to the Module's place in the hierarchy.
+Every Module's documentation page MUST contain the following elements. This is the universal shape — whether the Module is a System, Mechanism, Chart, or Converter. The full Module README template at *Concrete rules / templates → Module README template* below is one specific expression of these required elements; the per-Mechanism (or per-Chart) "variant pages" inside a parent Module are another (with `Reading this cold?` callouts added). The required elements are universal; the section structure adapts to the Module's place in the hierarchy.
 
 **Required elements (every Module page):**
 
@@ -460,11 +462,9 @@ A Module is NOT a Mechanism if:
 - **It's data-shaped** (a lookup table or formula consumed by another Module) → it's a **Chart**.
 - **It bridges mismatched type contracts** so two otherwise-incompatible Modules can compose → it's a **Converter**.
 
-**Important: Variant is a different category than Mechanism / System / Chart / Converter.** The other four are **kinds** (structural categories — what the Module IS structurally). Variant is a **role** (a position within a parent Module — one of N options the parent offers).
+A Module is exactly one of the four kinds. A Mechanism is never also a System (you can't be both an atom and a composition simultaneously); the four kinds are mutually exclusive.
 
-A single Module can be **both a kind AND a role at the same time.** Example: `extra_games` is a **Mechanism** (kind — atomic, single functional task) AND a **Variant** (role — one of three currently-shipping Handicap Mechanisms). FargoRate is a **Mechanism** (kind — does the rating math) AND a **Variant** (role — one of four Handicap Systems variants). The kind tells you what it IS; the role tells you what position it plays in a larger structure.
-
-So the Mechanism boundary is about the *kind* dimension. A Mechanism is never also a System (you can't be both an atom and a composition simultaneously), but it can readily be a Variant (atom playing the role of one-of-N within a parent).
+**On the word "variant":** you'll see it used loosely throughout these docs (e.g., *"the FargoRate variant of Handicap Systems"*) as everyday shorthand for "a Mechanism the parent Module offers as one of several alternatives." That's fine as casual vocabulary — but **Variant is NOT a separate architectural kind alongside Mechanism / System / Chart / Converter**. FargoRate is a Mechanism, full stop; the fact that Handicap Systems offers it as one of four alternatives is just a description of FargoRate's position in that parent, not a structural property of FargoRate itself.
 
 ### 4. The 2x2 axis-and-shape grid (handicap-related Mechanisms)
 
@@ -501,7 +501,7 @@ Currently-shipping Handicap Mechanism variants by mode flag:
 
 `extra_games` and `race_length_adjustment` sit in the same cell — same fundamental Mechanism shape, different mode flags.
 
-**Mode flags are part of the Mechanism's design space.** Adding a new mode flag is opening up a new dimension along which variants can differ; adding a new value to an existing flag is the variant route from the Module deep-dive's tweak classification.
+**Mode flags are part of the Mechanism's design space.** Adding a new mode flag dimension is opening up a new way alternatives can differ; adding a new value to an existing flag is the *new-Mechanism* route from the Module deep-dive's tweak classification (Layer 2).
 
 ### 6. Triggers
 
@@ -551,7 +551,7 @@ The Mechanism stays "stupid" about its place in the larger structure. This is wh
 - **Umbrella name** (the Module that contains Mechanism atoms as variants): plural noun phrase per [Module Deep Dive § 9](#9-naming-rule-plural-vs-singular) — *Handicap Mechanisms*, not *Handicap Mechanism*.
 - **Domain-canonical names:** if a Mechanism corresponds to an externally-defined concept with a published name (CSI's "10-Point Scoring System," APA's "Equalizer rating system"), preserve the canonical name as the display label.
 
-**Anti-conflation note on naming.** "Mechanism" the kind is the same word as "mechanism" the everyday-English noun. Be precise in docs: when you write *"the threshold mechanism"* lowercase, you mean any threshold-shaped mechanism. When you write *"the Threshold Mechanism Variant"* title-case, you mean a specific named Module. The capitalization signals the precision.
+**Anti-conflation note on naming.** "Mechanism" the kind is the same word as "mechanism" the everyday-English noun. Be precise in docs: when you write *"the threshold mechanism"* lowercase, you mean any threshold-shaped mechanism in the abstract. When you write *"the Threshold Mechanism"* title-case, you mean a specific named Module. The capitalization signals the precision.
 
 ## Concrete rules / templates
 
