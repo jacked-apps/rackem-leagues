@@ -443,10 +443,10 @@ If you can describe a Module's job in a single sentence — *"computes a player'
 If describing the job requires *"first this, then that, then this other thing, with rules for how they fit together,"* you're looking at a System.
 
 **Examples of Mechanisms:**
-- `extra_games`, `start_points`, `race_length_adjustment` (Handicap Mechanism atoms)
-- `accumulated_per_game` (per-game point allocator)
-- A threshold trigger that awards bonus points when a games-played milestone is reached
-- An end-of-match aggregate calculator
+- `extra_games`, `start_points`, `race_length_adjustment` (Handicap Mechanism atoms — each takes a handicap difference, produces one benchmark output)
+- `accumulated_per_game` (per-game point allocator — takes game data, produces per-side points)
+- A FargoRate handicap calculator (`person → handicap value`)
+- An end-of-match aggregate calculator (takes match data, produces a final per-side total)
 
 ### 2. Why "Mechanism" is its own kind
 
@@ -483,9 +483,9 @@ Per [Module Deep Dive § 8](#8-io-contracts-at-module-boundaries), every Module 
 - **Input:** typically data flowing from upstream (an upstream Mechanism's output, a Chart's lookup result, or a configuration value).
 - **Output:** the Mechanism's specific work product — a transformed value, a benchmark declaration, a points allocation, an event.
 
-Because Mechanisms don't compose other Modules, their contract is **direct**: input X → output Y, no internal complexity to verify against. This is in contrast to a System, whose contract has to verify both the external promise AND the internal chain of contracts holds.
+Because Mechanisms don't compose other Modules, their contract is **direct**: input X → output Y, with **no internal Module contracts to chain or verify**. This is in contrast to a System, whose contract has to verify both the external promise AND the internal chain of Module contracts holds. (A Mechanism may have plenty of internal logic, steps, and state — see [Section 1](#1-essence) — but no internal *named Modules*, so no internal contracts to verify.)
 
-Mechanisms typically have **simpler contracts than Systems** (one in, one out) — but the same precision rules apply: declare the input type, declare the output type, name the category if outputs vary by mode/variant.
+Mechanisms typically have **simpler contracts than Systems** (one external in, one external out) — but the same precision rules apply: declare the input type, declare the output type, name the category if outputs vary by mode.
 
 ### 6. How Mechanisms compose into Systems
 
