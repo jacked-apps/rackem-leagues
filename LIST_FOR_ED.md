@@ -1720,3 +1720,52 @@ handles arbitrary group chats. All this feature needs is:
 
 **Out of scope for Phase 1.** No schema change required when this lands.
 
+
+## 30. Messaging Phase 2 — Plan Doc Needs Writing
+
+**Discovered:** 2026-05-15 while triaging post-Phase-1 next steps
+**Severity:** MEDIUM — not blocking, but Phase 2 is the next significant
+chunk of the messaging overhaul and there's no plan doc for it yet.
+
+**Context:** Phase 1 of the messaging overhaul is code-complete (units
+1–9 shipped; units 10–14 added 2026-05-15 for polish, pending build +
+final test). Phase 2 (push notifications, per-chat tri-state controls,
+quiet hours, rate-limit, pause picker, `@mention` notification
+routing) is fully described in the requirements brainstorm
+(`docs/brainstorms/2026-04-21-messaging-system-overhaul-requirements.md`
+§ "Phase 2 — Notification subsystem") but has **no plan doc** in
+`docs/plans/` yet.
+
+**Why this matters:** Phase 2 is what makes the messaging system
+actually *trustworthy* — without push, mutes, rate-limits, and pause
+controls, every new message tries to interrupt the user. The
+hypothesis Phase 3 is supposed to test ("captains will use this over
+SMS") only really tests fairly once Phase 2 has tamed notification
+behavior. So this is *important*, not just *next*.
+
+**What's needed:**
+
+1. Read the brainstorm's Phase 2 section as the source of truth.
+2. Write a `docs/plans/<date>-001-feat-messaging-overhaul-phase-2-plan.md`
+   following the structure of the Phase 1 plan (Overview / Requirements
+   Trace / Scope Boundaries / Open Questions / Implementation Units
+   etc.). Use `ce-plan` if appropriate, or write directly.
+3. Particular open questions from the brainstorm that the plan must
+   close:
+   - **Dispatch worker shape** (single Edge Function subscribing to
+     INSERTs vs. DB-trigger + pg_net → worker?).
+   - **APNs / FCM coordination with Jack** (mobile partner) — who
+     holds the push-tokens table of record, who handles stale-token
+     cleanup.
+   - **pg_cron vs. Supabase Scheduled Edge Function** for any
+     scheduled work (also Phase 3 question).
+4. Schema items deferred from Phase 1 that land in Phase 2:
+   - `members.notifications_paused_until` (the pause picker UI).
+
+**When to start:** after Phase 1 ships (units 10–14 built + tests
+pass + merge).
+
+**Files this entry should disappear from once a plan exists:** delete
+this entry from `LIST_FOR_ED.md` when the plan doc is written and
+committed. The plan doc + its branch will then be the working record.
+

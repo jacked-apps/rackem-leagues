@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-14 (Messaging Phase 1 / Unit 9 redesign — moved the profanity onboarding modal from app first-load to first Messages-page open, and reframed it as a one-time, defaulted-ON prompt: "the filter is on by default — want to turn it off?" Every exit path (incl. dismiss) records a choice so it never reappears. Deleted `AuthOnboarding.tsx` (App.tsx mount); the modal now mounts inside `Messages.tsx`. `ProfanityOnboardingModal` rewritten with the new copy + two-button design; tests updated to 7 cases.)
+> **Last Updated**: 2026-05-15 (Messaging Phase 1 polish triage — appended Units 10–14 to the Phase 1 plan doc (date dividers, value-prop empty state, leave-respects-`cannot_leave`, emoji messages + 12-emoji picker, season-end `cannot_leave` release trigger). Added a Status table at the top of the plan; flipped Units 1–9 checkboxes to done. Added a "Messaging — Future Polish" BACKLOG NOTES section to `MVP_FEATURE_LIST.md` for the parked items (reactions / mute UI / typing indicators / pinned / @mentions / custom 9-ball etc.) with reasoning. Added `LIST_FOR_ED.md` #30 pointing at the Phase 2 plan doc that needs writing.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 

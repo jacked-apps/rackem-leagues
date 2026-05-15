@@ -1,13 +1,40 @@
 ---
 title: "feat: Messaging Overhaul — Phase 1 (Foundations)"
 type: feat
-status: active
+status: in-progress
 date: 2026-05-09
 deepened: 2026-05-09
+last-status-update: 2026-05-15
 origin: docs/brainstorms/2026-04-21-messaging-system-overhaul-requirements.md
 ---
 
 # feat: Messaging Overhaul — Phase 1 (Foundations)
+
+## Status
+
+**As of 2026-05-15** — code-complete on the original 9 units; **5 new polish
+units (10–14)** appended after triage on 2026-05-14/15; final step is an
+end-to-end test pass before merge.
+
+| Unit | What | Status |
+|------|------|--------|
+| 1 | Schema Part A — conversations + participants | ✅ shipped |
+| 2 | Schema Part B — messages + members | ✅ shipped |
+| 3 | System-message helper + auto-creation utilities | ✅ shipped |
+| 4 | Season-activation trigger | ✅ shipped |
+| 5 | Roster + captain lifecycle triggers | ✅ shipped |
+| 6 | Past-member + announcement read-only banner (UI) | ✅ shipped (RLS deferred — see LIST_FOR_ED #29) |
+| 7 | Profanity filter wiring + system-message variant (+ DOB-aware COMMENT polish) | ✅ shipped |
+| 8 | Composer failed-send recovery (inline iMessage-style) | ✅ shipped |
+| 9 | Profanity onboarding modal (first Messages open, defaulted-ON) + legacy SQL archive | ✅ shipped |
+| 10 | **Date dividers in message thread** | ⬜ not started |
+| 11 | **Empty conversation-list state — value-prop copy** | ⬜ not started |
+| 12 | **Leave button respects `cannot_leave`** | ⬜ not started |
+| 13 | **Emoji messages + composer picker (12-emoji curated set)** | ⬜ not started |
+| 14 | **Season-end trigger — release `cannot_leave` on completion** | ⬜ not started |
+
+**Branch:** `messaging-system-overhaul`.
+**Awaits:** Units 10–14 build + final end-to-end test pass (`pnpm db:reset && pnpm test:run` + manual dev-app smoke walkthrough).
 
 ## Overview
 
@@ -223,7 +250,7 @@ members:
 
 ## Implementation Units
 
-- [ ] **Unit 1: Schema migration Part A — conversations + participants extensions**
+- [x] **Unit 1: Schema migration Part A — conversations + participants extensions**
 
 **Goal:** Land all schema changes on `conversations` and `conversation_participants` in a single focused migration. Adds `archived_at`, the new tri-state `notification_mode` column with data migration from `is_muted`/`notifications_enabled`, the `cannot_leave` flag, and the CHECK-constraint extensions for `'match_chat'` (conversation_type), `'match'` (scope_type), and `'observer'` (role).
 
@@ -263,7 +290,7 @@ members:
 
 ---
 
-- [ ] **Unit 2: Schema migration Part B — messages + members extensions**
+- [x] **Unit 2: Schema migration Part B — messages + members extensions**
 
 **Goal:** Add the system-message support (`messages.is_system` + nullable `sender_id` + INSERT RLS gate) and the new `members` columns (`profanity_onboarding_completed_at`, `deleted_at`). Verify or add row-owner-scoped UPDATE RLS on `members` covering the new columns.
 
@@ -302,7 +329,7 @@ members:
 
 ---
 
-- [ ] **Unit 3: System-message helper + auto-creation utilities + captain manual-fallback button**
+- [x] **Unit 3: System-message helper + auto-creation utilities + captain manual-fallback button**
 
 **Goal:** Add a single `postSystemMessage(conversationId, content)` helper plus the four conversation-creation utilities (`createTeamChat`, `createCaptainChat`, `createSeasonAnnouncementsChat`, `createOrgAnnouncementsChat`) in pure-function form. **Concrete caller:** a "Create team chat" button on the captain's team-management view that invokes `createTeamChat(seasonId, teamId)` if the auto-managed team chat doesn't exist for their team yet. This button is the safety net for the rare case where Unit 4's trigger fails to create a chat — the captain can manually recover without operator intervention. The TS utilities are also reusable for any future operator "regenerate chats" admin tool.
 
@@ -349,7 +376,7 @@ members:
 
 ---
 
-- [ ] **Unit 4: Season-activation trigger + auto-creation SQL function**
+- [x] **Unit 4: Season-activation trigger + auto-creation SQL function**
 
 **Goal:** Wire a Postgres trigger on `seasons` AFTER UPDATE that fires when `status` flips to `'active'` and creates the four chat types (team chats × N teams, captain chat × 1, season announcements × 1, org announcements × 1 if not already present). Trigger calls a SECURITY DEFINER function that mirrors the TS utilities in Unit 3.
 
@@ -395,7 +422,7 @@ members:
 
 ---
 
-- [ ] **Unit 5: Roster + captain lifecycle triggers**
+- [x] **Unit 5: Roster + captain lifecycle triggers**
 
 **Goal:** Add `team_players` AFTER INSERT/DELETE triggers that update participant rows on the team chat and post a system message. Add a `teams` AFTER UPDATE OF `captain_id` trigger that handles captain transfers (set `cannot_leave=true` on new captain's row, false on old).
 
@@ -439,7 +466,7 @@ members:
 
 ---
 
-- [ ] **Unit 6: Past-member RLS + read-only composer banner**
+- [x] **Unit 6: Past-member RLS + read-only composer banner**
 
 **Goal:** Update the messaging RLS policies so past-members can SELECT messages where `messages.created_at <= conversation_participants.left_at`, and INSERT is blocked for any participant whose `left_at IS NOT NULL`. UI: when the current user has `left_at IS NOT NULL` for the open conversation, the composer is replaced with a "Past member — read only" banner.
 
@@ -488,7 +515,7 @@ members:
 
 ---
 
-- [ ] **Unit 7: Profanity filter — wire missing display surfaces + clean stale doc comment**
+- [x] **Unit 7: Profanity filter — wire missing display surfaces + clean stale doc comment**
 
 **Goal:** Apply `useProfanityFilter` / `censorProfanity` to the conversation list last-message preview and to system messages (which currently render raw text). Clean up the stale "Forced ON for users under 18" doc comment on `members.profanity_filter_enabled` (the hook itself has no DOB branches — confirmed by inspection — so this is a comment-only cleanup, not a code change in the hook).
 
@@ -528,7 +555,7 @@ members:
 
 ---
 
-- [ ] **Unit 8: Composer failed-send error UX**
+- [x] **Unit 8: Composer failed-send error UX**
 
 **Goal:** When a message send fails (network error, RLS rejection, rate-limit hit later), the composer keeps the typed text, the failed message bubble appears with a "Failed to send — Retry" affordance, and tapping retry re-attempts the send.
 
@@ -570,7 +597,7 @@ members:
 
 ---
 
-- [ ] **Unit 9: Onboarding prompt at app first-load + cleanup of legacy SQL files**
+- [x] **Unit 9: Onboarding prompt at app first-load + cleanup of legacy SQL files**
 
 **Goal:** Show a one-time onboarding modal at app first-load post-auth that asks the user about profanity filtering. Persists the answer via `members.profanity_onboarding_completed_at` (column added in Unit 2). Reuses `ProfanityFilterSection` for the actual toggle. Includes a "Don't show again" / permanent-decline option (per findings doc — re-prompting every session is a dark pattern). Cleanup: archive the two stale `database/messaging/user_reports.sql` and `database/reporting/user_reports.sql` files now that the live schema lives in the baseline migration.
 
@@ -616,6 +643,216 @@ members:
 **Verification:**
 - Test scenarios green; smoke test in dev app — clear the column for a test member, refresh, see the modal once, refresh again, no modal.
 - `supabase db reset` runs cleanly with the file moves.
+
+---
+
+> **Units 10–14 — Phase 1 polish extension (added 2026-05-15).** Triaged on
+> 2026-05-14/15 from a "what's cheap enough to ship before Phase 3" pass.
+> All five items were classified as cheap-tier OR small-functional and
+> agreed to be built on this same branch before Phase 1 closes. Items
+> *not* on this list (reactions, typing indicators, pinned messages,
+> plain @mentions, mute UI, etc.) were either gated to post-Phase-3,
+> deferred to Phase 2, or moved to `MVP_FEATURE_LIST.md` FUTURE
+> FEATURES with reasoning.
+
+---
+
+- [ ] **Unit 10: Date dividers in the message thread**
+
+**Goal:** Render calendar-day separators ("Today", "Yesterday", "May 12")
+between message groups so a long thread reads naturally instead of as one
+undifferentiated wall.
+
+**Dependencies:** None.
+
+**Files:**
+- Modify: `src/components/messages/messageview/MessageList.tsx`
+- Possible new helper: `src/utils/messageDayDividers.ts` (small pure
+  function returning a flattened sequence of `{ kind: 'divider', label }`
+  and `{ kind: 'message', message }` items).
+- Test: `src/utils/__tests__/messageDayDividers.test.ts` (pure helper
+  cases) + a small RTL test on `MessageList` confirming dividers render.
+
+**Approach:**
+- Use `parseLocalDate` / `formatLocalDate` from `@/utils/formatters` for
+  timezone-safe day comparisons (per existing project rule).
+- Iterate messages once, emitting a divider before any message whose local
+  calendar date differs from the previous emitted message's date.
+- Label rule: today → `"Today"`; yesterday → `"Yesterday"`; otherwise the
+  member's locale-formatted short date.
+- Style: small, muted, centered, similar to system-message visual but
+  even quieter (a horizontal hairline + label).
+
+**Test scenarios:**
+- Empty thread → no dividers rendered.
+- Single-day thread → exactly one divider.
+- Multi-day thread → exactly one divider per day boundary, in order.
+- Today / yesterday labels resolve correctly when fake-clock is pinned.
+
+**Verification:** unit + RTL tests green; visual check in dev with a
+multi-day conversation.
+
+---
+
+- [ ] **Unit 11: Empty conversation-list state — value-prop copy**
+
+**Goal:** Replace the generic "No conversations found / Start a new
+conversation to get started" placeholder with a single message that sells
+the core value prop and tells a brand-new user what to expect.
+
+**Dependencies:** None.
+
+**Files:**
+- Modify: `src/components/messages/ConversationList.tsx` (the `<EmptyState>`
+  invocation).
+- Test: small RTL test asserting the new copy renders when the list is
+  empty.
+
+**Approach:**
+- Copy: *"You can message anyone in your league — no phone number needed.
+  A team chat will show up here automatically once you're added to a
+  roster."*
+- One message, no variants. Per 2026-05-14 product call, the
+  "new-user-not-yet-rostered" state and the "no-DMs-yet" state always
+  travel together, so two copies aren't worth maintaining.
+
+**Verification:** test green; visual check in dev with a brand-new user
+account.
+
+---
+
+- [ ] **Unit 12: Leave button respects `cannot_leave`**
+
+**Goal:** The conversation header's Leave action is hidden when the
+current user's `conversation_participants.cannot_leave` is `TRUE` for
+that conversation (captains in their own team chat + captains chat).
+The underlying leave mutation should also reject server-side; verify
+or add that gate.
+
+**Dependencies:** Unit 5 (cannot_leave flag + triggers — already
+shipped).
+
+**Files:**
+- Modify: `src/components/messages/MessageView.tsx` — replace the
+  hardcoded `canLeave={true}` with the resolved value for the current
+  user's participant row.
+- Modify or extend: `src/hooks/useConversationParticipants.ts` (or a
+  small new hook) so the current user's `cannot_leave` for a given
+  conversation is consumable in one line.
+- Verify: `src/api/mutations/conversations.ts` (or wherever the leave
+  mutation lives) rejects when the participant's `cannot_leave` is true.
+  If it doesn't, add a guard.
+
+**Approach:**
+- The data layer enforces the cannot_leave invariant already (Unit 5
+  triggers maintain it). This unit is about respecting it in the UI.
+- For the mutation guard, prefer a server-side check (RPC or RLS) rather
+  than only client-side validation.
+
+**Test scenarios:**
+- A captain on their team chat → Leave button is NOT rendered.
+- A regular member on a team chat → Leave button IS rendered.
+- A captain on a DM → Leave button IS rendered (DMs don't lock).
+- Leave mutation called for a cannot_leave participant → server rejects.
+
+**Verification:** RTL test for UI gating + DB-backed test for the
+mutation rejection.
+
+---
+
+- [ ] **Unit 13: Emoji messages + composer picker**
+
+**Goal:** Make sending and seeing emoji feel native. (a) Messages whose
+content is *only* emoji render in a larger, unbubbled style (the iMessage
+"giant emoji" effect). (b) The composer gains a small emoji button that
+opens a curated 12-emoji picker; tapping an emoji inserts it into the
+composer at cursor position.
+
+**Dependencies:** None.
+
+**Files:**
+- New: `src/components/messages/emojiSet.ts` — config-driven curated set:
+  🎉 👍 👎 ❤️ 🍻 🎱 😂 🏆 💪 🔥 🤞 💔
+- New: `src/components/messages/EmojiPickerButton.tsx` — small popover
+  trigger + 4×3 grid of emoji buttons.
+- Modify: `src/components/messages/MessageBubble.tsx` — detect emoji-only
+  content (≤3 emojis after trim) and render larger / unbubbled. Keep the
+  profanity filter intact (a no-op for emoji content but stays consistent).
+- Modify: `src/components/messages/MessageInput.tsx` — slot the picker
+  button next to the send button; insert at cursor.
+- Tests: `src/components/messages/__tests__/EmojiPickerButton.test.tsx`,
+  `src/components/messages/__tests__/MessageBubble.emojiMessage.test.tsx`,
+  small helper test for emoji-only detection.
+
+**Approach:**
+- Emoji-only detection: regex on `\p{Emoji_Presentation}|\p{Extended_Pictographic}`
+  with `u` flag, trimmed, ≤3 graphemes. Conservative threshold; if it
+  fails, render normally.
+- Picker is plain HTML buttons in a popover. No new dependency. Config in
+  `emojiSet.ts` so Ed can edit the set without code changes.
+- Insertion respects the input's selection range so the emoji lands at
+  the cursor, not appended.
+
+**Test scenarios:**
+- Plain text message → renders as normal bubble.
+- Single-emoji message → renders large, no bubble background.
+- Three-emoji message → still renders large.
+- Four+ emoji message → renders as normal bubble (avoid clobbering long
+  emoji strings).
+- Mixed emoji + text → renders as normal bubble.
+- Picker click while input is empty → emoji becomes the input value.
+- Picker click while input has text → emoji inserted at cursor.
+
+**Verification:** tests green; smoke test in dev — send "👍" and "hello
+👍" and confirm they render differently.
+
+---
+
+- [ ] **Unit 14: Season-end trigger — release `cannot_leave` on completion**
+
+**Goal:** When a season's `status` flips from `active` to `completed`,
+flip `cannot_leave` to `FALSE` for all participants in that season's
+team chats and the season's captains chat. Chats themselves are NOT
+deleted, NOT auto-archived — they just become leave-able, so anyone
+(captain included) can clear the clutter from their inbox at season
+end without losing read access to history.
+
+**Dependencies:** Unit 4 (season-activation trigger — this is its
+mirror). Unit 5 (cannot_leave flag + roster triggers).
+
+**Files:**
+- New migration: `supabase/migrations/<date>_messaging_phase1_season_end_release_cannot_leave.sql`
+  — `CREATE OR REPLACE FUNCTION` + `CREATE TRIGGER` on `seasons` AFTER
+  UPDATE OF status, `WHEN (OLD.status = 'active' AND NEW.status =
+  'completed')`. Function does a single UPDATE on
+  `conversation_participants` joining through `conversations` for the
+  affected season's team chats and captains chat.
+- Test: `src/__tests__/database/messaging-phase1-season-end-trigger.rls.test.ts`
+  (DB-backed, follows the existing Phase 1 trigger-test pattern).
+
+**Approach:**
+- `SECURITY DEFINER`, explicit `search_path = public, pg_catalog`, REVOKE
+  PUBLIC/authenticated — same security shape as the Unit 4 trigger.
+- Idempotent: re-firing on a season already completed is a safe no-op
+  (the UPDATE just sets cannot_leave=false where it's already false).
+- Trigger only fires on `active → completed`. Other transitions
+  (`active → cancelled`, `upcoming → active`, etc.) do nothing.
+
+**Test scenarios:**
+- Activate a season → captains have `cannot_leave = TRUE` on team chats
+  + captains chat (precondition, from Unit 5).
+- Flip status `active → completed` → all participants in that season's
+  team chats + captains chat now have `cannot_leave = FALSE`. Other
+  seasons' chats untouched.
+- Flip status to a non-completed value (`active → cancelled`) → trigger
+  does NOT fire; cannot_leave stays as it was.
+- Re-fire the trigger on an already-completed season → no errors, no
+  spurious changes.
+
+**Verification:** DB test green; `pnpm db:reset` runs cleanly with the
+new migration applied.
+
+---
 
 ## System-Wide Impact
 
