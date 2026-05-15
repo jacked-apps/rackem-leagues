@@ -430,11 +430,13 @@ These three rules together preserve the borders. Without them, the modular syste
 
 ## Mechanism — Deep Dive
 
-*Mechanism is the **atom** kind of Module — the work-doing unit at the leaves of the architecture's tree. This deep-dive applies the Module primitives (Essence / Boundary / Design space / Typed I/O / Implementation-vs-intent flag) to the Mechanism kind specifically. Most existing variants in the codebase are Mechanisms; the deep-dive nails down what makes them Mechanisms (not Systems, not Charts), the trigger pattern that determines when they fire, and how Mechanisms compose into Systems. Family-specific classification tools (like the 2x2 grid for handicap-related Mechanisms) live with the family they classify, not in this deep-dive.*
+*Mechanism is the **atom** kind of Module — the work-doing unit at the leaves of the architecture's tree. This deep-dive applies the Module primitives (Essence / Boundary / Design space / Typed I/O / Implementation-vs-intent flag) to the Mechanism kind specifically. Most existing variants in the codebase are Mechanisms; the deep-dive nails down what makes them Mechanisms (not Systems, not Charts) and how Mechanisms compose into Systems. Family-specific classification tools (like the 2x2 grid for handicap-related Mechanisms) live with the family they classify, not in this deep-dive. **Triggers — sometimes mistaken for a Mechanism kind — are actually a System pattern** (event-acceptor + detector + task-performer + re-armer composed together); they're covered in the System deep-dive, not here.*
 
 ### 1. Essence
 
-**A Mechanism is a Module that performs ONE specific functional task with no internal composition.** The atom-ness is what distinguishes it from a System (which composes other Modules).
+**A Mechanism is a Module that performs ONE specific functional task with no internal composition of other Modules.** The atom-ness is what distinguishes it from a System (which composes other Modules).
+
+**"No internal composition" means no composition of other named Modules** — NOT "no internal complexity." A Mechanism may have multiple internal steps, internal state, internal logic. FargoRate's `validate input → look up rating (or call API) → apply transform` chain, for example, is all internal to one Mechanism. The atom-ness is about the EXTERNAL contract: from the outside, the Mechanism does one job (`(person) → handicap`). What it does internally to fulfill that job is implementation detail, not composition. If you find yourself decomposing a Mechanism's job into multiple distinct *named* Modules with their own contracts, you're looking at a System, not a Mechanism.
 
 If you can describe a Module's job in a single sentence — *"computes a player's handicap from match history"*, *"declares the asymmetric game targets for a handicapped match"*, *"allocates winner-and-loser points after each game"* — you're probably looking at a Mechanism.
 
@@ -474,32 +476,7 @@ Mechanism *families* (groups of Mechanisms that share a domain) often develop th
 
 Other Mechanism families (a future Match Format pairing-generation family, a between-match adjustment family, etc.) will develop their own classification tools tailored to their concerns. The pattern is: family-specific taxonomies live with the family's parent Module, not in PRINCIPLES.md.
 
-### 5. Triggers
-
-A **trigger** is a kind of Mechanism whose *job* is conditional event-detection — it watches for a specific event or condition and fires an action when met. The classic example is a Points System threshold trigger: its essence is *"watch for `games_played` reaching milestone N; when it does, fire."*
-
-A trigger Mechanism has two parts:
-
-- **Condition** — what it watches for (`games_played === 11`, an event arrival, an external signal).
-- **Action** — what it fires when the condition is met.
-
-**Trigger vs invocation.** Not every Mechanism is a trigger. Many Mechanisms are *pure actions*: someone hands them data and they process it.
-
-- A Converter just transforms input to output — there's nothing to watch for.
-- The per-game allocator just runs every game with that game's data — it doesn't watch for anything.
-
-The distinction is about JOB:
-
-- **Trigger Mechanism** — the job IS event detection.
-- **Pure-action Mechanism** — the job is the work itself; *when* to invoke it is handled by the parent System's dispatch logic, not by the Mechanism.
-
-**Implicit triggers in current System dispatch.** Some pure-action Mechanisms run in response to events (per-game allocator runs when a game is scored; start_points runs at match start; end-of-match aggregate runs at match end). Today, that event-detection logic lives inside the parent System's dispatch — *"when game-scored event arrives, call the allocator with this game's data."* The trigger is implicit — bundled into how the System wires things up rather than carried in its own Mechanism.
-
-Whether those implicit triggers SHOULD be unbundled into explicit Trigger Mechanisms is an **open architectural question — not settled here.** The current bundled state works for fixed Scoring Systems where the trigger logic is hardcoded; an LO-customizable system (where operators define what fires on what events) would likely require unbundling. A future brainstorm/plan decides.
-
-**Stackable explicit triggers.** A parent System can compose multiple trigger Mechanisms — one watching for `games_played = 10`, another for `games_played = 20`. Each fires independently. Multiple trigger Mechanisms inside a parent, not one Mechanism with multiple conditions.
-
-### 6. I/O contract for Mechanisms
+### 5. I/O contract for Mechanisms
 
 Per [Module Deep Dive § 8](#8-io-contracts-at-module-boundaries), every Module declares typed input and typed output. Mechanisms specifically:
 
@@ -510,7 +487,7 @@ Because Mechanisms don't compose other Modules, their contract is **direct**: in
 
 Mechanisms typically have **simpler contracts than Systems** (one in, one out) — but the same precision rules apply: declare the input type, declare the output type, name the category if outputs vary by mode/variant.
 
-### 7. How Mechanisms compose into Systems
+### 6. How Mechanisms compose into Systems
 
 Mechanisms are the building blocks Systems compose. The assembly-line view (per [Module Deep Dive § 8](#8-io-contracts-at-module-boundaries)): each Mechanism is a station; the System is the line; the fully-configured System produces the end product.
 
@@ -525,7 +502,7 @@ The Mechanism stays "stupid" about its place in the larger structure. This is wh
 
 **Implication for documentation.** A Mechanism's doc page describes its own contract (input, output, internal logic) — NOT how it's used in any specific System. Cross-references to System usage live in the System's docs (or are added as bare links from the Mechanism's "Where this is used" pointer).
 
-### 8. Naming Mechanisms
+### 7. Naming Mechanisms
 
 - **Atom names (code identifiers):** lowercase_snake_case — `extra_games`, `start_points`, `accumulated_per_game`, `race_length_adjustment`.
 - **Atom display names (in docs):** Title Case with spaces — *Extra Games*, *Start Points*, *Race Length Adjustment*.
