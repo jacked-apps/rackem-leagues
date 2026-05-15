@@ -60,7 +60,7 @@ These are non-negotiable. Without them, operators may falsely believe results fl
 
 - **Theoretically compatible with [`race_length_adjustment`](../handicap-mechanisms/race-length-adjustment.md) mechanism** — APA's well-known "SL race chart" (e.g., SL7-vs-SL5 → 5-vs-3 race) is exactly this pattern. **No current shipping chart exists** for this combo in the app.
 - **Compatible with [1-Point Scoring System](../points-system/one-point-scoring.md)** if a race-length-adjustment chart is added.
-- **Not used by any shipping Division** today.
+- **Not used by any shipping Scoring System** today.
 
 ## Possible modifications
 

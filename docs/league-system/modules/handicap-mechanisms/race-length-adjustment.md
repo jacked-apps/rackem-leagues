@@ -7,7 +7,7 @@ audience: developer + AI sessions
 
 # Race Length Adjustment
 
-A peer variant of the **[Handicap Mechanisms](README.md)** Module. **Reserved**: schema present, no calibrated chart exists for any current Handicap System pairing, so no shipping Division uses this mechanism today.
+A peer variant of the **[Handicap Mechanisms](README.md)** Module. **Reserved**: schema present, no calibrated chart exists for any current Handicap System pairing, so no shipping Scoring System uses this mechanism today.
 
 > **Reading this cold?** A handicap mechanism is *how* the league applies a strength difference between teams or players. (If the sides are evenly matched, no handicap is applied.) This page describes the **Race Length Adjustment** variant: per-pairing race lengths differ by the individual skill gap between the two paired players. Of the currently-defined mechanisms, this is the one that operates at the *per-pairing* level (the others — extra_games and start_points — work at the team level). Other variants exist (see the [Module README](README.md) for the full picture).
 

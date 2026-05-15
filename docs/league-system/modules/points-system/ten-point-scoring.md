@@ -7,9 +7,9 @@ audience: developer + AI sessions
 
 # 10-Point Scoring System
 
-A peer variant of the **[Scoring Systems](README.md)** Module — covering the **Points System** sub-concern (per-game point allocation rule). CSI's published name; one of CSI's flagship scoring systems for handicapped FargoRate divisions.
+A peer variant of the **[Points System](README.md)** Module — covering the per-game point allocation rule. CSI's published name; one of CSI's flagship per-game scoring rules for handicapped FargoRate divisions.
 
-> **Reading this cold?** A scoring system says how points are allocated per game and how match victory is decided. This page describes the **10-Point Scoring System** variant: per-game allocation gives the winner 10 points, the loser 0–7 points based on how many balls they pocketed before losing. Match victory is decided by accumulated team points. Used today by the FargoRate 10-Point 5-Man Division. Other variants exist (see the [Module README](README.md) for the full picture).
+> **Reading this cold?** The Points System governs *how points are allocated per game* (it does NOT decide who wins the match — that's the [Win Calculator](../win-calculator.md)'s separate job). This page describes the **10-Point Scoring System** variant of the per-game allocator: the winner gets 10 points, the loser gets 0–7 points based on how many balls they pocketed before losing. The accumulated point totals are then read by the Win Calculator (`win_condition='points'`) to declare the match winner. Used today by the FargoRate 10-Point 5-Man Scoring System. Other Points System variants exist (see the [Module README](README.md) for the full picture).
 
 ## What it is
 
@@ -20,9 +20,9 @@ Per-game allocation: **winner gets 10 points (fixed). Loser gets 0–7 points ba
 ## How it works
 
 At game completion:
-- The [Points System](README.md#points-system) records `winner_points = 10` (configurable via params) and `loser_points = balls_pocketed_by_loser` (typically 0–7, configurable max).
+- The Points System records `winner_points = 10` (configurable via params) and `loser_points = balls_pocketed_by_loser` (typically 0–7, configurable max).
 - Per-game points accumulate to match-total points per side.
-- The [Win Calculator](README.md#win-calculator) consults match-total points (`win_condition='points'`) to declare the winner.
+- The [Win Calculator](../win-calculator.md) consults match-total points (`win_condition='points'`) to declare the winner.
 
 When paired with the [`start_points`](../handicap-mechanisms/start-points.md) Handicap Mechanism (the canonical FargoRate combo), the weaker team's match total starts non-zero — the bonus is added to their accumulating point total before the first game.
 
@@ -53,11 +53,11 @@ A subtle property: **mathematically possible to win the match without winning a 
 - **Different `winner_points` value** — e.g., 12 or 15 instead of 10. The proportional structure (loser 0 to winner_points−3) would be preserved.
 - **Different `loser_points_max`** — e.g., 5 instead of 7 (some leagues prefer a tighter loser range).
 - **Different `loser_points_method`** — fixed value (always 5), formula-based (computed from rating gap), or balls-pocketed (current default).
-- **Achievement-based bonuses** — break-and-run, golden-break, etc. (currently league-preference-driven, separate from this scoring system; achievements compose with this calculator in the per-game scoring popup).
+- **Achievement-based bonuses** — break-and-run, golden-break, etc. (currently league-preference-driven, separate from this Points System variant; achievements compose with this calculator in the per-game scoring popup).
 
 ## Current code state
 
-Used by the **`fargo_5v5`** wizard preset (a.k.a. **FargoRate 10-Point 5-Man Division**). Implemented as the `accumulated_per_game` calculator.
+Used by the **`fargo_5v5`** wizard preset (a.k.a. the **FargoRate 10-Point 5-Man** prepackaged Scoring System). Implemented as the `accumulated_per_game` calculator.
 
 - Calculator: `src/systems/calculators/accumulated_per_game.ts` — registered name `'accumulated_per_game'`. Per-game-input calculator (`kind: 'per_game'`); takes the list of stored game records and computes per-team match totals.
 - Default params: `{ winner: { kind: 'fixed', points: 10 }, loser: { kind: 'counter', min: 0, max: 7, label: 'Balls pocketed' } }` — these are the 10-7 defaults; configurable per league.

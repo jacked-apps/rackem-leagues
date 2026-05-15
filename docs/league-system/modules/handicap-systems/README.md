@@ -87,7 +87,7 @@ Choosing internal vs external is a real LO decision with real consequences. Each
 - **Updates.** *Internal*: automatic; ratings evolve game-by-game from match history. *External*: manual entry or via API; depends on the external source's update cadence.
 - **World-championship pathway.** *Internal*: none for handicapped CSI/BCAPL events. *External*: yes — FargoRate specifically is CSI-mandated for BCAPL Handicapped World Championship divisions.
 
-Operators choosing a Division are really choosing one of these *worlds*. The doc should not hide that.
+Operators choosing a Scoring System are really choosing one of these *worlds*. The doc should not hide that.
 
 ## Rating confidence and the starting-handicap window {#rating-confidence}
 
@@ -127,4 +127,4 @@ The category is open. Adding a new variant requires: (a) an encoding spec, (b) a
 - `src/systems/buildSystemFromPreferences.ts` — per-`handicap_type` SystemModule dispatch
 - `src/wizards/league-v2/steps/HandicapSystemStep.tsx` — wizard UI for variant selection
 
-Step-2 rename targets: none at the Module level (the file structure is not being renamed; only the SystemModule keys / Division preset keys are).
+Step-2 rename targets: none at the Module level (the file structure is not being renamed; only the SystemModule keys / prepackaged Scoring System preset keys are).

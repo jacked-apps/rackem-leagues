@@ -51,7 +51,7 @@ A typical Win Calculator pairing is `win_condition='games'` with a target ("firs
 
 ## Current code state
 
-**Not shipped as a direct configuration.** No current Division uses a calculator that exactly implements CSI's 1-Point Scoring System (winner=1, loser=0, accumulated). The closest in spirit is **Points 3-Man** (`standard_3v3`), which uses `win_condition='games'` (matching 1-Point's victory-by-games-won philosophy) but with `points_calculator='linear_above_threshold'` — a coined calculator that gives points only above a games threshold rather than 1-per-win. So the *match-victory rule* is 1-Point-style; the *per-game point allocation* is different.
+**Not shipped as a direct configuration.** No current Scoring System uses a calculator that exactly implements CSI's 1-Point Scoring System (winner=1, loser=0, accumulated). The closest in spirit is **Points 3-Man** (`standard_3v3`), which uses `win_condition='games'` (matching 1-Point's victory-by-games-won philosophy) but with `points_calculator='linear_above_threshold'` — a coined calculator that gives points only above a games threshold rather than 1-per-win. So the *match-victory rule* is 1-Point-style; the *per-game point allocation* is different.
 
 A literal CSI 1-Point Scoring System could be implemented as a new calculator (e.g., `accumulated_per_game` with `winner.points=1, loser.points=0`) and selected via the wizard. The infrastructure supports it; no league has requested it yet.
 

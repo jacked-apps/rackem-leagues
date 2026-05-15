@@ -29,7 +29,7 @@ The docs are written for:
 The docs are NOT written for:
 
 - Pool players (separate future docs surface, in-app)
-- League operators choosing a Division (separate future docs surface, in the wizard)
+- League operators choosing a Scoring System (separate future docs surface, in the wizard)
 - CSI / Ozzy-level evaluators (separate future docs surface, polished pitch material)
 
 But — and this is load-bearing — **a fresh Claude reading any L1 file should be able to extract a novice-friendly explanation** for a player or operator on demand. The docs themselves can be dense and jargon-laden; the meaning underneath must be recoverable.
@@ -221,7 +221,7 @@ Step 1 (this branch) **defines** — boundaries, definitions, categories. Where 
 
 - Within same Module: relative paths to peer files (`points.md` → `[Percentage](percentage.md)`)
 - To other Modules: relative paths up one level (`[Threshold Charts](../threshold-charts/README.md)`)
-- To Divisions: `[Points 3-Man Division](../../divisions/points-3man.md)`
+- To prepackaged Scoring Systems: `[Points 3-Man](../../scoring-systems/points-3man.md)` (top-level `scoring-systems/` folder, not under `modules/`)
 - To external sources: full URLs with descriptive link text
 
 ## Phrases worth remembering

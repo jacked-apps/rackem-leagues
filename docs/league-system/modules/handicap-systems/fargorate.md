@@ -62,9 +62,9 @@ The win-expectancy is *this variant's output* to downstream Modules. What downst
 
 ## Interactions
 
-- **Compatible with [`start_points`](../handicap-mechanisms/start-points.md) mechanism** (current usage in the [FargoRate 10-Point 5-Man Division](../../divisions/fargo-10pt-5man.md)).
+- **Compatible with [`start_points`](../handicap-mechanisms/start-points.md) mechanism** (current usage in the [FargoRate 10-Point 5-Man](../../scoring-systems/fargo-10pt-5man.md) Scoring System).
 - **Compatible with [10-Point Scoring System](../points-system/ten-point-scoring.md)** — CSI's published Fargo+10-Point combo is the most prominent BCAPL handicapped configuration today.
-- **Could also pair with [1-Point Scoring System](../points-system/one-point-scoring.md)** (CSI has signaled future "FargoRate + Race-To" division formats — see the strategic brainstorm `modular-league-system-requirements.md`).
+- **Could also pair with [1-Point Scoring System](../points-system/one-point-scoring.md)** (CSI has signaled future "FargoRate + Race-To" Scoring Systems — see the strategic brainstorm `modular-league-system-requirements.md`).
 - **Compatible with [`race_length_adjustment`](../handicap-mechanisms/race-length-adjustment.md) mechanism** in theory; no current shipping configuration uses this combo.
 - **Pairs with [Fargo formula chart](../threshold-charts/fargo-formula.md)** today.
 
@@ -74,14 +74,14 @@ The FargoRate rating itself is locked to FargoRate's spec — no in-variant modi
 
 ## Current code state
 
-This handicap system shows up at two code layers, both used by the **FargoRate 10-Point 5-Man Division** (the LO-facing name for the bundle of choices that picks this system):
+This handicap system shows up at two code layers, both used by the **FargoRate 10-Point 5-Man** prepackaged Scoring System (the LO-facing name for the bundle of choices that picks this system):
 
-- **`fargo_5v5`** (in `src/wizards/league-v2/presetMappings.ts`) is the **wizard preset key** — the LO-facing "bundle" of 7 Module choices that gets picked during league creation. The preset expands into preferences (`handicap_type='fargo'`, plus the values for the other 6 Modules).
+- **`fargo_5v5`** (in `src/wizards/league-v2/presetMappings.ts`) is the **wizard preset key** — the LO-facing "bundle" of 8 Module choices that gets picked during league creation. The preset expands into preferences (`handicap_type='fargo'`, plus the values for the other 7 Modules).
 - **`fargo5v5`** (in `src/systems/fargo5v5.ts`) is the **SystemModule key** — the runtime code object that does the rating handling (validation, the `2^(rating/100)` transform, the win-expectancy computation, plus — for the current shipping pairing — start-points math).
 
 The two layers connect via `handicap_type='fargo'`: the wizard preset sets the preference; `src/systems/resolver.ts` (lines 42–55) then maps that preference back to the `fargo5v5` SystemModule at runtime. Step 2 collapses both names into `fargo_10pt_5man` for consistency across layers.
 
-**Implementation-vs-intent flag:** the `fargo5v5` SystemModule today bundles rating-system math (validation, transform, win-expectancy) AND start-points math in one file. The start-points portion is a **Handicap Mechanism concern**, not a rating-system concern, and the bundling is an accident of how the code grew before modular axes were fully separated. This is an **implementation artifact, not architectural intent**: any rating encoding should be composable with any mechanism. Future refactors should decouple to keep the rating variant clean and allow FargoRate to pair with mechanisms other than start_points (e.g., a future FargoRate + Race-To Division using `extra_games`). See the [Module README → Boundary](README.md#boundary) for the orthogonality intent.
+**Implementation-vs-intent flag:** the `fargo5v5` SystemModule today bundles rating-system math (validation, transform, win-expectancy) AND start-points math in one file. The start-points portion is a **Handicap Mechanism concern**, not a rating-system concern, and the bundling is an accident of how the code grew before modular axes were fully separated. This is an **implementation artifact, not architectural intent**: any rating encoding should be composable with any mechanism. Future refactors should decouple to keep the rating variant clean and allow FargoRate to pair with mechanisms other than start_points (e.g., a future FargoRate + Race-To Scoring System using `extra_games`). See the [Module README → Boundary](README.md#boundary) for the orthogonality intent.
 
 - Code anchors today: `src/systems/fargo5v5.ts` (SystemModule — rating validation, `2^(rating/100)` transform, start-points formula); `src/utils/calculatePlayerHandicap.ts:110+` (`calculateFargoHandicap` three-step fallback); `src/utils/handicap/fargoGamesWonThresholds.ts` (formula chart)
 - DB: `'fargo'` allowed value in `preferences.handicap_type` CHECK (`supabase/migrations/20260410000000_extend_preferences_modular.sql:60`)
@@ -96,4 +96,4 @@ The two layers connect via `handicap_type='fargo'`: the wizard preset sets the p
 | `fargo5v5` (SystemModule key) | `fargo_10pt_5man` |
 | `fargo_5v5` (wizard preset key) | `fargo_10pt_5man` |
 
-The new name `fargo_10pt_5man` makes the bundled choices explicit: FargoRate handicap **+** 10-Point Scoring **+** 5-Man lineup. This anticipates a future second Fargo Division (e.g., `fargo_1pt_5man` for the Race-To variant) where the disambiguation matters.
+The new name `fargo_10pt_5man` makes the bundled choices explicit: FargoRate handicap **+** 10-Point Scoring **+** 5-Man lineup. This anticipates a future second Fargo Scoring System (e.g., `fargo_1pt_5man` for the Race-To variant) where the disambiguation matters.

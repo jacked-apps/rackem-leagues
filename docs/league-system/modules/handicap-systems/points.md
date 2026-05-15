@@ -53,7 +53,7 @@ The team-level handicap is the sum of the active lineup's individual ratings. Th
 
 ## Interactions
 
-- **Compatible with [`extra_games`](../handicap-mechanisms/extra-games.md) mechanism** (current usage in the [Points 3-Man Division](../../divisions/points-3man.md)).
+- **Compatible with [`extra_games`](../handicap-mechanisms/extra-games.md) mechanism** (current usage in the [Points 3-Man](../../scoring-systems/points-3man.md) Scoring System).
 - **No current chart for [`start_points`](../handicap-mechanisms/start-points.md)** with Points handicap — combination is not blocked at the schema level but no calibrated chart exists, so it would not produce sensible values.
 - **Compatible with [1-Point Scoring System](../points-system/one-point-scoring.md)**.
 - **Pairs with [3v3 games-needed chart](../threshold-charts/3v3-games-needed.md)** today. Could pair with any threshold chart that consumes integer differences.
@@ -67,9 +67,9 @@ The team-level handicap is the sum of the active lineup's individual ratings. Th
 
 ## Current code state
 
-This handicap system shows up at two code layers, both used by the **Points 3-Man Division** (the LO-facing name for the bundle of choices that picks this system):
+This handicap system shows up at two code layers, both used by the **Points 3-Man** prepackaged Scoring System (the LO-facing name for the bundle of choices that picks this system):
 
-- **`standard_3v3`** (in `src/wizards/league-v2/presetMappings.ts`) is the **wizard preset key** — the LO-facing "bundle" of 7 Module choices that gets picked during league creation. The preset expands into preferences (`handicap_type='points'`, plus the values for the other 6 Modules).
+- **`standard_3v3`** (in `src/wizards/league-v2/presetMappings.ts`) is the **wizard preset key** — the LO-facing "bundle" of 8 Module choices that gets picked during league creation. The preset expands into preferences (`handicap_type='points'`, plus the values for the other 7 Modules).
 - **`bca3v3`** (in `src/systems/bca3v3.ts`) is the **SystemModule key** — the runtime code object handling the Points rating math (validation, history-based computation). The same file *also* currently calls the [3v3 games-needed chart](../threshold-charts/3v3-games-needed.md) directly — that's a separate Module's concern (Threshold Charts) bundled into this file for historical reasons. The bundling is an **implementation artifact, not architectural intent**: future refactors should decouple so any rating encoding can pair with any chart. See the [Module README → Boundary](README.md#boundary) for the orthogonality intent.
 
 The two layers connect via `handicap_type='points'`: the wizard preset sets the preference; `src/systems/resolver.ts` (lines 42–55) then maps that preference back to the `bca3v3` SystemModule at runtime. Step 2 collapses both names into `points_3man` for consistency across layers.
@@ -86,4 +86,4 @@ The two layers connect via `handicap_type='points'`: the wizard preset sets the 
 | `bca3v3` (SystemModule key) | `points_3man` | Same |
 | `standard_3v3` (wizard preset key) | `points_3man` | Names the actual handicap system + lineup size |
 
-CSI's *BCA Pool League Operators' Handbook* (June 2020, p.41 "Name Guidelines") explicitly states "BCA" alone is an incorrect reference — only "BCAPL" or "BCA Pool League" are valid. The current `bca3v3` identifiers literally violate CSI's published guidance, independently of the also-true motivation that the new names better describe what each Division is.
+CSI's *BCA Pool League Operators' Handbook* (June 2020, p.41 "Name Guidelines") explicitly states "BCA" alone is an incorrect reference — only "BCAPL" or "BCA Pool League" are valid. The current `bca3v3` identifiers literally violate CSI's published guidance, independently of the also-true motivation that the new names better describe what each prepackaged Scoring System actually is.
