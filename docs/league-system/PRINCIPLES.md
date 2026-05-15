@@ -632,6 +632,100 @@ Each level is a Module; only the *kind* (Mechanism / System / Chart / Converter)
 
 **Anti-conflation note on naming.** "System" the kind shares the everyday-English word "system" — and CSI uses "Scoring System" to mean specifically the per-game point allocation rule, not the whole composed thing. Be precise: when we write *"a System"* in docs, we mean any Module of the set kind. When we write *"the Scoring System"* title-case, we mean the specific top-level Module. CSI's "Scoring System" is now what we call the **Points System** (per the historical restructure that split the old "Scoring Systems" Module into Points System + Win Calculator).
 
+## Chart — Deep Dive
+
+*Chart is the **data-shaped** kind of Module — it provides organized, looked-up data on demand. Where Mechanism is the worker and System is the orchestrator, Chart is the reference: passive, queried by other Modules. This deep-dive applies the Module primitives to the Chart kind and codifies the formula-first preference (formulas are preferred where the math is known; discrete charts are mandatory when LO customization breaks the formula round-trip or when the mapping is empirically derived with no clean underlying math).*
+
+### 1. Essence
+
+**A Chart is a Module that provides organized data on demand via a typed lookup.** Its job is to answer queries: *"given input X, what is the value?"* Same input always produces same output — the Chart is pure (no state, no side effects).
+
+**Examples of Charts:**
+
+- **3v3 games-needed chart** — input: handicap difference; output: target wins per side
+- **5v5 games-needed chart** — input: handicap difference; output: target wins per side
+- **FargoRate formula** — input: rating difference; output: win-expectancy / games-needed value (a Chart in formula shape rather than discrete table shape)
+
+A Chart is *organized knowledge* with a contract. Data flowing between Modules has no contract; a Chart is data shaped into a Module by giving it a typed input/output interface.
+
+### 2. Why "Chart" is its own kind
+
+Could we just call data-shaped Modules "Mechanisms" and skip the Chart label? Yes — but the label carries information:
+
+- **Passive signal.** When you read "Chart," you know it's a passive lookup, not an active processor. It doesn't *do* anything until queried.
+- **Reference-data signal.** Charts hold organized knowledge. Mechanisms do work; Charts provide the reference values that work consumes.
+- **Formula-or-discrete signal.** A Chart can be implemented as a discrete table OR a continuous formula (see [Section 4](#4-formula-first-charts-are-derived)). The "Chart" label covers both shapes.
+- **Reusable signal.** Multiple Mechanisms can consume the same Chart — the Chart doesn't care who's asking. (Mechanisms are reusable too, but the reusability of a passive lookup is structurally different from reusability of an active processor.)
+
+### 3. Boundary: what's NOT a Chart
+
+A Module is NOT a Chart if:
+
+- **It actively performs work, transforms state, or has side effects** → it's a **Mechanism** (the atom kind for work-doers). A Chart is purely a lookup; same input always returns same output, no mutation.
+- **It composes other Modules** → it's a **System** (the set kind for compositions). A Chart provides knowledge, not orchestration.
+- **It bridges mismatched type contracts** so two otherwise-incompatible Modules can compose → it's a **Converter** (the adapter kind).
+
+A Module is exactly one of the four kinds. A Chart is never also a Mechanism (passive vs active).
+
+**Subtlety: a formula-shaped Chart computes its output — isn't that doing work?** No. A formula like FargoRate's `2^(diff/100)` *computes* a value, but the computation is pure description of the lookup. The Chart's purpose is to hold/provide knowledge; the formula is just a more compact representation of that knowledge than a discrete table. Compare: a Mechanism that computes a player's handicap from match history IS doing work — it's traversing records, applying logic, producing a derived value. The Chart lookup is "what's the value at this index?" The Mechanism work is "do this job and produce a result." Different essences.
+
+### 4. Formula-first; charts are derived
+
+**Charts come in two interchangeable shapes:**
+
+- **Discrete chart** — a table mapping specific input values to specific output values. Example: a 7×7 grid of handicap differences mapped to target wins.
+- **Formula** — a continuous function mapping any input value to its output. Example: `2^(diff/100)` mapping any rating difference to a target value.
+
+Both shapes are valid forms of the Chart kind — interconvertible expressions of the same mapping. A formula can generate any specific chart on demand. A chart can sometimes be reverse-engineered into a formula (symbolic regression — a research direction; see task tracker).
+
+**Formulas are PREFERRED where the math is known.** Reasons:
+
+- **Continuous coverage** — any input value, not just the discrete points in a table.
+- **Easier LO customization** — tweak a parameter in the formula and the entire chart updates.
+- **Single source of truth** — no chart-formula sync issues; the formula IS the canonical form.
+- **Smaller storage** — one formula vs N table rows.
+- **Generative** — can produce any specific chart for inspection or display on demand.
+
+**Charts are MANDATORY in two cases:**
+
+1. **LO customization beyond what the formula can express.** Common workflow: LO views a formula-generated chart, tweaks individual cells for their specific league needs (e.g., *"for handicap diff 3, I want target = 7 instead of 8 — that's just my house rule"*). Those arbitrary tweaks may not fit any clean formula. The system must save the chart as-is — the formula can't represent the LO's edits. Saving the discrete chart is the only honest option.
+2. **Empirically derived mappings with no clean underlying math.** Some handicap charts were created by operators tinkering and observing what felt fair, with no formula behind them. The chart is the original; no formula exists to derive it.
+
+**The architecture supports both shapes; the LO's choice determines which form their league uses.** A league running pure FargoRate uses the formula directly. A league that started with the formula and then tweaked individual cells stores the resulting chart as-is.
+
+### 5. I/O contract for Charts
+
+Per [Module Deep Dive § 8](#8-io-contracts-at-module-boundaries), every Module declares typed input and typed output. Charts specifically:
+
+- **Input** — the lookup key (a handicap difference, a rating, a percentage, or whatever the Chart maps from).
+- **Output** — the looked-up value (target wins, games needed, threshold value, or whatever the Chart maps to).
+
+**Charts are pure.** Same input always produces same output. No state mutation, no side effects, no time-varying behavior. This is what makes Charts safely reusable across many consumers — there's no "ask order" or "asker identity" affecting the answer.
+
+A Chart's contract is the simplest of all the kinds: input X → output Y, no internal complexity to verify, no chain of internal contracts.
+
+### 6. How Charts are consumed
+
+Charts are passive — they don't do anything until asked. A Mechanism (typically a handicap-side Mechanism that needs a benchmark value) consumes the Chart as part of doing its work.
+
+**Example flow:**
+1. A handicap-side Mechanism receives a handicap difference (e.g., from a Handicap System upstream).
+2. The Mechanism queries the relevant Chart: *"what target wins for handicap diff of 3?"*
+3. The Chart returns the looked-up value.
+4. The Mechanism uses that value to declare its benchmark (asymmetric game targets, starting points, etc.).
+
+The Chart doesn't know what consumer asked it; it just answers. The Mechanism doesn't care whether the Chart is implemented as a discrete table or a formula; it just consumes the typed output.
+
+**Charts can be selected at the parent-System level.** A selection-pattern System like *Threshold Charts* offers multiple Chart alternatives; the league picks one. The selected Chart is what gets queried during match runtime.
+
+### 7. Naming Charts
+
+- **Umbrella name** (the parent Module that wraps multiple Chart alternatives): plural noun phrase per [Module Deep Dive § 9](#9-naming-rule-plural-vs-singular) and the selection-pattern naming rule from [System § 4](#4-two-composition-patterns-selection-vs-chain) — *Threshold Charts* (plural; offers alternatives the league picks one of).
+- **Specific Chart names** — function-name style, describing what the Chart maps: *3v3-games-needed*, *5v5-games-needed*, *fargo-formula*. Lowercase-kebab for filenames; Title Case for display names.
+- **Formula vs discrete in names:** the name doesn't typically encode the shape (formula or discrete) — both shapes are valid Chart kinds. *fargo-formula* is named that way because "formula" is part of the canonical CSI/FargoRate vocabulary, not because the name needs to flag the shape.
+
+**Anti-conflation note.** "Chart" the kind shares the everyday-English word "chart." Be precise in docs: when you write *"the threshold chart"* lowercase, you mean any threshold-shaped Chart in the abstract. When you write *"the 3v3 Games-Needed Chart"* title-case, you mean the specific named Module. The capitalization signals the precision.
+
 ## Concrete rules / templates
 
 ### Module README template (8–9 sections)
