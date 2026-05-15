@@ -426,6 +426,133 @@ Module borders are enforced through three rules:
 
 These three rules together preserve the borders. Without them, the modular system collapses back into the one-big-blob it exists to escape.
 
+## Mechanism — Deep Dive
+
+*Mechanism is the **atom** kind of Module — the work-doing unit at the leaves of the architecture's tree. This deep-dive applies the Module primitives (Essence / Boundary / Design space / Typed I/O / Implementation-vs-intent flag) to the Mechanism kind specifically. Most existing variants in the codebase are Mechanisms; the deep-dive nails down what makes them Mechanisms (not Systems, not Charts) and the classification tools (2x2 grid, mode flags, triggers) that organize them.*
+
+### 1. Essence
+
+**A Mechanism is a Module that performs ONE specific functional task with no internal composition.** The atom-ness is what distinguishes it from a System (which composes other Modules).
+
+If you can describe a Module's job in a single sentence — *"computes a player's handicap from match history"*, *"declares the asymmetric game targets for a handicapped match"*, *"allocates winner-and-loser points after each game"* — you're probably looking at a Mechanism.
+
+If describing the job requires *"first this, then that, then this other thing, with rules for how they fit together,"* you're looking at a System.
+
+**Examples of Mechanisms:**
+- `extra_games`, `start_points`, `race_length_adjustment` (Handicap Mechanism atoms)
+- `accumulated_per_game` (per-game point allocator)
+- A threshold trigger that awards bonus points when a games-played milestone is reached
+- An end-of-match aggregate calculator
+
+### 2. Why "Mechanism" is its own kind
+
+Could we just call all atom Modules "Modules" and skip the Mechanism label? Yes — but the label carries information:
+
+- **Leaf-node signal.** When you read "Mechanism," you know this is a leaf — it won't decompose further. No "what's inside?" question to chase.
+- **Work-doing signal.** Mechanisms are where the actual computation happens. Systems orchestrate; Mechanisms produce.
+- **Reach-for-it-most signal.** Most Modules in the codebase are Mechanisms. The kind label keeps conversations precise — *"is this a Mechanism or a System?"* is the first question to ask when classifying anything new.
+
+### 3. Boundary: what's NOT a Mechanism (and the kind-vs-role clarification)
+
+A Module is NOT a Mechanism if:
+
+- **It composes other Modules** → it's a **System** (the kind for compositions, not atoms). The Scoring System composes 8 component Modules; that makes it a System, not a Mechanism.
+- **It's data-shaped** (a lookup table or formula consumed by another Module) → it's a **Chart**.
+- **It bridges mismatched type contracts** so two otherwise-incompatible Modules can compose → it's a **Converter**.
+
+**Important: Variant is a different category than Mechanism / System / Chart / Converter.** The other four are **kinds** (structural categories — what the Module IS structurally). Variant is a **role** (a position within a parent Module — one of N options the parent offers).
+
+A single Module can be **both a kind AND a role at the same time.** Example: `extra_games` is a **Mechanism** (kind — atomic, single functional task) AND a **Variant** (role — one of three currently-shipping Handicap Mechanisms). FargoRate is a **Mechanism** (kind — does the rating math) AND a **Variant** (role — one of four Handicap Systems variants). The kind tells you what it IS; the role tells you what position it plays in a larger structure.
+
+So the Mechanism boundary is about the *kind* dimension. A Mechanism is never also a System (you can't be both an atom and a composition simultaneously), but it can readily be a Variant (atom playing the role of one-of-N within a parent).
+
+### 4. The 2x2 axis-and-shape grid (handicap-related Mechanisms)
+
+A common classification tool for *handicap-related* Mechanisms uses two axes:
+
+|  | **Games axis** | **Points axis** |
+|---|---|---|
+| **Handicap-side** *(consumes the handicap)* | threshold + head-start mechanisms operating on game targets | threshold + head-start mechanisms operating on point totals |
+| **Scoring-side** *(no handicap)* | *(empty — games are recorded, not computed)* | per-game allocators, threshold triggers, end-of-match aggregates |
+
+**Handicap-side mechanisms** further split by **application type:**
+
+- **Threshold mechanism** — applies the handicap-derived value to the **finish line** (`extra_games`, `extra_points`). The stronger side has farther to go.
+- **Head-start mechanism** — applies it to the **starting position** (`start_points`, `games on the wire`). The weaker side starts ahead. *"On the wire"* is the gambling/domain synonym for head-start on the games axis.
+
+**Scoring-side mechanisms** don't consume the handicap — they operate purely on game outcomes. They're the per-game point math (allocator, threshold trigger, end-of-match aggregate) that lives inside the Points System.
+
+**The grid is a tool, not the universal Mechanism taxonomy.** Mechanisms outside the handicap/scoring concern (e.g., a future Match Format pairing-generation Mechanism, or a between-match adjustment Mechanism) won't fit the grid. The grid classifies one *family* of Mechanisms; other families have their own classification tools.
+
+### 5. Mode flags within a cell
+
+Mechanisms in the same grid cell share the fundamental shape but can differ on **mode flags**. Currently codified flags:
+
+- **Scope** — *team-aggregate* (sum the team's handicaps, apply the result to the whole team match) vs *per-pairing* (use individual handicaps, apply per head-to-head matchup). Scope is just an aggregation choice at the input stage; the downstream computation is the same shape.
+- **Termination** — *threshold* (play to a fixed game count, evaluate at end) vs *race* (match ends when someone hits the target).
+
+Currently-shipping Handicap Mechanism variants by mode flag:
+
+| Variant | Cell | Scope | Termination |
+|---|---|---|---|
+| `extra_games` | Games / Threshold | team-aggregate | threshold |
+| `start_points` | Points / Head-start | team-aggregate | threshold |
+| `race_length_adjustment` | Games / Threshold | per-pairing | race |
+
+`extra_games` and `race_length_adjustment` sit in the same cell — same fundamental Mechanism shape, different mode flags.
+
+**Mode flags are part of the Mechanism's design space.** Adding a new mode flag is opening up a new dimension along which variants can differ; adding a new value to an existing flag is the variant route from the Module deep-dive's tweak classification.
+
+### 6. Triggers
+
+Many Mechanisms have a **trigger condition** — they don't fire unconditionally; they fire when some condition is met.
+
+| Mechanism | Trigger |
+|---|---|
+| Per-game allocator | Per-game (implicit — fires after each game completion) |
+| Threshold trigger (Points System) | Games-played reaches milestone N (explicit condition) |
+| End-of-match aggregate | Match completion (implicit) |
+| Start-points (Handicap) | Match start (implicit, before first game) |
+
+**The trigger is part of the Mechanism's design.** Two Mechanisms with the same shape but different triggers are different Mechanisms (e.g., a per-game allocator is a different Mechanism than a threshold-fire allocator even if both produce points). Documenting a Mechanism without naming its trigger leaves a hole.
+
+Some Mechanisms have **stackable triggers** — multiple trigger conditions, each with its own action. Example: a Points System could stack two threshold triggers (one at games-played = 10, another at games-played = 20). Each trigger fires independently. This is still ONE Mechanism with multiple trigger conditions, not multiple Mechanisms.
+
+### 7. I/O contract for Mechanisms
+
+Per [Module Deep Dive § 8](#8-io-contracts-at-module-boundaries), every Module declares typed input and typed output. Mechanisms specifically:
+
+- **Input:** typically data flowing from upstream (an upstream Mechanism's output, a Chart's lookup result, or a configuration value).
+- **Output:** the Mechanism's specific work product — a transformed value, a benchmark declaration, a points allocation, an event.
+
+Because Mechanisms don't compose other Modules, their contract is **direct**: input X → output Y, no internal complexity to verify against. This is in contrast to a System, whose contract has to verify both the external promise AND the internal chain of contracts holds.
+
+Mechanisms typically have **simpler contracts than Systems** (one in, one out) — but the same precision rules apply: declare the input type, declare the output type, name the category if outputs vary by mode/variant.
+
+### 8. How Mechanisms compose into Systems
+
+Mechanisms are the building blocks Systems compose. The assembly-line view (per [Module Deep Dive § 8](#8-io-contracts-at-module-boundaries)): each Mechanism is a station; the System is the line; the fully-configured System produces the end product.
+
+**Inversion of control: Mechanisms don't know they're composed.** A Mechanism just consumes its declared input and produces its declared output. The System is responsible for:
+
+- Picking which Mechanisms to compose
+- Wiring outputs to inputs (and inserting Converters where types don't naturally line up)
+- Defining the order of composition
+- Handling errors at composition boundaries
+
+The Mechanism stays "stupid" about its place in the larger structure. This is what makes Mechanisms reusable — the same `extra_games` Mechanism can be composed into different Scoring Systems without modification because it doesn't know or care which System it's composed into.
+
+**Implication for documentation.** A Mechanism's doc page describes its own contract (input, output, internal logic) — NOT how it's used in any specific System. Cross-references to System usage live in the System's docs (or are added as bare links from the Mechanism's "Where this is used" pointer).
+
+### 9. Naming Mechanisms
+
+- **Atom names (code identifiers):** lowercase_snake_case — `extra_games`, `start_points`, `accumulated_per_game`, `race_length_adjustment`.
+- **Atom display names (in docs):** Title Case with spaces — *Extra Games*, *Start Points*, *Race Length Adjustment*.
+- **Umbrella name** (the Module that contains Mechanism atoms as variants): plural noun phrase per [Module Deep Dive § 9](#9-naming-rule-plural-vs-singular) — *Handicap Mechanisms*, not *Handicap Mechanism*.
+- **Domain-canonical names:** if a Mechanism corresponds to an externally-defined concept with a published name (CSI's "10-Point Scoring System," APA's "Equalizer rating system"), preserve the canonical name as the display label.
+
+**Anti-conflation note on naming.** "Mechanism" the kind is the same word as "mechanism" the everyday-English noun. Be precise in docs: when you write *"the threshold mechanism"* lowercase, you mean any threshold-shaped mechanism. When you write *"the Threshold Mechanism Variant"* title-case, you mean a specific named Module. The capitalization signals the precision.
+
 ## Concrete rules / templates
 
 ### Module README template (8–9 sections)
