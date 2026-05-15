@@ -727,6 +727,85 @@ The Chart doesn't know what consumer asked it; it just answers. The Mechanism do
 
 **Anti-conflation note.** "Chart" the kind shares the everyday-English word "chart." Be precise in docs: when you write *"the threshold chart"* lowercase, you mean any threshold-shaped Chart in the abstract. When you write *"the 3v3 Games-Needed Chart"* title-case, you mean the specific named Module. The capitalization signals the precision.
 
+## Converter — Deep Dive
+
+*Converter is the **adapter** kind of Module — its entire job is bridging two mismatched type contracts so two otherwise-incompatible Modules can compose. Converters are what make Module orthogonality real wherever types don't naturally line up. Currently zero implementations exist in code; the kind is on the committed roadmap because the modular system can't deliver on its "any A pairs with any B" promise without them. This deep-dive applies the Module primitives to the Converter kind.*
+
+### 1. Essence
+
+**A Converter is a Module whose entire job is translating one type into another so two Modules with mismatched contracts can compose.** Input is whatever the upstream Module produces; output is whatever the downstream Module expects.
+
+A Converter doesn't add business logic, doesn't compose other Modules, doesn't provide reference data. It just bridges the type gap.
+
+**Examples of Converters (committed roadmap; no current implementations):**
+
+- **Points-to-Fargo** — input: Points handicap (-2 to +2 integer); output: Fargo equivalent (100–850 integer). Lets a Fargo-calibrated Threshold Chart consume a Points handicap value.
+- **Percentage-to-Fargo** — input: Percentage rating (0–100); output: Fargo equivalent. Lets a Fargo-calibrated Chart consume a Percentage value.
+- **Fargo-to-Points** — reverse direction (if a Points-calibrated Chart needs to consume a Fargo value).
+
+Each Converter handles ONE direction. A bidirectional translation = two separate Converters (per the *one Module = one output type* rule from Module § 8).
+
+### 2. Why "Converter" is its own kind
+
+Could we just call adapters "Mechanisms" and skip the Converter label? Yes — but the label carries information:
+
+- **Adapter signal.** When you read "Converter," you know it's pure type bridging — no business logic, no domain decisions. Just *"upstream type X → downstream type Y."*
+- **Orthogonality-enabler signal.** Converters are what make composition claims like *"any Handicap System pairs with any Threshold Chart"* actually true. Without them, those claims are overstated (per Module § 8 implication). The kind label flags "this Module exists to make composition work where types don't naturally line up."
+- **Limited-scope signal.** A Converter has the smallest possible job — translate one value. Reading "Converter" tells you *"don't expect anything beyond the translation."*
+
+### 3. Boundary: what's NOT a Converter
+
+A Module is NOT a Converter if:
+
+- **It does business work, transforms domain state, or has side effects** → it's a **Mechanism** (the atom kind for work-doers). A Converter does pure type translation; if there's domain logic involved, it's a Mechanism.
+- **It composes other Modules** → it's a **System** (the set kind for compositions). A Converter is itself an atom — it doesn't have other Modules inside.
+- **It provides organized reference data via lookup** → it's a **Chart** (the data-shaped kind). A Converter computes a translation; a Chart provides looked-up values. (The line is subtle — see below.)
+
+A Module is exactly one of the four kinds. A Converter is never also a Chart, Mechanism, or System.
+
+**Subtlety: a Converter computes its output, just like a formula-shaped Chart. What's the difference?** The *purpose*. A Chart's job is to *provide knowledge* — answer the question *"what's the value at this index?"* A Converter's job is to *bridge type mismatches* — translate *"the upstream's value, in the downstream's expected form."* Same kind of math machinery; different essence. If the Module exists because two other Modules have mismatched types, it's a Converter. If the Module exists to provide a reference mapping that Mechanisms consume, it's a Chart.
+
+### 4. Calibrated translation, not unit conversion
+
+**Converters are calibrated translations, not trivial unit conversions.** This is critical to flag explicitly because the math often LOOKS trivial.
+
+**Trivial-looking case:** Points handicap is -2 to +2; Fargo is 100 to 850. Numerically scaling Points by some factor to land in Fargo's range is trivial math (e.g., `(points + 2) * 187.5 + 100`). But the resulting number is **meaningless** — a "0 Points" player isn't equivalent to a "475 Fargo" player just because the math lands them in similar numeric positions. Fargo and Points measure player skill differently; the scales aren't structurally comparable.
+
+**For a Converter to produce semantically meaningful output, the calibration must be empirically grounded** — fitted against actual play data showing what Fargo number consistently corresponds to what Points value across many leagues and many players. That's substantial data work.
+
+**Honest framing on what Converters can and can't do:**
+
+- **Fargo is the most accurate handicap encoding** of the ones we ship. Everything else is approximation.
+- **A Converter gets LOs as close as the math allows** while being honest about the approximation cost.
+- **Many LO-driven Converter combinations will produce *worse* matches** than the prepackaged tested ones. The Converter exists so the LO has the choice, not so every choice is good.
+- **Converters cannot perfectly equalize handicap systems.** Two leagues with different handicap encodings will produce different matchups even with a Converter in place.
+
+This honest framing should appear on every Converter's doc page (when the Modules get documented) and in any LO-facing UI that exposes Converter selection.
+
+### 5. I/O contract for Converters
+
+Per [Module Deep Dive § 8](#8-io-contracts-at-module-boundaries), every Module declares typed input and typed output. Converters specifically:
+
+- **Input** — the upstream Module's output type (e.g., Points integer in -2 to +2 range).
+- **Output** — the downstream Module's expected input type (e.g., Fargo integer in 100–850 range).
+
+**Converters are pure.** Same input always produces same output. No state, no side effects, no time-varying behavior. (Same purity discipline as Charts.)
+
+**One direction per Converter, per the *one Module = one output type* rule.** A `points-to-fargo` Converter is one Module; a `fargo-to-points` Converter is a different Module. They share no internal logic; even if the math is symmetric in principle, each direction is its own contract.
+
+A Converter's contract is the simplest of all the kinds: input X → output Y, no internal complexity, no chain to verify. Same as Chart's I/O contract structurally — the difference is the *purpose* (bridging vs lookup).
+
+### 6. Naming Converters
+
+- **Code identifiers:** lowercase-kebab using `<from>-to-<to>` convention — `points-to-fargo`, `percentage-to-fargo`, `fargo-to-points`.
+- **Display names:** Title Case with arrow or "to" — *Points-to-Fargo Converter*, *Percentage-to-Fargo Converter*.
+- **Filenames:** lowercase-kebab — `points-to-fargo.md`, etc.
+- **Umbrella name** (the parent Module that wraps Converters as alternatives): plural noun phrase — *Converters* (selection-pattern System; each league configuration picks which Converters to include in its pipeline).
+
+The `<from>-to-<to>` convention makes the direction explicit — critical because each direction is a separate Converter and the naming has to disambiguate.
+
+**Anti-conflation note.** "Converter" the kind shares the everyday-English word "converter." Be precise in docs: when you write *"the converter"* lowercase, you mean any Converter in the abstract. When you write *"the Points-to-Fargo Converter"* title-case, you mean the specific named Module. The capitalization signals the precision.
+
 ## Concrete rules / templates
 
 ### Module README template (8–9 sections)
