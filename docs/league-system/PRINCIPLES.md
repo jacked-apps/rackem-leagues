@@ -102,42 +102,20 @@ Some Handicap Mechanisms (`extra_games`, `start_points`) operate at the team-agg
 
 ## The architectural model
 
-*Settled during Unit 4 cold-read review with Ed. This supersedes an earlier "3-layer view" — the model converged through iterative refinement and is now codified.*
+*This section is a brief orientation. The full treatment of each concept lives in its dedicated **deep-dive** section that follows. If you're skimming for navigation, this is enough. If you're committing to architectural decisions, read the deep-dives.*
 
-### Module — the universal unit
+### Module and its four kinds
 
-A **Module** is any bounded, well-defined thing with **strict borders** (a clear definition of what it is and isn't) and **room to grow** inside those borders (it can become as powerful and flexible as it needs to be). It is a "cage" placed around a single responsibility.
+A **Module** is any bordered unit of league-system behavior with a typed external contract and a defined design space inside. Every Module is exactly one of four kinds:
 
-This is the core unit of the whole architecture, and it directly embodies the project's central principle: **strict borders = anti-conflation; room to grow = not constriction.**
+- **Mechanism** — atom. Does one functional task; no internal Modules. *(See [Mechanism — Deep Dive](#mechanism--deep-dive).)*
+- **System** — set. Composed of other Modules with rules for how they fit together. *(See [System — Deep Dive](#system--deep-dive).)*
+- **Chart** — data-shaped. Passive lookup queried by other Modules; can be a discrete table or a continuous formula. *(See [Chart — Deep Dive](#chart--deep-dive).)*
+- **Converter** — adapter. Bridges two mismatched type contracts so otherwise-incompatible Modules can compose. *(See [Converter — Deep Dive](#converter--deep-dive).)*
 
-**Modules nest recursively.** A Module can contain other Modules. The composition of a set of Modules — with rules for how they fit together — is itself a Module. `extra_games` is a Module; the "Handicap Mechanisms" Module contains it; the whole **Scoring System** is a Module containing those.
+For the foundational treatment of Module itself (essence, boundary, tweak classification, recursion, I/O contracts, page pattern, and cross-Module enforcement), see [Module — Deep Dive](#module--deep-dive) below.
 
-**The Scoring System is the top-level Module** of the rule-structure hierarchy — the complete, configured rule set that scores a match. The component Modules (Handicap System, Handicap Mechanisms, Points System, Win Calculator, Threshold Charts, Team Geometry, Match Format, Standings & Tiebreakers) nest *inside* it. *(The brainstorm cheat sheet's "7 Modules" framing is being revised — see "A Scoring System is the whole thing" below.)*
-
-**Data is not a Module.** A Module has walls around a *responsibility* — it does something, or organizes something. Data has a type but no responsibility. Games, Points, threshold values, player ratings — these are **data that flows between Modules**, not Modules themselves.
-
-### Kinds of Module
-
-"Mechanism," "System," "Chart," and "Converter" are not separate things from Modules — they describe **what kind of Module** something is structurally:
-
-- **Mechanism** — a Module that performs a single functional task (an *atom*). (`extra_games`, a threshold computation, a trigger.)
-- **System** — a Module that is a composition of other Modules (a *set*), with rules for how they fit together. (The Scoring System; the Handicap System; the Points System.) **When you need a word for "a set of Modules," the word is _System_.**
-- **Chart / Formula** — a Module used as a *tool* by another Module to do a computation. A chart is discrete; a formula is continuous; they are interconvertible.
-- **Converter** — a Module whose entire job is bridging two mismatched type contracts so two otherwise-incompatible Modules can compose. (Example: a `Points → Fargo equivalent` Converter would let a Fargo-calibrated Threshold Chart consume a Points handicap. Committed roadmap; currently zero implementations — required for the modular system to deliver on its orthogonality promise.)
-
-So "Module" is the noun; these are its **four kinds**. Every Module is exactly one of those four. **Mechanism** and **System** are the two reached for most — *atom* vs. *set*. **Converter** is the kind that makes Module orthogonality real wherever types don't naturally line up — without Converters, "any A pairs with any B" claims are overstated. See the Module — Deep Dive section below for the full treatment, and the per-kind deep-dives that follow it.
-
-> **"Variant" is casual shorthand, not a kind.** You'll see "variant" used loosely throughout these docs to mean "a Module the parent offers as one of several alternatives" (e.g., *"the Points variant of Handicap Systems"*). That's fine as everyday vocabulary, but **Variant is NOT a separate architectural kind** — there are only the four kinds above. Whether a Module is offered as an LO-pickable alternative is documented at the parent level, not as a structural property of the Module itself.
-
-### How Modules connect: data flows between them
-
-Modules connect by passing **data** — not by passing Modules. The canonical example, the handicap-to-trigger chain:
-
-1. The **Handicap System** (a Module) produces handicap **data** (rating values).
-2. A **threshold Mechanism** takes that data in, does its math (using a Chart or Formula as a tool), and produces threshold **data**.
-3. A **trigger Mechanism** takes the threshold data in, performs a task, and usually produces **data to be saved**.
-
-The composite — Handicap System + threshold + trigger — is itself a **System** (a Module composed of Modules). Each step is a bounded Module; data is what flows between them.
+> **"Variant" is casual shorthand, not a kind.** You'll see "variant" used loosely throughout these docs (e.g., *"the FargoRate variant of Handicap Systems"*) as everyday vocabulary for "a Module the parent offers as one of several alternatives." That's fine — but **Variant is NOT a separate architectural kind**. There are only the four kinds above.
 
 ### The two metrics
 
@@ -148,36 +126,11 @@ Every match tracks exactly two metrics — these are **data**, not Modules:
 
 This asymmetry (games recorded, points computed) is structural: there is nothing to "compute" about games without a handicap — you just count the records.
 
-### Mechanism classification
+### Scoring System as the top-level Module
 
-Mechanism-kind Modules classify on two axes:
+A **Scoring System** is the complete configured rule set that scores a match — a top-level System composing all 8 component Modules (Handicap Systems, Handicap Mechanisms, Points System, Win Calculator, Threshold Charts, Team Geometry, Match Format, Standings & Tiebreakers). The 8 components are the *parts*; the Scoring System is the *whole*. A Scoring System's behavior is built by **explicit composition**: the "instruction manual" reads the structure directly — no derivation step.
 
-|  | **Games** | **Points** |
-|---|---|---|
-| **Handicap-side** *(consumes the handicap)* | threshold + head-start mechanisms, games axis | threshold + head-start mechanisms, points axis |
-| **Scoring-side** *(no handicap)* | *(empty — games are recorded, not computed)* | per-game allocators, threshold triggers, end-of-match aggregates |
-
-**Handicap-side mechanisms** further split by *application type*:
-
-- **Threshold mechanism** — applies the handicap-derived value to the **finish line** (`extra_games`, `extra_points`).
-- **Head-start mechanism** — applies it to the **starting position** (`start_points`, `games on the wire`). "On the wire" is the domain/gambling synonym.
-
-Each handicap-side mechanism **uses a Chart or Formula** (a tool Module) to do the handicaps→value computation. The chart/formula is the single point where the handicap is consumed directly; everything downstream works with the derived value.
-
-### Win Calculator
-
-The **Win Calculator** is a component Module of its own. It consults the collected metrics (Games + Points) plus any benchmarks the mechanisms declared, and declares the match winner. It does not produce a metric; it decides.
-
-### A Scoring System is the whole thing
-
-A **Scoring System** is the complete, configured rule set that scores a match — a top-level System composing the component Modules. A Scoring System's behavior is built by **explicit composition**: if the "instruction manual" sees N distinct Mechanisms each with its own trigger, it reads the structure directly — no derivation step.
-
-Two terms get retired/relocated here:
-
-- **"Division" is dropped.** It was a CSI-inherited conflation that mixed up *a league* (a recurring competition) with *a scoring configuration* (a rule set) — two fundamentally different kinds of thing sharing one word. What the brainstorm called a "Division" is a **prepackaged Scoring System**. The competition hierarchy is **Organization → League → Season**; a League runs a Scoring System. "Division" appears nowhere.
-- **The brainstorm's "Scoring Systems Module"** (one of the original 7) was a mis-categorization — it tried to make "the whole thing" into one sibling part. It splits into two real component Modules: **Points System** (per-game point allocation) and **Win Calculator** (victory determination). The component-Module count goes 7 → 8.
-
-This restructure is **policy-gated** and not yet propagated to the cheat sheet / folders / cross-links — it is mapped and executed as a deliberate, separate step (see task tracker).
+> **"Division" is dropped.** The original brainstorm used CSI's term "Division" for the bundled rule set. We dropped it because CSI uses "division" for both *a league* (a recurring competition) and *a scoring configuration* — two fundamentally different things sharing one word. The competition hierarchy is **Organization → League → Season**; a League runs a Scoring System. "Division" appears nowhere.
 
 ### Scope: this branch defines the ideal
 
@@ -487,7 +440,7 @@ Per [Module Deep Dive § 8](#8-io-contracts-at-module-boundaries), every Module 
 
 Because Mechanisms don't compose other Modules, their contract is **direct**: input X → output Y, with **no internal Module contracts to chain or verify**. This is in contrast to a System, whose contract has to verify both the external promise AND the internal chain of Module contracts holds. (A Mechanism may have plenty of internal logic, steps, and state — see [Section 1](#1-essence) — but no internal *named Modules*, so no internal contracts to verify.)
 
-Mechanisms typically have **simpler contracts than Systems** (one external in, one external out) — but the same precision rules apply: declare the input type, declare the output type, name the category if outputs vary by mode.
+Mechanisms typically have **simpler contracts than Systems** (one external in, one external out) — but the same precision rules apply: declare the input type, declare the output type, name the category if outputs vary by mode. The *one Module = one external output type* rule from [Module § 8](#8-io-contracts-at-module-boundaries) applies (Mechanisms are Modules; the rule applies universally).
 
 ### 6. How Mechanisms compose into Systems
 
@@ -609,6 +562,8 @@ Per [Module Deep Dive § 8](#8-io-contracts-at-module-boundaries), every Module 
 
 **Chain-pattern Systems** have a more straightforward contract: external output is whatever the last station in the chain produces.
 
+The *one Module = one external output type* rule from [Module § 8](#8-io-contracts-at-module-boundaries) applies (Systems are Modules; the rule applies universally — even though a System composes multiple internal Modules, its EXTERNAL output is still one thing).
+
 ### 7. Recursion + inversion of control at the System level
 
 **Systems can contain other Systems.** Recursion is how the architecture scales:
@@ -703,7 +658,7 @@ Per [Module Deep Dive § 8](#8-io-contracts-at-module-boundaries), every Module 
 
 **Charts are pure.** Same input always produces same output. No state mutation, no side effects, no time-varying behavior. This is what makes Charts safely reusable across many consumers — there's no "ask order" or "asker identity" affecting the answer.
 
-A Chart's contract is the simplest of all the kinds: input X → output Y, no internal complexity to verify, no chain of internal contracts.
+A Chart's contract is the simplest of all the kinds: input X → output Y, no internal complexity to verify, no chain of internal contracts. The *one Module = one external output type* rule from [Module § 8](#8-io-contracts-at-module-boundaries) applies (Charts are Modules; the rule applies universally).
 
 ### 6. How Charts are consumed
 
