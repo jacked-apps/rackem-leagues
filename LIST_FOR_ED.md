@@ -1438,47 +1438,158 @@ recoverable.
 
 ---
 
-## 24. Flaky Captain Black Mark
+## 24. Fargo Initial-Points Confirmation Only Requires One Side (Consider Removing Entirely)
 
-**Branch needed:** `captain-flake-flag`
-**Discovered:** 2026-04-28
-**Priority:** Low — nice-to-have, not blocking
+**Discovered:** 2026-05-09
+**Severity:** Low-Medium (working "well enough" but the design isn't
+doing what it claims to do)
+**Owner:** unassigned
 
-**Problem:** When a team drops mid-season, it's almost always the captain's
-fault — they've broken their commitment to keep the team running. Today there
-is no signal to a different LO later that this person has flaked before. They
-can be made captain again and repeat the pattern with no warning.
+**Symptom:** The Fargo initial start-points credit is supposed to be
+a *two-team negotiation* — both captains need to confirm before the
+match proceeds. In practice, only one side's confirmation is being
+required (or only one side's confirmation is being read), and the
+match proceeds anyway. The gating mechanism isn't actually gating.
 
-**Solution:** Track a flake count (or flag) on the member, and surface it in
-any captain-selection UI as a soft warning ("This member has been recorded as
-flaking on a captain role X time(s). Consider another captain.").
+**Proposed direction (Ed's call, 2026-05-09):** rather than chase the
+bug to make confirmation work as designed, remove the confirmation
+requirement entirely. Compute the start-points credit from the lineup
+ratings, apply it, let the match proceed. If we ever find out the
+auto-computed value is wrong, fix it as a per-match adjustment after
+the fact (vacate-and-rescore-style intervention) rather than gating
+every match on a confirmation prompt.
 
-**Possible shapes:**
-1. **Simple counter** — add `captain_flake_count int default 0` to `members`.
-   Increment when a team is marked withdrawn while they were captain.
-2. **Flag table** — `member_flags` table with `member_id`, `flag_type`,
-   `season_id`, `notes`, `created_by`. Richer, supports other flag types
-   later (skipped payment, behavior issues, etc.).
+**Rationale:**
+- The two-side confirmation only matters when teams actually disagree
+  on the right credit. In practice, captains aren't second-guessing
+  the math; they're confirming what the system already computed. The
+  confirmation step is theater, not a real safety net.
+- The current half-broken confirmation creates UX friction (re-prompts
+  after return-to-lineup, see #22) without actually achieving the
+  negotiation it's named for.
+- Trusting the computed value and adjusting after-the-fact is a
+  smaller surface area: one path, no race conditions between two
+  devices, no captain-confirmation hook to maintain.
 
-**Recommended:** Option 2 (flag table). More flexible, supports future flag
-types without further schema changes. One row per incident keeps history.
+**What removing it would touch:**
+- The captain-confirmation prompt on the lineup page.
+- The `*_to_lose` scratch-state columns currently used to flag captain
+  confirmations (per the `useMatchPreparation.ts` comment block, those
+  columns are repurposed as scratch state for "this captain confirmed
+  with player number X").
+- `prep_match`'s logic that gates on confirmation flags.
+- Possibly relates to and supersedes issues #21 and #22.
 
-**Where the warning should appear:**
-- Captain dropdown in team creation/edit
-- Anywhere an LO assigns a captain
-- Should be a soft warning (informational), not a block
-
-**When to write a flag:**
-- Automatically when a team is set to `status = 'withdrawn'` mid-season —
-  write a flag row for the captain at that moment
-- Manually by an LO via a "report flake" button (optional, future)
-
-**Tied to:** Item above this section (mid-season team-drop / soft-delete
-work). The flag write happens inside the same drop-team flow.
+**When to revisit:** if a real-world case surfaces where the
+auto-computed start-points value was wrong AND the captain-
+confirmation step would've caught it. So far that hasn't happened.
 
 ---
 
-## 25. Team Chat — Allow Manual Adds of Non-Team Members (Phase 2+)
+## 25. Inline LO-Edit Mode in Scoring Modal (Branch B Architecture Requirement)
+
+**Discovered:** 2026-05-09 (during Branch A modal verification).
+**Severity:** Feature request — must be designed-into Branch B from
+the start, not bolted on later.
+**Owner:** unassigned
+
+**The idea:** the scoring modal should support an LO-only inline edit
+mode that lets a league operator hide/show specific events directly
+from within the modal, without leaving the live-scoring page. Same
+component is also reused as a live-preview-and-edit surface in the
+operator office's preferences page. One component, two entry points,
+same persistence.
+
+### UX flow
+
+1. While viewing the scoring modal as an LO of this match's league,
+   a pencil/edit icon appears in the top-right corner of the modal
+   (only visible to LOs of this specific league).
+2. Tapping the pencil flips the modal into "LO edit" shape:
+   instead of the normal scoring controls, the body shows a list of
+   every registry event with a "hide / achievement" checkbox column:
+
+   ```
+   hide   achievement
+   [ ]    Break and Run
+   [ ]    Win by forfeit
+   [x]    Scratch on 8        ← currently hidden for this league
+   [ ]    Early 8
+   ...
+   ```
+
+3. Toggling a checkbox writes to `event_preferences` immediately
+   (or commits via a Save action — UX call). LO exits edit mode →
+   modal returns to normal scoring shape with the new visibility set.
+4. Same component, called with `mode='preview'`, is what the
+   operator office's preferences page renders so the LO sees a
+   live representation of "what scorers will see in the modal" while
+   they configure the league.
+
+### Why this is the right shape
+
+- **Edit-where-you-look.** LO sees a checkbox they don't want during
+  a live match → taps pencil → hides → done. No menu-diving.
+- **8-on-the-break is the canonical example.** BCA = not a win;
+  APA = tracked; many bar-leagues = auto-win. Same event, three
+  different LO preferences. Inline edit makes this trivial.
+- **Component reuse as preferences preview.** The LO office's
+  preferences page would otherwise be a separate UI rendering of
+  "current toggles." Sharing the modal component as the preview
+  means what they see in office matches what scorers see at
+  game time — no drift, no double-implementation.
+
+### Architecture requirements for Branch B (must be designed-in)
+
+Branch B's `game_events` registry + `event_preferences` table work
+needs to reckon with this from the start, not bolt it on later:
+
+1. **`event_preferences` schema must support per-league toggles
+   that the LO can write from anywhere they have permission.**
+   Org-level vs league-level is the natural granularity — both
+   should be writable. (Org-level toggle = "apply to all my
+   leagues"; league-level toggle = "this league only.")
+2. **The scoring modal component must accept a `mode` prop**
+   (`'score' | 'edit' | 'preview'`) from day one of Branch B. The
+   `score` mode is what scorers see; `edit` is what LOs see when
+   they tap the pencil; `preview` is the office-page render. All
+   three share the same registry rendering — they differ in which
+   controls are interactive and what writes happen on toggle.
+3. **Authorization gating: LO of this match's league.** Pencil
+   only renders when:
+   - Current user has `league_operator` (or `developer`) role, AND
+   - The match's league belongs to an org this LO administrates.
+   An LO of a different league should NOT see the pencil on this
+   match.
+4. **Realtime propagation across active scorers** is preferred but
+   acceptable to defer. When LO toggles "Scratch on 8" off mid-
+   match, scorers' open modals can either update live (Supabase
+   realtime subscription on `event_preferences`) or update on
+   next-modal-open (acceptable; explicit). Pick one and document.
+5. **The "preview" entry point lives on the operator office's
+   preferences page** as the visual representation of which events
+   are toggled. Office form for the LO to configure events should
+   reuse this rendering, not build a parallel form.
+
+### Out of scope for this item (don't conflate)
+
+- Editing event NAMES / labels (e.g., changing "Loser balls
+  pocketed" → "Points earned"). That's calculator-params territory
+  (the calculator's params already have a `label` field) and is its
+  own LO surface.
+- Editing event APPLICABILITY rules (e.g., "show Runout when winner
+  is breaker too"). That's registry-definition territory, owned by
+  developers, not per-league config.
+
+### Cross-references
+
+- Branch A's planned scope: docs/plans/2026-05-05-001-feat-scoring-modal-plumbing-plan.md
+- Branch B not yet planned. When Branch B's brainstorm/plan is written,
+  this item must be a first-class requirement, not a future-considerations
+  bullet.
+- Related: project_lo_inline_placeholder_handling memory (similar
+  edit-from-where-you-look pattern for placeholder players).
+## 26. Team Chat — Allow Manual Adds of Non-Team Members (Phase 2+)
 
 **Discovered:** 2026-05-12 during Unit 3 captain-fallback button scoping
 **Severity:** LOW — enhancement, not a bug
@@ -1506,7 +1617,7 @@ behavior — manual-in, manual-out).
 
 ---
 
-## 26. Adversarial Failure-Isolation Test for Season-Activation Trigger
+## 27. Adversarial Failure-Isolation Test for Season-Activation Trigger
 
 **Discovered:** 2026-05-12 while writing Unit 4 tests
 **Severity:** LOW — the safety mechanism exists in code, but lacks a runtime test
@@ -1540,7 +1651,7 @@ the EXCEPTION blocks; this is purely a test-coverage gap.
 
 ---
 
-## 27. DB-Backed Messaging Tests Cannot Run in Parallel — FIXED 2026-05-12
+## 28. DB-Backed Messaging Tests Cannot Run in Parallel — FIXED 2026-05-12
 
 **Discovered + resolved:** 2026-05-12 while wrapping up Unit 5
 
@@ -1691,7 +1802,7 @@ plan.
 
 ---
 
-## 28. Optional LO-Created Org-Wide Group Chat
+## 30. Optional LO-Created Org-Wide Group Chat
 
 **Discovered:** 2026-05-12 while finalizing the messaging Phase 1 chat model
 **Severity:** LOW — future feature, not Phase 1
@@ -1721,7 +1832,7 @@ handles arbitrary group chats. All this feature needs is:
 **Out of scope for Phase 1.** No schema change required when this lands.
 
 
-## 30. Messaging Phase 2 — Plan Doc Needs Writing
+## 31. Messaging Phase 2 — Plan Doc Needs Writing
 
 **Discovered:** 2026-05-15 while triaging post-Phase-1 next steps
 **Severity:** MEDIUM — not blocking, but Phase 2 is the next significant

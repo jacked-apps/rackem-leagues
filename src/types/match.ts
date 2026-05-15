@@ -289,10 +289,14 @@ export interface MatchGame {
   break_fouled: boolean;
   runout: boolean;
   win_by_forfeit: boolean;
-  // Fargo-specific per-game input (added by 20260418000001). NULL for BCA matches.
-  // Winner points and loser points are NOT stored — they are derived at read time
-  // from this value plus the league's winner_points / loser_points_method dials.
-  loser_balls_pocketed: number | null;
+  // Calculator-driven per-game input values (renamed from loser_balls_pocketed by
+  // migration 20260505000000). Each side's value meaning is determined by the
+  // active calculator's scoringPopupFields() spec — could be points, ball count,
+  // or any number whose interpretation the calculator's compute() defines. NULL
+  // when the calculator declares that side as kind: 'fixed' (no input) or when
+  // the league does not track points.
+  winner_value: number | null;
+  loser_value: number | null;
 }
 
 /**
@@ -318,9 +322,12 @@ export interface ConfirmationQueueItem {
   breakFouled: boolean;
   runout: boolean;
   winByForfeit: boolean;
-  // Fargo per-game: number of balls the loser pocketed (0–7 for 8-ball).
-  // null for BCA matches (field isn't captured). Shown when non-null.
-  loserBallsPocketed: number | null;
+  // Calculator-driven per-game input values (renamed from loserBallsPocketed
+  // by Branch A). For Fargo 10-7 the loser side is 0–7 ball count; future
+  // calculators may declare arbitrary ranges. NULL for BCA matches and any
+  // calculator declaring that side as kind: 'fixed'. Shown when non-null.
+  winnerValue: number | null;
+  loserValue: number | null;
   isVacateRequest?: boolean;
 }
 

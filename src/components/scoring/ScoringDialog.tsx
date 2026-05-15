@@ -4,28 +4,48 @@
  * Single-step confirmation dialog for scoring a game. The same component
  * drives all three scoring systems (BCA points, BCA percentage, Fargo) —
  * rendering is configurable: always-tracked flags, role-conditional
- * achievement buttons, and system-specific per-game inputs all render in
- * one Submit action.
+ * achievement buttons, and calculator-declared per-game inputs all render
+ * in one Submit action.
  *
- * Field rules (Unit 11b):
- * - Break-fault toggle: always visible. When true, the actual breaker flips
- *   to the scheduled racker — so BR/GB and runout swap which side is
- *   eligible.
- * - Win-by-forfeit toggle: always visible.
- * - BR (Break & Run): visible when winner = actual breaker.
- * - GB (Golden Break / 8-on-the-break): visible when winner = actual breaker
- *   AND the league has `golden_break_counts_as_win = true`.
- * - Runout: visible when winner = non-breaker.
- * - Ball count (0–7): visible only when `handicapType === 'fargo'`. No
- *   default selection; Submit is disabled until a value is tapped (0 is a
- *   valid explicit choice).
+ * Field order (top to bottom): achievements → state modifiers →
+ * per-side scoring inputs (counter, just above Save). The counter sits
+ * last because it's the deliberate input the scorer lands on after
+ * scanning past the achievement checkboxes.
+ *
+ * Field rules:
+ * - Achievements (compact inline checkboxes, role-conditional):
+ *   - BR (Break & Run): visible when winner = actual breaker.
+ *   - GB (Golden Break / 8-on-the-break): visible when winner = actual
+ *     breaker AND the league has `golden_break_counts_as_win = true`.
+ *     Mutually exclusive with BR — checking one auto-unchecks the other.
+ *   - Runout: visible when winner = non-breaker.
+ * - State modifiers (Switches, always visible):
+ *   - Break-fault toggle: when true, the actual breaker flips to the
+ *     scheduled racker — so BR/GB and runout swap which side is eligible.
+ *   - Win-by-forfeit: when toggled on, any checked achievement is
+ *     auto-cleared (cascade announced via aria-live) and an attribution
+ *     line ("Recorded as [Loser Name]") renders below the switch.
+ * - Per-side scoring inputs: driven by the active calculator's
+ *   `scoringPopupFields()` spec (see `src/systems/calculators/types.ts`).
+ *   When the spec declares `kind: 'counter'` for a side, an AdaptiveCounter
+ *   renders for that side. `kind: 'fixed'` sides render nothing (the
+ *   calculator handles them implicitly at compute time). When the
+ *   calculator name is null, unknown, or the spec has no per-side inputs
+ *   (aggregate calculators), no scoring inputs render.
  *
  * Winner points and loser points are NOT captured here — they derive at
- * read time from the league's snapshotted dials + the stored ball count.
+ * read time from the league's snapshotted calculator + params.
+ *
+ * Branch A Unit 4 replaced the prior hardcoded
+ * `pointsCalculator === 'accumulated_per_game'` string check with this
+ * spec-driven path. The dormant `scoringPopupFields()` interface is now
+ * a real production consumer.
  */
 
+import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import {
   Dialog,
@@ -35,6 +55,9 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { getCalculator } from '@/systems/calculators';
+import { resolveCalculatorParams } from '@/systems/calculators/resolveParams';
+import { AdaptiveCounter } from './AdaptiveCounter';
 
 interface ScoringDialogProps {
   /** Whether dialog is open */
@@ -67,21 +90,46 @@ interface ScoringDialogProps {
    */
   handicapType?: string;
   /**
-   * Active league `points_calculator`. The ball-count input is only
-   * rendered when this is `'accumulated_per_game'` — the only calculator
-   * that needs per-game balls-pocketed data. For all other calculators
-   * (including null = "don't track points") the input stays hidden and
-   * Submit is not gated on it.
+   * Active league `points_calculator` name. Looked up via `getCalculator()`
+   * to retrieve the calculator instance whose `scoringPopupFields(params)`
+   * spec drives per-side input rendering. `null` (no points tracking) or
+   * an unknown name skips per-side rendering.
    */
   pointsCalculator?: string | null;
+  /**
+   * Active league `points_calculator_params`. Passed to the calculator's
+   * `scoringPopupFields(params)` to produce the per-side input spec. The
+   * calculator handles empty params (`{}`) by falling back to its defaults
+   * — the modal does not interpret the params itself.
+   */
+  pointsCalculatorParams?: Record<string, unknown> | null;
   /** Break-fault toggle state (always visible). */
   breakFouled?: boolean;
   /** Win-by-forfeit toggle state (always visible). */
   winByForfeit?: boolean;
   /** Runout state (role-conditional on winner = non-breaker). */
   runout?: boolean;
-  /** Loser balls pocketed 0–7 (Fargo only). null = unselected. */
-  loserBallsPocketed?: number | null;
+  /**
+   * Calculator-driven per-game input value for the losing side. For Fargo
+   * 10-7 (accumulated_per_game), this is the number of balls the loser
+   * pocketed (0–7). null = unselected. Renamed from loserBallsPocketed
+   * by Branch A.
+   */
+  loserValue?: number | null;
+  /**
+   * Calculator-driven per-game input value for the winning side. NULL when
+   * the calculator declares winner side as kind: 'fixed' (no input). Future
+   * calculators with a winner-side counter populate this.
+   */
+  winnerValue?: number | null;
+  /**
+   * Display name of the losing player. When provided and `winByForfeit` is
+   * true, the modal renders an inline attribution disclosure ("Recorded as
+   * [Loser Name]") below the forfeit Switch so scorers see which player is
+   * being attributed the loss-by-forfeit. Optional — when null/undefined,
+   * attribution disclosure is omitted (graceful degradation).
+   */
+  loserPlayerName?: string | null;
   /** Handler for Break & Run checkbox change */
   onBreakAndRunChange: (checked: boolean) => void;
   /** Handler for Golden Break checkbox change */
@@ -92,8 +140,10 @@ interface ScoringDialogProps {
   onWinByForfeitChange?: (checked: boolean) => void;
   /** Handler for runout toggle */
   onRunoutChange?: (checked: boolean) => void;
-  /** Handler for ball-count tap (Fargo only) */
-  onLoserBallsPocketedChange?: (value: number) => void;
+  /** Handler for loser-side per-game value change */
+  onLoserValueChange?: (value: number) => void;
+  /** Handler for winner-side per-game value change (when calculator declares winner counter) */
+  onWinnerValueChange?: (value: number) => void;
   /** Handler for cancel button */
   onCancel: () => void;
   /** Handler for confirm button */
@@ -115,16 +165,20 @@ export function ScoringDialog({
   goldenBreakCountsAsWin,
   gameType,
   pointsCalculator = null,
+  pointsCalculatorParams = null,
   breakFouled = false,
   winByForfeit = false,
   runout = false,
-  loserBallsPocketed = null,
+  loserValue = null,
+  winnerValue = null,
+  loserPlayerName = null,
   onBreakAndRunChange,
   onGoldenBreakChange,
   onBreakFouledChange,
   onWinByForfeitChange,
   onRunoutChange,
-  onLoserBallsPocketedChange,
+  onLoserValueChange,
+  onWinnerValueChange,
   onCancel,
   onConfirm,
 }: ScoringDialogProps) {
@@ -135,18 +189,39 @@ export function ScoringDialog({
   const winnerWasScheduledBreaker = game.winnerWasScheduledBreaker ?? true;
   const winnerIsActualBreaker = winnerWasScheduledBreaker !== breakFouled;
 
-  // Per-game loser balls pocketed are only consumed by the
-  // `accumulated_per_game` points calculator (Fargo 10-7). Other Fargo
-  // calculators (`linear_above_threshold`, `accumulate_with_milestone_jumps`)
-  // and `null` (no points tracking) don't need this input — gating on
-  // `handicap_type === 'fargo'` alone over-collected for those leagues
-  // and (worse) blocked Submit until a fake value was tapped.
-  const requiresLoserBallCount = pointsCalculator === 'accumulated_per_game';
+  // Resolve the active calculator and its scoringPopupFields spec. The spec
+  // tells the modal whether each side needs a counter input (kind: 'counter')
+  // or contributes a fixed implicit value (kind: 'fixed', no input shown).
+  // Aggregate calculators return `{ perSideInputs: null }` and produce no
+  // per-side inputs at all.
+  //
+  // Params go through resolveCalculatorParams first: when the league hasn't
+  // customized params, the snapshot stores `{}` and the calculator's
+  // scoringPopupFields() expects the canonical params shape (it doesn't have
+  // its own empty-fallback like compute() does). Without resolution, the
+  // calculator throws "cannot read properties of undefined" on the first
+  // line that touches `params.winner` / `params.loser`.
+  const spec = useMemo(() => {
+    if (!pointsCalculator) return null;
+    const calc = getCalculator(pointsCalculator);
+    if (!calc) {
+      console.warn(`[ScoringDialog] Unknown calculator name: ${pointsCalculator}`);
+      return null;
+    }
+    const resolvedParams = resolveCalculatorParams(pointsCalculator, pointsCalculatorParams);
+    return calc.scoringPopupFields(resolvedParams as never);
+  }, [pointsCalculator, pointsCalculatorParams]);
 
-  // Submit is blocked when the active calculator requires a ball count and
-  // none has been selected. Ball count can be 0 (valid choice), so we test
-  // for null explicitly.
-  const fargoBallCountMissing = requiresLoserBallCount && loserBallsPocketed === null;
+  const winnerSpec = spec?.perSideInputs?.winner;
+  const loserSpec = spec?.perSideInputs?.loser;
+  const winnerNeedsCounter = winnerSpec?.kind === 'counter';
+  const loserNeedsCounter = loserSpec?.kind === 'counter';
+
+  // Submit is blocked when any side declares 'counter' and the value is
+  // still null. value === 0 is a valid explicit choice (current Fargo UX).
+  const counterValueMissing =
+    (winnerNeedsCounter && winnerValue === null) ||
+    (loserNeedsCounter && loserValue === null);
 
   // Get label for golden break based on game type
   const getGoldenBreakLabel = () => {
@@ -173,6 +248,51 @@ export function ScoringDialog({
     }
   };
 
+  // Aria-live announcement region. Updated when an auto-clear cascade
+  // happens (currently only Forfeit clears a checked achievement). Locked
+  // copy template: "[Achievement Name] cleared because forfeit was selected."
+  const [liveAnnouncement, setLiveAnnouncement] = useState('');
+
+  // Mutual-exclusion handlers for the achievement checkboxes. B&R and Golden
+  // Break are mutually exclusive on the breaker side; checking one auto-
+  // unchecks the other. Runout (non-breaker side) doesn't conflict with
+  // either since it only renders when winner is non-breaker.
+  const handleBreakAndRunCheck = (checked: boolean) => {
+    onBreakAndRunChange(checked);
+    if (checked && goldenBreak) onGoldenBreakChange(false);
+  };
+  const handleGoldenBreakCheck = (checked: boolean) => {
+    onGoldenBreakChange(checked);
+    if (checked && breakAndRun) onBreakAndRunChange(false);
+  };
+
+  // Wraps the forfeit Switch's onCheckedChange. When forfeit toggles ON and
+  // any achievement is checked, clear it AND announce the cascade. Forfeit
+  // OFF does NOT restore the prior selection — once cleared, it stays
+  // cleared (per the Branch A plan).
+  const handleWinByForfeitChange = (checked: boolean) => {
+    onWinByForfeitChange?.(checked);
+    if (checked) {
+      const cleared: string[] = [];
+      if (breakAndRun) {
+        onBreakAndRunChange(false);
+        cleared.push('Break & Run');
+      }
+      if (goldenBreak) {
+        onGoldenBreakChange(false);
+        cleared.push(getGoldenBreakLabel());
+      }
+      if (runout) {
+        onRunoutChange?.(false);
+        cleared.push('Runout');
+      }
+      if (cleared.length > 0) {
+        const list = cleared.join(' and ');
+        setLiveAnnouncement(`${list} cleared because forfeit was selected.`);
+      }
+    }
+  };
+
   return (
     <Dialog open={open}>
       <DialogContent
@@ -181,13 +301,20 @@ export function ScoringDialog({
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
         <DialogHeader>
-          <DialogTitle>Select Game Winner</DialogTitle>
+          <DialogTitle>Confirm Game Result</DialogTitle>
           <DialogDescription>
-            Select any special achievements for this game.
+            Confirm the game outcome and any special achievements.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          {/* Aria-live region for cascade announcements. Visually hidden;
+              screen readers announce the message when it changes (e.g.,
+              "Break & Run cleared because forfeit was selected"). */}
+          <div role="status" aria-live="polite" className="sr-only">
+            {liveAnnouncement}
+          </div>
+
           <div className="text-center">
             <p className="text-sm text-muted-foreground">Game {game.gameNumber}</p>
             <p className="text-lg font-semibold mt-2">
@@ -195,7 +322,56 @@ export function ScoringDialog({
             </p>
           </div>
 
-          {/* Always-tracked toggles */}
+          {/* Section 1: role-conditional achievements as compact inline
+              checkboxes. Most leagues see at most 2 visible at a time
+              (B&R + Golden Break for breaker-side wins, or just Runout
+              for non-breaker wins). One horizontal row, scannable, easy
+              to skip past when no achievement applies. B&R and Golden
+              Break are mutually exclusive — checking one auto-unchecks
+              the other (handlers do the work). */}
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            {winnerIsActualBreaker && (
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="breakAndRun"
+                  checked={breakAndRun}
+                  onCheckedChange={(c) => handleBreakAndRunCheck(c === true)}
+                />
+                <Label htmlFor="breakAndRun" className="text-sm font-normal cursor-pointer">
+                  Break &amp; Run
+                </Label>
+              </div>
+            )}
+            {winnerIsActualBreaker && goldenBreakCountsAsWin && (
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="goldenBreak"
+                  checked={goldenBreak}
+                  onCheckedChange={(c) => handleGoldenBreakCheck(c === true)}
+                />
+                <Label htmlFor="goldenBreak" className="text-sm font-normal cursor-pointer">
+                  {getGoldenBreakLabel()}
+                </Label>
+              </div>
+            )}
+            {!winnerIsActualBreaker && (
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="runout"
+                  checked={runout}
+                  onCheckedChange={(c) => onRunoutChange?.(c === true)}
+                />
+                <Label htmlFor="runout" className="text-sm font-normal cursor-pointer">
+                  Runout
+                </Label>
+              </div>
+            )}
+          </div>
+
+          {/* Section 2: state modifiers — rare events that change game
+              mechanics (re-rack semantics) or stat attribution. Middle
+              section because they're tapped infrequently but matter when
+              they do. */}
           <div className="flex items-center justify-between">
             <Label htmlFor="breakFouled" className="text-sm font-normal">
               Break foul (re-rack)
@@ -207,102 +383,53 @@ export function ScoringDialog({
             />
           </div>
 
-          <div className="flex items-center justify-between">
-            <Label htmlFor="winByForfeit" className="text-sm font-normal">
-              Win by forfeit
-            </Label>
-            <Switch
-              id="winByForfeit"
-              checked={winByForfeit}
-              onCheckedChange={(checked) => onWinByForfeitChange?.(checked)}
-            />
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="winByForfeit" className="text-sm font-normal">
+                Win by forfeit
+              </Label>
+              <Switch
+                id="winByForfeit"
+                checked={winByForfeit}
+                onCheckedChange={handleWinByForfeitChange}
+              />
+            </div>
+            {winByForfeit && loserPlayerName && (
+              <p className="text-xs text-muted-foreground">
+                Recorded as {loserPlayerName}
+              </p>
+            )}
           </div>
 
-          {/* Role-conditional achievements */}
-          {winnerIsActualBreaker && (
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="breakAndRun"
-                checked={breakAndRun}
-                onChange={(e) => {
-                  onBreakAndRunChange(e.target.checked);
-                  if (e.target.checked) onGoldenBreakChange(false);
-                }}
-                className="w-4 h-4 text-blue-600 border-border rounded focus:ring-blue-500"
-              />
-              <label
-                htmlFor="breakAndRun"
-                className="text-sm font-normal cursor-pointer"
-              >
-                Break &amp; Run
-              </label>
-            </div>
+          {/* Section 3: per-side scoring inputs at the bottom, just above
+              the action buttons. The counter is the deliberate input —
+              users scan past achievements/modifiers and land here as the
+              last step before saving. The spec's `kind` drives rendering:
+              'counter' shows an AdaptiveCounter; 'fixed' shows nothing
+              (calculator handles fixed implicitly). Aggregate calculators
+              (no perSideInputs) produce nothing here. */}
+          {winnerSpec?.kind === 'counter' && (
+            <AdaptiveCounter
+              min={winnerSpec.min}
+              max={winnerSpec.max}
+              label={winnerSpec.label}
+              value={winnerValue}
+              onChange={(v) => onWinnerValueChange?.(v)}
+            />
           )}
-
-          {winnerIsActualBreaker && goldenBreakCountsAsWin && (
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="goldenBreak"
-                checked={goldenBreak}
-                onChange={(e) => {
-                  onGoldenBreakChange(e.target.checked);
-                  if (e.target.checked) onBreakAndRunChange(false);
-                }}
-                className="w-4 h-4 text-blue-600 border-border rounded focus:ring-blue-500"
-              />
-              <label
-                htmlFor="goldenBreak"
-                className="text-sm font-normal cursor-pointer"
-              >
-                {getGoldenBreakLabel()}
-              </label>
-            </div>
+          {loserSpec?.kind === 'counter' && (
+            <AdaptiveCounter
+              min={loserSpec.min}
+              max={loserSpec.max}
+              label={loserSpec.label}
+              value={loserValue}
+              onChange={(v) => onLoserValueChange?.(v)}
+            />
           )}
-
-          {!winnerIsActualBreaker && (
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="runout"
-                checked={runout}
-                onChange={(e) => onRunoutChange?.(e.target.checked)}
-                className="w-4 h-4 text-blue-600 border-border rounded focus:ring-blue-500"
-              />
-              <label
-                htmlFor="runout"
-                className="text-sm font-normal cursor-pointer"
-              >
-                Runout
-              </label>
-            </div>
-          )}
-
-          {/* Fargo-only: loser balls pocketed (0–7) */}
-          {requiresLoserBallCount && (
-            <div className="space-y-2">
-              <Label className="text-sm font-normal">
-                Loser balls pocketed
-              </Label>
-              <div className="grid grid-cols-8 gap-1">
-                {[0, 1, 2, 3, 4, 5, 6, 7].map((n) => {
-                  const selected = loserBallsPocketed === n;
-                  return (
-                    <Button
-                      key={n}
-                      type="button"
-                      size="sm"
-                      variant={selected ? 'default' : 'outline'}
-                      onClick={() => onLoserBallsPocketedChange?.(n)}
-                      loadingText="none"
-                    >
-                      {n}
-                    </Button>
-                  );
-                })}
-              </div>
-            </div>
+          {counterValueMissing && (
+            <p className="text-xs text-muted-foreground">
+              Tap a value to continue.
+            </p>
           )}
         </div>
 
@@ -313,9 +440,9 @@ export function ScoringDialog({
           <Button
             onClick={onConfirm}
             loadingText="Saving..."
-            disabled={fargoBallCountMissing}
+            disabled={counterValueMissing}
           >
-            Select Winner
+            Save Game
           </Button>
         </DialogFooter>
       </DialogContent>

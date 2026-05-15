@@ -69,8 +69,20 @@ export interface PlayerHistoryContext {
 export interface GameOutcome {
   winnerTeam: 'home' | 'away';
 
-  /** Required for Fargo. Number of balls the losing player pocketed (0-7 for 8-ball). */
-  loserBallsPocketed?: number;
+  /**
+   * Calculator-driven per-game input value for the losing side. For Fargo
+   * 10-7 (accumulated_per_game) this is the number of balls the loser
+   * pocketed (0-7 for 8-ball). Renamed from loserBallsPocketed by Branch A.
+   */
+  loserValue?: number;
+
+  /**
+   * Calculator-driven per-game input value for the winning side. NULL when
+   * the calculator declares winner side as kind: 'fixed' (no input). Future
+   * calculators with a winner-side counter (e.g., points spread 5-15)
+   * populate this; today's calculators leave it null.
+   */
+  winnerValue?: number;
 
   /**
    * Optional achievement flags. Future achievements extend this without
@@ -90,7 +102,8 @@ export interface GameOutcome {
 export interface GameRecordFields {
   winner_points: number | null;
   loser_points: number | null;
-  loser_balls_pocketed: number | null;
+  winner_value: number | null;
+  loser_value: number | null;
 }
 
 /**

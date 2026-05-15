@@ -53,7 +53,8 @@ interface UseMatchScoringMutationsParams {
     breakFouled: boolean;
     runout: boolean;
     winByForfeit: boolean;
-    loserBallsPocketed: number | null;
+    winnerValue: number | null;
+    loserValue: number | null;
   }) => void;
   /** Get player display name by ID */
   getPlayerDisplayName: (playerId: string) => string;
@@ -144,7 +145,8 @@ export function useMatchScoringMutations({
             breakFouled: existingGame.break_fouled,
             runout: existingGame.runout,
             winByForfeit: existingGame.win_by_forfeit,
-            loserBallsPocketed: existingGame.loser_balls_pocketed,
+            loserValue: existingGame.loser_value,
+            winnerValue: existingGame.winner_value,
           });
           return;
         }
@@ -221,7 +223,8 @@ export function useMatchScoringMutations({
               break_fouled: false,
               runout: false,
               win_by_forfeit: false,
-              loser_balls_pocketed: null,
+              winner_value: null,
+              loser_value: null,
               confirmed_by_home: null,
               confirmed_by_away: null,
               vacate_requested_by: null,
@@ -308,7 +311,8 @@ export function useMatchScoringMutations({
               break_fouled: false,
               runout: false,
               win_by_forfeit: false,
-              loser_balls_pocketed: null,
+              winner_value: null,
+              loser_value: null,
               confirmed_by_home: null,
               confirmed_by_away: null,
               confirmed_at: null,
@@ -360,7 +364,8 @@ export function useMatchScoringMutations({
         breakFouled?: boolean;
         runout?: boolean;
         winByForfeit?: boolean;
-        loserBallsPocketed?: number | null;
+        winnerValue?: number | null;
+        loserValue?: number | null;
       } = {}
     ) => {
       if (!scoringGame || !match || !homeLineup || !awayLineup) return;
@@ -368,7 +373,8 @@ export function useMatchScoringMutations({
       const breakFouled = extras.breakFouled ?? false;
       const runout = extras.runout ?? false;
       const winByForfeit = extras.winByForfeit ?? false;
-      const loserBallsPocketed = extras.loserBallsPocketed ?? null;
+      const winnerValue = extras.winnerValue ?? null;
+      const loserValue = extras.loserValue ?? null;
 
       try {
         // Tier 3 mutability: populate system_snapshot at the first scoring event.
@@ -417,7 +423,8 @@ export function useMatchScoringMutations({
           break_fouled: breakFouled,
           runout,
           win_by_forfeit: winByForfeit,
-          loser_balls_pocketed: loserBallsPocketed,
+          winner_value: winnerValue,
+          loser_value: loserValue,
           confirmed_by_home: isHomeTeamScoring ? memberId : null,
           confirmed_by_away: !isHomeTeamScoring ? memberId : null,
         };
@@ -433,7 +440,8 @@ export function useMatchScoringMutations({
             break_fouled: gameData.break_fouled,
             runout: gameData.runout,
             win_by_forfeit: gameData.win_by_forfeit,
-            loser_balls_pocketed: gameData.loser_balls_pocketed,
+            winner_value: gameData.winner_value,
+            loser_value: gameData.loser_value,
             confirmed_by_home: isHomeTeamScoring
               ? memberId
               : existingGame.confirmed_by_home,

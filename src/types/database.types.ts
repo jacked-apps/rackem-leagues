@@ -588,7 +588,7 @@ export type Database = {
           home_position: number | null
           id: string
           is_tiebreaker: boolean
-          loser_balls_pocketed: number | null
+          loser_value: number | null
           match_id: string
           runout: boolean
           updated_at: string
@@ -596,6 +596,7 @@ export type Database = {
           win_by_forfeit: boolean
           winner_player_id: string | null
           winner_team_id: string | null
+          winner_value: number | null
         }
         Insert: {
           away_action: string
@@ -615,7 +616,7 @@ export type Database = {
           home_position?: number | null
           id?: string
           is_tiebreaker?: boolean
-          loser_balls_pocketed?: number | null
+          loser_value?: number | null
           match_id: string
           runout?: boolean
           updated_at?: string
@@ -623,6 +624,7 @@ export type Database = {
           win_by_forfeit?: boolean
           winner_player_id?: string | null
           winner_team_id?: string | null
+          winner_value?: number | null
         }
         Update: {
           away_action?: string
@@ -642,7 +644,7 @@ export type Database = {
           home_position?: number | null
           id?: string
           is_tiebreaker?: boolean
-          loser_balls_pocketed?: number | null
+          loser_value?: number | null
           match_id?: string
           runout?: boolean
           updated_at?: string
@@ -650,6 +652,7 @@ export type Database = {
           win_by_forfeit?: boolean
           winner_player_id?: string | null
           winner_team_id?: string | null
+          winner_value?: number | null
         }
         Relationships: [
           {
