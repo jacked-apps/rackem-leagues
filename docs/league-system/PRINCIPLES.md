@@ -476,18 +476,28 @@ Other Mechanism families (a future Match Format pairing-generation family, a bet
 
 ### 5. Triggers
 
-Many Mechanisms have a **trigger condition** — they don't fire unconditionally; they fire when some condition is met.
+A **trigger** is a kind of Mechanism whose *job* is conditional event-detection — it watches for a specific event or condition and fires an action when met. The classic example is a Points System threshold trigger: its essence is *"watch for `games_played` reaching milestone N; when it does, fire."*
 
-| Mechanism | Trigger |
-|---|---|
-| Per-game allocator | Per-game (implicit — fires after each game completion) |
-| Threshold trigger (Points System) | Games-played reaches milestone N (explicit condition) |
-| End-of-match aggregate | Match completion (implicit) |
-| Start-points (Handicap) | Match start (implicit, before first game) |
+A trigger Mechanism has two parts:
 
-**The trigger is part of the Mechanism's design.** Two Mechanisms with the same shape but different triggers are different Mechanisms (e.g., a per-game allocator is a different Mechanism than a threshold-fire allocator even if both produce points). Documenting a Mechanism without naming its trigger leaves a hole.
+- **Condition** — what it watches for (`games_played === 11`, an event arrival, an external signal).
+- **Action** — what it fires when the condition is met.
 
-Some Mechanisms have **stackable triggers** — multiple trigger conditions, each with its own action. Example: a Points System could stack two threshold triggers (one at games-played = 10, another at games-played = 20). Each trigger fires independently. This is still ONE Mechanism with multiple trigger conditions, not multiple Mechanisms.
+**Trigger vs invocation.** Not every Mechanism is a trigger. Many Mechanisms are *pure actions*: someone hands them data and they process it.
+
+- A Converter just transforms input to output — there's nothing to watch for.
+- The per-game allocator just runs every game with that game's data — it doesn't watch for anything.
+
+The distinction is about JOB:
+
+- **Trigger Mechanism** — the job IS event detection.
+- **Pure-action Mechanism** — the job is the work itself; *when* to invoke it is handled by the parent System's dispatch logic, not by the Mechanism.
+
+**Implicit triggers in current System dispatch.** Some pure-action Mechanisms run in response to events (per-game allocator runs when a game is scored; start_points runs at match start; end-of-match aggregate runs at match end). Today, that event-detection logic lives inside the parent System's dispatch — *"when game-scored event arrives, call the allocator with this game's data."* The trigger is implicit — bundled into how the System wires things up rather than carried in its own Mechanism.
+
+Whether those implicit triggers SHOULD be unbundled into explicit Trigger Mechanisms is an **open architectural question — not settled here.** The current bundled state works for fixed Scoring Systems where the trigger logic is hardcoded; an LO-customizable system (where operators define what fires on what events) would likely require unbundling. A future brainstorm/plan decides.
+
+**Stackable explicit triggers.** A parent System can compose multiple trigger Mechanisms — one watching for `games_played = 10`, another for `games_played = 20`. Each fires independently. Multiple trigger Mechanisms inside a parent, not one Mechanism with multiple conditions.
 
 ### 6. I/O contract for Mechanisms
 
