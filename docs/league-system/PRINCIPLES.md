@@ -114,6 +114,25 @@ A chart is a discretized formula; a formula is a continuous chart. The Threshold
 
 Some Handicap Mechanisms (`extra_games`, `start_points`) operate at the team-aggregate level — the difference between team-sum ratings drives the asymmetry. Others (`race_length_adjustment`) operate at the per-pairing level — each individual head-to-head matchup uses the rating gap between the two paired players. Module-level statements that universally say "team-vs-team" exclude per-pairing mechanisms; use scope-aware language ("two sides," "team-vs-team or player-vs-player").
 
+### 10. Composability contract — no-break composition
+
+> *"Any module we build connects like puzzle pieces to make a chain and spit out something at least."* — Ed, 2026-05-16
+
+Any combination of Modules an LO can wire together MUST chain to a runnable output. The system never refuses, never errors out, never shrugs at a valid configuration.
+
+This is the runtime teeth on the LO-freedom promise. The full LO-freedom contract has four parts:
+
+- **LO can choose any combination** (freedom; per Module § 1 honest framing)
+- **Built-in defaults aim for accuracy** (the prepackaged Scoring Systems are the tested combinations)
+- **Any combination chains to output** (this principle) — cross-type mismatches bridged by default Converters (coarse if necessary), the match still runs
+- **Untested combinations surface warnings** — *"this may not give expected results"* messaging, but no refusal to run
+
+**Architectural commitment:** "any combination" is a RUNTIME guarantee with quality as the variable, not a configuration claim that may or may not work at runtime.
+
+**Implication for new Modules:** when a new Module is added to the architecture (e.g., a new Handicap System), it must ship with the default Converters needed to bridge from all existing types it can compose with. The architecture rejects new Modules that introduce un-bridgeable type mismatches.
+
+**Implication for runtime behavior:** the architecture does NOT validate that match OUTPUTS are meaningful — the LO is responsible for choosing combinations that produce sensible results. The system is responsible only for never breaking.
+
 ## The architectural model
 
 *This section is a brief orientation. The full treatment of each concept lives in its dedicated **deep-dive** section that follows. If you're skimming for navigation, this is enough. If you're committing to architectural decisions, read the deep-dives.*
@@ -772,6 +791,8 @@ This honest framing should appear on every Converter's doc page (when the Module
 **Each implementation is its own Converter Module.** A single type-bridge direction (e.g., Points → Percentage) may have MULTIPLE Converter Modules implementing it — one, two, three, or more — depending on what accuracy / complexity tradeoffs make sense for that direction. Some directions may have only one Converter; others may have several. New Handicap Systems added in the future will need their own Converters to/from existing systems, and each of those may have multiple implementations.
 
 Per Mechanism § 1 ("a Module has one internal implementation; swapping implementations means picking a different Module"), each Converter implementation is its own Module with its own external contract. The LO sees the **available Converters** for a given type-mismatch boundary in their league and picks one. The set of available Converters is open-ended and grows over time as new Handicap Systems and new implementations are added.
+
+Per [Principle 10 (Composability contract)](#10-composability-contract--no-break-composition), a default Converter must exist for every valid type-mismatch boundary the architecture enables. The LO may pick a non-default if available, but a default is always present so the system never refuses to run a configured combination.
 
 **Specific Converter implementations are documented in their own per-Converter docs**, not in this deep-dive. The deep-dive establishes the kind; individual Modules describe themselves.
 
