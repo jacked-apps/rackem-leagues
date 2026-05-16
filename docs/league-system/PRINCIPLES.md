@@ -2,8 +2,22 @@
 title: L1 Docs — Goals & Principles
 date: 2026-05-13
 status: active
+locked: true
 audience: developer + AI sessions writing or editing docs/league-system/
 ---
+
+> ## 🔒 LOCKED — DO NOT EDIT WITHOUT EXPLICIT INVOCATION
+>
+> Load-bearing architectural commitment; multi-day structured cold-read work codified here. Changes cascade through the codebase and other canonical docs.
+>
+> **Gate applies to taxonomy / principle / structural changes only.** Typo fixes and prose-clarity tweaks are open editing.
+>
+> **Required for gated changes:**
+> 1. Explicit user invocation (Ed says *"change X to Y"* in plain words)
+> 2. Cold-read of impact across all dependent canonical docs
+> 3. Confirmation of the specific change before applying
+>
+> See [Principle 7: Canonical-docs-as-policy](#7-canonical-docs-as-policy) below for the full enforcement rule.
 
 # L1 Docs — Goals & Principles
 
