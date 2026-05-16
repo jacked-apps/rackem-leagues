@@ -35,6 +35,8 @@ end-to-end test pass before merge.
 | 15 | **Auto-rename propagation — team / league / season / org renames update matching chat titles** | ⬜ not started |
 | 16 | **Bounded send — AbortController + 10s timeout in `sendMessage`** | ✅ shipped |
 | 17 | **Eliminate optimistic-vs-realtime double-render flash on sender side** | ⬜ not started |
+| 18 | **Shorter chat titles + banner interpolation + per-user captains label** | ⬜ not started |
+| 19 | **Editable team chat title (captain rename; auto-rename trigger respects user-edit)** | ⬜ not started |
 
 **Branch:** `messaging-system-overhaul`.
 **Awaits:** Units 10–14 build + final end-to-end test pass (`pnpm db:reset && pnpm test:run` + manual dev-app smoke walkthrough).
@@ -1064,6 +1066,136 @@ bubble appears and stays.
 **Why deferred (per Ed 2026-05-16):** cosmetic-only flash; doesn't
 block testing or correctness; medium-cost (~30-45 min including a
 test) so it batches with Units 10–15 in the polish bundle.
+
+---
+
+- [ ] **Unit 18: Shorter chat titles + banner interpolation + per-user captains label**
+
+**Goal:** Current chat-title patterns are too long for mobile —
+they put the entire org / league name in the row title. Move the
+long context name into the read-only banner where there's space,
+and shorten the row titles to mobile-friendly forms. Plus: for the
+captains chat, the DB stores a universal label but the UI optionally
+decorates it with the current user's team name (if they captain a
+team in that league) so a captain who runs teams in multiple leagues
+can differentiate.
+
+Discovered by Ed during Phase 1 UI walkthrough on 2026-05-16 —
+the existing `"<org name> — Announcements"` and similar titles
+wrap or truncate badly on a phone-width conversation list.
+
+**Dependencies:** Unit 4 (the season-activation trigger that sets
+initial titles), Unit 6 (the `ReadOnlyBanner` whose copy gets the
+interpolation), Unit 15 (auto-rename trigger that must use the new
+patterns), Unit 3 (chat-creation utilities).
+
+**Files:**
+- Modify: `supabase/migrations/20260509000003_messaging_phase1_season_activation_trigger.sql`
+  — update `v_title` patterns inline (or re-CREATE OR REPLACE the
+  function in a follow-up migration if we don't want to edit the
+  existing one in place).
+- Modify: `src/api/mutations/autoConversations.ts` — sync the
+  manual-fallback `createTeamChat` etc. to the new patterns.
+- Modify: `src/components/messages/ReadOnlyBanner.tsx` — accept a
+  new `contextName` prop and interpolate it into the
+  `announcement-non-staff` copy.
+- Modify: `src/api/hooks/useMessageComposerStatus.ts` — return the
+  org/league name alongside the existing `{ readOnly, reason }`
+  so the banner has the data to interpolate.
+- Modify: `src/components/messages/ConversationList.tsx` (or
+  `ConversationItem` rendering path) — for captains chats, look up
+  the current user's team in the conversation's league and decorate
+  the title with their team name.
+- Modify: future Unit 15 migration — match the new title patterns.
+
+**Title patterns (proposed):**
+
+| Chat type | DB title | UI-rendered title (special cases) |
+|---|---|---|
+| `org_announcements` | `"Global Announcements"` | (no override) |
+| `season_announcements` | `"League Announcements"` | (no override) |
+| `team_chat` | `"<team.name>"` (drop "— Team Chat" suffix) | (no override) |
+| `captains_chat` | `"Captains — <league.division or day_of_week>"` | If current user captains a team in the league → `"<their team> — Captains"` (or similar) |
+
+**Read-only banner copy (when `announcement-non-staff`):**
+
+- `"Only staff from <Org Name> can post here."` (org announcements)
+- `"Only staff from <League Name> can post here."` (season announcements)
+
+The exact `<Org Name>` / `<League Name>` comes from joining the
+conversation's `scope_id` to the relevant table — already partially
+done in `useMessageComposerStatus`; this unit extends that lookup.
+
+**Test scenarios:**
+- DB title patterns match the new shorter form for newly-activated
+  seasons.
+- ReadOnlyBanner with `reason='announcement-non-staff'` renders the
+  org/league name from props.
+- ConversationList: a captains chat for a league where the current
+  user captains "Hot Shots" renders with "Hot Shots" in the title.
+- ConversationList: the same captains chat for a non-captain
+  participant (e.g., LO/staff) renders the universal label.
+- Existing chats with the old title format: either backfilled
+  (separate one-time UPDATE in the same migration) OR left alone
+  (acceptable since `dev_starting_point.sql` wipes test data).
+
+**Verification:** smoke test in dev on a phone-width viewport —
+conversation list rows fit cleanly without truncating; opening a
+non-staff view of an announcement chat shows the banner with the
+right context name.
+
+---
+
+- [ ] **Unit 19: Editable team chat title (captain rename; auto-rename trigger respects user-edit)**
+
+**Goal:** Let a captain rename their team chat (e.g., to a fun
+nickname). The auto-rename trigger from Unit 15 must NOT overwrite
+a user-edited title — once a captain renames, that's the captain's
+title forever (until they reset / clear it).
+
+**Dependencies:** Unit 5 (the `cannot_leave` flag determines who
+can edit — captain is the one with cannot_leave on team chat),
+Unit 15 (the auto-rename trigger that must learn to skip
+user-edited titles).
+
+**Files:**
+- New migration: adds a column to `conversations`:
+  `title_user_edited_at TIMESTAMPTZ NULL` (set whenever a user
+  edits the title; null means "auto-managed").
+- Modify: future Unit 15 migration — auto-rename function checks
+  `title_user_edited_at IS NULL` before updating; if non-null, the
+  function leaves the title alone.
+- New: `src/api/mutations/conversations.ts` (or extend existing) —
+  `updateConversationTitle({ conversationId, title })` mutation.
+  Permissions enforced via RLS once the RLS-enablement project
+  ships; today as a client-side gate based on the user's
+  `cannot_leave` on that conversation.
+- New: `src/api/hooks/useConversationMutations.ts` extension —
+  `useUpdateConversationTitle` hook with cache invalidation.
+- Modify: `src/components/messages/ConversationHeader.tsx` — add
+  an edit affordance (small pencil icon, opens a Dialog with the
+  current title pre-filled).
+- New: `src/components/messages/EditConversationTitleDialog.tsx` —
+  the dialog UI.
+- Test files for the mutation + the dialog.
+
+**Edge cases:**
+- Captain edits → title persists, auto-rename trigger skips on
+  subsequent team renames. The team-rename → chat-rename
+  propagation (Unit 15) silently no-ops for this conversation.
+- Captain reverts to default: optional "Reset to default" button
+  in the dialog that NULLs `title_user_edited_at` so the next
+  team rename (or activation re-fire) reapplies the auto pattern.
+- Permission: only the captain of the team (the user with
+  `cannot_leave = TRUE` on the team chat) can edit the team
+  chat's title. Org staff can edit any chat title? — open question,
+  decide during planning.
+- Validation: max 80 chars (matching team name limit), trim
+  whitespace, reject empty.
+
+**Verification:** captain renames their team chat → title persists
+across page refresh, across renames of the team itself, across
+season-activation re-firing.
 
 ---
 
