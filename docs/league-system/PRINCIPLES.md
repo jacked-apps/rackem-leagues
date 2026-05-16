@@ -482,7 +482,7 @@ The Mechanism stays "stupid" about its place in the larger structure. This is wh
 
 ## System — Deep Dive
 
-*System is the **set** kind of Module — composed of other Modules with rules for how the parts fit together. Where Mechanism is the leaf, System is the orchestrator. This deep-dive applies the Module primitives (Essence / Boundary / Design space / Typed I/O / Implementation-vs-intent flag) to the System kind specifically, and addresses two patterns of composition (selection vs chain) plus the trigger pattern (canonical System example) deferred from the Mechanism deep-dive.*
+*System is the **set** kind of Module — composed of other Modules with rules for how the parts fit together. Where Mechanism is the leaf, System is the orchestrator. This deep-dive applies the Module primitives (Essence / Boundary / Design space / Typed I/O / Implementation-vs-intent flag) to the System kind specifically, and addresses three patterns of composition (selection / chain / parallel) plus the trigger pattern (canonical System example) deferred from the Mechanism deep-dive.*
 
 ### 1. Essence
 
@@ -520,9 +520,9 @@ A Module is exactly one of the four kinds. A System is never also a Mechanism (y
 
 **A System may contain other Systems.** Systems nest recursively (see [Section 7: Recursion + IoC](#7-recursion--inversion-of-control-at-the-system-level)). A top-level Scoring System contains a Handicap Mechanisms System; that system in turn contains Mechanism atoms. Each level is a Module of the appropriate kind.
 
-### 4. Two composition patterns: selection vs chain
+### 4. Three composition patterns: selection, chain, parallel
 
-Systems compose their internal Modules in one of two patterns. Knowing which pattern a System uses is critical for understanding what it does.
+Systems compose their internal Modules in one of three patterns. Knowing which pattern a System uses is critical for understanding what it does.
 
 **Selection pattern** — the System offers N alternatives; exactly ONE is active per league configuration. The LO picks one; the others are inactive.
 
@@ -540,9 +540,16 @@ Systems compose their internal Modules in one of two patterns. Knowing which pat
 
 **Naming for chain-pattern Systems is singular** ("Scoring System," "Win Calculator," "Points System") — the singular reflects the *single act* the chain produces, even though multiple components contribute.
 
-**Nesting is natural — chain composition often embeds selection slots.** A chain-pattern System's individual slots can themselves be selection-pattern Systems. The Scoring System uses chain composition (all 8 components run together) — and several of those slots are themselves selection-pattern Systems internally: Handicap Mechanisms (league picks one of three), Handicap Systems (league picks one of four), Threshold Charts (league picks one of several). The patterns aren't mutually exclusive at the System level; the natural case is chain composition WITH selection slots embedded at one or more stations.
+**Parallel / split-chain pattern** — the System composes N components that run INDEPENDENTLY of each other; no sequential dependency between them. Each component takes its own input, watches its own data, produces its own output. The System surfaces them as a set (or aggregates them as needed) rather than chaining one's output into another's input.
 
-**The naming rule from Module § 9 reflects this distinction.** Plural names = selection pattern; singular names = chain pattern. The plural-vs-singular test is really asking *"which composition pattern does this System use?"*
+- *Independent thresholds in a match* — a Scoring System can compose many Trigger Systems running in parallel (one watching for `games_played = 11`, another for `games_played = 1.5 bonus`, another for `games_played = 3.0 bonus`, etc.). Each Trigger runs autonomously; the scoreboard polls active Triggers and renders the "next 2 to be reached" by proximity to current state.
+- *Future possibility* — a Handicap System that simultaneously produces a team-aggregate handicap AND per-pairing handicaps, each consumed by different downstream Modules.
+
+**Naming for parallel-pattern Systems** typically follows the same plural-vs-singular rule (plural if the branches are coexisting alternatives the LO doesn't pick between but USES all of; singular if the System's identity is the act of running the parallel branches together).
+
+**Nesting is natural — any pattern can embed any other.** A chain-pattern System's individual slots can themselves be selection-pattern Systems OR parallel-pattern branches. A parallel-pattern System's individual branches can themselves be chain or selection. The Scoring System uses chain composition (all 8 components run together); several of those slots are themselves selection-pattern Systems internally (Handicap Mechanisms, Handicap Systems, Threshold Charts); and within one of those slots (e.g., Points System with stacked milestone Triggers), parallel composition can be embedded for the multiple-Trigger-Systems case. The patterns aren't mutually exclusive at the System level; the natural case is composition that mixes all three at different levels.
+
+**The naming rule from Module § 9 maps loosely to composition pattern.** Plural names typically reflect selection pattern (named alternatives coexisting in the design space, LO picks one) OR parallel pattern (named branches all running together). Singular names typically reflect chain pattern (one wrapping act produced by composing components in sequence). The plural-vs-singular test isn't a strict pattern detector — it's a heuristic that catches selection cleanly and ambiguates between parallel and chain.
 
 ### 5. Triggers as canonical System example
 
@@ -562,6 +569,17 @@ Each sub-Mechanism is its own atom (one job, no internal Modules). The Trigger c
 **Implicit vs explicit triggers (current code state).** Today, the trigger pattern is mostly *implicit* — bundled into how a parent System dispatches to its components. The parent System has dispatch logic that reads *"when game-scored event arrives, call the per-game allocator"* — the event detection and task dispatch are baked into the System's wiring rather than carried as a named Trigger System composing the four sub-Mechanisms. The trigger is real but not surfaced as its own Module. **This is implementation artifact, not architectural intent.** A future LO-customizable trigger UI (where operators define *what fires on what events*) would likely require unbundling implicit triggers into explicit Trigger Systems with their constituent Mechanisms named and swappable. See task tracker for the deferred decision.
 
 **Stackable triggers.** A parent System can compose multiple Trigger Systems — one watching for `games_played = 10`, another for `games_played = 20`. Each Trigger System is independent; each runs its own four-sub-Mechanism chain. Multiple Trigger Systems inside a parent, not one System with multiple conditions.
+
+**Display metadata.** Every Trigger exposes a display contract for UI consumption:
+
+- **Label** — short text the UI can render (e.g., *"win"*, *"1.5 bonus"*, *"extra games"*, *"race to 7"*)
+- **Target value** — the threshold being watched (e.g., `11`, `1.5`, `7`)
+- **Status** — active / met / not-yet-met (so the UI can sort by proximity)
+- *(Optional)* description, icon, ordering hint
+
+UI components (scoreboard, in-match status display, etc.) read the display metadata and render WITHOUT needing to know what KIND of Trigger it is. The scoreboard's *"show next 2 to be reached"* pattern just polls active Triggers, sorts by proximity-to-target, and renders the top 2 using their display metadata.
+
+This decouples UI from architectural kind — the scoreboard doesn't care if it's a milestone Trigger or a match-end Trigger; it just reads label + target + status. Enables the parallel-pattern *"many independent thresholds, scoreboard surfaces what's next"* UX naturally.
 
 ### 6. I/O contract for Systems
 
@@ -751,12 +769,13 @@ A Module is exactly one of the four kinds. A Converter is never also a Chart, Me
 
 This honest framing should appear on every Converter's doc page (when the Modules get documented) and in any LO-facing UI that exposes Converter selection.
 
-**Implementation strategy and chain placement (design space).** A Converter's accuracy depends on what data it has access to, which depends on where it sits in the chain:
+**Each implementation is its own Converter Module.** A single type-bridge direction (e.g., Points → Percentage) may have MULTIPLE Converter Modules implementing it — one, two, three, or more — depending on what accuracy / complexity tradeoffs make sense for that direction. Some directions may have only one Converter; others may have several. New Handicap Systems added in the future will need their own Converters to/from existing systems, and each of those may have multiple implementations.
 
-- **Naive implementation at boundary placement.** Converter sits at the type-mismatch boundary (e.g., right before the Chart that needs the converted input). Only has the upstream Module's output value (e.g., a Points handicap value of `+1`). Translation is a coarse mapping — the only data available.
-- **Smart implementation at earlier-chain placement.** Converter sits closer to the original data source (game records, raw history). Can re-derive the target encoding from the underlying data rather than from the already-coarsened upstream output. Example: instead of `Points → Percentage` via a 5-bucket scaling, the smart Converter pulls the player's actual game records and recomputes a real Percentage value (continuous, not bucketed). Substantially more accurate; requires reaching back to source data.
+Per Mechanism § 1 ("a Module has one internal implementation; swapping implementations means picking a different Module"), each Converter implementation is its own Module with its own external contract. The LO sees the **available Converters** for a given type-mismatch boundary in their league and picks one. The set of available Converters is open-ended and grows over time as new Handicap Systems and new implementations are added.
 
-**Where to place a Converter is a real design decision, not a doctrine.** Boundary placement is simpler; earlier placement is more accurate. The right choice depends on which Modules the league composes and what data is available at which point in the chain. This is implementation territory — captured in a separate task; not constrained by the L1 docs.
+**Specific Converter implementations are documented in their own per-Converter docs**, not in this deep-dive. The deep-dive establishes the kind; individual Modules describe themselves.
+
+**Converter chain placement is an implementation choice.** Where in the data chain a Converter sits depends on what data is available at that point — different placements enable different implementation strategies. The LO chooses both WHICH Converter and (implicitly) WHERE it sits via that choice. Implementation territory — captured in a separate task; not constrained by the L1 docs.
 
 ### 5. I/O contract for Converters
 
