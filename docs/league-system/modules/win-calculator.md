@@ -6,18 +6,9 @@ locked: true
 audience: developer + AI sessions
 ---
 
-> ## 🔒 LOCKED — DO NOT EDIT WITHOUT EXPLICIT INVOCATION
+> ## 🔒 LOCKED — DO NOT EDIT
 >
-> Load-bearing architectural commitment; multi-day structured cold-read work codified here. Changes cascade through the codebase and other canonical docs.
->
-> **Gate applies to taxonomy / principle / structural changes only.** Typo fixes and prose-clarity tweaks are open editing.
->
-> **Required for gated changes:**
-> 1. Explicit user invocation (Ed says *"change X to Y"* in plain words)
-> 2. Cold-read of impact across all dependent canonical docs
-> 3. Confirmation of the specific change before applying
->
-> See [Principle 7: Canonical-docs-as-policy](../PRINCIPLES.md#7-canonical-docs-as-policy) in PRINCIPLES.md for the full enforcement rule.
+> Before editing this file, read and apply the gate procedure in [Principle 7: Canonical-docs-as-policy](../PRINCIPLES.md#7-canonical-docs-as-policy). The procedure requires explicit user invocation using specific gate-aware language; casual approvals are NOT sufficient.
 
 # Win Calculator
 

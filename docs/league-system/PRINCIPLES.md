@@ -6,18 +6,9 @@ locked: true
 audience: developer + AI sessions writing or editing docs/league-system/
 ---
 
-> ## 🔒 LOCKED — DO NOT EDIT WITHOUT EXPLICIT INVOCATION
+> ## 🔒 LOCKED — DO NOT EDIT
 >
-> Load-bearing architectural commitment; multi-day structured cold-read work codified here. Changes cascade through the codebase and other canonical docs.
->
-> **Gate applies to taxonomy / principle / structural changes only.** Typo fixes and prose-clarity tweaks are open editing.
->
-> **Required for gated changes:**
-> 1. Explicit user invocation (Ed says *"change X to Y"* in plain words)
-> 2. Cold-read of impact across all dependent canonical docs
-> 3. Confirmation of the specific change before applying
->
-> See [Principle 7: Canonical-docs-as-policy](#7-canonical-docs-as-policy) below for the full enforcement rule.
+> Before editing this file, read and apply the gate procedure in [Principle 7: Canonical-docs-as-policy](#7-canonical-docs-as-policy) below. The procedure requires explicit user invocation using specific gate-aware language; casual approvals are NOT sufficient.
 
 # L1 Docs — Goals & Principles
 
@@ -100,11 +91,30 @@ This honors the doc's role as an architectural commitment, not just a code-state
 
 ### 7. Canonical-docs-as-policy
 
-Once written, these docs are POLICY CONTRACTS, not drafts. Consequences:
+Once written, these docs are POLICY CONTRACTS, not drafts. Some files are formally LOCKED (visible 🔒 banner at the top + `locked: true` frontmatter flag). Edits to LOCKED files must pass the gate procedure below — this principle is the single source for the procedure; the banner on each locked file just points back here.
+
+**The gate procedure for editing a LOCKED file:**
+
+1. **Explicit user invocation using gate-aware language.** The user must use the phrase *"unlock and make the changes"* (or equivalent — must explicitly invoke the "unlock" action). Casual approvals (*"go ahead,"* *"yes,"* *"fine,"* *"approved,"* *"sounds good,"* *"yep"*) are NOT sufficient. The required phrase signals that the user is consciously passing the gate, not casually approving a suggestion.
+2. **Cold-read of impact** across all dependent canonical docs. The AI session must verify the proposed change doesn't break consistency with other LOCKED docs.
+3. **Confirmation of the specific change** before applying. The AI presents the exact wording; the user approves. (Substantive changes require gate-aware language again; minor wording adjustments within an already-approved change can use briefer confirmation.)
+
+**Other rules:**
 
 - **No fuzzy claims.** Verify against authoritative sources (CSI handbook, APA's published material, FargoRate docs, the actual code) before adding factual claims. If you can't verify, hedge ("operator-observed behavior suggests...") or omit. If a user gives you operational lore that you can't verify, capture it in their words but don't assert it as fact.
-- **Naming taxonomy changes are policy-gated.** Changing a Module name, variant name, glossary definition, or canonical naming convention requires explicit user invocation ("change X to Y") plus explicit confirmation of the file edit. Either alone is insufficient.
-- **Prose quality changes are NOT policy-gated.** Typo fixes, rewording for clarity, examples added inside narrative sections — those are open editing.
+- **Naming taxonomy changes are policy-gated** under the procedure above. Changing a Module name, variant name, glossary definition, or canonical naming convention requires the full gate procedure.
+- **Prose quality changes are NOT policy-gated.** Typo fixes, rewording for clarity, examples added inside narrative sections — those are open editing. The gate applies only to taxonomy / principle / structural changes.
+
+**Currently LOCKED files:**
+
+- `docs/league-system/PRINCIPLES.md` (this file)
+- `docs/league-system/README.md`
+- `docs/league-system/modules/handicap-systems/README.md`
+- `docs/league-system/modules/handicap-mechanisms/README.md`
+- `docs/league-system/modules/points-system/README.md`
+- `docs/league-system/modules/win-calculator.md`
+
+Future canonical docs added to the lock pattern should add the short banner pointing back to this principle (no need to repeat the procedure on each file — DRY).
 
 ### 8. Charts and formulas are interconvertible
 
