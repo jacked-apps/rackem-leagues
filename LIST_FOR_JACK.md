@@ -116,4 +116,38 @@
 
 ---
 
-*Last Updated: 2025-12-18*
+## 16. Dark Mode — Messaging Composer Input Font Hard to Read
+
+**Discovered:** 2026-05-16 during the Phase 1 messaging end-to-end test pass
+**Severity:** Low-Medium — usable but the chat composer's text input
+is visually muddy in dark mode (low contrast between the typed text
+and the input background). Slows down composing messages.
+
+**Where:** `src/components/messages/MessageInput.tsx` — the `<Input>`
+inside the composer (and likely sibling components in the messaging
+UI that use the shadcn `Input` with the same class set).
+
+**Likely root cause:** the composer's `Input` uses `bg-card` for the
+background but inherits the default text color. In dark mode that
+combination yields a near-tone-on-tone result. Either an explicit
+`text-foreground` is missing, OR `bg-card` resolves to a value too
+close to the foreground in dark mode and the theme token needs a
+tweak.
+
+**Fix direction:**
+1. Open the Messages page in light mode AND dark mode side-by-side
+   to confirm the contrast gap.
+2. In `src/components/messages/MessageInput.tsx`, give the `<Input>`
+   an explicit foreground color that's high-contrast in both modes
+   (shadcn standard is `text-foreground`; verify the theme tokens
+   actually produce sufficient contrast).
+3. Check other messaging text-input surfaces (the conversation
+   search bar, the announcement modal composer, etc.) for the same
+   pattern and fix consistently.
+
+**Not blocking** the messaging-system-overhaul branch from merging
+— styling polish only.
+
+---
+
+*Last Updated: 2026-05-16*
