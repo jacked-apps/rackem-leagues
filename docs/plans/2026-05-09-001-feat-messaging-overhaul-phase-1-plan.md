@@ -34,6 +34,7 @@ end-to-end test pass before merge.
 | 14 | **Season-end trigger — release `cannot_leave` on completion** | ⬜ not started |
 | 15 | **Auto-rename propagation — team / league / season / org renames update matching chat titles** | ⬜ not started |
 | 16 | **Bounded send — AbortController + 10s timeout in `sendMessage`** | ✅ shipped |
+| 17 | **Eliminate optimistic-vs-realtime double-render flash on sender side** | ⬜ not started |
 
 **Branch:** `messaging-system-overhaul`.
 **Awaits:** Units 10–14 build + final end-to-end test pass (`pnpm db:reset && pnpm test:run` + manual dev-app smoke walkthrough).
@@ -983,6 +984,86 @@ Manually re-test Unit 8 with the dev app — toggle DevTools Offline
 or block the URL, send → bubble should turn red within 10s with
 the "Send timed out" reason. Composer re-enables when the bubble
 flips.
+
+---
+
+- [ ] **Unit 17: Eliminate optimistic-vs-realtime double-render flash on sender side**
+
+**Goal:** When the user sends a message, the optimistic bubble
+(Unit 8's `useOutgoingMessages` pending entry) and the
+realtime-delivered confirmed bubble briefly co-exist before the
+optimistic is removed by the mutation's `onSuccess`. That ~200ms
+window shows two bubbles stacked at the bottom of the list, then
+the list shifts as the optimistic vanishes — a small but visible
+jitter. iMessage / WhatsApp / Slack don't have this because the
+realtime delivery REPLACES the optimistic in-place rather than
+appending alongside it.
+
+Cosmetic only — end state is correct, no duplicate persists (the
+dedup fix in `3c2ad9e` covers the duplicate-on-cache-merge case;
+this is a different issue about the *transient* render). Discovered
+by Ed on 2026-05-16 during Phase 1 UI walkthrough Step 7/8.
+
+**Dependencies:** Unit 8 (the `useOutgoingMessages` state),
+Unit 16 (the bounded-send timeout — same code-path).
+
+**Files:**
+- Modify: `src/components/messages/messageview/useOutgoingMessages.ts`
+  — expose a `removeByMatch(predicate)` helper (or similar) so the
+  realtime side can clear a pending entry that matches an
+  incoming confirmed message.
+- Modify: `src/api/hooks/useMessagingRealtime.ts` — accept an
+  optional `onOwnMessageDelivered(message)` callback. When the
+  realtime push's `sender_id === currentUserId`, invoke the
+  callback so the caller can clear the matching pending entry
+  before the dual-render window opens.
+- Modify: `src/components/messages/MessageView.tsx` — wire the
+  callback: `onOwnMessageDelivered: (msg) => remove(matching outgoing)`.
+
+**Approach (matching heuristic):**
+
+The outgoing pending entry has `clientId`, `content`, and a
+client-side `createdAt`. The realtime-delivered message has the
+server's `id`, `content`, `sender_id`, and the server's
+`created_at`. Match on:
+
+- `sender_id === currentUserId` (the incoming message is mine)
+- exact `content` equality
+- incoming `created_at` is within ~30 seconds of the pending's
+  `createdAt` (defends against extremely-fast same-text duplicate
+  sends; matches the realistic round-trip window).
+
+If a match is found, call `remove(clientId)` for that pending
+entry. The realtime push's confirmed message then renders normally
+in its place, no flash.
+
+**Edge cases to test:**
+- Send "hi" twice in a row → only the FIRST "hi" should match the
+  first pending; the second pending matches the second confirmed.
+  Use the chronological-time-window check to prevent the second
+  confirmed from clearing the first pending.
+- Network delay > 30s → matcher misses, optimistic is removed by
+  the existing `await mutateAsync` path eventually (no regression).
+- Mutation fails (network error, timeout) → optimistic stays as
+  failed bubble, no realtime ever fires, matcher never runs (no
+  regression).
+
+**Test scenarios:**
+- Unit test on `useOutgoingMessages`: new `removeByMatch` correctly
+  removes only entries that match a predicate.
+- Integration test on `MessageView`: simulate a successful send +
+  realtime delivery → assert that the optimistic entry is removed
+  before the confirmed message is rendered.
+- Smoke test in dev: send a message, observe the bubble appearing
+  once with no jitter.
+
+**Verification:** smoke test in dev app — sending a message no
+longer shows the "two bubbles briefly, then one" flash; just one
+bubble appears and stays.
+
+**Why deferred (per Ed 2026-05-16):** cosmetic-only flash; doesn't
+block testing or correctness; medium-cost (~30-45 min including a
+test) so it batches with Units 10–15 in the polish bundle.
 
 ---
 
