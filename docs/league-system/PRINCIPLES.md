@@ -78,16 +78,17 @@ Convention: a `**Picture this** (for the novice-explanation case): ...` paragrap
 
 No variant is "the default" or "the basis." Each variant page describes itself in its own terms. The Module README's variants index lists peers in a flat or sub-categorized structure (e.g., Internal/External sub-categorization in Handicap Systems is fine — that's a real load-bearing operational distinction). Don't let one variant become the implicit standard others are measured against.
 
-### 6. Implementation vs architectural intent
+### 6. Docs are stand-alone; code references are supplementary
 
-Current code state is documented as ARTIFACT. Architectural INTENT is the doc's commitment. Where current code violates the architectural intent (e.g., the `bca3v3` SystemModule directly calls a specific threshold chart, or `fargo5v5` bundles start-points math with rating math), the doc:
+The L1 docs describe the architecture in its own terms. A reader who reads ONLY the doc understands the architecture fully. Code is NOT what the docs describe — the architecture is what the docs describe, and the architecture is the commitment.
 
-- Describes the current state accurately
-- Flags the bundling/coupling as an **"implementation artifact, not architectural intent"**
-- States what the intent should be (orthogonality, composability)
-- Notes that future refactors will decouple
+Code references, if included at all, are **supplementary illustration** — pointers to one prior shape a concept can take — not load-bearing definitions. The doc never says *"this code defines the concept"*; at most *"this prior code is one shape this concept can take."*
 
-This honors the doc's role as an architectural commitment, not just a code-state snapshot.
+Code references are optional. PRESENCE in one Module page and ABSENCE in another carries no architectural meaning; it's just author's choice about whether an illustrative pointer adds value for that specific concept. *"No code example"* is NOT a signal of *"missing,"* *"incomplete,"* or *"not applicable"* — the architecture is fully described by the doc itself.
+
+**Why this rigor matters:** if principles are formed with the existing code as a guide, the conflations in the code leak into the principles. The 3v3 chart documented as a 3-tuple `(target_win, target_tie, target_lose)` is a real example of this drift — "ties" is a downstream Win Calculator concern that leaked into the upstream Chart contract because the doc was written from the code. Standing-alone-from-code prevents that.
+
+**Future code-aligning work** (Task #23) aligns CODE to docs, not the reverse. The docs are the target; the code catches up.
 
 ### 7. Canonical-docs-as-policy
 
@@ -402,7 +403,7 @@ Every Module's documentation page MUST contain the following elements. This is t
 2. **Boundary** — what is NOT in this Module. Adjacent Modules with bare cross-links. The anti-conflation classifier.
 3. **Design space** — within the bounded responsibility, what variation is possible. Variants index for parent Modules; parameters/sub-mechanisms for atomic Modules.
 4. **How it interacts (typed I/O)** — typed input contract, typed output contract, upstream/downstream Module references. The I/O declaration is mandatory; without it the Module cannot be composed against.
-5. **Implementation-vs-intent flag** — where current code state diverges from the architectural intent stated in this Module's design space, the divergence is *flagged* (not silently fixed in the doc; not pretended to be already aligned). The flag uses the phrase *"implementation artifact, not architectural intent"* and links to the source-of-truth code anchors. **If a Module's code already matches its intent, the section says so in one line and moves on** — the rule is "flag if divergent," not "always include a flag." Existing code predates these principles; divergence is expected, not evidence of carelessness. The audit-and-align pass that closes those gaps lives in step 2+ branches (see *Scope: this branch defines the ideal* above).
+5. **(Optional) Code reference / implementation note** — a Module page MAY include a supplementary code pointer or implementation note if it adds illustrative value (per [Principle 6](#6-docs-are-stand-alone-code-references-are-supplementary)). Optional, not required. The doc stands alone architecturally; code references are bonus context.
 
 **Why each element is required:**
 
@@ -410,7 +411,6 @@ Every Module's documentation page MUST contain the following elements. This is t
 - **Boundary** prevents conflation drift.
 - **Design space** shows what's variable (and implies what's fixed).
 - **How it interacts (typed I/O)** is the contract that lets composition be verified mechanically — without it the Module is unusable to anything downstream.
-- **Implementation-vs-intent flag** preserves the doc's role as architectural commitment rather than code-state snapshot.
 
 ### 12. Cross-Module enforcement
 
@@ -844,7 +844,7 @@ The `<from>-to-<to>` convention makes the direction explicit — critical becaus
 6. **How this Module interacts** — upstream, internal partners, downstream. **MUST declare typed input contract and typed output contract** (per [Module Deep Dive § 8](#8-io-contracts-at-module-boundaries)).
 7. **(Sometimes)** Cross-cutting concept sections (e.g., Rating Confidence in Handicap Systems)
 8. **Future possibilities** — speculative welcome
-9. **Source of truth** — code anchors, no line numbers (lines rot)
+9. **(Optional) Code references** — supplementary code pointers if they add illustrative value (per [Principle 6](#6-docs-are-stand-alone-code-references-are-supplementary)). Optional, not required. If included, use code paths with no line numbers (lines rot).
 
 ### Variant page template (8 sections)
 
@@ -855,7 +855,7 @@ The `<from>-to-<to>` convention makes the direction explicit — critical becaus
 5. **When you wouldn't / cons**
 6. **Interactions** — cross-Module references; bare links per anti-conflation rule
 7. **Possible modifications** — what an LO could vary within this variant
-8. **Current code state** — anchors + step-2 rename targets if applicable; flag implementation-vs-intent issues
+8. **(Optional) Code references** — supplementary code pointers if they add illustrative value (per [Principle 6](#6-docs-are-stand-alone-code-references-are-supplementary)). Optional, not required.
 
 ### Naming conventions
 
