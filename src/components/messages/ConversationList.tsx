@@ -173,10 +173,15 @@ export function ConversationList({
         {loading ? (
           <LoadingState message="Loading conversations..." />
         ) : filteredConversations.length === 0 ? (
+          // Unit 11: first thing a new user sees on Messages. The copy
+          // sells the core value prop ("message anyone, no phone numbers
+          // needed") and sets the expectation that team chats will appear
+          // automatically once they're rostered — so an empty list isn't
+          // a sign of something broken.
           <EmptyState
             icon={MessageSquare}
-            title="No conversations found"
-            description="Start a new conversation to get started"
+            title="No messages yet"
+            description="You can message anyone in your league — no phone number needed. A team chat will show up here automatically once you're added to a roster."
           />
         ) : (
           (() => {
