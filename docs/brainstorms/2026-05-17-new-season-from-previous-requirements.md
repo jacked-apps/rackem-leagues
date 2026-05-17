@@ -104,6 +104,28 @@ When the new season is activated, the existing `auto_create_season_conversations
 
 > *Why:* the trigger is already idempotent and was specifically designed for this. Don't reinvent.
 
+### 7b. Button placement — settled per Ed (2026-05-17)
+
+The button hierarchy follows the page hierarchy. Ed: "buttons should be LOUD in league when season is getting close to being finished. easy we have a progress bar on the season."
+
+- **Primary placement: League page (`LeagueDetail.tsx`)** — fold the
+  "Start Next Season" action into the existing `ActionCard` that
+  sits next to `LeagueStatusCard` at the top of the page. `ActionCard`
+  is already context-sensitive by design (shows different things
+  based on the league's state). New state to handle: season is in
+  its last 2 weeks OR past playoffs OR completed → show prominent
+  "Start Next Season" button + brief context line ("3 weeks left in
+  the current season — get a head start on planning").
+- **Secondary placement: Org page (`OperatorDashboard` →
+  `ActiveLeagues`)** — small "📋 Plan next season" hint badge on
+  leagues nearing end. Click takes the operator to that league's
+  page where the real button lives. Don't put a full button here —
+  the org page lists many leagues, would get noisy.
+- **Trigger condition for the LOUD button:** use the existing
+  `calculateProgress()` logic in `LeagueStatusCard` — when progress
+  ≥ ~85% (last ~2 weeks of a typical season) OR playoffs are
+  visible OR the season is `completed`.
+
 ### 8. Allow copy before previous season is finished — **allow late-season; warn (not block) earlier (updated by Ed 2026-05-17)**
 
 Real LO workflow per Ed: end-of-season planning starts before the season actually ends. Rule:
