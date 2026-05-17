@@ -248,17 +248,6 @@ function the first-time league wizard already uses.
 
 ---
 
-## Related future feature pointer
-
-A captain "re-up sheet" idea came up in the 2026-05-17 design
-discussion (Ed's paper-era process: captains submit returning /
-dropping / captain-change info before season end so the LO walks
-into this wizard with pre-collected decisions). **Deliberately out
-of scope** for this feature — ship the wizard first, then evaluate
-whether the re-up sheet adds enough value over the captains-chat to
-justify building it. Worth its own brainstorm if/when that
-evaluation comes back yes.
-
 ## What ships after this
 
 Once new-season-from-previous is shipped:
