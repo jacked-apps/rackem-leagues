@@ -7,7 +7,7 @@ audience: developer + AI sessions
 
 # Single Round
 
-A variant of [Tiebreak Mechanisms](README.md) — a [Mechanism](../../PRINCIPLES.md#mechanism--deep-dive)-kind Module.
+A variant of the [Tiebreak System](README.md) — a [Mechanism](../../PRINCIPLES.md#mechanism--deep-dive)-kind Module.
 
 ## What it is
 

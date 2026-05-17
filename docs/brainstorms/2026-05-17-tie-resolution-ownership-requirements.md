@@ -25,9 +25,9 @@ When the stack runs out without producing a winner (all metrics tied), Win Calcu
 
 The wincon is intentionally "dumb" about how edge was produced — it just sees a metric and uses it. This preserves Win Calculator as the sole authority on "who won," with the Tiebreak System as a service that produces a metric for Win Calc to consume.
 
-### Tiebreak Mechanisms becomes a new Module
+### Tiebreak System becomes a new Module
 
-A new Module joins the Scoring System catalog: **Tiebreak Mechanisms** (plural-named, Mechanism-kind atomic methods). Each Mechanism's only job is "produce edge for one team." Variants include:
+A new Module joins the Scoring System catalog: **Tiebreak System** (singular-named per PRINCIPLES § Module § 9's rule for chain-pattern Systems). The Module composes atomic Tiebreak Mechanism variants in a chain. Each Mechanism's only job is "produce edge for one team." Variants include:
 
 - `coin_flip` — RNG produces edge for one side
 - `roshambo` — rock-paper-scissors (would need a small in-app UI added)
@@ -51,7 +51,7 @@ This is a slight variation on PRINCIPLES § System § 4's chain pattern — exis
 
 The current S&T Module bundles two scope-different concerns (match-level tiebreaker firing + season-level standings sort). With this direction:
 
-- **Match-level tiebreaker concerns** (`tiebreaker_trigger`, `tiebreaker_format`) move out of S&T entirely — absorbed by Win Calculator + Tiebreak Mechanisms. Exact field-mapping is an implementation-time concern.
+- **Match-level tiebreaker concerns** (`tiebreaker_trigger`, `tiebreaker_format`) move out of S&T entirely — absorbed by Win Calculator + the Tiebreak System. Exact field-mapping is an implementation-time concern.
 - **Season-level standings concerns** (`standings_sort`) move **OUT of the Scoring System catalog entirely**. Standings is a display/aggregation concern, not a scoring concern.
 
 ### Standings is its own concern, outside the Scoring System
@@ -62,7 +62,7 @@ Standings may itself become a System with substantial scope — possibly subsyst
 
 ### Net effect on the 9-Module catalog
 
-- Module slot #9 (was Standings & Tiebreakers) → becomes **Tiebreak Mechanisms**
+- Module slot #9 (was Standings & Tiebreakers) → becomes **Tiebreak System**
 - Catalog count stays at 9
 - Standings becomes its own thing outside the catalog (shape TBD via separate brainstorm)
 
@@ -85,10 +85,10 @@ Standings may itself become a System with substantial scope — possibly subsyst
 When this gets implemented, the following surfaces need touching. Several require explicit [Principle 7](../league-system/PRINCIPLES.md#7-canonical-docs-as-policy) unlock invocations from Ed:
 
 - **PRINCIPLES.md** (locked) — Module catalog enumeration changes; conditional-fallthrough chain pattern gets noted in § System § 4
-- **README.md** (locked) — catalog table updates (Module slot #9 name change; S&T row is replaced by Tiebreak Mechanisms)
+- **README.md** (locked) — catalog table updates (Module slot #9 name change; S&T row is replaced by Tiebreak System)
 - **win-calculator.md** (locked) — substantial expansion to describe the metric-stack model and the Tiebreak System trigger
 - **standings-tiebreakers.md** — file dissolves (deleted)
-- **New `modules/tiebreak-mechanisms/README.md`** — blueprint for the new Module (plus per-variant pages for the shipping Mechanism set)
+- **New `modules/tiebreak-system/README.md`** — blueprint for the new Module (plus per-variant pages for the shipping Mechanism set)
 - **Standings concern** — lands somewhere outside `docs/league-system/modules/`; actual location TBD when its own brainstorm runs
 
 ## Origin

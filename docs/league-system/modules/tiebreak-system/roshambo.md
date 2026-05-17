@@ -7,7 +7,7 @@ audience: developer + AI sessions
 
 # Roshambo
 
-A variant of [Tiebreak Mechanisms](README.md) — a [Mechanism](../../PRINCIPLES.md#mechanism--deep-dive)-kind Module.
+A variant of the [Tiebreak System](README.md) — a [Mechanism](../../PRINCIPLES.md#mechanism--deep-dive)-kind Module.
 
 ## What it is
 
@@ -17,7 +17,7 @@ An in-app rock-paper-scissors round between team representatives. Two players (o
 
 **Input:** the match context, plus a way to identify which player from each team participates (defaults to team captain).
 
-**Output:** edge metric assigned to one team. Usually single-valued — re-roll on a draw round (both picked the same).
+**Output:** edge metric assigned to one team. Always single-valued — the Mechanism re-rolls internally on a draw round (both picked the same) until edge is produced.
 
 ## Status
 
