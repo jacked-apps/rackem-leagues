@@ -188,6 +188,58 @@ This document captures aspirational features that would enhance the app's desira
 
 **Note**: This feature should be designed after core league management is working. May require role-based access control (RBAC) system and permission framework.
 
+### Captain Announcement Moderation (per-captain + league-wide)
+**Status**: Future consideration — surfaced 2026-05-17 during Phase 1 messaging walkthrough
+
+**Concept**: League Operators need a way to silence captains who abuse the league Announcements channel without disabling announcements entirely for the league.
+
+**Use Case (Ed, 2026-05-17)**: "I'm a league op. The captains' announcements are great, but one captain keeps trying to get a date for his grandma despite warnings. I should be able to block that specific guy, not turn off all captain announcements."
+
+**Two layers (both wanted)**:
+
+1. **Per-captain block** *(primary, surgical)*
+   - `can_announce` boolean on the captain's per-league row (defaults to true)
+   - LO sees a list of captains in their league with a toggle per captain
+   - When flipped off: the "Send Announcement" button in the composer is greyed/hidden for that captain in that league only; tooltip explains why
+   - Punishes the abuser, leaves the other captains alone
+
+2. **League-wide kill switch** *(secondary, nuclear)*
+   - League-level `captain_announcements_enabled` boolean (defaults true)
+   - When off: ALL captains in the league lose the announcement button regardless of per-captain flag
+   - For escalation scenarios or if the LO just doesn't want captains broadcasting at all
+
+**Server-side enforcement**: needs to be paired with the project-wide RLS enablement effort (LIST_FOR_ED #29) — UI gate alone is bypassable via API. RLS policy on the announcements-channel insert path should check both flags before allowing the post.
+
+**Cost estimate**: ~2hr for the data layer + LO UI + composer gate. RLS policy adds a bit more.
+
+**Why not now**: Phase 1 messaging is demo-ready; spam moderation isn't a sales-meeting story. Captures real friction discovered during testing.
+
+---
+
+### Player "Looking for a Team" Classifieds
+**Status**: Future consideration — surfaced 2026-05-17 during Phase 1 messaging walkthrough
+
+**Concept**: A lightweight classifieds board (NOT a one-to-many announcement) where players can post "I'm available, looking for a team" and captains can post "I have an open spot." Two-way matchmaking.
+
+**Why it's NOT just an announcement**: announcements are broadcasts from one authority figure to a captive audience. Classifieds are structured listings that captains/players actively browse — different mental model, different UI, different data model.
+
+**Minimum viable shape**:
+- New `postings` table: `posting_id`, `member_id`, `league_id`, `type` (`seeking_team` | `seeking_player`), `skill_level`, `days_available`, `notes`, `created_at`, `expires_at`, `status` (open/closed/expired)
+- Posters fill in a structured form (not free-text) so listings are searchable/filterable
+- Per-league board page showing all open postings
+- Optional: notify members when a matching new posting appears (e.g., a captain looking for a 6-7 SL player gets pinged when one posts)
+- Auto-expire after N days unless renewed
+
+**Use cases**:
+- New player joins org, hasn't been picked up by a team yet → posts "seeking_team"
+- Captain mid-season loses a player to injury → posts "seeking_player"
+
+**Cost estimate**: real feature, not a tweak. Probably ~1 week including schema, form, list page, basic notifications.
+
+**Why not now**: solid post-MVP feature; not in scope for Phase 1 messaging or the sales meeting demo.
+
+---
+
 ## Scheduling Resources
 
 ### Team Matchup Schedules
