@@ -111,11 +111,12 @@ Each axis has a value-space, a default, and a validation rule. Presented in depe
 
 | Attribute | Value |
 |---|---|
-| **Type** | enum (8 values; see operational meaning below) |
-| **Allowed values** | `'best_of_3_short_race'`, `'single_short_race'`, `'accept_tie'`, `'manual'`, `'coin_flip'`, `'random_player_single_game'`, `'random_player_short_race'`, `'teams_self_determine'` |
-| **Currently shipped values** | `'best_of_3_short_race'` (Points 3-Man), `'accept_tie'` (Percentage 5-Man, FargoRate 10-Point 5-Man — `tiebreaker_trigger='never'` so this value is vacuously selected) |
+| **Type** | enum |
+| **In DB CHECK today** | `'best_of_3_short_race'`, `'single_short_race'`, `'accept_tie'`, `'manual'` (4 values; see migration `20260429000001_extend_preferences_phase2_modular_axes.sql` lines 170–175) |
+| **Proposed additions (not yet in CHECK)** | `'coin_flip'`, `'random_player_single_game'`, `'random_player_short_race'`, `'teams_self_determine'` — operational meaning documented below for future implementation; adding any of these to the live system requires extending the CHECK constraint and shipping runtime handling |
+| **Used by shipped Scoring Systems** | `'best_of_3_short_race'` (Points 3-Man), `'accept_tie'` (Percentage 5-Man, FargoRate 10-Point 5-Man — `tiebreaker_trigger='never'` so this value is vacuously selected) |
 | **Default for new leagues** | `'accept_tie'` |
-| **Validation** | DB CHECK constraint enumerating the allowed values |
+| **Validation** | DB CHECK constraint enumerating the in-DB values |
 
 **Operational meaning of each variant:**
 
