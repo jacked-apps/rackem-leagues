@@ -86,11 +86,18 @@ Read the previous season's schedule pattern (start day, start time, week count, 
 
 > *Why:* most leagues run the same day/time forever. Re-deriving from scratch each season is busy-work.
 
-### 5. League preferences — **read-only display, link to "change" in league settings (recommend)**
+### 5. League preferences — **read-only in the wizard. Pref changes happen elsewhere (settled by Ed 2026-05-17)**
 
-Show the operator a summary of the league's current preferences (handicap, format, scoring, etc.) in the season-copy flow. If they want to change them, they click a link that takes them to league settings — those changes apply to all future seasons, not just this one.
+Ed's "league = identity" rule: a league is a group of people forming teams, playing a specific game, on a specific night, under specific rules. Changing the fundamentals (lineup size, game type, scoring, handicap) doesn't update the league — it makes a **different** league.
 
-> *Why:* keeps the "copy season" flow simple. Preference changes are rare and have league-wide implications, so they shouldn't be smuggled into a season-copy.
+So the wizard's prefs section is **purely a confirmation panel** — "do these still look right?" Read-only display, no edit form. If the operator wants changes:
+
+- **Small change** (e.g., max roster size, profanity filter setting) → existing League Settings page handles it; persists forward to all future seasons by design
+- **Big change** (lineup size, game type, scoring system, handicap system) → archive this league + create a new league. Preserves stats history cleanly; the new league starts its own identity. Show a small inline note on the read-only display: "Changing lineup size or game type? That's a different league — archive this one and create a new league with the new rules."
+
+> *Why (Ed):* "if they want a lineup change for instance this is a fundamentally different league... however if they want to change that stuff between seasons we should 'make it hard' but not impossible. almost easier to create a different league and archive this one."
+
+**No "per-season override" support needed.** Don't build the schema. The wizard is simpler, the identity model is cleaner, and the rare "I want a one-off weird season" case becomes "create a one-season league" which is a sharper signal to the operator that they're doing something unusual.
 
 ### 6. Home-venue carry-forward — **carry forward + validate (recommend)**
 
