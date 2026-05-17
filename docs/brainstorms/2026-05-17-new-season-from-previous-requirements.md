@@ -2,17 +2,26 @@
 
 > **Date:** 2026-05-17
 > **Status:** Brainstorm; needs Ed sign-off on recommended defaults before implementation
-> **Estimated scope:** ~1 day code + ~0.5 day testing once decisions are locked
+> **Estimated scope:** ~0.5–1 day code + 0.5 day testing
 >
-> **2026-05-17 update — separation of concerns rule (per Ed):**
+> **2026-05-17 separation of concerns rule (per Ed):**
 > Teams are owned by captains, not operators. The operator's only
-> jobs at season-creation/copy time are: (a) confirm how many teams
-> are returning, (b) make sure each one has a captain. **Rosters
-> are NOT operator-touchable in this flow.** They carry forward
-> silently; captains adjust them post-activation via TeamEditorModal.
-> This drops the "Step 3 — Rosters" wizard step entirely. Same rule
-> should be applied to the first-time league-creation wizard if it
-> currently asks for rosters up front (separate scope).
+> jobs at season-creation/copy time are: (a) confirm returning
+> teams, (b) handle captain changes, (c) note teams that are
+> dropping. **Rosters and team names are NOT operator-touchable**
+> in this flow — captains adjust them post-activation.
+>
+> **2026-05-17 architectural rule (per Ed):**
+> This is **not a new wizard.** It's the **existing league-creation
+> wizard with pre-filled data.** Reuse `WizardShell` /
+> `WizardFlowShell` / `WizardFlowStageRenderer` and the stage
+> components in `src/components/wizard/`. The first-season "create
+> from scratch" path and the new-season "pre-fill from previous"
+> path should share the same stages — the only difference is which
+> stages start with values populated vs empty.
+>
+> This drops scope substantially. Estimated ~0.5–1 day code instead
+> of the original 1.5 days because most stages already exist.
 
 ---
 
@@ -95,11 +104,15 @@ When the new season is activated, the existing `auto_create_season_conversations
 
 > *Why:* the trigger is already idempotent and was specifically designed for this. Don't reinvent.
 
-### 8. Allow copy before previous season is finished — **block with friendly message (recommend)**
+### 8. Allow copy before previous season is finished — **allow late-season; warn (not block) earlier (updated by Ed 2026-05-17)**
 
-If the operator clicks "Start Next Season" while the current season is still `active`, show a confirm dialog: *"This season isn't finished yet. You can either (a) wait until you mark it complete, or (b) start the next season anyway — both will run in parallel and may confuse players."* Default action is wait.
+Real LO workflow per Ed: end-of-season planning starts before the season actually ends. Rule:
 
-> *Why:* parallel seasons of the same league are technically possible but rare and confusing. Block-with-escape-hatch is safer than silent allow.
+- **Last 2 weeks of season OR after playoffs start** → button is normally available, no warning. This is when LOs naturally start planning the next one.
+- **Earlier than that** → show a soft confirm: *"Your current season has N weeks left. You can start planning the next one now if you want, but most LOs wait until the last 2 weeks. Continue?"* Don't block — let early planners do their thing.
+- **Previous season already `completed`** → button always available, no warning.
+
+> *Why (Ed):* "I would allow this to happen starting in the last weeks of the previous season... if they want to get it done early then let them."
 
 ---
 
@@ -131,27 +144,55 @@ If the operator clicks "Start Next Season" while the current season is still `ac
     eventually populate). This is the real REASON this step exists:
     operators need to see the conflicts before they pick.
 
-[Step 2: Returning teams + captains]
+[Step 2: Returning teams]
   - Table of teams from previous season, all checked
-  - Per-row: team name (editable but optional — captain can rename later),
-    captain (dropdown), home venue (dropdown if needed)
-  - Yellow row warning if captain is broken (must be fixed before activation)
-  - Informational "N vacancies" badge if archived players left roster gaps —
-    NOT blocking; captain handles post-activation
-  - Uncheck = team is NOT returning
-  - Bottom: "Add new team" button (just team name + captain, like first-time setup)
+  - LO's job here is narrow (per Ed): only TWO things matter to the LO:
+    (1) which teams are NOT returning (uncheck)
+    (2) which teams need a NEW captain (dropdown becomes editable + required)
+  - Team name and roster are NOT editable here — captain's job
+    post-activation. The team name shows in the row purely for
+    identification.
+  - Per-row state:
+    - Returning + captain OK → green check, no action needed
+    - Returning + captain broken → yellow warning, captain dropdown
+      required before proceeding
+    - Not returning → row greyed, no action needed
+  - Bottom: "Add new team" button — minimal form, just team name +
+    captain dropdown (the only two operator-required fields per Ed:
+    "in league creation (first time) we basically just ask for
+    captains per team")
 
-[Step 3: Schedule]
-  - Pre-filled with previous season's pattern (day/time/skip-weeks)
-  - Operator edits dates and confirms
+[Step 3: Venues]
+  - Same pattern as teams (per Ed: "venues will be pretty much
+    exactly like teams. usually the same but may have additions or
+    omissions")
+  - Table of league venues from previous season, all checked
+  - Uncheck = venue no longer used
+  - Bottom: "Add venue" button to bring in new ones
 
-[Step 4: Review + Activate]
-  - Summary of what's being created: N teams, K matches
+[Step 4: Schedule + holiday avoidance]
+  - Reuse existing schedule generator (per Ed: "the holiday
+    avoidance part we already have. it creates the dates looks up
+    holidays and flags conflicts")
+  - Pre-filled with previous season's pattern (day-of-week, start
+    time, etc.)
+  - Operator confirms or adjusts; existing holiday/championship
+    conflict flagging surfaces issues
+
+[Step 5: Matchups]
+  - Same as first-time setup (per Ed: "matchups same process as the
+    first time — randomize or manual order and create")
+  - Randomize OR manual ordering
+  - Preview the resulting matchups
+
+[Step 6: Review + Activate]
+  - Summary of what's being created: N teams, V venues, K matches
   - "Activate Season" button
-  - On activation: season status → 'active', auto_create_season_conversations trigger fires,
-    team chats + captains chat created, ready to score
-  - Captains get a welcome message in their team chat: "New season started.
-    Open your team to confirm/edit your roster."
+  - On activation: season status → 'active',
+    `auto_create_season_conversations` trigger fires, team chats +
+    captains chat created, ready to score
+  - Captains get a welcome message in their team chat: "New season
+    started. Open your team to confirm/edit your roster."
 ```
 
 ---
@@ -206,6 +247,39 @@ function the first-time league wizard already uses.
 8. **Anything I'm missing about how YOU run end-of-season today** — what's the manual process you'd be replacing? That'll catch any decisions I've gotten wrong.
 
 ---
+
+## Separate-but-related: Captain Re-Up Sheet (future feature)
+
+**Not in scope for this brainstorm, but called out as a high-value
+follow-up per Ed (2026-05-17).**
+
+Today's reality (Ed's paper-era process): operator hands captains a
+re-up sheet near season end. Captains fill in:
+- Will your team be playing next season? (yes/no)
+- New captain? (name + contact)
+- Any roster changes you know about now?
+- Are you looking for new players?
+
+Currently this happens via the captains-chat or face-to-face. **A
+proper in-app re-up sheet would feed straight into this new-season
+wizard so the LO walks in with most decisions already collected.**
+
+**Proposed shape:**
+- N weeks before season end, system auto-sends a modal/notification
+  to each captain via the existing messaging infrastructure
+- Captain fills a short form: returning yes/no, captain change, etc.
+- LO's view aggregates all responses into a single dashboard
+- The new-season wizard's Step 2 (Teams) pre-fills from re-up sheet
+  data: teams marked "not returning" are unchecked, teams with new
+  captains have the captain dropdown pre-set, etc.
+
+**Why separate:** the re-up sheet needs its own brainstorm + UX +
+schema (a `season_reup_responses` table or similar) + scheduled
+trigger logic. Building it into THIS feature would bloat the scope
+and delay the immediate win. Land the wizard first; layer the re-up
+sheet on top once the wizard is shipping value.
+
+Captured for future-features triage.
 
 ## What ships after this
 
