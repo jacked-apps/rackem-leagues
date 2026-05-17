@@ -32,7 +32,7 @@ end-to-end test pass before merge.
 | 12 | **Leave button respects `cannot_leave`** | ✅ shipped |
 | 13 | **Emoji messages + composer picker (12-emoji curated set)** | ✅ shipped |
 | 14 | **Season-end trigger — release `cannot_leave` on completion** | ⬜ not started |
-| 15 | **Auto-rename propagation — team / league / season / org renames update matching chat titles** | ⬜ not started |
+| 15 | **Auto-rename propagation — team rename + league rename update matching chat titles (2 triggers; season/org renames moot post-Unit-18)** | ✅ shipped |
 | 16 | **Bounded send — AbortController + 10s timeout in `sendMessage`** | ✅ shipped |
 | 17 | **Eliminate optimistic-vs-realtime double-render flash on sender side** | ⬜ not started |
 | 18 | **Shorter chat titles + banner interpolation** (per-user captains label deferred — see entry) | ✅ shipped (partial — per-user label deferred) |
