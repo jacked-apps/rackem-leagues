@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, MessageSquarePlus, Settings, Megaphone, MessageSquare, ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useConversations, useConversationsRealtime } from '@/api/hooks';
+import { useConversations, useConversationsRealtime, useUpdateLastRead } from '@/api/hooks';
 import { useProfanityFilter } from '@/hooks/useProfanityFilter';
 import { censorProfanity } from '@/utils/profanityFilter';
 import { formatDistanceToNow } from 'date-fns';
@@ -73,6 +73,11 @@ export function ConversationList({
 
   // Real-time subscriptions (auto-manages channels and cleanup)
   useConversationsRealtime(userId);
+
+  // Tappable unread badge → clear-from-list without opening the chat.
+  // Same mutation MessageView fires when the user opens a conversation,
+  // so the unread_count + last_read_at update is identical.
+  const updateLastReadMutation = useUpdateLastRead();
 
   // R4 (Unit 7): apply the user's profanity filter to the last-message
   // preview snippet. The DB row + unread-count badge stay unaffected —
@@ -189,8 +194,19 @@ export function ConversationList({
           />
         ) : (
           (() => {
-            const activeList = filteredConversations.filter((c) => !c.isPastMember);
             const archivedList = filteredConversations.filter((c) => c.isPastMember);
+            const nonArchived = filteredConversations.filter((c) => !c.isPastMember);
+            // Unread announcements pin to the top so important league-wide
+            // posts don't get buried under chatty DMs and team chats. Once
+            // the user reads (or taps the unread badge to mark-as-read),
+            // the row drops back into its natural last_message_at slot.
+            const pinnedAnnouncements = nonArchived.filter(
+              (c) => c.conversationType === 'announcements' && c.unreadCount > 0,
+            );
+            const restActive = nonArchived.filter(
+              (c) => !(c.conversationType === 'announcements' && c.unreadCount > 0),
+            );
+            const activeList = [...pinnedAnnouncements, ...restActive];
 
             const renderRow = (conversation: Conversation) => {
               const isAnnouncement = conversation.conversationType === 'announcements';
@@ -232,9 +248,41 @@ export function ConversationList({
                     {/* Hide unread badge for past-member rows — the trigger
                         stops incrementing unread_count once left_at is set,
                         so any leftover number is just stale state from
-                        before they left. Showing it would be misleading. */}
+                        before they left. Showing it would be misleading.
+
+                        Badge doubles as a tappable mark-as-read affordance:
+                        a tap clears the unread count without opening the
+                        chat (useful when the preview shows enough for the
+                        user to decide they don't need to read in full).
+                        Implemented as a role="button" span rather than a
+                        real <button> because the parent row is already a
+                        <button> and nesting them is invalid HTML. The
+                        stopPropagation prevents the row's onClick from
+                        firing and opening the conversation. */}
                     {!conversation.isPastMember && conversation.unreadCount > 0 && (
-                      <span className="ml-2 bg-blue-600 text-white text-xs font-medium rounded-full h-6 w-6 md:h-5 md:w-5 flex items-center justify-center flex-shrink-0">
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Mark ${displayTitle} as read`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          updateLastReadMutation.mutate({
+                            conversationId: conversation.id,
+                            userId,
+                          });
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            updateLastReadMutation.mutate({
+                              conversationId: conversation.id,
+                              userId,
+                            });
+                          }
+                        }}
+                        className="ml-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-medium rounded-full h-6 w-6 md:h-5 md:w-5 flex items-center justify-center flex-shrink-0 cursor-pointer transition-colors"
+                      >
                         {conversation.unreadCount}
                       </span>
                     )}
