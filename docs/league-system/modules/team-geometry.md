@@ -9,9 +9,9 @@ audience: developer + AI sessions
 
 ## Kind
 
-**Team Geometry is a [System](../PRINCIPLES.md#system--deep-dive)-kind Module in the configuration pattern.** It composes three independent configuration axes — **lineup size**, **roster cap**, **game-generation rule** — into a single structural specification consumed by every other Module that needs to know how many players, how many games, or how the games arrange. Unlike selection-pattern Systems (e.g., [Threshold Charts](threshold-charts/README.md)) where the league picks one packaged variant from a roster, Team Geometry's three axes are each set independently; the *variant* is the resulting tuple, not a named option pulled off a shelf. (Distinct from parallel-pattern Systems per PRINCIPLES § System § 4 — those compose components that *run* independently; configuration-pattern Systems compose *inert configuration values* into a tuple.)
+**Team Geometry is a [System](../PRINCIPLES.md#system--deep-dive)-kind Module that bundles three independent configuration axes** — **lineup size**, **roster cap**, **game-generation rule** — into a single structural specification consumed by every other Module that needs to know how many players, how many games, or how the games arrange. Unlike selection-pattern Systems (e.g., [Threshold Charts](threshold-charts/README.md)) where the league picks one packaged variant from a roster, Team Geometry's three axes are each set independently; the *variant* is the resulting tuple, not a named option pulled off a shelf. The axes don't run anything — they're inert configuration values consumed by other Modules.
 
-(Why this matters: the kind tells you what to expect inside. A configuration-pattern System has N orthogonal axes; legal configurations are the Cartesian product across them, gated by inter-axis validation. There is no "Team Geometry preset" — there's a `(lineup_size, max_roster_size, game_generation)` triple per league.)
+(Why this matters: the kind tells you what to expect inside. This Module has N orthogonal axes; legal configurations are the Cartesian product across them, gated by inter-axis validation. There is no "Team Geometry preset" — there's a `(lineup_size, max_roster_size, game_generation)` triple per league.)
 
 ## Essence
 

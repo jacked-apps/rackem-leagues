@@ -9,9 +9,9 @@ audience: developer + AI sessions
 
 ## Kind
 
-**Standings & Tiebreakers is a [System](../PRINCIPLES.md#system--deep-dive)-kind Module in the configuration pattern.** It composes three axes — **standings sort precedence**, **match-night tiebreaker trigger**, **match-night tiebreaker format** — that together govern *what happens when the simple winner-comparison ties* at two distinct scopes: across an entire season (standings) and at a single match-night (tiebreaker play). The Module name is plural because it bundles two related-but-distinct concerns that share a common conceptual root ("tie resolution") but operate at different temporal scopes and produce different artifacts.
+**Standings & Tiebreakers is a [System](../PRINCIPLES.md#system--deep-dive)-kind Module that bundles three independent configuration axes** — **standings sort precedence**, **match-night tiebreaker trigger**, **match-night tiebreaker format** — that together govern *what happens when the simple winner-comparison ties* at two distinct scopes: across an entire season (standings) and at a single match-night (tiebreaker play). The Module name is plural because it bundles two related-but-distinct concerns that share a common conceptual root ("tie resolution") but operate at different temporal scopes and produce different artifacts.
 
-(Why this matters: the kind tells you what to expect. A configuration-pattern System has N orthogonal axes; legal configurations are the constrained Cartesian product across them. Each axis is set independently; the *variant* is the resulting triple, not a packaged option pulled off a shelf. The two-scope bundling is a deliberate anti-conflation move — see [§Architectural intent](#architectural-intent-two-scopes-one-module-distinct-failure-modes).)
+(Why this matters: the kind tells you what to expect. This Module has N orthogonal axes; legal configurations are the constrained Cartesian product across them. Each axis is set independently; the *variant* is the resulting triple, not a packaged option pulled off a shelf. The two-scope bundling is a deliberate anti-conflation move — see [§Architectural intent](#architectural-intent-two-scopes-one-module-distinct-failure-modes).)
 
 ## Essence
 

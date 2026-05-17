@@ -9,7 +9,7 @@ audience: developer + AI sessions
 
 ## Kind
 
-**Pairings Generator is a [System](../PRINCIPLES.md#system--deep-dive)-kind Module in the chain pattern.** It composes three sub-Mechanisms — **pair generation**, **game ordering**, **break/rack assignment** — that run in sequence to transform two locked lineups into a concrete, fully-specified sequence of head-to-head game slots. Unlike the configuration-pattern Modules in the Scoring System catalog (Team Geometry, Match Format, Standings & Tiebreakers — each composed of independent configuration axes), Pairings Generator's sub-Mechanisms are ordered stages: each consumes the previous stage's output.
+**Pairings Generator is a [System](../PRINCIPLES.md#system--deep-dive)-kind Module in the chain pattern.** It composes three sub-Mechanisms — **pair generation**, **game ordering**, **break/rack assignment** — that run in sequence to transform two locked lineups into a concrete, fully-specified sequence of head-to-head game slots. Unlike Modules like Team Geometry, Match Format, and Standings & Tiebreakers — which each just bundle a few independent configuration axes that sit alongside each other inertly — Pairings Generator's sub-Mechanisms are ordered stages: each consumes the previous stage's output.
 
 (Why this matters: knowing the kind tells you what to expect inside. A chain-pattern System has N stages that ALL run, each transforming the previous stage's output. There is no "Pairings Generator preset" to pick; the *variant* is the tuple of sub-Mechanism choices for each of the three stages, and the runtime is the composition of those choices applied to the lineups.)
 
