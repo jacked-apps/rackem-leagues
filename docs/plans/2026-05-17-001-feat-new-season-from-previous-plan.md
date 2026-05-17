@@ -201,6 +201,10 @@ Each unit can land as its own small PR (3-6 of them total) OR the whole thing ca
 
 ## Open questions before starting
 
-- **Does the existing first-time league wizard expose its stage components in a way that lets us mount individual steps?** Worth a 15-min audit before Unit 2.
-- **Does the championship-dates conflict checker fail gracefully when the table is empty?** If not, Unit 3 needs to handle empty-table case.
-- **Is there an existing pattern for soft-confirm dialogs in this codebase?** Used to be `ConfirmDialog` — verify before Unit 1's "you're more than 2 weeks out" soft warn.
+~~All three open questions resolved by the pre-implementation audit on 2026-05-17:~~
+
+### Audit results (2026-05-17)
+
+1. **Wizard stage reusability: PARTIALLY REUSABLE.** Step components in `src/wizards/league-v2/steps/*.tsx` are pure props-driven (accept `WizardStepProps<TValue, LeagueWizardFormData>`) and have no shared-context coupling — they can be mounted directly with pre-filled values. BUT `src/wizards/league-v2/useCreateLeagueV2.ts` always calls `createLeague()` which INSERTs a new league row. **Action:** in Unit 2, factor the handler layer to accept a `mode: 'create' | 'nextseason'` flag (or build a parallel `useCreateSeasonFromPrevious` that reuses everything except the league-insert step). Adds ~30–60 min to Unit 2.
+2. **Conflict checker: FAILS GRACEFULLY.** `buildConflictList` in `src/utils/conflictDetectionUtils.ts` checks for championship object before using; `getChampionshipPreferences` in `src/api/queries/seasons.ts` returns `[]` on empty table; holidays come from the `date-holidays` npm package (no DB dependency). **Action:** none. Empty `championship_date_options` table just means no championship warnings shown.
+3. **Soft-confirm dialog: EXISTS.** `src/components/shared/ConfirmDialog.tsx` (component) + `src/hooks/useConfirmDialog.tsx` (promise-based hook). **Action:** use the hook in Unit 1 for the "you're more than 2 weeks out — most LOs wait" soft confirm. Pattern to copy: `src/components/messages/BlockedUsersModal.tsx` line 19.
