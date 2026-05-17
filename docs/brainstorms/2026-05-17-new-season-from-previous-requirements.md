@@ -248,38 +248,16 @@ function the first-time league wizard already uses.
 
 ---
 
-## Separate-but-related: Captain Re-Up Sheet (future feature)
+## Related future feature pointer
 
-**Not in scope for this brainstorm, but called out as a high-value
-follow-up per Ed (2026-05-17).**
-
-Today's reality (Ed's paper-era process): operator hands captains a
-re-up sheet near season end. Captains fill in:
-- Will your team be playing next season? (yes/no)
-- New captain? (name + contact)
-- Any roster changes you know about now?
-- Are you looking for new players?
-
-Currently this happens via the captains-chat or face-to-face. **A
-proper in-app re-up sheet would feed straight into this new-season
-wizard so the LO walks in with most decisions already collected.**
-
-**Proposed shape:**
-- N weeks before season end, system auto-sends a modal/notification
-  to each captain via the existing messaging infrastructure
-- Captain fills a short form: returning yes/no, captain change, etc.
-- LO's view aggregates all responses into a single dashboard
-- The new-season wizard's Step 2 (Teams) pre-fills from re-up sheet
-  data: teams marked "not returning" are unchecked, teams with new
-  captains have the captain dropdown pre-set, etc.
-
-**Why separate:** the re-up sheet needs its own brainstorm + UX +
-schema (a `season_reup_responses` table or similar) + scheduled
-trigger logic. Building it into THIS feature would bloat the scope
-and delay the immediate win. Land the wizard first; layer the re-up
-sheet on top once the wizard is shipping value.
-
-Captured for future-features triage.
+A captain "re-up sheet" idea came up in the 2026-05-17 design
+discussion (Ed's paper-era process: captains submit returning /
+dropping / captain-change info before season end so the LO walks
+into this wizard with pre-collected decisions). **Deliberately out
+of scope** for this feature — ship the wizard first, then evaluate
+whether the re-up sheet adds enough value over the captains-chat to
+justify building it. Worth its own brainstorm if/when that
+evaluation comes back yes.
 
 ## What ships after this
 
