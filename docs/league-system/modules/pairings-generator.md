@@ -9,7 +9,7 @@ audience: developer + AI sessions
 
 ## Kind
 
-**Pairings Generator is a [System](../PRINCIPLES.md#system--deep-dive)-kind Module in the chain pattern.** It composes three sub-Mechanisms — **pair generation**, **game ordering**, **break/rack assignment** — that run in sequence to transform two locked lineups into a concrete, fully-specified sequence of head-to-head game slots. Unlike the other composition-pattern Modules in the Scoring System catalog (Team Geometry, Match Format, Standings & Tiebreakers — each composed of independent axes set in parallel), Pairings Generator's sub-Mechanisms are ordered stages: each consumes the previous stage's output.
+**Pairings Generator is a [System](../PRINCIPLES.md#system--deep-dive)-kind Module in the chain pattern.** It composes three sub-Mechanisms — **pair generation**, **game ordering**, **break/rack assignment** — that run in sequence to transform two locked lineups into a concrete, fully-specified sequence of head-to-head game slots. Unlike the parallel-pattern Modules in the Scoring System catalog (Team Geometry, Match Format, Standings & Tiebreakers — each composed of independent axes set in parallel), Pairings Generator's sub-Mechanisms are ordered stages: each consumes the previous stage's output.
 
 (Why this matters: knowing the kind tells you what to expect inside. A chain-pattern System has N stages that ALL run, each transforming the previous stage's output. There is no "Pairings Generator preset" to pick; the *variant* is the tuple of sub-Mechanism choices for each of the three stages, and the runtime is the composition of those choices applied to the lineups.)
 
@@ -17,7 +17,14 @@ audience: developer + AI sessions
 
 A **pairings generator** takes the lineups two teams have locked in for a match night plus the structural rules governing the match (Team Geometry's `lineup_size` and `game_generation`; Match Format's `pairing_format`) and produces the **concrete game-slot list** the scoring runtime will fill in over the course of the night. Each entry in the output list specifies: which home-team player faces which away-team player, what position that game occupies in the sequence (game 1, game 2, … game N), and which player breaks vs racks. The Module produces nothing else; everything that happens *after* the list is materialized — actually playing the racks, scoring points, applying handicaps, deciding the match winner — belongs to other Modules.
 
-Pairings Generator is *active*, not *passive*. It does real work each time a match starts: combinatorial generation of the pairing set, sequencing into a play order, and per-game break/rack assignment. The output is deterministic given its inputs and the chosen sub-Mechanism variants. It runs once per match (typically at the lineup-lock step, when both teams have committed their player order for the night), and its output is then immutable for the match — change-of-mind by a captain mid-match is handled by Substitution Policy, not by re-running this Module.
+Pairings Generator is *active*, not *passive*. It does real work each time a match starts: combinatorial generation of the pairing set, sequencing into a play order, and per-game break/rack assignment. The output is deterministic given its inputs and the chosen sub-Mechanism variants. It runs once per **round of regular play** (typically at the lineup-lock step, when both teams have committed their player order for the night), and its output is immutable for that round — change-of-mind by a captain mid-round is handled by application-level substitution rules, not by re-running this Module.
+
+**Scope: regular round-robin play only.** This Pairings Generator's job is the *round-robin* pairing set (full SRR or DRR cross-product) for the main match. Two adjacent concerns use the SAME architectural pattern (lineups + rules → game-slot list) but are NOT this Module:
+
+- **Tiebreaker pairings** — when the match ends tied (per [Standings & Tiebreakers](standings-tiebreakers.md)'s `tiebreaker_trigger`), a tiebreaker mini-match needs its own pairing set (often a different shape: "one player from each team plays one game" rather than full round-robin). Either a future variant of this Module (re-invoked with mini-match parameters) or a peer Tiebreaker Generator handles those slots. Today, the runtime appends hardcoded tiebreaker game slots (games 19-21 for 3v3 best-of-3); the Step-3+ refactor formalizes this as a distinct generator concern.
+- **Individual race pairings** — when `pairing_format='race_to_n'` lands (future format), each pairing becomes a race-to-N sub-match. The pairing-generation pattern is the same (lineups → ordered pairings) but the per-pairing internal structure is different. Likely another future variant of this Module's family (or a peer Race Pairings Generator).
+
+Round-robin, tiebreaker, and race generators share the architectural pattern (chain-pattern System taking lineups + rules and producing a deterministic game-slot list) but each handles a distinct invocation context. This blueprint covers the round-robin case currently shipped in the 3 prepackaged Scoring Systems; the other two are future scope.
 
 ## Why Pairings Generator exists
 
@@ -158,9 +165,9 @@ Cross-stage validation is enforced inside the chain (each stage's output validat
 
 | Invariant | Source of enforcement | Failure mode |
 |---|---|---|
-| Output slot count matches Team Geometry's `game_count` formula for the active `game_generation` and the active Pair Generation variant | application layer | composition validator rejects at preference-write time if variants don't agree on cardinality; runtime warn-and-zero per Principle 10 if a slip occurs |
-| Each output slot has a non-null `home_player_id`, `away_player_id`, `game_number`, `breaker`, `racker` | application layer | runtime fails-loud (cannot score a slot with missing pairing data) |
-| `game_number` values are 1-indexed contiguous integers | application layer | runtime fails-loud (game-number gap indicates Pair Generation or Game Ordering bug) |
+| Output slot count matches Team Geometry's `game_count` formula for the active `game_generation` | by construction (round-robin algorithm is universal; slot count derives deterministically from lineup_size × multiplier) | not a real failure mode — the algorithm produces the correct count by definition |
+| Each output slot has a non-null `home_player_id`, `away_player_id`, `game_number`, `breaker`, `racker` | by construction (the round-robin algorithm produces complete slot records; sub-Mechanism chain enforces fill at each stage) | not a real failure mode — slot completeness is intrinsic to the algorithm |
+| `game_number` values are 1-indexed contiguous integers | by construction (Game Ordering stage enforces this) | not a real failure mode — sequencing is intrinsic to the algorithm |
 | Same inputs (TG + MF + lineups + variant choices) produce byte-identical output across invocations | by construction (deterministic compute) — characterization tests guard | regression test failure if a sub-Mechanism introduces non-determinism without seed input |
 | Variant choices for the three sub-Mechanisms are consistent with each other (e.g., a "Swiss pairing" Pair Generation variant requires a Game Ordering variant that doesn't assume Cartesian-product structure) | application-layer composition validator (currently bundled implicitly per Scoring System) | warns at LO setup; runtime falls back to safe-default chains per Principle 10 if a mismatch slips through |
 

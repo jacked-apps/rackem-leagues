@@ -9,7 +9,7 @@ audience: developer + AI sessions
 
 ## Kind
 
-**Match Format is a [System](../PRINCIPLES.md#system--deep-dive)-kind Module in the composition pattern.** It composes two axes — **pairing format** (single-rack vs race-to-N) and **base race length** (the N when race-to-N applies) — into the per-pairing structural specification consumed by the scoring runtime when it materializes individual head-to-head encounters into playable game slots. As with [Team Geometry](team-geometry.md), the *variant* is the resulting tuple, not a packaged option pulled off a shelf; legal configurations are the constrained Cartesian product across the axes.
+**Match Format is a [System](../PRINCIPLES.md#system--deep-dive)-kind Module in the parallel pattern.** It composes two axes — **pairing format** (single-rack vs race-to-N) and **base race length** (the N when race-to-N applies) — into the per-pairing structural specification consumed by the scoring runtime when it materializes individual head-to-head encounters into playable game slots. As with [Team Geometry](team-geometry.md), the *variant* is the resulting tuple, not a packaged option pulled off a shelf; legal configurations are the constrained Cartesian product across the axes.
 
 (Why this matters: Team Geometry sets the *number and topology* of pairings on a match night; Match Format sets the *shape of what one pairing is*. The two compose orthogonally — same game count (Team Geometry) can run as 25 single racks or as 25 race-to-N pairings (Match Format) without either Module knowing about the other's choice. Splitting the team-level structure from the per-pairing structure is the load-bearing anti-conflation this Module enforces.)
 
