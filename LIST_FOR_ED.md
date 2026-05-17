@@ -403,7 +403,16 @@ for full details.
 
 ---
 
-## 4. Better Dashboard Button on Home Page
+## ~~4. Better Dashboard Button on Home Page~~ ✅ CLOSED 2026-05-17
+
+> **Closed 2026-05-17** — added a full-width "Go to My Dashboard"
+> primary button at the top of `src/home/Home.tsx`, visible only when
+> the user is signed in (uses `useUser().isLoggedIn`). Signed-out
+> users still see the Explore cards alone. Dashboard is now one tap
+> from the home page; no need to dig into the hamburger menu.
+> Original entry preserved below for reference.
+
+### Original entry
 
 **Discovered:** 2026-04-17
 

@@ -13,8 +13,9 @@
 import { Link } from 'react-router-dom';
 import { useUser } from '../context/useUser';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
-import { Building2, Trophy, Radio, MapPin, BookOpen } from 'lucide-react';
+import { Building2, Trophy, Radio, MapPin, BookOpen, LayoutDashboard, ArrowRight } from 'lucide-react';
 import { ShareAppCard } from '@/components/ShareAppCard';
 import { toast } from 'sonner';
 
@@ -53,7 +54,7 @@ function FeatureCard({ icon, title, description }: FeatureCardProps) {
 }
 
 export const Home: React.FC = () => {
-  const { loading: authLoading } = useUser();
+  const { loading: authLoading, isLoggedIn } = useUser();
 
   // Show loading while checking auth status
   if (authLoading) {
@@ -85,6 +86,29 @@ export const Home: React.FC = () => {
       />
 
       <div className="max-w-4xl mx-auto p-6 space-y-8">
+        {/* Dashboard CTA — only shown when the user is signed in.
+            Previously the only route to /dashboard from the home page
+            was via the hamburger menu, which is too hidden for what
+            is effectively the primary landing destination for every
+            logged-in user. Full-width primary button sits above the
+            public Explore cards so it's the first thing logged-in
+            users see; signed-out users see the Explore cards alone
+            (which makes sense for the public-discovery framing of
+            the home page). */}
+        {isLoggedIn && (
+          <Link to="/dashboard" className="block">
+            <Button
+              size="lg"
+              loadingText="none"
+              className="w-full h-14 text-base font-semibold flex items-center justify-center gap-3"
+            >
+              <LayoutDashboard className="h-5 w-5" />
+              Go to My Dashboard
+              <ArrowRight className="h-5 w-5" />
+            </Button>
+          </Link>
+        )}
+
         {/* Feature cards */}
         <div className="space-y-4">
           <h2 className="text-xl font-semibold text-center text-muted-foreground">
