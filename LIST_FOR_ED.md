@@ -439,7 +439,30 @@ bulk actions, table number assignments.
 
 ---
 
-## 6. Wizard: Placeholder Captain Not Auto-Assigned + Dropdown Stale
+## ~~6. Wizard: Placeholder Captain Not Auto-Assigned + Dropdown Stale~~ ✅ CLOSED 2026-05-17 (PR #79)
+
+> **Closed 2026-05-17** — already fixed by PR #79 (`d4d110d`,
+> 2026-04-25, six days after this item was filed). The commit
+> description literally says: "Mirror the pattern from
+> TeamEditorModal: keep locally-created placeholders" — fixes both
+> parts of the bug.
+>
+> - **Part 1 (PP not assigned as captain)** — `MemberCombobox.tsx`
+>   line ~268 now calls `onValueChange(newMember.id)` on PP creation,
+>   auto-selecting the new placeholder. The wizard flow then treats
+>   it as the selected captain on the next submit.
+> - **Part 2 (stale dropdown)** — `CreatePlaceholderModal.tsx` calls
+>   `queryClient.invalidateQueries({ queryKey: queryKeys.members.all })`
+>   on PP-create success, plus the `onPlaceholderCreated` callback
+>   lets the parent inject the new player into its local list
+>   immediately. So the new PP is visible without a page refresh.
+>
+> No code change in this PR — just closing the entry. Triage from
+> the agent triage pass missed this one because it didn't search
+> git history for the specific fix commit.
+> Original entry preserved below for reference.
+
+### Original entry
 
 **Discovered:** 2026-04-19
 **Severity:** Low — has a workaround (refresh the page)
