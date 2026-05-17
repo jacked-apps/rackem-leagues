@@ -511,7 +511,16 @@ on mount.
 
 ---
 
-## 9. First-Lineup-Lock Stuck on Match Setup (Pre-Existing Intermittent)
+## 9. First-Lineup-Lock Stuck on Match Setup (Pre-Existing Intermittent) ⚠️ NEEDS-ED-CONFIRM 2026-05-17
+
+> **Triaged 2026-05-17** — PR #100 ("rock-solid lineup → scoring transition")
+> shipped retry logic in the `prep_match` RPC, but the original entry's
+> root cause (realtime-visibility lag on the second team's lineup row) is
+> not obviously addressed. Symptom could still reproduce. **Ed: try to
+> force the original failure and confirm before closing.** Original entry
+> preserved below.
+
+### Original entry
 
 **Discovered:** before 2026-04-01 (long-running)
 **Re-confirmed:** 2026-05-02 during modular-league-system test pass
@@ -569,7 +578,14 @@ visibility of the second team's lineup row.
 
 ---
 
-## 10. Scoreboard Number Layout Confusing — Threshold Duplicated
+## ~~10. Scoreboard Number Layout Confusing — Threshold Duplicated~~ ✅ CLOSED 2026-05-17 (PR #99)
+
+> **Closed 2026-05-17** — verified resolved by PR #99 (unified scoreboard
+> ships `UnifiedScoreboard.tsx`, reads `home_games_won` / `away_games_won`
+> directly from the match row; the redundant threshold display is gone).
+> Original entry preserved below for reference.
+
+### Original entry
 
 **Discovered:** 2026-05-02 during modular-league-system test pass
 **Severity:** Low (cosmetic / UX)
@@ -598,7 +614,15 @@ subtitle.
 
 ---
 
-## 11. Architectural Decision — Where Should the Live Scoreboard Read From?
+## ~~11. Architectural Decision — Where Should the Live Scoreboard Read From?~~ ✅ CLOSED 2026-05-17 (PR #99)
+
+> **Closed 2026-05-17** — decision made + implemented in PR #98/#99.
+> `home_games_won` / `away_games_won` on the `match` row are the
+> running totals; both `MatchEndVerification` and the live scoreboard
+> read from there. Architectural debate resolved.
+> Original entry preserved below for reference.
+
+### Original entry
 
 **Discovered:** 2026-05-02 during modular-league-system test pass
 **Severity:** Architectural — discuss with Jack before deciding
@@ -657,7 +681,17 @@ enough.
 
 ---
 
-## 12. One-Team Screen Flashes / Rapidly Re-renders Around Tiebreaker
+## 12. One-Team Screen Flashes / Rapidly Re-renders Around Tiebreaker ⚠️ PARTIALLY-RESOLVED 2026-05-17
+
+> **Triaged 2026-05-17** — PR #100 added `stableMatchForMutations`
+> memoization to `ScoreMatch.tsx`, which removes one source of the
+> flashing. The same treatment is NOT yet applied to `MatchLineup.tsx`,
+> so the tiebreaker-setup flash is likely mitigated but not fully gone.
+> Keeping open until either (a) the second component gets the same
+> memoization, or (b) Ed confirms the symptom is invisible in normal use.
+> Original entry preserved below.
+
+### Original entry
 
 **Discovered:** 2026-05-02 during modular-league-system test pass
 **Severity:** Medium — has a workaround (browser refresh)
@@ -767,7 +801,15 @@ games are excluded by design — Phase 5 Unit 5.5 locked invariant).
 
 ---
 
-## 14. Live-Scoring Page Doesn't Clear Completed Matches
+## ~~14. Live-Scoring Page Doesn't Clear Completed Matches~~ ✅ CLOSED 2026-05-17 (PR #99)
+
+> **Closed 2026-05-17** — verified resolved. `getLiveMatchesForLeague`
+> and `getLiveMatchesForMember` in `src/api/queries/matches.ts` both
+> filter with `.neq('status', 'completed')`, so completed matches no
+> longer linger on the live-scoring index.
+> Original entry preserved below for reference.
+
+### Original entry
 
 **Discovered:** 2026-05-02 during modular-league-system test pass
 **Severity:** Medium — visible UX bug (stale data showing)
@@ -817,7 +859,16 @@ query layer.
 
 ---
 
-## 15. MatchEndVerification Re-fires Completion on Already-Completed Match
+## ~~15. MatchEndVerification Re-fires Completion on Already-Completed Match~~ ✅ CLOSED 2026-05-17 (PR #100)
+
+> **Closed 2026-05-17** — verified resolved by PR #100. The exact guard
+> suggested in the original entry (`if (match?.status === 'completed') return;`)
+> was added near the top of the completion `useEffect` in
+> `src/components/scoring/MatchEndVerification.tsx`. Re-fires on already-
+> completed matches no longer happen.
+> Original entry preserved below for reference.
+
+### Original entry
 
 **Discovered:** 2026-05-02 during modular-league-system test pass
 **Severity:** Low — DB uniqueness constraint catches the duplicate, but
@@ -967,7 +1018,16 @@ collection once there's enough volume.
 
 ---
 
-## 18. Unified Scoreboard — One Component for All Configs
+## ~~18. Unified Scoreboard — One Component for All Configs~~ ✅ CLOSED 2026-05-17 (PR #99)
+
+> **Closed 2026-05-17** — verified resolved by PR #99. New
+> `UnifiedScoreboard.tsx` is the single component for all configs;
+> the routing no longer reaches the legacy `ThreeVThreeScoreboard` /
+> `FiveVFiveScoreboard` / `TenSevenScoreboard` trio (the old files
+> still exist on disk but are dead code — separate cleanup task).
+> Original entry preserved below for reference.
+
+### Original entry
 
 **Discovered:** 2026-05-03 during 5v5 Fargo + games-won test pass
 **Severity:** Architectural / next-branch brainstorm
@@ -1216,7 +1276,17 @@ treats them as synonyms is wrong.
 
 ---
 
-## 19. Cross-Match State Bleed — Fresh Match Shows "Tiebreak Needed"
+## 19. Cross-Match State Bleed — Fresh Match Shows "Tiebreak Needed" ⚠️ NEEDS-ED-CONFIRM 2026-05-17
+
+> **Triaged 2026-05-17** — PR #100 tightened realtime cache and component
+> identity around match-prep, which may have collateral-fixed this. But
+> the original symptom is specifically about navigation from match A →
+> match B, and that path wasn't explicitly addressed. **Ed: try to
+> reproduce the original repro (open abandoned match A, then navigate
+> to fresh match B) and confirm before closing.** Original entry
+> preserved below.
+
+### Original entry
 
 **Discovered:** 2026-05-03 during modular-league-system testing
 **Severity:** Medium (refresh-recoverable, no data corruption)
@@ -1401,7 +1471,15 @@ already started" short-circuits the confirmation prompt.
 
 ---
 
-## 23. First Winner-Selection Modal Missing Loser-Points Selector (Fargo)
+## ~~23. First Winner-Selection Modal Missing Loser-Points Selector (Fargo)~~ ✅ CLOSED 2026-05-17 (PR #104)
+
+> **Closed 2026-05-17** — PR #104 explicitly closes this. `ScoringDialog`
+> now falls back to the live `leaguePrefs.points_calculator` when the
+> snapshot is null, so the game-1 modal renders the loser-points selector
+> correctly for Fargo matches.
+> Original entry preserved below for reference.
+
+### Original entry
 
 **Discovered:** 2026-05-04 during unified-scoreboard smoke-testing.
 **Severity:** Medium-High (silent loss of loser points on game 1 of
