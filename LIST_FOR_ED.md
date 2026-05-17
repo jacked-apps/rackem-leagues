@@ -464,7 +464,30 @@ them from the dropdown as captain.
 
 ---
 
-## 7. New Org Not Visible on Dashboard After LO Application
+## ~~7. New Org Not Visible on Dashboard After LO Application~~ ✅ CLOSED 2026-05-17
+
+> **Closed 2026-05-17** — root cause was subtler than first guessed.
+> The two mutations (`useCreateOrganization`, `useUpdateMemberRole`)
+> WERE calling `invalidateQueries`, but `invalidateQueries`'s default
+> behavior only refetches *active* queries. The dashboard's org-list
+> query is NOT mounted during the LO application flow, so the cache
+> was marked stale but never actually refetched. The user navigates
+> to /dashboard, the component mounts, and there's a brief window
+> where the stale cache renders before the refetch completes —
+> hence "doesn't appear until refresh."
+>
+> Fixed by switching both mutations to `invalidateQueries({...,
+> refetchType: 'all' })` inside async `onSuccess` handlers that
+> await the refetch. Forces inactive-query refetches AND holds the
+> mutation open until the cache is genuinely fresh. The previous
+> 500ms `setTimeout` hack in the LO application's `handleSubmit`
+> was removed — there's no race left to paper over.
+>
+> Files touched: `useOrganizationMutations.ts`,
+> `useMemberMutations.ts`, `LeagueOperatorApplication.tsx`.
+> Original entry preserved below for reference.
+
+### Original entry
 
 **Discovered:** 2026-05-02 during modular-league-system test pass
 **Severity:** Low — has a workaround (refresh the page)

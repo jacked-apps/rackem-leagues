@@ -209,10 +209,21 @@ export function useUpdateMemberRole() {
 
   return useMutation({
     mutationFn: updateMemberRole,
-    onSuccess: () => {
-      // Invalidate all member queries to refresh role everywhere
-      queryClient.invalidateQueries({
+    onSuccess: async () => {
+      // Refresh role everywhere AND wait for refetch — paired with
+      // the same treatment in useCreateOrganization (closes LIST_FOR_ED
+      // #7). The LO-application flow runs both mutations back-to-back
+      // and then navigates to /dashboard, which gates the org-list on
+      // BOTH the new role AND the new org. If either query is stale
+      // when the dashboard mounts, the user sees the empty/wrong
+      // state and has to refresh.
+      //
+      // `refetchType: 'all'` forces inactive-query refetches; awaiting
+      // it inside the async onSuccess holds the mutation open until
+      // the cache is fresh.
+      await queryClient.invalidateQueries({
         queryKey: queryKeys.members.all,
+        refetchType: 'all',
       });
     },
   });
