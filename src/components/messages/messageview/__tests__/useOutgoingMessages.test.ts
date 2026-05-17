@@ -111,6 +111,48 @@ describe('useOutgoingMessages', () => {
     expect(result.current.outgoing.map((m) => m.content)).toEqual(['a', 'c']);
   });
 
+  // Unit 17: removeByMatch is what MessageView calls when the realtime
+  // push delivers a confirmed copy of an in-flight message. Eliminates
+  // the brief double-render (pending bubble + confirmed bubble briefly
+  // coexist) on the sender side.
+  it('removeByMatch removes every entry the predicate matches', () => {
+    const { result } = renderHook(() => useOutgoingMessages());
+
+    act(() => {
+      result.current.addPending('keep me');
+    });
+    act(() => {
+      result.current.addPending('drop me');
+    });
+    act(() => {
+      result.current.addPending('also drop me');
+    });
+
+    act(() => {
+      result.current.removeByMatch((entry) => entry.content.startsWith('drop') || entry.content.startsWith('also'));
+    });
+
+    expect(result.current.outgoing.map((m) => m.content)).toEqual(['keep me']);
+  });
+
+  it('removeByMatch with a never-true predicate leaves the list unchanged', () => {
+    const { result } = renderHook(() => useOutgoingMessages());
+
+    act(() => {
+      result.current.addPending('one');
+    });
+    act(() => {
+      result.current.addPending('two');
+    });
+    const before = result.current.outgoing;
+
+    act(() => {
+      result.current.removeByMatch(() => false);
+    });
+
+    expect(result.current.outgoing).toEqual(before);
+  });
+
   it('markFailed and markPending on an unknown clientId are no-ops', () => {
     const { result } = renderHook(() => useOutgoingMessages());
 

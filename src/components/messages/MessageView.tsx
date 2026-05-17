@@ -47,13 +47,36 @@ export function MessageView({ conversationId, currentUserId, onBack, onLeaveConv
 
   // Unit 8 inline-failed-send: optimistic outgoing-messages state that
   // MessageList renders alongside the confirmed messages.
-  const { outgoing, addPending, markPending, markFailed, remove } = useOutgoingMessages();
+  const { outgoing, addPending, markPending, markFailed, remove, removeByMatch } = useOutgoingMessages();
   const updateLastReadMutation = useUpdateLastRead();
   const leaveConversationMutation = useLeaveConversation();
   const blockUserMutation = useBlockUser();
 
   // Real-time subscriptions (auto-manages channels and cleanup)
-  useConversationMessagesRealtime(conversationId, currentUserId, updateLastReadMutation);
+  // Unit 17: when the realtime push delivers a message from the
+  // current user, find the matching optimistic pending entry in
+  // `outgoing` (by content + recent timestamp) and remove it in the
+  // same tick the confirmed bubble enters the cache. Without this,
+  // the optimistic pending bubble and the confirmed bubble briefly
+  // co-exist before the mutation's await resolves → small but
+  // visible flash on every send.
+  useConversationMessagesRealtime(
+    conversationId,
+    currentUserId,
+    updateLastReadMutation,
+    (msg) => {
+      removeByMatch((entry) => {
+        if (entry.content !== msg.content) return false;
+        // Defensive timestamp window — protects against an
+        // unlikely double-send-of-same-content matching the wrong
+        // pending entry. 30s covers normal round-trip latency
+        // with margin.
+        const entryTs = entry.createdAt ? new Date(entry.createdAt).getTime() : 0;
+        const msgTs = new Date(msg.created_at).getTime();
+        return Math.abs(msgTs - entryTs) < 30_000;
+      });
+    },
+  );
 
   // R5 + Phase-1 announcement-feels-one-way decision: gate the composer.
   // Returns { readOnly, reason } when the current user is a past-member of

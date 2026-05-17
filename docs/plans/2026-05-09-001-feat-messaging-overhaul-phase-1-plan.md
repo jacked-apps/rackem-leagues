@@ -34,7 +34,7 @@ end-to-end test pass before merge.
 | 14 | **Season-end trigger — release `cannot_leave` on completion** | ✅ shipped |
 | 15 | **Auto-rename propagation — team rename + league rename update matching chat titles (2 triggers; season/org renames moot post-Unit-18)** | ✅ shipped |
 | 16 | **Bounded send — AbortController + 10s timeout in `sendMessage`** | ✅ shipped |
-| 17 | **Eliminate optimistic-vs-realtime double-render flash on sender side** | ⬜ not started |
+| 17 | **Eliminate optimistic-vs-realtime double-render flash on sender side** | ✅ shipped 2026-05-17 |
 | 18 | **Shorter chat titles + banner interpolation** (per-user captains label deferred — see entry) | ✅ shipped (partial — per-user label deferred) |
 | 19 | **Editable team chat title (captain rename; auto-rename trigger respects user-edit)** | ✅ shipped |
 | 20 | **Past-member chats visible in inbox under "Archived" section (close Unit 6 gap)** | ✅ shipped |
@@ -991,7 +991,7 @@ flips.
 
 ---
 
-- [ ] **Unit 17: Eliminate optimistic-vs-realtime double-render flash on sender side**
+- [x] **Unit 17: Eliminate optimistic-vs-realtime double-render flash on sender side** ✅ shipped 2026-05-17
 
 **Goal:** When the user sends a message, the optimistic bubble
 (Unit 8's `useOutgoingMessages` pending entry) and the
@@ -1068,6 +1068,16 @@ bubble appears and stays.
 **Why deferred (per Ed 2026-05-16):** cosmetic-only flash; doesn't
 block testing or correctness; medium-cost (~30-45 min including a
 test) so it batches with Units 10–15 in the polish bundle.
+
+**Shipped 2026-05-17:** Added `removeByMatch(predicate)` to
+`useOutgoingMessages` and a new optional `onOwnMessageDelivered`
+callback parameter on `useConversationMessagesRealtime`. The hook
+inspects the embedded `sender` on the realtime-delivered message;
+when the sender is the current user, it fires the callback with
+`{id, content, created_at}`. `MessageView` wires the callback to
+remove the matching pending entry (content + ≤30s timestamp
+window). Tests in `useOutgoingMessages.test.ts` cover the new
+helper. Type-clean + unit suite green.
 
 ---
 

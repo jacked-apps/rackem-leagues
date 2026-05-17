@@ -125,10 +125,28 @@ export function useConversationsRealtime(userId: string | undefined) {
  *   return <div>{messages.map(...)}</div>;
  * }
  */
+/**
+ * Shape of the message data passed to the optional
+ * `onOwnMessageDelivered` callback (Unit 17 — used by MessageView to
+ * dismiss the matching optimistic pending entry before the dual-render
+ * window opens).
+ */
+export interface DeliveredOwnMessage {
+  id: string;
+  content: string;
+  created_at: string;
+}
+
 export function useConversationMessagesRealtime(
   conversationId: string | undefined,
   currentUserId: string | undefined,
-  updateLastReadMutation?: { mutate: (params: { conversationId: string; userId: string }) => void }
+  updateLastReadMutation?: { mutate: (params: { conversationId: string; userId: string }) => void },
+  /** Unit 17: invoked when the realtime push delivers a message whose
+   *  sender is the current user. Lets the caller (MessageView) dismiss
+   *  the matching optimistic pending entry from `useOutgoingMessages`
+   *  in the same tick that the confirmed bubble enters the cache —
+   *  eliminating the brief "two bubbles, one shifts up" flash on send. */
+  onOwnMessageDelivered?: (msg: DeliveredOwnMessage) => void,
 ) {
   const queryClient = useQueryClient();
 
@@ -190,6 +208,25 @@ export function useConversationMessagesRealtime(
                 userId: currentUserId,
               });
             }
+
+            // Unit 17: if this message was sent by the current user,
+            // let the caller dismiss the matching optimistic pending
+            // entry. Sender shape from the embed:
+            //   sender: { id, first_name, last_name, system_player_number } | null
+            // System messages have sender = null (no callback fires).
+            const senderRaw = (data as { sender?: { id: string } | { id: string }[] | null }).sender;
+            const sender = Array.isArray(senderRaw) ? senderRaw[0] : senderRaw;
+            if (
+              currentUserId &&
+              onOwnMessageDelivered &&
+              sender?.id === currentUserId
+            ) {
+              onOwnMessageDelivered({
+                id: data.id,
+                content: data.content,
+                created_at: data.created_at,
+              });
+            }
           }
         }
       )
@@ -199,6 +236,6 @@ export function useConversationMessagesRealtime(
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [conversationId, currentUserId, queryClient, updateLastReadMutation]);
+  }, [conversationId, currentUserId, queryClient, updateLastReadMutation, onOwnMessageDelivered]);
 }
 
