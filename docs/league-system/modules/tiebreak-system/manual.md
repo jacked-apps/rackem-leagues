@@ -21,4 +21,4 @@ The operator enters the tiebreaker result directly via a dialog (winner team, pl
 
 ## Status
 
-Already partially implemented in code — `src/components/scoring/ManualTiebreakerDialog.tsx` is the current operator-facing surface (per the old S&T `tiebreaker_format='manual'` setting). The Tiebreak System integration will route to this existing dialog when the `manual` Mechanism runs in a chain.
+Already partially implemented in code — `src/components/scoring/ManualTiebreakerDialog.tsx` is the current operator-facing surface (legacy of the prior `tiebreaker_format='manual'` preference, before the Tiebreak System refactor). The Tiebreak System integration will route to this existing dialog when the `manual` Mechanism runs in a chain.

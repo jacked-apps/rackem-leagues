@@ -30,7 +30,7 @@ The Points System is **only** the per-game point-allocation rule set. It is **no
 - The kind-of-asymmetry the handicap declares — that's a **[Handicap Mechanism](../handicap-mechanisms/README.md)**.
 - The chart/formula that converts a handicap difference into a benchmark — that's a **[Threshold Chart](../threshold-charts/README.md)**.
 - **The rule that decides who won the match** — that's the **[Win Calculator](../win-calculator.md)**. The Points System produces point data; the Win Calculator consults it (along with games and benchmarks) to declare a winner.
-- **Stats metadata about HOW games ended** (early 8-ball, scratch on 8, eight-wrong-pocket, etc.) — loss-cause events that belong in a future Stats/Analytics Module. *We care that a game was won, not how, for point-allocation purposes.*
+- **Stats metadata about HOW games ended** (early 8-ball, scratch on 8, eight-wrong-pocket, etc.) — loss-cause events that belong in a future Stats/Analytics concern (outside this catalog). *We care that a game was won, not how, for point-allocation purposes.*
 
 If a proposed feature changes *how points are calculated per game* → Points System. If it changes *which metric decides victory* → Win Calculator.
 

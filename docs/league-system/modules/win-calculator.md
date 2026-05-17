@@ -14,7 +14,7 @@ audience: developer + AI sessions
 
 ## Essence
 
-The **Win Calculator** examines the collected match data — the two metrics every match tracks (Games and Points) plus any benchmarks the Handicap Mechanisms declared — and **declares the match winner**. It does so by walking a configurable **metric precedence stack** — an ordered list of metrics — and choosing the first metric on which the two teams differ. If the stack runs out with all metrics tied, it fires the [Tiebreak System](tiebreak-system/README.md) to produce an **edge metric**, which sits as the lowest-precedence metric in the stack. The Win Calculator does not produce metrics and does not allocate points. It *decides*.
+The **Win Calculator** examines the collected match data — the two metrics every match tracks (Games and Points) plus any benchmarks the Handicap Mechanisms declared — and **declares the match winner**. It does so by walking a configurable **metric precedence stack** — an ordered list of metrics — and choosing the first metric on which the two teams differ. Configured stacks may include `edge` as a stack entry; when the walker reaches `edge` (i.e., all higher-precedence metrics tied), the Win Calculator fires the [Tiebreak System](tiebreak-system/README.md) to produce edge's value, then uses that value as the deciding metric. The Win Calculator does not produce metrics and does not allocate points. It *decides*.
 
 ## Why the Win Calculator exists
 
@@ -44,7 +44,7 @@ The Win Calculator holds a **metric precedence stack** — an LO-configured orde
 2. For each metric, compare the two teams' values.
 3. The **first metric on which the teams differ** decides the winner — the team with the higher value (per the metric's comparison rule) wins.
 4. If a metric's values are equal, continue to the next metric in the stack.
-5. If the stack runs out with all metrics tied AND `edge` is the next stack entry, fire the **Tiebreak System** (see below) to produce the edge metric, then consult edge as the final tiebreaker. If `edge` is NOT in the stack, the match is recorded as tied; the Tiebreak System does not fire.
+5. When the walker reaches an `edge` entry in the stack (meaning all higher-precedence metrics tied), fire the **Tiebreak System** (see below); it produces edge's value, which the walker then uses as the deciding metric. If the walker reaches the end of the stack without producing a winner (no `edge` entry was in the stack to fire), the match is recorded as tied.
 
 The simplest possible stack is one metric — equivalent to today's primitive `win_condition` field. A league using `win_condition='games'` has a one-metric stack: `[games_won]`. A league using `win_condition='points'` has `[points_earned]`. Real configurations can chain more metrics — e.g., `[points_above_threshold, games_won, edge]` reads as *"first compare points-above-threshold; if tied, compare games-won; if still tied, fall back to the Tiebreak System's edge."*
 
@@ -52,7 +52,7 @@ The metric stack is what makes Win Calculator *configurable* rather than primiti
 
 ## The Tiebreak System trigger and edge
 
-When the LO's metric stack ends with all metrics tied (or when the stack includes `edge` as a fallback), the Win Calculator **fires the Tiebreak System as a trigger**. The Tiebreak System (a chain of LO-configured Tiebreak Mechanisms — coin flip, short race, roshambo, etc., terminated by an auto-appended human-handoff modal) runs until it produces edge for one team. The Win Calculator then consults edge as the lowest-precedence stack metric and declares the team with edge the winner.
+When the walker reaches `edge` in the LO's metric stack (all higher-precedence metrics having tied), the Win Calculator **fires the Tiebreak System as a trigger**. The Tiebreak System (a chain of LO-configured Tiebreak Mechanisms — coin flip, short race, roshambo, etc., terminated by an auto-appended human-handoff modal) runs until it produces edge for one team. The Win Calculator then uses that edge value as the deciding metric and declares the team with edge the winner.
 
 **Edge is single-valued by construction.** The Tiebreak System guarantees the chain produces edge before exhausting (the auto-appended terminal handoff makes this structural). With edge in the stack, ties always resolve.
 

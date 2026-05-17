@@ -89,7 +89,7 @@ The variant set is open; new Mechanisms add themselves to the chain configuratio
 - **LO-authored chain templates** — pre-built chains a new LO can pick from rather than configuring each link (e.g., "BCAPL Standard: single_round → coin_flip").
 - **Per-Mechanism configuration** — some Mechanisms need their own settings (e.g., `race_to_n`'s N value). May warrant a `chain_link_config` shape that pairs a Mechanism with its config.
 - **Cross-Mechanism game-source reuse** — when a `single_round` Mechanism plays games, those game outcomes are real match data. A future enhancement could allow Win Calc's metrics to consult that data even before the chain produces edge.
-- **Stats-tracking integration** — when the future Standings/Statistics concern is designed, tiebreaker outcomes may need to flow into personal stats (e.g., "wins-when-it-mattered" achievement). Cross-concern wiring TBD.
+- **Stats-tracking integration** — when the future Standings concern is designed, tiebreaker outcomes may need to flow into personal stats (e.g., "wins-when-it-mattered" achievement). Cross-concern wiring TBD.
 
 ## Source of truth
 

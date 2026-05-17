@@ -7,9 +7,9 @@ audience: developer + AI sessions
 
 # 1-Point Scoring System
 
-A peer variant of the **[Scoring Systems](README.md)** Module — covering the **Points System** sub-concern (per-game point allocation rule). CSI's published name; also called *Race To* or *win/loss system*.
+A peer variant of the **[Points System](README.md)** Module — a per-game point allocation rule. CSI's published name; also called *Race To* or *win/loss system*.
 
-> **Reading this cold?** The Scoring Systems Module bundles two separate concerns — a **Points System** (how points are allocated per game) and a **Win Calculator** (how match victory is decided). This page describes the **1-Point Scoring System**, which is a *Points System* rule only: each game won = 1 point, each game lost = 0 points. It allocates points; it does NOT decide who won the match (that's the Win Calculator's job). Because the allocation is binary, match-total points always equals games-won counts. The simplest possible per-game allocation rule. Other variants exist (see the [Module README](README.md) for the full picture).
+> **Reading this cold?** The **Points System** Module (one of the 9 Modules in the modular Scoring System catalog) handles per-game point allocation; the separate **[Win Calculator](../win-calculator.md)** Module decides match victory. This page describes the **1-Point Scoring System** — a *Points System* rule only: each game won = 1 point, each game lost = 0 points. It allocates points; it does NOT decide who won the match (that's the Win Calculator's job). Because the allocation is binary, match-total points always equals games-won counts. The simplest possible per-game allocation rule. Other variants exist (see the [Module README](README.md) for the full picture).
 
 ## What it is
 

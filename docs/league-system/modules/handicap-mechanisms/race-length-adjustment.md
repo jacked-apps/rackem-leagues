@@ -26,7 +26,7 @@ Both of these are aggregation/timing choices on top of the same fundamental shap
 
 ## How it works
 
-The mechanism's output is a per-pairing tuple `(race_for_player_A, race_for_player_B)`, computed from the *individual* rating pair (not the team aggregate). Each pairing is **inherently race-mode**: it terminates when either player reaches their respective race target, regardless of how many games remain unplayed in the pairing. (This is structurally different from extra_games and start_points, which operate at the team level with currently-threshold-mode semantics.) The pairing outcomes (who won each head-to-head) are then handed off to the **Win Calculator** (currently the `win_condition` axis inside the Scoring Systems Module) for team-level match victory determination.
+The mechanism's output is a per-pairing tuple `(race_for_player_A, race_for_player_B)`, computed from the *individual* rating pair (not the team aggregate). Each pairing is **inherently race-mode**: it terminates when either player reaches their respective race target, regardless of how many games remain unplayed in the pairing. (This is structurally different from extra_games and start_points, which operate at the team level with currently-threshold-mode semantics.) The pairing outcomes (who won each head-to-head) are then handed off to the **[Win Calculator](../win-calculator.md)** for team-level match victory determination.
 
 A [Threshold Chart](../threshold-charts/README.md) keyed on individual rating pairs would be required for any Handicap System using this mechanism. None currently exists in the codebase.
 

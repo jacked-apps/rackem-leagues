@@ -649,7 +649,7 @@ Each level is a Module; only the *kind* (Mechanism / System / Chart / Converter)
 - **Plural vs singular** — per [Module Deep Dive § 9](#9-naming-rule-plural-vs-singular):
   - **Plural** for selection-pattern Systems (variants coexist as named alternatives) — *Handicap Mechanisms*, *Handicap Systems*, *Threshold Charts*.
   - **Singular** for chain-pattern Systems (one wrapping act with parameter variation) — *Scoring System*, *Win Calculator*, *Points System*, *Match Format*.
-  - The plural-vs-singular test from Module § 9 directly maps to which composition pattern the System uses (per [Section 4](#4-two-composition-patterns-selection-vs-chain) above).
+  - The plural-vs-singular test from Module § 9 directly maps to which composition pattern the System uses (per [Section 4](#4-three-composition-patterns-selection-chain-parallel) above).
 - **Domain-canonical names:** if a System corresponds to an externally-recognized concept with a published name, preserve it (we don't have many examples for Systems specifically — most are coined by us).
 
 **Anti-conflation note on naming.** "System" the kind shares the everyday-English word "system" — and CSI uses "Scoring System" to mean specifically the per-game point allocation rule, not the whole composed thing. Be precise: when we write *"a System"* in docs, we mean any Module of the set kind. When we write *"the Scoring System"* title-case, we mean the specific top-level Module. CSI's "Scoring System" is now what we call the **Points System** (per the historical restructure that split the old "Scoring Systems" Module into Points System + Win Calculator).
@@ -741,7 +741,7 @@ The Chart doesn't know what consumer asked it; it just answers. The Mechanism do
 
 ### 7. Naming Charts
 
-- **Umbrella name** (the parent Module that wraps multiple Chart alternatives): plural noun phrase per [Module Deep Dive § 9](#9-naming-rule-plural-vs-singular) and the selection-pattern naming rule from [System § 4](#4-two-composition-patterns-selection-vs-chain) — *Threshold Charts* (plural; offers alternatives the league picks one of).
+- **Umbrella name** (the parent Module that wraps multiple Chart alternatives): plural noun phrase per [Module Deep Dive § 9](#9-naming-rule-plural-vs-singular) and the selection-pattern naming rule from [System § 4](#4-three-composition-patterns-selection-chain-parallel) — *Threshold Charts* (plural; offers alternatives the league picks one of).
 - **Specific Chart names** — function-name style, describing what the Chart maps: *3v3-games-needed*, *5v5-games-needed*, *fargo-formula*. Lowercase-kebab for filenames; Title Case for display names.
 - **Formula vs discrete in names:** the name doesn't typically encode the shape (formula or discrete) — both shapes are valid Chart kinds.
 
