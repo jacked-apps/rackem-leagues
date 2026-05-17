@@ -40,38 +40,61 @@ export interface ComposerStatus {
    *  members (readOnly=true, reason='past-member') always have
    *  cannotLeave=false because they've already left. */
   cannotLeave: boolean;
+  /** Unit 18: for announcements channels, the org or league name to
+   *  interpolate into the `ReadOnlyBanner` copy ("Only staff from
+   *  <name> can post here."). Null for non-announcement chats and
+   *  for announcements where the lookup couldn't resolve. */
+  contextName: string | null;
 }
 
 /**
- * Resolve the org_id for a conversation, regardless of scope shape.
+ * Resolve the org_id AND a human-readable context name for a
+ * conversation's scope. The context name is what the `ReadOnlyBanner`
+ * interpolates ("Only staff from <name> can post here.") — for
+ * organization-scoped chats it's the org name; for season-scoped
+ * chats it's the league name (division → day_of_week → "League").
  *
- * - `scope_type='organization'` → scope_id IS the org_id.
- * - `scope_type='season'` → join season → league → organization.
- * - Anything else (team chats etc.) → null; this hook isn't designed
- *   to gate non-announcement chats by staff status.
+ * - `scope_type='organization'` → org_id is scope_id; name is org name.
+ * - `scope_type='season'` → join season → league → organization;
+ *   org_id from league.organization_id, name from league.division /
+ *   day_of_week.
+ * - Anything else (team chats etc.) → both null; this hook isn't
+ *   designed to gate non-announcement chats by staff status.
  */
-async function resolveOrgIdForScope(
+async function resolveOrgAndContextForScope(
   scopeType: string | null,
-  scopeId: string | null
-): Promise<string | null> {
-  if (!scopeType || !scopeId) return null;
+  scopeId: string | null,
+): Promise<{ orgId: string | null; contextName: string | null }> {
+  if (!scopeType || !scopeId) return { orgId: null, contextName: null };
 
-  if (scopeType === 'organization') return scopeId;
+  if (scopeType === 'organization') {
+    const { data, error } = await supabase
+      .from('organizations')
+      .select('id, organization_name')
+      .eq('id', scopeId)
+      .single();
+    if (error || !data) return { orgId: scopeId, contextName: null };
+    return { orgId: data.id, contextName: data.organization_name ?? null };
+  }
 
   if (scopeType === 'season') {
     const { data, error } = await supabase
       .from('seasons')
-      .select('league:leagues!inner(organization_id)')
+      .select('league:leagues!inner(organization_id, division, day_of_week)')
       .eq('id', scopeId)
       .single();
 
-    if (error || !data) return null;
-    const league = data.league as { organization_id: string } | { organization_id: string }[];
-    if (Array.isArray(league)) return league[0]?.organization_id ?? null;
-    return league?.organization_id ?? null;
+    if (error || !data) return { orgId: null, contextName: null };
+    const leagueRaw = data.league as
+      | { organization_id: string; division: string | null; day_of_week: string | null }
+      | { organization_id: string; division: string | null; day_of_week: string | null }[];
+    const league = Array.isArray(leagueRaw) ? leagueRaw[0] : leagueRaw;
+    if (!league) return { orgId: null, contextName: null };
+    const contextName = league.division ?? league.day_of_week ?? null;
+    return { orgId: league.organization_id, contextName };
   }
 
-  return null;
+  return { orgId: null, contextName: null };
 }
 
 async function fetchComposerStatus(
@@ -92,10 +115,10 @@ async function fetchComposerStatus(
     throw new Error(`Failed to load participant: ${pErr.message}`);
   }
   if (!participant) {
-    return { readOnly: true, reason: 'past-member', cannotLeave: false };
+    return { readOnly: true, reason: 'past-member', cannotLeave: false, contextName: null };
   }
   if (participant.left_at !== null) {
-    return { readOnly: true, reason: 'past-member', cannotLeave: false };
+    return { readOnly: true, reason: 'past-member', cannotLeave: false, contextName: null };
   }
 
   const cannotLeave = participant.cannot_leave === true;
@@ -111,14 +134,17 @@ async function fetchComposerStatus(
     throw new Error(`Failed to load conversation: ${cErr?.message ?? 'no row'}`);
   }
   if (conv.conversation_type !== 'announcements') {
-    return { readOnly: false, reason: null, cannotLeave };
+    return { readOnly: false, reason: null, cannotLeave, contextName: null };
   }
 
-  // Step 3: staff check for the announcement's org.
-  const orgId = await resolveOrgIdForScope(conv.scope_type, conv.scope_id);
+  // Step 3: staff check + context-name resolution for the announcement's org.
+  const { orgId, contextName } = await resolveOrgAndContextForScope(
+    conv.scope_type,
+    conv.scope_id,
+  );
   if (!orgId) {
     // Can't resolve an org → fail closed (treat as non-staff).
-    return { readOnly: true, reason: 'announcement-non-staff', cannotLeave };
+    return { readOnly: true, reason: 'announcement-non-staff', cannotLeave, contextName };
   }
 
   const { data: staff, error: sErr } = await supabase
@@ -133,8 +159,8 @@ async function fetchComposerStatus(
   }
 
   return staff
-    ? { readOnly: false, reason: null, cannotLeave }
-    : { readOnly: true, reason: 'announcement-non-staff', cannotLeave };
+    ? { readOnly: false, reason: null, cannotLeave, contextName }
+    : { readOnly: true, reason: 'announcement-non-staff', cannotLeave, contextName };
 }
 
 /**

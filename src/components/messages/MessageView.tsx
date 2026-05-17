@@ -241,7 +241,10 @@ export function MessageView({ conversationId, currentUserId, onBack, onLeaveConv
           unmounted (not hidden) when locked so it stays out of tab order
           and screen-reader output. */}
       {composerStatus?.readOnly && composerStatus.reason ? (
-        <ReadOnlyBanner reason={composerStatus.reason} />
+        <ReadOnlyBanner
+          reason={composerStatus.reason}
+          contextName={composerStatus.contextName ?? undefined}
+        />
       ) : (
         <MessageInput onSend={handleSendMessage} />
       )}
