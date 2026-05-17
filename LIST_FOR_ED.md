@@ -860,7 +860,29 @@ if status is 'completed').
 
 ---
 
-## 16. Team-Builder UX — Lineup-Size Slots + "Add Player" for Substitutes
+## ~~16. Team-Builder UX — Lineup-Size Slots + "Add Player" for Substitutes~~ ✅ CLOSED 2026-05-17
+
+> **Closed 2026-05-17** — `TeamEditorModal` now renders only
+> `lineupSize - 1` slots by default (captain takes one of the active
+> lineup spots), with a "+ Add Player (substitute)" dashed-border
+> button that reveals one substitute slot at a time, up to the
+> `rosterSize - 1` hard cap. Existing teams with more filled slots
+> than the lineup baseline open with all filled slots visible — no
+> data hidden behind the button. As the user fills the last visible
+> slot, the next one is proactively revealed so they can keep typing
+> without an extra click.
+>
+> Wiring: new `lineupSize` prop on `TeamEditorModal`; `TeamManagement`
+> passes `leaguePrefs.lineup_size`; `MyTeams` (captain side) gets
+> `editData.lineupSize` (the `getCaptainTeamEditData` query was
+> extended to also fetch `lineup_size` from `resolved_league_preferences`).
+>
+> Files touched: `src/operator/TeamEditorModal.tsx`,
+> `src/operator/TeamManagement.tsx`, `src/player/MyTeams.tsx`,
+> `src/api/queries/teams.ts`.
+> Original entry preserved below for reference.
+
+### Original entry
 
 **Discovered:** 2026-05-03 during modular-league-system test pass
 **Severity:** Enhancement — current behavior renders all max_roster_size

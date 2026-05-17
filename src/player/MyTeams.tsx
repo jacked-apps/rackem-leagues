@@ -492,6 +492,7 @@ export function MyTeams() {
           leagueId={editData.leagueId}
           seasonId={editData.seasonId}
           rosterSize={editData.rosterSize}
+          lineupSize={editData.lineupSize}
           venues={editData.venues}
           leagueVenues={editData.leagueVenues}
           members={editData.members}

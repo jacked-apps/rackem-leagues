@@ -9,7 +9,7 @@
  * - Team names containing profanity will be rejected with an error message
  */
 import React, { useState, useMemo } from 'react';
-import { X } from 'lucide-react';
+import { X, Plus } from 'lucide-react';
 import { useCreateTeam, useUpdateTeam, useInviteStatuses } from '@/api/hooks';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,8 +33,18 @@ interface TeamEditorModalProps {
   leagueId: string;
   /** Season ID for the team */
   seasonId: string;
-  /** Max players on a team roster (from resolved league preferences) */
+  /** Max players on a team roster (from resolved league preferences).
+   *  Hard cap — the form never accepts more than this. */
   rosterSize: number;
+  /** Active-lineup size from resolved league preferences (e.g., 5 for
+   *  a 5v5 league, 8 for 8v8). Drives the default number of slots
+   *  shown when creating a team — only `lineupSize - 1` additional
+   *  slots render initially (captain takes one of the lineup spots).
+   *  The "+ Add Player" button reveals one substitute slot at a time
+   *  up to `rosterSize - 1`. Closes LIST_FOR_ED #16 — the 20-slot
+   *  empty grid was overwhelming for the typical 5-8-active-plus-
+   *  subs case. */
+  lineupSize: number;
   /** Available venues for home venue selection */
   venues: Venue[];
   /** League venues assignments */
@@ -76,6 +86,7 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
   leagueId,
   seasonId,
   rosterSize,
+  lineupSize,
   venues,
   leagueVenues,
   members,
@@ -181,6 +192,44 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
     allTeams,
     seasonId,
   });
+
+  // LIST_FOR_ED #16 — incremental roster slots. The form initially
+  // renders only `lineupSize - 1` slots (captain takes one of the
+  // active-lineup spots), with a "+ Add Player" button below to
+  // reveal a single substitute slot at a time up to the hard cap
+  // (`rosterSize - 1`). Prevents the 20-slot empty grid that the
+  // 12 → 20 cap bump created for the typical 5-8-active-plus-subs
+  // case.
+  //
+  // For existing teams being edited, the initial visible count must
+  // also include every already-filled slot — otherwise a team that
+  // already has 8 players in a 5v5 league would have 3 of them
+  // hidden behind the Add Player button. So: max(lineup baseline,
+  // filled-slot count), clamped to the hard cap.
+  const filledSlotCount = useMemo(
+    () => playerIds.filter((id) => !!id).length,
+    [playerIds]
+  );
+  const initialVisibleSlotCount = useMemo(() => {
+    const baseline = Math.max(0, lineupSize - 1);
+    return Math.min(Math.max(baseline, filledSlotCount), Math.max(0, rosterSize - 1));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lineupSize, rosterSize, existingTeam?.id]); // freeze on team identity, not filledSlotCount (which changes as user types)
+  const [visibleSlotCount, setVisibleSlotCount] = useState(initialVisibleSlotCount);
+
+  // If the user fills the last visible slot and there's room left,
+  // proactively reveal one more so they can keep going without an
+  // extra click. (Doesn't unfocus the current slot or move the
+  // cursor — purely an additive render below.)
+  React.useEffect(() => {
+    if (
+      filledSlotCount >= visibleSlotCount &&
+      visibleSlotCount < rosterSize - 1
+    ) {
+      setVisibleSlotCount((c) => Math.min(c + 1, rosterSize - 1));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filledSlotCount]);
 
   // Get all placeholder player IDs from the roster for invite status lookup
   // Both operators and captains can see invite status badges
@@ -467,7 +516,7 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
               Captain is automatically added to the roster. You can add up to {rosterSize - 1} additional players.
             </p>
             <div className="space-y-3">
-              {Array.from({ length: rosterSize - 1 }).map((_, index) => {
+              {Array.from({ length: visibleSlotCount }).map((_, index) => {
                 const currentPlayerId = playerIds[index];
                 const currentMember = currentPlayerId ? allMembers.find(m => m.id === currentPlayerId) : null;
                 const isCurrentPlaceholder = isPlaceholderMember(currentMember);
@@ -541,6 +590,27 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
                   />
                 );
               })}
+
+              {/* "+ Add Player" button — reveals one substitute slot
+                  at a time, up to the rosterSize cap. Hidden when
+                  every possible slot is already rendered. Per
+                  LIST_FOR_ED #16: keeps the empty-state clean for
+                  the typical 5-8-active-players-plus-subs case
+                  instead of showing all 20 slots up front. */}
+              {visibleSlotCount < rosterSize - 1 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() =>
+                    setVisibleSlotCount((c) => Math.min(c + 1, rosterSize - 1))
+                  }
+                  loadingText="none"
+                  className="w-full justify-center gap-2 border-dashed"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Player (substitute)
+                </Button>
+              )}
             </div>
           </div>
         </div>
