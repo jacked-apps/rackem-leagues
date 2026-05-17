@@ -9,7 +9,7 @@ audience: developer + AI sessions
 
 ## Kind
 
-**Match Format is a [System](../PRINCIPLES.md#system--deep-dive)-kind Module in the parallel pattern.** It composes two axes — **pairing format** (single-rack vs race-to-N) and **base race length** (the N when race-to-N applies) — into the per-pairing structural specification consumed by the scoring runtime when it materializes individual head-to-head encounters into playable game slots. As with [Team Geometry](team-geometry.md), the *variant* is the resulting tuple, not a packaged option pulled off a shelf; legal configurations are the constrained Cartesian product across the axes.
+**Match Format is a [System](../PRINCIPLES.md#system--deep-dive)-kind Module in the configuration pattern.** It composes two axes — **pairing format** (single-rack vs race-to-N) and **base race length** (the N when race-to-N applies) — into the per-pairing structural specification consumed by the scoring runtime when it materializes individual head-to-head encounters into playable game slots. As with [Team Geometry](team-geometry.md), the *variant* is the resulting tuple, not a packaged option pulled off a shelf; legal configurations are the constrained Cartesian product across the axes.
 
 (Why this matters: Team Geometry sets the *number and topology* of pairings on a match night; Match Format sets the *shape of what one pairing is*. The two compose orthogonally — same game count (Team Geometry) can run as 25 single racks or as 25 race-to-N pairings (Match Format) without either Module knowing about the other's choice. Splitting the team-level structure from the per-pairing structure is the load-bearing anti-conflation this Module enforces.)
 
@@ -114,7 +114,7 @@ Schema enforces only the second clause's `>= 1` partial; the existence implicati
 | `race_length IS NULL OR race_length >= 1` | schema CHECK constraint | DB rejects values < 1 |
 | `pairing_format='single_rack' ⇒ race_length IS NULL` | application-layer (no schema CHECK currently) | preference write rejected with operator-facing error |
 | `pairing_format='race_to_n' ⇒ race_length IS NOT NULL` | application-layer | preference write rejected; LO must supply `race_length` |
-| Both axes immutable post-season-lock | `lock_tier1_preferences()` Postgres trigger covering Tier 1 columns | UPDATE on locked preferences blocked at DB layer |
+| Both axes immutable post-season-lock | schema-level season-stability lock trigger covering Match Format's columns | UPDATE on locked preferences blocked at DB layer |
 | `race_length` consistent with active Handicap Mechanism (when `race_length_adjustment`, the chart's per-pairing adjustments must yield positive race targets after adjustment) | application-layer (combo coherence validation) | warns at LO setup; runtime clamps to `max(1, baseline + δ)` if a mismatch slips through (Principle 10 graceful degradation) |
 
 The last row is the bridge to Handicap Mechanism interaction: a misconfigured `race_length_adjustment` chart could in principle return a δ large enough to push the weaker side's effective race target to ≤ 0 (e.g., baseline 5, weaker δ = −6 → effective race target = −1). Combo coherence validation at preference write time should warn against such combinations; runtime defensively clamps to `>= 1` rather than throw.
@@ -166,7 +166,7 @@ The category is open. Adding a new `pairing_format` enum value requires: (a) a t
 - `src/types/preferences.ts` — `pairing_format`, `race_length` column types in the `preferences` row shape
 - `src/types/resolvedSystemConfig.ts` — `ResolvedSystemConfig` carries the resolved Match Format tuple post-cascade
 - `supabase/migrations/20260429000001_extend_preferences_phase2_modular_axes.sql` (lines 52–60 for `pairing_format`, lines 181–187 for `race_length`) — schema definitions + CHECK constraints
-- `supabase/migrations/20260418000002_lock_tier1_preferences.sql` — `lock_tier1_preferences()` Postgres trigger enforcing season-stability immutability (Match Format's axes are Tier 1)
+- `supabase/migrations/20260418000002_lock_tier1_preferences.sql` — Postgres trigger enforcing season-stability immutability (Match Format's axes are in the lock set)
 - `supabase/migrations/20260429000002_resolved_view_phase2_modular_axes.sql` — `resolved_league_preferences` view applies the 3-tier cascade for Match Format's axes
 - `src/systems/types.ts` (around line 179+) — `RaceLengthThreshold` interface; the discriminated-union arm corresponding to `race_length_adjustment` Mechanism (not directly the Match Format Module, but the typed contract for the Threshold output shape Match Format's `race_to_n` variant implies downstream)
 - `src/systems/buildSystemFromPreferences.ts` — `pickThresholdCapability` switch including the `race_length_adjustment` branch (consumer of `race_length` when paired with the matching Mechanism)

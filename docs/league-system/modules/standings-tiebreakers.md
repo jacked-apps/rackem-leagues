@@ -9,9 +9,9 @@ audience: developer + AI sessions
 
 ## Kind
 
-**Standings & Tiebreakers is a [System](../PRINCIPLES.md#system--deep-dive)-kind Module in the parallel pattern.** It composes three axes — **standings sort precedence**, **match-night tiebreaker trigger**, **match-night tiebreaker format** — that together govern *what happens when the simple winner-comparison ties* at two distinct scopes: across an entire season (standings) and at a single match-night (tiebreaker play). The Module name is plural because it bundles two related-but-distinct concerns that share a common conceptual root ("tie resolution") but operate at different temporal scopes and produce different artifacts.
+**Standings & Tiebreakers is a [System](../PRINCIPLES.md#system--deep-dive)-kind Module in the configuration pattern.** It composes three axes — **standings sort precedence**, **match-night tiebreaker trigger**, **match-night tiebreaker format** — that together govern *what happens when the simple winner-comparison ties* at two distinct scopes: across an entire season (standings) and at a single match-night (tiebreaker play). The Module name is plural because it bundles two related-but-distinct concerns that share a common conceptual root ("tie resolution") but operate at different temporal scopes and produce different artifacts.
 
-(Why this matters: the kind tells you what to expect. A parallel-pattern System has N orthogonal axes; legal configurations are the constrained Cartesian product across them. Each axis is set independently; the *variant* is the resulting triple, not a packaged option pulled off a shelf. The two-scope bundling is a deliberate anti-conflation move — see [§Architectural intent](#architectural-intent-two-scopes-one-module-distinct-failure-modes).)
+(Why this matters: the kind tells you what to expect. A configuration-pattern System has N orthogonal axes; legal configurations are the constrained Cartesian product across them. Each axis is set independently; the *variant* is the resulting triple, not a packaged option pulled off a shelf. The two-scope bundling is a deliberate anti-conflation move — see [§Architectural intent](#architectural-intent-two-scopes-one-module-distinct-failure-modes).)
 
 ## Essence
 
@@ -42,10 +42,10 @@ Standings & Tiebreakers is **only** the season-level standings ordering and the 
 - **The Points System's allocation math** — points accumulated per game come from the [Points System](points-system/README.md). Standings & Tiebreakers consumes per-team `points_earned` totals for its `standings_sort` axis but does not produce or modify them.
 - **Playoff bracket generation, end-of-season seeding, championship structure** — these are **downstream** of the standings this Module produces. A separate Playoff Module (currently not modularized; lives as `src/utils/playoff/playoffGenerator.ts`) consumes the final standings and produces bracket shape. Standings & Tiebreakers does not see playoff games.
 - **Forfeit handling** — what happens when a team can't field a lineup. Forfeits produce match outcomes (forfeit win/loss) that feed standings, but the rule for *what counts as a forfeit and its associated penalties* is an application-level concern outside the modular Scoring System (not a Module of this set).
-- **Substitution rules, roster mutation, eligibility for tiebreaker play** — application-level concerns. Standings & Tiebreakers declares the *match-night tiebreaker shape* (e.g., "best of 3 short races"); *which players are eligible to play in the tiebreaker* (must they have played in the regular match? can a sub be inserted?) is governed by Substitution Policy outside the modular Scoring System.
+- **Substitution rules, roster mutation, eligibility for tiebreaker play** — application-level concerns outside the modular Scoring System. Standings & Tiebreakers declares the *match-night tiebreaker shape* (e.g., "best of 3 short races"); *which players are eligible to play in the tiebreaker* (must they have played in the regular match? can a sub be inserted?) is governed by application-level substitution rules, not by any Module in this set.
 - **The runtime data tiebreaker games accumulate** — game outcomes for tiebreaker games are stored in `match_games` rows with elevated `game_number` values (e.g., games 19-21 for the 3v3 best-of-3 tiebreaker). The schema accommodates this; the Module declares the count and shape but does not own the storage.
 
-If a proposed feature changes *the season standings sort order or the match-night tiebreaker firing/shape*, it belongs here. If it changes *the in-game tie-band points rule*, it belongs in the Points System calculator. If it changes *which metric decides a single match*, it belongs in Win Calculator. If it changes *who plays in the tiebreaker*, it belongs in Substitution Policy.
+If a proposed feature changes *the season standings sort order or the match-night tiebreaker firing/shape*, it belongs here. If it changes *the in-game tie-band points rule*, it belongs in the Points System calculator. If it changes *which metric decides a single match*, it belongs in Win Calculator. If it changes *who plays in the tiebreaker*, it belongs in application-level substitution rules (not a Module of this set).
 
 ### Architectural intent: two scopes, one Module, distinct failure modes
 
@@ -149,7 +149,7 @@ Each axis has a value-space, a default, and a validation rule. Presented in depe
 | `standings_sort` is non-empty AND no duplicates | application-layer (no schema CHECK currently) | preference write rejected with operator-facing error |
 | `tiebreaker_trigger IN ('even_total_games_only', 'never')` | schema CHECK constraint | DB rejects unknown values |
 | `tiebreaker_format IN ('best_of_3_short_race', 'single_short_race', 'accept_tie', 'manual', 'coin_flip', 'random_player_single_game', 'random_player_short_race', 'teams_self_determine')` | schema CHECK constraint | DB rejects unknown values |
-| All three axes immutable post-season-lock | `lock_tier1_preferences()` Postgres trigger (Standings & Tiebreakers axes are Tier 1) | UPDATE on locked preferences blocked at DB layer |
+| All three axes immutable post-season-lock | schema-level season-stability lock trigger (Standings & Tiebreakers axes are in the lock set) | UPDATE on locked preferences blocked at DB layer |
 | Combo coherence: `tiebreaker_trigger='even_total_games_only'` with odd `game_count` is vacuous-but-legal | application-layer combo coherence warning | warns at LO setup; runtime evaluates the trigger condition normally (falsey for odd count) |
 | Combo coherence: `tiebreaker_format='best_of_3_short_race'` with `pairing_format='race_to_n'` requires defined extra-pairing semantics | application-layer combo coherence (currently undefined behavior) | warns at LO setup; runtime falls back to `'manual'` per Principle 10 graceful degradation |
 
@@ -233,7 +233,7 @@ The category is open. Adding a new `standings_sort` element requires defining th
 - `src/types/preferences.ts` — `standings_sort`, `tiebreaker_trigger`, `tiebreaker_format` column types
 - `src/types/resolvedSystemConfig.ts` — `ResolvedSystemConfig` carries the resolved Standings & Tiebreakers triple post-cascade
 - `supabase/migrations/20260429000001_extend_preferences_phase2_modular_axes.sql` (lines 137–178 for the three axes) — schema definitions, defaults, CHECK constraints including `preferences_standings_sort_values_check`
-- `supabase/migrations/20260418000002_lock_tier1_preferences.sql` — `lock_tier1_preferences()` Postgres trigger (Standings & Tiebreakers axes are Tier 1)
+- `supabase/migrations/20260418000002_lock_tier1_preferences.sql` — Postgres trigger enforcing season-stability immutability (Standings & Tiebreakers axes are in the lock set)
 - `supabase/migrations/20260429000002_resolved_view_phase2_modular_axes.sql` — `resolved_league_preferences` view applies the 3-tier cascade for the three axes
 - `src/utils/playoff/playoffGenerator.standingsSort.ts` (naming approximate) — sort algorithm implementation
 - `src/utils/__tests__/playoffGenerator.standingsSort.characterization.test.ts` — characterization tests locking current sort behavior

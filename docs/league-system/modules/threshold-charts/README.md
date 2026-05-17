@@ -77,7 +77,9 @@ Charts are passive — they don't *do* anything until queried. The query flow at
 **Output contract (per variant):**
 - A **threshold value shape** — a named category whose specific fields depend on which Chart is active. Common shapes: `(target_wins_a, target_wins_b)`, `(target_wins, target_ties, target_losses)` per side, `(race_length_a, race_length_b)`. See each variant page for the specific output shape.
 
-**Upstream:** [Handicap Systems](../handicap-systems/README.md) produce the encoded strength values. The Chart receives those as input (with a [Converter](../../PRINCIPLES.md#converter--deep-dive) inserted when types don't naturally line up).
+**Upstream:**
+- **[Handicap Systems](../handicap-systems/README.md)** produce the encoded strength values. The Chart receives those as input (with a [Converter](../../PRINCIPLES.md#converter--deep-dive) inserted when types don't naturally line up).
+- **[Team Geometry](../team-geometry.md)** produces `game_count` (derived from `lineup_size × game_generation` multiplier). Formula-shape Chart variants take `game_count` as an input parameter to produce calibrated targets for any team size; discrete-table variants are calibrated for specific game counts. See each variant page for the variant's specific input contract.
 
 **Internal partner / consumer:** [Handicap Mechanisms](../handicap-mechanisms/README.md) consume the Chart's output as the concrete value they apply to match setup. A mechanism with no calibrated Chart for the active encoding has nothing meaningful to apply.
 
