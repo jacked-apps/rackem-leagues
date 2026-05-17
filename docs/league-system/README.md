@@ -126,7 +126,7 @@ The 13 raw configuration axes group into 9 user-facing component Modules. (The 9
 | 6 | **Team Geometry** | `lineup_size` + `max_roster_size` + `game_generation` |
 | 7 | **Match Format** | `pairing_format` + `race_length` |
 | 8 | **Pairings Generator** | runtime: `(Team Geometry + Match Format + locked lineups) → Array<GameSlot>` (no preference columns — composed of pair-generation, game-ordering, break/rack-assignment sub-Mechanisms) |
-| 9 | **Standings & Tiebreakers** | `standings_sort` + `tiebreaker_trigger` + `tiebreaker_format` |
+| 9 | **Tiebreak System** | `tiebreak_chain` (ordered list of LO-configured Tiebreak Mechanisms; auto-terminated at runtime by a human-handoff modal) |
 
 > **A Scoring System is the top-level Module that composes all 9 components above.** The 9 are the *components*; a Scoring System is the *whole*. The prepackaged Scoring Systems we ship (Points 3-Man, Percentage 5-Man, FargoRate 10-Point 5-Man) are tested combinations of these components.
 
@@ -166,8 +166,8 @@ Use this when Ed proposes a new feature, rule, or behavior — *before* writing 
 8. **Does it change how lineups become a concrete sequence of head-to-head games on a match night?** (Pair-generation algorithm — full round-robin vs partial; game-ordering rule — fixed table vs algorithmic; break/rack assignment policy.)
    → **Pairings Generator.** See `modules/pairings-generator.md`.
 
-9. **Does it change how teams are ordered in standings or how end-of-season ties are resolved?**
-   → **Standings & Tiebreakers.** See `modules/standings-tiebreakers.md`.
+9. **Does it change how a tied match is resolved at match-end (which extra-play fires, what method produces the deciding edge)?**
+   → **Tiebreak System.** See `modules/tiebreak-system/README.md`.
 
 10. **None of the above fit cleanly?**
     → **You probably need a new Module.** Don't force it into an existing one. Surface this as a planning question; write a brainstorm before classifying.
@@ -183,7 +183,7 @@ Walk the list:
 3. Does it change how per-game points are allocated? **No** — per-game point math is unchanged.
 4. Does it change how match victory is decided? **No** — match victory is decided the same way; this rule reads the result *after* victory is determined.
 5. Threshold chart change? **No** — no thresholds involved.
-6. Team Geometry / Match Format / Standings? **No** — none of those.
+6. Team Geometry / Match Format / Tiebreak System? **No** — none of those.
 
 **Result:** doesn't fit cleanly into any existing Module. The proposal describes a new category — *between-match handicap-adjustment rules* — where prior-match outcomes feed into next-match conditions. **This needs a new Module**, not a forced fit into an existing one. Surface this; write a brainstorm; do not silently wedge it into Handicap Mechanisms (which are *within-match* by definition).
 
@@ -237,7 +237,7 @@ docs/league-system/
 | Team Geometry | [`modules/team-geometry.md`](modules/team-geometry.md) | Lineup size, roster size, game-generation *(pending — Unit 6)* |
 | Match Format | [`modules/match-format.md`](modules/match-format.md) | Pairing format, race length *(pending — Unit 7)* |
 | Pairings Generator | [`modules/pairings-generator.md`](modules/pairings-generator.md) | Runtime instantiation of game slots from Team Geometry + Match Format + locked lineups *(pending)* |
-| Standings & Tiebreakers | [`modules/standings-tiebreakers.md`](modules/standings-tiebreakers.md) | Standings sort order, tiebreaker rules *(pending — Unit 8)* |
+| Tiebreak System | [`modules/tiebreak-system/README.md`](modules/tiebreak-system/README.md) | Match-end tie resolution — LO-configured chain of Tiebreak Mechanisms producing edge for Win Calculator |
 
 > A **Scoring System** is the top-level composition of these 9 component Modules. See [`PRINCIPLES.md`](PRINCIPLES.md) for the full architectural model.
 

@@ -172,7 +172,7 @@ This asymmetry (games recorded, points computed) is structural: there is nothing
 
 ### Scoring System as the top-level Module
 
-A **Scoring System** is the complete configured rule set that scores a match — a top-level System composing all 9 component Modules (Handicap Systems, Handicap Mechanisms, Points System, Win Calculator, Threshold Charts, Team Geometry, Match Format, Pairings Generator, Standings & Tiebreakers). The 9 components are the *parts*; the Scoring System is the *whole*. A Scoring System's behavior is built by **explicit composition**: the "instruction manual" reads the structure directly — no derivation step.
+A **Scoring System** is the complete configured rule set that scores a match — a top-level System composing all 9 component Modules (Handicap Systems, Handicap Mechanisms, Points System, Win Calculator, Threshold Charts, Team Geometry, Match Format, Pairings Generator, Tiebreak System). The 9 components are the *parts*; the Scoring System is the *whole*. A Scoring System's behavior is built by **explicit composition**: the "instruction manual" reads the structure directly — no derivation step.
 
 > **"Division" is dropped.** The original brainstorm used CSI's term "Division" for the bundled rule set. We dropped it because CSI uses "division" for both *a league* (a recurring competition) and *a scoring configuration* — two fundamentally different things sharing one word. The competition hierarchy is **Organization → League → Season**; a League runs a Scoring System. "Division" appears nowhere.
 
@@ -523,7 +523,7 @@ If the Module's job is one functional task with no internal Modules, you're look
 
 **Examples of Systems:**
 
-- **Scoring System** (top-level) — composed of 9 component Modules (Handicap Systems, Handicap Mechanisms, Points System, Win Calculator, Threshold Charts, Team Geometry, Match Format, Pairings Generator, Standings & Tiebreakers).
+- **Scoring System** (top-level) — composed of 9 component Modules (Handicap Systems, Handicap Mechanisms, Points System, Win Calculator, Threshold Charts, Team Geometry, Match Format, Pairings Generator, Tiebreak System).
 - **Handicap Mechanisms** (umbrella for one of the 9 components) — composed of alternative handicap-mechanism Mechanisms (`extra_games`, `start_points`, `race_length_adjustment`); the league picks one.
 - **Trigger** — composed of an event-acceptor Mechanism, an event-detector Mechanism, a task-performer Mechanism, and a re-armer Mechanism.
 
@@ -570,6 +570,8 @@ Systems compose their internal Modules in one of three patterns. Knowing which p
 - *Points System* — chains a per-game allocator + (optional) threshold trigger + (optional) initial-points + (optional) end-of-match aggregate.
 
 **Naming for chain-pattern Systems is singular** ("Scoring System," "Win Calculator," "Points System") — the singular reflects the *single act* the chain produces, even though multiple components contribute.
+
+**Chain variant: conditional fallthrough.** Some chain-pattern Systems run their components conditionally rather than universally — each component runs only if the previous didn't produce a complete result. The Tiebreak System uses this pattern (each tiebreak Mechanism in the chain runs only when the previous didn't produce edge; the first to produce edge wins). The shape is still chain (LO orders the components in sequence; the System orchestrates them; the composed result flows out) — just with conditional rather than universal execution per link.
 
 **Parallel / split-chain pattern** — the System composes N components that run INDEPENDENTLY of each other; no sequential dependency between them. Each component takes its own input, watches its own data, produces its own output. The System surfaces them as a set (or aggregates them as needed) rather than chaining one's output into another's input.
 
