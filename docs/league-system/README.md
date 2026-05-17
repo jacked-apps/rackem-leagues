@@ -114,7 +114,7 @@ Future: cross-axis conditions, race-mode termination, tie resolution, per-game e
 
 ### The 9 component Modules
 
-The 13 raw configuration axes group into 9 user-facing component Modules. (The 9th — Pairings Generator — wraps no preference columns; it is runtime composition of `(Team Geometry + Match Format + locked lineups) → Array<GameSlot>` produced by sub-Mechanisms.) There is also a 14th persisted-but-unconsumed column (`points_system`) that no scoring runtime reads; see [`modules/points-system/README.md`](modules/points-system/README.md).
+The 12 raw configuration axes group into 9 user-facing component Modules. (Pairings Generator wraps no preference columns; it is runtime composition of `(Team Geometry + Match Format + locked lineups) → Array<GameSlot>` produced by sub-Mechanisms.) There is also a 13th persisted-but-unconsumed column (`points_system`) that no scoring runtime reads; see [`modules/points-system/README.md`](modules/points-system/README.md).
 
 | # | Module | Wraps axes |
 |---|---|---|

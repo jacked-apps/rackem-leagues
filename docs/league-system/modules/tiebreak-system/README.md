@@ -11,7 +11,7 @@ audience: developer + AI sessions
 
 **Tiebreak System is a [System](../../PRINCIPLES.md#system--deep-dive)-kind Module in the chain pattern (conditional fallthrough).** The LO configures an ordered list of atomic Tiebreak Mechanisms; each link runs only if the previous one failed to produce edge. The first link that does produce edge wins. A terminal human-handoff modal is **automatically appended to every chain** — the LO does not configure it — guaranteeing the chain always produces edge.
 
-(Why this matters: the chain pattern in PRINCIPLES § System § 4 traditionally describes Systems where *all* components run together (e.g., Points System). This Module is a slight variation — a **conditional fallthrough** where each component runs only when needed. The naming follows the singular-name rule for chain-pattern Systems per PRINCIPLES § Module § 9.)
+(Why this matters: PRINCIPLES § System § 4 names the **conditional fallthrough** chain sub-pattern — where each component runs only if the previous didn't produce a complete result — and cites this Module as its canonical example. The naming follows the singular-name rule for chain-pattern Systems per PRINCIPLES § Module § 9.)
 
 ## Essence
 
