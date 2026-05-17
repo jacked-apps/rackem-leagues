@@ -33,6 +33,13 @@ export type ComposerLockReason = 'past-member' | 'announcement-non-staff';
 export interface ComposerStatus {
   readOnly: boolean;
   reason: ComposerLockReason | null;
+  /** Unit 12: when true, the current user's participant row has
+   *  `cannot_leave = TRUE` on this conversation — used by the UI to
+   *  hide the Leave option in the conversation header menu. Captains
+   *  on their own team chat / captains chat have this set. Past
+   *  members (readOnly=true, reason='past-member') always have
+   *  cannotLeave=false because they've already left. */
+  cannotLeave: boolean;
 }
 
 /**
@@ -76,7 +83,7 @@ async function fetchComposerStatus(
   // — they shouldn't be on this view, but the banner is the safe fallback.
   const { data: participant, error: pErr } = await supabase
     .from('conversation_participants')
-    .select('left_at')
+    .select('left_at, cannot_leave')
     .eq('conversation_id', conversationId)
     .eq('user_id', memberId)
     .maybeSingle();
@@ -85,11 +92,13 @@ async function fetchComposerStatus(
     throw new Error(`Failed to load participant: ${pErr.message}`);
   }
   if (!participant) {
-    return { readOnly: true, reason: 'past-member' };
+    return { readOnly: true, reason: 'past-member', cannotLeave: false };
   }
   if (participant.left_at !== null) {
-    return { readOnly: true, reason: 'past-member' };
+    return { readOnly: true, reason: 'past-member', cannotLeave: false };
   }
+
+  const cannotLeave = participant.cannot_leave === true;
 
   // Step 2: conversation shape. Only announcements need the staff gate.
   const { data: conv, error: cErr } = await supabase
@@ -102,14 +111,14 @@ async function fetchComposerStatus(
     throw new Error(`Failed to load conversation: ${cErr?.message ?? 'no row'}`);
   }
   if (conv.conversation_type !== 'announcements') {
-    return { readOnly: false, reason: null };
+    return { readOnly: false, reason: null, cannotLeave };
   }
 
   // Step 3: staff check for the announcement's org.
   const orgId = await resolveOrgIdForScope(conv.scope_type, conv.scope_id);
   if (!orgId) {
     // Can't resolve an org → fail closed (treat as non-staff).
-    return { readOnly: true, reason: 'announcement-non-staff' };
+    return { readOnly: true, reason: 'announcement-non-staff', cannotLeave };
   }
 
   const { data: staff, error: sErr } = await supabase
@@ -124,8 +133,8 @@ async function fetchComposerStatus(
   }
 
   return staff
-    ? { readOnly: false, reason: null }
-    : { readOnly: true, reason: 'announcement-non-staff' };
+    ? { readOnly: false, reason: null, cannotLeave }
+    : { readOnly: true, reason: 'announcement-non-staff', cannotLeave };
 }
 
 /**

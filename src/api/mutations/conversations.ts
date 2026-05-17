@@ -152,6 +152,42 @@ export async function leaveConversation(
 ): Promise<void> {
   const { conversationId, userId } = params;
 
+  // Unit 12: guard against captains leaving chats they own
+  // (cannot_leave = TRUE — set by the season-activation trigger for
+  // team chats + captains chat). The UI hides the Leave option via
+  // useMessageComposerStatus.cannotLeave, but a determined caller
+  // could still hit this mutation directly — check the flag before
+  // doing the UPDATE.
+  //
+  // Defense-in-depth note: a fully-determined attacker bypassing this
+  // mutation and calling `.update()` on conversation_participants
+  // directly is still possible until RLS lands (LIST_FOR_ED #29 will
+  // close this at the data layer). Today this is the casual-bypass
+  // gate plus a hint to whoever later writes the RLS policy.
+  const { data: participant, error: pErr } = await supabase
+    .from('conversation_participants')
+    .select('cannot_leave, left_at')
+    .eq('conversation_id', conversationId)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (pErr) {
+    logger.error('Failed to load participant before leave', { error: pErr.message });
+    throw new Error(`Failed to leave conversation: ${pErr.message}`);
+  }
+  if (!participant) {
+    throw new Error('You are not a participant of this conversation.');
+  }
+  if (participant.left_at !== null) {
+    // Already a past-member — treat as a no-op rather than a hard error.
+    return;
+  }
+  if (participant.cannot_leave === true) {
+    throw new Error(
+      'You cannot leave this conversation while you have a role here (e.g., captain).',
+    );
+  }
+
   const { error } = await supabase
     .from('conversation_participants')
     .update({ left_at: new Date().toISOString() })

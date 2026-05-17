@@ -195,7 +195,7 @@ export function MessageView({ conversationId, currentUserId, onBack, onLeaveConv
         onBack={onBack}
         onLeave={handleLeaveClick}
         onBlock={handleBlockClick}
-        canLeave={true}
+        canLeave={!composerStatus?.cannotLeave}
         canBlock={isDM}
       />
 
