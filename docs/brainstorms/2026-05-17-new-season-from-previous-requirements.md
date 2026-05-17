@@ -2,7 +2,17 @@
 
 > **Date:** 2026-05-17
 > **Status:** Brainstorm; needs Ed sign-off on recommended defaults before implementation
-> **Estimated scope:** ~1.5 days code + ~0.5 day testing once decisions are locked
+> **Estimated scope:** ~1 day code + ~0.5 day testing once decisions are locked
+>
+> **2026-05-17 update — separation of concerns rule (per Ed):**
+> Teams are owned by captains, not operators. The operator's only
+> jobs at season-creation/copy time are: (a) confirm how many teams
+> are returning, (b) make sure each one has a captain. **Rosters
+> are NOT operator-touchable in this flow.** They carry forward
+> silently; captains adjust them post-activation via TeamEditorModal.
+> This drops the "Step 3 — Rosters" wizard step entirely. Same rule
+> should be applied to the first-time league-creation wizard if it
+> currently asks for rosters up front (separate scope).
 
 ---
 
@@ -49,17 +59,17 @@ All teams from the previous season show up checked by default. Operator unchecks
 
 > *Why:* in a 12-team league with 11 returning and 1 dropping, opt-out is 1 click; opt-in is 11 clicks. The 80% case wins.
 
-### 2. Missing captain — **block with explicit "pick a new captain" prompt (recommend)**
+### 2. Missing captain — **block with explicit "pick a new captain" prompt (confirmed by Ed 2026-05-17)**
 
-If a returning team's captain has been archived, deleted, or otherwise unavailable, the team's row in the confirm-teams step shows a yellow warning and won't let you proceed until you've picked a new captain from a member dropdown.
+If a returning team's captain has been archived, deleted, or otherwise unavailable, the team's row in the confirm-teams step shows a yellow warning and won't let you proceed until you've picked a new captain. The LO is the only one who can assign captains.
 
-> *Why:* a team without a captain is broken at activation time anyway. Catching it here is cheaper than at season start.
+> *Why (Ed):* "if captain is dropped it needs to be assigned by LO." A team without a captain is unrunnable, and captain reassignment is one of the few operator-only actions in the team domain.
 
-### 3. Archived/missing roster players — **carry forward as vacant slots + show a count (recommend)**
+### 3. Archived/missing roster players — **carry as vacant slots, show informational badge, NEVER block (confirmed by Ed 2026-05-17)**
 
-If a roster player was archived, the slot stays vacant and the team shows "3 vacancies" badge on its row. Operator can fill them now (with new placeholders or existing members) or later (via TeamEditorModal during the season).
+Roster gaps are the captain's problem, not the operator's. Surface a "N vacancies" badge on the team row purely as info ("FYI, captain will need to fill these"); never block activation on it. Captain edits the roster post-activation via TeamEditorModal.
 
-> *Why:* don't block the copy on roster gaps — they're normal end-of-season churn. But surface them so operators don't miss them.
+> *Why (Ed):* "teams are controlled for the most part by the captains. they change name add remove players etc." Operators shouldn't be doing the captain's job at season-creation time.
 
 ### 4. Schedule generation — **auto-copy previous pattern + edit dates (recommend)**
 
@@ -104,28 +114,27 @@ If the operator clicks "Start Next Season" while the current season is still `ac
   - Start date (prefill: previous_end_date + 1 week)
   - End date (prefill: start_date + previous_season_length)
 
-[Step 2: Returning teams]
+[Step 2: Returning teams + captains]
   - Table of teams from previous season, all checked
-  - Per-row: team name (editable), captain (dropdown), home venue (dropdown if needed)
-  - Yellow row warning if captain or venue is broken
+  - Per-row: team name (editable but optional — captain can rename later),
+    captain (dropdown), home venue (dropdown if needed)
+  - Yellow row warning if captain is broken (must be fixed before activation)
+  - Informational "N vacancies" badge if archived players left roster gaps —
+    NOT blocking; captain handles post-activation
   - Uncheck = team is NOT returning
-  - Bottom: "Add new team" button (opens TeamEditorModal)
+  - Bottom: "Add new team" button (just team name + captain, like first-time setup)
 
-[Step 3: Rosters]
-  - One section per returning team
-  - Shows current roster carried forward (TeamEditorModal-style with the new incremental slots from #16)
-  - "3 vacancies" badge if archived players were skipped
-  - Operator can edit per team or skip — anything not edited stays as-is
-
-[Step 4: Schedule]
+[Step 3: Schedule]
   - Pre-filled with previous season's pattern (day/time/skip-weeks)
   - Operator edits dates and confirms
 
-[Step 5: Review + Activate]
-  - Summary of what's being created: N teams, M players, K matches
+[Step 4: Review + Activate]
+  - Summary of what's being created: N teams, K matches
   - "Activate Season" button
   - On activation: season status → 'active', auto_create_season_conversations trigger fires,
     team chats + captains chat created, ready to score
+  - Captains get a welcome message in their team chat: "New season started.
+    Open your team to confirm/edit your roster."
 ```
 
 ---
