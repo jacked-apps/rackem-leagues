@@ -259,9 +259,11 @@ export type Database = {
           id: string
           last_message_at: string | null
           last_message_preview: string | null
+          last_message_sender_id: string | null
           scope_id: string | null
           scope_type: string | null
           title: string | null
+          title_user_edited_at: string | null
           updated_at: string
         }
         Insert: {
@@ -272,9 +274,11 @@ export type Database = {
           id?: string
           last_message_at?: string | null
           last_message_preview?: string | null
+          last_message_sender_id?: string | null
           scope_id?: string | null
           scope_type?: string | null
           title?: string | null
+          title_user_edited_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -285,12 +289,22 @@ export type Database = {
           id?: string
           last_message_at?: string | null
           last_message_preview?: string | null
+          last_message_sender_id?: string | null
           scope_id?: string | null
           scope_type?: string | null
           title?: string | null
+          title_user_edited_at?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "conversations_last_message_sender_id_fkey"
+            columns: ["last_message_sender_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       handicap_chart_3vs3: {
         Row: {

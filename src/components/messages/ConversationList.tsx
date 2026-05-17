@@ -28,6 +28,13 @@ interface Conversation {
   scopeType: string | null;
   lastMessageAt: string | null;
   lastMessagePreview: string | null;
+  /** ID of the sender of the last message — NULL for system messages
+   *  or empty conversations. Used to decide which preview prefix to
+   *  render ("You: " vs "Jack: " vs unprefixed). */
+  lastMessageSenderId?: string | null;
+  /** First name of the sender of the last message — denormalized at
+   *  query time. NULL when sender is NULL or unknown. */
+  lastMessageSenderFirstName?: string | null;
   unreadCount: number;
   createdAt: string;
   /** True when the current user is a past-member of this conversation
@@ -37,6 +44,41 @@ interface Conversation {
    *  history, but the composer is replaced by the past-member banner
    *  (handled by `useMessageComposerStatus` + `ReadOnlyBanner`). */
   isPastMember?: boolean;
+}
+
+/**
+ * Build the iMessage/WhatsApp-style preview prefix for a conversation
+ * row's last-message snippet.
+ *
+ *   "You: nice shot"       — last message sent by the current user
+ *   "Jack: nice shot"      — last message in a GROUP chat sent by
+ *                             another participant
+ *   "nice shot"            — DM where the other person sent it (no
+ *                             prefix needed — the row title already
+ *                             names them), or system message (no
+ *                             sender)
+ *
+ * Pure function over the row data + current user id so it's trivial
+ * to test and the component stays render-only.
+ */
+function buildPreviewPrefix(
+  conv: Conversation,
+  currentUserId: string,
+): string {
+  if (!conv.lastMessageSenderId) return ''; // system message or empty chat
+  if (conv.lastMessageSenderId === currentUserId) return 'You: ';
+  // Other-person messages in DMs already have the sender's name as
+  // the row title; adding "Jack: " in front of every preview would
+  // just be visual noise. Group chats benefit from the author name
+  // because the row title is the chat name, not a person.
+  const isGroupChat =
+    conv.conversationType === 'team_chat' ||
+    conv.conversationType === 'captains_chat' ||
+    conv.conversationType === 'announcements';
+  if (isGroupChat && conv.lastMessageSenderFirstName) {
+    return `${conv.lastMessageSenderFirstName}: `;
+  }
+  return '';
 }
 
 interface ConversationListProps {
@@ -212,8 +254,10 @@ export function ConversationList({
               const isAnnouncement = conversation.conversationType === 'announcements';
               const displayTitle = conversation.title || 'Direct Message';
               const rawPreview = conversation.lastMessagePreview;
-              const preview =
+              const filteredPreview =
                 rawPreview && shouldFilter ? censorProfanity(rawPreview) : rawPreview;
+              const prefix = buildPreviewPrefix(conversation, userId);
+              const preview = filteredPreview ? `${prefix}${filteredPreview}` : null;
 
               return (
                 <button

@@ -18,10 +18,12 @@
  * outgoing list changes (new sends should bring the bottom into view).
  */
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, Fragment } from 'react';
+import { isNearBottom, findScrollParent } from '@/utils/scrollHelpers';
 import { MessageSquare } from 'lucide-react';
 import { LoadingState, EmptyState } from '@/components/shared';
 import { MessageBubble } from '../MessageBubble';
+import { BubbleContextMenu } from './BubbleContextMenu';
 import type { OutgoingMessage } from './useOutgoingMessages';
 import { interleaveDayDividers } from '@/utils/messageDayDividers';
 
@@ -45,6 +47,12 @@ interface MessageListProps {
   messages: Message[];
   currentUserId: string;
   recipientLastRead: string | null;
+  /** Snapshot of the current user's last_read_at as it was when the
+   *  chat was opened. Used to position the "Unread messages" divider
+   *  above the first message whose created_at is strictly greater
+   *  than this value. NULL = either a brand-new chat or first-ever
+   *  open — no divider renders in that case. */
+  unreadAnchorAt?: string | null;
   loading: boolean;
   /** Unit 8 inline-failed-send: locally-tracked sends, rendered after `messages`. */
   outgoingMessages?: OutgoingMessage[];
@@ -56,16 +64,70 @@ export function MessageList({
   messages,
   currentUserId,
   recipientLastRead,
+  unreadAnchorAt = null,
   loading,
   outgoingMessages = [],
   onRetryOutgoing,
 }: MessageListProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  // Whether the user was near the bottom of the scroll container at
+  // the time of the last scroll event. Drives the smart-autoscroll
+  // decision: a new incoming message only forces a scroll-to-bottom
+  // if the user was already there (i.e., they're tracking the
+  // conversation live). If they're scrolled up reading older
+  // history, an incoming message must NOT yank them down.
+  //
+  // Initialized to true so the very first messages render scrolls to
+  // bottom (consistent with the pre-smart-scroll behavior on chat
+  // open).
+  const userNearBottomRef = useRef<boolean>(true);
+  // Track previous total row count so we can detect "actually new"
+  // arrivals vs. an unrelated re-render (e.g., recipientLastRead
+  // changes triggering a re-render with no new content).
+  const prevTotalRef = useRef<number>(0);
+  // Track the last own-message we scrolled for, so back-to-back
+  // sends always force a scroll even if the user happened to have
+  // scrolled up between them.
+  const prevOwnOutgoingCountRef = useRef<number>(0);
 
-  // Scroll to bottom whenever either confirmed or outgoing changes — a
-  // new optimistic send should be visible immediately.
+  // Wire a scroll listener once we have a ref to the scroll
+  // container (which lives in the parent — we walk up to find it).
+  // We re-attach if the parent chain changes (rare; only on remount).
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const scrollParent = findScrollParent(messagesEndRef.current);
+    if (!scrollParent) return;
+    const onScroll = () => {
+      userNearBottomRef.current = isNearBottom(scrollParent);
+    };
+    // Seed the value once on mount in case the user never scrolls.
+    userNearBottomRef.current = isNearBottom(scrollParent);
+    scrollParent.addEventListener('scroll', onScroll, { passive: true });
+    return () => scrollParent.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Smart auto-scroll: only force the scroll if either
+  //   - the user was at/near the bottom before this render, OR
+  //   - the new content is the current user's own send (so the
+  //     "what I just sent" expectation is preserved even if they had
+  //     just scrolled up to read history before hitting send).
+  useEffect(() => {
+    const total = messages.length + outgoingMessages.length;
+    const ownOutgoingCount = outgoingMessages.length; // every outgoing entry is the user's own
+    const isNewMessage = total > prevTotalRef.current;
+    const isNewOwnSend = ownOutgoingCount > prevOwnOutgoingCountRef.current;
+
+    if (isNewMessage && (userNearBottomRef.current || isNewOwnSend)) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      // After scrolling to bottom we ARE at the bottom; update the
+      // ref so the next message also scrolls (the scroll event from
+      // our own programmatic scroll would update this too, but
+      // setting it here is defensive against environments where the
+      // listener fires asynchronously).
+      userNearBottomRef.current = true;
+    }
+
+    prevTotalRef.current = total;
+    prevOwnOutgoingCountRef.current = ownOutgoingCount;
   }, [messages, outgoingMessages]);
 
   if (loading) {
@@ -92,6 +154,20 @@ export function MessageList({
   // between message groups. Pure-function helper; rendered inline below.
   const rows = interleaveDayDividers(messages, (m) => m.created_at);
 
+  // First message id whose created_at is strictly greater than the
+  // unread-anchor snapshot. The "Unread messages" divider renders
+  // ABOVE this row. Skip the divider entirely when the anchor is
+  // null (first-time chat open) or there are no messages newer than
+  // the anchor (nothing to mark as unread).
+  const firstUnreadId: string | null = (() => {
+    if (!unreadAnchorAt) return null;
+    const anchorTs = new Date(unreadAnchorAt).getTime();
+    for (const m of messages) {
+      if (new Date(m.created_at).getTime() > anchorTs) return m.id;
+    }
+    return null;
+  })();
+
   return (
     <>
       {rows.map((row) => {
@@ -113,20 +189,47 @@ export function MessageList({
 
         const message = row.message;
 
+        // "Unread messages" divider — renders directly above the
+        // first row whose created_at is strictly newer than the
+        // snapshot captured at chat-open time. iMessage / WhatsApp /
+        // Slack all do something analogous so the user lands at
+        // "you left off here" in a busy thread.
+        const showUnreadDivider = message.id === firstUnreadId;
+
+        const dividerEl = showUnreadDivider ? (
+          <div
+            key={`unread-divider-${message.id}`}
+            className="flex items-center gap-3 py-2"
+            data-testid="unread-divider"
+            aria-label="Unread messages below"
+          >
+            <div className="flex-1 border-t border-blue-500" aria-hidden />
+            <span className="text-xs font-medium uppercase tracking-wide text-blue-600 dark:text-blue-400">
+              Unread messages
+            </span>
+            <div className="flex-1 border-t border-blue-500" aria-hidden />
+          </div>
+        ) : null;
+
         // System messages (sender_id IS NULL by CHECK constraint) render
         // in a distinct centered/italic variant; no sender → no avatar,
         // no read receipt, no isCurrentUser concept.
         if (message.is_system) {
+          // System messages don't get the Copy context menu — they
+          // narrate events ("Jack joined the team") and copying that
+          // doesn't really make sense.
           return (
-            <MessageBubble
-              key={message.id}
-              content={message.content}
-              createdAt={message.created_at}
-              isEdited={message.is_edited}
-              isCurrentUser={false}
-              isSystem
-              recipientLastRead={null}
-            />
+            <Fragment key={message.id}>
+              {dividerEl}
+              <MessageBubble
+                content={message.content}
+                createdAt={message.created_at}
+                isEdited={message.is_edited}
+                isCurrentUser={false}
+                isSystem
+                recipientLastRead={null}
+              />
+            </Fragment>
           );
         }
 
@@ -140,16 +243,20 @@ export function MessageList({
         const senderName = `${message.sender.first_name} ${message.sender.last_name}`;
 
         return (
-          <MessageBubble
-            key={message.id}
-            content={message.content}
-            createdAt={message.created_at}
-            isEdited={message.is_edited}
-            isCurrentUser={isCurrentUser}
-            senderName={!isCurrentUser ? senderName : undefined}
-            senderId={!isCurrentUser ? message.sender.id : undefined}
-            recipientLastRead={recipientLastRead}
-          />
+          <Fragment key={message.id}>
+            {dividerEl}
+            <BubbleContextMenu content={message.content}>
+              <MessageBubble
+                content={message.content}
+                createdAt={message.created_at}
+                isEdited={message.is_edited}
+                isCurrentUser={isCurrentUser}
+                senderName={!isCurrentUser ? senderName : undefined}
+                senderId={!isCurrentUser ? message.sender.id : undefined}
+                recipientLastRead={recipientLastRead}
+              />
+            </BubbleContextMenu>
+          </Fragment>
         );
       })}
 

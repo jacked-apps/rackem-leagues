@@ -109,6 +109,12 @@ export async function getUserConversations(userId: string) {
         scope_type,
         last_message_at,
         last_message_preview,
+        last_message_sender_id,
+        last_message_sender:members!last_message_sender_id(
+          id,
+          first_name,
+          last_name
+        ),
         created_at
       )
     `)
@@ -156,6 +162,19 @@ export async function getUserConversations(userId: string) {
         return null;
       }
 
+      // Last-message-sender plumbing — used by the conversation-list
+      // UI to render iMessage/WhatsApp-style preview prefixes:
+      //   - "You: nice shot"      — last message sent by current user
+      //   - "Jack: nice shot"     — last message in a group chat sent
+      //                              by another participant
+      //   - "nice shot"           — DM where the other person sent it,
+      //                              or system message (sender NULL)
+      // PostgREST nests embedded relations; embeds can come back as
+      // either an object or a single-element array depending on the
+      // PostgREST version + relation cardinality. Normalize to object.
+      const senderRaw = item.conversations.last_message_sender;
+      const sender = Array.isArray(senderRaw) ? senderRaw[0] : senderRaw;
+
       return {
         id: item.conversations.id,
         title: displayName || 'Direct Message',
@@ -163,6 +182,14 @@ export async function getUserConversations(userId: string) {
         scopeType: item.conversations.scope_type,
         lastMessageAt: item.conversations.last_message_at,
         lastMessagePreview: item.conversations.last_message_preview,
+        // ID of the sender of the last message in this conversation;
+        // NULL if the conversation is empty or the last message is a
+        // system message (no human sender).
+        lastMessageSenderId: item.conversations.last_message_sender_id ?? null,
+        // First name of the sender (or null) — denormalized at query
+        // time. The UI prefix logic only uses first_name to keep the
+        // preview short on mobile.
+        lastMessageSenderFirstName: sender?.first_name ?? null,
         unreadCount: item.unread_count,
         createdAt: item.conversations.created_at,
         // Past-member flag — true when this user has `left_at` set on
