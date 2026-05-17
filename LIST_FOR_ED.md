@@ -1364,7 +1364,26 @@ an unrecoverable state.
 
 ---
 
-## 22. Re-asks for Fargo Initial-Points Confirmation After Going Back to Lineup
+## ~~22. Re-asks for Fargo Initial-Points Confirmation After Going Back to Lineup~~ ✅ CLOSED 2026-05-17 (obsolete — negotiation hidden)
+
+> **Closed 2026-05-17** — obsolete. The Fargo start-points negotiation
+> flow that this bug was filed against is now hidden by default
+> (`AUTO_AGREE_START_POINTS = true` in
+> `src/hooks/lineup/useFargoStartPointsNegotiation.ts`). The home
+> client's initial write stamps BOTH `_to_lose` columns, so
+> `bothConfirmed=true` on first render → the `FargoStartPointsCard`
+> self-hides → there's no UI to re-ask. The math still applies; only
+> the human-in-the-loop step is gone.
+>
+> Reason for hiding: the negotiation was added so captains could
+> reconcile our Fargo math against BCAPL's official FargoRate app in
+> live matches. No league actually adopted the flow, so the
+> verification never happened. Trust the math; keep the negotiation
+> code as a bandaid (flip the flag to `false` to bring it back if
+> the math turns out to be off).
+> Original entry preserved below for reference.
+
+### Original entry
 
 **Discovered:** 2026-05-04 during unified-scoreboard smoke-testing,
 multi-device captain scenario.
@@ -1438,7 +1457,24 @@ recoverable.
 
 ---
 
-## 24. Fargo Initial-Points Confirmation Only Requires One Side (Consider Removing Entirely)
+## ~~24. Fargo Initial-Points Confirmation Only Requires One Side (Consider Removing Entirely)~~ ✅ CLOSED 2026-05-17 (obsolete — negotiation hidden, math trusted)
+
+> **Closed 2026-05-17** — the "Consider Removing Entirely" hint in
+> the title was the right call. The Fargo start-points negotiation
+> flow is now hidden by default via `AUTO_AGREE_START_POINTS = true`
+> in `src/hooks/lineup/useFargoStartPointsNegotiation.ts`. The math
+> still runs, the points still go to the correct team, but there's
+> no per-captain confirmation step to be "one-sided" or otherwise.
+>
+> See #22's closure note for the full reasoning. Same fix; both
+> items closed in the same PR.
+>
+> Code is still in place — flip `AUTO_AGREE_START_POINTS` to `false`
+> to bring back the manual two-captain negotiation if the math is
+> ever shown to be off.
+> Original entry preserved below for reference.
+
+### Original entry
 
 **Discovered:** 2026-05-09
 **Severity:** Low-Medium (working "well enough" but the design isn't
