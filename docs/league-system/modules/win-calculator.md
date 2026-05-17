@@ -30,6 +30,8 @@ The Win Calculator is **only** the victory-determination step. It is **not**:
 - The encoding of player strength — that's a **[Handicap System](handicap-systems/README.md)**.
 - The kind-of-asymmetry the handicap declares — that's a **[Handicap Mechanism](handicap-mechanisms/README.md)**.
 - The chart/formula that turns a handicap difference into a benchmark — that's a **[Threshold Chart](threshold-charts/README.md)**.
+- The structural game-slot list that scaffolds a match — that's the **[Pairings Generator](pairings-generator.md)** (its output is filled by the scoring runtime and the aggregated game data is what the Win Calculator eventually reads).
+- The season-standings table or the match-night tiebreaker firing/format — that's **[Standings & Tiebreakers](standings-tiebreakers.md)** (Win Calculator declares the per-match winner; Standings & Tiebreakers consumes that result and either ranks teams across the season or fires extra-play when a single match ends tied).
 
 If a proposed feature changes *which collected metric (or combination) declares the winner, when the match ends, or how a tie resolves* — it belongs here. If it changes *how points get allocated per game* — that's the Points System.
 
@@ -56,9 +58,9 @@ These are not yet built — `win_condition` is the primitive stand-in. The fulle
 
 ## How this Module interacts
 
-- **Upstream**: consumes the two **metrics** (Games and Points data) plus the **benchmarks** declared by [Handicap Mechanisms](handicap-mechanisms/README.md) and the point totals produced by the [Points System](points-system/README.md).
-- **Output**: the match result itself — the declared winner. This is the end of the scoring chain; the Win Calculator does not feed another Module, it produces the answer.
-- **Standings note**: [Standings & Tiebreakers](standings-tiebreakers.md) reads match results to build the league table, but standings sort order is configured independently of which axis the Win Calculator used to decide any single match.
+- **Upstream**: consumes the two **metrics** (Games and Points data) plus the **benchmarks** declared by [Handicap Mechanisms](handicap-mechanisms/README.md) and the point totals produced by the [Points System](points-system/README.md). The per-game data feeding those metrics arrives via the scoring runtime, which fills in the game slots produced by the [Pairings Generator](pairings-generator.md) — the Win Calculator does not read Pairings Generator's output directly, but its inputs originate downstream of that Module's slot list.
+- **Output**: the match result — the declared winner.
+- **Downstream**: [Standings & Tiebreakers](standings-tiebreakers.md) consumes the per-match result to build the season standings table and to evaluate whether a match-night tiebreaker should fire. Standings sort order is configured independently of which axis the Win Calculator used to decide any single match — Win Calculator answers *"who won this match,"* Standings & Tiebreakers answers *"given the season's match results, who finishes where,"* and *"if this single match ended tied, what (if anything) happens next."*
 
 ## Source of truth
 

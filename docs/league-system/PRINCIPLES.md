@@ -559,6 +559,8 @@ Systems compose their internal Modules in one of three patterns. Knowing which p
 - *Handicap Systems* (System) — offers Points, Percentage, FargoRate, Skill Level Mechanisms; the league picks one.
 - *Threshold Charts* (System) — offers various calibrated charts; the league picks one.
 
+**Selection-pattern alternatives can be any Module kind that fits the System's purpose.** *Handicap Mechanisms* and *Handicap Systems* offer Mechanism-kind alternatives (different rules for the same kind of act); *Threshold Charts* offers Chart-kind alternatives (different calibrated lookups). The pattern is about LO-choice between named options — not about a specific Module kind being the choices.
+
 **Naming for selection-pattern Systems is plural** ("Handicap Mechanisms," "Handicap Systems," "Threshold Charts") — the plural reflects the *coexistence* of the alternatives as named options.
 
 **Chain pattern** — the System composes N components in sequence; ALL are active, each contributing to the result.

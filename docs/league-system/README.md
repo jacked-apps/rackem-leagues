@@ -199,7 +199,7 @@ Walk the list:
 
 **Result:** fits in **Points System**. Specifically: it is a **modification of the 10-Point Scoring System variant** (changing the winner amount from 10 to 12 while preserving the per-game-allocation core mechanic). Document under `modules/points-system/ten-point-scoring.md` → "Possible modifications" section. Not a new variant (the core mechanic is unchanged); not a new Module.
 
-> **Boundary tip.** A *modification* changes parameters within the variant's core mechanic. A *new variant* changes the core mechanic itself (e.g., simple-winner-only with no loser points at all). A *new Module* introduces a category the existing eight don't cover.
+> **Boundary tip.** A *modification* changes parameters within the variant's core mechanic. A *new variant* changes the core mechanic itself (e.g., simple-winner-only with no loser points at all). A *new Module* introduces a category the existing nine don't cover.
 
 ## Doc structure
 

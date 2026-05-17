@@ -76,7 +76,7 @@ The FargoRate rating itself is locked to FargoRate's spec — no in-variant modi
 
 This handicap system shows up at two code layers, both used by the **FargoRate 10-Point 5-Man** prepackaged Scoring System (the LO-facing name for the bundle of choices that picks this system):
 
-- **`fargo_5v5`** (in `src/wizards/league-v2/presetMappings.ts`) is the **wizard preset key** — the LO-facing "bundle" of 8 Module choices that gets picked during league creation. The preset expands into preferences (`handicap_type='fargo'`, plus the values for the other 7 Modules).
+- **`fargo_5v5`** (in `src/wizards/league-v2/presetMappings.ts`) is the **wizard preset key** — the LO-facing "bundle" of 9 Module choices that gets picked during league creation. The preset expands into preferences (`handicap_type='fargo'`, plus the values for the other 8 Modules).
 - **`fargo5v5`** (in `src/systems/fargo5v5.ts`) is the **SystemModule key** — the runtime code object that does the rating handling (validation, the `2^(rating/100)` transform, the win-expectancy computation, plus — for the current shipping pairing — start-points math).
 
 The two layers connect via `handicap_type='fargo'`: the wizard preset sets the preference; `src/systems/resolver.ts` (lines 42–55) then maps that preference back to the `fargo5v5` SystemModule at runtime. Step 2 collapses both names into `fargo_10pt_5man` for consistency across layers.
