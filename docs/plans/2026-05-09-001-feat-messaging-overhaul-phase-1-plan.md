@@ -38,6 +38,7 @@ end-to-end test pass before merge.
 | 18 | **Shorter chat titles + banner interpolation + per-user captains label** | ⬜ not started |
 | 19 | **Editable team chat title (captain rename; auto-rename trigger respects user-edit)** | ⬜ not started |
 | 20 | **Past-member chats visible in inbox under "Archived" section (close Unit 6 gap)** | ✅ shipped |
+| 21 | **Collapsible "Archived" section in conversation list (default-collapsed)** | ⬜ not started |
 
 **Branch:** `messaging-system-overhaul`.
 **Awaits:** Units 10–14 build + final end-to-end test pass (`pnpm db:reset && pnpm test:run` + manual dev-app smoke walkthrough).
@@ -1268,6 +1269,51 @@ Tracked as Unit 20 polish follow-on but not blocking.
 `left_at` via SQL, hard refresh the conversation list, confirm the
 chat appears under an "Archived" header with muted styling, open
 it, confirm the `ReadOnlyBanner` shows where the composer would be.
+
+---
+
+- [ ] **Unit 21: Collapsible "Archived" section in conversation list (default-collapsed)**
+
+**Goal:** The Unit 20 "Archived" section currently always renders
+its rows expanded. For users with a lot of past-member chats
+(seasons over time, teams transferred out of), that can dominate
+the sidebar. Make the header clickable to toggle visibility,
+default-collapsed so it stays out of the way until the user wants
+to look at it. Standard pattern (Slack / Discord both do this).
+
+Suggested by Ed on 2026-05-16 immediately after verifying Unit 20.
+
+**Dependencies:** Unit 20 (the Archived section itself).
+
+**Files:**
+- Modify: `src/components/messages/ConversationList.tsx` — add a
+  small `useState(false)` for "archived expanded", wire the header
+  to toggle on click, render a chevron icon (▾ when expanded,
+  ▸ when collapsed), conditionally render the archived rows.
+
+**Approach:**
+- Default collapsed. Click the header → expanded. Click again →
+  collapsed. State is per-session (local component state, not
+  persisted) — simpler than threading a per-user "archived-expanded"
+  preference column through the DB.
+- Header keeps its current styling + adds a chevron + becomes a
+  button (a11y: `aria-expanded`, keyboard-tappable).
+- When collapsed, optionally show a count: `"Archived (3)"` so the
+  user knows it's not empty. Worth doing.
+
+**Test scenarios:**
+- New unit test (or extend `ConversationList.profanity.test.tsx`):
+  - With past-member rows present, header renders with the count
+    and rows are HIDDEN by default.
+  - Clicking the header shows the rows.
+  - Clicking again hides them.
+- When no past-member rows exist, the header doesn't render
+  (existing Unit 20 behavior; assert no regression).
+
+**Verification:** smoke test in dev — set `left_at` on a chat,
+refresh, confirm the Archived section starts collapsed (chevron
+right, just the count visible). Click → rows appear. Click again
+→ rows hide.
 
 ---
 
