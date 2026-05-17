@@ -41,6 +41,73 @@ This document captures aspirational features that would enhance the app's desira
 - Player spotlights and featured stories
 - Social media-style activity feeds
 
+### Org Member Affiliation + "Find a League" Discovery + Recruitment Pipeline
+**Status**: Future consideration — surfaced 2026-05-17 during messaging announcement-scope discussion
+
+**The gap**: Today the only way a regular player becomes "known" to an organization is by getting rostered on a team in one of its leagues. There's no concept of a player **opting into** an org, **expressing interest**, or even **being discoverable** by an LO who's recruiting. The org sees a roster, the player sees the teams they're on, and that's it.
+
+**Why this blocks other features**:
+
+1. **3-tier announcement scopes** (from earlier discussion above) — org-wide and global tiers depend on a "who's in this org's audience" answer that doesn't exist today.
+2. **"Find a League" homepage button** — currently a coming-soon placeholder. To actually work, players need to be able to (a) see what orgs/leagues exist near them and (b) declare "I'm interested" in a way the org can act on.
+3. **Player-side classifieds** ("Looking for a Team" from the other future-features section) — needs a place where players can be visible to captains/LOs without being on a roster yet.
+4. **Recruitment for LOs** — an LO trying to grow their league has no funnel today; they're entirely dependent on word-of-mouth + existing captains' networks. A real recruitment pipeline could materially help orgs grow, which is a sales/retention story.
+
+**Proposed foundation — `org_member_affiliations` table**:
+
+| field | meaning |
+|---|---|
+| `member_id` | the player |
+| `organization_id` | the org they're affiliated with |
+| `status` | `interested` (opted-in but not playing) / `active` (currently rostered) / `inactive` (was rostered, no current team) |
+| `joined_at` | when the row was created |
+| `auto_added` | true = created automatically by rostering; false = player opted in directly |
+| `discoverable` | bool — does the player want LOs to see their profile in recruitment searches? (privacy default: false) |
+
+**How rows get created**:
+- **Auto on roster** — getting added to a team auto-creates the row with `status='active'`, `auto_added=true`. Pre-existing rows get upgraded to active.
+- **Self-serve via Find-a-League** — player browses orgs, hits "I'm interested" → row created with `status='interested'`, `auto_added=false`, `discoverable=true` by default since they actively expressed interest.
+- **LO invite** — LO sends an invite link; player accepts → row created.
+
+**Status transitions**:
+- `interested → active` when first rostered
+- `active → inactive` when the player has zero current-season rosters in any league belonging to this org
+- `inactive → active` when re-rostered
+
+**"Find a League" page (homepage button)**:
+- Lists organizations + their leagues, filterable by location, game type, skill level, day of week
+- Each org has a public profile page (name, location, leagues, season schedule, contact)
+- Player can click "I'm interested" → creates the affiliation row → LO sees them in their recruitment queue
+- Optional: messaging hook → "Message the LO" button (uses existing messaging system once the affiliation row gives them a reason to be discoverable)
+
+**LO recruitment side**:
+- LO dashboard gets a "Interested players" list showing all `interested` and `discoverable=true` affiliations
+- LO can filter/search, reach out via the messaging system
+- When the LO rosters them, the status auto-flips to `active`
+
+**Announcement scope tiers this unlocks** (from earlier discussion):
+- **Season** (existing) → rostered players in this season only
+- **Org-wide** → `org_member_affiliations` where `status='active'`
+- **Global** → `org_member_affiliations` where `status IN ('active','interested')` — reaches the interested-but-not-yet-playing pool too. Useful for "we have an open spot, anyone want to join?"
+
+**Open questions**:
+- Does an org have a public-facing profile page, or is "Find a League" purely a search interface?
+- Privacy default for new affiliations — discoverable or not? (Recommend: opted-in via Find-a-League = discoverable; auto-added via roster = NOT discoverable by default, separate setting)
+- Can a player be affiliated with multiple orgs simultaneously? (Likely yes — different leagues, different orgs, normal case)
+- Does the LO need approval rights over `interested` affiliations, or is it open?
+- How does this interact with existing invite/registration flow — does Find-a-League replace it for new players, or is it an alternate entry point?
+
+**Cost framing**:
+- Schema + affiliation lifecycle triggers: ~1 day
+- Find-a-League page + org profile page: ~2-3 days
+- LO recruitment dashboard: ~1-2 days
+- Wiring announcement scope tiers on top of the new data: ~1 day
+- Privacy + discoverability settings: ~0.5 day
+
+Realistically a 1–2 week project, but the **payoff is large**: it's the foundation for org-wide announcements, classifieds, recruitment, and the homepage "Find a League" promise. It also makes the platform meaningfully more useful for LOs trying to grow their leagues, which is a real sales/retention argument.
+
+**Why not now**: large scope, touches multiple subsystems (auth/profile, org pages, messaging, recruitment UX). Worth doing properly post-MVP, not bolted on. Ed (2026-05-17): "I have to figure out something too" — open design problem, not ready to build.
+
 ## Gamification & Engagement
 
 ### Rewards System
