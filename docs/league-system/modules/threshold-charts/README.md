@@ -58,9 +58,11 @@ Charts organize on two axes:
 - **Scope** — does the lookup feed a **team-aggregate** benchmark (one threshold pair for the whole match) or a **per-pairing** benchmark (one threshold pair per individual matchup)?
 - **Shape** — is the chart a **discrete table** (exact rows or ranges) or a **formula** (continuous function)?
 
-| | **Discrete table** | **Formula** |
+**Shape is a deployment choice, not a separate variant.** Per [PRINCIPLES § Chart — § 4](../../PRINCIPLES.md#4-formula-first-charts-are-derived), formulas and discrete tables are *interchangeable shapes* of the same Chart kind. A formula-shape Chart can always be projected into a discrete table (for printable distribution, LO inspection, or LO row-level customization); a discrete-table Chart can be a stored per-league artifact when an LO has edited specific rows away from any clean formula. Both shapes are first-class deployment forms — the formula is typically the default, the discrete table is the per-league shape when an LO has customized it. Neither is more "real" than the other; they encode the same mapping.
+
+| | **Discrete table** *(LO-customized per-league stored shape — see [PRINCIPLES § Chart — § 4](../../PRINCIPLES.md#4-formula-first-charts-are-derived))* | **Formula** *(default deployment shape — the source of truth that projects into tables on demand)* |
 |---|---|---|
-| **Team-aggregate** | [3v3 Games-Needed](3v3-games-needed.md) — Points encoding, exact-diff lookup <br> [5v5 Games-Needed](5v5-games-needed.md) — Percentage encoding, range lookup | *Future:* formula-shaped team-aggregate charts |
+| **Team-aggregate** | *Per-league stored tables that diverge from the formula-shape variants below; each league's customized table is its own Chart instance.* | [Points Games-Needed Formula](3v3-games-needed.md) — Points encoding, parameterized by `game_count` (universal across team sizes) <br> [Percentage Games-Needed Formula](5v5-games-needed.md) — Percentage encoding, parameterized by `game_count` (universal across team sizes; BCAPL-fitted calibration) |
 | **Per-pairing** | [Race Points](race-points.md) — Points encoding, 2D pairwise lookup <br> [Race Percentage](race-percentage.md) — Percentage encoding, 2D gap × tier lookup | [FargoRate Formula](fargo-formula.md) — FargoRate encoding, continuous |
 
 The Module is open to additional Charts in any cell. Each Chart's variant page describes its specific lookup shape and output type; see the page for the I/O contract.

@@ -157,7 +157,7 @@ Use this when Ed proposes a new feature, rule, or behavior — *before* writing 
 5. **Does it change how a handicap difference becomes a target threshold value** (target wins, starting points)? Is it a lookup-table or formula change?
    → **Threshold Chart.** See `modules/threshold-charts/`.
 
-6. **Does it change the structural shape of a team or the games-per-match schedule?** (Lineup size, roster size, single vs double round-robin.)
+6. **Does it change the structural shape of a team or the games-per-match schedule?** (Lineup size, single vs double round-robin. The roster cap also belongs to Team Geometry but is an administrative axis — it doesn't affect match math.)
    → **Team Geometry.** See `modules/team-geometry.md`.
 
 7. **Does it change the per-pairing structure?** (Single rack vs race-to-N per pairing, race length per pairing.)
