@@ -1,5 +1,5 @@
 ---
-title: Points Games-Needed Formula (Variant)
+title: Points Games-Needed Formula
 date: 2026-05-17
 status: active
 audience: developer + AI sessions

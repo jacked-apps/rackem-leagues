@@ -1,5 +1,5 @@
 ---
-title: Teams Self-Determine (Tiebreak Mechanism Variant)
+title: Teams Self-Determine (Tiebreak Mechanism)
 date: 2026-05-17
 status: stub
 audience: developer + AI sessions

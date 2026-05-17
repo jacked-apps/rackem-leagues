@@ -1,5 +1,5 @@
 ---
-title: Skill Level Handicap (Reserved Variant)
+title: Skill Level Handicap (Reserved)
 date: 2026-05-12
 status: reserved
 audience: developer + AI sessions

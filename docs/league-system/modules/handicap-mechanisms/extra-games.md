@@ -1,5 +1,5 @@
 ---
-title: Extra Games (Variant)
+title: Extra Games
 date: 2026-05-13
 status: active
 audience: developer + AI sessions

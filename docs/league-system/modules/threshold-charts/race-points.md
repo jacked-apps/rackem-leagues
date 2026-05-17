@@ -1,5 +1,5 @@
 ---
-title: Race Points Chart (Variant)
+title: Race Points Chart
 date: 2026-05-16
 status: active
 audience: developer + AI sessions

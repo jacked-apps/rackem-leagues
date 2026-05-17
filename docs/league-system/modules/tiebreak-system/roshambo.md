@@ -1,5 +1,5 @@
 ---
-title: Roshambo (Tiebreak Mechanism Variant)
+title: Roshambo (Tiebreak Mechanism)
 date: 2026-05-17
 status: stub
 audience: developer + AI sessions

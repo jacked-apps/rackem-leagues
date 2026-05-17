@@ -1,5 +1,5 @@
 ---
-title: Start Points (Variant)
+title: Start Points
 date: 2026-05-13
 status: active
 audience: developer + AI sessions

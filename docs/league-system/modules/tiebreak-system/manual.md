@@ -1,5 +1,5 @@
 ---
-title: Manual (Tiebreak Mechanism Variant)
+title: Manual (Tiebreak Mechanism)
 date: 2026-05-17
 status: stub
 audience: developer + AI sessions

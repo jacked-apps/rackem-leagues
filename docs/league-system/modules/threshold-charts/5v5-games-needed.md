@@ -1,5 +1,5 @@
 ---
-title: Percentage Games-Needed Formula (Variant)
+title: Percentage Games-Needed Formula
 date: 2026-05-17
 status: active
 audience: developer + AI sessions

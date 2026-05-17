@@ -1,5 +1,5 @@
 ---
-title: FargoRate Formula Chart (Variant)
+title: FargoRate Formula Chart
 date: 2026-05-16
 status: active
 audience: developer + AI sessions

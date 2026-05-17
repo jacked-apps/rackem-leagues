@@ -48,7 +48,7 @@ Chain length is open. The same Mechanism may appear multiple times. Example chai
 
 **Empty LO chain is still a runnable configuration.** An LO who configures zero chain links effectively has a chain consisting of only the auto-appended terminal modal — every Win-Calc-triggered tie is resolved by direct human pick. The Tiebreak System still chains to runnable output per Principle 10; it just collapses to the terminal handoff.
 
-## Variants index
+## Catalog
 
 The atomic Tiebreak Mechanisms this System composes:
 

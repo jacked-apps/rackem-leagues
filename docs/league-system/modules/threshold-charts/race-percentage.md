@@ -1,5 +1,5 @@
 ---
-title: Race Percentage Chart (Variant)
+title: Race Percentage Chart
 date: 2026-05-16
 status: active
 audience: developer + AI sessions

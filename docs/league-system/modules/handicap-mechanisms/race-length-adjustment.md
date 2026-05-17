@@ -1,5 +1,5 @@
 ---
-title: Race Length Adjustment (Reserved Variant)
+title: Race Length Adjustment (Reserved)
 date: 2026-05-13
 status: reserved
 audience: developer + AI sessions
