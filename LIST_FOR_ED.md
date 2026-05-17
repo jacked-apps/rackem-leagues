@@ -1300,7 +1300,15 @@ dashboard. Match data is already correct on the server.
 
 ---
 
-## 20. Dark Mode Breaks Date Picker — For Jack
+## ~~20. Dark Mode Breaks Date Picker — For Jack~~ ↗ MOVED to LIST_FOR_JACK.md #18 (2026-05-17)
+
+> **Moved 2026-05-17** — owner was always Jack ("design / styling pass"),
+> so it belongs on his list rather than mine. Same entry copied to
+> LIST_FOR_JACK.md #18 with the adjacent dark-mode bullet (scoreboard
+> player-drawer names invisible) preserved. Original entry preserved
+> below for reference.
+
+### Original entry
 
 **Discovered:** 2026-05-04 during unified-scoreboard smoke-testing
 **Severity:** Medium (functionally usable but visually broken)

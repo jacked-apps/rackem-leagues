@@ -1,10 +1,18 @@
 # Task List for Jack
 
-## 1. Revamp Navigation Bar
+## ~~1. Revamp Navigation Bar~~ ✅ CLOSED 2026-05-17 (Jack shipped)
+
+> **Closed 2026-05-17** — Jack already revamped the navigation bar. Original entry preserved below.
+
+### Original entry
 - Review and update the navigation bar design and functionality
 - Ensure consistent styling and user experience
 
-## 2. Fix App.tsx Navigation
+## ~~2. Fix App.tsx Navigation~~ ✅ CLOSED 2026-05-17 (Jack shipped — landed with #1)
+
+> **Closed 2026-05-17** — same rework that closed #1 also cleaned up the App.tsx navigation issues. Original entry preserved below.
+
+### Original entry
 - Remove or properly implement the commented-out `NavigationWrapper` component in `src/App.tsx`
 - Clean up unused imports: `useLocation`, `NavBar`, `OperatorNavBar`
 - This is causing TypeScript errors for unused declarations
@@ -17,7 +25,36 @@
 - **Files affected**: Message components (MemberForMessaging), various single-entity hooks
 - **Decision needed**: Establish pattern for when to use selective vs full fetching
 
-## 4. InfoButton Responsive Positioning
+## ~~4. InfoButton Responsive Positioning~~ ✅ CLOSED 2026-05-17 (universal fix already in InfoButton.tsx, PR #67)
+
+> **Closed 2026-05-17** — `src/components/InfoButton.tsx` already has the
+> universal viewport-clamping fix this entry asked for, landed in PR #67
+> ("Wizard 2.0", commit `2c1bf8a`). Specifically:
+>
+> - `position: fixed` so the popup escapes any parent container's clipping
+> - `useLayoutEffect` measures the popup AFTER mount, clamps `left` so the
+>   popup never spills off either viewport edge (`VIEWPORT_MARGIN = 8`)
+> - Auto-flips above the button when there's not enough room below
+> - Recomputes on resize/scroll while open
+> - Honors `align="left"|"right"|"center"` as a preference hint, but the
+>   clamp still runs AFTER and pulls the popup back if the hint would
+>   spill off-screen
+>
+> Two `align="right"` usages exist (`PlayerManagement.tsx:244`,
+> `SelectableCard.tsx:67`) — leftover hints from before the universal
+> fix landed. Harmless (the clamp runs after the hint), could be
+> cleaned up sometime but no bug.
+>
+> One known edge case not covered by the clamp: if the InfoButton lives
+> inside a CSS-transformed/scaled/animated ancestor, `position: fixed`
+> becomes relative to that ancestor instead of the viewport, and the
+> math can be off. Fix when actually needed: render the popup through
+> a React portal (5-line change). Not adding preemptively per Ed
+> (2026-05-17) — "if there is a fix then close it."
+>
+> Original entry preserved below for reference.
+
+### Original entry
 - **Issue**: InfoButton popups get cut off on small screens
 - **Context**: The popup positioning logic in `/src/components/InfoButton.tsx` needs improvement for mobile
 - **Problem**: On narrow screens, the popup can extend beyond viewport edges, causing horizontal scrolling or cut-off content
@@ -114,6 +151,21 @@
 - **Integration**: When user claims, badge count decrements
 - **Related**: Pairs with login modal notification (implemented separately)
 
+## 18. Dark Mode Breaks Date Picker
+
+**Moved from LIST_FOR_ED.md #20 on 2026-05-17** (was always tagged "For Jack")
+
+**Discovered:** 2026-05-04 during unified-scoreboard smoke-testing
+**Severity:** Medium (functionally usable but visually broken)
+
+**Symptom:** In dark mode, the date picker is essentially unusable — the day numbers in the calendar grid are invisible against the background. Only a single date (presumably the currently-selected or hovered one) is visible at a time. User can't see which dates are available, weekends, today's marker, etc.
+
+**Suspected cause:** the calendar component's text color likely hardcoded to a light value (or inherits a light theme color) without a dark-mode variant defined. Background-text contrast collapses in dark mode.
+
+**Likely fix surface:** `src/components/ui/calendar.tsx` (the shadcn Calendar primitive) and/or any wrapper component that uses it. Audit the day-cell text color tokens — should use `text-foreground` / `text-muted-foreground` (theme-aware) rather than a hardcoded `text-gray-900` or similar.
+
+**Adjacent dark-mode issue (worth folding into the same pass):** unified scoreboard's player-drawer name colors. Per Ed 2026-05-04 smoke-test: "in dark mode the away team player names in the drawer are invisible. and in light mode the home team is invisible." Same root cause likely — a hardcoded color that doesn't flip per theme.
+
 ---
 
-*Last Updated: 2025-12-18*
+*Last Updated: 2026-05-17*
