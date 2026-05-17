@@ -30,7 +30,7 @@ end-to-end test pass before merge.
 | 10 | **Date dividers in message thread** | ⬜ not started |
 | 11 | **Empty conversation-list state — value-prop copy** | ⬜ not started |
 | 12 | **Leave button respects `cannot_leave`** | ⬜ not started |
-| 13 | **Emoji messages + composer picker (12-emoji curated set)** | ⬜ not started |
+| 13 | **Emoji messages + composer picker (12-emoji curated set)** | ✅ shipped |
 | 14 | **Season-end trigger — release `cannot_leave` on completion** | ⬜ not started |
 | 15 | **Auto-rename propagation — team / league / season / org renames update matching chat titles** | ⬜ not started |
 | 16 | **Bounded send — AbortController + 10s timeout in `sendMessage`** | ✅ shipped |
