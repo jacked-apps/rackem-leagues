@@ -1,0 +1,343 @@
+---
+title: Modular Scoring System — Transform Bundled Code into the Locked-Page Framework
+type: refactor
+status: active
+date: 2026-05-17
+origin: docs/brainstorms/2026-05-17-modular-scoring-system-comparison-requirements.md
+---
+
+# Modular Scoring System — Transform Bundled Code into the Locked-Page Framework
+
+## What this plan IS
+
+This plan describes **HOW to fundamentally change the existing bundled scoring code into the modular framework the locked pages define.** Not a polish of existing code. Not an alignment-to-tighten-edges. A real structural transformation, done incrementally so the app keeps working between each step.
+
+## The gap
+
+**The locked pages** in `docs/league-system/` define a framework where:
+- 8 component Modules (Handicap Systems, Handicap Mechanisms, Points System, Win Calculator, Threshold Charts, Team Geometry, Match Format, Standings & Tiebreakers) are independent composable primitives with crisp borders
+- A Scoring System is a top-level COMPOSITION of those 8 primitives
+- The 3 prepackaged systems (Points 3-Man, Percentage 5-Man, FargoRate 10-Point 5-Man) are tested compositions of those primitives, not bundled bespoke implementations
+- Per the locked Threshold Charts README: *"Step-2 refactors will lift Charts out as first-class Modules selected by the league configuration"*
+- Per the locked Handicap Systems README: *"The current codebase has historical bundlings... these are implementation artifacts from before the modular axes were fully separated — NOT statements of intended architecture. Future refactors will progressively decouple them"*
+
+**The existing code** has 3 bundled `SystemModule` files in `src/systems/`:
+- `bca3v3.ts` (~78 lines) implements `rating` + `scoring` + `threshold` + `teamFormat` all inside one bundled SystemModule instance
+- `bca5v5.ts` (~61 lines) — same shape, different content
+- `fargo5v5.ts` (~292 lines) — same shape, more code because Fargo's threshold math is more involved
+
+Plus runtime scaffolding from v2 (`buildSystemFromPreferences`, calculator registry, snapshot persistence) that dispatches these bundled modules but doesn't itself decompose them. **None of the 8 component Modules exist as first-class composable code primitives today.** They exist as preference columns, capability sections inside SystemModule, or scattered runtime code.
+
+**This plan transforms the second into the first.**
+
+## Strategy: strangler-fig migration
+
+The transformation cannot be a top-to-bottom rewrite because the app must keep scoring matches correctly throughout. The strategy is **strangler-fig**: a pattern where the new framework grows up alongside the existing code, with an adapter layer keeping the rest of the app working while each Module gets extracted, until eventually the old bundled code is dissolved.
+
+### How the strangler-fig works in practice
+
+1. **Keep `SystemModule` as a thin adapter** for the duration of the migration. The rest of the app (`computeMatchRunningTotals`, scoreboards, scoring mutations) continues calling `module.threshold.compute(...)`, `module.rating.validate(...)`, etc. as it does today.
+2. **Extract one component Module at a time.** Each component Module gets its own primitive type, files, contract. The SystemModule's capability section for that Module becomes a DELEGATION to the new primitive instead of a direct implementation.
+3. **App keeps working between extractions.** Each extraction ships independently. Characterization tests (`src/systems/__tests__/{bca3v3,bca5v5,fargo5v5}.characterization.test.ts`) guard external behavior. If the test still passes byte-identically, the extraction is safe.
+4. **When all 8 component Modules are extracted, dissolve `SystemModule`.** The 3 prepackaged Scoring Systems become tiny composition declarations (~15 lines each) instead of bundled files (~78-292 lines). The adapter layer is removed; the runtime consumes the composed Modules directly.
+
+### Extraction order (least entangled → most)
+
+Listed in the order that makes the strangler-fig clean. Earlier extractions create patterns that later ones follow.
+
+| # | Component Module | Why this order |
+|---|---|---|
+| 1 | **Win Calculator** | Smallest. Already a binary `win_condition` preference. Lowest blast radius — good shakedown for the strangler-fig pattern itself. |
+| 2 | **Threshold Charts** | Already partly separated (DB tables + SQL lookup function exist). Hardcoded TS charts in `src/systems/charts/` need lifting into Module shape. |
+| 3 | **Handicap Systems** | Rating capability inside SystemModule is self-contained. 4 variants (Points, Percentage, FargoRate, Skill-Level-reserved). |
+| 4 | **Handicap Mechanisms** | Already discriminated by mechanism in `SystemModule.threshold` discriminated union. Promote to a real Module type. |
+| 5 | **Points System sub-mechanisms** | Calculators are already extracted into a registry (`src/systems/calculators/`). This unit DEcomposes the bundled calculators into their underlying sub-mechanism types (A/B/C/D per the locked Points System README). |
+| 6 | **Team Geometry** | Currently mixed into `SystemModule.teamFormat`. Three axes (lineup_size, max_roster_size, game_generation). |
+| 7 | **Match Format** | Currently scattered preference fields (pairing_format, race_length). |
+| 8 | **Standings & Tiebreakers** | Currently scattered preference fields + `playoffGenerator.standingsSort`. |
+| 9 | **Dissolve `SystemModule`** | After 1-8 extract their primitives, `SystemModule` is just an adapter with no behavior of its own. Dissolve it. The 3 prepackaged systems become composition declarations. |
+| 10 | **Decision Record** | What got built, what got deferred, reconsideration triggers. |
+
+## How this plan is written
+
+**Unit 1 (Win Calculator) is defined in detail below.** It's the first extraction; doing it teaches us the pattern for the rest.
+
+**Units 2-9 are sketched only.** Each one is a real unit, but the detailed file list and approach gets filled in WHEN we approach that unit, not all up front. The reason: each extraction will surface things about the code we don't know yet, and pre-specifying all 9 in detail invites the over-planning we just spent a session backing out of. The plan is a roadmap whose detailed segments get drawn as we walk them.
+
+**Unit 10 (Decision Record) is a small documentation unit; defined at a sketch level.**
+
+## Honest sizing
+
+This is multi-week work, possibly multi-month depending on how each extraction surprises us. Each individual unit is probably 2-5 days of focused work; 10 units is many weeks. The strangler-fig approach means you can pause between any two units without leaving the app broken — you're never committed to "finish all 10 before something works."
+
+## Requirements Trace
+
+From the viability brainstorm's R1-R19. Most map to specific extraction units below.
+
+| R-item | Where it lives in this plan |
+|---|---|
+| R1 — (T+T) framing collapses (A/B/C/D) | Unit 5 (Points System sub-mechanism extraction realizes (T+T) shape) |
+| R2 — Threshold WHEN, Trigger WHAT | Unit 5 (same) |
+| R3 — Bilateral performer with declared inputs | Already shipped as `ScoringPopupSideSpec` |
+| R4 — One threshold per Module instance | Unit 2 (Threshold Charts) + Unit 4 (Mechanisms compose multiple chart instances) |
+| R5 — Pairings Generator split from Team Geometry | Decision Record: defer to its own focused work after this plan; pairings are sufficiently isolated in `src/utils/gameOrder.ts` today |
+| R6 — Break/Rack bundled as compound output | Stays bundled; not addressed in this plan |
+| R7 — Win Calc 4-slot hypothesis | Unit 1 establishes the Module shape; the 4-slot expansion is future work |
+| R8 — Win Calc / Points orthogonal | Unit 1 (Win Calc) + Unit 5 (Points) establish the independence in code |
+| R9 — Typed thresholds (discriminated by mechanism) | Unit 4 (Mechanisms own the discrimination) |
+| R10 — Converters with multiple variants per pair | Deferred — Converter Module gets its own focused plan when cross-handicap composition is actually needed |
+| R11 — Frozen-snapshot principle | Already shipped at the schema level; verified incidentally as extraction tests use snapshots |
+| R12-R15 — Methodology observations | Not implementable |
+| R16-R19 — Architecture-level / display | Inherited as constraints, not separate units |
+
+## Scope Boundaries
+
+- **No new features.** This is structural transformation only. The 3 prepackaged systems produce byte-identical match results before and after — guarded by characterization tests.
+- **No new UI.** The dial UI, wizard improvements, and LO-facing customization surfaces are downstream of this work, not part of it. Ed has stated his next brainstorm after this is the dial design.
+- **No Converter Module.** R10 is a separate Module kind that gets its own focused plan when needed.
+- **No locked-doc edits.** Per Principle 7 + `[[feedback_stop_asking_to_break_protocols]]`. Locked pages describe the target; this plan transforms code to match.
+- **No 4th Scoring System.** BCAPL Skill Level (`'skill_level'` handicap type) stays reserved/hidden.
+
+### Deferred to Separate Tasks
+
+- **Dial brainstorm + dial implementation** — Ed's stated next focus after this plan.
+- **Converter Module work** — its own focused plan.
+- **Pairings Generator split (R5)** — if/when LO custom pairing rules create demand.
+- **Threshold chart editor UI (v2 Phase 3.4)** — its own UI-focused branch when needed.
+- **BCAPL Skill Level (4th system) wiring + chart** — when Ed has BCAPL contact.
+- **Brand rename `bca3v3`/`bca5v5`/`fargo5v5` → CSI-aligned keys** — internal mechanical refactor, can run as its own small branch or fold into Unit 9.
+
+## Context & Research
+
+### Locked pages (the target framework)
+
+- `docs/league-system/PRINCIPLES.md` — meta-policy: 4 Module kinds (Mechanism, System, Chart, Converter) + 10 load-bearing principles + Principle 7 lock procedure
+- `docs/league-system/README.md` — vocabulary cheat sheet + 8-Module list + 3 prepackaged Scoring Systems index + classification walkthrough
+- `docs/league-system/modules/handicap-systems/README.md` — locked. 4 variants (Points/Percentage/FargoRate/Skill-Level-reserved). Internal-vs-external split.
+- `docs/league-system/modules/handicap-mechanisms/README.md` — locked. 2x2 fundamental taxonomy. 3 shipped variants + 'none'.
+- `docs/league-system/modules/points-system/README.md` — locked. (A)/(B)/(C)/(D) composable sub-mechanism types.
+- `docs/league-system/modules/win-calculator.md` — locked. Currently binary; future 4-piece architecture mapped.
+- `docs/league-system/modules/threshold-charts/README.md` — describes Charts as a System-kind Module offering Chart-kind variants. Encoding-locked input contract.
+- *Pending (not locked):* `modules/team-geometry.md`, `modules/match-format.md`, `modules/standings-tiebreakers.md` — would benefit from being written as the corresponding extraction units approach.
+
+### Existing bundled code (the source)
+
+- `src/systems/types.ts` (~316 lines) — `SystemModule` interface bundling 4 capability groups (teamFormat, rating, scoring, threshold)
+- `src/systems/bca3v3.ts` (~78 lines) — bundled Points 3-Man system
+- `src/systems/bca5v5.ts` (~61 lines) — bundled Percentage 5-Man system
+- `src/systems/fargo5v5.ts` (~292 lines) — bundled FargoRate 10-7 5-Man system
+- `src/systems/buildSystemFromPreferences.ts` (~433 lines) — runtime resolver (fast-path + ad-hoc path)
+- `src/systems/calculators/` — calculator registry (3 calculators currently, each bundling multiple sub-mechanisms)
+- `src/systems/charts/` — hardcoded TS chart files (3v3 games-needed, 5v5 games-needed, etc.)
+- `src/systems/__tests__/{bca3v3,bca5v5,fargo5v5}.characterization.test.ts` — **the audit reference per `[[feedback_two_paths_audit_pattern]]`**. These tests are the guarantee that each extraction preserves external behavior.
+- `supabase/migrations/20260418000003_add_matches_system_snapshot.sql` — R11 frozen-snapshot column
+
+### Memory entries carried as constraints
+
+- `[[feedback_stop_asking_to_break_protocols]]` — no locked-doc edits in this plan
+- `[[feedback_respect_module_boundaries_in_plans]]` — each extraction is one Module; resist bundling
+- `[[feedback_default_to_simpler]]` — smallest version of each extraction first
+- `[[feedback_plan_from_target_not_existing]]` — locked pages are the target; existing code is the source
+- `[[feedback_internal_naming_vs_ui_naming]]` — extractions don't change UI text
+- `[[feedback_dev_data_disposable]]` — no backfill plumbing
+- `[[feedback_consolidate_migrations_in_pr]]` — clean migrations only
+- `[[feedback_two_paths_audit_pattern]]` — preserve characterization tests as audit reference throughout
+- `[[project_scoring_accountability]]` — vacate-and-rescore is the only fix path
+- `[[project_modular_scoring_works_not_perfect]]` — v1 quality bar
+
+## Implementation Units
+
+- [ ] **Unit 1: Extract Win Calculator as primitive Module**
+
+**Goal:** Lift the current `win_condition` (binary preference: `'games' | 'points'`) out of being a runtime-resolver branch and into being a first-class Win Calculator Module with its own typed contract. The 3 prepackaged Scoring Systems compose this Module instead of dispatching on `win_condition` directly. Establishes the strangler-fig pattern that the next 7 extractions follow.
+
+**Requirements:** R8 (Win Calc / Points orthogonal — orthogonality made real in code).
+
+**Dependencies:** None — this is the shakedown extraction.
+
+**Locked-page definition (from `modules/win-calculator.md`):** *"The Win Calculator examines the collected match data — the two metrics every match tracks (Games and Points) plus any benchmarks the Handicap Mechanisms declared — and declares the match winner. It does not produce a metric and it does not allocate points. It decides."*
+
+**Where it lives in current code:**
+- `src/types/preferences.ts` + `src/types/resolvedSystemConfig.ts` — `win_condition` column type (`'games' | 'points'`)
+- `supabase/migrations/20260429000001_extend_preferences_phase2_modular_axes.sql` — DB CHECK for `win_condition`
+- `src/systems/buildSystemFromPreferences.ts` — dispatch branches on `win_condition` inline (no Module abstraction)
+- `src/wizards/league-v2/steps/WinConditionStep.tsx` — wizard UI for selecting (already exists)
+- `src/utils/match/computeMatchRunningTotals.ts` — reads `system_snapshot.win_condition` and branches
+- Match-end logic: bundled across `MatchEndVerification`, `computeMatchResult` in scoring.ts files, etc.
+
+**Structural gap:**
+- No `WinCalculator` Module type exists. The behavior is a switch on `win_condition` scattered across resolver + runtime.
+- No `decideMatchWinner(games, points, benchmarks)` function with a clear contract. Each call site implements its own branching.
+- The 3 prepackaged SystemModules don't declare "I use this Win Calculator"; they're invoked via the runtime switch.
+
+**Extraction approach:**
+1. **Create primitive type:** new file `src/systems/win-calculators/types.ts` defining `WinCalculator` Module interface — has `kind: 'games' | 'points'` (matching today's two values), `decide(matchData) -> WinnerDecision` function with a typed contract.
+2. **Create two variants:** `src/systems/win-calculators/games_decides.ts` and `src/systems/win-calculators/points_decides.ts` — each implements the contract. Behavior matches today's dispatch branches exactly.
+3. **Create registry:** `src/systems/win-calculators/index.ts` — pattern matches `src/systems/calculators/index.ts`. Registers the two variants at module load.
+4. **Adapter wiring:** add `winCalculator: WinCalculator` field to `SystemModule` interface. The 3 bundled SystemModules (`bca3v3.ts`, `bca5v5.ts`, `fargo5v5.ts`) declare which Win Calculator they use (`getWinCalculator('games')` for the BCA two, `getWinCalculator('points')` for fargo5v5).
+5. **Runtime consumers:** update `computeMatchRunningTotals.ts` and any other match-end logic to consult `system_snapshot.winCalculator.decide(...)` instead of branching on `win_condition` inline. The old branching becomes the bodies of the two variant `decide` functions.
+6. **Preserve `win_condition` preference column.** It stays as the LO's selection input; the resolver looks it up to populate `system_snapshot.winCalculator`. No DB migration needed.
+
+**Patterns to follow:**
+- `src/systems/calculators/index.ts` + `src/systems/calculators/types.ts` — same registry-of-typed-variants pattern.
+- Self-registration at module load (the fix from the 2026-05-02 "no points written" bug).
+
+**Test scenarios:**
+- *Regression × 3:* `bca3v3.characterization.test.ts`, `bca5v5.characterization.test.ts`, `fargo5v5.characterization.test.ts` all pass byte-identical after extraction. This is the gate.
+- *Happy path × 2:* `getWinCalculator('games').decide({...})` returns the same winner as today's `win_condition='games'` branch. Same for `'points'`.
+- *Edge case (tie band):* the locked 3v3 9-9 tie-band rule still produces the same match-end outcome.
+- *Integration:* `off_preset_combos.test.ts` continues to pass.
+- *Contract test:* WinCalculator's `decide` function rejects invalid inputs (missing games or points) gracefully — never throws, returns a typed error or safe default.
+
+**Verification:**
+- The 3 characterization tests pass byte-identical.
+- New files `src/systems/win-calculators/{types,games_decides,points_decides,index}.ts` exist with full contract coverage.
+- `SystemModule` interface has `winCalculator: WinCalculator` field.
+- The 3 bundled SystemModule files declare which Win Calculator they use.
+- Runtime consumers (`computeMatchRunningTotals`, match-end logic) consult the Module via `system_snapshot.winCalculator`, not via inline switch on `win_condition`.
+- All test suites pass.
+
+---
+
+- [ ] **Unit 2: Extract Threshold Charts as primitive Module(s)**
+
+**Sketch only — to be defined in detail when Unit 1 completes.**
+
+**Goal:** Lift hardcoded TS chart files (`src/systems/charts/`) and the chart compute logic out of being bundled inside SystemModule's `threshold` capability, into being first-class Chart Modules per the locked Threshold Charts README. Each chart (3v3 Games-Needed, 5v5 Games-Needed, FargoRate Formula, Race Points, Race Percentage) becomes its own Chart variant with the encoding-locked input contract.
+
+**Why second:** Already partly separated (DB tables exist for charts; SQL lookup function exists). The locked Threshold Charts README explicitly maps the variants. Charts are the most well-bounded of the remaining Modules.
+
+**To define when we approach:** specific file list, contract shape for `Chart<TInput, TOutput>`, how the SystemModule adapter delegates threshold computes to the active Chart Module, test strategy.
+
+---
+
+- [ ] **Unit 3: Extract Handicap Systems as primitive Module(s)**
+
+**Sketch only — to be defined in detail when Unit 2 completes.**
+
+**Goal:** Lift the `rating` capability section out of SystemModule into a first-class Handicap System Module with 4 variants (Points, Percentage, FargoRate, Skill-Level-reserved). Each variant: encoding spec + validation + display format + history-based computation (for internal variants).
+
+**Why third:** Rating is self-contained inside each bundled SystemModule today. Extracting it doesn't require coordination with other Modules first.
+
+---
+
+- [ ] **Unit 4: Extract Handicap Mechanisms as primitive Module(s)**
+
+**Sketch only.**
+
+**Goal:** Promote the existing `mechanism` preference column + the `ExtraGamesThreshold | StartPointsThreshold | RaceLengthThreshold` discriminated union into a first-class Handicap Mechanism Module with 3 shipped variants + 'none', per the locked 2x2 taxonomy.
+
+**Why fourth:** Builds on Unit 2 (Charts) — Mechanisms consume Chart output, so Charts existing as Modules makes Mechanism extraction cleaner. Also discriminated-union pattern is already in place; this codifies it as proper Module shape.
+
+---
+
+- [ ] **Unit 5: Extract Points System sub-mechanisms as composable primitives**
+
+**Sketch only.**
+
+**Goal:** Decompose the 3 bundled calculators (`linear_above_threshold`, `accumulate_with_milestone_jumps`, `accumulated_per_game`) into their underlying sub-mechanism types per the locked Points System README's (A) per-game allocator / (B) threshold trigger / (C) initial points / (D) end-of-match aggregate framing. Each sub-mechanism becomes a composable primitive Module. The 3 prepackaged systems compose them as their Points System.
+
+**Why fifth:** This is the largest extraction. Calculator registry exists, but the bundling-decomposition is real work. The (T+T) collapse from R1/R2/R4 lives here.
+
+**Why this order:** This is also where 5v5% could theoretically gain a 3rd threshold (the question you asked earlier in the brainstorm). Doing it after Mechanisms (Unit 4) and Charts (Unit 2) ensures the dependencies are first-class Modules when this unit composes them.
+
+---
+
+- [ ] **Unit 6: Extract Team Geometry as primitive Module**
+
+**Sketch only.**
+
+**Goal:** Lift `lineup_size` + `max_roster_size` + `game_generation` from being preference columns + the `SystemModule.teamFormat` capability section into a first-class Team Geometry Module. **First time this Module gets its own locked README** (currently pending — write it as part of this unit, or as a separate locked-doc unlock action if `[[feedback_stop_asking_to_break_protocols]]` requires).
+
+---
+
+- [ ] **Unit 7: Extract Match Format as primitive Module**
+
+**Sketch only.**
+
+**Goal:** Lift `pairing_format` + `race_length` from scattered preference fields into a first-class Match Format Module. **First time this Module gets its own locked README** (currently pending).
+
+---
+
+- [ ] **Unit 8: Extract Standings & Tiebreakers as primitive Module**
+
+**Sketch only.**
+
+**Goal:** Lift `standings_sort` + `tiebreaker_trigger` + `tiebreaker_format` from scattered preference fields + `playoffGenerator.standingsSort.ts` into a first-class Standings & Tiebreakers Module. **First time this Module gets its own locked README** (currently pending).
+
+---
+
+- [ ] **Unit 9: Dissolve `SystemModule` bundle — 3 prepackaged systems become composition declarations**
+
+**Sketch only.**
+
+**Goal:** With all 8 component Modules extracted as primitives, the `SystemModule` adapter has no behavior of its own — it's a pure pass-through. Dissolve it. The 3 prepackaged Scoring Systems become tiny declarations (~15 lines each) that name which Module variants they compose. The runtime consumes the composed Modules directly without going through the `SystemModule` shell.
+
+**End state:** `src/systems/bca3v3.ts` (was 78 lines) becomes `src/systems/scoring-systems/points_3man.ts` (~15 lines: declares the composition). The `SystemModule` interface in `src/systems/types.ts` either becomes much smaller (a list of Module instances) or goes away entirely.
+
+**This is also the natural place to do the internal brand rename** (`bca3v3` → `points_3man` etc.) if not done separately — the file restructure is the moment to apply the CSI-aligned naming.
+
+---
+
+- [ ] **Unit 10: Decision Record**
+
+**Sketch only.**
+
+**Goal:** One markdown file at `docs/plans/decision-records/2026-05-17-modular-migration.md` capturing:
+- What got built (which Modules extracted, in what order)
+- What got deferred (Converter Module, Pairings Generator split, dial customization, 4th Scoring System, chart editor UI) with reconsideration triggers
+- Lessons learned during the migration (any patterns that worked well, any surprises)
+- Hand-off to the next phase (Ed's dial brainstorm)
+
+## System-Wide Impact
+
+- **Interaction graph:** Almost every part of the scoring runtime (`computeMatchRunningTotals`, scoreboards, scoring mutations, vacate-and-rescore, match-end verification, snapshot persistence) touches the SystemModule interface. The strangler-fig adapter keeps this surface stable throughout extractions 1-8.
+- **Error propagation:** Existing graceful-degradation in `buildSystemFromPreferences` (warn + safe default) stays as the floor. Module-by-Module extraction preserves it.
+- **State lifecycle:** `matches.system_snapshot` JSONB column captures the resolved configuration at scheduled→in_progress. As Modules become primitives, the snapshot shape may carry Module identifiers (`winCalculator: 'games_decides'`) rather than raw preference values. Migration-safe per `[[feedback_dev_data_disposable]]`.
+- **API surface parity:** Internal types change; external (mobile app) surface stays stable (mobile reads preference columns, not SystemModule internals).
+- **Unchanged invariants:** Locked 3v3 9-9 tie-band rule (0 points) byte-identical throughout. 3 characterization tests are the gate for every extraction.
+
+## Risks & Dependencies
+
+| Risk | Likelihood | Impact | Mitigation |
+|------|-----------|--------|------------|
+| An extraction reveals deeper coupling than expected; the unit grows mid-flight | High | Med | Each unit's "approach" is sketched ahead of time but only detailed when started; the strangler-fig adapter pattern means partial extractions don't break the app |
+| A characterization test breaks during an extraction (real behavior changes accidentally) | Med | High | The characterization tests ARE the gate; don't merge a unit with failing tests; investigate before continuing |
+| Locked pages have ambiguities or contradictions that surface during extraction | Med | Med | Surface to Ed for a Principle-7-gated update with the specific change spelled out; do NOT silently interpret |
+| The 3-9 month timeline drifts further; partial migration sits indefinitely | Med | Low | Strangler-fig means partial state is workable; pause between units is fine; no "all 10 must finish before anything works" pressure |
+| Future plans get drafted against the partial state and reinforce the bundling | Med | Med | Decision Record (Unit 10) cross-references the migration's current state; future planners read it before designing new work |
+| Pending locked-page READMEs (Team Geometry, Match Format, Standings) need writing before Units 6/7/8 can land cleanly | High | Low | Write each pending README as part of approaching its extraction unit; treat as Principle-7-gated content the user approves |
+
+## Documentation / Operational Notes
+
+- **Each extraction unit produces its own commit/PR.** The strangler-fig means each unit is independently shippable.
+- **Characterization tests are the audit reference.** Per `[[feedback_two_paths_audit_pattern]]`, the `{bca3v3,bca5v5,fargo5v5}.characterization.test.ts` files are not touched during extractions — they prove the external behavior is preserved.
+- **Module-by-Module locked READMEs.** The locked README pattern (Essence / Boundary / Variants / How this Module interacts / Source of truth) gets applied to Team Geometry, Match Format, Standings & Tiebreakers as those Modules get extracted. These new READMEs become locked once written (per `[[feedback_lock_only_finished_docs]]`).
+- **No backfill for snapshot shape.** Per `[[feedback_dev_data_disposable]]`, `db reset` truncates test data when snapshot shape changes during extractions.
+- **The 3 prepackaged systems are the only systems supported throughout.** BCAPL SL stays reserved; no new systems land during this plan.
+
+## Sources & References
+
+- **Origin documents:**
+  - [`docs/brainstorms/2026-05-17-modular-scoring-system-comparison-requirements.md`](../brainstorms/2026-05-17-modular-scoring-system-comparison-requirements.md) — verdict: ship the framework
+  - [`docs/brainstorms/2026-05-16-modular-scoring-system-viability-requirements.md`](../brainstorms/2026-05-16-modular-scoring-system-viability-requirements.md) — R1-R19 architecture
+- **Target framework (locked pages):**
+  - [`docs/league-system/PRINCIPLES.md`](../league-system/PRINCIPLES.md)
+  - [`docs/league-system/README.md`](../league-system/README.md)
+  - [`docs/league-system/modules/handicap-systems/README.md`](../league-system/modules/handicap-systems/README.md)
+  - [`docs/league-system/modules/handicap-mechanisms/README.md`](../league-system/modules/handicap-mechanisms/README.md)
+  - [`docs/league-system/modules/points-system/README.md`](../league-system/modules/points-system/README.md)
+  - [`docs/league-system/modules/win-calculator.md`](../league-system/modules/win-calculator.md)
+  - [`docs/league-system/modules/threshold-charts/README.md`](../league-system/modules/threshold-charts/README.md)
+- **Prior plans (superseded; pending items deferred per Decision Record):**
+  - [`docs/plans/2026-04-28-001-feat-modular-league-system-plan.md`](2026-04-28-001-feat-modular-league-system-plan.md)
+  - [`docs/plans/2026-05-01-001-feat-modular-league-system-v2-plan.md`](2026-05-01-001-feat-modular-league-system-v2-plan.md)
+- **Key code seams (the existing bundled code being transformed):**
+  - `src/systems/types.ts` — `SystemModule` interface
+  - `src/systems/{bca3v3,bca5v5,fargo5v5}.ts` — the 3 bundled SystemModules
+  - `src/systems/buildSystemFromPreferences.ts` — runtime resolver
+  - `src/systems/calculators/` — calculator registry (Unit 5 decomposes these)
+  - `src/systems/charts/` — hardcoded TS charts (Unit 2 lifts these)
+  - `src/systems/__tests__/{bca3v3,bca5v5,fargo5v5}.characterization.test.ts` — audit reference
+- **Memory entries carried as plan constraints:**
+  - `[[feedback_stop_asking_to_break_protocols]]`, `[[feedback_respect_module_boundaries_in_plans]]`, `[[feedback_default_to_simpler]]`, `[[feedback_plan_from_target_not_existing]]`, `[[feedback_internal_naming_vs_ui_naming]]`, `[[feedback_dev_data_disposable]]`, `[[feedback_consolidate_migrations_in_pr]]`, `[[feedback_two_paths_audit_pattern]]`, `[[project_scoring_accountability]]`, `[[project_modular_scoring_works_not_perfect]]`
