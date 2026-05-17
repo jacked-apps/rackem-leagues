@@ -20,7 +20,7 @@ A **match format** is the season-stable per-pairing structural specification ans
 1. **Is each pairing a single rack, or a race-to-N over multiple racks** (`pairing_format`)
 2. **When pairings are races, what is the base race target before any handicap-driven adjustment** (`race_length`, nullable — populated only when `pairing_format='race_to_n'`)
 
-Match Format holds *no behavior*. It is a passive configuration record consumed by Pairings Generator (the runtime instantiator that turns Team Geometry × Match Format × lineups into concrete game slots), by the [Threshold Charts](threshold-charts/README.md) Module's race-shape charts (which produce per-pairing targets), and by the scoring runtime when it decides whether a pairing terminates on a single game-completion event or accumulates rack outcomes toward a race target.
+Match Format holds *no behavior*. It is a passive configuration record consumed by [Pairings Generator](pairings-generator.md) (the runtime instantiator that turns Team Geometry × Match Format × lineups into concrete game slots), by the [Threshold Charts](threshold-charts/README.md) Module's race-shape charts (which produce per-pairing targets), and by the scoring runtime when it decides whether a pairing terminates on a single game-completion event or accumulates rack outcomes toward a race target.
 
 The two axes are tightly coupled by an existence invariant: `race_length` is **mandatory and meaningful** when `pairing_format='race_to_n'`, and **forbidden** (NULL) when `pairing_format='single_rack'`. The schema enforces nullability; the application layer enforces the mandatory side. Single-rack matches have no race target because the pairing's outcome is fully determined by the single game's winner.
 
@@ -127,7 +127,7 @@ Match Format sits **between** Team Geometry (which sets up the pairing count) an
 
 **Downstream (Modules and runtime that consume Match Format's output):**
 
-- **Pairings Generator** *(deferred — R5 in viability brainstorm)* — consumes the `pairing_format` choice to know whether each pairing instantiates one `GameSlot` (single_rack) or an open-ended series of `GameSlot`s that accumulate until one side hits the race target (race_to_n). When the runtime instantiates pairings for a match night, this is the structural switch. Currently bundled inside the per-system code in `src/utils/gameOrder.ts` and the scoring runtime; the R5 deferral acknowledges the lift to a standalone Pairings Generator Module.
+- **[Pairings Generator](pairings-generator.md)** — consumes the `pairing_format` choice and `race_length` baseline alongside Team Geometry's structural facts and the locked lineups to instantiate the concrete `Array<GameSlot>` for the match. The `pairing_format` value (`single_rack` vs `race_to_n`) informs downstream Modules but does NOT itself change the slot list this Module produces; the slot list shape is invariant under that choice. (Currently the Pairings Generator implementation is bundled inside per-Scoring-System code in `src/utils/gameOrder.ts` and the scoring runtime; the Step-2 extraction lifts it to a centralized Module per its own blueprint.)
 - **[Threshold Charts](threshold-charts/README.md)** — race-shape charts (the [Race Points](threshold-charts/race-points.md) and [Race Percentage](threshold-charts/race-percentage.md) charts) produce per-pairing race-length targets. When `pairing_format='race_to_n'` and the active Mechanism is `race_length_adjustment`, the chart consumes the handicap diff and `race_length` as inputs (or as anchor point) to produce per-pairing adjusted targets. Charts that produce team-aggregate `extra_games` targets do not interact with Match Format at all (they assume single_rack pairings implicitly).
 - **[Handicap Mechanism](handicap-mechanisms/README.md) `race_length_adjustment` variant** — reads `race_length` as its anchor point for per-pairing adjustment. The other Mechanism variants (`extra_games`, `start_points`, `none`) do not read Match Format.
 - **The scoring runtime** (`src/utils/match/computeMatchRunningTotals.ts`, the scoring popup, the per-game mutation) — reads `pairing_format` to decide whether a single game-completion event terminates the pairing (single_rack) or whether to accumulate racks toward a race target (race_to_n). Reads `race_length` (when applicable) to know when to terminate the race.
@@ -146,28 +146,10 @@ The locked [`README.md`](../README.md) and [Handicap Mechanisms README's orthogo
 - The two axes live as columns on the `preferences` table (`pairing_format`, `race_length`).
 - All three currently-shipped Tested Preset Scoring Systems use `pairing_format='single_rack'`; no shipping system uses `race_to_n`. **The race-to-N runtime code path is partially implemented but not end-to-end tested** — it exists in service of the future BCAPL Skill Level format, which would be the first shipped consumer.
 - The `RaceLengthThreshold` type in `src/systems/types.ts` is wired (it's the third arm of the threshold discriminated union per Phase 1 Unit 1.3 of the v2 plan), but no SystemModule currently produces a `RaceLengthThreshold` at runtime because no shipped system uses `race_length_adjustment` as its Mechanism.
-- The Pairings Generator concern (R5) does not exist as a standalone Module; per-system game-order code in `src/utils/gameOrder.ts` and inlined scoring-runtime logic together cover the single_rack case for the shipped systems. Race_to_n pairing generation would need to extend this when BCAPL SL or similar formats ship.
+- [Pairings Generator](pairings-generator.md) is recognized in the locked Module catalog as Module #8 but is not yet extracted as a centralized implementation; per-system game-order code in `src/utils/gameOrder.ts` and inlined scoring-runtime logic together cover the single_rack case for the shipped systems. Race_to_n pairing generation would need to extend this when BCAPL SL or similar formats ship.
 - Wizard UI: `pairing_format` and `race_length` are currently derived from preset selection rather than independently chosen for the LO (the preset implies single_rack); a Step-2 refactor opportunity is to expose the axes independently once `race_to_n` has a shipping consumer.
 
-The Step-2 refactor lifts Match Format out as a first-class Module, splits Pairings Generator off as the runtime instantiator, and dissolves any remaining bundling between Team Geometry's `teamFormat` constants and Match Format's per-pairing axes inside the per-system SystemModule files. The new Module's typed contract is small — two fields with the existence invariant — but the runtime code paths it gates (especially the unfinished `race_to_n` termination logic) are substantive.
-
-## Variants
-
-Match Format is composition-pattern, so its *variants* are the legal `(pairing_format, race_length)` tuples — gated by the existence invariant and the schema range constraint. Currently shipped:
-
-| Tuple | Game count semantics | Shipped as |
-|---|---|---|
-| `('single_rack', NULL)` | each pairing contributes 1 game | Points 3-Man, Percentage 5-Man, FargoRate 10-Point 5-Man |
-
-Architecturally-valid but un-shipped tuples (with the BCAPL SL format being the eventual first shipping consumer):
-
-| Tuple | Game count semantics | Status |
-|---|---|---|
-| `('race_to_n', 5)` | each pairing races to 5 racks; pairing winner contributes 1 game | runtime partial; no shipping consumer |
-| `('race_to_n', 7)` | each pairing races to 7 racks | runtime partial; no shipping consumer |
-| `('race_to_n', N)` for various N | scales per the race target | open design space |
-
-Per Principle 10 graceful degradation, unwired tuples compose at the Match Format layer but stall downstream because the race-to-N termination logic is incomplete and no per-pairing race-length-adjustment Threshold Chart is calibrated. Such configurations warn-and-zero rather than throw — but they do not produce meaningfully scored matches until the supporting runtime and charts land.
+The Step-2 refactor lifts Match Format out as a first-class Module, extracts [Pairings Generator](pairings-generator.md) as a centralized runtime instantiator with its three sub-Mechanisms as first-class stages, and dissolves any remaining bundling between Team Geometry's `teamFormat` constants and Match Format's per-pairing axes inside the per-system SystemModule files. The new Module's typed contract is small — two fields with the existence invariant — but the runtime code paths it gates (especially the unfinished `race_to_n` termination logic) are substantive.
 
 ## Future possibilities
 

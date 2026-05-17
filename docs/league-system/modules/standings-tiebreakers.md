@@ -217,20 +217,6 @@ The locked [`README.md`](../README.md) establishes the principle that current co
 
 The Step-2 refactor lifts Standings & Tiebreakers out as a first-class Module with its own typed contract, consolidates the trigger/format evaluation into a single runtime entry point, and clearly defines the boundary with the Points System calculator's tie-band rule (which stays in the calculator). The known triple-tie gap is documented for future resolution; no v1 fix is in scope.
 
-## Variants
-
-Standings & Tiebreakers is composition-pattern, so its *variants* are the legal `(standings_sort, tiebreaker_trigger, tiebreaker_format)` triples — the Cartesian product constrained by [§Validation invariants](#validation-invariants) and the combo-coherence warnings. Three triples currently shipped:
-
-| Triple | Used by |
-|---|---|
-| `(default standings_sort, 'even_total_games_only', 'best_of_3_short_race')` | Points 3-Man (3v3 DRR can tie at 9-9; best-of-3 extra games resolve) |
-| `(default standings_sort, 'never', 'accept_tie')` | Percentage 5-Man (5v5 SRR's 25 games can't tie on game-win; `tiebreaker_format` value vacuous) |
-| `(default standings_sort, 'never', 'accept_tie')` | FargoRate 10-Point 5-Man (5v5 SRR; FargoRate cascade decisive; `tiebreaker_format` value vacuous) |
-
-Where `default standings_sort = ['match_wins', 'games_won', 'points_earned']`. When all three keys tie, the standings UI escalates to LO manual designation; a richer head-to-head resolution mechanism is named in [§Future possibilities](#future-possibilities) but not built.
-
-LO-customized variants (different sort priorities, alternative tiebreaker formats including the operationally-flexible escape hatches `'manual'` and `'teams_self_determine'`, or play-based formats like `'random_player_short_race'` for leagues that want skill-flavored resolution without full extra-pairing overhead) compose at the Module layer; per Principle 10 graceful degradation, any combo legal under [§Validation invariants](#validation-invariants) runs through the standings + tiebreaker runtime without error.
-
 ## Future possibilities
 
 - **LO-invoked head-to-head tie resolution.** When the always-computed `standings_sort` keys leave two or more teams tied, an LO-invoked action could query the matches the tied teams played against each other and compute h2h-scoped versions of the three metrics to break the tie. Build deferred until requested by an operator; when built, will likely include configurable h2h priority order, partial-round-robin composition rules for N-way ties, and other dials. Intentionally out of current scope to avoid pulling resources on an unbuilt fallback for an astronomically-rare condition.

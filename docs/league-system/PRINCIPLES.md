@@ -172,7 +172,7 @@ This asymmetry (games recorded, points computed) is structural: there is nothing
 
 ### Scoring System as the top-level Module
 
-A **Scoring System** is the complete configured rule set that scores a match — a top-level System composing all 8 component Modules (Handicap Systems, Handicap Mechanisms, Points System, Win Calculator, Threshold Charts, Team Geometry, Match Format, Standings & Tiebreakers). The 8 components are the *parts*; the Scoring System is the *whole*. A Scoring System's behavior is built by **explicit composition**: the "instruction manual" reads the structure directly — no derivation step.
+A **Scoring System** is the complete configured rule set that scores a match — a top-level System composing all 9 component Modules (Handicap Systems, Handicap Mechanisms, Points System, Win Calculator, Threshold Charts, Team Geometry, Match Format, Pairings Generator, Standings & Tiebreakers). The 9 components are the *parts*; the Scoring System is the *whole*. A Scoring System's behavior is built by **explicit composition**: the "instruction manual" reads the structure directly — no derivation step.
 
 > **"Division" is dropped.** The original brainstorm used CSI's term "Division" for the bundled rule set. We dropped it because CSI uses "division" for both *a league* (a recurring competition) and *a scoring configuration* — two fundamentally different things sharing one word. The competition hierarchy is **Organization → League → Season**; a League runs a Scoring System. "Division" appears nowhere.
 
@@ -311,7 +311,7 @@ A split is policy-gated under Principle 7 (canonical-docs-as-policy) — naming 
 
 ### 7. The recursive property
 
-Modules nest inside Modules. A System-kind Module composes other Modules. A Mechanism-kind Module may have sub-Mechanisms. The Scoring System (top-level Module) composes the 8 component Modules; the Handicap Systems Module contains 4 variants (each a Module); each variant may have parameter sub-structures.
+Modules nest inside Modules. A System-kind Module composes other Modules. A Mechanism-kind Module may have sub-Mechanisms. The Scoring System (top-level Module) composes the 9 component Modules; the Handicap Systems Module contains 4 variants (each a Module); each variant may have parameter sub-structures.
 
 **This is why we need a universal noun.** Without "Module" as the umbrella term, every level of nesting would force a new word: "the Mechanism that contains a Mechanism inside the System inside the Scoring System..." The recursive structure becomes unparseable. With "Module," every node in the tree is a Module — only the *kind* (Mechanism / System / Chart / Converter) varies by node.
 
@@ -458,7 +458,7 @@ Could we just call all atom Modules "Modules" and skip the Mechanism label? Yes 
 
 A Module is NOT a Mechanism if:
 
-- **It composes other Modules** → it's a **System** (the kind for compositions, not atoms). The Scoring System composes 8 component Modules; that makes it a System, not a Mechanism.
+- **It composes other Modules** → it's a **System** (the kind for compositions, not atoms). The Scoring System composes 9 component Modules; that makes it a System, not a Mechanism.
 - **It's data-shaped** (a lookup table or formula consumed by another Module) → it's a **Chart**.
 - **It bridges mismatched type contracts** so two otherwise-incompatible Modules can compose → it's a **Converter**.
 
@@ -523,8 +523,8 @@ If the Module's job is one functional task with no internal Modules, you're look
 
 **Examples of Systems:**
 
-- **Scoring System** (top-level) — composed of 8 component Modules (Handicap Systems, Handicap Mechanisms, Points System, Win Calculator, Threshold Charts, Team Geometry, Match Format, Standings & Tiebreakers).
-- **Handicap Mechanisms** (umbrella for one of the 8 components) — composed of alternative handicap-mechanism Mechanisms (`extra_games`, `start_points`, `race_length_adjustment`); the league picks one.
+- **Scoring System** (top-level) — composed of 9 component Modules (Handicap Systems, Handicap Mechanisms, Points System, Win Calculator, Threshold Charts, Team Geometry, Match Format, Pairings Generator, Standings & Tiebreakers).
+- **Handicap Mechanisms** (umbrella for one of the 9 components) — composed of alternative handicap-mechanism Mechanisms (`extra_games`, `start_points`, `race_length_adjustment`); the league picks one.
 - **Trigger** — composed of an event-acceptor Mechanism, an event-detector Mechanism, a task-performer Mechanism, and a re-armer Mechanism.
 
 A System has BOTH an external contract (the System's input → output to its consumers) AND an internal composition (how its component Modules wire together). Both must be documented; both must be verified.
@@ -563,7 +563,7 @@ Systems compose their internal Modules in one of three patterns. Knowing which p
 
 **Chain pattern** — the System composes N components in sequence; ALL are active, each contributing to the result.
 
-- *Scoring System* (top-level System) — chains 8 component Modules; all 8 run together as part of every match.
+- *Scoring System* (top-level System) — chains 9 component Modules; all 9 run together as part of every match.
 - A *Trigger* — chains an event-acceptor → detector → performer → re-armer; all four run together as part of the trigger lifecycle.
 - *Points System* — chains a per-game allocator + (optional) threshold trigger + (optional) initial-points + (optional) end-of-match aggregate.
 

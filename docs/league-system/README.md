@@ -112,9 +112,9 @@ Future: cross-axis conditions, race-mode termination, tie resolution, per-game e
 | `standard_5v5` | `percentage_5man` | **Percentage 5-Man** |
 | `fargo_5v5` | `fargo_10pt_5man` | **FargoRate 10-Point 5-Man** |
 
-### The 8 component Modules
+### The 9 component Modules
 
-The 13 raw configuration axes group into 8 user-facing component Modules. There is also a 14th persisted-but-unconsumed column (`points_system`) that no scoring runtime reads; see [`modules/points-system/README.md`](modules/points-system/README.md).
+The 13 raw configuration axes group into 9 user-facing component Modules. (The 9th — Pairings Generator — wraps no preference columns; it is runtime composition of `(Team Geometry + Match Format + locked lineups) → Array<GameSlot>` produced by sub-Mechanisms.) There is also a 14th persisted-but-unconsumed column (`points_system`) that no scoring runtime reads; see [`modules/points-system/README.md`](modules/points-system/README.md).
 
 | # | Module | Wraps axes |
 |---|---|---|
@@ -125,9 +125,10 @@ The 13 raw configuration axes group into 8 user-facing component Modules. There 
 | 5 | **Threshold Charts** | `threshold_chart_id` |
 | 6 | **Team Geometry** | `lineup_size` + `max_roster_size` + `game_generation` |
 | 7 | **Match Format** | `pairing_format` + `race_length` |
-| 8 | **Standings & Tiebreakers** | `standings_sort` + `tiebreaker_trigger` + `tiebreaker_format` |
+| 8 | **Pairings Generator** | runtime: `(Team Geometry + Match Format + locked lineups) → Array<GameSlot>` (no preference columns — composed of pair-generation, game-ordering, break/rack-assignment sub-Mechanisms) |
+| 9 | **Standings & Tiebreakers** | `standings_sort` + `tiebreaker_trigger` + `tiebreaker_format` |
 
-> **A Scoring System is the top-level Module that composes all 8 components above.** The 8 are the *components*; a Scoring System is the *whole*. The prepackaged Scoring Systems we ship (Points 3-Man, Percentage 5-Man, FargoRate 10-Point 5-Man) are tested combinations of these components.
+> **A Scoring System is the top-level Module that composes all 9 components above.** The 9 are the *components*; a Scoring System is the *whole*. The prepackaged Scoring Systems we ship (Points 3-Man, Percentage 5-Man, FargoRate 10-Point 5-Man) are tested combinations of these components.
 
 ### Disambiguation rule for "Points"
 
@@ -162,11 +163,14 @@ Use this when Ed proposes a new feature, rule, or behavior — *before* writing 
 7. **Does it change the per-pairing structure?** (Single rack vs race-to-N per pairing, race length per pairing.)
    → **Match Format.** See `modules/match-format.md`.
 
-8. **Does it change how teams are ordered in standings or how end-of-season ties are resolved?**
+8. **Does it change how lineups become a concrete sequence of head-to-head games on a match night?** (Pair-generation algorithm — full round-robin vs partial; game-ordering rule — fixed table vs algorithmic; break/rack assignment policy.)
+   → **Pairings Generator.** See `modules/pairings-generator.md`.
+
+9. **Does it change how teams are ordered in standings or how end-of-season ties are resolved?**
    → **Standings & Tiebreakers.** See `modules/standings-tiebreakers.md`.
 
-9. **None of the above fit cleanly?**
-   → **You probably need a new Module.** Don't force it into an existing one. Surface this as a planning question; write a brainstorm before classifying.
+10. **None of the above fit cleanly?**
+    → **You probably need a new Module.** Don't force it into an existing one. Surface this as a planning question; write a brainstorm before classifying.
 
 ### Worked example (classification that doesn't fit)
 
@@ -206,7 +210,7 @@ docs/league-system/
   README.md                          ← This file (cheat sheet + indexes)
   PRINCIPLES.md                      ← Meta-policy (architectural model + writing rules)
   scoring-systems/                   ← Prepackaged Scoring Systems (the 3 we ship; pages pending — Unit 9)
-  modules/                           ← The 8 component Modules
+  modules/                           ← The 9 component Modules
     handicap-systems/                ← Folder: README + 4 variant files
     handicap-mechanisms/             ← Folder: README + 3 variant files (none = covered in README)
     points-system/                   ← Folder: README + variant files (1-Point, 10-Point)
@@ -214,6 +218,7 @@ docs/league-system/
     threshold-charts/                ← Folder: README + per-chart variant files (pending — Unit 5)
     team-geometry.md                 ← Single file (pending — Unit 6)
     match-format.md                  ← Single file (pending — Unit 7)
+    pairings-generator.md            ← Single file (pending)
     standings-tiebreakers.md         ← Single file (pending — Unit 8)
   glossary.md                        ← Single-source term definitions (pending — Unit 10)
 ```
@@ -231,13 +236,14 @@ docs/league-system/
 | Threshold Charts | [`modules/threshold-charts/`](modules/threshold-charts/README.md) | How handicap-differences map to in-match targets *(pending — Unit 5)* |
 | Team Geometry | [`modules/team-geometry.md`](modules/team-geometry.md) | Lineup size, roster size, game-generation *(pending — Unit 6)* |
 | Match Format | [`modules/match-format.md`](modules/match-format.md) | Pairing format, race length *(pending — Unit 7)* |
+| Pairings Generator | [`modules/pairings-generator.md`](modules/pairings-generator.md) | Runtime instantiation of game slots from Team Geometry + Match Format + locked lineups *(pending)* |
 | Standings & Tiebreakers | [`modules/standings-tiebreakers.md`](modules/standings-tiebreakers.md) | Standings sort order, tiebreaker rules *(pending — Unit 8)* |
 
-> A **Scoring System** is the top-level composition of these 8 component Modules. See [`PRINCIPLES.md`](PRINCIPLES.md) for the full architectural model.
+> A **Scoring System** is the top-level composition of these 9 component Modules. See [`PRINCIPLES.md`](PRINCIPLES.md) for the full architectural model.
 
 ## Prepackaged Scoring Systems index
 
-A **Scoring System** is the complete configured rule set that scores a match — a top-level composition of the 8 component Modules above. The three prepackaged Scoring Systems below are what we ship today; each is a component-Module combination that has been **tested and works in practice**.
+A **Scoring System** is the complete configured rule set that scores a match — a top-level composition of the 9 component Modules above. The three prepackaged Scoring Systems below are what we ship today; each is a component-Module combination that has been **tested and works in practice**.
 
 The modular system technically allows other component combinations beyond these three. Those untested combinations are not validated — pairing arbitrary handicap + mechanism + chart + points + win-calc choices can produce matches that aren't fair, aren't competitive, or aren't mathematically sensible. Stick with shipped Scoring Systems unless you're prepared to validate a new combo.
 
