@@ -38,7 +38,7 @@ end-to-end test pass before merge.
 | 18 | **Shorter chat titles + banner interpolation + per-user captains label** | ⬜ not started |
 | 19 | **Editable team chat title (captain rename; auto-rename trigger respects user-edit)** | ⬜ not started |
 | 20 | **Past-member chats visible in inbox under "Archived" section (close Unit 6 gap)** | ✅ shipped |
-| 21 | **Collapsible "Archived" section in conversation list (default-collapsed)** | ⬜ not started |
+| 21 | **Collapsible "Archived" section in conversation list (default-collapsed)** | ✅ shipped |
 
 **Branch:** `messaging-system-overhaul`.
 **Awaits:** Units 10–14 build + final end-to-end test pass (`pnpm db:reset && pnpm test:run` + manual dev-app smoke walkthrough).
