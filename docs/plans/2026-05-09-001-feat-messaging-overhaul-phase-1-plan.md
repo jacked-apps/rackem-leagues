@@ -31,7 +31,7 @@ end-to-end test pass before merge.
 | 11 | **Empty conversation-list state — value-prop copy** | ✅ shipped |
 | 12 | **Leave button respects `cannot_leave`** | ✅ shipped |
 | 13 | **Emoji messages + composer picker (12-emoji curated set)** | ✅ shipped |
-| 14 | **Season-end trigger — release `cannot_leave` on completion** | ⬜ not started |
+| 14 | **Season-end trigger — release `cannot_leave` on completion** | ✅ shipped |
 | 15 | **Auto-rename propagation — team rename + league rename update matching chat titles (2 triggers; season/org renames moot post-Unit-18)** | ✅ shipped |
 | 16 | **Bounded send — AbortController + 10s timeout in `sendMessage`** | ✅ shipped |
 | 17 | **Eliminate optimistic-vs-realtime double-render flash on sender side** | ⬜ not started |
