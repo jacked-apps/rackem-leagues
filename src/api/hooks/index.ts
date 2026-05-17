@@ -83,6 +83,7 @@ export {
   useCreateOrOpenConversation,
   useCreateGroupConversation,
   useLeaveConversation,
+  useUpdateConversationTitle,
 } from './useConversationMutations';
 
 // Announcement mutations

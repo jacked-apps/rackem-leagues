@@ -11,6 +11,7 @@ import {
   createOrOpenConversation,
   createGroupConversation,
   leaveConversation,
+  updateConversationTitle,
 } from '../mutations/conversations';
 import { queryKeys } from '../queryKeys';
 
@@ -116,6 +117,34 @@ export function useLeaveConversation() {
       });
 
       // Also invalidate the specific conversation's messages
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.messages.byConversation(variables.conversationId),
+      });
+    },
+  });
+}
+
+/**
+ * Hook to rename a conversation (Unit 19 — editable team chat title).
+ *
+ * Only the team captain (the cannot_leave=true participant on a
+ * team_chat) is allowed to rename — the mutation enforces this
+ * server-side; the UI hides the edit affordance for non-captains
+ * via `useMessageComposerStatus.cannotLeave`.
+ *
+ * Invalidates the user's conversations list (so the new title
+ * shows in the sidebar) and the messages query for this
+ * conversation (so any header components re-read).
+ */
+export function useUpdateConversationTitle() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateConversationTitle,
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.messages.conversations(variables.userId),
+      });
       queryClient.invalidateQueries({
         queryKey: queryKeys.messages.byConversation(variables.conversationId),
       });

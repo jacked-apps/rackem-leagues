@@ -36,7 +36,7 @@ end-to-end test pass before merge.
 | 16 | **Bounded send — AbortController + 10s timeout in `sendMessage`** | ✅ shipped |
 | 17 | **Eliminate optimistic-vs-realtime double-render flash on sender side** | ⬜ not started |
 | 18 | **Shorter chat titles + banner interpolation** (per-user captains label deferred — see entry) | ✅ shipped (partial — per-user label deferred) |
-| 19 | **Editable team chat title (captain rename; auto-rename trigger respects user-edit)** | ⬜ not started |
+| 19 | **Editable team chat title (captain rename; auto-rename trigger respects user-edit)** | ✅ shipped |
 | 20 | **Past-member chats visible in inbox under "Archived" section (close Unit 6 gap)** | ✅ shipped |
 | 21 | **Collapsible "Archived" section in conversation list (default-collapsed)** | ✅ shipped |
 

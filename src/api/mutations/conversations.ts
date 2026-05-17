@@ -36,6 +36,24 @@ export interface LeaveConversationParams {
 }
 
 /**
+ * Parameters for editing a conversation's title (Unit 19).
+ */
+export interface UpdateConversationTitleParams {
+  conversationId: string;
+  /** Acting user's member id. Used to check permission (only the
+   *  captain — the cannot_leave=true participant on a team chat —
+   *  is allowed to rename it). */
+  userId: string;
+  /** New title. Trimmed + length-validated (1..80 chars after trim)
+   *  before the UPDATE. */
+  title: string;
+}
+
+/** Max title length the UI accepts (DB column is varchar(200); we
+ *  enforce a tighter 80 for mobile readability). */
+export const CONVERSATION_TITLE_MAX_LENGTH = 80;
+
+/**
  * Result returned from conversation creation
  */
 export interface ConversationResult {
@@ -197,5 +215,85 @@ export async function leaveConversation(
   if (error) {
     logger.error('Error leaving conversation', { error: error.message });
     throw new Error(`Failed to leave conversation: ${error.message}`);
+  }
+}
+
+/**
+ * Rename a conversation (Unit 19 — editable team chat title).
+ *
+ * Permissioned: only the captain of a team chat may rename it.
+ * "Captain" here means the participant on this conversation whose
+ * `cannot_leave = TRUE`. Other chat types (DMs, captains chat,
+ * announcements) are NOT user-renamable in this phase.
+ *
+ * Stamps `title_user_edited_at = NOW()` so the future Unit 15
+ * auto-rename trigger leaves this row's title alone going forward
+ * (entity renames no longer propagate over a user-set title).
+ *
+ * @throws Error on validation failure, permission failure, or DB error.
+ */
+export async function updateConversationTitle(
+  params: UpdateConversationTitleParams,
+): Promise<void> {
+  const { conversationId, userId, title } = params;
+
+  // 1. Validate the new title.
+  const trimmed = (title ?? '').trim();
+  if (trimmed.length === 0) {
+    throw new Error('Title cannot be empty.');
+  }
+  if (trimmed.length > CONVERSATION_TITLE_MAX_LENGTH) {
+    throw new Error(
+      `Title is too long (max ${CONVERSATION_TITLE_MAX_LENGTH} characters).`,
+    );
+  }
+
+  // 2. Check the conversation type — only team_chat is renamable in
+  //    this phase (per Unit 19 plan).
+  const { data: conv, error: cErr } = await supabase
+    .from('conversations')
+    .select('conversation_type')
+    .eq('id', conversationId)
+    .single();
+
+  if (cErr || !conv) {
+    throw new Error(`Conversation not found: ${cErr?.message ?? 'unknown'}`);
+  }
+  if (conv.conversation_type !== 'team_chat') {
+    throw new Error('Only team chats can be renamed.');
+  }
+
+  // 3. Check permission — the actor must have cannot_leave=true on this
+  //    conversation (the captain rule from Unit 5's roster triggers).
+  const { data: participant, error: pErr } = await supabase
+    .from('conversation_participants')
+    .select('cannot_leave, left_at')
+    .eq('conversation_id', conversationId)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (pErr) {
+    throw new Error(`Failed to verify permission: ${pErr.message}`);
+  }
+  if (!participant || participant.left_at !== null) {
+    throw new Error('You are not an active participant of this conversation.');
+  }
+  if (participant.cannot_leave !== true) {
+    throw new Error('Only the team captain can rename this chat.');
+  }
+
+  // 4. Do the update — stamp title_user_edited_at so the future Unit 15
+  //    auto-rename trigger respects the user's choice.
+  const { error } = await supabase
+    .from('conversations')
+    .update({
+      title: trimmed,
+      title_user_edited_at: new Date().toISOString(),
+    })
+    .eq('id', conversationId);
+
+  if (error) {
+    logger.error('Error updating conversation title', { error: error.message });
+    throw new Error(`Failed to update title: ${error.message}`);
   }
 }

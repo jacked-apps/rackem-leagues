@@ -12,6 +12,7 @@
 
 import { useState, useEffect } from 'react';
 import { ConversationHeader } from './ConversationHeader';
+import { EditConversationTitleDialog } from './EditConversationTitleDialog';
 import { MessageInput } from './MessageInput';
 import { ReadOnlyBanner } from './ReadOnlyBanner';
 import { MessageList, type Message } from './messageview/MessageList';
@@ -32,9 +33,12 @@ interface MessageViewProps {
 
 export function MessageView({ conversationId, currentUserId, onBack, onLeaveConversation }: MessageViewProps) {
   const [conversationType, setConversationType] = useState<string | null>(null);
+  const [conversationTitle, setConversationTitle] = useState<string>('');
   const [otherUserId, setOtherUserId] = useState<string | null>(null);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [showBlockConfirm, setShowBlockConfirm] = useState(false);
+  // Unit 19: rename-chat dialog (only for team chats, captain-only).
+  const [showRenameDialog, setShowRenameDialog] = useState(false);
 
   // TanStack Query hooks
   const { data: messagesData = [], isLoading: loading } = useConversationMessages(conversationId);
@@ -64,15 +68,16 @@ export function MessageView({ conversationId, currentUserId, onBack, onLeaveConv
   // Load conversation details (type and participants) when conversation changes
   useEffect(() => {
     async function loadConversationDetails() {
-      // Fetch conversation type and auto_managed flag
+      // Fetch conversation type, auto_managed flag, and title.
       const { data: convData } = await supabase
         .from('conversations')
-        .select('conversation_type, auto_managed')
+        .select('conversation_type, auto_managed, title')
         .eq('id', conversationId)
         .single();
 
       if (convData) {
         setConversationType(convData.conversation_type);
+        setConversationTitle(convData.title ?? '');
       }
 
       // For DMs: conversation_type is null and auto_managed is false
@@ -195,8 +200,14 @@ export function MessageView({ conversationId, currentUserId, onBack, onLeaveConv
         onBack={onBack}
         onLeave={handleLeaveClick}
         onBlock={handleBlockClick}
+        onRename={() => setShowRenameDialog(true)}
         canLeave={!composerStatus?.cannotLeave}
         canBlock={isDM}
+        // Unit 19: rename only available on team chats, captain-only
+        // (captain = the participant with cannot_leave=true).
+        canRename={
+          conversationType === 'team_chat' && composerStatus?.cannotLeave === true
+        }
       />
 
       {/* Leave Conversation Confirmation */}
@@ -247,6 +258,20 @@ export function MessageView({ conversationId, currentUserId, onBack, onLeaveConv
         />
       ) : (
         <MessageInput onSend={handleSendMessage} />
+      )}
+
+      {/* Unit 19: rename-chat dialog. Only mounted when needed (the
+          ConversationHeader's "Edit name" menu item is only visible when
+          canRename is true, so showRenameDialog is only ever set in
+          permitted contexts; the mutation also enforces server-side). */}
+      {showRenameDialog && (
+        <EditConversationTitleDialog
+          open={showRenameDialog}
+          onOpenChange={setShowRenameDialog}
+          conversationId={conversationId}
+          userId={currentUserId}
+          initialTitle={conversationTitle}
+        />
       )}
     </div>
   );
