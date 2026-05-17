@@ -2,8 +2,13 @@
 title: Pairings Generator (Module)
 date: 2026-05-17
 status: active
+locked: true
 audience: developer + AI sessions
 ---
+
+> ## 🔒 LOCKED — DO NOT EDIT
+>
+> Before editing this file, read and apply the gate procedure in [Principle 7: Canonical-docs-as-policy](../PRINCIPLES.md#7-canonical-docs-as-policy). The procedure requires explicit user invocation using specific gate-aware language; casual approvals are NOT sufficient.
 
 # Pairings Generator
 
