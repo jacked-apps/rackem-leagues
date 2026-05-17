@@ -109,10 +109,17 @@ If the operator clicks "Start Next Season" while the current season is still `ac
 [Operator Dashboard]
   → "Start Next Season" button on a league with at least one completed season
 
-[Step 1: Season details]
-  - New season name (prefill: "Spring 2026", "Season 5", etc.)
+[Step 1: Season dates]
   - Start date (prefill: previous_end_date + 1 week)
   - End date (prefill: start_date + previous_season_length)
+  - Season name is AUTO-DERIVED, NOT EDITABLE in the wizard
+    (per Ed 2026-05-17: "qualifier rolls over, that can be a settings
+    change not a wizard change"). Derivation: keep the qualifier from
+    the previous season name (e.g., "Fall", "Tuesday Night") and bump
+    the year to whatever the new start_date falls in. The wizard
+    displays the derived name as a read-only field so operator can
+    see it but not edit it here. Editing happens later via league
+    settings.
 
 [Step 2: Returning teams + captains]
   - Table of teams from previous season, all checked
@@ -163,6 +170,32 @@ No new tables. Pure orchestration over existing schema:
 - **A team's captain isn't a player anymore but is still a member** — captain still works (captain is a member, not a player record). Only blocks if the member is archived/deleted entirely.
 
 ---
+
+## Season-name derivation strategy (open — pick one)
+
+Today: `seasons.season_name` is just freeform text. No `qualifier`
+column exists. To make the wizard auto-derive the name without
+asking, we need ONE of:
+
+- **(A) Heuristic** — strip year-like tokens from the previous
+  `season_name` to extract the qualifier; bump the year; concatenate.
+  Works for "Spring 2025" → "Spring 2026" and "2025 Fall" → "2026 Fall"
+  and "Tuesday Night 2025" → "Tuesday Night 2026". Breaks for weird
+  names with no year-like token, or with multiple year-like tokens.
+  No schema change.
+- **(B) New `leagues.season_name_qualifier TEXT` column** (or on
+  `seasons`). Operator sets it once via league settings (defaults to
+  whatever's in the most recent season's name minus the year). Wizard
+  reads it and concatenates with the new year. Cleanest long-term.
+  +1 column + a settings UI for it.
+- **(C) Hybrid — heuristic first, surface the result to the operator
+  in step 4 review** (so they can bail out before activation if it
+  looks wrong) **+ link to edit via the existing season-edit UI
+  post-activation.** No schema change today; B can be added later
+  as a UX polish without breaking the wizard.
+
+**Recommended (C)** — ship the heuristic now, link to manual edit if
+the guess is wrong, defer the qualifier column to a future polish.
 
 ## Open questions for Ed (please confirm before I code)
 
