@@ -9,7 +9,7 @@
  * - Team names containing profanity will be rejected with an error message
  */
 import React, { useState, useMemo } from 'react';
-import { X, Plus } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useCreateTeam, useUpdateTeam, useInviteStatuses } from '@/api/hooks';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -193,43 +193,30 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
     seasonId,
   });
 
-  // LIST_FOR_ED #16 — incremental roster slots. The form initially
-  // renders only `lineupSize - 1` slots (captain takes one of the
-  // active-lineup spots), with a "+ Add Player" button below to
-  // reveal a single substitute slot at a time up to the hard cap
-  // (`rosterSize - 1`). Prevents the 20-slot empty grid that the
-  // 12 → 20 cap bump created for the typical 5-8-active-plus-subs
-  // case.
+  // LIST_FOR_ED #16 — show enough slots to cover (a) the lineup
+  // baseline, (b) every already-filled slot, and (c) ONE extra empty
+  // dropdown at the bottom so the next player can be added without
+  // clicking a button first. The empty dropdown itself is the
+  // affordance — no separate "+ Add Player" button needed. Once the
+  // roster hits the hard cap (`rosterSize - 1`), the trailing empty
+  // disappears too.
   //
-  // For existing teams being edited, the initial visible count must
-  // also include every already-filled slot — otherwise a team that
-  // already has 8 players in a 5v5 league would have 3 of them
-  // hidden behind the Add Player button. So: max(lineup baseline,
-  // filled-slot count), clamped to the hard cap.
+  // Pure derived value (no state) — recomputes every render off
+  // playerIds. As the user fills the trailing empty dropdown, a new
+  // empty one appears below it automatically.
   const filledSlotCount = useMemo(
     () => playerIds.filter((id) => !!id).length,
     [playerIds]
   );
-  const initialVisibleSlotCount = useMemo(() => {
-    const baseline = Math.max(0, lineupSize - 1);
-    return Math.min(Math.max(baseline, filledSlotCount), Math.max(0, rosterSize - 1));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lineupSize, rosterSize, existingTeam?.id]); // freeze on team identity, not filledSlotCount (which changes as user types)
-  const [visibleSlotCount, setVisibleSlotCount] = useState(initialVisibleSlotCount);
-
-  // If the user fills the last visible slot and there's room left,
-  // proactively reveal one more so they can keep going without an
-  // extra click. (Doesn't unfocus the current slot or move the
-  // cursor — purely an additive render below.)
-  React.useEffect(() => {
-    if (
-      filledSlotCount >= visibleSlotCount &&
-      visibleSlotCount < rosterSize - 1
-    ) {
-      setVisibleSlotCount((c) => Math.min(c + 1, rosterSize - 1));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filledSlotCount]);
+  const visibleSlotCount = useMemo(() => {
+    const cap = Math.max(0, rosterSize - 1);
+    const baseline = Math.min(Math.max(0, lineupSize - 1), cap);
+    // One extra empty below the last filled — gives the user the
+    // next dropdown without clicking anything. Clamped to cap so we
+    // don't render past the hard limit.
+    const withGrow = Math.min(filledSlotCount + 1, cap);
+    return Math.max(baseline, withGrow);
+  }, [filledSlotCount, lineupSize, rosterSize]);
 
   // Get all placeholder player IDs from the roster for invite status lookup
   // Both operators and captains can see invite status badges
@@ -590,27 +577,6 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
                   />
                 );
               })}
-
-              {/* "+ Add Player" button — reveals one substitute slot
-                  at a time, up to the rosterSize cap. Hidden when
-                  every possible slot is already rendered. Per
-                  LIST_FOR_ED #16: keeps the empty-state clean for
-                  the typical 5-8-active-players-plus-subs case
-                  instead of showing all 20 slots up front. */}
-              {visibleSlotCount < rosterSize - 1 && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() =>
-                    setVisibleSlotCount((c) => Math.min(c + 1, rosterSize - 1))
-                  }
-                  loadingText="none"
-                  className="w-full justify-center gap-2 border-dashed"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add Player (substitute)
-                </Button>
-              )}
             </div>
           </div>
         </div>
