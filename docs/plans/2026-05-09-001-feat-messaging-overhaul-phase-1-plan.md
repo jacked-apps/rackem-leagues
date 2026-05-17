@@ -27,7 +27,7 @@ end-to-end test pass before merge.
 | 7 | Profanity filter wiring + system-message variant (+ DOB-aware COMMENT polish) | ✅ shipped |
 | 8 | Composer failed-send recovery (inline iMessage-style) | ✅ shipped |
 | 9 | Profanity onboarding modal (first Messages open, defaulted-ON) + legacy SQL archive | ✅ shipped |
-| 10 | **Date dividers in message thread** | ⬜ not started |
+| 10 | **Date dividers in message thread** | ✅ shipped |
 | 11 | **Empty conversation-list state — value-prop copy** | ⬜ not started |
 | 12 | **Leave button respects `cannot_leave`** | ⬜ not started |
 | 13 | **Emoji messages + composer picker (12-emoji curated set)** | ✅ shipped |

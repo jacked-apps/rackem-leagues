@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-17 (Messaging Phase 1 polish bundle, Unit 13 — emoji messages + composer picker. New `EmojiPickerButton.tsx` + `emojiSet.ts` (12 curated emojis), new `isEmojiOnly` util + tests, MessageBubble gains a "giant emoji" render branch for ≤3 emoji-only messages, MessageInput slots the picker between input and send. On `messaging-phase1-polish` branch.)
+> **Last Updated**: 2026-05-17 (Messaging Phase 1 polish bundle, Units 10 + 13 — date dividers in message thread + emoji messages + composer picker. New `messageDayDividers.ts` util ("Today" / "Yesterday" / "MMM d" labels + interleave helper), `EmojiPickerButton.tsx` + `emojiSet.ts` (12 curated emojis), `isEmojiOnly` util. `MessageList.tsx` renders day-divider rows between message groups. `MessageBubble.tsx` gains a "giant emoji" render branch for ≤3 emoji-only messages. `MessageInput.tsx` slots the picker between input and send. On `messaging-phase1-polish` branch.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -802,6 +802,8 @@ Reusable wizard/form step components
 - `__tests__/age.test.ts` - **Age util tests** (10 cases) — `calculateAge` null/malformed/whole-years/birthday-not-yet/birthday-today; `isMinor` unknown DOB → false, clear minors → true, day-before-18 → true, exact 18th birthday → false, adults → false. Uses `vi.setSystemTime` to pin "today" to 2026-05-12.
 - `isEmojiOnly.ts` - **Messaging Phase 1 / Unit 13** — pure helper that drives the "giant emoji" render branch in `MessageBubble`. Returns `true` when a trimmed string is composed entirely of emoji (Extended_Pictographic + ZWJ + VS16 + regional-indicator pairs) AND is ≤3 graphemes. Uses `Intl.Segmenter` to count graphemes so ZWJ sequences (like 👨‍👩‍👧) count as one. Deliberately excludes `\p{Emoji_Component}` so plain digits don't trip the regex.
 - `__tests__/isEmojiOnly.test.ts` - **Emoji-only detection tests** (19 cases) — positives (single emoji, ZWJ + VS16 like ❤️, spaces between emojis, surrounding whitespace) + negatives (empty, mixed text+emoji, 4+ emojis, plain digits/punctuation).
+- `messageDayDividers.ts` - **Messaging Phase 1 / Unit 10** — pure helpers for the message thread's day-divider rendering. `getDayLabel(iso, now)` returns "Today" / "Yesterday" / locale-formatted "MMM d" (with year only when prior year). `interleaveDayDividers(messages, getTimestamp, now)` walks a chronologically-ordered messages array and emits a flat `DividerRow` sequence (divider before the first message of each new local calendar day). Local-TZ aware so grouping matches the user's calendar, not UTC.
+- `__tests__/messageDayDividers.test.ts` - **Day-divider helper tests** (11 cases) — `getDayLabel` for today / yesterday / same-year / prior-year / 2-days-ago; `interleaveDayDividers` empty / single-day / multi-day boundary emission / divider-before-first-message-of-day ordering / stable per-day keys for React reuse / skips dividers for empty timestamps.
 - `holidayUtils.ts` - Holiday detection and handling
 
 #### Schedule & Matchup
