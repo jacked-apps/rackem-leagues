@@ -110,16 +110,26 @@ If the operator clicks "Start Next Season" while the current season is still `ac
   → "Start Next Season" button on a league with at least one completed season
 
 [Step 1: Season dates]
-  - Start date (prefill: previous_end_date + 1 week)
-  - End date (prefill: start_date + previous_season_length)
-  - Season name is AUTO-DERIVED, NOT EDITABLE in the wizard
-    (per Ed 2026-05-17: "qualifier rolls over, that can be a settings
-    change not a wizard change"). Derivation: keep the qualifier from
-    the previous season name (e.g., "Fall", "Tuesday Night") and bump
-    the year to whatever the new start_date falls in. The wizard
-    displays the derived name as a read-only field so operator can
-    see it but not edit it here. Editing happens later via league
-    settings.
+  - Start date — prefill to the same-day-of-week shortly after the
+    previous season's end_date (e.g., previous ended Monday → next
+    Monday). Operator confirms or picks a different start day
+    (skip-a-week for holiday, etc.).
+  - Number of weeks — prefill from previous season's length. Operator
+    confirms or adjusts.
+  - End date — derived from start_date + (weeks × 7). Read-only.
+  - Season name — DERIVED, shown confirm-or-change. Use the existing
+    `deriveDateFields(startDate)` helper in
+    `src/wizards/league-v2/leagueWizardHelpers.ts` which returns
+    {dayOfWeek, season, year} from the start month
+    (Spring/Summer/Fall/Winter). Concatenate as "{season} {year}"
+    (e.g., "Fall 2026"). Display in a small editable field
+    pre-filled with the derived value — operator can override if
+    needed (rare).
+  - Conflict warnings — flag start/end dates that collide with
+    known holidays or BCA/APA championship windows (from the
+    `championship_date_options` table that LIST_FOR_ED #3 will
+    eventually populate). This is the real REASON this step exists:
+    operators need to see the conflicts before they pick.
 
 [Step 2: Returning teams + captains]
   - Table of teams from previous season, all checked
@@ -171,31 +181,18 @@ No new tables. Pure orchestration over existing schema:
 
 ---
 
-## Season-name derivation strategy (open — pick one)
+## Season-name derivation strategy — SETTLED (2026-05-17)
 
-Today: `seasons.season_name` is just freeform text. No `qualifier`
-column exists. To make the wizard auto-derive the name without
-asking, we need ONE of:
+Reuse the existing `deriveDateFields(isoDate)` helper from
+`src/wizards/league-v2/leagueWizardHelpers.ts`. It returns
+`{dayOfWeek, season, year}` where `season` is one of
+"Spring/Summer/Fall/Winter" based on the start month. Concatenate
+as `"{season} {year}"` (e.g., "Fall 2026"). Show in the step-1
+form pre-filled and editable so operator can override if the
+month boundary doesn't match how they think of the season (rare).
 
-- **(A) Heuristic** — strip year-like tokens from the previous
-  `season_name` to extract the qualifier; bump the year; concatenate.
-  Works for "Spring 2025" → "Spring 2026" and "2025 Fall" → "2026 Fall"
-  and "Tuesday Night 2025" → "Tuesday Night 2026". Breaks for weird
-  names with no year-like token, or with multiple year-like tokens.
-  No schema change.
-- **(B) New `leagues.season_name_qualifier TEXT` column** (or on
-  `seasons`). Operator sets it once via league settings (defaults to
-  whatever's in the most recent season's name minus the year). Wizard
-  reads it and concatenates with the new year. Cleanest long-term.
-  +1 column + a settings UI for it.
-- **(C) Hybrid — heuristic first, surface the result to the operator
-  in step 4 review** (so they can bail out before activation if it
-  looks wrong) **+ link to edit via the existing season-edit UI
-  post-activation.** No schema change today; B can be added later
-  as a UX polish without breaking the wizard.
-
-**Recommended (C)** — ship the heuristic now, link to manual edit if
-the guess is wrong, defer the qualifier column to a future polish.
+No new schema needed. No qualifier column. No heuristic. Same
+function the first-time league wizard already uses.
 
 ## Open questions for Ed (please confirm before I code)
 
