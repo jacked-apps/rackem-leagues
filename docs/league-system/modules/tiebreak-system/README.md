@@ -46,6 +46,8 @@ The LO configures an ordered list of Tiebreak Mechanisms — a chain. The system
 
 Chain length is open. The same Mechanism may appear multiple times. Example chain: `single_round + coin_flip + coin_flip + roshambo` — try a single mini-round first; if tied, try two coin flips; finally roshambo; (and if even that somehow doesn't decide, the auto-terminal human modal does). The LO's chain CANNOT structurally fail to produce edge because the auto-terminal modal is always there to catch it.
 
+**Empty LO chain is still a runnable configuration.** An LO who configures zero chain links effectively has a chain consisting of only the auto-appended terminal modal — every Win-Calc-triggered tie is resolved by direct human pick. The Tiebreak System still chains to runnable output per Principle 10; it just collapses to the terminal handoff.
+
 ## Variants index
 
 The atomic Tiebreak Mechanisms this System composes:

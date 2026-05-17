@@ -32,7 +32,7 @@ The transform from "two ordered lineups of length N" to "a fully specified game 
 
 - The set of pairings to play is a combinatorial choice (full round-robin? partial? Swiss? bracket?) that affects total game count, per-player exposure, and competitive character.
 - The order in which the pairings are played is a sequencing choice that affects per-night cadence (does the headline pairing come first or last?), break rotation patterns, and how scoresheet rendering naturally flows.
-- The per-game break/rack assignment is a per-pairing choice that affects per-game advantage distribution (the breaker has an edge in some game types; alternating vs. fixed assignments affect aggregate fairness across the match).
+- The per-game break/rack assignment is a per-pairing choice that affects per-game advantage distribution (the breaker has an advantage in some game types; alternating vs. fixed assignments affect aggregate fairness across the match).
 
 Each of these is a real, named operational concern in pool-league administration. Bundling all three inside per-Scoring-System hardcoded code (the current implementation state — see [§Implementation status](#implementation-status)) flattens the decisions into "whatever the code happens to do for this Scoring System," loses the ability to vary them independently, and makes LO customization at any of the three layers impossible without rewriting the per-system code path. Pulling Pairings Generator out as a Module — explicitly a chain-pattern composition of three sub-Mechanisms — exposes the design space cleanly: each stage's algorithm choice is named, swappable, and (eventually) LO-configurable as a parameter, all without disturbing the others.
 
