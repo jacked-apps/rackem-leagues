@@ -149,7 +149,7 @@ Each axis has a value-space, a default, and a validation rule. Presented in depe
 | `standings_sort` elements are subset of allowed values | schema CHECK constraint `preferences_standings_sort_values_check` | DB rejects unknown element values |
 | `standings_sort` is non-empty AND no duplicates | application-layer (no schema CHECK currently) | preference write rejected with operator-facing error |
 | `tiebreaker_trigger IN ('even_total_games_only', 'never')` | schema CHECK constraint | DB rejects unknown values |
-| `tiebreaker_format IN ('best_of_3_short_race', 'single_short_race', 'accept_tie', 'manual', 'coin_flip', 'random_player_single_game', 'random_player_short_race', 'teams_self_determine')` | schema CHECK constraint | DB rejects unknown values |
+| `tiebreaker_format IN ('best_of_3_short_race', 'single_short_race', 'accept_tie', 'manual')` (4 values in DB CHECK today; 4 proposed additions documented in the axis section above are not yet in the constraint) | schema CHECK constraint | DB rejects unknown values |
 | All three axes immutable post-season-lock | schema-level season-stability lock trigger (Standings & Tiebreakers axes are in the lock set) | UPDATE on locked preferences blocked at DB layer |
 | Combo coherence: `tiebreaker_trigger='even_total_games_only'` with odd `game_count` is vacuous-but-legal | application-layer combo coherence warning | warns at LO setup; runtime evaluates the trigger condition normally (falsey for odd count) |
 | Combo coherence: `tiebreaker_format='best_of_3_short_race'` with `pairing_format='race_to_n'` requires defined extra-pairing semantics | application-layer combo coherence (currently undefined behavior) | warns at LO setup; runtime falls back to `'manual'` per Principle 10 graceful degradation |

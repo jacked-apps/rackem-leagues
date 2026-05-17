@@ -144,8 +144,10 @@ Pairings Generator sits at the **structural-to-runtime seam** of the Scoring Sys
 
 **Upstream (Modules and runtime data this Module consumes):**
 - **[Team Geometry](team-geometry.md)** — `lineup_size` and `game_generation` (both season-stable per Team Geometry's schema-level lock). `lineup_size` determines the Pair Generation stage's input dimensions; `game_generation` constrains the Pair Generation variant choice (a `game_generation='single_round_robin'` Team Geometry pairs naturally with the "full SRR cross-product" Pair Generation variant).
-- **[Match Format](match-format.md)** — `pairing_format` informs downstream Modules but does NOT itself change the slot list this Module produces; the slot list shape is the same whether each slot will later terminate on a single game-completion event (single_rack) or accumulate racks until a race target is reached (race_to_n). Match Format is named as upstream here because the Pairings Generator's output gets consumed alongside Match Format's per-pairing semantics by the scoring runtime; the Pairings Generator's compute itself reads only the structural facts that affect slot generation.
 - **Lineup-lock event + the two ordered lineups** — the runtime inputs that change every match night. The Module runs once per match at lineup-lock; its output is then immutable for the duration of the match.
+
+**Sibling Module (consumed alongside, not upstream):**
+- **[Match Format](match-format.md)** — `pairing_format` is consumed by the scoring runtime *alongside* this Module's output, but is NOT read by this Module's compute. The slot list shape is the same whether each slot will later terminate on a single game-completion event (`single_rack`) or accumulate racks until a race target is reached (`race_to_n`). Listed here for traceability; not an input to Pair Generation, Game Ordering, or Break/Rack Assignment.
 
 **Internal partners (the three sub-Mechanisms compose in chain):**
 - Stage 1 (Pair Generation) produces input for Stage 2.

@@ -32,7 +32,7 @@ Operational distinctions captured by this axis:
 
 - **`single_rack`** — one rack per pairing, outcome determined by that game's winner. Per-pairing time is bounded (~5–15 min depending on game type and skill). Standings math is simple: each pairing contributes one game to the team count. This is what every currently-shipped Scoring System uses — the historical norm for BCA-tradition leagues.
 
-- **`race_to_n`** — each pairing is a race-to-N sequence of racks, with the pairing ending the moment one side wins N racks. Per-pairing time scales with N and skill (a race-to-7 between roughly-equal players can run 30–60 min). Each pairing still contributes one game-won to the team count (the pairing's overall winner); the racks inside the race are pairing-internal events that don't independently count toward team totals. This is the **BCAPL Skill Level format** and similar race-tradition leagues.
+- **`race_to_n`** — each pairing is a race-to-N sequence of racks, with the pairing ending the moment one side wins N racks. Per-pairing time scales with N and skill (a race-to-7 between roughly-equal players can run 30–60 min). Each pairing still contributes one game-won to the team count (the pairing's overall winner); the racks inside the race are pairing-internal events that don't independently count toward team totals. This is the standard race-tradition format used in skill-level leagues (e.g., BCAPL skill-level competitions, similar APA-style structures).
 
 Composability with Team Geometry illustrates the orthogonality cleanly: a `(lineup_size=5, game_generation=single_round_robin)` triple gives 25 pairings on a match night. Whether those 25 are 25 single racks (~2 hours, BCA-style) or 25 race-to-5 pairings (~6+ hours, an unrealistic single night) is Match Format's choice. The 25-pairing math doesn't change; the per-pairing time does, with downstream scheduling consequences. A realistic race-to-N league typically also uses a smaller `lineup_size` (e.g., 3v3 with 9 race-to-5 pairings) — but that's a *combination* the LO chooses, not a coupling either Module enforces.
 
@@ -71,7 +71,7 @@ Each axis has a value-space, a default, and a validation rule. The axes are pres
 | Attribute | Value |
 |---|---|
 | **Type** | enum: `'single_rack'` \| `'race_to_n'` |
-| **Currently shipped values** | `'single_rack'` (all three Tested Presets: Points 3-Man, Percentage 5-Man, FargoRate 10-Point 5-Man) |
+| **Currently shipped values** | `'single_rack'` (all three prepackaged Scoring Systems: Points 3-Man, Percentage 5-Man, FargoRate 10-Point 5-Man) |
 | **Default for new leagues** | `'single_rack'` |
 | **Validation** | enum CHECK constraint at DB layer (`preferences_pairing_format_check` in `20260429000001_extend_preferences_phase2_modular_axes.sql`); no inter-axis constraints on this axis directly |
 
@@ -89,7 +89,7 @@ Each axis has a value-space, a default, and a validation rule. The axes are pres
 |---|---|
 | **Type** | nullable positive integer |
 | **Realistic range** | 1..15 (theoretical: anything ≥ 1; below 1 collapses to single rack; above ~15 strains night duration) |
-| **Currently shipped values** | NULL across all three Tested Presets (none ship `race_to_n`) |
+| **Currently shipped values** | NULL across all three prepackaged Scoring Systems (none ship `race_to_n`) |
 | **Default for new leagues** | NULL (only populated when `pairing_format='race_to_n'`) |
 | **Validation** | DB CHECK constraint `(race_length IS NULL OR race_length >= 1)`; application-layer cross-axis check that NULL ⇔ `pairing_format='single_rack'` |
 
@@ -144,7 +144,7 @@ Match Format sits **between** Team Geometry (which sets up the pairing count) an
 The locked [`README.md`](../README.md) and [Handicap Mechanisms README's orthogonality section](handicap-mechanisms/README.md#architectural-intent-modules-are-orthogonal) both establish the principle that current code bundlings are *implementation artifacts from before the modular axes were fully separated, NOT statements of intended architecture*. Match Format's situation in current code:
 
 - The two axes live as columns on the `preferences` table (`pairing_format`, `race_length`).
-- All three currently-shipped Tested Preset Scoring Systems use `pairing_format='single_rack'`; no shipping system uses `race_to_n`. **The race-to-N runtime code path is partially implemented but not end-to-end tested** — it exists in service of the future BCAPL Skill Level format, which would be the first shipped consumer.
+- All three currently-shipped prepackaged Scoring Systems use `pairing_format='single_rack'`; no shipping system uses `race_to_n`. **The race-to-N runtime code path is partially implemented but not end-to-end tested** — it exists in service of a future race-tradition Scoring System (a BCAPL skill-level-style format would be the natural first shipped consumer).
 - The `RaceLengthThreshold` type in `src/systems/types.ts` is wired (it's the third arm of the threshold discriminated union per Phase 1 Unit 1.3 of the v2 plan), but no SystemModule currently produces a `RaceLengthThreshold` at runtime because no shipped system uses `race_length_adjustment` as its Mechanism.
 - [Pairings Generator](pairings-generator.md) is recognized in the locked Module catalog as Module #8 but is not yet extracted as a centralized implementation; per-system game-order code in `src/utils/gameOrder.ts` and inlined scoring-runtime logic together cover the single_rack case for the shipped systems. Race_to_n pairing generation would need to extend this when BCAPL SL or similar formats ship.
 - Wizard UI: `pairing_format` and `race_length` are currently derived from preset selection rather than independently chosen for the LO (the preset implies single_rack); a Step-2 refactor opportunity is to expose the axes independently once `race_to_n` has a shipping consumer.

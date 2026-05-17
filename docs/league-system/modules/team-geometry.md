@@ -186,11 +186,11 @@ Team Geometry sits at the **structural root** of the Scoring System composition.
 The locked [`README.md`](../README.md) and [Handicap Systems README's "Architectural intent: modules are orthogonal" section](handicap-systems/README.md#architectural-intent-modules-are-orthogonal) both establish the principle that current code bundlings are *implementation artifacts from before the modular axes were fully separated, NOT statements of intended architecture*. Team Geometry's situation in current code matches:
 
 - The triple lives partly in `preferences` columns (`lineup_size`, `max_roster_size`, `game_generation`) and partly bundled inside `SystemModule.teamFormat` (a `TeamFormatConstants` interface in `src/systems/types.ts`).
-- The three Tested Preset triples are wired into the three bundled SystemModule files (`bca3v3.ts`, `bca5v5.ts`, `fargo5v5.ts`).
+- The three prepackaged Scoring System triples are wired into the three bundled SystemModule files (`bca3v3.ts`, `bca5v5.ts`, `fargo5v5.ts`).
 - Game-order generation for 3v3 is hardcoded in `src/utils/gameOrder.ts` (the 18-game DRR table); 5v5 SRR generation is computed inline elsewhere. **There is no unified [Pairings Generator](pairings-generator.md) engine today** — the Module is recognized in the locked Module catalog, but the implementation is still bundled inside per-Scoring-System code awaiting Step-2 extraction.
 - Validation invariants are partly schema-enforced, partly application-enforced, and not centralized.
 
-The Step-2 refactor (per the comparison brainstorm's verdict) lifts Team Geometry out as a first-class Module with its own typed contract, extracts [Pairings Generator](pairings-generator.md) as the centralized runtime instantiator with its three sub-Mechanisms as first-class stages, and dissolves the `SystemModule.teamFormat` bundling. The 3 Tested Preset triples become declarations on the prepackaged Scoring System composition pages.
+The Step-2 refactor (per the comparison brainstorm's verdict) lifts Team Geometry out as a first-class Module with its own typed contract, extracts [Pairings Generator](pairings-generator.md) as the centralized runtime instantiator with its three sub-Mechanisms as first-class stages, and dissolves the `SystemModule.teamFormat` bundling. The 3 prepackaged Scoring System triples become declarations on the composition pages.
 
 ## Future possibilities
 
@@ -210,7 +210,7 @@ The category is open. Adding a new `game_generation` rule requires: (a) a game-c
 - `supabase/migrations/20260418000002_lock_tier1_preferences.sql` — Postgres trigger enforcing season-stability immutability (Team Geometry's `lineup_size` and `game_generation` are in the lock set; `max_roster_size` is NOT in the lock set and remains mutable mid-season)
 - `supabase/migrations/20260429000002_resolved_view_phase2_modular_axes.sql` — `resolved_league_preferences` view applies the 3-tier cascade for Team Geometry's axes
 - `src/systems/types.ts` — `TeamFormatConstants` interface (bundled inside `SystemModule.teamFormat`; the Step-2 refactor lifts this out)
-- `src/systems/{bca3v3,bca5v5,fargo5v5}.ts` — `teamFormat` declarations for the three Tested Preset triples
+- `src/systems/{bca3v3,bca5v5,fargo5v5}.ts` — `teamFormat` declarations for the three prepackaged Scoring System triples
 - `src/utils/gameOrder.ts` — hardcoded 18-game DRR table for 3v3 (the current bundled implementation that [Pairings Generator](pairings-generator.md) will extract from); the 5v5 SRR case is computed inline in the scoring runtime
 - `src/wizards/league-v2/steps/` — wizard step(s) collecting `lineup_size` + `max_roster_size`; `game_generation` is currently derived from preset selection rather than independently chosen (a Step-2 refactor opportunity)
 - `src/__tests__/database/lock_tier1_preferences.db.test.ts` (if present, naming approximate) — characterization of the lock trigger's behavior

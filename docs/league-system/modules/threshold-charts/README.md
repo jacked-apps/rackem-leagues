@@ -75,7 +75,7 @@ Charts are passive — they don't *do* anything until queried. The query flow at
 - A handicap difference, a rating pair, or a derived value produced by an upstream [Handicap System](../handicap-systems/README.md). The exact input type depends on the variant — see each variant page's I/O section.
 
 **Output contract (per variant):**
-- A **threshold value shape** — a named category whose specific fields depend on which Chart is active. Common shapes: `(target_wins_a, target_wins_b)`, `(target_wins, target_ties, target_losses)` per side, `(race_length_a, race_length_b)`. See each variant page for the specific output shape.
+- A **threshold value shape** — a named category whose specific fields depend on which Chart is active. Common shapes: `(target_wins_a, target_wins_b)` (paired with `extra_games`), `(start_points_weaker_side)` (paired with `start_points`), `(race_length_a, race_length_b)` (paired with `race_length_adjustment`). See each variant page for its specific output shape.
 
 **Upstream:**
 - **[Handicap Systems](../handicap-systems/README.md)** produce the encoded strength values. The Chart receives those as input (with a [Converter](../../PRINCIPLES.md#converter--deep-dive) inserted when types don't naturally line up).
