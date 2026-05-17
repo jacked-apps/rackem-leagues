@@ -40,12 +40,16 @@ target_weaker_base   = half + (1 if game_count is odd  else 0)
 bucket_width     = game_count + 1
 first_bucket_end = ⌊bucket_width / 2⌋ + 1
 offset           = bucket_width - first_bucket_end - 1
-gap_cap          = ⌊bucket_width / 2⌋ - 1
+max_gap_level    = ⌊(game_count - 1) / 4⌋                     /* how many bucket levels of asymmetry past the tied midpoint */
+gap_cap          = max_gap_level × bucket_width - offset      /* input cap: diffs at or beyond this all land in the most-asymmetric bucket */
 
-gap_level    = min( floor((|diff| + offset) / bucket_width), gap_cap / 2 )
-target_stronger = target_stronger_base + gap_level
-target_weaker   = target_weaker_base   - gap_level
+effective_diff   = min( |diff|, gap_cap )                     /* clamp at the input — past gap_cap, asymmetry can't grow further */
+gap_level        = ⌊(effective_diff + offset) / bucket_width⌋
+target_stronger  = target_stronger_base + gap_level
+target_weaker    = target_weaker_base   - gap_level
 ```
+
+The cap is built into the formula at the input stage rather than bolted on as a post-hoc clamp of the output. Past `gap_cap`, additional handicap difference simply doesn't translate to additional asymmetry — the strongest team still doesn't need to win every game, the weakest team still doesn't need to win zero. Fairness is structural, not a guard.
 
 **Discrete-table deployment is equally first-class.** Per [PRINCIPLES § Chart — § 4](../../PRINCIPLES.md#4-formula-first-charts-are-derived), formulas and discrete tables are *interchangeable shapes* of the same Chart kind. A discrete table can be generated from the formula by enumerating `(diff, game_count)` pairs of interest — useful for printable scoresheets, operator-facing documentation, or LO-side audits. When the LO keeps the generated table as-is (no row-level edits), it remains *projected from the formula* and regenerates automatically when the formula's parameters change. When the LO edits specific rows away from the formula's output (house rules, preferred bucket boundaries), the table becomes a **per-league stored Chart** — a first-class deployment shape in its own right, persisted alongside the league rather than regenerated. Both shapes encode the same kind of mapping; neither is more "real" than the other. The formula is the **default** for new leagues; the LO-customized stored table is the **per-league** shape when edits diverge. The original BCAPL 7-bucket lookup table is a concrete example: it's the per-league shape for any league that wants to use BCAPL's specific calibrated values verbatim, equally valid as a Chart deployment as the formula evaluation that produces those same values.
 
@@ -53,7 +57,7 @@ target_weaker   = target_weaker_base   - gap_level
 - **Odd game_count:** target_stronger_base = target_weaker_base (both equal). At diff=0 the chart returns the same target for both teams — race mode, no tie possible because the per-team targets sum to `game_count + 1` which exceeds the games available.
 - **Even game_count:** target_stronger_base = half+1 and target_weaker_base = half. At diff=0 the chart returns a 1-gap pair (e.g., 10/9 for 18 games). The midpoint outcome (half wins for both teams) lands both teams in the locked tie-band rule's range — tie at the natural midpoint. The downstream [Standings & Tiebreakers](../standings-tiebreakers.md) Module decides whether to trigger an extra-play tiebreaker.
 
-**Calibration constants.** Unlike the [FargoRate Formula](fargo-formula.md) Chart (which derives from FargoRate's first-principles win-expectancy math), this formula is **fitted to BCAPL's published 5v5 chart** at game_count=25. The constants — `bucket_width = game_count + 1`, `first_bucket_end = ⌊bucket_width/2⌋ + 1`, `gap_cap = ⌊bucket_width/2⌋ - 1` — are chosen specifically because they reproduce BCAPL's 7-bucket lookup table exactly when game_count=25. Extending to other game counts scales these constants by game_count; the extrapolation pattern is honest ("BCAPL-style extended") rather than "official BCAPL for that team size" (BCAPL does not publish charts for non-5v5 formats — see [§When you wouldn't / cons](#when-you-wouldnt--cons)).
+**Calibration constants.** Unlike the [FargoRate Formula](fargo-formula.md) Chart (which derives from FargoRate's first-principles win-expectancy math), this formula is **fitted to BCAPL's published 5v5 chart** at game_count=25. The constants — `bucket_width = game_count + 1`, `first_bucket_end = ⌊bucket_width/2⌋ + 1`, `max_gap_level = ⌊(game_count − 1) / 4⌋`, and the derived `gap_cap` (the input cap) — are chosen so the formula reproduces BCAPL's 7-bucket lookup table exactly when game_count=25 (gap_cap = 145, max_gap_level = 6). Extending to other game counts scales these constants by game_count; the extrapolation pattern is honest ("BCAPL-style extended") rather than "official BCAPL for that team size" (BCAPL does not publish charts for non-5v5 formats — see [§When you wouldn't / cons](#when-you-wouldnt--cons)).
 
 **Verification against BCAPL 5v5 (game_count=25):** the formula's bucket boundaries (0, 15, 41, 67, 93, 119, 145) and per-bucket targets (13/13, 14/12, 15/11, 16/10, 17/9, 18/8, 19/7) match BCAPL's published Standard Handicap System chart row-for-row.
 
