@@ -34,10 +34,10 @@ A **formula-shape** Chart, evaluated by **passing the team-aggregate handicap di
 **The formula's structure** (parameterized by game_count):
 
 ```
-half             = ⌊game_count / 2⌋
-target_stronger_base = half + (1 if game_count is even else 0)
-target_weaker_base   = half + (1 if game_count is odd  else 0)
-                       /* equivalent: ⌈(game_count+1)/2⌉ and ⌊(game_count+1)/2⌋ */
+target_stronger_base = ⌈(game_count + 1) / 2⌉
+target_weaker_base   = ⌊(game_count + 1) / 2⌋
+                       /* Verification: game_count=25 → 13/13 (matches BCAPL row 0);
+                          game_count=18 → 10/9 (the 1-gap pair for even counts) */
 
 bucket_width     = game_count + 1
 first_bucket_end = ⌊bucket_width / 2⌋ + 1
