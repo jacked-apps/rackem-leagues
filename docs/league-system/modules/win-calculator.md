@@ -44,7 +44,7 @@ The Win Calculator holds a **metric precedence stack** — an LO-configured orde
 2. For each metric, compare the two teams' values.
 3. The **first metric on which the teams differ** decides the winner — the team with the higher value (per the metric's comparison rule) wins.
 4. If a metric's values are equal, continue to the next metric in the stack.
-5. If the stack runs out with all metrics tied, fire the **Tiebreak System** (see below) to produce the **edge metric**, then consult edge as the final tiebreaker.
+5. If the stack runs out with all metrics tied AND `edge` is the next stack entry, fire the **Tiebreak System** (see below) to produce the edge metric, then consult edge as the final tiebreaker. If `edge` is NOT in the stack, the match is recorded as tied; the Tiebreak System does not fire.
 
 The simplest possible stack is one metric — equivalent to today's primitive `win_condition` field. A league using `win_condition='games'` has a one-metric stack: `[games_won]`. A league using `win_condition='points'` has `[points_earned]`. Real configurations can chain more metrics — e.g., `[points_above_threshold, games_won, edge]` reads as *"first compare points-above-threshold; if tied, compare games-won; if still tied, fall back to the Tiebreak System's edge."*
 

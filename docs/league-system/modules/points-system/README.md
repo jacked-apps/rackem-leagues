@@ -48,7 +48,7 @@ The Points System is a composition of small single-purpose sub-mechanisms. A giv
 - **(C) Initial points** — given once at match start, handicap-driven amount. Currently lives as the [`start_points`](../handicap-mechanisms/start-points.md) Handicap Mechanism; its output feeds the Points System's running totals. (start_points is *both* a handicap mechanism in the current taxonomy AND a Points System sub-mechanism architecturally.)
 - **(D) End-of-match aggregate** — alternative to per-game accumulation. Computes team_points = f(games_won, threshold) once at match end, rather than accumulating per-game. Implementation: the `linear_above_threshold` calculator.
 
-  **Tie-band rule (shipped in `linear_above_threshold`).** When both teams' `games_won` equals the threshold (e.g., 9–9 in 18-game 3v3), both teams receive 0 per-match points regardless of whether a tiebreaker subsequently fires or who wins it. The rule lives in `src/systems/calculators/linear_above_threshold.ts` and is fixed in code, not configurable. [Standings & Tiebreakers](../standings-tiebreakers.md) references this as a load-bearing cross-Module contract — the season standings calculation assumes per-match points exclude tiebreaker games when this calculator is active.
+  **Tie-band rule (shipped in `linear_above_threshold`).** When both teams' `games_won` equals the threshold (e.g., 9–9 in 18-game 3v3), both teams receive 0 per-match points regardless of whether the [Tiebreak System](../tiebreak-system/README.md) subsequently fires or which side it produces edge for. The rule lives in `src/systems/calculators/linear_above_threshold.ts` and is fixed in code, not configurable. Two adjacent concerns lean on this rule: the Tiebreak System's tiebreaker games (when one fires) produce game outcomes that drive edge but do NOT add per-match points (the tie-band rule fixes per-match points at 0 for both sides regardless), and the future Standings concern (outside the modular Scoring System catalog — its architectural shape is a separate brainstorm) consumes the per-team accumulated points for season-level aggregation, where the tie-band rule's "tiebreaker games don't add points" guarantee is what makes the season totals coherent.
 
 ## CSI's named scoring systems are configurations of (A)
 
@@ -91,7 +91,7 @@ The DB has a `points_system` column (`differential | bca_tiered | per_game | man
 
 - **Upstream**: [Handicap Mechanisms](../handicap-mechanisms/README.md) can contribute point values — e.g., the `start_points` mechanism's handicap-driven initial bonus feeds the Points System's running totals (sub-mechanism type C).
 - **Sibling**: the [Win Calculator](../win-calculator.md) consults the point totals this Module produces (alongside the games metric) to declare the match winner. The Points System *produces*; the Win Calculator *decides*.
-- **Downstream**: [Standings & Tiebreakers](../standings-tiebreakers.md) consumes per-team accumulated points for the league table.
+- **Downstream**: the future Standings concern (outside the modular Scoring System catalog — its architectural shape is a separate brainstorm) consumes per-team accumulated points for the league table.
 
 ## Future possibilities
 

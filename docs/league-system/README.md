@@ -215,11 +215,11 @@ docs/league-system/
     handicap-mechanisms/             ← Folder: README + 3 variant files (none = covered in README)
     points-system/                   ← Folder: README + variant files (1-Point, 10-Point)
     win-calculator.md                ← Single file
-    threshold-charts/                ← Folder: README + per-chart variant files (pending — Unit 5)
-    team-geometry.md                 ← Single file (pending — Unit 6)
-    match-format.md                  ← Single file (pending — Unit 7)
-    pairings-generator.md            ← Single file (pending)
-    standings-tiebreakers.md         ← Single file (pending — Unit 8)
+    threshold-charts/                ← Folder: README + per-chart variant files
+    team-geometry.md                 ← Single file
+    match-format.md                  ← Single file
+    pairings-generator.md            ← Single file
+    tiebreak-system/                 ← Folder: README + 7 variant files (coin-flip, roshambo, single-game, single-round, race-to-n, manual, teams-self-determine)
   glossary.md                        ← Single-source term definitions (pending — Unit 10)
 ```
 
