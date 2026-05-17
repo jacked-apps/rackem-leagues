@@ -37,6 +37,7 @@ end-to-end test pass before merge.
 | 17 | **Eliminate optimistic-vs-realtime double-render flash on sender side** | ⬜ not started |
 | 18 | **Shorter chat titles + banner interpolation + per-user captains label** | ⬜ not started |
 | 19 | **Editable team chat title (captain rename; auto-rename trigger respects user-edit)** | ⬜ not started |
+| 20 | **Past-member chats visible in inbox under "Archived" section (close Unit 6 gap)** | ✅ shipped |
 
 **Branch:** `messaging-system-overhaul`.
 **Awaits:** Units 10–14 build + final end-to-end test pass (`pnpm db:reset && pnpm test:run` + manual dev-app smoke walkthrough).
@@ -1196,6 +1197,77 @@ user-edited titles).
 **Verification:** captain renames their team chat → title persists
 across page refresh, across renames of the team itself, across
 season-activation re-firing.
+
+---
+
+- [x] **Unit 20: Past-member chats visible in inbox under "Archived" section (close Unit 6 gap)**
+
+**Goal:** Past-member chats (where the current user's
+`conversation_participants.left_at` is non-NULL) now appear in the
+conversation list under an "Archived" section, visually muted.
+Tapping one opens the chat normally, where the Unit 6 `ReadOnlyBanner`
+takes over to block posting. Without this, past-member chats are
+entirely invisible in the UI — making the Unit 6 banner unreachable
+through any natural user flow.
+
+Discovered by Ed on 2026-05-16 during the Phase 1 UI walkthrough
+Step 9: the past-member banner appeared to "not work" — actually
+the chat was just being filtered out of his sidebar so he could
+never click into it. The banner's logic was correct all along; the
+list query was hiding the chat.
+
+**Why this was an oversight:** the original Phase 1 plan
+explicitly called for relaxing the `.is('left_at', null)` filter on
+the conversation list, but only the banner UI shipped in Unit 6 —
+the query change was missed. Caught by manual testing, which is
+why we test.
+
+**Dependencies:** Unit 6 (the `ReadOnlyBanner` + the
+`useMessageComposerStatus` hook that gates the composer).
+
+**Files (shipped):**
+- Modify: `src/api/queries/messages.ts` — `getUserConversations`
+  removes the `.is('left_at', null)` filter on the outer query so
+  past-member rows are returned. The select now includes `left_at`,
+  and the returned shape gains `isPastMember: boolean`.
+- Modify: `src/components/messages/ConversationList.tsx` — splits
+  `filteredConversations` into `activeList` + `archivedList`,
+  renders the active list first, then (only when archived list
+  is non-empty) a sticky-ish "Archived" header + the archived rows.
+  Archived rows render with `opacity-60` and the unread-count badge
+  is suppressed (the unread-count trigger stops incrementing for
+  past members, so any leftover number would be stale state from
+  before they left).
+
+**Why hide the unread badge in Archived:** Unit 7 polish migration
+(`20260513000001`) makes the `increment_unread_count` trigger
+explicitly skip past-member participants (it was already skipping
+them implicitly via SQL NULL semantics). So the `unread_count`
+value on a past-member row is frozen at whatever it was when they
+left — usually 0, but if they left mid-conversation it could be
+non-zero. Showing it would tell the user "there are unread
+messages" when in fact there's nothing they can do about them. Per
+"don't show numbers you can't act on," it's hidden.
+
+**Test scenarios (existing):**
+- `src/components/messages/__tests__/ConversationList.profanity.test.tsx`
+  — still passes (6 cases). The conversation rendering pipeline
+  for active rows is unchanged; the new code adds a branch for
+  past-member rows but doesn't affect existing assertions.
+
+**Test scenarios (TODO — small follow-on):**
+- New test: when `useConversations` returns a mix of active +
+  past-member entries, the "Archived" header renders exactly once,
+  archived rows render muted, unread badges are hidden on archived.
+- New test: when there are zero past-member entries, the
+  "Archived" header does NOT render. (Most users' default state.)
+
+Tracked as Unit 20 polish follow-on but not blocking.
+
+**Verification:** smoke test in dev app — set a participant's
+`left_at` via SQL, hard refresh the conversation list, confirm the
+chat appears under an "Archived" header with muted styling, open
+it, confirm the `ReadOnlyBanner` shows where the composer would be.
 
 ---
 
