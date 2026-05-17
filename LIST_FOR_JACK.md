@@ -150,4 +150,63 @@ tweak.
 
 ---
 
+## 17. PageHeader — Profile-Avatar Position Inconsistent Across Pages
+
+**Discovered:** 2026-05-16 during the Phase 1 messaging end-to-end
+test pass, after `2d562b0` adjusted PageHeader to fix the empty-
+stripe bug on `/messages`.
+**Severity:** Low — purely visual / consistency concern, no
+functional break.
+
+**Where:** `src/components/PageHeader.tsx`.
+
+**The inconsistency:** the profile-circle avatar position now
+depends on which page you're looking at:
+
+- Pages that pass `subtitle`, `organizationId`, or `children` to
+  PageHeader (Dashboard, most operator pages) → avatar renders
+  **below** the sticky bar (in the `SubHeader` row, right-aligned).
+- Pages that pass only `title` (`/messages` and similar) → avatar
+  now renders **inside** the sticky bar (right of the title, before
+  the hamburger).
+
+The reason for the split: pages with no SubHeader content had an
+empty vertical stripe under the sticky bar containing just the
+floating avatar — visually ugly especially on `/messages` which
+uses `h-screen overflow-hidden` (no scroll to absorb it). The fix
+in commit `2d562b0` moved the avatar into the sticky bar in that
+case. Solves the empty-stripe bug but creates the inconsistency
+you're now seeing.
+
+**Design call for Jack:** pick ONE of the following and apply
+consistently:
+
+1. **Always in sticky bar.** Simpler. Avatar visible at all times
+   (doesn't scroll away). Matches chat-app / iMessage convention.
+   Cost: drop the IdentitySlot from SubHeader; remove the
+   `hasSubHeaderLeftContent` branch in PageHeader. Pages that
+   currently have avatar in SubHeader will move the avatar up.
+2. **Always in SubHeader.** Avatar scrolls away with content,
+   reclaims sticky-bar real estate. Matches the original PageHeader
+   intent. Cost: need a different fix for the empty-stripe bug —
+   either pass a real subtitle on every page (chore) or change the
+   SubHeader to render at 0-height when its left side is empty so
+   the floating-avatar stripe doesn't look wasted.
+3. **Hybrid (current).** Avatar goes where it best fits per-page.
+   Accept the inconsistency as a design feature. Document the rule
+   in a comment so future maintainers don't "fix" it by accident.
+
+My intuition leans toward option 1 (always in sticky bar) since
+the chat-app norm is to have the user's identity always reachable
+without scrolling, and the SubHeader's "scrolls away to reclaim
+height" payoff is small on most pages anyway. But this is your
+call — UX design isn't my strength.
+
+**Not blocking** messaging-system-overhaul branch from merging.
+The current behavior is a clear improvement over the pre-fix state
+(empty stripe gone on `/messages`); the inconsistency is a
+follow-on polish.
+
+---
+
 *Last Updated: 2026-05-16*
