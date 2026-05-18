@@ -13,48 +13,52 @@
 Every season, the LO collects money from players each week, sets aside venue green fees, covers misc expenses, takes a cut for themselves, and pays out prizes to the top teams (and sometimes individual players). Today this is all paper + spreadsheet + mental math, with the LO ad-hoc-ing the prize structure at the end based on "how much do we have, how do I want to split it." Easy to:
 
 - Miss an expense (forgot the trophies bill again)
-- Forget to deduct green fees from one of the weeks
 - Pick a payout split that looks weird ($732.47 to 1st place) instead of a nice round number
 - Realize halfway through writing checks that you under-charged for your own cut
 
-The app already knows: how many teams, how many players, how many weeks played. So most of the income side is just a multiplication. The debit side and the payout structure are where the LO needs help.
+The app already knows team count, lineup size, and total regular-season weeks. So the income side is a one-line formula the moment those are set. The LO just needs to tell us the price-per-player-per-night + green fee, and we can project the prize pool from Day 1.
 
-## The goal
+## The goal — a once-per-season payout calculator
 
-A **finances tab on the league page** that:
-1. Lets the LO set the per-player fee + green fee + any operator cut + the prize-distribution shape at season start (one-tap default OR full dial)
-2. Auto-calculates the running total + projected prize pool as the season progresses
-3. At end of season, presents a payout calculator with multiple sensible options (round numbers vs straight % vs hybrid), with an "adjust your cut" slider so the LO can see "if I take $50 less, 1st place gets $X more"
-4. Saves the final payout structure to the season's record so it's auditable later
+A **finances tab on the league page** that is mostly a single-use tool the LO opens at season's end to figure out payouts. Mid-season it's mostly read-only (with a "running projection" sanity check).
+
+1. **At season start (one-time setup):** LO enters price-per-player-per-night + green-fees-per-player-per-night. Defaults provided ($10 / $2). One-click to accept.
+2. **Mid-season (sanity check only):** the page shows "according to the formula, you should have $X in the pool right now." Helpful if the LO is curious; nothing else.
+3. **At season end (the actual job):** payout calculator with multiple sensible options (round numbers vs straight % vs custom), an "adjust your cut" slider, and a "Lock in payouts" button that saves the final structure to the season's record.
 
 Operator handles the actual cash. App just does the math + record-keeping.
+
+**Critical simplification (per Ed 2026-05-18):** the app does NOT try to track each week's actual collections. It runs a deterministic formula from the configured inputs. If reality drifts from the formula (a player no-showed and didn't pay, a sub paid extra), the LO accounts for that manually in the final calculator. No ledger, no per-week reconciliation, no forfeit-tracking complexity.
 
 ## The mental model
 
 ```
-INCOME                        per week per player
-  Fee in                            $10
-    │
-    ├─→ Green fee out  ────────►    $2   → venue
-    │                               ────
-    └─→ Goes to pool                $8
+PROJECTED INCOME (formula from Day 1 — uses TOTAL season weeks, not "so far")
+  price_per_player × lineup_size × team_count × total_regular_season_weeks
+  e.g.   $10        × 5            × 8           × 12                       = $4,800
 
-POOL ACCUMULATES OVER SEASON
-  $8 × lineup_size × team_count × weeks_played
-  e.g.   $8 × 5     × 8          × 12     = $3,840
+PROJECTED GREEN FEES (same formula, different multiplier)
+  green_per_player × lineup_size × team_count × total_regular_season_weeks
+  e.g.   $2          × 5            × 8           × 12                      = $960
 
-DEDUCTIONS FROM POOL
-  - App fee (whatever Rack'em charges this org)
-  - LO cut (% of pool OR flat fee, LO's choice)
+PROJECTED PRIZE POOL (before LO deductions)
+  income − green fees = $4,800 − $960 = $3,840
+
+LO DEDUCTIONS (set at end-of-season — but visible mid-season as projection)
+  - App fee (defaults $0; LO can override per-season)
+  - LO cut (% of pool OR flat fee OR both; LO's choice)
   - Misc expenses (trophies, paper, ink, banquet, etc. — LO adds line items)
+  - Misc credits (sponsorship, extra raffles — LO adds line items)
 
-ACTUAL PRIZE POOL  = whatever's left
+ACTUAL PRIZE POOL  = projected pool − deductions + credits
 
 PRIZE DISTRIBUTION
   - Team payouts (1st, 2nd, 3rd, …)
   - Optionally individual payouts (high single game, undefeated player, etc.)
   - Operator picks shape: round numbers OR straight % OR custom
 ```
+
+Everything to the left of the divider is COMPUTED. Everything to the right is OPERATOR INPUT. The whole thing collapses to a one-page form + a calculator view.
 
 ---
 
@@ -104,24 +108,15 @@ The final calculated structure gets **saved to the season** when the LO clicks "
 
 My pick: **(1) LO-only for v1**, (2) as a future polish. (3) is interesting but might pressure operators uncomfortably.
 
-### B. How does the app know each week's actual collections?
+### B. How does the app know each week's actual collections? — SETTLED 2026-05-18
 
-Two paths:
-1. **Inferred from match data.** App assumes every rostered player on every match owed a fee. Counts match-player-rows. Operator overrides per week if reality differs ("only 7 players showed instead of 10 — we still collected for 10 because subs paid"). Operator can also mark a week as "voided" if cancelled entirely.
-2. **Operator enters actuals each week.** Simple form: "this week we collected $X from Y players." More work but more accurate.
+**It doesn't track them.** The app runs a formula: `price_per_player × lineup_size × team_count × total_regular_season_weeks`. LO enters price + green fees ONCE at season start. App projects everything from there. If reality drifts (no-shows, sub overcharges, missed weeks), the LO accounts for it manually in the final calculator via misc-expense or "actual income override" inputs.
 
-My pick: **(1) inferred + per-week override**. App does the work; operator corrects when needed.
+Mid-season "what should we have right now" view = the same formula with `weeks_played_so_far` instead of `total_regular_season_weeks`. Useful as a sanity check; not authoritative.
 
-### C. Forfeit / no-show — does the player still owe?
+### C. Forfeit / no-show — does the player still owe? — SETTLED 2026-05-18
 
-Real league behavior varies. Some leagues require the no-show player to pay anyway (so the team still owes the venue's green fee + the prize pool stays whole). Others let no-shows skip the fee.
-
-**Pick one:**
-1. Assume default = "no-show still pays" (matches most BCAPL/CSI leagues I've heard of); LO override available.
-2. Default = "no-show doesn't pay" (more lenient).
-3. Per-league setting (LO picks at setup).
-
-My pick: **(1) default to "no-show still pays"**, with per-league override. Matches the most common pattern + protects the prize pool.
+**The team is on the hook, not the individual player.** Per Ed (2026-05-18): "team is expected to pay for subs noshows. the cost is the cost for the team." So per-night per-team = `lineup_size × price_per_player`, regardless of who actually showed up. Subs settle up with the team internally; no-shows still owe the team. The app's income formula treats the team as the unit of obligation — `price × lineup_size × teams × weeks` is exact, not an estimate. No "no-show adjustment" needed in the calculator.
 
 ### D. LO cut: flat fee vs. percentage
 
