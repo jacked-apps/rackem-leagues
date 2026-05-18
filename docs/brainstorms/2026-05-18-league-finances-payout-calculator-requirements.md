@@ -114,9 +114,19 @@ My pick: **(1) LO-only for v1**, (2) as a future polish. (3) is interesting but 
 
 Mid-season "what should we have right now" view = the same formula with `weeks_played_so_far` instead of `total_regular_season_weeks`. Useful as a sanity check; not authoritative.
 
-### C. Forfeit / no-show — does the player still owe? — SETTLED 2026-05-18
+### C. Forfeit / no-show vs. team drop — SETTLED 2026-05-18
 
-**The team is on the hook, not the individual player.** Per Ed (2026-05-18): "team is expected to pay for subs noshows. the cost is the cost for the team." So per-night per-team = `lineup_size × price_per_player`, regardless of who actually showed up. Subs settle up with the team internally; no-shows still owe the team. The app's income formula treats the team as the unit of obligation — `price × lineup_size × teams × weeks` is exact, not an estimate. No "no-show adjustment" needed in the calculator.
+**Forfeit / no-show is the TEAM's problem, not the app's.** Per Ed (2026-05-18): "team is expected to pay for subs noshows. the cost is the cost for the team." So per-night per-team = `lineup_size × price_per_player`, regardless of who actually showed up. Subs settle up with the team internally; no-shows still owe the team. Forfeit nights = team still owes for the night. The app's income formula treats the team as the unit of obligation.
+
+**Team drop mid-season IS something the app cares about.** When a team quits entirely partway through a season, two things happen:
+1. They stop paying → income from them stops as of the drop week
+2. They drop out of the prize hunt (can't win)
+
+Without handling, the formula would over-count income from a dropped team for the remaining weeks. **Calculator needs a "Team drops" section** where the LO can:
+- List each team that dropped + the week they dropped
+- Calculator subtracts the lost weeks from income automatically (`price × lineup_size × dropped_team_count × weeks_remaining_after_drop`)
+
+For v1, this is just an LO-entered list of `(team_id, week_number_they_dropped)` pairs. The calculator computes the lost income from there. Future polish: auto-detect from `teams.status = 'withdrawn'` (if the LO marks the team withdrawn in Team Management, the calculator could pre-fill the drop entry).
 
 ### D. LO cut: flat fee vs. percentage
 
