@@ -28,7 +28,9 @@ Additionally, the blueprint doesn't document the trigger protocol (Win Calc is s
 
 ### Two mutually exclusive Win Calc modes
 
-A league's Win Calc is configured in EXACTLY ONE of these two modes. Validation rejects "neither" (no win condition defined) and "both" (semantically incoherent).
+A league's Win Calc is configured in EXACTLY ONE of these two modes. Validation rejects "neither" (no win condition defined) and "both" (semantically incoherent). **The exact storage shape for this mode selection is implementation-time** — could be a `win_calc_mode` enum column, derived from presence of `threshold_chart_id` (chart configured = chip-mode; no chart = cascade-mode), or another mechanism. The constraint that matters is "exactly one mode" regardless of how it's stored.
+
+**Naming note:** Win Calculator stays SINGULAR per PRINCIPLES § Module § 9. The two modes are *parameter variation* of one Module, not *selection between two Modules*. Same shape as Match Format having `pairing_format` with `single_rack`/`race_to_n` variants — we don't call it "Match Formats" plural because of the two values. Win Calculator is similarly one Module whose operational behavior is parameterized by the chip-vs-cascade mode.
 
 **Chip-mode (threshold-based):**
 - Each team has its own win threshold — per-side, asymmetric, derived from the league's Threshold Chart for the handicap difference at hand
@@ -45,6 +47,8 @@ A league's Win Calc is configured in EXACTLY ONE of these two modes. Validation 
 - All metrics tied → **tied**
 
 Tie outcomes in EITHER mode fire the league's configured Tiebreak System chain (per the separate tie-resolution direction in `2026-05-17-tie-resolution-ownership-requirements.md`). If no Tiebreak chain is configured, the match is recorded as tied.
+
+**Module-boundary contract:** the Tiebreak System sees a uniform "tied" input regardless of which mode produced it. Chip-mode's "no chip + all games played" tied case and cascade-mode's "all metrics tied" tied case converge to the same signal at the Tiebreak System's edge. The Tiebreak chain doesn't need to know which mode fed it; it just produces edge for the leagues that configured it.
 
 **Why mutually exclusive (not stages of one mode):**
 - Chip-mode's per-side asymmetric thresholds mean raw values aren't comparable across teams (home meeting their 10 vs away sitting at 8 isn't comparing the same thing — the chart says they need different targets)
@@ -63,7 +67,7 @@ The Unit 1 Phase A/B infrastructure (`src/systems/win-calculators/`) was built a
 In BOTH modes, Win Calc receives external signals; it never watches game outcomes itself.
 
 **Chip-mode signals:**
-- **Winner chip** — Threshold Trigger fires when a team meets their threshold. Payload: `{ winner: 'home' | 'away', via_metric: <metric-name>, via_threshold: <threshold-value> }`. In race-mode configurations, also carries "end game now" semantics that tell the scoring runtime to stop scheduling additional games.
+- **Winner chip** — Threshold Trigger fires when a team meets their threshold. Payload: `{ winner: 'home' | 'away', via_metric: <metric-name>, via_threshold: <threshold-value> }`. In race-mode configurations (currently unbuilt — see Deferred), the chip would also carry "end game now" semantics telling the scoring runtime to stop scheduling additional games.
 - **Games-complete-no-chip** — fires when scheduled game count is reached without any winner chip having fired. Payload: `{ reason: 'all_games_played_no_threshold_met' }`. Win Calc treats this as the tied case.
 
 **Cascade-mode signal:**
@@ -160,7 +164,7 @@ If Threshold Trigger is built as a passive value-lookup (the natural first insti
   - Both are still simpler than Win Calc by an order of magnitude. Either makes a defensible shakedown.
 - **Win Calc extraction:** deferred — should land AFTER Threshold Charts + Threshold Trigger are extracted (so the chip protocol exists in code) AND after the locked Win Calc blueprint is expanded (so the two-mode architecture is documented).
 
-**Unit 1 Phase A + B artifacts** (committed in `7915bcf` + `ff01b68`) — the WinCalculator interface, walker, factory, and SystemModule field — are sound **cascade-mode infrastructure**. They DON'T cover chip-mode. They should stay committed as deferred scaffolding, with a note in the migration plan that they're partial (cascade-mode only) and will be complemented by chip-mode infrastructure when Win Calc is fully extracted later. Phase C (consumer swap) does NOT proceed.
+**Unit 1 Phase A + B artifacts** (committed in `7915bcf` + `ff01b68`) — the WinCalculator interface, walker, factory, and SystemModule field — are sound **cascade-mode infrastructure**. Specifically: the `WinCalculator` interface uses a `metricStack` field; the walker takes `(stack, matchData)` as inputs; both shapes assume the league walks an ordered list of metrics to decide. Those shapes don't fit chip-mode (which receives a chip payload, doesn't walk a stack, doesn't have a `metricStack` field at all). So Phase A/B doesn't cover chip-mode — chip-mode would need different interface fields (chip payload reception, signal listener registration) and a different decider (no stack walking). Phase A/B stays committed as deferred scaffolding, with a note in the migration plan that it's partial (cascade-mode only) and will be complemented by chip-mode infrastructure when Win Calc is fully extracted later. Phase C (consumer swap) does NOT proceed.
 
 ## What's deferred
 
