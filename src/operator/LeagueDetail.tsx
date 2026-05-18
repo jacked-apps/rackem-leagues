@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/button';
 import { DashboardCard } from '@/components/operator/DashboardCard';
 import { Settings } from 'lucide-react';
 import { useIsWizard2League, useFlowStageDetection } from '@/api/hooks';
+import { isNextSeasonRipe } from '@/utils/seasonLifecycle';
 
 /**
  * League Detail Component
@@ -190,6 +191,7 @@ export const LeagueDetail: React.FC = () => {
           <ActionCard
             league={league}
             seasonCount={seasonCount}
+            activeSeason={activeSeason}
             isNavigating={isNavigating}
             setIsNavigating={setIsNavigating}
             navigate={navigate}
@@ -234,12 +236,14 @@ export const LeagueDetail: React.FC = () => {
 function ActionCard({
   league,
   seasonCount,
+  activeSeason,
   isNavigating,
   setIsNavigating,
   navigate,
 }: {
   league: League;
   seasonCount: number;
+  activeSeason: { end_date?: string | null; status?: string } | null;
   isNavigating: boolean;
   setIsNavigating: (v: boolean) => void;
   navigate: ReturnType<typeof useNavigate>;
@@ -249,8 +253,44 @@ function ActionCard({
   const flowComplete = firstIncompleteStage >= 5;
   const showContinueSetup = isV2 && !flowComplete;
 
+  // "Start Next Season" takes priority over the generic "Let's Go" CTA
+  // when the league is in the natural end-of-season window. Setup-in-
+  // progress takes priority over everything (mid-wizard users haven't
+  // even launched their first season yet).
+  const showStartNextSeason =
+    !showContinueSetup && isNextSeasonRipe(activeSeason, seasonCount);
+
   const STAGE_LABELS = ['League', 'Season', 'Schedule', 'Teams', 'Matchups'];
   const nextStageName = STAGE_LABELS[firstIncompleteStage] ?? 'Setup';
+
+  if (showStartNextSeason) {
+    const hasActive = !!activeSeason;
+    return (
+      <div className="lg:bg-card lg:rounded-xl lg:shadow-sm p-6 flex flex-col items-center justify-center border-2 border-blue-200 bg-blue-50">
+        <div className="text-6xl mb-4">📅</div>
+        <h3 className="text-lg font-semibold text-foreground mb-2 text-center">
+          Start Next Season
+        </h3>
+        <p className="text-sm text-muted-foreground mb-6 text-center">
+          {hasActive
+            ? "Your current season is wrapping up — get a head start on the next one."
+            : "Roll forward into the next season — most of your teams will carry over."}
+        </p>
+        <Button
+          loadingText="Loading..."
+          isLoading={isNavigating}
+          onClick={() => {
+            setIsNavigating(true);
+            navigate(`/operator/start-next-season/${league.id}`);
+          }}
+          disabled={isNavigating}
+          size="lg"
+        >
+          Start Next Season
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="lg:bg-card lg:rounded-xl lg:shadow-sm p-6 flex flex-col items-center justify-center">
