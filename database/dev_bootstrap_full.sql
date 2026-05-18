@@ -6,15 +6,31 @@
 -- around the full app:
 --
 --   - 1 organization + 1 venue
---   - LEAGUE 1 (fresh): active 12-week season starting TODAY, 4 teams x 5
---     placeholder players, full round-robin schedule. Use for testing the
---     normal "new season starts, players play matches" flow.
+--   - LEAGUE 1 (fresh): active 12-week season starting TODAY. 4 teams,
+--     each with 7 players (1 captain + 6 regulars — roster intentionally
+--     larger than the 5-man lineup so the dev can swap substitutes
+--     during lineup testing). Full round-robin schedule. Team names
+--     derived from each captain's last name + " Crew" (e.g.,
+--     "Thompson Crew"). Use for testing the normal "new season starts,
+--     players play matches" flow.
 --   - LEAGUE 2 (near end of season): active season started ~11 weeks ago,
 --     ends in 10 days. Past-dated weeks marked completed so the progress
---     bar reflects "almost done." 4 teams x 5 players, full schedule. Use
---     for testing the next-season wizard's entry points (LeagueDetail
---     "Start Next Season" ActionCard + ActiveLeagues hint badge) without
---     waiting weeks of calendar time.
+--     bar reflects "almost done." Same 4 teams × 7 player shape as
+--     League 1, but team names use " Sharks" suffix so they're visually
+--     distinguishable. Use for testing the next-season wizard's entry
+--     points (LeagueDetail "Start Next Season" ActionCard + ActiveLeagues
+--     hint badge) without waiting weeks of calendar time.
+--   - FREE AGENTS: any seeded placeholder members beyond the 56 needed
+--     for the two leagues stay unassigned — they appear in the dev's
+--     player-picker dropdowns as "available to roster" so the captain's
+--     add-player UX has realistic options. Roughly 14 free agents
+--     given the 70-member seed pool.
+--
+-- DEPENDS ON: supabase/seed_members.sql + supabase/seed_extra_players.sql
+-- having been run first. The bootstrap pulls real placeholder members
+-- (with realistic names, handicaps, and BCA numbers) from that pool
+-- instead of generating "Player N Team M" literals. Bootstrap will
+-- abort with a clear message if the pool is too small.
 --
 -- Each league's URLs are printed via RAISE NOTICE at the bottom.
 --
@@ -103,8 +119,27 @@ DECLARE
 
   v_row INT[];
   v_i   INT;
+  v_j   INT;
+  v_idx INT;
   v_pp  UUID;
   v_match_id UUID;
+
+  -- Roster shape: each team gets 1 captain + 6 regular roster players
+  -- (7 total per team). Roster intentionally LARGER than the 5-man
+  -- lineup so the dev can test substitute swaps (and so the player
+  -- search has more rows to filter through). 4 teams × 7 = 28 members
+  -- per league, × 2 leagues = 56 needed.
+  v_team_roster_size CONSTANT INT := 7; -- 1 captain + 6 regulars
+
+  -- Pool of pre-seeded placeholder members we'll pick from. Populated
+  -- by querying members where user_id IS NULL — both seed_members.sql
+  -- and seed_extra_players.sql contribute. Bootstrap aborts if the
+  -- pool doesn't have at least v_min_pool_size rows; user runs the
+  -- two seed files first.
+  v_pool         UUID[];
+  v_pool_size    INT;
+  v_min_pool_size CONSTANT INT := 56; -- 4 teams × 7 × 2 leagues
+  v_captain_name TEXT;
 BEGIN
   -- Guards
   IF current_database() <> 'postgres' THEN
@@ -113,6 +148,29 @@ BEGIN
   IF v_email LIKE 'REPLACE%' THEN
     RAISE EXCEPTION 'Edit v_email in the CONFIG block before running.';
   END IF;
+
+  -- 0. Check the seed-player pool is populated. The bootstrap fills
+  --    teams from placeholder members (user_id IS NULL) seeded by
+  --    seed_members.sql + seed_extra_players.sql. Without those, we
+  --    can't fill rosters — bail out with a helpful message rather
+  --    than create empty teams.
+  SELECT array_agg(id ORDER BY created_at) INTO v_pool
+  FROM members
+  WHERE user_id IS NULL
+    AND role = 'player';
+  v_pool_size := COALESCE(array_length(v_pool, 1), 0);
+  IF v_pool_size < v_min_pool_size THEN
+    RAISE EXCEPTION 'Seed pool too small (% placeholder players, need >= %). Run supabase/seed_members.sql + supabase/seed_extra_players.sql first.',
+      v_pool_size, v_min_pool_size;
+  END IF;
+
+  -- Reshape the picked members to match the LO's city/state so the
+  -- player-search filter (which scopes by state) surfaces them. Only
+  -- touches the v_min_pool_size members we'll actually use; leaves
+  -- the free-agent overflow in their seeded city/state for variety.
+  UPDATE members
+  SET city = v_city, state = v_state
+  WHERE id = ANY(v_pool[1:v_min_pool_size]);
 
   -- 1. Find auth user.
   SELECT id INTO v_user_id FROM auth.users WHERE email = v_email;
@@ -178,29 +236,34 @@ BEGIN
   INSERT INTO season_weeks (season_id, scheduled_date, week_name, week_type)
   VALUES (v_season_id, v_start + (12 * 7), 'Season End Break', 'season_end_break');
 
-  -- 8. Captains — four placeholder members. State matches the LO's so the
-  -- dev's player-lookup (filtered by state) still finds them.
+  -- 8. League 1 captains — pull the first 4 members from the pool.
+  --    Pool indexes [1..4] = captains for teams 1..4 respectively.
   FOR v_i IN 1..4 LOOP
-    INSERT INTO members (first_name, last_name, city, state, role)
-    VALUES ('Captain', 'Team ' || v_i, v_city, v_state, 'player')
-    RETURNING id INTO v_pp;
-    v_captain_ids[v_i] := v_pp;
+    v_captain_ids[v_i] := v_pool[v_i];
   END LOOP;
 
-  -- 9. Teams (4) + roster (captain + 4 regulars per team).
+  -- 9. League 1 teams (4) + rosters (7 per team: 1 captain + 6
+  --    regulars). Roster intentionally larger than the 5-man lineup
+  --    so the dev can swap substitutes during lineup testing AND so
+  --    players with duplicate nicknames (which the seed data has on
+  --    purpose) can be swapped in/out without losing a roster slot.
+  --    Team name is derived from the captain's last name so the LO
+  --    sees a recognizable name instead of generic "Team N".
   FOR v_i IN 1..4 LOOP
+    SELECT last_name INTO v_captain_name FROM members WHERE id = v_captain_ids[v_i];
+
     INSERT INTO teams (id, season_id, league_id, team_name, captain_id, roster_size, home_venue_id, status)
-    VALUES (v_team_ids[v_i], v_season_id, v_league_id, 'Team ' || v_i, v_captain_ids[v_i], 5, v_venue_id, 'active');
+    VALUES (v_team_ids[v_i], v_season_id, v_league_id, v_captain_name || ' Crew', v_captain_ids[v_i], v_team_roster_size, v_venue_id, 'active');
 
     INSERT INTO team_players (team_id, season_id, member_id, is_captain, status)
     VALUES (v_team_ids[v_i], v_season_id, v_captain_ids[v_i], TRUE, 'active');
 
-    FOR v_row IN SELECT ARRAY[j] FROM generate_series(1, 4) AS j LOOP
-      INSERT INTO members (first_name, last_name, city, state, role)
-      VALUES ('Player ' || v_row[1], 'Team ' || v_i, v_city, v_state, 'player')
-      RETURNING id INTO v_pp;
+    -- Pool indexes [5..28] = league 1 regulars (6 per team × 4 teams).
+    -- For team v_i, members are at pool indexes 5 + (v_i-1)*6 .. 4 + v_i*6.
+    FOR v_j IN 1..6 LOOP
+      v_idx := 4 + (v_i - 1) * 6 + v_j;
       INSERT INTO team_players (team_id, season_id, member_id, is_captain, status)
-      VALUES (v_team_ids[v_i], v_season_id, v_pp, FALSE, 'active');
+      VALUES (v_team_ids[v_i], v_season_id, v_pool[v_idx], FALSE, 'active');
     END LOOP;
   END LOOP;
 
@@ -261,28 +324,27 @@ BEGIN
   INSERT INTO season_weeks (season_id, scheduled_date, week_name, week_type)
   VALUES (v_season2_id, v_start2 + (12 * 7), 'Season End Break', 'season_end_break');
 
-  -- 15. Captains (4 placeholders, distinguished by team name suffix).
+  -- 15. League 2 captains — pool indexes [29..32].
   FOR v_i IN 1..4 LOOP
-    INSERT INTO members (first_name, last_name, city, state, role)
-    VALUES ('Captain', 'NearEnd ' || v_i, v_city, v_state, 'player')
-    RETURNING id INTO v_pp;
-    v_captain2_ids[v_i] := v_pp;
+    v_captain2_ids[v_i] := v_pool[28 + v_i];
   END LOOP;
 
-  -- 16. Teams (4) + roster (captain + 4 regulars per team).
+  -- 16. League 2 teams (4) + rosters. Same shape as League 1
+  --     (1 captain + 6 regulars per team, name derived from captain).
+  --     Pool indexes [33..56] are these teams' regulars.
   FOR v_i IN 1..4 LOOP
+    SELECT last_name INTO v_captain_name FROM members WHERE id = v_captain2_ids[v_i];
+
     INSERT INTO teams (id, season_id, league_id, team_name, captain_id, roster_size, home_venue_id, status)
-    VALUES (v_team2_ids[v_i], v_season2_id, v_league2_id, 'NearEnd Team ' || v_i, v_captain2_ids[v_i], 5, v_venue_id, 'active');
+    VALUES (v_team2_ids[v_i], v_season2_id, v_league2_id, v_captain_name || ' Sharks', v_captain2_ids[v_i], v_team_roster_size, v_venue_id, 'active');
 
     INSERT INTO team_players (team_id, season_id, member_id, is_captain, status)
     VALUES (v_team2_ids[v_i], v_season2_id, v_captain2_ids[v_i], TRUE, 'active');
 
-    FOR v_row IN SELECT ARRAY[j] FROM generate_series(1, 4) AS j LOOP
-      INSERT INTO members (first_name, last_name, city, state, role)
-      VALUES ('Player ' || v_row[1], 'NearEnd ' || v_i, v_city, v_state, 'player')
-      RETURNING id INTO v_pp;
+    FOR v_j IN 1..6 LOOP
+      v_idx := 32 + (v_i - 1) * 6 + v_j;
       INSERT INTO team_players (team_id, season_id, member_id, is_captain, status)
-      VALUES (v_team2_ids[v_i], v_season2_id, v_pp, FALSE, 'active');
+      VALUES (v_team2_ids[v_i], v_season2_id, v_pool[v_idx], FALSE, 'active');
     END LOOP;
   END LOOP;
 
@@ -321,4 +383,7 @@ BEGIN
   RAISE NOTICE '';
   RAISE NOTICE 'Org URL:           /operator-settings/%', v_org_id;
   RAISE NOTICE 'House rules URL:   /league-rules/%', v_org_id;
+  RAISE NOTICE '';
+  RAISE NOTICE 'Free agents (not on any team): % member(s) — appear in player pickers.',
+    GREATEST(0, v_pool_size - v_min_pool_size);
 END $$;
