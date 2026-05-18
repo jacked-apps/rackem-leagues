@@ -99,9 +99,9 @@ export function useFargoStartPointsNegotiation(
     if (!applicable) return null;
     if (homeRatings.length !== lineupSize) return null;
     if (awayRatings.length !== lineupSize) return null;
-    if (fargo5v5.threshold.mode !== 'start_points') return null;
+    if (fargo5v5.thresholdChart?.kind !== 'fargo_formula') return null;
     try {
-      return fargo5v5.threshold.compute(
+      return fargo5v5.thresholdChart.compute(
         homeRatings,
         awayRatings,
         systemOverrides ?? {}

@@ -4,8 +4,8 @@
  * Delegates to the SystemModule resolver introduced in Phase 1 of the modular
  * handicap/scoring refactor. Callers continue to call getGamesNeeded() exactly
  * as before — no signature changes — but the routing now flows through
- * SystemModule.threshold.compute() so future systems can be added by writing
- * a single module without touching this file or its callers.
+ * SystemModule.thresholdChart.compute() so future systems can be added by
+ * writing a single Chart variant without touching this file or its callers.
  *
  * Characterization tests in
  *   src/utils/handicap/__tests__/getGamesNeeded.characterization.test.ts
@@ -23,25 +23,30 @@ export { get5v5GamesNeeded } from './get5v5GamesNeeded';
 /**
  * Get handicap thresholds based on the league's handicap type.
  *
- * Routes through the SystemModule resolver. BCA presets ('points', 'percentage')
- * use their respective charts. Fargo and unmapped values fall through to the
- * resolver's default (bca5v5), preserving the legacy routing behavior.
+ * Routes through the SystemModule resolver's `thresholdChart` field (per
+ * Phase C of the Threshold Charts extraction Unit). BCA presets pick the
+ * matching Games-Needed Chart variant; Fargo / unmapped types fall back to
+ * the 5v5 chart directly, preserving the legacy routing behavior.
  */
 export function getGamesNeeded(handicapDiff: number, handicapType: string): HandicapThresholds {
-  const { threshold } = pickModule(handicapType);
+  const { thresholdChart } = pickModule(handicapType);
 
-  // BCA modules have extra_games threshold mode — the contract this adapter serves.
-  // (Renamed from 'games_to_win' in Phase 1 Unit 1.3 — the discriminator now
-  // describes the mechanism rather than the output field name.)
-  if (threshold.mode === 'extra_games') {
-    return threshold.compute(handicapDiff, {});
+  // The Games-Needed Chart variants (3v3 + 5v5) carry the contract this
+  // adapter serves: a (handicapDiff) → HandicapThresholds lookup.
+  if (
+    thresholdChart &&
+    (thresholdChart.kind === 'games_needed_3v3' ||
+      thresholdChart.kind === 'games_needed_5v5')
+  ) {
+    return thresholdChart.compute(handicapDiff);
   }
 
-  // Unreachable in practice: Fargo (start_points mode) and BCAPL SL (race_length_adjustment)
-  // never call getGamesNeeded(). Defensive fallback preserves the legacy
-  // "everything non-points routes to 5v5" behavior.
+  // Unreachable in practice: Fargo (fargo_formula Chart) and BCAPL SL
+  // (race_length_adjustment, RESERVED stubs) never call getGamesNeeded(),
+  // and 'none' produces a null thresholdChart. Defensive fallback preserves
+  // the legacy "everything else routes to 5v5" behavior.
   console.warn(
-    `[handicap] getGamesNeeded reached a non-extra_games threshold module (mode="${threshold.mode}") for handicap_type="${handicapType}" — falling back to 5v5 chart directly`,
+    `[handicap] getGamesNeeded reached a non-GamesNeeded thresholdChart (kind="${thresholdChart?.kind ?? 'null'}") for handicap_type="${handicapType}" — falling back to 5v5 chart directly`,
   );
   return get5v5GamesNeededChart(handicapDiff);
 }
