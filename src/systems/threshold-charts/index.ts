@@ -20,7 +20,9 @@
 
 import type { ChartKind, ThresholdChart } from './types';
 import { gamesNeeded3v3Chart } from './games-needed-3v3';
+import { gamesNeeded3v3FormulaChart } from './games-needed-3v3-formula';
 import { gamesNeeded5v5Chart } from './games-needed-5v5';
+import { gamesNeeded5v5FormulaChart } from './games-needed-5v5-formula';
 import { fargoFormulaChart } from './fargo-formula';
 import { racePointsChart } from './race-points';
 import { racePercentageChart } from './race-percentage';
@@ -39,8 +41,12 @@ export function getThresholdChart(chartKind: ChartKind): ThresholdChart {
   switch (chartKind) {
     case 'games_needed_3v3':
       return gamesNeeded3v3Chart;
+    case 'games_needed_3v3_formula':
+      return gamesNeeded3v3FormulaChart;
     case 'games_needed_5v5':
       return gamesNeeded5v5Chart;
+    case 'games_needed_5v5_formula':
+      return gamesNeeded5v5FormulaChart;
     case 'fargo_formula':
       return fargoFormulaChart;
     case 'race_points':
@@ -59,7 +65,9 @@ export type {
   RaceLengthChart,
 } from './types';
 export { gamesNeeded3v3Chart } from './games-needed-3v3';
+export { gamesNeeded3v3FormulaChart } from './games-needed-3v3-formula';
 export { gamesNeeded5v5Chart } from './games-needed-5v5';
+export { gamesNeeded5v5FormulaChart } from './games-needed-5v5-formula';
 export { fargoFormulaChart } from './fargo-formula';
 export { racePointsChart } from './race-points';
 export { racePercentageChart } from './race-percentage';

@@ -30,23 +30,35 @@ import type { FargoStartPointsResult, RaceLengthResult } from '../types';
  */
 export type ChartKind =
   | 'games_needed_3v3'
+  | 'games_needed_3v3_formula'
   | 'games_needed_5v5'
+  | 'games_needed_5v5_formula'
   | 'fargo_formula'
   | 'race_points'
   | 'race_percentage';
 
 /**
- * Games-needed Chart — Points-encoded handicap diff → asymmetric per-side
- * target wins (output shape coupled to the `extra_games` Mechanism).
+ * Games-needed Chart — handicap diff → asymmetric per-side target wins
+ * (output shape coupled to the `extra_games` Mechanism).
  *
- * Variants: `games_needed_3v3` (5-man double round-robin, 18 games),
- * `games_needed_5v5` (8-man single round-robin, 25 games). The two differ
- * only in the lookup table they wrap; their I/O contract is identical.
+ * Variants come in matched TABLE / FORMULA pairs per the locked README's
+ * "shape is a deployment choice" principle:
+ *  - `games_needed_3v3`         — Points encoding, TABLE shape (18-game)
+ *  - `games_needed_3v3_formula` — Points encoding, FORMULA shape (universal game_count)
+ *  - `games_needed_5v5`         — Percentage encoding, TABLE shape (25-game)
+ *  - `games_needed_5v5_formula` — Percentage encoding, FORMULA shape (universal game_count)
+ *
+ * Each TABLE / FORMULA pair is cross-audited row-for-row in
+ * `__tests__/cross-audit-*-formula.test.ts` to guarantee equivalence.
  */
 export interface GamesNeededChart {
-  readonly kind: 'games_needed_3v3' | 'games_needed_5v5';
+  readonly kind:
+    | 'games_needed_3v3'
+    | 'games_needed_3v3_formula'
+    | 'games_needed_5v5'
+    | 'games_needed_5v5_formula';
   /**
-   * @param handicapDiff Signed integer (for 3v3) or percentage value (for 5v5).
+   * @param handicapDiff Signed integer (for Points) or percentage value (for Percentage).
    * @returns Per-side target wins as `HandicapThresholds`.
    */
   compute: (handicapDiff: number) => HandicapThresholds;
