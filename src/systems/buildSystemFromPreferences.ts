@@ -48,6 +48,7 @@ import { bca3v3 } from './bca3v3';
 import { bca5v5 } from './bca5v5';
 import { fargo5v5 } from './fargo5v5';
 import { get3v3GamesNeeded } from '@/utils/handicap/get3v3GamesNeeded';
+import { getWinCalculator } from './win-calculators';
 import { get5v5GamesNeeded } from '@/utils/handicap/get5v5GamesNeeded';
 
 // ============================================================================
@@ -429,5 +430,9 @@ export function buildSystemFromPreferences(
     rating: pickRating(prefs.handicap_type),
     scoring: pickScoring(prefs.points_calculator),
     threshold: pickThreshold(prefs),
+    // Per Unit 1 of the modular-framework migration plan: build a Win Calculator
+    // Module from the league's win_condition preference. One-entry metric stack;
+    // multi-entry stacks come in Unit 9.
+    winCalculator: getWinCalculator(prefs.win_condition),
   };
 }

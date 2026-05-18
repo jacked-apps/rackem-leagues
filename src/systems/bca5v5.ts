@@ -12,6 +12,7 @@
 
 import type { SystemModule } from './types';
 import { get5v5GamesNeeded } from '@/utils/handicap/get5v5GamesNeeded';
+import { getWinCalculator } from './win-calculators';
 
 const NOT_YET_WIRED =
   'bca5v5 scoring module methods not yet wired through SystemModule (legacy paths still in use)';
@@ -58,4 +59,8 @@ export const bca5v5: SystemModule = {
       return get5v5GamesNeeded(handicapDiff);
     },
   },
+
+  // BCA 5v5 ships with win_condition='games' — a one-entry metric stack with games_won.
+  // See bca3v3.ts for the rationale; same shape applies here.
+  winCalculator: getWinCalculator('games'),
 };

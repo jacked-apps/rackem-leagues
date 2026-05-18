@@ -20,6 +20,7 @@
 
 import type { SystemModule } from './types';
 import { get3v3GamesNeeded } from '@/utils/handicap/get3v3GamesNeeded';
+import { getWinCalculator } from './win-calculators';
 
 const NOT_YET_WIRED =
   'bca3v3 scoring module methods not yet wired through SystemModule (legacy paths still in use)';
@@ -75,4 +76,10 @@ export const bca3v3: SystemModule = {
       return get3v3GamesNeeded(handicapDiff);
     },
   },
+
+  // BCA 3v3 ships with win_condition='games' — a one-entry metric stack with games_won.
+  // Per Unit 1 of the modular-framework migration plan, this Module shape replaces the
+  // runtime branching on win_condition. Consumers call winCalculator.decide(matchData)
+  // instead of switching on win_condition inline.
+  winCalculator: getWinCalculator('games'),
 };

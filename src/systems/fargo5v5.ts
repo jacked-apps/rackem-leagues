@@ -50,6 +50,7 @@ import type {
   SystemModule,
 } from './types';
 import type { SystemOverrides } from '@/types/systemOverrides';
+import { getWinCalculator } from './win-calculators';
 
 // ============================================================================
 // Constants (module defaults — overridable via SystemOverrides)
@@ -289,4 +290,10 @@ export const fargo5v5: SystemModule = {
     mode: 'start_points',
     compute: computeStartPoints,
   },
+
+  // Fargo 5v5 ships with win_condition='points' — a one-entry metric stack with
+  // points_earned. Per Unit 1 of the modular-framework migration plan, this Module
+  // shape replaces the runtime branching on win_condition. Consumers call
+  // winCalculator.decide(matchData) instead of switching on win_condition inline.
+  winCalculator: getWinCalculator('points'),
 };
