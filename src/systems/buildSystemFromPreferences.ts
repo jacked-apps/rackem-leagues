@@ -50,6 +50,7 @@ import { fargo5v5 } from './fargo5v5';
 import { get3v3GamesNeeded } from '@/utils/handicap/get3v3GamesNeeded';
 import { getWinCalculator } from './win-calculators';
 import { getTeamGeometry } from './team-geometry';
+import { getMatchFormat } from './match-format';
 import { get5v5GamesNeeded } from '@/utils/handicap/get5v5GamesNeeded';
 
 // ============================================================================
@@ -436,6 +437,10 @@ export function buildSystemFromPreferences(
       prefs.max_roster_size,
       normalizedGameGeneration,
     ),
+    // Match Format Module — the per-pairing structural axes (pairing_format, race_length).
+    // Per the Match Format extraction Unit; consumers may still read pairing_format /
+    // race_length directly from prefs/snapshot during the strangler-fig transition.
+    matchFormat: getMatchFormat(prefs.pairing_format, prefs.race_length),
     rating: pickRating(prefs.handicap_type),
     scoring: pickScoring(prefs.points_calculator),
     threshold: pickThreshold(prefs),

@@ -14,6 +14,7 @@ import type { SystemModule } from './types';
 import { get5v5GamesNeeded } from '@/utils/handicap/get5v5GamesNeeded';
 import { getWinCalculator } from './win-calculators';
 import { getTeamGeometry } from './team-geometry';
+import { getMatchFormat } from './match-format';
 
 const NOT_YET_WIRED =
   'bca5v5 scoring module methods not yet wired through SystemModule (legacy paths still in use)';
@@ -24,6 +25,10 @@ export const bca5v5: SystemModule = {
   // Team Geometry Module — the three structural axes plus derived gameCount.
   // Replaces the legacy teamFormat field (Phase D of the Team Geometry migration).
   teamGeometry: getTeamGeometry(5, 8, 'single_round_robin'),
+
+  // Match Format Module — BCA 5v5 ships single_rack pairings (no race_length).
+  // See bca3v3.ts for the strangler-fig rationale.
+  matchFormat: getMatchFormat('single_rack', null),
 
   rating: {
     requiresManualEntry: false,

@@ -22,6 +22,7 @@ import type { SystemModule } from './types';
 import { get3v3GamesNeeded } from '@/utils/handicap/get3v3GamesNeeded';
 import { getWinCalculator } from './win-calculators';
 import { getTeamGeometry } from './team-geometry';
+import { getMatchFormat } from './match-format';
 
 const NOT_YET_WIRED =
   'bca3v3 scoring module methods not yet wired through SystemModule (legacy paths still in use)';
@@ -33,6 +34,11 @@ export const bca3v3: SystemModule = {
   // Replaces the legacy teamFormat field (deleted in Phase D of the Team Geometry
   // migration after all consumers were swapped to read teamGeometry instead).
   teamGeometry: getTeamGeometry(3, 5, 'double_round_robin'),
+
+  // Match Format Module — BCA 3v3 ships single_rack pairings (no race_length).
+  // Per the Match Format extraction Unit; coexists with any legacy scattered
+  // pairing_format/race_length preference reads during the strangler-fig transition.
+  matchFormat: getMatchFormat('single_rack', null),
 
   rating: {
     requiresManualEntry: false,

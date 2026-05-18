@@ -22,6 +22,7 @@ import type { HandicapThresholds } from '@/types/match';
 import type { SystemOverrides } from '@/types/systemOverrides';
 import type { WinCalculator } from './win-calculators/types';
 import type { TeamGeometry } from './team-geometry/types';
+import type { MatchFormat } from './match-format/types';
 
 // ============================================================================
 // Ratings
@@ -311,6 +312,25 @@ export interface SystemModule {
    * @see docs/league-system/modules/team-geometry.md — the locked blueprint
    */
   teamGeometry: TeamGeometry;
+
+  /**
+   * Match Format Module — passive configuration record bundling the two per-pairing
+   * structural axes (pairing_format, race_length).
+   *
+   * Added in the Match Format extraction Unit (per
+   * `docs/plans/2026-05-17-001-refactor-modular-framework-migration-plan.md`),
+   * following the strangler-fig pattern proven by Team Geometry.
+   *
+   * Currently no SystemModule consumer reads pairing_format / race_length directly —
+   * the Pairings Generator code that would do so is itself a future extraction Unit
+   * (currently bundled into runtime code). When that landlines, it'll consume
+   * `matchFormat.pairingFormat` and `matchFormat.raceLength` via the Module rather
+   * than via scattered preference reads.
+   *
+   * @see src/systems/match-format/index.ts — `getMatchFormat()` factory
+   * @see docs/league-system/modules/match-format.md — the locked blueprint
+   */
+  matchFormat: MatchFormat;
 
   /**
    * Win Calculator Module — the metric-precedence-stack walker that decides
