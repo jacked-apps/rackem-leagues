@@ -74,9 +74,9 @@ A fresh Claude reading a variant page should be able to derive a novice-friendly
 
 Convention: a `**Picture this** (for the novice-explanation case): ...` paragraph in each variant page's "What it is" section.
 
-### 5. Variants are peers
+### 5. Catalog entries are peers
 
-No variant is "the default" or "the basis." Each variant page describes itself in its own terms. The Module README's variants index lists peers in a flat or sub-categorized structure (e.g., Internal/External sub-categorization in Handicap Systems is fine — that's a real load-bearing operational distinction). Don't let one variant become the implicit standard others are measured against.
+No variant is "the default" or "the basis." Each variant page describes itself in its own terms. The Module README's catalog lists peers in a flat or sub-categorized structure (e.g., Internal/External sub-categorization in Handicap Systems is fine — that's a real load-bearing operational distinction). Don't let one variant become the implicit standard others are measured against.
 
 ### 6. Docs are stand-alone; code references are supplementary
 
@@ -401,7 +401,7 @@ Every Module's documentation page MUST contain the following elements. This is t
 
 1. **Essence** — what the Module IS in 1–2 sentences. The bounded responsibility, stated cleanly.
 2. **Boundary** — what is NOT in this Module. Adjacent Modules with bare cross-links. The anti-conflation classifier.
-3. **Design space** — within the bounded responsibility, what variation is possible. Variants index for parent Modules; parameters/sub-mechanisms for atomic Modules.
+3. **Design space** — within the bounded responsibility, what variation is possible. Catalog for parent Modules; parameters/sub-mechanisms for atomic Modules.
 4. **How it interacts (typed I/O)** — typed input contract, typed output contract, upstream/downstream Module references. The I/O declaration is mandatory; without it the Module cannot be composed against.
 5. **(Optional) Code reference / implementation note** — a Module page MAY include a supplementary code pointer or implementation note if it adds illustrative value (per [Principle 6](#6-docs-are-stand-alone-code-references-are-supplementary)). Optional, not required. The doc stands alone architecturally; code references are bonus context.
 
@@ -844,7 +844,7 @@ The `<from>-to-<to>` convention makes the direction explicit — critical becaus
 2. **Why X exists** — the operational WHY (provides framing for novice-extraction)
 3. **Boundary** — what's NOT in this Module; adjacent Modules; anti-conflation classifier
 4. **Architectural intent** — orthogonality, composability with other Modules; flag known code couplings as artifacts
-5. **Variants index** — peers, possibly sub-grouped if a load-bearing dimension exists
+5. **Catalog** — peers, possibly sub-grouped if a load-bearing dimension exists
 6. **How this Module interacts** — upstream, internal partners, downstream. **MUST declare typed input contract and typed output contract** (per [Module Deep Dive § 8](#8-io-contracts-at-module-boundaries)).
 7. **(Sometimes)** Cross-cutting concept sections (e.g., Rating Confidence in Handicap Systems)
 8. **Future possibilities** — speculative welcome
@@ -885,7 +885,7 @@ The `<from>-to-<to>` convention makes the direction explicit — critical becaus
 - *"The click is the Module boundary teaching moment."* — anti-conflation rule for cross-Module references; do not inline definitions.
 - *"Implementation artifact, not architectural intent."* — how to flag code couplings that violate Module orthogonality without rewriting code state inaccurately.
 - *"Reading this cold?"* — the self-bootstrapping callout convention on every variant page.
-- *"Variants are peers — no canonical, no default."*
+- *"Catalog entries are peers — no canonical, no default."*
 - *"Charts and formulas are interconvertible expressions of the same mapping."*
 - *"The system is an assembly line of Modules. Each station adds a piece to the end product."* — Ed, 2026-05-15. The Module-chain framing for I/O contracts.
 - *"A Module's identity is its act, not its variant inventory."* — the singular-vs-plural test from Module § 9.
