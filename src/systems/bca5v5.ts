@@ -15,6 +15,7 @@ import { get5v5GamesNeeded } from '@/utils/handicap/get5v5GamesNeeded';
 import { getWinCalculator } from './win-calculators';
 import { getTeamGeometry } from './team-geometry';
 import { getMatchFormat } from './match-format';
+import { percentageHandicapSystem } from './handicap-systems';
 
 const NOT_YET_WIRED =
   'bca5v5 scoring module methods not yet wired through SystemModule (legacy paths still in use)';
@@ -67,4 +68,8 @@ export const bca5v5: SystemModule = {
   // BCA 5v5 ships with win_condition='games' — a one-entry metric stack with games_won.
   // See bca3v3.ts for the rationale; same shape applies here.
   winCalculator: getWinCalculator('games'),
+
+  // Handicap System Module — Percentage variant (0–100 with `%` display).
+  // See bca3v3.ts for the strangler-fig rationale; coexists with `rating` until Phase D.
+  handicapSystem: percentageHandicapSystem,
 };

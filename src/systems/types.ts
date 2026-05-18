@@ -23,6 +23,7 @@ import type { SystemOverrides } from '@/types/systemOverrides';
 import type { WinCalculator } from './win-calculators/types';
 import type { TeamGeometry } from './team-geometry/types';
 import type { MatchFormat } from './match-format/types';
+import type { HandicapSystem } from './handicap-systems/types';
 
 // ============================================================================
 // Ratings
@@ -353,4 +354,34 @@ export interface SystemModule {
    * @see docs/league-system/modules/win-calculator.md — the locked blueprint
    */
   winCalculator: WinCalculator;
+
+  /**
+   * Handicap System Module — encapsulates the player rating encoding (kind,
+   * manual-vs-derived, displayFormat, validate, optional computeFromHistory).
+   *
+   * Added in the Handicap Systems extraction Unit (per
+   * `docs/plans/2026-05-17-001-refactor-modular-framework-migration-plan.md`),
+   * following the strangler-fig pattern proven by Team Geometry and Match Format.
+   *
+   * Coexists with the legacy `rating` capability above during the strangler-fig
+   * transition — both carry the same shape (and at runtime, are the SAME object
+   * by reference). Consumers gradually migrate from `systemModule.rating.X` to
+   * `systemModule.handicapSystem.X` in Phase C; the legacy `rating` capability
+   * is removed in Phase D.
+   *
+   * The four shipping variants:
+   * - Points (kind: 'points')           — BCA 3v3
+   * - Percentage (kind: 'percentage')   — BCA 5v5
+   * - FargoRate (kind: 'fargo')         — Fargo 5v5
+   * - Skill Level (kind: 'skill_level') — reserved; no current consumer
+   *
+   * `null` reflects the blueprint's "no handicap" case (`handicap_type='none'` —
+   * league self-sorts into skill tiers; no equalization Module is applied).
+   * The locked Handicap Systems README explicitly defines this as "no Module"
+   * rather than a 5th variant.
+   *
+   * @see src/systems/handicap-systems/index.ts — `getHandicapSystem()` factory
+   * @see docs/league-system/modules/handicap-systems/README.md — the locked blueprint
+   */
+  handicapSystem: HandicapSystem | null;
 }

@@ -52,6 +52,11 @@ import { getWinCalculator } from './win-calculators';
 import { getTeamGeometry } from './team-geometry';
 import { getMatchFormat } from './match-format';
 import { get5v5GamesNeeded } from '@/utils/handicap/get5v5GamesNeeded';
+import {
+  getHandicapSystem,
+  type HandicapSystem,
+  type HandicapType,
+} from './handicap-systems';
 
 // ============================================================================
 // Preset detection (fast-path)
@@ -176,6 +181,38 @@ function pickRating(handicapType: string): SystemModule['rating'] {
       );
       return bca5v5.rating;
   }
+}
+
+// ============================================================================
+// Handicap System Module dispatch
+// ============================================================================
+
+/**
+ * Pick a Handicap System Module for the ad-hoc module by handicap_type.
+ *
+ * Mirrors pickRating's routing for parity (both fields coexist during the
+ * strangler-fig transition). For the four shipping variants the registry
+ * returns the Module instance; for `handicap_type='none'` the field is
+ * `null` per the Handicap Systems blueprint ("no Module" rather than a
+ * 5th variant). For unknown handicap_type values, falls back to null with
+ * a warn, matching the resolver's graceful-degradation pattern.
+ */
+function pickHandicapSystem(handicapType: string): HandicapSystem | null {
+  if (
+    handicapType === 'points' ||
+    handicapType === 'percentage' ||
+    handicapType === 'fargo' ||
+    handicapType === 'skill_level'
+  ) {
+    return getHandicapSystem(handicapType as HandicapType);
+  }
+  if (handicapType === 'none') {
+    return null;
+  }
+  console.warn(
+    `[buildSystemFromPreferences] Unknown handicap_type ${JSON.stringify(handicapType)} — handicapSystem field set to null`,
+  );
+  return null;
 }
 
 // ============================================================================
@@ -448,5 +485,9 @@ export function buildSystemFromPreferences(
     // Module from the league's win_condition preference. One-entry metric stack;
     // multi-entry stacks come in Unit 9.
     winCalculator: getWinCalculator(prefs.win_condition),
+    // Handicap System Module — Phase B of the Handicap Systems extraction Unit.
+    // Coexists with the `rating` capability above (above field is the legacy
+    // strangler-fig source of truth until Phase D removes it).
+    handicapSystem: pickHandicapSystem(prefs.handicap_type),
   };
 }

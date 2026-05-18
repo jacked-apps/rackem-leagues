@@ -23,6 +23,7 @@ import { get3v3GamesNeeded } from '@/utils/handicap/get3v3GamesNeeded';
 import { getWinCalculator } from './win-calculators';
 import { getTeamGeometry } from './team-geometry';
 import { getMatchFormat } from './match-format';
+import { pointsHandicapSystem } from './handicap-systems';
 
 const NOT_YET_WIRED =
   'bca3v3 scoring module methods not yet wired through SystemModule (legacy paths still in use)';
@@ -88,4 +89,11 @@ export const bca3v3: SystemModule = {
   // runtime branching on win_condition. Consumers call winCalculator.decide(matchData)
   // instead of switching on win_condition inline.
   winCalculator: getWinCalculator('games'),
+
+  // Handicap System Module — Points variant (integer ±2 with explicit sign display).
+  // Coexists with the legacy `rating` capability above during the strangler-fig
+  // transition; both encode the identical contract. Consumers migrate from
+  // `bca3v3.rating.X` to `bca3v3.handicapSystem.X` in Phase C; `rating` is deleted
+  // in Phase D of the Handicap Systems extraction.
+  handicapSystem: pointsHandicapSystem,
 };
