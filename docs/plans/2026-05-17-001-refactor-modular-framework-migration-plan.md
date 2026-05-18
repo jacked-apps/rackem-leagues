@@ -148,7 +148,15 @@ From the viability brainstorm's R1-R19. Most map to specific extraction units be
 
 ## Implementation Units
 
-- [ ] **Unit 1: Extract Win Calculator as a metric-precedence-stack Module**
+> **Status note (2026-05-18):** The Win Calc Unit (detailed below) was attempted but **Phase C was halted** when the consumer-swap surfaced that the locked Win Calc blueprint is incomplete (two mutually-exclusive modes — chip-mode vs cascade-mode — that the blueprint conflates). Architectural direction captured in `docs/brainstorms/2026-05-18-win-calculator-trigger-and-cascade-direction-requirements.md`. Phase A + B infrastructure stays committed as cascade-mode-only scaffolding (commits `7915bcf`, `ff01b68`); full Win Calc extraction is deferred until after the locked blueprint is unlocked + expanded AND after Threshold Charts/Trigger work is in place.
+>
+> **Team Geometry was extracted as the de facto Unit 1** (a genuinely simple shakedown, per the Win Calc brainstorm's re-ordering recommendation). Full Phases A-D complete (commits `43800ed`, `64fb16d`, `260e9fc`, `c63cef5`). The strangler-fig pattern is proven; ready to repeat. Net code change: +team-geometry Module (3 files, 21 tests), -getMatchTotalGames utility, -teamFormat field + TeamFormatConstants interface. 331 tests pass; zero behavior change.
+>
+> **In progress:** Match Format extraction — same shape as Team Geometry (passive configuration bundle, low coupling). Phases A-D will follow the same pattern.
+>
+> **Migration plan ordering is being refined as units are reached** rather than re-numbered up front. The detailed Win Calc unit below remains as historical reference; do not act on it without re-reading the Win Calc brainstorm first.
+
+- [ ] **Unit 1 (deferred): Extract Win Calculator as a metric-precedence-stack Module**
 
 **Goal:** Lift the current `win_condition` (binary preference: `'games' | 'points'`) out of being a runtime-resolver branch and into being a first-class Win Calculator Module with its own typed contract — shaped as a **metric precedence stack** per the locked Win Calc doc. The 3 prepackaged Scoring Systems compose this Module instead of dispatching on `win_condition` directly. Establishes the strangler-fig pattern that the next 8 extractions follow.
 
