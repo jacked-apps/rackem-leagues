@@ -39,7 +39,7 @@ The transformation cannot be a top-to-bottom rewrite because the app must keep s
 1. **Keep `SystemModule` as a thin adapter** for the duration of the migration. The rest of the app (`computeMatchRunningTotals`, scoreboards, scoring mutations) continues calling `module.threshold.compute(...)`, `module.rating.validate(...)`, etc. as it does today.
 2. **Extract one component Module at a time.** Each component Module gets its own primitive type, files, contract. The SystemModule's capability section for that Module becomes a DELEGATION to the new primitive instead of a direct implementation.
 3. **App keeps working between extractions.** Each extraction ships independently. Characterization tests (`src/systems/__tests__/{bca3v3,bca5v5,fargo5v5}.characterization.test.ts`) guard external behavior. If the test still passes byte-identically, the extraction is safe.
-4. **When all 8 component Modules are extracted, dissolve `SystemModule`.** The 3 prepackaged Scoring Systems become tiny composition declarations (~15 lines each) instead of bundled files (~78-292 lines). The adapter layer is removed; the runtime consumes the composed Modules directly.
+4. **When all 9 component Modules are extracted, dissolve `SystemModule`.** The 3 prepackaged Scoring Systems become tiny composition declarations (~15 lines each) instead of bundled files (~78-292 lines). The adapter layer is removed; the runtime consumes the composed Modules directly.
 
 ### Extraction order (least entangled → most)
 
@@ -47,24 +47,25 @@ Listed in the order that makes the strangler-fig clean. Earlier extractions crea
 
 | # | Component Module | Why this order |
 |---|---|---|
-| 1 | **Win Calculator** | Smallest. Already a binary `win_condition` preference. Lowest blast radius — good shakedown for the strangler-fig pattern itself. |
+| 1 | **Win Calculator** | Smallest existing surface (binary `win_condition` preference today). Lowest blast radius — good shakedown for the strangler-fig pattern itself. Extracts as a metric-precedence-stack Module per the locked doc; initial implementation populates the stack with one entry (matching today's `win_condition`). Future expansion (multi-metric stacks, `edge` from Tiebreak System) is enabled but not implemented in this Unit. |
 | 2 | **Threshold Charts** | Already partly separated (DB tables + SQL lookup function exist). Hardcoded TS charts in `src/systems/charts/` need lifting into Module shape. |
 | 3 | **Handicap Systems** | Rating capability inside SystemModule is self-contained. 4 variants (Points, Percentage, FargoRate, Skill-Level-reserved). |
 | 4 | **Handicap Mechanisms** | Already discriminated by mechanism in `SystemModule.threshold` discriminated union. Promote to a real Module type. |
 | 5 | **Points System sub-mechanisms** | Calculators are already extracted into a registry (`src/systems/calculators/`). This unit DEcomposes the bundled calculators into their underlying sub-mechanism types (A/B/C/D per the locked Points System README). |
 | 6 | **Team Geometry** | Currently mixed into `SystemModule.teamFormat`. Three axes (lineup_size, max_roster_size, game_generation). |
 | 7 | **Match Format** | Currently scattered preference fields (pairing_format, race_length). |
-| 8 | **Standings & Tiebreakers** | Currently scattered preference fields + `playoffGenerator.standingsSort`. |
-| 9 | **Dissolve `SystemModule`** | After 1-8 extract their primitives, `SystemModule` is just an adapter with no behavior of its own. Dissolve it. The 3 prepackaged systems become composition declarations. |
-| 10 | **Decision Record** | What got built, what got deferred, reconsideration triggers. |
+| 8 | **Pairings Generator** | Currently runtime-only (no preference columns); hardcoded in `src/utils/gameOrder.ts` (3v3 DRR) and inline elsewhere. Extract as a chain-pattern System with three sub-Mechanisms (pair generation, game ordering, break/rack assignment) per the locked PG blueprint. |
+| 9 | **Tiebreak System** | Currently scattered runtime hooks (`MatchEndVerification`, `computeMatchResult` in bca3v3.ts, `ManualTiebreakerDialog`). Extract as a conditional-fallthrough chain Module with 4 Mechanism variants per the locked Tiebreak System blueprint. **Wires the Win Calc metric stack's `edge` entry to fire this Module** — closes the integration the locked Win Calc doc describes. (Note: the season-standings sort, formerly bundled in the old "Standings & Tiebreakers" Module, moves OUT of the modular Scoring System catalog entirely and is captured as a separate future Standings concern — not part of this migration plan.) |
+| 10 | **Dissolve `SystemModule`** | After 1-9 extract their primitives, `SystemModule` is just an adapter with no behavior of its own. Dissolve it. The 3 prepackaged systems become composition declarations. |
+| 11 | **Decision Record** | What got built, what got deferred, reconsideration triggers. |
 
 ## How this plan is written
 
 **Unit 1 (Win Calculator) is defined in detail below.** It's the first extraction; doing it teaches us the pattern for the rest.
 
-**Units 2-9 are sketched only.** Each one is a real unit, but the detailed file list and approach gets filled in WHEN we approach that unit, not all up front. The reason: each extraction will surface things about the code we don't know yet, and pre-specifying all 9 in detail invites the over-planning we just spent a session backing out of. The plan is a roadmap whose detailed segments get drawn as we walk them.
+**Units 2-10 are sketched only.** Each one is a real unit, but the detailed file list and approach gets filled in WHEN we approach that unit, not all up front. The reason: each extraction will surface things about the code we don't know yet, and pre-specifying all 10 in detail invites the over-planning we just spent a session backing out of. The plan is a roadmap whose detailed segments get drawn as we walk them.
 
-**Unit 10 (Decision Record) is a small documentation unit; defined at a sketch level.**
+**Unit 11 (Decision Record) is a small documentation unit; defined at a sketch level.**
 
 ## Honest sizing
 
@@ -147,15 +148,17 @@ From the viability brainstorm's R1-R19. Most map to specific extraction units be
 
 ## Implementation Units
 
-- [ ] **Unit 1: Extract Win Calculator as primitive Module**
+- [ ] **Unit 1: Extract Win Calculator as a metric-precedence-stack Module**
 
-**Goal:** Lift the current `win_condition` (binary preference: `'games' | 'points'`) out of being a runtime-resolver branch and into being a first-class Win Calculator Module with its own typed contract. The 3 prepackaged Scoring Systems compose this Module instead of dispatching on `win_condition` directly. Establishes the strangler-fig pattern that the next 7 extractions follow.
+**Goal:** Lift the current `win_condition` (binary preference: `'games' | 'points'`) out of being a runtime-resolver branch and into being a first-class Win Calculator Module with its own typed contract — shaped as a **metric precedence stack** per the locked Win Calc doc. The 3 prepackaged Scoring Systems compose this Module instead of dispatching on `win_condition` directly. Establishes the strangler-fig pattern that the next 8 extractions follow.
+
+**Scope discipline:** the locked Win Calculator doc describes a configurable multi-entry metric stack with an optional `edge` entry that fires the Tiebreak System. **Unit 1 implements the metric-stack interface but populates it with exactly ONE entry per league** — the one that corresponds to today's `win_condition` value (`'games'` → one-entry stack `[games_won]`; `'points'` → one-entry stack `[points_earned]`). Multi-entry stacks, the `edge` entry, and the Tiebreak System trigger integration are all enabled by the interface but NOT implemented in this Unit. They land in Unit 9 (Tiebreak System extraction) and beyond. This keeps the strangler-fig pattern clean: extract the Module shape first, validate parity with existing behavior, expand the implementation in later units.
 
 **Requirements:** R8 (Win Calc / Points orthogonal — orthogonality made real in code).
 
 **Dependencies:** None — this is the shakedown extraction.
 
-**Locked-page definition (from `modules/win-calculator.md`):** *"The Win Calculator examines the collected match data — the two metrics every match tracks (Games and Points) plus any benchmarks the Handicap Mechanisms declared — and declares the match winner. It does not produce a metric and it does not allocate points. It decides."*
+**Locked-page definition (from `modules/win-calculator.md`):** *"The Win Calculator examines the collected match data — the two metrics every match tracks (Games and Points) plus any benchmarks the Handicap Mechanisms declared — and declares the match winner. It does so by walking a configurable metric precedence stack — an ordered list of metrics — and choosing the first metric on which the two teams differ. Configured stacks may include `edge` as a stack entry; when the walker reaches `edge` (i.e., all higher-precedence metrics tied), the Win Calculator fires the Tiebreak System to produce edge's value, then uses that value as the deciding metric. The Win Calculator does not produce metrics and does not allocate points. It decides."*
 
 **Where it lives in current code:**
 - `src/types/preferences.ts` + `src/types/resolvedSystemConfig.ts` — `win_condition` column type (`'games' | 'points'`)
@@ -167,35 +170,46 @@ From the viability brainstorm's R1-R19. Most map to specific extraction units be
 
 **Structural gap:**
 - No `WinCalculator` Module type exists. The behavior is a switch on `win_condition` scattered across resolver + runtime.
-- No `decideMatchWinner(games, points, benchmarks)` function with a clear contract. Each call site implements its own branching.
+- No `decideMatchWinner(matchData) -> WinnerDecision` function with a clear contract. Each call site implements its own branching.
 - The 3 prepackaged SystemModules don't declare "I use this Win Calculator"; they're invoked via the runtime switch.
+- No metric-stack data structure. The architectural intent (configurable ordered list of metrics) has no code shape yet.
 
 **Extraction approach:**
-1. **Create primitive type:** new file `src/systems/win-calculators/types.ts` defining `WinCalculator` Module interface — has `kind: 'games' | 'points'` (matching today's two values), `decide(matchData) -> WinnerDecision` function with a typed contract.
-2. **Create two variants:** `src/systems/win-calculators/games_decides.ts` and `src/systems/win-calculators/points_decides.ts` — each implements the contract. Behavior matches today's dispatch branches exactly.
-3. **Create registry:** `src/systems/win-calculators/index.ts` — pattern matches `src/systems/calculators/index.ts`. Registers the two variants at module load.
-4. **Adapter wiring:** add `winCalculator: WinCalculator` field to `SystemModule` interface. The 3 bundled SystemModules (`bca3v3.ts`, `bca5v5.ts`, `fargo5v5.ts`) declare which Win Calculator they use (`getWinCalculator('games')` for the BCA two, `getWinCalculator('points')` for fargo5v5).
-5. **Runtime consumers:** update `computeMatchRunningTotals.ts` and any other match-end logic to consult `system_snapshot.winCalculator.decide(...)` instead of branching on `win_condition` inline. The old branching becomes the bodies of the two variant `decide` functions.
-6. **Preserve `win_condition` preference column.** It stays as the LO's selection input; the resolver looks it up to populate `system_snapshot.winCalculator`. No DB migration needed.
+1. **Create primitive type:** new file `src/systems/win-calculators/types.ts` defining the `WinCalculator` Module interface:
+   - `metricStack: MetricStackEntry[]` — ordered list of metric entries
+   - `MetricStackEntry` is a discriminated union: `'games_won' | 'points_earned' | 'edge'` (the third is enabled but unused in Unit 1)
+   - `decide(matchData) -> WinnerDecision` — walks the metric stack and returns a typed winner (or a "tied — no edge entry in stack" sentinel)
+2. **Implement the walker:** `src/systems/win-calculators/walker.ts` — a single function that takes a metric stack + match data and returns the decision. For each metric in the stack: compare the two teams' values; if they differ, return that team as winner; if equal, continue. If the stack walks past all entries without producing a winner: return the tied sentinel. (The `edge` case will be wired in Unit 9 when the Tiebreak System extraction lands; for Unit 1, encountering `edge` in the stack is a "not yet implemented" state — but since Unit 1 populates stacks with one entry only, `edge` never appears.)
+3. **Create one Module instance per current preference value:** instead of two "variant" files, this is ONE Module with a metric stack populated based on the `win_condition` preference. A factory: `getWinCalculator(win_condition: 'games' | 'points'): WinCalculator` returns a Module with `metricStack: [{ kind: 'games_won' }]` for `'games'` and `metricStack: [{ kind: 'points_earned' }]` for `'points'`. Both share the walker; only the stack content differs.
+4. **Create registry:** `src/systems/win-calculators/index.ts` — exports `getWinCalculator` factory. Pattern matches `src/systems/calculators/index.ts` (the existing points calculator registry).
+5. **Adapter wiring:** add `winCalculator: WinCalculator` field to the `SystemModule` interface. The 3 bundled SystemModules (`bca3v3.ts`, `bca5v5.ts`, `fargo5v5.ts`) declare which Win Calculator they use (`getWinCalculator('games')` for the BCA two — they ship with `win_condition='games'`; `getWinCalculator('points')` for fargo5v5 — it ships with `win_condition='points'`).
+6. **Runtime consumers:** update `computeMatchRunningTotals.ts` and any other match-end logic to consult `system_snapshot.winCalculator.decide(matchData)` instead of branching on `win_condition` inline. The old branching collapses into the metric-stack walker.
+7. **Preserve `win_condition` preference column.** It stays as the LO's selection input; the resolver looks it up to populate `system_snapshot.winCalculator` with the appropriate one-entry metric stack. No DB migration needed in this Unit.
+
+**Why this shape (not two variant Modules):** the locked Win Calc doc describes Win Calculator as a single Module with a configurable stack — not as N variants. Unit 1 must establish that shape correctly even though the initial stacks are degenerate (one entry). Building it as "two variant Modules" now would lock in a wrong architecture that Unit 9 would have to undo.
 
 **Patterns to follow:**
-- `src/systems/calculators/index.ts` + `src/systems/calculators/types.ts` — same registry-of-typed-variants pattern.
+- `src/systems/calculators/index.ts` + `src/systems/calculators/types.ts` — same registry-of-typed-Module pattern (single Module with factory, not N variants).
 - Self-registration at module load (the fix from the 2026-05-02 "no points written" bug).
+- Discriminated unions for the metric stack entries — match the existing pattern from `SystemModule.threshold` discriminated union.
 
 **Test scenarios:**
 - *Regression × 3:* `bca3v3.characterization.test.ts`, `bca5v5.characterization.test.ts`, `fargo5v5.characterization.test.ts` all pass byte-identical after extraction. This is the gate.
 - *Happy path × 2:* `getWinCalculator('games').decide({...})` returns the same winner as today's `win_condition='games'` branch. Same for `'points'`.
-- *Edge case (tie band):* the locked 3v3 9-9 tie-band rule still produces the same match-end outcome.
+- *Walker correctness:* the metric stack walker correctly handles the one-entry case (the only case Unit 1 exercises). Tests with `metricStack: [{ kind: 'games_won' }]` and `metricStack: [{ kind: 'points_earned' }]` produce expected results.
+- *Tied case sentinel:* with a one-entry `games_won` stack and tied games_won values, the walker returns the tied sentinel (not a winner). Today's runtime handles this case via scattered tie-band logic; the Module's contract says it returns the sentinel and lets the caller handle it. The caller (existing tie-band rule in `linear_above_threshold`) is unchanged in Unit 1.
+- *Edge case (tie band):* the locked 3v3 9-9 tie-band rule still produces the same match-end outcome (0 per-match points regardless). This is Points System's rule, not Win Calc's — Unit 1 doesn't touch it.
 - *Integration:* `off_preset_combos.test.ts` continues to pass.
-- *Contract test:* WinCalculator's `decide` function rejects invalid inputs (missing games or points) gracefully — never throws, returns a typed error or safe default.
+- *Contract test:* the walker rejects invalid inputs (empty stack, missing match data) gracefully — never throws, returns a typed error or the tied sentinel.
 
 **Verification:**
 - The 3 characterization tests pass byte-identical.
-- New files `src/systems/win-calculators/{types,games_decides,points_decides,index}.ts` exist with full contract coverage.
-- `SystemModule` interface has `winCalculator: WinCalculator` field.
-- The 3 bundled SystemModule files declare which Win Calculator they use.
-- Runtime consumers (`computeMatchRunningTotals`, match-end logic) consult the Module via `system_snapshot.winCalculator`, not via inline switch on `win_condition`.
+- New files `src/systems/win-calculators/{types,walker,index}.ts` exist with full contract coverage.
+- `SystemModule` interface has `winCalculator: WinCalculator` field with a metric stack rather than a binary kind.
+- The 3 bundled SystemModule files declare a one-entry metric stack matching their current `win_condition`.
+- Runtime consumers (`computeMatchRunningTotals`, match-end logic) consult the Module via `system_snapshot.winCalculator.decide(...)`, not via inline switch on `win_condition`.
 - All test suites pass.
+- **The `edge` metric stack entry is enabled in the type system but never appears in any league's actual stack in this Unit** — it remains "future use" until Unit 9 wires the Tiebreak System.
 
 ---
 
