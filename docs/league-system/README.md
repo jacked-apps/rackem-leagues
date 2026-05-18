@@ -219,7 +219,7 @@ docs/league-system/
     team-geometry.md                 ← Single file
     match-format.md                  ← Single file
     pairings-generator.md            ← Single file
-    tiebreak-system/                 ← Folder: README + 7 variant files (coin-flip, roshambo, single-game, single-round, race-to-n, manual, teams-self-determine)
+    tiebreak-system/                 ← Folder: README + 4 variant files (coin-flip, roshambo, human-pick, mini-match)
   glossary.md                        ← Single-source term definitions (pending — Unit 10)
 ```
 
