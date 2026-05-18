@@ -15,7 +15,7 @@ A peer variant of the **[Handicap Mechanisms](README.md)** Module. **Reserved**:
 
 The mechanism gives the weaker player in each **individual head-to-head pairing** a shorter race-to target than the stronger player. Each pairing has its own asymmetric race length, set from the rating gap between the two paired players (not the team-vs-team aggregate).
 
-**Same fundamental shape as `extra_games`.** Race Length Adjustment and Extra Games both live in the *Games / Extended-finish* cell of the [Module's 2x2 taxonomy](README.md#variants-index--the-2x2-fundamental-taxonomy) — same fundamental mechanism (stronger side has a farther finish line on the games axis). The differences are **mode flags**, not kind:
+**Same fundamental shape as `extra_games`.** Race Length Adjustment and Extra Games both live in the *Games / Extended-finish* cell of the [Module's 2x2 taxonomy](README.md#catalog--the-2x2-fundamental-taxonomy) — same fundamental mechanism (stronger side has a farther finish line on the games axis). The differences are **mode flags**, not kind:
 
 - **Scope**: per-pairing (this variant) vs team-aggregate (`extra_games`). Per-pairing means each individual matchup gets its own asymmetric finish lines, computed from the *individual* rating pair rather than the team-sum difference.
 - **Termination**: race (this variant — pairing ends when either player hits their target) vs threshold (`extra_games` — play all games to the team-level fixed count, evaluate at end).

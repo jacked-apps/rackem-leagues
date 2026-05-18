@@ -56,7 +56,7 @@ If a proposed feature changes *how a handicap input becomes a threshold value* (
 
 **Implementation status.** The current codebase couples specific Charts to specific encoding-runners (e.g., the 3v3 Points Chart is hardcoded inside the `bca3v3` SystemModule rather than queried as an independent Chart Module). **Implementation artifact, not architectural intent.** Step-2 refactors will lift Charts out as first-class Modules selected by the league configuration.
 
-## Variants index
+## Catalog
 
 Charts organize on two axes:
 

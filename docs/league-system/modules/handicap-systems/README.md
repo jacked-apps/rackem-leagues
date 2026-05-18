@@ -56,7 +56,7 @@ Everything else, including this app's `points` (-2 to +2 integer) and `percentag
 - We do not pretend our coined names (Points, Percentage) are CSI-official. They are coined.
 - Our `percentage` system is **not** CSI's "Average Handicapping" — ours is a *win-rate* average (binary wins / total games), not a *points-per-game* average. Adjacent concept; distinct mechanic.
 
-## Variants index — two sub-categories {#variants-index}
+## Catalog — two sub-categories
 
 The variants split along one fundamental axis: **who computes the rating**. This is not a presentation choice — it is the most consequential decision an LO makes inside this Module. Two of our four variants are internally-computed; two are externally-sourced.
 

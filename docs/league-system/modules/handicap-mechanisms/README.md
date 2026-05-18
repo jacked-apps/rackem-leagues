@@ -45,7 +45,7 @@ If a proposed feature changes *what kind of advantage the weaker side gets durin
 
 Any Handicap Mechanism should be **composable** with any Handicap System, any Threshold Chart, and any Scoring System (assuming a calibrated chart exists for the specific encoding-mechanism pair). The current codebase has wiring for specific combinations only — see variant pages for what's wired vs unwired. **This is an implementation status, not architectural intent.** Future work will fill in the gaps.
 
-## Variants index — the 2x2 fundamental taxonomy
+## Catalog — the 2x2 fundamental taxonomy
 
 The fundamental kinds of handicap mechanism are organized by two axes:
 
