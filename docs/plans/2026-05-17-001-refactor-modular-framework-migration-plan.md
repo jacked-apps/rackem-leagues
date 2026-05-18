@@ -194,7 +194,8 @@ From the viability brainstorm's R1-R19. Most map to specific extraction units be
 - Discriminated unions for the metric stack entries — match the existing pattern from `SystemModule.threshold` discriminated union.
 
 **Test scenarios:**
-- *Regression × 3:* `bca3v3.characterization.test.ts`, `bca5v5.characterization.test.ts`, `fargo5v5.characterization.test.ts` all pass byte-identical after extraction. This is the gate.
+- *Regression × 3:* `src/systems/__tests__/bca3v3.characterization.test.ts` (320 lines), `src/systems/__tests__/bca5v5.characterization.test.ts` (334 lines), `src/systems/__tests__/fargo5v5.test.ts` (420 lines — Fargo's actual implementation, not stubs) all pass byte-identical after extraction. This is the gate.
+- *Regression × 1 (win-determination):* `src/utils/__tests__/determineMatchResult.characterization.test.ts` — the existing characterization test for the win-determination function (which the new Win Calc walker effectively wraps). Locks the function-level behavior.
 - *Happy path × 2:* `getWinCalculator('games').decide({...})` returns the same winner as today's `win_condition='games'` branch. Same for `'points'`.
 - *Walker correctness:* the metric stack walker correctly handles the one-entry case (the only case Unit 1 exercises). Tests with `metricStack: [{ kind: 'games_won' }]` and `metricStack: [{ kind: 'points_earned' }]` produce expected results.
 - *Tied case sentinel:* with a one-entry `games_won` stack and tied games_won values, the walker returns the tied sentinel (not a winner). Today's runtime handles this case via scattered tie-band logic; the Module's contract says it returns the sentinel and lets the caller handle it. The caller (existing tie-band rule in `linear_above_threshold`) is unchanged in Unit 1.
