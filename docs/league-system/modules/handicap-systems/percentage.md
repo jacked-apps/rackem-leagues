@@ -1,5 +1,5 @@
 ---
-title: Percentage Handicap (Variant)
+title: Percentage Handicap
 date: 2026-05-12
 status: active
 audience: developer + AI sessions

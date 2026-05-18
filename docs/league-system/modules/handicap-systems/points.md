@@ -1,5 +1,5 @@
 ---
-title: Points Handicap (Variant)
+title: Points Handicap
 date: 2026-05-12
 status: active
 audience: developer + AI sessions

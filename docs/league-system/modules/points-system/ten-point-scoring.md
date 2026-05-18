@@ -1,5 +1,5 @@
 ---
-title: 10-Point Scoring System (Variant)
+title: 10-Point Scoring System
 date: 2026-05-13
 status: active
 audience: developer + AI sessions

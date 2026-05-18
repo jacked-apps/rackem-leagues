@@ -1,5 +1,5 @@
 ---
-title: 1-Point Scoring System (Variant)
+title: 1-Point Scoring System
 date: 2026-05-13
 status: active
 audience: developer + AI sessions
@@ -19,7 +19,7 @@ Per-game allocation: **winner gets 1 point, loser gets 0 points.** Match-total p
 
 ## How it works
 
-At game completion, the [Points System](README.md#points-system) records winner=1 / loser=0. Per-game points accumulate to a match-total points count (which, for this system, equals the games-won count). The [Win Calculator](README.md#win-calculator) consults match-total to determine the winner. With `win_condition='games'`, the games-won counts decide; with `win_condition='points'`, the accumulated points decide — but for 1-Point both produce the same winner.
+At game completion, the [Points System](README.md) records winner=1 / loser=0. Per-game points accumulate to a match-total points count (which, for this system, equals the games-won count). The [Win Calculator](../win-calculator.md) consults match-total to determine the winner. With `win_condition='games'`, the games-won counts decide; with `win_condition='points'`, the accumulated points decide — but for 1-Point both produce the same winner.
 
 A typical Win Calculator pairing is `win_condition='games'` with a target ("first to N wins" — CSI's "Race To" framing). When paired with the [`extra_games`](../handicap-mechanisms/extra-games.md) mechanism, the asymmetric per-team targets produce the handicapped match.
 

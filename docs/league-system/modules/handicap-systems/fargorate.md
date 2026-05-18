@@ -1,5 +1,5 @@
 ---
-title: FargoRate Handicap (Variant)
+title: FargoRate Handicap
 date: 2026-05-12
 status: active
 audience: developer + AI sessions
