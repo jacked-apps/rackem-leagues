@@ -63,6 +63,7 @@ const HouseRuleDetailPage = lazy(() => import('../rules/HouseRuleDetailPage'));
 // Lazy-loaded operator pages (only loaded when operator accesses them)
 const OperatorWelcome = lazy(() => import('../operator/OperatorWelcome'));
 const OperatorDashboard = lazy(() => import('../operator/OperatorDashboard'));
+const NewSeasonFromPreviousPage = lazy(() => import('../operator/NewSeasonFromPreviousPage'));
 const OrganizationSettings = lazy(() => import('../operator/OrganizationSettings'));
 const ReportsManagement = lazy(() => import('../operator/ReportsManagement'));
 const PlayerManagement = lazy(() => import('../operator/PlayerManagement'));
@@ -239,6 +240,7 @@ export const router = createBrowserRouter([
           { path: 'league/:leagueId', element: withOperator(LeagueDetail) },
           { path: 'league/:leagueId/settings', element: withOperator(LeagueSettings) },
           { path: 'league/:leagueId/create-season', element: withOperator(SeasonCreationWizard) },
+          { path: 'operator/start-next-season/:leagueId', element: withOperator(NewSeasonFromPreviousPage) },
           { path: 'league/:leagueId/season/:seasonId/manage-schedule', element: withOperator(SeasonScheduleManager) },
           { path: 'league/:leagueId/manage-teams', element: withOperator(TeamManagement) },
           { path: 'league/:leagueId/season/:seasonId/playoffs-setup', element: withOperator(PlayoffsSetupWizard) },

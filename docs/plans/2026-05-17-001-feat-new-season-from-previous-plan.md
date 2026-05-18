@@ -24,12 +24,17 @@ End-of-season → start-of-next-season is the highest-frequency operator task. T
 
 | Unit | Title | Status |
 |---|---|---|
-| 1 | Entry points — button on LeagueDetail + hint badge on ActiveLeagues | ⬜ not started |
-| 2 | Route + wizard shell + previous-season data pre-loader | ⬜ not started |
-| 3 | Step "Dates" — pre-filled start date + week count + derived name | ⬜ not started |
-| 4 | Step "Teams" — carry-forward + dropouts + captain changes | ⬜ not started |
-| 5 | Step "Venues" — carry-forward + add/remove | ⬜ not started |
-| 6 | Activation — RPC for atomic season + teams + venues + welcome message | ⬜ not started |
+| 1 | Entry points — button on LeagueDetail + hint badge on ActiveLeagues | ✅ shipped 2026-05-17 |
+| 2 | Route + wizard shell + previous-season data pre-loader | ✅ shipped 2026-05-17 |
+| 3 | Step "Dates" — pre-filled start date + week count + derived name | ✅ shipped 2026-05-17 |
+| 4 | Step "Teams" — carry-forward + dropouts + captain changes | ✅ shipped 2026-05-17 |
+| 5 | Step "Venues" — carry-forward + add/remove | ✅ shipped 2026-05-17 |
+| 6 | Activation — RPC for atomic season + teams + venues + welcome message | ✅ shipped 2026-05-17 (welcome message deferred — see notes) |
+
+**Notes (2026-05-17 implementation):**
+- Schedule + Matchups steps from the brainstorm's 6-step flow are NOT wired into this wizard yet — the new season lands as `status='upcoming'` and the operator continues from the league page using the existing first-season-style schedule/matchups flow. Future polish: wire those existing components directly into this wizard for a single uninterrupted flow.
+- Welcome-message-to-team-chats is deferred — the existing `auto_create_season_conversations` trigger fires on season activation, so the chats appear automatically; the additional welcome message is a small polish item that can ship later.
+- Local DB migration NOT yet applied (branch is behind the messaging-stack migrations applied to the local DB). RPC file is valid SQL and will apply cleanly on merge. Run `pnpm db:reset && pnpm db:types` from main after merge to refresh.
 
 Schedule and Matchups steps reuse the existing first-season flow components as-is. No new units needed for those — the wizard just navigates through them.
 
