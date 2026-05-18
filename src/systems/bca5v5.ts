@@ -16,6 +16,7 @@ import { getMatchFormat } from './match-format';
 import { percentageHandicapSystem } from './handicap-systems';
 import { gamesNeeded5v5Chart } from './threshold-charts';
 import { createExtraGamesMechanism } from './handicap-mechanisms';
+import { buildPercent5ManComposition } from './points-system/compositions/percent-5-man';
 
 const NOT_YET_WIRED =
   'bca5v5 scoring module methods not yet wired through SystemModule (legacy paths still in use)';
@@ -56,4 +57,9 @@ export const bca5v5: SystemModule = {
   // Handicap Mechanism Module — extra_games bound to the 5v5 Games-Needed Chart.
   // Coexists with `threshold` until Phase D.
   handicapMechanism: createExtraGamesMechanism(gamesNeeded5v5Chart),
+
+  // Points System Module — Percentage 5-Man composition: per-game allocator
+  // (winner = 0.1, loser = 0) + 2 jump triggers (milestone at games_to_win × 0.7,
+  // win threshold at games_to_win). Phase B of Points System extraction.
+  pointsSystem: buildPercent5ManComposition({}),
 };

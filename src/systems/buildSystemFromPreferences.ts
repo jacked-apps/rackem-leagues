@@ -63,6 +63,10 @@ import {
   noneMechanism,
   type HandicapMechanism,
 } from './handicap-mechanisms';
+import { buildPoints3ManComposition } from './points-system/compositions/points-3-man';
+import { buildPercent5ManComposition } from './points-system/compositions/percent-5-man';
+import { buildFargo10pt5ManComposition } from './points-system/compositions/fargo-10pt-5-man';
+import type { PointsSystem } from './points-system/types';
 
 // ============================================================================
 // Preset detection (fast-path)
@@ -258,6 +262,38 @@ function pickHandicapMechanism(
 }
 
 // ============================================================================
+// Points System Module dispatch
+// ============================================================================
+
+/**
+ * Pick a Points System composition for the ad-hoc module by `points_calculator`.
+ * Mirrors the dispatch the legacy `pickScoring` does, but returns a composed
+ * Points System rather than a bundled calculator. Phase B of the Points
+ * System extraction; coexists with the legacy `scoring` capability.
+ *
+ * Returns null when `points_calculator` is null (the league doesn't track
+ * points at all — no Points System applies).
+ */
+function pickPointsSystem(pointsCalculator: string | null): PointsSystem | null {
+  if (pointsCalculator === null) {
+    return null;
+  }
+  if (pointsCalculator === 'linear_above_threshold') {
+    return buildPoints3ManComposition({ multiplier: 1 });
+  }
+  if (pointsCalculator === 'accumulate_with_milestone_jumps') {
+    return buildPercent5ManComposition({});
+  }
+  if (pointsCalculator === 'accumulated_per_game') {
+    return buildFargo10pt5ManComposition({});
+  }
+  console.warn(
+    `[buildSystemFromPreferences] Unknown points_calculator ${JSON.stringify(pointsCalculator)} — pointsSystem field set to null`,
+  );
+  return null;
+}
+
+// ============================================================================
 // Scoring section dispatch
 // ============================================================================
 
@@ -404,5 +440,10 @@ export function buildSystemFromPreferences(
       prefs.mechanism,
       pickThresholdChart(prefs.handicap_type, prefs.mechanism),
     ),
+    // Points System Module — Phase B of the Points System extraction Unit.
+    // Composes the per-match point allocation rule set from primitives.
+    // Coexists with the legacy `scoring` capability + calculator-registry
+    // dispatch until Phase D removes the legacy.
+    pointsSystem: pickPointsSystem(prefs.points_calculator),
   };
 }

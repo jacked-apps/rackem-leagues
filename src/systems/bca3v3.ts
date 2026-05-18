@@ -27,6 +27,7 @@ import { getMatchFormat } from './match-format';
 import { pointsHandicapSystem } from './handicap-systems';
 import { gamesNeeded3v3Chart } from './threshold-charts';
 import { createExtraGamesMechanism } from './handicap-mechanisms';
+import { buildPoints3ManComposition } from './points-system/compositions/points-3-man';
 
 const NOT_YET_WIRED =
   'bca3v3 scoring module methods not yet wired through SystemModule (legacy paths still in use)';
@@ -74,4 +75,11 @@ export const bca3v3: SystemModule = {
   // Handicap Mechanism Module — extra_games bound to the 3v3 Games-Needed Chart.
   // Coexists with the legacy `threshold` capability above until Phase D removes it.
   handicapMechanism: createExtraGamesMechanism(gamesNeeded3v3Chart),
+
+  // Points System Module — Points 3-Man composition: end-of-match aggregate
+  // (linear_above_threshold) with the locked 3v3 9-9 tie-band absorption.
+  // Phase B of the Points System extraction. Coexists with the legacy
+  // `scoring` capability + calculator-registry dispatch; Phase C/D will swap
+  // consumers and remove the legacy registry.
+  pointsSystem: buildPoints3ManComposition({ multiplier: 1 }),
 };

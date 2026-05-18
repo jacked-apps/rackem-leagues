@@ -53,6 +53,7 @@ import { getMatchFormat } from './match-format';
 import { fargoRateHandicapSystem } from './handicap-systems';
 import { fargoFormulaChart } from './threshold-charts';
 import { createStartPointsMechanism } from './handicap-mechanisms';
+import { buildFargo10pt5ManComposition } from './points-system/compositions/fargo-10pt-5-man';
 
 // ============================================================================
 // Constants (module defaults — overridable via SystemOverrides)
@@ -211,4 +212,12 @@ export const fargo5v5: SystemModule = {
   // Handicap Mechanism Module — start_points bound to the FargoRate Formula Chart.
   // Coexists with `threshold` until Phase D.
   handicapMechanism: createStartPointsMechanism(fargoFormulaChart),
+
+  // Points System Module — FargoRate 10-Point 5-Man composition: 2 receipt
+  // triggers (award handicap-driven initial points to each side) + per-game
+  // allocator (winner = 10 fixed, loser = counter 0-7 balls pocketed).
+  // The initial points value is read from prefs at evaluation time (caller
+  // pre-computes via the Handicap Mechanism's start_points logic per the
+  // D3 dual-identity resolution).
+  pointsSystem: buildFargo10pt5ManComposition({}),
 };

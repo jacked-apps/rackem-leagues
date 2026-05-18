@@ -25,6 +25,7 @@ import type { MatchFormat } from './match-format/types';
 import type { HandicapSystem } from './handicap-systems/types';
 import type { ThresholdChart } from './threshold-charts/types';
 import type { HandicapMechanism } from './handicap-mechanisms/types';
+import type { PointsSystem } from './points-system/types';
 
 // ============================================================================
 // Ratings
@@ -356,4 +357,34 @@ export interface SystemModule {
    * @see docs/league-system/modules/handicap-mechanisms/README.md — locked blueprint
    */
   handicapMechanism: HandicapMechanism | null;
+
+  /**
+   * Points System Module — the composed per-match point allocation rule set.
+   * A `PointsSystem` is a structured-slot composition of primitives
+   * (thresholds, optional per-game allocator, triggers, optional end-of-match
+   * aggregate) per the locked Points System README and the Ed-walked
+   * decomposition in
+   * `docs/brainstorms/2026-05-18-points-system-decomposition-requirements.md`.
+   *
+   * Added in Phase B of the Points System extraction Unit (Unit 5). Coexists
+   * with the legacy `scoring` capability above + the calculator-registry
+   * dispatch (`src/systems/calculators/`) during the strangler-fig transition;
+   * Phase C swaps consumers to the composed Points System; Phase D removes
+   * the legacy calculator registry.
+   *
+   * The three prepackaged Scoring Systems each declare their composition:
+   * - Points 3-Man — buildPoints3ManComposition() (just an end-of-match aggregate)
+   * - Percentage 5-Man — buildPercent5ManComposition() (allocator + 2 jump triggers)
+   * - FargoRate 10-Point 5-Man — buildFargo10pt5ManComposition() (initial points + allocator)
+   *
+   * `null` reflects combos where no Points System applies — currently the
+   * `handicap_type='none' + mechanism='none'` case (a league running with
+   * no points tracking at all). Cross-audited byte-equivalent to the legacy
+   * bundled calculators across exhaustive input sweeps; see
+   * `src/systems/points-system/__tests__/cross-audit-*.test.ts`.
+   *
+   * @see src/systems/points-system/runtime.ts — evaluatePointsSystem()
+   * @see docs/league-system/modules/points-system/README.md — the locked blueprint
+   */
+  pointsSystem: PointsSystem | null;
 }
