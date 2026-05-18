@@ -16,6 +16,7 @@ import { LeagueStatusCard } from '@/components/operator/LeagueStatusCard';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { logger } from '@/utils/logger';
 import { LeagueOverviewCard } from '@/components/operator/LeagueOverviewCard';
+import { LeagueReupStatusCard } from '@/components/operator/LeagueReupStatusCard';
 import { TeamsCard } from '@/components/operator/TeamsCard';
 import { ScheduleCard } from '@/components/operator/ScheduleCard';
 import { StatsCard } from '@/components/operator/StatsCard';
@@ -197,6 +198,11 @@ export const LeagueDetail: React.FC = () => {
             navigate={navigate}
           />
         </div>
+
+        {/* Re-up Status — only renders when the league's active season
+            is in its last 3 weeks; otherwise the card returns null and
+            takes up no space. */}
+        <LeagueReupStatusCard leagueId={league.id} />
 
         {/* Stats & Standings (only shown if active season exists) */}
         <StatsCard leagueId={league.id} seasonId={activeSeason?.id || null} />

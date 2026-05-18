@@ -64,6 +64,7 @@ const HouseRuleDetailPage = lazy(() => import('../rules/HouseRuleDetailPage'));
 const OperatorWelcome = lazy(() => import('../operator/OperatorWelcome'));
 const OperatorDashboard = lazy(() => import('../operator/OperatorDashboard'));
 const NewSeasonFromPreviousPage = lazy(() => import('../operator/NewSeasonFromPreviousPage'));
+const CaptainReupPage = lazy(() => import('../pages/CaptainReupPage'));
 const OrganizationSettings = lazy(() => import('../operator/OrganizationSettings'));
 const ReportsManagement = lazy(() => import('../operator/ReportsManagement'));
 const PlayerManagement = lazy(() => import('../operator/PlayerManagement'));
@@ -180,6 +181,7 @@ export const router = createBrowserRouter([
           { path: 'messages', element: withMember(<Messages />) },
           { path: 'player/:playerId', element: withMember(<PlayerProfile />) },
           { path: 'my-teams', element: withMember(<MyTeams />) },
+          { path: 'reup', element: withMember(<CaptainReupPage />) },
           { path: 'my-match', element: withMember(<MyMatch />) },
           { path: 'stats', element: withMember(<PlayerStats />) },
           // Rules pages — public (no auth wrapper) but rendered inside

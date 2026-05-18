@@ -35,6 +35,7 @@ import { useUser } from '@/context/useUser';
 import { useUserProfile } from '@/api/hooks/useUserProfile';
 import { useOrganizations } from '@/api/hooks/useOrganizations';
 import { useUnreadMessageCount } from '@/api/hooks/useMessages';
+import { useCaptainReupPrompt } from '@/hooks/useCaptainReupPrompt';
 import { OperatorOrgRow } from './OperatorOrgRow';
 
 interface AppDrawerProps {
@@ -166,10 +167,20 @@ function PublicSection() {
  */
 function PlayerSection({ unreadCount }: { unreadCount: number }) {
   const messagesLabel = unreadCount > 0 ? `Messages (${unreadCount})` : 'Messages';
+  // Captain re-up entry — shown only when the current user has open
+  // re-up forms (last-3-weeks window + no submitted answer yet). Same
+  // hook the syncer-modal uses, so the link appears the moment a
+  // qualifying team exists and disappears the moment it's answered.
+  const { data: reupTeams = [] } = useCaptainReupPrompt();
+  const reupLabel =
+    reupTeams.length > 1
+      ? `Season Re-Up (${reupTeams.length})`
+      : 'Season Re-Up';
   return (
     <ul className="space-y-1">
       <DrawerLink to="/my-match" label="My Match" />
       <DrawerLink to="/my-teams" label="My Teams" />
+      {reupTeams.length > 0 && <DrawerLink to="/reup" label={reupLabel} />}
       <DrawerLink to="/stats" label="Stats" />
       <DrawerLink to="/rules" label="Rules" />
       <DrawerLink to="/messages" label={messagesLabel} />

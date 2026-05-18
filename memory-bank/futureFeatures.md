@@ -188,36 +188,6 @@ This document captures aspirational features that would enhance the app's desira
 
 **Note**: This feature should be designed after core league management is working. May require role-based access control (RBAC) system and permission framework.
 
-### Captain "Re-Up Sheet" — End-of-Season Survey Fed Into New-Season Wizard
-**Status**: Future consideration — surfaced 2026-05-17 during new-season wizard brainstorm. Deliberately deferred until the wizard ships and we see whether the captains-chat alone is sufficient.
-
-**The pain (Ed's paper-era process):**
-Toward the end of every season, the LO needs to know from each captain:
-- Will your team be playing next season?
-- Are you still the captain, or do we need to change it?
-- Any roster changes you know about already?
-- Are you looking for new players?
-
-Historically Ed handed out paper "re-up sheets" to collect this. Today it happens via the captains-chat or face-to-face. **Both approaches scatter the data across conversations — the LO has to manually aggregate it before they can sit down to plan the next season.**
-
-**The idea:**
-An in-app re-up sheet that:
-- Is auto-sent to each captain N weeks before the current season's end_date (via the existing messaging infrastructure / a "Tasks for you" tab)
-- Captures structured responses: returning yes/no, new-captain change, expected roster changes, looking-for-new-players flag
-- Aggregates into an LO-facing dashboard so they can see at a glance who's responded, who's dropping, who needs a new captain
-- **Feeds the new-season wizard's Step 2 (Teams) automatically** — teams marked "not returning" are pre-unchecked, teams with captain changes have the new captain pre-selected, etc.
-
-**Why this is a separate feature (not part of the wizard):**
-- Needs its own schema (`season_reup_responses` table or similar)
-- Needs scheduled trigger logic (auto-send at N weeks before season end)
-- Needs LO dashboard view + per-captain form view
-- The wizard works without it; this feature makes the wizard's data already-collected
-
-**When to revisit:**
-After the new-season wizard ships and gets real operator use. If LOs report that "filling in the wizard's Step 2 still takes too long because I have to text every captain first," the re-up sheet is the answer. If they say "the captains-chat is enough," skip it.
-
-**Originally surfaced as:** brainstorm pointer in `docs/brainstorms/2026-05-17-new-season-from-previous-requirements.md`. Moved here on 2026-05-17 so it's preserved outside the wizard's scope.
-
 ## Scheduling Resources
 
 ### Team Matchup Schedules
