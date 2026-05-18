@@ -82,6 +82,13 @@ export type FlowStage =
  * Holds the IDs of entities created in earlier stages.
  */
 export interface FlowContext {
+  /** ID of the organization the league belongs to. Set from the URL
+   *  in the first-time flow (`/create-league/:orgId`); set from the
+   *  league row in the next-season flow (which only has `leagueId` in
+   *  its URL). Step components should read this from context instead
+   *  of `useParams()` so the same step works on either route. */
+  organizationId?: string;
+
   /** ID of the league this flow is creating/managing (set after Stage 1) */
   leagueId?: string;
 
@@ -138,6 +145,42 @@ export interface FlowContext {
 
   /** Number of distinct venues in use by those teams */
   venueCount?: number;
+
+  /**
+   * Captain re-up responses for the league's previous season — used by
+   * the next-season wizard's Teams stage to pre-populate team selection
+   * and captain dropdowns. The first-time flow never has any of these
+   * (no previous season exists) and the field stays undefined; the
+   * Teams step falls back to its normal behavior.
+   *
+   * Each entry corresponds to ONE team from the previous season:
+   *   - returningNextSeason=false → row pre-unchecked
+   *   - returningNextSeason=true, nextCaptainId set → captain dropdown
+   *     pre-set to that member
+   *   - returningNextSeason=true, nextCaptainId NULL → captain stays
+   *     the same
+   *   - No entry for a team → no response yet → pre-unchecked with
+   *     warning ("captain hasn't confirmed")
+   */
+  reupResponses?: ReupResponseContextEntry[];
+}
+
+/**
+ * A single team's re-up response, projected into the shape the
+ * wizard's Teams stage needs to apply pre-fill. Owned here (not in
+ * the re-up feature's types) so the flow framework stays decoupled
+ * from the re-up feature's internals.
+ */
+export interface ReupResponseContextEntry {
+  /** Source team ID (from the previous season) */
+  sourceTeamId: string;
+  /** Previous season's team name — used for display when warning the
+   *  operator that a no-response team is being dropped by default */
+  teamName: string;
+  /** NULL = no submitted answer (treat as "not returning + warn") */
+  returningNextSeason: boolean | null;
+  /** NULL = same captain; non-null = captain change */
+  nextCaptainId: string | null;
 }
 
 /**

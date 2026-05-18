@@ -18,11 +18,13 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/supabaseClient';
+import type { ReupResponseContextEntry } from '@/components/wizard';
 
 interface NextSeasonStageDetectionResult {
   isLoading: boolean;
   firstIncompleteStage: number;
   context: {
+    organizationId?: string;
     leagueId?: string;
     leagueStartDate?: string;
     leagueName?: string;
@@ -65,6 +67,7 @@ interface NextSeasonStageDetectionResult {
       bcaDates?: string;
       apaDates?: string;
     };
+    reupResponses?: ReupResponseContextEntry[];
   };
 }
 
@@ -78,7 +81,9 @@ export function useNextSeasonStageDetection(
 
       // League row + prefs — same as the first-time detection. Also
       // pull organization_id so we can look up the operator's saved
-      // championship preferences (set once at first-league creation).
+      // championship preferences (set once at first-league creation)
+      // AND so the wizard's step components can read it via flow
+      // context (the next-season route doesn't have orgId in it).
       const [{ data: league }, { data: prefs }] = await Promise.all([
         supabase
           .from('leagues')
@@ -146,11 +151,12 @@ export function useNextSeasonStageDetection(
         .limit(1)
         .maybeSingle();
 
-      // Most-recent non-upcoming season for THIS league. Used to compute
-      // the "last week played" date that anchors the next-season start
-      // date choices, and to pre-fill the Season Length step's "same as
-      // last" choice. Skip 'upcoming' since that IS the one being built.
-      const { data: previousSeasonForDates } = await supabase
+      // Most-recent non-upcoming season for THIS league. Drives all three
+      // pre-fills downstream: the start-date anchors (last-week-played
+      // +7/+14/+21), the Season Length "Same as last" choice, and the
+      // Teams stage's re-up pre-fill. Skip 'upcoming' since that IS the
+      // one we're building.
+      const { data: previousSeason } = await supabase
         .from('seasons')
         .select('id, season_length')
         .eq('league_id', leagueId)
@@ -159,31 +165,65 @@ export function useNextSeasonStageDetection(
         .limit(1)
         .maybeSingle();
       const previousSeasonLength: number | undefined =
-        previousSeasonForDates?.season_length ?? undefined;
+        previousSeason?.season_length ?? undefined;
 
-      // Last scheduled_date across ALL week types (regular + playoffs)
-      // for the previous season, PLUS the count of playoff weeks.
-      // Caps the "last week played" calculation AND drives the Playoff
-      // Format step's "Same as last" choice.
+      // for the previous season, PLUS the count of playoff weeks, AND
+      // re-up responses + previous teams. Only when a previous season
+      // exists — first-time leagues have nothing to carry forward.
       let previousSeasonLastWeekDate: string | undefined;
       let previousSeasonPlayoffWeeks: number | undefined;
-      if (previousSeasonForDates?.id) {
-        const [{ data: lastWeek }, { count: playoffWeekCount }] = await Promise.all([
+      let reupResponses: ReupResponseContextEntry[] = [];
+      if (previousSeason?.id) {
+        const [
+          { data: lastWeek },
+          { count: playoffWeekCount },
+          { data: prevTeams },
+          { data: responses },
+        ] = await Promise.all([
           supabase
             .from('season_weeks')
             .select('scheduled_date')
-            .eq('season_id', previousSeasonForDates.id)
+            .eq('season_id', previousSeason.id)
             .order('scheduled_date', { ascending: false })
             .limit(1)
             .maybeSingle(),
           supabase
             .from('season_weeks')
             .select('*', { count: 'exact', head: true })
-            .eq('season_id', previousSeasonForDates.id)
+            .eq('season_id', previousSeason.id)
             .eq('week_type', 'playoffs'),
+          supabase
+            .from('teams')
+            .select('id, team_name')
+            .eq('season_id', previousSeason.id)
+            .eq('status', 'active'),
+          supabase
+            .from('season_reup_responses')
+            .select('team_id, returning_next_season, next_captain_id, submitted_at')
+            .eq('season_id', previousSeason.id),
         ]);
         previousSeasonLastWeekDate = lastWeek?.scheduled_date ?? undefined;
         previousSeasonPlayoffWeeks = playoffWeekCount ?? 0;
+        const responsesByTeamId = new Map<string, { returning_next_season: boolean | null; next_captain_id: string | null; submitted_at: string | null }>();
+        for (const r of responses ?? []) {
+          responsesByTeamId.set(r.team_id, {
+            returning_next_season: r.returning_next_season,
+            next_captain_id: r.next_captain_id,
+            submitted_at: r.submitted_at,
+          });
+        }
+        reupResponses = (prevTeams ?? []).map((t: { id: string; team_name: string }) => {
+          const r = responsesByTeamId.get(t.id);
+          return {
+            sourceTeamId: t.id,
+            teamName: t.team_name,
+            // No submission yet → returningNextSeason is null (Teams
+            // step treats this as "not returning + warn"). Submitted
+            // → use the actual answer.
+            returningNextSeason: r?.submitted_at ? (r.returning_next_season ?? null) : null,
+            nextCaptainId: r?.submitted_at ? (r.next_captain_id ?? null) : null,
+          };
+        });
       }
 
       // Downstream progress checks (only meaningful if we have an
@@ -224,6 +264,7 @@ export function useNextSeasonStageDetection(
         previousSeasonLength,
         previousSeasonPlayoffWeeks,
         championshipTracking,
+        reupResponses,
       };
     },
     enabled: !!leagueId,
@@ -237,7 +278,7 @@ export function useNextSeasonStageDetection(
     };
   }
 
-  const { league, prefs, upcomingSeason, hasSchedule, teamCount, venueCount, previousSeasonLastWeekDate, previousSeasonLength, previousSeasonPlayoffWeeks, championshipTracking } = data;
+  const { league, prefs, upcomingSeason, hasSchedule, teamCount, venueCount, previousSeasonLastWeekDate, previousSeasonLength, previousSeasonPlayoffWeeks, championshipTracking, reupResponses } = data;
 
   // Resolve stage. With NO upcoming season, the operator starts at
   // stage 0 (Season). With one in progress, walk the cascade.
@@ -253,6 +294,7 @@ export function useNextSeasonStageDetection(
     isLoading: false,
     firstIncompleteStage,
     context: {
+      organizationId: league?.organization_id ?? undefined,
       leagueId: leagueId ?? undefined,
       leagueStartDate: league?.league_start_date,
       gameType: league?.game_type,
@@ -271,6 +313,7 @@ export function useNextSeasonStageDetection(
       previousSeasonLength,
       previousSeasonPlayoffWeeks,
       championshipTracking,
+      reupResponses: reupResponses?.length ? reupResponses : undefined,
     },
   };
 }

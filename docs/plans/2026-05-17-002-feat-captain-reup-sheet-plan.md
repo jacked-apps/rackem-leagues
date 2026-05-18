@@ -18,11 +18,11 @@
 | 3 | Modal-trigger hook (`useCaptainReupPrompt`) | ✅ shipped 2026-05-17 |
 | 4 | Scoring-page inline button | ⏸ deferred (3 access paths already; gilding) |
 | 5 | LO status card on league page | ✅ shipped 2026-05-17 |
-| 6 | Wizard pre-fill integration | ⏸ deferred (needs teamsWizardConfig refactor) |
+| 6 | Wizard pre-fill integration | ✅ shipped 2026-05-18 (feat/wizard-reup-prefill) |
 
 **Deferral notes:**
 - **Unit 4 (scoring-page button):** captain already has THREE access paths — modal pops on app open, hamburger drawer's "Season Re-Up" item, dedicated `/reup` page. Adding a fourth inline in the 1000-line `ScoreMatch.tsx` adds maintenance debt for marginal value. Can revisit if real captains report missing the modal AND not navigating to the page AND not seeing the drawer.
-- **Unit 6 (wizard pre-fill):** the existing `teamsWizardConfig` (used by both first-time and next-season flows) doesn't natively support "here are pre-decided teams + their captains." Wiring re-up data into it requires a real refactor of the shared component — that change should apply to both flows per Ed's rule (2026-05-17). Standalone re-up still gives LO 90% of the value: status card shows who's responded; LO walks into the wizard with the info already in mind. Wizard pre-fill is the bow on top. Worth its own follow-up.
+- **Unit 6 (wizard pre-fill):** ✅ shipped 2026-05-18 on branch `feat/wizard-reup-prefill`. Discovery: the framework ALREADY plumbs the flow context through `formData._flowContext` (see `WizardFlowStageRenderer.tsx:86-94`) — no framework refactor needed, the feature was just unused. Added `organizationId` and `reupResponses` to `FlowContext`; populated from `useNextSeasonStageDetection` (next-season) and `LeagueWizardV2Page` (first-time); migrated `CaptainsTeamsStep` to read both from `formData._flowContext`. Side effect: fixed a pre-existing bug where the next-season wizard's Teams step had an empty captain dropdown (it was reading `orgId` from URL params, but the next-season route doesn't have `:orgId`). The Teams step now seeds its captain list from re-up responses where `returningNextSeason=true`, and shows a yellow "From the re-up sheet" banner listing teams that were omitted (not returning OR no response) so the LO can manually add them back if they have inside info.
 
 **What landed (the 4 shipped units):**
 - New `season_reup_responses` table + match-start trigger that clears dismissals
