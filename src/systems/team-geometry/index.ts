@@ -17,34 +17,34 @@
 import type { GameGeneration, TeamGeometry } from './types';
 
 /**
- * Game-count multiplier per game-generation mode. Single round-robin = 1× (each pairing
- * plays once). Double round-robin = 2× (each pairing plays twice).
- */
-const GAME_GENERATION_MULTIPLIER: Record<GameGeneration, number> = {
-  single_round_robin: 1,
-  double_round_robin: 2,
-};
-
-/**
  * Derive the total games per match-night from lineup_size + game_generation.
  *
  * Formula: `lineup_size² × multiplier(game_generation)`.
+ * Multiplier: `double_round_robin` = 2, anything else = 1 (graceful fallback for
+ * unknown game-generation values that may arrive from un-typed sources like DB rows
+ * with stale data).
  *
  * Exposed as a standalone function (in addition to being computed by `getTeamGeometry`)
  * so that callers who only have raw axes (not a constructed Module) can derive game_count
- * without constructing one. Phase C consumer swaps will deprecate the legacy
- * `getMatchTotalGames` utility in favor of this function or the Module's `gameCount` property.
+ * without constructing one. Replaces the legacy `getMatchTotalGames` utility (deprecated
+ * in this Phase C; deleted once all callers migrate).
+ *
+ * Accepts `gameGeneration: string` rather than the strict `GameGeneration` enum to
+ * preserve the legacy utility's permissive behavior — callers that pass an unrecognized
+ * value still get a sensible single-round-robin fallback rather than NaN or a throw.
  *
  * @example
  *   computeGameCount(3, 'double_round_robin') // 18
  *   computeGameCount(5, 'single_round_robin') // 25
  *   computeGameCount(4, 'double_round_robin') // 32
+ *   computeGameCount(5, 'experimental')       // 25 (falls back to single-round-robin multiplier)
  */
 export function computeGameCount(
   lineupSize: number,
-  gameGeneration: GameGeneration,
+  gameGeneration: GameGeneration | string,
 ): number {
-  return lineupSize * lineupSize * GAME_GENERATION_MULTIPLIER[gameGeneration];
+  const multiplier = gameGeneration === 'double_round_robin' ? 2 : 1;
+  return lineupSize * lineupSize * multiplier;
 }
 
 /**

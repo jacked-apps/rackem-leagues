@@ -40,6 +40,25 @@ describe('computeGameCount — pure derivation', () => {
     // BCA 5v5 SRR ships 25 games (also FargoRate 10-Point 5-Man).
     expect(computeGameCount(5, 'single_round_robin')).toBe(25);
   });
+
+  describe('graceful fallback for unknown gameGeneration', () => {
+    // Preserves the legacy `getMatchTotalGames` utility's permissive behavior —
+    // unknown game-generation values default to the single-round-robin multiplier
+    // rather than NaN or a throw. Necessary because gameGeneration may arrive from
+    // un-typed sources (e.g., DB rows with stale data).
+
+    it('unknown string value defaults to single-round-robin multiplier (1×)', () => {
+      expect(computeGameCount(5, 'experimental')).toBe(25);
+    });
+
+    it('empty string defaults to 1× multiplier', () => {
+      expect(computeGameCount(3, '')).toBe(9);
+    });
+
+    it('lineup_size of 1 (individual leagues, future scope) = 1 game per match', () => {
+      expect(computeGameCount(1, 'single_round_robin')).toBe(1);
+    });
+  });
 });
 
 describe('getTeamGeometry — factory', () => {
