@@ -237,14 +237,111 @@ Season's archived record shows the final payouts as part of the standings page. 
 
 ---
 
-## External examples worth checking before final design
+## Recommended one-tap defaults (from research, 2026-05-18)
 
-Ed (2026-05-18): "im sure there are examples out there we can find that would show other metrics i may have missed." Worth a 30-min research pass to look at:
-- BCAPL local-league payout structures (their handbook may publish a template)
-- APA prize-tier defaults
-- CSI Master Pool Player League payout formulas
-- Common bar-league "house calcs" (forums / Reddit pool league discussion)
+Web-research pass surveyed pool forums, BCAPL handbook, APA rules, bowling guides, poker tournament docs, and dart leagues. Cross-domain consensus + my reads:
 
-Surfacing what's standard helps the "one-tap default" stay genuinely sensible, and may identify metrics or expense types I missed (e.g., handicap-tracking subscription fees, paid scorekeeper compensation, etc.).
+### Default prize-distribution preset
 
-I can run a web research pass after Ed answers the open questions if he wants.
+- **Top 3 places: 50% / 30% / 20%** of the prize pool
+- Cited independently by poker (single-table standard), bowling, dart, and pool sources
+- BCAPL/APA explicitly leave this to the LO — we're not violating any standard by picking this default; we're filling a gap
+
+### Default "number of places paid"
+
+- Rule of thumb: **~25% of the field**
+- 8 teams → pay 2; 12-16 → pay 3; 20+ → pay 4-5
+- Soft floor: every paid place gets at least $50 ("anything less is an insult" per pool community)
+
+### Default rounding
+
+- Round to nearest **$25** under $500, nearest **$50** for $500-$2000, nearest **$100** above
+- Rounding remainder added to 1st place (most common convention; transparent)
+
+### Default LO cut
+
+- **$1 per player per night** flat (cited as standard community norm)
+- Alternative: 10% of pool (also widely accepted)
+- Cap at 10% — anything higher gets community pushback as unfair
+
+## Power-user menu (advanced mode)
+
+Surface these as toggles/inputs when the LO clicks "Advanced":
+
+### Prize-distribution shape options
+- 50/30/20 (default for 3 places)
+- 40/30/20/10 (dart-league standard for 4 places)
+- 35/25/20/12/8 (bowling 5-place standard)
+- Pure doubling (1st = 2× 2nd = 4× 3rd …)
+- Flat sliding scale (every team gets something, lower places get less — Westside 8-Ball model — keeps lower teams engaged)
+- Bowling dual-layer: **place money** (top 3-5 by finish) + **point money** (proportional to wins all season) — rewards both standing AND consistency
+- Custom: LO types each percentage by hand
+
+### Individual award options (LO toggles which to include)
+- **Top Shooter** — best individual player (typically $100, from pool)
+- **High Single Game** — break-and-run or high run pot ($20-100, from pool)
+- **MVP** — best overall contribution, usually trophy + small cash
+- **Sportsmanship** — voted by peers, usually trophy
+- **Most Improved** — usually trophy
+- **Outstanding Achievement** — *worst player* recognized with a developmental prize (lesson, vouchers). Per Ed's real league: LO-funded personally, NOT from prize pool. Intent: help them get better. (See "non-pool-funded prizes" below.)
+- **Undefeated record bonus** — bonus to teams that went undefeated
+- Custom: LO defines
+
+### Non-pool-funded prizes (NEW pattern from Ed's experience)
+
+Some prizes come from the LO's pocket, not the prize pool — typically goodwill / developmental awards (Outstanding Achievement, swag, etc.). Calculator should:
+- Let the LO add an award + mark it as "LO-funded" rather than "pool-funded"
+- LO-funded awards don't reduce the prize pool
+- Tracked separately so the LO has a record ("I spent $50 on Linda's pool lesson — gift")
+- Appears on the season summary as part of the prize list but with a "🎁 LO gift" badge or similar
+
+### Side pots (running during season)
+- Break-and-run raffle ($1 tickets, runs all season, pays whoever runs the table)
+- 50/50 raffle (mid-season fundraiser to cover incidentals)
+- These run **parallel** to the main prize pool, not from it
+
+### Carry-over reward (winner's discount)
+- Winning team gets reduced entry fee next season
+- Not a cash payout, in-kind reward; reduces operator's working capital but increases retention
+
+### "Everyone in the money" floor (APA-style)
+- Optional toggle that guarantees every team gets at least their entry value back (or some floor amount)
+- Reduces resentment from teams that paid all season and finished last
+
+### Calcutta auction support (Phase 2 candidate)
+- Pre-tournament player auction with its own prize pool
+- Legal status varies by state — UI would need a disclaimer
+- Probably not v1; flag for futureFeatures
+
+## Reminders / "did you forget?" prompts the calculator should surface
+
+The LO will forget expenses. Per Ed's prompt: "reminders of what expenses they should expect or may have forgotten." Calculator's expense section should suggest these as quick-add options the LO can tap if applicable:
+
+**Common expense categories (from research):**
+- 🏆 Trophies / plaques
+- 🖨️ Paper / ink / printing (score sheets, standings)
+- 🍕 Banquet / awards ceremony food + venue
+- 👕 League shirts / jerseys (if not separately funded)
+- 📋 Sanctioning fees (APA franchise, BCAPL registration)
+- 🛡️ Insurance (rare at bar-league level)
+- 💻 Website / scoring software subscription (if any)
+- 🎁 LO gifts to players (the "outstanding achievement" pattern)
+
+Calculator presents these as "Quick-add: did you have any of these expenses?" with one-tap insert. LO can also add custom line items.
+
+## External research — done 2026-05-18
+
+Synthesis above ("Recommended one-tap defaults" + "Power-user menu" sections) is the output of a web research pass across pool, bowling, dart, poker, and golf sources. Key sources captured:
+
+- [AzBilliards Forums — BCA League Payouts (Is this normal?)](https://forums.azbilliards.com/threads/bca-league-payouts-and-operations-is-this-normal.362349/) — Community discussion of operator ethics and typical pool league payout norms
+- [AzBilliards Forums — Pool League Money: Who Gets What?](https://forums.azbilliards.com/threads/pool-league-money-who-gets-what.23736/) — LO compensation, venue cuts, expense categories
+- [AzBilliards Forums — Standardized Tournament Payouts](https://forums.azbilliards.com/threads/standardized-tournament-payouts.223024/) — 25% field rule, doubling pattern, rounding conventions
+- [Westside 8 Ball League — Payout Scales](http://westside8ball.com/payoutscoresheet/) — Live example of sliding-scale + win-credit hybrid
+- [BCAPL/CSI Operators' Handbook](https://www.playcsipool.com/uploads/7/3/5/9/7359673/bcapl_lo_handbook_230727_web.pdf) — Official: confirms LO has full discretion on payouts
+- [APA Trophies and Awards](https://rules.poolplayers.com/league-structure/trophies-and-awards/) — APA individual awards are trophies; cash deferred to local bylaws
+- [Bowling League Prize Distribution](http://www.bowlingboards.com/threads/21436-League-Payouts/page2) — Place money + point money dual-layer
+- [Dart Players St. Louis — Payouts/Cost](https://dartplayersstlouis.com/payouts-cost/)
+- [Boise Dart League — Awards](https://boisedartleague.com/awards.php) — 40/30/20/10 distribution
+- [Beasts of Poker — Tournament Payout Structure Guide](https://beastsofpoker.com/poker-tournament-payout-structure/) — Most rigorous payout-percentage documentation
+
+**Key takeaway:** there is NO mandated standard from BCAPL/APA/CSI. Every league does it differently. So our "one-tap default" isn't violating a standard — we're filling a gap. Defaults above are the closest thing to community consensus.
