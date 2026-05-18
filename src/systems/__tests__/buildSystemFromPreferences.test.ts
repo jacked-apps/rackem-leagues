@@ -143,11 +143,11 @@ describe('buildSystemFromPreferences — preset fast-path', () => {
 });
 
 // ============================================================================
-// Ad-hoc path: teamFormat
+// Ad-hoc path: teamGeometry
 // ============================================================================
 
-describe('buildSystemFromPreferences — ad-hoc teamFormat derivation', () => {
-  it('derives teamFormat from prefs (4v4 single-RR + Fargo)', () => {
+describe('buildSystemFromPreferences — ad-hoc teamGeometry derivation', () => {
+  it('derives teamGeometry from prefs (4v4 single-RR + Fargo, 16 games)', () => {
     const mod = buildSystemFromPreferences(
       makeConfig({
         lineup_size: 4,
@@ -159,10 +159,11 @@ describe('buildSystemFromPreferences — ad-hoc teamFormat derivation', () => {
       }),
       EMPTY_OVERRIDES,
     );
-    expect(mod.teamFormat).toEqual({
+    expect(mod.teamGeometry).toEqual({
       lineupSize: 4,
       maxRosterSize: 6,
       gameGeneration: 'single_round_robin',
+      gameCount: 16,
     });
   });
 
@@ -175,7 +176,7 @@ describe('buildSystemFromPreferences — ad-hoc teamFormat derivation', () => {
       }),
       EMPTY_OVERRIDES,
     );
-    expect(mod.teamFormat.gameGeneration).toBe('single_round_robin');
+    expect(mod.teamGeometry.gameGeneration).toBe('single_round_robin');
   });
 
   it('produces a deterministic ad-hoc key', () => {

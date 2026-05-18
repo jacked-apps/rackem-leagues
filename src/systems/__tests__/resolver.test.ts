@@ -63,31 +63,34 @@ describe('pickModule', () => {
     });
   });
 
-  describe('returned modules expose expected teamFormat constants', () => {
-    it('bca3v3 is 3v3 double round robin', () => {
+  describe('returned modules expose expected teamGeometry constants', () => {
+    it('bca3v3 is 3v3 double round robin (18 games)', () => {
       const mod = pickModule('points');
-      expect(mod.teamFormat).toEqual({
+      expect(mod.teamGeometry).toEqual({
         lineupSize: 3,
         maxRosterSize: 5,
         gameGeneration: 'double_round_robin',
+        gameCount: 18,
       });
     });
 
-    it('bca5v5 is 5v5 single round robin', () => {
+    it('bca5v5 is 5v5 single round robin (25 games)', () => {
       const mod = pickModule('percentage');
-      expect(mod.teamFormat).toEqual({
+      expect(mod.teamGeometry).toEqual({
         lineupSize: 5,
         maxRosterSize: 8,
         gameGeneration: 'single_round_robin',
+        gameCount: 25,
       });
     });
 
-    it('fargo5v5 is 5v5 single round robin with manual rating entry', () => {
+    it('fargo5v5 is 5v5 single round robin (25 games) with manual rating entry', () => {
       const mod = pickModule('fargo');
-      expect(mod.teamFormat).toEqual({
+      expect(mod.teamGeometry).toEqual({
         lineupSize: 5,
         maxRosterSize: 8,
         gameGeneration: 'single_round_robin',
+        gameCount: 25,
       });
       expect(mod.rating.requiresManualEntry).toBe(true);
     });

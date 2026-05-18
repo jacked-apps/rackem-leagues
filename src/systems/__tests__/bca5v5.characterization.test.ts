@@ -36,11 +36,12 @@ describe('bca5v5 SystemModule — characterization', () => {
       expect(bca5v5.key).toBe('bca5v5');
     });
 
-    it('teamFormat: 5-player lineup, 8-player roster, single round-robin', () => {
-      expect(bca5v5.teamFormat).toEqual({
+    it('teamGeometry: 5-player lineup, 8-player roster, single round-robin, 25 games', () => {
+      expect(bca5v5.teamGeometry).toEqual({
         lineupSize: 5,
         maxRosterSize: 8,
         gameGeneration: 'single_round_robin',
+        gameCount: 25,
       });
     });
 

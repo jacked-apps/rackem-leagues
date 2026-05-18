@@ -29,15 +29,9 @@ const NOT_YET_WIRED =
 export const bca3v3: SystemModule = {
   key: 'bca3v3',
 
-  teamFormat: {
-    lineupSize: 3,
-    maxRosterSize: 5,
-    gameGeneration: 'double_round_robin',
-  },
-
-  // Team Geometry Module — same axis values as teamFormat above, plus derived gameCount.
-  // Per Unit 1 of the modular-framework migration plan, both fields coexist during the
-  // strangler-fig transition; Phase C swaps consumers from teamFormat to teamGeometry.
+  // Team Geometry Module — the three structural axes plus derived gameCount.
+  // Replaces the legacy teamFormat field (deleted in Phase D of the Team Geometry
+  // migration after all consumers were swapped to read teamGeometry instead).
   teamGeometry: getTeamGeometry(3, 5, 'double_round_robin'),
 
   rating: {

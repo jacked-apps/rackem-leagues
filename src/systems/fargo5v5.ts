@@ -267,14 +267,8 @@ function computeMatchResult(
 export const fargo5v5: SystemModule = {
   key: 'fargo5v5',
 
-  teamFormat: {
-    lineupSize: 5,
-    maxRosterSize: 8,
-    gameGeneration: 'single_round_robin',
-  },
-
-  // Team Geometry Module — same axis values as teamFormat above, plus derived gameCount.
-  // See bca3v3.ts for the strangler-fig rationale.
+  // Team Geometry Module — the three structural axes plus derived gameCount.
+  // Replaces the legacy teamFormat field (Phase D of the Team Geometry migration).
   teamGeometry: getTeamGeometry(5, 8, 'single_round_robin'),
 
   rating: {

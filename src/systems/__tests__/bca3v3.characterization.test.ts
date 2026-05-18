@@ -47,11 +47,12 @@ describe('bca3v3 SystemModule — characterization', () => {
       expect(bca3v3.key).toBe('bca3v3');
     });
 
-    it('teamFormat: 3-player lineup, 5-player roster, double round-robin', () => {
-      expect(bca3v3.teamFormat).toEqual({
+    it('teamGeometry: 3-player lineup, 5-player roster, double round-robin, 18 games', () => {
+      expect(bca3v3.teamGeometry).toEqual({
         lineupSize: 3,
         maxRosterSize: 5,
         gameGeneration: 'double_round_robin',
+        gameCount: 18,
       });
     });
 

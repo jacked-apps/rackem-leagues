@@ -99,7 +99,7 @@ describe('Off-preset combos — full pipeline', () => {
     it('runtime resolver produces an ad-hoc module (not a preset)', () => {
       const mod = buildSystemFromPreferences(cfg, EMPTY_OVERRIDES);
       expect(mod.key).toMatch(/^custom_4v4_fargo/);
-      expect(mod.teamFormat.lineupSize).toBe(4);
+      expect(mod.teamGeometry.lineupSize).toBe(4);
     });
 
     it('home wins 9 of 16 → +0 points (above-tie band, threshold=9 inferred at 9)', () => {
@@ -182,8 +182,8 @@ describe('Off-preset combos — full pipeline', () => {
 
     it('runtime resolver routes to fargo rating + linear scoring stub', () => {
       const mod = buildSystemFromPreferences(cfg, EMPTY_OVERRIDES);
-      expect(mod.teamFormat.lineupSize).toBe(3);
-      expect(mod.teamFormat.gameGeneration).toBe('double_round_robin');
+      expect(mod.teamGeometry.lineupSize).toBe(3);
+      expect(mod.teamGeometry.gameGeneration).toBe('double_round_robin');
       // points_calculator=linear_above_threshold → SystemModule.scoring
       // is the legacy NOT_YET_WIRED stub (per Phase 5 Unit 5.5 — aggregate
       // calculators flow through running-totals path, not SystemModule.scoring).

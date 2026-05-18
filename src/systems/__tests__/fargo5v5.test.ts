@@ -19,16 +19,17 @@ import { fargo5v5 } from '../fargo5v5';
 import type { StoredGameRecord } from '../types';
 
 describe('fargo5v5 SystemModule', () => {
-  describe('key and teamFormat', () => {
+  describe('key and teamGeometry', () => {
     it('exposes the correct module key', () => {
       expect(fargo5v5.key).toBe('fargo5v5');
     });
 
-    it('has 5v5 single-round-robin teamFormat', () => {
-      expect(fargo5v5.teamFormat).toEqual({
+    it('has 5v5 single-round-robin teamGeometry (25 games)', () => {
+      expect(fargo5v5.teamGeometry).toEqual({
         lineupSize: 5,
         maxRosterSize: 8,
         gameGeneration: 'single_round_robin',
+        gameCount: 25,
       });
     });
 

@@ -428,14 +428,9 @@ export function buildSystemFromPreferences(
 
   return {
     key: deriveAdHocKey(prefs),
-    teamFormat: {
-      lineupSize: prefs.lineup_size,
-      maxRosterSize: prefs.max_roster_size,
-      gameGeneration: normalizedGameGeneration,
-    },
-    // Team Geometry Module — same axis values as teamFormat above plus derived gameCount.
-    // Per the new Unit 1 of the modular-framework migration plan; coexists with teamFormat
-    // during the strangler-fig transition.
+    // Team Geometry Module — replaces the legacy teamFormat field (Phase D of the
+    // Team Geometry migration). Bundles lineup_size + max_roster_size + game_generation
+    // axes plus derived gameCount.
     teamGeometry: getTeamGeometry(
       prefs.lineup_size,
       prefs.max_roster_size,

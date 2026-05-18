@@ -208,25 +208,6 @@ export interface RaceLengthResult {
 }
 
 // ============================================================================
-// Team format
-// ============================================================================
-
-/**
- * Structural facts about how a preset's matches are shaped.
- * Used by lineup and schedule code to know roster size, lineup size, and RR mode.
- */
-export interface TeamFormatConstants {
-  /** Players per team in a match night's lineup (3 for 3v3, 5 for 5v5). */
-  lineupSize: number;
-
-  /** Maximum roster size a team can carry (5 for 3v3, 8 for 5v5). */
-  maxRosterSize: number;
-
-  /** How games are generated from the lineup. */
-  gameGeneration: 'double_round_robin' | 'single_round_robin';
-}
-
-// ============================================================================
 // SystemModule (main interface)
 // ============================================================================
 
@@ -250,9 +231,6 @@ export interface SystemModule {
    * fallback) to honor the graceful-degradation principle.
    */
   key: string;
-
-  /** Structural team-format constants for this preset. */
-  teamFormat: TeamFormatConstants;
 
   /** Rating computation, validation, and display. */
   rating: {
