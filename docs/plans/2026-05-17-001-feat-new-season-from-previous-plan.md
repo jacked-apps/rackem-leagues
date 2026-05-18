@@ -32,9 +32,22 @@ End-of-season → start-of-next-season is the highest-frequency operator task. T
 | 6 | Activation — RPC for atomic season + teams + venues + welcome message | ✅ shipped 2026-05-17 (welcome message deferred — see notes) |
 
 **Notes (2026-05-17 implementation):**
-- Schedule + Matchups steps from the brainstorm's 6-step flow are NOT wired into this wizard yet — the new season lands as `status='upcoming'` and the operator continues from the league page using the existing first-season-style schedule/matchups flow. Future polish: wire those existing components directly into this wizard for a single uninterrupted flow.
-- Welcome-message-to-team-chats is deferred — the existing `auto_create_season_conversations` trigger fires on season activation, so the chats appear automatically; the additional welcome message is a small polish item that can ship later.
-- Local DB migration NOT yet applied (branch is behind the messaging-stack migrations applied to the local DB). RPC file is valid SQL and will apply cleanly on merge. Run `pnpm db:reset && pnpm db:types` from main after merge to refresh.
+
+**Architectural correction (2026-05-17 same-day):** the initial implementation (commit `e1be874`) wrote a custom wizard shell + custom step components + a mega RPC, treating the next-season flow as a separate piece of code. Ed flagged this as over-engineering — the existing wizard scaffold (`WizardFlowShell` + per-stage `wizardConfig`s) is specifically designed for reuse, and "next season" is just "the same scaffold with the League stage skipped + pre-filled context."
+
+The refactor (this commit) collapses the custom wizard down to:
+- A 100-line flow config `createNextSeasonFlow` listing the 4 stages
+- A handlers hook that reuses the SAME mutation hooks the first-time flow uses (`useCreateSeasonV2`, `useSaveScheduleV2`, `useSaveTeamsV2`), just omits the league handler
+- A detection hook scoped to "what's incomplete for the latest UPCOMING season for this league?" (vs. the first-time detection's "latest any-status season")
+- A ~50-line page component that mounts `WizardFlowShell` with the above
+
+Files deleted in the refactor: custom wizard shell, 3 custom step components, the mega RPC migration, the per-feature mutation + hook, the prefill query (detection hook supersedes it). Behavior is identical to the original brainstorm's 4-step intent but with the existing scaffold doing the heavy lifting.
+
+**Demo-relevant consequences of the refactor:**
+- The new-season wizard now feels EXACTLY like the first-time wizard, just shorter — operators learn one flow, use it in two contexts.
+- Schedule + Matchups stages ARE in the flow now (since we're using the existing scaffold), so the wizard goes all the way through to activation with one continuous experience. The earlier "we hand off to existing pages" cut is gone.
+- Pause/resume works for free: hitting "Start Next Season" again from the league page re-runs detection, which finds the in-progress upcoming season and drops the operator at the right stage. Same affordance as the first-time wizard's "Continue Setup."
+- Local DB still needs the messaging-stack migrations applied; no migration in this branch (no new RPC).
 
 Schedule and Matchups steps reuse the existing first-season flow components as-is. No new units needed for those — the wizard just navigates through them.
 
