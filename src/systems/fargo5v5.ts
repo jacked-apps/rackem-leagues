@@ -40,11 +40,9 @@
  */
 
 import type {
-  FargoStartPointsResult,
   GameOutcome,
   GameRecordFields,
   MatchResult,
-  RatingValue,
   StoredGameRecord,
   SystemModule,
 } from './types';
@@ -63,74 +61,8 @@ const DEFAULT_WINNER_POINTS = 10;
 const DEFAULT_LOSER_POINTS_METHOD = 'balls_pocketed' as const;
 const DEFAULT_LOSER_POINTS_MAX = 7;
 
-/**
- * Empirically calibrated average loser points per game. Used in the start-points
- * formula to estimate the per-game point differential. See file header for the
- * calibration note. If future real-match test cases diverge significantly from
- * our computed value, revisit this constant or move to a gap-sensitive formula.
- */
-const AVG_LOSER_POINTS = 4.2;
-
-// ============================================================================
-// Threshold (start-points formula)
-// ============================================================================
-
-/** Transform a single rating into FargoRate's "T" value (2^(rating/100)). */
-function transformRating(rating: RatingValue): number {
-  return Math.pow(2, rating / 100);
-}
-
 function resolveWinnerPoints(overrides: SystemOverrides): number {
   return overrides.winner_points ?? DEFAULT_WINNER_POINTS;
-}
-
-function computeStartPoints(
-  homeRatings: RatingValue[],
-  awayRatings: RatingValue[],
-  overrides: SystemOverrides,
-): FargoStartPointsResult {
-  if (homeRatings.length === 0 || awayRatings.length === 0) {
-    throw new Error('fargo5v5.threshold.compute requires non-empty ratings arrays');
-  }
-  if (homeRatings.some((r) => !Number.isFinite(r))) {
-    throw new Error('fargo5v5.threshold.compute received a non-finite home rating');
-  }
-  if (awayRatings.some((r) => !Number.isFinite(r))) {
-    throw new Error('fargo5v5.threshold.compute received a non-finite away rating');
-  }
-
-  const tHome = homeRatings.reduce((sum, r) => sum + transformRating(r), 0);
-  const tAway = awayRatings.reduce((sum, r) => sum + transformRating(r), 0);
-
-  // Single round robin: every home player plays every away player once
-  const totalGames = homeRatings.length * awayRatings.length;
-
-  const pHomeWins = tHome / (tHome + tAway);
-  const pAwayWins = 1 - pHomeWins;
-
-  const winnerPoints = resolveWinnerPoints(overrides);
-
-  // Per-game expected score for each team
-  const homePerGame = pHomeWins * winnerPoints + pAwayWins * AVG_LOSER_POINTS;
-  const awayPerGame = pAwayWins * winnerPoints + pHomeWins * AVG_LOSER_POINTS;
-
-  // Match-level expected totals
-  const homeTotal = homePerGame * totalGames;
-  const awayTotal = awayPerGame * totalGames;
-
-  const diff = Math.abs(homeTotal - awayTotal);
-  const startPoints = Math.floor(diff);
-
-  let weakerTeam: 'home' | 'away' | 'even';
-  if (startPoints === 0) {
-    weakerTeam = 'even';
-  } else if (homeTotal < awayTotal) {
-    weakerTeam = 'home';
-  } else {
-    weakerTeam = 'away';
-  }
-
-  return { startPointsForWeakerTeam: startPoints, weakerTeam };
 }
 
 // ============================================================================
@@ -260,9 +192,13 @@ export const fargo5v5: SystemModule = {
     computeMatchResult,
   },
 
+  // Legacy `threshold` field — carries the Mechanism mode discriminator until
+  // Handicap Mechanisms is extracted as its own Module (Unit 4 of the migration
+  // plan). The `compute` delegates to `fargoFormulaChart.compute` so the FargoRate
+  // start-points formula has a single source of truth (the Chart Module).
   threshold: {
     mode: 'start_points',
-    compute: computeStartPoints,
+    compute: fargoFormulaChart.compute,
   },
 
   // Fargo 5v5 ships with win_condition='points' — a one-entry metric stack with
@@ -272,11 +208,11 @@ export const fargo5v5: SystemModule = {
   winCalculator: getWinCalculator('points'),
 
   // Handicap System Module — FargoRate variant (integer 100–850, manually entered).
-  // Replaces the legacy `rating` capability deleted in Phase D.
+  // Replaces the legacy `rating` capability deleted in Phase D of Handicap Systems.
   handicapSystem: fargoRateHandicapSystem,
 
   // Threshold Chart Module — FargoRate Formula chart (FargoRate × start_points).
-  // The Chart's `compute` is byte-identical to this file's local `computeStartPoints`;
-  // both live during the strangler-fig transition until Phase D removes the legacy copy.
+  // Owns the start-points formula now; the legacy `threshold.compute` above
+  // delegates here.
   thresholdChart: fargoFormulaChart,
 };

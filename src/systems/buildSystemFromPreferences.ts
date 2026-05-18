@@ -47,11 +47,9 @@ import type {
 import { bca3v3 } from './bca3v3';
 import { bca5v5 } from './bca5v5';
 import { fargo5v5 } from './fargo5v5';
-import { get3v3GamesNeeded } from '@/utils/handicap/get3v3GamesNeeded';
 import { getWinCalculator } from './win-calculators';
 import { getTeamGeometry } from './team-geometry';
 import { getMatchFormat } from './match-format';
-import { get5v5GamesNeeded } from '@/utils/handicap/get5v5GamesNeeded';
 import {
   getHandicapSystem,
   type HandicapSystem,
@@ -284,36 +282,35 @@ function zeroExtraGames(): HandicapThresholds {
 
 /**
  * Build an ExtraGamesThreshold for an ad-hoc module. Routes by handicap_type
- * to the existing TS chart files until Unit 3.1 wires the `lookup_threshold`
- * SQL function for Layer 3 chart-id lookups.
+ * to the matching Games-Needed Chart Module.
  *
  * Behavior:
- *  - handicap_type='points' → 3v3 chart (regardless of lineup size — chart
- *    is the only Layer-2 source for integer points handicaps today)
- *  - handicap_type='percentage' → 5v5 chart
+ *  - handicap_type='points' → 3v3 Games-Needed Chart (regardless of lineup
+ *    size — the chart is the only Layer-2 source for integer points handicaps today)
+ *  - handicap_type='percentage' → 5v5 Games-Needed Chart
  *  - any other → zero handicap (graceful fallback) with a one-time warn
  */
 function buildExtraGamesThreshold(handicapType: string): ExtraGamesThreshold {
   if (handicapType === 'points') {
     return {
       mode: 'extra_games',
-      compute: (handicapDiff) => get3v3GamesNeeded(handicapDiff),
+      compute: (handicapDiff) => gamesNeeded3v3Chart.compute(handicapDiff),
     };
   }
   if (handicapType === 'percentage') {
     return {
       mode: 'extra_games',
-      compute: (handicapDiff) => get5v5GamesNeeded(handicapDiff),
+      compute: (handicapDiff) => gamesNeeded5v5Chart.compute(handicapDiff),
     };
   }
   // Fargo / skill_level / none / unknown with extra_games mechanism: no
-  // Layer 1 generative engine yet (Unit 3.2). Return zero-handicap and
-  // warn — match plays unhandicapped rather than failing to start.
+  // calibrated chart yet. Return zero-handicap and warn — match plays
+  // unhandicapped rather than failing to start.
   return {
     mode: 'extra_games',
     compute: () => {
       console.warn(
-        `[buildSystemFromPreferences] No Layer 1/2/3 extra_games chart for handicap_type=${JSON.stringify(handicapType)} — returning zero-handicap fallback (Unit 3.2 will provide Fargo Layer 1)`,
+        `[buildSystemFromPreferences] No extra_games Chart calibrated for handicap_type=${JSON.stringify(handicapType)} — returning zero-handicap fallback`,
       );
       return zeroExtraGames();
     },
@@ -321,9 +318,9 @@ function buildExtraGamesThreshold(handicapType: string): ExtraGamesThreshold {
 }
 
 /**
- * Build a StartPointsThreshold for an ad-hoc module. Reuses fargo5v5's
- * computeStartPoints which works for any roster size — the formula is
- * roster-agnostic (sums transformed ratings, multiplies by total games).
+ * Build a StartPointsThreshold for an ad-hoc module. Delegates to the FargoRate
+ * Formula Chart Module — the formula is roster-agnostic (sums transformed
+ * ratings, multiplies by total games), so it works for any lineup size.
  *
  * For handicap systems other than Fargo (`points`, `percentage`,
  * `skill_level`) paired with a start-points mechanism, no calibrated
@@ -333,10 +330,7 @@ function buildStartPointsThreshold(handicapType: string): StartPointsThreshold {
   if (handicapType === 'fargo') {
     return {
       mode: 'start_points',
-      compute: fargo5v5.threshold.mode === 'start_points'
-        ? fargo5v5.threshold.compute
-        : /* istanbul ignore next — fargo5v5.threshold.mode is always 'start_points' by construction */
-          () => ({ startPointsForWeakerTeam: 0, weakerTeam: 'even' }),
+      compute: fargoFormulaChart.compute,
     };
   }
   return {
