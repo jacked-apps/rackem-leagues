@@ -193,15 +193,6 @@ export const fargo5v5: SystemModule = {
     computeMatchResult,
   },
 
-  // Legacy `threshold` field — carries the Mechanism mode discriminator until
-  // Handicap Mechanisms is extracted as its own Module (Unit 4 of the migration
-  // plan). The `compute` delegates to `fargoFormulaChart.compute` so the FargoRate
-  // start-points formula has a single source of truth (the Chart Module).
-  threshold: {
-    mode: 'start_points',
-    compute: fargoFormulaChart.compute,
-  },
-
   // Fargo 5v5 ships with win_condition='points' — a one-entry metric stack with
   // points_earned. Per Unit 1 of the modular-framework migration plan, this Module
   // shape replaces the runtime branching on win_condition. Consumers call
@@ -213,8 +204,8 @@ export const fargo5v5: SystemModule = {
   handicapSystem: fargoRateHandicapSystem,
 
   // Threshold Chart Module — FargoRate Formula chart (FargoRate × start_points).
-  // Owns the start-points formula now; the legacy `threshold.compute` above
-  // delegates here.
+  // Owns the start-points formula. Consumers route through the Handicap Mechanism
+  // (below); the Chart is the data layer the Mechanism delegates to.
   thresholdChart: fargoFormulaChart,
 
   // Handicap Mechanism Module — start_points bound to the FargoRate Formula Chart.

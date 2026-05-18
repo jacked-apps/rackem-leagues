@@ -46,7 +46,7 @@ describe('fargo5v5 SystemModule', () => {
     });
 
     it('uses start_points threshold mode', () => {
-      expect(fargo5v5.threshold.mode).toBe('start_points');
+      expect(fargo5v5.handicapMechanism?.kind).toBe('start_points');
     });
   });
 
@@ -57,10 +57,10 @@ describe('fargo5v5 SystemModule', () => {
     // 10-point system, 5v5 SRR (25 games)
     // Official FargoRate calculator result: 56 start points to away (weaker team)
     it('matches the captured real-match case within ±1 point', () => {
-      if (fargo5v5.threshold.mode !== 'start_points') {
+      if (fargo5v5.handicapMechanism?.kind !== 'start_points') {
         throw new Error('expected start_points threshold mode');
       }
-      const result = fargo5v5.threshold.compute(
+      const result = fargo5v5.handicapMechanism!.compute(
         [567, 458, 493, 486, 574],
         [447, 394, 452, 322, 374],
         {},
@@ -74,10 +74,10 @@ describe('fargo5v5 SystemModule', () => {
 
   describe('threshold.compute — synthetic cases', () => {
     it('returns 0 start-points for an even match (identical rosters)', () => {
-      if (fargo5v5.threshold.mode !== 'start_points') {
+      if (fargo5v5.handicapMechanism?.kind !== 'start_points') {
         throw new Error('expected start_points threshold mode');
       }
-      const result = fargo5v5.threshold.compute(
+      const result = fargo5v5.handicapMechanism!.compute(
         [500, 500, 500, 500, 500],
         [500, 500, 500, 500, 500],
         {},
@@ -87,10 +87,10 @@ describe('fargo5v5 SystemModule', () => {
     });
 
     it('identifies the weaker team correctly when home is stronger', () => {
-      if (fargo5v5.threshold.mode !== 'start_points') {
+      if (fargo5v5.handicapMechanism?.kind !== 'start_points') {
         throw new Error('expected start_points threshold mode');
       }
-      const result = fargo5v5.threshold.compute(
+      const result = fargo5v5.handicapMechanism!.compute(
         [600, 600, 600, 600, 600],
         [400, 400, 400, 400, 400],
         {},
@@ -100,10 +100,10 @@ describe('fargo5v5 SystemModule', () => {
     });
 
     it('identifies the weaker team correctly when away is stronger', () => {
-      if (fargo5v5.threshold.mode !== 'start_points') {
+      if (fargo5v5.handicapMechanism?.kind !== 'start_points') {
         throw new Error('expected start_points threshold mode');
       }
-      const result = fargo5v5.threshold.compute(
+      const result = fargo5v5.handicapMechanism!.compute(
         [400, 400, 400, 400, 400],
         [600, 600, 600, 600, 600],
         {},
@@ -113,15 +113,15 @@ describe('fargo5v5 SystemModule', () => {
     });
 
     it('produces symmetric output under team swap', () => {
-      if (fargo5v5.threshold.mode !== 'start_points') {
+      if (fargo5v5.handicapMechanism?.kind !== 'start_points') {
         throw new Error('expected start_points threshold mode');
       }
-      const r1 = fargo5v5.threshold.compute(
+      const r1 = fargo5v5.handicapMechanism!.compute(
         [567, 458, 493, 486, 574],
         [447, 394, 452, 322, 374],
         {},
       );
-      const r2 = fargo5v5.threshold.compute(
+      const r2 = fargo5v5.handicapMechanism!.compute(
         [447, 394, 452, 322, 374],
         [567, 458, 493, 486, 574],
         {},
@@ -133,20 +133,20 @@ describe('fargo5v5 SystemModule', () => {
     });
 
     it('produces larger start-points for larger rating gaps (monotonic)', () => {
-      if (fargo5v5.threshold.mode !== 'start_points') {
+      if (fargo5v5.handicapMechanism?.kind !== 'start_points') {
         throw new Error('expected start_points threshold mode');
       }
-      const smallGap = fargo5v5.threshold.compute(
+      const smallGap = fargo5v5.handicapMechanism!.compute(
         [500, 500, 500, 500, 500],
         [450, 450, 450, 450, 450],
         {},
       );
-      const mediumGap = fargo5v5.threshold.compute(
+      const mediumGap = fargo5v5.handicapMechanism!.compute(
         [500, 500, 500, 500, 500],
         [400, 400, 400, 400, 400],
         {},
       );
-      const largeGap = fargo5v5.threshold.compute(
+      const largeGap = fargo5v5.handicapMechanism!.compute(
         [500, 500, 500, 500, 500],
         [300, 300, 300, 300, 300],
         {},
@@ -156,19 +156,19 @@ describe('fargo5v5 SystemModule', () => {
     });
 
     it('throws on empty rating arrays', () => {
-      if (fargo5v5.threshold.mode !== 'start_points') {
+      if (fargo5v5.handicapMechanism?.kind !== 'start_points') {
         throw new Error('expected start_points threshold mode');
       }
-      expect(() => fargo5v5.threshold.compute([], [500, 500, 500, 500, 500], {})).toThrow();
-      expect(() => fargo5v5.threshold.compute([500, 500, 500, 500, 500], [], {})).toThrow();
+      expect(() => fargo5v5.handicapMechanism!.compute([], [500, 500, 500, 500, 500], {})).toThrow();
+      expect(() => fargo5v5.handicapMechanism!.compute([500, 500, 500, 500, 500], [], {})).toThrow();
     });
 
     it('throws on non-finite ratings', () => {
-      if (fargo5v5.threshold.mode !== 'start_points') {
+      if (fargo5v5.handicapMechanism?.kind !== 'start_points') {
         throw new Error('expected start_points threshold mode');
       }
       expect(() =>
-        fargo5v5.threshold.compute(
+        fargo5v5.handicapMechanism!.compute(
           [500, 500, 500, 500, Number.NaN],
           [500, 500, 500, 500, 500],
           {},
@@ -179,15 +179,15 @@ describe('fargo5v5 SystemModule', () => {
 
   describe('threshold.compute — override: winner_points affects the calculation', () => {
     it('higher winner_points increases the per-game differential and therefore start-points', () => {
-      if (fargo5v5.threshold.mode !== 'start_points') {
+      if (fargo5v5.handicapMechanism?.kind !== 'start_points') {
         throw new Error('expected start_points threshold mode');
       }
-      const defaultWinner = fargo5v5.threshold.compute(
+      const defaultWinner = fargo5v5.handicapMechanism!.compute(
         [600, 600, 600, 600, 600],
         [400, 400, 400, 400, 400],
         {},
       );
-      const higherWinner = fargo5v5.threshold.compute(
+      const higherWinner = fargo5v5.handicapMechanism!.compute(
         [600, 600, 600, 600, 600],
         [400, 400, 400, 400, 400],
         { winner_points: 20 },

@@ -5,7 +5,6 @@
  * Uses integer point handicaps (-2..+2 standard, -1..+1 reduced).
  * Games-won scoring with team bonus.
  *
- * threshold.compute wraps the existing get3v3GamesNeeded chart.
  * rating.computeFromHistory is NOT exposed through the module in this unit —
  * the existing async calculatePlayerHandicap() in src/utils/calculatePlayerHandicap.ts
  * continues to own that logic (it has DB dependencies and async semantics that
@@ -22,7 +21,6 @@
  */
 
 import type { SystemModule } from './types';
-import { get3v3GamesNeeded } from '@/utils/handicap/get3v3GamesNeeded';
 import { getWinCalculator } from './win-calculators';
 import { getTeamGeometry } from './team-geometry';
 import { getMatchFormat } from './match-format';
@@ -53,17 +51,6 @@ export const bca3v3: SystemModule = {
     },
     computeMatchResult: () => {
       throw new Error(NOT_YET_WIRED);
-    },
-  },
-
-  threshold: {
-    mode: 'extra_games',
-    // Delegates to the existing hardcoded chart. No behavior change — the
-    // characterization tests in src/utils/handicap/__tests__/getGamesNeeded.characterization.test.ts
-    // guarantee this path returns the same values as before the refactor.
-    compute: (handicapDiff, overrides) => {
-      void overrides; // reserved for future dials (e.g. team_bonus_enabled); not consumed by chart lookup
-      return get3v3GamesNeeded(handicapDiff);
     },
   },
 

@@ -33,17 +33,9 @@
  * @see docs/plans/2026-04-28-001-feat-modular-league-system-plan.md (Unit 5.1)
  */
 
-import type { HandicapThresholds } from '@/types/match';
 import type { SystemOverrides } from '@/types/systemOverrides';
 import type { ResolvedSystemConfig } from '@/types/resolvedSystemConfig';
-import type {
-  ExtraGamesThreshold,
-  FargoStartPointsResult,
-  RaceLengthResult,
-  RaceLengthThreshold,
-  StartPointsThreshold,
-  SystemModule,
-} from './types';
+import type { SystemModule } from './types';
 import { bca3v3 } from './bca3v3';
 import { bca5v5 } from './bca5v5';
 import { fargo5v5 } from './fargo5v5';
@@ -339,136 +331,6 @@ function pickScoring(pointsCalculator: string | null): SystemModule['scoring'] {
 }
 
 // ============================================================================
-// Threshold section dispatch (mechanism → ExtraGames | StartPoints | RaceLength)
-// ============================================================================
-
-/** Zero-handicap threshold output — no extra games, no tie threshold, no losing threshold. */
-function zeroExtraGames(): HandicapThresholds {
-  return { games_to_win: 0, games_to_tie: null, games_to_lose: null };
-}
-
-/**
- * Build an ExtraGamesThreshold for an ad-hoc module. Routes by handicap_type
- * to the matching Games-Needed Chart Module.
- *
- * Behavior:
- *  - handicap_type='points' → 3v3 Games-Needed Chart (regardless of lineup
- *    size — the chart is the only Layer-2 source for integer points handicaps today)
- *  - handicap_type='percentage' → 5v5 Games-Needed Chart
- *  - any other → zero handicap (graceful fallback) with a one-time warn
- */
-function buildExtraGamesThreshold(handicapType: string): ExtraGamesThreshold {
-  if (handicapType === 'points') {
-    return {
-      mode: 'extra_games',
-      compute: (handicapDiff) => gamesNeeded3v3Chart.compute(handicapDiff),
-    };
-  }
-  if (handicapType === 'percentage') {
-    return {
-      mode: 'extra_games',
-      compute: (handicapDiff) => gamesNeeded5v5Chart.compute(handicapDiff),
-    };
-  }
-  // Fargo / skill_level / none / unknown with extra_games mechanism: no
-  // calibrated chart yet. Return zero-handicap and warn — match plays
-  // unhandicapped rather than failing to start.
-  return {
-    mode: 'extra_games',
-    compute: () => {
-      console.warn(
-        `[buildSystemFromPreferences] No extra_games Chart calibrated for handicap_type=${JSON.stringify(handicapType)} — returning zero-handicap fallback`,
-      );
-      return zeroExtraGames();
-    },
-  };
-}
-
-/**
- * Build a StartPointsThreshold for an ad-hoc module. Delegates to the FargoRate
- * Formula Chart Module — the formula is roster-agnostic (sums transformed
- * ratings, multiplies by total games), so it works for any lineup size.
- *
- * For handicap systems other than Fargo (`points`, `percentage`,
- * `skill_level`) paired with a start-points mechanism, no calibrated
- * formula exists yet. Returns zero start-points with a warn.
- */
-function buildStartPointsThreshold(handicapType: string): StartPointsThreshold {
-  if (handicapType === 'fargo') {
-    return {
-      mode: 'start_points',
-      compute: fargoFormulaChart.compute,
-    };
-  }
-  return {
-    mode: 'start_points',
-    compute: (homeRatings, awayRatings, overrides): FargoStartPointsResult => {
-      void homeRatings;
-      void awayRatings;
-      void overrides;
-      console.warn(
-        `[buildSystemFromPreferences] No start_points formula for handicap_type=${JSON.stringify(handicapType)} — returning zero start-points fallback`,
-      );
-      return { startPointsForWeakerTeam: 0, weakerTeam: 'even' };
-    },
-  };
-}
-
-/**
- * Build a RaceLengthThreshold for an ad-hoc module. The BCAPL Skill Level
- * Layer 2 chart lands in Unit 3.3; until then we return equal race lengths
- * derived from `prefs.race_length` (or 7 if NULL — a sensible default for
- * 8-ball / 9-ball race-to-N).
- */
-function buildRaceLengthThreshold(prefs: ResolvedSystemConfig): RaceLengthThreshold {
-  const baseRace = prefs.race_length ?? 7;
-  return {
-    mode: 'race_length_adjustment',
-    compute: (homeRatings, awayRatings, overrides): RaceLengthResult => {
-      void homeRatings;
-      void awayRatings;
-      void overrides;
-      console.warn(
-        `[buildSystemFromPreferences] race_length_adjustment mechanism has no chart wired yet (Unit 3.3) — returning equal race lengths of ${baseRace}`,
-      );
-      return { homeRaceLength: baseRace, awayRaceLength: baseRace };
-    },
-  };
-}
-
-/**
- * Pick a threshold capability for the ad-hoc module by `mechanism`.
- *
- * `mechanism='none'` collapses to a zero-handicap ExtraGamesThreshold so
- * the threshold-shape contract is satisfied without applying any handicap.
- * Callers reading `module.threshold.mode === 'extra_games'` and getting
- * `{ games_to_win: 0, ... }` should interpret that as "play unhandicapped."
- */
-function pickThreshold(prefs: ResolvedSystemConfig): SystemModule['threshold'] {
-  switch (prefs.mechanism) {
-    case 'extra_games':
-      return buildExtraGamesThreshold(prefs.handicap_type);
-    case 'start_points':
-      return buildStartPointsThreshold(prefs.handicap_type);
-    case 'race_length_adjustment':
-      return buildRaceLengthThreshold(prefs);
-    case 'none':
-      return {
-        mode: 'extra_games',
-        compute: () => zeroExtraGames(),
-      };
-    default:
-      console.warn(
-        `[buildSystemFromPreferences] Unknown mechanism ${JSON.stringify(prefs.mechanism)} — defaulting to zero-handicap extra_games`,
-      );
-      return {
-        mode: 'extra_games',
-        compute: () => zeroExtraGames(),
-      };
-  }
-}
-
-// ============================================================================
 // Public API
 // ============================================================================
 
@@ -525,7 +387,6 @@ export function buildSystemFromPreferences(
     // race_length directly from prefs/snapshot during the strangler-fig transition.
     matchFormat: getMatchFormat(prefs.pairing_format, prefs.race_length),
     scoring: pickScoring(prefs.points_calculator),
-    threshold: pickThreshold(prefs),
     // Per Unit 1 of the modular-framework migration plan: build a Win Calculator
     // Module from the league's win_condition preference. One-entry metric stack;
     // multi-entry stacks come in Unit 9.
@@ -533,13 +394,11 @@ export function buildSystemFromPreferences(
     // Handicap System Module — replaces the legacy `rating` capability deleted
     // in Phase D of the Handicap Systems extraction Unit.
     handicapSystem: pickHandicapSystem(prefs.handicap_type),
-    // Threshold Chart Module — Phase B of the Threshold Charts extraction Unit.
-    // Coexists with the `threshold` capability above (above field remains the
-    // strangler-fig source of truth until Phase D removes it).
+    // Threshold Chart Module — the passive data layer (lookup table or formula).
     thresholdChart: pickThresholdChart(prefs.handicap_type, prefs.mechanism),
-    // Handicap Mechanism Module — Phase B of the Handicap Mechanisms extraction Unit.
-    // Wraps the active Chart in the matching Mechanism kind. Coexists with the
-    // legacy `threshold` field; Phase D of Handicap Mechanisms will remove that field.
+    // Handicap Mechanism Module — wraps the active Chart in the matching
+    // Mechanism kind. Replaces the legacy `threshold` field deleted in Phase D
+    // of the Handicap Mechanisms extraction Unit.
     handicapMechanism: pickHandicapMechanism(
       prefs.handicap_type,
       prefs.mechanism,

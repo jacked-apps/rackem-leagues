@@ -5,13 +5,11 @@
  * Uses percentage handicaps (0-100 standard, 0-50 reduced).
  * Games-won scoring with team bonus.
  *
- * threshold.compute wraps the existing get5v5GamesNeeded chart.
  * Same stubbing rationale as bca3v3 for rating.computeFromHistory and
  * scoring.* methods — see bca3v3.ts file header.
  */
 
 import type { SystemModule } from './types';
-import { get5v5GamesNeeded } from '@/utils/handicap/get5v5GamesNeeded';
 import { getWinCalculator } from './win-calculators';
 import { getTeamGeometry } from './team-geometry';
 import { getMatchFormat } from './match-format';
@@ -40,15 +38,6 @@ export const bca5v5: SystemModule = {
     },
     computeMatchResult: () => {
       throw new Error(NOT_YET_WIRED);
-    },
-  },
-
-  threshold: {
-    mode: 'extra_games',
-    // Delegates to the existing hardcoded chart. No behavior change.
-    compute: (handicapDiff, overrides) => {
-      void overrides; // reserved for future dials (e.g. team_bonus_enabled); not consumed by chart lookup
-      return get5v5GamesNeeded(handicapDiff);
     },
   },
 

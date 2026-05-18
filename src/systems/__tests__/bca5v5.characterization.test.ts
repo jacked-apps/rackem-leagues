@@ -50,7 +50,7 @@ describe('bca5v5 SystemModule — characterization', () => {
     });
 
     it('threshold.mode is "extra_games" (mechanism: extra games)', () => {
-      expect(bca5v5.threshold.mode).toBe('extra_games');
+      expect(bca5v5.handicapMechanism?.kind).toBe('extra_games');
     });
 
     it('handicapSystem is wired to the Percentage variant (kind: "percentage")', () => {
@@ -68,10 +68,10 @@ describe('bca5v5 SystemModule — characterization', () => {
     it.each([0, 14, 15, 40, 66, 92, 118, 144, 145, 500, -14, -15, -40, -145])(
       'threshold.compute(%i) returns same shape as get5v5GamesNeeded(%i)',
       (diff) => {
-        if (bca5v5.threshold.mode !== 'extra_games') {
+        if (bca5v5.handicapMechanism?.kind !== 'extra_games') {
           throw new Error('expected BCA threshold mode');
         }
-        expect(bca5v5.threshold.compute(diff, NO_OVERRIDES)).toEqual(
+        expect(bca5v5.handicapMechanism!.compute(diff, NO_OVERRIDES)).toEqual(
           get5v5GamesNeeded(diff)
         );
       }
@@ -90,11 +90,11 @@ describe('bca5v5 SystemModule — characterization', () => {
     it.each([0, 14, 15, 40, 66, 92, 118, 144, 145, 500, -14, -15, -40, -145])(
       'diff %i: games_to_tie is null',
       (diff) => {
-        if (bca5v5.threshold.mode !== 'extra_games') {
+        if (bca5v5.handicapMechanism?.kind !== 'extra_games') {
           throw new Error('expected BCA threshold mode');
         }
         expect(
-          bca5v5.threshold.compute(diff, NO_OVERRIDES).games_to_tie
+          bca5v5.handicapMechanism!.compute(diff, NO_OVERRIDES).games_to_tie
         ).toBeNull();
       }
     );
@@ -129,11 +129,11 @@ describe('bca5v5 SystemModule — characterization', () => {
     ])(
       'home diff %i: home and away thresholds are both direct chart lookups',
       (homeDiff) => {
-        if (bca5v5.threshold.mode !== 'extra_games') {
+        if (bca5v5.handicapMechanism?.kind !== 'extra_games') {
           throw new Error('expected BCA threshold mode');
         }
-        const homeThresholds = bca5v5.threshold.compute(homeDiff, NO_OVERRIDES);
-        const awayThresholds = bca5v5.threshold.compute(
+        const homeThresholds = bca5v5.handicapMechanism!.compute(homeDiff, NO_OVERRIDES);
+        const awayThresholds = bca5v5.handicapMechanism!.compute(
           -homeDiff,
           NO_OVERRIDES
         );
@@ -157,11 +157,11 @@ describe('bca5v5 SystemModule — characterization', () => {
     it.each([0, 5, 10, 14])(
       'handicap diff %i (within range 0-14): home and away thresholds are identical',
       (diff) => {
-        if (bca5v5.threshold.mode !== 'extra_games') {
+        if (bca5v5.handicapMechanism?.kind !== 'extra_games') {
           throw new Error('expected BCA threshold mode');
         }
-        const home = bca5v5.threshold.compute(diff, NO_OVERRIDES);
-        const away = bca5v5.threshold.compute(-diff, NO_OVERRIDES);
+        const home = bca5v5.handicapMechanism!.compute(diff, NO_OVERRIDES);
+        const away = bca5v5.handicapMechanism!.compute(-diff, NO_OVERRIDES);
         expect(home).toEqual(away);
         // Both teams need 13 games of 25 to win in this range
         expect(home.games_to_win).toBe(13);
@@ -171,11 +171,11 @@ describe('bca5v5 SystemModule — characterization', () => {
     it.each([15, 16, 40, 41, 66, 100, 145, 500])(
       'handicap diff %i (outside range 0-14): home and away thresholds MUST differ',
       (diff) => {
-        if (bca5v5.threshold.mode !== 'extra_games') {
+        if (bca5v5.handicapMechanism?.kind !== 'extra_games') {
           throw new Error('expected BCA threshold mode');
         }
-        const home = bca5v5.threshold.compute(diff, NO_OVERRIDES);
-        const away = bca5v5.threshold.compute(-diff, NO_OVERRIDES);
+        const home = bca5v5.handicapMechanism!.compute(diff, NO_OVERRIDES);
+        const away = bca5v5.handicapMechanism!.compute(-diff, NO_OVERRIDES);
         expect(home.games_to_win).not.toBe(away.games_to_win);
       }
     );
@@ -205,11 +205,11 @@ describe('bca5v5 SystemModule — characterization', () => {
     ])(
       'positive diff %i: higher-handicap team needs %i games to win',
       (diff, expected) => {
-        if (bca5v5.threshold.mode !== 'extra_games') {
+        if (bca5v5.handicapMechanism?.kind !== 'extra_games') {
           throw new Error('expected BCA threshold mode');
         }
         expect(
-          bca5v5.threshold.compute(diff, NO_OVERRIDES).games_to_win
+          bca5v5.handicapMechanism!.compute(diff, NO_OVERRIDES).games_to_win
         ).toBe(expected);
       }
     );
@@ -230,11 +230,11 @@ describe('bca5v5 SystemModule — characterization', () => {
     ])(
       'negative diff %i: lower-handicap team needs %i games to win',
       (diff, expected) => {
-        if (bca5v5.threshold.mode !== 'extra_games') {
+        if (bca5v5.handicapMechanism?.kind !== 'extra_games') {
           throw new Error('expected BCA threshold mode');
         }
         expect(
-          bca5v5.threshold.compute(diff, NO_OVERRIDES).games_to_win
+          bca5v5.handicapMechanism!.compute(diff, NO_OVERRIDES).games_to_win
         ).toBe(expected);
       }
     );
