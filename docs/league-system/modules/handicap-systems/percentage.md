@@ -3,7 +3,12 @@ title: Percentage Handicap
 date: 2026-05-12
 status: active
 audience: developer + AI sessions
+locked: true
 ---
+
+> ## 🔒 LOCKED — DO NOT EDIT
+>
+> Before editing this file, read and apply the gate procedure in [Principle 7: Canonical-docs-as-policy](../../PRINCIPLES.md#7-canonical-docs-as-policy). The procedure requires explicit user invocation using specific gate-aware language; casual approvals are NOT sufficient.
 
 # Percentage Handicap
 
