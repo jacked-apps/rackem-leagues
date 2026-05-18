@@ -120,70 +120,6 @@ function deriveAdHocKey(prefs: ResolvedSystemConfig): string {
 }
 
 // ============================================================================
-// Rating section dispatch
-// ============================================================================
-
-/**
- * Pick a rating capability for the ad-hoc module by handicap_type. We reuse
- * the shipped modules' rating shapes verbatim — the rating-system semantics
- * (how to validate / display / compute-from-history) don't change with
- * lineup size or scoring method, only with the underlying rating system.
- *
- * For `skill_level` (BCAPL SL — Phase 3 Unit 3.3) and `none` we provide
- * minimal stubs until the real implementations land.
- */
-function pickRating(handicapType: string): SystemModule['rating'] {
-  switch (handicapType) {
-    case 'points':
-      return bca3v3.rating;
-    case 'percentage':
-      return bca5v5.rating;
-    case 'fargo':
-      return fargo5v5.rating;
-    case 'skill_level':
-      // Stub: BCAPL Skill Level (1-9 integer). Real validate/display lands
-      // with Unit 3.3's Layer 2 chart seed. Until then, accept integers
-      // 1-9 and display as a bare number.
-      return {
-        requiresManualEntry: true,
-        computeFromHistory: () => null,
-        displayFormat: (value) => `SL${Math.round(value)}`,
-        validate: (value) => {
-          if (typeof value !== 'number' || !Number.isFinite(value)) {
-            return { ok: false, message: 'Skill Level must be a number' };
-          }
-          if (!Number.isInteger(value)) {
-            return { ok: false, message: 'Skill Level must be an integer' };
-          }
-          if (value < 1 || value > 9) {
-            return { ok: false, message: 'Skill Level must be between 1 and 9' };
-          }
-          return { ok: true, value };
-        },
-      };
-    case 'none':
-      // No-handicap leagues: rating is informational only, accept anything
-      // numeric for storage consistency.
-      return {
-        requiresManualEntry: false,
-        computeFromHistory: () => null,
-        displayFormat: () => '—',
-        validate: (value) => {
-          if (typeof value !== 'number' || !Number.isFinite(value)) {
-            return { ok: false, message: 'Rating must be a number' };
-          }
-          return { ok: true, value };
-        },
-      };
-    default:
-      console.warn(
-        `[buildSystemFromPreferences] Unknown handicap_type ${JSON.stringify(handicapType)} — defaulting to bca5v5 rating shape`,
-      );
-      return bca5v5.rating;
-  }
-}
-
-// ============================================================================
 // Handicap System Module dispatch
 // ============================================================================
 
@@ -478,16 +414,14 @@ export function buildSystemFromPreferences(
     // Per the Match Format extraction Unit; consumers may still read pairing_format /
     // race_length directly from prefs/snapshot during the strangler-fig transition.
     matchFormat: getMatchFormat(prefs.pairing_format, prefs.race_length),
-    rating: pickRating(prefs.handicap_type),
     scoring: pickScoring(prefs.points_calculator),
     threshold: pickThreshold(prefs),
     // Per Unit 1 of the modular-framework migration plan: build a Win Calculator
     // Module from the league's win_condition preference. One-entry metric stack;
     // multi-entry stacks come in Unit 9.
     winCalculator: getWinCalculator(prefs.win_condition),
-    // Handicap System Module — Phase B of the Handicap Systems extraction Unit.
-    // Coexists with the `rating` capability above (above field is the legacy
-    // strangler-fig source of truth until Phase D removes it).
+    // Handicap System Module — replaces the legacy `rating` capability deleted
+    // in Phase D of the Handicap Systems extraction Unit.
     handicapSystem: pickHandicapSystem(prefs.handicap_type),
   };
 }

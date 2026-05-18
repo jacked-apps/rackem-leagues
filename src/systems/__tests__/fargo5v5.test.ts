@@ -33,8 +33,12 @@ describe('fargo5v5 SystemModule', () => {
       });
     });
 
-    it('requires manual rating entry', () => {
-      expect(fargo5v5.rating.requiresManualEntry).toBe(true);
+    it('handicapSystem is wired to the FargoRate variant (kind: "fargo")', () => {
+      // Full displayFormat / validate / computeFromHistory / requiresManualEntry
+      // coverage lives in src/systems/handicap-systems/__tests__/fargorate.test.ts.
+      // This assertion is the integration check: the Fargo 5v5 system picks the
+      // FargoRate Module.
+      expect(fargo5v5.handicapSystem?.kind).toBe('fargo');
     });
 
     it('uses points_accumulated scoring', () => {
@@ -43,68 +47,6 @@ describe('fargo5v5 SystemModule', () => {
 
     it('uses start_points threshold mode', () => {
       expect(fargo5v5.threshold.mode).toBe('start_points');
-    });
-  });
-
-  describe('rating.validate', () => {
-    it('accepts an integer in range [100, 850]', () => {
-      expect(fargo5v5.rating.validate(500)).toEqual({ ok: true, value: 500 });
-      expect(fargo5v5.rating.validate(100)).toEqual({ ok: true, value: 100 });
-      expect(fargo5v5.rating.validate(850)).toEqual({ ok: true, value: 850 });
-    });
-
-    it('rejects values below 100', () => {
-      const r = fargo5v5.rating.validate(99);
-      expect(r.ok).toBe(false);
-    });
-
-    it('rejects values above 850', () => {
-      const r = fargo5v5.rating.validate(851);
-      expect(r.ok).toBe(false);
-    });
-
-    it('rejects non-integers', () => {
-      const r = fargo5v5.rating.validate(500.5);
-      expect(r.ok).toBe(false);
-    });
-
-    it('rejects strings', () => {
-      const r = fargo5v5.rating.validate('500');
-      expect(r.ok).toBe(false);
-    });
-
-    it('rejects null', () => {
-      const r = fargo5v5.rating.validate(null);
-      expect(r.ok).toBe(false);
-    });
-
-    it('rejects NaN', () => {
-      const r = fargo5v5.rating.validate(Number.NaN);
-      expect(r.ok).toBe(false);
-    });
-  });
-
-  describe('rating.displayFormat', () => {
-    it('renders an integer rating as a plain string', () => {
-      expect(fargo5v5.rating.displayFormat(575)).toBe('575');
-      expect(fargo5v5.rating.displayFormat(100)).toBe('100');
-    });
-
-    it('rounds fractional inputs for display', () => {
-      expect(fargo5v5.rating.displayFormat(575.4)).toBe('575');
-      expect(fargo5v5.rating.displayFormat(575.6)).toBe('576');
-    });
-  });
-
-  describe('rating.computeFromHistory', () => {
-    it('returns null (Fargo is manual-entry only)', () => {
-      expect(fargo5v5.rating.computeFromHistory).toBeDefined();
-      const result = fargo5v5.rating.computeFromHistory!({
-        playerId: 'x',
-        recentGames: [],
-        weeksPlayed: 0,
-      });
-      expect(result).toBeNull();
     });
   });
 

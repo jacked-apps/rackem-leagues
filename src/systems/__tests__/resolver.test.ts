@@ -84,7 +84,7 @@ describe('pickModule', () => {
       });
     });
 
-    it('fargo5v5 is 5v5 single round robin (25 games) with manual rating entry', () => {
+    it('fargo5v5 is 5v5 single round robin (25 games) with the FargoRate Handicap System', () => {
       const mod = pickModule('fargo');
       expect(mod.teamGeometry).toEqual({
         lineupSize: 5,
@@ -92,12 +92,15 @@ describe('pickModule', () => {
         gameGeneration: 'single_round_robin',
         gameCount: 25,
       });
-      expect(mod.rating.requiresManualEntry).toBe(true);
+      expect(mod.handicapSystem?.kind).toBe('fargo');
+      expect(mod.handicapSystem?.requiresManualEntry).toBe(true);
     });
 
-    it('BCA modules do not require manual rating entry', () => {
-      expect(pickModule('points').rating.requiresManualEntry).toBe(false);
-      expect(pickModule('percentage').rating.requiresManualEntry).toBe(false);
+    it('BCA modules pick the Points and Percentage Handicap Systems (history-derived)', () => {
+      expect(pickModule('points').handicapSystem?.kind).toBe('points');
+      expect(pickModule('points').handicapSystem?.requiresManualEntry).toBe(false);
+      expect(pickModule('percentage').handicapSystem?.kind).toBe('percentage');
+      expect(pickModule('percentage').handicapSystem?.requiresManualEntry).toBe(false);
     });
   });
 

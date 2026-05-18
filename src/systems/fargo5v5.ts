@@ -44,7 +44,6 @@ import type {
   GameOutcome,
   GameRecordFields,
   MatchResult,
-  RatingValidationResult,
   RatingValue,
   StoredGameRecord,
   SystemModule,
@@ -70,29 +69,6 @@ const DEFAULT_LOSER_POINTS_MAX = 7;
  * our computed value, revisit this constant or move to a gap-sensitive formula.
  */
 const AVG_LOSER_POINTS = 4.2;
-
-// ============================================================================
-// Rating
-// ============================================================================
-
-const FARGO_RATING_MIN = 100;
-const FARGO_RATING_MAX = 850;
-
-function validateRating(value: unknown): RatingValidationResult {
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
-    return { ok: false, message: 'Fargo rating must be a number' };
-  }
-  if (!Number.isInteger(value)) {
-    return { ok: false, message: 'Fargo rating must be a whole integer' };
-  }
-  if (value < FARGO_RATING_MIN || value > FARGO_RATING_MAX) {
-    return {
-      ok: false,
-      message: `Fargo rating must be between ${FARGO_RATING_MIN} and ${FARGO_RATING_MAX}`,
-    };
-  }
-  return { ok: true, value };
-}
 
 // ============================================================================
 // Threshold (start-points formula)
@@ -277,14 +253,6 @@ export const fargo5v5: SystemModule = {
   // See bca3v3.ts for the strangler-fig rationale.
   matchFormat: getMatchFormat('single_rack', null),
 
-  rating: {
-    requiresManualEntry: true,
-    // Fargo ratings are externally sourced; no history-based computation.
-    computeFromHistory: () => null,
-    displayFormat: (value) => String(Math.round(value)),
-    validate: validateRating,
-  },
-
   scoring: {
     method: 'points_accumulated',
     recordGameOutcome,
@@ -303,6 +271,6 @@ export const fargo5v5: SystemModule = {
   winCalculator: getWinCalculator('points'),
 
   // Handicap System Module — FargoRate variant (integer 100–850, manually entered).
-  // See bca3v3.ts for the strangler-fig rationale; coexists with `rating` until Phase D.
+  // Replaces the legacy `rating` capability deleted in Phase D.
   handicapSystem: fargoRateHandicapSystem,
 };

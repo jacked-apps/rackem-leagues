@@ -234,31 +234,6 @@ export interface SystemModule {
    */
   key: string;
 
-  /** Rating computation, validation, and display. */
-  rating: {
-    /**
-     * True for Fargo (operator enters rating manually at lineup time).
-     * False for BCA (rating derives from history).
-     */
-    requiresManualEntry: boolean;
-
-    /**
-     * Compute a rating from a player's recent game history.
-     * Undefined for Fargo (manual-only). Returns null when the player has
-     * insufficient history for the module's formula.
-     */
-    computeFromHistory?: (ctx: PlayerHistoryContext) => RatingValue | null;
-
-    /** Format a numeric rating for display (e.g., '+2', '85%', '575'). */
-    displayFormat: (value: RatingValue) => string;
-
-    /**
-     * Parse unknown input (string/number/null from a form field) into a
-     * validated rating value. UI uses the error message when ok is false.
-     */
-    validate: (value: unknown) => RatingValidationResult;
-  };
-
   /** Game outcome recording and match-result computation. */
   scoring: {
     /**
@@ -363,11 +338,9 @@ export interface SystemModule {
    * `docs/plans/2026-05-17-001-refactor-modular-framework-migration-plan.md`),
    * following the strangler-fig pattern proven by Team Geometry and Match Format.
    *
-   * Coexists with the legacy `rating` capability above during the strangler-fig
-   * transition — both carry the same shape (and at runtime, are the SAME object
-   * by reference). Consumers gradually migrate from `systemModule.rating.X` to
-   * `systemModule.handicapSystem.X` in Phase C; the legacy `rating` capability
-   * is removed in Phase D.
+   * Replaces the legacy `rating` capability that was a stranded API — declared
+   * but never consumed by production code. Phase C was a no-op (no consumers to
+   * swap); Phase D deleted the field and its 4 construction sites.
    *
    * The four shipping variants:
    * - Points (kind: 'points')           — BCA 3v3

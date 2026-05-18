@@ -197,8 +197,8 @@ describe('buildSystemFromPreferences — ad-hoc teamGeometry derivation', () => 
 // Ad-hoc path: rating dispatch
 // ============================================================================
 
-describe('buildSystemFromPreferences — rating dispatch', () => {
-  it('routes handicap_type=points to bca3v3 rating shape', () => {
+describe('buildSystemFromPreferences — handicapSystem dispatch', () => {
+  it('routes handicap_type=points to the Points Handicap System', () => {
     const mod = buildSystemFromPreferences(
       makeConfig({
         lineup_size: 4,
@@ -208,13 +208,11 @@ describe('buildSystemFromPreferences — rating dispatch', () => {
       }),
       EMPTY_OVERRIDES,
     );
-    // bca3v3 displays signed integers
-    expect(mod.rating.displayFormat(2)).toBe('+2');
-    expect(mod.rating.displayFormat(-1)).toBe('-1');
-    expect(mod.rating.requiresManualEntry).toBe(false);
+    expect(mod.handicapSystem?.kind).toBe('points');
+    expect(mod.handicapSystem?.requiresManualEntry).toBe(false);
   });
 
-  it('routes handicap_type=percentage to bca5v5 rating shape', () => {
+  it('routes handicap_type=percentage to the Percentage Handicap System', () => {
     const mod = buildSystemFromPreferences(
       makeConfig({
         lineup_size: 6,
@@ -224,10 +222,11 @@ describe('buildSystemFromPreferences — rating dispatch', () => {
       }),
       EMPTY_OVERRIDES,
     );
-    expect(mod.rating.displayFormat(85)).toBe('85%');
+    expect(mod.handicapSystem?.kind).toBe('percentage');
+    expect(mod.handicapSystem?.requiresManualEntry).toBe(false);
   });
 
-  it('routes handicap_type=fargo to fargo5v5 rating shape with manual entry', () => {
+  it('routes handicap_type=fargo to the FargoRate Handicap System (manual entry)', () => {
     const mod = buildSystemFromPreferences(
       makeConfig({
         lineup_size: 4,
@@ -237,11 +236,11 @@ describe('buildSystemFromPreferences — rating dispatch', () => {
       }),
       EMPTY_OVERRIDES,
     );
-    expect(mod.rating.requiresManualEntry).toBe(true);
-    expect(mod.rating.displayFormat(575)).toBe('575');
+    expect(mod.handicapSystem?.kind).toBe('fargo');
+    expect(mod.handicapSystem?.requiresManualEntry).toBe(true);
   });
 
-  it('provides a stub for handicap_type=skill_level (BCAPL SL)', () => {
+  it('routes handicap_type=skill_level to the Skill Level Handicap System (reserved)', () => {
     const mod = buildSystemFromPreferences(
       makeConfig({
         lineup_size: 5,
@@ -253,14 +252,12 @@ describe('buildSystemFromPreferences — rating dispatch', () => {
       }),
       EMPTY_OVERRIDES,
     );
-    expect(mod.rating.displayFormat(5)).toBe('SL5');
-    expect(mod.rating.validate(5)).toEqual({ ok: true, value: 5 });
-    expect(mod.rating.validate(0).ok).toBe(false);
-    expect(mod.rating.validate(10).ok).toBe(false);
-    expect(mod.rating.validate(5.5).ok).toBe(false);
+    expect(mod.handicapSystem?.kind).toBe('skill_level');
   });
 
-  it('provides a stub for handicap_type=none (no-handicap leagues)', () => {
+  it('returns null handicapSystem for handicap_type=none (no-handicap leagues)', () => {
+    // Per the locked Handicap Systems blueprint: 'none' is "no Module" rather
+    // than a 5th variant — the league self-sorts into skill tiers.
     const mod = buildSystemFromPreferences(
       makeConfig({
         handicap_type: 'none',
@@ -268,18 +265,16 @@ describe('buildSystemFromPreferences — rating dispatch', () => {
       }),
       EMPTY_OVERRIDES,
     );
-    expect(mod.rating.displayFormat(500)).toBe('—');
-    expect(mod.rating.validate(0)).toEqual({ ok: true, value: 0 });
-    expect(mod.rating.validate('not-a-number').ok).toBe(false);
+    expect(mod.handicapSystem).toBeNull();
   });
 
-  it('falls back to bca5v5 rating shape with a warn for unknown handicap_type', () => {
+  it('returns null handicapSystem with a warn for unknown handicap_type', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const mod = buildSystemFromPreferences(
       makeConfig({ handicap_type: 'experimental_rating' }),
       EMPTY_OVERRIDES,
     );
-    expect(mod.rating.displayFormat(50)).toBe('50%');
+    expect(mod.handicapSystem).toBeNull();
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
   });

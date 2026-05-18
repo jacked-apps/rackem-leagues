@@ -64,75 +64,11 @@ describe('bca3v3 SystemModule — characterization', () => {
       expect(bca3v3.threshold.mode).toBe('extra_games');
     });
 
-    it('rating.requiresManualEntry is false (BCA derives rating from history)', () => {
-      expect(bca3v3.rating.requiresManualEntry).toBe(false);
-    });
-  });
-
-  describe('rating.displayFormat — points handicap ranges -2..+2', () => {
-    it.each([
-      [-2, '-2'],
-      [-1, '-1'],
-      [0, '0'],
-      [1, '+1'],
-      [2, '+2'],
-    ])('value %i displays as "%s"', (value, expected) => {
-      expect(bca3v3.rating.displayFormat(value)).toBe(expected);
-    });
-  });
-
-  describe('rating.validate', () => {
-    it.each([-2, -1, 0, 1, 2])('accepts valid integer %i', (value) => {
-      expect(bca3v3.rating.validate(value)).toEqual({ ok: true, value });
-    });
-
-    it('rejects strings', () => {
-      expect(bca3v3.rating.validate('1')).toEqual({
-        ok: false,
-        message: 'Rating must be a number',
-      });
-    });
-
-    it('rejects null', () => {
-      expect(bca3v3.rating.validate(null)).toEqual({
-        ok: false,
-        message: 'Rating must be a number',
-      });
-    });
-
-    it('rejects undefined', () => {
-      expect(bca3v3.rating.validate(undefined)).toEqual({
-        ok: false,
-        message: 'Rating must be a number',
-      });
-    });
-
-    it('rejects NaN', () => {
-      expect(bca3v3.rating.validate(NaN)).toEqual({
-        ok: false,
-        message: 'Rating must be a number',
-      });
-    });
-
-    it.each([Infinity, -Infinity])('rejects %s', (value) => {
-      expect(bca3v3.rating.validate(value)).toEqual({
-        ok: false,
-        message: 'Rating must be a number',
-      });
-    });
-
-    it.each([0.5, 1.5, -1.5, 0.1])('rejects fractional %f', (value) => {
-      expect(bca3v3.rating.validate(value)).toEqual({
-        ok: false,
-        message: 'Points handicap must be an integer',
-      });
-    });
-
-    it.each([-3, 3, -100, 100])('rejects out-of-range integer %i', (value) => {
-      expect(bca3v3.rating.validate(value)).toEqual({
-        ok: false,
-        message: 'Points handicap must be between -2 and +2',
-      });
+    it('handicapSystem is wired to the Points variant (kind: "points")', () => {
+      // Full displayFormat / validate / requiresManualEntry coverage lives in
+      // src/systems/handicap-systems/__tests__/points.test.ts. This assertion
+      // is the integration check: the BCA 3v3 system picks the Points Module.
+      expect(bca3v3.handicapSystem?.kind).toBe('points');
     });
   });
 

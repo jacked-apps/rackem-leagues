@@ -53,88 +53,12 @@ describe('bca5v5 SystemModule — characterization', () => {
       expect(bca5v5.threshold.mode).toBe('extra_games');
     });
 
-    it('rating.requiresManualEntry is false (BCA derives rating from history)', () => {
-      expect(bca5v5.rating.requiresManualEntry).toBe(false);
+    it('handicapSystem is wired to the Percentage variant (kind: "percentage")', () => {
+      // Full displayFormat / validate / requiresManualEntry coverage lives in
+      // src/systems/handicap-systems/__tests__/percentage.test.ts. This assertion
+      // is the integration check: the BCA 5v5 system picks the Percentage Module.
+      expect(bca5v5.handicapSystem?.kind).toBe('percentage');
     });
-  });
-
-  describe('rating.displayFormat — percentage handicap', () => {
-    it.each([
-      [0, '0%'],
-      [50, '50%'],
-      [100, '100%'],
-    ])('value %i displays as "%s"', (value, expected) => {
-      expect(bca5v5.rating.displayFormat(value)).toBe(expected);
-    });
-
-    it('rounds fractional values for display', () => {
-      // 5v5 uses Math.round in the formatter
-      expect(bca5v5.rating.displayFormat(33.4)).toBe('33%');
-      expect(bca5v5.rating.displayFormat(33.6)).toBe('34%');
-      expect(bca5v5.rating.displayFormat(99.5)).toBe('100%'); // banker's rounding caveat: JS rounds .5 up
-    });
-  });
-
-  describe('rating.validate', () => {
-    it.each([0, 25, 50, 75, 100])('accepts valid integer %i', (value) => {
-      expect(bca5v5.rating.validate(value)).toEqual({ ok: true, value });
-    });
-
-    it('accepts fractional values (different from 3v3)', () => {
-      // 5v5 doesn't require integers; percentages can be fractional
-      expect(bca5v5.rating.validate(33.5)).toEqual({ ok: true, value: 33.5 });
-      expect(bca5v5.rating.validate(0.1)).toEqual({ ok: true, value: 0.1 });
-    });
-
-    it('accepts boundary values 0 and 100', () => {
-      expect(bca5v5.rating.validate(0)).toEqual({ ok: true, value: 0 });
-      expect(bca5v5.rating.validate(100)).toEqual({ ok: true, value: 100 });
-    });
-
-    it('rejects strings', () => {
-      expect(bca5v5.rating.validate('50')).toEqual({
-        ok: false,
-        message: 'Rating must be a number',
-      });
-    });
-
-    it('rejects null', () => {
-      expect(bca5v5.rating.validate(null)).toEqual({
-        ok: false,
-        message: 'Rating must be a number',
-      });
-    });
-
-    it('rejects undefined', () => {
-      expect(bca5v5.rating.validate(undefined)).toEqual({
-        ok: false,
-        message: 'Rating must be a number',
-      });
-    });
-
-    it('rejects NaN', () => {
-      expect(bca5v5.rating.validate(NaN)).toEqual({
-        ok: false,
-        message: 'Rating must be a number',
-      });
-    });
-
-    it.each([Infinity, -Infinity])('rejects %s', (value) => {
-      expect(bca5v5.rating.validate(value)).toEqual({
-        ok: false,
-        message: 'Rating must be a number',
-      });
-    });
-
-    it.each([-1, -0.1, 100.1, 101, 200])(
-      'rejects out-of-range value %f',
-      (value) => {
-        expect(bca5v5.rating.validate(value)).toEqual({
-          ok: false,
-          message: 'Percentage handicap must be between 0 and 100',
-        });
-      }
-    );
   });
 
   describe('threshold.compute — delegates to the range-based chart', () => {

@@ -16,6 +16,9 @@
  * goes through the module for game recording in v1; the existing scoring
  * mutation pipeline is unchanged. Fargo (Unit 10) is the first consumer of
  * these capabilities.
+ *
+ * The rating capability was deleted in Phase D of the Handicap Systems
+ * extraction Unit; `handicapSystem: pointsHandicapSystem` is the replacement.
  */
 
 import type { SystemModule } from './types';
@@ -40,28 +43,6 @@ export const bca3v3: SystemModule = {
   // Per the Match Format extraction Unit; coexists with any legacy scattered
   // pairing_format/race_length preference reads during the strangler-fig transition.
   matchFormat: getMatchFormat('single_rack', null),
-
-  rating: {
-    requiresManualEntry: false,
-    // computeFromHistory intentionally omitted — see file header.
-    displayFormat: (value) => {
-      // Points handicap displays with explicit sign for non-zero values: +2, -1, 0
-      if (value > 0) return `+${value}`;
-      return String(value);
-    },
-    validate: (value) => {
-      if (typeof value !== 'number' || !Number.isFinite(value)) {
-        return { ok: false, message: 'Rating must be a number' };
-      }
-      if (!Number.isInteger(value)) {
-        return { ok: false, message: 'Points handicap must be an integer' };
-      }
-      if (value < -2 || value > 2) {
-        return { ok: false, message: 'Points handicap must be between -2 and +2' };
-      }
-      return { ok: true, value };
-    },
-  },
 
   scoring: {
     method: 'games_won_with_team_bonus',
@@ -91,9 +72,8 @@ export const bca3v3: SystemModule = {
   winCalculator: getWinCalculator('games'),
 
   // Handicap System Module — Points variant (integer ±2 with explicit sign display).
-  // Coexists with the legacy `rating` capability above during the strangler-fig
-  // transition; both encode the identical contract. Consumers migrate from
-  // `bca3v3.rating.X` to `bca3v3.handicapSystem.X` in Phase C; `rating` is deleted
-  // in Phase D of the Handicap Systems extraction.
+  // Replaces the legacy `rating` capability deleted in Phase D of the Handicap
+  // Systems extraction (the field was stranded — declared but never consumed by
+  // production code).
   handicapSystem: pointsHandicapSystem,
 };

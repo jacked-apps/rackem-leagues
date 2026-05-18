@@ -31,21 +31,6 @@ export const bca5v5: SystemModule = {
   // See bca3v3.ts for the strangler-fig rationale.
   matchFormat: getMatchFormat('single_rack', null),
 
-  rating: {
-    requiresManualEntry: false,
-    // computeFromHistory intentionally omitted — see bca3v3.ts file header.
-    displayFormat: (value) => `${Math.round(value)}%`,
-    validate: (value) => {
-      if (typeof value !== 'number' || !Number.isFinite(value)) {
-        return { ok: false, message: 'Rating must be a number' };
-      }
-      if (value < 0 || value > 100) {
-        return { ok: false, message: 'Percentage handicap must be between 0 and 100' };
-      }
-      return { ok: true, value };
-    },
-  },
-
   scoring: {
     method: 'games_won_with_team_bonus',
     recordGameOutcome: () => {
@@ -70,6 +55,6 @@ export const bca5v5: SystemModule = {
   winCalculator: getWinCalculator('games'),
 
   // Handicap System Module — Percentage variant (0–100 with `%` display).
-  // See bca3v3.ts for the strangler-fig rationale; coexists with `rating` until Phase D.
+  // Replaces the legacy `rating` capability deleted in Phase D.
   handicapSystem: percentageHandicapSystem,
 };
