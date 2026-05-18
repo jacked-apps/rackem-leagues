@@ -18,17 +18,24 @@ Every season, the LO collects money from players each week, sets aside venue gre
 
 The app already knows team count, lineup size, and total regular-season weeks. So the income side is a one-line formula the moment those are set. The LO just needs to tell us the price-per-player-per-night + green fee, and we can project the prize pool from Day 1.
 
-## The goal — a once-per-season payout calculator
+## The goal — a slick payout calculator (the rest is supporting cast)
 
-A **finances tab on the league page** that is mostly a single-use tool the LO opens at season's end to figure out payouts. Mid-season it's mostly read-only (with a "running projection" sanity check).
+Per Ed (2026-05-18): **"this is MOSTLY a tool to figure out prize payouts. the rest is fluff and qol. so dont go crazy on the credit debit side — go crazy on the calculate payouts nifty slick and cool side."**
 
-1. **At season start (one-time setup):** LO enters price-per-player-per-night + green-fees-per-player-per-night. Defaults provided ($10 / $2). One-click to accept.
-2. **Mid-season (sanity check only):** the page shows "according to the formula, you should have $X in the pool right now." Helpful if the LO is curious; nothing else.
-3. **At season end (the actual job):** payout calculator with multiple sensible options (round numbers vs straight % vs custom), an "adjust your cut" slider, and a "Lock in payouts" button that saves the final structure to the season's record.
+So the design priorities are:
+
+1. **HEADLINE — payout calculator.** End-of-season tool that takes a prize pool number and turns it into nice prize allocations (round numbers / straight % / custom), with an LO-cut slider that updates everything live. This is where we polish the UX.
+2. **Supporting — auto-computed income + simple expense entry.** The formula tells us the projected pool from Day 1 (`price × lineup_size × teams × weeks`). Expenses + credits are a simple list with dates. Persisted because LOs want a "what did I spend and when" reference, but kept lean.
+3. **Bonus entry point — "I have $X, figure it out for me."** LO can skip income tracking entirely and just feed in a manual pool amount → straight to the calculator. Power-user shortcut.
+
+**Three ways the LO can get to a prize-distribution:**
+- (A) Set up income inputs at season start → app calculates pool → calculator runs at end
+- (B) Skip the formula, enter a manual pool amount → calculator runs immediately
+- (C) Hybrid: formula-based projection + LO override at the end
 
 Operator handles the actual cash. App just does the math + record-keeping.
 
-**Critical simplification (per Ed 2026-05-18):** the app does NOT try to track each week's actual collections. It runs a deterministic formula from the configured inputs. If reality drifts from the formula (a player no-showed and didn't pay, a sub paid extra), the LO accounts for that manually in the final calculator. No ledger, no per-week reconciliation, no forfeit-tracking complexity.
+**Critical simplification (per Ed 2026-05-18):** the app does NOT try to track each week's actual collections. It runs a deterministic formula from the configured inputs. If reality drifts from the formula (a player no-showed and didn't pay, a sub paid extra), the LO accounts for that manually. No ledger, no per-week reconciliation.
 
 ## The mental model
 
@@ -128,54 +135,52 @@ Without handling, the formula would over-count income from a dropped team for th
 
 For v1, this is just an LO-entered list of `(team_id, week_number_they_dropped)` pairs. The calculator computes the lost income from there. Future polish: auto-detect from `teams.status = 'withdrawn'` (if the LO marks the team withdrawn in Team Management, the calculator could pre-fill the drop entry).
 
-### D. LO cut: flat fee vs. percentage
+### D. LO cut: flat fee vs. percentage — SETTLED 2026-05-18
 
-The LO might want either:
-- **Flat fee** ("I take $50/week regardless")
-- **% of pool** ("I take 10% — bigger leagues pay me more")
-- **Both** ("$25/week base + 5% of pool")
+Support all three modes: **flat $/week**, **% of pool**, or **both** (flat base + %). % of pool is the default. Drop-down at setup time + the slider on the end-of-season calculator lets the LO dial it live.
 
-My pick: **support all three**, with % being the default. Drop-down at setup time + the slider on the end-of-season calculator lets them dial it.
+### E. Mid-season expenses — do they affect the running pool projection? — STANDING PICK 2026-05-18
 
-### E. Mid-season expenses — do they affect the running pool projection?
+**Applied immediately to the running projection.** When the LO adds "$180 trophies" as an expense, the projected end-of-season pool drops by $180 right then. Lets the operator see what's left to play with as the season goes.
 
-When the LO adds "$180 — trophies" as a misc expense in week 6, does the projected end-of-season pool drop by $180 immediately? Or only "applied at end of season"?
+### F. Multi-season operator cut rollup — DROPPED 2026-05-18
 
-My pick: **applied immediately to the running projection.** Want the operator to see the impact in real time.
+Per Ed: not needed. Not in v1, not in futureFeatures, not a thing.
 
-### F. Multi-season operator cut accounting
+### G. Sponsor money / outside income — SETTLED 2026-05-18
 
-Some LOs run 4 seasons/year and want a year-end view: "how much did I take in total operator cut across all leagues, all seasons this year?" Out of scope for v1 but worth noting for futureFeatures.
+Yes, support misc-credit line items the same way as misc-debit (trophies, ink). LO adds them as they come in. Lift the pool by the credit amount.
 
-### G. Sponsor money / outside income
+### H + I. Where does this live + persistence model — SETTLED 2026-05-18 (with structure)
 
-Some leagues get sponsorship (bar tab, equipment donations, sponsor money). Should the calculator accept "outside income" line items that boost the prize pool without coming from player fees?
+Per Ed: two-level configuration with persistence.
 
-My pick: **yes, support "additional income" line items.** Same shape as misc expenses but on the credit side. LO adds them as they come in.
+**Org level — "Org Finance Defaults":**
+- New section on the org settings page (`/operator-settings/:orgId`)
+- LO sets org-wide presets: default price-per-player-per-night, default green-fees-per-player-per-night, default LO cut shape, default prize-distribution shape, default round-number target
+- Any league created under this org **inherits these defaults** unless overridden
 
-### H. Where does this UI live in the navigation?
+**League level — "Finances" tab on the league page:**
+- New tab on `LeagueDetail.tsx` (alongside Teams / Schedule / Standings)
+- Starts pre-filled from org defaults; LO can override per-league
+- Persisted: all the inputs + the expense/credit line items (with dates) + the final locked-in payouts
+- LO can view their expense list anytime: "what did I spend, when did I spend it"
 
-**Pick one:**
-1. New tab on the league page (alongside Teams / Schedule / Standings / etc.) — "Finances"
-2. New page off the operator dashboard (Org-level — covers all the org's leagues)
-3. Both — overview at org level, detail per league
+**Calculator views inside the Finances tab:**
+- "Running projection" view (default if season is active) — formula-based pool + running deductions
+- "Payout calculator" view (default if season is completed) — the headline slick tool
 
-My pick: **(1) for v1** — single-league focused. The org-level rollup (option 3) is a Phase 2 polish item once we know what data shape to aggregate.
+Per Ed: "this is MOSTLY a tool to figure out prize payouts. the rest is fluff and qol." So the expenses/credits list is intentionally lean — just a date + amount + description form. Calculator UI is where we put the polish budget.
 
-### I. Saving partial state mid-season
+### J. App fee — SETTLED 2026-05-18
 
-If the LO opens the end-of-season calculator early (week 10 of 12) to see "what would it look like if we ended now," is that just a preview, or do we save their tweaks?
+The proposed pricing is on `src/leagueOperator/BecomeLeagueOperator.tsx` — **$1 per team per week + $10 setup per season.** Fully computable from data the app already has:
 
-My pick: **preview-only until they hit "Lock in payouts" at season end.** Otherwise mid-season tweaks would persist and confuse the final-state calculator.
+```
+app_fee = (team_count × season_length × $1) + $10
+```
 
-### J. App fee — how does the system know the right number?
-
-The org has a subscription with us. The app fee shown in the finance breakdown should match the org's actual subscription rate. **Pick one:**
-1. Org-level setting (operator types it; we trust them).
-2. From the Stripe subscription tier (when subscriptions are real).
-3. Hardcoded "$0" until subscriptions exist; LO sets it manually later.
-
-My pick: **(3) for v1**. App fee defaults to $0; LO can override per-league/per-season. Real Stripe integration is a Phase 2 thing once we have subscription tiers defined.
+No LO input required. Calculator shows it as an automatic deduction with a tooltip explaining the math. If a future pricing change happens, we update the formula in one place.
 
 ---
 
