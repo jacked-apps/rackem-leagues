@@ -15,7 +15,7 @@ audience: developer + AI sessions
 
 ## Essence
 
-The **Tiebreak System** produces an **edge metric** — a single-valued indicator of which side gets the deciding nod — for the [Win Calculator](../win-calculator.md) to consume as the lowest-precedence metric in its decision stack. The System composes atomic Tiebreak Mechanism variants (coin flip, roshambo, human-reported) plus one composed Mechanism (mini-match using Pairings Generator + Threshold Trigger) in an LO-configured chain. When fired, the chain runs through its links until one produces edge.
+The **Tiebreak System** produces an **edge metric** — a single-valued indicator of which side gets the deciding nod — for the [Win Calculator](../win-calculator.md) to consume as the lowest-precedence metric in its decision stack. The System composes atomic Tiebreak Mechanism variants (`coin_flip`, `roshambo`, `human_pick`) plus one composed Mechanism (`mini_match` using Pairings Generator + Threshold Trigger) in an LO-configured chain. When fired, the chain runs through its links until one produces edge.
 
 ## Why the Tiebreak System exists
 

@@ -41,7 +41,10 @@ The parent [Win Calculator](../win-calculator.md) re-evaluates its metric stack 
 
 - **`best_of_3_short_race`** (Points 3-Man's current shipping format): `round_shape=3`, `stop_threshold=2`. Three games played; first team to 2 wins takes the match. Third game may be skipped if the second decides the series.
 - **`single_game`**: `round_shape=1`, `stop_threshold=1`. One game played; the winner takes the match. Pool can't tie a single rack, so this always produces edge.
-- **`race_to_n`** (variable): `round_shape=N`, `stop_threshold=⌈N/2⌉+1`. Effectively a short race; first team to win the majority takes the match.
+- **`best_of_5`**: `round_shape=5`, `stop_threshold=3`. Up to 5 games played; first team to 3 wins takes the match. Games 4-5 may be skipped if earlier ones decide.
+- **Pool's "race-to-N" format** in this Mechanism is equivalent to **best-of-(2N−1)**. A "race to 3" (first to 3 wins, worst case 3-2 over 5 games) is `round_shape=5`, `stop_threshold=3` — same parameters as `best_of_5`. The two names describe the same configuration.
+
+General rule for odd `round_shape = N`: `stop_threshold = ⌊N/2⌋ + 1` (the majority). For N=3 → 2 ✓. For N=5 → 3 ✓. For N=7 → 4 ✓. Even `round_shape` values can tie at majority and would need `round_shape + 1` games to decide; avoid even values when configuring this Mechanism for a tie-resolution role.
 
 The catalog deliberately does NOT proliferate one Mechanism per shape — these are all the same Mechanism with different `(round_shape, stop_threshold)` config.
 
