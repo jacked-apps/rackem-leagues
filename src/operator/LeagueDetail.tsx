@@ -226,6 +226,7 @@ export const LeagueDetail: React.FC = () => {
         {/* Finances Section (Unit 2+ of the finance calculator feature) */}
         <LeagueFinancesSection
           leagueId={league.id}
+          seasonId={activeSeason?.id ?? null}
           teamCount={activeSeason?.team_count ?? 0}
           totalWeeks={activeSeason?.season_length ?? 0}
         />

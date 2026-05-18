@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-15 (Messaging Phase 1 polish triage — appended Units 10–14 to the Phase 1 plan doc (date dividers, value-prop empty state, leave-respects-`cannot_leave`, emoji messages + 12-emoji picker, season-end `cannot_leave` release trigger). Added a Status table at the top of the plan; flipped Units 1–9 checkboxes to done. Added a "Messaging — Future Polish" BACKLOG NOTES section to `MVP_FEATURE_LIST.md` for the parked items (reactions / mute UI / typing indicators / pinned / @mentions / custom 9-ball etc.) with reasoning. Added `LIST_FOR_ED.md` #30 pointing at the Phase 2 plan doc that needs writing.)
+> **Last Updated**: 2026-05-18 (League Finances + Payout Calculator Units 1–3 indexed: new migration `20260518000010_league_finances.sql`, math engine under `src/utils/finances/` with 37 unit tests, API layer entries for `leagueFinances` + `seasonFinanceEntries` queries/mutations/hooks, and the `src/components/operator/finances/` cards — `FinanceSettingsCard`, `RunningProjectionCard`, `SeasonExpensesCard`, `DroppedTeamsCard`, `LeagueFinancesSection`. Plan: `docs/plans/2026-05-18-001-feat-league-finances-payout-calculator-plan.md`.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -57,12 +57,14 @@
 | `docs/brainstorms/modular-league-system-requirements.md` | Requirements for fully modular league configuration | Deprecates `5_man`/`8_man`; any-combo support; 3-layer threshold strategy; supersedes April 18 modular-handicap-scoring doc |
 | `docs/brainstorms/lineup-to-scoring-transition-requirements.md` | Requirements for the lineup → scoring transition stability fix | 7-defense architecture; supersedes cache/recovery aspects of the prior race-condition brainstorm; closes LIST_FOR_ED #21/#22 |
 | `docs/brainstorms/unified-scoreboard-requirements.md` | Requirements for collapsing 4 scoreboards to 1 + tiebreaker | Schema-derived display hints (escape hatch), mobile-first compact mode, "stadium not sportsbook" focus; depends on PR #98 merge |
+| `docs/brainstorms/2026-05-18-league-finances-payout-calculator-requirements.md` | Requirements for the League Finances + Payout Calculator | Calculator-first design (bookkeeping is "fluff"); formula = price × lineup × teams × weeks; 50/30/20 default; rounding tiers; individual awards incl. non-pool "Outstanding Achievement" |
 | `/docs/plans/` | **CE implementation plans** | Output of `/compound-engineering:ce-plan` |
 | `docs/plans/2026-04-17-001-feat-official-rulebook-reader-plan.md` | Implementation plan for the Official Rulebook Reader | 6 units, active branch `feature/official-rulebook-reader` |
 | `docs/plans/2026-04-27-001-feat-global-header-nav-rework-plan.md` | Implementation plan for the global header & navigation rework | 9 units in 3 phases, active branch `fix/header-mobile-rework` |
 | `docs/plans/2026-04-28-001-feat-modular-league-system-plan.md` | Implementation plan for the fully modular league system | 21 units across 8 phases (Phase 0 research + 7 implementation phases); supersedes April 18 plan; covers BCAPL SL handicap, audit log R21, threshold-charts wiring, team_format drop |
 | `docs/plans/2026-05-04-001-fix-lineup-to-scoring-transition-stability-plan.md` | Implementation plan for the lineup → scoring transition stability fix | 7 implementation units across 3 phases; new MatchPhaseGuard + MatchTransitionRecovery + useMatchPhase; hardened prep_match RPC; foreground polling backstop; deletes 6-month-old retry loop |
 | `docs/plans/2026-05-03-001-feat-unified-scoreboard-plan.md` | Implementation plan for the unified scoreboard refactor | 8 units across 3 phases; replaces 3 legacy scoreboards with 1 + tiebreaker fix; schema-derived display hints; TeamStatsCard generalized for points-mode; depends on PR #98 merge |
+| `docs/plans/2026-05-18-001-feat-league-finances-payout-calculator-plan.md` | Implementation plan for the League Finances + Payout Calculator | 5 units; org→league inheritance via COALESCE; pure-function math engine; expense/credit/dropped-team line items; payout calculator (round/percent/custom) with LO-cut slider; org defaults + lock-in + standings integration |
 
 ### Future Work Folder
 
@@ -692,6 +694,13 @@ Reusable wizard/form step components
 - `VenueCard.tsx` - Venue card
 - `VenueCreationModal.tsx` - Venue creation modal
 
+##### Finances (`/components/operator/finances/`)
+- `LeagueFinancesSection.tsx` - Top-level section composing the four finance cards on the league page (mounted from `LeagueDetail.tsx`).
+- `FinanceSettingsCard.tsx` - Editable form for league-level finance settings (price, green fee, LO cut, payout shape) with "league override vs org default" indicator + reset button.
+- `RunningProjectionCard.tsx` - Read-only live projection: income − green fees − app fee − LO cut − expenses + credits = projected prize pool.
+- `SeasonExpensesCard.tsx` - Quick-add chips (trophies/banquet/sponsor/etc.) + amount+description form for season expense and credit line items; supports LO-funded flag for non-pool expenses.
+- `DroppedTeamsCard.tsx` - Picker for active teams + drop-week input; subtracts lost-week income from the projection.
+
 #### Playoff Components (`/components/playoff/`)
 - `ParticipationSettingsCard.tsx` - Playoff participation/qualification settings with collapsible edit controls
 - `PlayoffWeeksCard.tsx` - Playoff weeks selector with add weeks modal and payment method options
@@ -842,6 +851,17 @@ Reusable wizard/form step components
 - `membershipUtils.ts` - Membership utilities
 - `reportingQueries.ts` - Reporting queries
 
+#### League Finances Math Engine (`/utils/finances/`)
+*Pure functions — no React, no DB deps — so the math is unit-testable in isolation.*
+- `types.ts` - Shared types (LoCutKind, PayoutShape, ResolvedFinanceSettings, DroppedTeam, FinanceEntry, PrizeAllocation, ComputedFinances).
+- `computeIncome.ts` - `computeProjectedIncome` (price × lineup × teams × weeks, minus dropped-team lost-week deduction), `computeProjectedGreenFees` (same shape), `computeAppFee` ((teams × weeks × $1) + $10).
+- `computeLoCut.ts` - LO take-home calculator supporting flat / percentage / both modes.
+- `distributePrizes.ts` - `percentagesForShape` + `distributePrizes` (built-in presets 50/30/20, 40/30/20/10, 35/25/20/12/8; algorithmic doubling / sliding_scale / flat / custom; rounding remainder routed to 1st).
+- `index.ts` - Barrel re-exports.
+- `__tests__/computeIncome.test.ts` - 14 unit tests covering formula + dropped-team paths.
+- `__tests__/computeLoCut.test.ts` - 5 unit tests covering the three LO cut modes + clamping.
+- `__tests__/distributePrizes.test.ts` - 18 unit tests covering all payout shapes + rounding.
+
 ---
 
 ### 🎨 Services (`/services/`)
@@ -868,12 +888,16 @@ High-level business logic services
 
 - `members.ts` - **✅ Member queries** (getCurrentMember, getMemberProfile, getOperatorId, etc.)
 - `matchGames.ts` - **✅ Match game queries** (fetchPlayerGameHistory for handicap calculations)
+- `leagueFinances.ts` - **Finance settings query** (resolves league override → org default → hardcoded fallback via COALESCE chain).
+- `seasonFinanceEntries.ts` - **Season finance entries query** (polymorphic expense/credit/dropped_team line items).
 
 #### Mutations (`/mutations/`) - Write Operations
 *Create/Update/Delete operations with automatic cache invalidation*
 
 - `matches.ts` - **✅ Match mutations** (generic updateMatch for any match field updates)
 - `matchLineups.ts` - **✅ Match lineup mutations** (generic updateMatchLineup + specific save/lock/unlock)
+- `leagueFinanceSettings.ts` - **League finance settings mutations** (upsert override row + delete-to-revert-to-org-default).
+- `seasonFinanceEntries.ts` - **Season finance entries mutations** (add/delete polymorphic line items).
 
 #### Hooks (`/hooks/`) - React Query Hooks
 *React-specific wrappers combining queries with useQuery/useMutation*
@@ -884,6 +908,9 @@ High-level business logic services
 - `useUserProfile.ts` - **✅ User profile hook** (full member data + role utilities)
 - `useOperatorId.ts` - **✅ Operator ID hook** (operator lookup with caching)
 - `useMatchPhase.ts` - **✅ Match-phase status query** (minimal id/status/started_at slice; staleTime: 0; foreground 7s polling while status='scheduled' as Defense 7 backstop for dropped realtime). Distinct cache key from `useMatchById` — see file header for rationale.
+- `useLeagueFinances.ts` - **Finance settings hook** (TanStack wrapper around `getLeagueFinances`).
+- `useLeagueFinanceMutations.ts` - **Finance settings mutation hooks** (upsert + delete with `refetchType: 'all'` invalidation).
+- `useSeasonFinanceEntries.ts` - **Season finance entries hooks** (query + add + delete for line items).
 - `index.ts` - Central export point for all hooks
 
 **Migration Status**: Phase 1 Complete (foundation), Phase 2 Next (migrate member/user data)
@@ -1088,6 +1115,7 @@ Supabase local configuration and migrations
 | `supabase/migrations/20260509000003_messaging_phase1_season_activation_trigger.sql` | **Messaging Phase 1 / Unit 4** — adds SECURITY DEFINER `auto_create_season_conversations(uuid)` plus trigger wrapper; trigger fires `AFTER UPDATE OF status ON seasons WHEN status flips to 'active'` and creates one team chat per team, one captain chat, one season-announcements chat, and an org-announcements chat (idempotent). Each chat creation is wrapped in `BEGIN/EXCEPTION` so a single failure doesn't strand others. Also adds `conversations` to the `supabase_realtime` publication. See `docs/plans/2026-05-09-001-feat-messaging-overhaul-phase-1-plan.md`. |
 | `supabase/migrations/20260509000004_messaging_phase1_roster_captain_triggers.sql` | **Messaging Phase 1 / Unit 5** — four trigger functions that keep auto-managed chats in sync with roster + captain state: `team_players` INSERT (add participant, post "joined" only on real inserts via `xmax = 0`), `team_players` DELETE (set `left_at`, post "left" only when newly set), `teams` UPDATE OF `captain_id` (flip `cannot_leave` in both team and captain chats; multi-team captains keep `cannot_leave` on captain chat), `members` UPDATE OF `deleted_at` NULL→ts (mark every active participant row as left). All `SECURITY DEFINER`, `search_path = public, pg_catalog`, REVOKE PUBLIC/authenticated. See `docs/plans/2026-05-09-001-feat-messaging-overhaul-phase-1-plan.md`. |
 | `supabase/migrations/20260513000001_messaging_phase1_unit7_polish.sql` | **Messaging Phase 1 / Unit 7 (polish)** — two changes. (1) `COMMENT ON COLUMN public.members.profanity_filter_enabled` reworded from "Forced ON for users under 18, optional for adults" to reflect the DOB-optional reality (forced ON only for *known* minors; toggleable for adults and members with no DOB on file). (2) `CREATE OR REPLACE FUNCTION public.increment_unread_count()` adds an explicit `IF NEW.is_system THEN RETURN NEW; END IF;` early-return so system messages never bump unread counts; today the implicit SQL NULL semantics achieve the same result but the explicit guard makes intent visible and survives future schema changes. Both statements are idempotent. See `docs/plans/2026-05-09-001-feat-messaging-overhaul-phase-1-plan.md` (Unit 7). |
+| `supabase/migrations/20260518000010_league_finances.sql` | **League Finances Unit 1** — 4 new tables: `org_finance_defaults`, `league_finance_settings` (nullable cols for inheritance via COALESCE chain), `season_finance_entries` (polymorphic expense/credit/dropped_team), `season_locked_payouts` (JSONB snapshots). Includes updated_at triggers, indexes, and check constraints. See `docs/plans/2026-05-18-001-feat-league-finances-payout-calculator-plan.md`. |
 | `supabase/seed.sql` | Full local dev DB dump — auto-applied on `supabase db reset`. **Local only, never runs against production.** |
 | `supabase/seed_test_users.sql` | 4 synthetic test auth users (player/operator/captain/owner, password `test-password-123`). **Dev-only — run manually via `docker exec ... psql`.** |
 | `supabase/seed_members.sql` | 20 placeholder players (no `user_id`) spanning Fargo 300–580 ratings for wizard/team-management testing. **Dev-only — not wired into auto-seed; run manually when the local DB needs a bench of fake members.** |

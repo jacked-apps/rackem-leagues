@@ -17,13 +17,19 @@ import {
   computeAppFee,
   computeLoCut,
 } from '@/utils/finances';
-import type { ResolvedFinanceSettings } from '@/utils/finances';
+import type { ResolvedFinanceSettings, DroppedTeam } from '@/utils/finances';
 
 interface RunningProjectionCardProps {
   finances: ResolvedFinanceSettings;
   lineupSize: number;
   teamCount: number;
   totalWeeks: number;
+  /** Pool-funded expenses to subtract (excludes lo_funded ones). */
+  totalExpenses?: number;
+  /** Sponsor / outside-income credits to add. */
+  totalCredits?: number;
+  /** Teams that dropped mid-season — reduces formula income. */
+  droppedTeams?: DroppedTeam[];
   onOpenCalculator?: () => void;
 }
 
@@ -32,6 +38,9 @@ export function RunningProjectionCard({
   lineupSize,
   teamCount,
   totalWeeks,
+  totalExpenses = 0,
+  totalCredits = 0,
+  droppedTeams = [],
   onOpenCalculator,
 }: RunningProjectionCardProps) {
   // Live computations
@@ -40,12 +49,14 @@ export function RunningProjectionCard({
     lineupSize,
     teamCount,
     totalWeeks,
+    droppedTeams,
   });
   const greenFees = computeProjectedGreenFees({
     greenFeePerPlayerPerNight: finances.greenFeePerPlayerPerNight,
     lineupSize,
     teamCount,
     totalWeeks,
+    droppedTeams,
   });
   const appFee = computeAppFee({ teamCount, totalWeeks });
   const preCutPool = Math.max(0, income - greenFees - appFee);
@@ -56,7 +67,7 @@ export function RunningProjectionCard({
     totalWeeks,
     preCutPool,
   });
-  const projectedPrizePool = Math.max(0, preCutPool - loCut);
+  const projectedPrizePool = Math.max(0, preCutPool - loCut - totalExpenses + totalCredits);
 
   return (
     <Card>
@@ -74,12 +85,23 @@ export function RunningProjectionCard({
 
         <div className="space-y-2 text-sm">
           <Row label="Total income (formula)" value={income} positive />
+          {droppedTeams.length > 0 && (
+            <p className="text-xs text-muted-foreground italic pl-4">
+              ↳ Already adjusted for {droppedTeams.length} dropped team{droppedTeams.length === 1 ? '' : 's'}
+            </p>
+          )}
           <Row label="− Green fees to venue" value={-greenFees} />
           <Row
             label={`− App fee (${teamCount} × ${totalWeeks} × $1 + $10)`}
             value={-appFee}
           />
           <Row label="− Your LO cut" value={-loCut} />
+          {totalExpenses > 0 && (
+            <Row label="− Other expenses" value={-totalExpenses} />
+          )}
+          {totalCredits > 0 && (
+            <Row label="+ Outside income / sponsors" value={totalCredits} positive />
+          )}
           <div className="border-t pt-2 mt-2">
             <Row
               label="Projected prize pool"
