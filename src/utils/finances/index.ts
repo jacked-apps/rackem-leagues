@@ -13,6 +13,8 @@ export type {
   FinanceEntry,
   PrizeAllocation,
   ComputedFinances,
+  IndividualAward,
+  PayoutMode,
 } from './types';
 
 export {
@@ -24,3 +26,5 @@ export {
 export { computeLoCut } from './computeLoCut';
 
 export { distributePrizes, percentagesForShape } from './distributePrizes';
+
+export { computePayoutPlan, type PayoutPlanInput } from './computePayoutPlan';

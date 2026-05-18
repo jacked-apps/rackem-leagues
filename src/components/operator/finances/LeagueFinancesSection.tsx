@@ -7,7 +7,7 @@
  * calculator (Unit 4) as that lands.
  */
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useLeagueFinances } from '@/api/hooks/useLeagueFinances';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { useSeasonFinanceEntries } from '@/api/hooks/useSeasonFinanceEntries';
@@ -16,6 +16,7 @@ import { FinanceSettingsCard } from './FinanceSettingsCard';
 import { RunningProjectionCard } from './RunningProjectionCard';
 import { SeasonExpensesCard } from './SeasonExpensesCard';
 import { DroppedTeamsCard } from './DroppedTeamsCard';
+import { PayoutCalculatorCard } from './PayoutCalculatorCard';
 import type { DroppedTeam } from '@/utils/finances';
 
 interface LeagueFinancesSectionProps {
@@ -37,7 +38,6 @@ export function LeagueFinancesSection({
   const { data: finances, isLoading } = useLeagueFinances(leagueId);
   const { data: prefs } = useResolvedLeaguePrefs(leagueId);
   const { data: entries = [] } = useSeasonFinanceEntries(seasonId ?? undefined);
-  const [showCalculator, setShowCalculator] = useState(false);
 
   const lineupSize = prefs?.lineup_size ?? 5;
 
@@ -80,7 +80,16 @@ export function LeagueFinancesSection({
         totalExpenses={totalExpenses}
         totalCredits={totalCredits}
         droppedTeams={droppedTeams}
-        onOpenCalculator={() => setShowCalculator(true)}
+      />
+
+      <PayoutCalculatorCard
+        finances={finances.resolved}
+        lineupSize={lineupSize}
+        teamCount={teamCount}
+        totalWeeks={totalWeeks}
+        totalExpenses={totalExpenses}
+        totalCredits={totalCredits}
+        droppedTeams={droppedTeams}
       />
 
       <FinanceSettingsCard leagueId={leagueId} finances={finances} />
@@ -95,13 +104,6 @@ export function LeagueFinancesSection({
       {!seasonId && (
         <div className="p-4 border border-dashed rounded-lg text-sm text-muted-foreground text-center">
           Start a season to track expenses, credits, and dropped teams.
-        </div>
-      )}
-
-      {/* Payout calculator mounts here in Unit 4 */}
-      {showCalculator && (
-        <div className="p-4 border border-dashed rounded-lg text-sm text-muted-foreground text-center">
-          Payout calculator coming in Unit 4. (Click handler placeholder.)
         </div>
       )}
     </div>

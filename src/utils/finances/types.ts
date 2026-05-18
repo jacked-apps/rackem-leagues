@@ -52,6 +52,23 @@ export interface PrizeAllocation {
   amount: number;
 }
 
+/** Calculator mode: how the prize pool size is determined.
+ *  - 'auto'        — formula income − green fees − app fee − LO cut − expenses + credits
+ *  - 'manual_pool' — LO types in a target pool dollar amount
+ *  - 'target_pct'  — LO sets target % of the formula pool to pay out
+ */
+export type PayoutMode = 'auto' | 'manual_pool' | 'target_pct';
+
+/** Individual award (Top Shooter, Outstanding Achievement, etc.).
+ *  `loFunded=true` means the award is paid by the LO personally and
+ *  does NOT reduce the prize pool. */
+export interface IndividualAward {
+  id: string; // stable client-side id for list keys + edits
+  label: string;
+  amount: number;
+  loFunded: boolean;
+}
+
 /** Full computed snapshot ready for the calculator UI. */
 export interface ComputedFinances {
   projectedIncome: number;
@@ -60,6 +77,11 @@ export interface ComputedFinances {
   loCutAmount: number;
   totalExpenses: number; // only pool-funded
   totalCredits: number;
-  projectedPrizePool: number;
+  totalIndividualAwardsFromPool: number; // non-LO-funded awards subtracted from team pool
+  /** Pool BEFORE individual awards are carved out. */
+  prePoolDistributable: number;
+  /** Pool AFTER individual awards are carved out — what gets distributed to teams. */
+  teamPool: number;
   prizeAllocations: PrizeAllocation[];
+  individualAwards: IndividualAward[];
 }

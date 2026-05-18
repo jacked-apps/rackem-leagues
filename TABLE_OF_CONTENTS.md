@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-18 (League Finances + Payout Calculator Units 1–3 indexed: new migration `20260518000010_league_finances.sql`, math engine under `src/utils/finances/` with 37 unit tests, API layer entries for `leagueFinances` + `seasonFinanceEntries` queries/mutations/hooks, and the `src/components/operator/finances/` cards — `FinanceSettingsCard`, `RunningProjectionCard`, `SeasonExpensesCard`, `DroppedTeamsCard`, `LeagueFinancesSection`. Plan: `docs/plans/2026-05-18-001-feat-league-finances-payout-calculator-plan.md`.)
+> **Last Updated**: 2026-05-18 (League Finances + Payout Calculator Units 1–4 indexed: math engine under `src/utils/finances/` with 42 unit tests, API layer for `leagueFinances` + `seasonFinanceEntries`, and the `src/components/operator/finances/` cards including the **headline `PayoutCalculatorCard`** (3 modes: auto / manual pool / target %, live overrides, individual-awards carve-out) backed by the new `computePayoutPlan` orchestrator. Plan: `docs/plans/2026-05-18-001-feat-league-finances-payout-calculator-plan.md`.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -695,11 +695,14 @@ Reusable wizard/form step components
 - `VenueCreationModal.tsx` - Venue creation modal
 
 ##### Finances (`/components/operator/finances/`)
-- `LeagueFinancesSection.tsx` - Top-level section composing the four finance cards on the league page (mounted from `LeagueDetail.tsx`).
+- `LeagueFinancesSection.tsx` - Top-level section composing all finance cards on the league page (mounted from `LeagueDetail.tsx`).
 - `FinanceSettingsCard.tsx` - Editable form for league-level finance settings (price, green fee, LO cut, payout shape) with "league override vs org default" indicator + reset button.
 - `RunningProjectionCard.tsx` - Read-only live projection: income − green fees − app fee − LO cut − expenses + credits = projected prize pool.
 - `SeasonExpensesCard.tsx` - Quick-add chips (trophies/banquet/sponsor/etc.) + amount+description form for season expense and credit line items; supports LO-funded flag for non-pool expenses.
 - `DroppedTeamsCard.tsx` - Picker for active teams + drop-week input; subtracts lost-week income from the projection.
+- `PayoutCalculatorCard.tsx` - **THE HEADLINE** — 3-mode payout calculator (auto / manual pool / target %), live-overridable shape + places + rounding, individual awards carve-out with LO-funded toggle. All math via `computePayoutPlan`.
+- `TeamPayoutsTable.tsx` - Pure display: per-place rows with trophy icon, dollar amount, and % of pool.
+- `IndividualAwardsEditor.tsx` - Add/edit/remove individual awards (Top Shooter, Outstanding Achievement, etc.) with `loFunded` toggle. Exports `defaultIndividualAwards()` for the calculator's seed state.
 
 #### Playoff Components (`/components/playoff/`)
 - `ParticipationSettingsCard.tsx` - Playoff participation/qualification settings with collapsible edit controls
@@ -857,10 +860,12 @@ Reusable wizard/form step components
 - `computeIncome.ts` - `computeProjectedIncome` (price × lineup × teams × weeks, minus dropped-team lost-week deduction), `computeProjectedGreenFees` (same shape), `computeAppFee` ((teams × weeks × $1) + $10).
 - `computeLoCut.ts` - LO take-home calculator supporting flat / percentage / both modes.
 - `distributePrizes.ts` - `percentagesForShape` + `distributePrizes` (built-in presets 50/30/20, 40/30/20/10, 35/25/20/12/8; algorithmic doubling / sliding_scale / flat / custom; rounding remainder routed to 1st).
+- `computePayoutPlan.ts` - Top-level orchestrator (Unit 4). Combines all four math functions + line items + individual awards + mode selection (auto/manual_pool/target_pct) into a single `ComputedFinances` snapshot the calculator UI renders.
 - `index.ts` - Barrel re-exports.
 - `__tests__/computeIncome.test.ts` - 14 unit tests covering formula + dropped-team paths.
 - `__tests__/computeLoCut.test.ts` - 5 unit tests covering the three LO cut modes + clamping.
 - `__tests__/distributePrizes.test.ts` - 18 unit tests covering all payout shapes + rounding.
+- `__tests__/computePayoutPlan.test.ts` - 5 unit tests covering the three calculator modes + individual-awards carve-out + percent clamping.
 
 ---
 

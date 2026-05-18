@@ -9,8 +9,7 @@
  */
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { TrendingUp, ArrowRight } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
 import {
   computeProjectedIncome,
   computeProjectedGreenFees,
@@ -30,7 +29,6 @@ interface RunningProjectionCardProps {
   totalCredits?: number;
   /** Teams that dropped mid-season — reduces formula income. */
   droppedTeams?: DroppedTeam[];
-  onOpenCalculator?: () => void;
 }
 
 export function RunningProjectionCard({
@@ -41,7 +39,6 @@ export function RunningProjectionCard({
   totalExpenses = 0,
   totalCredits = 0,
   droppedTeams = [],
-  onOpenCalculator,
 }: RunningProjectionCardProps) {
   // Live computations
   const income = computeProjectedIncome({
@@ -111,17 +108,6 @@ export function RunningProjectionCard({
             />
           </div>
         </div>
-
-        {onOpenCalculator && (
-          <Button
-            loadingText="none"
-            onClick={onOpenCalculator}
-            className="w-full mt-2 gap-2"
-          >
-            Open payout calculator
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-        )}
 
         <p className="text-xs text-muted-foreground italic">
           These are projections. Expenses, dropped teams, and sponsor income
