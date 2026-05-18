@@ -53,6 +53,7 @@ import { getWinCalculator } from './win-calculators';
 import { getTeamGeometry } from './team-geometry';
 import { getMatchFormat } from './match-format';
 import { fargoRateHandicapSystem } from './handicap-systems';
+import { fargoFormulaChart } from './threshold-charts';
 
 // ============================================================================
 // Constants (module defaults — overridable via SystemOverrides)
@@ -273,4 +274,9 @@ export const fargo5v5: SystemModule = {
   // Handicap System Module — FargoRate variant (integer 100–850, manually entered).
   // Replaces the legacy `rating` capability deleted in Phase D.
   handicapSystem: fargoRateHandicapSystem,
+
+  // Threshold Chart Module — FargoRate Formula chart (FargoRate × start_points).
+  // The Chart's `compute` is byte-identical to this file's local `computeStartPoints`;
+  // both live during the strangler-fig transition until Phase D removes the legacy copy.
+  thresholdChart: fargoFormulaChart,
 };

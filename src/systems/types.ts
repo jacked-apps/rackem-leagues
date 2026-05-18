@@ -24,6 +24,7 @@ import type { WinCalculator } from './win-calculators/types';
 import type { TeamGeometry } from './team-geometry/types';
 import type { MatchFormat } from './match-format/types';
 import type { HandicapSystem } from './handicap-systems/types';
+import type { ThresholdChart } from './threshold-charts/types';
 
 // ============================================================================
 // Ratings
@@ -357,4 +358,39 @@ export interface SystemModule {
    * @see docs/league-system/modules/handicap-systems/README.md — the locked blueprint
    */
   handicapSystem: HandicapSystem | null;
+
+  /**
+   * Threshold Chart Module — the passive data lookup that maps a handicap
+   * input (a difference, a rating pair, or a derived value) to a threshold
+   * value that the active Mechanism applies to match setup.
+   *
+   * Added in the Threshold Charts extraction Unit (per
+   * `docs/plans/2026-05-17-001-refactor-modular-framework-migration-plan.md`),
+   * following the strangler-fig pattern proven by Team Geometry / Match Format
+   * / Handicap Systems.
+   *
+   * Coexists with the legacy `threshold` capability above during the
+   * strangler-fig transition — the legacy field's `compute` function internally
+   * delegates to the same Chart code paths this field references. Consumers
+   * gradually migrate from `systemModule.threshold.compute(...)` to
+   * `systemModule.thresholdChart.compute(...)` in Phase C; the legacy
+   * `threshold` capability is removed in Phase D.
+   *
+   * The five shipping variants:
+   * - games_needed_3v3 — BCA 3v3 (Points × extra_games)
+   * - games_needed_5v5 — BCA 5v5 (Percentage × extra_games)
+   * - fargo_formula   — Fargo 5v5 (FargoRate × start_points)
+   * - race_points     — RESERVED (Points × race_length_adjustment)
+   * - race_percentage — RESERVED (Percentage × race_length_adjustment)
+   *
+   * `null` reflects combos with no calibrated Chart for the active
+   * (handicap_type × mechanism) pairing — e.g., `handicap_type='none'`
+   * (no handicap applied) or unknown/unbuilt combinations. The legacy
+   * `threshold` field continues to provide a zero-handicap fallback in
+   * those cases so the match still plays.
+   *
+   * @see src/systems/threshold-charts/index.ts — `getThresholdChart()` factory
+   * @see docs/league-system/modules/threshold-charts/README.md — the locked blueprint
+   */
+  thresholdChart: ThresholdChart | null;
 }

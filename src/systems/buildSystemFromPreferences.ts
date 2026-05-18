@@ -57,6 +57,12 @@ import {
   type HandicapSystem,
   type HandicapType,
 } from './handicap-systems';
+import {
+  gamesNeeded3v3Chart,
+  gamesNeeded5v5Chart,
+  fargoFormulaChart,
+  type ThresholdChart,
+} from './threshold-charts';
 
 // ============================================================================
 // Preset detection (fast-path)
@@ -148,6 +154,49 @@ function pickHandicapSystem(handicapType: string): HandicapSystem | null {
   console.warn(
     `[buildSystemFromPreferences] Unknown handicap_type ${JSON.stringify(handicapType)} — handicapSystem field set to null`,
   );
+  return null;
+}
+
+// ============================================================================
+// Threshold Chart Module dispatch
+// ============================================================================
+
+/**
+ * Pick a Threshold Chart Module for the ad-hoc module by (handicap_type ×
+ * mechanism). Mirrors the pickThreshold routing logic but returns the Chart
+ * Module rather than the wrapped Mechanism `compute` function. Coexists with
+ * the legacy `threshold` field during the strangler-fig transition.
+ *
+ * Returns null for combos with no calibrated Chart:
+ * - `mechanism='none'` or `handicap_type='none'` — no handicap applied
+ * - `race_length_adjustment` combos — both Race Chart variants ship as RESERVED stubs
+ * - Unknown handicap_type / mechanism — graceful-fallback path
+ *
+ * The legacy `threshold` field continues to provide a zero-handicap fallback
+ * compute() in those cases, so the match still plays.
+ */
+function pickThresholdChart(
+  handicapType: string,
+  mechanism: string,
+): ThresholdChart | null {
+  if (mechanism === 'none' || handicapType === 'none') {
+    return null;
+  }
+  if (mechanism === 'extra_games') {
+    if (handicapType === 'points') return gamesNeeded3v3Chart;
+    if (handicapType === 'percentage') return gamesNeeded5v5Chart;
+    return null;
+  }
+  if (mechanism === 'start_points') {
+    if (handicapType === 'fargo') return fargoFormulaChart;
+    return null;
+  }
+  if (mechanism === 'race_length_adjustment') {
+    // Both Race Chart variants (race_points / race_percentage) ship as RESERVED stubs.
+    // No shipping Scoring System uses race_length_adjustment today; return null and
+    // let the legacy `threshold` field's race-length fallback handle it.
+    return null;
+  }
   return null;
 }
 
@@ -423,5 +472,9 @@ export function buildSystemFromPreferences(
     // Handicap System Module — replaces the legacy `rating` capability deleted
     // in Phase D of the Handicap Systems extraction Unit.
     handicapSystem: pickHandicapSystem(prefs.handicap_type),
+    // Threshold Chart Module — Phase B of the Threshold Charts extraction Unit.
+    // Coexists with the `threshold` capability above (above field remains the
+    // strangler-fig source of truth until Phase D removes it).
+    thresholdChart: pickThresholdChart(prefs.handicap_type, prefs.mechanism),
   };
 }
