@@ -3,9 +3,20 @@
 -- ============================================================================
 --
 -- Extends database/dev_bootstrap_lo.sql with everything you need to click
--- around the full app: organization, venue, league, active 12-week season
--- (starting today), 4 teams each filled with 5 placeholder players (1 captain
--- + 4 regulars), and a full round-robin schedule with empty lineups.
+-- around the full app:
+--
+--   - 1 organization + 1 venue
+--   - LEAGUE 1 (fresh): active 12-week season starting TODAY, 4 teams x 5
+--     placeholder players, full round-robin schedule. Use for testing the
+--     normal "new season starts, players play matches" flow.
+--   - LEAGUE 2 (near end of season): active season started ~11 weeks ago,
+--     ends in 10 days. Past-dated weeks marked completed so the progress
+--     bar reflects "almost done." 4 teams x 5 players, full schedule. Use
+--     for testing the next-season wizard's entry points (LeagueDetail
+--     "Start Next Season" ActionCard + ActiveLeagues hint badge) without
+--     waiting weeks of calendar time.
+--
+-- Each league's URLs are printed via RAISE NOTICE at the bottom.
 --
 -- WHAT THIS DOES NOT DO
 --   - Does NOT create the auth.users row. Sign up via /register first.
@@ -56,6 +67,22 @@ DECLARE
   v_captain_ids UUID[] := ARRAY[gen_random_uuid(), gen_random_uuid(), gen_random_uuid(), gen_random_uuid()];
   v_week_ids    UUID[];
   v_week_id     UUID;
+
+  -- Second league: a "near end of season" league so the next-season
+  -- wizard's entry-point button is visible immediately (no need to
+  -- run a separate squish script). Season started 11 weeks ago,
+  -- ends 10 days from now. Past weeks marked completed so the
+  -- progress bar reflects "almost done."
+  v_league2_id UUID;
+  v_season2_id UUID;
+  v_start2     DATE := CURRENT_DATE - INTERVAL '11 weeks';
+  v_end2       DATE := CURRENT_DATE + INTERVAL '10 days';
+
+  v_team2_ids    UUID[] := ARRAY[gen_random_uuid(), gen_random_uuid(), gen_random_uuid(), gen_random_uuid()];
+  v_captain2_ids UUID[] := ARRAY[gen_random_uuid(), gen_random_uuid(), gen_random_uuid(), gen_random_uuid()];
+  v_week2_ids    UUID[];
+  v_week2_id     UUID;
+  v_match2_id    UUID;
 
   -- Round-robin pattern captured from the UI's schedule generator. Rows are
   -- (week, match_number, home_team_idx, away_team_idx). Indexes are 1-based.
@@ -190,16 +217,108 @@ BEGIN
     -- match_lineups are auto-created by trigger_auto_create_match_lineups.
   END LOOP;
 
-  -- 11. Done.
+  -- ===========================================================
+  -- SECOND LEAGUE: "near end of season" for next-season-wizard testing
+  -- ===========================================================
+  --
+  -- Same shape as the first league (4 teams, 5 players each, full
+  -- round-robin schedule) but the season started 11 weeks ago and
+  -- ends 10 days from now → falls inside the next-season wizard's
+  -- 21-day ripe window, so the "Start Next Season" button + the
+  -- org-dashboard hint badge appear immediately without needing to
+  -- run a separate squish script.
+  --
+  -- Past-dated weeks get week_completed=true so the LeagueStatusCard
+  -- progress bar reflects "almost done" instead of week 0.
+
+  -- 12. Second league (same org + venue, different day_of_week so
+  --     league names disambiguate visually).
+  INSERT INTO leagues (organization_id, game_type, day_of_week, team_format, league_start_date, division, status)
+  VALUES (v_org_id, v_game_type, 'thursday', v_team_format, v_start2, 'Dev League — Near End', 'active')
+  RETURNING id INTO v_league2_id;
+
+  INSERT INTO league_venues (league_id, venue_id) VALUES (v_league2_id, v_venue_id);
+
+  -- 13. Active season ending in 10 days (started 11 weeks ago).
+  INSERT INTO seasons (league_id, season_name, start_date, end_date, season_length, status)
+  VALUES (v_league2_id, 'Dev Season ' || to_char(v_start2, 'YYYY-MM-DD') || ' (near end)', v_start2, v_end2, 12, 'active')
+  RETURNING id INTO v_season2_id;
+
+  -- 14. Weeks 1-12 regular + 1 end break. Mark past weeks completed.
+  v_week2_ids := ARRAY[]::UUID[];
+  FOR v_i IN 1..12 LOOP
+    INSERT INTO season_weeks (season_id, scheduled_date, week_name, week_type, week_completed)
+    VALUES (
+      v_season2_id,
+      v_start2 + ((v_i - 1) * 7),
+      'Week ' || v_i,
+      'regular',
+      (v_start2 + ((v_i - 1) * 7)) < CURRENT_DATE
+    )
+    RETURNING id INTO v_week2_id;
+    v_week2_ids := array_append(v_week2_ids, v_week2_id);
+  END LOOP;
+  INSERT INTO season_weeks (season_id, scheduled_date, week_name, week_type)
+  VALUES (v_season2_id, v_start2 + (12 * 7), 'Season End Break', 'season_end_break');
+
+  -- 15. Captains (4 placeholders, distinguished by team name suffix).
+  FOR v_i IN 1..4 LOOP
+    INSERT INTO members (first_name, last_name, city, state, role)
+    VALUES ('Captain', 'NearEnd ' || v_i, v_city, v_state, 'player')
+    RETURNING id INTO v_pp;
+    v_captain2_ids[v_i] := v_pp;
+  END LOOP;
+
+  -- 16. Teams (4) + roster (captain + 4 regulars per team).
+  FOR v_i IN 1..4 LOOP
+    INSERT INTO teams (id, season_id, league_id, team_name, captain_id, roster_size, home_venue_id, status)
+    VALUES (v_team2_ids[v_i], v_season2_id, v_league2_id, 'NearEnd Team ' || v_i, v_captain2_ids[v_i], 5, v_venue_id, 'active');
+
+    INSERT INTO team_players (team_id, season_id, member_id, is_captain, status)
+    VALUES (v_team2_ids[v_i], v_season2_id, v_captain2_ids[v_i], TRUE, 'active');
+
+    FOR v_row IN SELECT ARRAY[j] FROM generate_series(1, 4) AS j LOOP
+      INSERT INTO members (first_name, last_name, city, state, role)
+      VALUES ('Player ' || v_row[1], 'NearEnd ' || v_i, v_city, v_state, 'player')
+      RETURNING id INTO v_pp;
+      INSERT INTO team_players (team_id, season_id, member_id, is_captain, status)
+      VALUES (v_team2_ids[v_i], v_season2_id, v_pp, FALSE, 'active');
+    END LOOP;
+  END LOOP;
+
+  -- 17. Matches + lineups (reuses the same hardcoded round-robin
+  --     pattern from the first league — same week + match numbers,
+  --     just bound to the second league's team + week IDs).
+  FOREACH v_row SLICE 1 IN ARRAY v_schedule LOOP
+    INSERT INTO matches (
+      season_id, season_week_id, home_team_id, away_team_id,
+      match_number, status, scheduled_venue_id
+    ) VALUES (
+      v_season2_id, v_week2_ids[v_row[1]],
+      v_team2_ids[v_row[3]], v_team2_ids[v_row[4]],
+      v_row[2], 'scheduled', v_venue_id
+    ) RETURNING id INTO v_match2_id;
+  END LOOP;
+
+  -- 18. Done.
   RAISE NOTICE '=== Full bootstrap complete ===';
   RAISE NOTICE 'auth.user:         %', v_user_id;
   RAISE NOTICE 'member:            %', v_member_id;
   RAISE NOTICE 'organization:      %', v_org_id;
   RAISE NOTICE 'venue:             %', v_venue_id;
+  RAISE NOTICE '';
+  RAISE NOTICE '--- League 1 (fresh) ---';
   RAISE NOTICE 'league:            %', v_league_id;
   RAISE NOTICE 'season:            % (% → %)', v_season_id, v_start, v_end;
   RAISE NOTICE 'teams:             %', v_team_ids;
+  RAISE NOTICE 'League settings:   /league-settings/%', v_league_id;
+  RAISE NOTICE '';
+  RAISE NOTICE '--- League 2 (near end of season — for next-season wizard testing) ---';
+  RAISE NOTICE 'league:            %', v_league2_id;
+  RAISE NOTICE 'season:            % (% → %)  ends in 10 days', v_season2_id, v_start2, v_end2;
+  RAISE NOTICE 'teams:             %', v_team2_ids;
+  RAISE NOTICE 'League page:       /league/%', v_league2_id;
+  RAISE NOTICE '';
   RAISE NOTICE 'Org URL:           /operator-settings/%', v_org_id;
   RAISE NOTICE 'House rules URL:   /league-rules/%', v_org_id;
-  RAISE NOTICE 'League settings:   /league-settings/%', v_league_id;
 END $$;
