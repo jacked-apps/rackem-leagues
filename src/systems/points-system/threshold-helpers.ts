@@ -53,19 +53,21 @@ export function prefThreshold(name: string, prefKey: string): Threshold {
 
 /**
  * A threshold wrapping an arbitrary compute function. The catch-all for
- * thresholds that don't fit a simpler factory shape.
+ * thresholds that don't fit a simpler factory shape. May return `null` to
+ * express "no value applies" (e.g., a tie target on a chart that doesn't
+ * permit ties).
  */
 export function computedThreshold(
   name: string,
-  fn: (inputs: ThresholdInputs) => number,
+  fn: (inputs: ThresholdInputs) => number | null,
 ): Threshold {
   return { name, compute: fn };
 }
 
 /**
  * Resolve a map of named thresholds to a map of resolved values. Called once
- * at match start; the resulting `Record<string, number>` is the
- * `thresholdValues` bag that triggers reference at evaluation time.
+ * at match start; the resulting bag is what triggers reference at evaluation
+ * time. Values may be `number | null`.
  *
  * Throws if any threshold's compute throws (composition error surfaces here
  * rather than at trigger-evaluation time, where it would be harder to debug).
@@ -73,8 +75,8 @@ export function computedThreshold(
 export function resolveAllThresholds(
   thresholds: Record<string, Threshold>,
   inputs: ThresholdInputs,
-): Record<string, number> {
-  const out: Record<string, number> = {};
+): Record<string, number | null> {
+  const out: Record<string, number | null> = {};
   for (const [key, threshold] of Object.entries(thresholds)) {
     out[key] = threshold.compute(inputs);
   }

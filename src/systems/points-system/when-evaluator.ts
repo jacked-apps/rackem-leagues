@@ -32,7 +32,7 @@ export interface WhenEvalResult {
 }
 
 export interface WhenEvalContext {
-  thresholdValues: Readonly<Record<string, number>>;
+  thresholdValues: Readonly<Record<string, number | null>>;
   /**
    * What phase of evaluation the runtime is in. Some condition kinds only
    * fire in specific phases (receipt during match-start; match_end at the end).
@@ -110,10 +110,23 @@ export function evaluateWhen(
   }
 }
 
+/**
+ * Get a threshold value as a number for comparison purposes. Throws if the
+ * reference is undefined (composition error) OR if the value is null
+ * (when-conditions reference thresholds as comparison values; null means
+ * "no value applies" so any comparison would be meaningless — the
+ * composition should not have wired a null-able threshold into a
+ * when-condition that requires a value).
+ */
 function requireThreshold(ctx: WhenEvalContext, ref: string): number {
   const v = ctx.thresholdValues[ref];
   if (v === undefined) {
     throw new Error(`WhenCondition references undefined threshold "${ref}"`);
+  }
+  if (v === null) {
+    throw new Error(
+      `WhenCondition references null-valued threshold "${ref}"; only Action targets can accept null threshold values`,
+    );
   }
   return v;
 }

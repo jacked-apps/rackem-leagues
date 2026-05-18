@@ -100,16 +100,18 @@ export interface ThresholdInputs {
 }
 
 /**
- * A Threshold is a pure function from inputs to a single number. No firing
- * logic. No side attribution. Just math. Called once at match start to
- * resolve its value; the resolved value lands in a named variable via a
- * `receipt`-triggered trigger.
+ * A Threshold is a pure function from inputs to a single number (or `null`
+ * to express "no meaningful value for this composition" — e.g., the tie
+ * target on charts that don't permit ties). No firing logic. No side
+ * attribution. Just math. Called once at match start to resolve its value;
+ * the resolved value lands in a named variable via a `receipt`-triggered
+ * trigger.
  */
 export interface Threshold {
   /** Stable name for debugging / referencing from triggers. */
   readonly name: string;
-  /** The pure compute function. */
-  compute: (inputs: ThresholdInputs) => number;
+  /** The pure compute function. `null` means "no value applies." */
+  compute: (inputs: ThresholdInputs) => number | null;
 }
 
 // ============================================================================

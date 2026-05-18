@@ -26,7 +26,7 @@ import type { Action, ActionValue, MatchStateBag, MatchStateValue } from './type
  *   so side-scoped targets and the `triggering_side` ActionValue can resolve
  */
 export interface ActionContext {
-  thresholdValues: Readonly<Record<string, number>>;
+  thresholdValues: Readonly<Record<string, number | null>>;
   triggeringSide: 'home' | 'away' | null;
 }
 

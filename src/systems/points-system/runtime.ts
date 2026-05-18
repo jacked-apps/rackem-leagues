@@ -211,10 +211,14 @@ function requireNumber(state: MatchStateBag, key: string): number {
 function nullableNumber(state: MatchStateBag, key: string): number | null {
   const v = state[key];
   if (v === undefined || v === null) return null;
-  if (typeof v !== 'number' || !Number.isFinite(v)) {
+  if (typeof v !== 'number') {
     throw new Error(
       `evaluatePointsSystem: aggregate variable "${key}" must be a number or null, got ${JSON.stringify(v)}`,
     );
+  }
+  if (!Number.isFinite(v)) {
+    // NaN/Infinity treated as null for nullable variables (defensive).
+    return null;
   }
   return v;
 }
