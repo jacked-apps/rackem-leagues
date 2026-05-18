@@ -51,6 +51,7 @@ import type {
 } from './types';
 import type { SystemOverrides } from '@/types/systemOverrides';
 import { getWinCalculator } from './win-calculators';
+import { getTeamGeometry } from './team-geometry';
 
 // ============================================================================
 // Constants (module defaults — overridable via SystemOverrides)
@@ -271,6 +272,10 @@ export const fargo5v5: SystemModule = {
     maxRosterSize: 8,
     gameGeneration: 'single_round_robin',
   },
+
+  // Team Geometry Module — same axis values as teamFormat above, plus derived gameCount.
+  // See bca3v3.ts for the strangler-fig rationale.
+  teamGeometry: getTeamGeometry(5, 8, 'single_round_robin'),
 
   rating: {
     requiresManualEntry: true,

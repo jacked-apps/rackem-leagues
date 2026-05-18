@@ -13,6 +13,7 @@
 import type { SystemModule } from './types';
 import { get5v5GamesNeeded } from '@/utils/handicap/get5v5GamesNeeded';
 import { getWinCalculator } from './win-calculators';
+import { getTeamGeometry } from './team-geometry';
 
 const NOT_YET_WIRED =
   'bca5v5 scoring module methods not yet wired through SystemModule (legacy paths still in use)';
@@ -25,6 +26,10 @@ export const bca5v5: SystemModule = {
     maxRosterSize: 8,
     gameGeneration: 'single_round_robin',
   },
+
+  // Team Geometry Module — same axis values as teamFormat above, plus derived gameCount.
+  // See bca3v3.ts for the strangler-fig rationale.
+  teamGeometry: getTeamGeometry(5, 8, 'single_round_robin'),
 
   rating: {
     requiresManualEntry: false,

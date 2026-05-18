@@ -49,6 +49,7 @@ import { bca5v5 } from './bca5v5';
 import { fargo5v5 } from './fargo5v5';
 import { get3v3GamesNeeded } from '@/utils/handicap/get3v3GamesNeeded';
 import { getWinCalculator } from './win-calculators';
+import { getTeamGeometry } from './team-geometry';
 import { get5v5GamesNeeded } from '@/utils/handicap/get5v5GamesNeeded';
 
 // ============================================================================
@@ -416,17 +417,30 @@ export function buildSystemFromPreferences(
     return preset;
   }
 
+  // Normalize game_generation to the strict enum the Team Geometry Module expects.
+  // Falls back to single_round_robin for unknown values per the existing graceful-degradation
+  // pattern this resolver uses elsewhere.
+  const normalizedGameGeneration: 'single_round_robin' | 'double_round_robin' =
+    prefs.game_generation === 'double_round_robin' ||
+    prefs.game_generation === 'single_round_robin'
+      ? prefs.game_generation
+      : 'single_round_robin';
+
   return {
     key: deriveAdHocKey(prefs),
     teamFormat: {
       lineupSize: prefs.lineup_size,
       maxRosterSize: prefs.max_roster_size,
-      gameGeneration:
-        prefs.game_generation === 'double_round_robin' ||
-        prefs.game_generation === 'single_round_robin'
-          ? prefs.game_generation
-          : 'single_round_robin',
+      gameGeneration: normalizedGameGeneration,
     },
+    // Team Geometry Module — same axis values as teamFormat above plus derived gameCount.
+    // Per the new Unit 1 of the modular-framework migration plan; coexists with teamFormat
+    // during the strangler-fig transition.
+    teamGeometry: getTeamGeometry(
+      prefs.lineup_size,
+      prefs.max_roster_size,
+      normalizedGameGeneration,
+    ),
     rating: pickRating(prefs.handicap_type),
     scoring: pickScoring(prefs.points_calculator),
     threshold: pickThreshold(prefs),

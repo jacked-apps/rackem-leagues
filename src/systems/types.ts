@@ -21,6 +21,7 @@
 import type { HandicapThresholds } from '@/types/match';
 import type { SystemOverrides } from '@/types/systemOverrides';
 import type { WinCalculator } from './win-calculators/types';
+import type { TeamGeometry } from './team-geometry/types';
 
 // ============================================================================
 // Ratings
@@ -314,6 +315,24 @@ export interface SystemModule {
    * system (per Phase 1 Unit 1.3 restructuring).
    */
   threshold: ExtraGamesThreshold | StartPointsThreshold | RaceLengthThreshold;
+
+  /**
+   * Team Geometry Module — passive configuration record bundling the three
+   * structural axes (lineup_size, max_roster_size, game_generation) plus the
+   * derived game_count (lineup_size² × multiplier(game_generation)).
+   *
+   * Added in the new Unit 1 of the modular-framework migration (per
+   * `docs/plans/2026-05-17-001-refactor-modular-framework-migration-plan.md`).
+   *
+   * Coexists with the existing `teamFormat` field during the strangler-fig
+   * transition — both fields carry the same axis values; consumers gradually
+   * migrate from `teamFormat` to `teamGeometry` in Phase C. The legacy field
+   * gets deprecated/removed once no consumers remain.
+   *
+   * @see src/systems/team-geometry/index.ts — `getTeamGeometry()` factory
+   * @see docs/league-system/modules/team-geometry.md — the locked blueprint
+   */
+  teamGeometry: TeamGeometry;
 
   /**
    * Win Calculator Module — the metric-precedence-stack walker that decides

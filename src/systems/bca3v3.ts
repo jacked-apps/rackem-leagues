@@ -21,6 +21,7 @@
 import type { SystemModule } from './types';
 import { get3v3GamesNeeded } from '@/utils/handicap/get3v3GamesNeeded';
 import { getWinCalculator } from './win-calculators';
+import { getTeamGeometry } from './team-geometry';
 
 const NOT_YET_WIRED =
   'bca3v3 scoring module methods not yet wired through SystemModule (legacy paths still in use)';
@@ -33,6 +34,11 @@ export const bca3v3: SystemModule = {
     maxRosterSize: 5,
     gameGeneration: 'double_round_robin',
   },
+
+  // Team Geometry Module — same axis values as teamFormat above, plus derived gameCount.
+  // Per Unit 1 of the modular-framework migration plan, both fields coexist during the
+  // strangler-fig transition; Phase C swaps consumers from teamFormat to teamGeometry.
+  teamGeometry: getTeamGeometry(3, 5, 'double_round_robin'),
 
   rating: {
     requiresManualEntry: false,
