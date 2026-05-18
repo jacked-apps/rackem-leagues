@@ -19,11 +19,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Lock, Trophy, Award } from 'lucide-react';
 import { useStandings } from '@/api/hooks/useStandings';
 import { StatsNavBar } from '@/components/StatsNavBar';
 import { PageHeader } from '@/components/PageHeader';
 import { useCurrentMember } from '@/api/hooks/useCurrentMember';
+import { useSeasonLockedPayouts } from '@/api/hooks/useSeasonLockedPayouts';
 
 /**
  * Standings Component
@@ -38,6 +39,12 @@ export function Standings() {
   // Fetch standings data
   const { standings, isLoading, error } = useStandings(seasonId || '');
   const { data: member } = useCurrentMember();
+  const { data: lockedPayouts } = useSeasonLockedPayouts(seasonId || undefined);
+
+  // Build a place → amount lookup so we can map rank-by-index to prize
+  const prizeByPlace = new Map<number, number>(
+    (lockedPayouts?.team_payouts ?? []).map((p) => [p.place, p.amount]),
+  );
 
   // Check if current user is a league operator
   const isOperator = member?.role === 'league_operator';
@@ -135,6 +142,22 @@ export function Standings() {
         {/* Page Title */}
         <span className="text-2xl lg:text-4xl font-bold text-center mb-4 sm:mb-6">Standings</span>
 
+        {/* Locked payouts banner */}
+        {lockedPayouts && (
+          <div className="mb-4 flex items-center gap-2 text-sm bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-900 rounded-md p-3">
+            <Lock className="h-4 w-4 text-green-700 dark:text-green-400 flex-shrink-0" />
+            <div>
+              <div className="font-medium text-green-900 dark:text-green-100">
+                Official prize payouts
+              </div>
+              <div className="text-xs text-green-800 dark:text-green-200">
+                Final prize pool ${lockedPayouts.final_prize_pool.toFixed(2)} — locked on{' '}
+                {new Date(lockedPayouts.locked_at).toLocaleDateString()}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Table - no card wrapper */}
         <div className="overflow-x-auto">
           <Table>
@@ -146,11 +169,15 @@ export function Standings() {
                 <TableHead className="w-[30px] sm:w-[50px] px-1 sm:px-4 text-center text-xs sm:text-sm">L</TableHead>
                 <TableHead className="w-[35px] sm:w-[60px] px-1 sm:px-4 text-center text-xs sm:text-sm">Pts</TableHead>
                 <TableHead className="w-[40px] sm:w-[60px] px-1 sm:px-4 text-center text-xs sm:text-sm">Gms</TableHead>
+                {lockedPayouts && (
+                  <TableHead className="w-[80px] px-1 sm:px-4 text-center text-xs sm:text-sm">Prize</TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
               {standings.map((team, index) => {
                 const rank = index + 1;
+                const prize = prizeByPlace.get(rank);
                 return (
                   <TableRow key={team.teamId}>
                     <TableCell className="font-medium px-1 sm:px-4 text-center text-xs sm:text-base">{rank}</TableCell>
@@ -161,12 +188,52 @@ export function Standings() {
                       {team.points > 0 ? `+${team.points}` : team.points}
                     </TableCell>
                     <TableCell className="text-center px-1 sm:px-4 text-xs sm:text-base">{team.gamesWon}</TableCell>
+                    {lockedPayouts && (
+                      <TableCell className="text-center px-1 sm:px-4 text-xs sm:text-base font-semibold text-green-700 dark:text-green-400">
+                        {prize ? `$${prize.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
+                      </TableCell>
+                    )}
                   </TableRow>
                 );
               })}
             </TableBody>
           </Table>
         </div>
+
+        {/* Individual awards */}
+        {lockedPayouts && lockedPayouts.individual_awards.length > 0 && (
+          <Card className="mt-4">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Award className="h-5 w-5 text-purple-600" />
+                Individual Awards
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {lockedPayouts.individual_awards.map((award) => (
+                  <div
+                    key={award.id}
+                    className="flex items-center justify-between gap-3 py-2 px-3 rounded bg-muted/30"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Trophy className="h-4 w-4 text-yellow-600" />
+                      <span className="font-medium">{award.label}</span>
+                      {award.lo_funded && (
+                        <span className="text-xs bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full">
+                          LO-funded
+                        </span>
+                      )}
+                    </div>
+                    <span className="font-semibold text-green-700 dark:text-green-400">
+                      ${award.amount.toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

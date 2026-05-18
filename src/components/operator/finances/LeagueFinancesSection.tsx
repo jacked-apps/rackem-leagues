@@ -90,6 +90,7 @@ export function LeagueFinancesSection({
         totalExpenses={totalExpenses}
         totalCredits={totalCredits}
         droppedTeams={droppedTeams}
+        seasonId={seasonId}
       />
 
       <FinanceSettingsCard leagueId={leagueId} finances={finances} />

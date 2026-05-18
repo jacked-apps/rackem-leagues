@@ -16,6 +16,7 @@ import { ContactInfoCard } from '@/components/operator/ContactInfoCard';
 import { PaymentMethodCard } from '@/components/operator/PaymentMethodCard';
 import { OrganizationPreferencesCard } from '@/components/operator/OrganizationPreferencesCard';
 import { BlackoutDatesCard } from '@/components/operator/BlackoutDatesCard';
+import { OrgFinanceDefaultsCard } from '@/components/operator/finances/OrgFinanceDefaultsCard';
 
 /**
  * Organization Settings Component
@@ -107,6 +108,9 @@ export const OrganizationSettings: React.FC = () => {
             organizationId={organization.id}
             onUpdate={() => refetchOrganization()}
           />
+
+          {/* Finance Defaults Card — applies to all leagues in this org */}
+          <OrgFinanceDefaultsCard organizationId={organization.id} />
 
           {/* House Rules Card — org-wide manager */}
           <DashboardCard

@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-18 (League Finances + Payout Calculator Units 1–4 indexed: math engine under `src/utils/finances/` with 42 unit tests, API layer for `leagueFinances` + `seasonFinanceEntries`, and the `src/components/operator/finances/` cards including the **headline `PayoutCalculatorCard`** (3 modes: auto / manual pool / target %, live overrides, individual-awards carve-out) backed by the new `computePayoutPlan` orchestrator. Plan: `docs/plans/2026-05-18-001-feat-league-finances-payout-calculator-plan.md`.)
+> **Last Updated**: 2026-05-18 (League Finances + Payout Calculator Units 1–5 complete: math engine under `src/utils/finances/` with 42 unit tests, full API layer (`leagueFinances`, `seasonFinanceEntries`, `orgFinanceDefaults`, `seasonLockedPayouts`), the `src/components/operator/finances/` cards (settings + projection + expenses + dropped teams + **headline `PayoutCalculatorCard`** with **lock-in snapshot** to `season_locked_payouts`), `OrgFinanceDefaultsCard` mounted on `OrganizationSettings.tsx`, and Standings page reads + displays the locked payouts as a "Prize" column + Individual Awards card. Plan: `docs/plans/2026-05-18-001-feat-league-finances-payout-calculator-plan.md`.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -700,9 +700,10 @@ Reusable wizard/form step components
 - `RunningProjectionCard.tsx` - Read-only live projection: income − green fees − app fee − LO cut − expenses + credits = projected prize pool.
 - `SeasonExpensesCard.tsx` - Quick-add chips (trophies/banquet/sponsor/etc.) + amount+description form for season expense and credit line items; supports LO-funded flag for non-pool expenses.
 - `DroppedTeamsCard.tsx` - Picker for active teams + drop-week input; subtracts lost-week income from the projection.
-- `PayoutCalculatorCard.tsx` - **THE HEADLINE** — 3-mode payout calculator (auto / manual pool / target %), live-overridable shape + places + rounding, individual awards carve-out with LO-funded toggle. All math via `computePayoutPlan`.
+- `PayoutCalculatorCard.tsx` - **THE HEADLINE** — 3-mode payout calculator (auto / manual pool / target %), live-overridable shape + places + rounding, individual awards carve-out with LO-funded toggle, **lock-in button** (writes immutable snapshot to `season_locked_payouts`) + unlock escape hatch. All math via `computePayoutPlan`.
 - `TeamPayoutsTable.tsx` - Pure display: per-place rows with trophy icon, dollar amount, and % of pool.
 - `IndividualAwardsEditor.tsx` - Add/edit/remove individual awards (Top Shooter, Outstanding Achievement, etc.) with `loFunded` toggle. Exports `defaultIndividualAwards()` for the calculator's seed state.
+- `OrgFinanceDefaultsCard.tsx` - **Org-level defaults editor** (Unit 5). Mounted on `OrganizationSettings.tsx`. Writes to `org_finance_defaults`; applies to every league in the org unless individually overridden.
 
 #### Playoff Components (`/components/playoff/`)
 - `ParticipationSettingsCard.tsx` - Playoff participation/qualification settings with collapsible edit controls
@@ -895,6 +896,8 @@ High-level business logic services
 - `matchGames.ts` - **✅ Match game queries** (fetchPlayerGameHistory for handicap calculations)
 - `leagueFinances.ts` - **Finance settings query** (resolves league override → org default → hardcoded fallback via COALESCE chain).
 - `seasonFinanceEntries.ts` - **Season finance entries query** (polymorphic expense/credit/dropped_team line items).
+- `orgFinanceDefaults.ts` - **Org-level finance defaults query** (raw row or null).
+- `seasonLockedPayouts.ts` - **Locked payout snapshot query** (returns the immutable end-of-season snapshot row, or null).
 
 #### Mutations (`/mutations/`) - Write Operations
 *Create/Update/Delete operations with automatic cache invalidation*
@@ -903,6 +906,8 @@ High-level business logic services
 - `matchLineups.ts` - **✅ Match lineup mutations** (generic updateMatchLineup + specific save/lock/unlock)
 - `leagueFinanceSettings.ts` - **League finance settings mutations** (upsert override row + delete-to-revert-to-org-default).
 - `seasonFinanceEntries.ts` - **Season finance entries mutations** (add/delete polymorphic line items).
+- `orgFinanceDefaults.ts` - **Org defaults mutation** (single upsert; org row exists or hardcoded fallback applies).
+- `seasonLockedPayouts.ts` - **Lock-in mutations** (insert immutable snapshot + delete escape hatch).
 
 #### Hooks (`/hooks/`) - React Query Hooks
 *React-specific wrappers combining queries with useQuery/useMutation*
@@ -916,6 +921,8 @@ High-level business logic services
 - `useLeagueFinances.ts` - **Finance settings hook** (TanStack wrapper around `getLeagueFinances`).
 - `useLeagueFinanceMutations.ts` - **Finance settings mutation hooks** (upsert + delete with `refetchType: 'all'` invalidation).
 - `useSeasonFinanceEntries.ts` - **Season finance entries hooks** (query + add + delete for line items).
+- `useOrgFinanceDefaults.ts` - **Org defaults hooks** (query + upsert; upsert also invalidates all `leagueFinances` cache entries since they read from the org chain).
+- `useSeasonLockedPayouts.ts` - **Lock-in hooks** (query + lock + unlock for season payout snapshots).
 - `index.ts` - Central export point for all hooks
 
 **Migration Status**: Phase 1 Complete (foundation), Phase 2 Next (migrate member/user data)

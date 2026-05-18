@@ -21,7 +21,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calculator, ChevronDown, ChevronUp } from 'lucide-react';
+import { Calculator, ChevronDown, ChevronUp, Lock, Unlock } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   computePayoutPlan,
   type PayoutMode,
@@ -32,6 +33,11 @@ import {
 } from '@/utils/finances';
 import { TeamPayoutsTable } from './TeamPayoutsTable';
 import { IndividualAwardsEditor, defaultIndividualAwards } from './IndividualAwardsEditor';
+import {
+  useSeasonLockedPayouts,
+  useLockSeasonPayouts,
+  useUnlockSeasonPayouts,
+} from '@/api/hooks/useSeasonLockedPayouts';
 
 interface PayoutCalculatorCardProps {
   finances: ResolvedFinanceSettings;
@@ -41,6 +47,8 @@ interface PayoutCalculatorCardProps {
   totalExpenses: number;
   totalCredits: number;
   droppedTeams: DroppedTeam[];
+  /** Optional — only when a season exists. Required to enable lock-in. */
+  seasonId?: string | null;
 }
 
 const SHAPE_LABELS: Record<PayoutShape, string> = {
@@ -70,7 +78,13 @@ export function PayoutCalculatorCard({
   totalExpenses,
   totalCredits,
   droppedTeams,
+  seasonId,
 }: PayoutCalculatorCardProps) {
+  const { data: lockedRow } = useSeasonLockedPayouts(seasonId ?? undefined);
+  const lockMutation = useLockSeasonPayouts();
+  const unlockMutation = useUnlockSeasonPayouts();
+  const isLocked = !!lockedRow;
+
   // Live (un-persisted) overrides — what-if scenarios
   const [mode, setMode] = useState<PayoutMode>('auto');
   const [manualPool, setManualPool] = useState('');
@@ -280,11 +294,83 @@ export function PayoutCalculatorCard({
           <IndividualAwardsEditor awards={individualAwards} onChange={setIndividualAwards} />
         </div>
 
-        {/* Lock-in placeholder for Unit 5 */}
-        <div className="pt-2 border-t">
-          <p className="text-xs text-muted-foreground italic text-center">
-            Unit 5 will add "lock in payouts" — saves this exact plan as the official end-of-season payout.
-          </p>
+        {/* Lock-in / unlock */}
+        <div className="pt-3 border-t space-y-2">
+          {isLocked ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-900 rounded-md p-3">
+                <Lock className="h-4 w-4 text-green-700 dark:text-green-400 flex-shrink-0" />
+                <div>
+                  <div className="font-medium text-green-900 dark:text-green-100">
+                    Payouts locked
+                  </div>
+                  <div className="text-xs text-green-800 dark:text-green-200">
+                    Final prize pool: ${lockedRow.final_prize_pool.toFixed(2)} — locked on{' '}
+                    {new Date(lockedRow.locked_at).toLocaleDateString()}
+                  </div>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                loadingText="Unlocking..."
+                isLoading={unlockMutation.isPending}
+                onClick={async () => {
+                  if (!seasonId) return;
+                  try {
+                    await unlockMutation.mutateAsync({ seasonId });
+                    toast.success('Payouts unlocked');
+                  } catch (e) {
+                    toast.error(e instanceof Error ? e.message : 'Failed to unlock');
+                  }
+                }}
+                className="gap-1 text-muted-foreground"
+              >
+                <Unlock className="h-3.5 w-3.5" />
+                Unlock (escape hatch — for fixing mistakes)
+              </Button>
+            </div>
+          ) : seasonId ? (
+            <Button
+              loadingText="Locking..."
+              isLoading={lockMutation.isPending}
+              onClick={async () => {
+                try {
+                  await lockMutation.mutateAsync({
+                    seasonId,
+                    totalIncome: plan.projectedIncome,
+                    totalDeductions: plan.projectedGreenFees + plan.totalExpenses + plan.totalIndividualAwardsFromPool,
+                    totalCredits: plan.totalCredits,
+                    appFee: plan.appFee,
+                    loCutAmount: plan.loCutAmount,
+                    finalPrizePool: plan.teamPool,
+                    teamPayouts: plan.prizeAllocations.map((a) => ({
+                      team_id: null,
+                      place: a.place,
+                      amount: a.amount,
+                    })),
+                    individualAwards: plan.individualAwards.map((a) => ({
+                      id: a.id,
+                      label: a.label,
+                      amount: a.amount,
+                      lo_funded: a.loFunded,
+                    })),
+                  });
+                  toast.success('Payouts locked in for this season');
+                } catch (e) {
+                  toast.error(e instanceof Error ? e.message : 'Failed to lock');
+                }
+              }}
+              className="w-full gap-2"
+            >
+              <Lock className="h-4 w-4" />
+              Lock in these payouts as the official end-of-season result
+            </Button>
+          ) : (
+            <p className="text-xs text-muted-foreground italic text-center">
+              Lock-in requires an active season. Start a season to enable.
+            </p>
+          )}
         </div>
       </CardContent>
     </Card>
