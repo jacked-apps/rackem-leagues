@@ -52,6 +52,7 @@ import { getTeamGeometry } from './team-geometry';
 import { getMatchFormat } from './match-format';
 import { fargoRateHandicapSystem } from './handicap-systems';
 import { fargoFormulaChart } from './threshold-charts';
+import { createStartPointsMechanism } from './handicap-mechanisms';
 
 // ============================================================================
 // Constants (module defaults — overridable via SystemOverrides)
@@ -215,4 +216,8 @@ export const fargo5v5: SystemModule = {
   // Owns the start-points formula now; the legacy `threshold.compute` above
   // delegates here.
   thresholdChart: fargoFormulaChart,
+
+  // Handicap Mechanism Module — start_points bound to the FargoRate Formula Chart.
+  // Coexists with `threshold` until Phase D.
+  handicapMechanism: createStartPointsMechanism(fargoFormulaChart),
 };

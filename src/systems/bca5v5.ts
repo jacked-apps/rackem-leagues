@@ -17,6 +17,7 @@ import { getTeamGeometry } from './team-geometry';
 import { getMatchFormat } from './match-format';
 import { percentageHandicapSystem } from './handicap-systems';
 import { gamesNeeded5v5Chart } from './threshold-charts';
+import { createExtraGamesMechanism } from './handicap-mechanisms';
 
 const NOT_YET_WIRED =
   'bca5v5 scoring module methods not yet wired through SystemModule (legacy paths still in use)';
@@ -62,4 +63,8 @@ export const bca5v5: SystemModule = {
   // Threshold Chart Module — 5v5 Games-Needed chart (Percentage × extra_games).
   // See bca3v3.ts for the strangler-fig rationale; coexists with `threshold` until Phase D.
   thresholdChart: gamesNeeded5v5Chart,
+
+  // Handicap Mechanism Module — extra_games bound to the 5v5 Games-Needed Chart.
+  // Coexists with `threshold` until Phase D.
+  handicapMechanism: createExtraGamesMechanism(gamesNeeded5v5Chart),
 };

@@ -25,6 +25,7 @@ import type { TeamGeometry } from './team-geometry/types';
 import type { MatchFormat } from './match-format/types';
 import type { HandicapSystem } from './handicap-systems/types';
 import type { ThresholdChart } from './threshold-charts/types';
+import type { HandicapMechanism } from './handicap-mechanisms/types';
 
 // ============================================================================
 // Ratings
@@ -393,4 +394,39 @@ export interface SystemModule {
    * @see docs/league-system/modules/threshold-charts/README.md — the locked blueprint
    */
   thresholdChart: ThresholdChart | null;
+
+  /**
+   * Handicap Mechanism Module — declares the KIND of asymmetry the handicap
+   * creates in match setup (extra games to win, start points, race-length
+   * adjustment). Bundled internally with the active Chart at construction.
+   *
+   * Added in the Handicap Mechanisms extraction Unit (per
+   * `docs/plans/2026-05-17-001-refactor-modular-framework-migration-plan.md`),
+   * following the strangler-fig pattern proven by Team Geometry / Match Format /
+   * Handicap Systems / Threshold Charts.
+   *
+   * Coexists with the legacy `threshold` capability above during the
+   * strangler-fig transition — both ultimately compute the same values
+   * (the Mechanism's `compute` delegates to its bound Chart, same path as
+   * the legacy field after Threshold Charts Phase D). Consumers gradually
+   * migrate from `systemModule.threshold.compute(...)` to
+   * `systemModule.handicapMechanism.compute(...)` in Phase C; the legacy
+   * `threshold` capability is removed in Phase D, completing the cleanup
+   * that Threshold Charts Phase D deferred.
+   *
+   * Variants per the locked 2x2 taxonomy:
+   * - extra_games (BCA 3v3 + BCA 5v5)
+   * - start_points (Fargo 5v5)
+   * - race_length_adjustment (RESERVED — no shipping consumer)
+   *
+   * `null` reflects combos with no calibrated (Mechanism × Chart) pairing —
+   * e.g., `handicap_type='none'` (no handicap applied) or unknown combos.
+   * For `mechanism='none'` configs, the `noneMechanism` zero-handicap
+   * instance fills this slot rather than null, so consumers see a uniform
+   * shape per the locked spec.
+   *
+   * @see src/systems/handicap-mechanisms/index.ts — `buildHandicapMechanism()` factory
+   * @see docs/league-system/modules/handicap-mechanisms/README.md — locked blueprint
+   */
+  handicapMechanism: HandicapMechanism | null;
 }

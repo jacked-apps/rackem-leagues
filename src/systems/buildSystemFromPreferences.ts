@@ -60,7 +60,17 @@ import {
   gamesNeeded5v5Chart,
   fargoFormulaChart,
   type ThresholdChart,
+  type GamesNeededChart,
+  type FargoFormulaChart,
+  type RaceLengthChart,
 } from './threshold-charts';
+import {
+  createExtraGamesMechanism,
+  createStartPointsMechanism,
+  createRaceLengthAdjustmentMechanism,
+  noneMechanism,
+  type HandicapMechanism,
+} from './handicap-mechanisms';
 
 // ============================================================================
 // Preset detection (fast-path)
@@ -193,6 +203,63 @@ function pickThresholdChart(
     // Both Race Chart variants (race_points / race_percentage) ship as RESERVED stubs.
     // No shipping Scoring System uses race_length_adjustment today; return null and
     // let the legacy `threshold` field's race-length fallback handle it.
+    return null;
+  }
+  return null;
+}
+
+// ============================================================================
+// Handicap Mechanism Module dispatch
+// ============================================================================
+
+/**
+ * Pick a Handicap Mechanism Module for the ad-hoc module by (handicap_type ×
+ * mechanism). Mirrors pickThresholdChart's routing logic, then wraps the
+ * selected Chart in the matching Mechanism factory. Coexists with the legacy
+ * `threshold` field during the strangler-fig transition.
+ *
+ * Returns `noneMechanism` for `mechanism='none'` / `handicap_type='none'`
+ * (zero-handicap extra_games shape per the locked spec). Returns null for
+ * combos with no calibrated Chart (the legacy threshold field still provides
+ * a zero-handicap fallback).
+ */
+function pickHandicapMechanism(
+  handicapType: string,
+  mechanism: string,
+  chart: ThresholdChart | null,
+): HandicapMechanism | null {
+  if (mechanism === 'none' || handicapType === 'none') {
+    return noneMechanism;
+  }
+  if (chart === null) {
+    // No calibrated Chart for this (handicap_type × mechanism) combo. The
+    // legacy `threshold` field provides a zero-handicap fallback; the
+    // Mechanism field signals null so consumers know the Module path is
+    // unwired for this combo.
+    return null;
+  }
+  if (mechanism === 'extra_games') {
+    // Type-narrowed via chart.kind — only Games-Needed Charts pair with extra_games.
+    if (
+      chart.kind === 'games_needed_3v3' ||
+      chart.kind === 'games_needed_3v3_formula' ||
+      chart.kind === 'games_needed_5v5' ||
+      chart.kind === 'games_needed_5v5_formula'
+    ) {
+      return createExtraGamesMechanism(chart as GamesNeededChart);
+    }
+    return null;
+  }
+  if (mechanism === 'start_points') {
+    if (chart.kind === 'fargo_formula') {
+      return createStartPointsMechanism(chart as FargoFormulaChart);
+    }
+    return null;
+  }
+  if (mechanism === 'race_length_adjustment') {
+    if (chart.kind === 'race_points' || chart.kind === 'race_percentage') {
+      return createRaceLengthAdjustmentMechanism(chart as RaceLengthChart);
+    }
     return null;
   }
   return null;
@@ -470,5 +537,13 @@ export function buildSystemFromPreferences(
     // Coexists with the `threshold` capability above (above field remains the
     // strangler-fig source of truth until Phase D removes it).
     thresholdChart: pickThresholdChart(prefs.handicap_type, prefs.mechanism),
+    // Handicap Mechanism Module — Phase B of the Handicap Mechanisms extraction Unit.
+    // Wraps the active Chart in the matching Mechanism kind. Coexists with the
+    // legacy `threshold` field; Phase D of Handicap Mechanisms will remove that field.
+    handicapMechanism: pickHandicapMechanism(
+      prefs.handicap_type,
+      prefs.mechanism,
+      pickThresholdChart(prefs.handicap_type, prefs.mechanism),
+    ),
   };
 }

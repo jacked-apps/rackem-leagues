@@ -28,6 +28,7 @@ import { getTeamGeometry } from './team-geometry';
 import { getMatchFormat } from './match-format';
 import { pointsHandicapSystem } from './handicap-systems';
 import { gamesNeeded3v3Chart } from './threshold-charts';
+import { createExtraGamesMechanism } from './handicap-mechanisms';
 
 const NOT_YET_WIRED =
   'bca3v3 scoring module methods not yet wired through SystemModule (legacy paths still in use)';
@@ -82,4 +83,8 @@ export const bca3v3: SystemModule = {
   // Coexists with the legacy `threshold` capability above during the
   // strangler-fig transition; both ultimately call into get3v3GamesNeeded.
   thresholdChart: gamesNeeded3v3Chart,
+
+  // Handicap Mechanism Module — extra_games bound to the 3v3 Games-Needed Chart.
+  // Coexists with the legacy `threshold` capability above until Phase D removes it.
+  handicapMechanism: createExtraGamesMechanism(gamesNeeded3v3Chart),
 };
