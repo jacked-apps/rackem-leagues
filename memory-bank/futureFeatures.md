@@ -253,4 +253,35 @@ why it's off.
 
 ---
 
+### Modular / Customizable Scoreboard
+**Status**: Dreamy — probably not, but maaaayyybeee. Flagged 2026-05-18.
+
+**Concept**:
+The Points System Decomposition (Unit 5 of the modular Scoring System migration, see `docs/brainstorms/2026-05-18-points-system-decomposition-requirements.md`) locked in a "single-mechanism-for-everything" principle: every value the system tracks (chart targets, initial points, milestone jumps, win signals, per-match running totals, chips, flags, etc.) gets assigned via the SAME trigger machinery into a unified named-variable namespace. As a downstream consequence, the scoreboard becomes a READER of variables, not a special-cased renderer with its own data path.
+
+**What this would enable**:
+- **Default scoreboard**: shows a sensible variable subset (`home_points`, `away_points`, `homeWinTarget`, `awayWinTarget`, etc.) — what 95% of leagues want, hand-curated.
+- **Custom scoreboards by LO**: pick ANY subset of available variables, in any layout. Want to show all 6 chart values (home/away × win/tie/lose)? Pull from variables that already exist. Want to surface `endgame_chip` mid-match? It's a variable. Want a "milestone proximity" indicator using whatever the milestone trigger assigned? It's a variable.
+- **New scoring features automatically become displayable**: add a new threshold, a new trigger, a new variable — scoreboards can render it without any scoreboard code changes.
+- **No drift possible**: what the scoreboard shows IS the operational value, by construction. Not a parallel computation that might disagree as the system evolves.
+
+**What's missing for this to be real**:
+- **Variable display metadata** — labels, format hints, role hints (e.g., "this is a points total", "this is a chip state", "this is a target the team is racing to"). Same `displayHints` concept the existing per-game calculators use; would extend to variable-level rather than calculator-param-level.
+- **A scoreboard composition UI** — LO-facing wizard for picking + arranging variables. Several tiers of complexity (drag-and-drop layout editor; template gallery; etc.).
+- **Variable namespace stability** — once LOs configure custom scoreboards referencing variables by name, renaming variables becomes a breaking change. Needs care.
+
+**Why it's dreamy**:
+- Real upside for power-user LOs who want to differentiate their leagues with custom presentation.
+- Architecturally for free (the foundation is already built once Unit 5 lands).
+- The wizard UI work is non-trivial — would be its own multi-week effort.
+
+**Why it might be "probably not"**:
+- 95% of leagues are perfectly served by a well-curated default scoreboard.
+- The "configure your own scoreboard" feature appeals to a niche.
+- LO-facing customization adds support burden (debugging "why doesn't my scoreboard show X?" queries).
+
+**Not doing now** — Phase A of Unit 5 just lays the foundation. If the appetite materializes after the modular Scoring System ships and a few LOs ask for custom presentations, this becomes a tractable next-tier project. Until then, flagged as a happy capability we got for free architecturally.
+
+---
+
 *This is a living document - add ideas as they come up during development and user feedback sessions.*
