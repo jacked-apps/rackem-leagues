@@ -248,6 +248,7 @@ export {
 // Member mutations
 export {
   useUpdateProfanityFilter,
+  useMarkProfanityOnboardingComplete,
   useCreateMember,
   useDeleteMember,
 } from './useMemberMutations';
@@ -286,3 +287,7 @@ export { useInviteStatuses } from './useInviteStatuses';
 export type { InviteStatus } from './useInviteStatuses';
 export { usePlayerTeamCount } from './usePlayerTeamCount';
 export type { PlayerTeam } from './usePlayerTeamCount';
+export { useCaptainTeamsMissingChat } from './useCaptainTeamsMissingChat';
+export type { CaptainTeamMissingChat } from './useCaptainTeamsMissingChat';
+export { useMessageComposerStatus } from './useMessageComposerStatus';
+export type { ComposerLockReason, ComposerStatus } from './useMessageComposerStatus';

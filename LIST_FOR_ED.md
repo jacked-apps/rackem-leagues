@@ -1589,3 +1589,379 @@ needs to reckon with this from the start, not bolt it on later:
   bullet.
 - Related: project_lo_inline_placeholder_handling memory (similar
   edit-from-where-you-look pattern for placeholder players).
+## 26. Team Chat — Allow Manual Adds of Non-Team Members (Phase 2+)
+
+**Discovered:** 2026-05-12 during Unit 3 captain-fallback button scoping
+**Severity:** LOW — enhancement, not a bug
+
+**Idea:** Today the auto-managed team chat is locked to the team roster
+(roster triggers in Unit 5 will keep membership in sync with `team_players`).
+Ed asked whether a captain could manually add a non-team member to the team
+chat — e.g., a player's spouse who wants to see league updates. Schema-wise
+this is already possible (`conversation_participants.user_id` doesn't require
+team membership), but there's no UI for it and Unit 5's roster triggers would
+ignore the outsider on roster changes (which is actually the desired
+behavior — manual-in, manual-out).
+
+**Scope when picked up:**
+- "Add member" UI inside the team chat conversation view, captain-only
+- Distinguish "auto-managed roster member" from "manually added outsider"
+  visually (e.g., small "guest" badge) so the captain knows roster triggers
+  won't sweep them
+- Make sure Unit 5 roster triggers only touch participants whose user_id
+  matches a current team roster member — outsiders are left alone
+- Add a "remove" affordance for captains on guest entries
+
+**Deferred from:** Phase 1 Unit 3 (captain manual-fallback button) on
+2026-05-12. Out of scope for that unit; logged here so it isn't lost.
+
+---
+
+## 27. Adversarial Failure-Isolation Test for Season-Activation Trigger
+
+**Discovered:** 2026-05-12 while writing Unit 4 tests
+**Severity:** LOW — the safety mechanism exists in code, but lacks a runtime test
+
+**The issue:** The plan's Unit 4 calls for an adversarial test that forces
+one team chat to fail and asserts the trigger's `BEGIN/EXCEPTION` blocks
+isolate the failure (other chats still create, season UPDATE still
+succeeds). The current schema has FK constraints strict enough that
+manufacturing a synthetic per-chat failure from outside the function
+requires destructive setup (deleting members cascades the roster;
+bypassing FKs via `session_replication_role = replica` is too hacky for
+a test fixture).
+
+**The risk:** Low. The `BEGIN/EXCEPTION WHEN OTHERS THEN RAISE WARNING`
+pattern is present in the function source, and the logic is short enough
+to verify by inspection. But there's no runtime evidence that a real
+failure stays isolated.
+
+**Possible test approaches when revisiting:**
+1. Add a small helper SQL function that raises an exception, called from
+   a fork of `auto_create_season_conversations` wired up in the test
+   only. Heavy.
+2. Use a custom Postgres role with constrained INSERT privileges so the
+   function fails on a specific block. Cleaner but needs RLS / role setup.
+3. Refactor the function to take an injectable "force-failure-for-team"
+   debug param. Adds prod surface for a test-only need.
+
+**Where this came from:** `docs/plans/2026-05-09-001-feat-messaging-overhaul-phase-1-plan.md`,
+the *Adversarial* test scenario under Unit 4. The trigger ships with
+the EXCEPTION blocks; this is purely a test-coverage gap.
+
+---
+
+## 28. DB-Backed Messaging Tests Cannot Run in Parallel — FIXED 2026-05-12
+
+**Discovered + resolved:** 2026-05-12 while wrapping up Unit 5
+
+**The issue (kept for institutional memory):** The three messaging
+DB-backed test files (`messaging-phase1-createTeamChat.test.ts`,
+`messaging-phase1-season-activation.rls.test.ts`,
+`messaging-phase1-roster-triggers.rls.test.ts`) all share one local
+Postgres and pick fixtures off the same seeded teams/seasons. Vitest's
+default file-level parallelism raced them — one test deleted a team
+chat while another expected it to exist, etc.
+
+**The fix:** `vitest.config.ts` now uses two `test.projects`:
+- `unit`: every other test file. Parallel, happy-dom.
+- `db`: `src/__tests__/database/**`. **Sequential**
+  (`fileParallelism: false`), jsdom.
+
+Vitest picks the right project per file automatically based on the path.
+No flag needed. `pnpm test:run` runs both projects with the right
+parallelism rules out of the box. Future CI workflows that invoke
+`pnpm test:run` inherit the behavior with zero config.
+
+**If you ever add another set of DB-backed tests** (outside
+`src/__tests__/database/`), add their path to the `db` project's
+`include` array in `vitest.config.ts` — or move them under that
+directory so they're auto-picked-up.
+
+**Future enhancement (not urgent):** the per-test fixture-overlap
+problem could be solved more cleanly by having each file pick a
+disjoint test team, or by transaction-wrapping each test with rollback.
+Either would let DB tests run in parallel again. Until the test suite
+gets big enough to make sequential DB tests painful, the project-pin
+fix is sufficient.
+
+---
+
+## 29. Messaging Unit 6 — Past-Member + Announcement-Read-Only RLS (deferred)
+
+**Discovered:** 2026-05-12 while implementing Unit 6
+**Severity:** MEDIUM — defense-in-depth gap until the RLS-enablement project ships
+
+**Context:** Unit 6 of the Phase 1 messaging plan calls for both a UI
+banner AND a set of Postgres RLS policies that enforce read-only at
+the data layer. Per the existing project decision to defer all RLS
+work to a dedicated "RLS-enablement project" (see
+[[project_rls_disabled_in_dev]]), only the UI portion shipped on
+2026-05-12. This entry captures what needs to land at the data layer
+whenever the RLS project gets picked up, so nothing has to be
+re-derived from the plan.
+
+**The gap:** Today a sophisticated user could bypass the
+`ReadOnlyBanner` by making a direct `supabase-js .insert()` call from
+the browser console, posting a message into an announcements chat or
+into a chat they've been removed from. The UI prevents the casual
+case; the data layer doesn't prevent the determined case.
+
+**Policies to add when RLS gets enabled** (against tables `messages`
+and `conversation_participants`):
+
+1. **`messages` SELECT policy** — past-members can read messages
+   posted up to and including their `left_at` timestamp:
+   ```
+   EXISTS (
+     SELECT 1 FROM conversation_participants cp
+     WHERE cp.conversation_id = messages.conversation_id
+       AND cp.user_id = get_current_member_id()
+       AND (cp.left_at IS NULL OR messages.created_at <= cp.left_at)
+   )
+   ```
+   Use `get_current_member_id()` (returns `members.id`); do NOT
+   compare `members.id` to `auth.uid()` directly — the
+   `auth.uid() → members.user_id` indirection is handled inside the
+   helper.
+
+2. **`messages` INSERT policy** — active participants only:
+   ```
+   EXISTS (
+     SELECT 1 FROM conversation_participants cp
+     WHERE cp.conversation_id = messages.conversation_id
+       AND cp.user_id = get_current_member_id()
+       AND cp.left_at IS NULL
+   )
+   ```
+
+3. **Announcements INSERT gate** — only `organization_staff` may
+   INSERT into a conversation whose `conversation_type='announcements'`:
+   ```
+   EXISTS (
+     SELECT 1
+     FROM conversations c
+     LEFT JOIN seasons s ON s.id = c.scope_id AND c.scope_type = 'season'
+     LEFT JOIN leagues l ON l.id = s.league_id
+     JOIN organization_staff os
+       ON os.organization_id = COALESCE(
+            CASE WHEN c.scope_type = 'organization' THEN c.scope_id END,
+            l.organization_id
+          )
+     WHERE c.id = messages.conversation_id
+       AND c.conversation_type = 'announcements'
+       AND os.member_id = get_current_member_id()
+   )
+   ```
+   Combine with the active-participant INSERT policy via `OR` — or
+   build it as a separate explicit policy that augments INSERT only
+   for announcement conversations. The plan author's note: be careful
+   the staff-only gate doesn't accidentally close the door on
+   non-announcement chats (use a `conversation_type='announcements'`
+   guard).
+
+4. **`conversation_participants` UPDATE/DELETE lockdown** — only
+   triggers (SECURITY DEFINER) and `service_role` may set `left_at`.
+   Without this, a malicious user could push their own `left_at` into
+   the future to keep reading post-removal messages, or set it to NULL
+   to lift the INSERT block:
+   ```
+   REVOKE UPDATE (left_at), DELETE ON conversation_participants
+     FROM authenticated;
+   GRANT UPDATE (notification_mode, last_read_at, is_muted,
+                 notifications_enabled, unread_count)
+     ON conversation_participants TO authenticated;
+   ```
+
+5. **Required test scenarios** (from the plan):
+   - Past-member SELECT before `left_at` succeeds; after `left_at` blocked
+   - Past-member INSERT blocked
+   - Active member SELECT + INSERT normal
+   - Boundary: `left_at = messages.created_at` is INCLUSIVE on SELECT
+   - Non-participant SELECT blocked
+   - User attempts to UPDATE their own `left_at` → blocked
+   - Test against a user whose `auth.uid() != any members.id` they
+     ever appear in (catches the production-bug class of using
+     `members.id = auth.uid()` instead of `members.user_id`)
+
+**Migration filename slot (reserved):**
+`supabase/migrations/<future_date>_messaging_phase1_past_member_rls.sql`
+
+**Existing tests to keep passing:**
+`src/__tests__/database/messaging.rls.test.ts`,
+`src/__tests__/database/members.rls.test.ts`.
+
+**Why it was deferred 2026-05-12:** Ed has historically had
+poor experiences debugging Supabase RLS policies that "don't even make
+sense" and pays the iteration cost upfront on every feature. The
+project's working pattern is "build features RLS-off, harden with RLS
+later in one dedicated pass." This entry exists so when that pass
+happens, none of the design work above has to be re-derived from the
+plan.
+
+
+---
+
+## 30. Optional LO-Created Org-Wide Group Chat
+
+**Discovered:** 2026-05-12 while finalizing the messaging Phase 1 chat model
+**Severity:** LOW — future feature, not Phase 1
+
+**The idea:** Today, the four auto-created chats per season are:
+captain chat, team chats, season announcements (one-way), org
+announcements (one-way). There is intentionally no auto-created
+back-and-forth "everyone in the org" chat — a 200-player free-for-all
+is a moderation disaster.
+
+But: an LO may someday want a deliberate, opt-in, org-wide group chat
+("the league's clubhouse"). The current data model already supports it
+— the existing `createGroupConversation` SECURITY DEFINER function
+handles arbitrary group chats. All this feature needs is:
+
+1. An LO-only UI button: **"Start an org-wide chat"**
+2. On click, call `createGroupConversation` with `member_ids` = every
+   player currently active across the org's active seasons (same query
+   as `createOrgAnnouncementsChat`'s participants snapshot).
+3. The new chat is a normal back-and-forth `conversations` row —
+   not `auto_managed=true`, so it doesn't get re-created by any
+   trigger. The LO owns its lifecycle (rename, leave, delete).
+4. Probably hide the button until the LO has at least, say, 5 active
+   members in the org — guard against accidental creation in an empty
+   org.
+
+**Out of scope for Phase 1.** No schema change required when this lands.
+
+
+## 31. Messaging Phase 2 — Plan Doc Needs Writing
+
+**Discovered:** 2026-05-15 while triaging post-Phase-1 next steps
+**Severity:** MEDIUM — not blocking, but Phase 2 is the next significant
+chunk of the messaging overhaul and there's no plan doc for it yet.
+
+**Context:** Phase 1 of the messaging overhaul is code-complete (units
+1–9 shipped; units 10–14 added 2026-05-15 for polish, pending build +
+final test). Phase 2 (push notifications, per-chat tri-state controls,
+quiet hours, rate-limit, pause picker, `@mention` notification
+routing) is fully described in the requirements brainstorm
+(`docs/brainstorms/2026-04-21-messaging-system-overhaul-requirements.md`
+§ "Phase 2 — Notification subsystem") but has **no plan doc** in
+`docs/plans/` yet.
+
+**Why this matters:** Phase 2 is what makes the messaging system
+actually *trustworthy* — without push, mutes, rate-limits, and pause
+controls, every new message tries to interrupt the user. The
+hypothesis Phase 3 is supposed to test ("captains will use this over
+SMS") only really tests fairly once Phase 2 has tamed notification
+behavior. So this is *important*, not just *next*.
+
+**What's needed:**
+
+1. Read the brainstorm's Phase 2 section as the source of truth.
+2. Write a `docs/plans/<date>-001-feat-messaging-overhaul-phase-2-plan.md`
+   following the structure of the Phase 1 plan (Overview / Requirements
+   Trace / Scope Boundaries / Open Questions / Implementation Units
+   etc.). Use `ce-plan` if appropriate, or write directly.
+3. Particular open questions from the brainstorm that the plan must
+   close:
+   - **Dispatch worker shape** (single Edge Function subscribing to
+     INSERTs vs. DB-trigger + pg_net → worker?).
+   - **APNs / FCM coordination with Jack** (mobile partner) — who
+     holds the push-tokens table of record, who handles stale-token
+     cleanup.
+   - **pg_cron vs. Supabase Scheduled Edge Function** for any
+     scheduled work (also Phase 3 question).
+4. Schema items deferred from Phase 1 that land in Phase 2:
+   - `members.notifications_paused_until` (the pause picker UI).
+
+**When to start:** after Phase 1 ships (units 10–14 built + tests
+pass + merge).
+
+**Files this entry should disappear from once a plan exists:** delete
+this entry from `LIST_FOR_ED.md` when the plan doc is written and
+committed. The plan doc + its branch will then be the working record.
+
+
+## 32. Pre-existing DB-Test Drift — 4 RLS Test Files Reference Dead Columns / Stale Embeds
+
+**Discovered:** 2026-05-15 during Phase 1 end-to-end test pass
+**Severity:** MEDIUM — tests are silently broken on main; nothing in
+production is wrong, but the test suite gives a false sense of
+coverage on the affected tables until fixed.
+
+**Branch suggested:** `fix-drifted-rls-tests` (a small, scoped branch
+— probably 30–60 min of mechanical edits).
+
+**Context:** When the Phase 1 messaging-overhaul work cleaned up the
+vitest config to stop sweeping `.worktrees/` (commit `41c4038`), the
+full `pnpm test:run` got a real signal for the first time in a while
+— and surfaced 15 failures spread across 4 non-messaging test files.
+None are new failures from messaging work; all are pre-existing main
+bugs where a migration renamed/dropped a column (or restructured a
+relationship) and the corresponding test file was never updated. The
+failures were hidden previously because the worktree noise drowned
+the signal.
+
+The messaging-side equivalent of this drift was fixed inline on the
+messaging branch (commit `61794ca`, file `messaging.rls.test.ts`).
+The 4 files below are non-messaging and were left for a separate fix
+branch per scope.
+
+**Files + drift:**
+
+1. `src/__tests__/database/matchLineups.rls.test.ts` (**7 failures**)
+   References `lineup_position` and `player_id` on `match_lineups`,
+   which were renamed by the Phase 2 modular-system rename family
+   (look at the `home_to_win` / `home_to_tie` rename migration
+   `20260502000002_prep_match_rpc_renamed_columns.sql` and related
+   commits — the lineup column names changed in that family).
+   Fix: read the current `match_lineups` schema in
+   `20251130010824_baseline.sql` (+ any later ALTERs), update the
+   test's `.select` / `.update` / `.insert` column names to match.
+
+2. `src/__tests__/database/operator.rls.test.ts` (**6 failures**)
+   PostgREST ambiguous-embedding error:
+   `PGRST201 — Could not embed because more than one relationship
+   was found for 'organizations' and 'members'`. Two FKs now connect
+   the tables: `members.organization_id` (placeholder org
+   attribution) AND `organizations.created_by` → `members.id` (LO
+   creator). PostgREST refuses to auto-pick.
+   Fix: in any `.select(\`*, members(...)\`)` style embed in the
+   test, disambiguate with the explicit FK syntax PostgREST
+   suggests: `members!members_organization_id_fkey(...)` or
+   `members!organizations_created_by_fkey(...)` depending on
+   which side the test means.
+
+3. `src/__tests__/database/matches.rls.test.ts` (**1 failure**)
+   References `match_date` column on `matches`, which doesn't exist
+   (the actual column is likely `scheduled_at` or similar — check
+   the baseline migration).
+   Fix: one-line rename in the INSERT around test file line 216.
+
+4. `src/__tests__/database/venues.rls.test.ts` (**1 failure**)
+   References `venues.address` column, which doesn't exist on the
+   current `venues` table (the venue-table-configuration migrations
+   restructured this).
+   Fix: read the current `venues` columns and update the test's
+   embed/select.
+
+**How to verify a fix:**
+
+```
+pnpm db:reset
+# paste database/dev_starting_point.sql in Studio SQL editor → Run
+pnpm test:run > test-output.log 2>&1
+```
+
+Expected after fix: zero failures across all 4 files.
+
+**Note on RLS posture:** Per project memory
+`project_rls_disabled_in_dev`, RLS is currently DISABLED on most
+tables in dev. So these files are functioning as schema-CRUD smoke
+tests today, not actual RLS enforcement tests. Fixing the column
+drift now means they'll start *actually testing* what they claim to
+as soon as the RLS-enablement project (LIST_FOR_ED #29) gets picked
+up. This work and the RLS enablement are independent — either can
+ship first.
+
+
+

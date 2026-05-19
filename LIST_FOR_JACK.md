@@ -116,4 +116,97 @@
 
 ---
 
-*Last Updated: 2025-12-18*
+## 16. Dark Mode — Messaging Composer Input Font Hard to Read
+
+**Discovered:** 2026-05-16 during the Phase 1 messaging end-to-end test pass
+**Severity:** Low-Medium — usable but the chat composer's text input
+is visually muddy in dark mode (low contrast between the typed text
+and the input background). Slows down composing messages.
+
+**Where:** `src/components/messages/MessageInput.tsx` — the `<Input>`
+inside the composer (and likely sibling components in the messaging
+UI that use the shadcn `Input` with the same class set).
+
+**Likely root cause:** the composer's `Input` uses `bg-card` for the
+background but inherits the default text color. In dark mode that
+combination yields a near-tone-on-tone result. Either an explicit
+`text-foreground` is missing, OR `bg-card` resolves to a value too
+close to the foreground in dark mode and the theme token needs a
+tweak.
+
+**Fix direction:**
+1. Open the Messages page in light mode AND dark mode side-by-side
+   to confirm the contrast gap.
+2. In `src/components/messages/MessageInput.tsx`, give the `<Input>`
+   an explicit foreground color that's high-contrast in both modes
+   (shadcn standard is `text-foreground`; verify the theme tokens
+   actually produce sufficient contrast).
+3. Check other messaging text-input surfaces (the conversation
+   search bar, the announcement modal composer, etc.) for the same
+   pattern and fix consistently.
+
+**Not blocking** the messaging-system-overhaul branch from merging
+— styling polish only.
+
+---
+
+## 17. PageHeader — Profile-Avatar Position Inconsistent Across Pages
+
+**Discovered:** 2026-05-16 during the Phase 1 messaging end-to-end
+test pass, after `2d562b0` adjusted PageHeader to fix the empty-
+stripe bug on `/messages`.
+**Severity:** Low — purely visual / consistency concern, no
+functional break.
+
+**Where:** `src/components/PageHeader.tsx`.
+
+**The inconsistency:** the profile-circle avatar position now
+depends on which page you're looking at:
+
+- Pages that pass `subtitle`, `organizationId`, or `children` to
+  PageHeader (Dashboard, most operator pages) → avatar renders
+  **below** the sticky bar (in the `SubHeader` row, right-aligned).
+- Pages that pass only `title` (`/messages` and similar) → avatar
+  now renders **inside** the sticky bar (right of the title, before
+  the hamburger).
+
+The reason for the split: pages with no SubHeader content had an
+empty vertical stripe under the sticky bar containing just the
+floating avatar — visually ugly especially on `/messages` which
+uses `h-screen overflow-hidden` (no scroll to absorb it). The fix
+in commit `2d562b0` moved the avatar into the sticky bar in that
+case. Solves the empty-stripe bug but creates the inconsistency
+you're now seeing.
+
+**Design call for Jack:** pick ONE of the following and apply
+consistently:
+
+1. **Always in sticky bar.** Simpler. Avatar visible at all times
+   (doesn't scroll away). Matches chat-app / iMessage convention.
+   Cost: drop the IdentitySlot from SubHeader; remove the
+   `hasSubHeaderLeftContent` branch in PageHeader. Pages that
+   currently have avatar in SubHeader will move the avatar up.
+2. **Always in SubHeader.** Avatar scrolls away with content,
+   reclaims sticky-bar real estate. Matches the original PageHeader
+   intent. Cost: need a different fix for the empty-stripe bug —
+   either pass a real subtitle on every page (chore) or change the
+   SubHeader to render at 0-height when its left side is empty so
+   the floating-avatar stripe doesn't look wasted.
+3. **Hybrid (current).** Avatar goes where it best fits per-page.
+   Accept the inconsistency as a design feature. Document the rule
+   in a comment so future maintainers don't "fix" it by accident.
+
+My intuition leans toward option 1 (always in sticky bar) since
+the chat-app norm is to have the user's identity always reachable
+without scrolling, and the SubHeader's "scrolls away to reclaim
+height" payoff is small on most pages anyway. But this is your
+call — UX design isn't my strength.
+
+**Not blocking** messaging-system-overhaul branch from merging.
+The current behavior is a clear improvement over the pre-fix state
+(empty stripe gone on `/messages`); the inconsistency is a
+follow-on polish.
+
+---
+
+*Last Updated: 2026-05-16*

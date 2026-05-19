@@ -1,10 +1,15 @@
 /**
  * @fileoverview Message Input Component
  *
- * Single responsibility: Handle message input and sending.
- * Reusable component for composing and sending messages.
+ * Single responsibility: handle message composition + dispatch send.
  *
- * Mobile-optimized with:
+ * `onSend` is expected to handle its own failure reporting — the failed-
+ * send recovery UX (Unit 8) is rendered inline in the conversation
+ * thread by `MessageList`, NOT in this composer. This component clears
+ * its text on submit regardless of outcome; the failed message lives in
+ * `useOutgoingMessages` (consumed by `MessageView`).
+ *
+ * Mobile-optimized:
  * - Larger send button for touch targets
  * - Responsive padding and sizing
  * - Mobile-friendly character counter
@@ -28,10 +33,19 @@ export function MessageInput({ onSend, disabled = false, maxLength = 2000 }: Mes
   const handleSendMessage = async () => {
     if (!messageInput.trim() || sending) return;
 
-    setSending(true);
-    await onSend(messageInput);
+    const content = messageInput;
+    // Clear immediately — the in-list optimistic bubble takes over the
+    // job of "showing what was just sent" (and, on failure, becoming the
+    // retryable failed bubble).
     setMessageInput('');
-    setSending(false);
+    setSending(true);
+    try {
+      // onSend swallows its own errors (MessageView marks the optimistic
+      // outgoing entry as failed). We don't need to catch here.
+      await onSend(content);
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {

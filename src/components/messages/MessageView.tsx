@@ -10,31 +10,18 @@
  * - Mobile-optimized input area
  */
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { ConversationHeader } from './ConversationHeader';
-import { MessageBubble } from './MessageBubble';
 import { MessageInput } from './MessageInput';
+import { ReadOnlyBanner } from './ReadOnlyBanner';
+import { MessageList, type Message } from './messageview/MessageList';
+import { useOutgoingMessages } from './messageview/useOutgoingMessages';
 import { useConversationParticipants } from '@/hooks/useConversationParticipants';
-import { useConversationMessages, useSendMessage, useUpdateLastRead, useConversationMessagesRealtime, useLeaveConversation, useBlockUser } from '@/api/hooks';
+import { useConversationMessages, useSendMessage, useUpdateLastRead, useConversationMessagesRealtime, useLeaveConversation, useBlockUser, useMessageComposerStatus } from '@/api/hooks';
 import { supabase } from '@/supabaseClient';
-import { LoadingState, EmptyState, ConfirmDialog } from '@/components/shared';
-import { MessageSquare } from 'lucide-react';
+import { ConfirmDialog } from '@/components/shared';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
-
-interface Message {
-  id: string;
-  content: string;
-  created_at: string;
-  edited_at: string | null;
-  is_edited: boolean;
-  sender: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    system_player_number: number;
-  };
-}
 
 interface MessageViewProps {
   conversationId: string;
@@ -48,18 +35,26 @@ export function MessageView({ conversationId, currentUserId, onBack, onLeaveConv
   const [otherUserId, setOtherUserId] = useState<string | null>(null);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [showBlockConfirm, setShowBlockConfirm] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // TanStack Query hooks
   const { data: messagesData = [], isLoading: loading } = useConversationMessages(conversationId);
-  const messages = messagesData as any as Message[];
+  const messages = messagesData as unknown as Message[];
   const sendMessageMutation = useSendMessage();
+
+  // Unit 8 inline-failed-send: optimistic outgoing-messages state that
+  // MessageList renders alongside the confirmed messages.
+  const { outgoing, addPending, markPending, markFailed, remove } = useOutgoingMessages();
   const updateLastReadMutation = useUpdateLastRead();
   const leaveConversationMutation = useLeaveConversation();
   const blockUserMutation = useBlockUser();
 
   // Real-time subscriptions (auto-manages channels and cleanup)
   useConversationMessagesRealtime(conversationId, currentUserId, updateLastReadMutation);
+
+  // R5 + Phase-1 announcement-feels-one-way decision: gate the composer.
+  // Returns { readOnly, reason } when the current user is a past-member of
+  // this chat OR is a non-staff viewer of an announcements channel.
+  const { data: composerStatus } = useMessageComposerStatus(conversationId);
 
   const { recipientName, recipientLastRead } = useConversationParticipants(
     conversationId,
@@ -114,28 +109,35 @@ export function MessageView({ conversationId, currentUserId, onBack, onLeaveConv
     }
   }, [conversationId, currentUserId, messages.length]);
 
-  // Auto-scroll to bottom when messages change
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  const handleSendMessage = async (content: string) => {
-    sendMessageMutation.mutate(
-      {
+  // Submit a message: add an optimistic bubble to the conversation,
+  // fire the mutation, and either remove the bubble on success (realtime
+  // delivers the authoritative server-side row) or transition it to
+  // failed state on error (the bubble stays inline with a Retry button).
+  // Swallows the error here — failure is visible via the inline bubble,
+  // not via re-thrown exceptions to MessageInput.
+  const sendWithOptimistic = async (clientId: string, content: string) => {
+    try {
+      await sendMessageMutation.mutateAsync({
         conversationId,
         senderId: currentUserId,
         content,
-      },
-      {
-        onError: (error) => {
-          logger.error('Error sending message', { error: error instanceof Error ? error.message : String(error) });
-          toast.error('Failed to send message. Please try again.');
-        },
-      }
-    );
+      });
+      remove(clientId);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      logger.error('Error sending message', { error: msg });
+      markFailed(clientId, msg || 'Failed to send');
+    }
+  };
 
-    // Don't manually fetch - let realtime subscription handle it
-    // The message will appear via the realtime subscription
+  const handleSendMessage = async (content: string) => {
+    const clientId = addPending(content);
+    await sendWithOptimistic(clientId, content);
+  };
+
+  const handleRetryOutgoing = async (clientId: string, content: string) => {
+    markPending(clientId);
+    await sendWithOptimistic(clientId, content);
   };
 
   const handleLeaveClick = () => {
@@ -221,47 +223,28 @@ export function MessageView({ conversationId, currentUserId, onBack, onLeaveConv
         variant="destructive"
       />
 
-      {/* Messages - Mobile-optimized padding */}
+      {/* Messages — list rendering, loading, empty state, auto-scroll,
+          system-message variant, and per-bubble profanity filter all live
+          in <MessageList>. */}
       <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-3 md:space-y-4 bg-muted">
-        {loading ? (
-          <div className="flex items-center justify-center h-full">
-            <LoadingState message="Loading messages..." />
-          </div>
-        ) : messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <EmptyState
-              icon={MessageSquare}
-              title="No messages yet"
-              description="Start the conversation!"
-            />
-          </div>
-        ) : (
-          messages.map((message) => {
-            if (!message.sender) {
-              return null;
-            }
-
-            const isCurrentUser = message.sender.id === currentUserId;
-            const senderName = `${message.sender.first_name} ${message.sender.last_name}`;
-
-            return (
-              <MessageBubble
-                key={message.id}
-                content={message.content}
-                createdAt={message.created_at}
-                isEdited={message.is_edited}
-                isCurrentUser={isCurrentUser}
-                senderName={!isCurrentUser ? senderName : undefined}
-                senderId={!isCurrentUser ? message.sender.id : undefined}
-                recipientLastRead={recipientLastRead}
-              />
-            );
-          })
-        )}
-        <div ref={messagesEndRef} />
+        <MessageList
+          messages={messages}
+          currentUserId={currentUserId}
+          recipientLastRead={recipientLastRead}
+          loading={loading}
+          outgoingMessages={outgoing}
+          onRetryOutgoing={handleRetryOutgoing}
+        />
       </div>
 
-      <MessageInput onSend={handleSendMessage} />
+      {/* Composer OR read-only banner — never both, and the composer is
+          unmounted (not hidden) when locked so it stays out of tab order
+          and screen-reader output. */}
+      {composerStatus?.readOnly && composerStatus.reason ? (
+        <ReadOnlyBanner reason={composerStatus.reason} />
+      ) : (
+        <MessageInput onSend={handleSendMessage} />
+      )}
     </div>
   );
 }

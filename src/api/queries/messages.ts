@@ -91,13 +91,17 @@ export async function getUserConversations(userId: string) {
   // First, get list of blocked users
   const blockedUserIds = await getBlockedUsers(userId);
 
-  // Fetch all conversations the user is a participant in
+  // Fetch all conversations the user is a participant in (including
+  // past-member rows where `left_at` is non-NULL — those render under
+  // an "Archived" section in the conversation list, per the Unit 6 /
+  // Unit 20 past-member visibility design).
   const { data, error } = await supabase
     .from('conversation_participants')
     .select(`
       conversation_id,
       unread_count,
       last_read_at,
+      left_at,
       conversations!inner(
         id,
         title,
@@ -109,7 +113,6 @@ export async function getUserConversations(userId: string) {
       )
     `)
     .eq('user_id', userId)
-    .is('left_at', null) // Only active conversations
     .order('conversations(last_message_at)', { ascending: false, nullsFirst: false });
 
   if (error) throw error;
@@ -162,6 +165,11 @@ export async function getUserConversations(userId: string) {
         lastMessagePreview: item.conversations.last_message_preview,
         unreadCount: item.unread_count,
         createdAt: item.conversations.created_at,
+        // Past-member flag — true when this user has `left_at` set on
+        // their participant row. Drives the "Archived" section in the
+        // conversation-list UI (Unit 20) and is the load-bearing
+        // signal for past-member visibility.
+        isPastMember: item.left_at !== null,
       };
     })
   );
@@ -194,6 +202,7 @@ export async function getConversationMessages(conversationId: string) {
       created_at,
       edited_at,
       is_edited,
+      is_system,
       sender:members!sender_id(
         id,
         first_name,

@@ -167,10 +167,20 @@ export function useConversationMessagesRealtime(
             .single();
 
           if (!error && data) {
-            // Update TanStack Query cache with new message
+            // Update TanStack Query cache with new message — dedupe by id
+            // so a message can't land twice when both the mutation's
+            // invalidation refetch AND the realtime push deliver it
+            // (race between the two on the sender side; receiver only
+            // gets the realtime push and dedup is a safe no-op for them).
             queryClient.setQueryData(
               queryKeys.messages.byConversation(conversationId),
-              (old: any) => [...(old || []), data]
+              (old: any) => {
+                const existing = old || [];
+                if (existing.some((m: { id: string }) => m.id === data.id)) {
+                  return existing;
+                }
+                return [...existing, data];
+              }
             );
 
             // Update last read if we're viewing the conversation and have mutation hook

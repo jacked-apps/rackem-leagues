@@ -17,6 +17,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../queryKeys';
 import {
   updateProfanityFilter,
+  markProfanityOnboardingComplete,
   updateMemberNickname,
   updateMemberProfile,
   createMember,
@@ -118,6 +119,36 @@ export function useUpdateProfanityFilter() {
       // Invalidate profanity settings cache for this user
       queryClient.invalidateQueries({
         queryKey: [...queryKeys.members.byUser(variables.userId), 'profanitySettings'],
+      });
+    },
+  });
+}
+
+/**
+ * Hook for the Unit 9 profanity-onboarding modal.
+ *
+ * Writes both `profanity_filter_enabled` (the user's chosen preference)
+ * AND `profanity_onboarding_completed_at` (now, so the modal stops
+ * reappearing) in a single UPDATE. Invalidates both the profanity
+ * settings cache AND the current-member cache so the modal-mount
+ * gate (`profanity_onboarding_completed_at IS NULL`) flips to false
+ * immediately.
+ */
+export function useMarkProfanityOnboardingComplete() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: markProfanityOnboardingComplete,
+    onSuccess: (_, variables) => {
+      // Profanity settings (current-user filter pref) — gives the rest
+      // of the UI the new preference on the next render.
+      queryClient.invalidateQueries({
+        queryKey: [...queryKeys.members.byUser(variables.userId), 'profanitySettings'],
+      });
+      // Member row itself — `profanity_onboarding_completed_at` is part
+      // of the member record the modal-mount component reads.
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.members.byUser(variables.userId),
       });
     },
   });
