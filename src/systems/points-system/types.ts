@@ -537,23 +537,10 @@ export interface Trigger {
 // ============================================================================
 
 /**
- * Aggregate-input shape passed to an EndOfMatchAggregate's compute. Bundles
- * the per-side resolved variables the aggregate needs.
- */
-export interface AggregateInput {
-  homeWins: number;
-  awayWins: number;
-  homeWinTarget: number;
-  awayWinTarget: number;
-  homeTieTarget: number | null;
-  awayTieTarget: number | null;
-  homeLoseTarget: number;
-  awayLoseTarget: number;
-}
-
-/**
- * Result of an EndOfMatchAggregate evaluation. Per-side absolute per-match
- * points; the runtime assigns these to `home_points` and `away_points`.
+ * Result of an end-of-match aggregate evaluation. Per-side absolute per-match
+ * points; the runtime assigns these to `home_points` and `away_points`
+ * (overwriting any per-game accumulation — aggregate-mode is an ALTERNATIVE
+ * to per-game accumulation per the locked spec).
  */
 export interface AggregateResult {
   homePoints: number;
@@ -561,16 +548,34 @@ export interface AggregateResult {
 }
 
 /**
- * End-of-match aggregate. Reads variables (already populated by triggers
- * at match start + during play) and computes per-match points using its
- * formula. The locked 3v3 9-9 tie-band absorption invariant lives INSIDE
- * the formula for aggregates that have a tie threshold.
+ * Code-side registry entry for a named aggregate operation. Same data-driven
+ * pattern as ThresholdOperation / AllocatorFormulaOperation: the compute
+ * logic lives in code; the EndOfMatchAggregate row references it by name + args.
+ *
+ * The operation reads the match-state bag DIRECTLY (home_wins, away_wins, and
+ * the chart-target state vars receipt triggers populated — homeWinTarget,
+ * homeTieTarget, etc.). No fixed input shape; the operation reads what it
+ * needs by convention. Produces both sides' points in one call so coupled
+ * rules (like the 3v3 tie-band: 9-9 → both 0) are expressed naturally.
+ *
+ * @see ./aggregate-registry.ts — registry implementation
+ */
+export interface AggregateOperation {
+  readonly name: string;
+  readonly compute: (
+    args: Readonly<Record<string, unknown>>,
+    state: Readonly<MatchStateBag>,
+  ) => AggregateResult;
+}
+
+/**
+ * End-of-match aggregate — data-driven row. References a registered aggregate
+ * operation by name + args. The locked 3v3 9-9 tie-band absorption invariant
+ * lives inside the operation's compute (fixed in code, not in args).
  */
 export interface EndOfMatchAggregate {
-  readonly name: string;
-  /** Open-shape params the formula may consume (`multiplier` etc.). */
-  params: Record<string, unknown>;
-  compute: (input: AggregateInput, params: Record<string, unknown>) => AggregateResult;
+  readonly operationKind: string;
+  readonly operationArgs: Readonly<Record<string, unknown>>;
 }
 
 // ============================================================================

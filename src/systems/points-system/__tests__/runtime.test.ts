@@ -13,7 +13,8 @@
 
 import { describe, it, expect } from 'vitest';
 import { evaluatePointsSystem, type RuntimeGameRecord } from '../runtime';
-import { linearAboveThresholdAggregate } from '../aggregate';
+// Side-effect import: register the linear_above_threshold aggregate operation.
+import '../aggregate-operations/linear-above-threshold';
 import { buildThresholdRow } from '../threshold-resolver';
 // Side-effect imports: register the operations these tests reference.
 import '../operations/read-pref';
@@ -242,7 +243,10 @@ describe('evaluatePointsSystem — end-of-match aggregate (Points 3-Man pattern 
       ]),
     ),
     triggers: TARGET_NAMES.map(assignThresholdToSelf),
-    endOfMatchAggregate: linearAboveThresholdAggregate({ multiplier: 1 }),
+    endOfMatchAggregate: {
+      operationKind: 'linear_above_threshold',
+      operationArgs: { multiplier: 1 },
+    },
   };
 
   const aggregateInputs: ThresholdInputs = {

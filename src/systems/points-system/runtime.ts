@@ -41,6 +41,7 @@
 
 import { evaluateAction, type ActionContext } from './action-evaluator';
 import { evaluateAllocator } from './allocator-evaluator';
+import { getAggregateOperation } from './aggregate-registry';
 import { evaluateWhen, type WhenEvalContext } from './when-evaluator';
 import { resolveAllThresholds } from './threshold-helpers';
 import type {
@@ -220,47 +221,25 @@ export function evaluatePointsSystem(
   }
 
   if (composition.endOfMatchAggregate) {
-    const aggregateInput = {
-      homeWins: (state.home_wins as number) ?? 0,
-      awayWins: (state.away_wins as number) ?? 0,
-      homeWinTarget: requireNumber(state, 'homeWinTarget'),
-      awayWinTarget: requireNumber(state, 'awayWinTarget'),
-      homeTieTarget: nullableNumber(state, 'homeTieTarget'),
-      awayTieTarget: nullableNumber(state, 'awayTieTarget'),
-      homeLoseTarget: requireNumber(state, 'homeLoseTarget'),
-      awayLoseTarget: requireNumber(state, 'awayLoseTarget'),
-    };
-    const result = composition.endOfMatchAggregate.compute(
-      aggregateInput,
-      composition.endOfMatchAggregate.params,
+    // Aggregate operation reads the state bag directly (home_wins, away_wins,
+    // and the chart-target state vars receipt triggers populated). It
+    // OVERWRITES home_points/away_points — aggregate-mode is an alternative
+    // to per-game accumulation, not additive.
+    const operation = getAggregateOperation(
+      composition.endOfMatchAggregate.operationKind,
+    );
+    if (operation === undefined) {
+      throw new Error(
+        `evaluatePointsSystem: unknown aggregate operation "${composition.endOfMatchAggregate.operationKind}"`,
+      );
+    }
+    const result = operation.compute(
+      composition.endOfMatchAggregate.operationArgs,
+      state,
     );
     state.home_points = result.homePoints;
     state.away_points = result.awayPoints;
   }
 
   return state;
-}
-
-function requireNumber(state: MatchStateBag, key: string): number {
-  const v = state[key];
-  if (typeof v !== 'number' || !Number.isFinite(v)) {
-    throw new Error(
-      `evaluatePointsSystem: end-of-match aggregate requires numeric variable "${key}", got ${JSON.stringify(v)}`,
-    );
-  }
-  return v;
-}
-
-function nullableNumber(state: MatchStateBag, key: string): number | null {
-  const v = state[key];
-  if (v === undefined || v === null) return null;
-  if (typeof v !== 'number') {
-    throw new Error(
-      `evaluatePointsSystem: aggregate variable "${key}" must be a number or null, got ${JSON.stringify(v)}`,
-    );
-  }
-  if (!Number.isFinite(v)) {
-    return null;
-  }
-  return v;
 }

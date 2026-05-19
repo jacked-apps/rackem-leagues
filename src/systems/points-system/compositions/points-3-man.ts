@@ -4,26 +4,23 @@
  * Per the locked Points System README, Points 3-Man's composition is:
  *  - 6 thresholds (per-side win/tie/lose targets, derived from the 3v3 chart)
  *  - 6 receipt triggers (one per threshold → assigns to a same-named variable)
- *  - 1 end-of-match aggregate (linearAboveThresholdAggregate) with the
- *    locked 3v3 9-9 tie-band absorption rule baked into its formula
+ *  - 1 end-of-match aggregate (data-driven `linear_above_threshold` operation)
+ *    with the locked 3v3 9-9 tie-band absorption rule baked into the operation
  *
- * **Slice 2 of the Threshold refactor (2026-05-19):** migrated to the
- * data-driven `ThresholdRow` shape per the Ed-walked architecture. Each
- * threshold names an operation kind in the registry (`'chart_lookup_3v3'`)
- * and supplies args (which side's diff, which chart output field). No
- * inline `compute` functions — everything is data that could load from a
- * future DB row without code change.
+ * Thresholds + aggregate are both data-driven: each names a registered
+ * operation kind + args. No inline `compute` functions — everything is data
+ * that could load from a future DB row without code change.
  *
  * @see ../runtime.ts — the runtime that consumes this composition
- * @see ../aggregate.ts — the linearAboveThresholdAggregate primitive
+ * @see ../aggregate-operations/linear-above-threshold.ts — the aggregate operation
  * @see ../operations/chart-lookup-3v3.ts — the registered chart operation
  */
 
-import { linearAboveThresholdAggregate } from '../aggregate';
-import { validatePointsSystem } from '../composition-validator';
-// Importing this file auto-registers the chart_lookup_3v3 operation into
-// the threshold registry — see the module's bottom-of-file side effect.
+// Importing these auto-registers the operations into their registries.
 import '../operations/chart-lookup-3v3';
+import '../aggregate-operations/linear-above-threshold';
+
+import { validatePointsSystem } from '../composition-validator';
 import { buildThresholdRow } from '../threshold-resolver';
 import type { PointsSystem, Trigger } from '../types';
 
@@ -101,7 +98,10 @@ export function buildPoints3ManComposition(
       assignThresholdToSelf('homeLoseTarget', 'home'),
       assignThresholdToSelf('awayLoseTarget', 'away'),
     ],
-    endOfMatchAggregate: linearAboveThresholdAggregate(params),
+    endOfMatchAggregate: {
+      operationKind: 'linear_above_threshold',
+      operationArgs: { multiplier: params.multiplier ?? 1 },
+    },
   };
 
   validatePointsSystem(composition);
