@@ -981,7 +981,32 @@ if status is 'completed').
 
 ---
 
-## 16. Team-Builder UX — Lineup-Size Slots + "Add Player" for Substitutes
+## ~~16. Team-Builder UX — Lineup-Size Slots + "Add Player" for Substitutes~~ ✅ CLOSED 2026-05-17
+
+> **Closed 2026-05-17** — `TeamEditorModal` now renders exactly the
+> slots needed: the lineup baseline (`lineupSize - 1`, since captain
+> takes one of the active lineup spots), PLUS every already-filled
+> slot, PLUS one extra empty dropdown at the bottom. As the user
+> fills that trailing dropdown, a new empty one appears below it.
+> Once the roster reaches `rosterSize - 1` (the hard cap), the
+> trailing empty disappears too.
+>
+> No "+ Add Player" button — the empty dropdown itself is the
+> affordance, killing one click per substitute add. Pure derived
+> render from `playerIds.filter(Boolean).length` — no state, no
+> useEffect, no opportunity for stale visible-count drift.
+>
+> Wiring: new `lineupSize` prop on `TeamEditorModal`; `TeamManagement`
+> passes `leaguePrefs.lineup_size`; `MyTeams` (captain side) gets
+> `editData.lineupSize` (the `getCaptainTeamEditData` query was
+> extended to also fetch `lineup_size` from `resolved_league_preferences`).
+>
+> Files touched: `src/operator/TeamEditorModal.tsx`,
+> `src/operator/TeamManagement.tsx`, `src/player/MyTeams.tsx`,
+> `src/api/queries/teams.ts`.
+> Original entry preserved below for reference.
+
+### Original entry
 
 **Discovered:** 2026-05-03 during modular-league-system test pass
 **Severity:** Enhancement — current behavior renders all max_roster_size
@@ -1440,7 +1465,15 @@ dashboard. Match data is already correct on the server.
 
 ---
 
-## 20. Dark Mode Breaks Date Picker — For Jack
+## ~~20. Dark Mode Breaks Date Picker — For Jack~~ ↗ MOVED to LIST_FOR_JACK.md #18 (2026-05-17)
+
+> **Moved 2026-05-17** — owner was always Jack ("design / styling pass"),
+> so it belongs on his list rather than mine. Same entry copied to
+> LIST_FOR_JACK.md #18 with the adjacent dark-mode bullet (scoreboard
+> player-drawer names invisible) preserved. Original entry preserved
+> below for reference.
+
+### Original entry
 
 **Discovered:** 2026-05-04 during unified-scoreboard smoke-testing
 **Severity:** Medium (functionally usable but visually broken)
