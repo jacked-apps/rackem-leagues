@@ -108,8 +108,8 @@ export async function sendMessage(params: SendMessageParams) {
         },
       ])
       .select()
-      .single()
-      .abortSignal(controller.signal);
+      .abortSignal(controller.signal)
+      .single();
 
     if (error) {
       // If our timer aborted, the error here will be the abort error —
