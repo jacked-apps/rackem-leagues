@@ -1,27 +1,40 @@
 /**
  * @fileoverview Percentage 5-Man Scoring System — Points System composition.
  *
- * Per the locked Points System README + the Ed-walked decomposition:
- *   composition = (A) per-game allocator + (B) milestone trigger + (B) win-threshold trigger
+ * Per the locked Points System README + the Ed-walked decomposition + the
+ * locked Trigger Model:
  *
- * **Slice 3 of the Threshold refactor (2026-05-19):** migrated to data-driven
- * `ThresholdRow`s + FIXES the Finding 1 drift from the architectural audit:
+ *   composition = (A) per-game allocator
+ *               + (B) per-side milestone bonus triggers (jump to 1.5)
+ *               + (B) per-side win bonus triggers (jump to 3.0)
+ *               + (B) per-side win-edge triggers (record who clinched first)
  *
- * 1. Thresholds now reference registered operations (`read_pref`,
- *    `arithmetic_round_product`) instead of inlining compute functions.
+ * **Jump semantics — `op: 'assign'`, not `'add'`.** The legacy
+ * `accumulate_with_milestone_jumps` calculator replaces the running total
+ * with the band base (1.5 at milestone, 3.0 at win) plus linear progression
+ * ABOVE that base. The trigger action assigns the new band base; subsequent
+ * games' allocator contributions accumulate on top of it.
  *
- * 2. Jump values that were previously inlined as `{ kind: 'literal', value: 1.5 }`
- *    in trigger actions now flow through the named-threshold system via
- *    `threshold_ref`. The `milestoneJumpValue` and `winThresholdJumpValue`
- *    thresholds (which existed but were dead in earlier code) are now
- *    actually consumed by triggers. Per the single-mechanism principle —
- *    every value flows through one path, no shortcuts.
+ * **No endmatch terminal.** BCA 5v5 plays all 25 games regardless of clinch,
+ * so triggers fire on the clinching game but the match continues. Endmatch
+ * is reserved for race-to-X formats where game play stops on clinch.
  *
- * 3. Receipt triggers assign the jump-value thresholds to variables so
- *    they're consistently surfaced for future display, same way the chart
- *    targets are.
+ * **Trigger Model Lock-In (2026-05-19):** rebuilt around the locked trigger
+ * primitive (one input + one when + one action; constants live ON the trigger
+ * row, not in separate thresholds). The previous Slice 3 design that routed
+ * jump values through `milestoneJumpValue` / `winThresholdJumpValue` thresholds
+ * is replaced — those thresholds were over-architected. Per the locked model,
+ * the `1.5` and `3.0` jump values are constants stored on the trigger rows as
+ * `{ kind: 'literal' }` action values, LO-editable as properties of the
+ * trigger itself.
  *
- * Cross-audited against the legacy accumulate_with_milestone_jumps calculator.
+ * **Why one threshold per kind, not per side:** the milestone target and win
+ * target values in Percent 5-Man are league-wide (not handicap-derived per
+ * side), so a single `milestoneTarget` and `winTarget` threshold serve both
+ * sides. Each per-side trigger reads the relevant shared threshold and
+ * filters on its own `side` field. When a Scoring System uses per-side
+ * handicap-derived thresholds (e.g., Points 3-Man), it declares them
+ * separately as `home<Kind>Target` / `away<Kind>Target`.
  *
  * @see ../runtime.ts — runtime that consumes this composition
  * @see ../operations/read-pref.ts — registered read_pref operation
@@ -32,6 +45,7 @@
 import '../operations/read-pref';
 import '../operations/arithmetic-round-product';
 
+import { validatePointsSystem } from '../composition-validator';
 import { buildThresholdRow } from '../threshold-resolver';
 import type { PointsSystem, Trigger } from '../types';
 
@@ -50,43 +64,47 @@ const DEFAULT_PARAMS: Percent5ManParams = {
 };
 
 /**
- * Receipt trigger that assigns the named threshold's value to a variable of
- * the same name. Common pattern for surfacing chart/pref values into the
- * variable namespace so LO can display them and other primitives can read them.
+ * Build a "side reaches threshold, jump side_points to constant" trigger.
+ * The band base value (1.5 for milestone, 3.0 for win) replaces the running
+ * total; subsequent games' allocator contributions accumulate on top.
+ * The constant is baked into the trigger's action as a literal — it's a
+ * stated property of THIS trigger row, LO-editable as a trigger field.
  */
-function assignThresholdToSelf(name: string): Trigger {
+function sideReachesJumpTrigger(
+  triggerName: string,
+  side: 'home' | 'away',
+  thresholdRef: string,
+  jumpValue: number,
+): Trigger {
   return {
-    name: `assign_${name}`,
-    when: { kind: 'receipt', thresholdRef: name },
+    name: triggerName,
+    input: { thresholdRef },
+    when: { kind: 'side_reaches', side, sideVar: `${side}_wins` },
     action: {
-      target: { kind: 'concrete', variableName: name },
+      target: { kind: 'concrete', variableName: `${side}_points` },
       op: 'assign',
-      value: { kind: 'threshold_ref', thresholdRef: name },
+      value: { kind: 'literal', value: jumpValue },
     },
   };
 }
 
 /**
- * Build a "jump points to threshold value when side reaches another threshold" trigger.
- * Both halves reference thresholds by name — no inline literals.
+ * Build an edge-marker trigger that records which side clinched first when
+ * `winTarget` is reached.
  */
-function jumpToThresholdOnReach(
+function sideReachesEdgeTrigger(
   triggerName: string,
-  firingThresholdRef: string,
-  valueThresholdRef: string,
+  side: 'home' | 'away',
+  thresholdRef: string,
 ): Trigger {
   return {
     name: triggerName,
-    when: {
-      kind: 'side_reaches',
-      thresholdRef: firingThresholdRef,
-      side: 'any',
-      sideVarTemplate: '<side>_wins',
-    },
+    input: { thresholdRef },
+    when: { kind: 'side_reaches', side, sideVar: `${side}_wins` },
     action: {
-      target: { kind: 'side_scoped', variableNameTemplate: '<side>_points' },
+      target: { kind: 'concrete', variableName: 'edge' },
       op: 'assign',
-      value: { kind: 'threshold_ref', thresholdRef: valueThresholdRef },
+      value: { kind: 'literal', value: side },
     },
   };
 }
@@ -102,12 +120,11 @@ export function buildPercent5ManComposition(
   params: Partial<Percent5ManParams> = {},
 ): PointsSystem {
   const p: Percent5ManParams = { ...DEFAULT_PARAMS, ...params };
-  void p; // params shape preserved for back-compat; actual values come from prefs
 
-  return {
+  const composition: PointsSystem = {
     name: 'percent_5man',
     thresholds: {
-      // The firing-condition thresholds — when a side reaches these values, triggers fire.
+      // League-wide comparison values; both sides read the same threshold.
       winTarget: buildThresholdRow({
         name: 'winTarget',
         operationKind: 'read_pref',
@@ -120,18 +137,6 @@ export function buildPercent5ManComposition(
           factor_pref_keys: ['games_to_win', 'milestone_percent'],
         },
       }),
-      // The jump-value thresholds — actually consumed by triggers' actions
-      // (Finding 1 fix: previously these existed but were dead code).
-      milestoneJumpValue: buildThresholdRow({
-        name: 'milestoneJumpValue',
-        operationKind: 'read_pref',
-        operationArgs: { pref_key: 'milestone_jump_value' },
-      }),
-      winThresholdJumpValue: buildThresholdRow({
-        name: 'winThresholdJumpValue',
-        operationKind: 'read_pref',
-        operationArgs: { pref_key: 'win_threshold_jump_value' },
-      }),
     },
     perGameAllocator: {
       name: 'percent_per_game',
@@ -141,16 +146,40 @@ export function buildPercent5ManComposition(
       loser: { kind: 'fixed', points: 0 },
     },
     triggers: [
-      // Receipt triggers — surface the threshold values into the variable
-      // namespace so they're displayable + readable by downstream code via
-      // the same mechanism as chart targets.
-      assignThresholdToSelf('winTarget'),
-      assignThresholdToSelf('milestoneTarget'),
-      assignThresholdToSelf('milestoneJumpValue'),
-      assignThresholdToSelf('winThresholdJumpValue'),
-      // Play-time jump triggers — both halves reference thresholds by name.
-      jumpToThresholdOnReach('milestone_jump', 'milestoneTarget', 'milestoneJumpValue'),
-      jumpToThresholdOnReach('win_jump', 'winTarget', 'winThresholdJumpValue'),
+      // Milestone band — fires when a side reaches the milestone target;
+      // assigns side_points to the milestone jump value (replaces running total).
+      sideReachesJumpTrigger(
+        'homeMilestoneJump',
+        'home',
+        'milestoneTarget',
+        p.milestone_jump_value,
+      ),
+      sideReachesJumpTrigger(
+        'awayMilestoneJump',
+        'away',
+        'milestoneTarget',
+        p.milestone_jump_value,
+      ),
+      // Win band — fires when a side reaches the win target; assigns
+      // side_points to the win jump value (replaces running total) and
+      // records which side clinched first via `edge`.
+      sideReachesJumpTrigger(
+        'homeWinJump',
+        'home',
+        'winTarget',
+        p.win_threshold_jump_value,
+      ),
+      sideReachesJumpTrigger(
+        'awayWinJump',
+        'away',
+        'winTarget',
+        p.win_threshold_jump_value,
+      ),
+      sideReachesEdgeTrigger('homeWinEdge', 'home', 'winTarget'),
+      sideReachesEdgeTrigger('awayWinEdge', 'away', 'winTarget'),
     ],
   };
+
+  validatePointsSystem(composition);
+  return composition;
 }

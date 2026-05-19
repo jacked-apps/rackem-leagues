@@ -9,26 +9,21 @@ import { evaluateWhen, type WhenEvalContext } from '../when-evaluator';
 import type { MatchStateBag, WhenCondition } from '../types';
 
 const emptyState: MatchStateBag = {};
-const emptyThresholds = {};
 
 describe('evaluateWhen — receipt kind', () => {
   it('fires during receipt phase', () => {
-    const cond: WhenCondition = { kind: 'receipt', thresholdRef: 'anyRef' };
-    const ctx: WhenEvalContext = { thresholdValues: emptyThresholds, phase: 'receipt' };
-    expect(evaluateWhen(cond, emptyState, ctx)).toEqual({
-      fires: true,
-      triggeringSide: null,
-    });
+    const cond: WhenCondition = { kind: 'receipt' };
+    const ctx: WhenEvalContext = { inputValue: 5, phase: 'receipt' };
+    expect(evaluateWhen(cond, emptyState, ctx)).toBe(true);
   });
 
   it('does not fire during per_game or match_end phases', () => {
-    const cond: WhenCondition = { kind: 'receipt', thresholdRef: 'anyRef' };
+    const cond: WhenCondition = { kind: 'receipt' };
     expect(
-      evaluateWhen(cond, emptyState, { thresholdValues: emptyThresholds, phase: 'per_game' }).fires,
+      evaluateWhen(cond, emptyState, { inputValue: 5, phase: 'per_game' }),
     ).toBe(false);
     expect(
-      evaluateWhen(cond, emptyState, { thresholdValues: emptyThresholds, phase: 'match_end' })
-        .fires,
+      evaluateWhen(cond, emptyState, { inputValue: 5, phase: 'match_end' }),
     ).toBe(false);
   });
 });
@@ -37,166 +32,144 @@ describe('evaluateWhen — match_end kind', () => {
   it('fires only during match_end phase', () => {
     const cond: WhenCondition = { kind: 'match_end' };
     expect(
-      evaluateWhen(cond, emptyState, { thresholdValues: emptyThresholds, phase: 'match_end' })
-        .fires,
+      evaluateWhen(cond, emptyState, { inputValue: undefined, phase: 'match_end' }),
     ).toBe(true);
     expect(
-      evaluateWhen(cond, emptyState, { thresholdValues: emptyThresholds, phase: 'receipt' }).fires,
+      evaluateWhen(cond, emptyState, { inputValue: undefined, phase: 'receipt' }),
     ).toBe(false);
     expect(
-      evaluateWhen(cond, emptyState, { thresholdValues: emptyThresholds, phase: 'per_game' }).fires,
+      evaluateWhen(cond, emptyState, { inputValue: undefined, phase: 'per_game' }),
     ).toBe(false);
   });
 });
 
 describe('evaluateWhen — total_games_played kind', () => {
-  it('fires when gamesPlayed equals the threshold value', () => {
-    const cond: WhenCondition = { kind: 'total_games_played', thresholdRef: 'target' };
-    const ctx: WhenEvalContext = {
-      thresholdValues: { target: 6 },
-      phase: 'per_game',
-      gamesPlayed: 6,
-    };
-    expect(evaluateWhen(cond, emptyState, ctx).fires).toBe(true);
+  it('fires when gamesPlayed equals the input value', () => {
+    const cond: WhenCondition = { kind: 'total_games_played' };
+    const ctx: WhenEvalContext = { inputValue: 6, phase: 'per_game', gamesPlayed: 6 };
+    expect(evaluateWhen(cond, emptyState, ctx)).toBe(true);
   });
 
   it('does not fire on the wrong game count', () => {
-    const cond: WhenCondition = { kind: 'total_games_played', thresholdRef: 'target' };
+    const cond: WhenCondition = { kind: 'total_games_played' };
     expect(
-      evaluateWhen(cond, emptyState, {
-        thresholdValues: { target: 6 },
-        phase: 'per_game',
-        gamesPlayed: 5,
-      }).fires,
+      evaluateWhen(cond, emptyState, { inputValue: 6, phase: 'per_game', gamesPlayed: 5 }),
     ).toBe(false);
     expect(
-      evaluateWhen(cond, emptyState, {
-        thresholdValues: { target: 6 },
-        phase: 'per_game',
-        gamesPlayed: 7,
-      }).fires,
+      evaluateWhen(cond, emptyState, { inputValue: 6, phase: 'per_game', gamesPlayed: 7 }),
     ).toBe(false);
   });
 
   it('does not fire outside per_game phase', () => {
-    const cond: WhenCondition = { kind: 'total_games_played', thresholdRef: 'target' };
+    const cond: WhenCondition = { kind: 'total_games_played' };
     expect(
-      evaluateWhen(cond, emptyState, {
-        thresholdValues: { target: 6 },
-        phase: 'receipt',
-      }).fires,
+      evaluateWhen(cond, emptyState, { inputValue: 6, phase: 'receipt' }),
     ).toBe(false);
   });
 });
 
 describe('evaluateWhen — side_reaches kind', () => {
-  const milestoneCondition: WhenCondition = {
+  const homeMilestone: WhenCondition = {
     kind: 'side_reaches',
-    thresholdRef: 'milestoneTarget',
-    side: 'any',
-    sideVarTemplate: '<side>_wins',
+    side: 'home',
+    sideVar: 'home_wins',
   };
 
-  it('fires for the side that just won, when their wins equal the threshold', () => {
+  it('fires when home just won and home_wins equals input', () => {
     const result = evaluateWhen(
-      milestoneCondition,
+      homeMilestone,
       { home_wins: 9, away_wins: 5 },
-      {
-        thresholdValues: { milestoneTarget: 9 },
-        phase: 'per_game',
-        gameWinnerSide: 'home',
-      },
+      { inputValue: 9, phase: 'per_game', gameWinnerSide: 'home' },
     );
-    expect(result).toEqual({ fires: true, triggeringSide: 'home' });
+    expect(result).toBe(true);
   });
 
-  it('does not fire when the winning side has not reached the threshold', () => {
+  it('does not fire when the winning side has not reached the input', () => {
     const result = evaluateWhen(
-      milestoneCondition,
+      homeMilestone,
       { home_wins: 5, away_wins: 3 },
-      {
-        thresholdValues: { milestoneTarget: 9 },
-        phase: 'per_game',
-        gameWinnerSide: 'home',
-      },
+      { inputValue: 9, phase: 'per_game', gameWinnerSide: 'home' },
     );
-    expect(result.fires).toBe(false);
+    expect(result).toBe(false);
   });
 
-  it('does not fire for the side that did NOT win this game (avoids stale re-fires)', () => {
-    // away has 9 wins already (from past) but home won THIS game — milestone
-    // shouldn't fire because away's state didn't change.
+  it('does not fire when away just won (the trigger watches home)', () => {
+    // home_wins is at 9 from a prior game but home didn't win THIS game.
+    // The trigger must NOT refire — only fires when home just incremented.
     const result = evaluateWhen(
-      milestoneCondition,
-      { home_wins: 5, away_wins: 9 },
-      {
-        thresholdValues: { milestoneTarget: 9 },
-        phase: 'per_game',
-        gameWinnerSide: 'home',
-      },
+      homeMilestone,
+      { home_wins: 9, away_wins: 5 },
+      { inputValue: 9, phase: 'per_game', gameWinnerSide: 'away' },
     );
-    expect(result.fires).toBe(false);
+    expect(result).toBe(false);
   });
 
-  it('fires with side: home when restricted to that side specifically', () => {
-    const cond: WhenCondition = {
+  it('per-side: away-watching trigger fires when away just won and away_wins equals input', () => {
+    const awayMilestone: WhenCondition = {
       kind: 'side_reaches',
-      thresholdRef: 'target',
-      side: 'home',
-      sideVarTemplate: '<side>_wins',
+      side: 'away',
+      sideVar: 'away_wins',
     };
     const result = evaluateWhen(
-      cond,
-      { home_wins: 10, away_wins: 5 },
-      {
-        thresholdValues: { target: 10 },
-        phase: 'per_game',
-        gameWinnerSide: 'home',
-      },
+      awayMilestone,
+      { home_wins: 5, away_wins: 10 },
+      { inputValue: 10, phase: 'per_game', gameWinnerSide: 'away' },
     );
-    expect(result).toEqual({ fires: true, triggeringSide: 'home' });
+    expect(result).toBe(true);
   });
 });
 
 describe('evaluateWhen — all_sides_reach kind', () => {
-  const tieBandCondition: WhenCondition = {
+  const tieBand: WhenCondition = {
     kind: 'all_sides_reach',
-    thresholdRef: 'tieGames',
-    sideVarTemplate: '<side>_wins',
+    homeVar: 'home_wins',
+    awayVar: 'away_wins',
   };
 
-  it('fires when both sides simultaneously hit the threshold', () => {
+  it('fires when both sides simultaneously hit the input value', () => {
     const result = evaluateWhen(
-      tieBandCondition,
+      tieBand,
       { home_wins: 9, away_wins: 9 },
-      {
-        thresholdValues: { tieGames: 9 },
-        phase: 'per_game',
-      },
+      { inputValue: 9, phase: 'per_game' },
     );
-    expect(result).toEqual({ fires: true, triggeringSide: null });
+    expect(result).toBe(true);
   });
 
   it('does not fire when only one side has reached', () => {
     expect(
       evaluateWhen(
-        tieBandCondition,
+        tieBand,
         { home_wins: 9, away_wins: 8 },
-        { thresholdValues: { tieGames: 9 }, phase: 'per_game' },
-      ).fires,
+        { inputValue: 9, phase: 'per_game' },
+      ),
     ).toBe(false);
   });
 });
 
 describe('evaluateWhen — error cases', () => {
-  it('throws on undefined threshold reference', () => {
-    const cond: WhenCondition = { kind: 'total_games_played', thresholdRef: 'missing' };
+  it('throws when total_games_played has no input', () => {
+    const cond: WhenCondition = { kind: 'total_games_played' };
     expect(() =>
       evaluateWhen(cond, emptyState, {
-        thresholdValues: {},
+        inputValue: undefined,
         phase: 'per_game',
         gamesPlayed: 6,
       }),
-    ).toThrow(/undefined threshold/);
+    ).toThrow(/none was declared/);
+  });
+
+  it('throws when side_reaches has a null input value', () => {
+    const cond: WhenCondition = {
+      kind: 'side_reaches',
+      side: 'home',
+      sideVar: 'home_wins',
+    };
+    expect(() =>
+      evaluateWhen(cond, { home_wins: 9 }, {
+        inputValue: null,
+        phase: 'per_game',
+        gameWinnerSide: 'home',
+      }),
+    ).toThrow(/null input/);
   });
 });

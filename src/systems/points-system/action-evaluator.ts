@@ -3,13 +3,13 @@
  * runtime state and mutates the match-state bag.
  *
  * Every Action has the same uniform shape `{ target, op, value }`:
- *  - `target` resolves to a concrete variable name (concrete or side-scoped)
- *  - `value` resolves to a concrete MatchStateValue (literal / threshold-ref /
- *    variable-ref / triggering-side)
+ *  - `target` is a concrete variable name in the match-state bag
+ *  - `value` resolves to a concrete MatchStateValue (literal / input-ref /
+ *    variable-ref)
  *  - `op` combines value with target's current value (`assign | add | multiply`)
  *
  * The runtime calls this on each trigger fire. No action categories; same
- * code path for "give 10 points to home" and "set endgame_chip to true."
+ * code path for "give 1.5 to home_points" and "set endmatch to true."
  *
  * @see ./types.ts — the Action / ActionValue / ActionTarget types
  */
@@ -19,23 +19,22 @@ import type { Action, ActionValue, MatchStateBag, MatchStateValue } from './type
 /**
  * Runtime context the action evaluator needs alongside the match-state bag.
  *
- * - `thresholdValues` — resolved threshold values keyed by threshold name
- *   (populated at match start when receipt triggers fire)
- * - `triggeringSide` — for triggers that fire because a specific side
- *   crossed a value (e.g., milestone reached), this identifies which side
- *   so side-scoped targets and the `triggering_side` ActionValue can resolve
+ * - `inputValue` — the trigger's bound input value (`n`), resolved from
+ *   `Trigger.input.thresholdRef` once per firing. Undefined if the trigger
+ *   declared no input (rare; only receipt/match_end with no threshold read).
+ *   Null if the bound threshold's operation returned null at this match's
+ *   inputs (only legal for actions that don't reference input_ref).
  */
 export interface ActionContext {
-  thresholdValues: Readonly<Record<string, number | null>>;
-  triggeringSide: 'home' | 'away' | null;
+  inputValue: number | null | undefined;
 }
 
 /**
  * Resolve an ActionValue to a concrete MatchStateValue.
  *
- * Throws on unresolvable references — a reference to a threshold or variable
- * that doesn't exist is a composition error that should fail loudly at
- * evaluation time, not silently produce wrong values.
+ * Throws on unresolvable references — a reference to input on a trigger with
+ * no input, or a variable that doesn't exist, is a composition error that
+ * should fail loudly at evaluation time, not silently produce wrong values.
  */
 export function resolveValue(
   value: ActionValue,
@@ -45,14 +44,13 @@ export function resolveValue(
   switch (value.kind) {
     case 'literal':
       return value.value;
-    case 'threshold_ref': {
-      const v = ctx.thresholdValues[value.thresholdRef];
-      if (v === undefined) {
+    case 'input_ref': {
+      if (ctx.inputValue === undefined) {
         throw new Error(
-          `Action references undefined threshold "${value.thresholdRef}"`,
+          'Action uses input_ref but the trigger declared no input',
         );
       }
-      return v;
+      return ctx.inputValue;
     }
     case 'variable_ref': {
       const v = state[value.variableName];
@@ -63,36 +61,7 @@ export function resolveValue(
       }
       return v;
     }
-    case 'triggering_side':
-      if (ctx.triggeringSide === null) {
-        throw new Error(
-          'Action uses triggering_side but the trigger has no associated side',
-        );
-      }
-      return ctx.triggeringSide;
   }
-}
-
-/**
- * Resolve an ActionTarget to a concrete variable name.
- *
- * For `side_scoped` targets, the template `<side>` is substituted with the
- * triggering side. Throws if there's no triggering side context but the
- * target is side-scoped (composition error).
- */
-export function resolveTarget(
-  target: Action['target'],
-  ctx: ActionContext,
-): string {
-  if (target.kind === 'concrete') {
-    return target.variableName;
-  }
-  if (ctx.triggeringSide === null) {
-    throw new Error(
-      `Action uses side-scoped target template "${target.variableNameTemplate}" but the trigger has no associated side`,
-    );
-  }
-  return target.variableNameTemplate.replace('<side>', ctx.triggeringSide);
 }
 
 /**
@@ -132,7 +101,7 @@ export function evaluateAction(
   state: MatchStateBag,
   ctx: ActionContext,
 ): MatchStateBag {
-  const targetName = resolveTarget(action.target, ctx);
+  const targetName = action.target.variableName;
   const resolvedValue = resolveValue(action.value, state, ctx);
   const current = state[targetName];
   const next = applyOp(action.op, current, resolvedValue);

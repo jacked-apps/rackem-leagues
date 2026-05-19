@@ -102,8 +102,15 @@ describe('Cross-audit: Percentage 5-Man composed vs. accumulate_with_milestone_j
         it.each(outcomes)(
           'home=%i, away=%i: composed matches legacy for both sides',
           (homeWins, awayWins) => {
+            // Trigger Model Lock-In (2026-05-19): jump values (`1.5` and
+            // `3.0`) are constants on the trigger rows, baked in at
+            // composition-build time from factory params. Threshold inputs
+            // (`games_to_win`, `milestone_percent`) still flow through prefs
+            // via their `read_pref` / `arithmetic_round_product` operations.
             const composition = buildPercent5ManComposition({
               per_game_increment: params.per_game_increment,
+              milestone_jump_value: params.milestone_jump_value,
+              win_threshold_jump_value: params.win_threshold_jump_value,
             });
             const inputs: ThresholdInputs = {
               homeRatings: [],
@@ -112,14 +119,8 @@ describe('Cross-audit: Percentage 5-Man composed vs. accumulate_with_milestone_j
               awayHandicapDiff: 0,
               gameCount: 25,
               prefs: {
-                // Slice 3 of the Threshold refactor: tunable values flow
-                // through prefs at runtime via `read_pref` operations, not
-                // via factory params. Pass all 4 values here so the
-                // composition resolves correctly.
                 games_to_win: GAMES_TO_WIN,
                 milestone_percent: params.milestone_percent,
-                milestone_jump_value: params.milestone_jump_value,
-                win_threshold_jump_value: params.win_threshold_jump_value,
               },
             };
             const state = evaluatePointsSystem(

@@ -32,6 +32,7 @@
 // Importing these auto-registers the operations into the threshold registry.
 import '../operations/fargo-start-points-for-side';
 
+import { validatePointsSystem } from '../composition-validator';
 import { buildThresholdRow } from '../threshold-resolver';
 import type { PointsSystem, Trigger } from '../types';
 
@@ -52,9 +53,9 @@ const DEFAULT_PARAMS: Fargo10pt5ManParams = {
 };
 
 /**
- * Build a receipt trigger that adds the named threshold's value to a
- * concrete points variable. Used for awarding the start-points head-start
- * at match start.
+ * Build a receipt trigger that adds the trigger's bound input value (the
+ * named threshold's resolved value, `n`) to a concrete points variable.
+ * Used for awarding the start-points head-start at match start.
  */
 function awardInitialPoints(
   triggerName: string,
@@ -63,11 +64,12 @@ function awardInitialPoints(
 ): Trigger {
   return {
     name: triggerName,
-    when: { kind: 'receipt', thresholdRef },
+    input: { thresholdRef },
+    when: { kind: 'receipt' },
     action: {
       target: { kind: 'concrete', variableName: targetVariable },
       op: 'add',
-      value: { kind: 'threshold_ref', thresholdRef },
+      value: { kind: 'input_ref' },
     },
   };
 }
@@ -83,7 +85,7 @@ export function buildFargo10pt5ManComposition(
 ): PointsSystem {
   const p: Fargo10pt5ManParams = { ...DEFAULT_PARAMS, ...params };
 
-  return {
+  const composition: PointsSystem = {
     name: 'fargo_10pt_5man',
     thresholds: {
       // Start-points per side. Operation runs the FargoRate formula and returns
@@ -115,4 +117,7 @@ export function buildFargo10pt5ManComposition(
       awardInitialPoints('award_initial_away', 'initialAway', 'away_points'),
     ],
   };
+
+  validatePointsSystem(composition);
+  return composition;
 }

@@ -18,7 +18,7 @@ import { buildThresholdRow } from '../threshold-resolver';
 // Side-effect imports: register the operations these tests reference.
 import '../operations/read-pref';
 import '../operations/arithmetic-round-product';
-import type { PointsSystem, ThresholdInputs } from '../types';
+import type { PointsSystem, ThresholdInputs, Trigger } from '../types';
 
 const emptyInputs: ThresholdInputs = {
   homeRatings: [],
@@ -61,10 +61,11 @@ describe('evaluatePointsSystem — wins counting (no allocator, no triggers)', (
 
 describe('evaluatePointsSystem — Percentage 5-Man-style accumulation (allocator + milestone triggers)', () => {
   // Per-game allocator: winner=0.1 fixed, loser=0 fixed
-  // Threshold: milestoneTarget = round(games_to_win × 0.7), milestoneValue = 1.5
-  // Trigger: when home_wins reaches milestoneTarget → jump home_points to 1.5
-  // Trigger: when away_wins reaches milestoneTarget → jump away_points to 1.5
-  // (No second milestone for simplicity; one milestone is enough to verify the mechanism)
+  // Threshold: milestoneTarget = round(games_to_win × 0.7) = 9
+  // Triggers (locked model — per-side, concrete, no shortcuts):
+  //   - homeMilestone: when home_wins === milestoneTarget AND home won this game,
+  //                    assign home_points = 1.5 (jump replaces running total)
+  //   - awayMilestone: same shape for away
   const composition: PointsSystem = {
     name: 'percent_milestone_test',
     thresholds: {
@@ -83,15 +84,21 @@ describe('evaluatePointsSystem — Percentage 5-Man-style accumulation (allocato
     },
     triggers: [
       {
-        name: 'home_milestone',
-        when: {
-          kind: 'side_reaches',
-          thresholdRef: 'milestoneTarget',
-          side: 'any',
-          sideVarTemplate: '<side>_wins',
-        },
+        name: 'homeMilestone',
+        input: { thresholdRef: 'milestoneTarget' },
+        when: { kind: 'side_reaches', side: 'home', sideVar: 'home_wins' },
         action: {
-          target: { kind: 'side_scoped', variableNameTemplate: '<side>_points' },
+          target: { kind: 'concrete', variableName: 'home_points' },
+          op: 'assign',
+          value: { kind: 'literal', value: 1.5 },
+        },
+      },
+      {
+        name: 'awayMilestone',
+        input: { thresholdRef: 'milestoneTarget' },
+        when: { kind: 'side_reaches', side: 'away', sideVar: 'away_wins' },
+        action: {
+          target: { kind: 'concrete', variableName: 'away_points' },
           op: 'assign',
           value: { kind: 'literal', value: 1.5 },
         },
@@ -105,7 +112,6 @@ describe('evaluatePointsSystem — Percentage 5-Man-style accumulation (allocato
   };
 
   it('linear accumulation below milestone', () => {
-    // 8 home wins, 0 away
     const games = Array.from({ length: 8 }, homeWins);
     const state = evaluatePointsSystem(composition, inputs, games);
     expect(state.home_wins).toBe(8);
@@ -128,7 +134,6 @@ describe('evaluatePointsSystem — Percentage 5-Man-style accumulation (allocato
   });
 
   it('milestone fires independently for each side', () => {
-    // 9 wins each
     const games = [
       ...Array.from({ length: 9 }, homeWins),
       ...Array.from({ length: 9 }, awayWins),
@@ -140,11 +145,9 @@ describe('evaluatePointsSystem — Percentage 5-Man-style accumulation (allocato
 });
 
 describe('evaluatePointsSystem — receipt-trigger initial points (FargoRate start_points pattern)', () => {
-  // Threshold computes "initial points to award to home" (fixed at 56 for this test)
-  // Trigger: when receipt, add the threshold value to home_points
-  // Slice 5: thresholds use the `read_pref` operation; the test supplies
-  // values via inputs.prefs to control the test scenario without needing
-  // a chart or formula.
+  // Receipt triggers add the trigger's bound input value (n) to the per-side
+  // points variables at match start. Threshold values come from prefs to keep
+  // the test self-contained.
   const composition: PointsSystem = {
     name: 'fargo_initial',
     thresholds: {
@@ -162,20 +165,22 @@ describe('evaluatePointsSystem — receipt-trigger initial points (FargoRate sta
     triggers: [
       {
         name: 'award_initial_home',
-        when: { kind: 'receipt', thresholdRef: 'initialHome' },
+        input: { thresholdRef: 'initialHome' },
+        when: { kind: 'receipt' },
         action: {
           target: { kind: 'concrete', variableName: 'home_points' },
           op: 'add',
-          value: { kind: 'threshold_ref', thresholdRef: 'initialHome' },
+          value: { kind: 'input_ref' },
         },
       },
       {
         name: 'award_initial_away',
-        when: { kind: 'receipt', thresholdRef: 'initialAway' },
+        input: { thresholdRef: 'initialAway' },
+        when: { kind: 'receipt' },
         action: {
           target: { kind: 'concrete', variableName: 'away_points' },
           op: 'add',
-          value: { kind: 'threshold_ref', thresholdRef: 'initialAway' },
+          value: { kind: 'input_ref' },
         },
       },
     ],
@@ -201,65 +206,42 @@ describe('evaluatePointsSystem — receipt-trigger initial points (FargoRate sta
 });
 
 describe('evaluatePointsSystem — end-of-match aggregate (Points 3-Man pattern with tie-band)', () => {
-  // Receipt triggers assign chart values (homeWinTarget, homeTieTarget, etc.) to variables
-  // End-of-match aggregate reads those variables and applies linear_above_threshold formula
-  // Slice 5: thresholds use `read_pref` to pull test values from prefs.
-  // Same shape the real Points 3-Man composition uses for chart values;
-  // the test just supplies values directly rather than going through a chart.
+  // Receipt triggers surface chart-target values into the state bag for the
+  // aggregate to read. End-of-match aggregate applies the linear_above_threshold
+  // formula with the locked tie-band absorption rule.
+  const TARGET_NAMES = [
+    'homeWinTarget',
+    'awayWinTarget',
+    'homeTieTarget',
+    'awayTieTarget',
+    'homeLoseTarget',
+    'awayLoseTarget',
+  ] as const;
+
+  const assignThresholdToSelf = (name: string): Trigger => ({
+    name: `assign_${name}`,
+    input: { thresholdRef: name },
+    when: { kind: 'receipt' },
+    action: {
+      target: { kind: 'concrete', variableName: name },
+      op: 'assign',
+      value: { kind: 'input_ref' },
+    },
+  });
+
   const composition: PointsSystem = {
     name: 'points_3man_test',
-    thresholds: {
-      homeWinTarget: buildThresholdRow({
-        name: 'homeWinTarget',
-        operationKind: 'read_pref',
-        operationArgs: { pref_key: 'test_homeWinTarget' },
-      }),
-      awayWinTarget: buildThresholdRow({
-        name: 'awayWinTarget',
-        operationKind: 'read_pref',
-        operationArgs: { pref_key: 'test_awayWinTarget' },
-      }),
-      homeTieTarget: buildThresholdRow({
-        name: 'homeTieTarget',
-        operationKind: 'read_pref',
-        operationArgs: { pref_key: 'test_homeTieTarget' },
-      }),
-      awayTieTarget: buildThresholdRow({
-        name: 'awayTieTarget',
-        operationKind: 'read_pref',
-        operationArgs: { pref_key: 'test_awayTieTarget' },
-      }),
-      homeLoseTarget: buildThresholdRow({
-        name: 'homeLoseTarget',
-        operationKind: 'read_pref',
-        operationArgs: { pref_key: 'test_homeLoseTarget' },
-      }),
-      awayLoseTarget: buildThresholdRow({
-        name: 'awayLoseTarget',
-        operationKind: 'read_pref',
-        operationArgs: { pref_key: 'test_awayLoseTarget' },
-      }),
-    },
-    triggers: [
-      ...(
-        [
-          'homeWinTarget',
-          'awayWinTarget',
-          'homeTieTarget',
-          'awayTieTarget',
-          'homeLoseTarget',
-          'awayLoseTarget',
-        ] as const
-      ).map((name) => ({
-        name: `assign_${name}`,
-        when: { kind: 'receipt' as const, thresholdRef: name },
-        action: {
-          target: { kind: 'concrete' as const, variableName: name },
-          op: 'assign' as const,
-          value: { kind: 'threshold_ref' as const, thresholdRef: name },
-        },
-      })),
-    ],
+    thresholds: Object.fromEntries(
+      TARGET_NAMES.map((name) => [
+        name,
+        buildThresholdRow({
+          name,
+          operationKind: 'read_pref',
+          operationArgs: { pref_key: `test_${name}` },
+        }),
+      ]),
+    ),
+    triggers: TARGET_NAMES.map(assignThresholdToSelf),
     endOfMatchAggregate: linearAboveThresholdAggregate({ multiplier: 1 }),
   };
 
@@ -306,9 +288,12 @@ describe('evaluatePointsSystem — end-of-match aggregate (Points 3-Man pattern 
   });
 });
 
-describe('evaluatePointsSystem — win-chip signal pattern', () => {
+describe('evaluatePointsSystem — win-edge signal pattern (per-side triggers)', () => {
+  // Locked model: per-side triggers, each writing a side-specific literal to
+  // a shared variable. Whichever side wins first sets `edge` to their name;
+  // the other side's trigger never gets to fire if endmatch is terminal.
   const composition: PointsSystem = {
-    name: 'win_chip_test',
+    name: 'win_edge_test',
     thresholds: {
       winTarget: buildThresholdRow({
         name: 'winTarget',
@@ -318,17 +303,23 @@ describe('evaluatePointsSystem — win-chip signal pattern', () => {
     },
     triggers: [
       {
-        name: 'set_win_chip',
-        when: {
-          kind: 'side_reaches',
-          thresholdRef: 'winTarget',
-          side: 'any',
-          sideVarTemplate: '<side>_wins',
-        },
+        name: 'homeWinEdge',
+        input: { thresholdRef: 'winTarget' },
+        when: { kind: 'side_reaches', side: 'home', sideVar: 'home_wins' },
         action: {
-          target: { kind: 'concrete', variableName: 'win_chip' },
+          target: { kind: 'concrete', variableName: 'edge' },
           op: 'assign',
-          value: { kind: 'triggering_side' },
+          value: { kind: 'literal', value: 'home' },
+        },
+      },
+      {
+        name: 'awayWinEdge',
+        input: { thresholdRef: 'winTarget' },
+        when: { kind: 'side_reaches', side: 'away', sideVar: 'away_wins' },
+        action: {
+          target: { kind: 'concrete', variableName: 'edge' },
+          op: 'assign',
+          value: { kind: 'literal', value: 'away' },
         },
       },
     ],
@@ -339,30 +330,107 @@ describe('evaluatePointsSystem — win-chip signal pattern', () => {
     prefs: { test_winTarget: 10 },
   };
 
-  it('home reaches 10 wins first → win_chip becomes "home"', () => {
+  it('home reaches 10 wins first → edge becomes "home"', () => {
     const games = [
       ...Array.from({ length: 10 }, homeWins),
       ...Array.from({ length: 7 }, awayWins),
     ];
     const state = evaluatePointsSystem(composition, winChipInputs, games);
-    expect(state.win_chip).toBe('home');
+    expect(state.edge).toBe('home');
   });
 
-  it('away reaches 10 wins first → win_chip becomes "away"', () => {
+  it('away reaches 10 wins first → edge becomes "away"', () => {
     const games = [
       ...Array.from({ length: 10 }, awayWins),
       ...Array.from({ length: 7 }, homeWins),
     ];
     const state = evaluatePointsSystem(composition, winChipInputs, games);
-    expect(state.win_chip).toBe('away');
+    expect(state.edge).toBe('away');
   });
 
-  it('neither side reaches 10 → win_chip never set (tie via absence of chip)', () => {
+  it('neither side reaches 10 → edge never set (tie via absence of edge)', () => {
     const games = [
       ...Array.from({ length: 9 }, homeWins),
       ...Array.from({ length: 9 }, awayWins),
     ];
     const state = evaluatePointsSystem(composition, winChipInputs, games);
-    expect(state.win_chip).toBeUndefined();
+    expect(state.edge).toBeUndefined();
+  });
+});
+
+describe('evaluatePointsSystem — terminal trigger halts the cascade', () => {
+  // Cascade: bonus → edge → endmatch (terminal). Subsequent games never
+  // process; never-fired triggers don't run.
+  const composition: PointsSystem = {
+    name: 'terminal_test',
+    thresholds: {
+      winTarget: buildThresholdRow({
+        name: 'winTarget',
+        operationKind: 'read_pref',
+        operationArgs: { pref_key: 'test_winTarget' },
+      }),
+    },
+    perGameAllocator: {
+      name: 'point_per_game',
+      winner: { kind: 'fixed', points: 1 },
+      loser: { kind: 'fixed', points: 0 },
+    },
+    triggers: [
+      {
+        name: 'homeWinBonus',
+        input: { thresholdRef: 'winTarget' },
+        when: { kind: 'side_reaches', side: 'home', sideVar: 'home_wins' },
+        action: {
+          target: { kind: 'concrete', variableName: 'home_points' },
+          op: 'add',
+          value: { kind: 'literal', value: 3 },
+        },
+      },
+      {
+        name: 'homeWinEdge',
+        input: { thresholdRef: 'winTarget' },
+        when: { kind: 'side_reaches', side: 'home', sideVar: 'home_wins' },
+        action: {
+          target: { kind: 'concrete', variableName: 'edge' },
+          op: 'assign',
+          value: { kind: 'literal', value: 'home' },
+        },
+      },
+      {
+        name: 'homeWinEndmatch',
+        input: { thresholdRef: 'winTarget' },
+        when: { kind: 'side_reaches', side: 'home', sideVar: 'home_wins' },
+        action: {
+          target: { kind: 'concrete', variableName: 'endmatch' },
+          op: 'assign',
+          value: { kind: 'literal', value: true },
+        },
+        terminal: true,
+      },
+    ],
+  };
+
+  const winInputs: ThresholdInputs = {
+    ...emptyInputs,
+    prefs: { test_winTarget: 3 },
+  };
+
+  it('cascade fires in order: bonus then edge then endmatch (terminal)', () => {
+    const games = [homeWins(), homeWins(), homeWins()];
+    const state = evaluatePointsSystem(composition, winInputs, games);
+    // Bonus added 3 on top of the 3 from per-game allocator (1 × 3 wins).
+    expect(state.home_points).toBe(6);
+    expect(state.edge).toBe('home');
+    expect(state.endmatch).toBe(true);
+  });
+
+  it('terminal halts remaining games — subsequent games do not process', () => {
+    // 3 wins clinch; the 4th game record is provided but should be ignored.
+    const games = [homeWins(), homeWins(), homeWins(), awayWins(), awayWins()];
+    const state = evaluatePointsSystem(composition, winInputs, games);
+    // home_wins stops at 3 (the clinching game); away never gets to win.
+    expect(state.home_wins).toBe(3);
+    expect(state.away_wins).toBe(0);
+    expect(state.endmatch).toBe(true);
   });
 });

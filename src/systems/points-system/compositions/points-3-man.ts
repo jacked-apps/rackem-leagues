@@ -20,6 +20,7 @@
  */
 
 import { linearAboveThresholdAggregate } from '../aggregate';
+import { validatePointsSystem } from '../composition-validator';
 // Importing this file auto-registers the chart_lookup_3v3 operation into
 // the threshold registry — see the module's bottom-of-file side effect.
 import '../operations/chart-lookup-3v3';
@@ -27,17 +28,20 @@ import { buildThresholdRow } from '../threshold-resolver';
 import type { PointsSystem, Trigger } from '../types';
 
 /**
- * Build a receipt trigger that assigns the named threshold's value to a
- * variable of the same name. Common pattern for the chart-value assignments.
+ * Build a receipt trigger that assigns the trigger's bound input value (the
+ * named threshold's resolved value, `n`) to a state variable of the same
+ * name. Common pattern for surfacing chart values into the state bag so the
+ * end-of-match aggregate (and future display code) can read them.
  */
 function assignThresholdToSelf(name: string): Trigger {
   return {
     name: `assign_${name}`,
-    when: { kind: 'receipt', thresholdRef: name },
+    input: { thresholdRef: name },
+    when: { kind: 'receipt' },
     action: {
       target: { kind: 'concrete', variableName: name },
       op: 'assign',
-      value: { kind: 'threshold_ref', thresholdRef: name },
+      value: { kind: 'input_ref' },
     },
   };
 }
@@ -50,7 +54,7 @@ function assignThresholdToSelf(name: string): Trigger {
 export function buildPoints3ManComposition(
   params: { multiplier?: number } = {},
 ): PointsSystem {
-  return {
+  const composition: PointsSystem = {
     name: 'points_3man',
     thresholds: {
       homeWinTarget: buildThresholdRow({
@@ -94,4 +98,7 @@ export function buildPoints3ManComposition(
     ],
     endOfMatchAggregate: linearAboveThresholdAggregate(params),
   };
+
+  validatePointsSystem(composition);
+  return composition;
 }

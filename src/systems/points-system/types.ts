@@ -283,37 +283,37 @@ export interface PerGameAllocator {
 
 /**
  * A firing condition. Each kind encodes a different "when does this fire?"
- * semantic. Kinds reference thresholds by name; the runtime resolves the
- * threshold value at match start and uses it as a comparison value.
+ * semantic. Conditions reference the trigger's bound input value `n`
+ * (resolved from `Trigger.input.thresholdRef` at evaluation time) — they
+ * never name a threshold themselves.
  *
  * Kinds:
- * - `receipt` — fires immediately at match start when its referenced threshold's
- *   value is computed. Used for initial points and chart-value assignment.
- * - `side_reaches` — fires when the given side's tracked variable reaches
- *   the threshold value. The `side` may be `'any'` to fire for whichever
- *   side hits first (per-side; fires once per side reaching the value).
- * - `all_sides_reach` — fires when ALL sides simultaneously hit the threshold.
- *   Used for things like "both sides at tie value at the same time."
- * - `total_games_played` — fires after the N-th game has been played
- *   (regardless of who won). The threshold provides N.
+ * - `receipt` — fires immediately at match start. Typical use: receipt-style
+ *   triggers that read `n` and write it to a named variable.
+ * - `side_reaches` — fires when the named side won the current game AND its
+ *   `sideVar` value equals `n`. Concrete side (no 'any' shorthand); concrete
+ *   var name (no template substitution). To handle home and away symmetrically,
+ *   declare TWO triggers (one per side).
+ * - `all_sides_reach` — fires when both home and away vars equal `n` at the
+ *   same time. Both var names are concrete.
+ * - `total_games_played` — fires after the N-th game (regardless of winner);
+ *   N comes from the trigger's bound input.
  * - `match_end` — fires once after all games are played.
  */
 export type WhenCondition =
-  | { kind: 'receipt'; thresholdRef: string }
+  | { kind: 'receipt' }
   | {
       kind: 'side_reaches';
-      thresholdRef: string;
-      side: 'home' | 'away' | 'any';
-      /** Which tracked variable to compare against the threshold (typically `home_wins` / `away_wins`). */
-      sideVarTemplate: string;
+      side: 'home' | 'away';
+      /** Concrete state-bag variable name (e.g., `'home_wins'`). */
+      sideVar: string;
     }
   | {
       kind: 'all_sides_reach';
-      thresholdRef: string;
-      /** Per-side variable name template (the runtime substitutes the side prefix). */
-      sideVarTemplate: string;
+      homeVar: string;
+      awayVar: string;
     }
-  | { kind: 'total_games_played'; thresholdRef: string }
+  | { kind: 'total_games_played' }
   | { kind: 'match_end' };
 
 // ============================================================================
@@ -321,30 +321,35 @@ export type WhenCondition =
 // ============================================================================
 
 /**
- * Value source for an action's payload. Either a literal constant, a
- * reference to a threshold by name, or a reference to a named variable.
- * Phase A keeps this simple; expression evaluation (combining multiple
- * variables / arithmetic) is a future extension.
+ * Value source for an action's payload.
  *
- * For triggers that reference the side that caused the firing (e.g., the
- * side whose wins crossed the milestone), `kind: 'triggering_side'`
- * resolves to a string literal `'home' | 'away'` at evaluation time.
+ * - `literal` — a constant baked into THIS trigger (e.g., `1.5` for a milestone
+ *   bonus, `'home'` for an edge marker, `true` for endmatch). LO-editable as a
+ *   property of the trigger row.
+ * - `input_ref` — the trigger's bound input value (`n`), resolved from
+ *   `Trigger.input.thresholdRef` at evaluation time.
+ * - `variable_ref` — the current value of another named variable in the
+ *   match-state bag.
+ *
+ * No "threshold_ref" — the trigger has exactly one input (its `Trigger.input`).
+ * No "triggering_side" — triggers are per-side (declare separate triggers for
+ * home and away), so the side is concrete in `target.variableName`.
  */
 export type ActionValue =
   | { kind: 'literal'; value: MatchStateValue }
-  | { kind: 'threshold_ref'; thresholdRef: string }
-  | { kind: 'variable_ref'; variableName: string }
-  | { kind: 'triggering_side' };
+  | { kind: 'input_ref' }
+  | { kind: 'variable_ref'; variableName: string };
 
 /**
- * Resolution strategy for the action's target variable name. Either a
- * concrete name (e.g., `home_points`) or a per-side template (e.g.,
- * `<side>_points`) that resolves against the side that triggered the
- * action.
+ * The action's target variable is always a concrete name. No side-scoped
+ * templates — triggers are per-side, so the target is concrete per trigger
+ * (e.g., `'home_points'` for the home milestone bonus, `'away_points'` for
+ * the away one).
  */
-export type ActionTarget =
-  | { kind: 'concrete'; variableName: string }
-  | { kind: 'side_scoped'; variableNameTemplate: string };
+export interface ActionTarget {
+  readonly kind: 'concrete';
+  readonly variableName: string;
+}
 
 /**
  * The uniform Action shape. NO action categories — every action is an
@@ -361,14 +366,36 @@ export interface Action {
 // ============================================================================
 
 /**
- * A trigger fires when its `when` becomes true and runs its `action`. Single
- * action per trigger (compose multiple triggers with the same `when` if you
- * need multiple effects on the same firing event).
+ * Reference to the threshold whose resolved value feeds the trigger as `n`.
+ * Optional — `receipt`/`match_end` triggers MAY omit input if they don't
+ * read a threshold value. All other kinds require it.
+ */
+export interface TriggerInput {
+  readonly thresholdRef: string;
+}
+
+/**
+ * A trigger fires when its `when` becomes true and runs its `action`.
+ *
+ * **Single input, single action.** The trigger reads exactly one threshold
+ * value (its `input`); the `when` predicate compares state against `n`; the
+ * `action` mutates one variable using `n`, a constant, or another variable.
+ * To produce multiple effects on the same firing event, declare multiple
+ * triggers with the same `when` — each is one atomic rule.
+ *
+ * **Terminal triggers halt the cascade.** When a trigger with `terminal: true`
+ * fires (typically `endmatch`), subsequent triggers in the array are NOT
+ * evaluated for this tick AND the match ends. Composition-build validation
+ * enforces terminal triggers appear last in the array.
  */
 export interface Trigger {
   readonly name: string;
+  /** The threshold the trigger reads as `n`. Optional for receipt/match_end. */
+  readonly input?: TriggerInput;
   when: WhenCondition;
   action: Action;
+  /** When true, firing this trigger halts further trigger evaluation for the match. */
+  readonly terminal?: boolean;
 }
 
 // ============================================================================

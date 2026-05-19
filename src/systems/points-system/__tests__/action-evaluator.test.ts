@@ -8,13 +8,12 @@ import { describe, it, expect } from 'vitest';
 import {
   evaluateAction,
   resolveValue,
-  resolveTarget,
   applyOp,
   type ActionContext,
 } from '../action-evaluator';
 import type { Action, MatchStateBag } from '../types';
 
-const emptyCtx: ActionContext = { thresholdValues: {}, triggeringSide: null };
+const emptyCtx: ActionContext = { inputValue: undefined };
 
 describe('resolveValue', () => {
   it('returns literal values directly', () => {
@@ -24,18 +23,20 @@ describe('resolveValue', () => {
     expect(resolveValue({ kind: 'literal', value: null }, {}, emptyCtx)).toBeNull();
   });
 
-  it('resolves threshold_ref from the thresholdValues bag', () => {
-    const ctx: ActionContext = {
-      thresholdValues: { winTarget: 10 },
-      triggeringSide: null,
-    };
-    expect(resolveValue({ kind: 'threshold_ref', thresholdRef: 'winTarget' }, {}, ctx)).toBe(10);
+  it('resolves input_ref to the trigger\'s bound input value', () => {
+    const ctx: ActionContext = { inputValue: 10 };
+    expect(resolveValue({ kind: 'input_ref' }, {}, ctx)).toBe(10);
   });
 
-  it('throws on undefined threshold reference', () => {
-    expect(() =>
-      resolveValue({ kind: 'threshold_ref', thresholdRef: 'missing' }, {}, emptyCtx),
-    ).toThrow(/undefined threshold/);
+  it('resolves input_ref to null when the bound input resolved to null', () => {
+    const ctx: ActionContext = { inputValue: null };
+    expect(resolveValue({ kind: 'input_ref' }, {}, ctx)).toBeNull();
+  });
+
+  it('throws on input_ref when the trigger has no input', () => {
+    expect(() => resolveValue({ kind: 'input_ref' }, {}, emptyCtx)).toThrow(
+      /no input/,
+    );
   });
 
   it('resolves variable_ref from the state bag', () => {
@@ -49,36 +50,6 @@ describe('resolveValue', () => {
     expect(() =>
       resolveValue({ kind: 'variable_ref', variableName: 'missing' }, {}, emptyCtx),
     ).toThrow(/undefined variable/);
-  });
-
-  it('resolves triggering_side from ctx', () => {
-    const ctx: ActionContext = { thresholdValues: {}, triggeringSide: 'home' };
-    expect(resolveValue({ kind: 'triggering_side' }, {}, ctx)).toBe('home');
-  });
-
-  it('throws on triggering_side when no side is set', () => {
-    expect(() => resolveValue({ kind: 'triggering_side' }, {}, emptyCtx)).toThrow(
-      /no associated side/,
-    );
-  });
-});
-
-describe('resolveTarget', () => {
-  it('returns concrete target names directly', () => {
-    expect(resolveTarget({ kind: 'concrete', variableName: 'win_chip' }, emptyCtx)).toBe('win_chip');
-  });
-
-  it('substitutes <side> in side-scoped templates', () => {
-    const ctx: ActionContext = { thresholdValues: {}, triggeringSide: 'away' };
-    expect(
-      resolveTarget({ kind: 'side_scoped', variableNameTemplate: '<side>_points' }, ctx),
-    ).toBe('away_points');
-  });
-
-  it('throws when side-scoped template has no triggering side', () => {
-    expect(() =>
-      resolveTarget({ kind: 'side_scoped', variableNameTemplate: '<side>_points' }, emptyCtx),
-    ).toThrow(/no associated side/);
   });
 });
 
@@ -107,67 +78,61 @@ describe('applyOp', () => {
 });
 
 describe('evaluateAction — end-to-end mutations', () => {
-  it('assigns a literal to a concrete target', () => {
+  it('assigns a literal to a concrete target (the edge-marker pattern)', () => {
     const action: Action = {
-      target: { kind: 'concrete', variableName: 'win_chip' },
+      target: { kind: 'concrete', variableName: 'edge' },
       op: 'assign',
       value: { kind: 'literal', value: 'home' },
     };
     const state: MatchStateBag = {};
     evaluateAction(action, state, emptyCtx);
-    expect(state.win_chip).toBe('home');
+    expect(state.edge).toBe('home');
   });
 
-  it('adds a threshold value to a side-scoped variable (the "give to side" pattern)', () => {
-    // "give threshold initialA value to side A"
+  it('adds the trigger\'s input value to a concrete target (the start-points pattern)', () => {
     const action: Action = {
-      target: { kind: 'side_scoped', variableNameTemplate: '<side>_points' },
+      target: { kind: 'concrete', variableName: 'home_points' },
       op: 'add',
-      value: { kind: 'threshold_ref', thresholdRef: 'initialA' },
+      value: { kind: 'input_ref' },
     };
     const state: MatchStateBag = { home_points: 0 };
-    const ctx: ActionContext = {
-      thresholdValues: { initialA: 56 },
-      triggeringSide: 'home',
-    };
+    const ctx: ActionContext = { inputValue: 56 };
     evaluateAction(action, state, ctx);
     expect(state.home_points).toBe(56);
   });
 
-  it('jumps a running total to a literal value (the milestone jump pattern)', () => {
-    // "when milestone reached, replace running total with 1.5 for the triggering side"
+  it('adds a literal constant to a concrete target (the milestone-bonus pattern)', () => {
+    // "when home reaches milestone, add 1.5 to home_points" — 1.5 is a constant
+    // on the trigger row, not a separate threshold.
     const action: Action = {
-      target: { kind: 'side_scoped', variableNameTemplate: '<side>_points' },
-      op: 'assign',
+      target: { kind: 'concrete', variableName: 'home_points' },
+      op: 'add',
       value: { kind: 'literal', value: 1.5 },
     };
     const state: MatchStateBag = { home_points: 0.9 };
-    const ctx: ActionContext = { thresholdValues: {}, triggeringSide: 'home' };
-    evaluateAction(action, state, ctx);
-    expect(state.home_points).toBe(1.5);
+    evaluateAction(action, state, emptyCtx);
+    expect(state.home_points).toBe(2.4);
   });
 
   it('multiplies a running total by a literal (the points x2 pattern)', () => {
     const action: Action = {
-      target: { kind: 'side_scoped', variableNameTemplate: '<side>_points' },
+      target: { kind: 'concrete', variableName: 'away_points' },
       op: 'multiply',
       value: { kind: 'literal', value: 2 },
     };
     const state: MatchStateBag = { away_points: 5 };
-    const ctx: ActionContext = { thresholdValues: {}, triggeringSide: 'away' };
-    evaluateAction(action, state, ctx);
+    evaluateAction(action, state, emptyCtx);
     expect(state.away_points).toBe(10);
   });
 
-  it('assigns triggering_side to a signaling variable (the win chip pattern)', () => {
+  it('assigns a literal boolean to a concrete target (the endmatch pattern)', () => {
     const action: Action = {
-      target: { kind: 'concrete', variableName: 'win_chip' },
+      target: { kind: 'concrete', variableName: 'endmatch' },
       op: 'assign',
-      value: { kind: 'triggering_side' },
+      value: { kind: 'literal', value: true },
     };
     const state: MatchStateBag = {};
-    const ctx: ActionContext = { thresholdValues: {}, triggeringSide: 'away' };
-    evaluateAction(action, state, ctx);
-    expect(state.win_chip).toBe('away');
+    evaluateAction(action, state, emptyCtx);
+    expect(state.endmatch).toBe(true);
   });
 });

@@ -4,13 +4,13 @@
  *
  * Each WhenCondition kind has its own check logic. The runtime calls these
  * at the appropriate points during match evaluation:
- *  - After receipt-trigger resolution (at match start): check `receipt` kinds
- *  - After each game played: check `side_reaches`, `all_sides_reach`,
- *    `total_games_played` kinds
- *  - Once at match end: check `match_end` kinds
+ *  - At match start: `receipt` kinds
+ *  - After each game played: `side_reaches`, `all_sides_reach`,
+ *    `total_games_played`
+ *  - Once at match end: `match_end`
  *
- * Conditions reference thresholds by name; thresholdValues bag provides the
- * resolved values.
+ * Conditions reference the trigger's bound input value (`n`) via the
+ * `inputValue` field on the eval context — never a threshold name directly.
  *
  * @see ./types.ts — the WhenCondition variants
  */
@@ -19,114 +19,89 @@ import type { MatchStateBag, WhenCondition } from './types';
 
 /**
  * Runtime context the WhenCondition evaluator needs to make a true/false
- * decision plus tell the caller WHICH side (if any) caused the firing.
+ * decision.
  *
- * For per-side conditions like `side_reaches` with `side: 'any'`, the runtime
- * needs to know which side just crossed so subsequent action evaluation can
- * use `triggeringSide` in its target/value resolution.
+ * - `inputValue` — the trigger's bound input value (`n`), resolved from the
+ *   trigger's input threshold once per firing pass. Undefined if the trigger
+ *   declared no input (only legal for receipt/match_end with no threshold read).
+ * - `phase` — what phase of evaluation we're in; some kinds only fire in
+ *   specific phases.
+ * - `gameWinnerSide` — for `per_game` phase: which side won the current game.
+ *   Used by `side_reaches` to gate firing to the side whose state just
+ *   changed (prevents stale re-fires on subsequent games).
+ * - `gamesPlayed` — for `per_game` phase: total games including this one.
  */
-export interface WhenEvalResult {
-  fires: boolean;
-  /** Set when a per-side condition fires; null otherwise (`receipt`, `match_end`, etc.). */
-  triggeringSide: 'home' | 'away' | null;
-}
-
 export interface WhenEvalContext {
-  thresholdValues: Readonly<Record<string, number | null>>;
-  /**
-   * What phase of evaluation the runtime is in. Some condition kinds only
-   * fire in specific phases (receipt during match-start; match_end at the end).
-   */
+  inputValue: number | null | undefined;
   phase: 'receipt' | 'per_game' | 'match_end';
-  /** For `per_game` phase: the side whose state just changed (won this game). */
   gameWinnerSide?: 'home' | 'away';
-  /** For `per_game` phase: total games played including this one. */
   gamesPlayed?: number;
 }
 
 /**
- * Evaluate a WhenCondition. Returns fires + triggering side.
- *
- * Threshold references resolve via ctx.thresholdValues; missing references
- * throw (composition error). Variable references resolve via state.
+ * Evaluate a WhenCondition. Returns whether it fires this tick.
  */
 export function evaluateWhen(
   condition: WhenCondition,
   state: MatchStateBag,
   ctx: WhenEvalContext,
-): WhenEvalResult {
+): boolean {
   switch (condition.kind) {
     case 'receipt':
-      return { fires: ctx.phase === 'receipt', triggeringSide: null };
+      return ctx.phase === 'receipt';
 
     case 'match_end':
-      return { fires: ctx.phase === 'match_end', triggeringSide: null };
+      return ctx.phase === 'match_end';
 
     case 'total_games_played': {
-      if (ctx.phase !== 'per_game' || ctx.gamesPlayed === undefined) {
-        return { fires: false, triggeringSide: null };
-      }
-      const target = requireThreshold(ctx, condition.thresholdRef);
-      return { fires: ctx.gamesPlayed === target, triggeringSide: null };
+      if (ctx.phase !== 'per_game' || ctx.gamesPlayed === undefined) return false;
+      const n = requireInput(ctx);
+      return ctx.gamesPlayed === n;
     }
 
     case 'side_reaches': {
-      if (ctx.phase !== 'per_game') {
-        return { fires: false, triggeringSide: null };
-      }
-      const target = requireThreshold(ctx, condition.thresholdRef);
-      // Determine which side(s) to check.
-      const sidesToCheck =
-        condition.side === 'any' ? (['home', 'away'] as const) : [condition.side];
-      for (const side of sidesToCheck) {
-        // For "any" side firing, only check sides whose state actually changed
-        // this game (avoids re-firing on stale state from prior games).
-        if (condition.side === 'any' && ctx.gameWinnerSide !== side) continue;
-        const varName = condition.sideVarTemplate.replace('<side>', side);
-        const v = state[varName];
-        if (typeof v === 'number' && v === target) {
-          return { fires: true, triggeringSide: side };
-        }
-      }
-      return { fires: false, triggeringSide: null };
+      if (ctx.phase !== 'per_game') return false;
+      // Only fire when the named side just won this game — prevents stale
+      // re-firing on subsequent games when state[sideVar] hasn't changed.
+      if (ctx.gameWinnerSide !== condition.side) return false;
+      const n = requireInput(ctx);
+      const v = state[condition.sideVar];
+      return typeof v === 'number' && v === n;
     }
 
     case 'all_sides_reach': {
-      if (ctx.phase !== 'per_game') {
-        return { fires: false, triggeringSide: null };
-      }
-      const target = requireThreshold(ctx, condition.thresholdRef);
-      const homeVar = condition.sideVarTemplate.replace('<side>', 'home');
-      const awayVar = condition.sideVarTemplate.replace('<side>', 'away');
-      const homeVal = state[homeVar];
-      const awayVal = state[awayVar];
-      const fires =
+      if (ctx.phase !== 'per_game') return false;
+      const n = requireInput(ctx);
+      const homeVal = state[condition.homeVar];
+      const awayVal = state[condition.awayVar];
+      return (
         typeof homeVal === 'number' &&
         typeof awayVal === 'number' &&
-        homeVal === target &&
-        awayVal === target;
-      return { fires, triggeringSide: null };
+        homeVal === n &&
+        awayVal === n
+      );
     }
   }
 }
 
 /**
- * Get a threshold value as a number for comparison purposes. Throws if the
- * reference is undefined (composition error) OR if the value is null
- * (when-conditions reference thresholds as comparison values; null means
- * "no value applies" so any comparison would be meaningless — the
- * composition should not have wired a null-able threshold into a
- * when-condition that requires a value).
+ * Get the trigger's bound input value as a number. Throws if the trigger
+ * declared no input (composition error — only receipt/match_end may omit
+ * input, and they don't reach this helper) or if the input resolved to null
+ * (WhenConditions compare against `n`, and a null `n` makes comparison
+ * meaningless — the composition shouldn't wire a null-able threshold into
+ * a comparison-using condition).
  */
-function requireThreshold(ctx: WhenEvalContext, ref: string): number {
-  const v = ctx.thresholdValues[ref];
-  if (v === undefined) {
-    throw new Error(`WhenCondition references undefined threshold "${ref}"`);
-  }
-  if (v === null) {
+function requireInput(ctx: WhenEvalContext): number {
+  if (ctx.inputValue === undefined) {
     throw new Error(
-      `WhenCondition references null-valued threshold "${ref}"; only Action targets can accept null threshold values`,
+      'WhenCondition requires the trigger to have an input, but none was declared',
     );
   }
-  return v;
+  if (ctx.inputValue === null) {
+    throw new Error(
+      'WhenCondition references a null input value; only actions can accept null inputs',
+    );
+  }
+  return ctx.inputValue;
 }
