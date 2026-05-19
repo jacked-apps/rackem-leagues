@@ -444,7 +444,13 @@ export interface EndOfMatchAggregate {
  */
 export interface PointsSystem {
   readonly name: string;
-  thresholds: Record<string, Threshold>;
+  /**
+   * Named map of thresholds. Accepts either the legacy `Threshold` (function-
+   * valued compute, being phased out) or the new `ThresholdRow` (data-shaped,
+   * looks up an operation in the registry) during the per-composition
+   * migration. After slice 5 lands, only `ThresholdRow` will be accepted.
+   */
+  thresholds: Record<string, Threshold | ThresholdRow>;
   perGameAllocator?: PerGameAllocator;
   triggers: readonly Trigger[];
   endOfMatchAggregate?: EndOfMatchAggregate;

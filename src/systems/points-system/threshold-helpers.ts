@@ -18,7 +18,17 @@
  * @see ./types.ts — the Threshold interface
  */
 
-import type { Threshold, ThresholdInputs } from './types';
+import { resolveThreshold } from './threshold-resolver';
+import type { Threshold, ThresholdInputs, ThresholdRow } from './types';
+
+/**
+ * Type guard: distinguishes the new data-driven `ThresholdRow` from the
+ * legacy function-valued `Threshold`. Used by `resolveAllThresholds` during
+ * the per-composition migration so the runtime can handle both shapes.
+ */
+function isThresholdRow(t: Threshold | ThresholdRow): t is ThresholdRow {
+  return (t as ThresholdRow).operationKind !== undefined;
+}
 
 /**
  * A threshold that always returns the same number regardless of inputs.
@@ -69,16 +79,25 @@ export function computedThreshold(
  * at match start; the resulting bag is what triggers reference at evaluation
  * time. Values may be `number | null`.
  *
+ * Handles BOTH the legacy `Threshold` (function-valued compute) and the new
+ * `ThresholdRow` (data-driven, looks up an operation in the registry) during
+ * the per-composition migration. After all compositions migrate (slice 5),
+ * this function's signature narrows to `Record<string, ThresholdRow>`.
+ *
  * Throws if any threshold's compute throws (composition error surfaces here
  * rather than at trigger-evaluation time, where it would be harder to debug).
  */
 export function resolveAllThresholds(
-  thresholds: Record<string, Threshold>,
+  thresholds: Record<string, Threshold | ThresholdRow>,
   inputs: ThresholdInputs,
 ): Record<string, number | null> {
   const out: Record<string, number | null> = {};
   for (const [key, threshold] of Object.entries(thresholds)) {
-    out[key] = threshold.compute(inputs);
+    if (isThresholdRow(threshold)) {
+      out[key] = resolveThreshold(threshold, inputs);
+    } else {
+      out[key] = threshold.compute(inputs);
+    }
   }
   return out;
 }
