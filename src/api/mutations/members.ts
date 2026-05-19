@@ -223,6 +223,55 @@ export async function updateProfanityFilter(
 }
 
 /**
+ * Parameters for marking the profanity-filter onboarding modal as completed.
+ */
+export interface MarkProfanityOnboardingCompleteParams {
+  /** Supabase auth user id of the member completing the prompt. */
+  userId: string;
+  /** What the member chose: true = filter ON, false = show everything. */
+  filterEnabled: boolean;
+}
+
+/**
+ * Persist the member's answer to the Unit 9 profanity onboarding modal.
+ *
+ * Writes both columns in a single UPDATE:
+ *   - profanity_filter_enabled  ← user's choice
+ *   - profanity_onboarding_completed_at ← now() (so the modal never
+ *     reappears for them on subsequent app loads)
+ *
+ * Skipped vs. "decide later": this mutation is only called when the
+ * user makes an explicit choice (Yes or No). "Decide later" (Escape /
+ * backdrop / X / tertiary button) does NOT call this mutation, which
+ * keeps the column NULL and lets the modal reappear on next load.
+ *
+ * No age check: minor enforcement is a display-time concern handled by
+ * `useProfanityFilter` via `isMinor(dob)`. Saving the member's stored
+ * preference here is harmless for minors — the hook still forces the
+ * filter ON for them at render time.
+ *
+ * @param params - Onboarding parameters (userId, filterEnabled).
+ * @throws Error if the database update fails.
+ */
+export async function markProfanityOnboardingComplete(
+  params: MarkProfanityOnboardingCompleteParams,
+): Promise<void> {
+  const { userId, filterEnabled } = params;
+
+  const { error } = await supabase
+    .from('members')
+    .update({
+      profanity_filter_enabled: filterEnabled,
+      profanity_onboarding_completed_at: new Date().toISOString(),
+    })
+    .eq('user_id', userId);
+
+  if (error) {
+    throw new Error(`Failed to record profanity onboarding choice: ${error.message}`);
+  }
+}
+
+/**
  * Create a new member
  *
  * Inserts a new member record.

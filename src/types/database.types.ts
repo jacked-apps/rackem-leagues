@@ -195,33 +195,39 @@ export type Database = {
       }
       conversation_participants: {
         Row: {
+          cannot_leave: boolean
           conversation_id: string
           is_muted: boolean
           joined_at: string
           last_read_at: string | null
           left_at: string | null
+          notification_mode: string
           notifications_enabled: boolean
           role: string
           unread_count: number
           user_id: string
         }
         Insert: {
+          cannot_leave?: boolean
           conversation_id: string
           is_muted?: boolean
           joined_at?: string
           last_read_at?: string | null
           left_at?: string | null
+          notification_mode?: string
           notifications_enabled?: boolean
           role?: string
           unread_count?: number
           user_id: string
         }
         Update: {
+          cannot_leave?: boolean
           conversation_id?: string
           is_muted?: boolean
           joined_at?: string
           last_read_at?: string | null
           left_at?: string | null
+          notification_mode?: string
           notifications_enabled?: boolean
           role?: string
           unread_count?: number
@@ -246,6 +252,7 @@ export type Database = {
       }
       conversations: {
         Row: {
+          archived_at: string | null
           auto_managed: boolean
           conversation_type: string | null
           created_at: string
@@ -258,6 +265,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archived_at?: string | null
           auto_managed?: boolean
           conversation_type?: string | null
           created_at?: string
@@ -270,6 +278,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archived_at?: string | null
           auto_managed?: boolean
           conversation_type?: string | null
           created_at?: string
@@ -1032,6 +1041,7 @@ export type Database = {
           created_at: string | null
           created_by_member_id: string | null
           date_of_birth: string | null
+          deleted_at: string | null
           email: string | null
           fargo_rating: number | null
           first_name: string
@@ -1042,6 +1052,7 @@ export type Database = {
           organization_id: string | null
           phone: string | null
           profanity_filter_enabled: boolean | null
+          profanity_onboarding_completed_at: string | null
           role: Database["public"]["Enums"]["user_role"] | null
           starting_handicap_3v3: number | null
           starting_handicap_5v5: number | null
@@ -1059,6 +1070,7 @@ export type Database = {
           created_at?: string | null
           created_by_member_id?: string | null
           date_of_birth?: string | null
+          deleted_at?: string | null
           email?: string | null
           fargo_rating?: number | null
           first_name: string
@@ -1069,6 +1081,7 @@ export type Database = {
           organization_id?: string | null
           phone?: string | null
           profanity_filter_enabled?: boolean | null
+          profanity_onboarding_completed_at?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
           starting_handicap_3v3?: number | null
           starting_handicap_5v5?: number | null
@@ -1086,6 +1099,7 @@ export type Database = {
           created_at?: string | null
           created_by_member_id?: string | null
           date_of_birth?: string | null
+          deleted_at?: string | null
           email?: string | null
           fargo_rating?: number | null
           first_name?: string
@@ -1096,6 +1110,7 @@ export type Database = {
           organization_id?: string | null
           phone?: string | null
           profanity_filter_enabled?: boolean | null
+          profanity_onboarding_completed_at?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
           starting_handicap_3v3?: number | null
           starting_handicap_5v5?: number | null
@@ -1132,7 +1147,8 @@ export type Database = {
           id: string
           is_deleted: boolean
           is_edited: boolean
-          sender_id: string
+          is_system: boolean
+          sender_id: string | null
           updated_at: string
         }
         Insert: {
@@ -1144,7 +1160,8 @@ export type Database = {
           id?: string
           is_deleted?: boolean
           is_edited?: boolean
-          sender_id: string
+          is_system?: boolean
+          sender_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -1156,7 +1173,8 @@ export type Database = {
           id?: string
           is_deleted?: boolean
           is_edited?: boolean
-          sender_id?: string
+          is_system?: boolean
+          sender_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1505,7 +1523,7 @@ export type Database = {
           max_roster_size: number | null
           mechanism: string | null
           pairing_format: string | null
-          points_calculator: string | null
+          points_calculator: string
           points_calculator_params: Json
           points_system: string | null
           profanity_filter_enabled: boolean | null
@@ -1533,7 +1551,7 @@ export type Database = {
           max_roster_size?: number | null
           mechanism?: string | null
           pairing_format?: string | null
-          points_calculator?: string | null
+          points_calculator?: string
           points_calculator_params?: Json
           points_system?: string | null
           profanity_filter_enabled?: boolean | null
@@ -1561,7 +1579,7 @@ export type Database = {
           max_roster_size?: number | null
           mechanism?: string | null
           pairing_format?: string | null
-          points_calculator?: string | null
+          points_calculator?: string
           points_calculator_params?: Json
           points_system?: string | null
           profanity_filter_enabled?: boolean | null
@@ -1942,7 +1960,7 @@ export type Database = {
       }
       teams: {
         Row: {
-          captain_id: string
+          captain_id: string | null
           created_at: string | null
           games_lost: number | null
           games_won: number | null
@@ -1960,7 +1978,7 @@ export type Database = {
           wins: number | null
         }
         Insert: {
-          captain_id: string
+          captain_id?: string | null
           created_at?: string | null
           games_lost?: number | null
           games_won?: number | null
@@ -1978,7 +1996,7 @@ export type Database = {
           wins?: number | null
         }
         Update: {
-          captain_id?: string
+          captain_id?: string | null
           created_at?: string | null
           games_lost?: number | null
           games_won?: number | null
@@ -2471,6 +2489,10 @@ export type Database = {
         Args: { p_season_week_id: string }
         Returns: undefined
       }
+      auto_create_season_conversations: {
+        Args: { p_season_id: string }
+        Returns: undefined
+      }
       can_write_house_rule_org: {
         Args: { target_org_id: string }
         Returns: boolean
@@ -2512,7 +2534,10 @@ export type Database = {
         }
         Returns: string
       }
-      daitch_mokotoff: { Args: { "": string }; Returns: string[] }
+      daitch_mokotoff: {
+        Args: { "": string }
+        Returns: string[]
+      }
       delete_unused_placeholder: {
         Args: {
           p_actor_member_id: string
@@ -2524,9 +2549,18 @@ export type Database = {
           success: boolean
         }[]
       }
-      dmetaphone: { Args: { "": string }; Returns: string }
-      dmetaphone_alt: { Args: { "": string }; Returns: string }
-      get_current_member_id: { Args: never; Returns: string }
+      dmetaphone: {
+        Args: { "": string }
+        Returns: string
+      }
+      dmetaphone_alt: {
+        Args: { "": string }
+        Returns: string
+      }
+      get_current_member_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_invite_details: {
         Args: { p_token: string }
         Returns: {
@@ -2556,7 +2590,7 @@ export type Database = {
         }[]
       }
       get_my_pending_invites: {
-        Args: never
+        Args: Record<PropertyKey, never>
         Returns: {
           captain_name: string
           creator_name: string
@@ -2575,9 +2609,18 @@ export type Database = {
           token: string
         }[]
       }
-      get_operator_placeholders: { Args: { p_org_id: string }; Returns: Json }
-      get_operator_player_stats: { Args: { p_org_id: string }; Returns: Json }
-      get_operator_stats: { Args: { operator_id_param: string }; Returns: Json }
+      get_operator_placeholders: {
+        Args: { p_org_id: string }
+        Returns: Json
+      }
+      get_operator_player_stats: {
+        Args: { p_org_id: string }
+        Returns: Json
+      }
+      get_operator_stats: {
+        Args: { operator_id_param: string }
+        Returns: Json
+      }
       get_org_placeholders_for_merge: {
         Args: { p_include_archived?: boolean; p_org_id: string }
         Returns: {
@@ -2616,6 +2659,26 @@ export type Database = {
           is_correct: boolean
           team_name: string
         }[]
+      }
+      gtrgm_compress: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_decompress: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_in: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_options: {
+        Args: { "": unknown }
+        Returns: undefined
+      }
+      gtrgm_out: {
+        Args: { "": unknown }
+        Returns: unknown
       }
       is_conversation_participant: {
         Args: { conv_id: string; uid: string }
@@ -2667,7 +2730,10 @@ export type Database = {
           total_rows_updated: number
         }[]
       }
-      placeholder_has_stats: { Args: { p_member_id: string }; Returns: boolean }
+      placeholder_has_stats: {
+        Args: { p_member_id: string }
+        Returns: boolean
+      }
       prep_match: {
         Args: { p_game_rows: Json; p_match_id: string; p_thresholds: Json }
         Returns: undefined
@@ -2761,6 +2827,10 @@ export type Database = {
           total_score: number
         }[]
       }
+      set_limit: {
+        Args: { "": number }
+        Returns: number
+      }
       set_match_lineup_rating: {
         Args: {
           p_match_lineup_id: string
@@ -2779,10 +2849,22 @@ export type Database = {
         }
         Returns: string
       }
-      show_limit: { Args: never; Returns: number }
-      show_trgm: { Args: { "": string }; Returns: string[] }
-      soundex: { Args: { "": string }; Returns: string }
-      text_soundex: { Args: { "": string }; Returns: string }
+      show_limit: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      show_trgm: {
+        Args: { "": string }
+        Returns: string[]
+      }
+      soundex: {
+        Args: { "": string }
+        Returns: string
+      }
+      text_soundex: {
+        Args: { "": string }
+        Returns: string
+      }
       undo_merge_placeholder: {
         Args: {
           p_actor_member_id: string

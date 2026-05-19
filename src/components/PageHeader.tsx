@@ -121,6 +121,15 @@ export function PageHeader({
 
   const showBack = !hideBack && (backTo || onBackClick);
 
+  // When SubHeader has no LEFT-side content (no org / subtitle / children),
+  // the only thing it would render is the IdentitySlot avatar floating on
+  // the right — that leaves an empty vertical stripe under the sticky bar
+  // (most visible on `h-screen overflow-hidden` pages like /messages where
+  // there's no scrolling to absorb the gap). In that case we promote the
+  // IdentitySlot into the sticky bar and skip the SubHeader entirely.
+  // Pages with subtitle / org / children keep the existing layout.
+  const hasSubHeaderLeftContent = Boolean(organization || subtitle || children);
+
   return (
     <>
       <header
@@ -137,6 +146,10 @@ export function PageHeader({
         ) : null}
 
         <h1 className="flex-1 truncate text-lg font-semibold text-foreground lg:text-3xl">{title}</h1>
+
+        {!hasSubHeaderLeftContent ? (
+          <IdentitySlot pathname={location.pathname} />
+        ) : null}
 
         <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
           <SheetTrigger asChild>
@@ -156,15 +169,17 @@ export function PageHeader({
         </Sheet>
       </header>
 
-      <SubHeader
-        organization={organization}
-        subtitle={subtitle}
-        pathname={location.pathname}
-        hasBack={Boolean(showBack)}
-        backWidth={backWidth}
-      >
-        {children}
-      </SubHeader>
+      {hasSubHeaderLeftContent ? (
+        <SubHeader
+          organization={organization}
+          subtitle={subtitle}
+          pathname={location.pathname}
+          hasBack={Boolean(showBack)}
+          backWidth={backWidth}
+        >
+          {children}
+        </SubHeader>
+      ) : null}
     </>
   );
 }

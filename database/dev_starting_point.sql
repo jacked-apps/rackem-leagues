@@ -571,14 +571,16 @@ BEGIN
   -- League + preferences (trigger created the empty prefs row; UPSERT into it)
   ----------------------------------------------------------------------------
 
+  -- team_format dropped from leagues by 20260502000000_drop_team_format.sql;
+  -- lineup geometry now lives in preferences.lineup_size (set in the UPDATE below).
   INSERT INTO leagues (
     id, organization_id, game_type, day_of_week, division,
-    team_format, league_start_date, status,
+    league_start_date, status,
     handicap_variant, team_handicap_variant, handicap_level,
     golden_break_counts_as_win
   ) VALUES (
     v_league_id, v_org_id, 'eight_ball', 'tuesday', '3v3 old school',
-    '5_man', CURRENT_DATE, 'active',
+    CURRENT_DATE, 'active',
     'standard', 'standard', 'standard',
     FALSE
   );
@@ -822,7 +824,8 @@ DECLARE
     '8-Ball Wednesday Standard 5v5 Spring 2026',
     '8-Ball Thursday Fargo 5v5 Spring 2026'
   ];
-  v_team_formats       TEXT[] := ARRAY['8_man', '5_man'];
+  -- team_format dropped from leagues (see 20260502000000_drop_team_format.sql).
+  -- Kept lineup_size = 5 set in the preferences UPDATE below.
   v_handicap_types     TEXT[] := ARRAY['percentage', 'fargo'];
   v_points_systems     TEXT[] := ARRAY['bca_tiered', 'differential'];
   v_placeholder_offsets INT[] := ARRAY[16, 32];          -- skip placeholders used by League 1 / 1+2
@@ -860,12 +863,12 @@ BEGIN
 
     INSERT INTO leagues (
       id, organization_id, game_type, day_of_week, division,
-      team_format, league_start_date, status,
+      league_start_date, status,
       handicap_variant, team_handicap_variant, handicap_level,
       golden_break_counts_as_win
     ) VALUES (
       v_league_ids[v_l], v_org_id, 'eight_ball', v_days_of_week[v_l], v_divisions[v_l],
-      v_team_formats[v_l], v_start_date, 'active',
+      v_start_date, 'active',
       'standard', 'standard', 'standard',
       FALSE
     );

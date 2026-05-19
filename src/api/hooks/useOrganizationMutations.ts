@@ -73,10 +73,23 @@ export function useCreateOrganization() {
 
   return useMutation({
     mutationFn: (params: CreateOrganizationParams) => createOrganization(params),
-    onSuccess: () => {
-      // Invalidate all organization queries
-      queryClient.invalidateQueries({
+    onSuccess: async () => {
+      // Invalidate AND wait for refetch — closes LIST_FOR_ED #7. The
+      // dashboard's org-list query (`useOrganizations(memberId)`) is
+      // typically NOT mounted during the LO-application flow, so a
+      // plain `invalidateQueries` only marks the cache stale without
+      // refetching. The user then navigates to /dashboard, the
+      // component mounts, and there's a brief window where the
+      // stale data renders before the refetch completes — which is
+      // why the new org "doesn't appear until refresh."
+      //
+      // `refetchType: 'all'` forces a refetch of inactive queries
+      // too, and awaiting it inside the async onSuccess holds the
+      // mutation open until the cache is genuinely fresh. The
+      // LO-application page then navigates with confidence.
+      await queryClient.invalidateQueries({
         queryKey: ['organizations'],
+        refetchType: 'all',
       });
     },
   });
