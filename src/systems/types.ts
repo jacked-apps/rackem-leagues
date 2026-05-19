@@ -388,7 +388,7 @@ export interface SystemModule {
    * The three prepackaged Scoring Systems each declare their composition:
    * - Points 3-Man — buildPoints3ManComposition() (just an end-of-match aggregate)
    * - Percentage 5-Man — buildPercent5ManComposition() (allocator + 2 jump triggers)
-   * - FargoRate 10-Point 5-Man — buildFargo10pt5ManComposition() (initial points + allocator)
+   * - 10-Point Scoring System — buildTenPointComposition() (initial points + allocator)
    *
    * `null` reflects combos where no Points System applies — currently the
    * `handicap_type='none' + mechanism='none'` case (a league running with

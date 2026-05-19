@@ -1,25 +1,25 @@
 /**
- * @fileoverview Cross-audit: FargoRate 10-Point 5-Man composed Points System
+ * @fileoverview Cross-audit: 10-Point Scoring System composed Points System
  * vs. existing bundled calculator.
  *
  *   1. Legacy bundled: `accumulated_per_game` calculator + manual start_points
  *      addition (the bundled calculator does ONLY per-game accumulation;
  *      start_points is layered separately in the existing runtime).
- *   2. Composed Points System: `buildFargo10pt5ManComposition()` + the runtime
+ *   2. Composed Points System: `buildTenPointComposition()` + the runtime
  *      evaluator.
  *
  * Tests both the per-game-only path (start_points = 0) and the start-points-
  * inclusive path (composed adds start_points via receipt triggers; legacy
  * value is the sum of per-game + start_points).
  *
- * @see ../compositions/fargo-10pt-5-man.ts — the composition under audit
+ * @see ../compositions/10-point.ts — the composition under audit
  * @see src/systems/calculators/accumulated_per_game.ts — the bundled per-game source of truth
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { accumulatedPerGame } from '@/systems/calculators/accumulated_per_game';
 import { evaluatePointsSystem, type RuntimeGameRecord } from '../runtime';
-import { buildFargo10pt5ManComposition } from '../compositions/fargo-10pt-5-man';
+import { buildTenPointComposition } from '../compositions/10-point';
 import type { ThresholdInputs } from '../types';
 import { clearRegistry, registerCalculator } from '@/systems/calculators';
 
@@ -57,7 +57,7 @@ const FARGO_PARAMS = {
   loser: { kind: 'counter' as const, min: 0, max: 7, label: 'Balls pocketed by loser' },
 };
 
-describe('Cross-audit: Fargo 10-Point 5-Man composed vs. accumulated_per_game legacy', () => {
+describe('Cross-audit: 10-Point Scoring System composed vs. accumulated_per_game legacy', () => {
   describe('per-game accumulation (start_points = 0)', () => {
     // Sample game streams: vary winner side + loser balls. The 5v5 SRR plays
     // 25 games; we generate representative streams that exercise the counter
@@ -101,7 +101,7 @@ describe('Cross-audit: Fargo 10-Point 5-Man composed vs. accumulated_per_game le
 
     for (const stream of STREAMS) {
       it(`${stream.label}: composed home/away points match legacy per-game accumulation`, () => {
-        const composition = buildFargo10pt5ManComposition({});
+        const composition = buildTenPointComposition({});
         const inputs: ThresholdInputs = {
           // Slice 4 of Threshold refactor: thresholds now compute from
           // ratings via the FargoFormulaChart rather than reading pre-computed
@@ -144,7 +144,7 @@ describe('Cross-audit: Fargo 10-Point 5-Man composed vs. accumulated_per_game le
           loserBalls: 4,
         })),
       ];
-      const composition = buildFargo10pt5ManComposition({});
+      const composition = buildTenPointComposition({});
       const inputs: ThresholdInputs = {
         // Validated real-match anchor (per docs/research/fargorate-formula.md):
         // home ratings [567,458,493,486,574] vs away [447,394,452,322,374]
@@ -180,7 +180,7 @@ describe('Cross-audit: Fargo 10-Point 5-Man composed vs. accumulated_per_game le
       // Slice 4: under the new model, only ONE side gets a non-zero start
       // (the weaker team). Test that start-points fire at match start
       // regardless of game count by running an empty match.
-      const composition = buildFargo10pt5ManComposition({});
+      const composition = buildTenPointComposition({});
       const inputs: ThresholdInputs = {
         homeRatings: [567, 458, 493, 486, 574],
         awayRatings: [447, 394, 452, 322, 374],

@@ -1,31 +1,27 @@
 /**
- * @fileoverview FargoRate 10-Point 5-Man Scoring System — Points System composition.
+ * @fileoverview 10-Point Scoring System — Points System composition.
+ *
+ * Per the official CSI / BCAPL / FargoRate terminology, this is the
+ * **10-Point Scoring System** — the points format where each game awards
+ * 10 points to the winner plus a counter (0-7 balls pocketed) to the loser.
+ * FargoRate is a SEPARATE rating system that can be applied on top of this
+ * scoring format to provide handicapping (see `fargo_start_points_for_side`
+ * operation); the points format itself is just "10-Point."
  *
  * Per the locked Points System README + the Ed-walked decomposition:
  *
  *   composition = (C) initial points (via receipt trigger pair)
  *               + (A) per-game allocator
  *
- * **Slice 4 of the Threshold refactor (2026-05-19):** migrated to data-driven
- * `ThresholdRow`s AND fixes Finding 2 from the architectural audit.
+ * Thresholds compute start-points from lineup ratings via the
+ * FargoFormulaChart at evaluation time (no caller pre-computation needed).
  *
- * **Finding 2 was real drift** — the previous initial-points thresholds
- * read pre-computed values from `inputs.prefs.initial_home` / `initial_away`,
- * making the caller responsible for running the FargoRate math externally.
- * This violated the "threshold is a pure function of match inputs" principle —
- * the threshold was just a pass-through, not actually doing computation.
+ * **Size-agnostic.** The 10-Point per-game allocator (`winner: fixed 10`,
+ * `loser: counter 0..7`) doesn't depend on lineup size. The threshold
+ * operation `fargo_start_points_for_side` declares `consumesSize: 'any'`.
+ * One composition handles 5v5, 3v3, or any other roster size.
  *
- * **Fix:** thresholds now reference the `fargo_start_points_for_side`
- * operation, which delegates to `fargoFormulaChart` for the calibrated
- * computation. The threshold consumes `homeRatings` + `awayRatings` from
- * runtime inputs and produces the start-points value if this side is the
- * weaker team, 0 otherwise. The math lives inside the threshold operation
- * where it belongs.
- *
- * Cross-audit updated to provide real rating arrays instead of pre-computed
- * start-points values.
- *
- * @see ../operations/fargo-start-points-for-side.ts — the FargoRate operation
+ * @see ../operations/fargo-start-points-for-side.ts — the FargoRate start-points operation
  * @see src/systems/threshold-charts/fargo-formula.ts — the underlying chart
  */
 
@@ -36,7 +32,7 @@ import { validatePointsSystem } from '../composition-validator';
 import { buildThresholdRow } from '../threshold-resolver';
 import type { PointsSystem, Trigger } from '../types';
 
-export interface Fargo10pt5ManParams {
+export interface TenPointParams {
   /** Default points awarded to the winner of each game (default 10). */
   winner_points: number;
   /** Min/max for the loser's counter input (default 0–7 for balls pocketed). */
@@ -45,7 +41,7 @@ export interface Fargo10pt5ManParams {
   loser_label: string;
 }
 
-const DEFAULT_PARAMS: Fargo10pt5ManParams = {
+const DEFAULT_PARAMS: TenPointParams = {
   winner_points: 10,
   loser_min: 0,
   loser_max: 7,
@@ -77,18 +73,18 @@ function awardInitialPoints(
 }
 
 /**
- * Build the FargoRate 10-Point 5-Man Scoring System's Points System composition.
+ * Build the 10-Point Scoring System's Points System composition.
  *
  * Thresholds compute start-points from `inputs.homeRatings`/`awayRatings`
  * at evaluation time (no caller pre-computation needed).
  */
-export function buildFargo10pt5ManComposition(
-  params: Partial<Fargo10pt5ManParams> = {},
+export function buildTenPointComposition(
+  params: Partial<TenPointParams> = {},
 ): PointsSystem {
-  const p: Fargo10pt5ManParams = { ...DEFAULT_PARAMS, ...params };
+  const p: TenPointParams = { ...DEFAULT_PARAMS, ...params };
 
   const composition: PointsSystem = {
-    name: 'fargo_10pt_5man',
+    name: '10_point',
     thresholds: {
       // Start-points per side. Operation runs the FargoRate formula and returns
       // the start-points value if this side is the weaker team, 0 otherwise.
@@ -105,7 +101,7 @@ export function buildFargo10pt5ManComposition(
       }),
     },
     perGameAllocator: {
-      name: 'fargo_per_game',
+      name: '10pt_per_game',
       winner: { kind: 'fixed', points: p.winner_points },
       loser: {
         kind: 'counter',

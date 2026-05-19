@@ -65,7 +65,7 @@ import {
 } from './handicap-mechanisms';
 import { buildPoints3ManComposition } from './points-system/compositions/points-3-man';
 import { buildPercent5ManComposition } from './points-system/compositions/percent-5-man';
-import { buildFargo10pt5ManComposition } from './points-system/compositions/fargo-10pt-5-man';
+import { buildTenPointComposition } from './points-system/compositions/10-point';
 import type { PointsSystem } from './points-system/types';
 
 // ============================================================================
@@ -285,7 +285,7 @@ function pickPointsSystem(pointsCalculator: string | null): PointsSystem | null 
     return buildPercent5ManComposition({});
   }
   if (pointsCalculator === 'accumulated_per_game') {
-    return buildFargo10pt5ManComposition({});
+    return buildTenPointComposition({});
   }
   console.warn(
     `[buildSystemFromPreferences] Unknown points_calculator ${JSON.stringify(pointsCalculator)} — pointsSystem field set to null`,
