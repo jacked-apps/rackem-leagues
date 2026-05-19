@@ -10,7 +10,7 @@
  * - Mobile-optimized input area
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ConversationHeader } from './ConversationHeader';
 import { EditConversationTitleDialog } from './EditConversationTitleDialog';
 import { MessageInput } from './MessageInput';
@@ -83,10 +83,27 @@ export function MessageView({ conversationId, currentUserId, onBack, onLeaveConv
   // this chat OR is a non-staff viewer of an announcements channel.
   const { data: composerStatus } = useMessageComposerStatus(conversationId);
 
-  const { recipientName, recipientLastRead } = useConversationParticipants(
+  const { recipientName, recipientLastRead, currentUserLastRead } = useConversationParticipants(
     conversationId,
     currentUserId
   );
+
+  // Snapshot the current user's last_read_at at chat-open time. We
+  // can't read this live because the moment messages load, the
+  // updateLastReadMutation fires and bumps last_read_at to now — so
+  // a "where did I leave off" divider needs the value as it was
+  // BEFORE the user entered the chat. First non-null value wins;
+  // subsequent participant-list refetches are ignored for this
+  // purpose (a cleared ref means "fresh chat, no divider").
+  const unreadAnchorRef = useRef<string | null | undefined>(undefined);
+  if (unreadAnchorRef.current === undefined && currentUserLastRead !== null) {
+    unreadAnchorRef.current = currentUserLastRead;
+  }
+  // Reset the anchor when the conversation changes — otherwise the
+  // divider from chat A could carry over into chat B.
+  useEffect(() => {
+    unreadAnchorRef.current = undefined;
+  }, [conversationId]);
 
   // Load conversation details (type and participants) when conversation changes
   useEffect(() => {
@@ -265,6 +282,7 @@ export function MessageView({ conversationId, currentUserId, onBack, onLeaveConv
           messages={messages}
           currentUserId={currentUserId}
           recipientLastRead={recipientLastRead}
+          unreadAnchorAt={unreadAnchorRef.current ?? null}
           loading={loading}
           outgoingMessages={outgoing}
           onRetryOutgoing={handleRetryOutgoing}

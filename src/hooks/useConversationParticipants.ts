@@ -42,7 +42,18 @@ export function useConversationParticipants(conversationId: string, currentUserI
     return otherParticipant?.lastReadAt || null;
   }, [participants, currentUserId]);
 
+  // Get CURRENT user's last_read_at — the "where did I leave off"
+  // anchor that drives the unread-messages divider in MessageList.
+  // Note: this value updates the moment the user opens the chat
+  // (via useUpdateLastRead). Callers that want the snapshot from
+  // chat-open time must capture this into a ref themselves rather
+  // than reading it live (see MessageView).
+  const currentUserLastRead = useMemo(() => {
+    const me = participants.find(p => p.userId === currentUserId);
+    return me?.lastReadAt || null;
+  }, [participants, currentUserId]);
+
   const loading = titleLoading || participantsLoading;
 
-  return { recipientName, recipientLastRead, loading };
+  return { recipientName, recipientLastRead, currentUserLastRead, loading };
 }
