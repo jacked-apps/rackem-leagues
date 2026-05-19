@@ -43,6 +43,10 @@ interface NextSeasonStageDetectionResult {
      *  next-season start-date picker's "Start immediately / Week off /
      *  Custom" choices. Undefined for first-time leagues (no prior season). */
     previousSeasonLastWeekDate?: string;
+    /** Regular-season week count of the previous season. Drives the
+     *  Season Length step's "Same as last (X weeks)" choice. Undefined
+     *  for first-time leagues. */
+    previousSeasonLength?: number;
   };
 }
 
@@ -82,15 +86,18 @@ export function useNextSeasonStageDetection(
 
       // Most-recent non-upcoming season for THIS league. Used to compute
       // the "last week played" date that anchors the next-season start
-      // date choices. Skip 'upcoming' since that IS the one being built.
+      // date choices, and to pre-fill the Season Length step's "same as
+      // last" choice. Skip 'upcoming' since that IS the one being built.
       const { data: previousSeasonForDates } = await supabase
         .from('seasons')
-        .select('id')
+        .select('id, season_length')
         .eq('league_id', leagueId)
         .in('status', ['active', 'completed'])
         .order('end_date', { ascending: false })
         .limit(1)
         .maybeSingle();
+      const previousSeasonLength: number | undefined =
+        previousSeasonForDates?.season_length ?? undefined;
 
       // Last scheduled_date across ALL week types (regular + playoffs) for
       // that previous season. Caps the "last week played" calculation.
@@ -141,6 +148,7 @@ export function useNextSeasonStageDetection(
         teamCount,
         venueCount,
         previousSeasonLastWeekDate,
+        previousSeasonLength,
       };
     },
     enabled: !!leagueId,
@@ -154,7 +162,7 @@ export function useNextSeasonStageDetection(
     };
   }
 
-  const { league, prefs, upcomingSeason, hasSchedule, teamCount, venueCount, previousSeasonLastWeekDate } = data;
+  const { league, prefs, upcomingSeason, hasSchedule, teamCount, venueCount, previousSeasonLastWeekDate, previousSeasonLength } = data;
 
   // Resolve stage. With NO upcoming season, the operator starts at
   // stage 0 (Season). With one in progress, walk the cascade.
@@ -185,6 +193,7 @@ export function useNextSeasonStageDetection(
       teamCount: teamCount || undefined,
       venueCount: venueCount || undefined,
       previousSeasonLastWeekDate,
+      previousSeasonLength,
     },
   };
 }
