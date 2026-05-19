@@ -21,14 +21,21 @@
  *   4. **Trigger names are unique within a composition.** Prevents typos +
  *      makes downstream debugging easier.
  *
+ *   5. **Allocator formula references resolve.** If a per-game allocator side
+ *      declares a formula, its `operationKind` must name a registered
+ *      allocator-formula operation. Catches typos / unregistered operations
+ *      at composition-build time instead of mid-match.
+ *
  * Compositions call `validatePointsSystem(composition)` as the last step of
  * their factory function. Throws with a precise message on any violation.
  *
  * @see ./types.ts — the PointsSystem / Trigger / ThresholdRow shapes
  */
 
+import { getAllocatorFormulaOperation } from './allocator-formula-registry';
 import type {
   PointsSystem,
+  SideConfig,
   ThresholdOutputSide,
   ThresholdRow,
   Trigger,
@@ -71,6 +78,24 @@ function validateInputSpec(
 }
 
 /**
+ * Validate that a per-game allocator side's formula (if present) references a
+ * registered allocator-formula operation. Throws on unresolved reference.
+ */
+function validateAllocatorSide(
+  composition: PointsSystem,
+  side: SideConfig,
+  sideName: 'winner' | 'loser',
+): void {
+  if (!side.formula) return;
+  const operation = getAllocatorFormulaOperation(side.formula.operationKind);
+  if (operation === undefined) {
+    throw new Error(
+      `Composition "${composition.name}": allocator ${sideName} side references unknown formula operation "${side.formula.operationKind}". Ensure the operation file is imported (operations auto-register on import).`,
+    );
+  }
+}
+
+/**
  * Validate a PointsSystem composition against the locked trigger-model
  * invariants. Throws on the first violation found.
  */
@@ -78,6 +103,11 @@ export function validatePointsSystem(composition: PointsSystem): void {
   const thresholdNames = new Set(Object.keys(composition.thresholds));
   const seenTriggerNames = new Set<string>();
   let firstTerminalIndex: number | null = null;
+
+  if (composition.perGameAllocator) {
+    validateAllocatorSide(composition, composition.perGameAllocator.winner, 'winner');
+    validateAllocatorSide(composition, composition.perGameAllocator.loser, 'loser');
+  }
 
   for (let i = 0; i < composition.triggers.length; i++) {
     const trigger = composition.triggers[i]!;
