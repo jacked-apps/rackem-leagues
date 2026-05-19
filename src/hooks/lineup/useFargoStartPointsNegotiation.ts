@@ -31,6 +31,30 @@ import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
 import type { SystemOverrides } from '@/types/systemOverrides';
 
+/**
+ * Skip the two-captain Fargo start-points negotiation UI and auto-agree
+ * to the computed default value. When true (current default), the home
+ * client's initial write stamps BOTH `_to_lose` columns immediately, so
+ * `bothConfirmed` becomes true on first render and the
+ * `FargoStartPointsCard` self-hides (it already returns null when
+ * `bothConfirmed`). prep_match then fires as if both captains had
+ * confirmed manually.
+ *
+ * **Why:** the negotiation was added so captains could reconcile our
+ * Fargo math against BCAPL's official FargoRate app in live matches. No
+ * league actually adopted the integrated flow, so the verification
+ * never happened — but we also can't validate our math against live
+ * matches without that adoption. Ed's call (2026-05-17): "trust the
+ * math, hide the negotiation, leave the code as a bandaid in case the
+ * math turns out to be off." Flip this constant back to `false` to
+ * restore the manual two-captain confirmation flow — no other code
+ * change required.
+ *
+ * Replaces LIST_FOR_ED #22 and #24 (both were UX bugs against the now-
+ * hidden negotiation flow; obsolete once auto-agree is on).
+ */
+const AUTO_AGREE_START_POINTS = true;
+
 interface FargoNegotiationParams {
   matchId: string | undefined;
   /** Current member's system_player_number — written to *_games_to_lose on confirm. */
@@ -155,7 +179,12 @@ export function useFargoStartPointsNegotiation(
     if (!matchId || memberPlayerNumber === null) return;
     if (currentValue !== null) return;
     if (computedDefault === null) return;
-    if (weakerTeam === null || weakerTeam === 'even') return;
+    if (weakerTeam === null) return;
+    // When auto-agree is OFF, the manual flow had no path for
+    // evenly-matched teams (initial write bailed). With auto-agree ON
+    // we still want to stamp both confirms so prep_match can fire on
+    // an even-matched Fargo match — zero start points, both agreed.
+    if (!AUTO_AGREE_START_POINTS && weakerTeam === 'even') return;
     if (initialWriteFiredRef.current) return;
 
     initialWriteFiredRef.current = true;
@@ -169,15 +198,37 @@ export function useFargoStartPointsNegotiation(
         updates.home_to_tie = computedDefault;
         updates.away_to_tie = 0;
         updates.home_to_lose = memberPlayerNumber;
-      } else {
+      } else if (weakerTeam === 'away') {
         updates.away_to_tie = computedDefault;
         updates.home_to_tie = 0;
         updates.away_to_lose = memberPlayerNumber;
+      } else {
+        // weakerTeam === 'even' — only reachable with AUTO_AGREE on.
+        // Zero start points on both sides.
+        updates.home_to_tie = 0;
+        updates.away_to_tie = 0;
       }
 
-      // Race guard: only write if the weaker team's tie column is still null.
+      // Auto-agree: also stamp the OPPOSITE side's _to_lose so
+      // `bothConfirmed` is true on first render. We use the same
+      // home-captain player number for the away side too — the
+      // downstream checks only care that both columns are non-null,
+      // not what the value is. (See AUTO_AGREE_START_POINTS docstring
+      // at the top of the file for the why.)
+      if (AUTO_AGREE_START_POINTS) {
+        updates.home_to_lose = memberPlayerNumber;
+        updates.away_to_lose = memberPlayerNumber;
+      }
+
+      // Race guard: only write if the weaker team's tie column is still
+      // null. For the even case, gate on home_to_tie which is what we
+      // set first.
       const weakerTieColumn =
-        weakerTeam === 'home' ? 'home_to_tie' : 'away_to_tie';
+        weakerTeam === 'home'
+          ? 'home_to_tie'
+          : weakerTeam === 'away'
+            ? 'away_to_tie'
+            : 'home_to_tie';
 
       const { error } = await supabase
         .from('matches')

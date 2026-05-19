@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-17 (Modular Scoring System framework landed under `docs/league-system/`: 9-Module catalog (Handicap Systems, Handicap Mechanisms, Points System, Win Calculator, Threshold Charts, Team Geometry, Match Format, Pairings Generator, Tiebreak System) with locked PRINCIPLES + README + 9 Module READMEs + 14 substantive variant pages + 4 Tiebreak Mechanism stubs. All 100% locked per Principle 7 gate procedure. League Intake Agent prompt + howto added at `docs/league-system/intake-agent-prompt.md` + `intake-agent-howto.md`; one-line invocation pointer at repo root `secretweapon.md`. Brainstorm captures: modular-scoring viability/comparison + tie-resolution direction. Migration plan: `docs/plans/2026-05-17-001-refactor-modular-framework-migration-plan.md`.)
+> **Last Updated**: 2026-05-19 (Merged main into docs/league-system-l1. Branch carries: Modular Scoring System framework under `docs/league-system/` + Module extraction work — Team Geometry / Match Format / Handicap Systems / Threshold Charts / Handicap Mechanisms all A→D complete; Points System (Unit 5) Phase A+B in place with cross-audited compositions. Main absorbed: Messaging Phase 1 overhaul, Navigation IA overhaul, Scoring Modal rework, Fargo auto-agree start-points, modular league system v2 (calculator-as-type), unified scoreboard.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -280,7 +280,6 @@ Node-only tooling the operator runs manually (not part of the app bundle).
 | `conversation_participants.sql` | Participant relationships |
 | `messages.sql` | Message data |
 | `blocked_users.sql` | Blocked user relationships |
-| `user_reports.sql` | User reporting system |
 | `messaging_rls_policies.sql` | Row-level security policies |
 | `enable_realtime.sql` | Realtime subscription setup |
 | `create_conversation_function.sql` | Create conversation function |
@@ -421,9 +420,35 @@ how to add a new test, demo recording, cleanup model).
 - `groupHouseRules.test.ts` - TOC interleave grouping: standalones, override pairing, specificity ordering
 - `houseRuleForm.test.tsx` - HouseRuleForm: validation, effect-type switch, CSI suggestions, snippet picker, dirty state
 
+#### Test Documentation
+- `__tests__/README.md` - **Test directory conventions.** Explains the vitest `unit` vs `db` project split, where to put new tests, the one rule that matters (`db`-touching tests go under `__tests__/database/`), and how to run them. Read this before adding a new test file.
+
 #### Database Tests (`/__tests__/database/`)
 - `rulesPageEvents.rls.test.ts` - `rules_page_events` RLS + constraints (requires local Supabase)
 - `houseRules.rls.test.ts` - `house_rules` RLS probes (requires local Supabase; full coverage deferred until seed fixtures land)
+- `messaging-phase1-conversations.rls.test.ts` - **Messaging Phase 1 / Unit 1** — schema verification: confirms `conversations.archived_at`, `conversation_participants.notification_mode`, `cannot_leave`, and the widened CHECK constraints all landed. 13 tests.
+- `messaging-phase1-messages.rls.test.ts` - **Messaging Phase 1 / Unit 2** — schema verification: confirms `messages.is_system`, nullable `sender_id`, `messages_is_system_shape` CHECK, `members.profanity_onboarding_completed_at`, `members.deleted_at`. 9 tests.
+- `messaging-phase1-postSystemMessage.test.ts` - **Messaging Phase 1 / Unit 3 helper 1/5** — DB-backed coverage of `postSystemMessage()`: inserts row with `is_system=true, sender_id=NULL`, rejects on missing conversation FK.
+- `messaging-phase1-createTeamChat.test.ts` - **Messaging Phase 1 / Unit 3 helper 2/5** — DB-backed coverage of `createTeamChat()` (idempotency, roster→participants, captain `cannot_leave`, opening system message, FK errors).
+- `messaging-phase1-createCaptainChat.test.ts` - **Messaging Phase 1 / Unit 3 helper 3/5** — DB-backed coverage of `createCaptainChat()`: dedups captains-also-on-staff (captain rule wins on `cannot_leave`), idempotent, posts opening message.
+- `messaging-phase1-createSeasonAnnouncementsChat.test.ts` - **Messaging Phase 1 / Unit 3 helper 4/5** — DB-backed coverage of `createSeasonAnnouncementsChat()`: every distinct rostered player as `cannot_leave=true` participant, idempotent.
+- `messaging-phase1-createOrgAnnouncementsChat.test.ts` - **Messaging Phase 1 / Unit 3 helper 5/5** — DB-backed coverage of `createOrgAnnouncementsChat()`: every distinct player across currently-active seasons in the org, past-season players excluded, idempotent.
+- `messaging-phase1-unit7-polish.rls.test.ts` - **Messaging Phase 1 / Unit 7 (polish)** — verifies the polish migration (`20260513000001`): system-message INSERT keeps all participants' `unread_count` at 0, regular message INSERT still bumps non-senders, mixed system/regular sequence only counts the regular one, and the reworded `COMMENT ON COLUMN members.profanity_filter_enabled` mentions both minor enforcement (`minor` / `under 18` / `age`) AND the DOB fallback (`dob` / `date_of_birth`).
+
+#### Messaging UI Components (`/components/messages/`)
+- `ReadOnlyBanner.tsx` - **Messaging Phase 1 / Unit 6** — shadcn `Alert` that renders in place of the message composer when the current user can read but not post. Two reasons covered: `past-member` (left_at non-NULL) and `announcement-non-staff` (announcements channel viewed by a non-staff member). The composer is unmounted by `MessageView`, not just hidden by CSS.
+- `__tests__/ReadOnlyBanner.test.tsx` - RTL test covering both `reason` values render distinct copy.
+- `__tests__/ConversationList.profanity.test.tsx` - **Messaging Phase 1 / Unit 7** — RTL test covering the last-message-preview filter: filter ON censors profane previews while leaving clean ones and surrounding chrome intact, filter OFF renders raw, null/empty preview falls back to "No messages yet", unread-count badge is unaffected.
+- `__tests__/MessageBubble.system-message.test.tsx` - **Messaging Phase 1 / Unit 7** — RTL test for the `isSystem` render branch: centered/italic/muted-foreground wrapper, no sender link / no timestamp / no read receipt even when those props are passed, profanity filter applies defensively when enabled, default variant unchanged when `isSystem` is omitted.
+- `messageview/__tests__/useOutgoingMessages.test.ts` - **Messaging Phase 1 / Unit 8** — Unit tests for the optimistic-outgoing hook: `addPending` returns unique clientIds and appends a `sending` entry; `markFailed` flips status + records error; `markPending` clears the error on retry; `remove` deletes by clientId while preserving order; unknown-id mutators are no-ops. 6 cases.
+- `messageview/__tests__/MessageList.outgoing.test.tsx` - **Messaging Phase 1 / Unit 8** — RTL test for the inline-failed-send rendering: pending outgoing entries render as normal user bubbles after the confirmed messages, failed entries render as the destructive failed-variant `MessageBubble` with error + Retry button (click invokes `onRetryOutgoing(clientId, content)`), multiple failed entries render independently (eggs AND bacon both visible + retryable), mixed pending+failed render in order, empty state only shows when both confirmed AND outgoing are empty. 7 cases.
+- `CreateTeamChatPrompt.tsx` - **Messaging Phase 1 / Unit 3 helper 6/6** — captain manual-fallback prompt above the Messages conversation list. Shows one card per captained active-season team that lacks an auto-managed chat. Clicking creates the chat via `createTeamChat()` and auto-selects it.
+
+#### Messaging Hooks (`/api/hooks/`)
+- `useMessageComposerStatus.ts` - **Messaging Phase 1 / Unit 6** — TanStack Query hook. Returns `{ readOnly, reason }` for a conversation. Looks up the current user's participant row + (for announcement channels) their `organization_staff` membership. Consumed by `MessageView` to choose between `MessageInput` and `ReadOnlyBanner`.
+- `useCaptainTeamsMissingChat.ts` - **Messaging Phase 1 / Unit 3 helper 6/6** — TanStack Query hook. Returns the list of teams the current user captains in an active season that lack an auto-managed team chat. Used by `CreateTeamChatPrompt`.
+- `messaging-phase1-season-activation.rls.test.ts` - **Messaging Phase 1 / Unit 4** — DB-backed coverage of the season-activation trigger: team chats per team, captain chat, season + org announcements, idempotent re-fire, no-fire on non-status UPDATEs, no-fire when status flips away from active.
+- `messaging-phase1-roster-triggers.rls.test.ts` - **Messaging Phase 1 / Unit 5** — DB-backed coverage of the four roster/captain lifecycle triggers: INSERT (join + msg only on real inserts), DELETE (deferred constraint trigger; sets `left_at` and posts "left" only on real removals, silent on wholesale-replace), captain change (cannot_leave flip in team + captain chats; multi-team captain edge case), member soft-delete. **Note:** the three messaging DB-backed test files race each other under default vitest file parallelism — run with `--no-file-parallelism` when executing the full directory. See `LIST_FOR_ED.md` #27.
 
 #### Test Utilities (`/test/`)
 - `setup.ts` - Test environment setup
@@ -480,7 +505,7 @@ how to add a new test, demo recording, cleanup model).
 
 #### Standalone Pages (`/pages/`)
 - `AdminReports.tsx` - Admin reports dashboard
-- `Messages.tsx` - Messaging page
+- `Messages.tsx` - Messaging page — also mounts the Unit 9 `ProfanityOnboardingModal` on first open (gated by NULL `profanity_onboarding_completed_at`).
 - `PlayerProfile.tsx` - Player profile page
 
 #### Auth Pages (`/login/`)
@@ -652,9 +677,11 @@ Reusable wizard/form step components
 - `scoreboardColors.ts` - Single source of truth for team colors (home: blue, away: orange)
 
 #### Messaging Components (`/components/messages/`)
-- `MessageView.tsx` - Main message view
-- `MessageInput.tsx` - Message input
-- `MessageBubble.tsx` - Message bubble
+- `MessageView.tsx` - Main message view — orchestrates header, message list (via `MessageList`), composer / read-only banner, leave + block dialogs.
+- `MessageInput.tsx` - Message input — composer. Clears on send-attempt regardless of outcome; failure rendering lives in the conversation thread via `MessageList`, not here.
+- `MessageBubble.tsx` - Message bubble — three variants: default user-to-user, Unit 7 centered/italic system-message, Unit 8 destructive failed-send (used inline in `MessageList` for failed outgoing entries).
+- `messageview/MessageList.tsx` - Scrollable message list extracted from `MessageView`. Owns the `Message` interface (exported), loading + empty states, auto-scroll, the system-message branch (`is_system → MessageBubble isSystem`), AND the Unit 8 inline-failed-send rendering: optimistic outgoing entries (pending + failed) render after the confirmed list with the appropriate `MessageBubble` variant per status.
+- `messageview/useOutgoingMessages.ts` - Local-state hook for optimistic outgoing messages (Unit 8 inline pattern). Tracks `{ clientId, content, status: 'sending' | 'failed', errorMessage?, createdAt }` entries; exposes `addPending` / `markPending` / `markFailed` / `remove`. Used by `MessageView` to thread an optimistic bubble into `MessageList` and convert it to a retryable failed bubble when the mutation rejects.
 - `ConversationList.tsx` - Conversation list
 - `ConversationHeader.tsx` - Conversation header
 - `MessagesEmptyState.tsx` - Empty state
@@ -663,6 +690,10 @@ Reusable wizard/form step components
 - `MessageSettingsModal.tsx` - Settings modal
 - `BlockedUsersModal.tsx` - Blocked users modal
 - `UserListItem.tsx` - User list item
+
+#### Onboarding Components (`/components/onboarding/`)
+- `ProfanityOnboardingModal.tsx` - **Messaging Phase 1 / Unit 9** — shadcn `Dialog` shown once, the first time a member opens the Messages page (gated by a NULL `members.profanity_onboarding_completed_at`). One-time, defaulted-ON framing: copy explains the filter is on by default and changeable in Settings, then asks if they'd like to turn it off. Two buttons ("Turn filter off" → enabled=false, "Keep filter on" → enabled=true); dismissing (Escape / backdrop / X) is treated as "keep on" (enabled=true). Every exit path writes `completed=now()` so it never reappears. Calls `useMarkProfanityOnboardingComplete`; `onResolved` fires only on a successful write (a rejected mutation leaves the modal open for retry).
+- `__tests__/ProfanityOnboardingModal.test.tsx` - **Messaging Phase 1 / Unit 9** — RTL test: copy + two buttons render, "Keep filter on" persists `filterEnabled=true`, "Turn filter off" persists `false`, Escape defaults to `true`, `onResolved` fires once per success, rejected mutation does NOT resolve (retry works), choice-then-dismiss only resolves once. 7 cases.
 
 #### Operator Components (`/components/operator/`)
 - `ActiveLeagues.tsx` - Active leagues overview (uses LeagueStatusCard)
@@ -763,7 +794,8 @@ Reusable wizard/form step components
 - `useRosterEditor.ts` - Roster editing
 
 #### Form & Validation
-- `useProfanityFilter.ts` - Profanity filtering
+- `useProfanityFilter.ts` - Profanity filtering — two-tier rule: when `isMinor(date_of_birth)` is true the filter is forced ON and `canToggle: false` (R4 under-18 enforcement); otherwise respects `members.profanity_filter_enabled`. DOB is optional, so unknown-age falls back to the user's stored preference.
+- `__tests__/useProfanityFilter.test.ts` - **Profanity filter hook tests** (10 cases) — loading state, fail-open on error / no data, forced ON for known minors (incl. day-before-18th-birthday boundary), adult preference both directions, null DOB respects preference, null `profanity_filter_enabled` coerces to false.
 - `useOperatorProfanityFilter.ts` - Operator profanity filter
 - `useChampionshipAutoFill.ts` - Championship date autofill
 
@@ -783,6 +815,8 @@ Reusable wizard/form step components
 > **CRITICAL**: Always use `formatters.ts` for timezone-safe date handling
 
 - `formatters.ts` - **Timezone-safe date utilities** (parseLocalDate, formatLocalDate, etc.)
+- `age.ts` - **Age calculation utilities** — `calculateAge(dob)` and `isMinor(dob)` built on `parseLocalDate` so DOB strings anchor to the local calendar (avoids the UTC off-by-one-day bug). Consumed by `useProfanityFilter` for R4 under-18 enforcement; returns `null` / `false` for missing or malformed DOB.
+- `__tests__/age.test.ts` - **Age util tests** (10 cases) — `calculateAge` null/malformed/whole-years/birthday-not-yet/birthday-today; `isMinor` unknown DOB → false, clear minors → true, day-before-18 → true, exact 18th birthday → false, adults → false. Uses `vi.setSystemTime` to pin "today" to 2026-05-12.
 - `holidayUtils.ts` - Holiday detection and handling
 
 #### Schedule & Matchup
@@ -1070,6 +1104,11 @@ Supabase local configuration and migrations
 | `supabase/migrations/20260501000004_backfill_null_bye_matches.sql` | **PR 1 bye-as-real-team** — one-time backfill: replaces NULL `home_team_id`/`away_team_id` on legacy matches with real per-season bye-team rows. Includes pre-flight DO block enumerating abort conditions. |
 | `supabase/migrations/20260501000001_team_fks_cascade_to_restrict.sql` | **PR 0 cascade safety net** — flips `matches.home_team_id`, `matches.away_team_id`, and `match_lineups.team_id` from `ON DELETE CASCADE` to `ON DELETE RESTRICT` so deleting a team can no longer silently destroy match/lineup history. See `docs/plans/2026-04-29-001-fix-team-cascade-deletion-plan.md`. |
 | `supabase/migrations/20260504000000_harden_prep_match_write_guards.sql` | **Lineup→scoring transition stability fix** — replaces `prep_match` body so ALL writes (thresholds, status, started_at) are guarded by `WHERE status = 'scheduled'`; drops `IF NOT FOUND` exception and wraps INSERT in `IF FOUND` so race-loser calls are true no-ops. See `docs/plans/2026-05-04-001-fix-lineup-to-scoring-transition-stability-plan.md`. |
+| `supabase/migrations/20260509000001_messaging_phase1_conversations_participants.sql` | **Messaging Phase 1 / Unit 1** — schema foundations: `conversations.archived_at` (Phase 6 read-only gate prep), `conversation_participants.notification_mode` (tri-state replacement for legacy `is_muted` + `notifications_enabled`, with backfill), `conversation_participants.cannot_leave` (captain-force-membership flag, used by Unit 5 + Unit 6). Plus three CHECK-constraint widenings: `conversation_type` gains `'match_chat'`, `scope_type` gains `'match'`, participant `role` gains `'observer'`. All additive; legacy columns stay during deprecation window. |
+| `supabase/migrations/20260509000002_messaging_phase1_messages_members.sql` | **Messaging Phase 1 / Unit 2** — `messages.is_system` flag + nullable `sender_id` + paired `messages_is_system_shape` CHECK (every row is either system-with-NULL-sender or user-with-sender, no other shape). `members.profanity_onboarding_completed_at` (Unit 9 modal). `members.deleted_at` (soft-delete, read by Unit 5 trigger). Intentionally ships **no RLS policies** — those tables have `rowsecurity=false` in dev (RLS-enablement is a separate planned effort). |
+| `supabase/migrations/20260509000003_messaging_phase1_season_activation_trigger.sql` | **Messaging Phase 1 / Unit 4** — adds SECURITY DEFINER `auto_create_season_conversations(uuid)` plus trigger wrapper; trigger fires `AFTER UPDATE OF status ON seasons WHEN status flips to 'active'` and creates one team chat per team, one captain chat, one season-announcements chat, and an org-announcements chat (idempotent). Each chat creation is wrapped in `BEGIN/EXCEPTION` so a single failure doesn't strand others. Also adds `conversations` to the `supabase_realtime` publication. See `docs/plans/2026-05-09-001-feat-messaging-overhaul-phase-1-plan.md`. |
+| `supabase/migrations/20260509000004_messaging_phase1_roster_captain_triggers.sql` | **Messaging Phase 1 / Unit 5** — four trigger functions that keep auto-managed chats in sync with roster + captain state: `team_players` INSERT (add participant, post "joined" only on real inserts via `xmax = 0`), `team_players` DELETE (set `left_at`, post "left" only when newly set), `teams` UPDATE OF `captain_id` (flip `cannot_leave` in both team and captain chats; multi-team captains keep `cannot_leave` on captain chat), `members` UPDATE OF `deleted_at` NULL→ts (mark every active participant row as left). All `SECURITY DEFINER`, `search_path = public, pg_catalog`, REVOKE PUBLIC/authenticated. See `docs/plans/2026-05-09-001-feat-messaging-overhaul-phase-1-plan.md`. |
+| `supabase/migrations/20260513000001_messaging_phase1_unit7_polish.sql` | **Messaging Phase 1 / Unit 7 (polish)** — two changes. (1) `COMMENT ON COLUMN public.members.profanity_filter_enabled` reworded from "Forced ON for users under 18, optional for adults" to reflect the DOB-optional reality (forced ON only for *known* minors; toggleable for adults and members with no DOB on file). (2) `CREATE OR REPLACE FUNCTION public.increment_unread_count()` adds an explicit `IF NEW.is_system THEN RETURN NEW; END IF;` early-return so system messages never bump unread counts; today the implicit SQL NULL semantics achieve the same result but the explicit guard makes intent visible and survives future schema changes. Both statements are idempotent. See `docs/plans/2026-05-09-001-feat-messaging-overhaul-phase-1-plan.md` (Unit 7). |
 | `supabase/seed.sql` | Full local dev DB dump — auto-applied on `supabase db reset`. **Local only, never runs against production.** |
 | `supabase/seed_test_users.sql` | 4 synthetic test auth users (player/operator/captain/owner, password `test-password-123`). **Dev-only — run manually via `docker exec ... psql`.** |
 | `supabase/seed_members.sql` | 20 placeholder players (no `user_id`) spanning Fargo 300–580 ratings for wizard/team-management testing. **Dev-only — not wired into auto-seed; run manually when the local DB needs a bench of fake members.** |
@@ -1122,7 +1161,7 @@ See [RESTRUCTURE_PLAN.md](RESTRUCTURE_PLAN.md) for complete list of 20 organizat
 | **Official Rulebook Reader** | `/rules`, `/officalBCARulebook/cleaned`, `/scripts/clean-rulebook` | `RulesPage.tsx`, `RuleDetailPage.tsx`, `useRulebook.ts`, `scripts/clean-rulebook.ts`, `rules_page_events.sql` |
 | **League House Rules** | `/rules` (reader overlay), `/rules/house/:scope/:scopeId/:ruleId`, `/league-rules/:orgId`, `/league-settings/:leagueId` (authoring) | `HouseRuleForm.tsx`, `HouseRulesList.tsx`, `HouseRuleDetailPage.tsx`, `LeagueHouseRulesSection.tsx`, `useHouseRules.ts`, `house_rules.sql`, `leagues_ignore_org_house_rules.sql` |
 | **Player Registration** | `/newPlayer` | `NewPlayerForm.tsx`, `usePlayerFormSubmission.ts` |
-| **Reporting** | `/operator`, `/pages`, `/database/reporting` | `ReportsManagement.tsx`, `AdminReports.tsx`, `user_reports.sql` |
+| **Reporting** | `/operator`, `/pages` | `ReportsManagement.tsx`, `AdminReports.tsx` (live schema in `supabase/migrations/20251130010824_baseline.sql`; legacy drafts archived 2026-05-13) |
 | **Wizards/Forms** | `/wizards`, `/components/wizard`, `/components/forms`, `/data`, `/flows` | `WizardFlowShell.tsx`, `createNewLeagueFlow.ts`, `seasonWizardSteps.tsx` |
 
 ---

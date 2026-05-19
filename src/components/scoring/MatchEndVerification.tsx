@@ -483,8 +483,8 @@ export function MatchEndVerification({
           setIsCompleting(false); // Reset completing state before navigation
           navigate(`/match/${matchId}/lineup`);
         } else {
-          // Match has a winner - navigate to dashboard
-          navigate('/dashboard');
+          // Match has a winner - navigate to My Teams
+          navigate('/my-teams');
         }
       } catch (error) {
         logger.error('Failed to complete match', { error: error instanceof Error ? error.message : String(error) });

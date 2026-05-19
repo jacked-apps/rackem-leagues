@@ -93,10 +93,10 @@ export const usePlayerFormSubmission = ({ state, onError, onSuccess, onLoading }
       // Success! Clear errors
       onSuccess();
 
-      // Force a full page reload to dashboard
+      // Force a full page reload to My Teams
       // This ensures UserProvider refetches the session and the new member record is loaded
       // Using window.location instead of navigate() ensures the entire app state refreshes
-      window.location.href = '/dashboard';
+      window.location.href = '/my-teams';
 
     } catch (error) {
       // Handle unexpected errors

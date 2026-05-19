@@ -1,3 +1,18 @@
+-- ============================================================================
+-- ARCHIVED 2026-05-13 (Messaging Phase 1 / Unit 9 cleanup)
+-- ============================================================================
+-- Original location: database/reporting/user_reports.sql
+--
+-- This file is no longer the authoritative source for the user_reports table.
+-- The live schema (including all RLS policies, indexes, and triggers) lives in
+-- the baseline migration:
+--
+--   supabase/migrations/20251130010824_baseline.sql
+--
+-- Kept here only for historical reference. Do NOT run this file against any
+-- environment. New schema work goes through supabase/migrations/.
+-- ============================================================================
+
 /**
  * @fileoverview User Reporting System
  *

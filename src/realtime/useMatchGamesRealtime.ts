@@ -50,7 +50,8 @@ interface UseMatchGamesRealtimeOptions {
     breakFouled: boolean;
     runout: boolean;
     winByForfeit: boolean;
-    loserBallsPocketed: number | null;
+    winnerValue: number | null;
+    loserValue: number | null;
     isResetRequest?: boolean;
   }) => void;
   /** Current editing game (to suppress own vacate requests) */
@@ -145,7 +146,8 @@ export function useMatchGamesRealtime(
                   breakFouled: updatedGame.break_fouled,
                   runout: updatedGame.runout,
                   winByForfeit: updatedGame.win_by_forfeit,
-                  loserBallsPocketed: updatedGame.loser_balls_pocketed,
+                  loserValue: updatedGame.loser_value,
+                  winnerValue: updatedGame.winner_value,
                   isResetRequest: true
                 });
               }
@@ -178,7 +180,8 @@ export function useMatchGamesRealtime(
                   breakFouled: updatedGame.break_fouled,
                   runout: updatedGame.runout,
                   winByForfeit: updatedGame.win_by_forfeit,
-                  loserBallsPocketed: updatedGame.loser_balls_pocketed,
+                  loserValue: updatedGame.loser_value,
+                  winnerValue: updatedGame.winner_value,
                   isResetRequest: false
                 });
               }

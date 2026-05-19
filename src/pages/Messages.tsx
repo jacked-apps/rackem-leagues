@@ -20,11 +20,13 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
 import { ConversationList } from '@/components/messages/ConversationList';
+import { CreateTeamChatPrompt } from '@/components/messages/CreateTeamChatPrompt';
 import { MessageView } from '@/components/messages/MessageView';
 import { MessagesEmptyState } from '@/components/messages/MessagesEmptyState';
 import { NewMessageModal } from '@/components/messages/NewMessageModal';
 import { AnnouncementModal } from '@/components/messages/AnnouncementModal';
 import { MessageSettingsModal } from '@/components/messages/MessageSettingsModal';
+import { ProfanityOnboardingModal } from '@/components/onboarding/ProfanityOnboardingModal';
 import {
   useCurrentMember,
   useUserProfile,
@@ -52,6 +54,18 @@ export function Messages() {
   const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const { data: isCaptain = false } = useIsCaptain();
+
+  // Unit 9: one-time profanity-filter onboarding. Shown the first time a
+  // member opens Messages (detected by a NULL
+  // profanity_onboarding_completed_at). The modal records a choice on
+  // every exit path, so once resolved it never reappears; the local
+  // flag just prevents a re-render flash before the member cache
+  // refetches with the new timestamp.
+  const [onboardingResolved, setOnboardingResolved] = useState(false);
+  const showProfanityOnboarding =
+    !!member?.user_id &&
+    member.profanity_onboarding_completed_at == null &&
+    !onboardingResolved;
 
   // Mutation hooks
   const createOrOpenConversationMutation = useCreateOrOpenConversation();
@@ -193,16 +207,19 @@ export function Messages() {
           )}
         >
           {memberId && (
-            <ConversationList
-              userId={memberId}
-              selectedConversationId={selectedConversationId}
-              onSelectConversation={setSelectedConversationId}
-              onNewMessage={handleNewMessage}
-              showAnnouncements={isCaptain || canAccessLeagueOperatorFeatures()}
-              onAnnouncements={handleAnnouncements}
-              onSettings={() => setShowSettingsModal(true)}
-              onExit={() => navigate('/dashboard')}
-            />
+            <>
+              <CreateTeamChatPrompt onChatCreated={setSelectedConversationId} />
+              <ConversationList
+                userId={memberId}
+                selectedConversationId={selectedConversationId}
+                onSelectConversation={setSelectedConversationId}
+                onNewMessage={handleNewMessage}
+                showAnnouncements={isCaptain || canAccessLeagueOperatorFeatures()}
+                onAnnouncements={handleAnnouncements}
+                onSettings={() => setShowSettingsModal(true)}
+                onExit={() => navigate('/my-teams')}
+              />
+            </>
           )}
         </div>
 
@@ -230,8 +247,8 @@ export function Messages() {
 
           {/* Exit Button - Only show on desktop */}
           <div className="hidden md:flex border-t bg-green-300 px-4 md:px-6 py-4 justify-end flex-shrink-0">
-            <Button onClick={() => navigate('/dashboard')} loadingText="none">
-              Exit to Dashboard
+            <Button onClick={() => navigate('/my-teams')} loadingText="none">
+              Exit to My Teams
             </Button>
           </div>
         </div>
@@ -263,6 +280,14 @@ export function Messages() {
           onUnblocked={() => {
             // Cache auto-refreshed by unblock mutation
           }}
+        />
+      )}
+
+      {/* Profanity onboarding — first Messages open only (Unit 9) */}
+      {showProfanityOnboarding && member?.user_id && (
+        <ProfanityOnboardingModal
+          userId={member.user_id}
+          onResolved={() => setOnboardingResolved(true)}
         />
       )}
     </div>

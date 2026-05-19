@@ -4,17 +4,33 @@
  * Single responsibility: Display a single message with read receipts.
  * Reusable component for rendering individual messages in a conversation.
  *
+ * Three render variants:
+ *  - Default bubble (user-to-user): colored bubble, sender link, timestamp,
+ *    read receipt.
+ *  - System bubble (trigger-driven "Sally joined the team" lines, marked
+ *    `is_system = true` and `sender_id IS NULL` per the messages_is_system_shape
+ *    CHECK constraint): centered, italic, muted-foreground; no avatar, no
+ *    sender link, no timestamp, no read receipt.
+ *  - Failed bubble (Unit 8): the user's own message couldn't reach the
+ *    server. Rendered with the destructive palette, the inline error text
+ *    below it, and a Retry button. Sender-side layout (justify-end) so it
+ *    sits where the user's own messages live.
+ *
  * Profanity Filtering:
  * - Applies display-time filtering based on viewer's profanity filter setting
- * - Users under 18 always see filtered content (forced ON)
- * - Users 18+ see filtered content only if they have filter enabled
- * - Original message content stored uncensored in database
+ *   (see `useProfanityFilter`).
+ * - Filter is forced ON when the viewer's `members.date_of_birth` is on file
+ *   AND `isMinor()` is true — DOB is optional, so when it's unknown the
+ *   filter falls back to the viewer's stored preference.
+ * - Original message content stored uncensored in DB; transform is render-only.
+ * - System AND failed messages also pass through the filter (defensive).
  */
 
 import { Check, CheckCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { PlayerNameLink } from '@/components/PlayerNameLink';
+import { Button } from '@/components/ui/button';
 import { useProfanityFilter } from '@/hooks/useProfanityFilter';
 import { censorProfanity } from '@/utils/profanityFilter';
 
@@ -26,6 +42,14 @@ interface MessageBubbleProps {
   senderName?: string;
   senderId?: string;
   recipientLastRead: string | null;
+  /** When true, renders the centered/italic/muted system-message variant. */
+  isSystem?: boolean;
+  /** When true, renders the destructive failed-send variant with Retry button. */
+  failed?: boolean;
+  /** Human-readable error message shown beneath the failed bubble. */
+  errorMessage?: string;
+  /** Click handler for the Retry button (only used in the failed variant). */
+  onRetry?: () => void;
 }
 
 export function MessageBubble({
@@ -36,12 +60,56 @@ export function MessageBubble({
   senderName,
   senderId,
   recipientLastRead,
+  isSystem = false,
+  failed = false,
+  errorMessage,
+  onRetry,
 }: MessageBubbleProps) {
-  // Get user's profanity filter setting (forced ON for under 18, optional for 18+)
   const { shouldFilter } = useProfanityFilter();
-
-  // Apply profanity filter if user has it enabled (or is under 18)
   const displayContent = shouldFilter ? censorProfanity(content) : content;
+
+  if (failed) {
+    return (
+      <div className="flex justify-end" data-testid="failed-message">
+        <div className="max-w-md flex flex-col items-end gap-1">
+          <div className="rounded-lg px-4 py-2 bg-destructive/15 text-foreground border border-destructive">
+            <p className="text-sm whitespace-pre-wrap">{displayContent}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span
+              className="text-xs text-destructive"
+              data-testid="failed-message-error"
+            >
+              {errorMessage || 'Failed to send'}
+            </span>
+            {onRetry && (
+              <Button
+                variant="destructive"
+                size="sm"
+                loadingText="none"
+                onClick={onRetry}
+              >
+                Retry
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isSystem) {
+    return (
+      <div
+        data-testid="system-message"
+        className="flex justify-center my-2"
+      >
+        <p className="text-sm italic text-muted-foreground text-center max-w-md px-4 whitespace-pre-wrap">
+          {displayContent}
+        </p>
+      </div>
+    );
+  }
 
   const formatTimestamp = (dateString: string) => {
     try {

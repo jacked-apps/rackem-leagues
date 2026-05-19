@@ -199,49 +199,50 @@ describe('fargo5v5 SystemModule', () => {
   });
 
   describe('scoring.recordGameOutcome', () => {
-    it('stores only loser_balls_pocketed; winner_points and loser_points are null', () => {
+    it('stores only loser_value; winner_points and loser_points are null', () => {
       const result = fargo5v5.scoring.recordGameOutcome(
-        { winnerTeam: 'home', loserBallsPocketed: 3 },
+        { winnerTeam: 'home', loserValue: 3 },
         {},
       );
       expect(result).toEqual({
         winner_points: null,
         loser_points: null,
-        loser_balls_pocketed: 3,
+        winner_value: null,
+        loser_value: 3,
       });
     });
 
-    it('clamps loser_balls_pocketed to [0, loser_points_max]', () => {
+    it('clamps loser_value to [0, loser_points_max]', () => {
       const low = fargo5v5.scoring.recordGameOutcome(
-        { winnerTeam: 'home', loserBallsPocketed: -1 },
+        { winnerTeam: 'home', loserValue: -1 },
         {},
       );
-      expect(low.loser_balls_pocketed).toBe(0);
+      expect(low.loser_value).toBe(0);
 
       const high = fargo5v5.scoring.recordGameOutcome(
-        { winnerTeam: 'home', loserBallsPocketed: 99 },
+        { winnerTeam: 'home', loserValue: 99 },
         {},
       );
-      expect(high.loser_balls_pocketed).toBe(7); // default max
+      expect(high.loser_value).toBe(7); // default max
 
       const customMax = fargo5v5.scoring.recordGameOutcome(
-        { winnerTeam: 'home', loserBallsPocketed: 10 },
+        { winnerTeam: 'home', loserValue: 10 },
         { loser_points_max: 15 },
       );
-      expect(customMax.loser_balls_pocketed).toBe(10);
+      expect(customMax.loser_value).toBe(10);
     });
 
-    it('returns null for balls when loserBallsPocketed is missing', () => {
+    it('returns null for balls when loserValue is missing', () => {
       const result = fargo5v5.scoring.recordGameOutcome({ winnerTeam: 'home' }, {});
-      expect(result.loser_balls_pocketed).toBeNull();
+      expect(result.loser_value).toBeNull();
     });
 
     it('floors fractional ball counts', () => {
       const result = fargo5v5.scoring.recordGameOutcome(
-        { winnerTeam: 'home', loserBallsPocketed: 3.7 },
+        { winnerTeam: 'home', loserValue: 3.7 },
         {},
       );
-      expect(result.loser_balls_pocketed).toBe(3);
+      expect(result.loser_value).toBe(3);
     });
   });
 
@@ -251,12 +252,12 @@ describe('fargo5v5 SystemModule', () => {
         winner_team: winner,
         winner_points: null,
         loser_points: null,
-        loser_balls_pocketed: balls,
+        loser_value: balls,
       };
     }
 
-    it('derives per-game points from loser_balls_pocketed and the winner_points dial', () => {
-      // Home wins both games with default winner_points=10 and loser_balls_pocketed=3
+    it('derives per-game points from loser_value and the winner_points dial', () => {
+      // Home wins both games with default winner_points=10 and loser_value=3
       const games = [game('home', 3), game('home', 3)];
       const result = fargo5v5.scoring.computeMatchResult(games, {});
       // Each home win: home gets 10, away gets 3 (balls_pocketed method).

@@ -65,7 +65,7 @@ function regularGame(
 ): MinimalMatchGame {
   return {
     winner_team_id: winner,
-    loser_balls_pocketed: ballsPocketed,
+    loser_value: ballsPocketed,
     is_tiebreaker: false,
     confirmed_by_home: 'h',
     confirmed_by_away: 'a',

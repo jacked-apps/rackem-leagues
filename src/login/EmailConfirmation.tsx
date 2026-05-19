@@ -38,8 +38,8 @@ export const EmailConfirmation: React.FC = () => {
             setStatus('success');
             setMessage('Email confirmed successfully! Redirecting...');
 
-            // Redirect to dashboard after 2 seconds
-            setTimeout(() => navigate('/dashboard'), 2000);
+            // Redirect to My Teams after 2 seconds
+            setTimeout(() => navigate('/my-teams'), 2000);
           }
         } else {
           setStatus('error');

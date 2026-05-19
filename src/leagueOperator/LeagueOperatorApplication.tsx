@@ -198,8 +198,14 @@ export const LeagueOperatorApplication: React.FC = () => {
       return;
     }
 
-    // Wait a moment for the profile to refresh before navigating
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // (Previously had a 500ms setTimeout here to paper over a stale-
+    // cache bug — the dashboard would render before the org-list
+    // refetch completed. Replaced by `refetchType: 'all'` + awaited
+    // invalidation inside `useCreateOrganization` and
+    // `useUpdateMemberRole`, which now hold the mutations open until
+    // the cache is genuinely fresh. By the time we reach this line
+    // both queries are guaranteed up to date — no race left to paper
+    // over. See LIST_FOR_ED #7 closure note for the full diagnosis.)
 
     // Clear saved progress since form is submitted
     try {
@@ -258,7 +264,7 @@ export const LeagueOperatorApplication: React.FC = () => {
           } catch (error) {
             logger.warn('Failed to clear saved progress on exit', { error: error instanceof Error ? error.message : String(error) });
           }
-          navigate('/dashboard');
+          navigate('/my-teams');
         }}
         title="Become a League Operator"
         subtitle={`Step ${currentStep + 1} of ${questions.length}`}

@@ -238,6 +238,32 @@ The following commands can be run without explicit user permission:
 - `pnpm run lint` (code quality checks)
 - Any read-only analysis commands (grep, glob, read files)
 
+### Testing Conventions
+**Where you put a test file determines how vitest schedules it.** The
+`vitest.config.ts` has two projects (`unit` + `db`) that auto-route
+files by path. Full conventions live in `src/__tests__/README.md`;
+the rule that matters most for new code:
+
+- **If your test touches the real local Postgres** (raw SQL via
+  `executeSql`, supabase-js writes hitting `localhost:54322`, migration
+  verification, trigger/RLS tests) → put it under
+  `src/__tests__/database/`. The `db` project runs these
+  **sequentially** with jsdom so they don't race each other on the
+  shared DB. Add `// @vitest-environment jsdom` as the first line if
+  the file uses supabase-js write paths (see
+  `memory/project_happy_dom_supabase_insert_limit.md`).
+- **Every other test** (component, hook, utility, integration with
+  mocked supabase-js) → co-locate with the source file as
+  `Foo.test.tsx` OR put under `src/__tests__/unit/` or
+  `src/__tests__/integration/`. The `unit` project runs these in
+  parallel with happy-dom.
+
+Plain `pnpm test:run` does the right thing for both projects — no
+`--no-file-parallelism` flag, no manual orchestration. CI workflows
+that call `pnpm test:run` inherit the behavior automatically. Don't
+add tests outside the two project paths without first updating the
+`include` arrays in `vitest.config.ts`.
+
 ### Code Documentation Standards
 This is a collaborative project requiring comprehensive code documentation:
 

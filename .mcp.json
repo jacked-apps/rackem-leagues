@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "supabase-local": {
+      "type": "http",
+      "url": "http://localhost:54321/mcp"
+    },
+    "supabase-staging": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=${SUPABASE_STAGING_PROJECT_REF}&features=database,docs,debug&read_only=true",
+      "headers": {
+        "Authorization": "Bearer ${SUPABASE_ACCESS_TOKEN}"
+      }
+    }
+  }
+}

@@ -229,8 +229,8 @@ export function useSpectateMatch(matchId: string | null | undefined) {
       const teamId = playerIsHomeTeam ? match.home_team_id : match.away_team_id;
       if (g.winner_team_id === teamId) {
         total += fargoWinnerPoints;
-      } else if (g.loser_balls_pocketed !== null && g.loser_balls_pocketed !== undefined) {
-        total += g.loser_balls_pocketed;
+      } else if (g.loser_value !== null && g.loser_value !== undefined) {
+        total += g.loser_value;
       }
     }
     return total;

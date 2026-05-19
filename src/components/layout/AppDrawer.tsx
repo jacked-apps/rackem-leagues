@@ -169,7 +169,6 @@ function PlayerSection({ unreadCount }: { unreadCount: number }) {
   return (
     <ul className="space-y-1">
       <DrawerLink to="/my-match" label="My Match" />
-      <DrawerLink to="/dashboard" label="Dashboard" />
       <DrawerLink to="/my-teams" label="My Teams" />
       <DrawerLink to="/stats" label="Stats" />
       <DrawerLink to="/rules" label="Rules" />
@@ -190,7 +189,6 @@ function OperatorSection({ orgs }: { orgs: OperatorOrg[] }) {
   if (!orgs || orgs.length === 0) return null;
 
   const visible = pickVisibleOrgs(orgs, OPERATOR_ORG_CAP);
-  const hasOverflow = orgs.length > OPERATOR_ORG_CAP;
   const isSingleOrg = visible.length === 1;
 
   return (
@@ -217,16 +215,6 @@ function OperatorSection({ orgs }: { orgs: OperatorOrg[] }) {
           ))}
         </ul>
       )}
-      {hasOverflow ? (
-        <SheetClose asChild>
-          <Link
-            to="/dashboard"
-            className="mt-2 flex min-h-11 items-center rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent"
-          >
-            More on Dashboard →
-          </Link>
-        </SheetClose>
-      ) : null}
     </div>
   );
 }

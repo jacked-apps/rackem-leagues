@@ -39,8 +39,17 @@ import { getCalculator } from '@/systems/calculators';
 export interface MinimalMatchGame {
   /** Winning team's ID. `null` for unscored or vacated games. */
   winner_team_id: string | null;
-  /** Counter value collected from the loser side (e.g. balls pocketed in Fargo 10-7). */
-  loser_balls_pocketed: number | null;
+  /**
+   * Calculator-driven per-game input value collected from the winner side.
+   * NULL when the calculator declares winner side as kind: 'fixed' (no input).
+   */
+  winner_value: number | null;
+  /**
+   * Calculator-driven per-game input value collected from the loser side
+   * (e.g. balls pocketed in Fargo 10-7). Renamed from loser_balls_pocketed
+   * by Branch A.
+   */
+  loser_value: number | null;
   /** Whether this game was played as a tiebreaker. Excluded from regular running totals. */
   is_tiebreaker: boolean;
   /** Member ID of the home-team confirmer. `null` until home confirms. */
@@ -190,8 +199,8 @@ export function computeMatchRunningTotals(
   } else {
     const inputGames = confirmedRegular.map((g) => ({
       winner_team_id: g.winner_team_id,
-      winner_score: null,
-      loser_score: g.loser_balls_pocketed,
+      winner_score: g.winner_value,
+      loser_score: g.loser_value,
       is_tiebreaker: g.is_tiebreaker,
     }));
     home_points_earned = calc.compute(

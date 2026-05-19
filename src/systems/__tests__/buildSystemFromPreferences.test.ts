@@ -298,10 +298,10 @@ describe('buildSystemFromPreferences — scoring dispatch', () => {
     expect(mod.scoring.method).toBe('points_accumulated');
     // Sanity: recordGameOutcome works for a Fargo-style outcome
     const recorded = mod.scoring.recordGameOutcome(
-      { winnerTeam: 'home', loserBallsPocketed: 4 },
+      { winnerTeam: 'home', loserValue: 4 },
       EMPTY_OVERRIDES,
     );
-    expect(recorded.loser_balls_pocketed).toBe(4);
+    expect(recorded.loser_value).toBe(4);
   });
 
   it('stubs points_calculator=linear_above_threshold (legacy paths still in use)', () => {

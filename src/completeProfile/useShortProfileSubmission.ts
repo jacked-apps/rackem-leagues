@@ -123,8 +123,8 @@ export const useShortProfileSubmission = ({
 
       onSuccess();
 
-      // Force full page reload to ensure UserProvider refetches member data
-      window.location.href = '/dashboard';
+      // Force full page reload to My Teams to ensure UserProvider refetches member data
+      window.location.href = '/my-teams';
     } catch (error) {
       logger.error('Unexpected error during profile creation', {
         error: error instanceof Error ? error.message : String(error),

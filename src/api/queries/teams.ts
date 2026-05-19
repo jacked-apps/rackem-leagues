@@ -423,14 +423,18 @@ export async function getCaptainTeamEditData(teamId: string) {
     // Get all teams in this season for duplicate validation
     getTeamsBySeason(seasonId),
 
-    // Get resolved max_roster_size from preferences (source of truth)
+    // Get resolved max_roster_size + lineup_size from preferences. Both
+    // are needed by TeamEditorModal: max_roster_size caps how many
+    // players the form will ever accept, lineup_size drives how many
+    // slots are shown by default (the "+ Add Player" button reveals
+    // additional substitute slots one at a time, up to the cap).
     supabase
       .from('resolved_league_preferences')
-      .select('max_roster_size')
+      .select('max_roster_size, lineup_size')
       .eq('league_id', leagueId)
       .single()
       .then(({ data, error }) => {
-        if (error) return { max_roster_size: 8 }; // fallback
+        if (error) return { max_roster_size: 8, lineup_size: 5 }; // fallback
         return data;
       }),
   ]);
@@ -444,5 +448,6 @@ export async function getCaptainTeamEditData(teamId: string) {
     leagueId,
     seasonId,
     rosterSize: resolvedPrefs?.max_roster_size ?? 8,
+    lineupSize: resolvedPrefs?.lineup_size ?? 5,
   };
 }

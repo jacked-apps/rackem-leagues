@@ -81,10 +81,20 @@ export const accumulatedPerGameParamSchema = z.object({
   loser: sideConfigSchema,
 });
 
-/** Tested Preset values (Fargo 10-7 default). */
+/**
+ * Tested Preset values (Fargo 10-7 default).
+ *
+ * Loser label is intentionally generic ("Points earned in this loss")
+ * rather than 10-7-specific ("Balls pocketed"). The label happens to map
+ * 1:1 with balls in Fargo 10-7's default config, but the column stores a
+ * generic per-game value that the calculator's compute() interprets — a
+ * future league with "2 points per ball" or any other formula reuses the
+ * same label semantics. LOs can override the label per-league through
+ * the calculator's params when the wizard exposes that surface.
+ */
 export const ACCUMULATED_PER_GAME_DEFAULT_PARAMS: AccumulatedPerGameParams = {
   winner: { kind: 'fixed', points: 10 },
-  loser: { kind: 'counter', min: 0, max: 7, label: 'Balls pocketed' },
+  loser: { kind: 'counter', min: 0, max: 7, label: 'Points earned in this loss' },
 };
 
 // ============================================================================
