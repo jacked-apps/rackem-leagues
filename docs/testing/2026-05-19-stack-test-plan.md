@@ -52,7 +52,7 @@ Do these once at the start. Skip whichever you don't need to repeat.
 - [ ] **Run dev seed:** paste `database/dev_bootstrap_full.sql` into Studio. Produces realistic-named teams + a captain + members + 2 leagues (fresh + near-end-of-season). Idempotent.
 - [ ] **Make a season "ripe"** so PR #120 has something to test against: paste `database/dev_make_season_ripe.sql` into Studio.
 - [ ] **Start the dev server:** in your terminal: `pnpm run dev`
-- [ ] **Log in** as `dev@test.com` / `password`
+- [ ] **Log in** as `operator@test.com` / `test-password-123`
 
 ---
 
@@ -76,7 +76,11 @@ If any of those crashes, stop and tell me what you saw before continuing.
 
 - [ ] **CTA visible:** the league detail page shows a "Start Next Season" CTA card (📅 icon) instead of the generic "Let's Go" CTA. Copy reads "Your current season is wrapping up..."
 - [ ] **Click flow:** clicking the button takes you to `/operator/start-next-season/<leagueId>` (URL bar should match)
-- [ ] **Pre-fill correctness:** the wizard's first step shows the upcoming start date pre-filled based on the previous season's end
+- [ ] **Start-date picker** (rebuilt post-first-test): the Start Date step shows **three radio choices** anchored on the previous season's last played week:
+  - "Start immediately" = last week + 7 days
+  - "Take a week off" = last week + 14 days
+  - "Take more time off" = custom DateStepper, minDate = last week + 21 days, locked to the league's play DOW
+  - Defaults to "Start immediately". All three dates should land on the league's play day (e.g. all Thursdays for League 2).
 - [ ] **Team list step:** previous season's teams appear pre-selected for the new season
 - [ ] **Venue step:** previous season's venues appear pre-selected
 - [ ] **Submit works:** clicking Create on the final step lands you somewhere sensible (probably the new season's league detail page) and a new season exists in the DB
