@@ -2,7 +2,7 @@
  * @fileoverview OperatorDashboard Component
  * Main dashboard for league operators with access to all operator-specific features
  */
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useUserProfile, useOrganization } from '@/api/hooks';
 import { DashboardCard } from '@/components/operator/DashboardCard';
@@ -35,6 +35,16 @@ export const OperatorDashboard: React.FC = () => {
   const { orgId } = useParams<{ orgId: string }>();
   const { member } = useUserProfile();
   const { count: pendingReportsCount } = usePendingReportsCount(orgId);
+
+  // Closes LIST_FOR_ED #8 — React Router doesn't reset window scroll
+  // on navigation, so coming from a scrolled-down page (e.g. a long
+  // player-management list) would land the user partway down the
+  // OperatorDashboard. Force scroll-to-top on mount. No global
+  // <ScrollToTop> handler because some pages (wizards, scroll-anchor
+  // navigation) intentionally manage their own scroll state.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [orgId]);
 
   // Fetch organization data
   const { organization, loading: orgLoading } = useOrganization(orgId!);

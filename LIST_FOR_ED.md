@@ -519,7 +519,22 @@ dashboard's org-list query.
 
 ---
 
-## 8. Org Dashboard Loads Scrolled Below the Top
+## ~~8. Org Dashboard Loads Scrolled Below the Top~~ ✅ CLOSED 2026-05-17
+
+> **Closed 2026-05-17** — root cause: React Router doesn't reset
+> `window.scrollTo(0, 0)` on navigation by default, so coming from a
+> scrolled-down page (e.g. a long player-management list) would
+> land the user partway down the OperatorDashboard. Fixed with a
+> targeted `useEffect(() => window.scrollTo(0, 0), [orgId])` on the
+> `OperatorDashboard` component. Per-page fix instead of a global
+> `<ScrollToTop>` handler — some pages (wizards, scroll-anchor
+> navigation) intentionally manage their own scroll state and
+> shouldn't be force-reset.
+>
+> Files touched: `src/operator/OperatorDashboard.tsx`.
+> Original entry preserved below for reference.
+
+### Original entry
 
 **Discovered:** 2026-05-02 during modular-league-system test pass
 **Severity:** Low (cosmetic)
