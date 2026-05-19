@@ -99,18 +99,138 @@ export interface ThresholdInputs {
   prefs: Record<string, unknown>;
 }
 
+// ============================================================================
+// Threshold — data-driven shape per the Ed-walked refactor (2026-05-19)
+// ============================================================================
+
 /**
- * A Threshold is a pure function from inputs to a single number (or `null`
- * to express "no meaningful value for this composition" — e.g., the tie
- * target on charts that don't permit ties). No firing logic. No side
- * attribution. Just math. Called once at match start to resolve its value;
- * the resolved value lands in a named variable via a `receipt`-triggered
- * trigger.
+ * Handicap encoding a Threshold operation consumes. Mirrors the existing
+ * `handicap_type` preference values, plus `'none'` for operations that
+ * don't consume handicap inputs (e.g., reading a constant from prefs).
+ */
+export type HandicapTypeRequirement =
+  | 'fargo'
+  | 'points'
+  | 'percentage'
+  | 'skill_level'
+  | 'none';
+
+/**
+ * Shape of the input population a Threshold operation expects.
+ *
+ * - `lineup_sizes`: expects team arrays of one of the listed sizes; `'any'`
+ *   means "size-agnostic" (formula-style operations that scale with
+ *   `game_count`).
+ * - `single`: expects a single handicap (per-pairing operations).
+ * - `none`: doesn't consume team/individual-shape inputs (e.g., reads from
+ *   prefs only).
+ */
+export type SizeRequirement =
+  | { readonly kind: 'lineup_sizes'; readonly sizes: readonly number[] | 'any' }
+  | { readonly kind: 'single' }
+  | { readonly kind: 'none' };
+
+/**
+ * Output category a Threshold produces. Maps to the locked Handicap Mechanisms
+ * 2x2 taxonomy plus `'numeric'` for thresholds that produce generic LO-tunable
+ * values (jump targets, multipliers, milestone-trigger comparison values, etc.)
+ * rather than handicap-shape outputs.
+ */
+export type ThresholdOutputType =
+  | 'game_target'
+  | 'points_target'
+  | 'game_headstart'
+  | 'points_headstart'
+  | 'numeric';
+
+/**
+ * Data-shaped Threshold per the Ed-walked refactor. A row's worth of
+ * information — names an operation kind from a code-side registry and
+ * supplies args. Exposes its expected inputs + output type at the top level
+ * (DERIVED from the operation's registry entry at write time) so consumers
+ * never have to "dig" through the operation to see what it needs.
+ *
+ * Replaces the legacy `Threshold` interface that bundled a `(inputs) => number`
+ * compute function inline (incompatible with future DB-row loading).
+ *
+ * @see ./threshold-registry.ts — the operation registry
+ * @see ./threshold-resolver.ts — runtime evaluator
+ */
+export interface ThresholdRow {
+  /** Stable identifier (also serves as DB-row primary key when persisted). */
+  readonly name: string;
+
+  /** Scope of the row (global / org / league) — for the eventual DB cascade. */
+  readonly scope?: 'global' | 'org' | 'league';
+
+  /**
+   * Handicap encoding this threshold consumes from the league. DERIVED from
+   * the operation's `consumesHandicapType`; validated at row construction.
+   * Exposing it on the row lets consumers filter compatibility without
+   * looking up the operation.
+   */
+  readonly expectedHandicapType: HandicapTypeRequirement;
+
+  /** Shape of the input population. DERIVED from operation. */
+  readonly expectedSize: SizeRequirement;
+
+  /** Output category this threshold produces. DERIVED from operation. */
+  readonly outputType: ThresholdOutputType;
+
+  /** Names a `ThresholdOperation` registered in the operation registry. */
+  readonly operationKind: string;
+
+  /**
+   * Operation-specific args. Holds values that aren't otherwise derivable
+   * from match context — chart refs, pref keys, aggregation-method choices,
+   * etc. Match-context values (`game_count`, `lineup_size`, ratings) come
+   * from runtime inputs at evaluation time, never from stored args.
+   */
+  readonly operationArgs: Readonly<Record<string, unknown>>;
+}
+
+/**
+ * Code-side registry entry describing a named Threshold operation. The
+ * registry is the source of truth for what each `operationKind` consumes
+ * and produces; threshold rows reference operations by name and the
+ * registry resolves them at evaluation time.
+ */
+export interface ThresholdOperation {
+  /** Name used as the key in the operation registry; threshold rows reference this. */
+  readonly name: string;
+
+  /** What handicap encoding this operation requires from the league. */
+  readonly consumesHandicapType: HandicapTypeRequirement;
+
+  /** Input population shape this operation handles. */
+  readonly consumesSize: SizeRequirement;
+
+  /** Output category this operation produces. */
+  readonly producesOutputType: ThresholdOutputType;
+
+  /**
+   * Pure compute function. Takes the threshold row's `operationArgs` plus
+   * the runtime `ThresholdInputs`, produces a number (or `null` for "no
+   * value applies" — e.g., a tie target on a chart that doesn't permit
+   * ties at the given handicap diff).
+   */
+  readonly compute: (
+    args: Readonly<Record<string, unknown>>,
+    inputs: ThresholdInputs,
+  ) => number | null;
+}
+
+/**
+ * Legacy Threshold interface — function-valued compute, inline values.
+ * Kept temporarily so existing compositions still type-check during the
+ * incremental migration to `ThresholdRow`. After all three prepackaged
+ * compositions migrate (slices 2-4 of the refactor), this gets deleted
+ * in slice 5.
+ *
+ * @deprecated migrate to ThresholdRow + ThresholdOperation registry.
  */
 export interface Threshold {
-  /** Stable name for debugging / referencing from triggers. */
   readonly name: string;
-  /** The pure compute function. `null` means "no value applies." */
   compute: (inputs: ThresholdInputs) => number | null;
 }
 
