@@ -63,10 +63,10 @@ export const OrganizationSettings: React.FC = () => {
               {error || 'Organization not found.'}
             </p>
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/my-teams')}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg"
             >
-              Back to Dashboard
+              Back to My Teams
             </button>
           </div>
         </div>

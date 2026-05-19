@@ -231,7 +231,7 @@ export default function RulesPage() {
     <div>
       <PageHeader backTo="/" backLabel="Home" title="Official Rules" />
 
-      <div className="mx-auto max-w-3xl p-4">
+      <div className="mx-auto max-w-4xl p-4">
         {showNudge ? (
           <div
             role="status"
@@ -256,8 +256,11 @@ export default function RulesPage() {
           </div>
         ) : null}
 
-        <div className="space-y-2" role="group" aria-label="Filter rules">
-          <div className="flex flex-wrap items-center gap-2">
+        <div role="group" aria-label="Filter rules">
+          {/* All chips on a single row, each stretching to share the container
+              width equally via `flex-1`. `justify-center` keeps labels centered
+              when stretched. */}
+          <div className="flex w-full items-center gap-2 [&>button]:flex-1 [&>button]:justify-center">
             {mainGames.map((game) => (
               <FilterChip
                 key={game.slug}
@@ -267,8 +270,6 @@ export default function RulesPage() {
                 {game.name}
               </FilterChip>
             ))}
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
             <FilterChip
               aria-expanded={showMore}
               aria-controls="rules-more-games"

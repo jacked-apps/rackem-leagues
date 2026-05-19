@@ -31,8 +31,8 @@ export const BecomeLeagueOperator: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Page Header */}
       <PageHeader
-        backTo="/dashboard"
-        backLabel="Back to Dashboard"
+        backTo="/my-teams"
+        backLabel="Back to My Teams"
         title="Become a League Operator"
         subtitle="Start running your own pool leagues and earn revenue"
       >

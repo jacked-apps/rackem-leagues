@@ -35,9 +35,13 @@ export function AllGamesAccordion({ houseRules = [], differencesOnly = false }: 
         return (
           <AccordionItem key={game.slug} value={game.slug}>
             <AccordionTrigger className="text-base">
-              {game.name}
-              <span className="ml-2 text-xs font-normal text-muted-foreground">
-                ({rules.length})
+              {/* Wrap name + count in one flex item so the trigger's
+                  justify-between pushes only the chevron to the right. */}
+              <span className="flex items-baseline gap-2">
+                {game.name}
+                <span className="text-xs font-normal text-muted-foreground">
+                  ({rules.length})
+                </span>
               </span>
             </AccordionTrigger>
             <AccordionContent>

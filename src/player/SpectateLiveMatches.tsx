@@ -42,10 +42,10 @@ export function SpectateLiveMatches() {
   // If the user came from a specific page (e.g., their scoring page), the
   // opening navigation passed { from, fromLabel } in route state so the back
   // button here returns them to exactly that page instead of routing through
-  // the dashboard. Falls back to dashboard for direct navigation / refresh.
+  // My Teams. Falls back to My Teams for direct navigation / refresh.
   const navState = (location.state ?? {}) as { from?: string; fromLabel?: string };
-  const backTo = navState.from ?? '/dashboard';
-  const backLabel = navState.fromLabel ?? 'Back to Dashboard';
+  const backTo = navState.from ?? '/my-teams';
+  const backLabel = navState.fromLabel ?? 'Back to My Teams';
 
   // Compose league label from the first match's joined league data. Every
   // match in this list belongs to the same league (the query filters on it),

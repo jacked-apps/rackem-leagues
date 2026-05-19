@@ -40,7 +40,7 @@ export const matchupsWizardConfig: WizardConfig<MatchupsWizardFormData> = {
       hideBack: true,
       // Hide Cancel — by the time the operator sees this step, matchups are already
       // saved to the DB. Cancel would just leave them here in an "upcoming" season
-      // state, which is confusing. The PageHeader's "Back to Dashboard" is still
+      // state, which is confusing. The PageHeader's "Back to My Teams" is still
       // available if they truly need to bail out.
       hideCancel: true,
       // Confirm before activating the season. Emphasize that edits are still

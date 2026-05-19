@@ -64,8 +64,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     if (member?.role === 'developer') {
       // Allow developers through
     } else if (member?.role === 'player') {
-      // Players redirected to their dashboard
-      return <Navigate to="/dashboard" replace />;
+      // Players redirected to My Teams
+      return <Navigate to="/my-teams" replace />;
     } else {
       // Other mismatched roles get unauthorized page
       return <Navigate to="/unauthorized" replace />;

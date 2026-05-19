@@ -703,11 +703,11 @@ function ScoreMatchBody() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/my-teams')}
             className="flex items-center gap-1"
           >
             <ArrowLeft className="h-4 w-4" />
-            Dashboard
+            My Teams
           </Button>
           {/* Team Name */}
           <div className="text-lg font-semibold text-foreground">

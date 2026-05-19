@@ -52,7 +52,7 @@ export function PlaceholderRemovalModal({
     setNavigating(true);
     // Navigate to messages with context about the removal request
     // The user can compose a message to their league operator
-    navigate('/dashboard/messages', {
+    navigate('/messages', {
       state: {
         prefillSubject: `Request: Remove placeholder player from ${teamName}`,
         prefillMessage: `Hi,\n\nI would like to request the removal of placeholder player "${playerName}" from team "${teamName}".\n\nThank you.`,
