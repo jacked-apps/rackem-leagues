@@ -144,6 +144,42 @@ export type ThresholdOutputType =
   | 'numeric';
 
 /**
+ * Which side a Threshold's output represents.
+ *
+ * - `'home'` — value is specifically for the home side (e.g., chart_lookup
+ *   with args.side='home' produces a home win target)
+ * - `'away'` — value is specifically for the away side
+ * - `'shared'` — value applies equally to either side (league-wide constants
+ *   like `read_pref`'s output of `games_to_win`; both sides reach the same
+ *   number)
+ *
+ * Compatibility (for trigger ↔ threshold binding): `'shared'` is a wildcard
+ * — a `'shared'` threshold can feed a `'home'`/`'away'`/`'shared'` trigger,
+ * and vice versa. Same-side matches always work. Cross-side (`'home'`
+ * threshold into `'away'` trigger) is a composition error.
+ */
+export type ThresholdOutputSide = 'home' | 'away' | 'shared';
+
+/**
+ * Bounds on the numeric value a Threshold's output can take. The min/max
+ * sides may be:
+ *
+ * - A concrete number (e.g., `0`, `7`)
+ * - `'games_in_match'` — the bound is the match's total game count from
+ *   Team Geometry (resolved per-match at runtime)
+ * - `'unbounded'` — no upper or lower limit
+ *
+ * Range is informational on the row + trigger inputSpec; composition-build
+ * validation enforces type and side strictly but treats range as a contract
+ * for future strict checks once Team Geometry context is available at build
+ * time.
+ */
+export interface ThresholdOutputRange {
+  readonly min: number | 'unbounded';
+  readonly max: number | 'games_in_match' | 'unbounded';
+}
+
+/**
  * Data-shaped Threshold per the Ed-walked refactor. A row's worth of
  * information — names an operation kind from a code-side registry and
  * supplies args. Exposes its expected inputs + output type at the top level
@@ -177,6 +213,12 @@ export interface ThresholdRow {
   /** Output category this threshold produces. DERIVED from operation. */
   readonly outputType: ThresholdOutputType;
 
+  /** Which side the output represents. DERIVED from operation (may depend on args). */
+  readonly outputSide: ThresholdOutputSide;
+
+  /** Bounds on the output value. DERIVED from operation (may depend on args). */
+  readonly outputRange: ThresholdOutputRange;
+
   /** Names a `ThresholdOperation` registered in the operation registry. */
   readonly operationKind: string;
 
@@ -194,6 +236,11 @@ export interface ThresholdRow {
  * registry is the source of truth for what each `operationKind` consumes
  * and produces; threshold rows reference operations by name and the
  * registry resolves them at evaluation time.
+ *
+ * **Output declarations may be constants OR functions of args.** When an
+ * operation's output side/range depends on its args (e.g., `chart_lookup_3v3`
+ * with `args.side` parameter produces a home- or away-side value), declare
+ * a function `(args) => value`. For static operations, declare the constant.
  */
 export interface ThresholdOperation {
   /** Name used as the key in the operation registry; threshold rows reference this. */
@@ -207,6 +254,22 @@ export interface ThresholdOperation {
 
   /** Output category this operation produces. */
   readonly producesOutputType: ThresholdOutputType;
+
+  /**
+   * Which side the output represents. Constant if static; function of args
+   * if arg-dependent (e.g., chart_lookup operations parametrized by side).
+   */
+  readonly producesOutputSide:
+    | ThresholdOutputSide
+    | ((args: Readonly<Record<string, unknown>>) => ThresholdOutputSide);
+
+  /**
+   * Bounds on the output value. Constant if static; function of args if
+   * arg-dependent.
+   */
+  readonly producesOutputRange:
+    | ThresholdOutputRange
+    | ((args: Readonly<Record<string, unknown>>) => ThresholdOutputRange);
 
   /**
    * Pure compute function. Takes the threshold row's `operationArgs` plus
@@ -375,6 +438,25 @@ export interface TriggerInput {
 }
 
 /**
+ * Trigger input safety contract — what shape of threshold the trigger expects.
+ * Composition-build validation compares this against the bound threshold's
+ * output declarations; mismatch is a composition error caught at build time
+ * instead of producing wrong runtime values.
+ *
+ * **Type and side are enforced strictly.** Range is informational pending
+ * Team Geometry context at build time (the `'games_in_match'` sentinel
+ * resolves per-match at runtime, not at composition build).
+ *
+ * Optional — triggers without input (`receipt`/`match_end` only) omit this.
+ */
+export interface TriggerInputSpec {
+  readonly outputType: ThresholdOutputType;
+  readonly outputSide: ThresholdOutputSide;
+  /** Informational; not strictly validated yet. */
+  readonly outputRange?: ThresholdOutputRange;
+}
+
+/**
  * A trigger fires when its `when` becomes true and runs its `action`.
  *
  * **Single input, single action.** The trigger reads exactly one threshold
@@ -392,6 +474,8 @@ export interface Trigger {
   readonly name: string;
   /** The threshold the trigger reads as `n`. Optional for receipt/match_end. */
   readonly input?: TriggerInput;
+  /** Safety contract on the input's shape. Composition-build validation enforces match. */
+  readonly inputSpec?: TriggerInputSpec;
   when: WhenCondition;
   action: Action;
   /** When true, firing this trigger halts further trigger evaluation for the match. */

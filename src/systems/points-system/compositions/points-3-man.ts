@@ -32,11 +32,16 @@ import type { PointsSystem, Trigger } from '../types';
  * named threshold's resolved value, `n`) to a state variable of the same
  * name. Common pattern for surfacing chart values into the state bag so the
  * end-of-match aggregate (and future display code) can read them.
+ *
+ * `side` is the threshold's output side — matches the side prefix in the
+ * threshold name (e.g., `homeWinTarget` → 'home'). The inputSpec ensures
+ * the trigger only binds to a side-compatible threshold at build time.
  */
-function assignThresholdToSelf(name: string): Trigger {
+function assignThresholdToSelf(name: string, side: 'home' | 'away'): Trigger {
   return {
     name: `assign_${name}`,
     input: { thresholdRef: name },
+    inputSpec: { outputType: 'game_target', outputSide: side },
     when: { kind: 'receipt' },
     action: {
       target: { kind: 'concrete', variableName: name },
@@ -89,12 +94,12 @@ export function buildPoints3ManComposition(
       }),
     },
     triggers: [
-      assignThresholdToSelf('homeWinTarget'),
-      assignThresholdToSelf('awayWinTarget'),
-      assignThresholdToSelf('homeTieTarget'),
-      assignThresholdToSelf('awayTieTarget'),
-      assignThresholdToSelf('homeLoseTarget'),
-      assignThresholdToSelf('awayLoseTarget'),
+      assignThresholdToSelf('homeWinTarget', 'home'),
+      assignThresholdToSelf('awayWinTarget', 'away'),
+      assignThresholdToSelf('homeTieTarget', 'home'),
+      assignThresholdToSelf('awayTieTarget', 'away'),
+      assignThresholdToSelf('homeLoseTarget', 'home'),
+      assignThresholdToSelf('awayLoseTarget', 'away'),
     ],
     endOfMatchAggregate: linearAboveThresholdAggregate(params),
   };

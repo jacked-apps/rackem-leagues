@@ -60,11 +60,13 @@ const DEFAULT_PARAMS: Fargo10pt5ManParams = {
 function awardInitialPoints(
   triggerName: string,
   thresholdRef: string,
+  side: 'home' | 'away',
   targetVariable: string,
 ): Trigger {
   return {
     name: triggerName,
     input: { thresholdRef },
+    inputSpec: { outputType: 'points_headstart', outputSide: side },
     when: { kind: 'receipt' },
     action: {
       target: { kind: 'concrete', variableName: targetVariable },
@@ -113,8 +115,8 @@ export function buildFargo10pt5ManComposition(
       },
     },
     triggers: [
-      awardInitialPoints('award_initial_home', 'initialHome', 'home_points'),
-      awardInitialPoints('award_initial_away', 'initialAway', 'away_points'),
+      awardInitialPoints('award_initial_home', 'initialHome', 'home', 'home_points'),
+      awardInitialPoints('award_initial_away', 'initialAway', 'away', 'away_points'),
     ],
   };
 

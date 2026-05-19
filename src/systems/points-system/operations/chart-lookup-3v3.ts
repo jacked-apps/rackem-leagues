@@ -36,6 +36,17 @@ export const chartLookup3v3Operation: ThresholdOperation = {
   consumesHandicapType: 'points',
   consumesSize: { kind: 'lineup_sizes', sizes: [3] },
   producesOutputType: 'game_target',
+  // Output side comes from args.side — chart lookup returns the per-side
+  // target for whichever side was requested.
+  producesOutputSide: (args) => {
+    const side = args.side;
+    if (side === 'home' || side === 'away') return side;
+    throw new Error(
+      `chart_lookup_3v3: producesOutputSide expects args.side='home'|'away', got ${JSON.stringify(side)}`,
+    );
+  },
+  // 3v3 chart returns game counts within match length (0..games_in_match).
+  producesOutputRange: { min: 0, max: 'games_in_match' },
   compute: (args, inputs) => {
     const side = args.side;
     const field = args.output_field;

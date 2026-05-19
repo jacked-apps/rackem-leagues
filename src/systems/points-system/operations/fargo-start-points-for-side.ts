@@ -41,6 +41,17 @@ export const fargoStartPointsForSideOperation: ThresholdOperation = {
   consumesHandicapType: 'fargo',
   consumesSize: { kind: 'lineup_sizes', sizes: 'any' },
   producesOutputType: 'points_headstart',
+  // Output side comes from args.side — this row produces the value FOR that
+  // side specifically (0 if that side isn't the weaker team).
+  producesOutputSide: (args) => {
+    const side = args.side;
+    if (side === 'home' || side === 'away') return side;
+    throw new Error(
+      `fargo_start_points_for_side: producesOutputSide expects args.side='home'|'away', got ${JSON.stringify(side)}`,
+    );
+  },
+  // Start-points are nonneg; no calibrated upper bound short of theoretical caps.
+  producesOutputRange: { min: 0, max: 'unbounded' },
   compute: (args, inputs) => {
     const side = args.side;
     if (side !== 'home' && side !== 'away') {

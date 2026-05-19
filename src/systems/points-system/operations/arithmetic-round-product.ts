@@ -31,6 +31,10 @@ export const arithmeticRoundProductOperation: ThresholdOperation = {
   consumesHandicapType: 'none',
   consumesSize: { kind: 'none' },
   producesOutputType: 'numeric',
+  // Product of two league-wide prefs; applies equally to both sides.
+  producesOutputSide: 'shared',
+  // Open numeric range — the factors could be any numbers.
+  producesOutputRange: { min: 'unbounded', max: 'unbounded' },
   compute: (args, inputs) => {
     const keys = args.factor_pref_keys;
     if (!Array.isArray(keys) || keys.length !== 2) {

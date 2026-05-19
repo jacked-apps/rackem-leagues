@@ -79,6 +79,7 @@ function sideReachesJumpTrigger(
   return {
     name: triggerName,
     input: { thresholdRef },
+    inputSpec: { outputType: 'numeric', outputSide: side },
     when: { kind: 'side_reaches', side, sideVar: `${side}_wins` },
     action: {
       target: { kind: 'concrete', variableName: `${side}_points` },
@@ -100,6 +101,7 @@ function sideReachesEdgeTrigger(
   return {
     name: triggerName,
     input: { thresholdRef },
+    inputSpec: { outputType: 'numeric', outputSide: side },
     when: { kind: 'side_reaches', side, sideVar: `${side}_wins` },
     action: {
       target: { kind: 'concrete', variableName: 'edge' },

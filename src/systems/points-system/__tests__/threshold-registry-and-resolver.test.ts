@@ -34,6 +34,8 @@ const testOperation: ThresholdOperation = {
   consumesHandicapType: 'none',
   consumesSize: { kind: 'none' },
   producesOutputType: 'numeric',
+  producesOutputSide: 'shared',
+  producesOutputRange: { min: 'unbounded', max: 'unbounded' },
   compute: (args) => {
     const v = args.value;
     return typeof v === 'number' ? v : null;
@@ -45,6 +47,8 @@ const testChartOp: ThresholdOperation = {
   consumesHandicapType: 'points',
   consumesSize: { kind: 'lineup_sizes', sizes: [3] },
   producesOutputType: 'game_target',
+  producesOutputSide: 'home',
+  producesOutputRange: { min: 0, max: 'games_in_match' },
   compute: (args, inputs) => {
     // Trivial: return the home handicap diff (proves args + inputs are wired).
     void args;
@@ -93,6 +97,8 @@ describe('threshold-resolver — buildThresholdRow', () => {
     expect(row.expectedHandicapType).toBe('points');
     expect(row.expectedSize).toEqual({ kind: 'lineup_sizes', sizes: [3] });
     expect(row.outputType).toBe('game_target');
+    expect(row.outputSide).toBe('home');
+    expect(row.outputRange).toEqual({ min: 0, max: 'games_in_match' });
     expect(row.operationKind).toBe('test_chart_lookup');
     expect(row.operationArgs).toEqual({ chart_ref: 'fake_chart' });
   });
@@ -143,6 +149,8 @@ describe('threshold-resolver — resolveThreshold', () => {
       consumesHandicapType: 'none',
       consumesSize: { kind: 'none' },
       producesOutputType: 'numeric',
+      producesOutputSide: 'shared',
+      producesOutputRange: { min: 'unbounded', max: 'unbounded' },
       compute: () => null,
     });
     const row = buildThresholdRow({ name: 'n', operationKind: 'always_null' });
@@ -157,6 +165,8 @@ describe('threshold-resolver — resolveThreshold', () => {
       expectedHandicapType: 'none',
       expectedSize: { kind: 'none' },
       outputType: 'numeric',
+      outputSide: 'shared',
+      outputRange: { min: 'unbounded', max: 'unbounded' },
       operationKind: 'never_registered',
       operationArgs: {},
     };
@@ -173,6 +183,8 @@ describe('threshold-resolver — resolveThreshold', () => {
       expectedHandicapType: 'fargo', // operation says 'points'
       expectedSize: { kind: 'lineup_sizes', sizes: [3] },
       outputType: 'game_target',
+      outputSide: 'home',
+      outputRange: { min: 0, max: 'games_in_match' },
       operationKind: 'test_chart_lookup',
       operationArgs: {},
     };
@@ -186,6 +198,8 @@ describe('threshold-resolver — resolveThreshold', () => {
       expectedHandicapType: 'points',
       expectedSize: { kind: 'lineup_sizes', sizes: [5] }, // operation says [3]
       outputType: 'game_target',
+      outputSide: 'home',
+      outputRange: { min: 0, max: 'games_in_match' },
       operationKind: 'test_chart_lookup',
       operationArgs: {},
     };
@@ -199,6 +213,38 @@ describe('threshold-resolver — resolveThreshold', () => {
       expectedHandicapType: 'points',
       expectedSize: { kind: 'lineup_sizes', sizes: [3] },
       outputType: 'points_headstart', // operation says 'game_target'
+      outputSide: 'home',
+      outputRange: { min: 0, max: 'games_in_match' },
+      operationKind: 'test_chart_lookup',
+      operationArgs: {},
+    };
+    expect(() => resolveThreshold(drifted, emptyInputs)).toThrow(/drift/);
+  });
+
+  it('drift check covers outputSide', () => {
+    registerThresholdOperation(testChartOp);
+    const drifted: ThresholdRow = {
+      name: 'drifted',
+      expectedHandicapType: 'points',
+      expectedSize: { kind: 'lineup_sizes', sizes: [3] },
+      outputType: 'game_target',
+      outputSide: 'away', // operation says 'home'
+      outputRange: { min: 0, max: 'games_in_match' },
+      operationKind: 'test_chart_lookup',
+      operationArgs: {},
+    };
+    expect(() => resolveThreshold(drifted, emptyInputs)).toThrow(/drift/);
+  });
+
+  it('drift check covers outputRange', () => {
+    registerThresholdOperation(testChartOp);
+    const drifted: ThresholdRow = {
+      name: 'drifted',
+      expectedHandicapType: 'points',
+      expectedSize: { kind: 'lineup_sizes', sizes: [3] },
+      outputType: 'game_target',
+      outputSide: 'home',
+      outputRange: { min: 'unbounded', max: 'unbounded' }, // operation says {0, games_in_match}
       operationKind: 'test_chart_lookup',
       operationArgs: {},
     };
@@ -211,6 +257,8 @@ describe('threshold-resolver — resolveThreshold', () => {
       consumesHandicapType: 'points',
       consumesSize: { kind: 'lineup_sizes', sizes: 'any' },
       producesOutputType: 'game_target',
+      producesOutputSide: 'shared',
+      producesOutputRange: { min: 0, max: 'games_in_match' },
       compute: () => 42,
     };
     registerThresholdOperation(op);
@@ -220,5 +268,33 @@ describe('threshold-resolver — resolveThreshold', () => {
     });
     expect(row.expectedSize).toEqual({ kind: 'lineup_sizes', sizes: 'any' });
     expect(resolveThreshold(row, emptyInputs)).toBe(42);
+  });
+
+  it('resolves arg-dependent producesOutputSide function', () => {
+    const sideOp: ThresholdOperation = {
+      name: 'side_picker',
+      consumesHandicapType: 'none',
+      consumesSize: { kind: 'none' },
+      producesOutputType: 'game_target',
+      producesOutputSide: (args) =>
+        args.side === 'home' || args.side === 'away'
+          ? (args.side as 'home' | 'away')
+          : 'shared',
+      producesOutputRange: { min: 0, max: 'games_in_match' },
+      compute: () => 0,
+    };
+    registerThresholdOperation(sideOp);
+    const homeRow = buildThresholdRow({
+      name: 'h',
+      operationKind: 'side_picker',
+      operationArgs: { side: 'home' },
+    });
+    const awayRow = buildThresholdRow({
+      name: 'a',
+      operationKind: 'side_picker',
+      operationArgs: { side: 'away' },
+    });
+    expect(homeRow.outputSide).toBe('home');
+    expect(awayRow.outputSide).toBe('away');
   });
 });

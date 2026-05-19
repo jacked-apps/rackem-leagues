@@ -27,6 +27,10 @@ export const readPrefOperation: ThresholdOperation = {
   consumesHandicapType: 'none',
   consumesSize: { kind: 'none' },
   producesOutputType: 'numeric',
+  // A league-wide pref applies equally to both sides.
+  producesOutputSide: 'shared',
+  // Generic numeric pref; no bounds we can assert at the operation level.
+  producesOutputRange: { min: 'unbounded', max: 'unbounded' },
   compute: (args, inputs) => {
     const key = args.pref_key;
     if (typeof key !== 'string') {

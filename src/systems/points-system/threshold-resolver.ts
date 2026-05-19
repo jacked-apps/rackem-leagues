@@ -26,9 +26,38 @@ import type {
   SizeRequirement,
   ThresholdInputs,
   ThresholdOperation,
+  ThresholdOutputRange,
+  ThresholdOutputSide,
   ThresholdOutputType,
   ThresholdRow,
 } from './types';
+
+/**
+ * Resolve a possibly-function-valued operation output declaration to a
+ * concrete value given the row's operationArgs. Centralized helper so
+ * builders + validators agree on the same resolution logic.
+ */
+function resolveOperationOutputSide(
+  operation: ThresholdOperation,
+  args: Readonly<Record<string, unknown>>,
+): ThresholdOutputSide {
+  return typeof operation.producesOutputSide === 'function'
+    ? operation.producesOutputSide(args)
+    : operation.producesOutputSide;
+}
+
+function resolveOperationOutputRange(
+  operation: ThresholdOperation,
+  args: Readonly<Record<string, unknown>>,
+): ThresholdOutputRange {
+  return typeof operation.producesOutputRange === 'function'
+    ? operation.producesOutputRange(args)
+    : operation.producesOutputRange;
+}
+
+function rangesMatch(a: ThresholdOutputRange, b: ThresholdOutputRange): boolean {
+  return a.min === b.min && a.max === b.max;
+}
 
 /**
  * Resolve a threshold row's value at match start (or wherever the runtime
@@ -71,14 +100,17 @@ export function buildThresholdRow(params: {
       `buildThresholdRow: unknown operation "${params.operationKind}". Register the operation before building rows that reference it.`,
     );
   }
+  const args = params.operationArgs ?? {};
   return {
     name: params.name,
     scope: params.scope,
     expectedHandicapType: operation.consumesHandicapType,
     expectedSize: operation.consumesSize,
     outputType: operation.producesOutputType,
+    outputSide: resolveOperationOutputSide(operation, args),
+    outputRange: resolveOperationOutputRange(operation, args),
     operationKind: params.operationKind,
-    operationArgs: params.operationArgs ?? {},
+    operationArgs: args,
   };
 }
 
@@ -107,6 +139,18 @@ function validateRowMatchesOperation(
       `Threshold "${row.name}" drift: row outputType="${row.outputType}" but operation "${operation.name}" produces "${operation.producesOutputType}"`,
     );
   }
+  const opSide = resolveOperationOutputSide(operation, row.operationArgs);
+  if (row.outputSide !== opSide) {
+    throw new Error(
+      `Threshold "${row.name}" drift: row outputSide="${row.outputSide}" but operation "${operation.name}" produces "${opSide}" for these args`,
+    );
+  }
+  const opRange = resolveOperationOutputRange(operation, row.operationArgs);
+  if (!rangesMatch(row.outputRange, opRange)) {
+    throw new Error(
+      `Threshold "${row.name}" drift: row outputRange={min:${row.outputRange.min},max:${row.outputRange.max}} but operation "${operation.name}" produces {min:${opRange.min},max:${opRange.max}} for these args`,
+    );
+  }
 }
 
 function sizeMatches(a: SizeRequirement, b: SizeRequirement): boolean {
@@ -130,6 +174,8 @@ export type {
   SizeRequirement,
   ThresholdInputs,
   ThresholdOperation,
+  ThresholdOutputRange,
+  ThresholdOutputSide,
   ThresholdOutputType,
   ThresholdRow,
 };
