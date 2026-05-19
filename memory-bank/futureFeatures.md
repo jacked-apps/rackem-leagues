@@ -41,6 +41,33 @@ This document captures aspirational features that would enhance the app's desira
 - Player spotlights and featured stories
 - Social media-style activity feeds
 
+### Messaging Phase 2 — Notification Subsystem
+**Status**: Future consideration — moved here from LIST_FOR_ED.md #31 on 2026-05-17 (not an active todo; will be planned when Ed decides Phase 2 is the next priority)
+
+**The gap**: Phase 1 made messaging *work* end-to-end (you can read, send, see unread counts, recover from failed sends). Phase 2 is what makes messaging *trustworthy* — without push notifications, mutes, rate-limits, and pause controls, every new message tries to interrupt the user. The Phase 3 hypothesis ("captains will use this over SMS") only really tests fairly once Phase 2 has tamed notification behavior. So this is *important*, not just *next*.
+
+**Source of truth for scope**: `docs/brainstorms/2026-04-21-messaging-system-overhaul-requirements.md` § "Phase 2 — Notification subsystem". When you're ready to build it, the actual planning doc goes in `docs/plans/<date>-001-feat-messaging-overhaul-phase-2-plan.md` following the structure of the Phase 1 plan.
+
+**Phase 2 scope (high-level)**:
+- Push notifications (web + mobile)
+- Per-chat notification controls (tri-state: all / mentions / none)
+- Quiet hours (do-not-disturb windows)
+- Rate-limit (a chatty group chat can't bury you in pings)
+- Pause picker (one-tap "mute everything for 1h / 4h / 24h / until tomorrow morning")
+- `@mention` notification routing
+
+**Open design questions to close in the plan doc**:
+- **Dispatch worker shape** — single Edge Function subscribing to message INSERTs vs. DB trigger + `pg_net` → worker?
+- **APNs / FCM coordination with Jack** (mobile partner) — who holds the push-tokens table of record? Who handles stale-token cleanup?
+- **`pg_cron` vs. Supabase Scheduled Edge Function** for any scheduled work (also a Phase 3 question)
+
+**Schema items deferred from Phase 1 that land in Phase 2**:
+- `members.notifications_paused_until` — backs the pause picker UI
+
+**When to actually start**: after Phase 1 has shipped *and* there's real user signal that the cost is worth it. Per `project_messaging_why_and_success.md`: "expensive polish waits for Phase 3 gate" — Phase 2 is the same family.
+
+**Originally filed as**: LIST_FOR_ED.md #31 (2026-05-15). Moved here because it's a "want to do later" idea, not an active todo blocking the sales meeting or current dev work.
+
 ### Org Member Affiliation + "Find a League" Discovery + Recruitment Pipeline
 **Status**: Future consideration — surfaced 2026-05-17 during messaging announcement-scope discussion
 

@@ -1851,7 +1851,18 @@ handles arbitrary group chats. All this feature needs is:
 **Out of scope for Phase 1.** No schema change required when this lands.
 
 
-## 31. Messaging Phase 2 — Plan Doc Needs Writing
+## ~~31. Messaging Phase 2 — Plan Doc Needs Writing~~ ↗ MOVED to memory-bank/futureFeatures.md 2026-05-17
+
+> **Moved 2026-05-17** — this doesn't belong on the active todo list;
+> it's a "want to do later" idea that needs no immediate action. The
+> Phase 2 context (scope, open design questions, deferred schema)
+> now lives in `memory-bank/futureFeatures.md` under "Messaging
+> Phase 2 — Notification Subsystem". When you decide Phase 2 is the
+> next priority, the planning doc still needs writing — but the
+> "should we write it now" pressure is gone. Original entry preserved
+> below for reference.
+
+### Original entry
 
 **Discovered:** 2026-05-15 while triaging post-Phase-1 next steps
 **Severity:** MEDIUM — not blocking, but Phase 2 is the next significant
