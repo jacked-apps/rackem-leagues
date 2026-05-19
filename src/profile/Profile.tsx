@@ -27,10 +27,12 @@ import { ContactInfoSection } from './ContactInfoSection';
 import { AddressSection } from './AddressSection';
 import { PrivacySettingsSection } from './PrivacySettingsSection';
 import { Link } from 'react-router-dom';
+import { LogOut } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
 import { ShareAppCard } from '@/components/ShareAppCard';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 /**
  * Member Profile Page Component
@@ -48,7 +50,7 @@ import { ShareAppCard } from '@/components/ShareAppCard';
  * - Comprehensive member data display
  */
 export const Profile: React.FC = () => {
-  const { user } = useUser();
+  const { user, logout } = useUser();
   const { member, loading } = useUserProfile();
 
   // Get all form state and handlers from custom hook
@@ -184,6 +186,36 @@ export const Profile: React.FC = () => {
               </CardContent>
             </Card>
           )}
+
+          {/* Account — appearance + sign out. Lives here (not in nav) since
+              they're infrequent actions, not at-your-fingertips ones. */}
+          <Card>
+            <CardContent className="p-6 space-y-6">
+              <div>
+                <h3 className="font-semibold text-foreground mb-1">Appearance</h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Choose how Rack 'Em looks on this device.
+                </p>
+                <ThemeToggle />
+              </div>
+              <div className="border-t pt-6">
+                <h3 className="font-semibold text-foreground mb-1">Sign Out</h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  End your session on this device.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  loadingText="none"
+                  onClick={logout}
+                  className="w-full sm:w-auto gap-2"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign out
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

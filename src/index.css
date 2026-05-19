@@ -21,7 +21,9 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: #99aaff;
+  /* Primary: Simonis 860 "Lake Michigan" tournament blue.
+     Mid-tone teal-blue — black foreground reads better than white (~6.5:1). */
+  --primary: #50a6c2;
   --primary-foreground: #000;
   --secondary: #fff9c4;
   --secondary-foreground: #000;
@@ -30,6 +32,19 @@
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
+
+  /* Status tokens. Use as solid (bg-success / text-success-foreground) for
+     badges/buttons, or alpha-tinted (bg-success/10, border-success/40,
+     text-success) for subtle callouts. Single source of truth — change here
+     to retheme every status surface app-wide. */
+  --success: oklch(0.62 0.16 152);
+  --success-foreground: oklch(0.99 0 0);
+  --warning: oklch(0.74 0.16 65);
+  --warning-foreground: oklch(0.2 0 0);
+  --info: oklch(0.58 0.2 252);
+  --info-foreground: oklch(0.99 0 0);
+  --highlight: oklch(0.58 0.22 295);
+  --highlight-foreground: oklch(0.99 0 0);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
@@ -63,15 +78,6 @@
   --sidebar-width: 16rem;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
 body {
   margin: 0;
   min-height: 100vh;
@@ -101,6 +107,14 @@ body {
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-highlight: var(--highlight);
+  --color-highlight-foreground: var(--highlight-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -126,7 +140,9 @@ body {
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: #ffcc00;
+  /* Keep Simonis blue in dark mode for brand consistency; near-black foreground
+     still wins contrast on this mid-tone color. */
+  --primary: #50a6c2;
   --primary-foreground: #000;
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
@@ -135,6 +151,17 @@ body {
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
+
+  /* Status tokens — brightened in dark mode so vivid text reads on the dim
+     alpha-tinted backgrounds. */
+  --success: oklch(0.72 0.17 152);
+  --success-foreground: oklch(0.15 0 0);
+  --warning: oklch(0.82 0.16 70);
+  --warning-foreground: oklch(0.15 0 0);
+  --info: oklch(0.7 0.18 250);
+  --info-foreground: oklch(0.15 0 0);
+  --highlight: oklch(0.72 0.2 295);
+  --highlight-foreground: oklch(0.15 0 0);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);

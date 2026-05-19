@@ -159,36 +159,6 @@ export const router = createBrowserRouter([
       { path: '8-man-format-details', element: <EightManFormatDetails /> },
       { path: 'format-comparison', element: <FormatComparison /> },
       { path: 'test/handicap-lookup', element: <HandicapLookupTest /> },
-      {
-        path: 'rules',
-        element: (
-          <RulesErrorBoundary>
-            <Suspense fallback={<RulesSkeleton />}>
-              <RulesPage />
-            </Suspense>
-          </RulesErrorBoundary>
-        ),
-      },
-      {
-        path: 'rules/:game/:ruleId',
-        element: (
-          <RulesErrorBoundary>
-            <Suspense fallback={<RulesSkeleton />}>
-              <RuleDetailPage />
-            </Suspense>
-          </RulesErrorBoundary>
-        ),
-      },
-      {
-        path: 'rules/house/:scope/:scopeId/:ruleId',
-        element: (
-          <RulesErrorBoundary>
-            <Suspense fallback={<RulesSkeleton />}>
-              <HouseRuleDetailPage />
-            </Suspense>
-          </RulesErrorBoundary>
-        ),
-      },
 
       // === Development-only Routes ===
       { path: 'dev/rls-tests', element: <DevOnly><RLSTestPage /></DevOnly> },
@@ -211,6 +181,40 @@ export const router = createBrowserRouter([
           { path: 'my-teams', element: withMember(<MyTeams />) },
           { path: 'my-match', element: withMember(<MyMatch />) },
           { path: 'stats', element: withMember(<PlayerStats />) },
+          // Rules pages — public (no auth wrapper) but rendered inside
+          // MemberLayout so logged-in users keep their sidebar/tab bar.
+          // AppSidebar and BottomTabBar both auth-gate their nav content,
+          // so public visitors see a minimal chrome (brand + theme toggle).
+          {
+            path: 'rules',
+            element: (
+              <RulesErrorBoundary>
+                <Suspense fallback={<RulesSkeleton />}>
+                  <RulesPage />
+                </Suspense>
+              </RulesErrorBoundary>
+            ),
+          },
+          {
+            path: 'rules/:game/:ruleId',
+            element: (
+              <RulesErrorBoundary>
+                <Suspense fallback={<RulesSkeleton />}>
+                  <RuleDetailPage />
+                </Suspense>
+              </RulesErrorBoundary>
+            ),
+          },
+          {
+            path: 'rules/house/:scope/:scopeId/:ruleId',
+            element: (
+              <RulesErrorBoundary>
+                <Suspense fallback={<RulesSkeleton />}>
+                  <HouseRuleDetailPage />
+                </Suspense>
+              </RulesErrorBoundary>
+            ),
+          },
           { path: 'team/:teamId/schedule', element: withMember(<TeamSchedule />) },
           { path: 'match/:matchId/lineup', element: withMember(<MatchLineup />) },
           { path: 'match/:matchId/score', element: withMember(<ScoreMatch />) },

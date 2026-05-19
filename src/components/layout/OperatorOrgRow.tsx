@@ -44,7 +44,7 @@ export function OperatorOrgRow({ orgId, orgName, mode }: OperatorOrgRowProps) {
       <li>
         <Link
           to={`/operator-dashboard/${orgId}`}
-          className="flex min-h-11 items-center rounded-md px-3 py-2 text-sm hover:bg-accent"
+          className="flex min-h-11 items-center rounded-md px-3 py-2 text-sm text-primary transition-colors hover:bg-primary/10"
         >
           Dashboard
         </Link>
@@ -52,7 +52,7 @@ export function OperatorOrgRow({ orgId, orgName, mode }: OperatorOrgRowProps) {
       <li>
         <Link
           to={`/create-league/${orgId}`}
-          className="flex min-h-11 items-center rounded-md px-3 py-2 text-sm hover:bg-accent"
+          className="flex min-h-11 items-center rounded-md px-3 py-2 text-sm text-primary transition-colors hover:bg-primary/10"
         >
           Create League
         </Link>
@@ -60,7 +60,7 @@ export function OperatorOrgRow({ orgId, orgName, mode }: OperatorOrgRowProps) {
       <li>
         <Link
           to={`/operator-reports/${orgId}`}
-          className="flex min-h-11 items-center rounded-md px-3 py-2 text-sm hover:bg-accent"
+          className="flex min-h-11 items-center rounded-md px-3 py-2 text-sm text-primary transition-colors hover:bg-primary/10"
         >
           {reportsLabel}
         </Link>
@@ -74,7 +74,7 @@ export function OperatorOrgRow({ orgId, orgName, mode }: OperatorOrgRowProps) {
 
   return (
     <details className="group rounded-md">
-      <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent [&::-webkit-details-marker]:hidden">
+      <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/10 [&::-webkit-details-marker]:hidden">
         <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
         <span className="flex-1 truncate">{orgName}</span>
       </summary>

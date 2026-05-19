@@ -138,10 +138,8 @@ export function BottomTabBar() {
               to={tab.to}
               aria-label={tab.label}
               aria-current={isActive ? 'page' : undefined}
-              className={`flex flex-1 flex-col items-center justify-center gap-0.5 text-xs transition-colors ${
-                isActive
-                  ? 'text-primary font-medium'
-                  : 'text-muted-foreground'
+              className={`flex flex-1 flex-col items-center justify-center gap-0.5 text-xs text-primary transition-colors ${
+                isActive ? 'font-semibold' : 'opacity-60'
               }`}
             >
               <span className="relative">
