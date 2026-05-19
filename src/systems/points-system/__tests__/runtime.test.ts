@@ -14,11 +14,10 @@
 import { describe, it, expect } from 'vitest';
 import { evaluatePointsSystem, type RuntimeGameRecord } from '../runtime';
 import { linearAboveThresholdAggregate } from '../aggregate';
-import {
-  computedThreshold,
-  constantThreshold,
-  prefThreshold,
-} from '../threshold-helpers';
+import { buildThresholdRow } from '../threshold-resolver';
+// Side-effect imports: register the operations these tests reference.
+import '../operations/read-pref';
+import '../operations/arithmetic-round-product';
 import type { PointsSystem, ThresholdInputs } from '../types';
 
 const emptyInputs: ThresholdInputs = {
@@ -69,12 +68,13 @@ describe('evaluatePointsSystem — Percentage 5-Man-style accumulation (allocato
   const composition: PointsSystem = {
     name: 'percent_milestone_test',
     thresholds: {
-      milestoneTarget: computedThreshold('milestoneTarget', (inputs) =>
-        Math.round(
-          (inputs.prefs.games_to_win as number) *
-            (inputs.prefs.milestone_percent as number),
-        ),
-      ),
+      milestoneTarget: buildThresholdRow({
+        name: 'milestoneTarget',
+        operationKind: 'arithmetic_round_product',
+        operationArgs: {
+          factor_pref_keys: ['games_to_win', 'milestone_percent'],
+        },
+      }),
     },
     perGameAllocator: {
       name: 'percent_allocator',
@@ -142,11 +142,22 @@ describe('evaluatePointsSystem — Percentage 5-Man-style accumulation (allocato
 describe('evaluatePointsSystem — receipt-trigger initial points (FargoRate start_points pattern)', () => {
   // Threshold computes "initial points to award to home" (fixed at 56 for this test)
   // Trigger: when receipt, add the threshold value to home_points
+  // Slice 5: thresholds use the `read_pref` operation; the test supplies
+  // values via inputs.prefs to control the test scenario without needing
+  // a chart or formula.
   const composition: PointsSystem = {
     name: 'fargo_initial',
     thresholds: {
-      initialHome: constantThreshold('initialHome', 0),
-      initialAway: constantThreshold('initialAway', 56),
+      initialHome: buildThresholdRow({
+        name: 'initialHome',
+        operationKind: 'read_pref',
+        operationArgs: { pref_key: 'test_initial_home' },
+      }),
+      initialAway: buildThresholdRow({
+        name: 'initialAway',
+        operationKind: 'read_pref',
+        operationArgs: { pref_key: 'test_initial_away' },
+      }),
     },
     triggers: [
       {
@@ -170,15 +181,20 @@ describe('evaluatePointsSystem — receipt-trigger initial points (FargoRate sta
     ],
   };
 
+  const initialInputs: ThresholdInputs = {
+    ...emptyInputs,
+    prefs: { test_initial_home: 0, test_initial_away: 56 },
+  };
+
   it('awards initial points at match start before any games', () => {
-    const state = evaluatePointsSystem(composition, emptyInputs, []);
+    const state = evaluatePointsSystem(composition, initialInputs, []);
     expect(state.home_points).toBe(0);
     expect(state.away_points).toBe(56);
   });
 
   it('initial points persist as games are played (no per-game allocator here)', () => {
     const games = [homeWins(), homeWins()];
-    const state = evaluatePointsSystem(composition, emptyInputs, games);
+    const state = evaluatePointsSystem(composition, initialInputs, games);
     expect(state.home_points).toBe(0);
     expect(state.away_points).toBe(56);
   });
@@ -187,15 +203,42 @@ describe('evaluatePointsSystem — receipt-trigger initial points (FargoRate sta
 describe('evaluatePointsSystem — end-of-match aggregate (Points 3-Man pattern with tie-band)', () => {
   // Receipt triggers assign chart values (homeWinTarget, homeTieTarget, etc.) to variables
   // End-of-match aggregate reads those variables and applies linear_above_threshold formula
+  // Slice 5: thresholds use `read_pref` to pull test values from prefs.
+  // Same shape the real Points 3-Man composition uses for chart values;
+  // the test just supplies values directly rather than going through a chart.
   const composition: PointsSystem = {
     name: 'points_3man_test',
     thresholds: {
-      homeWinTarget: computedThreshold('homeWinTarget', () => 10),
-      awayWinTarget: computedThreshold('awayWinTarget', () => 10),
-      homeTieTarget: computedThreshold('homeTieTarget', () => 9),
-      awayTieTarget: computedThreshold('awayTieTarget', () => 9),
-      homeLoseTarget: computedThreshold('homeLoseTarget', () => 8),
-      awayLoseTarget: computedThreshold('awayLoseTarget', () => 8),
+      homeWinTarget: buildThresholdRow({
+        name: 'homeWinTarget',
+        operationKind: 'read_pref',
+        operationArgs: { pref_key: 'test_homeWinTarget' },
+      }),
+      awayWinTarget: buildThresholdRow({
+        name: 'awayWinTarget',
+        operationKind: 'read_pref',
+        operationArgs: { pref_key: 'test_awayWinTarget' },
+      }),
+      homeTieTarget: buildThresholdRow({
+        name: 'homeTieTarget',
+        operationKind: 'read_pref',
+        operationArgs: { pref_key: 'test_homeTieTarget' },
+      }),
+      awayTieTarget: buildThresholdRow({
+        name: 'awayTieTarget',
+        operationKind: 'read_pref',
+        operationArgs: { pref_key: 'test_awayTieTarget' },
+      }),
+      homeLoseTarget: buildThresholdRow({
+        name: 'homeLoseTarget',
+        operationKind: 'read_pref',
+        operationArgs: { pref_key: 'test_homeLoseTarget' },
+      }),
+      awayLoseTarget: buildThresholdRow({
+        name: 'awayLoseTarget',
+        operationKind: 'read_pref',
+        operationArgs: { pref_key: 'test_awayLoseTarget' },
+      }),
     },
     triggers: [
       ...(
@@ -220,12 +263,24 @@ describe('evaluatePointsSystem — end-of-match aggregate (Points 3-Man pattern 
     endOfMatchAggregate: linearAboveThresholdAggregate({ multiplier: 1 }),
   };
 
+  const aggregateInputs: ThresholdInputs = {
+    ...emptyInputs,
+    prefs: {
+      test_homeWinTarget: 10,
+      test_awayWinTarget: 10,
+      test_homeTieTarget: 9,
+      test_awayTieTarget: 9,
+      test_homeLoseTarget: 8,
+      test_awayLoseTarget: 8,
+    },
+  };
+
   it('home wins 12-6 → home_points=2 (above-win band)', () => {
     const games = [
       ...Array.from({ length: 12 }, homeWins),
       ...Array.from({ length: 6 }, awayWins),
     ];
-    const state = evaluatePointsSystem(composition, emptyInputs, games);
+    const state = evaluatePointsSystem(composition, aggregateInputs, games);
     expect(state.home_points).toBe(2); // (12-10)*1
     expect(state.away_points).toBe(-3); // (6-9)*1 → below-tie band
   });
@@ -235,7 +290,7 @@ describe('evaluatePointsSystem — end-of-match aggregate (Points 3-Man pattern 
       ...Array.from({ length: 9 }, homeWins),
       ...Array.from({ length: 9 }, awayWins),
     ];
-    const state = evaluatePointsSystem(composition, emptyInputs, games);
+    const state = evaluatePointsSystem(composition, aggregateInputs, games);
     expect(state.home_points).toBe(0);
     expect(state.away_points).toBe(0);
   });
@@ -245,7 +300,7 @@ describe('evaluatePointsSystem — end-of-match aggregate (Points 3-Man pattern 
       ...Array.from({ length: 10 }, homeWins),
       ...Array.from({ length: 8 }, awayWins),
     ];
-    const state = evaluatePointsSystem(composition, emptyInputs, games);
+    const state = evaluatePointsSystem(composition, aggregateInputs, games);
     expect(state.home_points).toBe(0); // tie band absorbs
     expect(state.away_points).toBe(-1); // (8-9)*1
   });
@@ -255,7 +310,11 @@ describe('evaluatePointsSystem — win-chip signal pattern', () => {
   const composition: PointsSystem = {
     name: 'win_chip_test',
     thresholds: {
-      winTarget: constantThreshold('winTarget', 10),
+      winTarget: buildThresholdRow({
+        name: 'winTarget',
+        operationKind: 'read_pref',
+        operationArgs: { pref_key: 'test_winTarget' },
+      }),
     },
     triggers: [
       {
@@ -275,12 +334,17 @@ describe('evaluatePointsSystem — win-chip signal pattern', () => {
     ],
   };
 
+  const winChipInputs: ThresholdInputs = {
+    ...emptyInputs,
+    prefs: { test_winTarget: 10 },
+  };
+
   it('home reaches 10 wins first → win_chip becomes "home"', () => {
     const games = [
       ...Array.from({ length: 10 }, homeWins),
       ...Array.from({ length: 7 }, awayWins),
     ];
-    const state = evaluatePointsSystem(composition, emptyInputs, games);
+    const state = evaluatePointsSystem(composition, winChipInputs, games);
     expect(state.win_chip).toBe('home');
   });
 
@@ -289,7 +353,7 @@ describe('evaluatePointsSystem — win-chip signal pattern', () => {
       ...Array.from({ length: 10 }, awayWins),
       ...Array.from({ length: 7 }, homeWins),
     ];
-    const state = evaluatePointsSystem(composition, emptyInputs, games);
+    const state = evaluatePointsSystem(composition, winChipInputs, games);
     expect(state.win_chip).toBe('away');
   });
 
@@ -298,7 +362,7 @@ describe('evaluatePointsSystem — win-chip signal pattern', () => {
       ...Array.from({ length: 9 }, homeWins),
       ...Array.from({ length: 9 }, awayWins),
     ];
-    const state = evaluatePointsSystem(composition, emptyInputs, games);
+    const state = evaluatePointsSystem(composition, winChipInputs, games);
     expect(state.win_chip).toBeUndefined();
   });
 });

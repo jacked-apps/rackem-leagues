@@ -1,103 +1,40 @@
 /**
- * @fileoverview Factory helpers for common Threshold shapes.
+ * @fileoverview Threshold resolution helpers.
  *
- * A Threshold is a pure `(inputs) → number` function with a name. Each
- * prepackaged Scoring System declares its own thresholds via these helpers
- * or by writing custom compute functions inline. Phase A ships the most
- * commonly-used shapes:
+ * Phase A's `threshold-helpers.ts` originally exported function-valued
+ * factory helpers (`constantThreshold`, `prefThreshold`, `computedThreshold`)
+ * that produced legacy `Threshold` instances with inline compute functions.
  *
- * - `constantThreshold(name, value)` — returns the same number every time;
- *   used for literal-value thresholds (e.g., milestone jump value = 1.5)
- * - `prefThreshold(name, prefKey)` — reads a value from the prefs bag;
- *   used for thresholds whose value comes directly from a league preference
- *   (e.g., games_to_win)
- * - `computedThreshold(name, fn)` — wraps an arbitrary compute function;
- *   used for thresholds whose value derives from a formula (e.g.,
- *   milestoneTarget = round(games_to_win × milestone_percent))
+ * **Slice 5 of the Threshold refactor (2026-05-19):** legacy helpers removed.
+ * Thresholds are now data-shaped `ThresholdRow`s referencing registered
+ * operations; `buildThresholdRow()` from `./threshold-resolver` is the
+ * canonical way to construct them.
  *
- * @see ./types.ts — the Threshold interface
+ * This file now exports only `resolveAllThresholds()` — the bulk resolver
+ * the runtime calls at match start.
+ *
+ * @see ./threshold-resolver.ts — `buildThresholdRow()` + `resolveThreshold()`
+ * @see ./threshold-registry.ts — operation registry
  */
 
 import { resolveThreshold } from './threshold-resolver';
-import type { Threshold, ThresholdInputs, ThresholdRow } from './types';
-
-/**
- * Type guard: distinguishes the new data-driven `ThresholdRow` from the
- * legacy function-valued `Threshold`. Used by `resolveAllThresholds` during
- * the per-composition migration so the runtime can handle both shapes.
- */
-function isThresholdRow(t: Threshold | ThresholdRow): t is ThresholdRow {
-  return (t as ThresholdRow).operationKind !== undefined;
-}
-
-/**
- * A threshold that always returns the same number regardless of inputs.
- * Useful for literal jump values, fixed bonus amounts, etc.
- */
-export function constantThreshold(name: string, value: number): Threshold {
-  return {
-    name,
-    compute: () => value,
-  };
-}
-
-/**
- * A threshold that reads its value from a league preference. The pref's
- * value must be a finite number; throws otherwise (composition error —
- * the composition referenced a pref that isn't numeric).
- */
-export function prefThreshold(name: string, prefKey: string): Threshold {
-  return {
-    name,
-    compute: (inputs) => {
-      const v = inputs.prefs[prefKey];
-      if (typeof v !== 'number' || !Number.isFinite(v)) {
-        throw new Error(
-          `prefThreshold "${name}" expected numeric pref "${prefKey}", got ${JSON.stringify(v)}`,
-        );
-      }
-      return v;
-    },
-  };
-}
-
-/**
- * A threshold wrapping an arbitrary compute function. The catch-all for
- * thresholds that don't fit a simpler factory shape. May return `null` to
- * express "no value applies" (e.g., a tie target on a chart that doesn't
- * permit ties).
- */
-export function computedThreshold(
-  name: string,
-  fn: (inputs: ThresholdInputs) => number | null,
-): Threshold {
-  return { name, compute: fn };
-}
+import type { ThresholdInputs, ThresholdRow } from './types';
 
 /**
  * Resolve a map of named thresholds to a map of resolved values. Called once
  * at match start; the resulting bag is what triggers reference at evaluation
  * time. Values may be `number | null`.
  *
- * Handles BOTH the legacy `Threshold` (function-valued compute) and the new
- * `ThresholdRow` (data-driven, looks up an operation in the registry) during
- * the per-composition migration. After all compositions migrate (slice 5),
- * this function's signature narrows to `Record<string, ThresholdRow>`.
- *
- * Throws if any threshold's compute throws (composition error surfaces here
+ * Throws if any threshold's operation throws (composition error surfaces here
  * rather than at trigger-evaluation time, where it would be harder to debug).
  */
 export function resolveAllThresholds(
-  thresholds: Record<string, Threshold | ThresholdRow>,
+  thresholds: Record<string, ThresholdRow>,
   inputs: ThresholdInputs,
 ): Record<string, number | null> {
   const out: Record<string, number | null> = {};
   for (const [key, threshold] of Object.entries(thresholds)) {
-    if (isThresholdRow(threshold)) {
-      out[key] = resolveThreshold(threshold, inputs);
-    } else {
-      out[key] = threshold.compute(inputs);
-    }
+    out[key] = resolveThreshold(threshold, inputs);
   }
   return out;
 }

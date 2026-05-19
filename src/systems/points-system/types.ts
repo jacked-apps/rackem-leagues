@@ -220,19 +220,6 @@ export interface ThresholdOperation {
   ) => number | null;
 }
 
-/**
- * Legacy Threshold interface — function-valued compute, inline values.
- * Kept temporarily so existing compositions still type-check during the
- * incremental migration to `ThresholdRow`. After all three prepackaged
- * compositions migrate (slices 2-4 of the refactor), this gets deleted
- * in slice 5.
- *
- * @deprecated migrate to ThresholdRow + ThresholdOperation registry.
- */
-export interface Threshold {
-  readonly name: string;
-  compute: (inputs: ThresholdInputs) => number | null;
-}
 
 // ============================================================================
 // Per-game allocator — sub-mechanism (A)
@@ -445,12 +432,11 @@ export interface EndOfMatchAggregate {
 export interface PointsSystem {
   readonly name: string;
   /**
-   * Named map of thresholds. Accepts either the legacy `Threshold` (function-
-   * valued compute, being phased out) or the new `ThresholdRow` (data-shaped,
-   * looks up an operation in the registry) during the per-composition
-   * migration. After slice 5 lands, only `ThresholdRow` will be accepted.
+   * Named map of thresholds. Each value is a data-shaped `ThresholdRow`
+   * that references a registered operation kind + args. The runtime
+   * resolves each row to its number/null value at match start.
    */
-  thresholds: Record<string, Threshold | ThresholdRow>;
+  thresholds: Record<string, ThresholdRow>;
   perGameAllocator?: PerGameAllocator;
   triggers: readonly Trigger[];
   endOfMatchAggregate?: EndOfMatchAggregate;
