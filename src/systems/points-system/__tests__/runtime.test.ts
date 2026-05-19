@@ -79,8 +79,8 @@ describe('evaluatePointsSystem — Percentage 5-Man-style accumulation (allocato
     },
     perGameAllocator: {
       name: 'percent_allocator',
-      winner: { kind: 'fixed', points: 0.1 },
-      loser: { kind: 'fixed', points: 0 },
+      winner: { base: 0.1, formula: null },
+      loser: { base: 0, formula: null },
     },
     triggers: [
       {
@@ -372,8 +372,8 @@ describe('evaluatePointsSystem — terminal trigger halts the cascade', () => {
     },
     perGameAllocator: {
       name: 'point_per_game',
-      winner: { kind: 'fixed', points: 1 },
-      loser: { kind: 'fixed', points: 0 },
+      winner: { base: 1, formula: null },
+      loser: { base: 0, formula: null },
     },
     triggers: [
       {

@@ -1,27 +1,34 @@
 /**
  * @fileoverview Tests for the per-game allocator evaluator.
  *
- * Covers the 3 per-side config kinds (fixed / counter / formula) plus the
- * canonical patterns the 3 prepackaged systems use plus the 17-Point
- * formula case.
+ * Covers the locked SideConfig shape (base + formula) plus the canonical
+ * patterns the prepackaged systems use plus the 17-Point + state-reading
+ * formula patterns via registered operations.
  *
  * @see ../allocator-evaluator.ts — code under test
  */
 
 import { describe, it, expect } from 'vitest';
-import { evaluateAllocator, type AllocatorCumulativeState } from '../allocator-evaluator';
-import type { PerGameAllocator } from '../types';
+import { evaluateAllocator } from '../allocator-evaluator';
+// Side-effect imports: register the operations these tests reference.
+import '../allocator-formula-operations/add-complement-of-other-side';
+import '../allocator-formula-operations/state-diff-times-constant';
+import type { MatchStateBag, PerGameAllocator } from '../types';
 
-const zeroState: AllocatorCumulativeState = {
-  home: { wins: 0, points: 0 },
-  away: { wins: 0, points: 0 },
+const zeroState: Readonly<MatchStateBag> = {
+  home_wins: 0,
+  away_wins: 0,
+  home_points: 0,
+  away_points: 0,
+  games_played: 0,
+  total_games: 25,
 };
 
 describe('evaluateAllocator — Percentage 5-Man pattern (winner=0.1 fixed, loser=0 fixed)', () => {
   const allocator: PerGameAllocator = {
     name: 'percent_5v5',
-    winner: { kind: 'fixed', points: 0.1 },
-    loser: { kind: 'fixed', points: 0 },
+    winner: { base: 0.1, formula: null },
+    loser: { base: 0, formula: null },
   };
 
   it('home wins → winner contributes 0.1, loser contributes 0', () => {
@@ -33,7 +40,7 @@ describe('evaluateAllocator — Percentage 5-Man pattern (winner=0.1 fixed, lose
     expect(result).toEqual({ winnerContribution: 0.1, loserContribution: 0 });
   });
 
-  it('away wins → same contributions (which side won doesn\'t change values)', () => {
+  it("away wins → same contributions (which side won doesn't change values)", () => {
     const result = evaluateAllocator(
       allocator,
       { winnerSide: 'away', winnerCounterInput: null, loserCounterInput: null },
@@ -43,11 +50,14 @@ describe('evaluateAllocator — Percentage 5-Man pattern (winner=0.1 fixed, lose
   });
 });
 
-describe('evaluateAllocator — FargoRate 10-Point pattern (winner=10 fixed, loser=counter 0-7)', () => {
+describe('evaluateAllocator — 10-Point pattern (winner=10 fixed, loser=range 0-7 input)', () => {
   const allocator: PerGameAllocator = {
-    name: 'fargo_10_7',
-    winner: { kind: 'fixed', points: 10 },
-    loser: { kind: 'counter', min: 0, max: 7, label: 'Balls pocketed by loser' },
+    name: '10pt',
+    winner: { base: 10, formula: null },
+    loser: {
+      base: { min: 0, max: 7, label: 'Balls pocketed by loser' },
+      formula: null,
+    },
   };
 
   it.each([0, 1, 3, 5, 7])('loser pocketed %i balls', (input) => {
@@ -77,28 +87,34 @@ describe('evaluateAllocator — FargoRate 10-Point pattern (winner=10 fixed, los
     expect(result.loserContribution).toBe(0); // clamped to min
   });
 
-  it('throws on missing counter input when side is a counter', () => {
+  it('throws when a side with a SideInputRange base has no scorer input', () => {
     expect(() =>
       evaluateAllocator(
         allocator,
         { winnerSide: 'home', winnerCounterInput: null, loserCounterInput: null },
         zeroState,
       ),
-    ).toThrow(/Counter side requires a numeric input/);
+    ).toThrow(/no scorer input/);
   });
 });
 
-describe('evaluateAllocator — 17-Point formula pattern', () => {
-  // 17-Point: winner_side = formula(base=10, formula: ctx.winner + (7 - ctx.loser))
-  //           loser_side  = counter 0-7
+describe('evaluateAllocator — 17-Point formula pattern (zero-sum 17 per game)', () => {
+  // 17-Point: winner gets (10 base) + (7 - loser's pocketed balls)
+  //           loser gets the pocketed balls (0-7)
+  //           total per game = 17 always
   const allocator: PerGameAllocator = {
     name: 'seventeen_point',
     winner: {
-      kind: 'formula',
       base: 10,
-      formula: (ctx) => ctx.winner + (7 - ctx.loser),
+      formula: {
+        operationKind: 'add_complement_of_other_side',
+        operationArgs: { max: 7, other_side: 'loser' },
+      },
     },
-    loser: { kind: 'counter', min: 0, max: 7, label: 'Balls pocketed by loser' },
+    loser: {
+      base: { min: 0, max: 7, label: 'Balls pocketed by loser' },
+      formula: null,
+    },
   };
 
   it.each([
@@ -121,13 +137,15 @@ describe('evaluateAllocator — 17-Point formula pattern', () => {
   );
 
   it('changing the base shifts winner output proportionally', () => {
-    // Same formula shape, base=12 instead of 10 — "modified 17-Point with 19 total"
+    // Same formula shape, base=12 instead of 10 — "modified" 19-total variant.
     const modified: PerGameAllocator = {
       ...allocator,
       winner: {
-        kind: 'formula',
         base: 12,
-        formula: (ctx) => ctx.winner + (7 - ctx.loser),
+        formula: {
+          operationKind: 'add_complement_of_other_side',
+          operationArgs: { max: 7, other_side: 'loser' },
+        },
       },
     };
     const result = evaluateAllocator(
@@ -140,48 +158,74 @@ describe('evaluateAllocator — 17-Point formula pattern', () => {
   });
 });
 
-describe('evaluateAllocator — formula with cumulative match-state context (diminishing returns)', () => {
-  // Ed's "diminishing returns" example:
-  // winner_side = formula(base=10, formula: ctx.thisSide === 'home'
-  //   ? 10 - (ctx.home.wins - ctx.away.wins)
-  //   : 10 - (ctx.away.wins - ctx.home.wins))
+describe('evaluateAllocator — formula reading state bag (behind-boost pattern)', () => {
+  // Behind-boost: winner gets (total_games - home_wins) * 0.5
+  // Reads TWO state variables in one formula — total_games (match-level)
+  // and home_wins (cumulative). Demonstrates universal state bag access
+  // from inside allocator formulas.
   const allocator: PerGameAllocator = {
-    name: 'diminishing_returns',
+    name: 'behind_boost',
     winner: {
-      kind: 'formula',
-      base: 10,
-      formula: (ctx) =>
-        ctx.thisSide === 'home'
-          ? 10 - (ctx.home.wins - ctx.away.wins)
-          : 10 - (ctx.away.wins - ctx.home.wins),
+      base: 0,
+      formula: {
+        operationKind: 'state_diff_times_constant',
+        operationArgs: {
+          minuend_var: 'total_games',
+          subtrahend_var: 'home_wins',
+          multiplier: 0.5,
+        },
+      },
     },
-    loser: { kind: 'fixed', points: 0 },
+    loser: { base: 0, formula: null },
   };
 
-  it('with equal wins, winner gets full 10', () => {
+  it('home_wins=0 in a 25-game match → winner gets (25-0)*0.5 = 12.5', () => {
+    const state: Readonly<MatchStateBag> = { ...zeroState, total_games: 25, home_wins: 0 };
     const result = evaluateAllocator(
       allocator,
       { winnerSide: 'home', winnerCounterInput: null, loserCounterInput: null },
-      { home: { wins: 3, points: 0 }, away: { wins: 3, points: 0 } },
+      state,
     );
-    expect(result.winnerContribution).toBe(10);
+    expect(result.winnerContribution).toBe(12.5);
   });
 
-  it('home ahead by 2 → home wins next game with 8 points', () => {
+  it('home_wins=10 in a 25-game match → winner gets (25-10)*0.5 = 7.5', () => {
+    const state: Readonly<MatchStateBag> = { ...zeroState, total_games: 25, home_wins: 10 };
     const result = evaluateAllocator(
       allocator,
       { winnerSide: 'home', winnerCounterInput: null, loserCounterInput: null },
-      { home: { wins: 5, points: 0 }, away: { wins: 3, points: 0 } },
+      state,
     );
-    expect(result.winnerContribution).toBe(8); // 10 - (5-3)
+    expect(result.winnerContribution).toBe(7.5);
   });
 
-  it('away wins from behind → away gets 12 points (catch-up bonus)', () => {
+  it('home_wins=25 (impossible mid-match but illustrative) → winner gets 0', () => {
+    const state: Readonly<MatchStateBag> = { ...zeroState, total_games: 25, home_wins: 25 };
     const result = evaluateAllocator(
       allocator,
-      { winnerSide: 'away', winnerCounterInput: null, loserCounterInput: null },
-      { home: { wins: 5, points: 0 }, away: { wins: 3, points: 0 } },
+      { winnerSide: 'home', winnerCounterInput: null, loserCounterInput: null },
+      state,
     );
-    expect(result.winnerContribution).toBe(12); // 10 - (3-5) = 10 - (-2) = 12
+    expect(result.winnerContribution).toBe(0);
+  });
+});
+
+describe('evaluateAllocator — error cases', () => {
+  it('throws when formula references unregistered operation', () => {
+    const broken: PerGameAllocator = {
+      name: 'broken',
+      winner: {
+        base: 0,
+        formula: { operationKind: 'never_registered', operationArgs: {} },
+      },
+      loser: { base: 0, formula: null },
+    };
+    expect(() =>
+      evaluateAllocator(
+        broken,
+        { winnerSide: 'home', winnerCounterInput: null, loserCounterInput: null },
+        zeroState,
+      ),
+    ).toThrow(/unknown operation/);
   });
 });

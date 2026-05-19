@@ -289,55 +289,105 @@ export interface ThresholdOperation {
 // ============================================================================
 
 /**
- * Formula context for a per-side `formula` allocator config. Spans both
- * per-game role data and cumulative match-state.
- *
- * - `winner` / `loser` — the resolved values for the winning and losing side
- *   of the CURRENT game. For a fixed side, the value is its base. For a
- *   counter side, the value is the per-game input. (Formula sides can't
- *   reference each other to avoid circular evaluation.)
- * - `thisSide` — which team this formula is being evaluated FOR ('home' | 'away')
- * - `home` / `away` — cumulative match-state BEFORE this game (wins, points)
- *
- * Future context fields can be added without breaking existing formulas.
+ * Numeric range with a UI prompt label. Used as the `base` of a side that
+ * collects scorer input each game (e.g., Fargo 10-Point's loser side accepts
+ * `{ min: 0, max: 7, label: 'Balls pocketed' }`). The presence of this shape
+ * (vs. a plain `number`) is itself the signal that a scorer input is needed
+ * — no separate `input: boolean` flag.
  */
-export interface FormulaContext {
-  winner: number;
-  loser: number;
-  thisSide: 'home' | 'away';
-  home: { wins: number; points: number };
-  away: { wins: number; points: number };
+export interface SideInputRange {
+  readonly min: number;
+  readonly max: number;
+  readonly label: string;
 }
 
 /**
- * Per-side allocator config — one of three shapes per the locked spec.
+ * Mechanism-internal context exposed to allocator-formula operations.
  *
- * - `fixed` — a constant points value, no scorer input collected
- * - `counter` — a numeric range; scorer enters the actual value per game
- * - `formula` — derived via `(FormulaContext) → number`; `base` is the
- *   configurable constant the formula's context exposes as `ctx.winner`
- *   or `ctx.loser` (depending on which side this is)
+ * **`ctx` is mechanism-internal ONLY.** It carries the per-game role values
+ * that exist only inside this allocator's invocation:
+ * - `winner` / `loser` — the resolved values for the winner/loser of THIS game
+ *   (for a fixed-base side, the base value; for a range side, the scorer's
+ *   input; after both sides are resolved, both are available to a formula)
+ * - `thisSide` — which side ('winner' | 'loser') this formula is computing for
+ *
+ * **State variables are NOT in ctx.** Match-level cumulative state
+ * (`home_wins`, `total_games`, `games_played`, etc.) is read directly from
+ * the state bag passed alongside ctx — same access pattern as triggers.
+ *
+ * @see ./allocator-formula-registry.ts — operations consuming this context
  */
-export type SideConfig =
-  | { kind: 'fixed'; points: number }
-  | { kind: 'counter'; min: number; max: number; label: string }
-  | {
-      kind: 'formula';
-      /** The configurable constant; appears in formula as ctx.winner or ctx.loser depending on side. */
-      base: number;
-      formula: (ctx: FormulaContext) => number;
-    };
+export interface FormulaContext {
+  readonly winner: number;
+  readonly loser: number;
+  readonly thisSide: 'winner' | 'loser';
+}
+
+/**
+ * Reference to a registered allocator-formula operation. Same data-driven
+ * pattern as ThresholdRow's operationKind + operationArgs.
+ */
+export interface AllocatorFormulaRef {
+  readonly operationKind: string;
+  readonly operationArgs: Readonly<Record<string, unknown>>;
+}
+
+/**
+ * Per-side allocator config — the locked discriminated-union shape.
+ *
+ * **Two fields, always:**
+ * - `base` is either a `number` (fixed value, no scorer input) OR a
+ *   `SideInputRange` (range requiring scorer input). The shape itself signals
+ *   whether an input is needed — no separate `input: boolean` flag.
+ * - `formula` is optional (`null` when no transformation needed). When
+ *   non-null, the registered operation transforms the resolved base/input
+ *   value using `ctx` and the state bag.
+ *
+ * **Scenarios:**
+ * - Fixed value: `{ base: 10, formula: null }` (Fargo winner)
+ * - Scorer input: `{ base: { min: 0, max: 7, label: 'Balls pocketed' }, formula: null }` (Fargo loser)
+ * - Anchor + formula: `{ base: 10, formula: { operationKind: 'add_complement_of_other_side', operationArgs: { max: 7, other_side: 'loser' } } }` (17-Pt winner)
+ * - State-driven: `{ base: 0, formula: { operationKind: 'state_diff_times_constant', operationArgs: { ... } } }` (behind-boost)
+ */
+export interface SideConfig {
+  readonly base: number | SideInputRange;
+  readonly formula: AllocatorFormulaRef | null;
+}
 
 /**
  * A per-game allocator. Independent configs for the winner-side and
  * loser-side of each game. The runtime resolves each side's value per
- * game (handling fixed/counter/formula) and adds the result to the
+ * game (handling base + optional formula) and adds the result to the
  * respective team's running points total.
  */
 export interface PerGameAllocator {
   readonly name: string;
-  winner: SideConfig;
-  loser: SideConfig;
+  readonly winner: SideConfig;
+  readonly loser: SideConfig;
+}
+
+/**
+ * Code-side registry entry for a named allocator-formula operation. Parallel
+ * to ThresholdOperation but with a different signature — allocator-formula
+ * operations consume mechanism-internal `ctx` plus the match-state bag, not
+ * `ThresholdInputs`.
+ *
+ * @see ./allocator-formula-registry.ts — registry implementation
+ */
+export interface AllocatorFormulaOperation {
+  /** Name used as the key in the registry; SideConfig.formula references this. */
+  readonly name: string;
+
+  /**
+   * Pure compute function. Takes the operation's args, the mechanism-internal
+   * ctx (winner/loser/thisSide for THIS game), and the cumulative state bag
+   * (read-only — formulas don't mutate state). Returns a number.
+   */
+  readonly compute: (
+    args: Readonly<Record<string, unknown>>,
+    ctx: FormulaContext,
+    state: Readonly<MatchStateBag>,
+  ) => number;
 }
 
 // ============================================================================

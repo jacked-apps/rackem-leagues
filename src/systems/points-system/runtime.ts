@@ -143,6 +143,11 @@ export function evaluatePointsSystem(
     away_wins: 0,
     home_points: 0,
     away_points: 0,
+    // Match-level state exposed to allocator formulas + triggers via the
+    // universal state bag (per the locked Composability principle). Set at
+    // match start from Team Geometry's gameCount.
+    games_played: 0,
+    total_games: thresholdInputs.gameCount,
   };
 
   // Resolve all thresholds once at match start; values feed every trigger's
@@ -163,23 +168,15 @@ export function evaluatePointsSystem(
   for (let gameIndex = 0; gameIndex < games.length && !halted; gameIndex++) {
     const game = games[gameIndex]!;
 
-    // Capture cumulative state BEFORE this game (for allocator formulas).
-    const cumulativeState = {
-      home: {
-        wins: (state.home_wins as number) ?? 0,
-        points: (state.home_points as number) ?? 0,
-      },
-      away: {
-        wins: (state.away_wins as number) ?? 0,
-        points: (state.away_points as number) ?? 0,
-      },
-    };
-
-    // Increment wins for the winning side.
+    // Increment wins for the winning side BEFORE the allocator runs — the
+    // allocator's formulas read state.<side>_wins and should see the
+    // already-incremented value for the side that just won.
     const winnerKey = `${game.winnerSide}_wins`;
     state[winnerKey] = ((state[winnerKey] as number) ?? 0) + 1;
 
     // Run per-game allocator if present; add contributions to per-side points.
+    // The allocator reads the state bag directly (formulas may reference any
+    // state var — home_wins, games_played, total_games, etc.).
     if (composition.perGameAllocator) {
       const allocation = evaluateAllocator(
         composition.perGameAllocator,
@@ -188,7 +185,7 @@ export function evaluatePointsSystem(
           winnerCounterInput: game.winnerCounterInput,
           loserCounterInput: game.loserCounterInput,
         },
-        cumulativeState,
+        state,
       );
       const loserSide: 'home' | 'away' =
         game.winnerSide === 'home' ? 'away' : 'home';
@@ -199,6 +196,10 @@ export function evaluatePointsSystem(
       state[loserPointsKey] =
         ((state[loserPointsKey] as number) ?? 0) + allocation.loserContribution;
     }
+
+    // Increment games_played so per-game triggers + future formulas see
+    // the post-game state ("this is game N completed").
+    state.games_played = ((state.games_played as number) ?? 0) + 1;
 
     // Fire per-game triggers whose conditions now hold (state already updated).
     halted = fireTriggersForPhase(composition.triggers, state, {

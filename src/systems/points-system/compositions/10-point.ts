@@ -102,12 +102,14 @@ export function buildTenPointComposition(
     },
     perGameAllocator: {
       name: '10pt_per_game',
-      winner: { kind: 'fixed', points: p.winner_points },
+      // Winner gets a fixed base value (no scorer input). Loser side declares
+      // a SideInputRange — the scorer enters a value in [min, max] each game.
+      // The presence of the range (vs. a number) is itself the signal that
+      // an input is needed.
+      winner: { base: p.winner_points, formula: null },
       loser: {
-        kind: 'counter',
-        min: p.loser_min,
-        max: p.loser_max,
-        label: p.loser_label,
+        base: { min: p.loser_min, max: p.loser_max, label: p.loser_label },
+        formula: null,
       },
     },
     triggers: [

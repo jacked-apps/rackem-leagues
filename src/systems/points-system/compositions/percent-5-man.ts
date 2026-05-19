@@ -142,10 +142,10 @@ export function buildPercent5ManComposition(
     },
     perGameAllocator: {
       name: 'percent_per_game',
-      // per_game_increment is read from prefs at runtime; for now inlined
-      // pending per-game allocator audit (next refactor unit).
-      winner: { kind: 'fixed', points: p.per_game_increment },
-      loser: { kind: 'fixed', points: 0 },
+      // Both sides have fixed bases (no scorer input, no formula): the winner
+      // gets the per-game increment, the loser gets nothing.
+      winner: { base: p.per_game_increment, formula: null },
+      loser: { base: 0, formula: null },
     },
     triggers: [
       // Milestone band — fires when a side reaches the milestone target;
