@@ -18,6 +18,9 @@ const mockUseProfanityFilter = vi.fn();
 vi.mock('@/api/hooks', () => ({
   useConversations: (userId: string) => mockUseConversations(userId),
   useConversationsRealtime: (userId: string) => mockUseConversationsRealtime(userId),
+  // useUpdateLastRead is used by the tappable mark-as-read badge.
+  // Not exercised in this file; return a no-op mutate so the import resolves.
+  useUpdateLastRead: () => ({ mutate: vi.fn() }),
 }));
 
 vi.mock('@/hooks/useProfanityFilter', () => ({
