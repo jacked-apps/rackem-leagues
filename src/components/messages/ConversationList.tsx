@@ -13,7 +13,7 @@
 import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, MessageSquarePlus, Settings, Megaphone, MessageSquare } from 'lucide-react';
+import { Search, MessageSquarePlus, Settings, Megaphone, MessageSquare, ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useConversations, useConversationsRealtime } from '@/api/hooks';
 import { useProfanityFilter } from '@/hooks/useProfanityFilter';
@@ -62,6 +62,10 @@ export function ConversationList({
 }: ConversationListProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
+  // Unit 21: the "Archived" past-member-chats section is collapsible
+  // and defaults to collapsed so it stays out of the way until the user
+  // wants to look at it. Per-session state; not persisted to DB.
+  const [archivedExpanded, setArchivedExpanded] = useState(false);
 
   // Fetch conversations using TanStack Query
   const { data: conversationsData = [], isLoading: loading } = useConversations(userId);
@@ -173,10 +177,15 @@ export function ConversationList({
         {loading ? (
           <LoadingState message="Loading conversations..." />
         ) : filteredConversations.length === 0 ? (
+          // Unit 11: first thing a new user sees on Messages. The copy
+          // sells the core value prop ("message anyone, no phone numbers
+          // needed") and sets the expectation that team chats will appear
+          // automatically once they're rostered — so an empty list isn't
+          // a sign of something broken.
           <EmptyState
             icon={MessageSquare}
-            title="No conversations found"
-            description="Start a new conversation to get started"
+            title="No messages yet"
+            description="You can message anyone in your league — no phone number needed. A team chat will show up here automatically once you're added to a roster."
           />
         ) : (
           (() => {
@@ -239,10 +248,21 @@ export function ConversationList({
                 {activeList.map(renderRow)}
                 {archivedList.length > 0 && (
                   <>
-                    <div className="px-4 py-2 md:py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground bg-muted/40 border-b border-border">
-                      Archived
-                    </div>
-                    {archivedList.map(renderRow)}
+                    <button
+                      type="button"
+                      onClick={() => setArchivedExpanded((prev) => !prev)}
+                      aria-expanded={archivedExpanded}
+                      data-testid="archived-toggle"
+                      className="flex w-full items-center gap-2 px-4 py-2 md:py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground bg-muted/40 border-b border-border hover:bg-muted active:bg-accent"
+                    >
+                      {archivedExpanded ? (
+                        <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+                      ) : (
+                        <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+                      )}
+                      <span>Archived ({archivedList.length})</span>
+                    </button>
+                    {archivedExpanded && archivedList.map(renderRow)}
                   </>
                 )}
               </>

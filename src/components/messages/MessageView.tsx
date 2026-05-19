@@ -12,6 +12,7 @@
 
 import { useState, useEffect } from 'react';
 import { ConversationHeader } from './ConversationHeader';
+import { EditConversationTitleDialog } from './EditConversationTitleDialog';
 import { MessageInput } from './MessageInput';
 import { ReadOnlyBanner } from './ReadOnlyBanner';
 import { MessageList, type Message } from './messageview/MessageList';
@@ -32,9 +33,12 @@ interface MessageViewProps {
 
 export function MessageView({ conversationId, currentUserId, onBack, onLeaveConversation }: MessageViewProps) {
   const [conversationType, setConversationType] = useState<string | null>(null);
+  const [conversationTitle, setConversationTitle] = useState<string>('');
   const [otherUserId, setOtherUserId] = useState<string | null>(null);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [showBlockConfirm, setShowBlockConfirm] = useState(false);
+  // Unit 19: rename-chat dialog (only for team chats, captain-only).
+  const [showRenameDialog, setShowRenameDialog] = useState(false);
 
   // TanStack Query hooks
   const { data: messagesData = [], isLoading: loading } = useConversationMessages(conversationId);
@@ -43,13 +47,36 @@ export function MessageView({ conversationId, currentUserId, onBack, onLeaveConv
 
   // Unit 8 inline-failed-send: optimistic outgoing-messages state that
   // MessageList renders alongside the confirmed messages.
-  const { outgoing, addPending, markPending, markFailed, remove } = useOutgoingMessages();
+  const { outgoing, addPending, markPending, markFailed, remove, removeByMatch } = useOutgoingMessages();
   const updateLastReadMutation = useUpdateLastRead();
   const leaveConversationMutation = useLeaveConversation();
   const blockUserMutation = useBlockUser();
 
   // Real-time subscriptions (auto-manages channels and cleanup)
-  useConversationMessagesRealtime(conversationId, currentUserId, updateLastReadMutation);
+  // Unit 17: when the realtime push delivers a message from the
+  // current user, find the matching optimistic pending entry in
+  // `outgoing` (by content + recent timestamp) and remove it in the
+  // same tick the confirmed bubble enters the cache. Without this,
+  // the optimistic pending bubble and the confirmed bubble briefly
+  // co-exist before the mutation's await resolves → small but
+  // visible flash on every send.
+  useConversationMessagesRealtime(
+    conversationId,
+    currentUserId,
+    updateLastReadMutation,
+    (msg) => {
+      removeByMatch((entry) => {
+        if (entry.content !== msg.content) return false;
+        // Defensive timestamp window — protects against an
+        // unlikely double-send-of-same-content matching the wrong
+        // pending entry. 30s covers normal round-trip latency
+        // with margin.
+        const entryTs = entry.createdAt ? new Date(entry.createdAt).getTime() : 0;
+        const msgTs = new Date(msg.created_at).getTime();
+        return Math.abs(msgTs - entryTs) < 30_000;
+      });
+    },
+  );
 
   // R5 + Phase-1 announcement-feels-one-way decision: gate the composer.
   // Returns { readOnly, reason } when the current user is a past-member of
@@ -64,15 +91,16 @@ export function MessageView({ conversationId, currentUserId, onBack, onLeaveConv
   // Load conversation details (type and participants) when conversation changes
   useEffect(() => {
     async function loadConversationDetails() {
-      // Fetch conversation type and auto_managed flag
+      // Fetch conversation type, auto_managed flag, and title.
       const { data: convData } = await supabase
         .from('conversations')
-        .select('conversation_type, auto_managed')
+        .select('conversation_type, auto_managed, title')
         .eq('id', conversationId)
         .single();
 
       if (convData) {
         setConversationType(convData.conversation_type);
+        setConversationTitle(convData.title ?? '');
       }
 
       // For DMs: conversation_type is null and auto_managed is false
@@ -195,8 +223,14 @@ export function MessageView({ conversationId, currentUserId, onBack, onLeaveConv
         onBack={onBack}
         onLeave={handleLeaveClick}
         onBlock={handleBlockClick}
-        canLeave={true}
+        onRename={() => setShowRenameDialog(true)}
+        canLeave={!composerStatus?.cannotLeave}
         canBlock={isDM}
+        // Unit 19: rename only available on team chats, captain-only
+        // (captain = the participant with cannot_leave=true).
+        canRename={
+          conversationType === 'team_chat' && composerStatus?.cannotLeave === true
+        }
       />
 
       {/* Leave Conversation Confirmation */}
@@ -241,9 +275,26 @@ export function MessageView({ conversationId, currentUserId, onBack, onLeaveConv
           unmounted (not hidden) when locked so it stays out of tab order
           and screen-reader output. */}
       {composerStatus?.readOnly && composerStatus.reason ? (
-        <ReadOnlyBanner reason={composerStatus.reason} />
+        <ReadOnlyBanner
+          reason={composerStatus.reason}
+          contextName={composerStatus.contextName ?? undefined}
+        />
       ) : (
         <MessageInput onSend={handleSendMessage} />
+      )}
+
+      {/* Unit 19: rename-chat dialog. Only mounted when needed (the
+          ConversationHeader's "Edit name" menu item is only visible when
+          canRename is true, so showRenameDialog is only ever set in
+          permitted contexts; the mutation also enforces server-side). */}
+      {showRenameDialog && (
+        <EditConversationTitleDialog
+          open={showRenameDialog}
+          onOpenChange={setShowRenameDialog}
+          conversationId={conversationId}
+          userId={currentUserId}
+          initialTitle={conversationTitle}
+        />
       )}
     </div>
   );

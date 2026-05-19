@@ -111,7 +111,9 @@ export async function createTeamChat(
   const { data: conversation, error: convError } = await supabase
     .from('conversations')
     .insert({
-      title: `${team.team_name} — Team Chat`,
+      // Unit 18: team chat title is just the team name (no "— Team Chat"
+      // suffix). Mobile-friendly; matches the season-activation trigger.
+      title: team.team_name,
       auto_managed: true,
       conversation_type: 'team_chat',
       scope_type: 'team',
@@ -283,9 +285,9 @@ export async function createCaptainChat(
   const staffIds = new Set<string>((staffRows ?? []).map((r) => r.member_id as string));
 
   // 6. Insert the conversation
-  const titleLabel = league.division
-    ? `${league.division} Captains Chat`
-    : `${league.day_of_week} Captains Chat`;
+  // Unit 18: "Captains — <division|day>" instead of "<...> Captains Chat".
+  // Matches the season-activation trigger's pattern.
+  const titleLabel = `Captains — ${league.division ?? league.day_of_week ?? 'League'}`;
 
   const { data: conversation, error: convError } = await supabase
     .from('conversations')
@@ -430,9 +432,10 @@ export async function createSeasonAnnouncementsChat(
   const { data: conversation, error: convError } = await supabase
     .from('conversations')
     .insert({
-      title: season.season_name
-        ? `${season.season_name} — Announcements`
-        : 'Season Announcements',
+      // Unit 18: universal "League Announcements" title; the actual
+      // league/season name moves to the read-only banner where there's
+      // room. Matches the season-activation trigger's pattern.
+      title: 'League Announcements',
       auto_managed: true,
       conversation_type: 'announcements',
       scope_type: 'season',
@@ -558,9 +561,10 @@ export async function createOrgAnnouncementsChat(
   const { data: conversation, error: convError } = await supabase
     .from('conversations')
     .insert({
-      title: org.organization_name
-        ? `${org.organization_name} — Announcements`
-        : 'Organization Announcements',
+      // Unit 18: universal "Global Announcements" title; the actual
+      // org name moves to the read-only banner where there's room.
+      // Matches the season-activation trigger's pattern.
+      title: 'Global Announcements',
       auto_managed: true,
       conversation_type: 'announcements',
       scope_type: 'organization',

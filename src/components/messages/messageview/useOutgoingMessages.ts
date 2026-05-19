@@ -52,6 +52,12 @@ export interface UseOutgoingMessagesReturn {
   markFailed: (clientId: string, errorMessage: string) => void;
   /** Remove an entry (used when the server acknowledges or the user dismisses). */
   remove: (clientId: string) => void;
+  /** Unit 17: remove every entry matching the predicate. Used by
+   *  MessageView to remove a pending entry when the realtime push
+   *  delivers the confirmed version of the same message — eliminates
+   *  the brief "two bubbles, one shifts up" flash that the
+   *  previous wait-for-mutation-then-remove flow produced. */
+  removeByMatch: (predicate: (entry: OutgoingMessage) => boolean) => void;
 }
 
 export function useOutgoingMessages(): UseOutgoingMessagesReturn {
@@ -93,5 +99,12 @@ export function useOutgoingMessages(): UseOutgoingMessagesReturn {
     setOutgoing((prev) => prev.filter((m) => m.clientId !== clientId));
   }, []);
 
-  return { outgoing, addPending, markPending, markFailed, remove };
+  const removeByMatch = useCallback(
+    (predicate: (entry: OutgoingMessage) => boolean) => {
+      setOutgoing((prev) => prev.filter((m) => !predicate(m)));
+    },
+    [],
+  );
+
+  return { outgoing, addPending, markPending, markFailed, remove, removeByMatch };
 }

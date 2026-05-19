@@ -106,7 +106,10 @@ describe('createCaptainChat()', () => {
     expect(convs[0].scope_type).toBe('season');
     expect(convs[0].scope_id).toBe(seasonId);
     expect(convs[0].auto_managed).toBe(true);
-    expect(convs[0].title).toContain('Captains Chat');
+    // Unit 18 (2026-05-17) shortened the title from "<...> Captains Chat"
+    // to "Captains — <division|day>". Assert on the universal "Captains"
+    // substring so this test passes the post-Unit-18 pattern.
+    expect(convs[0].title).toContain('Captains');
   });
 
   it('includes every distinct team captain as a participant', async () => {

@@ -1799,6 +1799,25 @@ later in one dedicated pass." This entry exists so when that pass
 happens, none of the design work above has to be re-derived from the
 plan.
 
+**Add this policy at the same time (Unit 12 / 2026-05-17):**
+
+4. **`conversation_participants` UPDATE policy** — block users from
+   setting their own `left_at` on a row where `cannot_leave = TRUE`
+   (the captain-force-membership case from Unit 5). Today the JS
+   `leaveConversation` mutation checks `cannot_leave` before doing
+   the UPDATE, but a determined caller can bypass with a direct
+   `.update()`. Policy shape:
+
+   ```
+   -- Allow UPDATE only when EITHER cannot_leave is already FALSE
+   -- (normal participant leaving) OR the UPDATE is not setting
+   -- left_at (the user is changing something else, e.g. last_read_at).
+   ```
+
+   Use `get_current_member_id()` for the actor check. The casual UI
+   path is already gated by the JS check + `useMessageComposerStatus.cannotLeave`
+   hiding the Leave button.
+
 
 ---
 

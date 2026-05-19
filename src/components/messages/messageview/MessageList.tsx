@@ -23,6 +23,7 @@ import { MessageSquare } from 'lucide-react';
 import { LoadingState, EmptyState } from '@/components/shared';
 import { MessageBubble } from '../MessageBubble';
 import type { OutgoingMessage } from './useOutgoingMessages';
+import { interleaveDayDividers } from '@/utils/messageDayDividers';
 
 export interface Message {
   id: string;
@@ -87,9 +88,31 @@ export function MessageList({
     );
   }
 
+  // Unit 10: interleave day dividers ("Today" / "Yesterday" / "May 12")
+  // between message groups. Pure-function helper; rendered inline below.
+  const rows = interleaveDayDividers(messages, (m) => m.created_at);
+
   return (
     <>
-      {messages.map((message) => {
+      {rows.map((row) => {
+        if (row.kind === 'divider') {
+          return (
+            <div
+              key={row.key}
+              className="flex items-center gap-3 py-2"
+              data-testid="day-divider"
+            >
+              <div className="flex-1 border-t border-border" aria-hidden />
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                {row.label}
+              </span>
+              <div className="flex-1 border-t border-border" aria-hidden />
+            </div>
+          );
+        }
+
+        const message = row.message;
+
         // System messages (sender_id IS NULL by CHECK constraint) render
         // in a distinct centered/italic variant; no sender → no avatar,
         // no read receipt, no isCurrentUser concept.

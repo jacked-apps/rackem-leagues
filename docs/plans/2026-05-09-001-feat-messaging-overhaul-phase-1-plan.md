@@ -27,18 +27,18 @@ end-to-end test pass before merge.
 | 7 | Profanity filter wiring + system-message variant (+ DOB-aware COMMENT polish) | ✅ shipped |
 | 8 | Composer failed-send recovery (inline iMessage-style) | ✅ shipped |
 | 9 | Profanity onboarding modal (first Messages open, defaulted-ON) + legacy SQL archive | ✅ shipped |
-| 10 | **Date dividers in message thread** | ⬜ not started |
-| 11 | **Empty conversation-list state — value-prop copy** | ⬜ not started |
-| 12 | **Leave button respects `cannot_leave`** | ⬜ not started |
-| 13 | **Emoji messages + composer picker (12-emoji curated set)** | ⬜ not started |
-| 14 | **Season-end trigger — release `cannot_leave` on completion** | ⬜ not started |
-| 15 | **Auto-rename propagation — team / league / season / org renames update matching chat titles** | ⬜ not started |
+| 10 | **Date dividers in message thread** | ✅ shipped |
+| 11 | **Empty conversation-list state — value-prop copy** | ✅ shipped |
+| 12 | **Leave button respects `cannot_leave`** | ✅ shipped |
+| 13 | **Emoji messages + composer picker (12-emoji curated set)** | ✅ shipped |
+| 14 | **Season-end trigger — release `cannot_leave` on completion** | ✅ shipped |
+| 15 | **Auto-rename propagation — team rename + league rename update matching chat titles (2 triggers; season/org renames moot post-Unit-18)** | ✅ shipped |
 | 16 | **Bounded send — AbortController + 10s timeout in `sendMessage`** | ✅ shipped |
-| 17 | **Eliminate optimistic-vs-realtime double-render flash on sender side** | ⬜ not started |
-| 18 | **Shorter chat titles + banner interpolation + per-user captains label** | ⬜ not started |
-| 19 | **Editable team chat title (captain rename; auto-rename trigger respects user-edit)** | ⬜ not started |
+| 17 | **Eliminate optimistic-vs-realtime double-render flash on sender side** | ✅ shipped 2026-05-17 |
+| 18 | **Shorter chat titles + banner interpolation** (per-user captains label deferred — see entry) | ✅ shipped (partial — per-user label deferred) |
+| 19 | **Editable team chat title (captain rename; auto-rename trigger respects user-edit)** | ✅ shipped |
 | 20 | **Past-member chats visible in inbox under "Archived" section (close Unit 6 gap)** | ✅ shipped |
-| 21 | **Collapsible "Archived" section in conversation list (default-collapsed)** | ⬜ not started |
+| 21 | **Collapsible "Archived" section in conversation list (default-collapsed)** | ✅ shipped |
 
 **Branch:** `messaging-system-overhaul`.
 **Awaits:** Units 10–14 build + final end-to-end test pass (`pnpm db:reset && pnpm test:run` + manual dev-app smoke walkthrough).
@@ -991,7 +991,7 @@ flips.
 
 ---
 
-- [ ] **Unit 17: Eliminate optimistic-vs-realtime double-render flash on sender side**
+- [x] **Unit 17: Eliminate optimistic-vs-realtime double-render flash on sender side** ✅ shipped 2026-05-17
 
 **Goal:** When the user sends a message, the optimistic bubble
 (Unit 8's `useOutgoingMessages` pending entry) and the
@@ -1068,6 +1068,16 @@ bubble appears and stays.
 **Why deferred (per Ed 2026-05-16):** cosmetic-only flash; doesn't
 block testing or correctness; medium-cost (~30-45 min including a
 test) so it batches with Units 10–15 in the polish bundle.
+
+**Shipped 2026-05-17:** Added `removeByMatch(predicate)` to
+`useOutgoingMessages` and a new optional `onOwnMessageDelivered`
+callback parameter on `useConversationMessagesRealtime`. The hook
+inspects the embedded `sender` on the realtime-delivered message;
+when the sender is the current user, it fires the callback with
+`{id, content, created_at}`. `MessageView` wires the callback to
+remove the matching pending entry (content + ≤30s timestamp
+window). Tests in `useOutgoingMessages.test.ts` cover the new
+helper. Type-clean + unit suite green.
 
 ---
 

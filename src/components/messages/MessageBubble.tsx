@@ -33,6 +33,7 @@ import { PlayerNameLink } from '@/components/PlayerNameLink';
 import { Button } from '@/components/ui/button';
 import { useProfanityFilter } from '@/hooks/useProfanityFilter';
 import { censorProfanity } from '@/utils/profanityFilter';
+import { isEmojiOnly } from '@/utils/isEmojiOnly';
 
 interface MessageBubbleProps {
   content: string;
@@ -120,6 +121,48 @@ export function MessageBubble({
   };
 
   const isRead = recipientLastRead && new Date(createdAt) <= new Date(recipientLastRead);
+
+  // Unit 13: emoji-only messages (≤3 graphemes) render large + unbubbled
+  // for emphasis — iMessage / WhatsApp convention. Skips the bubble shell
+  // and sender-link / read-receipt chrome, but keeps the timestamp below
+  // so the user still has context.
+  if (isEmojiOnly(displayContent)) {
+    return (
+      <div
+        className={cn('flex', isCurrentUser ? 'justify-end' : 'justify-start')}
+        data-testid="emoji-only-message"
+      >
+        <div className="flex flex-col gap-1 max-w-md">
+          {!isCurrentUser && senderName && senderId && (
+            <div className="text-xs font-semibold">
+              <PlayerNameLink
+                playerId={senderId}
+                playerName={senderName}
+                className="text-foreground hover:text-blue-600"
+              />
+            </div>
+          )}
+          <p className="text-5xl leading-tight whitespace-pre-wrap">{displayContent}</p>
+          <div
+            className={cn(
+              'flex items-center gap-1',
+              isCurrentUser ? 'justify-end' : 'justify-start',
+            )}
+          >
+            <p className="text-xs text-muted-foreground">
+              {formatTimestamp(createdAt)}
+              {isEdited && ' (edited)'}
+            </p>
+            {isCurrentUser && recipientLastRead && (
+              <span className="text-muted-foreground">
+                {isRead ? <CheckCheck className="h-3 w-3" /> : <Check className="h-3 w-3" />}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cn('flex', isCurrentUser ? 'justify-end' : 'justify-start')}>
