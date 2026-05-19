@@ -6,24 +6,33 @@
  *   composition = (C) initial points (via receipt trigger pair)
  *               + (A) per-game allocator
  *
- * Where:
- * - (C) initial points: two receipt triggers (one per side), each consulting
- *   a threshold that returns the handicap-driven start-points value for that
- *   side. Per D3 dual-identity resolution: the threshold delegates to the
- *   FargoFormulaChart (or the active Handicap Mechanism's start_points
- *   compute). Phase A's cross-audit just uses literal pre-computed values
- *   from the test fixture, since the chart wiring is tested separately.
- * - (A) per-game allocator: winner = 10 fixed, loser = counter 0–7 (balls pocketed)
+ * **Slice 4 of the Threshold refactor (2026-05-19):** migrated to data-driven
+ * `ThresholdRow`s AND fixes Finding 2 from the architectural audit.
  *
- * Cross-audited against the legacy `accumulated_per_game` bundled calculator
- * (`src/systems/calculators/accumulated_per_game.ts`) for the per-game portion;
- * initial points behavior verified by composition tests (start_points adds
- * before per-game accumulation).
+ * **Finding 2 was real drift** — the previous initial-points thresholds
+ * read pre-computed values from `inputs.prefs.initial_home` / `initial_away`,
+ * making the caller responsible for running the FargoRate math externally.
+ * This violated the "threshold is a pure function of match inputs" principle —
+ * the threshold was just a pass-through, not actually doing computation.
  *
- * @see ./points-3-man.ts ./percent-5-man.ts — sibling compositions
+ * **Fix:** thresholds now reference the `fargo_start_points_for_side`
+ * operation, which delegates to `fargoFormulaChart` for the calibrated
+ * computation. The threshold consumes `homeRatings` + `awayRatings` from
+ * runtime inputs and produces the start-points value if this side is the
+ * weaker team, 0 otherwise. The math lives inside the threshold operation
+ * where it belongs.
+ *
+ * Cross-audit updated to provide real rating arrays instead of pre-computed
+ * start-points values.
+ *
+ * @see ../operations/fargo-start-points-for-side.ts — the FargoRate operation
+ * @see src/systems/threshold-charts/fargo-formula.ts — the underlying chart
  */
 
-import { computedThreshold } from '../threshold-helpers';
+// Importing these auto-registers the operations into the threshold registry.
+import '../operations/fargo-start-points-for-side';
+
+import { buildThresholdRow } from '../threshold-resolver';
 import type { PointsSystem, Trigger } from '../types';
 
 export interface Fargo10pt5ManParams {
@@ -43,23 +52,9 @@ const DEFAULT_PARAMS: Fargo10pt5ManParams = {
 };
 
 /**
- * Inputs the Fargo initial-points thresholds need. The threshold compute
- * functions receive `ThresholdInputs` and read these via the `prefs` bag —
- * cleaner than extending `ThresholdInputs` with Fargo-specific fields
- * (which would mix concerns).
- *
- * For Phase A, the caller pre-computes the start-points values (typically
- * via the existing FargoFormulaChart or `fargo5v5.handicapMechanism.compute`)
- * and provides them as prefs.
- */
-export interface FargoInitialPointsInputs {
-  initial_home: number;
-  initial_away: number;
-}
-
-/**
  * Build a receipt trigger that adds the named threshold's value to a
- * concrete points variable.
+ * concrete points variable. Used for awarding the start-points head-start
+ * at match start.
  */
 function awardInitialPoints(
   triggerName: string,
@@ -80,9 +75,8 @@ function awardInitialPoints(
 /**
  * Build the FargoRate 10-Point 5-Man Scoring System's Points System composition.
  *
- * The initial-points thresholds read `initial_home` / `initial_away` from
- * the prefs bag — the caller (typically the resolver) is responsible for
- * pre-computing these via the active Handicap Mechanism's start_points logic.
+ * Thresholds compute start-points from `inputs.homeRatings`/`awayRatings`
+ * at evaluation time (no caller pre-computation needed).
  */
 export function buildFargo10pt5ManComposition(
   params: Partial<Fargo10pt5ManParams> = {},
@@ -92,14 +86,18 @@ export function buildFargo10pt5ManComposition(
   return {
     name: 'fargo_10pt_5man',
     thresholds: {
-      // Initial points per side: read from the prefs bag. Caller pre-computes.
-      initialHome: computedThreshold('initialHome', (inputs) => {
-        const v = inputs.prefs.initial_home;
-        return typeof v === 'number' && Number.isFinite(v) ? v : 0;
+      // Start-points per side. Operation runs the FargoRate formula and returns
+      // the start-points value if this side is the weaker team, 0 otherwise.
+      // Math lives inside the threshold; no caller pre-computation.
+      initialHome: buildThresholdRow({
+        name: 'initialHome',
+        operationKind: 'fargo_start_points_for_side',
+        operationArgs: { side: 'home' },
       }),
-      initialAway: computedThreshold('initialAway', (inputs) => {
-        const v = inputs.prefs.initial_away;
-        return typeof v === 'number' && Number.isFinite(v) ? v : 0;
+      initialAway: buildThresholdRow({
+        name: 'initialAway',
+        operationKind: 'fargo_start_points_for_side',
+        operationArgs: { side: 'away' },
       }),
     },
     perGameAllocator: {
