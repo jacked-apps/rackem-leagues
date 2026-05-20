@@ -1,22 +1,20 @@
 ---
-title: Trigger (v2 — candidate)
+title: Trigger
 date: 2026-05-20
-status: candidate
-locked: false
+status: active
+locked: true
 audience: developer + AI sessions
 ---
 
-# Trigger (v2)
+# Trigger
 
-> **Status: candidate replacement, in the locking process — NOT yet canonical.**
-> This doc replaces the scattered, mis-framed trigger content in the locked docs
-> (Points System README sub-mechanism (B) "Threshold trigger"; PRINCIPLES
-> § System § 5). It exists because we found a FUNDAMENTAL flaw in that content —
-> a false coupling baked into the model — not a typo or a missing operator. It
-> must pass the full cold-read process before it locks. It also supersedes the
-> exploratory `complex-trigger.md`.
+> ## 🔒 LOCKED — DO NOT EDIT
+>
+> Before editing this file, read and apply the gate procedure in [Principle 7: Canonical-docs-as-policy](../../PRINCIPLES.md#7-canonical-docs-as-policy). The procedure requires explicit user invocation using specific gate-aware language; casual approvals are NOT sufficient.
+>
+> This is the **authoritative Trigger model.** It supersedes the older trigger framing still present in PRINCIPLES § System § 5 and Points System README (B) — reconciling those locked docs to point here is a follow-up step. It also supersedes the exploratory `complex-trigger.md`.
 
-## The flaw in v1
+## Why triggers are decoupled from thresholds
 
 The old model coupled two independent things:
 
@@ -29,13 +27,13 @@ The old model coupled two independent things:
   is like insisting a `useEffect` must contain an `if` — it often does, but
   requiring it calcifies a dependency that isn't real.
 
-v2 removes the coupling. There is no threshold input slot. A trigger reads and
-writes the **state bag** by name, full stop.
+This model removes the coupling. There is no threshold input slot. A trigger
+reads and writes the **state bag** by name, full stop.
 
 ## Anatomy
 
-v2 keeps the canonical four sub-mechanisms from PRINCIPLES § System § 5 — a
-Trigger is a System, not an atom — and gives them author-facing names:
+The trigger keeps the canonical four sub-mechanisms from PRINCIPLES § System § 5
+— a Trigger is a System, not an atom — and gives them author-facing names:
 
 | Canonical sub-mechanism | Author-facing part | Job |
 |---|---|---|
@@ -216,10 +214,9 @@ declarations, sequenced execution** — not literal concurrency.
 meaning independent / no-chaining, NOT concurrent. The execution is still
 ordered, per ORDER above.)
 
-## DISPLAY — UI contract (kept for canonical-compat; likely belongs elsewhere)
+## DISPLAY — UI contract (likely belongs elsewhere)
 
-PRINCIPLES § System § 5 (lines 606-611) says every Trigger exposes a display
-contract:
+PRINCIPLES § System § 5 says every Trigger exposes a display contract:
 
 - **Label** — short text (e.g. *"win"*, *"1.5 bonus"*)
 - **Target value** — the value being watched (e.g. `11`, `1.5`)
@@ -235,8 +232,8 @@ second misplacement in the canonical model, the same shape as the
 threshold-coupling flaw.
 
 For now, display is exposed via the state bag; this contract is kept here for
-canonical-compatibility but is **minor and unused** — flagged as a likely
-relocation (display → thresholds / scoreboard) when revisited.
+completeness but is **minor and unused** — flagged as a likely relocation
+(display → thresholds / scoreboard) when revisited.
 
 ## Two hard constraints
 
@@ -263,7 +260,7 @@ flatten:
 ## The end-of-match aggregate is expressible as match_end triggers
 
 The locked model has a distinct canonical sub-mechanism — **(D) end-of-match
-aggregate.** v2 does NOT remove it. v2 only shows its logic expresses as
+aggregate.** This model does NOT remove it — it only shows the logic expresses as
 match_end triggers, so it's not architecturally *distinct* from a trigger:
 
 ```
@@ -275,9 +272,9 @@ type: match_end   IF home_wins < tieTarget   THEN home_points = (home_wins - tie
 (Per-side: declare the matching pair for the away side.) No compound condition,
 no nesting, no `else` — reproduces the locked 3-band behavior exactly.
 
-**Deprecating (D) is a SEPARATE downstream step**, not part of enstating v2.
-Until then the EOGA remains canonical and the locked docs continue to describe
-it. v2 establishes only that the trigger model *can* absorb it.
+**Deprecating (D) is a SEPARATE downstream step**, not part of enstating this
+trigger model. Until then the EOGA remains canonical and the locked docs continue
+to describe it. This model establishes only that it *can* absorb the aggregate.
 
 ## The per-game allocator — possibly a periodic trigger (open)
 
@@ -285,7 +282,7 @@ The per-game allocator (sub-mechanism (A)) is NOT folded into triggers here. It
 differs from a trigger today: it has **no condition** (it just fires every game)
 and it **collects scorer inputs**. A **periodic** re-arm + input handling MIGHT
 let a trigger absorb it — but that's an open evaluation, deliberately AFTER
-locking v2 and assessing EOGA. v2 leaves (A) standing.
+this model locks and EOGA is assessed. The model leaves (A) standing.
 
 ## There is no separate "complex trigger"
 
@@ -296,7 +293,7 @@ dangerous for non-coder authoring. A separate, deliberate decision if ever neede
 
 ## Safety lives in the authoring UI, not a schema contract
 
-v1's `inputSpec` shape-contract is dropped — it was scaffolding for the false
+The old `inputSpec` shape-contract is dropped — it was scaffolding for the false
 1:1 binding and merely re-declared what the condition already names. The real
 safety is the **constrained, ESLint-style builder**:
 
