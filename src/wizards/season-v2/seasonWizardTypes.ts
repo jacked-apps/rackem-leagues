@@ -36,6 +36,12 @@ export interface SeasonWizardFormData {
 
   /** Wildcard checkbox within PlayoffFormatStep */
   'playoff-wildcard'?: boolean;
+
+  /** Step: ChampionshipStep (next-season only — confirmation of last
+   *  season's BCA/APA tracking choices). In first-season flow this step
+   *  lives in the schedule wizard instead since it ties to schedule
+   *  building. */
+  'championships'?: { trackBca: boolean; trackApa: boolean };
 }
 
 /**

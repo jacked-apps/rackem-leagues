@@ -18,6 +18,7 @@ import { SeasonStartDateStep } from './steps/SeasonStartDateStep';
 import { SeasonSettingsModeStep } from './steps/SeasonSettingsModeStep';
 import { SeasonLengthStep } from './steps/SeasonLengthStep';
 import { PlayoffFormatStep } from './steps/PlayoffFormatStep';
+import { ChampionshipStep } from '@/wizards/schedule-v2/ChampionshipStep';
 import type { SeasonWizardFormData } from './seasonWizardTypes';
 import { parseLocalDate } from '@/utils/formatters';
 import { generateSeasonName } from '@/types/season';
@@ -189,6 +190,24 @@ export const seasonWizardConfig: WizardConfig<SeasonWizardFormData> = {
         return v?.format ? undefined : ['Please select a playoff format'];
       },
       component: PlayoffFormatStep as WizardConfig<SeasonWizardFormData>['steps'][number]['component'],
+    },
+    {
+      id: 'championships',
+      title: 'Championships',
+      // Next-season only — championship tracking belongs alongside
+      // the other "are last season's settings still right?" gates.
+      // First-season flow keeps championship in the Schedule wizard
+      // where it ties to schedule building.
+      // Hidden when nothing is tracked (showIf returns false), so
+      // operators who opted out never see it.
+      showIf: (fd) => {
+        const ctx = (fd as Record<string, unknown>)._flowContext as
+          | { championshipTracking?: { trackBca: boolean; trackApa: boolean } }
+          | undefined;
+        if (!ctx?.championshipTracking) return false;
+        return ctx.championshipTracking.trackBca || ctx.championshipTracking.trackApa;
+      },
+      component: ChampionshipStep as WizardConfig<SeasonWizardFormData>['steps'][number]['component'],
     },
     {
       id: 'review',

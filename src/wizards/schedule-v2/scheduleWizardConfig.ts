@@ -33,19 +33,20 @@ export const scheduleWizardConfig: WizardConfig<ScheduleWizardFormData> = {
       id: 'championships',
       title: 'Championship Tracking',
       optional: true,
-      // For next-season runs, skip this step entirely when the
-      // operator isn't tracking either championship — they already
-      // told us "don't bother" at first-league creation and we don't
-      // re-ask every season. Visible in: (a) first-league runs (no
-      // flowContext.championshipTracking) so they CAN opt in, or
-      // (b) next-season runs where at least one is currently tracked
-      // so they can confirm or change.
+      // Only shown in the FIRST-time league flow — there, championship
+      // tracking is part of building the schedule for the first time
+      // (the operator is making the decision, not confirming it).
+      //
+      // For next-season runs, the championship "is this still right?"
+      // confirmation now lives in the Season wizard (Stage 1) next to
+      // the other settings gates, so Stage 2 jumps straight to the
+      // schedule grid. The presence of `flowContext.championshipTracking`
+      // is the "this is a next-season run" signal.
       showIf: (fd) => {
         const ctx = (fd as Record<string, unknown>)._flowContext as
           | { championshipTracking?: { trackBca: boolean; trackApa: boolean } }
           | undefined;
-        if (!ctx?.championshipTracking) return true; // first-time flow
-        return ctx.championshipTracking.trackBca || ctx.championshipTracking.trackApa;
+        return !ctx?.championshipTracking;
       },
       component: ChampionshipStep as WizardConfig<ScheduleWizardFormData>['steps'][number]['component'],
     },

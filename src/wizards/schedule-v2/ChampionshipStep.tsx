@@ -31,7 +31,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { InfoButton } from '@/components/InfoButton';
 import type { WizardStepProps } from '@/components/wizard';
-import type { ScheduleWizardFormData } from './scheduleWizardTypes';
 
 interface ChampionshipValue {
   trackBca: boolean;
@@ -52,7 +51,7 @@ export function ChampionshipStep({
   onChange,
   onNext,
   formData,
-}: WizardStepProps<ChampionshipValue | undefined, ScheduleWizardFormData>) {
+}: WizardStepProps<ChampionshipValue | undefined, unknown>) {
   const flowContext = (formData as Record<string, unknown>)._flowContext as
     | FlowContextShape
     | undefined;
