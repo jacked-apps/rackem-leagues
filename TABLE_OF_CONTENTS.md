@@ -58,7 +58,7 @@
 | `docs/league-system/modules/` | **Per-Module blueprints (9 Modules + variant pages)** | All LOCKED |
 | `docs/league-system/modules/handicap-systems/` | Handicap Systems Module (README + 4 variants: percentage, fargorate, points, skill-level) | LOCKED |
 | `docs/league-system/modules/handicap-mechanisms/` | Handicap Mechanisms Module (README + 3 variants: extra-games, start-points, race-length-adjustment) | LOCKED |
-| `docs/league-system/modules/points-system/` | Points System Module (README + 2 variants: one-point-scoring, ten-point-scoring; + complex-trigger.md design concept; + trigger-v2.md canonical candidate, in cold-read process) | README LOCKED; complex-trigger + trigger-v2 UNLOCKED |
+| `docs/league-system/modules/points-system/` | Points System Module (README + 2 variants: one-point-scoring, ten-point-scoring; + **trigger.md** canonical Trigger model; + complex-trigger.md superseded/pending-deletion) | README + trigger.md LOCKED; complex-trigger UNLOCKED (superseded) |
 | `docs/league-system/modules/win-calculator.md` | Win Calculator Module — metric precedence stack + Tiebreak System trigger model | LOCKED |
 | `docs/league-system/modules/threshold-charts/` | Threshold Charts Module (README + 5 variants: 3v3-games-needed, 5v5-games-needed, race-points, race-percentage, fargo-formula) | LOCKED |
 | `docs/league-system/modules/team-geometry.md` | Team Geometry Module — lineup_size + max_roster_size + game_generation | LOCKED |
