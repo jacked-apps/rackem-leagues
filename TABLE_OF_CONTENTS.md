@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-15 (Messaging Phase 1 polish triage — appended Units 10–14 to the Phase 1 plan doc (date dividers, value-prop empty state, leave-respects-`cannot_leave`, emoji messages + 12-emoji picker, season-end `cannot_leave` release trigger). Added a Status table at the top of the plan; flipped Units 1–9 checkboxes to done. Added a "Messaging — Future Polish" BACKLOG NOTES section to `MVP_FEATURE_LIST.md` for the parked items (reactions / mute UI / typing indicators / pinned / @mentions / custom 9-ball etc.) with reasoning. Added `LIST_FOR_ED.md` #30 pointing at the Phase 2 plan doc that needs writing.)
+> **Last Updated**: 2026-05-20 (Added the Modular Scoring System L1 documentation canon under `docs/league-system/` — 9-Module locked architecture + PRINCIPLES + per-Module blueprints + the canonical Trigger model + concept-analogies lens + threshold charts + League Intake Agent tooling. Earlier: Messaging Phase 1 polish triage — appended Units 10–14 to the Phase 1 plan doc (date dividers, value-prop empty state, leave-respects-`cannot_leave`, emoji messages + 12-emoji picker, season-end `cannot_leave` release trigger). Added a Status table at the top of the plan; flipped Units 1–9 checkboxes to done. Added a "Messaging — Future Polish" BACKLOG NOTES section to `MVP_FEATURE_LIST.md` for the parked items (reactions / mute UI / typing indicators / pinned / @mentions / custom 9-ball etc.) with reasoning. Added `LIST_FOR_ED.md` #30 pointing at the Phase 2 plan doc that needs writing.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -47,6 +47,22 @@
 | `docs/BCA_HANDICAP_SYSTEM.md` | BCA handicap system documentation | Official BCA handicap rules and calculations |
 | `docs/CUSTOM_5MAN_HANDICAP_SYSTEM.md` | Custom 5-man handicap system | Proprietary handicap system for 5-man format |
 | `docs/LEAGUE_MANAGEMENT_PLAN.md` | League management system architecture | System hierarchy and database schema |
+| `/docs/league-system/` | **Modular Scoring System framework — LOCKED canonical docs** | 9-Module architecture (Handicap Systems, Handicap Mechanisms, Points System, Win Calculator, Threshold Charts, Team Geometry, Match Format, Pairings Generator, Tiebreak System); LOCKED per Principle 7 gate procedure |
+| `docs/league-system/PRINCIPLES.md` | 10 architectural principles + 4 Module kinds + composition patterns | **LOCKED** — edits require explicit Principle 7 unlock invocation |
+| `docs/league-system/README.md` | 9-Module catalog + classification walkthrough + cheat-sheet | **LOCKED** |
+| `docs/league-system/concept-analogies.md` | Lens mapping locked concepts → programming primitives (Module=component, Threshold=state setter, Trigger=if/then, per-game allocator=reducer…); flaw-detector for cold reads | **LOCKED** |
+| `docs/league-system/intake-agent-prompt.md` | Persona prompt for the League Intake Agent (translates LO league descriptions to the modular framework) | Active tool — onboarding new LOs |
+| `docs/league-system/intake-agent-howto.md` | Step-by-step ops how-to for running the intake agent | Active tool |
+| `docs/league-system/modules/` | **Per-Module blueprints (9 Modules + variant pages)** | All LOCKED |
+| `docs/league-system/modules/handicap-systems/` | Handicap Systems Module (README + 4 variants: percentage, fargorate, points, skill-level) | LOCKED |
+| `docs/league-system/modules/handicap-mechanisms/` | Handicap Mechanisms Module (README + 3 variants: extra-games, start-points, race-length-adjustment) | LOCKED |
+| `docs/league-system/modules/points-system/` | Points System Module (README + variants; + **trigger.md** canonical Trigger model) | README + trigger.md LOCKED |
+| `docs/league-system/modules/win-calculator.md` | Win Calculator Module — metric precedence stack + Tiebreak System trigger model | LOCKED |
+| `docs/league-system/modules/threshold-charts/` | Threshold Charts Module (README + 5 variants: 3v3-games-needed, 5v5-games-needed, race-points, race-percentage, fargo-formula) | LOCKED |
+| `docs/league-system/modules/team-geometry.md` | Team Geometry Module — lineup_size + max_roster_size + game_generation | LOCKED |
+| `docs/league-system/modules/match-format.md` | Match Format Module — pairing_format + race_length | LOCKED |
+| `docs/league-system/modules/pairings-generator.md` | Pairings Generator Module — chain pattern (pair generation + game ordering + break/rack assignment) | LOCKED |
+| `docs/league-system/modules/tiebreak-system/` | Tiebreak System Module (README + 4 Mechanism stubs: coin-flip, roshambo, human-pick, mini-match) | LOCKED |
 | `/docs/brainstorms/` | **CE brainstorm requirements docs** | Output of `/compound-engineering:ce-brainstorm` |
 | `docs/brainstorms/official-rulebook-reader-requirements.md` | Requirements for the Official Rulebook Reader feature | Branch 1 of the rules-feature family |
 | `docs/brainstorms/e2e-test-infrastructure-requirements.md` | Requirements for the Playwright E2E scaffolding (foundation seed + factories + multi-user auth + demo mode) | Active branch `feat/e2e-test-infrastructure` |
