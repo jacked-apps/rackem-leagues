@@ -15,6 +15,7 @@ import type { WizardConfig } from '@/components/wizard';
 import { ReviewStep } from '@/components/wizard';
 import { SeasonIntroStep } from './steps/SeasonIntroStep';
 import { SeasonStartDateStep } from './steps/SeasonStartDateStep';
+import { SeasonSettingsModeStep } from './steps/SeasonSettingsModeStep';
 import { SeasonLengthStep } from './steps/SeasonLengthStep';
 import { PlayoffFormatStep } from './steps/PlayoffFormatStep';
 import type { SeasonWizardFormData } from './seasonWizardTypes';
@@ -104,10 +105,17 @@ export const seasonWizardConfig: WizardConfig<SeasonWizardFormData> = {
     // visited the step that owns it. Each step's mount-useEffect
     // writes a default to formData, so the presence of the formData
     // slice IS the "user has been here" signal.
-    const lengthValue = formData['season-length'] as number | undefined;
-    const playoffValue = formData['playoff-format'] as
-      | { format?: string; wildcard?: boolean }
-      | undefined;
+    //
+    // The gate-step ("season-settings-mode") snapshots length + playoff
+    // when the LO picks "Keep both". We treat that snapshot as the
+    // committed answers for the two hidden steps — so the summary still
+    // grows row-by-row even when those steps are skipped.
+    const gate = formData['season-settings-mode'];
+    const lengthValue =
+      (formData['season-length'] as number | undefined) ?? gate?.length;
+    const playoffValue =
+      (formData['playoff-format'] as { format?: string; wildcard?: boolean } | undefined) ??
+      gate?.playoff;
 
     // Season Name shows only when all upstream answers are committed.
     const showSeasonName =
@@ -144,13 +152,38 @@ export const seasonWizardConfig: WizardConfig<SeasonWizardFormData> = {
       component: SeasonStartDateStep as WizardConfig<SeasonWizardFormData>['steps'][number]['component'],
     },
     {
+      id: 'season-settings-mode',
+      title: 'Settings',
+      // Only show in the next-season flow (when the flow has a
+      // previous-season anchor). For first-season flows, this gate
+      // doesn't make sense — there's nothing to "keep."
+      showIf: (fd) => {
+        const ctx = (fd as Record<string, unknown>)._flowContext as
+          | { previousSeasonLength?: number }
+          | undefined;
+        return ctx?.previousSeasonLength != null;
+      },
+      component: SeasonSettingsModeStep as WizardConfig<SeasonWizardFormData>['steps'][number]['component'],
+    },
+    {
       id: 'season-length',
       title: 'Season Length',
+      // Hidden when the LO picked "Keep both" on the gate step —
+      // the defaults are snapshotted there and read by useCreateSeasonV2.
+      showIf: (fd) => {
+        const gate = fd['season-settings-mode'];
+        return gate?.mode !== 'keep';
+      },
       component: SeasonLengthStep as WizardConfig<SeasonWizardFormData>['steps'][number]['component'],
     },
     {
       id: 'playoff-format',
       title: 'Playoffs',
+      // Hidden when the LO picked "Keep both" on the gate step.
+      showIf: (fd) => {
+        const gate = fd['season-settings-mode'];
+        return gate?.mode !== 'keep';
+      },
       validate: (value: unknown) => {
         const v = value as { format?: string } | undefined;
         return v?.format ? undefined : ['Please select a playoff format'];
