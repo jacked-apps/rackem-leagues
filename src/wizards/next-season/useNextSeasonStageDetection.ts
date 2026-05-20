@@ -47,6 +47,11 @@ interface NextSeasonStageDetectionResult {
      *  Season Length step's "Same as last (X weeks)" choice. Undefined
      *  for first-time leagues. */
     previousSeasonLength?: number;
+    /** Count of `season_weeks` rows with week_type='playoffs' for the
+     *  previous season. Drives the Playoff Format step's "Same as
+     *  last (N playoff weeks)" choice. 0 = no playoffs, 1 = 1-week, 2 =
+     *  2-week. Undefined for first-time leagues. */
+    previousSeasonPlayoffWeeks?: number;
   };
 }
 
@@ -99,18 +104,29 @@ export function useNextSeasonStageDetection(
       const previousSeasonLength: number | undefined =
         previousSeasonForDates?.season_length ?? undefined;
 
-      // Last scheduled_date across ALL week types (regular + playoffs) for
-      // that previous season. Caps the "last week played" calculation.
+      // Last scheduled_date across ALL week types (regular + playoffs)
+      // for the previous season, PLUS the count of playoff weeks.
+      // Caps the "last week played" calculation AND drives the Playoff
+      // Format step's "Same as last" choice.
       let previousSeasonLastWeekDate: string | undefined;
+      let previousSeasonPlayoffWeeks: number | undefined;
       if (previousSeasonForDates?.id) {
-        const { data: lastWeek } = await supabase
-          .from('season_weeks')
-          .select('scheduled_date')
-          .eq('season_id', previousSeasonForDates.id)
-          .order('scheduled_date', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+        const [{ data: lastWeek }, { count: playoffWeekCount }] = await Promise.all([
+          supabase
+            .from('season_weeks')
+            .select('scheduled_date')
+            .eq('season_id', previousSeasonForDates.id)
+            .order('scheduled_date', { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+          supabase
+            .from('season_weeks')
+            .select('*', { count: 'exact', head: true })
+            .eq('season_id', previousSeasonForDates.id)
+            .eq('week_type', 'playoffs'),
+        ]);
         previousSeasonLastWeekDate = lastWeek?.scheduled_date ?? undefined;
+        previousSeasonPlayoffWeeks = playoffWeekCount ?? 0;
       }
 
       // Downstream progress checks (only meaningful if we have an
@@ -149,6 +165,7 @@ export function useNextSeasonStageDetection(
         venueCount,
         previousSeasonLastWeekDate,
         previousSeasonLength,
+        previousSeasonPlayoffWeeks,
       };
     },
     enabled: !!leagueId,
@@ -162,7 +179,7 @@ export function useNextSeasonStageDetection(
     };
   }
 
-  const { league, prefs, upcomingSeason, hasSchedule, teamCount, venueCount, previousSeasonLastWeekDate, previousSeasonLength } = data;
+  const { league, prefs, upcomingSeason, hasSchedule, teamCount, venueCount, previousSeasonLastWeekDate, previousSeasonLength, previousSeasonPlayoffWeeks } = data;
 
   // Resolve stage. With NO upcoming season, the operator starts at
   // stage 0 (Season). With one in progress, walk the cascade.
@@ -194,6 +211,7 @@ export function useNextSeasonStageDetection(
       venueCount: venueCount || undefined,
       previousSeasonLastWeekDate,
       previousSeasonLength,
+      previousSeasonPlayoffWeeks,
     },
   };
 }
