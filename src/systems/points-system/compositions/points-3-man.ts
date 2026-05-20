@@ -2,8 +2,9 @@
  * @fileoverview Points 3-Man Scoring System — Points System composition.
  *
  * Per the locked Points System README, Points 3-Man's composition is:
- *  - 6 thresholds (per-side win/tie/lose targets, derived from the 3v3 chart)
- *  - 6 receipt triggers (one per threshold → assigns to a same-named variable)
+ *  - 6 thresholds (per-side win/tie/lose targets, derived from the 3v3 chart).
+ *    Thresholds are state setters — the runtime writes each resolved value into
+ *    the state bag under its name at match start (no copy-trigger needed).
  *  - 1 end-of-match aggregate (data-driven `linear_above_threshold` operation)
  *    with the locked 3v3 9-9 tie-band absorption rule baked into the operation
  *
@@ -22,31 +23,7 @@ import '../aggregate-operations/linear-above-threshold';
 
 import { validatePointsSystem } from '../composition-validator';
 import { buildThresholdRow } from '../threshold-resolver';
-import type { PointsSystem, Trigger } from '../types';
-
-/**
- * Build a receipt trigger that assigns the trigger's bound input value (the
- * named threshold's resolved value, `n`) to a state variable of the same
- * name. Common pattern for surfacing chart values into the state bag so the
- * end-of-match aggregate (and future display code) can read them.
- *
- * `side` is the threshold's output side — matches the side prefix in the
- * threshold name (e.g., `homeWinTarget` → 'home'). The inputSpec ensures
- * the trigger only binds to a side-compatible threshold at build time.
- */
-function assignThresholdToSelf(name: string, side: 'home' | 'away'): Trigger {
-  return {
-    name: `assign_${name}`,
-    input: { thresholdRef: name },
-    inputSpec: { outputType: 'game_target', outputSide: side },
-    when: { kind: 'receipt' },
-    action: {
-      target: { kind: 'concrete', variableName: name },
-      op: 'assign',
-      value: { kind: 'input_ref' },
-    },
-  };
-}
+import type { PointsSystem } from '../types';
 
 /**
  * Build the Points 3-Man Scoring System's Points System composition.
@@ -90,14 +67,9 @@ export function buildPoints3ManComposition(
         operationArgs: { side: 'away', output_field: 'games_to_lose' },
       }),
     },
-    triggers: [
-      assignThresholdToSelf('homeWinTarget', 'home'),
-      assignThresholdToSelf('awayWinTarget', 'away'),
-      assignThresholdToSelf('homeTieTarget', 'home'),
-      assignThresholdToSelf('awayTieTarget', 'away'),
-      assignThresholdToSelf('homeLoseTarget', 'home'),
-      assignThresholdToSelf('awayLoseTarget', 'away'),
-    ],
+    // No triggers: thresholds write themselves into the state bag (state
+    // setters), and the end-of-match scoring reads those state vars directly.
+    triggers: [],
     endOfMatchAggregate: {
       operationKind: 'linear_above_threshold',
       operationArgs: { multiplier: params.multiplier ?? 1 },

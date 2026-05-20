@@ -151,12 +151,19 @@ export function evaluatePointsSystem(
     total_games: thresholdInputs.gameCount,
   };
 
-  // Resolve all thresholds once at match start; values feed every trigger's
-  // input lookup throughout the match.
+  // Resolve all thresholds once at match start.
   const thresholdValues = resolveAllThresholds(
     composition.thresholds,
     thresholdInputs,
   );
+
+  // Thresholds are state setters (locked Trigger model): each resolved value is
+  // written into the state bag under its name at match start, before any trigger
+  // fires. Consumers (triggers, the end-of-match scoring pattern) read these by
+  // name from the bag — "thresholds resolve → then triggers fire."
+  for (const [name, value] of Object.entries(thresholdValues)) {
+    state[name] = value;
+  }
 
   // Phase 1: Receipt — fire receipt triggers.
   let halted = fireTriggersForPhase(composition.triggers, state, {
