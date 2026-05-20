@@ -262,4 +262,53 @@ follow-on polish.
 
 ---
 
-*Last Updated: 2026-05-16*
+## 19. Form-control border tokens too light to see (radio, checkbox, etc.)
+
+**Flagged 2026-05-20 by Ed during next-season wizard testing.** The
+radio-button outer circles in the new "Same as last / Change" pickers
+are so pale Ed initially thought they weren't there. Same issue
+already surfaced multiple times before — there are inline overrides
+sprinkled around to work around it (e.g. the Checkbox in
+`PlayoffFormatStep.tsx` ships `className="size-5 border-2 border-gray-400"`
+to force a visible edge). This is whack-a-mole; a global fix would
+prevent it from happening again.
+
+**Where the color comes from:**
+
+- `src/components/ui/radio-group.tsx:28` — `RadioGroupItem` uses
+  `border-input` (Tailwind class that resolves to `--color-input`
+  from the theme).
+- Same `--color-input` token is consumed by Checkbox, Input,
+  SelectTrigger, Textarea, etc. Whatever fix lands here ripples to
+  every form control.
+
+**Possible fixes (your call):**
+
+1. **Darken `--color-input` globally** (CSS variable in
+   `src/index.css` / the theme block). Pros: one knob, fixes every
+   form control, kills the inline `border-gray-400` workarounds.
+   Cons: also affects dark-mode `--color-input` if you don't pin
+   both modes explicitly.
+2. **Component-level override** — change `border-input` →
+   `border-gray-400` (or a darker semantic token) directly in
+   `radio-group.tsx`, `checkbox.tsx`, etc. More surgical, but you
+   touch every file and the next new shadcn primitive starts the
+   problem again.
+3. **New semantic token** like `--color-form-border` that's
+   explicitly darker than `--color-input` (which is used for plain
+   borders too). Form controls use the new token. Cleanest long
+   term but a bigger refactor.
+
+**Repro:** the new gate step on the next-season wizard
+(`feat/new-season-from-previous` branch). Click "Start Next Season"
+on League 2 → look at the radio circles. They're barely visible.
+Same pattern in the start-date picker + season-length picker on
+the same branch.
+
+**Not blocking** anything Ed is shipping right now; he's working
+around it inline (or just living with it) but flagged for a global
+pass once you have a beat.
+
+---
+
+*Last Updated: 2026-05-20*
