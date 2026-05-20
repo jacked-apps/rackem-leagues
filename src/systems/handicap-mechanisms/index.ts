@@ -24,7 +24,7 @@ import type {
   GamesNeededChart,
   RaceLengthChart,
 } from '../threshold-charts/types';
-import { createExtraGamesMechanism, noneMechanism } from './extra-games';
+import { createExtraGamesMechanism } from './extra-games';
 import { createStartPointsMechanism } from './start-points';
 import { createRaceLengthAdjustmentMechanism } from './race-length-adjustment';
 import type {
