@@ -15,7 +15,7 @@ This plan describes **HOW to fundamentally change the existing bundled scoring c
 ## The gap
 
 **The locked pages** in `docs/league-system/` define a framework where:
-- 8 component Modules (Handicap Systems, Handicap Mechanisms, Points System, Win Calculator, Threshold Charts, Team Geometry, Match Format, Standings & Tiebreakers) are independent composable primitives with crisp borders
+- 9 component Modules (Handicap Systems, Handicap Mechanisms, Points System, Win Calculator, Threshold Charts, Team Geometry, Match Format, Pairings Generator, Tiebreak System) are independent composable primitives with crisp borders
 - A Scoring System is a top-level COMPOSITION of those 8 primitives
 - The 3 prepackaged systems (Points 3-Man, Percentage 5-Man, FargoRate 10-Point 5-Man) are tested compositions of those primitives, not bundled bespoke implementations
 - Per the locked Threshold Charts README: *"Step-2 refactors will lift Charts out as first-class Modules selected by the league configuration"*
@@ -116,7 +116,9 @@ From the viability brainstorm's R1-R19. Most map to specific extraction units be
 - `docs/league-system/README.md` — vocabulary cheat sheet + 8-Module list + 3 prepackaged Scoring Systems index + classification walkthrough
 - `docs/league-system/modules/handicap-systems/README.md` — locked. 4 variants (Points/Percentage/FargoRate/Skill-Level-reserved). Internal-vs-external split.
 - `docs/league-system/modules/handicap-mechanisms/README.md` — locked. 2x2 fundamental taxonomy. 3 shipped variants + 'none'.
-- `docs/league-system/modules/points-system/README.md` — locked. (A)/(B)/(C)/(D) composable sub-mechanism types.
+- `docs/league-system/modules/points-system/README.md` — locked. (A) per-game allocator / (B) trigger / (C) initial points; end-of-match scoring = `match_end` triggers.
+- `docs/league-system/modules/points-system/trigger.md` — locked. The authoritative Trigger model (v2): TYPE/CONDITION/ACTION/RE-ARM/ORDER, decoupled from thresholds; full arithmetic on actions.
+- `docs/league-system/concept-analogies.md` — locked. Maps each primitive to a programming primitive (Trigger=if/then, per-game allocator=reducer…); flaw-detector lens.
 - `docs/league-system/modules/win-calculator.md` — locked. Currently binary; future 4-piece architecture mapped.
 - `docs/league-system/modules/threshold-charts/README.md` — describes Charts as a System-kind Module offering Chart-kind variants. Encoding-locked input contract.
 - *Pending (not locked):* `modules/team-geometry.md`, `modules/match-format.md`, `modules/standings-tiebreakers.md` — would benefit from being written as the corresponding extraction units approach.
@@ -153,6 +155,8 @@ From the viability brainstorm's R1-R19. Most map to specific extraction units be
 > **Team Geometry was extracted as the de facto Unit 1** (a genuinely simple shakedown, per the Win Calc brainstorm's re-ordering recommendation). Full Phases A-D complete (commits `43800ed`, `64fb16d`, `260e9fc`, `c63cef5`). The strangler-fig pattern is proven; ready to repeat. Net code change: +team-geometry Module (3 files, 21 tests), -getMatchTotalGames utility, -teamFormat field + TeamFormatConstants interface. 331 tests pass; zero behavior change.
 >
 > **In progress:** Match Format extraction — same shape as Team Geometry (passive configuration bundle, low coupling). Phases A-D will follow the same pattern.
+>
+> **Points System (Unit 5) was decomposed ahead of order (2026-05-20).** `src/systems/points-system/` already exists (data-driven thresholds, per-game allocator, triggers, registries; ~861 tests), built from the points-system decomposition brainstorm. But it predates the finalized trigger-model canon (trigger v2 decoupled from thresholds; EOGA deprecated → `match_end` triggers; full arithmetic on actions; per-game allocator confirmed a distinct primitive). **So Unit 5 is now a *reconciliation* of that existing code to the finalized canon, not a fresh extraction** — and it is **not yet wired into live scoring** (the legacy `src/systems/calculators/` still drives the scoring UI path). See the code-vs-canon audit + the rewritten Unit 5 below.
 >
 > **Migration plan ordering is being refined as units are reached** rather than re-numbered up front. The detailed Win Calc unit below remains as historical reference; do not act on it without re-reading the Win Calc brainstorm first.
 
@@ -254,15 +258,24 @@ From the viability brainstorm's R1-R19. Most map to specific extraction units be
 
 ---
 
-- [ ] **Unit 5: Extract Points System sub-mechanisms as composable primitives**
+- [ ] **Unit 5: Reconcile the Points System decomposition to the finalized canon + wire it into live scoring**
 
-**Sketch only.**
+**Partially built ahead of order — now a *reconciliation*, not a fresh extraction.** `src/systems/points-system/` already decomposes the Points System (data-driven thresholds, per-game allocator, triggers, registries; ~861 tests). It was built to a pre-canon model and must be reconciled to the finalized canon, then cut over from the legacy calculators.
 
-**Goal:** Decompose the 3 bundled calculators (`linear_above_threshold`, `accumulate_with_milestone_jumps`, `accumulated_per_game`) into their underlying sub-mechanism types per the locked Points System README's (A) per-game allocator / (B) threshold trigger / (C) initial points / (D) end-of-match aggregate framing. Each sub-mechanism becomes a composable primitive Module. The 3 prepackaged systems compose them as their Points System.
+**Final-canon target** (per the locked points-system README + `trigger.md`):
+- **(A) Per-game allocator** — stays a distinct primitive (the per-game reducer + ORDER pivot + scorer-input collector). Already built; keep.
+- **(B) Trigger** — decoupled from thresholds (no `input`/`inputSpec`): TYPE (match_start/match_end/anytime) + CONDITION (one flat comparison) + ACTION (write one state var via a flat `( ) + − × ÷` expression; `÷` throws on /0 + build warning) + RE-ARM (single-shot/periodic/manual) + ORDER (number + before/after-allocator bool).
+- **(C) Initial points** — a match_start trigger.
+- **Threshold** — a state setter that writes to the bag directly at match start (drop the "receipt trigger" indirection).
+- **End-of-match scoring** — `match_end` triggers (two per side + default-0 tie band); the `endOfMatchAggregate` slot + `aggregate` kind/registry dissolve.
 
-**Why fifth:** This is the largest extraction. Calculator registry exists, but the bundling-decomposition is real work. The (T+T) collapse from R1/R2/R4 lives here.
+**Reconciliation punch list:** the code-vs-canon audit (2026-05-20) enumerates the gaps — kill `input`/`inputSpec`; add TYPE; CONDITION as a flat comparison; ACTION as a flat-expression evaluator; add RE-ARM; add the ORDER allocator-pivot; dissolve EOGA into match_end triggers; thresholds as direct state setters; rebuild the 5 compositions + validator; reconcile `terminal` → `endmatch`.
 
-**Why this order:** This is also where 5v5% could theoretically gain a 3rd threshold (the question you asked earlier in the brainstorm). Doing it after Mechanisms (Unit 4) and Charts (Unit 2) ensures the dependencies are first-class Modules when this unit composes them.
+**Legacy→new cutover (strand B):** the live scoring path (`computeMatchRunningTotals`, `ScoringDialog`, `ScoreMatch`, `UnifiedScoreboard`, the wizard step) still runs the legacy `src/systems/calculators/`. Wire the reconciled `points-system/` runtime into live scoring and retire the legacy calculators.
+
+**UI-readiness is load-bearing here.** Every shape (conditions, actions, side configs) must stay data-driven + serializable so the future non-coder build/tinker workspace can expose them as dials with no second refactor — that workspace is the entire reason for the modular architecture (`[[project_modular_scoring_build_ui_ready]]`). Do NOT build the workspace in this unit; just don't foreclose it.
+
+**Why this is the largest unit:** the trigger/threshold/allocator reconciliation + the legacy cutover are both substantial. Characterization tests + the 861 existing points-system tests are the parity gate.
 
 ---
 
