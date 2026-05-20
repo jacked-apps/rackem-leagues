@@ -3,28 +3,32 @@
  *
  * Two modes:
  *
- * 1. **Next-season mode** (when `_flowContext.championshipTracking`
- *    exists) — the operator already set this up when they created
- *    their first league. Show "Keep tracking — BCA (dates), APA (dates)"
- *    vs "Change" radio. Snapshots BCA/APA defaults so the next stage
- *    has values without forcing edits.
+ * 1. **Next-season click-thru mode** (when `_flowContext.championshipTracking`
+ *    exists). The operator already set this up at first-league creation —
+ *    we just confirm with a conversational question + two buttons:
  *
- *    If the operator isn't tracking either championship, the
- *    schedule wizard's `showIf` skips this step entirely (configured
- *    in scheduleWizardConfig).
+ *       "Hey — you track BCA (Aug 1–7) but not APA. Still the case?"
+ *       [Skip — same as before]   [Change tracking]
+ *
+ *    Skip commits the snapshot via onChange and advances via onNext.
+ *    Change reveals the checkbox editor inline.
+ *
+ *    If the operator isn't tracking either championship, the schedule
+ *    wizard's `showIf` skips this step entirely (configured in
+ *    scheduleWizardConfig).
  *
  * 2. **First-time mode** — operator hasn't told us yet. Show the
- *    original checkbox UI.
+ *    original checkbox UI so they can opt in.
  *
  * This is a league/operator-level preference — set once, carries
- * forward to future seasons. Dates are entered annually by admin
- * into `championship_date_options`.
+ * forward to future seasons. Dates are entered annually by admin into
+ * `championship_date_options`.
  */
 
-import { useEffect } from 'react';
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { InfoButton } from '@/components/InfoButton';
 import type { WizardStepProps } from '@/components/wizard';
 import type { ScheduleWizardFormData } from './scheduleWizardTypes';
@@ -46,6 +50,7 @@ interface FlowContextShape {
 export function ChampionshipStep({
   value,
   onChange,
+  onNext,
   formData,
 }: WizardStepProps<ChampionshipValue | undefined, ScheduleWizardFormData>) {
   const flowContext = (formData as Record<string, unknown>)._flowContext as
@@ -56,9 +61,10 @@ export function ChampionshipStep({
 
   if (tracking) {
     return (
-      <NextSeasonChampionshipPicker
+      <NextSeasonChampionshipConfirm
         value={value}
         onChange={onChange}
+        onNext={onNext}
         tracking={tracking}
       />
     );
@@ -141,135 +147,140 @@ function FirstTimeChampionshipPicker({
   );
 }
 
-/** "Same as last / Change" pattern for next-season runs. */
-function NextSeasonChampionshipPicker({
+/**
+ * Click-thru: one button to skip (= keep as-is + advance), one to
+ * change. No radio, no extra Next click.
+ */
+function NextSeasonChampionshipConfirm({
   value,
   onChange,
+  onNext,
   tracking,
 }: {
   value: ChampionshipValue | undefined;
   onChange: (v: ChampionshipValue) => void;
+  onNext: () => void;
   tracking: NonNullable<FlowContextShape['championshipTracking']>;
 }) {
-  const sameDefault: ChampionshipValue = {
+  const [editing, setEditing] = useState(false);
+
+  const snapshot: ChampionshipValue = {
     trackBca: tracking.trackBca,
     trackApa: tracking.trackApa,
   };
+  const current = value ?? snapshot;
 
-  useEffect(() => {
-    if (!value) onChange(sameDefault);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tracking.trackBca, tracking.trackApa]);
+  // Conversational summary line: "BCA (dates) but not APA" / "BCA + APA" / etc.
+  const question = (() => {
+    const both = tracking.trackBca && tracking.trackApa;
+    const onlyBca = tracking.trackBca && !tracking.trackApa;
+    const onlyApa = !tracking.trackBca && tracking.trackApa;
+    if (both) {
+      return `Hey — you track both BCA (${tracking.bcaDates ?? 'dates TBD'}) and APA (${tracking.apaDates ?? 'dates TBD'}). Still the case?`;
+    }
+    if (onlyBca) {
+      return `Hey — you track BCA (${tracking.bcaDates ?? 'dates TBD'}) but not APA. Still the case?`;
+    }
+    if (onlyApa) {
+      return `Hey — you track APA (${tracking.apaDates ?? 'dates TBD'}) but not BCA. Still the case?`;
+    }
+    // Step should be hidden via showIf when neither is tracked, but
+    // handle the case gracefully just in case.
+    return `Hey — you don't currently track BCA or APA. Still the case?`;
+  })();
 
-  const current = value ?? sameDefault;
-  const mode: 'keep' | 'change' =
-    current.trackBca === sameDefault.trackBca && current.trackApa === sameDefault.trackApa
-      ? 'keep'
-      : 'change';
-
-  const handleModeChange = (next: string) => {
-    if (next === 'keep') onChange(sameDefault);
-    else onChange({ trackBca: !sameDefault.trackBca, trackApa: !sameDefault.trackApa });
+  const handleSkip = () => {
+    onChange(snapshot);
+    onNext();
   };
 
-  const summaryParts: string[] = [];
-  if (tracking.trackBca) summaryParts.push(`BCA${tracking.bcaDates ? ` (${tracking.bcaDates})` : ''}`);
-  if (tracking.trackApa) summaryParts.push(`APA${tracking.apaDates ? ` (${tracking.apaDates})` : ''}`);
-  const summary = summaryParts.join(' + ') || 'None';
+  if (!editing) {
+    return (
+      <div className="space-y-6 max-w-lg">
+        <div className="flex items-center gap-1">
+          <p className="font-medium text-foreground">National Championships</p>
+          <InfoButton title="Championship Conflicts" size="sm">
+            <p>
+              You set this once when you created your first league. We
+              don&rsquo;t bug you about it every season — but you can
+              change it any time.
+            </p>
+          </InfoButton>
+        </div>
+
+        <p className="text-foreground">{question}</p>
+
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Button onClick={handleSkip} loadingText="none">
+            Skip — same as before
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setEditing(true)}
+            loadingText="none"
+          >
+            Change tracking
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 max-w-lg">
-      <div className="flex items-center gap-1">
-        <p className="font-medium text-foreground">National Championships</p>
-        <InfoButton title="Championship Conflicts" size="sm">
-          <p>
-            BCA and APA hold national championships each year. If your
-            players travel to compete, you may want to suspend league
-            play for those weeks. You set this once when you created
-            your first league — keep it the same or change it for this
-            season.
-          </p>
-        </InfoButton>
+      <p className="font-medium text-foreground">Change championship tracking</p>
+
+      <div className="space-y-3">
+        <div className="flex items-center gap-3">
+          <Checkbox
+            id="track-bca-edit"
+            checked={current.trackBca}
+            onCheckedChange={(checked) =>
+              onChange({ ...current, trackBca: checked === true })
+            }
+            className="size-5 border-2 border-gray-400"
+          />
+          <Label htmlFor="track-bca-edit">
+            Track BCA National Championship conflicts
+            {tracking.bcaDates && (
+              <span className="text-xs text-muted-foreground ml-2">
+                ({tracking.bcaDates})
+              </span>
+            )}
+          </Label>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Checkbox
+            id="track-apa-edit"
+            checked={current.trackApa}
+            onCheckedChange={(checked) =>
+              onChange({ ...current, trackApa: checked === true })
+            }
+            className="size-5 border-2 border-gray-400"
+          />
+          <Label htmlFor="track-apa-edit">
+            Track APA National Championship conflicts
+            {tracking.apaDates && (
+              <span className="text-xs text-muted-foreground ml-2">
+                ({tracking.apaDates})
+              </span>
+            )}
+          </Label>
+        </div>
       </div>
 
-      <p className="text-sm text-muted-foreground">
-        Currently tracking: <strong>{summary}</strong>.
-      </p>
-
-      <RadioGroup value={mode} onValueChange={handleModeChange} className="space-y-3">
-        <ChoiceRow
-          id="keep"
-          label="Keep current tracking"
-          sublabel={`Stay with ${summary}. Skip to the schedule.`}
-        />
-        <ChoiceRow
-          id="change"
-          label="Change tracking"
-          sublabel="Edit which championships are flagged on the schedule."
-        />
-      </RadioGroup>
-
-      {mode === 'change' && (
-        <div className="space-y-3 pt-2 pl-7 border-l-2 border-muted">
-          <div className="flex items-center gap-3">
-            <Checkbox
-              id="track-bca-edit"
-              checked={current.trackBca}
-              onCheckedChange={(checked) =>
-                onChange({ ...current, trackBca: checked === true })
-              }
-              className="size-5 border-2 border-gray-400"
-            />
-            <Label htmlFor="track-bca-edit">
-              Track BCA National Championship conflicts
-              {tracking.bcaDates && (
-                <span className="text-xs text-muted-foreground ml-2">
-                  ({tracking.bcaDates})
-                </span>
-              )}
-            </Label>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Checkbox
-              id="track-apa-edit"
-              checked={current.trackApa}
-              onCheckedChange={(checked) =>
-                onChange({ ...current, trackApa: checked === true })
-              }
-              className="size-5 border-2 border-gray-400"
-            />
-            <Label htmlFor="track-apa-edit">
-              Track APA National Championship conflicts
-              {tracking.apaDates && (
-                <span className="text-xs text-muted-foreground ml-2">
-                  ({tracking.apaDates})
-                </span>
-              )}
-            </Label>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ChoiceRow({
-  id,
-  label,
-  sublabel,
-}: {
-  id: string;
-  label: string;
-  sublabel: string;
-}) {
-  return (
-    <div className="flex items-start gap-3 cursor-pointer">
-      <RadioGroupItem value={id} id={id} className="mt-1" />
-      <Label htmlFor={id} className="cursor-pointer flex-1">
-        <div className="font-medium">{label}</div>
-        <div className="text-sm text-muted-foreground">{sublabel}</div>
-      </Label>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => {
+          onChange(snapshot);
+          setEditing(false);
+        }}
+        loadingText="none"
+      >
+        ← Back to "same as before"
+      </Button>
     </div>
   );
 }
