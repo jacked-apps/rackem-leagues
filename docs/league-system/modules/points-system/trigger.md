@@ -12,7 +12,7 @@ audience: developer + AI sessions
 >
 > Before editing this file, read and apply the gate procedure in [Principle 7: Canonical-docs-as-policy](../../PRINCIPLES.md#7-canonical-docs-as-policy). The procedure requires explicit user invocation using specific gate-aware language; casual approvals are NOT sufficient.
 >
-> This is the **authoritative Trigger model.** It supersedes the older trigger framing still present in PRINCIPLES § System § 5 and Points System README (B) — reconciling those locked docs to point here is a follow-up step. It also supersedes the exploratory `complex-trigger.md`.
+> This is the **authoritative Trigger model.** It supersedes the older trigger framing still present in PRINCIPLES § System § 5 and Points System README (B) — reconciling those locked docs to point here is a follow-up step.
 
 ## Why triggers are decoupled from thresholds
 
