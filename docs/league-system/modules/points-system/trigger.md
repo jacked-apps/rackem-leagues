@@ -188,8 +188,8 @@ order is deterministic; its absolute value is irrelevant.)
   trigger of a symmetric pair fires first doesn't affect correctness.
 
 (That the allocator is a fixed pivot — not just another numbered trigger — is a
-small point in favor of it staying a distinct primitive; see the open per-game
-question below.)
+small point in favor of it staying a distinct primitive; see the per-game
+allocator section below.)
 
 ## Stackable — many independent triggers, one fire order
 
@@ -273,13 +273,28 @@ type: match_end   IF home_wins < tieTarget   THEN home_points = (home_wins - tie
 (Per-side: declare the matching pair for the away side.) The win/tie targets are
 thresholds; the tie band is the default-0 of `home_points`.
 
-## The per-game allocator — possibly a periodic trigger (open)
+## The per-game allocator stays a distinct primitive
 
-The per-game allocator (sub-mechanism (A)) is NOT folded into triggers here. It
-differs from a trigger today: it has **no condition** (it just fires every game)
-and it **collects scorer inputs**. A **periodic** re-arm + input handling MIGHT
-let a trigger absorb it — but that's an open evaluation, deliberately AFTER
-this model locks and EOGA is assessed. The model leaves (A) standing.
+The per-game allocator (sub-mechanism (A)) is NOT a trigger, and the evaluation
+of whether it could fold into a periodic trigger is closed: it stays distinct. A
+periodic `anytime` trigger *can* technically accumulate per game, but the
+allocator does three things a flat trigger does not:
+
+- **It's the per-game reducer, not an if/then.** It runs every game,
+  unconditionally, folding a value into *both* sides' running totals — the
+  reducer primitive, distinct from the trigger's event/condition/action.
+- **It's the ORDER pivot.** Every per-game `anytime` trigger orders itself via
+  the "before/after the allocator?" bool (see ORDER above). The pivot must be a
+  distinct singular anchor; were it just another periodic trigger, that bool
+  would be circular.
+- **It collects scorer input and carries per-game winner/loser context.** A
+  range base (`{min, max, label}`) signals a per-game scorer input and drives
+  the scoring UI; the allocator exposes the just-resolved winner/loser values to
+  a side's formula (e.g. 17-Point `winner = 10 + (7 − loser)`). Triggers are
+  pure state-in/state-out — they read collected state but don't collect it.
+
+Folding it in would mean re-inventing all three inside the trigger model — a
+relocation, not a simplification.
 
 ## There is no separate "complex trigger"
 
