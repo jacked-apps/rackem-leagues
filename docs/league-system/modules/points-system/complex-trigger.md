@@ -10,33 +10,55 @@ locked: false
 > **Status: design concept, not yet implemented.** The shipped trigger schema
 > supports SIMPLE triggers only. This doc defines what a COMPLEX trigger is so
 > the trigger model has a clear growth path. Implementing it means extending
-> the trigger schema to allow formulas in both the `when` and the `action`.
+> the trigger schema to allow computation in both the condition and the action.
 
-## A trigger is an if/then statement
+## A trigger is TYPE + CONDITION + ACTION
 
-Every trigger is fundamentally:
+Every trigger has three parts:
 
 ```
-IF (when) THEN (action)
+TYPE       when is it checked?   match_start | match_end | anytime
+CONDITION  does it fire?         a flat comparison (or always-true)
+ACTION     what does it do?      assign or compute a value
 ```
 
-That's it. A condition, and a thing to do when the condition is true. There is
-no `else` — if the condition is false, nothing happens.
+Read together it's still an if/then: *given the TYPE's timing, IF the CONDITION
+holds, THEN run the ACTION.* There is no `else` — if the condition is false,
+nothing happens.
+
+### The three types
+
+- **match_start** — fires immediately at match start. Pass-through triggers
+  (like initial points) use this with an always-true condition.
+- **match_end** — fires after all games are played OR the end chip (endmatch) is
+  received. Handles both a natural finish AND an early clinch (race-to-X).
+- **anytime** — fires whenever its condition holds during play, as games are
+  recorded.
+
+**TYPE is orthogonal to CONDITION.** "match_end + a comparison" is just
+`type=match_end` with one flat comparison — NOT a compound condition. Separating
+the two is what lets every trigger stay flat: the type handles *when*, the
+condition handles *whether*, never mashed together.
+
+> *Naming note:* "match" = the whole set of games; a "game" is one rack. These
+> types fire at MATCH boundaries — hence match_start / match_end.
 
 ## Simple trigger (shipped today)
 
 A **simple trigger** is the restricted form currently in code:
 
-- **when** — an EQUALITY check only. e.g. `home_wins === n` (where `n` is the
-  value from a single bound threshold), or a timing condition (`receipt`,
-  `match_end`).
-- **action** — ASSIGN a fixed value or a reference. The value is a literal
-  (`1.5`, `'home'`, `true`), the bound input (`n`), or another variable's
-  current value. No math.
+- **condition** — an EQUALITY check only. e.g. `home_wins === n` (where `n` is
+  the value from a single bound threshold) — or always-true for a
+  match_start / match_end pass-through.
+- **action** — ASSIGN a fixed value or a reference: a literal (`1.5`, `'home'`,
+  `true`), the bound input (`n`), or another variable's current value. The only
+  math today is the limited `target + value` or `target × value` — no subtract,
+  no divide, no multi-operand expressions.
 
-Example: *"when home reaches the win target, set home_points to 3.0."*
+Example *(type: anytime)*: "when home reaches the win target, set home_points to 3.0."
 
 ```
+type: anytime
 IF   home_wins === winTarget
 THEN home_points = 3.0
 ```
@@ -46,36 +68,41 @@ tier in the LO trigger builder.
 
 ## Complex trigger (the concept)
 
-A **complex trigger** is the FULL if/then statement — both halves may be a
-function/formula:
+A **complex trigger** is the same TYPE + CONDITION + ACTION shape, but the
+CONDITION and ACTION may compute:
 
-- **when** — a SINGLE comparison, not just equality. e.g.
-  `home_wins > winTarget`, `games_played < total_games`. ONE flat comparison —
-  no compound `AND`/`OR`, no range checks like `T <= x <= W`. If you think you
-  need a compound condition, that's a signal to push the logic elsewhere (see
-  "No nesting" below).
-- **action** — a computed value via a registered OPERATION, not just an
-  assignment. e.g. `home_points = (home_wins - winTarget) * multiplier`.
-  **The formula is a registered operation** (operation_kind + args), shown here
-  in readable form — NOT free-form math an LO types into a box. Same
-  data-driven pattern as thresholds and allocator formulas: the math lives in
-  code, the args are data.
+- **condition** — a SINGLE comparison beyond equality: `>`, `<`, `>=`, `<=`.
+  e.g. `home_wins > winTarget`. ONE flat comparison — no compound `AND`/`OR`,
+  no range checks like `T <= x <= W`. If you think you need a compound
+  condition, that's a signal to push the logic elsewhere (see "No nesting").
+- **action** — a flat arithmetic expression: `( )`, `+`, `−`, `×`, `÷`,
+  constants, and variables. e.g. `home_points = (home_wins - winTarget) * multiplier`.
+  **It's a registered operation** (operation_kind + args), shown here in
+  readable form — NOT free-form code an LO types into a box. Same data-driven
+  pattern as thresholds and allocator formulas: the math lives in code, the
+  args are data.
 
-Example: *"when home finishes above the win target, award the overage times
-the multiplier."*
+Example *(type: match_end)*: "when home finishes above the win target, award
+the overage times the multiplier."
 
 ```
+type: match_end
 IF   home_wins > winTarget
 THEN home_points = (home_wins - winTarget) * multiplier
 ```
 
-Both the `when` and the `action` are formulas. That's the entire difference
-from a simple trigger: **a complex trigger lets a formula run in the condition
-AND in the action.**
+That's the entire difference from a simple trigger: **a complex trigger adds
+comparators to the condition and a flat arithmetic expression to the action.**
+Not "full programming" — one flat statement, still bounded.
+
+> **`÷` needs a zero-guard.** Divide-by-zero is the one arithmetic edge case: in
+> JS `x / 0` is `Infinity` and `0 / 0` is `NaN`, which silently poison every
+> later calculation. The rule: **throw on divide-by-zero** (fail loud), plus a
+> build-time warning when a trigger uses `÷`. `+`, `−`, `×` need no guard.
 
 ## Two hard constraints
 
-A complex trigger is a FULL if/then — but a BOUNDED one. Two rules keep it from
+A complex trigger is still ONE flat statement — bounded. Two rules keep it from
 becoming arbitrary code:
 
 ### 1. No `else`
@@ -91,13 +118,13 @@ doing two.
 
 ### 2. No nesting
 
-The formulas are FLAT. Neither the `when` nor the `action` may contain an
+The formulas are FLAT. Neither the condition nor the action may contain an
 if/then inside it — no `(a > b ? x : y)`, no branching within an expression, no
-compound/range conditions in the `when`.
+compound/range conditions in the condition.
 
-**If you think you need a nested `when`, you're solving it in the wrong place.**
-A nested condition is a signal — move the decision OUT of the trigger. Two ways
-to flatten it:
+**If you think you need a nested condition, you're solving it in the wrong
+place.** A nested condition is a signal — move the decision OUT of the trigger.
+Two ways to flatten it:
 
 1. **Push the decision into a threshold (primary).** A threshold is a value
    producer — it's ALLOWED to read outside sources (state, prefs, charts) and
@@ -115,7 +142,7 @@ to flatten it:
 the most dangerous thing to expose to a non-coder LO. Pushing the decision into
 a threshold keeps the conditional in code (the operation), where it's tested and
 safe; splitting into flat triggers keeps each rule glance-readable. **A nested
-`when` should never live inside a single trigger.**
+condition should never live inside a single trigger.**
 
 ## Relationship to the end-of-match aggregate (EOGA)
 
@@ -170,12 +197,13 @@ dicier it gets.
 
 | | Simple trigger | Complex trigger |
 |---|---|---|
-| `when` | equality / timing only | full boolean formula |
-| `action` | assign literal / reference | computed formula |
-| `else` | n/a (none) | none (use another trigger) |
-| nesting | n/a | none (flat formulas only) |
+| type | match_start / match_end / anytime | same |
+| condition | equality (`===`) only | single comparison (`> < >= <=`) |
+| action | assign literal/ref, or `target +/× value` | flat arithmetic expr `( ) + − × ÷` |
+| else | none | none (use another trigger) |
+| nesting | none | none (flat only) |
 | status | shipped | design concept |
 
-A complex trigger is a simple trigger with the brakes off in two specific
-places — formulas allowed in the condition and the action — but still bounded
-to a single, flat, else-less if/then.
+A complex trigger is a simple trigger with two specific brakes released —
+comparators in the condition, a flat arithmetic expression in the action — but
+still bounded to a single, flat, else-less **TYPE + CONDITION + ACTION**.

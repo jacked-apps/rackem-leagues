@@ -52,12 +52,13 @@
 | `/docs/league-system/` | **Modular Scoring System framework — LOCKED canonical docs** | 9-Module architecture (Handicap Systems, Handicap Mechanisms, Points System, Win Calculator, Threshold Charts, Team Geometry, Match Format, Pairings Generator, Tiebreak System); LOCKED per Principle 7 gate procedure |
 | `docs/league-system/PRINCIPLES.md` | 10 architectural principles + 4 Module kinds + composition patterns | **LOCKED** — edits require explicit Principle 7 unlock invocation |
 | `docs/league-system/README.md` | 9-Module catalog + classification walkthrough + cheat-sheet | **LOCKED** |
+| `docs/league-system/concept-analogies.md` | Lens mapping locked concepts → programming primitives (Module=component, Threshold=state setter, Trigger=if/then…); flaw-detector for cold reads | CANDIDATE for canonization (UNLOCKED) |
 | `docs/league-system/intake-agent-prompt.md` | Persona prompt for the League Intake Agent (Claude session that translates LO league descriptions to the modular framework) | Active tool — use when onboarding new LOs |
 | `docs/league-system/intake-agent-howto.md` | Step-by-step ops how-to for running the intake agent | Active tool — references via `secretweapon.md` and `LIST_FOR_ED.md` |
 | `docs/league-system/modules/` | **Per-Module blueprints (9 Modules + variant pages)** | All LOCKED |
 | `docs/league-system/modules/handicap-systems/` | Handicap Systems Module (README + 4 variants: percentage, fargorate, points, skill-level) | LOCKED |
 | `docs/league-system/modules/handicap-mechanisms/` | Handicap Mechanisms Module (README + 3 variants: extra-games, start-points, race-length-adjustment) | LOCKED |
-| `docs/league-system/modules/points-system/` | Points System Module (README + 2 variants: one-point-scoring, ten-point-scoring; + complex-trigger.md design concept) | README LOCKED; complex-trigger DESIGN |
+| `docs/league-system/modules/points-system/` | Points System Module (README + 2 variants: one-point-scoring, ten-point-scoring; + complex-trigger.md design concept; + trigger-v2.md canonical candidate, in cold-read process) | README LOCKED; complex-trigger + trigger-v2 UNLOCKED |
 | `docs/league-system/modules/win-calculator.md` | Win Calculator Module — metric precedence stack + Tiebreak System trigger model | LOCKED |
 | `docs/league-system/modules/threshold-charts/` | Threshold Charts Module (README + 5 variants: 3v3-games-needed, 5v5-games-needed, race-points, race-percentage, fargo-formula) | LOCKED |
 | `docs/league-system/modules/team-geometry.md` | Team Geometry Module — lineup_size + max_roster_size + game_generation | LOCKED |
