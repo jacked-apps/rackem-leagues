@@ -1,24 +1,22 @@
 /**
  * @fileoverview SeasonLengthStep — how many regular season weeks
  *
- * Two modes:
+ * Click-thru pattern (same shape as ChampionshipStep): conversational
+ * question + [Skip — X weeks] / [Change weeks →] buttons.
  *
- * 1. **Next-season mode** (when `_flowContext.previousSeasonLength` exists)
- *    — show two radio choices: "Same as last (X weeks)" or "Choose different".
- *    Selecting "different" reveals the NumberStepper.
+ * **Next-season mode** (when `_flowContext.previousSeasonLength` is
+ * provided): Skip commits the previous length + advances. Change reveals
+ * the NumberStepper inline.
  *
- * 2. **First-season / fallback mode** — single NumberStepper defaulting to 16.
+ * **First-season / fallback mode**: bare NumberStepper defaulting to 16.
  *
- * Same UX pattern as `SeasonStartDateStep` so subsequent-season operators
- * see a consistent confirm-or-change flow.
- *
- * Range: 6-52 weeks. Default: 16 (most common) when no previous-season anchor.
+ * Range: 6-52 weeks.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { NumberStepper } from '@/components/wizard';
+import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import type { WizardStepProps } from '@/components/wizard';
 import type { SeasonWizardFormData } from '../seasonWizardTypes';
 
@@ -31,6 +29,7 @@ interface FlowContextShape {
 export function SeasonLengthStep({
   value,
   onChange,
+  onNext,
   formData,
 }: WizardStepProps<number | undefined, SeasonWizardFormData>) {
   const flowContext = (formData as Record<string, unknown>)._flowContext as
@@ -44,6 +43,7 @@ export function SeasonLengthStep({
       <NextSeasonLengthPicker
         value={value}
         onChange={onChange}
+        onNext={onNext}
         previousLength={previousLength}
       />
     );
@@ -52,7 +52,6 @@ export function SeasonLengthStep({
   return <FirstSeasonLengthPicker value={value} onChange={onChange} />;
 }
 
-/** Original behavior: bare NumberStepper, default 16. */
 function FirstSeasonLengthPicker({
   value,
   onChange,
@@ -85,78 +84,78 @@ function FirstSeasonLengthPicker({
   );
 }
 
-/** 2-choice radio + reveal-on-change pattern. */
 function NextSeasonLengthPicker({
   value,
   onChange,
+  onNext,
   previousLength,
 }: {
   value: number | undefined;
   onChange: (v: number) => void;
+  onNext: () => void;
   previousLength: number;
 }) {
-  // Default to "Same as last" on first mount
+  const [editing, setEditing] = useState(false);
+
   useEffect(() => {
     if (value == null) onChange(previousLength);
   }, [previousLength, value, onChange]);
 
-  const mode: 'same' | 'different' = value === previousLength ? 'same' : 'different';
-
-  const handleModeChange = (next: string) => {
-    if (next === 'same') onChange(previousLength);
-    else onChange(previousLength === DEFAULT_LENGTH ? 12 : DEFAULT_LENGTH);
+  const handleSkip = () => {
+    onChange(previousLength);
+    onNext();
   };
+
+  if (!editing) {
+    return (
+      <div className="space-y-6 max-w-lg">
+        <div>
+          <Label className="text-base">Regular season length</Label>
+          <p className="text-foreground mt-1">
+            Hey — last season was{' '}
+            <strong>{previousLength} weeks</strong>. Same again?
+          </p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Button onClick={handleSkip} loadingText="none">
+            Skip — {previousLength} weeks
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setEditing(true)}
+            loadingText="none"
+          >
+            Change weeks →
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 max-w-lg">
-      <div>
-        <Label className="text-base">How many weeks of regular season play?</Label>
-      </div>
+      <p className="font-medium text-foreground">Change regular season length</p>
 
-      <RadioGroup value={mode} onValueChange={handleModeChange} className="space-y-3">
-        <ChoiceRow
-          id="same"
-          label={`Same as last season — ${previousLength} weeks`}
-          sublabel="Most leagues stay the same season to season."
-        />
-        <ChoiceRow
-          id="different"
-          label="Choose different"
-          sublabel="Pick a new week count below."
-        />
-      </RadioGroup>
+      <NumberStepper
+        label="Weeks of regular play"
+        value={value ?? DEFAULT_LENGTH}
+        onChange={onChange}
+        min={6}
+        max={52}
+      />
 
-      {mode === 'different' && (
-        <div className="pt-2 pl-7">
-          <NumberStepper
-            label="Weeks of regular play"
-            value={value ?? DEFAULT_LENGTH}
-            onChange={onChange}
-            min={6}
-            max={52}
-          />
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ChoiceRow({
-  id,
-  label,
-  sublabel,
-}: {
-  id: string;
-  label: string;
-  sublabel: string;
-}) {
-  return (
-    <div className="flex items-start gap-3 cursor-pointer">
-      <RadioGroupItem value={id} id={id} className="mt-1" />
-      <Label htmlFor={id} className="cursor-pointer flex-1">
-        <div className="font-medium">{label}</div>
-        <div className="text-sm text-muted-foreground">{sublabel}</div>
-      </Label>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => {
+          onChange(previousLength);
+          setEditing(false);
+        }}
+        loadingText="none"
+      >
+        ← Back to "same as before"
+      </Button>
     </div>
   );
 }
