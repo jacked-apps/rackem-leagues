@@ -14,7 +14,7 @@ audience: developer + AI sessions
 
 ## Essence
 
-The **Win Calculator** examines the collected match data — the two metrics every match tracks (Games and Points) plus any benchmarks the Handicap Mechanisms declared — and **declares the match winner**. It does so by walking a configurable **metric precedence stack** — an ordered list of metrics — and choosing the first metric on which the two teams differ. Configured stacks may include `edge` as a stack entry; when the walker reaches `edge` (i.e., all higher-precedence metrics tied), the Win Calculator fires the [Tiebreak System](tiebreak-system/README.md) to produce edge's value, then uses that value as the deciding metric. The Win Calculator does not produce metrics and does not allocate points. It *decides*.
+The **Win Calculator** examines the collected match data — the two metrics every match tracks (Games and Points) plus any thresholds the Handicap Mechanisms declared — and **declares the match winner**. It does so by walking a configurable **metric precedence stack** — an ordered list of metrics — and choosing the first metric on which the two teams differ. Configured stacks may include `edge` as a stack entry; when the walker reaches `edge` (i.e., all higher-precedence metrics tied), the Win Calculator fires the [Tiebreak System](tiebreak-system/README.md) to produce edge's value, then uses that value as the deciding metric. The Win Calculator does not produce metrics and does not allocate points. It *decides*.
 
 ## Why the Win Calculator exists
 
@@ -29,7 +29,7 @@ The Win Calculator is **only** the victory-determination step. It is **not**:
 - The per-game point allocation — that's the **[Points System](points-system/README.md)**.
 - The encoding of player strength — that's a **[Handicap System](handicap-systems/README.md)**.
 - The kind-of-asymmetry the handicap declares — that's a **[Handicap Mechanism](handicap-mechanisms/README.md)**.
-- The chart/formula that turns a handicap difference into a benchmark — that's a **[Threshold Chart](threshold-charts/README.md)**.
+- The chart/formula that turns a handicap difference into a threshold — that's a **[Threshold Chart](threshold-charts/README.md)**.
 - The structural game-slot list that scaffolds a match — that's the **[Pairings Generator](pairings-generator.md)** (its output is filled by the scoring runtime and the aggregated game data is what the Win Calculator eventually reads).
 - The atomic methods that produce edge when a tie needs resolving — that's the **[Tiebreak System](tiebreak-system/README.md)**. The Win Calculator owns the *decision to fire* tiebreak when its metric stack ties out; the Tiebreak System owns *how* edge is produced (coin flip, short race, roshambo, etc.). Edge then re-enters the Win Calculator's stack as the lowest-precedence metric.
 - The season-standings table — that's a separate Standings concern that lives **outside the modular Scoring System catalog entirely**. Its architectural shape (Module? System? subsystems for personal stats / achievements?) is a separate future brainstorm. The Win Calculator declares the per-match winner; the Standings concern consumes per-match results across the season to rank teams.
@@ -74,7 +74,7 @@ Beyond the metric stack and Tiebreak System integration documented above, the Wi
 
 ## How this Module interacts
 
-- **Upstream**: consumes the two **metrics** (Games and Points data) plus the **benchmarks** declared by [Handicap Mechanisms](handicap-mechanisms/README.md) and the point totals produced by the [Points System](points-system/README.md). The per-game data feeding those metrics arrives via the scoring runtime, which fills in the game slots produced by the [Pairings Generator](pairings-generator.md) — the Win Calculator does not read Pairings Generator's output directly, but its inputs originate downstream of that Module's slot list.
+- **Upstream**: consumes the two **metrics** (Games and Points data) plus the **thresholds** declared by [Handicap Mechanisms](handicap-mechanisms/README.md) and the point totals produced by the [Points System](points-system/README.md). The per-game data feeding those metrics arrives via the scoring runtime, which fills in the game slots produced by the [Pairings Generator](pairings-generator.md) — the Win Calculator does not read Pairings Generator's output directly, but its inputs originate downstream of that Module's slot list.
 - **Output**: the match result — the declared winner.
 - **Trigger target**: when the metric stack ties out and `edge` is the next stack entry, the Win Calculator fires the [Tiebreak System](tiebreak-system/README.md) and consumes the edge metric the System produces. Sequential, not circular: Win Calc fires → Tiebreak System produces value → Win Calc reads the value and continues its stack evaluation.
 - **Downstream**: the per-match result feeds the Standings concern (outside the modular Scoring System catalog — its architectural shape is a separate future brainstorm) for season-level ranking. The Win Calculator answers *"who won this match"*; the future Standings concern answers *"given the season's match results, who finishes where."*
