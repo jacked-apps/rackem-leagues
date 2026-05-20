@@ -60,6 +60,7 @@ Specific anti-conflation rules:
 - **Variant pages describe ONLY intrinsic operations.** They do NOT claim what downstream Modules will do with their output. The variant's "output" (e.g., the team-vs-team difference, or FargoRate's win-expectancy) ends the variant's responsibility; what happens next is somebody else's Module.
 - **Cross-Module references are bare links, no inline definitions.** The click between pages IS the boundary teaching moment. Inlining a definition dissolves the boundary the doc exists to enforce.
 - **Intra-Module references** (variants within the same Module) MAY have brief inline glosses since no boundary is crossed.
+- **"Threshold" is the canonical term — "benchmark" and "milestone" are synonyms, not separate concepts.** A *threshold* is the concrete target a side plays to (game-win count, race length, or start-points amount); a Threshold Chart produces it, a Handicap Mechanism declares it. *Benchmark* (the bar a side must clear) and *milestone* (a threshold reached mid-match) are good plain-language explainers — use them when teaching the system, but canonical prose and code say **threshold**.
 
 ### 3. Self-bootstrapping per file
 
@@ -342,13 +343,13 @@ Three architectural layers:
 - **Output:** a handicap value (typed per the active variant — integer for Points, integer for FargoRate, percentage for Percentage, etc.).
 - The Points variant internally queries match records to compute the handicap. The FargoRate variant internally calls the FargoRate API. The LO-override variant pulls a stored value. All three satisfy the same `(person) → handicap` contract.
 
-**Variant-specific output shapes (one category, multiple shapes).** A Module's output may have multiple specific shapes depending on which variant is active. Example — Handicap Mechanism's output is a "benchmark declaration," but the actual fields differ:
+**Variant-specific output shapes (one category, multiple shapes).** A Module's output may have multiple specific shapes depending on which variant is active. Example — Handicap Mechanism's output is a "threshold declaration," but the actual fields differ:
 
 - `extra_games` outputs `{ games_target_a, games_target_b }`
 - `start_points` outputs `{ start_points_a, start_points_b }`
 - `race_length_adjustment` outputs per-pairing race lengths
 
-All three are *the same category* (benchmark declaration), but their fields differ. The Module's contract isn't "outputs a fixed shape" (false — it varies) or "outputs anything" (too loose — defeats the contract). The honest contract is **"outputs one of these named shapes, with a tag identifying which."** In code this is expressed as a discriminated union (`ExtraGamesThreshold | StartPointsThreshold | RaceLengthThreshold` in `src/systems/types.ts`); in docs, name it in plain language as a *category with variant-specific shapes*.
+All three are *the same category* (threshold declaration), but their fields differ. The Module's contract isn't "outputs a fixed shape" (false — it varies) or "outputs anything" (too loose — defeats the contract). The honest contract is **"outputs one of these named shapes, with a tag identifying which."** In code this is expressed as a discriminated union (`ExtraGamesThreshold | StartPointsThreshold | RaceLengthThreshold` in `src/systems/types.ts`); in docs, name it in plain language as a *category with variant-specific shapes*.
 
 **When two Modules' types don't match: insert a Converter.** A Converter is a Module whose entire job is bridging mismatched type contracts (see [Section 10: Kinds of Module](#10-kinds-of-module--pointer)). Example: a Threshold Chart calibrated to FargoRate inputs cannot directly accept a Points handicap. Without a Converter, those two Modules cannot compose. With one — `(Points) → Fargo equivalent` — the Chart can consume the converted value.
 
@@ -441,7 +442,7 @@ If you can describe a Module's job in a single sentence — *"computes a player'
 If describing the job requires *"first this, then that, then this other thing, with rules for how they fit together,"* you're looking at a System.
 
 **Examples of Mechanisms:**
-- `extra_games`, `start_points`, `race_length_adjustment` (Handicap Mechanism atoms — each takes a handicap difference, produces one benchmark output)
+- `extra_games`, `start_points`, `race_length_adjustment` (Handicap Mechanism atoms — each takes a handicap difference, produces one threshold output)
 - `accumulated_per_game` (per-game point allocator — takes game data, produces per-side points)
 - A FargoRate handicap calculator (`person → handicap value`)
 - An end-of-match aggregate calculator (takes match data, produces a final per-side total)
@@ -479,7 +480,7 @@ Other Mechanism families (a future Match Format pairing-generation family, a bet
 Per [Module Deep Dive § 8](#8-io-contracts-at-module-boundaries), every Module declares typed input and typed output. Mechanisms specifically:
 
 - **Input:** typically data flowing from upstream (an upstream Mechanism's output, a Chart's lookup result, or a configuration value).
-- **Output:** the Mechanism's specific work product — a transformed value, a benchmark declaration, a points allocation, an event.
+- **Output:** the Mechanism's specific work product — a transformed value, a threshold declaration, a points allocation, an event.
 
 Because Mechanisms don't compose other Modules, their contract is **direct**: input X → output Y, with **no internal Module contracts to chain or verify**. This is in contrast to a System, whose contract has to verify both the external promise AND the internal chain of Module contracts holds. (A Mechanism may have plenty of internal logic, steps, and state — see [Section 1](#1-essence) — but no internal *named Modules*, so no internal contracts to verify.)
 
@@ -625,7 +626,7 @@ Per [Module Deep Dive § 8](#8-io-contracts-at-module-boundaries), every Module 
 
 **Verifying a System's contract = verifying both layers.** Mechanisms only have to verify the external contract (input X → output Y, no internals). Systems have to verify the external promise AND the internal chain holds. This is the substantive difference between Mechanism and System contracts.
 
-**Selection-pattern Systems** have a special contract pattern: the external output type is the *category* (e.g., "handicap value," "benchmark declaration") shared by all the alternatives, but the actual specific shape depends on which alternative is active (per [Module Deep Dive § 8 — Variant-specific output shapes](#8-io-contracts-at-module-boundaries)). The contract is "outputs one of these named shapes, with a tag identifying which."
+**Selection-pattern Systems** have a special contract pattern: the external output type is the *category* (e.g., "handicap value," "threshold declaration") shared by all the alternatives, but the actual specific shape depends on which alternative is active (per [Module Deep Dive § 8 — Variant-specific output shapes](#8-io-contracts-at-module-boundaries)). The contract is "outputs one of these named shapes, with a tag identifying which."
 
 **Chain-pattern Systems** have a more straightforward contract: external output is whatever the last station in the chain produces.
 
@@ -729,13 +730,13 @@ A Chart's contract is the simplest of all the kinds: input X → output Y, no in
 
 ### 6. How Charts are consumed
 
-Charts are passive — they don't do anything until asked. A Mechanism (typically a handicap-side Mechanism that needs a benchmark value) consumes the Chart as part of doing its work.
+Charts are passive — they don't do anything until asked. A Mechanism (typically a handicap-side Mechanism that needs a threshold value) consumes the Chart as part of doing its work.
 
 **Example flow:**
 1. A handicap-side Mechanism receives a handicap difference (e.g., from a Handicap System upstream).
 2. The Mechanism queries the relevant Chart: *"what target wins for handicap diff of 3?"*
 3. The Chart returns the looked-up value.
-4. The Mechanism uses that value to declare its benchmark (asymmetric game targets, starting points, etc.).
+4. The Mechanism uses that value to declare its threshold (asymmetric game targets, starting points, etc.).
 
 The Chart doesn't know what consumer asked it; it just answers. The Mechanism doesn't care whether the Chart is implemented as a discrete table or a formula; it just consumes the typed output.
 
@@ -779,7 +780,7 @@ Could we just call adapters "Mechanisms" and skip the Converter label? Yes — b
 
 A Module is NOT a Converter if:
 
-- **It exists to do work that isn't type translation** → it's a **Mechanism** (the atom kind for work-doers). The distinction is **purpose**, not internal complexity. A Converter exists specifically to bridge a type mismatch; a Mechanism exists to do some other kind of work (compute a handicap, allocate per-game points, declare a benchmark, etc.). Both kinds may have substantial internal logic — what distinguishes them is *why the Module exists*.
+- **It exists to do work that isn't type translation** → it's a **Mechanism** (the atom kind for work-doers). The distinction is **purpose**, not internal complexity. A Converter exists specifically to bridge a type mismatch; a Mechanism exists to do some other kind of work (compute a handicap, allocate per-game points, declare a threshold, etc.). Both kinds may have substantial internal logic — what distinguishes them is *why the Module exists*.
 - **It composes other Modules** → it's a **System** (the set kind for compositions). A Converter is itself an atom — it doesn't have other Modules inside.
 - **It provides organized reference data via lookup** → it's a **Chart** (the data-shaped kind). A Converter computes a translation; a Chart provides looked-up values. (The line is subtle — see below.)
 
