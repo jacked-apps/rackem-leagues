@@ -1,18 +1,18 @@
 ---
 title: Concept Analogies — locked concepts ↔ programming primitives
 date: 2026-05-20
-status: candidate
-locked: false
+status: active
+locked: true
 audience: developer + AI sessions
 ---
 
 # Concept Analogies
 
-> **Status: candidate for canonization, not yet locked.** This is a companion
-> lens to [PRINCIPLES.md](PRINCIPLES.md), not a redefinition. PRINCIPLES is
-> authoritative for what each concept IS; this doc adds the familiar programming
-> primitive each one corresponds to. If canonized, it goes through the full
-> cold-read + locking process.
+> ## 🔒 LOCKED — DO NOT EDIT
+>
+> Before editing this file, read and apply the gate procedure in [Principle 7: Canonical-docs-as-policy](PRINCIPLES.md#7-canonical-docs-as-policy). The procedure requires explicit user invocation using specific gate-aware language; casual approvals are NOT sufficient.
+>
+> This is a companion lens to [PRINCIPLES.md](PRINCIPLES.md), not a redefinition. PRINCIPLES is authoritative for what each concept IS; this doc adds the familiar programming primitive each one corresponds to.
 
 ## Thesis
 
@@ -61,8 +61,8 @@ the same smell.
 
 **2. It's a north star.** When a design decision is unclear, ask: *what's the
 clean primitive here?* and align to it. The threshold/trigger split, the
-state-bag decoupling, the EOGA-as-fold realization — all fell out of "match the
-primitive."
+state-bag decoupling, the per-game allocator landing as a reducer — all fell out
+of "match the primitive."
 
 **3. It makes the system learnable.** Anyone who can write an `if` statement, a
 `reduce`, and a component can map the entire domain to things they already know.
