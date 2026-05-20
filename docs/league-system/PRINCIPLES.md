@@ -283,7 +283,7 @@ Implementation: new Module folder, new design-space mapping, new wizard surface 
 
 **The walkthrough in `README.md#how-to-classify-a-new-idea` only handles Layer 3 (new Module).** Most day-to-day LO tweaks are Layer 1 or 2; both deserve the same anti-conflation rigor.
 
-**Module-design implication.** A parent Module's *internal* design determines how often LOs hit Layer 2 vs Layer 1. A parent designed for *composable sub-Mechanisms* (Points System, with its per-game allocator + trigger + initial points + end-of-match aggregate) pushes more tweaks into the parameter/composition layer (Layer 1), fewer into new-Mechanism territory (Layer 2). A parent designed for *mutually-exclusive alternatives* (Handicap Mechanisms with extra_games / start_points / race_length_adjustment) pushes more tweaks toward new Mechanisms. Neither is wrong — the design choice should match the parent's expected variation pattern.
+**Module-design implication.** A parent Module's *internal* design determines how often LOs hit Layer 2 vs Layer 1. A parent designed for *composable sub-Mechanisms* (Points System, with its per-game allocator + trigger + initial points) pushes more tweaks into the parameter/composition layer (Layer 1), fewer into new-Mechanism territory (Layer 2). A parent designed for *mutually-exclusive alternatives* (Handicap Mechanisms with extra_games / start_points / race_length_adjustment) pushes more tweaks toward new Mechanisms. Neither is wrong — the design choice should match the parent's expected variation pattern.
 
 ### 6. Drift / split detection
 
@@ -445,7 +445,7 @@ If describing the job requires *"first this, then that, then this other thing, w
 - `extra_games`, `start_points`, `race_length_adjustment` (Handicap Mechanism atoms — each takes a handicap difference, produces one threshold output)
 - `accumulated_per_game` (per-game point allocator — takes game data, produces per-side points)
 - A FargoRate handicap calculator (`person → handicap value`)
-- An end-of-match aggregate calculator (takes match data, produces a final per-side total)
+- A `match_end` trigger action (takes match data, writes a final per-side total)
 
 ### 2. Why "Mechanism" is its own kind
 
@@ -568,7 +568,7 @@ Systems compose their internal Modules in one of three patterns. Knowing which p
 
 - *Scoring System* (top-level System) — chains 9 component Modules; all 9 run together as part of every match.
 - A *Trigger* — chains an event-acceptor → detector → performer → re-armer; all four run together as part of the trigger lifecycle.
-- *Points System* — chains a per-game allocator + (optional) trigger + (optional) initial-points + (optional) end-of-match aggregate.
+- *Points System* — chains a per-game allocator + (optional) trigger + (optional) initial-points.
 
 **Naming for chain-pattern Systems is singular** ("Scoring System," "Win Calculator," "Points System") — the singular reflects the *single act* the chain produces, even though multiple components contribute.
 
