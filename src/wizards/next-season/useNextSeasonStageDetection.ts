@@ -52,6 +52,19 @@ interface NextSeasonStageDetectionResult {
      *  last (N playoff weeks)" choice. 0 = no playoffs, 1 = 1-week, 2 =
      *  2-week. Undefined for first-time leagues. */
     previousSeasonPlayoffWeeks?: number;
+    /** Org-level championship tracking preferences (saved once at first
+     *  league creation, carried forward to every subsequent league/season).
+     *  Drives:
+     *    - ChampionshipStep's "Keep tracking (dates) / Change" radio
+     *    - The whole step's `showIf` (hides when neither BCA nor APA
+     *      is tracked, so operators who said "don't bother" aren't
+     *      re-asked every season). */
+    championshipTracking?: {
+      trackBca: boolean;
+      trackApa: boolean;
+      bcaDates?: string;
+      apaDates?: string;
+    };
   };
 }
 
@@ -63,11 +76,13 @@ export function useNextSeasonStageDetection(
     queryFn: async () => {
       if (!leagueId) return null;
 
-      // League row + prefs — same as the first-time detection.
+      // League row + prefs — same as the first-time detection. Also
+      // pull organization_id so we can look up the operator's saved
+      // championship preferences (set once at first-league creation).
       const [{ data: league }, { data: prefs }] = await Promise.all([
         supabase
           .from('leagues')
-          .select('league_start_date, game_type, division, day_of_week')
+          .select('league_start_date, game_type, division, day_of_week, organization_id')
           .eq('id', leagueId)
           .single(),
         supabase
@@ -77,6 +92,48 @@ export function useNextSeasonStageDetection(
           .eq('entity_id', leagueId)
           .maybeSingle(),
       ]);
+
+      // Operator's championship tracking preferences. We "already know"
+      // the answer from the first league this operator set up — no need
+      // to re-ask unless they want to change. Empty array means the
+      // operator hasn't opted into tracking anything; the schedule
+      // wizard's championship step is hidden in that case.
+      let championshipTracking:
+        | { trackBca: boolean; trackApa: boolean; bcaDates?: string; apaDates?: string }
+        | undefined;
+      if (league?.organization_id) {
+        const { data: champPrefs } = await supabase
+          .from('operator_blackout_preferences')
+          .select('preference_action, championship_date_options(organization, start_date, end_date, year)')
+          .eq('organization_id', league.organization_id)
+          .eq('preference_type', 'championship');
+
+        const blackouts = (champPrefs ?? []).filter(
+          (p) => p.preference_action === 'blackout' && p.championship_date_options,
+        );
+        // Pick the most recent year's row per organization (BCA / APA).
+        const byOrg = new Map<string, { start_date: string; end_date: string; year: number }>();
+        for (const p of blackouts) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const c = p.championship_date_options as any;
+          const existing = byOrg.get(c.organization);
+          if (!existing || c.year > existing.year) {
+            byOrg.set(c.organization, {
+              start_date: c.start_date,
+              end_date: c.end_date,
+              year: c.year,
+            });
+          }
+        }
+        const bca = byOrg.get('BCA');
+        const apa = byOrg.get('APA');
+        championshipTracking = {
+          trackBca: !!bca,
+          trackApa: !!apa,
+          bcaDates: bca ? `${bca.start_date} – ${bca.end_date}` : undefined,
+          apaDates: apa ? `${apa.start_date} – ${apa.end_date}` : undefined,
+        };
+      }
 
       // Look for an UPCOMING season for this league. If one exists,
       // we're resuming mid-setup. If not, we're starting fresh.
@@ -166,6 +223,7 @@ export function useNextSeasonStageDetection(
         previousSeasonLastWeekDate,
         previousSeasonLength,
         previousSeasonPlayoffWeeks,
+        championshipTracking,
       };
     },
     enabled: !!leagueId,
@@ -179,7 +237,7 @@ export function useNextSeasonStageDetection(
     };
   }
 
-  const { league, prefs, upcomingSeason, hasSchedule, teamCount, venueCount, previousSeasonLastWeekDate, previousSeasonLength, previousSeasonPlayoffWeeks } = data;
+  const { league, prefs, upcomingSeason, hasSchedule, teamCount, venueCount, previousSeasonLastWeekDate, previousSeasonLength, previousSeasonPlayoffWeeks, championshipTracking } = data;
 
   // Resolve stage. With NO upcoming season, the operator starts at
   // stage 0 (Season). With one in progress, walk the cascade.
@@ -212,6 +270,7 @@ export function useNextSeasonStageDetection(
       previousSeasonLastWeekDate,
       previousSeasonLength,
       previousSeasonPlayoffWeeks,
+      championshipTracking,
     },
   };
 }
