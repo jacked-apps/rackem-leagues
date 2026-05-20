@@ -12,7 +12,7 @@ audience: developer + AI sessions
 >
 > Before editing this file, read and apply the gate procedure in [Principle 7: Canonical-docs-as-policy](../../PRINCIPLES.md#7-canonical-docs-as-policy). The procedure requires explicit user invocation using specific gate-aware language; casual approvals are NOT sufficient.
 >
-> This is the **authoritative Trigger model.** It supersedes the older trigger framing still present in PRINCIPLES § System § 5 and Points System README (B) — reconciling those locked docs to point here is a follow-up step.
+> This is the **authoritative Trigger model.** PRINCIPLES § System § 5 and the Points System README have been reconciled to point here.
 
 ## Why triggers are decoupled from thresholds
 
@@ -257,11 +257,12 @@ flatten:
 2. **Split into separate triggers (fallback).** When the branches do genuinely
    different ACTIONS, write one flat trigger per branch.
 
-## The end-of-match aggregate is expressible as match_end triggers
+## End-of-match scoring with match_end triggers
 
-The locked model has a distinct canonical sub-mechanism — **(D) end-of-match
-aggregate.** This model does NOT remove it — it only shows the logic expresses as
-match_end triggers, so it's not architecturally *distinct* from a trigger:
+A common pattern: compute a side's match points once at match end from its final
+games-won, rather than accumulating per-game. Per side, two `match_end` triggers
+reproduce a three-band points formula with no compound condition, no nesting, and
+no `else`:
 
 ```
 type: match_end   IF home_wins > winTarget   THEN home_points = (home_wins - winTarget) * multiplier
@@ -269,12 +270,8 @@ type: match_end   IF home_wins < tieTarget   THEN home_points = (home_wins - tie
 (tie band: neither fires → home_points keeps its default 0)
 ```
 
-(Per-side: declare the matching pair for the away side.) No compound condition,
-no nesting, no `else` — reproduces the locked 3-band behavior exactly.
-
-**Deprecating (D) is a SEPARATE downstream step**, not part of enstating this
-trigger model. Until then the EOGA remains canonical and the locked docs continue
-to describe it. This model establishes only that it *can* absorb the aggregate.
+(Per-side: declare the matching pair for the away side.) The win/tie targets are
+thresholds; the tie band is the default-0 of `home_points`.
 
 ## The per-game allocator — possibly a periodic trigger (open)
 
