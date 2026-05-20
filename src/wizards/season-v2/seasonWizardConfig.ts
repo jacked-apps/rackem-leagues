@@ -30,10 +30,10 @@ const PLAYOFF_FORMAT_LABELS: Record<string, string> = {
   '2week_percentage': '2 Weeks — Top 50%',
 };
 
-function formatPlayoffFormat(value: unknown): string {
-  if (!value) return 'None';
+function formatPlayoffFormat(value: unknown): string | undefined {
+  if (!value) return undefined;
   const v = value as { format?: string; wildcard?: boolean };
-  if (!v.format) return 'None';
+  if (!v.format) return undefined;
   const label = PLAYOFF_FORMAT_LABELS[v.format] ?? v.format;
   return v.wildcard ? `${label} + Wildcard` : label;
 }
@@ -74,12 +74,15 @@ export const seasonWizardConfig: WizardConfig<SeasonWizardFormData> = {
         }
       | undefined;
 
-    // Start date: explicit override (subsequent-season picker) wins;
-    // otherwise inherit from the intro / league context.
-    const startDateStr =
-      (formData['season-start-date'] as string | undefined) ??
-      intro?.leagueStartDate ??
-      flowContext?.leagueStartDate;
+    // Start date: additive — appears only after the user has actually
+    // committed to one. For the next-season flow, that's the dedicated
+    // start-date step. For first-season, the intro IS the start-date
+    // confirmation (operator already saw it on the league-create step
+    // and is acknowledging here).
+    const isNextSeason = !!intro?.hasExistingSeasons;
+    const startDateStr = isNextSeason
+      ? (formData['season-start-date'] as string | undefined)
+      : intro?.leagueStartDate;
 
     // Derived season name — same formula as `useCreateSeasonV2`, so the
     // summary mirrors what will actually get saved.
@@ -97,6 +100,19 @@ export const seasonWizardConfig: WizardConfig<SeasonWizardFormData> = {
       }
     }
 
+    // Additive gating — each row appears only after the user has
+    // visited the step that owns it. Each step's mount-useEffect
+    // writes a default to formData, so the presence of the formData
+    // slice IS the "user has been here" signal.
+    const lengthValue = formData['season-length'] as number | undefined;
+    const playoffValue = formData['playoff-format'] as
+      | { format?: string; wildcard?: boolean }
+      | undefined;
+
+    // Season Name shows only when all upstream answers are committed.
+    const showSeasonName =
+      !!derivedSeasonName && lengthValue != null && !!playoffValue?.format;
+
     return [
       {
         label: 'Start Date',
@@ -104,10 +120,10 @@ export const seasonWizardConfig: WizardConfig<SeasonWizardFormData> = {
       },
       {
         label: 'Regular Season',
-        value: formData['season-length'] ? `${formData['season-length']} weeks` : undefined,
+        value: lengthValue != null ? `${lengthValue} weeks` : undefined,
       },
-      { label: 'Playoffs', value: formatPlayoffFormat(formData['playoff-format']) },
-      { label: 'Season Name', value: derivedSeasonName },
+      { label: 'Playoffs', value: formatPlayoffFormat(playoffValue) },
+      { label: 'Season Name', value: showSeasonName ? derivedSeasonName : undefined },
     ];
   },
   steps: [
