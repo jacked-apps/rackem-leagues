@@ -44,7 +44,7 @@ The Points System is a composition of small single-purpose sub-mechanisms. A giv
   - **Formula** — derived from game data (e.g., `winner = 10 + (7 − loser)` — the 17-Point case where winner gets 10 plus opponent's remaining balls). *Not yet supported in code; the calculator interface would need a `formula` kind.*
 
   The data shape implies the input behavior — integer = no input, array = scorer input, formula = computed. No explicit `input` or `formula` flags needed.
-- **(B) Threshold trigger** — at games-threshold N, change or add to the running point total. Multiple triggers can stack (one at threshold X, another at threshold Y, etc.). Currently bundled inside the `accumulate_with_milestone_jumps` calculator.
+- **(B) Trigger** — fires on a condition (or at match start/end) and writes a value into match state via a flat expression. A trigger is NOT bound to a threshold — it reads state by name (a threshold may set that state; the two are decoupled). Multiple triggers stack, each independent, firing in a defined order. Full model: [trigger.md](trigger.md). Currently bundled inside the `accumulate_with_milestone_jumps` calculator.
 - **(C) Initial points** — given once at match start, handicap-driven amount. Currently lives as the [`start_points`](../handicap-mechanisms/start-points.md) Handicap Mechanism; its output feeds the Points System's running totals. (start_points is *both* a handicap mechanism in the current taxonomy AND a Points System sub-mechanism architecturally.)
 - **(D) End-of-match aggregate** — alternative to per-game accumulation. Computes team_points = f(games_won, threshold) once at match end, rather than accumulating per-game. Implementation: the `linear_above_threshold` calculator.
 
