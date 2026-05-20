@@ -87,16 +87,15 @@ export function SeasonSettingsModeStep({
       <div>
         <Label className="text-base">Season length + playoffs</Label>
         <p className="text-foreground mt-1">
-          Hey — last season was{' '}
-          <strong>{previousLength} weeks</strong> with{' '}
+          Last season ran <strong>{previousLength} weeks</strong> with{' '}
           <strong>{summarizePlayoffWeeks(previousPlayoffWeeks)}</strong>.
-          Still the case?
+          Use the same setup?
         </p>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
         <Button onClick={handleSkip} loadingText="none">
-          Skip — same as before
+          Keep — same as last season
         </Button>
         <Button variant="outline" onClick={handleChange} loadingText="none">
           Change something →

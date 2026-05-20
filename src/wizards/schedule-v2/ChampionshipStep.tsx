@@ -176,17 +176,17 @@ function NextSeasonChampionshipConfirm({
     const onlyBca = tracking.trackBca && !tracking.trackApa;
     const onlyApa = !tracking.trackBca && tracking.trackApa;
     if (both) {
-      return `Hey — you track both BCA (${tracking.bcaDates ?? 'dates TBD'}) and APA (${tracking.apaDates ?? 'dates TBD'}). Still the case?`;
+      return `You're tracking both BCA (${tracking.bcaDates ?? 'dates TBD'}) and APA (${tracking.apaDates ?? 'dates TBD'}). Keep that?`;
     }
     if (onlyBca) {
-      return `Hey — you track BCA (${tracking.bcaDates ?? 'dates TBD'}) but not APA. Still the case?`;
+      return `You're tracking BCA (${tracking.bcaDates ?? 'dates TBD'}) but not APA. Keep that?`;
     }
     if (onlyApa) {
-      return `Hey — you track APA (${tracking.apaDates ?? 'dates TBD'}) but not BCA. Still the case?`;
+      return `You're tracking APA (${tracking.apaDates ?? 'dates TBD'}) but not BCA. Keep that?`;
     }
     // Step should be hidden via showIf when neither is tracked, but
     // handle the case gracefully just in case.
-    return `Hey — you don't currently track BCA or APA. Still the case?`;
+    return `You're not tracking BCA or APA. Keep that?`;
   })();
 
   const handleSkip = () => {
@@ -201,9 +201,9 @@ function NextSeasonChampionshipConfirm({
           <p className="font-medium text-foreground">National Championships</p>
           <InfoButton title="Championship Conflicts" size="sm">
             <p>
-              You set this once when you created your first league. We
-              don&rsquo;t bug you about it every season — but you can
-              change it any time.
+              You set this when you created your first league. We
+              carry it forward each season — but you can change it
+              any time.
             </p>
           </InfoButton>
         </div>
@@ -212,14 +212,14 @@ function NextSeasonChampionshipConfirm({
 
         <div className="flex flex-col sm:flex-row gap-3">
           <Button onClick={handleSkip} loadingText="none">
-            Skip — same as before
+            Keep — same as last season
           </Button>
           <Button
             variant="outline"
             onClick={() => setEditing(true)}
             loadingText="none"
           >
-            Change tracking
+            Change tracking →
           </Button>
         </div>
       </div>
@@ -279,7 +279,7 @@ function NextSeasonChampionshipConfirm({
         }}
         loadingText="none"
       >
-        ← Back to "same as before"
+        ← Use last season&rsquo;s tracking instead
       </Button>
     </div>
   );

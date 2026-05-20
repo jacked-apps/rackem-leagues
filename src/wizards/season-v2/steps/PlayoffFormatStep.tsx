@@ -136,7 +136,7 @@ function NextSeasonPlayoffPicker({
         <div>
           <Label className="text-base">Playoffs</Label>
           <p className="text-foreground mt-1">
-            Hey — last season had{' '}
+            Last season had{' '}
             <strong>{summarizePlayoffWeeks(previousPlayoffWeeks)}</strong>.
             Same setup?
           </p>
@@ -144,7 +144,7 @@ function NextSeasonPlayoffPicker({
 
         <div className="flex flex-col sm:flex-row gap-3">
           <Button onClick={handleSkip} loadingText="none">
-            Skip — {summarizePlayoffWeeks(previousPlayoffWeeks)}
+            Keep — {summarizePlayoffWeeks(previousPlayoffWeeks)}
           </Button>
           <Button
             variant="outline"
@@ -191,7 +191,7 @@ function NextSeasonPlayoffPicker({
         }}
         loadingText="none"
       >
-        ← Back to "same as before"
+        ← Use last season&rsquo;s playoff format instead
       </Button>
     </div>
   );

@@ -112,14 +112,13 @@ function NextSeasonLengthPicker({
         <div>
           <Label className="text-base">Regular season length</Label>
           <p className="text-foreground mt-1">
-            Hey — last season was{' '}
-            <strong>{previousLength} weeks</strong>. Same again?
+            Last season ran <strong>{previousLength} weeks</strong>. Same again?
           </p>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3">
           <Button onClick={handleSkip} loadingText="none">
-            Skip — {previousLength} weeks
+            Keep — {previousLength} weeks
           </Button>
           <Button
             variant="outline"
@@ -154,7 +153,7 @@ function NextSeasonLengthPicker({
         }}
         loadingText="none"
       >
-        ← Back to "same as before"
+        ← Use last season&rsquo;s length instead
       </Button>
     </div>
   );

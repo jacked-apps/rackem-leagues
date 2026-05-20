@@ -124,7 +124,7 @@ function NextSeasonStartDatePicker({
         <div>
           <Label className="text-base">When does the new season start?</Label>
           <p className="text-foreground mt-1">
-            Hey — last season&rsquo;s last week was{' '}
+            Last season&rsquo;s final week was{' '}
             <strong>{formatPretty(lastWeekDate)}</strong>. Start the next
             one on <strong>{formatPretty(startImmediate)}</strong>?
           </p>
@@ -132,7 +132,7 @@ function NextSeasonStartDatePicker({
 
         <div className="flex flex-col sm:flex-row gap-3">
           <Button onClick={handleSkip} loadingText="none">
-            Skip — start {formatPretty(startImmediate)}
+            Start {formatPretty(startImmediate)}
           </Button>
           <Button
             variant="outline"
@@ -206,7 +206,7 @@ function NextSeasonStartDatePicker({
         }}
         loadingText="none"
       >
-        ← Back to "same as before"
+        ← Use last season&rsquo;s timing instead
       </Button>
     </div>
   );
