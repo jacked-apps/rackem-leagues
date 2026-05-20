@@ -14,7 +14,7 @@ locked: true
 
 A peer variant of the **[Threshold Charts](README.md)** Module — a [Chart](../../PRINCIPLES.md#chart--deep-dive)-kind Module.
 
-> **Reading this cold?** A threshold chart is a passive lookup table (or formula) that converts a handicap input into a concrete match-setup benchmark. This page describes the **Race Percentage Chart** variant: a discrete 2D table that takes the gap between two players and the stronger player's skill tier (Percentage encoding), and returns the per-pairing race-to game-win target for each player. Other Chart variants exist (see the [Module README](README.md) for the full picture).
+> **Reading this cold?** A threshold chart is a passive lookup table (or formula) that converts a handicap input into a concrete match-setup threshold. This page describes the **Race Percentage Chart** variant: a discrete 2D table that takes the gap between two players and the stronger player's skill tier (Percentage encoding), and returns the per-pairing race-to game-win target for each player. Other Chart variants exist (see the [Module README](README.md) for the full picture).
 
 ## What it is
 

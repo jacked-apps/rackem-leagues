@@ -14,7 +14,7 @@ locked: true
 
 A peer variant of the **[Threshold Charts](README.md)** Module — a [Chart](../../PRINCIPLES.md#chart--deep-dive)-kind Module.
 
-> **Reading this cold?** A threshold chart is a passive lookup that converts a handicap input into a concrete match-setup benchmark. This page describes the **FargoRate Formula** variant: a continuous mathematical function (not a discrete table) that takes a set of FargoRate ratings and computes asymmetric match-setup thresholds. Other Chart variants exist as discrete tables (see the [Module README](README.md) for the full picture).
+> **Reading this cold?** A threshold chart is a passive lookup that converts a handicap input into a concrete match-setup threshold. This page describes the **FargoRate Formula** variant: a continuous mathematical function (not a discrete table) that takes a set of FargoRate ratings and computes asymmetric match-setup thresholds. Other Chart variants exist as discrete tables (see the [Module README](README.md) for the full picture).
 
 ## What it is
 
