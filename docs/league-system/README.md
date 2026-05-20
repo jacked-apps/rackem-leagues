@@ -148,7 +148,7 @@ Use this when Ed proposes a new feature, rule, or behavior — *before* writing 
 2. **Does it change how the strength difference between teams is applied during play?** (A new way to spot the weaker side — extra games, head-start in points, race-length adjustments, something hybrid.)
    → **Handicap Mechanism.** See `modules/handicap-mechanisms/`.
 
-3. **Does it change how per-game points are allocated?** (Winner gets X, loser gets Y; threshold-triggered point bonuses; end-of-match aggregates.)
+3. **Does it change how per-game points are allocated?** (Winner gets X, loser gets Y; threshold-triggered point bonuses; end-of-match scoring.)
    → **Points System.** See `modules/points-system/`.
 
 4. **Does it change how match victory is decided?** (Which metric — games or points — declares the winner; tie rules; cross-axis conditions; race-mode vs threshold-mode termination.)

@@ -34,7 +34,7 @@ The Tiebreak System is **only** the production of an edge metric when fired. It 
 
 - The decision of *whether* to fire — that's [Win Calculator](../win-calculator.md)'s job (when its metric stack walker reaches `edge`, it fires this System).
 - The metric precedence stack itself — that's [Win Calculator](../win-calculator.md)'s composition.
-- The per-game tie-band rule (zero points awarded when teams tie at a threshold) — that's a [Points System](../points-system/README.md) calculator concern (see the locked `linear_above_threshold` rule).
+- The per-game tie-band rule (zero points awarded when teams tie at a threshold) — that's a [Points System](../points-system/README.md) concern (see its tie-band rule).
 - The season-aggregate standings sort — that lives **outside the modular Scoring System catalog entirely** as a separate Standings concern (architectural shape TBD via a future brainstorm; this Module does not touch it).
 
 If a proposed feature changes *which method produces edge*, it belongs here as a new Tiebreak Mechanism variant. If it changes *when the Tiebreak System fires*, it belongs in Win Calculator. If it changes *how teams rank across the season when their match records tie*, it belongs in the Standings concern (outside this catalog).
