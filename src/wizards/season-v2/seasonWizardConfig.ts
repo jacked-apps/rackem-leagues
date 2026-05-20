@@ -18,6 +18,9 @@ import { SeasonStartDateStep } from './steps/SeasonStartDateStep';
 import { SeasonLengthStep } from './steps/SeasonLengthStep';
 import { PlayoffFormatStep } from './steps/PlayoffFormatStep';
 import type { SeasonWizardFormData } from './seasonWizardTypes';
+import { parseLocalDate } from '@/utils/formatters';
+import { generateSeasonName } from '@/types/season';
+import { formatDayOfWeek, formatGameType, type DayOfWeek, type GameType } from '@/types/league';
 
 const PLAYOFF_FORMAT_LABELS: Record<string, string> = {
   'none': 'No Playoffs',
@@ -35,6 +38,17 @@ function formatPlayoffFormat(value: unknown): string {
   return v.wildcard ? `${label} + Wildcard` : label;
 }
 
+/** Compact date for summary cells: "Thu, May 28, 2026". */
+function formatDateForSummary(isoDate: string): string {
+  const date = parseLocalDate(isoDate);
+  return date.toLocaleDateString('en-US', {
+    weekday: 'short',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
 /** Require a selection for steps that need one */
 const requireSelection = (value: unknown) =>
   value ? undefined : ['Please make a selection'];
@@ -45,15 +59,55 @@ export const seasonWizardConfig: WizardConfig<SeasonWizardFormData> = {
   schemaVersion: 1,
   initialFormData: {},
   getSummaryItems: (formData) => {
-    // The flow's getContextSummaryItems handles league info (name, format,
-    // start date) carried forward from Stage 1 — don't duplicate it here.
-    // Only return the choices the user is actively making in this wizard.
+    // Additive summary — grows with each step so the LO sees the full picture
+    // of what they're building. Derived rows (Start Date, Season Name) update
+    // as upstream choices change.
+    const intro = formData['intro'] as
+      | { leagueStartDate?: string; hasExistingSeasons?: boolean }
+      | undefined;
+    const flowContext = (formData as Record<string, unknown>)._flowContext as
+      | {
+          leagueStartDate?: string;
+          dayOfWeek?: string;
+          gameType?: string;
+          division?: string;
+        }
+      | undefined;
+
+    // Start date: explicit override (subsequent-season picker) wins;
+    // otherwise inherit from the intro / league context.
+    const startDateStr =
+      (formData['season-start-date'] as string | undefined) ??
+      intro?.leagueStartDate ??
+      flowContext?.leagueStartDate;
+
+    // Derived season name — same formula as `useCreateSeasonV2`, so the
+    // summary mirrors what will actually get saved.
+    let derivedSeasonName: string | undefined;
+    if (startDateStr && flowContext?.dayOfWeek && flowContext?.gameType) {
+      try {
+        derivedSeasonName = generateSeasonName(
+          parseLocalDate(startDateStr),
+          formatDayOfWeek(flowContext.dayOfWeek as DayOfWeek),
+          formatGameType(flowContext.gameType as GameType),
+          flowContext.division,
+        );
+      } catch {
+        derivedSeasonName = undefined;
+      }
+    }
+
     return [
+      {
+        label: 'Start Date',
+        value: startDateStr ? formatDateForSummary(startDateStr) : undefined,
+      },
       {
         label: 'Regular Season',
         value: formData['season-length'] ? `${formData['season-length']} weeks` : undefined,
       },
       { label: 'Playoffs', value: formatPlayoffFormat(formData['playoff-format']) },
+      { label: 'Season Name', value: derivedSeasonName },
     ];
   },
   steps: [

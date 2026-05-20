@@ -283,4 +283,22 @@ why it's off.
 
 ---
 
+## Editable league + season names
+
+Today both the league name (game_type + day_of_week + division + season + year) and the season name (same formula) are derived automatically by `generateSeasonName` and the league-name helpers. The operator can't override them — which means a league/season that needs a custom marketing name ("The Big Dawg Tour", "Wednesday Night Massacre") can't get one without touching SQL.
+
+**Sketch**:
+- League settings page → inline editable "League name" field that overrides the derived name. Stored as a nullable column on `leagues` (e.g. `display_name TEXT`); falls back to the generator when null.
+- Same pattern on the season detail / season settings page → `seasons.display_name`.
+- All display surfaces (league cards, schedule headers, standings, breadcrumbs, wizard summaries) read through a `getDisplayName(league)` / `getDisplayName(season)` helper that prefers the override.
+- Wizard "review" step previews the derived name + offers an inline "edit" affordance before commit, so the LO can rename at creation time too.
+
+**Why it's nice**:
+- Many real-world leagues have nicknames that don't match the derived schema. Forcing the derived name everywhere is "engineer-correct, operator-wrong."
+- Cheap once the column + helper are in place — every display site already reads through the same path.
+
+**Not doing now** — flagged by Ed 2026-05-20 during the next-season wizard test pass while the wizard summary was showing the derived season name. Pending wizard testing wrap-up + the more pressing payout-calculator + finances work.
+
+---
+
 *This is a living document - add ideas as they come up during development and user feedback sessions.*
