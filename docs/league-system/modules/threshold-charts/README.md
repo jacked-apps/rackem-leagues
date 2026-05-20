@@ -31,7 +31,7 @@ Both shapes are valid forms of the Chart kind; they're interconvertible expressi
 
 ## Why threshold charts exist
 
-A handicap input alone is just a number — *"the team-aggregate difference is +3"* or *"FargoRate gap is 80 points"* says nothing about how to set up the match. The Chart turns that number into a **match-setup benchmark** other Modules can consume: *"the stronger team needs 12 game wins; the weaker team needs 9,"* or *"in this individual pairing, race to 6 vs race to 4."* Without the Chart, a [Handicap Mechanism](../handicap-mechanisms/README.md) has nothing concrete to apply.
+A handicap input alone is just a number — *"the team-aggregate difference is +3"* or *"FargoRate gap is 80 points"* says nothing about how to set up the match. The Chart turns that number into a **match-setup threshold** other Modules can consume: *"the stronger team needs 12 game wins; the weaker team needs 9,"* or *"in this individual pairing, race to 6 vs race to 4."* Without the Chart, a [Handicap Mechanism](../handicap-mechanisms/README.md) has nothing concrete to apply.
 
 Charts are also **where calibration lives**. The "right" target-wins-per-handicap-difference for a 3-player league with 18 games is not the same as for a 5-player league with 25 games — same handicap encoding, different match shape, different calibration. Different leagues swap Charts without changing the encoding or the mechanism. This is what makes leagues genuinely customizable: the Chart is the dial.
 
@@ -60,7 +60,7 @@ If a proposed feature changes *how a handicap input becomes a threshold value* (
 
 Charts organize on two axes:
 
-- **Scope** — does the lookup feed a **team-aggregate** benchmark (one threshold pair for the whole match) or a **per-pairing** benchmark (one threshold pair per individual matchup)?
+- **Scope** — does the lookup feed a **team-aggregate** threshold (one threshold pair for the whole match) or a **per-pairing** threshold (one threshold pair per individual matchup)?
 - **Shape** — is the chart a **discrete table** (exact rows or ranges) or a **formula** (continuous function)?
 
 **Shape is a deployment choice, not a separate variant.** Per [PRINCIPLES § Chart — § 4](../../PRINCIPLES.md#4-formula-first-charts-are-derived), formulas and discrete tables are *interchangeable shapes* of the same Chart kind. A formula-shape Chart can always be projected into a discrete table (for printable distribution, LO inspection, or LO row-level customization); a discrete-table Chart can be a stored per-league artifact when an LO has edited specific rows away from any clean formula. Both shapes are first-class deployment forms — the formula is typically the default, the discrete table is the per-league shape when an LO has customized it. Neither is more "real" than the other; they encode the same mapping.
