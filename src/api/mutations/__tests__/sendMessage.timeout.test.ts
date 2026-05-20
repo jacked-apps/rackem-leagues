@@ -10,26 +10,32 @@
  * timeout-flavoured error after that interval.
  *
  * Pattern: replace the `supabase` module with a query-builder mock whose
- * terminal `.abortSignal(signal)` method returns a Promise that never
- * resolves on its own — it only rejects when the AbortController fires.
- * Then advance fake timers past `SEND_TIMEOUT_MS` and assert the thrown
- * error.
+ * terminal `.single()` returns a Promise that never resolves on its own
+ * — it only rejects when the AbortController fires. The `.abortSignal()`
+ * call earlier in the chain registers the signal that will trigger the
+ * abort. Then advance fake timers past `SEND_TIMEOUT_MS` and assert the
+ * thrown error.
+ *
+ * Chain order matters: `.abortSignal()` must precede `.single()` because
+ * supabase-js's `.single()` returns a `PostgrestBuilder` which doesn't
+ * expose `.abortSignal()`.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('@/supabaseClient', () => {
-  // Each call to `supabase.from('messages').insert(...).select().single()
-  // .abortSignal(signal)` returns a Promise that rejects when the signal
-  // aborts. supabase-js translates an aborted fetch into an error object
-  // with a non-null `error` field rather than throwing, so we mirror that.
+  // Each call to `supabase.from('messages').insert(...).select()
+  // .abortSignal(signal).single()` returns a Promise that rejects when
+  // the signal aborts. supabase-js translates an aborted fetch into an
+  // error object with a non-null `error` field rather than throwing,
+  // so we mirror that.
   const buildChain = () => {
+    let abortPromise: Promise<{ data: null; error: { message: string; name: string } }> | null = null;
     const chain = {
       insert: vi.fn(() => chain),
       select: vi.fn(() => chain),
-      single: vi.fn(() => chain),
       abortSignal: vi.fn((signal: AbortSignal) => {
-        return new Promise((resolve) => {
+        abortPromise = new Promise((resolve) => {
           signal.addEventListener('abort', () => {
             resolve({
               data: null,
@@ -38,7 +44,9 @@ vi.mock('@/supabaseClient', () => {
           });
           // No success branch — the test scenario is a stalled request.
         });
+        return chain;
       }),
+      single: vi.fn(() => abortPromise),
     };
     return chain;
   };
