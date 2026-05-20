@@ -47,6 +47,13 @@ Trigger is a System, not an atom — and gives them author-facing names:
 Plus two properties every trigger carries: **ORDER** (a fire-order number + a
 before/after-allocator bool) and **DISPLAY** (label + target value for the UI).
 
+**Each of the four sub-mechanisms is an atom** — one job, nothing inside it: the
+condition just compares, the action just writes, the re-armer just tracks
+re-firing, the detector just watches. (TYPE is the "when" knob of the Event
+acceptor atom, paired with the condition's "what.") Composing these atoms is
+what makes a Trigger a *System* rather than a single Mechanism. ORDER and
+DISPLAY are properties — configuration on that System, not sub-mechanisms.
+
 Read together it's an if/then: *given the TYPE's timing, IF the CONDITION holds,
 THEN run the ACTION; the RE-ARM decides whether it can fire again.* There is no
 `else` — if the condition is false, nothing happens.
@@ -185,6 +192,29 @@ order is deterministic; its absolute value is irrelevant.)
 (That the allocator is a fixed pivot — not just another numbered trigger — is a
 small point in favor of it staying a distinct primitive; see the open per-game
 question below.)
+
+## Stackable — many independent triggers, one fire order
+
+A composition holds MANY triggers, not one. Each is **independent**: it watches
+its own condition and declares its own action — no trigger's output pipes into
+another's input (this is not a chain). You add capability by stacking another
+trigger: one watching `games_played === 11`, another for the 1.5 bonus, another
+for the win — each running its own TYPE + CONDITION + ACTION.
+
+**"Independent" and "fire order" are both true — they're not in tension.** This
+is exactly how lines of code work: independent statements have no piping between
+them, yet they execute in a definite order (their line position). Here the
+ORDER number IS the line position.
+
+What makes order load-bearing is the **shared state bag**: a later trigger sees
+the writes of earlier ones (give-points must fire before end-match, or the
+points get negated). Pure-independent things would be order-insensitive;
+triggers aren't, *because they share state*. So a trigger stack is **independent
+declarations, sequenced execution** — not literal concurrency.
+
+(This is what PRINCIPLES calls the "parallel pattern" for triggers — "parallel"
+meaning independent / no-chaining, NOT concurrent. The execution is still
+ordered, per ORDER above.)
 
 ## DISPLAY — UI contract (kept for canonical-compat; likely belongs elsewhere)
 
