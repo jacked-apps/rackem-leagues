@@ -282,7 +282,7 @@ Implementation: new Module folder, new design-space mapping, new wizard surface 
 
 **The walkthrough in `README.md#how-to-classify-a-new-idea` only handles Layer 3 (new Module).** Most day-to-day LO tweaks are Layer 1 or 2; both deserve the same anti-conflation rigor.
 
-**Module-design implication.** A parent Module's *internal* design determines how often LOs hit Layer 2 vs Layer 1. A parent designed for *composable sub-Mechanisms* (Points System, with its per-game allocator + threshold trigger + initial points + end-of-match aggregate) pushes more tweaks into the parameter/composition layer (Layer 1), fewer into new-Mechanism territory (Layer 2). A parent designed for *mutually-exclusive alternatives* (Handicap Mechanisms with extra_games / start_points / race_length_adjustment) pushes more tweaks toward new Mechanisms. Neither is wrong — the design choice should match the parent's expected variation pattern.
+**Module-design implication.** A parent Module's *internal* design determines how often LOs hit Layer 2 vs Layer 1. A parent designed for *composable sub-Mechanisms* (Points System, with its per-game allocator + trigger + initial points + end-of-match aggregate) pushes more tweaks into the parameter/composition layer (Layer 1), fewer into new-Mechanism territory (Layer 2). A parent designed for *mutually-exclusive alternatives* (Handicap Mechanisms with extra_games / start_points / race_length_adjustment) pushes more tweaks toward new Mechanisms. Neither is wrong — the design choice should match the parent's expected variation pattern.
 
 ### 6. Drift / split detection
 
@@ -567,7 +567,7 @@ Systems compose their internal Modules in one of three patterns. Knowing which p
 
 - *Scoring System* (top-level System) — chains 9 component Modules; all 9 run together as part of every match.
 - A *Trigger* — chains an event-acceptor → detector → performer → re-armer; all four run together as part of the trigger lifecycle.
-- *Points System* — chains a per-game allocator + (optional) threshold trigger + (optional) initial-points + (optional) end-of-match aggregate.
+- *Points System* — chains a per-game allocator + (optional) trigger + (optional) initial-points + (optional) end-of-match aggregate.
 
 **Naming for chain-pattern Systems is singular** ("Scoring System," "Win Calculator," "Points System") — the singular reflects the *single act* the chain produces, even though multiple components contribute.
 
@@ -586,6 +586,8 @@ Systems compose their internal Modules in one of three patterns. Knowing which p
 
 ### 5. Triggers as canonical System example
 
+> **Authoritative spec:** the full Trigger model lives in [`modules/points-system/trigger.md`](modules/points-system/trigger.md). This section uses triggers as the canonical example of a *System*; the model details (types, condition, action, re-arm, order, threshold decoupling) are in trigger.md.
+
 A **Trigger** is a System pattern composed of four sub-Mechanisms:
 
 | Sub-Mechanism | Job |
@@ -599,7 +601,7 @@ Each sub-Mechanism is its own atom (one job, no internal Modules). The Trigger c
 
 **Why triggers are Systems, not Mechanisms.** A trigger has multiple distinct concerns (configure / detect / act / manage re-firing). Each is a separate job. By the atom-vs-set rule, multiple distinct concerns composed together = a System. Triggers belong here in the System deep-dive, not in the Mechanism deep-dive.
 
-**Implicit vs explicit triggers (current code state).** Today, the trigger pattern is mostly *implicit* — bundled into how a parent System dispatches to its components. The parent System has dispatch logic that reads *"when game-scored event arrives, call the per-game allocator"* — the event detection and task dispatch are baked into the System's wiring rather than carried as a named Trigger System composing the four sub-Mechanisms. The trigger is real but not surfaced as its own Module. **This is implementation artifact, not architectural intent.** A future LO-customizable trigger UI (where operators define *what fires on what events*) would likely require unbundling implicit triggers into explicit Trigger Systems with their constituent Mechanisms named and swappable. See task tracker for the deferred decision.
+**Implicit vs explicit triggers (current code state).** Today, the trigger pattern is mostly *implicit* — bundled into how a parent System dispatches to its components. The parent System has dispatch logic that reads *"when game-scored event arrives, call the per-game allocator"* — the event detection and task dispatch are baked into the System's wiring rather than carried as a named Trigger System composing the four sub-Mechanisms. The trigger is real but not surfaced as its own Module. **This is implementation artifact, not architectural intent.** A future LO-customizable trigger UI (where operators define *what fires on what events*) would likely require unbundling implicit triggers into explicit Trigger Systems with their constituent Mechanisms named and swappable. See task tracker for the deferred decision. The explicit model is now specified in [`modules/points-system/trigger.md`](modules/points-system/trigger.md).
 
 **Stackable triggers.** A parent System can compose multiple Trigger Systems — one watching for `games_played = 10`, another for `games_played = 20`. Each Trigger System is independent; each runs its own four-sub-Mechanism chain. Multiple Trigger Systems inside a parent, not one System with multiple conditions.
 
