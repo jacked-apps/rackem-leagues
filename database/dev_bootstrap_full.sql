@@ -67,7 +67,10 @@ DECLARE
   v_org_phone    TEXT := '555-0100';
   v_game_type    TEXT := 'eight_ball';
   v_day_of_week  TEXT := 'tuesday';
-  v_team_format  TEXT := '5_man';
+  -- v_team_format dropped: `leagues.team_format` was removed by migration
+  -- 20260502000000_drop_team_format.sql in favor of the modular lineup
+  -- axis under `preferences`. The lineup_size default (5) lives on the
+  -- preferences row tied to the org/league.
   -- ===== END EDIT =====
 
   v_user_id   UUID;
@@ -214,8 +217,8 @@ BEGIN
   RETURNING id INTO v_venue_id;
 
   -- 5. League.
-  INSERT INTO leagues (organization_id, game_type, day_of_week, team_format, league_start_date, division, status)
-  VALUES (v_org_id, v_game_type, v_day_of_week, v_team_format, v_start, 'Dev League', 'active')
+  INSERT INTO leagues (organization_id, game_type, day_of_week, league_start_date, division, status)
+  VALUES (v_org_id, v_game_type, v_day_of_week, v_start, 'Dev League', 'active')
   RETURNING id INTO v_league_id;
 
   INSERT INTO league_venues (league_id, venue_id) VALUES (v_league_id, v_venue_id);
@@ -296,8 +299,8 @@ BEGIN
 
   -- 12. Second league (same org + venue, different day_of_week so
   --     league names disambiguate visually).
-  INSERT INTO leagues (organization_id, game_type, day_of_week, team_format, league_start_date, division, status)
-  VALUES (v_org_id, v_game_type, 'thursday', v_team_format, v_start2, 'Dev League — Near End', 'active')
+  INSERT INTO leagues (organization_id, game_type, day_of_week, league_start_date, division, status)
+  VALUES (v_org_id, v_game_type, 'thursday', v_start2, 'Dev League — Near End', 'active')
   RETURNING id INTO v_league2_id;
 
   INSERT INTO league_venues (league_id, venue_id) VALUES (v_league2_id, v_venue_id);
