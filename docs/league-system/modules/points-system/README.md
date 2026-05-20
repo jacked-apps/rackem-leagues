@@ -46,9 +46,9 @@ The Points System is a composition of small single-purpose sub-mechanisms. A giv
   The data shape implies the input behavior — integer = no input, array = scorer input, formula = computed. No explicit `input` or `formula` flags needed.
 - **(B) Trigger** — fires on a condition (or at match start/end) and writes a value into match state via a flat expression. A trigger is NOT bound to a threshold — it reads state by name (a threshold may set that state; the two are decoupled). Multiple triggers stack, each independent, firing in a defined order. Full model: [trigger.md](trigger.md). Currently bundled inside the `accumulate_with_milestone_jumps` calculator.
 - **(C) Initial points** — given once at match start, handicap-driven amount. Currently lives as the [`start_points`](../handicap-mechanisms/start-points.md) Handicap Mechanism; its output feeds the Points System's running totals. (start_points is *both* a handicap mechanism in the current taxonomy AND a Points System sub-mechanism architecturally.)
-- **(D) End-of-match aggregate** — alternative to per-game accumulation. Computes team_points = f(games_won, threshold) once at match end, rather than accumulating per-game. Implementation: the `linear_above_threshold` calculator.
+- **(D) End-of-match scoring — a `match_end` trigger pattern (not a distinct sub-mechanism).** Computes a side's match points once at match end from its final `games_won`, rather than accumulating per-game. The logic is unchanged from the former "end-of-match aggregate" — it is simply expressed as `match_end` triggers (see [trigger.md](trigger.md)): per side, two triggers — `IF games_won > winTarget THEN points = (games_won − winTarget) × multiplier` (above-win) and `IF games_won < tieTarget THEN points = (games_won − tieTarget) × multiplier` (below-tie) — with the tie band as the default-0 (neither fires). Today's code still bundles this as the `linear_above_threshold` aggregate calculator; it folds into `match_end` triggers in the code refactor.
 
-  **Tie-band rule (shipped in `linear_above_threshold`).** When both teams' `games_won` equals the threshold (e.g., 9–9 in 18-game 3v3), both teams receive 0 per-match points regardless of whether the [Tiebreak System](../tiebreak-system/README.md) subsequently fires or which side it produces edge for. The rule lives in `src/systems/calculators/linear_above_threshold.ts` and is fixed in code, not configurable. Two adjacent concerns lean on this rule: the Tiebreak System's tiebreaker games (when one fires) produce game outcomes that drive edge but do NOT add per-match points (the tie-band rule fixes per-match points at 0 for both sides regardless), and the future Standings concern (outside the modular Scoring System catalog — its architectural shape is a separate brainstorm) consumes the per-team accumulated points for season-level aggregation, where the tie-band rule's "tiebreaker games don't add points" guarantee is what makes the season totals coherent.
+  **Tie-band rule (the default-0 of the `match_end` pattern; today enforced in `linear_above_threshold`).** When both teams' `games_won` equals the threshold (e.g., 9–9 in 18-game 3v3), both teams receive 0 per-match points regardless of whether the [Tiebreak System](../tiebreak-system/README.md) subsequently fires or which side it produces edge for. The rule lives in `src/systems/calculators/linear_above_threshold.ts` and is fixed in code, not configurable. Two adjacent concerns lean on this rule: the Tiebreak System's tiebreaker games (when one fires) produce game outcomes that drive edge but do NOT add per-match points (the tie-band rule fixes per-match points at 0 for both sides regardless), and the future Standings concern (outside the modular Scoring System catalog — its architectural shape is a separate brainstorm) consumes the per-team accumulated points for season-level aggregation, where the tie-band rule's "tiebreaker games don't add points" guarantee is what makes the season totals coherent.
 
 ## CSI's named scoring systems are configurations of (A)
 
@@ -66,7 +66,7 @@ CSI's main use case for 17-Point: incentivizes the loser to keep pocketing balls
 
 | Prepackaged Scoring System | Composition |
 |---|---|
-| Points 3-Man (`standard_3v3`) | **(D)** `points = games_won − threshold` |
+| Points 3-Man (`standard_3v3`) | **(D)** `match_end` triggers — `points = games_won − threshold` (tie band → 0) |
 | Percentage 5-Man (`standard_5v5`) | **(A)** `winner = 0.1, loser = 0` + **(B)** milestone trigger 1: jump to 1.5 at games-X + **(B)** milestone trigger 2: jump to 3 at games-Y |
 | FargoRate 10-Point 5-Man (`fargo_5v5`) | **(C)** handicap-driven start_points + **(A)** `winner = 10, loser = [0, 7]` (CSI's 10-Point Scoring System) |
 
@@ -78,7 +78,7 @@ The compositions above are **conceptual**. Current code bundles them differently
 |---|---|---|
 | `accumulated_per_game` | (A) generic per-game allocator | FargoRate 10-Point 5-Man (also wired with start_points logic in `fargo5v5.ts`) |
 | `accumulate_with_milestone_jumps` | (A) + (B) bundled into one calculator | Percentage 5-Man |
-| `linear_above_threshold` | (D) end-of-match aggregate | Points 3-Man |
+| `linear_above_threshold` | (D) end-of-match scoring (match_end trigger pattern); today bundled as an aggregate calculator | Points 3-Man |
 | `none` | No-op (no points tracked at all) | None today (selectable for new leagues) |
 
 **Implementation artifact, not architectural intent.** The current per-Scoring-System bundling means the "calculator" picked in the wizard is a pre-built combination matching that Scoring System. Architecturally, a future refactor should decouple these into composable sub-mechanisms — so an LO could mix-and-match (e.g., milestone triggers stacked on top of any per-game allocator config; start_points combined with any per-game allocator; new compositions for new Scoring Systems without writing new calculator types).
