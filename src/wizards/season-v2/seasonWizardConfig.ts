@@ -27,10 +27,10 @@ const PLAYOFF_FORMAT_LABELS: Record<string, string> = {
   '2week_percentage': '2 Weeks — Top 50%',
 };
 
-function formatPlayoffFormat(value: unknown): string | undefined {
-  if (!value) return undefined;
+function formatPlayoffFormat(value: unknown): string {
+  if (!value) return 'None';
   const v = value as { format?: string; wildcard?: boolean };
-  if (!v.format) return undefined;
+  if (!v.format) return 'None';
   const label = PLAYOFF_FORMAT_LABELS[v.format] ?? v.format;
   return v.wildcard ? `${label} + Wildcard` : label;
 }
