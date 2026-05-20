@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-19 (Merged main into docs/league-system-l1. Branch carries: Modular Scoring System framework under `docs/league-system/` + Module extraction work — Team Geometry / Match Format / Handicap Systems / Threshold Charts / Handicap Mechanisms all A→D complete; Points System (Unit 5) Phase A+B in place with cross-audited compositions. Main absorbed: Messaging Phase 1 overhaul, Navigation IA overhaul, Scoring Modal rework, Fargo auto-agree start-points, modular league system v2 (calculator-as-type), unified scoreboard.)
+> **Last Updated**: 2026-05-20 (Points System all four sub-mechanisms A/B/C/D audited + locked data-driven: triggers, threshold output enrichment, per-game allocator (SideConfig + formula registry), end-of-match aggregate (data-driven operation). Added 10-Point rename, 17-Point + behind-boost compositions, complex-trigger.md design concept. Earlier: Merged main into docs/league-system-l1 — Modular Scoring System framework + Module extraction (Team Geometry / Match Format / Handicap Systems / Threshold Charts / Handicap Mechanisms A→D). Main absorbed: Messaging Phase 1, Navigation IA, Scoring Modal rework, Fargo auto-agree start-points, modular league system v2, unified scoreboard.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -57,7 +57,7 @@
 | `docs/league-system/modules/` | **Per-Module blueprints (9 Modules + variant pages)** | All LOCKED |
 | `docs/league-system/modules/handicap-systems/` | Handicap Systems Module (README + 4 variants: percentage, fargorate, points, skill-level) | LOCKED |
 | `docs/league-system/modules/handicap-mechanisms/` | Handicap Mechanisms Module (README + 3 variants: extra-games, start-points, race-length-adjustment) | LOCKED |
-| `docs/league-system/modules/points-system/` | Points System Module (README + 2 variants: one-point-scoring, ten-point-scoring) | LOCKED |
+| `docs/league-system/modules/points-system/` | Points System Module (README + 2 variants: one-point-scoring, ten-point-scoring; + complex-trigger.md design concept) | README LOCKED; complex-trigger DESIGN |
 | `docs/league-system/modules/win-calculator.md` | Win Calculator Module — metric precedence stack + Tiebreak System trigger model | LOCKED |
 | `docs/league-system/modules/threshold-charts/` | Threshold Charts Module (README + 5 variants: 3v3-games-needed, 5v5-games-needed, race-points, race-percentage, fargo-formula) | LOCKED |
 | `docs/league-system/modules/team-geometry.md` | Team Geometry Module — lineup_size + max_roster_size + game_generation | LOCKED |
