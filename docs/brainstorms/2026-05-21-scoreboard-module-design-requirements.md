@@ -28,6 +28,18 @@ audience: developer + AI sessions
   **renders the value with the shared label** in a position. A position can hold
   **up to 2 states**; rough layout **3 small / 2 large / 3 small** per side
   (~**8 selectable metrics**). The LO customizes which show / hide.
+- **A slot renders either a single value or a pair.** Render modes: **single**
+  ("Wins: 5"), or **paired/tracked** — two states shown together as a fraction /
+  progress ("3/10"), each state keeping its own internal name under one slot
+  label. The pair capability is general (not just the global region): a *sided*
+  slot can show a per-side pair (`home_wins`/`homeWinTarget` → "3/10" home,
+  "2/8" away).
+- **Side-consistency within a slot:** a sided slot's pair should be **two per-side
+  states** (so it mirrors cleanly); a **global pair** (`gamesPlayed`/`totalGames`
+  → "5/25") lives in the separate global region, not a sided slot. *Open Q:* may a
+  sided slot mix a per-side + a global state (e.g. `home_wins`/`totalGames`)? It
+  renders (numerator mirrors, denominator shared) but puts a global value on the
+  sided board — judgment call, decide later.
 - **The sided scoreboard is PURELY per-side (mirrored) metrics.** Match-level /
   global values (e.g. games played 5/25) are **not on it** — they're a separate
   concern. If a global readout is ever wanted (a baseball-inning-style indicator),
