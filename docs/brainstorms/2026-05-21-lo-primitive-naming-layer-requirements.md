@@ -123,6 +123,27 @@ Scoreboard modules additionally carry the **labels** they render (player-facing)
 Building these fields into the data shapes now keeps them UI-ready so the workshop
 needs no second refactor — even though the workshop itself is deferred.
 
+## The workshop is a curated, controlled environment (Ed, 2026-05-21)
+
+The LO never has free rein. In the workshop they pick only from a **list we
+expose**:
+- the **built-ins we allow** (engine-provided state vars / metrics), and
+- the things **they have created** (their thresholds, triggers, etc.).
+
+They cannot "find" or inject arbitrary outside state. And because **we define each
+exposed item's metadata** — type, side-mode (`shared` / `team` / global), what it
+represents, and how it may be used — the **workshop UI enforces correct usage from
+that metadata.** Consequences:
+- Every "can the LO do X / will this crash" question becomes an **enforceable
+  workshop rule**, not chaos. (e.g. side-consistency in a slot = the workshop only
+  offers compatible picks; the naming crashes = the workshop wires the internal
+  reference and only asks the LO for the label.)
+- This is "safety lives in the authoring UI, not the engine" made concrete: the
+  engine stays dumb-and-obedient (never-break); the **workshop is the guardrail.**
+- Open layout/usage questions (e.g. may a sided slot mix a per-side + a global
+  state?) are therefore **workshop policy** — allow or disallow via metadata — not
+  engine risks, so they're safely deferrable.
+
 ## Scope boundaries
 
 - **This doc owns:** the naming/identity glossary + the auto-assign rule + the
