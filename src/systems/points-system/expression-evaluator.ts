@@ -25,25 +25,12 @@
  * @see docs/league-system/modules/points-system/trigger.md — the ACTION contract
  */
 
-import type { MatchStateBag } from './types';
+import type { Expression, MatchStateBag } from './types';
 
-/**
- * A flat arithmetic expression, stored as serializable data (a tree).
- *
- * - `const` — a literal number (e.g., `1.5`, `0`).
- * - `var` — reads a named value off the state bag (e.g., `home_wins`, `winTarget`).
- * - `op` — a binary operation; operands are themselves expressions, so nesting
- *   expresses parentheses (e.g., `(home_wins − winTarget) × multiplier`).
- */
-export type Expression =
-  | { readonly kind: 'const'; readonly value: number }
-  | { readonly kind: 'var'; readonly name: string }
-  | {
-      readonly kind: 'op';
-      readonly op: '+' | '-' | '*' | '/';
-      readonly left: Expression;
-      readonly right: Expression;
-    };
+// `Expression` now lives in ./types (single home for trigger-model types).
+// Re-export it here so existing consumers that import it from this evaluator
+// (the action-side module) keep working.
+export type { Expression };
 
 /**
  * Result of evaluating an expression. Never throws — a problem is reported as

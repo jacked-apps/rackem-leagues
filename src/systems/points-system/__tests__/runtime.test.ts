@@ -19,7 +19,7 @@ import { buildThresholdRow } from '../threshold-resolver';
 // Side-effect imports: register the operations these tests reference.
 import '../operations/read-pref';
 import '../operations/arithmetic-round-product';
-import type { PointsSystem, ThresholdInputs, Trigger } from '../types';
+import type { PointsSystem, ThresholdInputs } from '../types';
 
 const emptyInputs: ThresholdInputs = {
   homeRatings: [],
@@ -63,9 +63,10 @@ describe('evaluatePointsSystem — wins counting (no allocator, no triggers)', (
 describe('evaluatePointsSystem — Percentage 5-Man-style accumulation (allocator + milestone triggers)', () => {
   // Per-game allocator: winner=0.1 fixed, loser=0 fixed
   // Threshold: milestoneTarget = round(games_to_win × 0.7) = 9
-  // Triggers (locked model — per-side, concrete, no shortcuts):
-  //   - homeMilestone: when home_wins === milestoneTarget AND home won this game,
-  //                    assign home_points = 1.5 (jump replaces running total)
+  // Triggers (new model — anytime, after-allocator, single_shot):
+  //   - homeMilestone: when home_wins == milestoneTarget, set home_points = 1.5
+  //                    (jump replaces running total; fires after the allocator
+  //                    so it overwrites the per-game add for the clinching game)
   //   - awayMilestone: same shape for away
   const composition: PointsSystem = {
     name: 'percent_milestone_test',
@@ -86,23 +87,29 @@ describe('evaluatePointsSystem — Percentage 5-Man-style accumulation (allocato
     triggers: [
       {
         name: 'homeMilestone',
-        input: { thresholdRef: 'milestoneTarget' },
-        when: { kind: 'side_reaches', side: 'home', sideVar: 'home_wins' },
-        action: {
-          target: { kind: 'concrete', variableName: 'home_points' },
-          op: 'assign',
-          value: { kind: 'literal', value: 1.5 },
+        type: 'anytime',
+        condition: {
+          kind: 'compare',
+          left: { kind: 'var', name: 'home_wins' },
+          op: '==',
+          right: { kind: 'var', name: 'milestoneTarget' },
         },
+        action: { target: 'home_points', value: { kind: 'set', value: 1.5 } },
+        rearm: 'single_shot',
+        order: { number: 1, beforeAllocator: false },
       },
       {
         name: 'awayMilestone',
-        input: { thresholdRef: 'milestoneTarget' },
-        when: { kind: 'side_reaches', side: 'away', sideVar: 'away_wins' },
-        action: {
-          target: { kind: 'concrete', variableName: 'away_points' },
-          op: 'assign',
-          value: { kind: 'literal', value: 1.5 },
+        type: 'anytime',
+        condition: {
+          kind: 'compare',
+          left: { kind: 'var', name: 'away_wins' },
+          op: '==',
+          right: { kind: 'var', name: 'milestoneTarget' },
         },
+        action: { target: 'away_points', value: { kind: 'set', value: 1.5 } },
+        rearm: 'single_shot',
+        order: { number: 2, beforeAllocator: false },
       },
     ],
   };
@@ -145,10 +152,11 @@ describe('evaluatePointsSystem — Percentage 5-Man-style accumulation (allocato
   });
 });
 
-describe('evaluatePointsSystem — receipt-trigger initial points (FargoRate start_points pattern)', () => {
-  // Receipt triggers add the trigger's bound input value (n) to the per-side
-  // points variables at match start. Threshold values come from prefs to keep
-  // the test self-contained.
+describe('evaluatePointsSystem — match_start-trigger initial points (FargoRate start_points pattern)', () => {
+  // match_start triggers ADD a start-points threshold (already written to state
+  // by name) to the per-side points variables at match start, via an `expr`
+  // action (points = points + threshold). Threshold values come from prefs to
+  // keep the test self-contained.
   const composition: PointsSystem = {
     name: 'fargo_initial',
     thresholds: {
@@ -166,23 +174,41 @@ describe('evaluatePointsSystem — receipt-trigger initial points (FargoRate sta
     triggers: [
       {
         name: 'award_initial_home',
-        input: { thresholdRef: 'initialHome' },
-        when: { kind: 'receipt' },
+        type: 'match_start',
+        condition: { kind: 'always' },
         action: {
-          target: { kind: 'concrete', variableName: 'home_points' },
-          op: 'add',
-          value: { kind: 'input_ref' },
+          target: 'home_points',
+          value: {
+            kind: 'expr',
+            expr: {
+              kind: 'op',
+              op: '+',
+              left: { kind: 'var', name: 'home_points' },
+              right: { kind: 'var', name: 'initialHome' },
+            },
+          },
         },
+        rearm: 'single_shot',
+        order: { number: 1, beforeAllocator: false },
       },
       {
         name: 'award_initial_away',
-        input: { thresholdRef: 'initialAway' },
-        when: { kind: 'receipt' },
+        type: 'match_start',
+        condition: { kind: 'always' },
         action: {
-          target: { kind: 'concrete', variableName: 'away_points' },
-          op: 'add',
-          value: { kind: 'input_ref' },
+          target: 'away_points',
+          value: {
+            kind: 'expr',
+            expr: {
+              kind: 'op',
+              op: '+',
+              left: { kind: 'var', name: 'away_points' },
+              right: { kind: 'var', name: 'initialAway' },
+            },
+          },
         },
+        rearm: 'single_shot',
+        order: { number: 2, beforeAllocator: false },
       },
     ],
   };
@@ -207,9 +233,10 @@ describe('evaluatePointsSystem — receipt-trigger initial points (FargoRate sta
 });
 
 describe('evaluatePointsSystem — end-of-match aggregate (Points 3-Man pattern with tie-band)', () => {
-  // Receipt triggers surface chart-target values into the state bag for the
-  // aggregate to read. End-of-match aggregate applies the linear_above_threshold
-  // formula with the locked tie-band absorption rule.
+  // Thresholds are state setters: the runtime writes each resolved chart-target
+  // value into the state bag under its name at match start, so the aggregate can
+  // read them directly — no copy-trigger needed. End-of-match aggregate applies
+  // the linear_above_threshold formula with the locked tie-band absorption rule.
   const TARGET_NAMES = [
     'homeWinTarget',
     'awayWinTarget',
@@ -218,17 +245,6 @@ describe('evaluatePointsSystem — end-of-match aggregate (Points 3-Man pattern 
     'homeLoseTarget',
     'awayLoseTarget',
   ] as const;
-
-  const assignThresholdToSelf = (name: string): Trigger => ({
-    name: `assign_${name}`,
-    input: { thresholdRef: name },
-    when: { kind: 'receipt' },
-    action: {
-      target: { kind: 'concrete', variableName: name },
-      op: 'assign',
-      value: { kind: 'input_ref' },
-    },
-  });
 
   const composition: PointsSystem = {
     name: 'points_3man_test',
@@ -242,7 +258,7 @@ describe('evaluatePointsSystem — end-of-match aggregate (Points 3-Man pattern 
         }),
       ]),
     ),
-    triggers: TARGET_NAMES.map(assignThresholdToSelf),
+    triggers: [],
     endOfMatchAggregate: {
       operationKind: 'linear_above_threshold',
       operationArgs: { multiplier: 1 },
@@ -293,9 +309,11 @@ describe('evaluatePointsSystem — end-of-match aggregate (Points 3-Man pattern 
 });
 
 describe('evaluatePointsSystem — win-edge signal pattern (per-side triggers)', () => {
-  // Locked model: per-side triggers, each writing a side-specific literal to
-  // a shared variable. Whichever side wins first sets `edge` to their name;
-  // the other side's trigger never gets to fire if endmatch is terminal.
+  // New model: per-side anytime triggers, each setting a side-specific literal
+  // to a shared variable when that side's win count hits winTarget. Whichever
+  // side reaches winTarget first sets `edge` to their name. single_shot keeps
+  // each from re-firing; the win count only equals winTarget on the clinching
+  // game, so the first side to clinch wins the `edge`.
   const composition: PointsSystem = {
     name: 'win_edge_test',
     thresholds: {
@@ -308,23 +326,29 @@ describe('evaluatePointsSystem — win-edge signal pattern (per-side triggers)',
     triggers: [
       {
         name: 'homeWinEdge',
-        input: { thresholdRef: 'winTarget' },
-        when: { kind: 'side_reaches', side: 'home', sideVar: 'home_wins' },
-        action: {
-          target: { kind: 'concrete', variableName: 'edge' },
-          op: 'assign',
-          value: { kind: 'literal', value: 'home' },
+        type: 'anytime',
+        condition: {
+          kind: 'compare',
+          left: { kind: 'var', name: 'home_wins' },
+          op: '==',
+          right: { kind: 'var', name: 'winTarget' },
         },
+        action: { target: 'edge', value: { kind: 'set', value: 'home' } },
+        rearm: 'single_shot',
+        order: { number: 1, beforeAllocator: false },
       },
       {
         name: 'awayWinEdge',
-        input: { thresholdRef: 'winTarget' },
-        when: { kind: 'side_reaches', side: 'away', sideVar: 'away_wins' },
-        action: {
-          target: { kind: 'concrete', variableName: 'edge' },
-          op: 'assign',
-          value: { kind: 'literal', value: 'away' },
+        type: 'anytime',
+        condition: {
+          kind: 'compare',
+          left: { kind: 'var', name: 'away_wins' },
+          op: '==',
+          right: { kind: 'var', name: 'winTarget' },
         },
+        action: { target: 'edge', value: { kind: 'set', value: 'away' } },
+        rearm: 'single_shot',
+        order: { number: 2, beforeAllocator: false },
       },
     ],
   };
@@ -362,11 +386,13 @@ describe('evaluatePointsSystem — win-edge signal pattern (per-side triggers)',
   });
 });
 
-describe('evaluatePointsSystem — terminal trigger halts the cascade', () => {
-  // Cascade: bonus → edge → endmatch (terminal). Subsequent games never
-  // process; never-fired triggers don't run.
+describe('evaluatePointsSystem — multiple triggers fire on the clinching game (ordered, no halt)', () => {
+  // Three anytime triggers share the same condition (home_wins == winTarget) and
+  // fire in `order.number` sequence on the clinching game: bonus (expr add) →
+  // edge (set) → endmatch flag (set). The new model has NO terminal/halt — the
+  // match keeps processing every game; `endmatch` is just a flag, not a halt.
   const composition: PointsSystem = {
-    name: 'terminal_test',
+    name: 'clinch_cascade_test',
     thresholds: {
       winTarget: buildThresholdRow({
         name: 'winTarget',
@@ -382,34 +408,53 @@ describe('evaluatePointsSystem — terminal trigger halts the cascade', () => {
     triggers: [
       {
         name: 'homeWinBonus',
-        input: { thresholdRef: 'winTarget' },
-        when: { kind: 'side_reaches', side: 'home', sideVar: 'home_wins' },
-        action: {
-          target: { kind: 'concrete', variableName: 'home_points' },
-          op: 'add',
-          value: { kind: 'literal', value: 3 },
+        type: 'anytime',
+        condition: {
+          kind: 'compare',
+          left: { kind: 'var', name: 'home_wins' },
+          op: '==',
+          right: { kind: 'var', name: 'winTarget' },
         },
+        action: {
+          target: 'home_points',
+          value: {
+            kind: 'expr',
+            expr: {
+              kind: 'op',
+              op: '+',
+              left: { kind: 'var', name: 'home_points' },
+              right: { kind: 'const', value: 3 },
+            },
+          },
+        },
+        rearm: 'single_shot',
+        order: { number: 1, beforeAllocator: false },
       },
       {
         name: 'homeWinEdge',
-        input: { thresholdRef: 'winTarget' },
-        when: { kind: 'side_reaches', side: 'home', sideVar: 'home_wins' },
-        action: {
-          target: { kind: 'concrete', variableName: 'edge' },
-          op: 'assign',
-          value: { kind: 'literal', value: 'home' },
+        type: 'anytime',
+        condition: {
+          kind: 'compare',
+          left: { kind: 'var', name: 'home_wins' },
+          op: '==',
+          right: { kind: 'var', name: 'winTarget' },
         },
+        action: { target: 'edge', value: { kind: 'set', value: 'home' } },
+        rearm: 'single_shot',
+        order: { number: 2, beforeAllocator: false },
       },
       {
         name: 'homeWinEndmatch',
-        input: { thresholdRef: 'winTarget' },
-        when: { kind: 'side_reaches', side: 'home', sideVar: 'home_wins' },
-        action: {
-          target: { kind: 'concrete', variableName: 'endmatch' },
-          op: 'assign',
-          value: { kind: 'literal', value: true },
+        type: 'anytime',
+        condition: {
+          kind: 'compare',
+          left: { kind: 'var', name: 'home_wins' },
+          op: '==',
+          right: { kind: 'var', name: 'winTarget' },
         },
-        terminal: true,
+        action: { target: 'endmatch', value: { kind: 'set', value: true } },
+        rearm: 'single_shot',
+        order: { number: 3, beforeAllocator: false },
       },
     ],
   };
@@ -419,7 +464,7 @@ describe('evaluatePointsSystem — terminal trigger halts the cascade', () => {
     prefs: { test_winTarget: 3 },
   };
 
-  it('cascade fires in order: bonus then edge then endmatch (terminal)', () => {
+  it('cascade fires in order on the clinching game: bonus then edge then endmatch', () => {
     const games = [homeWins(), homeWins(), homeWins()];
     const state = evaluatePointsSystem(composition, winInputs, games);
     // Bonus added 3 on top of the 3 from per-game allocator (1 × 3 wins).
@@ -428,13 +473,16 @@ describe('evaluatePointsSystem — terminal trigger halts the cascade', () => {
     expect(state.endmatch).toBe(true);
   });
 
-  it('terminal halts remaining games — subsequent games do not process', () => {
-    // 3 wins clinch; the 4th game record is provided but should be ignored.
+  it('no halt — subsequent games still process (endmatch is a flag, not a stop)', () => {
+    // 3 wins clinch on game 3, but the match keeps running through all games.
     const games = [homeWins(), homeWins(), homeWins(), awayWins(), awayWins()];
     const state = evaluatePointsSystem(composition, winInputs, games);
-    // home_wins stops at 3 (the clinching game); away never gets to win.
+    // home_wins stays at 3 (no more home wins); away accumulates its 2 wins.
     expect(state.home_wins).toBe(3);
-    expect(state.away_wins).toBe(0);
+    expect(state.away_wins).toBe(2);
     expect(state.endmatch).toBe(true);
+    // single_shot — the clinch triggers fire only on game 3, so home_points
+    // stays 6 (no double bonus on later games even though home_wins is still 3).
+    expect(state.home_points).toBe(6);
   });
 });

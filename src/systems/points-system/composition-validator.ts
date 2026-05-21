@@ -1,30 +1,23 @@
 /**
  * @fileoverview Composition-build validation for PointsSystem compositions.
  *
- * Enforces the locked trigger-model invariants at composition construction
- * time so drift can't sneak through:
+ * Enforces the trigger-model invariants at composition construction time so
+ * drift can't sneak through:
  *
- *   1. **Threshold references resolve.** Every trigger's `input.thresholdRef`
- *      must name a threshold that exists in `composition.thresholds`.
+ *   1. **Trigger names are unique within a composition.** Prevents typos and
+ *      makes the runtime's re-arm bookkeeping (keyed by name) unambiguous.
  *
- *   2. **Trigger inputSpec is shape-compatible with the bound threshold.**
- *      The trigger declares what it expects (outputType + outputSide); the
- *      threshold declares what it produces. Mismatch is caught at build
- *      time, not at runtime where wrong values would silently feed
- *      downstream code. (Range is informational pending Team Geometry
- *      context at build time.)
- *
- *   3. **Terminal triggers are last.** A trigger with `terminal: true` may
- *      not be followed by any other trigger in the array. Terminal triggers
- *      halt the cascade — anything after would silently never fire.
- *
- *   4. **Trigger names are unique within a composition.** Prevents typos +
- *      makes downstream debugging easier.
- *
- *   5. **Allocator formula references resolve.** If a per-game allocator side
+ *   2. **Allocator formula references resolve.** If a per-game allocator side
  *      declares a formula, its `operationKind` must name a registered
  *      allocator-formula operation. Catches typos / unregistered operations
  *      at composition-build time instead of mid-match.
+ *
+ * **State-var bookkeeping (light).** For each trigger we collect the state-var
+ * names it READS (condition operands of kind `'var'`; expression nodes of kind
+ * `'var'`) and the var it WRITES (`action.target`). This isn't enforced yet —
+ * the open state-bag namespace means a trigger may legitimately read a var
+ * another trigger or a threshold wrote — but collecting it keeps the structure
+ * available for a future "every read has a writer" check and documents intent.
  *
  * Compositions call `validatePointsSystem(composition)` as the last step of
  * their factory function. Throws with a precise message on any violation.
@@ -34,47 +27,58 @@
 
 import { getAllocatorFormulaOperation } from './allocator-formula-registry';
 import type {
+  Condition,
+  Expression,
   PointsSystem,
   SideConfig,
-  ThresholdOutputSide,
-  ThresholdRow,
   Trigger,
 } from './types';
 
 /**
- * Side compatibility: `'shared'` is a wildcard either way; same side OK;
- * cross-side is the violation.
+ * Collect the state-var names a condition reads (operands of kind `'var'`).
  */
-function sidesCompatible(
-  thresholdSide: ThresholdOutputSide,
-  triggerSide: ThresholdOutputSide,
-): boolean {
-  if (thresholdSide === 'shared' || triggerSide === 'shared') return true;
-  return thresholdSide === triggerSide;
+function conditionReads(condition: Condition): string[] {
+  if (condition.kind === 'always') return [];
+  const reads: string[] = [];
+  if (condition.left.kind === 'var') reads.push(condition.left.name);
+  if (condition.right.kind === 'var') reads.push(condition.right.name);
+  return reads;
 }
 
 /**
- * Check a single trigger's inputSpec against its bound threshold's output.
- * Throws on mismatch.
+ * Collect the state-var names an expression reads (nodes of kind `'var'`).
  */
-function validateInputSpec(
-  composition: PointsSystem,
-  trigger: Trigger,
-  threshold: ThresholdRow,
-): void {
-  if (!trigger.inputSpec) return;
-
-  if (trigger.inputSpec.outputType !== threshold.outputType) {
-    throw new Error(
-      `Composition "${composition.name}": trigger "${trigger.name}" expects outputType="${trigger.inputSpec.outputType}" but bound threshold "${threshold.name}" produces "${threshold.outputType}"`,
-    );
+function expressionReads(expr: Expression): string[] {
+  switch (expr.kind) {
+    case 'const':
+      return [];
+    case 'var':
+      return [expr.name];
+    case 'op':
+      return [...expressionReads(expr.left), ...expressionReads(expr.right)];
   }
+}
 
-  if (!sidesCompatible(threshold.outputSide, trigger.inputSpec.outputSide)) {
-    throw new Error(
-      `Composition "${composition.name}": trigger "${trigger.name}" expects outputSide="${trigger.inputSpec.outputSide}" but bound threshold "${threshold.name}" produces side="${threshold.outputSide}" (cross-side wiring; use a 'shared' threshold or matching-side threshold)`,
-    );
+/**
+ * The state vars a single trigger reads + the one it writes. Returned for the
+ * benefit of future cross-trigger checks; not enforced today.
+ */
+export interface TriggerVarUsage {
+  readonly name: string;
+  readonly reads: readonly string[];
+  readonly writes: string;
+}
+
+/**
+ * Compute a trigger's read/write var usage. Reads come from the condition plus
+ * (for `expr` actions) the action expression; the write is `action.target`.
+ */
+function triggerVarUsage(trigger: Trigger): TriggerVarUsage {
+  const reads = [...conditionReads(trigger.condition)];
+  if (trigger.action.value.kind === 'expr') {
+    reads.push(...expressionReads(trigger.action.value.expr));
   }
+  return { name: trigger.name, reads, writes: trigger.action.target };
 }
 
 /**
@@ -96,22 +100,18 @@ function validateAllocatorSide(
 }
 
 /**
- * Validate a PointsSystem composition against the locked trigger-model
- * invariants. Throws on the first violation found.
+ * Validate a PointsSystem composition against the trigger-model invariants.
+ * Throws on the first violation found.
  */
 export function validatePointsSystem(composition: PointsSystem): void {
-  const thresholdNames = new Set(Object.keys(composition.thresholds));
   const seenTriggerNames = new Set<string>();
-  let firstTerminalIndex: number | null = null;
 
   if (composition.perGameAllocator) {
     validateAllocatorSide(composition, composition.perGameAllocator.winner, 'winner');
     validateAllocatorSide(composition, composition.perGameAllocator.loser, 'loser');
   }
 
-  for (let i = 0; i < composition.triggers.length; i++) {
-    const trigger = composition.triggers[i]!;
-
+  for (const trigger of composition.triggers) {
     if (seenTriggerNames.has(trigger.name)) {
       throw new Error(
         `Composition "${composition.name}": duplicate trigger name "${trigger.name}"`,
@@ -119,28 +119,9 @@ export function validatePointsSystem(composition: PointsSystem): void {
     }
     seenTriggerNames.add(trigger.name);
 
-    if (trigger.input) {
-      if (!thresholdNames.has(trigger.input.thresholdRef)) {
-        throw new Error(
-          `Composition "${composition.name}": trigger "${trigger.name}" references unknown threshold "${trigger.input.thresholdRef}". Available: ${[...thresholdNames].join(', ')}`,
-        );
-      }
-      const threshold = composition.thresholds[trigger.input.thresholdRef]!;
-      validateInputSpec(composition, trigger, threshold);
-    } else if (trigger.inputSpec) {
-      throw new Error(
-        `Composition "${composition.name}": trigger "${trigger.name}" declares inputSpec but has no input — inputSpec describes the shape of a bound threshold, so an input is required when inputSpec is present`,
-      );
-    }
-
-    if (firstTerminalIndex !== null) {
-      throw new Error(
-        `Composition "${composition.name}": trigger "${trigger.name}" appears after terminal trigger "${composition.triggers[firstTerminalIndex]!.name}" (index ${firstTerminalIndex}). Terminal triggers must be last in the array — any trigger after them would never fire.`,
-      );
-    }
-
-    if (trigger.terminal) {
-      firstTerminalIndex = i;
-    }
+    // Collect read/write var usage. Not enforced yet (open namespace), but
+    // computing it keeps the shape available for future checks + surfaces
+    // malformed action/condition trees as a type error at build.
+    triggerVarUsage(trigger);
   }
 }

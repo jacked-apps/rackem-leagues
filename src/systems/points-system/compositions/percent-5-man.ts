@@ -67,47 +67,67 @@ const DEFAULT_PARAMS: Percent5ManParams = {
  * Build a "side reaches threshold, jump side_points to constant" trigger.
  * The band base value (1.5 for milestone, 3.0 for win) replaces the running
  * total; subsequent games' allocator contributions accumulate on top.
- * The constant is baked into the trigger's action as a literal — it's a
- * stated property of THIS trigger row, LO-editable as a trigger field.
+ *
+ * **Anytime / after-allocator / single_shot.** The condition compares the
+ * side's win count against the threshold (`<side>_wins == <thresholdVar>`,
+ * both already in the state bag). It fires AFTER the per-game allocator
+ * (`beforeAllocator: false`) so the jump OVERWRITES the allocator's per-game
+ * add for the clinching game. `single_shot` ensures the jump fires exactly
+ * once (the win count only equals the target on the clinching game anyway).
+ * The jump constant is a `set` action value, LO-editable as a trigger field.
  */
 function sideReachesJumpTrigger(
   triggerName: string,
   side: 'home' | 'away',
-  thresholdRef: string,
+  thresholdVar: string,
   jumpValue: number,
+  orderNumber: number,
 ): Trigger {
   return {
     name: triggerName,
-    input: { thresholdRef },
-    inputSpec: { outputType: 'numeric', outputSide: side },
-    when: { kind: 'side_reaches', side, sideVar: `${side}_wins` },
-    action: {
-      target: { kind: 'concrete', variableName: `${side}_points` },
-      op: 'assign',
-      value: { kind: 'literal', value: jumpValue },
+    type: 'anytime',
+    condition: {
+      kind: 'compare',
+      left: { kind: 'var', name: `${side}_wins` },
+      op: '==',
+      right: { kind: 'var', name: thresholdVar },
     },
+    action: {
+      target: `${side}_points`,
+      value: { kind: 'set', value: jumpValue },
+    },
+    rearm: 'single_shot',
+    order: { number: orderNumber, beforeAllocator: false },
   };
 }
 
 /**
  * Build an edge-marker trigger that records which side clinched first when
- * `winTarget` is reached.
+ * `winTarget` is reached. Same firing shape as the jump trigger (anytime /
+ * after-allocator / single_shot); writes the side name to the shared `edge`
+ * variable via a `set` action.
  */
 function sideReachesEdgeTrigger(
   triggerName: string,
   side: 'home' | 'away',
-  thresholdRef: string,
+  thresholdVar: string,
+  orderNumber: number,
 ): Trigger {
   return {
     name: triggerName,
-    input: { thresholdRef },
-    inputSpec: { outputType: 'numeric', outputSide: side },
-    when: { kind: 'side_reaches', side, sideVar: `${side}_wins` },
-    action: {
-      target: { kind: 'concrete', variableName: 'edge' },
-      op: 'assign',
-      value: { kind: 'literal', value: side },
+    type: 'anytime',
+    condition: {
+      kind: 'compare',
+      left: { kind: 'var', name: `${side}_wins` },
+      op: '==',
+      right: { kind: 'var', name: thresholdVar },
     },
+    action: {
+      target: 'edge',
+      value: { kind: 'set', value: side },
+    },
+    rearm: 'single_shot',
+    order: { number: orderNumber, beforeAllocator: false },
   };
 }
 
@@ -149,20 +169,22 @@ export function buildPercent5ManComposition(
     },
     triggers: [
       // Milestone band — fires when a side reaches the milestone target;
-      // assigns side_points to the milestone jump value (replaces running total).
+      // sets side_points to the milestone jump value (replaces running total).
       sideReachesJumpTrigger(
         'homeMilestoneJump',
         'home',
         'milestoneTarget',
         p.milestone_jump_value,
+        1,
       ),
       sideReachesJumpTrigger(
         'awayMilestoneJump',
         'away',
         'milestoneTarget',
         p.milestone_jump_value,
+        2,
       ),
-      // Win band — fires when a side reaches the win target; assigns
+      // Win band — fires when a side reaches the win target; sets
       // side_points to the win jump value (replaces running total) and
       // records which side clinched first via `edge`.
       sideReachesJumpTrigger(
@@ -170,15 +192,17 @@ export function buildPercent5ManComposition(
         'home',
         'winTarget',
         p.win_threshold_jump_value,
+        3,
       ),
       sideReachesJumpTrigger(
         'awayWinJump',
         'away',
         'winTarget',
         p.win_threshold_jump_value,
+        4,
       ),
-      sideReachesEdgeTrigger('homeWinEdge', 'home', 'winTarget'),
-      sideReachesEdgeTrigger('awayWinEdge', 'away', 'winTarget'),
+      sideReachesEdgeTrigger('homeWinEdge', 'home', 'winTarget', 5),
+      sideReachesEdgeTrigger('awayWinEdge', 'away', 'winTarget', 6),
     ],
   };
 

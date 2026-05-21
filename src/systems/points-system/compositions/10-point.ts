@@ -10,7 +10,7 @@
  *
  * Per the locked Points System README + the Ed-walked decomposition:
  *
- *   composition = (C) initial points (via receipt trigger pair)
+ *   composition = (C) initial points (via match_start trigger pair)
  *               + (A) per-game allocator
  *
  * Thresholds compute start-points from lineup ratings via the
@@ -49,26 +49,37 @@ const DEFAULT_PARAMS: TenPointParams = {
 };
 
 /**
- * Build a receipt trigger that adds the trigger's bound input value (the
- * named threshold's resolved value, `n`) to a concrete points variable.
- * Used for awarding the start-points head-start at match start.
+ * Build a match_start trigger that ADDS a start-points threshold (already
+ * written to state under `thresholdVar`) to a concrete points variable. Used
+ * for awarding the FargoRate start-points head-start at match start.
+ *
+ * The action is `points = points + thresholdVar` — an arithmetic expression
+ * over the state bag (the threshold value lives in the bag by name).
  */
 function awardInitialPoints(
   triggerName: string,
-  thresholdRef: string,
-  side: 'home' | 'away',
+  thresholdVar: string,
   targetVariable: string,
+  orderNumber: number,
 ): Trigger {
   return {
     name: triggerName,
-    input: { thresholdRef },
-    inputSpec: { outputType: 'points_headstart', outputSide: side },
-    when: { kind: 'receipt' },
+    type: 'match_start',
+    condition: { kind: 'always' },
     action: {
-      target: { kind: 'concrete', variableName: targetVariable },
-      op: 'add',
-      value: { kind: 'input_ref' },
+      target: targetVariable,
+      value: {
+        kind: 'expr',
+        expr: {
+          kind: 'op',
+          op: '+',
+          left: { kind: 'var', name: targetVariable },
+          right: { kind: 'var', name: thresholdVar },
+        },
+      },
     },
+    rearm: 'single_shot',
+    order: { number: orderNumber, beforeAllocator: false },
   };
 }
 
@@ -113,8 +124,8 @@ export function buildTenPointComposition(
       },
     },
     triggers: [
-      awardInitialPoints('award_initial_home', 'initialHome', 'home', 'home_points'),
-      awardInitialPoints('award_initial_away', 'initialAway', 'away', 'away_points'),
+      awardInitialPoints('award_initial_home', 'initialHome', 'home_points', 1),
+      awardInitialPoints('award_initial_away', 'initialAway', 'away_points', 2),
     ],
   };
 

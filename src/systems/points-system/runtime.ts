@@ -5,44 +5,44 @@
  * producing the final per-side per-match points (and any other variables
  * triggers wrote to the match-state bag).
  *
- * **Three phases per match:**
+ * **Three phases per match (driven by `trigger.type`):**
  *
- * 1. **Receipt phase (match start).** Resolve all thresholds. Initialize
+ * 1. **Match-start phase.** Resolve all thresholds and write each into the
+ *    state bag under its name (thresholds are state setters). Initialize
  *    per-side variables (home_wins / away_wins / home_points / away_points = 0).
- *    Fire all `receipt`-kind triggers in composition order. Receipt triggers
- *    do work like "assign threshold value to a variable" (chart targets,
- *    initial points, etc.).
+ *    Fire all `match_start` triggers in `order.number` order.
  *
- * 2. **Per-game phase.** For each stored game record (in chronological order):
- *    a. Capture cumulative match-state BEFORE this game (for allocator formula context)
- *    b. Increment the winning side's `*_wins` variable
+ * 2. **Per-game phase.** For each stored game record (chronological order):
+ *    a. Increment the winning side's `*_wins` variable
+ *    b. Fire `anytime` triggers with `order.beforeAllocator === true`
+ *       (sorted by `order.number`)
  *    c. If a per-game allocator is configured, run it; add winner_contribution
- *       to the winner side's points variable, loser_contribution to the loser's
- *    d. Fire any per_game-phase triggers whose `when` becomes true.
+ *       to the winner's points, loser_contribution to the loser's
+ *    d. Increment games_played
+ *    e. Fire `anytime` triggers with `order.beforeAllocator === false`
+ *       (sorted by `order.number`)
  *
- * 3. **Match end phase.** Fire any `match_end`-kind triggers. Then, if a
- *    composition has an EndOfMatchAggregate, run it against the populated
- *    state to compute final home_points / away_points.
+ * 3. **Match-end phase.** Fire all `match_end` triggers (sorted by
+ *    `order.number`). Then, if a composition has an EndOfMatchAggregate, run
+ *    it against the populated state to compute final home_points / away_points.
  *
- * **Terminal triggers halt the cascade.** When a trigger with `terminal: true`
- * fires, no more triggers are evaluated for the remainder of the match (the
- * cascade is over). The aggregate (if present) still runs — terminal halts
- * TRIGGERS, but it's the signal to "initiate end-of-match protocols."
- *
- * **Trigger input resolution.** Each trigger declares `input.thresholdRef`
- * (optional for receipt/match_end). The runtime resolves it to the threshold's
- * value (`n`) once per firing pass; `n` is then passed to both the when
- * predicate and the action evaluator. Triggers reference EXACTLY ONE
- * threshold — no mix-and-match.
+ * **NEVER-BREAK CONTRACT (load-bearing).** The runtime must NEVER throw on bad
+ * math/data. When a trigger's condition or action can't evaluate (the
+ * never-throw evaluators return `{ ok: false }`), we `console.warn` the reason
+ * plus the trigger name and SKIP that trigger's action (no write) — then keep
+ * going. The whole per-trigger body is wrapped so one bad trigger can't crash a
+ * live match (games won/lost is the sacred metric and must keep recording).
  *
  * @see ./types.ts — PointsSystem composition shape
- * @see docs/brainstorms/2026-05-18-points-system-decomposition-requirements.md
+ * @see ./condition-evaluator.ts — never-throw condition check
+ * @see ./expression-evaluator.ts — never-throw action arithmetic
+ * @see docs/league-system/modules/points-system/trigger.md — the locked Trigger model
  */
 
-import { evaluateAction, type ActionContext } from './action-evaluator';
 import { evaluateAllocator } from './allocator-evaluator';
 import { getAggregateOperation } from './aggregate-registry';
-import { evaluateWhen, type WhenEvalContext } from './when-evaluator';
+import { evaluateCondition } from './condition-evaluator';
+import { evaluateExpression } from './expression-evaluator';
 import { resolveAllThresholds } from './threshold-helpers';
 import type {
   MatchStateBag,
@@ -72,58 +72,83 @@ export interface RuntimeGameRecord {
 export type RuntimeResult = MatchStateBag;
 
 /**
- * Phase-shared inputs the runtime gathers once per phase pass.
+ * Stable sort by `order.number` ascending. (`Array.prototype.sort` is stable in
+ * modern engines, so equal `order.number` triggers keep declaration order.)
  */
-interface PhaseInputs {
-  thresholdValues: Readonly<Record<string, number | null>>;
-  phase: 'receipt' | 'per_game' | 'match_end';
-  gameWinnerSide?: 'home' | 'away';
-  gamesPlayed?: number;
+function byOrder(a: Trigger, b: Trigger): number {
+  return a.order.number - b.order.number;
 }
 
 /**
- * Fire any triggers whose `when` becomes true in the given phase. For each
- * trigger, the trigger's bound input value (`n`) is resolved from
- * `thresholdValues` and passed to both the when predicate and the action
- * evaluator. Returns `true` if a terminal trigger fired (caller halts).
+ * Fire one trigger against the state bag, honoring the re-arm policy and the
+ * NEVER-BREAK contract. Mutates `state` and `firedNames` in place.
+ *
+ * 1. Evaluate the condition; on evaluator failure → warn + skip (don't fire);
+ *    on `false` → skip (condition not met).
+ * 2. Re-arm gate: a `single_shot`/`manual` trigger that already fired is
+ *    skipped; `periodic` always allowed. (`manual` reset support is future.)
+ * 3. Run the action: `set` writes the literal directly; `expr` evaluates the
+ *    arithmetic and, on evaluator failure, warns + skips the write.
+ * 4. Record the fire in `firedNames`.
+ *
+ * The whole body is wrapped in try/catch as a final backstop: even an
+ * unexpected throw cannot escape into the match loop.
  */
-function fireTriggersForPhase(
-  triggers: readonly Trigger[],
+function fireTrigger(
+  trigger: Trigger,
   state: MatchStateBag,
-  inputs: PhaseInputs,
-): boolean {
-  for (const trigger of triggers) {
-    // Resolve the trigger's bound input value once; same value flows into
-    // both the when predicate (as `n`) and the action evaluator (as input_ref).
-    // `null` is a valid resolved value (operation returned "no value applies");
-    // only `undefined` (threshold name not in the map) is a composition error.
-    let inputValue: number | null | undefined;
-    if (trigger.input) {
-      const v = inputs.thresholdValues[trigger.input.thresholdRef];
-      if (v === undefined) {
-        throw new Error(
-          `Trigger "${trigger.name}" references undefined threshold "${trigger.input.thresholdRef}"`,
-        );
-      }
-      inputValue = v;
+  firedNames: Set<string>,
+): void {
+  try {
+    // 1. Condition.
+    const cond = evaluateCondition(trigger.condition, state);
+    if (!cond.ok) {
+      console.warn(
+        `[points-system] trigger "${trigger.name}": condition not evaluable — ${cond.reason}; skipping`,
+      );
+      return;
+    }
+    if (cond.value === false) return; // condition not met
+
+    // 2. Re-arm gate. periodic always re-fires; single_shot/manual fire once.
+    if (trigger.rearm !== 'periodic' && firedNames.has(trigger.name)) return;
+
+    // 3. Action.
+    if (trigger.action.value.kind === 'set') {
+      state[trigger.action.target] = trigger.action.value.value;
     } else {
-      inputValue = undefined;
+      const r = evaluateExpression(trigger.action.value.expr, state);
+      if (!r.ok) {
+        console.warn(
+          `[points-system] trigger "${trigger.name}": action expression not evaluable — ${r.reason}; skipping write`,
+        );
+        return;
+      }
+      state[trigger.action.target] = r.value;
     }
 
-    const whenCtx: WhenEvalContext = {
-      inputValue,
-      phase: inputs.phase,
-      gameWinnerSide: inputs.gameWinnerSide,
-      gamesPlayed: inputs.gamesPlayed,
-    };
-    if (!evaluateWhen(trigger.when, state, whenCtx)) continue;
-
-    const actionCtx: ActionContext = { inputValue };
-    evaluateAction(trigger.action, state, actionCtx);
-
-    if (trigger.terminal) return true;
+    // 4. Record the fire (drives the single_shot/manual re-arm gate above).
+    firedNames.add(trigger.name);
+  } catch (e) {
+    // Final backstop — the never-throw evaluators shouldn't get here, but the
+    // sacred-metric invariant means we swallow anything unexpected.
+    console.warn(
+      `[points-system] trigger "${trigger.name}": unexpected error while firing — ${
+        e instanceof Error ? e.message : String(e)
+      }; skipping`,
+    );
   }
-  return false;
+}
+
+/**
+ * Fire a list of triggers (already filtered + sorted) against the state bag.
+ */
+function fireAll(
+  triggers: readonly Trigger[],
+  state: MatchStateBag,
+  firedNames: Set<string>,
+): void {
+  for (const trigger of triggers) fireTrigger(trigger, state, firedNames);
 }
 
 /**
@@ -151,6 +176,10 @@ export function evaluatePointsSystem(
     total_games: thresholdInputs.gameCount,
   };
 
+  // Re-arm bookkeeping: names of triggers that have already fired (drives the
+  // single_shot/manual gate). One set for the whole match.
+  const firedNames = new Set<string>();
+
   // Resolve all thresholds once at match start.
   const thresholdValues = resolveAllThresholds(
     composition.thresholds,
@@ -165,15 +194,26 @@ export function evaluatePointsSystem(
     state[name] = value;
   }
 
-  // Phase 1: Receipt — fire receipt triggers.
-  let halted = fireTriggersForPhase(composition.triggers, state, {
-    thresholdValues,
-    phase: 'receipt',
-  });
+  // Pre-partition triggers by type/group once (cheap, and keeps the per-game
+  // loop tidy).
+  const matchStartTriggers = composition.triggers
+    .filter((t) => t.type === 'match_start')
+    .sort(byOrder);
+  const anytimeBefore = composition.triggers
+    .filter((t) => t.type === 'anytime' && t.order.beforeAllocator)
+    .sort(byOrder);
+  const anytimeAfter = composition.triggers
+    .filter((t) => t.type === 'anytime' && !t.order.beforeAllocator)
+    .sort(byOrder);
+  const matchEndTriggers = composition.triggers
+    .filter((t) => t.type === 'match_end')
+    .sort(byOrder);
 
-  // Phase 2: Per-game. Skip remaining games if a terminal already fired
-  // (rare for receipt, but the cascade contract is uniform across phases).
-  for (let gameIndex = 0; gameIndex < games.length && !halted; gameIndex++) {
+  // Phase 1: match start.
+  fireAll(matchStartTriggers, state, firedNames);
+
+  // Phase 2: per-game.
+  for (let gameIndex = 0; gameIndex < games.length; gameIndex++) {
     const game = games[gameIndex]!;
 
     // Increment wins for the winning side BEFORE the allocator runs — the
@@ -181,6 +221,9 @@ export function evaluatePointsSystem(
     // already-incremented value for the side that just won.
     const winnerKey = `${game.winnerSide}_wins`;
     state[winnerKey] = ((state[winnerKey] as number) ?? 0) + 1;
+
+    // anytime triggers that must fire BEFORE the per-game allocator.
+    fireAll(anytimeBefore, state, firedNames);
 
     // Run per-game allocator if present; add contributions to per-side points.
     // The allocator reads the state bag directly (formulas may reference any
@@ -209,29 +252,19 @@ export function evaluatePointsSystem(
     // the post-game state ("this is game N completed").
     state.games_played = ((state.games_played as number) ?? 0) + 1;
 
-    // Fire per-game triggers whose conditions now hold (state already updated).
-    halted = fireTriggersForPhase(composition.triggers, state, {
-      thresholdValues,
-      phase: 'per_game',
-      gameWinnerSide: game.winnerSide,
-      gamesPlayed: gameIndex + 1,
-    });
+    // anytime triggers that must fire AFTER the per-game allocator (e.g.
+    // milestone/win jumps that OVERWRITE the allocator's per-game add).
+    fireAll(anytimeAfter, state, firedNames);
   }
 
-  // Phase 3: Match end. Skip triggers if a terminal already fired (cascade
-  // ended early); aggregate still runs as the "end-of-match protocol."
-  if (!halted) {
-    fireTriggersForPhase(composition.triggers, state, {
-      thresholdValues,
-      phase: 'match_end',
-    });
-  }
+  // Phase 3: match end. Triggers first, then the aggregate (if any).
+  fireAll(matchEndTriggers, state, firedNames);
 
   if (composition.endOfMatchAggregate) {
     // Aggregate operation reads the state bag directly (home_wins, away_wins,
-    // and the chart-target state vars receipt triggers populated). It
-    // OVERWRITES home_points/away_points — aggregate-mode is an alternative
-    // to per-game accumulation, not additive.
+    // and the chart-target state vars written at match start). It OVERWRITES
+    // home_points/away_points — aggregate-mode is an alternative to per-game
+    // accumulation, not additive.
     const operation = getAggregateOperation(
       composition.endOfMatchAggregate.operationKind,
     );

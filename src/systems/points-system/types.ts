@@ -21,15 +21,17 @@
  *    shape receives a rich context bag (per-game role values + cumulative
  *    match-state) and returns a number.
  *
- * 3. **WhenCondition** — firing-semantics primitive. Kinds include
- *    `receipt` (fires immediately at match start), `side_reaches`,
- *    `all_sides_reach`, `total_games_played`, etc. Each kind may reference
- *    thresholds as comparison values.
+ * 3. **Trigger** — state-in/state-out rule `{ name, type, condition, action,
+ *    rearm, order }`. `type` (`match_start | match_end | anytime`) selects the
+ *    firing phase; `condition` is a flat comparison (or `always`) over the
+ *    state bag; `action` writes ONE named variable (either an arithmetic
+ *    `Expression` or a literal `set`); `rearm` controls re-firing; `order`
+ *    sequences firing (and partitions `anytime` triggers around the allocator).
  *
- * 4. **Action** — uniform `{ target, op, value }` shape. NO action categories.
- *    Target is a named variable in the system's mutable-state namespace;
- *    op is `assign | add | multiply`; value is a constant, threshold ref,
- *    or expression.
+ * 4. **Condition / Expression** — the trigger's two halves. A `Condition` is a
+ *    pure boolean check (no math); an `Expression` is the action's arithmetic.
+ *    Both are evaluated by never-throw evaluators (`condition-evaluator.ts`,
+ *    `expression-evaluator.ts`).
  *
  * 5. **EndOfMatchAggregate** — computes per-match points at match end.
  *    Reads named variables populated by triggers (homeWins/homeWinTarget/etc.)
@@ -42,7 +44,7 @@
  * A `PointsSystem` is a record with named slots:
  * - `thresholds` — named map of value-producing functions
  * - `perGameAllocator` — optional; the per-game linear baseline
- * - `triggers` — ordered list of `{ when, action }` pairs (single-action)
+ * - `triggers` — ordered list of `{ condition, action }` rules (single-action)
  * - `endOfMatchAggregate` — optional; reads variables and applies formula
  *
  * **Single-mechanism-for-everything principle:** every value the system
@@ -169,10 +171,8 @@ export type ThresholdOutputSide = 'home' | 'away' | 'shared';
  *   Team Geometry (resolved per-match at runtime)
  * - `'unbounded'` — no upper or lower limit
  *
- * Range is informational on the row + trigger inputSpec; composition-build
- * validation enforces type and side strictly but treats range as a contract
- * for future strict checks once Team Geometry context is available at build
- * time.
+ * Range is informational on the row; it's a contract for future strict checks
+ * once Team Geometry context is available at build time.
  */
 export interface ThresholdOutputRange {
   readonly min: number | 'unbounded';
@@ -391,145 +391,108 @@ export interface AllocatorFormulaOperation {
 }
 
 // ============================================================================
-// WhenCondition — firing-semantics primitive
+// Expression — trigger ACTION arithmetic (state-in/number-out)
 // ============================================================================
 
 /**
- * A firing condition. Each kind encodes a different "when does this fire?"
- * semantic. Conditions reference the trigger's bound input value `n`
- * (resolved from `Trigger.input.thresholdRef` at evaluation time) — they
- * never name a threshold themselves.
+ * A flat arithmetic expression, stored as serializable data (a tree). This is
+ * the home of the `Expression` type; the action-side evaluator
+ * (`./expression-evaluator.ts`) re-exports it for back-compat consumers.
  *
- * Kinds:
- * - `receipt` — fires immediately at match start. Typical use: receipt-style
- *   triggers that read `n` and write it to a named variable.
- * - `side_reaches` — fires when the named side won the current game AND its
- *   `sideVar` value equals `n`. Concrete side (no 'any' shorthand); concrete
- *   var name (no template substitution). To handle home and away symmetrically,
- *   declare TWO triggers (one per side).
- * - `all_sides_reach` — fires when both home and away vars equal `n` at the
- *   same time. Both var names are concrete.
- * - `total_games_played` — fires after the N-th game (regardless of winner);
- *   N comes from the trigger's bound input.
+ * - `const` — a literal number (e.g., `1.5`, `0`).
+ * - `var` — reads a named value off the state bag (e.g., `home_wins`, `winTarget`).
+ * - `op` — a binary operation; operands are themselves expressions, so nesting
+ *   expresses parentheses (e.g., `(home_wins − winTarget) × multiplier`).
+ *
+ * @see ./expression-evaluator.ts — the never-throw evaluator
+ */
+export type Expression =
+  | { readonly kind: 'const'; readonly value: number }
+  | { readonly kind: 'var'; readonly name: string }
+  | {
+      readonly kind: 'op';
+      readonly op: '+' | '-' | '*' | '/';
+      readonly left: Expression;
+      readonly right: Expression;
+    };
+
+// ============================================================================
+// Condition — trigger CONDITION (the "if" check, no math)
+// ============================================================================
+
+/**
+ * A condition operand: a constant or a state-variable read. NOT an arithmetic
+ * expression — conditions never compute (that's the ACTION's job). Home of the
+ * `ConditionOperand` type; `./condition-evaluator.ts` re-exports it.
+ */
+export type ConditionOperand =
+  | { readonly kind: 'const'; readonly value: number }
+  | { readonly kind: 'var'; readonly name: string };
+
+/**
+ * A trigger's firing condition. Home of the `Condition` type;
+ * `./condition-evaluator.ts` re-exports it.
+ *
+ * - `always` — always true (pass-through triggers, e.g. initial points).
+ * - `compare` — one flat comparison between two operands.
+ *
+ * @see ./condition-evaluator.ts — the never-throw evaluator
+ */
+export type Condition =
+  | { readonly kind: 'always' }
+  | {
+      readonly kind: 'compare';
+      readonly left: ConditionOperand;
+      readonly op: '==' | '>' | '<' | '>=' | '<=';
+      readonly right: ConditionOperand;
+    };
+
+// ============================================================================
+// Trigger — state-in/state-out rule (condition + action)
+// ============================================================================
+
+/**
+ * When a trigger fires. The runtime drives firing phases by this:
+ * - `match_start` — fires once at match start, after thresholds resolve.
  * - `match_end` — fires once after all games are played.
+ * - `anytime` — fires during the per-game phase, partitioned around the
+ *   per-game allocator by `order.beforeAllocator`.
  */
-export type WhenCondition =
-  | { kind: 'receipt' }
-  | {
-      kind: 'side_reaches';
-      side: 'home' | 'away';
-      /** Concrete state-bag variable name (e.g., `'home_wins'`). */
-      sideVar: string;
-    }
-  | {
-      kind: 'all_sides_reach';
-      homeVar: string;
-      awayVar: string;
-    }
-  | { kind: 'total_games_played' }
-  | { kind: 'match_end' };
-
-// ============================================================================
-// Action — uniform `{ target, op, value }` shape
-// ============================================================================
+export type TriggerType = 'match_start' | 'match_end' | 'anytime';
 
 /**
- * Value source for an action's payload.
- *
- * - `literal` — a constant baked into THIS trigger (e.g., `1.5` for a milestone
- *   bonus, `'home'` for an edge marker, `true` for endmatch). LO-editable as a
- *   property of the trigger row.
- * - `input_ref` — the trigger's bound input value (`n`), resolved from
- *   `Trigger.input.thresholdRef` at evaluation time.
- * - `variable_ref` — the current value of another named variable in the
- *   match-state bag.
- *
- * No "threshold_ref" — the trigger has exactly one input (its `Trigger.input`).
- * No "triggering_side" — triggers are per-side (declare separate triggers for
- * home and away), so the side is concrete in `target.variableName`.
+ * Re-arm policy — controls whether a trigger can fire more than once.
+ * - `single_shot` — fires at most once per match.
+ * - `periodic` — may fire every time its condition holds.
+ * - `manual` — treated like `single_shot` for now (explicit reset is future).
  */
-export type ActionValue =
-  | { kind: 'literal'; value: MatchStateValue }
-  | { kind: 'input_ref' }
-  | { kind: 'variable_ref'; variableName: string };
+export type ReArm = 'single_shot' | 'periodic' | 'manual';
+
+/** Fire-order. number = within-group order (ascending). beforeAllocator only
+ *  meaningful for `anytime` triggers (moot for match_start/match_end). */
+export interface TriggerOrder { readonly number: number; readonly beforeAllocator: boolean; }
+
+/** ACTION writes ONE state var. `expr` = arithmetic (numeric). `set` = a literal
+ *  string/bool/number written directly (e.g. edge='home', endmatch=true). */
+export type TriggerAction = {
+  readonly target: string;
+  readonly value:
+    | { readonly kind: 'expr'; readonly expr: Expression }
+    | { readonly kind: 'set'; readonly value: MatchStateValue };
+};
 
 /**
- * The action's target variable is always a concrete name. No side-scoped
- * templates — triggers are per-side, so the target is concrete per trigger
- * (e.g., `'home_points'` for the home milestone bonus, `'away_points'` for
- * the away one).
- */
-export interface ActionTarget {
-  readonly kind: 'concrete';
-  readonly variableName: string;
-}
-
-/**
- * The uniform Action shape. NO action categories — every action is an
- * assignment to a named variable using one of three ops.
- */
-export interface Action {
-  target: ActionTarget;
-  op: 'assign' | 'add' | 'multiply';
-  value: ActionValue;
-}
-
-// ============================================================================
-// Trigger — single-action declaration pairing a when-condition with an action
-// ============================================================================
-
-/**
- * Reference to the threshold whose resolved value feeds the trigger as `n`.
- * Optional — `receipt`/`match_end` triggers MAY omit input if they don't
- * read a threshold value. All other kinds require it.
- */
-export interface TriggerInput {
-  readonly thresholdRef: string;
-}
-
-/**
- * Trigger input safety contract — what shape of threshold the trigger expects.
- * Composition-build validation compares this against the bound threshold's
- * output declarations; mismatch is a composition error caught at build time
- * instead of producing wrong runtime values.
- *
- * **Type and side are enforced strictly.** Range is informational pending
- * Team Geometry context at build time (the `'games_in_match'` sentinel
- * resolves per-match at runtime, not at composition build).
- *
- * Optional — triggers without input (`receipt`/`match_end` only) omit this.
- */
-export interface TriggerInputSpec {
-  readonly outputType: ThresholdOutputType;
-  readonly outputSide: ThresholdOutputSide;
-  /** Informational; not strictly validated yet. */
-  readonly outputRange?: ThresholdOutputRange;
-}
-
-/**
- * A trigger fires when its `when` becomes true and runs its `action`.
- *
- * **Single input, single action.** The trigger reads exactly one threshold
- * value (its `input`); the `when` predicate compares state against `n`; the
- * `action` mutates one variable using `n`, a constant, or another variable.
- * To produce multiple effects on the same firing event, declare multiple
- * triggers with the same `when` — each is one atomic rule.
- *
- * **Terminal triggers halt the cascade.** When a trigger with `terminal: true`
- * fires (typically `endmatch`), subsequent triggers in the array are NOT
- * evaluated for this tick AND the match ends. Composition-build validation
- * enforces terminal triggers appear last in the array.
+ * A trigger: a state-in/state-out rule. When its `condition` holds (subject to
+ * its `rearm` policy), its `action` writes exactly one state variable. Triggers
+ * never throw — the runtime logs and skips on any evaluator failure.
  */
 export interface Trigger {
   readonly name: string;
-  /** The threshold the trigger reads as `n`. Optional for receipt/match_end. */
-  readonly input?: TriggerInput;
-  /** Safety contract on the input's shape. Composition-build validation enforces match. */
-  readonly inputSpec?: TriggerInputSpec;
-  when: WhenCondition;
-  action: Action;
-  /** When true, firing this trigger halts further trigger evaluation for the match. */
-  readonly terminal?: boolean;
+  readonly type: TriggerType;
+  readonly condition: Condition;
+  readonly action: TriggerAction;
+  readonly rearm: ReArm;
+  readonly order: TriggerOrder;
 }
 
 // ============================================================================
@@ -590,8 +553,9 @@ export interface EndOfMatchAggregate {
  * - `thresholds` — named map; every value-producer the composition needs.
  * - `perGameAllocator` — optional; the linear per-game baseline.
  *   Omitted by Scoring Systems that use only an end-of-match aggregate.
- * - `triggers` — ordered list of single-action triggers. Order matters
- *   for cases where triggers might both fire on the same event (rare).
+ * - `triggers` — list of single-action triggers. Firing order within a phase
+ *   is driven by `trigger.order.number` (and partitioned around the per-game
+ *   allocator by `trigger.order.beforeAllocator` for `anytime` triggers).
  * - `endOfMatchAggregate` — optional; the once-at-match-end formula.
  *   Omitted by Scoring Systems that compute totals via per-game accumulation.
  */

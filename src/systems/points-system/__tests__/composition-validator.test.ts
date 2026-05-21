@@ -1,17 +1,20 @@
 /**
  * @fileoverview Tests for composition-build validation.
  *
- * Each rule the validator enforces gets a passing case (implicit — the
- * prepackaged compositions all validate) and a failing case here.
+ * The new trigger model removes the old input/inputSpec/terminal fields, so the
+ * validator's surface narrowed to two enforced rules:
+ *   1. Trigger names are unique within a composition.
+ *   2. Allocator formula references resolve to a registered operation.
+ *
+ * Each rule gets a failing case here; the passing cases are implicit (the
+ * prepackaged compositions all validate at build time).
  *
  * @see ../composition-validator.ts — code under test
  */
 
 import { describe, it, expect } from 'vitest';
 import { validatePointsSystem } from '../composition-validator';
-import { buildThresholdRow } from '../threshold-resolver';
-// Side-effect imports: register operations the fixtures reference.
-import '../operations/read-pref';
+// Side-effect import: register the operation the allocator fixture references.
 import '../allocator-formula-operations/state-diff-times-constant';
 import type { PointsSystem, Trigger } from '../types';
 
@@ -24,141 +27,29 @@ function baseComposition(overrides: Partial<PointsSystem>): PointsSystem {
   };
 }
 
-const receiptTrigger = (name: string, thresholdRef: string): Trigger => ({
+/** Build a minimal match_start trigger that sets a literal into `target`. */
+const setTrigger = (name: string, target: string): Trigger => ({
   name,
-  input: { thresholdRef },
-  when: { kind: 'receipt' },
-  action: {
-    target: { kind: 'concrete', variableName: name },
-    op: 'assign',
-    value: { kind: 'input_ref' },
-  },
+  type: 'match_start',
+  condition: { kind: 'always' },
+  action: { target, value: { kind: 'set', value: 1 } },
+  rearm: 'single_shot',
+  order: { number: 1, beforeAllocator: false },
 });
 
 describe('validatePointsSystem — trigger name uniqueness', () => {
   it('throws on duplicate trigger names', () => {
     const composition = baseComposition({
-      thresholds: {
-        a: buildThresholdRow({ name: 'a', operationKind: 'read_pref', operationArgs: { pref_key: 'x' } }),
-      },
-      triggers: [receiptTrigger('dup', 'a'), receiptTrigger('dup', 'a')],
+      triggers: [setTrigger('dup', 'x'), setTrigger('dup', 'y')],
     });
     expect(() => validatePointsSystem(composition)).toThrow(/duplicate trigger name/);
   });
-});
 
-describe('validatePointsSystem — threshold reference resolution', () => {
-  it('throws when a trigger references an unknown threshold', () => {
+  it('passes when trigger names are unique', () => {
     const composition = baseComposition({
-      thresholds: {},
-      triggers: [receiptTrigger('t', 'missingThreshold')],
-    });
-    expect(() => validatePointsSystem(composition)).toThrow(/unknown threshold/);
-  });
-});
-
-describe('validatePointsSystem — inputSpec requires input', () => {
-  it('throws when a trigger declares inputSpec but no input', () => {
-    const composition = baseComposition({
-      triggers: [
-        {
-          name: 'orphanSpec',
-          inputSpec: { outputType: 'numeric', outputSide: 'shared' },
-          when: { kind: 'match_end' },
-          action: {
-            target: { kind: 'concrete', variableName: 'x' },
-            op: 'assign',
-            value: { kind: 'literal', value: 1 },
-          },
-        },
-      ],
-    });
-    expect(() => validatePointsSystem(composition)).toThrow(/declares inputSpec but has no input/);
-  });
-});
-
-describe('validatePointsSystem — terminal triggers must be last', () => {
-  it('throws when a non-terminal trigger follows a terminal one', () => {
-    const composition = baseComposition({
-      triggers: [
-        {
-          name: 'terminalFirst',
-          when: { kind: 'match_end' },
-          action: { target: { kind: 'concrete', variableName: 'endmatch' }, op: 'assign', value: { kind: 'literal', value: true } },
-          terminal: true,
-        },
-        {
-          name: 'afterTerminal',
-          when: { kind: 'match_end' },
-          action: { target: { kind: 'concrete', variableName: 'x' }, op: 'assign', value: { kind: 'literal', value: 1 } },
-        },
-      ],
-    });
-    expect(() => validatePointsSystem(composition)).toThrow(/Terminal triggers must be last/);
-  });
-
-  it('allows a terminal trigger as the final element', () => {
-    const composition = baseComposition({
-      triggers: [
-        {
-          name: 'onlyTerminal',
-          when: { kind: 'match_end' },
-          action: { target: { kind: 'concrete', variableName: 'endmatch' }, op: 'assign', value: { kind: 'literal', value: true } },
-          terminal: true,
-        },
-      ],
+      triggers: [setTrigger('a', 'x'), setTrigger('b', 'y')],
     });
     expect(() => validatePointsSystem(composition)).not.toThrow();
-  });
-});
-
-describe('validatePointsSystem — inputSpec shape compatibility', () => {
-  it('throws on cross-side wiring (home trigger ← away threshold)', () => {
-    // Build a threshold whose output side is 'home' by hand (read_pref is
-    // 'shared', so we construct the row directly to force a cross-side case).
-    const composition = baseComposition({
-      thresholds: {
-        homeVal: {
-          name: 'homeVal',
-          expectedHandicapType: 'none',
-          expectedSize: { kind: 'none' },
-          outputType: 'game_target',
-          outputSide: 'home',
-          outputRange: { min: 'unbounded', max: 'unbounded' },
-          operationKind: 'read_pref',
-          operationArgs: { pref_key: 'x' },
-        },
-      },
-      triggers: [
-        {
-          name: 'awayTrigger',
-          input: { thresholdRef: 'homeVal' },
-          inputSpec: { outputType: 'game_target', outputSide: 'away' },
-          when: { kind: 'side_reaches', side: 'away', sideVar: 'away_wins' },
-          action: { target: { kind: 'concrete', variableName: 'away_points' }, op: 'add', value: { kind: 'input_ref' } },
-        },
-      ],
-    });
-    expect(() => validatePointsSystem(composition)).toThrow(/cross-side wiring/);
-  });
-
-  it('throws on outputType mismatch', () => {
-    const composition = baseComposition({
-      thresholds: {
-        v: buildThresholdRow({ name: 'v', operationKind: 'read_pref', operationArgs: { pref_key: 'x' } }),
-      },
-      triggers: [
-        {
-          name: 'mismatch',
-          input: { thresholdRef: 'v' },
-          // read_pref produces 'numeric'; expect 'game_target'
-          inputSpec: { outputType: 'game_target', outputSide: 'shared' },
-          when: { kind: 'receipt' },
-          action: { target: { kind: 'concrete', variableName: 'x' }, op: 'assign', value: { kind: 'input_ref' } },
-        },
-      ],
-    });
-    expect(() => validatePointsSystem(composition)).toThrow(/expects outputType/);
   });
 });
 

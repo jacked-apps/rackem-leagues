@@ -24,30 +24,12 @@
  * @see docs/league-system/modules/points-system/trigger.md — the CONDITION contract
  */
 
-import type { MatchStateBag } from './types';
+import type { Condition, ConditionOperand, MatchStateBag } from './types';
 
-/**
- * A condition operand: a constant or a state-variable read. NOT an arithmetic
- * expression — conditions never compute (that's the ACTION's job).
- */
-export type ConditionOperand =
-  | { readonly kind: 'const'; readonly value: number }
-  | { readonly kind: 'var'; readonly name: string };
-
-/**
- * A trigger's firing condition.
- *
- * - `always` — always true (pass-through triggers, e.g. initial points).
- * - `compare` — one flat comparison between two operands.
- */
-export type Condition =
-  | { readonly kind: 'always' }
-  | {
-      readonly kind: 'compare';
-      readonly left: ConditionOperand;
-      readonly op: '==' | '>' | '<' | '>=' | '<=';
-      readonly right: ConditionOperand;
-    };
+// `Condition` / `ConditionOperand` now live in ./types (single home for
+// trigger-model types). Re-export them here so existing consumers that import
+// them from this evaluator keep working.
+export type { Condition, ConditionOperand };
 
 /**
  * Result of evaluating a condition. Never throws — an unevaluable condition is

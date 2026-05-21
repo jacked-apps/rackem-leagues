@@ -20,7 +20,7 @@
  * **Composition shape:**
  *   - Thresholds: per-side FargoRate start-points (same as 10-Point —
  *     FargoRate is the handicap layer applied on top of the scoring format)
- *   - Triggers: receipt triggers awarding the start-points head-start
+ *   - Triggers: match_start triggers awarding the start-points head-start
  *   - Per-game allocator: zero-sum 17-Point split
  *     - winner: base 10, formula `add_complement_of_other_side` (max=7,
  *       other_side='loser') — produces 10 + (7 - loser_balls)
@@ -54,22 +54,35 @@ const DEFAULT_PARAMS: SeventeenPointParams = {
   loser_label: 'Balls pocketed by loser',
 };
 
+/**
+ * Build a match_start trigger that ADDS a start-points threshold (already
+ * written to state under `thresholdVar`) to a concrete points variable: the
+ * action is `points = points + thresholdVar`.
+ */
 function awardInitialPoints(
   triggerName: string,
-  thresholdRef: string,
-  side: 'home' | 'away',
+  thresholdVar: string,
   targetVariable: string,
+  orderNumber: number,
 ): Trigger {
   return {
     name: triggerName,
-    input: { thresholdRef },
-    inputSpec: { outputType: 'points_headstart', outputSide: side },
-    when: { kind: 'receipt' },
+    type: 'match_start',
+    condition: { kind: 'always' },
     action: {
-      target: { kind: 'concrete', variableName: targetVariable },
-      op: 'add',
-      value: { kind: 'input_ref' },
+      target: targetVariable,
+      value: {
+        kind: 'expr',
+        expr: {
+          kind: 'op',
+          op: '+',
+          left: { kind: 'var', name: targetVariable },
+          right: { kind: 'var', name: thresholdVar },
+        },
+      },
     },
+    rearm: 'single_shot',
+    order: { number: orderNumber, beforeAllocator: false },
   };
 }
 
@@ -118,8 +131,8 @@ export function buildSeventeenPointComposition(
       },
     },
     triggers: [
-      awardInitialPoints('award_initial_home', 'initialHome', 'home', 'home_points'),
-      awardInitialPoints('award_initial_away', 'initialAway', 'away', 'away_points'),
+      awardInitialPoints('award_initial_home', 'initialHome', 'home_points', 1),
+      awardInitialPoints('award_initial_away', 'initialAway', 'away_points', 2),
     ],
   };
 
