@@ -14,7 +14,8 @@
  *
  * **Arg shape:**
  *  - `side: 'home' | 'away'` — which side's handicap diff to look up
- *  - `output_field: 'games_to_win' | 'games_to_tie' | 'games_to_lose'`
+ *  - `output_field: 'games_to_win' | 'games_to_tie' | 'games_to_lose' | 'games_to_tie_or_win'`
+ *    (the last is a derived lower-band edge: `games_to_tie ?? games_to_win`)
  *
  * **Registered declarations:**
  *  - consumesHandicapType: `'points'` (3v3 chart is Points-calibrated)
@@ -58,14 +59,24 @@ export const chartLookup3v3Operation: ThresholdOperation = {
     if (
       field !== 'games_to_win' &&
       field !== 'games_to_tie' &&
-      field !== 'games_to_lose'
+      field !== 'games_to_lose' &&
+      field !== 'games_to_tie_or_win'
     ) {
       throw new Error(
         `chart_lookup_3v3: expected args.output_field to be a chart field, got ${JSON.stringify(field)}`,
       );
     }
     const diff = side === 'home' ? inputs.homeHandicapDiff : inputs.awayHandicapDiff;
-    return get3v3GamesNeeded(diff)[field as ChartOutputField];
+    const chart = get3v3GamesNeeded(diff);
+    if (field === 'games_to_tie_or_win') {
+      // Lower-band edge for end-of-match scoring: the tie target when a tie is
+      // possible, else the win target. This collapses the below-band scoring to a
+      // single linear band when ties are impossible — matching the legacy
+      // aggregate's null-tie collapse, expressed as a threshold value so the
+      // match_end trigger just compares against it.
+      return chart.games_to_tie ?? chart.games_to_win;
+    }
+    return chart[field as ChartOutputField];
   },
 };
 

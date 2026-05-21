@@ -23,8 +23,8 @@
  *       (sorted by `order.number`)
  *
  * 3. **Match-end phase.** Fire all `match_end` triggers (sorted by
- *    `order.number`). Then, if a composition has an EndOfMatchAggregate, run
- *    it against the populated state to compute final home_points / away_points.
+ *    `order.number`). End-of-match scoring (e.g. Points 3-Man) is just match_end
+ *    triggers — there is no separate aggregate step.
  *
  * **NEVER-BREAK CONTRACT (load-bearing).** The runtime must NEVER throw on bad
  * math/data. When a trigger's condition or action can't evaluate (the
@@ -40,7 +40,6 @@
  */
 
 import { evaluateAllocator } from './allocator-evaluator';
-import { getAggregateOperation } from './aggregate-registry';
 import { evaluateCondition } from './condition-evaluator';
 import { evaluateExpression } from './expression-evaluator';
 import { resolveAllThresholds } from './threshold-helpers';
@@ -257,29 +256,9 @@ export function evaluatePointsSystem(
     fireAll(anytimeAfter, state, firedNames);
   }
 
-  // Phase 3: match end. Triggers first, then the aggregate (if any).
+  // Phase 3: match end. End-of-match scoring (e.g. Points 3-Man) is just
+  // match_end triggers — there is no separate aggregate step.
   fireAll(matchEndTriggers, state, firedNames);
-
-  if (composition.endOfMatchAggregate) {
-    // Aggregate operation reads the state bag directly (home_wins, away_wins,
-    // and the chart-target state vars written at match start). It OVERWRITES
-    // home_points/away_points — aggregate-mode is an alternative to per-game
-    // accumulation, not additive.
-    const operation = getAggregateOperation(
-      composition.endOfMatchAggregate.operationKind,
-    );
-    if (operation === undefined) {
-      throw new Error(
-        `evaluatePointsSystem: unknown aggregate operation "${composition.endOfMatchAggregate.operationKind}"`,
-      );
-    }
-    const result = operation.compute(
-      composition.endOfMatchAggregate.operationArgs,
-      state,
-    );
-    state.home_points = result.homePoints;
-    state.away_points = result.awayPoints;
-  }
 
   return state;
 }

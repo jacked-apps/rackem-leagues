@@ -9,12 +9,11 @@
  * `accumulate_with_milestone_jumps`, `accumulated_per_game`) which packed
  * multiple primitive kinds into single classes.
  *
- * **Five primitive kinds:**
+ * **Four primitive kinds:**
  *
  * 1. **Threshold** — a pure function `(inputs) → number`. No firing logic,
  *    no side attribution, just math. Same architectural shape as the
- *    Threshold Charts Module. Used as a value-source by triggers and the
- *    end-of-match aggregate.
+ *    Threshold Charts Module. Used as a value-source by triggers.
  *
  * 2. **PerGameAllocator** — per-side configs (`fixed` | `counter` | `formula`)
  *    that allocate points each game (winner gets X, loser gets Y). Formula
@@ -33,26 +32,22 @@
  *    Both are evaluated by never-throw evaluators (`condition-evaluator.ts`,
  *    `expression-evaluator.ts`).
  *
- * 5. **EndOfMatchAggregate** — computes per-match points at match end.
- *    Reads named variables populated by triggers (homeWins/homeWinTarget/etc.)
- *    and applies its formula, including the locked tie-band absorption
- *    invariant. Stays a distinct primitive because it has a clear
- *    single-fire-at-end role.
+ * End-of-match scoring (e.g. Points 3-Man) is NOT a separate primitive — it's
+ * just `match_end` triggers (two per side reproduce the three-band linear
+ * formula; the tie band is the default-0).
  *
  * **Composition structure (D2b structured slots):**
  *
  * A `PointsSystem` is a record with named slots:
  * - `thresholds` — named map of value-producing functions
  * - `perGameAllocator` — optional; the per-game linear baseline
- * - `triggers` — ordered list of `{ condition, action }` rules (single-action)
- * - `endOfMatchAggregate` — optional; reads variables and applies formula
+ * - `triggers` — ordered list of `{ type, condition, action, rearm, order }` rules
  *
  * **Single-mechanism-for-everything principle:** every value the system
  * tracks (chart targets, initial points, milestone jumps, win signals,
  * running totals, chips, flags) gets assigned via the SAME trigger
  * machinery into the unified named-variable namespace. Different
- * consumers (display, end-of-match aggregate, Win Calc) read from the
- * same variables. No drift possible.
+ * consumers (display, Win Calc) read from the same variables. No drift possible.
  *
  * @see docs/brainstorms/2026-05-18-points-system-decomposition-requirements.md — design walkthrough
  * @see docs/league-system/modules/points-system/README.md — locked blueprint
@@ -496,52 +491,6 @@ export interface Trigger {
 }
 
 // ============================================================================
-// End-of-match aggregate — sub-mechanism (D)
-// ============================================================================
-
-/**
- * Result of an end-of-match aggregate evaluation. Per-side absolute per-match
- * points; the runtime assigns these to `home_points` and `away_points`
- * (overwriting any per-game accumulation — aggregate-mode is an ALTERNATIVE
- * to per-game accumulation per the locked spec).
- */
-export interface AggregateResult {
-  homePoints: number;
-  awayPoints: number;
-}
-
-/**
- * Code-side registry entry for a named aggregate operation. Same data-driven
- * pattern as ThresholdOperation / AllocatorFormulaOperation: the compute
- * logic lives in code; the EndOfMatchAggregate row references it by name + args.
- *
- * The operation reads the match-state bag DIRECTLY (home_wins, away_wins, and
- * the chart-target state vars receipt triggers populated — homeWinTarget,
- * homeTieTarget, etc.). No fixed input shape; the operation reads what it
- * needs by convention. Produces both sides' points in one call so coupled
- * rules (like the 3v3 tie-band: 9-9 → both 0) are expressed naturally.
- *
- * @see ./aggregate-registry.ts — registry implementation
- */
-export interface AggregateOperation {
-  readonly name: string;
-  readonly compute: (
-    args: Readonly<Record<string, unknown>>,
-    state: Readonly<MatchStateBag>,
-  ) => AggregateResult;
-}
-
-/**
- * End-of-match aggregate — data-driven row. References a registered aggregate
- * operation by name + args. The locked 3v3 9-9 tie-band absorption invariant
- * lives inside the operation's compute (fixed in code, not in args).
- */
-export interface EndOfMatchAggregate {
-  readonly operationKind: string;
-  readonly operationArgs: Readonly<Record<string, unknown>>;
-}
-
-// ============================================================================
 // Composition — the structured-slot PointsSystem record (D2b)
 // ============================================================================
 
@@ -552,12 +501,12 @@ export interface EndOfMatchAggregate {
  * Slot semantics:
  * - `thresholds` — named map; every value-producer the composition needs.
  * - `perGameAllocator` — optional; the linear per-game baseline.
- *   Omitted by Scoring Systems that use only an end-of-match aggregate.
+ *   Omitted by Scoring Systems that score only at match end (via match_end triggers).
  * - `triggers` — list of single-action triggers. Firing order within a phase
  *   is driven by `trigger.order.number` (and partitioned around the per-game
  *   allocator by `trigger.order.beforeAllocator` for `anytime` triggers).
- * - `endOfMatchAggregate` — optional; the once-at-match-end formula.
- *   Omitted by Scoring Systems that compute totals via per-game accumulation.
+ *   End-of-match scoring is just `match_end` triggers — there is no separate
+ *   aggregate slot.
  */
 export interface PointsSystem {
   readonly name: string;
@@ -569,5 +518,4 @@ export interface PointsSystem {
   thresholds: Record<string, ThresholdRow>;
   perGameAllocator?: PerGameAllocator;
   triggers: readonly Trigger[];
-  endOfMatchAggregate?: EndOfMatchAggregate;
 }

@@ -13,8 +13,6 @@
 
 import { describe, it, expect } from 'vitest';
 import { evaluatePointsSystem, type RuntimeGameRecord } from '../runtime';
-// Side-effect import: register the linear_above_threshold aggregate operation.
-import '../aggregate-operations/linear-above-threshold';
 import { buildThresholdRow } from '../threshold-resolver';
 // Side-effect imports: register the operations these tests reference.
 import '../operations/read-pref';
@@ -229,82 +227,6 @@ describe('evaluatePointsSystem — match_start-trigger initial points (FargoRate
     const state = evaluatePointsSystem(composition, initialInputs, games);
     expect(state.home_points).toBe(0);
     expect(state.away_points).toBe(56);
-  });
-});
-
-describe('evaluatePointsSystem — end-of-match aggregate (Points 3-Man pattern with tie-band)', () => {
-  // Thresholds are state setters: the runtime writes each resolved chart-target
-  // value into the state bag under its name at match start, so the aggregate can
-  // read them directly — no copy-trigger needed. End-of-match aggregate applies
-  // the linear_above_threshold formula with the locked tie-band absorption rule.
-  const TARGET_NAMES = [
-    'homeWinTarget',
-    'awayWinTarget',
-    'homeTieTarget',
-    'awayTieTarget',
-    'homeLoseTarget',
-    'awayLoseTarget',
-  ] as const;
-
-  const composition: PointsSystem = {
-    name: 'points_3man_test',
-    thresholds: Object.fromEntries(
-      TARGET_NAMES.map((name) => [
-        name,
-        buildThresholdRow({
-          name,
-          operationKind: 'read_pref',
-          operationArgs: { pref_key: `test_${name}` },
-        }),
-      ]),
-    ),
-    triggers: [],
-    endOfMatchAggregate: {
-      operationKind: 'linear_above_threshold',
-      operationArgs: { multiplier: 1 },
-    },
-  };
-
-  const aggregateInputs: ThresholdInputs = {
-    ...emptyInputs,
-    prefs: {
-      test_homeWinTarget: 10,
-      test_awayWinTarget: 10,
-      test_homeTieTarget: 9,
-      test_awayTieTarget: 9,
-      test_homeLoseTarget: 8,
-      test_awayLoseTarget: 8,
-    },
-  };
-
-  it('home wins 12-6 → home_points=2 (above-win band)', () => {
-    const games = [
-      ...Array.from({ length: 12 }, homeWins),
-      ...Array.from({ length: 6 }, awayWins),
-    ];
-    const state = evaluatePointsSystem(composition, aggregateInputs, games);
-    expect(state.home_points).toBe(2); // (12-10)*1
-    expect(state.away_points).toBe(-3); // (6-9)*1 → below-tie band
-  });
-
-  it('9-9 tie → BOTH sides get 0 (tie-band absorbs)', () => {
-    const games = [
-      ...Array.from({ length: 9 }, homeWins),
-      ...Array.from({ length: 9 }, awayWins),
-    ];
-    const state = evaluatePointsSystem(composition, aggregateInputs, games);
-    expect(state.home_points).toBe(0);
-    expect(state.away_points).toBe(0);
-  });
-
-  it('10-8 outcome → home_points=0 (tie-band), away_points=-1 (below-tie)', () => {
-    const games = [
-      ...Array.from({ length: 10 }, homeWins),
-      ...Array.from({ length: 8 }, awayWins),
-    ];
-    const state = evaluatePointsSystem(composition, aggregateInputs, games);
-    expect(state.home_points).toBe(0); // tie band absorbs
-    expect(state.away_points).toBe(-1); // (8-9)*1
   });
 });
 
