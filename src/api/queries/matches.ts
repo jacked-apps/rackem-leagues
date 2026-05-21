@@ -993,6 +993,39 @@ export async function updateMatchRunningTotals(matchId: string): Promise<void> {
       writeErr.message,
     );
   }
+
+  // Shadow audit (Strand-B points cutover): run the NEW modular engine
+  // alongside the legacy result just written and log any divergence. Pure
+  // observation — never writes the match row, never throws, never blocks the
+  // scoring flow. Lets us prove parity on real data before flipping the live
+  // path over to the engine. Remove this call at the flip.
+  try {
+    const { shadowAuditRunningTotals } = await import(
+      '@/utils/match/shadowAuditRunningTotals'
+    );
+    await shadowAuditRunningTotals({
+      matchId,
+      homeTeamId: matchRow.home_team_id,
+      awayTeamId: matchRow.away_team_id,
+      homeThresholds: {
+        games_to_win: matchRow.home_to_win,
+        games_to_tie: matchRow.home_to_tie,
+        games_to_lose: matchRow.home_to_lose,
+      },
+      awayThresholds: {
+        games_to_win: matchRow.away_to_win,
+        games_to_tie: matchRow.away_to_tie,
+        games_to_lose: matchRow.away_to_lose,
+      },
+      games: games as Parameters<typeof shadowAuditRunningTotals>[0]['games'],
+      pointsCalculator,
+      pointsCalculatorParams,
+      winCondition,
+      legacyTotals: totals,
+    });
+  } catch {
+    // Shadow audit must never perturb live scoring.
+  }
 }
 
 /**
