@@ -51,6 +51,22 @@ the scoring engine wrote per side (points, wins, targets, chips, signals) is
 available to surface, authored once and mirrored. Same mirror pattern as
 thresholds: author once side-agnostic → two sided instances at render.
 
+## Never-break: the scoreboard cannot crash the app
+
+The never-break rule extends here. The scoreboard must **never crash** — at worst
+it shows a wrong number. The asymmetry: wrong numbers → "this thing is acting
+strange" (a complaint we fix; customer kept); a crash → "this app is shit, use
+something else" (brand-killer; customer lost). Two safeguards:
+1. **Reader, never recomputer** — the scoreboard only reads state the engine
+   already wrote, so a display bug can show garbage on screen but **cannot corrupt
+   the recorded game data.**
+2. **Crash-wrapped render** — a bad render blanks/mis-shows *that one slot* and
+   never takes down the app or the scoring flow.
+
+Clean layering: games recorded (sacred, protected) → engine computes (log+bypass,
+never throws) → scoreboard reads + renders (wrong-but-shown, never crashes). A
+failure at any layer degrades; it never cascades up to break recording.
+
 ## How it touches the naming layer (the "naming crashes" to watch)
 
 A scoreboard module is itself a **created thing**, so it carries the trio
