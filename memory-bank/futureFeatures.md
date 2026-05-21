@@ -284,4 +284,34 @@ The Points System Decomposition (Unit 5 of the modular Scoring System migration,
 
 ---
 
+### Emergency Manual Scoresheet (never-lose-a-match-night fallback)
+**Status**: Idea — flagged 2026-05-20. The ultimate scoring backstop.
+
+**Concept**:
+A dead-simple, can-never-break scorekeeping mode, completely separate from the
+modular scoring engine. If the real scoring ever fails mid-match — a bad LO
+config, a bug, anything — the scorekeeper switches to this and the match night is
+saved instead of lost.
+
+**Behavior** (stripped to the absolute minimum):
+- Pick a roster size.
+- Enter player names manually.
+- NO handicaps, NO thresholds, NO points, NO calculators, NO triggers.
+- Record only the one sacred thing: each game's win/loss (who beat whom).
+
+**Why**:
+The scoring engine already follows a never-break rule — games won/lost is the
+sacred metric; points and the declared winner are derived and recoverable; bad
+math logs + bypasses rather than crashing. This feature is the last-resort version
+of that same principle: when even log-and-bypass can't keep the real engine
+running, capture wins/losses by hand so nobody has to replay the night, then
+reconstruct points/standings afterward. Bad or missing derived data is
+recoverable; 30+ players losing their night (and having to come back another
+evening) is not — they'd hate us for it.
+
+**Not doing now** — build after the modular engine is solid. It's insurance, not a
+feature users seek out, but it's cheap protection against catastrophic failure.
+
+---
+
 *This is a living document - add ideas as they come up during development and user feedback sessions.*
