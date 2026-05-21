@@ -15,6 +15,7 @@ import type { WizardConfig } from '@/components/wizard';
 import { ReviewStep } from '@/components/wizard';
 import { SeasonIntroStep } from './steps/SeasonIntroStep';
 import { SeasonStartDateStep } from './steps/SeasonStartDateStep';
+import { SeasonSettingsModeStep } from './steps/SeasonSettingsModeStep';
 import { SeasonLengthStep } from './steps/SeasonLengthStep';
 import { PlayoffFormatStep } from './steps/PlayoffFormatStep';
 import { ChampionshipStep } from '@/wizards/schedule-v2/ChampionshipStep';
@@ -105,10 +106,17 @@ export const seasonWizardConfig: WizardConfig<SeasonWizardFormData> = {
     // visited the step that owns it. Each step's mount-useEffect
     // writes a default to formData, so the presence of the formData
     // slice IS the "user has been here" signal.
-    const lengthValue = formData['season-length'] as number | undefined;
-    const playoffValue = formData['playoff-format'] as
-      | { format?: string; wildcard?: boolean }
-      | undefined;
+    //
+    // The gate-step ("season-settings-mode") snapshots length + playoff
+    // when the LO picks "Keep". We treat that snapshot as the committed
+    // answers for the two hidden steps — so the summary still grows
+    // row-by-row even when they're skipped via the gate.
+    const gate = formData['season-settings-mode'];
+    const lengthValue =
+      (formData['season-length'] as number | undefined) ?? gate?.length;
+    const playoffValue =
+      (formData['playoff-format'] as { format?: string; wildcard?: boolean } | undefined) ??
+      gate?.playoff;
 
     // Season Name shows only when all upstream answers are committed.
     const showSeasonName =
@@ -145,19 +153,48 @@ export const seasonWizardConfig: WizardConfig<SeasonWizardFormData> = {
       component: SeasonStartDateStep as WizardConfig<SeasonWizardFormData>['steps'][number]['component'],
     },
     {
+      id: 'season-settings-mode',
+      title: 'Settings',
+      // Combined "length + playoff" gate. Only next-season flows see
+      // it — first-season flows have nothing to "keep" so they go
+      // straight to the individual length + playoff steps.
+      showIf: (fd) => {
+        const ctx = (fd as Record<string, unknown>)._flowContext as
+          | { previousSeasonLength?: number }
+          | undefined;
+        return ctx?.previousSeasonLength != null;
+      },
+      component: SeasonSettingsModeStep as WizardConfig<SeasonWizardFormData>['steps'][number]['component'],
+    },
+    {
       id: 'season-length',
       title: 'Season Length',
-      // Always shown. The step component handles its own
-      // "Keep / Change" UI from previousSeasonLength in flow context
-      // (next-season flow) or falls back to a bare NumberStepper
-      // (first-season flow).
+      // First-season flow: always shown.
+      // Next-season flow: hidden when the LO picked "Keep both" on the
+      // gate step (defaults snapshotted there and read by
+      // useCreateSeasonV2). Visible when the gate's mode is 'change'.
+      showIf: (fd) => {
+        const ctx = (fd as Record<string, unknown>)._flowContext as
+          | { previousSeasonLength?: number }
+          | undefined;
+        if (ctx?.previousSeasonLength == null) return true; // first-season
+        const gate = fd['season-settings-mode'];
+        return gate?.mode === 'change';
+      },
       component: SeasonLengthStep as WizardConfig<SeasonWizardFormData>['steps'][number]['component'],
     },
     {
       id: 'playoff-format',
       title: 'Playoffs',
-      // Always shown. Same self-contained Keep/Change pattern as
-      // the length step.
+      // Same visibility as season-length.
+      showIf: (fd) => {
+        const ctx = (fd as Record<string, unknown>)._flowContext as
+          | { previousSeasonLength?: number }
+          | undefined;
+        if (ctx?.previousSeasonLength == null) return true; // first-season
+        const gate = fd['season-settings-mode'];
+        return gate?.mode === 'change';
+      },
       validate: (value: unknown) => {
         const v = value as { format?: string } | undefined;
         return v?.format ? undefined : ['Please select a playoff format'];
