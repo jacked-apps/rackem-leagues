@@ -18,16 +18,6 @@ export interface SeasonWizardFormData {
   /** Step: SeasonStartDateStep (only for subsequent seasons) */
   'season-start-date'?: string;
 
-  /** Step: SeasonSettingsModeStep (only when previous-season anchor exists).
-   *  Gates whether the SeasonLengthStep + PlayoffFormatStep render. On
-   *  "keep", we snapshot the resolved defaults here so useCreateSeasonV2
-   *  has the values it needs without those two steps writing them. */
-  'season-settings-mode'?: {
-    mode: 'keep' | 'change';
-    length?: number;
-    playoff?: { format: string; wildcard: boolean };
-  };
-
   /** Step: SeasonLengthStep */
   'season-length'?: number;
 
