@@ -46,6 +46,14 @@ export const scheduleWizardConfig: WizardConfig<ScheduleWizardFormData> = {
         const ctx = (fd as Record<string, unknown>)._flowContext as
           | { championshipTracking?: { trackBca: boolean; trackApa: boolean } }
           | undefined;
+        // TEMP debug — remove after diagnosing why championship step
+        // shows on next-season runs when it shouldn't.
+        // eslint-disable-next-line no-console
+        console.log('[scheduleWizardConfig] championships showIf', {
+          hasCtx: !!ctx,
+          championshipTracking: ctx?.championshipTracking,
+          willShow: !ctx?.championshipTracking,
+        });
         return !ctx?.championshipTracking;
       },
       component: ChampionshipStep as WizardConfig<ScheduleWizardFormData>['steps'][number]['component'],
