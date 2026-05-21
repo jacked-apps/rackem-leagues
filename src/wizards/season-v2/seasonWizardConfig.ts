@@ -204,18 +204,17 @@ export const seasonWizardConfig: WizardConfig<SeasonWizardFormData> = {
     {
       id: 'championships',
       title: 'Championships',
-      // Next-season only — championship tracking belongs alongside
-      // the other "are last season's settings still right?" gates.
+      // Next-season only — same Skip/Change confirmation pattern as
+      // the other gate steps. The step's UI handles all three states:
+      // tracking both / tracking one / tracking neither (so the
+      // operator can opt INTO tracking they haven't set yet).
       // First-season flow keeps championship in the Schedule wizard
       // where it ties to schedule building.
-      // Hidden when nothing is tracked (showIf returns false), so
-      // operators who opted out never see it.
       showIf: (fd) => {
         const ctx = (fd as Record<string, unknown>)._flowContext as
           | { championshipTracking?: { trackBca: boolean; trackApa: boolean } }
           | undefined;
-        if (!ctx?.championshipTracking) return false;
-        return ctx.championshipTracking.trackBca || ctx.championshipTracking.trackApa;
+        return !!ctx?.championshipTracking;
       },
       component: ChampionshipStep as WizardConfig<SeasonWizardFormData>['steps'][number]['component'],
     },
