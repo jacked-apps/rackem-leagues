@@ -15,17 +15,29 @@ audience: developer + AI sessions
 
 ## The idea (Ed, 2026-05-21)
 
-- The scoreboard is built with **slots** on each side — **home** and **away**.
-- Each slot is filled by a **scoreboard module**. A module **reads the state bag**
-  (by state-var name), and **renders the value(s) with a label** in a position on
-  screen.
-- A position can hold **up to 2 states**. Rough layout shape:
-  **3 small / 2 large / 3 small** per side (~**8 selectable metrics**).
-- The **LO customizes** which metrics show and which don't.
+- The scoreboard is built **ONCE, as a single side-agnostic unit, then mirrored**
+  to both sides. The LO designs "Wins / Points / Win at:" one time; the renderer
+  instantiates it on the **home** side (pulling `home_*` values) and the **away**
+  side (pulling `away_*` values). Same template, side-specific values.
+- **The two sides are ALWAYS identical** (same metrics, same positions) — if one
+  side showed something the other didn't, it'd be confusing. This is a hard rule.
+- **Labels are side-agnostic** — just "Wins," never "Home Wins." The home/away
+  identity is **positional** (the side headers are always on screen, left/right),
+  so one label serves both sides at once.
+- Each side's **slot reads the state bag** (by that side's state-var name) and
+  **renders the value with the shared label** in a position. A position can hold
+  **up to 2 states**; rough layout **3 small / 2 large / 3 small** per side
+  (~**8 selectable metrics**). The LO customizes which show / hide.
+- **The sided scoreboard is PURELY per-side (mirrored) metrics.** Match-level /
+  global values (e.g. games played 5/25) are **not on it** — they're a separate
+  concern. If a global readout is ever wanted (a baseball-inning-style indicator),
+  it's a **separate region outside** the sided scoreboard, never squeezed into the
+  mirrored sides.
 
 So: the scoreboard is a *reader* of the state bag (never a re-computer) — whatever
-the scoring engine wrote (points, wins, targets, chips, signals) is available to
-surface, and the LO picks what to show + where.
+the scoring engine wrote per side (points, wins, targets, chips, signals) is
+available to surface, authored once and mirrored. Same mirror pattern as
+thresholds: author once side-agnostic → two sided instances at render.
 
 ## How it touches the naming layer (the "naming crashes" to watch)
 
@@ -45,18 +57,20 @@ collides — flagged here so the naming doc stays precise:
    module-builder needs the display→internal mapping. **Crash #2** (and: if a
    referenced state var is later deleted/renamed, the module's reference dangles —
    needs the same stable-internal-name rule the naming doc locks).
-3. **Mirrored values + the two sides.** A module on the home slot reads
-   `homeWinTarget`; the away slot reads `awayWinTarget`. If the LO authored the
-   threshold as one mirrored entry, the scoreboard still needs to resolve the
-   correct sided internal name per slot. **Crash #3** (the workshop-mirror-only /
-   runtime-independent split has to hold here too).
-4. **`shared` values on a two-sided board.** A `shared` value (one var, e.g.
-   `winTarget` in Percentage 5-Man) shown on both home and away slots renders the
-   same number twice — is that desired, or shown once/centered? **Crash #4.**
+3. **Mirrored values + the two sides — RESOLVED by the layout model.** Because the
+   board is one side-agnostic unit mirrored to both sides, each slot auto-resolves
+   to its side's var (home slot → `homeWinTarget`, away → `awayWinTarget`). The LO
+   never thinks about it; the singular-unit-mirrored model handles it. (The
+   workshop-mirror-only / runtime-independent split still holds.)
+4. **`shared`/global values on the board — RESOLVED (not applicable).** The sided
+   scoreboard is PURELY per-side metrics; shared/global values (games played 5/25,
+   etc.) are not on it — they live in a separate region/concern. So there's no
+   "same number shown on both sides" awkwardness to settle.
 
-These four are the reason to draft this now: they tell us exactly which naming
-concepts must stay distinct (display name ≠ label; internal name = the stable
-reference; side resolution at render time).
+So crashes #1 and #2 are real **naming-layer mechanics** to keep distinct
+(display name ≠ label; internal name = the stable reference). Crashes #3 and #4
+are dissolved by the layout rules (singular-unit-mirrored; purely per-side). That
+split — surfaced by drafting the scoreboard early — is exactly the payoff.
 
 ## Open questions (it's rough — these need Ed)
 
