@@ -314,4 +314,31 @@ feature users seek out, but it's cheap protection against catastrophic failure.
 
 ---
 
+### Scoring-math error surfacing (flag → notify → persist)
+**Status**: Idea — flagged 2026-05-21. Deferred (build after the engine is wired
+into live scoring — Strand B). The never-break engine already *catches + bypasses*
+bad math; this is about *surfacing* those flags to humans.
+
+**Concept** — when the engine logs a math failure (divide-by-zero, missing/bad
+state, non-finite), surface it three ways:
+- **Player toast** (reassuring, keep-playing): *"Something weird happened with the
+  math. Your league operator has been notified, so the scoring might be off.
+  Games won/lost is NOT lost — keep playing; we can correct the scoring after the
+  match."* The toast may be doable relatively easily even now.
+- **LO notification** — a message to the league operator that a match hit a
+  scoring-math error (so they can review/fix the config).
+- **DB-persisted flags** — save the error records (which match, which trigger, the
+  reason) so they're auditable + fixable, not just console noise.
+
+**Forward-compat to bake in AT the cutover (Strand B), not as a separate task:**
+have the runtime **collect** the math errors (return them alongside the result)
+instead of only `console.warn`. Then toast / LO-message / DB-flags become a
+wire-up, not a refactor.
+
+**Why deferred:** the toast / LO-message hook into the live scoring flow, which the
+new engine isn't wired into yet. Current `console.warn` is enough for now (dev
+visibility); the engine already degrades safely. Pairs with the never-break rule.
+
+---
+
 *This is a living document - add ideas as they come up during development and user feedback sessions.*
