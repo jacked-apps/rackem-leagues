@@ -113,10 +113,13 @@ function NextSeasonStartDatePicker({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startImmediate]);
 
-  const handleSkip = () => {
-    onChange(startImmediate);
+  const handlePick = (next: string) => {
+    onChange(next);
     onNext();
   };
+
+  const isCustom =
+    !!value && value !== startImmediate && value !== weekOff;
 
   if (!editing) {
     return (
@@ -125,36 +128,51 @@ function NextSeasonStartDatePicker({
           <Label className="text-base">When does the new season start?</Label>
           <p className="text-foreground mt-1">
             Last season&rsquo;s final week was{' '}
-            <strong>{formatPretty(lastWeekDate)}</strong>. Start the next
-            one on <strong>{formatPretty(startImmediate)}</strong>?
+            <strong>{formatPretty(lastWeekDate)}</strong>. Pick when the
+            next one kicks off:
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3">
-          <Button onClick={handleSkip} loadingText="none">
-            Start {formatPretty(startImmediate)}
+        <div className="space-y-2">
+          <Button
+            onClick={() => handlePick(startImmediate)}
+            loadingText="none"
+            className="w-full justify-start"
+          >
+            Start immediately — {formatPretty(startImmediate)}
+          </Button>
+          <Button
+            onClick={() => handlePick(weekOff)}
+            loadingText="none"
+            className="w-full justify-start"
+          >
+            Take a week off — {formatPretty(weekOff)}
           </Button>
           <Button
             variant="outline"
-            onClick={() => setEditing(true)}
+            onClick={() => {
+              if (!isCustom) onChange(customMin);
+              setEditing(true);
+            }}
             loadingText="none"
+            className="w-full justify-start"
           >
-            Change start date →
+            Take more time off — pick a {dayName} →
           </Button>
         </div>
       </div>
     );
   }
 
-  // Edit mode — the 3 sub-options
+  // Edit mode — custom date picker
   return (
     <div className="space-y-4 max-w-lg">
-      <p className="font-medium text-foreground">When does the new season start?</p>
+      <p className="font-medium text-foreground">Pick a custom start {dayName}</p>
 
       <div className="space-y-2">
         <Button
           variant={value === startImmediate ? 'default' : 'outline'}
-          onClick={() => onChange(startImmediate)}
+          onClick={() => handlePick(startImmediate)}
           loadingText="none"
           className="w-full justify-start"
         >
@@ -162,22 +180,16 @@ function NextSeasonStartDatePicker({
         </Button>
         <Button
           variant={value === weekOff ? 'default' : 'outline'}
-          onClick={() => onChange(weekOff)}
+          onClick={() => handlePick(weekOff)}
           loadingText="none"
           className="w-full justify-start"
         >
           Take a week off — {formatPretty(weekOff)}
         </Button>
         <Button
-          variant={
-            value && value !== startImmediate && value !== weekOff
-              ? 'default'
-              : 'outline'
-          }
+          variant={isCustom ? 'default' : 'outline'}
           onClick={() => {
-            if (!value || value === startImmediate || value === weekOff) {
-              onChange(customMin);
-            }
+            if (!isCustom) onChange(customMin);
           }}
           loadingText="none"
           className="w-full justify-start"
