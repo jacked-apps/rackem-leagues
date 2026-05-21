@@ -37,10 +37,22 @@ export interface SeasonWizardFormData {
   /** Wildcard checkbox within PlayoffFormatStep */
   'playoff-wildcard'?: boolean;
 
-  /** Step: ChampionshipStep (next-season only — confirmation of last
-   *  season's BCA/APA tracking choices). In first-season flow this step
-   *  lives in the schedule wizard instead since it ties to schedule
-   *  building. */
+  /** Step: ChampionshipModeStep (next-season only — gate page).
+   *  Same shape as `season-settings-mode`. Snapshots current tracking
+   *  when mode='keep' so useCreateSeasonV2 has values without forcing
+   *  the editor step to render. */
+  'championships-mode'?: {
+    mode: 'keep' | 'change';
+    trackBca?: boolean;
+    trackApa?: boolean;
+  };
+
+  /** Step: ChampionshipEditStep (next-season only, only when gate=change).
+   *  The explicit checkbox-edited tracking values. */
+  'championships-edit'?: { trackBca: boolean; trackApa: boolean };
+
+  /** Step: ChampionshipStep (first-season only — lives in the schedule
+   *  wizard's slice). Carried here for the first-season schedule wizard. */
   'championships'?: { trackBca: boolean; trackApa: boolean };
 }
 

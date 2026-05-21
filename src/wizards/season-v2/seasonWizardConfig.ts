@@ -18,7 +18,10 @@ import { SeasonStartDateStep } from './steps/SeasonStartDateStep';
 import { SeasonSettingsModeStep } from './steps/SeasonSettingsModeStep';
 import { SeasonLengthStep } from './steps/SeasonLengthStep';
 import { PlayoffFormatStep } from './steps/PlayoffFormatStep';
-import { ChampionshipStep } from '@/wizards/schedule-v2/ChampionshipStep';
+import {
+  ChampionshipModeStep,
+  ChampionshipEditStep,
+} from '@/wizards/schedule-v2/ChampionshipStep';
 import type { SeasonWizardFormData } from './seasonWizardTypes';
 import { parseLocalDate } from '@/utils/formatters';
 import { generateSeasonName } from '@/types/season';
@@ -202,21 +205,36 @@ export const seasonWizardConfig: WizardConfig<SeasonWizardFormData> = {
       component: PlayoffFormatStep as WizardConfig<SeasonWizardFormData>['steps'][number]['component'],
     },
     {
-      id: 'championships',
+      id: 'championships-mode',
       title: 'Championships',
-      // Next-season only — same Skip/Change confirmation pattern as
-      // the other gate steps. The step's UI handles all three states:
-      // tracking both / tracking one / tracking neither (so the
-      // operator can opt INTO tracking they haven't set yet).
+      // Next-season only — gate step. Mirrors `season-settings-mode`:
+      // Keep snapshots current tracking + advances; Change advances
+      // to the editor below.
       // First-season flow keeps championship in the Schedule wizard
-      // where it ties to schedule building.
+      // (different config) since it ties to schedule building.
       showIf: (fd) => {
         const ctx = (fd as Record<string, unknown>)._flowContext as
           | { championshipTracking?: { trackBca: boolean; trackApa: boolean } }
           | undefined;
         return !!ctx?.championshipTracking;
       },
-      component: ChampionshipStep as WizardConfig<SeasonWizardFormData>['steps'][number]['component'],
+      component: ChampionshipModeStep as WizardConfig<SeasonWizardFormData>['steps'][number]['component'],
+    },
+    {
+      id: 'championships-edit',
+      title: 'Edit Tracking',
+      // Only shown when the LO picked "Change" on the championships-mode
+      // gate. Same pattern as season-length / playoff-format vs the
+      // settings-mode gate.
+      showIf: (fd) => {
+        const ctx = (fd as Record<string, unknown>)._flowContext as
+          | { championshipTracking?: { trackBca: boolean; trackApa: boolean } }
+          | undefined;
+        if (!ctx?.championshipTracking) return false;
+        const gate = fd['championships-mode'];
+        return gate?.mode === 'change';
+      },
+      component: ChampionshipEditStep as WizardConfig<SeasonWizardFormData>['steps'][number]['component'],
     },
     {
       id: 'review',

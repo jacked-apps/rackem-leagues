@@ -1,40 +1,42 @@
 /**
- * @fileoverview ChampionshipStep — BCA/APA conflict tracking preference
+ * @fileoverview Championship-tracking steps for the wizards.
  *
- * Two modes:
+ * Exports three components:
  *
- * 1. **Next-season click-thru mode** (when `_flowContext.championshipTracking`
- *    exists). The operator already set this up at first-league creation —
- *    we just confirm with a conversational question + two buttons:
+ * 1. **ChampionshipStep** — used in the FIRST-time league flow
+ *    (schedule wizard). Original checkbox UI for operators who haven't
+ *    set tracking yet.
  *
- *       "Hey — you track BCA (Aug 1–7) but not APA. Still the case?"
- *       [Skip — same as before]   [Change tracking]
+ * 2. **ChampionshipModeStep** — gate page used in the NEXT-season
+ *    flow (season wizard). Same shape as the SeasonSettingsModeStep:
+ *    Keep / Change buttons, both auto-advance.
+ *      - Keep:   snapshot current tracking, advance, edit step is hidden.
+ *      - Change: mode='change', advance to ChampionshipEditStep.
  *
- *    Skip commits the snapshot via onChange and advances via onNext.
- *    Change reveals the checkbox editor inline.
- *
- *    If the operator isn't tracking either championship, the schedule
- *    wizard's `showIf` skips this step entirely (configured in
- *    scheduleWizardConfig).
- *
- * 2. **First-time mode** — operator hasn't told us yet. Show the
- *    original checkbox UI so they can opt in.
+ * 3. **ChampionshipEditStep** — editor revealed by the gate when the
+ *    operator picks Change. Checkbox UI for BCA/APA with date hints.
  *
  * This is a league/operator-level preference — set once, carries
  * forward to future seasons. Dates are entered annually by admin into
  * `championship_date_options`.
  */
 
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { InfoButton } from '@/components/InfoButton';
 import type { WizardStepProps } from '@/components/wizard';
 
-interface ChampionshipValue {
+export interface ChampionshipValue {
   trackBca: boolean;
   trackApa: boolean;
+}
+
+export interface ChampionshipModeValue {
+  mode: 'keep' | 'change';
+  trackBca?: boolean;
+  trackApa?: boolean;
 }
 
 interface FlowContextShape {
@@ -46,40 +48,14 @@ interface FlowContextShape {
   };
 }
 
+// ----------------------------------------------------------------------------
+// 1. First-time picker (schedule wizard, first-league flow)
+// ----------------------------------------------------------------------------
+
 export function ChampionshipStep({
   value,
   onChange,
-  onNext,
-  formData,
 }: WizardStepProps<ChampionshipValue | undefined, unknown>) {
-  const flowContext = (formData as Record<string, unknown>)._flowContext as
-    | FlowContextShape
-    | undefined;
-
-  const tracking = flowContext?.championshipTracking;
-
-  if (tracking) {
-    return (
-      <NextSeasonChampionshipConfirm
-        value={value}
-        onChange={onChange}
-        onNext={onNext}
-        tracking={tracking}
-      />
-    );
-  }
-
-  return <FirstTimeChampionshipPicker value={value} onChange={onChange} />;
-}
-
-/** Original behavior — operator hasn't told us yet. */
-function FirstTimeChampionshipPicker({
-  value,
-  onChange,
-}: {
-  value: ChampionshipValue | undefined;
-  onChange: (v: ChampionshipValue) => void;
-}) {
   const current = value ?? { trackBca: false, trackApa: false };
 
   return (
@@ -146,88 +122,126 @@ function FirstTimeChampionshipPicker({
   );
 }
 
-/**
- * Click-thru: one button to skip (= keep as-is + advance), one to
- * change. No radio, no extra Next click.
- */
-function NextSeasonChampionshipConfirm({
+// ----------------------------------------------------------------------------
+// 2. Gate (season wizard, next-season flow)
+// ----------------------------------------------------------------------------
+
+export function ChampionshipModeStep({
   value,
   onChange,
   onNext,
-  tracking,
-}: {
-  value: ChampionshipValue | undefined;
-  onChange: (v: ChampionshipValue) => void;
-  onNext: () => void;
-  tracking: NonNullable<FlowContextShape['championshipTracking']>;
-}) {
-  const [editing, setEditing] = useState(false);
+  formData,
+}: WizardStepProps<ChampionshipModeValue | undefined, unknown>) {
+  const flowContext = (formData as Record<string, unknown>)._flowContext as
+    | FlowContextShape
+    | undefined;
+  const tracking = flowContext?.championshipTracking ?? {
+    trackBca: false,
+    trackApa: false,
+  };
 
-  const snapshot: ChampionshipValue = {
+  const keepSnapshot: ChampionshipModeValue = {
+    mode: 'keep',
     trackBca: tracking.trackBca,
     trackApa: tracking.trackApa,
   };
-  const current = value ?? snapshot;
 
-  // Conversational summary line: "BCA (dates) but not APA" / "BCA + APA" / etc.
+  // Snapshot the defaults on mount so summary + downstream creation
+  // have values even before the user clicks Keep.
+  useEffect(() => {
+    if (!value) onChange(keepSnapshot);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tracking.trackBca, tracking.trackApa]);
+
+  const handleKeep = () => {
+    onChange(keepSnapshot);
+    onNext();
+  };
+
+  const handleChange = () => {
+    onChange({ mode: 'change' });
+    onNext();
+  };
+
   const question = (() => {
     const both = tracking.trackBca && tracking.trackApa;
     const onlyBca = tracking.trackBca && !tracking.trackApa;
     const onlyApa = !tracking.trackBca && tracking.trackApa;
     if (both) {
-      return `You're tracking both BCA (${tracking.bcaDates ?? 'dates TBD'}) and APA (${tracking.apaDates ?? 'dates TBD'}). Keep that?`;
+      return `You're tracking both BCA (${flowContext?.championshipTracking?.bcaDates ?? 'dates TBD'}) and APA (${flowContext?.championshipTracking?.apaDates ?? 'dates TBD'}). Use the same setup?`;
     }
     if (onlyBca) {
-      return `You're tracking BCA (${tracking.bcaDates ?? 'dates TBD'}) but not APA. Keep that?`;
+      return `You're tracking BCA (${flowContext?.championshipTracking?.bcaDates ?? 'dates TBD'}) but not APA. Use the same setup?`;
     }
     if (onlyApa) {
-      return `You're tracking APA (${tracking.apaDates ?? 'dates TBD'}) but not BCA. Keep that?`;
+      return `You're tracking APA (${flowContext?.championshipTracking?.apaDates ?? 'dates TBD'}) but not BCA. Use the same setup?`;
     }
-    // Step should be hidden via showIf when neither is tracked, but
-    // handle the case gracefully just in case.
-    return `You're not tracking BCA or APA. Keep that?`;
+    return `You're not tracking BCA or APA conflicts. Use the same setup?`;
   })();
 
-  const handleSkip = () => {
-    onChange(snapshot);
-    onNext();
+  return (
+    <div className="space-y-6 max-w-lg">
+      <div className="flex items-center gap-1">
+        <p className="font-medium text-foreground">National Championships</p>
+        <InfoButton title="Championship Conflicts" size="sm">
+          <p>
+            You set this when you created your first league. We carry it
+            forward each season — but you can change it any time.
+          </p>
+        </InfoButton>
+      </div>
+
+      <p className="text-foreground">{question}</p>
+
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Button onClick={handleKeep} loadingText="none">
+          Keep — same as last season
+        </Button>
+        <Button variant="outline" onClick={handleChange} loadingText="none">
+          Change tracking →
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------------
+// 3. Editor (season wizard, next-season flow — only when gate=change)
+// ----------------------------------------------------------------------------
+
+export function ChampionshipEditStep({
+  value,
+  onChange,
+  formData,
+}: WizardStepProps<ChampionshipValue | undefined, unknown>) {
+  const flowContext = (formData as Record<string, unknown>)._flowContext as
+    | FlowContextShape
+    | undefined;
+  const tracking = flowContext?.championshipTracking ?? {
+    trackBca: false,
+    trackApa: false,
   };
 
-  if (!editing) {
-    return (
-      <div className="space-y-6 max-w-lg">
-        <div className="flex items-center gap-1">
-          <p className="font-medium text-foreground">National Championships</p>
-          <InfoButton title="Championship Conflicts" size="sm">
-            <p>
-              You set this when you created your first league. We
-              carry it forward each season — but you can change it
-              any time.
-            </p>
-          </InfoButton>
-        </div>
+  const current = value ?? {
+    trackBca: tracking.trackBca,
+    trackApa: tracking.trackApa,
+  };
 
-        <p className="text-foreground">{question}</p>
-
-        <div className="flex flex-col sm:flex-row gap-3">
-          <Button onClick={handleSkip} loadingText="none">
-            Keep — same as last season
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setEditing(true)}
-            loadingText="none"
-          >
-            Change tracking →
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (!value) {
+      onChange({ trackBca: tracking.trackBca, trackApa: tracking.trackApa });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
-    <div className="space-y-4 max-w-lg">
-      <p className="font-medium text-foreground">Change championship tracking</p>
+    <div className="space-y-6 max-w-lg">
+      <div>
+        <p className="font-medium text-foreground">Change championship tracking</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          Toggle which championships should be flagged on your schedule.
+        </p>
+      </div>
 
       <div className="space-y-3">
         <div className="flex items-center gap-3">
@@ -268,18 +282,6 @@ function NextSeasonChampionshipConfirm({
           </Label>
         </div>
       </div>
-
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => {
-          onChange(snapshot);
-          setEditing(false);
-        }}
-        loadingText="none"
-      >
-        ← Use last season&rsquo;s tracking instead
-      </Button>
     </div>
   );
 }
