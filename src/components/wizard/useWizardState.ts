@@ -48,11 +48,20 @@ export function useWizardState<TFormData>({
 }: UseWizardStateOptions<TFormData>) {
   const [formData, setFormData] = useState<TFormData>(initialFormData);
   const [currentStepId, setCurrentStepId] = useState<string>(() => {
-    // Prefer the persisted step if it's still a valid step in the current config
-    if (initialStepId && steps.some((s) => s.id === initialStepId)) {
-      return initialStepId;
+    // Prefer the persisted step if it's STILL a valid AND VISIBLE step
+    // in the current config. A persisted step that's now hidden via
+    // showIf (e.g., schema changed since the wizard was paused) falls
+    // through to "first visible" so the wizard never lands on a hidden
+    // step.
+    if (initialStepId) {
+      const persistedStep = steps.find((s) => s.id === initialStepId);
+      if (persistedStep && (!persistedStep.showIf || persistedStep.showIf(initialFormData))) {
+        return initialStepId;
+      }
     }
-    return steps[0]?.id ?? '';
+    // First visible step — skip any that are hidden by their showIf check.
+    const firstVisible = steps.find((s) => !s.showIf || s.showIf(initialFormData));
+    return firstVisible?.id ?? steps[0]?.id ?? '';
   });
 
   const currentIndex = steps.findIndex((s) => s.id === currentStepId);
