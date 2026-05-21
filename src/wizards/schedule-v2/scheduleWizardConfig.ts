@@ -49,11 +49,15 @@ export const scheduleWizardConfig: WizardConfig<ScheduleWizardFormData> = {
         // TEMP debug — remove after diagnosing why championship step
         // shows on next-season runs when it shouldn't.
         // eslint-disable-next-line no-console
-        console.log('[scheduleWizardConfig] championships showIf', {
-          hasCtx: !!ctx,
-          championshipTracking: ctx?.championshipTracking,
-          willShow: !ctx?.championshipTracking,
-        });
+        console.log(
+          '[scheduleWizardConfig] championships showIf →',
+          JSON.stringify({
+            hasCtx: !!ctx,
+            ctxKeys: ctx ? Object.keys(ctx) : null,
+            championshipTracking: ctx?.championshipTracking,
+            willShow: !ctx?.championshipTracking,
+          }),
+        );
         return !ctx?.championshipTracking;
       },
       component: ChampionshipStep as WizardConfig<ScheduleWizardFormData>['steps'][number]['component'],
