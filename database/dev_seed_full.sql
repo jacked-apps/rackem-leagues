@@ -327,7 +327,7 @@ BEGIN
   RAISE NOTICE 'Logins (password "password"): dev@test.com (LO+captain),';
   RAISE NOTICE '  cap1@test.com, cap2@test.com, cap3@test.com (captains)';
   RAISE NOTICE '3 leagues (3v3 points / 5v5 percentage / 5v5 fargo 10-7),';
-  RAISE NOTICE '  4 teams each, rosters filled, 6 scheduled matches each.';
+  RAISE NOTICE '  4 teams each, rosters filled, 12 weeks x 2 = 24 matches each.';
   RAISE NOTICE 'Sign in at http://localhost:5173/login as dev@test.com.';
   RAISE NOTICE '====================================================';
 END $$;
