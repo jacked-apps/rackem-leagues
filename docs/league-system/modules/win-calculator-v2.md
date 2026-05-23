@@ -3,99 +3,128 @@ title: Win Calculator (Module) — v2 DRAFT
 date: 2026-05-23
 status: draft
 supersedes: win-calculator.md (pending ratification)
-audience: AI sessions + expert dev
+audience: developer + AI sessions
 ---
 
 > ## ✍️ DRAFT — NOT YET CANON
-> Proposed v2 replacement for locked [`win-calculator.md`](win-calculator.md) (2026-05-23 endgame brainstorm). Unlocked by design; carries no locked banner; not authoritative. Ratify by swapping this content into the locked file via the [Principle 7](../PRINCIPLES.md#7-canonical-docs-as-policy) unlock→swap→relock cycle; the [delta list](#what-this-changes-vs-the-locked-v1) is the diff to apply.
+>
+> Proposed v2 replacement for the locked [`win-calculator.md`](win-calculator.md), from the 2026-05-23 Win Calculator / endgame brainstorm. **Built as a surgical diff of v1**: every section not touched by a listed delta is preserved verbatim; only the [6 deltas](#changes-vs-the-locked-v1-draft-only--remove-at-ratification) are changed, for stated reasons. Unlocked by design; carries no locked banner; not authoritative. Ratify by swapping this body into the locked file via the [Principle 7](../PRINCIPLES.md#7-canonical-docs-as-policy) unlock→swap→relock cycle, only after it passes the cold-read gate.
 
-# Win Calculator (v2 draft)
+# Win Calculator
 
 ## Essence
 
-Side-effect-free **verdict function** `(match state) → result`, with `result ∈ {home, away, ∅}` (∅ ≡ no winner ≡ tie). Resolution is short-circuiting:
+The **Win Calculator** examines the collected match data — the two metrics every match tracks (Games and Points) plus any thresholds the Handicap Mechanisms declared — and **declares the match winner**. It is a **pure judge**: given the match state it returns one verdict — a winning side, or a tie — and does nothing else (it allocates no points, ends no match, records nothing). It reaches the verdict in a fixed order: if a **winner chip** has already been set during play, that side won; otherwise it walks a configurable, LO-ordered set of **comparators** and takes the first that yields a winner; if none does, the verdict is a **tie** — a conclusion, never a stored value. The Win Calculator does not produce metrics and does not allocate points. It *decides*.
 
-1. **Chip set?** If `result` already holds a winner (an affirmative write during play), return it; comparators skip.
-2. **Else walk the comparator switch** — the LO-ordered winner predicates; the first decisive one writes `result`.
-3. **Else ∅** — a tie is the terminal *residue*, never an emitted value.
+## Why the Win Calculator exists
 
-Pure/idempotent: re-invocation on identical state yields the identical verdict; the Module allocates no points, emits no flow-control, performs no I/O. (Extractable analogy: handicap lays the track; Win Calc is the finish tape + photo-finish — judgment only, not setup or operation.)
+Every match accumulates two streams of data: **games** (winner/loser recorded per game) and **points** (allocated by the Points System). Something has to look at that data and answer the only question that ultimately matters: *who won the match?* That is the Win Calculator's single job.
 
-## Why it exists
-
-Anti-conflation of *production* vs *decision*. A match accumulates two data streams — games (recorded per game) and points (allocated by [Points System](points-system/README.md)). Producing point data and deciding the winner are distinct responsibilities; this Module is solely the latter.
+Separating this out is load-bearing anti-conflation. It is tempting to assume "the scoring system" both allocates points AND decides victory — but those are two different responsibilities. The [Points System](points-system/README.md) allocates points; the Win Calculator decides the winner. A Points System rule (like CSI's "1-Point Scoring System") never, by itself, declares a winner — it just produces the point data the Win Calculator then consults.
 
 ## Boundary
 
-Owns winner determination only. NOT: per-game point production → [Points System](points-system/README.md); strength encoding → [Handicap System](handicap-systems/README.md); asymmetry kind (head-start vs asymmetric race) → [Handicap Mechanism](handicap-mechanisms/README.md); target derivation → [Threshold Chart](threshold-charts/README.md); edge production → [Tiebreak System](tiebreak-system/README.md); match termination → the `endMatch` token (runtime-consumed); endgame sequencing (point awards, confirmation, undo, recording) → the runtime/"director", **outside the Scoring System catalog**.
+The Win Calculator is **only** the victory-determination step. It is **not**:
 
-Classifier: *what data declares the winner* → here; *how points are produced* → Points System; *when play stops* → `endMatch`/runtime; *how a tie is broken* → Tiebreak System.
+- The per-game point allocation — that's the **[Points System](points-system/README.md)**.
+- The encoding of player strength — that's a **[Handicap System](handicap-systems/README.md)**.
+- The kind-of-asymmetry the handicap declares — that's a **[Handicap Mechanism](handicap-mechanisms/README.md)**.
+- The chart/formula that turns a handicap difference into a threshold — that's a **[Threshold Chart](threshold-charts/README.md)**.
+- The structural game-slot list that scaffolds a match — that's the **[Pairings Generator](pairings-generator.md)** (its output is filled by the scoring runtime and the aggregated game data is what the Win Calculator eventually reads).
+- The atomic methods that produce a winner when a tie needs resolving — that's the **[Tiebreak System](tiebreak-system/README.md)**. The Win Calculator *concludes* a tie when its comparators yield no winner; the **scoring runtime** then runs the Tiebreak System, which produces a winner that re-enters as the winner chip. The Tiebreak System owns *how* that winner is produced (coin flip, short race, roshambo, etc.).
+- Ending the match early (race-mode termination) — that's the separate **`endMatch`** flow-control token, set by a trigger and consumed by the scoring runtime, not the Win Calculator.
+- The post-verdict sequence — match-end point awards, two-scorekeeper confirmation, undo, and final recording — sequenced by the scoring runtime (the "director") and living **outside the modular Scoring System catalog**. The Win Calculator returns the verdict; it orchestrates none of this.
+- The season-standings table — that's a separate Standings concern that lives **outside the modular Scoring System catalog entirely**. Its architectural shape (Module? System? subsystems for personal stats / achievements?) is a separate future brainstorm. The Win Calculator declares the per-match winner; the Standings concern consumes per-match results across the season to rank teams.
 
-## Verdict model — `result` + win chip
+If a proposed feature changes *which collected metric (or combination) declares the winner, or how a tie resolves* — it belongs here. If it changes *how points get allocated per game* — that's the Points System. If it changes *when the match stops* — that's the `endMatch` token and the scoring runtime.
 
-`result` carries a **winner only** (`home|away`), never `tie` (tie ≡ ∅, see [Ties](#ties)). The **win chip** is any affirmative winner-write into `result`, from three interchangeable producers:
+## The comparator switch
 
-- a **win-threshold trigger** during play (clinch; `anytime` or `match_end` TYPE per [Trigger](points-system/trigger.md));
-- a **comparator** at terminal;
-- the **[Tiebreak System](tiebreak-system/README.md)** post-∅.
+The Win Calculator holds an **LO-ordered set of comparators** — the configurable replacement for a single fixed win-condition. When no winner chip is present, at match end:
 
-Chip is **checked first → short-circuit/override**. Mandatory: asymmetric per-side targets make cross-side raw comparison undefined, so a clinch must bind unconditionally rather than be re-litigated by a comparator. **Recalc** = re-invocation after a producer mutates `result`; the Tiebreak path is guaranteed to terminate it (Tiebreak is a total function — its chain auto-appends a terminal human-pick).
+1. Walk the comparators in the LO's order.
+2. For each, inspect the match data; the comparator returns a winner, or "no decision."
+3. The **first comparator that returns a winner** decides.
+4. If a comparator cannot decide, continue to the next.
+5. If the set is exhausted with no winner, the verdict is a **tie** (see [Ties and the Tiebreak System](#ties-and-the-tiebreak-system)).
 
-## Comparator switch (internal composition)
+There are four comparators — a 2×2 of *what* is compared and *how*:
 
-Win Calc is a [System](../PRINCIPLES.md#system--deep-dive) composing **comparator Mechanisms**; the LO selects + orders them (the "switch"), persisted as **data** (workshop-exposable, no engine change to add/reorder). Catalog is a 2×2:
-
-| | totals-compare (symmetric) | target-compare (asymmetric) |
+| | **compare-totals** (symmetric) | **compare-to-target** (asymmetric) |
 |---|---|---|
-| **games** | max games | games vs per-side games-target |
-| **points** | max points | points vs per-side points-target |
+| **games** | most games | games vs per-side games-target |
+| **points** | most points | points vs per-side points-target |
 
-- **totals-compare** — valid iff the handicap advantage is folded into the totals (e.g. [`start_points`](handicap-mechanisms/README.md) head-start); decisive only at terminal; ∅ on equality.
-- **target-compare** — reads per-side targets from the [Threshold Chart](threshold-charts/README.md) ([`extra_games`](handicap-mechanisms/README.md)); the only comparator that **clinches early** (emits the chip mid-play).
+- **compare-totals** — the side with the higher total wins; a tie is equal totals. Valid only when the handicap advantage is already folded into the totals (e.g., a head start via `start_points`), so the raw numbers are comparable across sides.
+- **compare-to-target** — each side is measured against its own target from the [Threshold Chart](threshold-charts/README.md) (e.g., `extra_games`). This is the comparator that can **clinch early** — emit the winner chip the instant a side meets its win-target, mid-match.
 
-Switch examples: asymmetric-games (BCA 3v3) = `[target-compare games]`; pure-points (Fargo 10-7) = `[totals-compare points, totals-compare games, →Tiebreak]`; either (Percentage 5v5) = LO choice.
+The simplest set is one comparator — equivalent to today's primitive `win_condition` field. A league using `win_condition='games'` has the one-entry set `[compare-totals games]`; `'points'` has `[compare-totals points]`. Real configurations chain more — e.g., Fargo 10-7 is `[compare-totals points, compare-totals games]` then the Tiebreak System; BCA 3v3 is `[compare-to-target games]`.
 
-## `endMatch` — orthogonal termination token
+The comparator set is what makes Win Calculator *configurable* rather than primitive. Each Scoring System composition picks its set, and the set is stored as data so the build/tinker workspace can expose it.
 
-Stopping play is a **separate flow-control token** (`endMatch`), runtime-consumed, not Win Calc's. The two dissociate: win∧¬end (threshold-mode clinch, play continues), end∧¬chip (schedule exhausted, comparators then decide), win∧end (race-mode). Race-mode = **two triggers on one condition** (one writes `result`, one writes `endMatch`; per Trigger "two effects = two triggers"). "Ends on threshold met" is therefore a per-league setting ≡ presence of the `endMatch` trigger; the chip is unchanged.
+## The winner chip and `result`
 
-## Ties
+The Win Calculator's output is **`result`**, holding a **winner only** (`home` or `away`) — never "tie" (a tie is the absence of a winner; see [Ties](#ties-and-the-tiebreak-system)). The **winner chip** is any affirmative write of a winner into `result`. It can come from three interchangeable producers, all meaning the same thing to the judge:
 
-∅ is a **concluded residue, not a signal** — concludable only at terminal state, which structurally forbids premature ties. target-compare: the chart supplies a win-target **and** a tie-target; ∅ recognized only at terminal with no win chip and no side at its win-target. totals-compare: ∅ ≡ equality.
+- a **win-threshold trigger** during play (a side met its win-target — a clinch), firing mid-match or on the final game;
+- a **comparator**, at match end;
+- the **[Tiebreak System](tiebreak-system/README.md)**, after a tie has been concluded.
 
-Routing of ∅: **tiebreak assigned** → runtime executes it → winner → chip → recalc → verdict; **unassigned** → `result` stays ∅ through full resolution → recorder persists a tie. **Allow-Ties = explicit slot occupant** (no null/empty sentinel — absence cannot distinguish "deliberate" from "unconfigured"). An assigned tiebreak cannot itself yield ∅ (terminal human-pick is total) ⇒ persisted-tie ⟺ Allow-Ties selected.
+The chip is **checked first — an override**: if `result` is already set, the comparators do not run. This is mandatory because compare-to-target targets are asymmetric per side, so comparing raw counts across sides is meaningless — a clinch must bind unconditionally. **Recalc** is simply re-running the judge after a producer has written `result`; the Tiebreak path is guaranteed to terminate it (the Tiebreak System always produces a winner — its chain auto-appends a terminal human-handoff).
 
-**Config vs execution**: tiebreak selection/order/allow-ties ∈ Scoring System (the terminal winner-determination piece); execution (coin flip, played mini-match, human pick — human/async) ∈ runtime. A mini-match tiebreaker is a second match; matches are runtime-run.
+## Ties and the Tiebreak System
 
-## Director boundary
+A tie is a **conclusion, not a signal**. A win is an event a side achieves and gets *written*; a tie is what remains when nothing decisive happened, and is only ever *concluded* at match end. Concluding it only at the end is what prevents a premature tie — a side sitting on its tie-target with games still to play might yet win.
 
-Win Calc = pure verdict; the **runtime/"director"** (outside the catalog) sequences everything around it. Match-end point awards = `match_end` triggers reading `result` from the state bag, ORDER-sequenced — **no Win Calc→Points call**. Confirmation (two-scorekeeper handshake) + recording = runtime-driven reactions to the verdict; Win Calc never hands off. Undo = recompute (vacate-and-rescore), free given purity. The runtime **invokes modules by contract, never reaches internals**. Purity ⇒ the never-break floor: a side-effect-free verdict has minimal throw surface.
+- In a **compare-to-target** rule, the [Threshold Chart](threshold-charts/README.md) hands each side a **win-target and a tie-target**. A win-trigger watches the win-target; a tie is recognized only at match end, when no winner chip fired and neither side met its win-target.
+- In a **compare-totals** rule, a tie is simply equal totals at the end.
+
+When the comparators yield no winner, the **scoring runtime** runs the LO's configured Tiebreak System. It produces a winner, which is written as the `result` chip; the Win Calculator then recalcs and declares that side the winner.
+
+**Win Calculator is "dumb" about how the tiebreak winner was produced.** It just sees a winner in `result` and uses it; it doesn't know or care whether that came from a coin flip or a single-rack tiebreaker game. This keeps Win Calculator the sole authority on "who won the match" while the Tiebreak System owns the *how*.
+
+**Accept-tie via an explicit Allow-Ties module.** Some leagues want a tied match to stand. Rather than an empty/absent tie slot (which cannot tell "deliberately allow ties" from "not configured"), the tie slot holds an explicit **Allow-Ties** module. An *assigned* Tiebreak System can never itself yield a tie (its terminal human-handoff always produces a winner), so a match recorded as tied unambiguously means the LO selected Allow-Ties.
+
+**Config lives here; execution lives in the runtime.** Which tiebreak modules, in what order, and allow-ties-or-not is *configuration* — part of the Scoring System, the last piece of winner determination. Actually *running* the tiebreak (coin flip, a played mini-match, a human pick — all human/async) is the runtime's job. (A mini-match tiebreaker is literally a second match, and matches are runtime-run.)
 
 ## Current implementation status
 
-Stand-in: binary `win_condition ∈ {games, points}`; the unified model is not in code. target-compare/chip requires a **Threshold Trigger**, which requires **[Threshold Charts](threshold-charts/README.md)** + the **[Trigger](points-system/trigger.md)** primitive in code — hence build order Threshold Charts → Trigger → this Module. (Unit sequencing → migration plan, not this blueprint.)
+Today's code is the primitive stand-in: a single binary field, `win_condition`, with values `'games'` or `'points'`. This is equivalent to a one-entry comparator set with no winner chip and no Tiebreak System; ties at the chosen metric are handled by scattered runtime hooks rather than the structured comparator-set-plus-chip model described above. The full model — the comparator switch, the winner chip, and the Tiebreak System integration — is the architectural direction developed in the 2026-05-23 Win Calculator / endgame brainstorm and not yet in code. Notably, **compare-to-target / the clinch chip requires a Threshold Trigger**, which requires the **[Threshold Charts](threshold-charts/README.md)** Module and the **[Trigger](points-system/trigger.md)** primitive to exist in code first; the build order is therefore Threshold Charts → Trigger → this Module. Implementation will require new preference column(s) describing the LO-configured comparator set and the integrated Tiebreak System chain evaluator.
 
 ## Remaining open design space
 
-Comparator-switch persistence shape; race-mode `endMatch` semantics (no race league ships today); comparator-catalog growth via registry (data, not engine).
+Beyond the comparator switch and Tiebreak System integration documented above, the Win Calculator's fuller design space still contains genuinely-future items:
+
+1. **Race-mode termination** — the `endMatch` token models early termination, but its "end now" trigger semantics are unbuilt; today every match plays its full game count.
+2. **Cross-axis conditions** — rules that consult both metric axes at once. Example from the Points 3-Man Scoring System: *"positive points are only awarded if the game threshold is reached; it is possible to win the match with zero points."* Currently this kind of cross-axis condition lives inside the Points System calculator (`linear_above_threshold`), not in Win Calculator. A future refactor could lift it.
+3. **Per-game evaluation cadence** — race-mode requires checking after every game; threshold-mode can evaluate once at match-end. Today only threshold-mode is wired; race-mode evaluation cadence is unbuilt.
+4. **Comparator-set persistence shape** — how the LO-ordered set is stored as data (preference column shape) is an implementation-time choice.
 
 ## How this Module interacts
 
-Upstream: games + points data + per-side targets ([Handicap Mechanisms](handicap-mechanisms/README.md) + [Threshold Charts](threshold-charts/README.md)). Output: `result` (or ∅ → recorded tie). Tiebreak: ∅ fires [Tiebreak System](tiebreak-system/README.md) via the runtime; the winner re-enters as the chip → recalc (sequential, not circular). Downstream: per-match verdict → Standings concern (outside the catalog).
+- **Upstream**: consumes the two **metrics** (Games and Points data) plus the **thresholds** declared by [Handicap Mechanisms](handicap-mechanisms/README.md) and the point totals produced by the [Points System](points-system/README.md). The per-game data feeding those metrics arrives via the scoring runtime, which fills in the game slots produced by the [Pairings Generator](pairings-generator.md) — the Win Calculator does not read Pairings Generator's output directly, but its inputs originate downstream of that Module's slot list.
+- **Output**: the match result — the declared winner, or a tie when no winner is produced.
+- **Tiebreak**: when the comparators yield no winner, the scoring runtime fires the [Tiebreak System](tiebreak-system/README.md); the winner it produces re-enters as the `result` chip and the Win Calculator recalcs. Sequential, not circular: comparators conclude tie → runtime runs Tiebreak System → winner written → Win Calc recalcs.
+- **Downstream**: the per-match result feeds the Standings concern (outside the modular Scoring System catalog — its architectural shape is a separate future brainstorm) for season-level ranking. The Win Calculator answers *"who won this match"*; the future Standings concern answers *"given the season's match results, who finishes where."*
 
-## What this changes vs. the locked v1
+## Changes vs the locked v1 (draft-only — remove at ratification)
 
-Diff to apply when swapping out [`win-calculator.md`](win-calculator.md):
+The complete diff against [`win-calculator.md`](win-calculator.md). Everything not listed here is preserved verbatim.
 
-1. **Two-mode framing dropped.** 2026-05-18 "chip-mode vs cascade-mode" → one judge (chip-short-circuit + comparator switch). "chip-mode" ≡ a target-compare comparator configured; "cascade-mode" ≡ totals-compare comparators.
-2. **`result` win-only; tie = ∅ residue.** v1 "metric precedence stack with `edge` as lowest entry" → chip-override + recalc; no `edge`-as-bottom-metric.
-3. **Comparators = explicit 2×2** ({games,points}×{totals,target}) vs abstract "metric precedence stack."
-4. **`endMatch` modeled as its own token** (v1 unmodeled; 2026-05-18 lumped "end game now" onto the chip).
-5. **Orchestration removed from Win Calc.** v1 + 2026-05-18 had Win Calc fire the tiebreak and orchestrate the end-cascade; here Win Calc is pure and the runtime/director sequences tiebreak, point awards, confirmation, recording.
-6. **Allow-Ties = explicit module** in the tie slot (no null/empty-slot sentinel for ties-allowed).
+1. **One judge, not a two-mode split.** The 2026-05-18 chip-mode/cascade-mode framing is gone; the judge is chip-checked-first + an LO-ordered comparator switch. ("chip-mode" = a compare-to-target comparator configured; "cascade-mode" = compare-totals comparators.)
+2. **`result` is win-only; a tie is a concluded residue.** v1's "metric precedence stack with `edge` as the lowest entry" is replaced by the winner chip (override) + recalc; there is no `edge`-as-bottom-metric.
+3. **Comparators named as a 2×2** ({games, points} × {compare-totals, compare-to-target}) in place of the abstract "metric precedence stack."
+4. **`endMatch` is its own flow-control token**, separate from the winner declaration (v1 did not model termination as a token; the 2026-05-18 draft lumped "end game now" onto the chip).
+5. **Orchestration removed from Win Calculator.** v1 had it "own the decision to fire" the tiebreak; here the Win Calculator is a pure judge that *concludes* a tie, and the **scoring runtime/director** fires the tiebreak and sequences point awards, confirmation, undo, and recording.
+6. **Allow-Ties is an explicit module** occupying the tie slot, replacing v1's "accept-tie = omit `edge` from the stack."
 
 ## Source of truth
 
-- Prior direction (superseded by this v2): `docs/brainstorms/2026-05-18-win-calculator-trigger-and-cascade-direction-requirements.md` — the two-mode framing this draft replaces, developed forward in the 2026-05-23 Win Calculator / endgame brainstorm.
-- Current primitive code: `src/types/preferences.ts` (`win_condition`); `src/systems/win-calculators/` (cascade-mode-only scaffolding); `src/systems/buildSystemFromPreferences.ts`.
-- The unified model above is not yet in code.
+**Current code (the primitive stand-in):**
+- `src/types/preferences.ts` and `src/types/resolvedSystemConfig.ts` — the `win_condition` column type (`'games' | 'points'`)
+- `supabase/migrations/20260429000001_extend_preferences_phase2_modular_axes.sql` — DB CHECK for `win_condition`
+- `src/systems/buildSystemFromPreferences.ts` — the dispatch that routes match-result determination based on `win_condition`
+- `src/systems/win-calculators/` — cascade-mode-only scaffolding from the halted Unit 1 extraction
+- `src/wizards/league-v2/steps/WinConditionStep.tsx` — wizard UI for selecting the win condition
+
+**The comparator-switch + winner-chip model documented above is not yet in code.** Prior direction (superseded by this v2): `docs/brainstorms/2026-05-18-win-calculator-trigger-and-cascade-direction-requirements.md`, developed forward in the 2026-05-23 Win Calculator / endgame brainstorm.
