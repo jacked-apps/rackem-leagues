@@ -274,7 +274,7 @@ BEGIN
     RETURNING id INTO v_season_id;
 
     v_week_ids := ARRAY[]::UUID[];
-    FOR v_w IN 1..3 LOOP
+    FOR v_w IN 1..12 LOOP
       INSERT INTO season_weeks (season_id, scheduled_date, week_name, week_type)
       VALUES (v_season_id, CURRENT_DATE + ((v_w - 1) * 7), 'Week ' || v_w, 'regular')
       RETURNING id INTO v_week_id;
@@ -302,18 +302,23 @@ BEGIN
       END LOOP;
     END LOOP;
 
-    -- Schedule: 4-team single round-robin (3 weeks × 2 matches), all scheduled.
+    -- Schedule: 12 weeks = the 4-team round-robin (3 rounds) repeated 4×, so
+    -- every week has 2 matches and the season is a realistic length.
     v_mnum := 0;
-    FOREACH v_pair SLICE 1 IN ARRAY v_rr LOOP
-      v_mnum := v_mnum + 1;
-      INSERT INTO matches (
-        season_id, season_week_id, home_team_id, away_team_id,
-        match_number, status, scheduled_venue_id
-      ) VALUES (
-        v_season_id, v_week_ids[v_pair[1]],
-        v_team_ids[v_pair[2]], v_team_ids[v_pair[3]],
-        v_mnum, 'scheduled', v_venue_id
-      );
+    FOR v_w IN 1..12 LOOP
+      FOREACH v_pair SLICE 1 IN ARRAY v_rr LOOP
+        IF v_pair[1] = ((v_w - 1) % 3) + 1 THEN
+          v_mnum := v_mnum + 1;
+          INSERT INTO matches (
+            season_id, season_week_id, home_team_id, away_team_id,
+            match_number, status, scheduled_venue_id
+          ) VALUES (
+            v_season_id, v_week_ids[v_w],
+            v_team_ids[v_pair[2]], v_team_ids[v_pair[3]],
+            v_mnum, 'scheduled', v_venue_id
+          );
+        END IF;
+      END LOOP;
     END LOOP;
   END LOOP;
 
