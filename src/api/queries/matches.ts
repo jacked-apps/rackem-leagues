@@ -963,24 +963,75 @@ export async function updateMatchRunningTotals(matchId: string): Promise<void> {
     return;
   }
 
-  const totals = computeMatchRunningTotals({
+  const homeThresholds = {
+    games_to_win: matchRow.home_to_win,
+    games_to_tie: matchRow.home_to_tie,
+    games_to_lose: matchRow.home_to_lose,
+  };
+  const awayThresholds = {
+    games_to_win: matchRow.away_to_win,
+    games_to_tie: matchRow.away_to_tie,
+    games_to_lose: matchRow.away_to_lose,
+  };
+
+  // Legacy totals: kept as the never-break FALLBACK and the auditor. Post Strand-B
+  // flip the new engine is the source of truth, but legacy still runs so (a) we
+  // can fall back to it if the engine path can't compute, and (b) it audits the
+  // engine and logs any divergence ("two paths audit each other").
+  const legacyTotals = computeMatchRunningTotals({
     homeTeamId: matchRow.home_team_id,
     awayTeamId: matchRow.away_team_id,
-    homeThresholds: {
-      games_to_win: matchRow.home_to_win,
-      games_to_tie: matchRow.home_to_tie,
-      games_to_lose: matchRow.home_to_lose,
-    },
-    awayThresholds: {
-      games_to_win: matchRow.away_to_win,
-      games_to_tie: matchRow.away_to_tie,
-      games_to_lose: matchRow.away_to_lose,
-    },
+    homeThresholds,
+    awayThresholds,
     games: games as Parameters<typeof computeMatchRunningTotals>[0]['games'],
     pointsCalculator,
     pointsCalculatorParams,
     winCondition,
   });
+
+  // Strand-B flip: the NEW modular engine computes the totals the match row is
+  // written with. It never throws — on any failure it returns null and we fall
+  // back to legacy, so the columns are always populated and live scoring is
+  // never interrupted. Games-won is recorded on the sacred path regardless.
+  let totals = legacyTotals;
+  try {
+    const { computeEngineRunningTotals, runningTotalsDiffer } = await import(
+      '@/utils/match/engineRunningTotals'
+    );
+    const engineTotals = await computeEngineRunningTotals({
+      matchId,
+      homeTeamId: matchRow.home_team_id,
+      awayTeamId: matchRow.away_team_id,
+      homeThresholds,
+      awayThresholds,
+      games: games as Parameters<typeof computeEngineRunningTotals>[0]['games'],
+      pointsCalculator,
+      pointsCalculatorParams,
+      winCondition,
+    });
+    if (engineTotals) {
+      totals = engineTotals;
+      // Reverse audit: legacy now checks the engine (the source of truth).
+      if (runningTotalsDiffer(engineTotals, legacyTotals)) {
+        console.warn(
+          '[matches.updateMatchRunningTotals] engine vs legacy DIVERGENCE (engine is source of truth)',
+          JSON.stringify({
+            matchId,
+            pointsCalculator,
+            winCondition,
+            engine: engineTotals,
+            legacy: legacyTotals,
+          }),
+        );
+      }
+    }
+  } catch (e) {
+    // Engine path unavailable → `totals` is already the legacy fallback. Never break.
+    console.warn(
+      '[matches.updateMatchRunningTotals] engine path failed, using legacy',
+      e instanceof Error ? e.message : String(e),
+    );
+  }
 
   const { error: writeErr } = await supabase
     .from('matches')
@@ -992,39 +1043,6 @@ export async function updateMatchRunningTotals(matchId: string): Promise<void> {
       '[matches.updateMatchRunningTotals] write error',
       writeErr.message,
     );
-  }
-
-  // Shadow audit (Strand-B points cutover): run the NEW modular engine
-  // alongside the legacy result just written and log any divergence. Pure
-  // observation — never writes the match row, never throws, never blocks the
-  // scoring flow. Lets us prove parity on real data before flipping the live
-  // path over to the engine. Remove this call at the flip.
-  try {
-    const { shadowAuditRunningTotals } = await import(
-      '@/utils/match/shadowAuditRunningTotals'
-    );
-    await shadowAuditRunningTotals({
-      matchId,
-      homeTeamId: matchRow.home_team_id,
-      awayTeamId: matchRow.away_team_id,
-      homeThresholds: {
-        games_to_win: matchRow.home_to_win,
-        games_to_tie: matchRow.home_to_tie,
-        games_to_lose: matchRow.home_to_lose,
-      },
-      awayThresholds: {
-        games_to_win: matchRow.away_to_win,
-        games_to_tie: matchRow.away_to_tie,
-        games_to_lose: matchRow.away_to_lose,
-      },
-      games: games as Parameters<typeof shadowAuditRunningTotals>[0]['games'],
-      pointsCalculator,
-      pointsCalculatorParams,
-      winCondition,
-      legacyTotals: totals,
-    });
-  } catch {
-    // Shadow audit must never perturb live scoring.
   }
 }
 

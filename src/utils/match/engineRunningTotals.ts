@@ -1,18 +1,17 @@
 /**
- * @fileoverview Shadow audit for the Strand-B points cutover.
+ * @fileoverview Engine running-totals — the NEW modular Points System path.
  *
- * Runs the NEW modular Points System engine
- * (`computeMatchRunningTotalsViaEngine`) ALONGSIDE the legacy
- * `computeMatchRunningTotals` on every real scoring mutation, compares the
- * four running totals, and logs any divergence — **without ever affecting the
- * legacy write.** This is the "shadow" phase of the strangler-fig migration:
- * the legacy path stays the source of truth and keeps writing the match row;
- * the engine path only observes, so we can prove it matches on real data
- * before flipping live scoring over to it.
+ * Computes a match's four running totals via the new composable engine
+ * (`computeMatchRunningTotalsViaEngine`). After the Strand-B flip this is the
+ * SOURCE OF TRUTH for the points columns; legacy `computeMatchRunningTotals`
+ * stays alongside as the fallback + auditor (the "two paths audit each other"
+ * pattern), reversed from the earlier shadow phase.
  *
- * **Never-break contract.** This helper is fire-and-forget and fully
- * try/catch-wrapped. It must NEVER throw, never block, and never touch the
- * match row — a bug here can only produce a log line, never a scoring error.
+ * **Never-break contract.** `computeEngineRunningTotals` NEVER throws. If it
+ * can't compute (no locked lineups, bad inputs, anything unexpected) it returns
+ * `null` and the caller falls back to the legacy totals — so the match row's
+ * columns are always populated and live scoring is never interrupted. Games-won
+ * is recorded on a separate sacred path regardless.
  *
  * **Frozen-snapshot inputs (per Ed, 2026-05-21).** The engine is fed the
  * prep-time snapshot, never live values: the snapshotted threshold columns off
@@ -20,8 +19,8 @@
  * `home_team_modifier` team bonus). Thresholds/ratings are read once and stay
  * stable for the whole match — a mid-match handicap change cannot move them.
  *
- * @see ./computeMatchRunningTotals.ts — the legacy source of truth
- * @see src/systems/points-system/match-adapter.ts — the engine adapter under audit
+ * @see ./computeMatchRunningTotals.ts — the legacy path (fallback + auditor)
+ * @see src/systems/points-system/match-adapter.ts — the engine adapter
  */
 
 import { supabase } from '@/supabaseClient';
@@ -33,8 +32,8 @@ import type {
   MinimalMatchGame,
 } from './computeMatchRunningTotals';
 
-/** Inputs the seam already has in hand when it calls the shadow audit. */
-export interface ShadowAuditArgs {
+/** Inputs the seam already has in hand (match row + games + snapshot prefs). */
+export interface EngineRunningTotalsArgs {
   matchId: string;
   homeTeamId: string;
   awayTeamId: string;
@@ -46,8 +45,6 @@ export interface ShadowAuditArgs {
   pointsCalculator: string | null;
   pointsCalculatorParams: Record<string, unknown>;
   winCondition: 'games' | 'points';
-  /** What legacy just computed — the reference to compare the engine against. */
-  legacyTotals: MatchRunningTotals;
 }
 
 /** A single locked-lineup row, narrowed to the handicap fields we read. */
@@ -83,22 +80,33 @@ function lineupRatings(row: LineupRow): number[] {
   ].filter((h): h is number => typeof h === 'number');
 }
 
-/** Points are float-accumulated in the engine; tolerate last-bit noise only. */
-function pointsDiffer(a: number, b: number): boolean {
-  return Math.abs(a - b) > 1e-6;
+/**
+ * Whether two running-totals results differ. Game counts are integers and must
+ * match exactly; points tolerate IEEE-754 last-bit noise (the percentage engine
+ * accumulates `0.1`-style increments per game, vs legacy's closed form).
+ */
+export function runningTotalsDiffer(
+  a: MatchRunningTotals,
+  b: MatchRunningTotals,
+): boolean {
+  return (
+    a.home_games_won !== b.home_games_won ||
+    a.away_games_won !== b.away_games_won ||
+    Math.abs(a.home_points_earned - b.home_points_earned) > 1e-6 ||
+    Math.abs(a.away_points_earned - b.away_points_earned) > 1e-6
+  );
 }
 
 /**
- * Compute the new-engine totals from the frozen snapshot and compare to the
- * legacy totals. Logs a structured divergence warning on mismatch; otherwise
- * silent. Never throws — any failure (lineup read, build, eval) is swallowed
- * with a debug-level note so the live scoring write is never disturbed.
+ * Compute the four running totals via the new modular engine from the frozen
+ * prep snapshot. Returns `null` (never throws) when it can't compute — caller
+ * falls back to legacy. Reads the LOCKED `match_lineups` for ratings + the
+ * frozen team bonus; thresholds come from the snapshotted match-row columns.
  */
-export async function shadowAuditRunningTotals(
-  args: ShadowAuditArgs,
-): Promise<void> {
+export async function computeEngineRunningTotals(
+  args: EngineRunningTotalsArgs,
+): Promise<MatchRunningTotals | null> {
   try {
-    // Frozen ratings + team bonus come from the LOCKED lineup snapshot.
     const { data: lineups, error } = await supabase
       .from('match_lineups')
       .select(
@@ -107,18 +115,13 @@ export async function shadowAuditRunningTotals(
       .eq('match_id', args.matchId)
       .eq('locked', true);
 
-    if (error || !lineups || lineups.length < 2) {
-      // Can't audit without both locked lineups — not an error, just skip.
-      return;
-    }
+    // Without both locked lineups the engine can't resolve handicap inputs —
+    // signal the caller to fall back to legacy.
+    if (error || !lineups || lineups.length < 2) return null;
 
-    const home = (lineups as LineupRow[]).find(
-      (l) => l.team_id === args.homeTeamId,
-    );
-    const away = (lineups as LineupRow[]).find(
-      (l) => l.team_id === args.awayTeamId,
-    );
-    if (!home || !away) return;
+    const home = (lineups as LineupRow[]).find((l) => l.team_id === args.homeTeamId);
+    const away = (lineups as LineupRow[]).find((l) => l.team_id === args.awayTeamId);
+    if (!home || !away) return null;
 
     // Handicap diff, mirroring prep's calculateHandicapThresholds: the team
     // bonus is the FROZEN home_team_modifier (not a fresh standings lookup),
@@ -137,7 +140,7 @@ export async function shadowAuditRunningTotals(
       prefs: {},
     };
 
-    const engineTotals = computeMatchRunningTotalsViaEngine({
+    return computeMatchRunningTotalsViaEngine({
       homeTeamId: args.homeTeamId,
       awayTeamId: args.awayTeamId,
       games: args.games,
@@ -148,31 +151,12 @@ export async function shadowAuditRunningTotals(
       homeThresholds: args.homeThresholds,
       awayThresholds: args.awayThresholds,
     });
-
-    const { legacyTotals } = args;
-    const diverged =
-      engineTotals.home_games_won !== legacyTotals.home_games_won ||
-      engineTotals.away_games_won !== legacyTotals.away_games_won ||
-      pointsDiffer(engineTotals.home_points_earned, legacyTotals.home_points_earned) ||
-      pointsDiffer(engineTotals.away_points_earned, legacyTotals.away_points_earned);
-
-    if (diverged) {
-      console.warn(
-        '[shadowAudit] engine vs legacy DIVERGENCE',
-        JSON.stringify({
-          matchId: args.matchId,
-          pointsCalculator: args.pointsCalculator,
-          winCondition: args.winCondition,
-          legacy: legacyTotals,
-          engine: engineTotals,
-        }),
-      );
-    }
   } catch (e) {
-    // Never surface — the shadow must not perturb live scoring.
+    // Never surface — caller falls back to legacy so the write still happens.
     console.warn(
-      '[shadowAudit] audit failed (ignored)',
+      '[engineRunningTotals] compute failed, caller will fall back to legacy',
       e instanceof Error ? e.message : String(e),
     );
+    return null;
   }
 }
