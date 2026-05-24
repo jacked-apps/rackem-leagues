@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-24 (Added `docs/brainstorms/2026-05-24-live-scoring-resilience-requirements.md` — requirements for robust multi-device live match scoring: connection resilience + concurrency correctness. Branch `docs/live-scoring-resilience-brainstorm`.)
+> **Last Updated**: 2026-05-24 (Added live-scoring-resilience brainstorm + implementation plan: `docs/brainstorms/2026-05-24-live-scoring-resilience-requirements.md` and `docs/plans/2026-05-24-001-feat-live-scoring-resilience-plan.md` — robust multi-device live match scoring (connection resilience + concurrency correctness). Branch `docs/live-scoring-resilience-brainstorm`.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -64,6 +64,7 @@
 | `docs/plans/2026-04-28-001-feat-modular-league-system-plan.md` | Implementation plan for the fully modular league system | 21 units across 8 phases (Phase 0 research + 7 implementation phases); supersedes April 18 plan; covers BCAPL SL handicap, audit log R21, threshold-charts wiring, team_format drop |
 | `docs/plans/2026-05-04-001-fix-lineup-to-scoring-transition-stability-plan.md` | Implementation plan for the lineup → scoring transition stability fix | 7 implementation units across 3 phases; new MatchPhaseGuard + MatchTransitionRecovery + useMatchPhase; hardened prep_match RPC; foreground polling backstop; deletes 6-month-old retry loop |
 | `docs/plans/2026-05-03-001-feat-unified-scoreboard-plan.md` | Implementation plan for the unified scoreboard refactor | 8 units across 3 phases; replaces 3 legacy scoreboards with 1 + tiebreaker fix; schema-derived display hints; TeamStatsCard generalized for points-mode; depends on PR #98 merge |
+| `docs/plans/2026-05-24-001-feat-live-scoring-resilience-plan.md` | Implementation plan for robust multi-device live scoring (resilience + concurrency) | 11 units / 5 phases; rely-on-client reconnect + catch-up refetch + polling fallback; guarded scoring RPCs (deny-flags-not-wipes, race-safe totals, N-device completion) on prep_match model; hold-and-send taps; sticky participation modes; branch `docs/live-scoring-resilience-brainstorm`; origin 2026-05-24 brainstorm |
 
 ### Future Work Folder
 
