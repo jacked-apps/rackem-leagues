@@ -159,9 +159,12 @@ comparator(metric, 'most', s):
     return a === b ? null : (a > b ? 'home' : 'away')
 
 comparator(metric, 'met_goal', s):
-    if s[home_<metric>] >= s[home_<metric>_target]: return 'home'
-    if s[away_<metric>] >= s[away_<metric>_target]: return 'away'
-    return null
+    homeMet = s[home_<metric>] >= s[home_<metric>_target]
+    awayMet = s[away_<metric>] >= s[away_<metric>_target]
+    if homeMet and awayMet: flag('both-met-target — impossible w/ correct targets'); return null
+    if homeMet: return 'home'
+    if awayMet: return 'away'
+    return null   # neither met → no decision (normal tie path)
 
 # every comparator call wrapped: on throw → log + return null (never-break)
 ```
@@ -215,7 +218,7 @@ Parity mapping (today's fixed behavior, reproduced by `buildWinCalcConfig`):
 
 **Approach:**
 - `most(homeVal, awayVal)`: equal → `null`; else higher → that side.
-- `metGoal(homeVal, homeTarget, awayVal, awayTarget)`: home ≥ homeTarget → `'home'`; else away ≥ awayTarget → `'away'`; else `null`. Home checked first (matches `determineMatchResult` precedence on simultaneous clinch). A `null` target ⇒ that side can't meet a goal ⇒ contributes no decision.
+- `metGoal(homeVal, homeTarget, awayVal, awayTarget)`: **exactly one** side ≥ its target → that side; neither → `null`. **Both** ≥ their targets → `null` **and raise an anomaly flag** ("both met target — impossible with correct targets"): never throw, never pick a side. Diagnosing/routing the bad targets is not this module's job (the comparator reads targets from state, agnostic to which chart produced them). A `null` target ⇒ that side can't meet a goal ⇒ contributes no decision.
 - No throws in normal paths; guard division/`NaN` only if any arithmetic is introduced (none expected here).
 
 **Patterns to follow:** small pure utilities under `src/utils/` / `src/systems/`.
@@ -224,7 +227,7 @@ Parity mapping (today's fixed behavior, reproduced by `buildWinCalcConfig`):
 - Happy path (most): `most(12,6)→home`; `most(6,12)→away`.
 - Edge (most): `most(9,9)→null` (equal = no decision); `most(0,0)→null`.
 - Happy path (met_goal): home 10 / target 10 → `home`; away 8 / target 8, home 7 / target 10 → `away`.
-- Edge (met_goal): neither meets (home 7/10, away 6/8) → `null`; both meet (home 10/10, away 9/8) → `home` (home-first precedence); `null` win target → no decision from that side.
+- Edge (met_goal): neither meets (home 7/10, away 6/8) → `null`; **both meet (home 10/10, away 8/8) → `null` + anomaly flag raised** (NOT an arbitrary home win); `null` win target → no decision from that side.
 
 **Verification:** `pnpm test:run` green for `comparators.test.ts`; outputs match the table above.
 
@@ -317,8 +320,9 @@ Parity mapping (today's fixed behavior, reproduced by `buildWinCalcConfig`):
 - Edge: BCA tie (e.g. 9–9 at tie targets) → both produce tie/no-winner.
 - Edge: Fargo points-equal → both fall to games; games decide identically.
 - Known divergence (NOT strictly unreachable — feasibility/scope finding): points exact-tie (points AND games equal). New judge → `tie` (v2-correct: residue handed to the future tie-resolution module); legacy → `home` (home-favored fallback). This **cannot** occur in odd-game formats (Fargo 5v5 = 25 games), but **can** occur in even-game points formats (4v4/3v3). Assert the odd-game case never reaches it; for an even-game synthetic case, assert the intended `tie` and document that the live divergence auditor will (correctly) flag it if such a league exists — it is the v2 fix replacing a latent home-favored bug, not a regression.
+- Known divergence (met-goal both-met): if both sides reach their games-target — impossible with correct targets — the new judge returns no-winner **plus an anomaly flag** (→ tie), whereas legacy `determineMatchResult` returns `home` (home-first). Unreachable with correct charts; if synthetically forced, assert the new `tie` + flag and document it as intended v2 anomaly-handling, not a regression. (This means the games/met-goal parity claim holds for all chart-valid scorelines; the only old/new difference is this malformed-target case.)
 
-**Verification:** `pnpm test:run` green; matrix covers all three presets + tiebreaker re-entry + boundaries; the only old/new divergence is the documented points-exact-tie case.
+**Verification:** `pnpm test:run` green; matrix covers all three presets + tiebreaker re-entry + boundaries; the only old/new divergences are the two documented, unreachable-with-correct-config cases (points exact-tie; met-goal both-met).
 
 ### Phase 3 — Live cutover (strangler-fig)
 

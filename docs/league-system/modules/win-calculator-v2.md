@@ -56,7 +56,7 @@ A comparator's mode is one of two — a 2×2 of *what* is compared and *how* (tw
 | **points** | most points | points vs per-side points-target |
 
 - **compare-totals** — the side with the higher total wins; "no decision" on equal totals.
-- **compare-to-target** — each side is measured against its own win-target; a side that has reached its target wins, otherwise "no decision."
+- **compare-to-target** — each side is measured against its own win-target. **Exactly one** side reaching its target wins; neither reaching → "no decision." Both reaching is impossible with correct targets; should it occur, the Win Calculator names no winner (it cannot single one out) and **flags the anomaly** rather than breaking or picking arbitrarily — diagnosing or routing that flaw is not this module's job.
 
 A configuration may enable just one comparator or both, in the LO's chosen order. For example: points compare-totals, then games compare-totals, with a concluded tie handed off (Fargo 10-7); or games compare-to-target alone (BCA 3v3).
 
