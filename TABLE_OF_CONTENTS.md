@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-21 (Strand-B points cutover begun: match-adapter (engine→4 totals) + legacy parity gate (1374 cases), then shadow-audit wired into updateMatchRunningTotals — new engine runs alongside legacy on real mutations and logs divergence, legacy still writes. Earlier: Trigger v2 enstated as canonical; corpus-wide benchmark→threshold standardization + synonym note; EOGA deprecated from canon (end-of-match scoring is a match_end trigger); per-game allocator confirmed a distinct primitive; concept-analogies.md canonized/locked. Earlier: Points System all four sub-mechanisms A/B/C/D audited + locked data-driven: triggers, threshold output enrichment, per-game allocator (SideConfig + formula registry), end-of-match aggregate (data-driven operation). Added 10-Point rename, 17-Point + behind-boost compositions, complex-trigger.md design concept. Earlier: Merged main into docs/league-system-l1 — Modular Scoring System framework + Module extraction (Team Geometry / Match Format / Handicap Systems / Threshold Charts / Handicap Mechanisms A→D). Main absorbed: Messaging Phase 1, Navigation IA, Scoring Modal rework, Fargo auto-agree start-points, modular league system v2, unified scoreboard.)
+> **Last Updated**: 2026-05-24 (Live-scoring resilience Phase 1: realtime worker-heartbeat + reconnect-on-dead-socket survival config; useMatchRealtime now surfaces connection status + catch-up-refetch on re-subscribe; new useConnectionHealth classifies realtime-down vs offline + drives an in-progress polling fallback; new ConnectionIndicator gives the scorer a calm degraded/outage indicator — zero scoring-write-path changes.) Earlier: 2026-05-21 (Strand-B points cutover begun: match-adapter (engine→4 totals) + legacy parity gate (1374 cases), then shadow-audit wired into updateMatchRunningTotals — new engine runs alongside legacy on real mutations and logs divergence, legacy still writes. Earlier: Trigger v2 enstated as canonical; corpus-wide benchmark→threshold standardization + synonym note; EOGA deprecated from canon (end-of-match scoring is a match_end trigger); per-game allocator confirmed a distinct primitive; concept-analogies.md canonized/locked. Earlier: Points System all four sub-mechanisms A/B/C/D audited + locked data-driven: triggers, threshold output enrichment, per-game allocator (SideConfig + formula registry), end-of-match aggregate (data-driven operation). Added 10-Point rename, 17-Point + behind-boost compositions, complex-trigger.md design concept. Earlier: Merged main into docs/league-system-l1 — Modular Scoring System framework + Module extraction (Team Geometry / Match Format / Handicap Systems / Threshold Charts / Handicap Mechanisms A→D). Main absorbed: Messaging Phase 1, Navigation IA, Scoring Modal rework, Fargo auto-agree start-points, modular league system v2, unified scoreboard.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -919,6 +919,7 @@ Reusable section components composed by `PreferencesCard.tsx`. Same components d
 #### Match Components (`/components/match/`)
 - `MatchPhaseGuard.tsx` - Server-state route guard. Reads `matches.status` via `useMatchPhase`, dispatches lineup vs scoring vs recovery rendering, holds the compound `key={matchId:recoveryEpoch}` that drives in-place subtree remounts on Hard Reset.
 - `MatchTransitionRecovery.tsx` - Unified recovery surface for the lineup → scoring transition. Reason-aware copy (connection / match_not_found / auth_expired / server_error / unknown_status), two-level Try Again (soft refetch first, Hard Reset only after soft fails — with confirmation dialog).
+- `ConnectionIndicator.tsx` - Calm connection indicator for the active scorer. Renders nothing while live, a quiet "Catching up…" pill while degraded, and a single calm note only after a sustained offline outage (north star: invisible robustness).
 
 #### Player Components (`/components/player/`)
 - `TeamCard.tsx` - Player team card ⚠️ **DUPLICATE** (also in `/components`)
@@ -1427,6 +1428,8 @@ Zod validation schemas
 
 Supabase real-time subscription hooks for live data updates
 
+- `useMatchRealtime.ts` - Unified real-time subscription for the whole match flow (matches/lineups/games); surfaces connection status + fires a catch-up refetch on re-subscribe after a drop
+- `useConnectionHealth.ts` - Classifies realtime trouble into actionable health (realtime-down vs offline) via one cheap reachability probe; drives the degraded polling fallback cadence
 - `useMatchGamesRealtime.ts` - Real-time subscription for match games (scoring updates, confirmation requests)
 - `useMatchLineupsRealtime.ts` - Real-time subscription for match lineups (lineup status changes, lock/unlock events)
 
