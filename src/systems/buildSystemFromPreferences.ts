@@ -33,22 +33,40 @@
  * @see docs/plans/2026-04-28-001-feat-modular-league-system-plan.md (Unit 5.1)
  */
 
-import type { HandicapThresholds } from '@/types/match';
 import type { SystemOverrides } from '@/types/systemOverrides';
 import type { ResolvedSystemConfig } from '@/types/resolvedSystemConfig';
-import type {
-  ExtraGamesThreshold,
-  FargoStartPointsResult,
-  RaceLengthResult,
-  RaceLengthThreshold,
-  StartPointsThreshold,
-  SystemModule,
-} from './types';
+import type { SystemModule } from './types';
 import { bca3v3 } from './bca3v3';
 import { bca5v5 } from './bca5v5';
 import { fargo5v5 } from './fargo5v5';
-import { get3v3GamesNeeded } from '@/utils/handicap/get3v3GamesNeeded';
-import { get5v5GamesNeeded } from '@/utils/handicap/get5v5GamesNeeded';
+import { getWinCalculator } from './win-calculators';
+import { getTeamGeometry } from './team-geometry';
+import { getMatchFormat } from './match-format';
+import {
+  getHandicapSystem,
+  type HandicapSystem,
+  type HandicapType,
+} from './handicap-systems';
+import {
+  gamesNeeded3v3Chart,
+  gamesNeeded5v5Chart,
+  fargoFormulaChart,
+  type ThresholdChart,
+  type GamesNeededChart,
+  type FargoFormulaChart,
+  type RaceLengthChart,
+} from './threshold-charts';
+import {
+  createExtraGamesMechanism,
+  createStartPointsMechanism,
+  createRaceLengthAdjustmentMechanism,
+  noneMechanism,
+  type HandicapMechanism,
+} from './handicap-mechanisms';
+import { buildPoints3ManComposition } from './points-system/compositions/points-3-man';
+import { buildPercent5ManComposition } from './points-system/compositions/percent-5-man';
+import { buildTenPointComposition } from './points-system/compositions/10-point';
+import type { PointsSystem } from './points-system/types';
 
 // ============================================================================
 // Preset detection (fast-path)
@@ -112,67 +130,167 @@ function deriveAdHocKey(prefs: ResolvedSystemConfig): string {
 }
 
 // ============================================================================
-// Rating section dispatch
+// Handicap System Module dispatch
 // ============================================================================
 
 /**
- * Pick a rating capability for the ad-hoc module by handicap_type. We reuse
- * the shipped modules' rating shapes verbatim — the rating-system semantics
- * (how to validate / display / compute-from-history) don't change with
- * lineup size or scoring method, only with the underlying rating system.
+ * Pick a Handicap System Module for the ad-hoc module by handicap_type.
  *
- * For `skill_level` (BCAPL SL — Phase 3 Unit 3.3) and `none` we provide
- * minimal stubs until the real implementations land.
+ * Mirrors pickRating's routing for parity (both fields coexist during the
+ * strangler-fig transition). For the four shipping variants the registry
+ * returns the Module instance; for `handicap_type='none'` the field is
+ * `null` per the Handicap Systems blueprint ("no Module" rather than a
+ * 5th variant). For unknown handicap_type values, falls back to null with
+ * a warn, matching the resolver's graceful-degradation pattern.
  */
-function pickRating(handicapType: string): SystemModule['rating'] {
-  switch (handicapType) {
-    case 'points':
-      return bca3v3.rating;
-    case 'percentage':
-      return bca5v5.rating;
-    case 'fargo':
-      return fargo5v5.rating;
-    case 'skill_level':
-      // Stub: BCAPL Skill Level (1-9 integer). Real validate/display lands
-      // with Unit 3.3's Layer 2 chart seed. Until then, accept integers
-      // 1-9 and display as a bare number.
-      return {
-        requiresManualEntry: true,
-        computeFromHistory: () => null,
-        displayFormat: (value) => `SL${Math.round(value)}`,
-        validate: (value) => {
-          if (typeof value !== 'number' || !Number.isFinite(value)) {
-            return { ok: false, message: 'Skill Level must be a number' };
-          }
-          if (!Number.isInteger(value)) {
-            return { ok: false, message: 'Skill Level must be an integer' };
-          }
-          if (value < 1 || value > 9) {
-            return { ok: false, message: 'Skill Level must be between 1 and 9' };
-          }
-          return { ok: true, value };
-        },
-      };
-    case 'none':
-      // No-handicap leagues: rating is informational only, accept anything
-      // numeric for storage consistency.
-      return {
-        requiresManualEntry: false,
-        computeFromHistory: () => null,
-        displayFormat: () => '—',
-        validate: (value) => {
-          if (typeof value !== 'number' || !Number.isFinite(value)) {
-            return { ok: false, message: 'Rating must be a number' };
-          }
-          return { ok: true, value };
-        },
-      };
-    default:
-      console.warn(
-        `[buildSystemFromPreferences] Unknown handicap_type ${JSON.stringify(handicapType)} — defaulting to bca5v5 rating shape`,
-      );
-      return bca5v5.rating;
+function pickHandicapSystem(handicapType: string): HandicapSystem | null {
+  if (
+    handicapType === 'points' ||
+    handicapType === 'percentage' ||
+    handicapType === 'fargo' ||
+    handicapType === 'skill_level'
+  ) {
+    return getHandicapSystem(handicapType as HandicapType);
   }
+  if (handicapType === 'none') {
+    return null;
+  }
+  console.warn(
+    `[buildSystemFromPreferences] Unknown handicap_type ${JSON.stringify(handicapType)} — handicapSystem field set to null`,
+  );
+  return null;
+}
+
+// ============================================================================
+// Threshold Chart Module dispatch
+// ============================================================================
+
+/**
+ * Pick a Threshold Chart Module for the ad-hoc module by (handicap_type ×
+ * mechanism). Mirrors the pickThreshold routing logic but returns the Chart
+ * Module rather than the wrapped Mechanism `compute` function. Coexists with
+ * the legacy `threshold` field during the strangler-fig transition.
+ *
+ * Returns null for combos with no calibrated Chart:
+ * - `mechanism='none'` or `handicap_type='none'` — no handicap applied
+ * - `race_length_adjustment` combos — both Race Chart variants ship as RESERVED stubs
+ * - Unknown handicap_type / mechanism — graceful-fallback path
+ *
+ * The legacy `threshold` field continues to provide a zero-handicap fallback
+ * compute() in those cases, so the match still plays.
+ */
+function pickThresholdChart(
+  handicapType: string,
+  mechanism: string,
+): ThresholdChart | null {
+  if (mechanism === 'none' || handicapType === 'none') {
+    return null;
+  }
+  if (mechanism === 'extra_games') {
+    if (handicapType === 'points') return gamesNeeded3v3Chart;
+    if (handicapType === 'percentage') return gamesNeeded5v5Chart;
+    return null;
+  }
+  if (mechanism === 'start_points') {
+    if (handicapType === 'fargo') return fargoFormulaChart;
+    return null;
+  }
+  if (mechanism === 'race_length_adjustment') {
+    // Both Race Chart variants (race_points / race_percentage) ship as RESERVED stubs.
+    // No shipping Scoring System uses race_length_adjustment today; return null and
+    // let the legacy `threshold` field's race-length fallback handle it.
+    return null;
+  }
+  return null;
+}
+
+// ============================================================================
+// Handicap Mechanism Module dispatch
+// ============================================================================
+
+/**
+ * Pick a Handicap Mechanism Module for the ad-hoc module by (handicap_type ×
+ * mechanism). Mirrors pickThresholdChart's routing logic, then wraps the
+ * selected Chart in the matching Mechanism factory. Coexists with the legacy
+ * `threshold` field during the strangler-fig transition.
+ *
+ * Returns `noneMechanism` for `mechanism='none'` / `handicap_type='none'`
+ * (zero-handicap extra_games shape per the locked spec). Returns null for
+ * combos with no calibrated Chart (the legacy threshold field still provides
+ * a zero-handicap fallback).
+ */
+function pickHandicapMechanism(
+  handicapType: string,
+  mechanism: string,
+  chart: ThresholdChart | null,
+): HandicapMechanism | null {
+  if (mechanism === 'none' || handicapType === 'none') {
+    return noneMechanism;
+  }
+  if (chart === null) {
+    // No calibrated Chart for this (handicap_type × mechanism) combo. The
+    // legacy `threshold` field provides a zero-handicap fallback; the
+    // Mechanism field signals null so consumers know the Module path is
+    // unwired for this combo.
+    return null;
+  }
+  if (mechanism === 'extra_games') {
+    // Type-narrowed via chart.kind — only Games-Needed Charts pair with extra_games.
+    if (
+      chart.kind === 'games_needed_3v3' ||
+      chart.kind === 'games_needed_3v3_formula' ||
+      chart.kind === 'games_needed_5v5' ||
+      chart.kind === 'games_needed_5v5_formula'
+    ) {
+      return createExtraGamesMechanism(chart as GamesNeededChart);
+    }
+    return null;
+  }
+  if (mechanism === 'start_points') {
+    if (chart.kind === 'fargo_formula') {
+      return createStartPointsMechanism(chart as FargoFormulaChart);
+    }
+    return null;
+  }
+  if (mechanism === 'race_length_adjustment') {
+    if (chart.kind === 'race_points' || chart.kind === 'race_percentage') {
+      return createRaceLengthAdjustmentMechanism(chart as RaceLengthChart);
+    }
+    return null;
+  }
+  return null;
+}
+
+// ============================================================================
+// Points System Module dispatch
+// ============================================================================
+
+/**
+ * Pick a Points System composition for the ad-hoc module by `points_calculator`.
+ * Mirrors the dispatch the legacy `pickScoring` does, but returns a composed
+ * Points System rather than a bundled calculator. Phase B of the Points
+ * System extraction; coexists with the legacy `scoring` capability.
+ *
+ * Returns null when `points_calculator` is null (the league doesn't track
+ * points at all — no Points System applies).
+ */
+function pickPointsSystem(pointsCalculator: string | null): PointsSystem | null {
+  if (pointsCalculator === null) {
+    return null;
+  }
+  if (pointsCalculator === 'linear_above_threshold') {
+    return buildPoints3ManComposition({ multiplier: 1 });
+  }
+  if (pointsCalculator === 'accumulate_with_milestone_jumps') {
+    return buildPercent5ManComposition({});
+  }
+  if (pointsCalculator === 'accumulated_per_game') {
+    return buildTenPointComposition({});
+  }
+  console.warn(
+    `[buildSystemFromPreferences] Unknown points_calculator ${JSON.stringify(pointsCalculator)} — pointsSystem field set to null`,
+  );
+  return null;
 }
 
 // ============================================================================
@@ -249,140 +367,6 @@ function pickScoring(pointsCalculator: string | null): SystemModule['scoring'] {
 }
 
 // ============================================================================
-// Threshold section dispatch (mechanism → ExtraGames | StartPoints | RaceLength)
-// ============================================================================
-
-/** Zero-handicap threshold output — no extra games, no tie threshold, no losing threshold. */
-function zeroExtraGames(): HandicapThresholds {
-  return { games_to_win: 0, games_to_tie: null, games_to_lose: null };
-}
-
-/**
- * Build an ExtraGamesThreshold for an ad-hoc module. Routes by handicap_type
- * to the existing TS chart files until Unit 3.1 wires the `lookup_threshold`
- * SQL function for Layer 3 chart-id lookups.
- *
- * Behavior:
- *  - handicap_type='points' → 3v3 chart (regardless of lineup size — chart
- *    is the only Layer-2 source for integer points handicaps today)
- *  - handicap_type='percentage' → 5v5 chart
- *  - any other → zero handicap (graceful fallback) with a one-time warn
- */
-function buildExtraGamesThreshold(handicapType: string): ExtraGamesThreshold {
-  if (handicapType === 'points') {
-    return {
-      mode: 'extra_games',
-      compute: (handicapDiff) => get3v3GamesNeeded(handicapDiff),
-    };
-  }
-  if (handicapType === 'percentage') {
-    return {
-      mode: 'extra_games',
-      compute: (handicapDiff) => get5v5GamesNeeded(handicapDiff),
-    };
-  }
-  // Fargo / skill_level / none / unknown with extra_games mechanism: no
-  // Layer 1 generative engine yet (Unit 3.2). Return zero-handicap and
-  // warn — match plays unhandicapped rather than failing to start.
-  return {
-    mode: 'extra_games',
-    compute: () => {
-      console.warn(
-        `[buildSystemFromPreferences] No Layer 1/2/3 extra_games chart for handicap_type=${JSON.stringify(handicapType)} — returning zero-handicap fallback (Unit 3.2 will provide Fargo Layer 1)`,
-      );
-      return zeroExtraGames();
-    },
-  };
-}
-
-/**
- * Build a StartPointsThreshold for an ad-hoc module. Reuses fargo5v5's
- * computeStartPoints which works for any roster size — the formula is
- * roster-agnostic (sums transformed ratings, multiplies by total games).
- *
- * For handicap systems other than Fargo (`points`, `percentage`,
- * `skill_level`) paired with a start-points mechanism, no calibrated
- * formula exists yet. Returns zero start-points with a warn.
- */
-function buildStartPointsThreshold(handicapType: string): StartPointsThreshold {
-  if (handicapType === 'fargo') {
-    return {
-      mode: 'start_points',
-      compute: fargo5v5.threshold.mode === 'start_points'
-        ? fargo5v5.threshold.compute
-        : /* istanbul ignore next — fargo5v5.threshold.mode is always 'start_points' by construction */
-          () => ({ startPointsForWeakerTeam: 0, weakerTeam: 'even' }),
-    };
-  }
-  return {
-    mode: 'start_points',
-    compute: (homeRatings, awayRatings, overrides): FargoStartPointsResult => {
-      void homeRatings;
-      void awayRatings;
-      void overrides;
-      console.warn(
-        `[buildSystemFromPreferences] No start_points formula for handicap_type=${JSON.stringify(handicapType)} — returning zero start-points fallback`,
-      );
-      return { startPointsForWeakerTeam: 0, weakerTeam: 'even' };
-    },
-  };
-}
-
-/**
- * Build a RaceLengthThreshold for an ad-hoc module. The BCAPL Skill Level
- * Layer 2 chart lands in Unit 3.3; until then we return equal race lengths
- * derived from `prefs.race_length` (or 7 if NULL — a sensible default for
- * 8-ball / 9-ball race-to-N).
- */
-function buildRaceLengthThreshold(prefs: ResolvedSystemConfig): RaceLengthThreshold {
-  const baseRace = prefs.race_length ?? 7;
-  return {
-    mode: 'race_length_adjustment',
-    compute: (homeRatings, awayRatings, overrides): RaceLengthResult => {
-      void homeRatings;
-      void awayRatings;
-      void overrides;
-      console.warn(
-        `[buildSystemFromPreferences] race_length_adjustment mechanism has no chart wired yet (Unit 3.3) — returning equal race lengths of ${baseRace}`,
-      );
-      return { homeRaceLength: baseRace, awayRaceLength: baseRace };
-    },
-  };
-}
-
-/**
- * Pick a threshold capability for the ad-hoc module by `mechanism`.
- *
- * `mechanism='none'` collapses to a zero-handicap ExtraGamesThreshold so
- * the threshold-shape contract is satisfied without applying any handicap.
- * Callers reading `module.threshold.mode === 'extra_games'` and getting
- * `{ games_to_win: 0, ... }` should interpret that as "play unhandicapped."
- */
-function pickThreshold(prefs: ResolvedSystemConfig): SystemModule['threshold'] {
-  switch (prefs.mechanism) {
-    case 'extra_games':
-      return buildExtraGamesThreshold(prefs.handicap_type);
-    case 'start_points':
-      return buildStartPointsThreshold(prefs.handicap_type);
-    case 'race_length_adjustment':
-      return buildRaceLengthThreshold(prefs);
-    case 'none':
-      return {
-        mode: 'extra_games',
-        compute: () => zeroExtraGames(),
-      };
-    default:
-      console.warn(
-        `[buildSystemFromPreferences] Unknown mechanism ${JSON.stringify(prefs.mechanism)} — defaulting to zero-handicap extra_games`,
-      );
-      return {
-        mode: 'extra_games',
-        compute: () => zeroExtraGames(),
-      };
-  }
-}
-
-// ============================================================================
 // Public API
 // ============================================================================
 
@@ -415,19 +399,51 @@ export function buildSystemFromPreferences(
     return preset;
   }
 
+  // Normalize game_generation to the strict enum the Team Geometry Module expects.
+  // Falls back to single_round_robin for unknown values per the existing graceful-degradation
+  // pattern this resolver uses elsewhere.
+  const normalizedGameGeneration: 'single_round_robin' | 'double_round_robin' =
+    prefs.game_generation === 'double_round_robin' ||
+    prefs.game_generation === 'single_round_robin'
+      ? prefs.game_generation
+      : 'single_round_robin';
+
   return {
     key: deriveAdHocKey(prefs),
-    teamFormat: {
-      lineupSize: prefs.lineup_size,
-      maxRosterSize: prefs.max_roster_size,
-      gameGeneration:
-        prefs.game_generation === 'double_round_robin' ||
-        prefs.game_generation === 'single_round_robin'
-          ? prefs.game_generation
-          : 'single_round_robin',
-    },
-    rating: pickRating(prefs.handicap_type),
+    // Team Geometry Module — replaces the legacy teamFormat field (Phase D of the
+    // Team Geometry migration). Bundles lineup_size + max_roster_size + game_generation
+    // axes plus derived gameCount.
+    teamGeometry: getTeamGeometry(
+      prefs.lineup_size,
+      prefs.max_roster_size,
+      normalizedGameGeneration,
+    ),
+    // Match Format Module — the per-pairing structural axes (pairing_format, race_length).
+    // Per the Match Format extraction Unit; consumers may still read pairing_format /
+    // race_length directly from prefs/snapshot during the strangler-fig transition.
+    matchFormat: getMatchFormat(prefs.pairing_format, prefs.race_length),
     scoring: pickScoring(prefs.points_calculator),
-    threshold: pickThreshold(prefs),
+    // Per Unit 1 of the modular-framework migration plan: build a Win Calculator
+    // Module from the league's win_condition preference. One-entry metric stack;
+    // multi-entry stacks come in Unit 9.
+    winCalculator: getWinCalculator(prefs.win_condition),
+    // Handicap System Module — replaces the legacy `rating` capability deleted
+    // in Phase D of the Handicap Systems extraction Unit.
+    handicapSystem: pickHandicapSystem(prefs.handicap_type),
+    // Threshold Chart Module — the passive data layer (lookup table or formula).
+    thresholdChart: pickThresholdChart(prefs.handicap_type, prefs.mechanism),
+    // Handicap Mechanism Module — wraps the active Chart in the matching
+    // Mechanism kind. Replaces the legacy `threshold` field deleted in Phase D
+    // of the Handicap Mechanisms extraction Unit.
+    handicapMechanism: pickHandicapMechanism(
+      prefs.handicap_type,
+      prefs.mechanism,
+      pickThresholdChart(prefs.handicap_type, prefs.mechanism),
+    ),
+    // Points System Module — Phase B of the Points System extraction Unit.
+    // Composes the per-match point allocation rule set from primitives.
+    // Coexists with the legacy `scoring` capability + calculator-registry
+    // dispatch until Phase D removes the legacy.
+    pointsSystem: pickPointsSystem(prefs.points_calculator),
   };
 }

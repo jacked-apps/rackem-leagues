@@ -5,13 +5,18 @@
  * Uses percentage handicaps (0-100 standard, 0-50 reduced).
  * Games-won scoring with team bonus.
  *
- * threshold.compute wraps the existing get5v5GamesNeeded chart.
  * Same stubbing rationale as bca3v3 for rating.computeFromHistory and
  * scoring.* methods — see bca3v3.ts file header.
  */
 
 import type { SystemModule } from './types';
-import { get5v5GamesNeeded } from '@/utils/handicap/get5v5GamesNeeded';
+import { getWinCalculator } from './win-calculators';
+import { getTeamGeometry } from './team-geometry';
+import { getMatchFormat } from './match-format';
+import { percentageHandicapSystem } from './handicap-systems';
+import { gamesNeeded5v5Chart } from './threshold-charts';
+import { createExtraGamesMechanism } from './handicap-mechanisms';
+import { buildPercent5ManComposition } from './points-system/compositions/percent-5-man';
 
 const NOT_YET_WIRED =
   'bca5v5 scoring module methods not yet wired through SystemModule (legacy paths still in use)';
@@ -19,26 +24,13 @@ const NOT_YET_WIRED =
 export const bca5v5: SystemModule = {
   key: 'bca5v5',
 
-  teamFormat: {
-    lineupSize: 5,
-    maxRosterSize: 8,
-    gameGeneration: 'single_round_robin',
-  },
+  // Team Geometry Module — the three structural axes plus derived gameCount.
+  // Replaces the legacy teamFormat field (Phase D of the Team Geometry migration).
+  teamGeometry: getTeamGeometry(5, 8, 'single_round_robin'),
 
-  rating: {
-    requiresManualEntry: false,
-    // computeFromHistory intentionally omitted — see bca3v3.ts file header.
-    displayFormat: (value) => `${Math.round(value)}%`,
-    validate: (value) => {
-      if (typeof value !== 'number' || !Number.isFinite(value)) {
-        return { ok: false, message: 'Rating must be a number' };
-      }
-      if (value < 0 || value > 100) {
-        return { ok: false, message: 'Percentage handicap must be between 0 and 100' };
-      }
-      return { ok: true, value };
-    },
-  },
+  // Match Format Module — BCA 5v5 ships single_rack pairings (no race_length).
+  // See bca3v3.ts for the strangler-fig rationale.
+  matchFormat: getMatchFormat('single_rack', null),
 
   scoring: {
     method: 'games_won_with_team_bonus',
@@ -50,12 +42,24 @@ export const bca5v5: SystemModule = {
     },
   },
 
-  threshold: {
-    mode: 'extra_games',
-    // Delegates to the existing hardcoded chart. No behavior change.
-    compute: (handicapDiff, overrides) => {
-      void overrides; // reserved for future dials (e.g. team_bonus_enabled); not consumed by chart lookup
-      return get5v5GamesNeeded(handicapDiff);
-    },
-  },
+  // BCA 5v5 ships with win_condition='games' — a one-entry metric stack with games_won.
+  // See bca3v3.ts for the rationale; same shape applies here.
+  winCalculator: getWinCalculator('games'),
+
+  // Handicap System Module — Percentage variant (0–100 with `%` display).
+  // Replaces the legacy `rating` capability deleted in Phase D.
+  handicapSystem: percentageHandicapSystem,
+
+  // Threshold Chart Module — 5v5 Games-Needed chart (Percentage × extra_games).
+  // See bca3v3.ts for the strangler-fig rationale; coexists with `threshold` until Phase D.
+  thresholdChart: gamesNeeded5v5Chart,
+
+  // Handicap Mechanism Module — extra_games bound to the 5v5 Games-Needed Chart.
+  // Coexists with `threshold` until Phase D.
+  handicapMechanism: createExtraGamesMechanism(gamesNeeded5v5Chart),
+
+  // Points System Module — Percentage 5-Man composition: per-game allocator
+  // (winner = 0.1, loser = 0) + 2 jump triggers (milestone at games_to_win × 0.7,
+  // win threshold at games_to_win). Phase B of Points System extraction.
+  pointsSystem: buildPercent5ManComposition({}),
 };

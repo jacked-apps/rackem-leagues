@@ -19,21 +19,26 @@ import { fargo5v5 } from '../fargo5v5';
 import type { StoredGameRecord } from '../types';
 
 describe('fargo5v5 SystemModule', () => {
-  describe('key and teamFormat', () => {
+  describe('key and teamGeometry', () => {
     it('exposes the correct module key', () => {
       expect(fargo5v5.key).toBe('fargo5v5');
     });
 
-    it('has 5v5 single-round-robin teamFormat', () => {
-      expect(fargo5v5.teamFormat).toEqual({
+    it('has 5v5 single-round-robin teamGeometry (25 games)', () => {
+      expect(fargo5v5.teamGeometry).toEqual({
         lineupSize: 5,
         maxRosterSize: 8,
         gameGeneration: 'single_round_robin',
+        gameCount: 25,
       });
     });
 
-    it('requires manual rating entry', () => {
-      expect(fargo5v5.rating.requiresManualEntry).toBe(true);
+    it('handicapSystem is wired to the FargoRate variant (kind: "fargo")', () => {
+      // Full displayFormat / validate / computeFromHistory / requiresManualEntry
+      // coverage lives in src/systems/handicap-systems/__tests__/fargorate.test.ts.
+      // This assertion is the integration check: the Fargo 5v5 system picks the
+      // FargoRate Module.
+      expect(fargo5v5.handicapSystem?.kind).toBe('fargo');
     });
 
     it('uses points_accumulated scoring', () => {
@@ -41,69 +46,7 @@ describe('fargo5v5 SystemModule', () => {
     });
 
     it('uses start_points threshold mode', () => {
-      expect(fargo5v5.threshold.mode).toBe('start_points');
-    });
-  });
-
-  describe('rating.validate', () => {
-    it('accepts an integer in range [100, 850]', () => {
-      expect(fargo5v5.rating.validate(500)).toEqual({ ok: true, value: 500 });
-      expect(fargo5v5.rating.validate(100)).toEqual({ ok: true, value: 100 });
-      expect(fargo5v5.rating.validate(850)).toEqual({ ok: true, value: 850 });
-    });
-
-    it('rejects values below 100', () => {
-      const r = fargo5v5.rating.validate(99);
-      expect(r.ok).toBe(false);
-    });
-
-    it('rejects values above 850', () => {
-      const r = fargo5v5.rating.validate(851);
-      expect(r.ok).toBe(false);
-    });
-
-    it('rejects non-integers', () => {
-      const r = fargo5v5.rating.validate(500.5);
-      expect(r.ok).toBe(false);
-    });
-
-    it('rejects strings', () => {
-      const r = fargo5v5.rating.validate('500');
-      expect(r.ok).toBe(false);
-    });
-
-    it('rejects null', () => {
-      const r = fargo5v5.rating.validate(null);
-      expect(r.ok).toBe(false);
-    });
-
-    it('rejects NaN', () => {
-      const r = fargo5v5.rating.validate(Number.NaN);
-      expect(r.ok).toBe(false);
-    });
-  });
-
-  describe('rating.displayFormat', () => {
-    it('renders an integer rating as a plain string', () => {
-      expect(fargo5v5.rating.displayFormat(575)).toBe('575');
-      expect(fargo5v5.rating.displayFormat(100)).toBe('100');
-    });
-
-    it('rounds fractional inputs for display', () => {
-      expect(fargo5v5.rating.displayFormat(575.4)).toBe('575');
-      expect(fargo5v5.rating.displayFormat(575.6)).toBe('576');
-    });
-  });
-
-  describe('rating.computeFromHistory', () => {
-    it('returns null (Fargo is manual-entry only)', () => {
-      expect(fargo5v5.rating.computeFromHistory).toBeDefined();
-      const result = fargo5v5.rating.computeFromHistory!({
-        playerId: 'x',
-        recentGames: [],
-        weeksPlayed: 0,
-      });
-      expect(result).toBeNull();
+      expect(fargo5v5.handicapMechanism?.kind).toBe('start_points');
     });
   });
 
@@ -114,10 +57,10 @@ describe('fargo5v5 SystemModule', () => {
     // 10-point system, 5v5 SRR (25 games)
     // Official FargoRate calculator result: 56 start points to away (weaker team)
     it('matches the captured real-match case within ±1 point', () => {
-      if (fargo5v5.threshold.mode !== 'start_points') {
+      if (fargo5v5.handicapMechanism?.kind !== 'start_points') {
         throw new Error('expected start_points threshold mode');
       }
-      const result = fargo5v5.threshold.compute(
+      const result = fargo5v5.handicapMechanism!.compute(
         [567, 458, 493, 486, 574],
         [447, 394, 452, 322, 374],
         {},
@@ -131,10 +74,10 @@ describe('fargo5v5 SystemModule', () => {
 
   describe('threshold.compute — synthetic cases', () => {
     it('returns 0 start-points for an even match (identical rosters)', () => {
-      if (fargo5v5.threshold.mode !== 'start_points') {
+      if (fargo5v5.handicapMechanism?.kind !== 'start_points') {
         throw new Error('expected start_points threshold mode');
       }
-      const result = fargo5v5.threshold.compute(
+      const result = fargo5v5.handicapMechanism!.compute(
         [500, 500, 500, 500, 500],
         [500, 500, 500, 500, 500],
         {},
@@ -144,10 +87,10 @@ describe('fargo5v5 SystemModule', () => {
     });
 
     it('identifies the weaker team correctly when home is stronger', () => {
-      if (fargo5v5.threshold.mode !== 'start_points') {
+      if (fargo5v5.handicapMechanism?.kind !== 'start_points') {
         throw new Error('expected start_points threshold mode');
       }
-      const result = fargo5v5.threshold.compute(
+      const result = fargo5v5.handicapMechanism!.compute(
         [600, 600, 600, 600, 600],
         [400, 400, 400, 400, 400],
         {},
@@ -157,10 +100,10 @@ describe('fargo5v5 SystemModule', () => {
     });
 
     it('identifies the weaker team correctly when away is stronger', () => {
-      if (fargo5v5.threshold.mode !== 'start_points') {
+      if (fargo5v5.handicapMechanism?.kind !== 'start_points') {
         throw new Error('expected start_points threshold mode');
       }
-      const result = fargo5v5.threshold.compute(
+      const result = fargo5v5.handicapMechanism!.compute(
         [400, 400, 400, 400, 400],
         [600, 600, 600, 600, 600],
         {},
@@ -170,15 +113,15 @@ describe('fargo5v5 SystemModule', () => {
     });
 
     it('produces symmetric output under team swap', () => {
-      if (fargo5v5.threshold.mode !== 'start_points') {
+      if (fargo5v5.handicapMechanism?.kind !== 'start_points') {
         throw new Error('expected start_points threshold mode');
       }
-      const r1 = fargo5v5.threshold.compute(
+      const r1 = fargo5v5.handicapMechanism!.compute(
         [567, 458, 493, 486, 574],
         [447, 394, 452, 322, 374],
         {},
       );
-      const r2 = fargo5v5.threshold.compute(
+      const r2 = fargo5v5.handicapMechanism!.compute(
         [447, 394, 452, 322, 374],
         [567, 458, 493, 486, 574],
         {},
@@ -190,20 +133,20 @@ describe('fargo5v5 SystemModule', () => {
     });
 
     it('produces larger start-points for larger rating gaps (monotonic)', () => {
-      if (fargo5v5.threshold.mode !== 'start_points') {
+      if (fargo5v5.handicapMechanism?.kind !== 'start_points') {
         throw new Error('expected start_points threshold mode');
       }
-      const smallGap = fargo5v5.threshold.compute(
+      const smallGap = fargo5v5.handicapMechanism!.compute(
         [500, 500, 500, 500, 500],
         [450, 450, 450, 450, 450],
         {},
       );
-      const mediumGap = fargo5v5.threshold.compute(
+      const mediumGap = fargo5v5.handicapMechanism!.compute(
         [500, 500, 500, 500, 500],
         [400, 400, 400, 400, 400],
         {},
       );
-      const largeGap = fargo5v5.threshold.compute(
+      const largeGap = fargo5v5.handicapMechanism!.compute(
         [500, 500, 500, 500, 500],
         [300, 300, 300, 300, 300],
         {},
@@ -213,19 +156,19 @@ describe('fargo5v5 SystemModule', () => {
     });
 
     it('throws on empty rating arrays', () => {
-      if (fargo5v5.threshold.mode !== 'start_points') {
+      if (fargo5v5.handicapMechanism?.kind !== 'start_points') {
         throw new Error('expected start_points threshold mode');
       }
-      expect(() => fargo5v5.threshold.compute([], [500, 500, 500, 500, 500], {})).toThrow();
-      expect(() => fargo5v5.threshold.compute([500, 500, 500, 500, 500], [], {})).toThrow();
+      expect(() => fargo5v5.handicapMechanism!.compute([], [500, 500, 500, 500, 500], {})).toThrow();
+      expect(() => fargo5v5.handicapMechanism!.compute([500, 500, 500, 500, 500], [], {})).toThrow();
     });
 
     it('throws on non-finite ratings', () => {
-      if (fargo5v5.threshold.mode !== 'start_points') {
+      if (fargo5v5.handicapMechanism?.kind !== 'start_points') {
         throw new Error('expected start_points threshold mode');
       }
       expect(() =>
-        fargo5v5.threshold.compute(
+        fargo5v5.handicapMechanism!.compute(
           [500, 500, 500, 500, Number.NaN],
           [500, 500, 500, 500, 500],
           {},
@@ -236,15 +179,15 @@ describe('fargo5v5 SystemModule', () => {
 
   describe('threshold.compute — override: winner_points affects the calculation', () => {
     it('higher winner_points increases the per-game differential and therefore start-points', () => {
-      if (fargo5v5.threshold.mode !== 'start_points') {
+      if (fargo5v5.handicapMechanism?.kind !== 'start_points') {
         throw new Error('expected start_points threshold mode');
       }
-      const defaultWinner = fargo5v5.threshold.compute(
+      const defaultWinner = fargo5v5.handicapMechanism!.compute(
         [600, 600, 600, 600, 600],
         [400, 400, 400, 400, 400],
         {},
       );
-      const higherWinner = fargo5v5.threshold.compute(
+      const higherWinner = fargo5v5.handicapMechanism!.compute(
         [600, 600, 600, 600, 600],
         [400, 400, 400, 400, 400],
         { winner_points: 20 },

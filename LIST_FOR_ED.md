@@ -496,6 +496,18 @@ them from the dropdown as captain.
 
 ---
 
+## 🛠️ Tool: League Intake Agent (use when onboarding new LOs)
+
+When you sit with a league operator (like Ozzy) and they describe a league that may or may not fit your existing modular Scoring System: use the **League Intake Agent**. It's a Claude session loaded with the modular framework docs that intakes the LO's description and maps it to the 9 Modules.
+
+**How to run it:** see [`docs/league-system/intake-agent-howto.md`](docs/league-system/intake-agent-howto.md) for step-by-step (terminal commands, copy-paste flow, troubleshooting).
+
+**TL;DR:** `cd ~/Programming/rackem-leagues` → `claude` → paste the prompt from `docs/league-system/intake-agent-prompt.md` → hand keyboard to the LO or describe their league yourself. Output is a structured table flagging each Module as ✓ existing variant / ⚠ new variant needed / 🔴 new Module needed.
+
+**The prompt itself:** [`docs/league-system/intake-agent-prompt.md`](docs/league-system/intake-agent-prompt.md)
+
+---
+
 ## ~~7. New Org Not Visible on Dashboard After LO Application~~ ✅ CLOSED 2026-05-17
 
 > **Closed 2026-05-17** — root cause was subtler than first guessed.

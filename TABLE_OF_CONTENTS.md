@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-15 (Messaging Phase 1 polish triage — appended Units 10–14 to the Phase 1 plan doc (date dividers, value-prop empty state, leave-respects-`cannot_leave`, emoji messages + 12-emoji picker, season-end `cannot_leave` release trigger). Added a Status table at the top of the plan; flipped Units 1–9 checkboxes to done. Added a "Messaging — Future Polish" BACKLOG NOTES section to `MVP_FEATURE_LIST.md` for the parked items (reactions / mute UI / typing indicators / pinned / @mentions / custom 9-ball etc.) with reasoning. Added `LIST_FOR_ED.md` #30 pointing at the Phase 2 plan doc that needs writing.)
+> **Last Updated**: 2026-05-21 (Strand-B points cutover begun: match-adapter (engine→4 totals) + legacy parity gate (1374 cases), then shadow-audit wired into updateMatchRunningTotals — new engine runs alongside legacy on real mutations and logs divergence, legacy still writes. Earlier: Trigger v2 enstated as canonical; corpus-wide benchmark→threshold standardization + synonym note; EOGA deprecated from canon (end-of-match scoring is a match_end trigger); per-game allocator confirmed a distinct primitive; concept-analogies.md canonized/locked. Earlier: Points System all four sub-mechanisms A/B/C/D audited + locked data-driven: triggers, threshold output enrichment, per-game allocator (SideConfig + formula registry), end-of-match aggregate (data-driven operation). Added 10-Point rename, 17-Point + behind-boost compositions, complex-trigger.md design concept. Earlier: Merged main into docs/league-system-l1 — Modular Scoring System framework + Module extraction (Team Geometry / Match Format / Handicap Systems / Threshold Charts / Handicap Mechanisms A→D). Main absorbed: Messaging Phase 1, Navigation IA, Scoring Modal rework, Fargo auto-agree start-points, modular league system v2, unified scoreboard.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -31,6 +31,7 @@
 | `CLAUDE.md` | Claude Code AI assistant instructions for this project | **CRITICAL** - Always read |
 | `TABLE_OF_CONTENTS.md` | This file - complete project index | **UPDATE ON EVERY FILE CHANGE** |
 | `RESTRUCTURE_PLAN.md` | Current app reorganization plan | Active (app-restructure branch) |
+| `secretweapon.md` | One-line invocation pointer for the League Intake Agent | Type "read secretweapon.md" in Claude Code anywhere in repo → loads the intake-agent persona and starts the LO intake conversation |
 
 ### Feature Plans & Specifications (Active)
 
@@ -38,6 +39,7 @@
 |------|---------|--------|
 | `MVP_FEATURE_LIST.md` | Minimum viable product feature list | **Active - MVP tracker** |
 | `LIST_FOR_JACK.md` | Design and styling tasks for Jack | **Active - UI/UX improvements** |
+| `LIST_FOR_ED.md` | Tasks and refactoring items for Ed | **Active - travels with branch commits** |
 
 ### Reference Documentation Folder
 
@@ -47,6 +49,22 @@
 | `docs/BCA_HANDICAP_SYSTEM.md` | BCA handicap system documentation | Official BCA handicap rules and calculations |
 | `docs/CUSTOM_5MAN_HANDICAP_SYSTEM.md` | Custom 5-man handicap system | Proprietary handicap system for 5-man format |
 | `docs/LEAGUE_MANAGEMENT_PLAN.md` | League management system architecture | System hierarchy and database schema |
+| `/docs/league-system/` | **Modular Scoring System framework — LOCKED canonical docs** | 9-Module architecture (Handicap Systems, Handicap Mechanisms, Points System, Win Calculator, Threshold Charts, Team Geometry, Match Format, Pairings Generator, Tiebreak System); LOCKED per Principle 7 gate procedure |
+| `docs/league-system/PRINCIPLES.md` | 10 architectural principles + 4 Module kinds + composition patterns | **LOCKED** — edits require explicit Principle 7 unlock invocation |
+| `docs/league-system/README.md` | 9-Module catalog + classification walkthrough + cheat-sheet | **LOCKED** |
+| `docs/league-system/concept-analogies.md` | Lens mapping locked concepts → programming primitives (Module=component, Threshold=state setter, Trigger=if/then, per-game allocator=reducer…); flaw-detector for cold reads | LOCKED |
+| `docs/league-system/intake-agent-prompt.md` | Persona prompt for the League Intake Agent (Claude session that translates LO league descriptions to the modular framework) | Active tool — use when onboarding new LOs |
+| `docs/league-system/intake-agent-howto.md` | Step-by-step ops how-to for running the intake agent | Active tool — references via `secretweapon.md` and `LIST_FOR_ED.md` |
+| `docs/league-system/modules/` | **Per-Module blueprints (9 Modules + variant pages)** | All LOCKED |
+| `docs/league-system/modules/handicap-systems/` | Handicap Systems Module (README + 4 variants: percentage, fargorate, points, skill-level) | LOCKED |
+| `docs/league-system/modules/handicap-mechanisms/` | Handicap Mechanisms Module (README + 3 variants: extra-games, start-points, race-length-adjustment) | LOCKED |
+| `docs/league-system/modules/points-system/` | Points System Module (README + 2 variants: one-point-scoring, ten-point-scoring; + **trigger.md** canonical Trigger model) | README + trigger.md LOCKED |
+| `docs/league-system/modules/win-calculator.md` | Win Calculator Module — metric precedence stack + Tiebreak System trigger model | LOCKED |
+| `docs/league-system/modules/threshold-charts/` | Threshold Charts Module (README + 5 variants: 3v3-games-needed, 5v5-games-needed, race-points, race-percentage, fargo-formula) | LOCKED |
+| `docs/league-system/modules/team-geometry.md` | Team Geometry Module — lineup_size + max_roster_size + game_generation | LOCKED |
+| `docs/league-system/modules/match-format.md` | Match Format Module — pairing_format + race_length | LOCKED |
+| `docs/league-system/modules/pairings-generator.md` | Pairings Generator Module — chain pattern (Pair Generation + Game Ordering + Break/Rack Assignment) | LOCKED |
+| `docs/league-system/modules/tiebreak-system/` | Tiebreak System Module (README + 4 Mechanism stubs: coin-flip, roshambo, human-pick, mini-match) | LOCKED |
 | `/docs/brainstorms/` | **CE brainstorm requirements docs** | Output of `/compound-engineering:ce-brainstorm` |
 | `docs/brainstorms/official-rulebook-reader-requirements.md` | Requirements for the Official Rulebook Reader feature | Branch 1 of the rules-feature family |
 | `docs/brainstorms/e2e-test-infrastructure-requirements.md` | Requirements for the Playwright E2E scaffolding (foundation seed + factories + multi-user auth + demo mode) | Active branch `feat/e2e-test-infrastructure` |
@@ -57,12 +75,18 @@
 | `docs/brainstorms/modular-league-system-requirements.md` | Requirements for fully modular league configuration | Deprecates `5_man`/`8_man`; any-combo support; 3-layer threshold strategy; supersedes April 18 modular-handicap-scoring doc |
 | `docs/brainstorms/lineup-to-scoring-transition-requirements.md` | Requirements for the lineup → scoring transition stability fix | 7-defense architecture; supersedes cache/recovery aspects of the prior race-condition brainstorm; closes LIST_FOR_ED #21/#22 |
 | `docs/brainstorms/unified-scoreboard-requirements.md` | Requirements for collapsing 4 scoreboards to 1 + tiebreaker | Schema-derived display hints (escape hatch), mobile-first compact mode, "stadium not sportsbook" focus; depends on PR #98 merge |
+| `docs/brainstorms/2026-05-16-modular-scoring-system-viability-requirements.md` | Viability-stage brainstorm for the modular Scoring System framework | "Works, not perfect" v1 standard established |
+| `docs/brainstorms/2026-05-17-modular-scoring-system-comparison-requirements.md` | Compare-stage brainstorm — verdict to ship modular framework | Drove the locked-docs framework adoption |
+| `docs/brainstorms/2026-05-17-tie-resolution-ownership-requirements.md` | Captured architectural direction for Win Calc metric stack + Tiebreak System | Drove the locked-doc edits + new Tiebreak System Module (#9 in catalog, replacing dissolved Standings & Tiebreakers) |
+| `docs/brainstorms/2026-05-21-lo-primitive-naming-layer-requirements.md` | Naming/identity layer for LO-built primitives — locks the internal-name / display-name / description / label glossary; mirror is workshop-authoring-only | Design (future workshop); NOT locked canon |
+| `docs/brainstorms/2026-05-21-scoreboard-module-design-requirements.md` | ROUGH: scoreboard = slots per side filled by modules that read the state bag + render labeled values; LO-customizable; stress-tests the naming layer | Rough draft — Ed's idea, to flesh out |
 | `/docs/plans/` | **CE implementation plans** | Output of `/compound-engineering:ce-plan` |
 | `docs/plans/2026-04-17-001-feat-official-rulebook-reader-plan.md` | Implementation plan for the Official Rulebook Reader | 6 units, active branch `feature/official-rulebook-reader` |
 | `docs/plans/2026-04-27-001-feat-global-header-nav-rework-plan.md` | Implementation plan for the global header & navigation rework | 9 units in 3 phases, active branch `fix/header-mobile-rework` |
 | `docs/plans/2026-04-28-001-feat-modular-league-system-plan.md` | Implementation plan for the fully modular league system | 21 units across 8 phases (Phase 0 research + 7 implementation phases); supersedes April 18 plan; covers BCAPL SL handicap, audit log R21, threshold-charts wiring, team_format drop |
 | `docs/plans/2026-05-04-001-fix-lineup-to-scoring-transition-stability-plan.md` | Implementation plan for the lineup → scoring transition stability fix | 7 implementation units across 3 phases; new MatchPhaseGuard + MatchTransitionRecovery + useMatchPhase; hardened prep_match RPC; foreground polling backstop; deletes 6-month-old retry loop |
 | `docs/plans/2026-05-03-001-feat-unified-scoreboard-plan.md` | Implementation plan for the unified scoreboard refactor | 8 units across 3 phases; replaces 3 legacy scoreboards with 1 + tiebreaker fix; schema-derived display hints; TeamStatsCard generalized for points-mode; depends on PR #98 merge |
+| `docs/plans/2026-05-17-001-refactor-modular-framework-migration-plan.md` | Strangler-fig migration plan for the modular Scoring System refactor | Unit 1 (Win Calculator extraction) detailed; Units 2-9 sketched; each Unit extracts one Module piece-by-piece without breaking the shipping prepackaged Scoring Systems |
 
 ### Future Work Folder
 
@@ -809,6 +833,7 @@ Reusable wizard/form step components
 #### Match Running Totals (`/utils/match/`)
 - `computeMatchRunningTotals.ts` - **Per-mutation running-totals calculator** (Phase 5 Unit 5.5) — pure helper that filters confirmed regular games, runs the snapshot's points calculator, and returns `{ home_games_won, away_games_won, home_points_earned, away_points_earned }`. Eager recompute on every scoring mutation keeps the match row consistent with the live scoreboard. Tiebreaker games and unconfirmed games are excluded from regular running totals.
 - `auditScoringConsistency.ts` - **Match-completion scoring-consistency audit** (Phase 5 Unit 5.6) — pure `compareRunningTotals(actual, expected)` helper that returns per-field discrepancies between the match row's stored totals and a fresh recompute. Match record is never modified — divergence is logged to `app_logs` for the dev to investigate. Reusable for on-demand audits.
+- `engineRunningTotals.ts` - **Strand-B engine running-totals (post-flip source of truth).** `computeEngineRunningTotals` runs the NEW modular Points System engine (`src/systems/points-system/match-adapter.ts`) on the frozen prep snapshot (snapshotted threshold columns + LOCKED `match_lineups` ratings/team-bonus) and returns the four totals the match row is written with; `runningTotalsDiffer` is the audit comparator. Never throws — returns `null` on any failure so `updateMatchRunningTotals` falls back to legacy `computeMatchRunningTotals` (which also stays on as the auditor: "two paths audit each other"). Was the shadow auditor pre-flip; the roles reversed at the flip.
 - `__tests__/computeMatchRunningTotals.test.ts` - **Running-totals tests** (10 cases): confirmation filtering, tiebreaker exclusion, linear_above_threshold above/tie/below bands, LOCKED tie-band-with-tiebreaker invariant, accumulated_per_game (Fargo 10-7), null calculator, unknown calculator
 - `__tests__/auditScoringConsistency.test.ts` - **Audit comparison tests** (7 cases): in-sync match returns ok, single-field divergence on games_won / points_earned, multi-field divergence, diff sign convention (positive = stored too high), input non-mutation
 
@@ -1072,6 +1097,8 @@ Supabase local configuration and migrations
 | `supabase/migrations/20260420120000_leagues_ignore_org_house_rules.sql` | `leagues.ignore_org_house_rules` column for per-league pure-CSI opt-out |
 | `database/dev_bootstrap_lo.sql` | DEV-ONLY: given an email, upserts member + org (owner via trigger) + one empty league. Paste into Studio. |
 | `database/dev_bootstrap_full.sql` | DEV-ONLY: full fixture — org + venue + league + active 12-week season + 4 teams with 5-player rosters + full round-robin schedule. Paste into Studio. |
+| `database/dev_seed_full.sql` | **DEV-ONLY: canonical full test environment (post-modular).** 4 logins (all captains, password "password"), Tester Org + venue, ~100 placeholders with random handicaps (3v3/5v5/fargo), and 3 leagues — one per packaged scoring system (3v3 points / 5v5 percentage / 5v5 fargo 10-7, prefs = byte-exact PRESET_MAPPINGS) — each with 4 captained teams, lineup_size+1 rosters, and a scheduled round-robin. Idempotent. Paste into Studio after `pnpm db:reset`. Use this to test scoring across all 3 systems. |
+| `database/dev_seed_minimal.sql` | DEV-ONLY: foundation-only seed (4 logins, org, 130 FL placeholders, handicaps) — no leagues/teams; build those via the wizard. Use when testing the wizard itself. |
 | `supabase/migrations/20260418000000_add_leagues_system_overrides.sql` | **Phase 2 Unit 4** — adds `leagues.system_overrides JSONB` for per-league dial overrides |
 | `supabase/migrations/20260418000001_add_fargo_match_columns.sql` | **Phase 2 Unit 5** — adds `matches.fargo_start_points` + `match_games.winner_points`/`loser_points`/`loser_balls_pocketed` |
 | `supabase/migrations/20260418000002_lock_tier1_preferences.sql` | **Phase 2 Unit 6** — DB trigger blocking UPDATE of `handicap_type` and `lineup_size` on league preferences (tier 1 mutability) |
