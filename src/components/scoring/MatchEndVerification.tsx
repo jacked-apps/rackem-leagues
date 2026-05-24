@@ -21,6 +21,7 @@ import { useUpdateMatchLineup } from '@/api/hooks';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { auditMatchScoringConsistency } from '@/api/queries/matches';
 import { determineMatchResult, type MatchResultOutcome } from '@/utils/determineMatchResult';
+import { buildWinCalcConfig, decideWinner } from '@/systems/win-calculator';
 import { ManualTiebreakerDialog } from './ManualTiebreakerDialog';
 import type { ManualTiebreakerSubmission } from './ManualTiebreakerDialog';
 import {
@@ -228,6 +229,35 @@ export function MatchEndVerification({
       : homePoints > awayPoints ? 'home_win' : 'away_win'
     : bcaResult;
 
+  // --- Win Calculator cutover, Step A: SHADOW (observation only) ---
+  // Run the new modular judge alongside the legacy `result` above. The legacy
+  // `result` STILL decides the winner; this changes no behavior. The shadow
+  // verdict is compared at completion time and any disagreement is logged
+  // (see the completion effect below), so we can confirm parity on real
+  // matches before Step B makes the judge authoritative. Documented
+  // divergences (both-met target, full points+games tie) are unreachable in
+  // shipped odd-game formats, so any logged disagreement is worth a look.
+  const shadow = decideWinner(
+    {
+      home_games: homeWins,
+      away_games: awayWins,
+      home_points: homePoints,
+      away_points: awayPoints,
+      home_games_target: homeWinThreshold,
+      away_games_target: awayWinThreshold,
+      home_points_target: null,
+      away_points_target: null,
+      edge: null,
+    },
+    buildWinCalcConfig(winCondition),
+  );
+  const shadowResult: 'home_win' | 'away_win' | 'tie' =
+    'winner' in shadow.verdict
+      ? shadow.verdict.winner === 'home'
+        ? 'home_win'
+        : 'away_win'
+      : 'tie';
+
   // Auto-complete match when both teams verify
   useEffect(() => {
     if (!bothVerified || isCompleting || completionStartedRef.current) return;
@@ -272,6 +302,32 @@ export function MatchEndVerification({
             result === 'home_win' ? homeTeamId :
             result === 'away_win' ? awayTeamId :
             null; // tie
+
+          // Win Calculator SHADOW (Step A): observation only — log if the new
+          // judge disagrees with the legacy `result`. Does NOT affect
+          // winnerTeamId or the write. Runs once per completion (first
+          // verifier's device). Confirms real-match parity before Step B flips
+          // the judge to authoritative.
+          if (shadowResult !== result) {
+            logger.warn('[WinCalc shadow] judge disagrees with legacy result', {
+              matchId,
+              winCondition,
+              legacy: result,
+              judge: shadowResult,
+              flags: shadow.flags,
+              homeWins,
+              awayWins,
+              homePoints,
+              awayPoints,
+              homeWinThreshold,
+              awayWinThreshold,
+            });
+          } else if (shadow.flags.length > 0) {
+            logger.warn('[WinCalc shadow] judge agrees but raised flags', {
+              matchId,
+              flags: shadow.flags,
+            });
+          }
 
           // Phase 5 Unit 5.5: completion just persists the outcome — running
           // totals (home_games_won / away_games_won / home_points_earned /
