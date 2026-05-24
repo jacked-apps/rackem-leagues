@@ -4,6 +4,30 @@ Tasks and refactoring items for Ed to work on.
 
 ---
 
+## ⭐ 2026-05-24 NEXT BRANCH — Match realtime resilience (handoff must survive dropped connections)
+
+**Discovered:** 2026-05-24 while testing the Win Calculator cutover — the realtime subscription fell into a `CLOSED → re-subscribe → TIMED_OUT` loop and the two-scorekeeper handoff stopped syncing.
+**Severity:** IMPORTANT — Ed flagged this as the very next branch to work on.
+**Branch needed:** `feat/match-realtime-resilience` — its own focused branch, NOT a quick fix.
+
+**The problem:** the live-scoring handoff between the two teams rides entirely on Supabase realtime (`src/realtime/useMatchRealtime.ts`). That hook is well-built *against re-subscribe churn* (deps are `[matchId]` only; callbacks/options held in refs; it does not tight-retry), BUT it has **no app-level resilience**: no explicit re-subscribe when the channel drops (`CLOSED`), no "reconnecting…" indicator for the scorekeeper, and no fallback (e.g. polling) when realtime degrades. It trusts realtime to stay up plus whatever the Supabase client reconnects on its own. A dropped/blipped connection in production can leave one device out of sync until a manual refresh.
+
+**Why it matters (not polish):** live scoring happens in pool halls, which routinely have flaky wifi. "The handoff survives a dropped connection" is real product robustness for launch.
+
+**What is NOT the bug (don't chase these):**
+- The recurring local `CLOSED/TIMED_OUT` loops in dev are usually the **local Supabase realtime container** being unhealthy (worse after schema/config changes). Dev fix = `supabase stop && supabase start` (data is preserved). Environment quirk, not this code.
+- The hook's subscription *wiring* is sound — don't rewrite it; ADD a resilience layer around it.
+
+**Fix direction (for the focused branch):**
+- Re-subscribe on `CLOSED` with sensible backoff (not a tight loop).
+- A user-facing "reconnecting… / offline" indicator on the scoring + lineup screens so a scorekeeper knows sync is degraded.
+- A fallback (e.g. short-interval polling refetch) so scoring still works while realtime is down, resuming realtime when it recovers.
+- Test by simulating dropped/timed-out connections, not just the happy path.
+
+**Until fixed:** in dev, restart Supabase when the subscription loops. In production, a realtime blip can desync a scorekeeper's device until manual refresh — the handoff is a single point of failure with no graceful degradation.
+
+---
+
 ## 🚨 2026-04-21 STAGING TEST — Multiple Critical Failures
 
 **Discovered:** 2026-04-21 during first real-player staging test at the league event
