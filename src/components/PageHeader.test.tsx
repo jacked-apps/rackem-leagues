@@ -128,13 +128,11 @@ describe('PageHeader', () => {
     expect(screen.getByTestId('info-chip')).toBeInTheDocument();
   });
 
-  it('shows the avatar (initials) linking to /profile when logged in', () => {
-    configureProfile({ firstName: 'Bob', lastName: 'Smith' });
-    renderHeader(<PageHeader title="Home" />);
-    const avatar = screen.getByRole('link', { name: /open profile/i });
-    expect(avatar).toHaveAttribute('href', '/profile');
-    expect(avatar).toHaveTextContent('BS');
-  });
+  // The avatar/initials link used to live in PageHeader's right
+  // identity slot. The 2026-05 nav overhaul moved profile access to
+  // the sidebar (desktop) + bottom tab bar (mobile), so PageHeader
+  // no longer renders it. Profile-link coverage now lives in the
+  // AppDrawer + sidebar tests instead.
 
   it('shows the Sign in button when logged out on a non-auth-flow route', () => {
     renderHeader(<PageHeader title="Home" />, { isLoggedIn: false, initialRoute: '/' });

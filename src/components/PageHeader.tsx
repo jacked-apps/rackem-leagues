@@ -6,8 +6,9 @@
  * - Back arrow (immediately right of hamburger, conditional on `backTo` or
  *   `onBackClick`). Mobile: icon only. Desktop ≥1024px (`lg:`): icon + label.
  * - Title (flex-1, truncates with ellipsis).
- * - Identity slot (right) — avatar/initials linking to `/profile` when logged
- *   in, "Sign in" button when logged out, suppressed on auth-flow routes.
+ * - Identity slot (right) — "Sign in" button when logged out, suppressed
+ *   on auth-flow routes. Profile access for logged-in users moved to
+ *   the sidebar/drawer in the 2026-05 nav overhaul.
  *
  * Below the sticky bar (NOT sticky) the component renders the page's
  * `subtitle`, optional organization badge (driven by `organizationId`), and

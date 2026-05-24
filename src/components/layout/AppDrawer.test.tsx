@@ -10,7 +10,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
-import { renderWithProviders, screen, userEvent, within } from '@/test/utils';
+import { renderWithProviders, screen, within } from '@/test/utils';
 
 // Mock the data-fetching hooks used by AppDrawer. The drawer's role/auth
 // branching is driven by these return values; controlling them per test lets
@@ -114,14 +114,16 @@ describe('AppDrawer', () => {
     renderDrawer();
 
     const nav = screen.getByRole('navigation', { name: /main navigation/i });
+    // Post 2026-05 nav overhaul: the player section is My Match / My
+    // Teams / Stats / Rules / Messages / Profile. "Dashboard" moved
+    // into the per-org Operator section (only for operators); Sign
+    // out moved out of the drawer entirely.
     expect(within(nav).getByRole('link', { name: 'My Match' })).toBeInTheDocument();
-    expect(within(nav).getByRole('link', { name: 'Dashboard' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'My Teams' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Stats' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Rules' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: /^Messages/ })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Profile' })).toBeInTheDocument();
-    expect(within(nav).getByRole('button', { name: /sign out/i })).toBeInTheDocument();
   });
 
   // Happy path — single-org operator
@@ -142,12 +144,12 @@ describe('AppDrawer', () => {
     renderDrawer();
 
     expect(screen.getByText('Operator')).toBeInTheDocument();
-    // Two "Dashboard" links exist: the player section one (/dashboard) and the
-    // org-scoped operator one (/operator-dashboard/org-a). Match each by href.
+    // Post 2026-05 nav overhaul: the player section no longer has a
+    // "Dashboard" link. The single Dashboard link comes from the org-
+    // scoped Operator section.
     const dashboardLinks = screen.getAllByRole('link', { name: 'Dashboard' });
-    expect(dashboardLinks.map((l) => l.getAttribute('href'))).toEqual(
-      expect.arrayContaining(['/dashboard', '/operator-dashboard/org-a']),
-    );
+    expect(dashboardLinks).toHaveLength(1);
+    expect(dashboardLinks[0]).toHaveAttribute('href', '/operator-dashboard/org-a');
     expect(screen.getByRole('link', { name: 'Create League' })).toHaveAttribute(
       'href',
       '/create-league/org-a',
@@ -234,7 +236,7 @@ describe('AppDrawer', () => {
   });
 
   // Edge case — overflow with cap-at-4
-  it('caps the operator section at 4 orgs and shows "More on Dashboard" overflow link', () => {
+  it('caps the operator section at 4 orgs', () => {
     mockUseUserProfile.mockReturnValue({
       member: { id: 'm1', first_name: 'Op', last_name: 'Many' },
       canAccessLeagueOperatorFeatures: () => true,
@@ -265,11 +267,9 @@ describe('AppDrawer', () => {
     // Cut off:
     expect(screen.queryByText('Staff Delta')).not.toBeInTheDocument();
     expect(screen.queryByText('Staff Echo')).not.toBeInTheDocument();
-    // Overflow link to /dashboard:
-    expect(screen.getByRole('link', { name: /more on dashboard/i })).toHaveAttribute(
-      'href',
-      '/dashboard',
-    );
+    // Post 2026-05 nav overhaul: no "More on Dashboard" overflow
+    // link — the cap is silent. Operators with >4 orgs reach the
+    // overflow via the org switcher elsewhere in the chrome.
   });
 
   // Edge case — operator with 0 owned orgs renders staff orgs only (no owner section)
@@ -312,35 +312,18 @@ describe('AppDrawer', () => {
 
     renderDrawer();
 
-    // Player section still renders; Operator heading is absent until orgs load.
-    expect(screen.getByRole('link', { name: 'Dashboard' })).toBeInTheDocument();
+    // Player section still renders; Operator heading is absent until
+    // orgs load. We probe "My Teams" (a stable player-section link)
+    // instead of "Dashboard" (which moved into the per-org Operator
+    // section in the 2026-05 nav overhaul).
+    expect(screen.getByRole('link', { name: 'My Teams' })).toBeInTheDocument();
     expect(screen.queryByText('Operator')).not.toBeInTheDocument();
   });
 
-  // Integration — sign out closes drawer and calls logout
-  it('Sign out button closes the drawer and calls logout', async () => {
-    const user = userEvent.setup();
-    const logoutSpy = vi.fn();
-    configurePlayer();
-
-    const onOpenChange = vi.fn();
-    renderWithProviders(
-      <Sheet open onOpenChange={onOpenChange}>
-        <SheetContent side="left">
-          <AppDrawer open onOpenChange={onOpenChange} />
-        </SheetContent>
-      </Sheet>,
-      {
-        userContext: {
-          isLoggedIn: true,
-          logout: logoutSpy,
-        },
-      },
-    );
-
-    await user.click(screen.getByRole('button', { name: /sign out/i }));
-
-    expect(onOpenChange).toHaveBeenCalledWith(false);
-    expect(logoutSpy).toHaveBeenCalled();
-  });
+  // The Sign-out button used to live inside the drawer. The 2026-05
+  // nav overhaul moved it out (it's now on the Profile page). Drawer
+  // dismissal on link tap is covered by the player-root + operator-
+  // section tests above (each uses SheetClose-wrapped DrawerLink).
+  // If/when a sign-out affordance returns to the drawer, restore this
+  // test against the new button.
 });
