@@ -372,6 +372,13 @@ The DB has a `points_system` column (`differential | bca_tiered | per_game | man
 - `src/systems/calculators/{linear_above_threshold,accumulate_with_milestone_jumps,accumulated_per_game}.ts` — per-calculator implementations
 - `src/wizards/league-v2/steps/PointsCalculatorStep.tsx` — wizard UI for selecting the points calculator
 
+### Inline status & code refs (borderline pass)
+
+- Per-game allocator `formula` value-shape: not yet supported in code (the calculator interface would need a `formula` kind). 17-Point depends on it; no shipping Scoring System uses it.
+- Trigger sub-mechanism: currently bundled inside the `accumulate_with_milestone_jumps` calculator.
+- Tie-band rule: enforced in `src/systems/calculators/linear_above_threshold.ts`, fixed in code (not configurable).
+- Calculator registry `src/systems/calculators/index.ts` supports `registerCalculator`; the gap for LO-customizable allocations is the LO-facing UI.
+
 ## modules/points-system/one-point-scoring.md
 
 _Extracted 2026-05-24 from the locked design doc [modules/points-system/one-point-scoring.md](modules/points-system/one-point-scoring.md)._
