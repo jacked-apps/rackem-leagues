@@ -54,6 +54,7 @@
 | `docs/league-system/README.md` | 9-Module catalog + classification walkthrough + cheat-sheet | **LOCKED** |
 | `docs/league-system/concept-analogies.md` | Lens mapping locked concepts → programming primitives (Module=component, Threshold=state setter, Trigger=if/then, per-game allocator=reducer…); flaw-detector for cold reads | LOCKED |
 | `docs/league-system/revision-protocol.md` | How to safely revise a LOCKED doc: v2-draft-alongside, surgical-diff discipline, plan-as-validation-gate, 3-cold-read ratification; companion to Principle 7 | Active process doc |
+| `docs/league-system/implementation-status.md` | Unlocked sidecar holding the code references + build-status extracted out of the LOCKED design docs (per PRINCIPLES § 6 — docs are stand-alone). One section per module; editable as code moves, no unlock ritual | Living status sheet |
 | `docs/league-system/intake-agent-prompt.md` | Persona prompt for the League Intake Agent (Claude session that translates LO league descriptions to the modular framework) | Active tool — use when onboarding new LOs |
 | `docs/league-system/intake-agent-howto.md` | Step-by-step ops how-to for running the intake agent | Active tool — references via `secretweapon.md` and `LIST_FOR_ED.md` |
 | `docs/league-system/modules/` | **Per-Module blueprints (9 Modules + variant pages)** | All LOCKED |

@@ -114,13 +114,6 @@ A formula-shaped Chart in code can be re-expressed at any scope as a saved discr
 - **Calibration-by-data tools** — generating a new Chart by fitting historical match outcomes to a desired competitive balance target. Removes the manual calibration burden.
 - **Per-Mechanism Chart families** — distinct Chart sets calibrated for different Mechanisms (e.g., a "Points encoding × start_points Mechanism" Chart that doesn't exist today because the Mechanism pairing isn't wired).
 
-## Source of truth
-
-- `supabase/migrations/20260410000002_threshold_charts.sql` — `threshold_charts` and `threshold_chart_rows` table definitions; the `lookup_threshold()` SQL function that performs the scope-cascade query
-- `supabase/migrations/20260410000003_seed_threshold_charts.sql` — global default rows for the currently-shipped Charts
-- `supabase/migrations/20260410000004_add_threshold_chart_fk.sql` — `preferences.threshold_chart_id` foreign key
-- `supabase/migrations/20260429000004_threshold_charts_rls_production.sql` — row-level security
-- Per-Chart code anchors live in each variant page's *Current code state* section
-- `src/utils/handicap/fargoGamesWonThresholds.ts` — Fargo formula entry point (formula-shaped Chart, not stored in the SQL tables)
+## Anti-conflation note
 
 **Anti-conflation note.** The word **chart** appears in several adjacent meanings in the codebase — *threshold chart* (this Module), *handicap chart* (an operator-colloquial term sometimes covering both encoding and lookup together), *standings chart* (a UI table of team standings). When writing or reading, lowercase *"chart"* is the abstract noun; capitalized *"Chart"* or *"Threshold Chart"* refers to this Module specifically (per [PRINCIPLES § Chart — § 7](../../PRINCIPLES.md#7-naming-charts)).

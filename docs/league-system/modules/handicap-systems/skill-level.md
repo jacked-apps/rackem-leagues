@@ -75,20 +75,6 @@ N/A while reserved. When revived, the relevant modifications are:
 - Manual-entry UX details (validation, optional history view, refresh prompts).
 - Variant selection (APA SL1–SL9 vs a locally-coined N-grade scheme).
 
-## Current code state (and the step-2 hide)
-
-The variant is **scaffolded but not usable**:
-
-- DB allows the value: `'skill_level'` in `preferences.handicap_type` CHECK (`supabase/migrations/20260410000000_extend_preferences_modular.sql:61`)
-- `HandicapType` union member: `src/utils/calculatePlayerHandicap.ts:22`
-- Stub branch in `src/systems/buildSystemFromPreferences.ts:135` (`case 'skill_level':`)
-- Wizard card currently visible: `src/wizards/league-v2/steps/HandicapSystemStep.tsx:43`
-
-**Step 2 will:**
-
-1. **Hide the wizard card** in `HandicapSystemStep.tsx` so operators cannot select Skill Level until a usable implementation exists. The schema, stub, and union member stay intact — per the project's *hide-but-preserve* rule for half-built features (don't ship broken; don't strip scaffolding).
-2. **Add an early-return guard in `src/utils/calculatePlayerHandicap.ts`** for `handicap_type === 'skill_level'`. Today the function silently falls through to a percentage-style starting handicap (returning `player.starting_handicap_5v5 ?? 40`), which is wrong data, not a visible failure. The guard should return `{ value: null, stale: false }` with a `logger.warn` — turning silent miscalculation into an explicit "no data" state.
-
 ## Trigger to revive in app
 
 Un-hide the wizard card when **any** of these is true:

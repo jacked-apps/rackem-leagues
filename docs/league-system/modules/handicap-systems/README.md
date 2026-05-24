@@ -123,13 +123,3 @@ Each variant ships with a *known-compatible* mechanism and chart pairing today. 
 - **Hybrid systems** — e.g., FargoRate as primary with manual override range, or Points-derived-from-Fargo bucketing.
 
 The category is open. Adding a new variant requires: (a) an encoding spec, (b) at least one compatible mechanism + chart, (c) a wizard card, (d) the matching variant page here.
-
-## Source of truth
-
-- `src/types/preferences.ts` — `handicap_type` column type
-- `src/utils/calculatePlayerHandicap.ts` — `HandicapType` union; calculation dispatch
-- `supabase/migrations/20260410000000_extend_preferences_modular.sql` (lines 51–66) — DB CHECK enumerating allowed values
-- `src/systems/buildSystemFromPreferences.ts` — per-`handicap_type` SystemModule dispatch
-- `src/wizards/league-v2/steps/HandicapSystemStep.tsx` — wizard UI for variant selection
-
-Step-2 rename targets: none at the Module level (the file structure is not being renamed; only the SystemModule keys / prepackaged Scoring System preset keys are).

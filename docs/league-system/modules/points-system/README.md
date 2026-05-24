@@ -73,21 +73,6 @@ CSI's main use case for 17-Point: incentivizes the loser to keep pocketing balls
 
 The compositions above are **conceptual**. Current code bundles them differently — see the calculator implementations table below.
 
-## Our coined calculator implementations (current code)
-
-| Calculator (in code) | What it actually contains | Used by Scoring System |
-|---|---|---|
-| `accumulated_per_game` | (A) generic per-game allocator | FargoRate 10-Point 5-Man (also wired with start_points logic in `fargo5v5.ts`) |
-| `accumulate_with_milestone_jumps` | (A) + (B) bundled into one calculator | Percentage 5-Man |
-| `linear_above_threshold` | end-of-match scoring — computes a side's match points once at match end from games-won vs thresholds (incl. the tie-band rule) | Points 3-Man |
-| `none` | No-op (no points tracked at all) | None today (selectable for new leagues) |
-
-**Implementation artifact, not architectural intent.** The current per-Scoring-System bundling means the "calculator" picked in the wizard is a pre-built combination matching that Scoring System. Architecturally, a future refactor should decouple these into composable sub-mechanisms — so an LO could mix-and-match (e.g., milestone triggers stacked on top of any per-game allocator config; start_points combined with any per-game allocator; new compositions for new Scoring Systems without writing new calculator types).
-
-## Persisted-but-unconsumed: `points_system` column
-
-The DB has a `points_system` column (`differential | bca_tiered | per_game | manual`) from Phase 1 of the modular system rollout. **No scoring runtime currently consumes the resolved value.** It persists per Ed's "don't drop columns" directive. Future cleanup may rename or drop in a separate branch.
-
 ## How this Module interacts
 
 - **Upstream**: [Handicap Mechanisms](../handicap-mechanisms/README.md) can contribute point values — e.g., the `start_points` mechanism's handicap-driven initial bonus feeds the Points System's running totals (sub-mechanism type C).
@@ -100,12 +85,3 @@ The DB has a `points_system` column (`differential | bca_tiered | per_game | man
 - **17-Point Scoring System implementation** — needs the `formula` shape for the per-game allocator (see (A) above); no shipping Scoring System uses it.
 - **LO-customizable per-game allocations** — operators defining new calculator types via UI rather than code. The calculator registry (`src/systems/calculators/index.ts`) already supports `registerCalculator`; the gap is the LO-facing UI.
 - **Decoupled sub-mechanism composition** — the current calculators bundle (A)+(B) etc.; a future refactor would let an LO stack sub-mechanisms freely (milestone triggers on any per-game allocator, etc.).
-
-## Source of truth
-
-- `src/types/preferences.ts` and `src/types/resolvedSystemConfig.ts` — `points_calculator`, `points_calculator_params`, `points_system` column types
-- `supabase/migrations/20260429000001_extend_preferences_phase2_modular_axes.sql` — DB CHECK enumerating allowed `points_calculator` values
-- `src/systems/calculators/index.ts` — calculator registry (`getCalculator`, `registerCalculator`, `listCalculators`)
-- `src/systems/calculators/types.ts` — `PointsCalculator` interface (discriminated by `kind: 'aggregate' | 'per_game'`)
-- `src/systems/calculators/{linear_above_threshold,accumulate_with_milestone_jumps,accumulated_per_game}.ts` — per-calculator implementations
-- `src/wizards/league-v2/steps/PointsCalculatorStep.tsx` — wizard UI for selecting the points calculator

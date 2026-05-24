@@ -52,10 +52,3 @@ The mechanism's output is a pair of per-team target wins (`target_home`, `target
 
 - **Different chart granularities** — finer or coarser steps between target counts.
 - **Scaling-factor variants** — pair with the 50% / 75% / 150% handicap-strength scaling options of Handicap Systems to dial the mechanism's intensity.
-
-## Current code state
-
-- DB: `'extra_games'` allowed value in `preferences.mechanism` CHECK (`supabase/migrations/20260429000001_extend_preferences_phase2_modular_axes.sql`, around lines 122–134).
-- Type: `ExtraGamesThreshold` in `src/systems/types.ts` (around line 142).
-- Dispatch: `pickExtraGamesThreshold()` in `src/systems/buildSystemFromPreferences.ts` (around line 270). Wired for Points (delegates to `bca3v3.threshold.compute`) and Percentage (delegates to `bca5v5.threshold.compute`). Unwired combinations (Fargo + extra_games, skill_level + extra_games, etc.) return a zero-handicap fallback and emit a warning.
-- The actual chart computation for the wired combos lives in `src/utils/handicap/get3v3GamesNeeded.ts` and `src/utils/handicap/get5v5GamesNeeded.ts`. Same architectural-intent flag as in the [Module README](README.md#architectural-intent-modules-are-orthogonal): the current `bca3v3`/`bca5v5` SystemModules bundle the chart call directly — that's a Threshold Charts concern bundled into the rating-system files for historical reasons, not architectural intent.

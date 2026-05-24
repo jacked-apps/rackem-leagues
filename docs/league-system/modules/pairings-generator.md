@@ -179,18 +179,6 @@ Cross-stage validation is enforced inside the chain (each stage's output validat
 | Same inputs (TG + MF + lineups + variant choices) produce byte-identical output across invocations | by construction (deterministic compute) — characterization tests guard | regression test failure if a sub-Mechanism introduces non-determinism without seed input |
 | Variant choices for the three sub-Mechanisms are consistent with each other (e.g., a "Swiss pairing" Pair Generation variant needs a Game Ordering variant that doesn't assume Cartesian-product structure) | application-layer composition validator (currently bundled implicitly per Scoring System) | warns at LO setup; runtime falls back to safe-default chains per Principle 10 if a mismatch slips through |
 
-## Implementation status
-
-The locked [`README.md`](../README.md) and [Handicap Systems README's "Architectural intent: modules are orthogonal" section](handicap-systems/README.md#architectural-intent-modules-are-orthogonal) both establish the principle that current code bundlings are *implementation artifacts from before the modular axes were fully separated, NOT statements of intended architecture*. Pairings Generator's situation in current code matches:
-
-- There is no standalone `PairingsGenerator` Module type in `src/systems/`. The work happens but is bundled inside per-Scoring-System code paths.
-- `src/utils/gameOrder.ts` contains a hardcoded 18-game DRR table for 3v3 that bundles all three sub-Mechanisms (pair generation + game ordering + break/rack assignment) into one lookup table. Helper functions (`getGameMatchup(game_number)` etc.) read from this table at scoring time.
-- The 5v5 SRR case is computed inline elsewhere in the scoring runtime (not centralized; specific algorithm location is implicit in code).
-- No preference columns exist for any of the three sub-Mechanisms today. The choices are implicit in per-Scoring-System code rather than LO-configurable.
-- The race_to_n + race_length_adjustment combination is the case where Match Format + Handicap Mechanism downstream consumption of this Module's output diverges from the single_rack assumption — implementation is partial there because no shipped Scoring System uses race_to_n.
-
-The Step-2 refactor lifts Pairings Generator out as a first-class Module with its own typed contract, splits the three sub-Mechanisms into separately-implemented stages, and centralizes the previously-scattered runtime code. The new Module's typed contract is small but load-bearing (the slot-list shape is consumed by every scoring code path). Per-sub-Mechanism preference columns may be added in a later phase as LO customization at any of the three stages becomes a real product need; the Module's design accommodates this extension without restructuring.
-
 ## Future possibilities
 
 - **LO-configurable sub-Mechanism choice per stage.** Add preference columns (`pair_generation_variant`, `game_ordering_variant`, `break_rack_assignment_variant`) so LOs can pick from the currently-implicit variants explicitly. Wizard UI presents each stage as an independent dial. Currently the sub-Mechanism choices are bundled implicitly per Scoring System; making them LO-facing is straightforward once the Module is extracted but requires schema additions.
@@ -202,12 +190,3 @@ The Step-2 refactor lifts Pairings Generator out as a first-class Module with it
 - **Mid-match re-pairing.** Currently this Module runs once per match at lineup-lock; the output is immutable for the match. A future variant could allow re-running on substitution events (preserving completed slots, regenerating remaining slots with the new lineup). Application-level substitution rules would govern when re-pairing is allowed; this Module would handle the recomputation.
 
 The category is open. Each new sub-Mechanism variant requires: (a) algorithm implementation, (b) test coverage for the deterministic-output contract, (c) cross-stage compatibility verification (a Swiss pairing pairs with a Swiss-aware Game Ordering, not with a fixed-table ordering), (d) wizard UI option if the variant is LO-facing.
-
-## Source of truth
-
-- `src/utils/gameOrder.ts` — current hardcoded 18-game DRR table for 3v3 bundling all three sub-Mechanisms; `getGameMatchup(game_number)` and related helpers read from this table
-- `src/utils/__tests__/gameOrder.characterization.test.ts` — characterization tests locking the current 3v3 DRR sequence; the Step-2 refactor preserves byte-identical output
-- 5v5 SRR pair-and-order generation is computed inline in the scoring runtime (location implicit; centralizing this is part of the Step-2 refactor)
-- No preference columns currently exist for any of the three sub-Mechanisms; addition would require a schema migration adding `pair_generation_variant`, `game_ordering_variant`, `break_rack_assignment_variant` to `preferences` with appropriate CHECK constraints
-- `src/types/match.ts` — `GameSlot` (or equivalent) is the output record shape; each slot carries pairing + game_number + break/rack annotations consumed by the scoring runtime
-- No wizard step currently collects Pairings Generator configuration (the sub-Mechanism choices are bundled implicitly in per-Scoring-System code); a Step-2-or-later wizard step would expose the three stages as dials
