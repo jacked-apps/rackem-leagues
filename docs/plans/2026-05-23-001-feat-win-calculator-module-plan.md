@@ -179,7 +179,7 @@ Parity mapping (today's fixed behavior, reproduced by `buildWinCalcConfig`):
 | `win_condition` | Config produced | Reproduces |
 |---|---|---|
 | `games` | `{ order: ['games'], games: { mode: 'met_goal' } }` | `determineMatchResult` (per-side game targets; no-winner ⇒ tie) |
-| `points` | `{ order: ['points','games'], points: { mode: 'most' }, games: { mode: 'most' } }` | inline points ternary (most points; games tiebreak; exact-tie home-favored branch is unreachable in shipped odd-game formats — documented) |
+| `points` | `{ order: ['points','games'], points: { mode: 'most' }, games: { mode: 'most' } }` | inline points ternary: most points; if points equal, most games — legacy's `homeWins >= awayWins ? home : away` means an exact games tie resolves to **home**. Only the full points-AND-games tie diverges (legacy → home, new judge → tie); unreachable in shipped odd-game formats (see Unit 5). |
 
 ## Implementation Units
 
@@ -324,7 +324,7 @@ Parity mapping (today's fixed behavior, reproduced by `buildWinCalcConfig`):
 - Happy: tiebreaker re-entry (target 2, best-of-3) → identical winner old vs new.
 - Edge: BCA tie (e.g. 9–9 at tie targets) → both produce tie/no-winner.
 - Edge: Fargo points-equal → both fall to games; games decide identically.
-- Known divergence (NOT strictly unreachable — feasibility/scope finding): points exact-tie (points AND games equal). New judge → `tie` (v2-correct: residue handed to the future tie-resolution module); legacy → `home` (home-favored fallback). This **cannot** occur in odd-game formats (Fargo 5v5 = 25 games), but **can** occur in even-game points formats (4v4/3v3). Assert the odd-game case never reaches it; for an even-game synthetic case, assert the intended `tie` and document that the live divergence auditor will (correctly) flag it if such a league exists — it is the v2 fix replacing a latent home-favored bug, not a regression.
+- Known divergence (NOT strictly unreachable — feasibility/scope finding): points exact-tie (points AND games equal). Legacy's points-equal branch is `homeWins >= awayWins ? 'home_win' : 'away_win'`, so a full points-and-games tie resolves to **home**; the new judge returns `tie` (v2-correct: residue handed to the future tie-resolution module). For points-equal-but-games-differ, legacy and the new judge let games decide **identically** — the divergence is ONLY the full tie. It **cannot** occur in odd-game formats (Fargo 5v5 = 25 games), but **can** occur in even-game points formats (4v4/3v3). Assert the odd-game case never reaches it; for an even-game synthetic case, assert the intended `tie` and document that the live divergence auditor will (correctly) flag it if such a league exists — it is the v2 fix replacing a latent home-favored bug, not a regression.
 - Known divergence (met-goal both-met): if both sides reach their games-target — impossible with correct targets — the new judge returns no-winner **plus an anomaly flag** (→ tie), whereas legacy `determineMatchResult` returns `home` (home-first). Unreachable with correct charts; if synthetically forced, assert the new `tie` + flag and document it as intended v2 anomaly-handling, not a regression. (This means the games/met-goal parity claim holds for all chart-valid scorelines; the only old/new difference is this malformed-target case.)
 
 **Verification:** `pnpm test:run` green; matrix covers all three presets + tiebreaker re-entry + boundaries; the only old/new divergences are the two documented, unreachable-with-correct-config cases (points exact-tie; met-goal both-met).
@@ -418,10 +418,9 @@ Parity mapping (today's fixed behavior, reproduced by `buildWinCalcConfig`):
 
 - **Spec:** [docs/league-system/modules/win-calculator.md](../league-system/modules/win-calculator.md) — the ratified pure-judge canon (was the v2 draft this plan validated); the corrected 2-comparator model is captured above.
 - **Revision protocol:** [docs/league-system/revision-protocol.md](../league-system/revision-protocol.md)
-- **Locked v1 (do not edit):** [docs/league-system/modules/win-calculator.md](../league-system/modules/win-calculator.md)
 - **Trigger primitive (prereq spec):** [docs/league-system/modules/points-system/trigger.md](../league-system/modules/points-system/trigger.md)
 - **Threshold Charts (prereq spec):** [docs/league-system/modules/threshold-charts/README.md](../league-system/modules/threshold-charts/README.md)
-- **Cross-doc drift to reconcile at ratification:** [docs/league-system/modules/tiebreak-system/README.md](../league-system/modules/tiebreak-system/README.md), `docs/plans/2026-05-17-001-refactor-modular-framework-migration-plan.md` (Units 1 & 9)
+- **Cross-doc drift deferred to those docs' own v2s** (logged in finding #3): [docs/league-system/modules/tiebreak-system/README.md](../league-system/modules/tiebreak-system/README.md), `docs/league-system/modules/pairings-generator.md`, and `docs/plans/2026-05-17-001-refactor-modular-framework-migration-plan.md` (Units 1 & 9)
 - **Live winner code:** `src/components/scoring/MatchEndVerification.tsx`, `src/utils/determineMatchResult.ts`
 - **State bag / engine cutover precedent:** `src/systems/points-system/{types,runtime,match-adapter}.ts`, `src/api/queries/matches.ts`
 - **Dead scaffolding to remove:** `src/systems/win-calculators/`, `src/systems/fargo5v5.ts` (computeMatchResult), `src/utils/fargoMatchTotals.ts`
