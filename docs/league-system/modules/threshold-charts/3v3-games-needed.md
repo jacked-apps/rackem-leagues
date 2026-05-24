@@ -14,8 +14,6 @@ locked: true
 
 A peer variant of the **[Threshold Charts](README.md)** Module — a [Chart](../../PRINCIPLES.md#chart--deep-dive)-kind Module.
 
-> **Filename note.** This file is named `3v3-games-needed.md` for historical reasons. The formula it documents is universal across team sizes (parameterized by `game_count`); the team-size-implying filename is a leftover from before the formula was unified across team sizes. Renaming has been deferred to avoid breaking inbound links from other docs and code references. Future cleanup will rename it (likely to `points-games-needed.md`) once link rewrites across the codebase can be coordinated.
-
 > **Reading this cold?** A threshold chart is a passive lookup (table OR formula) that converts a handicap input into a concrete match-setup threshold. This page describes the **Points Games-Needed Formula** variant: a formula taking a team-aggregate handicap difference (Points encoding) and a match-night game count, returning the per-side asymmetric game-win targets. Universal across team sizes — works the same way whether the league is 3v3 (18 games), 4v4 (16 single round-robin or 32 double), 5v5 (25 or 50), or any other valid lineup_size × game_generation combination. Other Chart variants exist for other handicap encodings (Percentage, FargoRate); see the [Module README](README.md).
 
 ## What it is
@@ -66,11 +64,3 @@ A **formula-shape** Chart, evaluated by **passing the team-aggregate handicap di
 - **Range extension.** The default Points encoding spans -2 to +2; reduced-strength variants span -1 to +1. Future encodings (e.g., a -3 to +3 extended Points range) would be supported by the same formula without modification — only the input domain widens.
 - **Tighter or looser asymmetry per Points-unit.** A future LO-customization dial could scale the per-Points-unit gap between targets (e.g., "each Points-unit of diff shifts targets by 1.5 instead of 1"). That parameterization would extend the formula's signature with a `points_unit_multiplier` parameter; the Chart variant pair stays the same.
 - **Per-handicap-system multipliers (strength dials).** Per [Handicap Systems README's Future possibilities](../handicap-systems/README.md#future-possibilities), strength dials (50% / 75% / 100% / 150%) would adjust the effective handicap diff *before* feeding the formula — scaling the asymmetry without changing the formula itself. The Chart receives a pre-scaled diff and proceeds normally.
-
-## (Optional) Code references
-
-*Supplementary pointers to one prior implementation that approximates this Chart's shape. Per [PRINCIPLES § 6](../../PRINCIPLES.md#6-docs-are-stand-alone-code-references-are-supplementary), this section is illustrative only — the architectural definition is the prose above, independent of any specific code.*
-
-- **A prior implementation stored this Chart as a discrete table calibrated specifically for 3v3 DRR's 18 games** (`src/utils/handicap/get3v3GamesNeeded.ts`, the seeded DB rows in `supabase/migrations/20260410000003_seed_threshold_charts.sql`). That implementation is the human-convenience artifact described above and is **not** the source of truth under the formula-first architecture this variant page now codifies. The Step-2 refactor replaces hardcoded table values with formula evaluation parameterized by `game_count`, removing the team-size-specific constraint baked into the prior implementation.
-- A prior implementation also stored the Chart shape with a 3-column output (`result_1/2/3` interpreted as win/tie/lose), conflating downstream tie-handling into the Chart's storage. The architectural definition above intentionally narrows the Chart's output to the per-side target pair; tie / unresolved-band semantics belong to the [Win Calculator](../win-calculator.md), not the Chart.
-- Other prior code pointers: `supabase/migrations/20260410000002_threshold_charts.sql` (table schema + `lookup_threshold()` SQL function), `src/utils/handicap/get3v3GamesNeeded.ts` (TypeScript hardcoded copy).

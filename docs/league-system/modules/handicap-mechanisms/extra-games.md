@@ -33,7 +33,7 @@ The mechanism's output is a pair of per-team target wins (`target_home`, `target
 ## When you'd use it / pros
 
 - **Operators preferring a "you have to earn it" feel** — the stronger team can't coast; they have to outperform the rating gap on the table.
-- **Pairs naturally with a game-counting Win Calculator** — when match victory is decided by reaching game-win targets (currently `win_condition='games'`), extra_games' asymmetric targets directly determine the winner. If the Win Calculator instead consults accumulated points, the asymmetric targets are recorded but don't decide the match.
+- **Pairs naturally with a game-counting Win Calculator** — when match victory is decided by reaching game-win targets, extra_games' asymmetric targets directly determine the winner. If the Win Calculator instead consults accumulated points, the asymmetric targets are recorded but don't decide the match.
 - **Clear and intuitive for players** — "your team needs to win 8 games, theirs needs 5" is easy to communicate at lineup time.
 
 ## When you wouldn't / cons
@@ -45,17 +45,10 @@ The mechanism's output is a pair of per-team target wins (`target_home`, `target
 ## Interactions
 
 - **Upstream**: works with [any Handicap System](../handicap-systems/README.md) whose chart can produce a per-team target-wins pair.
-- **Currently wired in code** for [Points](../handicap-systems/points.md) (via [3v3 games-needed chart](../threshold-charts/3v3-games-needed.md)) and [Percentage](../handicap-systems/percentage.md) (via [5v5 games-needed chart](../threshold-charts/5v5-games-needed.md)). Unwired for FargoRate and Skill Level — those combos would need calibrated extra_games charts.
+- **Pairs with** [Points](../handicap-systems/points.md) (via the [3v3 games-needed chart](../threshold-charts/3v3-games-needed.md)) and [Percentage](../handicap-systems/percentage.md) (via the [5v5 games-needed chart](../threshold-charts/5v5-games-needed.md)). FargoRate and Skill Level would each need a calibrated extra_games chart to pair.
 - **Compatible with [1-Point Scoring System](../points-system/one-point-scoring.md)** — the asymmetric target wins map cleanly to a "first team to its target" victory rule.
 
 ## Possible modifications
 
 - **Different chart granularities** — finer or coarser steps between target counts.
 - **Scaling-factor variants** — pair with the 50% / 75% / 150% handicap-strength scaling options of Handicap Systems to dial the mechanism's intensity.
-
-## Current code state
-
-- DB: `'extra_games'` allowed value in `preferences.mechanism` CHECK (`supabase/migrations/20260429000001_extend_preferences_phase2_modular_axes.sql`, around lines 122–134).
-- Type: `ExtraGamesThreshold` in `src/systems/types.ts` (around line 142).
-- Dispatch: `pickExtraGamesThreshold()` in `src/systems/buildSystemFromPreferences.ts` (around line 270). Wired for Points (delegates to `bca3v3.threshold.compute`) and Percentage (delegates to `bca5v5.threshold.compute`). Unwired combinations (Fargo + extra_games, skill_level + extra_games, etc.) return a zero-handicap fallback and emit a warning.
-- The actual chart computation for the wired combos lives in `src/utils/handicap/get3v3GamesNeeded.ts` and `src/utils/handicap/get5v5GamesNeeded.ts`. Same architectural-intent flag as in the [Module README](README.md#architectural-intent-modules-are-orthogonal): the current `bca3v3`/`bca5v5` SystemModules bundle the chart call directly — that's a Threshold Charts concern bundled into the rating-system files for historical reasons, not architectural intent.

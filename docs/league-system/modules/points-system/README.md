@@ -41,15 +41,15 @@ The Points System is a composition of small single-purpose sub-mechanisms. A giv
 - **(A) Per-game allocator** — ONE generic mechanism, configurable per side. On each game, give winner X and loser Y. Each side's value can be expressed as:
   - **Integer** — a set number, no input needed (e.g., `winner = 10`)
   - **Array `[min, max]`** — a range; the scorer inputs the actual value per game (e.g., `loser = [0, 7]` for balls pocketed)
-  - **Formula** — derived from game data (e.g., `winner = 10 + (7 − loser)` — the 17-Point case where winner gets 10 plus opponent's remaining balls). *Not yet supported in code; the calculator interface would need a `formula` kind.*
+  - **Formula** — derived from game data (e.g., `winner = 10 + (7 − loser)` — the 17-Point case where winner gets 10 plus opponent's remaining balls).
 
   The data shape implies the input behavior — integer = no input, array = scorer input, formula = computed. No explicit `input` or `formula` flags needed.
-- **(B) Trigger** — fires on a condition (or at match start/end) and writes a value into match state via a flat expression. A trigger is NOT bound to a threshold — it reads state by name (a threshold may set that state; the two are decoupled). Multiple triggers stack, each independent, firing in a defined order. Full model: [trigger.md](trigger.md). Currently bundled inside the `accumulate_with_milestone_jumps` calculator.
-- **(C) Initial points** — given once at match start, handicap-driven amount. Currently lives as the [`start_points`](../handicap-mechanisms/start-points.md) Handicap Mechanism; its output feeds the Points System's running totals. (start_points is *both* a handicap mechanism in the current taxonomy AND a Points System sub-mechanism architecturally.)
+- **(B) Trigger** — fires on a condition (or at match start/end) and writes a value into match state via a flat expression. A trigger is NOT bound to a threshold — it reads state by name (a threshold may set that state; the two are decoupled). Multiple triggers stack, each independent, firing in a defined order. Full model: [trigger.md](trigger.md).
+- **(C) Initial points** — given once at match start, handicap-driven amount. Realized as the [`start_points`](../handicap-mechanisms/start-points.md) Handicap Mechanism; its output feeds the Points System's running totals. (start_points is *both* a Handicap Mechanism AND a Points System sub-mechanism architecturally.)
 
 **End-of-match scoring (a `match_end` trigger pattern).** Some Scoring Systems compute a side's match points once at match end from its final `games_won`, rather than accumulating per-game. This is a use of (B): per side, two `match_end` triggers (see [trigger.md](trigger.md)) — `IF games_won > winTarget THEN points = (games_won − winTarget) × multiplier` (above-win) and `IF games_won < tieTarget THEN points = (games_won − tieTarget) × multiplier` (below-tie) — with the tie band as the default-0 (neither fires).
 
-**Tie-band rule (the default-0 of the `match_end` pattern; today enforced in `linear_above_threshold`).** When both teams' `games_won` equals the threshold (e.g., 9–9 in 18-game 3v3), both teams receive 0 per-match points regardless of whether the [Tiebreak System](../tiebreak-system/README.md) subsequently fires or which side it produces edge for. The rule lives in `src/systems/calculators/linear_above_threshold.ts` and is fixed in code, not configurable. Two adjacent concerns lean on this rule: the Tiebreak System's tiebreaker games (when one fires) produce game outcomes that drive edge but do NOT add per-match points (the tie-band rule fixes per-match points at 0 for both sides regardless), and the future Standings concern (outside the modular Scoring System catalog — its architectural shape is a separate brainstorm) consumes the per-team accumulated points for season-level aggregation, where the tie-band rule's "tiebreaker games don't add points" guarantee is what makes the season totals coherent.
+**Tie-band rule (the default-0 of the `match_end` pattern).** When both teams' `games_won` equals the threshold (e.g., 9–9 in 18-game 3v3), both teams receive 0 per-match points regardless of whether the [Tiebreak System](../tiebreak-system/README.md) subsequently fires or which side it produces edge for. The rule is fixed, not configurable. Two adjacent concerns lean on this rule: the Tiebreak System's tiebreaker games (when one fires) produce game outcomes that drive edge but do NOT add per-match points (the tie-band rule fixes per-match points at 0 for both sides regardless), and the future Standings concern (outside the modular Scoring System catalog — its architectural shape is a separate brainstorm) consumes the per-team accumulated points for season-level aggregation, where the tie-band rule's "tiebreaker games don't add points" guarantee is what makes the season totals coherent.
 
 ## CSI's named scoring systems are configurations of (A)
 
@@ -59,7 +59,7 @@ The Points System is a composition of small single-purpose sub-mechanisms. A giv
 |---|---|
 | [**1-Point Scoring System**](one-point-scoring.md) (a.k.a. *Race To*) | `winner = 1, loser = 0`. ***Degenerate*** — match-total points always equals games-won; functionally equivalent to just counting games. CSI gives it a name; in our system it's effectively `win_condition='games'` with no separate calculator. |
 | [**10-Point Scoring System**](ten-point-scoring.md) | `winner = 10, loser = [0, 7]` (balls pocketed; scorer input per game). |
-| **17-Point Scoring System** *(reference only)* | `winner = 10 + (7 − loser), loser = [0, 7]`. **Key difference from 10-Point:** winner is a FORMULA (10 + opponent's remaining balls); 10-Point's winner is FIXED at 10. Per-game total always = 17 (vs 10–17 in 10-Point). Not yet implementable — needs the `formula` shape. |
+| **17-Point Scoring System** *(reference only)* | `winner = 10 + (7 − loser), loser = [0, 7]`. **Key difference from 10-Point:** winner is a FORMULA (10 + opponent's remaining balls); 10-Point's winner is FIXED at 10. Per-game total always = 17 (vs 10–17 in 10-Point). Requires the `formula` allocator shape (see (A)). |
 
 CSI's main use case for 17-Point: incentivizes the loser to keep pocketing balls even after the win is locked, since each ball they fail to pocket adds to the winner's score.
 
@@ -71,22 +71,7 @@ CSI's main use case for 17-Point: incentivizes the loser to keep pocketing balls
 | Percentage 5-Man (`standard_5v5`) | **(A)** `winner = 0.1, loser = 0` + **(B)** milestone trigger 1: jump to 1.5 at games-X + **(B)** milestone trigger 2: jump to 3 at games-Y |
 | FargoRate 10-Point 5-Man (`fargo_5v5`) | **(C)** handicap-driven start_points + **(A)** `winner = 10, loser = [0, 7]` (CSI's 10-Point Scoring System) |
 
-The compositions above are **conceptual**. Current code bundles them differently — see the calculator implementations table below.
-
-## Our coined calculator implementations (current code)
-
-| Calculator (in code) | What it actually contains | Used by Scoring System |
-|---|---|---|
-| `accumulated_per_game` | (A) generic per-game allocator | FargoRate 10-Point 5-Man (also wired with start_points logic in `fargo5v5.ts`) |
-| `accumulate_with_milestone_jumps` | (A) + (B) bundled into one calculator | Percentage 5-Man |
-| `linear_above_threshold` | end-of-match scoring — computes a side's match points once at match end from games-won vs thresholds (incl. the tie-band rule) | Points 3-Man |
-| `none` | No-op (no points tracked at all) | None today (selectable for new leagues) |
-
-**Implementation artifact, not architectural intent.** The current per-Scoring-System bundling means the "calculator" picked in the wizard is a pre-built combination matching that Scoring System. Architecturally, a future refactor should decouple these into composable sub-mechanisms — so an LO could mix-and-match (e.g., milestone triggers stacked on top of any per-game allocator config; start_points combined with any per-game allocator; new compositions for new Scoring Systems without writing new calculator types).
-
-## Persisted-but-unconsumed: `points_system` column
-
-The DB has a `points_system` column (`differential | bca_tiered | per_game | manual`) from Phase 1 of the modular system rollout. **No scoring runtime currently consumes the resolved value.** It persists per Ed's "don't drop columns" directive. Future cleanup may rename or drop in a separate branch.
+The compositions above are **conceptual** decompositions.
 
 ## How this Module interacts
 
@@ -97,15 +82,6 @@ The DB has a `points_system` column (`differential | bca_tiered | per_game | man
 ## Future possibilities
 
 - **Race-mode termination** — currently the point total is evaluated at match-end; a future option would end the match when a point target is reached.
-- **17-Point Scoring System implementation** — needs the `formula` shape for the per-game allocator (see (A) above); no shipping Scoring System uses it.
-- **LO-customizable per-game allocations** — operators defining new calculator types via UI rather than code. The calculator registry (`src/systems/calculators/index.ts`) already supports `registerCalculator`; the gap is the LO-facing UI.
+- **17-Point Scoring System** — needs the `formula` shape for the per-game allocator (see (A) above).
+- **LO-customizable per-game allocations** — operators defining new allocator types via UI rather than code.
 - **Decoupled sub-mechanism composition** — the current calculators bundle (A)+(B) etc.; a future refactor would let an LO stack sub-mechanisms freely (milestone triggers on any per-game allocator, etc.).
-
-## Source of truth
-
-- `src/types/preferences.ts` and `src/types/resolvedSystemConfig.ts` — `points_calculator`, `points_calculator_params`, `points_system` column types
-- `supabase/migrations/20260429000001_extend_preferences_phase2_modular_axes.sql` — DB CHECK enumerating allowed `points_calculator` values
-- `src/systems/calculators/index.ts` — calculator registry (`getCalculator`, `registerCalculator`, `listCalculators`)
-- `src/systems/calculators/types.ts` — `PointsCalculator` interface (discriminated by `kind: 'aggregate' | 'per_game'`)
-- `src/systems/calculators/{linear_above_threshold,accumulate_with_milestone_jumps,accumulated_per_game}.ts` — per-calculator implementations
-- `src/wizards/league-v2/steps/PointsCalculatorStep.tsx` — wizard UI for selecting the points calculator
