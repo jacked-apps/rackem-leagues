@@ -112,6 +112,13 @@ _Extracted 2026-05-24 from the locked design doc [modules/handicap-mechanisms/RE
 - `src/systems/types.ts` (around line 137+) — discriminated union of threshold types (`ExtraGamesThreshold`, `StartPointsThreshold`, `RaceLengthThreshold`)
 - `supabase/migrations/20260429000002_resolved_view_phase2_modular_axes.sql` — resolved view applies the cascade for the `mechanism` column
 
+### Inline status & code refs (borderline pass)
+
+- Win Calculator is the binary `win_condition` axis (`games` | `points`) today (referenced in Essence + the Downstream interaction).
+- Architectural-intent note: the current codebase has wiring for specific encoding-mechanism combinations only (see variant pages for wired vs unwired) — implementation status, not architectural intent; future work fills the gaps.
+- `mechanism='none'` collapses in code to a zero-handicap `extra_games` shape for type-system convenience — callers see `threshold.mode === 'extra_games'` with no per-side delta.
+- The `manual_entry` term lives in `src/wizards/league-v2/steps/ThresholdSourceStep.tsx` — a threshold-chart-source classification (not a mechanism).
+
 ## modules/handicap-mechanisms/extra-games.md
 
 _Extracted 2026-05-24 from the locked design doc [modules/handicap-mechanisms/extra-games.md](modules/handicap-mechanisms/extra-games.md)._

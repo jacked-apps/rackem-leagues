@@ -19,7 +19,7 @@ A **handicap mechanism** declares the *kind of asymmetry* the handicap creates i
 - **Games axis** — asymmetric game-win targets (`extra_games`), or asymmetric per-pairing race lengths (`race_length_adjustment`)
 - **Points axis** — asymmetric initial point totals (`start_points`)
 
-The [Handicap Systems](../handicap-systems/README.md) Module produces a **number** (each player's encoded strength); this Module declares the *kind* of threshold that number drives in match setup. The actual threshold **values** come from a [Threshold Chart](../threshold-charts/README.md). The mechanism does NOT decide who wins the match — that's the responsibility of a separate concern called the **Win Calculator** (currently the binary `win_condition` axis; see [How this Module interacts](#how-this-module-interacts) for the separation). Mechanisms can declare thresholds at the **team** level or the **per-pairing** level depending on the variant.
+The [Handicap Systems](../handicap-systems/README.md) Module produces a **number** (each player's encoded strength); this Module declares the *kind* of threshold that number drives in match setup. The actual threshold **values** come from a [Threshold Chart](../threshold-charts/README.md). The mechanism does NOT decide who wins the match — that's the responsibility of a separate concern called the **Win Calculator** (see [How this Module interacts](#how-this-module-interacts) for the separation). Mechanisms can declare thresholds at the **team** level or the **per-pairing** level depending on the variant.
 
 ## Why mechanisms exist
 
@@ -43,7 +43,7 @@ If a proposed feature changes *what kind of advantage the weaker side gets durin
 
 ### Architectural intent: modules are orthogonal
 
-Any Handicap Mechanism should be **composable** with any Handicap System, any Threshold Chart, and any Scoring System (assuming a calibrated chart exists for the specific encoding-mechanism pair). The current codebase has wiring for specific combinations only — see variant pages for what's wired vs unwired. **This is an implementation status, not architectural intent.** Future work will fill in the gaps.
+Any Handicap Mechanism should be **composable** with any Handicap System, any Threshold Chart, and any Scoring System (assuming a calibrated chart exists for the specific encoding-mechanism pair). Wiring a specific combination only requires that a calibrated chart exist for that encoding-mechanism pair; the composability is a property of the design, not of any one pairing being realized.
 
 ## Catalog — the 2x2 fundamental taxonomy
 
@@ -78,7 +78,7 @@ So `extra_games` and `race_length_adjustment` are **siblings within the same cel
 
 ### The `'none'` case
 
-No mechanism applied. Used when `handicap_type='none'` (the league runs without handicapping). Covered here, no separate page. In code, `mechanism='none'` collapses to a zero-handicap `extra_games` shape for type-system convenience — callers consistently see `threshold.mode === 'extra_games'` with no per-side delta. Conceptually, it's just the absence of a mechanism.
+No mechanism applied. Used when `handicap_type='none'` (the league runs without handicapping). Covered here, no separate page. Conceptually, it's just the absence of a mechanism.
 
 ## How this Module interacts
 
@@ -86,7 +86,7 @@ Mechanisms sit in the middle of the handicap chain:
 
 - **Upstream**: [Handicap Systems](../handicap-systems/README.md) produce encoded strength values. The **difference** that feeds a mechanism is computed at the appropriate scope — team-vs-team for team-level mechanisms (`extra_games`, `start_points`), individual player-vs-player for per-pairing mechanisms (`race_length_adjustment`). For some encodings, the upstream input may be a derived value (e.g., FargoRate's win-expectancy probability) rather than a raw difference.
 - **Internal partner**: [Threshold Charts](../threshold-charts/README.md) produce the actual numbers a mechanism needs — target wins (for extra_games), starting points (for start_points), per-pairing race lengths (for race_length_adjustment). A mechanism with no calibrated chart (or formula) for the encoding-side has nothing meaningful to apply. *Note:* "chart" is shorthand — a **formula** can fill the same role (e.g., FargoRate's start-points uses the `2^(rating/100)` formula in place of a lookup table; the 3v3 hardcoded chart could likewise be expressed as a formula). Charts and formulas are interconvertible expressions of the same mapping; the Threshold Charts Module covers both shapes. **Formulas are generally preferred** for their versatility — continuous coverage, easier LO customization, can generate any specific chart on demand.
-- **Downstream**: A separate concern — the **[Win Calculator](../win-calculator.md)** — examines the collected match data (games won per side, accumulated points per side) plus the thresholds the mechanism declared, and decides who wins the match. This lives as the binary `win_condition` axis (games | points) in the [Win Calculator](../win-calculator.md) Module. **The mechanism does NOT decide the winner** — it declares the threshold; what's done with the threshold plus played data is the Win Calculator's job.
+- **Downstream**: A separate concern — the **[Win Calculator](../win-calculator.md)** — examines the collected match data (games won per side, accumulated points per side) plus the thresholds the mechanism declared, and decides who wins the match. **The mechanism does NOT decide the winner** — it declares the threshold; what's done with the threshold plus played data is the Win Calculator's job.
 
 ## Future possibilities
 
@@ -98,4 +98,4 @@ Mechanisms sit in the middle of the handicap chain:
 
 ## Anti-conflation note
 
-**Clarifying note** (anti-conflation): the term `manual_entry` that appears in `src/wizards/league-v2/steps/ThresholdSourceStep.tsx` is a **threshold-chart-source** classification (is the chart auto-generated by the app, or LO-entered manually?) — it is **NOT** a handicap mechanism. Easy to misread; do not conflate.
+**Clarifying note** (anti-conflation): the **threshold-chart-source** classification *manual entry* — is the chart auto-generated by the app, or LO-entered manually? — is **NOT** a handicap mechanism. Easy to misread; do not conflate.
