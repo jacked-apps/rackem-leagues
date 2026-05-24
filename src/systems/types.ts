@@ -19,7 +19,6 @@
  */
 
 import type { SystemOverrides } from '@/types/systemOverrides';
-import type { WinCalculator } from './win-calculators/types';
 import type { TeamGeometry } from './team-geometry/types';
 import type { MatchFormat } from './match-format/types';
 import type { HandicapSystem } from './handicap-systems/types';
@@ -250,28 +249,6 @@ export interface SystemModule {
    * @see docs/league-system/modules/match-format.md — the locked blueprint
    */
   matchFormat: MatchFormat;
-
-  /**
-   * Win Calculator Module — the metric-precedence-stack walker that decides
-   * the match winner. Added in Unit 1 of the modular-framework migration
-   * (per `docs/plans/2026-05-17-001-refactor-modular-framework-migration-plan.md`).
-   *
-   * Replaces the runtime branching on `win_condition` that lived in
-   * `computeMatchRunningTotals`, `MatchEndVerification`, and other
-   * consumers. Each SystemModule declares which Win Calculator it uses;
-   * the runtime calls `winCalculator.decide(matchData)` to get a typed
-   * `WinnerDecision` ('home_win' / 'away_win' / 'tied').
-   *
-   * In Unit 1, every Win Calculator's metric stack has exactly one entry
-   * (matching the SystemModule's traditional `win_condition` value).
-   * Multi-entry stacks, the `edge` entry, and the Tiebreak System trigger
-   * integration are enabled by the interface but not implemented until
-   * Unit 9 (Tiebreak System extraction).
-   *
-   * @see src/systems/win-calculators/index.ts — `getWinCalculator()` factory
-   * @see docs/league-system/modules/win-calculator.md — the locked blueprint
-   */
-  winCalculator: WinCalculator;
 
   /**
    * Handicap System Module — encapsulates the player rating encoding (kind,

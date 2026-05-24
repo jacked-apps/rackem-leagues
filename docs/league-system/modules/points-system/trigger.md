@@ -127,15 +127,9 @@ endmatch    = true
 - Writes ONE state var. (Two effects on one event = two triggers, same condition.)
 - Operands: state vars, constants. Operators: `(`, `)`, `+`, `−`, `×`, `÷`. A
   single flat expression — no branching inside it.
-- **Never-break (the engine never throws on bad math).** If an action's
-  expression can't be computed — divide-by-zero, a missing or non-numeric state
-  var, a non-finite result — the engine **logs it and skips that write** (the
-  value is left untouched); it does **not** throw. Live scoring must keep
-  recording — games won/lost is sacred; points are recoverable by hand. The
-  builder warns up front (e.g. when a trigger uses `÷`); the engine is the
-  runtime backstop. An unevaluable **condition** is likewise treated as *not
-  firing*. (In JS `x/0`=`Infinity`, `0/0`=`NaN`, which silently poison downstream
-  math, so a raw result never escapes — the engine reports and bypasses instead.)
+- **`÷` zero-guard:** divide-by-zero **throws** (fail loud); the builder warns
+  when a trigger uses `÷`. In JS `x/0`=`Infinity`, `0/0`=`NaN`, which silently
+  poison downstream math, so a raw result never escapes. `+`/`−`/`×` need no guard.
 
 ## RE-ARM — whether the trigger fires again
 

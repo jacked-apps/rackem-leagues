@@ -25,7 +25,3 @@ The accountability model is **teams decide, teams report.** The operator (LO) is
 **Input:** the match context, presented to the teams' scorekeepers via a dialog. Both scorekeepers may need to confirm the same answer before edge is recorded (implementation detail TBD — single-confirm vs. both-must-agree is a parameter).
 
 **Output:** edge metric assigned to the team the scorekeepers selected. Always single-valued — the dialog constrains the response to one team.
-
-## Status
-
-Stub. Not yet implemented. The existing `src/components/scoring/ManualTiebreakerDialog.tsx` (legacy of the prior `tiebreaker_format='manual'` preference, before the Tiebreak System refactor) may provide reusable UI scaffolding — the new Mechanism targets the teams' scorekeepers rather than the operator. The prior `manual` Mechanism (operator-decides) was deliberately removed during the Tiebreak System slimming pass; we don't want operators doing this work.

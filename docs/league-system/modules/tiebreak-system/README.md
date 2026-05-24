@@ -106,14 +106,6 @@ The catalog is open; new Mechanisms add themselves to the chain configuration as
 - **Cross-Mechanism game-source reuse** — when `mini_match` plays games, those game outcomes are real match data. A future enhancement could allow Win Calc's metrics to consult that data even before the chain produces edge.
 - **Stats-tracking integration** — when the future Standings concern is designed, tiebreaker outcomes may need to flow into personal stats (e.g., "wins-when-it-mattered" achievement). Cross-concern wiring TBD.
 
-## Source of truth
-
-This Module is new — it does not yet exist in code. Implementation will require:
-
-- New preference column(s) describing the LO-configured chain (e.g., `tiebreak_chain JSONB` or a separate `tiebreak_chain_links` table)
-- New runtime evaluator that walks the chain when Win Calc fires the trigger, with the terminal human-handoff modal auto-appended at evaluation time
-- Per-Mechanism implementations matching the variant pages
-
-Currently the closest existing code is the scattered tiebreaker-firing runtime hooks (`MatchEndVerification`, `computeMatchResult` in `bca3v3.ts`, `ManualTiebreakerDialog.tsx` — legacy of the prior `tiebreaker_format='manual'` preference, before the Tiebreak System refactor). The implementation phase will consolidate these into the Tiebreak System chain evaluator. The auto-appended terminal modal will likely reuse the existing scoring-game confirmation handoff pattern.
+## Anti-conflation note
 
 **Anti-conflation note.** *"Tiebreak"* lowercase is the everyday-English noun (any tie-resolution act). *"Tiebreak Mechanism"* refers to an atomic variant (`coin_flip`, `roshambo`, `human_pick`) or a composed Mechanism (`mini_match`). *"Tiebreak System"* is this Module — the chain that composes those variants for an LO's league (per [PRINCIPLES § Module § 9](../../PRINCIPLES.md#9-naming-rule-plural-vs-singular)'s singular-naming rule for chain-pattern Systems).

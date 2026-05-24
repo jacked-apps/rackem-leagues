@@ -21,6 +21,7 @@ import { useUpdateMatchLineup } from '@/api/hooks';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { auditMatchScoringConsistency } from '@/api/queries/matches';
 import { determineMatchResult, type MatchResultOutcome } from '@/utils/determineMatchResult';
+import { buildWinCalcConfig, decideWinner } from '@/systems/win-calculator';
 import { ManualTiebreakerDialog } from './ManualTiebreakerDialog';
 import type { ManualTiebreakerSubmission } from './ManualTiebreakerDialog';
 import {
@@ -222,11 +223,50 @@ export function MatchEndVerification({
   // totals — no tie possible. Win-condition 'games' (BCA-style) decides on
   // games-won thresholds and may produce 'tie' which triggers the
   // tiebreaker flow.
-  const result: 'home_win' | 'away_win' | 'tie' = winCondition === 'points'
+  // Legacy winner logic — retained as the fallback + divergence auditor
+  // reference now that the modular judge is authoritative (Step B below).
+  const legacyResult: 'home_win' | 'away_win' | 'tie' = winCondition === 'points'
     ? homePoints === awayPoints
       ? homeWins >= awayWins ? 'home_win' : 'away_win'
       : homePoints > awayPoints ? 'home_win' : 'away_win'
     : bcaResult;
+
+  // --- Win Calculator cutover, Step B: the judge is AUTHORITATIVE ---
+  // The modular judge now decides the recorded winner; the legacy logic above
+  // is kept as a fallback + divergence auditor (compared at completion). The
+  // parity gate proved they agree across shipped configs; the documented
+  // divergences (both sides meeting target; a full points+games tie) are
+  // unreachable in shipped odd-game formats. The judge call is wrapped so the
+  // new path can never break the match-end screen — if it ever throws, we fall
+  // back to the legacy result (scoring must not crash).
+  let result: 'home_win' | 'away_win' | 'tie';
+  let judgeFlags: ReadonlyArray<string>;
+  try {
+    const judge = decideWinner(
+      {
+        home_games: homeWins,
+        away_games: awayWins,
+        home_points: homePoints,
+        away_points: awayPoints,
+        home_games_target: homeWinThreshold,
+        away_games_target: awayWinThreshold,
+        home_points_target: null,
+        away_points_target: null,
+        edge: null,
+      },
+      buildWinCalcConfig(winCondition),
+    );
+    result =
+      'winner' in judge.verdict
+        ? judge.verdict.winner === 'home'
+          ? 'home_win'
+          : 'away_win'
+        : 'tie';
+    judgeFlags = judge.flags;
+  } catch (err) {
+    result = legacyResult;
+    judgeFlags = [`win-calc judge threw — fell back to legacy: ${String(err)}`];
+  }
 
   // Auto-complete match when both teams verify
   useEffect(() => {
@@ -272,6 +312,31 @@ export function MatchEndVerification({
             result === 'home_win' ? homeTeamId :
             result === 'away_win' ? awayTeamId :
             null; // tie
+
+          // Win Calculator auditor (Step B): the judge is authoritative; the
+          // legacy logic is the reference. Log any disagreement (and any flags)
+          // at completion — observation only; the write above already uses the
+          // judge. Runs once per completion (first verifier's device).
+          if (result !== legacyResult) {
+            logger.warn('[WinCalc] judge (authoritative) differs from legacy', {
+              matchId,
+              winCondition,
+              judge: result,
+              legacy: legacyResult,
+              flags: judgeFlags,
+              homeWins,
+              awayWins,
+              homePoints,
+              awayPoints,
+              homeWinThreshold,
+              awayWinThreshold,
+            });
+          } else if (judgeFlags.length > 0) {
+            logger.warn('[WinCalc] judge raised flags', {
+              matchId,
+              flags: judgeFlags,
+            });
+          }
 
           // Phase 5 Unit 5.5: completion just persists the outcome — running
           // totals (home_games_won / away_games_won / home_points_earned /

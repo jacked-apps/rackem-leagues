@@ -7,6 +7,8 @@ audience: developer + AI sessions
 
 # Win Calculator — captured architectural direction (rev 2)
 
+> **⚠️ SUPERSEDED (2026-05-23).** The two-mode (chip-mode vs cascade-mode) framing below was unified in the 2026-05-23 brainstorm into a single judge: **chip checked first + an LO-ordered comparator switch** ({games, points} × {compare-totals, compare-to-target}), with ties as a *conclusion* and the runtime/director (not Win Calc) running the endgame. See `docs/league-system/modules/win-calculator-v2.md` for the current direction. This doc is kept for history.
+
 ## What this is
 
 A **captured architectural direction** from verbal sessions, not a full option-exploration brainstorm. Emerged during the Unit 1 implementation attempt (Win Calculator extraction per `docs/plans/2026-05-17-001-refactor-modular-framework-migration-plan.md`) when the consumer-swap (Phase C) surfaced that the existing runtime behavior is structurally richer than the locked Win Calc blueprint documents.
