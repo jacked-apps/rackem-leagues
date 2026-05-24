@@ -67,10 +67,8 @@ DECLARE
   v_org_phone    TEXT := '555-0100';
   v_game_type    TEXT := 'eight_ball';
   v_day_of_week  TEXT := 'tuesday';
-  -- v_team_format dropped: `leagues.team_format` was removed by migration
-  -- 20260502000000_drop_team_format.sql in favor of the modular lineup
-  -- axis under `preferences`. The lineup_size default (5) lives on the
-  -- preferences row tied to the org/league.
+  -- (team_format was dropped from `leagues` in 20260502000000 — lineup size is
+  --  now a modular league preference, configured via the app after seeding.)
   -- ===== END EDIT =====
 
   v_user_id   UUID;

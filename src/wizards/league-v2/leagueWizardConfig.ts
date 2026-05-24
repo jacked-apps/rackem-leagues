@@ -41,7 +41,7 @@ import { StandingsSortStep } from './steps/StandingsSortStep';
 import { TiebreakerStep } from './steps/TiebreakerStep';
 import type { LeagueWizardFormData } from './leagueWizardTypes';
 import { getLeagueSummaryItems } from './leagueWizardHelpers';
-import { getMatchTotalGames } from '@/utils/lineup/getMatchTotalGames';
+import { computeGameCount } from '@/systems/team-geometry';
 
 /** Simple validator — blocks Next if nothing is selected */
 const requireSelection = (value: unknown) =>
@@ -170,10 +170,10 @@ export const leagueWizardConfig: WizardConfig<LeagueWizardFormData> = {
       title: 'Tiebreaker',
       showIf: (fd) => {
         if (fd['league-format'] !== 'custom') return false;
-        const totalGames = getMatchTotalGames({
-          lineupSize: fd['lineup-size'] ?? 3,
-          gameGeneration: fd['match-format'] ?? 'double_round_robin',
-        });
+        const totalGames = computeGameCount(
+          fd['lineup-size'] ?? 3,
+          fd['match-format'] ?? 'double_round_robin',
+        );
         return totalGames % 2 === 0;
       },
       validate: requireSelection,
