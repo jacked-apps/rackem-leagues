@@ -23,7 +23,7 @@
  */
 
 import type { LeagueWizardFormData } from './leagueWizardTypes';
-import { getMatchTotalGames } from '@/utils/lineup/getMatchTotalGames';
+import { computeGameCount } from '@/systems/team-geometry';
 
 /** Severity tier — drives the Alert variant in the Review-step UI. */
 export type ComboFinding = {
@@ -146,7 +146,7 @@ export function evaluateCombo(formData: LeagueWizardFormData): ComboCoherenceRes
     typeof lineupSize === 'number' &&
     gameGeneration
   ) {
-    const totalGames = getMatchTotalGames({ lineupSize, gameGeneration });
+    const totalGames = computeGameCount(lineupSize, gameGeneration);
     if (totalGames % 2 === 0) {
       warnings.push({
         severity: 'warning',

@@ -253,4 +253,92 @@ why it's off.
 
 ---
 
+### Modular / Customizable Scoreboard
+**Status**: Dreamy — probably not, but maaaayyybeee. Flagged 2026-05-18.
+
+**Concept**:
+The Points System Decomposition (Unit 5 of the modular Scoring System migration, see `docs/brainstorms/2026-05-18-points-system-decomposition-requirements.md`) locked in a "single-mechanism-for-everything" principle: every value the system tracks (chart targets, initial points, milestone jumps, win signals, per-match running totals, chips, flags, etc.) gets assigned via the SAME trigger machinery into a unified named-variable namespace. As a downstream consequence, the scoreboard becomes a READER of variables, not a special-cased renderer with its own data path.
+
+**What this would enable**:
+- **Default scoreboard**: shows a sensible variable subset (`home_points`, `away_points`, `homeWinTarget`, `awayWinTarget`, etc.) — what 95% of leagues want, hand-curated.
+- **Custom scoreboards by LO**: pick ANY subset of available variables, in any layout. Want to show all 6 chart values (home/away × win/tie/lose)? Pull from variables that already exist. Want to surface `endgame_chip` mid-match? It's a variable. Want a "milestone proximity" indicator using whatever the milestone trigger assigned? It's a variable.
+- **New scoring features automatically become displayable**: add a new threshold, a new trigger, a new variable — scoreboards can render it without any scoreboard code changes.
+- **No drift possible**: what the scoreboard shows IS the operational value, by construction. Not a parallel computation that might disagree as the system evolves.
+
+**What's missing for this to be real**:
+- **Variable display metadata** — labels, format hints, role hints (e.g., "this is a points total", "this is a chip state", "this is a target the team is racing to"). Same `displayHints` concept the existing per-game calculators use; would extend to variable-level rather than calculator-param-level.
+- **A scoreboard composition UI** — LO-facing wizard for picking + arranging variables. Several tiers of complexity (drag-and-drop layout editor; template gallery; etc.).
+- **Variable namespace stability** — once LOs configure custom scoreboards referencing variables by name, renaming variables becomes a breaking change. Needs care.
+
+**Why it's dreamy**:
+- Real upside for power-user LOs who want to differentiate their leagues with custom presentation.
+- Architecturally for free (the foundation is already built once Unit 5 lands).
+- The wizard UI work is non-trivial — would be its own multi-week effort.
+
+**Why it might be "probably not"**:
+- 95% of leagues are perfectly served by a well-curated default scoreboard.
+- The "configure your own scoreboard" feature appeals to a niche.
+- LO-facing customization adds support burden (debugging "why doesn't my scoreboard show X?" queries).
+
+**Not doing now** — Phase A of Unit 5 just lays the foundation. If the appetite materializes after the modular Scoring System ships and a few LOs ask for custom presentations, this becomes a tractable next-tier project. Until then, flagged as a happy capability we got for free architecturally.
+
+---
+
+### Emergency Manual Scoresheet (never-lose-a-match-night fallback)
+**Status**: Idea — flagged 2026-05-20. The ultimate scoring backstop.
+
+**Concept**:
+A dead-simple, can-never-break scorekeeping mode, completely separate from the
+modular scoring engine. If the real scoring ever fails mid-match — a bad LO
+config, a bug, anything — the scorekeeper switches to this and the match night is
+saved instead of lost.
+
+**Behavior** (stripped to the absolute minimum):
+- Pick a roster size.
+- Enter player names manually.
+- NO handicaps, NO thresholds, NO points, NO calculators, NO triggers.
+- Record only the one sacred thing: each game's win/loss (who beat whom).
+
+**Why**:
+The scoring engine already follows a never-break rule — games won/lost is the
+sacred metric; points and the declared winner are derived and recoverable; bad
+math logs + bypasses rather than crashing. This feature is the last-resort version
+of that same principle: when even log-and-bypass can't keep the real engine
+running, capture wins/losses by hand so nobody has to replay the night, then
+reconstruct points/standings afterward. Bad or missing derived data is
+recoverable; 30+ players losing their night (and having to come back another
+evening) is not — they'd hate us for it.
+
+**Not doing now** — build after the modular engine is solid. It's insurance, not a
+feature users seek out, but it's cheap protection against catastrophic failure.
+
+---
+
+### Scoring-math error surfacing (flag → notify → persist)
+**Status**: Idea — flagged 2026-05-21. Deferred (build after the engine is wired
+into live scoring — Strand B). The never-break engine already *catches + bypasses*
+bad math; this is about *surfacing* those flags to humans.
+
+**Concept** — when the engine logs a math failure (divide-by-zero, missing/bad
+state, non-finite), surface it three ways:
+- **Player toast** (reassuring, keep-playing): *"Something weird happened with the
+  math. Your league operator has been notified, so the scoring might be off.
+  Games won/lost is NOT lost — keep playing; we can correct the scoring after the
+  match."* The toast may be doable relatively easily even now.
+- **LO notification** — a message to the league operator that a match hit a
+  scoring-math error (so they can review/fix the config).
+- **DB-persisted flags** — save the error records (which match, which trigger, the
+  reason) so they're auditable + fixable, not just console noise.
+
+**Forward-compat to bake in AT the cutover (Strand B), not as a separate task:**
+have the runtime **collect** the math errors (return them alongside the result)
+instead of only `console.warn`. Then toast / LO-message / DB-flags become a
+wire-up, not a refactor.
+
+**Why deferred:** the toast / LO-message hook into the live scoring flow, which the
+new engine isn't wired into yet. Current `console.warn` is enough for now (dev
+visibility); the engine already degrades safely. Pairs with the never-break rule.
+
+---
+
 *This is a living document - add ideas as they come up during development and user feedback sessions.*
