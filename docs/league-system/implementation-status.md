@@ -436,6 +436,10 @@ The Step-2 refactor (per the comparison brainstorm's verdict) lifts Team Geometr
 
 _Extracted 2026-05-24 from the locked design doc [modules/threshold-charts/3v3-games-needed.md](modules/threshold-charts/3v3-games-needed.md)._
 
+### Filename note
+
+Named `3v3-games-needed.md` for historical reasons; the formula is universal (parameterized by `game_count`). Rename to `points-games-needed.md` deferred to avoid breaking inbound doc/code links.
+
 
 ### (Optional) Code references
 
@@ -448,6 +452,10 @@ _Extracted 2026-05-24 from the locked design doc [modules/threshold-charts/3v3-g
 ## modules/threshold-charts/5v5-games-needed.md
 
 _Extracted 2026-05-24 from the locked design doc [modules/threshold-charts/5v5-games-needed.md](modules/threshold-charts/5v5-games-needed.md)._
+
+### Filename note
+
+Named `5v5-games-needed.md` for historical reasons; the formula is universal (parameterized by `game_count`). Rename to `percentage-games-needed.md` deferred to avoid breaking inbound doc/code links.
 
 
 ### (Optional) Code references
