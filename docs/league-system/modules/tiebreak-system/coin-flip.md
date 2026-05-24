@@ -23,7 +23,3 @@ A 50/50 RNG draw produces edge for one side. Fastest possible resolution; zero p
 **Input:** the match context (which two teams are tied). No additional configuration.
 
 **Output:** edge metric assigned to one team. Always single-valued — a coin flip cannot tie.
-
-## Status
-
-Stub. Not yet implemented. Full design (RNG source, seed persistence for reproducibility, UI surface for the result reveal) is implementation-phase work.

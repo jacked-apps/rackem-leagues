@@ -53,8 +53,6 @@ General rule for odd `round_shape = N`: `stop_threshold = ⌊N/2⌋ + 1` (the ma
 
 The catalog deliberately does NOT proliferate one Mechanism per shape — these are all the same Mechanism with different `(round_shape, stop_threshold)` config.
 
-## Status
-
-Stub. Not yet implemented. The closest existing code is the hardcoded `bca3v3.ts` tiebreaker logic (games 19-21 for the 3v3 best-of-3) which the implementation pass will replace. Mini Match's implementation will reuse the Pairings Generator's mini-match invocation path and the Threshold Trigger pattern.
+## Lineup ordering
 
 **Lineup ordering matters and is handled by the underlying Pairings Generator's mini-match config** — Mini Match itself doesn't decide who plays whom; it asks PG to produce the slot list using the same lineups as the regular match, with whatever mini-round ordering the Pairings Generator implements for that configuration.
