@@ -317,6 +317,12 @@ The Step-2 refactor lifts Match Format out as a first-class Module, extracts [Pa
 - `src/wizards/league-v2/steps/` — wizard step(s) for `pairing_format` and `race_length`; currently derived from preset selection rather than independently chosen
 - `src/components/scoring/` — scoring popup and scoresheet renderer; current code branches implicitly on single_rack assumption, race_to_n branches are partial
 
+### Inline status & code refs (borderline pass)
+
+- Shipped: `pairing_format='single_rack'` across all three prepackaged Scoring Systems; `race_length` is NULL (none ship `race_to_n`).
+- `pairing_format` CHECK: `preferences_pairing_format_check` (`20260429000001_extend_preferences_phase2_modular_axes.sql`).
+- Pairings Generator implementation is bundled in `src/utils/gameOrder.ts` + the scoring runtime (Step-2 extracts it); scoring runtime entry `src/utils/match/computeMatchRunningTotals.ts`.
+
 ## modules/pairings-generator.md
 
 _Extracted 2026-05-24 from the locked design doc [modules/pairings-generator.md](modules/pairings-generator.md)._
