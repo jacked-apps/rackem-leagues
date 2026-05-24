@@ -26,17 +26,18 @@ import { REALTIME_SUBSCRIBE_STATES } from '@supabase/supabase-js';
 // the factory below reference these before the module under test imports them.
 // ---------------------------------------------------------------------------
 const mocks = vi.hoisted(() => {
-  let subscribeCallback:
-    | ((status: REALTIME_SUBSCRIBE_STATES, err?: Error) => void)
-    | null = null;
+  type SubscribeCb = (status: REALTIME_SUBSCRIBE_STATES, err?: Error) => void;
+  let subscribeCallback: SubscribeCb | null = null;
 
-  const channelMock: any = {
-    on: vi.fn(() => channelMock),
-    subscribe: vi.fn((cb: any) => {
-      subscribeCallback = cb;
-      return channelMock;
-    }),
-  };
+  // `.on` and `.subscribe` are chainable (return the channel). Declared first,
+  // then wired with mockReturnValue/mockImplementation to avoid a self-reference
+  // in the object literal.
+  const channelMock = { on: vi.fn(), subscribe: vi.fn() };
+  channelMock.on.mockReturnValue(channelMock);
+  channelMock.subscribe.mockImplementation((cb: SubscribeCb) => {
+    subscribeCallback = cb;
+    return channelMock;
+  });
 
   const supabaseMock = {
     channel: vi.fn(() => channelMock),
