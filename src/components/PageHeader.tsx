@@ -30,7 +30,7 @@
  */
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, Building2, LogIn, Menu } from 'lucide-react';
 import {
   Sheet,
@@ -38,13 +38,23 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { AppDrawer } from '@/components/layout/AppDrawer';
+import { OrgSwitcher } from '@/components/OrgSwitcher';
 import { useOrganization } from '@/api/hooks/useOrganizations';
 import { useUser } from '@/context/useUser';
-import { useUserProfile } from '@/api/hooks/useUserProfile';
 
 /** Routes where the right-slot Sign-in button is suppressed (rendering it
  *  would be redundant on the login page or contextually wrong on the other
  *  auth-flow pages). The hamburger menu itself remains available. */
+/** Route patterns where the org-switcher dropdown appears in the header. */
+const OPERATOR_ROUTE_PATTERNS: readonly RegExp[] = [
+  /^\/operator-/,
+  /^\/league\//,
+  /^\/venues\//,
+  /^\/manage-/,
+  /^\/create-league\//,
+  /^\/league-rules\//,
+];
+
 const AUTH_FLOW_ROUTES: readonly string[] = [
   '/login',
   '/register',
@@ -121,6 +131,15 @@ export function PageHeader({
 
   const showBack = !hideBack && (backTo || onBackClick);
 
+  // When SubHeader has no LEFT-side content (no org / subtitle / children),
+  // the only thing it would render is the IdentitySlot avatar floating on
+  // the right — that leaves an empty vertical stripe under the sticky bar
+  // (most visible on `h-screen overflow-hidden` pages like /messages where
+  // there's no scrolling to absorb the gap). In that case we promote the
+  // IdentitySlot into the sticky bar and skip the SubHeader entirely.
+  // Pages with subtitle / org / children keep the existing layout.
+  const hasSubHeaderLeftContent = Boolean(organization || subtitle || children);
+
   return (
     <>
       <header
@@ -138,33 +157,50 @@ export function PageHeader({
 
         <h1 className="flex-1 truncate text-lg font-semibold text-foreground lg:text-3xl">{title}</h1>
 
-        <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-          <SheetTrigger asChild>
-            <button
-              type="button"
-              aria-label="Open menu"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md hover:bg-accent"
-            >
-              <Menu className="h-5 w-5" />
-            </button>
-          </SheetTrigger>
-          <SheetContent side="right">
-            {drawerOpen ? (
-              <AppDrawer open={drawerOpen} onOpenChange={setDrawerOpen} />
-            ) : null}
-          </SheetContent>
-        </Sheet>
+        {/* Org switcher — shown only on operator routes */}
+        {OPERATOR_ROUTE_PATTERNS.some((p) => p.test(location.pathname)) ? (
+          <OrgSwitcher />
+        ) : null}
+
+        {/* Promote IdentitySlot into the sticky bar when there's no SubHeader
+            to host it (avoids an empty stripe below the bar on pages like
+            /messages that have no scrollable subtitle area). */}
+        {!hasSubHeaderLeftContent ? (
+          <IdentitySlot pathname={location.pathname} />
+        ) : null}
+
+        {/* Hamburger menu — hidden on desktop where the persistent sidebar takes over */}
+        <div className="lg:hidden">
+          <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+            <SheetTrigger asChild>
+              <button
+                type="button"
+                aria-label="Open menu"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-primary transition-colors hover:bg-primary/10"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+            </SheetTrigger>
+            <SheetContent side="right">
+              {drawerOpen ? (
+                <AppDrawer open={drawerOpen} onOpenChange={setDrawerOpen} />
+              ) : null}
+            </SheetContent>
+          </Sheet>
+        </div>
       </header>
 
-      <SubHeader
-        organization={organization}
-        subtitle={subtitle}
-        pathname={location.pathname}
-        hasBack={Boolean(showBack)}
-        backWidth={backWidth}
-      >
-        {children}
-      </SubHeader>
+      {hasSubHeaderLeftContent ? (
+        <SubHeader
+          organization={organization}
+          subtitle={subtitle}
+          pathname={location.pathname}
+          hasBack={Boolean(showBack)}
+          backWidth={backWidth}
+        >
+          {children}
+        </SubHeader>
+      ) : null}
     </>
   );
 }
@@ -283,7 +319,7 @@ function BackAffordance({
   // flex row so the cap-height of the back-button text aligns with the
   // cap-height of the (larger) title. The 40px tap target is preserved;
   // it just sits in the upper portion of the bar instead of centered.
-  const className = 'flex h-10 shrink-0 items-center gap-1 self-start rounded-md px-2 text-sm text-muted-foreground hover:bg-accent';
+  const className = 'flex h-10 shrink-0 items-center gap-1 self-start rounded-md px-2 text-sm text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary';
 
   if (onBackClick) {
     return (
@@ -318,75 +354,31 @@ function BackAffordance({
 }
 
 /**
- * Identity slot: avatar/initials linking to /profile when logged in,
- * "Sign in" button when logged out. Suppressed on auth-flow routes.
- *
- * The avatar acts as a toggle — tapping it from anywhere goes to /profile,
- * tapping it again while on /profile goes back to where the user came from.
- * Saves a navigation step when peeking at profile mid-task.
+ * Identity slot: "Sign in" CTA for logged-out visitors on public pages.
+ * Logged-in users see their profile in the sidebar (desktop) and the
+ * Profile tab in the bottom tab bar (mobile), so the page-chrome avatar
+ * was removed to avoid duplication. Suppressed on auth-flow routes.
  */
 function IdentitySlot({ pathname }: { pathname: string }) {
   const { isLoggedIn } = useUser();
-  const { member } = useUserProfile();
-  const navigate = useNavigate();
 
   if (AUTH_FLOW_ROUTES.includes(pathname)) {
     return null;
   }
 
-  if (!isLoggedIn) {
-    return (
-      <Link
-        to="/login"
-        aria-label="Sign in"
-        className="flex h-10 shrink-0 items-center gap-1 rounded-md border px-3 text-sm hover:bg-accent"
-      >
-        <LogIn className="h-4 w-4" />
-        <span className="hidden sm:inline">Sign in</span>
-      </Link>
-    );
+  if (isLoggedIn) {
+    return null;
   }
 
-  const initials = computeInitials(member?.first_name, member?.last_name);
-  const displayName = [member?.first_name, member?.last_name].filter(Boolean).join(' ') || 'Profile';
-  const onProfile = pathname === '/profile';
-  const avatarClass =
-    'flex h-9 w-9 shrink-0 items-center justify-center rounded-full border bg-muted text-xs font-semibold text-foreground hover:bg-accent';
-
-  // On the profile page, the avatar becomes a "back" button that takes the
-  // user back to wherever they came from (open/close toggle behavior).
-  if (onProfile) {
-    return (
-      <button
-        type="button"
-        onClick={() => navigate(-1)}
-        aria-label="Close profile and go back"
-        className={avatarClass}
-      >
-        {initials}
-      </button>
-    );
-  }
-
-  // Anywhere else, the avatar is a Link to /profile (preserves keyboard,
-  // right-click open-in-new-tab, screen-reader "link" semantics).
   return (
     <Link
-      to="/profile"
-      aria-label={`${displayName} — open profile`}
-      className={avatarClass}
+      to="/login"
+      aria-label="Sign in"
+      className="flex h-10 shrink-0 items-center gap-1 rounded-md border border-primary/40 px-3 text-sm text-primary transition-colors hover:bg-primary/10"
     >
-      {initials}
+      <LogIn className="h-4 w-4" />
+      <span className="hidden sm:inline">Sign in</span>
     </Link>
   );
-}
-
-/** Two-letter initials from first + last; falls back to "?" when both are
- *  missing. Defensive against null/undefined/empty strings. */
-function computeInitials(firstName?: string | null, lastName?: string | null): string {
-  const first = firstName?.trim()?.charAt(0) ?? '';
-  const last = lastName?.trim()?.charAt(0) ?? '';
-  const combined = `${first}${last}`.toUpperCase();
-  return combined || '?';
 }
 

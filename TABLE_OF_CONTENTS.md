@@ -31,6 +31,7 @@
 | `CLAUDE.md` | Claude Code AI assistant instructions for this project | **CRITICAL** - Always read |
 | `TABLE_OF_CONTENTS.md` | This file - complete project index | **UPDATE ON EVERY FILE CHANGE** |
 | `RESTRUCTURE_PLAN.md` | Current app reorganization plan | Active (app-restructure branch) |
+| `secretweapon.md` | One-line invocation pointer for the League Intake Agent | Type "read secretweapon.md" in Claude Code anywhere in repo → loads the intake-agent persona and starts the LO intake conversation |
 
 ### Feature Plans & Specifications (Active)
 
@@ -38,6 +39,7 @@
 |------|---------|--------|
 | `MVP_FEATURE_LIST.md` | Minimum viable product feature list | **Active - MVP tracker** |
 | `LIST_FOR_JACK.md` | Design and styling tasks for Jack | **Active - UI/UX improvements** |
+| `LIST_FOR_ED.md` | Tasks and refactoring items for Ed | **Active - travels with branch commits** |
 
 ### Reference Documentation Folder
 
@@ -47,6 +49,22 @@
 | `docs/BCA_HANDICAP_SYSTEM.md` | BCA handicap system documentation | Official BCA handicap rules and calculations |
 | `docs/CUSTOM_5MAN_HANDICAP_SYSTEM.md` | Custom 5-man handicap system | Proprietary handicap system for 5-man format |
 | `docs/LEAGUE_MANAGEMENT_PLAN.md` | League management system architecture | System hierarchy and database schema |
+| `/docs/league-system/` | **Modular Scoring System framework — LOCKED canonical docs** | 9-Module architecture (Handicap Systems, Handicap Mechanisms, Points System, Win Calculator, Threshold Charts, Team Geometry, Match Format, Pairings Generator, Tiebreak System); LOCKED per Principle 7 gate procedure |
+| `docs/league-system/PRINCIPLES.md` | 10 architectural principles + 4 Module kinds + composition patterns | **LOCKED** — edits require explicit Principle 7 unlock invocation |
+| `docs/league-system/README.md` | 9-Module catalog + classification walkthrough + cheat-sheet | **LOCKED** |
+| `docs/league-system/concept-analogies.md` | Lens mapping locked concepts → programming primitives (Module=component, Threshold=state setter, Trigger=if/then, per-game allocator=reducer…); flaw-detector for cold reads | **LOCKED** |
+| `docs/league-system/intake-agent-prompt.md` | Persona prompt for the League Intake Agent (translates LO league descriptions to the modular framework) | Active tool — onboarding new LOs |
+| `docs/league-system/intake-agent-howto.md` | Step-by-step ops how-to for running the intake agent | Active tool |
+| `docs/league-system/modules/` | **Per-Module blueprints (9 Modules + variant pages)** | All LOCKED |
+| `docs/league-system/modules/handicap-systems/` | Handicap Systems Module (README + 4 variants: percentage, fargorate, points, skill-level) | LOCKED |
+| `docs/league-system/modules/handicap-mechanisms/` | Handicap Mechanisms Module (README + 3 variants: extra-games, start-points, race-length-adjustment) | LOCKED |
+| `docs/league-system/modules/points-system/` | Points System Module (README + variants; + **trigger.md** canonical Trigger model) | README + trigger.md LOCKED |
+| `docs/league-system/modules/win-calculator.md` | Win Calculator Module — metric precedence stack + Tiebreak System trigger model | LOCKED |
+| `docs/league-system/modules/threshold-charts/` | Threshold Charts Module (README + 5 variants: 3v3-games-needed, 5v5-games-needed, race-points, race-percentage, fargo-formula) | LOCKED |
+| `docs/league-system/modules/team-geometry.md` | Team Geometry Module — lineup_size + max_roster_size + game_generation | LOCKED |
+| `docs/league-system/modules/match-format.md` | Match Format Module — pairing_format + race_length | LOCKED |
+| `docs/league-system/modules/pairings-generator.md` | Pairings Generator Module — chain pattern (pair generation + game ordering + break/rack assignment) | LOCKED |
+| `docs/league-system/modules/tiebreak-system/` | Tiebreak System Module (README + 4 Mechanism stubs: coin-flip, roshambo, human-pick, mini-match) | LOCKED |
 | `/docs/brainstorms/` | **CE brainstorm requirements docs** | Output of `/compound-engineering:ce-brainstorm` |
 | `docs/brainstorms/official-rulebook-reader-requirements.md` | Requirements for the Official Rulebook Reader feature | Branch 1 of the rules-feature family |
 | `docs/brainstorms/e2e-test-infrastructure-requirements.md` | Requirements for the Playwright E2E scaffolding (foundation seed + factories + multi-user auth + demo mode) | Active branch `feat/e2e-test-infrastructure` |
@@ -58,6 +76,21 @@
 | `docs/brainstorms/lineup-to-scoring-transition-requirements.md` | Requirements for the lineup → scoring transition stability fix | 7-defense architecture; supersedes cache/recovery aspects of the prior race-condition brainstorm; closes LIST_FOR_ED #21/#22 |
 | `docs/brainstorms/unified-scoreboard-requirements.md` | Requirements for collapsing 4 scoreboards to 1 + tiebreaker | Schema-derived display hints (escape hatch), mobile-first compact mode, "stadium not sportsbook" focus; depends on PR #98 merge |
 | `docs/brainstorms/2026-05-24-live-scoring-resilience-requirements.md` | Requirements for robust multi-device live scoring (connection resilience + concurrency correctness) | Invisible-robustness north star; hold-and-send taps; many-eyes confirm/deny with captain backstop; smoke-detector-not-judge; branch `docs/live-scoring-resilience-brainstorm` |
+| `docs/brainstorms/modular-handicap-scoring-requirements.md` | Original requirements for the modular handicap/scoring system | Superseded by `modular-league-system-requirements.md` |
+| `docs/brainstorms/placeholder-player-improvements-requirements.md` | Requirements for the placeholder-player lifecycle (merge / archive / undo-merge) | Drove the 23-migration `20260422` PR series |
+| `docs/brainstorms/league-house-rules-requirements.md` | Requirements for org-level house rules with per-league opt-out | Foundation of the `house_rules` table + `ignore_org_house_rules` flag |
+| `docs/brainstorms/lineup-race-condition-fix-requirements.md` | Requirements for fixing the lineup → scoring race condition | Predecessor to `lineup-to-scoring-transition-requirements.md` |
+| `docs/brainstorms/team-deletion-cascade-fix-requirements.md` | Requirements for fixing the team-deletion cascade behavior | Drove the cascade→restrict migration |
+| `docs/brainstorms/2026-04-21-messaging-system-overhaul-findings.md` | Findings phase of the messaging overhaul investigation | Inputs to the Phase 1 plan |
+| `docs/brainstorms/2026-04-21-messaging-system-overhaul-requirements.md` | Requirements for the messaging system overhaul | Backbone of the Phase 1 plan |
+| `docs/brainstorms/2026-04-29-dark-mode-requirements.md` | Requirements for dark-mode toggle support | Drove the dark-mode plan |
+| `docs/brainstorms/2026-04-30-navigation-ia-overhaul-requirements.md` | Requirements for the navigation IA overhaul | Drove PR #124 (MemberLayout / AppSidebar / BottomTabBar / AppDrawer) |
+| `docs/brainstorms/2026-05-05-scoring-modal-rework-requirements.md` | Requirements for the scoring-modal plumbing rework | Drove the scoring modal refactor |
+| `docs/brainstorms/2026-05-16-modular-scoring-system-viability-requirements.md` | Viability-stage brainstorm for the modular Scoring System framework | "Works, not perfect" v1 standard established |
+| `docs/brainstorms/2026-05-17-modular-scoring-system-comparison-requirements.md` | Compare-stage brainstorm — verdict to ship modular framework | Drove the locked-docs framework adoption |
+| `docs/brainstorms/2026-05-17-tie-resolution-ownership-requirements.md` | Captured architectural direction for Win Calc metric stack + Tiebreak System | Drove the locked-doc edits + new Tiebreak System Module (#9 in catalog, replacing dissolved Standings & Tiebreakers) |
+| `docs/brainstorms/2026-05-21-lo-primitive-naming-layer-requirements.md` | Naming/identity layer for LO-built primitives — locks the internal-name / display-name / description / label glossary; mirror is workshop-authoring-only | Design (future workshop); NOT locked canon |
+| `docs/brainstorms/2026-05-21-scoreboard-module-design-requirements.md` | ROUGH: scoreboard = slots per side filled by modules that read the state bag + render labeled values; LO-customizable; stress-tests the naming layer | Rough draft — Ed's idea, to flesh out |
 | `/docs/plans/` | **CE implementation plans** | Output of `/compound-engineering:ce-plan` |
 | `docs/plans/2026-04-17-001-feat-official-rulebook-reader-plan.md` | Implementation plan for the Official Rulebook Reader | 6 units, active branch `feature/official-rulebook-reader` |
 | `docs/plans/2026-04-27-001-feat-global-header-nav-rework-plan.md` | Implementation plan for the global header & navigation rework | 9 units in 3 phases, active branch `fix/header-mobile-rework` |
@@ -65,6 +98,20 @@
 | `docs/plans/2026-05-04-001-fix-lineup-to-scoring-transition-stability-plan.md` | Implementation plan for the lineup → scoring transition stability fix | 7 implementation units across 3 phases; new MatchPhaseGuard + MatchTransitionRecovery + useMatchPhase; hardened prep_match RPC; foreground polling backstop; deletes 6-month-old retry loop |
 | `docs/plans/2026-05-03-001-feat-unified-scoreboard-plan.md` | Implementation plan for the unified scoreboard refactor | 8 units across 3 phases; replaces 3 legacy scoreboards with 1 + tiebreaker fix; schema-derived display hints; TeamStatsCard generalized for points-mode; depends on PR #98 merge |
 | `docs/plans/2026-05-24-001-feat-live-scoring-resilience-plan.md` | Implementation plan for robust multi-device live scoring (resilience + concurrency) | 11 units / 5 phases; rely-on-client reconnect + catch-up refetch + polling fallback; guarded scoring RPCs (deny-flags-not-wipes, race-safe totals, N-device completion) on prep_match model; hold-and-send taps; sticky participation modes; branch `docs/live-scoring-resilience-brainstorm`; origin 2026-05-24 brainstorm |
+| `docs/plans/2026-04-18-001-refactor-modular-handicap-scoring-systems-plan.md` | Implementation plan for the modular handicap/scoring foundation | Predecessor to the April 28 modular league system plan |
+| `docs/plans/2026-04-19-001-feat-league-house-rules-plan.md` | Implementation plan for org-level house rules | `house_rules` table + `ignore_org_house_rules` per-league flag |
+| `docs/plans/2026-04-22-001-feat-placeholder-player-lifecycle-plan.md` | Implementation plan for the placeholder-player lifecycle | 23 migrations + RPCs + UI; merge / archive / undo-merge / org-scope |
+| `docs/plans/2026-04-24-001-fix-lineup-race-condition-plan.md` | Implementation plan for the lineup race-condition fix | Predecessor to the May 4 lineup→scoring transition stability plan |
+| `docs/plans/2026-04-29-001-feat-dark-mode-toggle-plan.md` | Implementation plan for the dark-mode toggle | Theme provider + ThemeToggle component |
+| `docs/plans/2026-04-29-001-fix-team-cascade-deletion-plan.md` | Implementation plan for the team-cascade-deletion fix | Migration `20260501000001` flips FKs from CASCADE to RESTRICT |
+| `docs/plans/2026-04-30-001-feat-navigation-ia-overhaul-plan.md` | Implementation plan for the navigation IA overhaul | Drove PR #124 (MemberLayout + AppSidebar + BottomTabBar + AppDrawer + OperatorOrgRow) |
+| `docs/plans/2026-05-01-001-feat-modular-league-system-v2-plan.md` | Implementation plan for the modular league system v2 (League Wizard V2 + axis cleanup) | Builds on the April 28 modular league plan |
+| `docs/plans/2026-05-05-001-feat-scoring-modal-plumbing-plan.md` | Implementation plan for the scoring modal plumbing rework | Drove the scoring modal refactor |
+| `docs/plans/2026-05-09-001-feat-messaging-overhaul-phase-1-plan.md` | Implementation plan for the messaging overhaul Phase 1 | Units 1–14: schema, triggers, auto-chats, past-member, profanity, failed-send, value-prop empty state, etc. |
+| `docs/plans/2026-05-17-001-feat-new-season-from-previous-plan.md` | Implementation plan for the next-season-from-previous wizard | Draft PR #120 |
+| `docs/plans/2026-05-17-002-feat-captain-reup-sheet-plan.md` | Implementation plan for the captain re-up sheet | Draft PR #121 |
+| `docs/plans/2026-04-28-001-feat-modular-league-system-plan-supplements/` | Supplements directory for the modular league system plan | Append-only addenda used during execution |
+| `docs/plans/2026-05-17-001-refactor-modular-framework-migration-plan.md` | Strangler-fig migration plan for the modular Scoring System refactor | Unit 1 (Win Calculator extraction) detailed; Units 2-9 sketched; each Unit extracts one Module piece-by-piece without breaking the shipping prepackaged Scoring Systems |
 
 ### Future Work Folder
 
@@ -135,9 +182,7 @@ Node-only tooling the operator runs manually (not part of the app bundle).
 
 ### Orphaned/Unknown Files
 
-| File | Purpose | Action Needed |
-|------|---------|---------------|
-| `cUsersshodbpersonalsupabase-learning-hubsrcutilsscheduleGenerator.ts` | Unknown - possibly corrupt file path | **DELETE?** |
+*Previously listed `cUsersshodbpersonalsupabase-learning-hubsrcutilsscheduleGenerator.ts` (corrupt path) — confirmed not present on disk; entry removed.*
 
 ---
 
@@ -208,6 +253,22 @@ Node-only tooling the operator runs manually (not part of the app bundle).
 | `futureFeatures.md` | Future feature ideas | Oct 15 |
 | `API-HOOKS-USAGE.md` | TanStack Query API hooks usage guide | Nov 7 ✨ |
 | `CENTRAL-DATABASE-IMPLEMENTATION.md` | TanStack Query patterns and migration approach | Nov 7 ✨ |
+| `authorize-new-players.md` | Notes on the authorize-new-players org-level toggle |
+| `BRANCH-placeholder-players.md` | Branch-tracking notes for the placeholder-player work |
+| `PLAN-5v5-substitute-flow.md` | Substitute-flow plan for 5v5 lineups |
+| `PLAN-branch1-modularization.md` | Branch 1 plan for the modular handicap/scoring system |
+| `PLAN-branch2-fargo-points.md` | Branch 2 plan for Fargo per-game point accumulation |
+| `PLAN-email-invites.md` | Email-invite plumbing plan |
+| `PLAN-fargo-handicap-system.md` | Full Fargo handicap-system plan (rating + scoring + thresholds) |
+| `PLAN-lo-manual-scoring.md` | Plan for LO-driven manual scoring entry |
+| `PLAN-placeholder-players.md` | Original placeholder-player plan (predecessor to the lifecycle PR series) |
+| `PLAN-pp-removal.md` | Plan for safely removing placeholder players |
+| `PLAN-stats-and-standings.md` | Stats-and-standings architecture plan |
+| `PLAN-wizard-v2-cleanup.md` | Cleanup tasks for Wizard V2 follow-up |
+| `preferences-system-status.md` | Status doc for the modular preferences system |
+| `pwa-implementation-guide.md` | PWA setup guide (offline + install) |
+| `progress.md` | High-level progress tracker (core Memory Bank file) |
+| `systemPatterns.md` | System architecture patterns (core Memory Bank file) |
 
 ### Active Planning Documents (`/memory-bank/plans/`)
 
@@ -215,6 +276,17 @@ Node-only tooling the operator runs manually (not part of the app bundle).
 |------|---------|--------|
 | `plans/PLAN-wizard2.md` | Wizard 2.0 framework — clean rebuild of league wizard with reusable shell, schemas, and step contract | Planning (current branch: `wizard-2-creation`) ✨ |
 | `plans/playoff-system-plan.md` | Playoff system architecture and implementation plan | Existing |
+| `plans/bye-team-enhancement-plan.md` | Plan for treating byes as real team rows | Implemented (migrations `20260501000002`–`04`) |
+| `plans/NOTE-scoring-abbreviations.md` | Reference note for scoring-screen abbreviations | Reference |
+| `plans/schedule-manual-manipulation-plan.md` | Plan for manual schedule manipulation features | Planning |
+| `plans/TODO-championship-date-reminders.md` | TODO list for championship-date reminder UX | Backlog |
+| `plans/TODO-season-preferences-editor.md` | TODO list for the season-level preferences editor | Backlog |
+
+### Memory-bank Archive (`/memory-bank/archive/`)
+- `architectural-reframe-2026-05-01.md` - May 2026 architectural reframe notes.
+- `BRANCH-venue-table-sizes.md` - Branch-tracking notes for the venue table-sizes feature.
+- `lo-manual-scoring-investigation.md` - Investigation notes for LO manual scoring (precursor to the plan).
+- `phase-0c-full-e2e-research-notes.md` - Research notes from the E2E Phase 0c pass.
 
 ---
 
@@ -261,7 +333,6 @@ Node-only tooling the operator runs manually (not part of the app bundle).
 | `conversation_participants.sql` | Participant relationships |
 | `messages.sql` | Message data |
 | `blocked_users.sql` | Blocked user relationships |
-| `user_reports.sql` | User reporting system |
 | `messaging_rls_policies.sql` | Row-level security policies |
 | `enable_realtime.sql` | Realtime subscription setup |
 | `create_conversation_function.sql` | Create conversation function |
@@ -287,10 +358,39 @@ Node-only tooling the operator runs manually (not part of the app bundle).
 | `handicap_chart_3vs3.sql` | 3v3 handicap chart |
 | `create_substitute_members.sql` | Substitute member support |
 | `enable_realtime_match_games.sql` | Realtime game updates |
+| `add_5v5_lineup_support.sql` | Schema additions to support 5v5 in the same scoring tables |
+| `add_unique_constraint_match_lineups.sql` | UNIQUE constraint on `match_lineups` to prevent duplicate rows |
+| `change_game_confirmations_to_member_ids.sql` | Switches game-confirmation tracking from emails to member IDs |
+| `database_changes_summary_2025_01_11.sql` | Historical change-summary doc (kept for reference) |
+| `enable_matches_realtime.sql` | Adds `matches` to the realtime publication |
+| `match_verification_columns.sql` | Match-row verification columns (per-team verify state) |
+
+### 5x5 Scoring System (`/database/scoring5x5/`)
+- `handicap_chart_5v5.sql` - 5v5 handicap chart seed.
+- `handicap_chart_5v5_simple.sql` - Simplified 5v5 chart variant.
 
 ### Reporting System (`/database/reporting/`)
+- `MIGRATION_upgrade_reporting_system.sql` - Migration to upgrade the user-report tracking system.
 
-*(Files in this directory - add if needed)*
+### Database Schemas (`/database/schemas/`)
+- `playoff_configurations.sql` - Schema definition for the `playoff_configurations` table.
+
+### Database Policies (`/database/policies/`)
+- `matches_player_verification.sql` - Player-verification RLS policy for the matches table.
+
+### Database Tests (`/database/tests/`)
+- `test_messaging_rls.sql` - Manual RLS tests for messaging tables.
+- `test_reporting_rls.sql` - Manual RLS tests for the reporting tables.
+
+### Database Dev Dumps + Seeds (`/database/dumps/`, `/database/staging_seeds/`, `/database/test_data/`)
+*Dev-only — never run against production.*
+
+- `database/dumps/` - 20 dated SQL dumps used for snapshot capture and rollback during heavy migrations. Stored for reference; not auto-applied.
+- `database/staging_seeds/seed_staging_users.sql` - Staging-environment seed users for QA flows.
+- `database/test_data/` - 7 SQL files holding bespoke test datasets (specific bug-reproduction fixtures, ad-hoc team/match shapes for manual testing).
+- `database/dev_starting_point.messaging-system-overhaul.sql` - Branch-scoped dev seed used during the messaging overhaul work.
+- `database/fix_dump.py`, `database/fix_match_games.py`, `database/fix_match_lineups.py` - Python helpers for cleaning up SQL dump quirks before replay.
+- `database/dump.sql` - Latest convenience dump (rotated manually).
 
 ### Migrations & Utilities
 
@@ -298,6 +398,7 @@ Node-only tooling the operator runs manually (not part of the app bundle).
 |------|---------|
 | `migrations/add_handicap_variant_to_leagues.sql` | Migration: Add handicap_variant fields to leagues table |
 | `migrations/add_match_results_tracking.sql` | Migration: Add match results tracking system |
+| `migrations/` (additional ~30 historical files) | **Pre-supabase/migrations/ historical migrations.** Bulk of early-development schema changes lives here as named SQL files (not timestamp-prefixed). Examples: `add_position_tracking_to_match_games.sql`, `add_preferences_table.sql`, `add_vacate_requested_by.sql`, `allow_players_update_match_thresholds.sql`, `authorize_new_players_feature.sql`, `complete_rls_reset.sql`, `create_organization_staff_table.sql`, `create_organizations_table.sql`, `disable_all_rls_for_development.sql`, `disable_rls_for_development.sql`, `drop_all_league_operators_rls_policies.sql`, `drop_league_operators_table.sql`, `drop_league_operators_table_v2.sql`, `fix_handicap_chart_games_to_lose.sql`, `fix_lineup_unlock_policy.sql`, `fix_match_lineups_unlock_policy.sql`, `increase_handicap_precision.sql`, `migrate_league_operator_data.sql`, `migrate_venues_to_organizations.sql`, `nuclear_drop_all_rls_policies.sql`, `populate_handicap_chart_tie_lose.sql`, `remove_match_lineups_check_constraint.sql`, `rename_league_email_phone_to_organization.sql`, `rename_operator_id_to_organization_id.sql`, `restore_match_games.sql`, `restore_match_lineups.sql`, `update_get_operator_stats_function.sql`, `update_handicap_columns_for_5v5_percentages.sql`, `update_operator_blackout_preferences_rls.sql`, `update_season_weeks_rls.sql`. *Going forward, all new migrations should land under `supabase/migrations/` with a timestamp prefix.* |
 | `scoring3x3/add_game_type_to_match_games.sql` | **Add game_type column to match_games (denormalized for performance)** |
 | `tests/` | Database test files |
 | `e2e_seed.sql` | **E2E test foundation seed** — local-only sandbox (1 test org, 1 venue, 5 foundation users with auth.identities + non-NULL token columns for GoTrue compatibility). Idempotent. Double-guarded against running anywhere but local Supabase. |
@@ -402,9 +503,35 @@ how to add a new test, demo recording, cleanup model).
 - `groupHouseRules.test.ts` - TOC interleave grouping: standalones, override pairing, specificity ordering
 - `houseRuleForm.test.tsx` - HouseRuleForm: validation, effect-type switch, CSI suggestions, snippet picker, dirty state
 
+#### Test Documentation
+- `__tests__/README.md` - **Test directory conventions.** Explains the vitest `unit` vs `db` project split, where to put new tests, the one rule that matters (`db`-touching tests go under `__tests__/database/`), and how to run them. Read this before adding a new test file.
+
 #### Database Tests (`/__tests__/database/`)
 - `rulesPageEvents.rls.test.ts` - `rules_page_events` RLS + constraints (requires local Supabase)
 - `houseRules.rls.test.ts` - `house_rules` RLS probes (requires local Supabase; full coverage deferred until seed fixtures land)
+- `messaging-phase1-conversations.rls.test.ts` - **Messaging Phase 1 / Unit 1** — schema verification: confirms `conversations.archived_at`, `conversation_participants.notification_mode`, `cannot_leave`, and the widened CHECK constraints all landed. 13 tests.
+- `messaging-phase1-messages.rls.test.ts` - **Messaging Phase 1 / Unit 2** — schema verification: confirms `messages.is_system`, nullable `sender_id`, `messages_is_system_shape` CHECK, `members.profanity_onboarding_completed_at`, `members.deleted_at`. 9 tests.
+- `messaging-phase1-postSystemMessage.test.ts` - **Messaging Phase 1 / Unit 3 helper 1/5** — DB-backed coverage of `postSystemMessage()`: inserts row with `is_system=true, sender_id=NULL`, rejects on missing conversation FK.
+- `messaging-phase1-createTeamChat.test.ts` - **Messaging Phase 1 / Unit 3 helper 2/5** — DB-backed coverage of `createTeamChat()` (idempotency, roster→participants, captain `cannot_leave`, opening system message, FK errors).
+- `messaging-phase1-createCaptainChat.test.ts` - **Messaging Phase 1 / Unit 3 helper 3/5** — DB-backed coverage of `createCaptainChat()`: dedups captains-also-on-staff (captain rule wins on `cannot_leave`), idempotent, posts opening message.
+- `messaging-phase1-createSeasonAnnouncementsChat.test.ts` - **Messaging Phase 1 / Unit 3 helper 4/5** — DB-backed coverage of `createSeasonAnnouncementsChat()`: every distinct rostered player as `cannot_leave=true` participant, idempotent.
+- `messaging-phase1-createOrgAnnouncementsChat.test.ts` - **Messaging Phase 1 / Unit 3 helper 5/5** — DB-backed coverage of `createOrgAnnouncementsChat()`: every distinct player across currently-active seasons in the org, past-season players excluded, idempotent.
+- `messaging-phase1-unit7-polish.rls.test.ts` - **Messaging Phase 1 / Unit 7 (polish)** — verifies the polish migration (`20260513000001`): system-message INSERT keeps all participants' `unread_count` at 0, regular message INSERT still bumps non-senders, mixed system/regular sequence only counts the regular one, and the reworded `COMMENT ON COLUMN members.profanity_filter_enabled` mentions both minor enforcement (`minor` / `under 18` / `age`) AND the DOB fallback (`dob` / `date_of_birth`).
+
+#### Messaging UI Components (`/components/messages/`)
+- `ReadOnlyBanner.tsx` - **Messaging Phase 1 / Unit 6** — shadcn `Alert` that renders in place of the message composer when the current user can read but not post. Two reasons covered: `past-member` (left_at non-NULL) and `announcement-non-staff` (announcements channel viewed by a non-staff member). The composer is unmounted by `MessageView`, not just hidden by CSS.
+- `__tests__/ReadOnlyBanner.test.tsx` - RTL test covering both `reason` values render distinct copy.
+- `__tests__/ConversationList.profanity.test.tsx` - **Messaging Phase 1 / Unit 7** — RTL test covering the last-message-preview filter: filter ON censors profane previews while leaving clean ones and surrounding chrome intact, filter OFF renders raw, null/empty preview falls back to "No messages yet", unread-count badge is unaffected.
+- `__tests__/MessageBubble.system-message.test.tsx` - **Messaging Phase 1 / Unit 7** — RTL test for the `isSystem` render branch: centered/italic/muted-foreground wrapper, no sender link / no timestamp / no read receipt even when those props are passed, profanity filter applies defensively when enabled, default variant unchanged when `isSystem` is omitted.
+- `messageview/__tests__/useOutgoingMessages.test.ts` - **Messaging Phase 1 / Unit 8** — Unit tests for the optimistic-outgoing hook: `addPending` returns unique clientIds and appends a `sending` entry; `markFailed` flips status + records error; `markPending` clears the error on retry; `remove` deletes by clientId while preserving order; unknown-id mutators are no-ops. 6 cases.
+- `messageview/__tests__/MessageList.outgoing.test.tsx` - **Messaging Phase 1 / Unit 8** — RTL test for the inline-failed-send rendering: pending outgoing entries render as normal user bubbles after the confirmed messages, failed entries render as the destructive failed-variant `MessageBubble` with error + Retry button (click invokes `onRetryOutgoing(clientId, content)`), multiple failed entries render independently (eggs AND bacon both visible + retryable), mixed pending+failed render in order, empty state only shows when both confirmed AND outgoing are empty. 7 cases.
+- `CreateTeamChatPrompt.tsx` - **Messaging Phase 1 / Unit 3 helper 6/6** — captain manual-fallback prompt above the Messages conversation list. Shows one card per captained active-season team that lacks an auto-managed chat. Clicking creates the chat via `createTeamChat()` and auto-selects it.
+
+#### Messaging Hooks (`/api/hooks/`)
+- `useMessageComposerStatus.ts` - **Messaging Phase 1 / Unit 6** — TanStack Query hook. Returns `{ readOnly, reason }` for a conversation. Looks up the current user's participant row + (for announcement channels) their `organization_staff` membership. Consumed by `MessageView` to choose between `MessageInput` and `ReadOnlyBanner`.
+- `useCaptainTeamsMissingChat.ts` - **Messaging Phase 1 / Unit 3 helper 6/6** — TanStack Query hook. Returns the list of teams the current user captains in an active season that lack an auto-managed team chat. Used by `CreateTeamChatPrompt`.
+- `messaging-phase1-season-activation.rls.test.ts` - **Messaging Phase 1 / Unit 4** — DB-backed coverage of the season-activation trigger: team chats per team, captain chat, season + org announcements, idempotent re-fire, no-fire on non-status UPDATEs, no-fire when status flips away from active.
+- `messaging-phase1-roster-triggers.rls.test.ts` - **Messaging Phase 1 / Unit 5** — DB-backed coverage of the four roster/captain lifecycle triggers: INSERT (join + msg only on real inserts), DELETE (deferred constraint trigger; sets `left_at` and posts "left" only on real removals, silent on wholesale-replace), captain change (cannot_leave flip in team + captain chats; multi-team captain edge case), member soft-delete. **Note:** the three messaging DB-backed test files race each other under default vitest file parallelism — run with `--no-file-parallelism` when executing the full directory. See `LIST_FOR_ED.md` #27.
 
 #### Test Utilities (`/test/`)
 - `setup.ts` - Test environment setup
@@ -427,6 +554,9 @@ how to add a new test, demo recording, cleanup model).
 - `PlayerStats.tsx` - Personal stats landing page (PLACEHOLDER — real build-out is a backlog item)
 - `ScoreMatch.tsx` - Match scoring interface
 - `TeamSchedule.tsx` - Team schedule view
+- `SpectateLiveMatches.tsx` - League-scoped spectator view: lists currently-live matches in a league.
+- `SpectateMyLiveMatches.tsx` - Spectator view scoped to the current user's teams' live matches.
+- `SpectateMatchCard.tsx` - Per-match card used inside the spectate pages; routes through `UnifiedScoreboard`.
 
 #### Operator Pages (`/operator/`)
 
@@ -437,6 +567,22 @@ how to add a new test, demo recording, cleanup model).
 **League Management**
 - `LeagueDetail.tsx` - League details page
 - `LeagueRules.tsx` - League rules management
+- `LeagueSettings.tsx` - General league settings page (linked from the League Settings card on `LeagueDetail`).
+- `LeaguePlayoffSettings.tsx` - League-scoped playoff configuration page.
+
+**Playoffs**
+- `PlayoffSetup.tsx` - Playoff setup page (mounts the bracket + settings cards).
+- `PlayoffsSetupWizard.tsx` - Entry-point for the playoff setup wizard flow.
+- `OrganizationPlayoffSettings.tsx` - Org-default playoff settings page.
+
+**Player Management**
+- `PlayerManagement.tsx` - Operator player-management page (search, edit, merge placeholders).
+
+**Components (`/operator/components/`)**
+- `AttachPlaceholderDialog.tsx` - Dialog to attach an existing placeholder to a team.
+- `OrgPlaceholdersCard.tsx` - Card listing org-owned placeholder players (merge / archive / remove).
+- `RemovePlaceholderDialog.tsx` - Confirmation dialog before removing a placeholder.
+- `UnmergePlayerDialog.tsx` - Undo-merge dialog (restores a placeholder from the merge snapshot).
 
 **Season & Schedule Management**
 - `SeasonCreationWizard.tsx` - Season creation wizard
@@ -461,8 +607,14 @@ how to add a new test, demo recording, cleanup model).
 
 #### Standalone Pages (`/pages/`)
 - `AdminReports.tsx` - Admin reports dashboard
-- `Messages.tsx` - Messaging page
+- `Messages.tsx` - Messaging page — also mounts the Unit 9 `ProfanityOnboardingModal` on first open (gated by NULL `profanity_onboarding_completed_at`).
 - `PlayerProfile.tsx` - Player profile page
+- `Standings.tsx` - Standings page (team rankings + win/loss/points/games).
+- `TopShooters.tsx` - Top shooters page (per-player aggregated stats).
+- `TeamStats.tsx` - Team stats page (per-team aggregated stats).
+- `FeatsOfExcellence.tsx` - Feats-of-excellence page (break-and-run, special achievements).
+- `MatchDataViewer.tsx` - Raw match-data viewer (developer / advanced view).
+- `HandicapLookupTest.tsx` - Dev/test page for exercising the handicap lookup engine.
 
 #### Auth Pages (`/login/`)
 - `Login.tsx` - Login page
@@ -590,6 +742,17 @@ LO-authored rules layered on top of the CSI rulebook. Org-wide rules cascade int
 - `Modal.tsx` - Base modal component
 - `index.ts` - Exports
 
+#### Layout Components (`/components/layout/`) — **Navigation IA overhaul (PR #124)**
+
+Shared chrome that wraps all authenticated routes. `MemberLayout` is mounted by `NavRoutes.tsx` as a parent route; child routes render into its `<Outlet/>`.
+
+- `MemberLayout.tsx` - Persistent layout shell. Desktop: left sidebar (`<AppSidebar>`). Mobile: bottom tab bar (`<BottomTabBar>`). Also hosts global features previously on the Dashboard (e.g., pending-invites modal). Pages still own their own `<PageHeader>`.
+- `AppSidebar.tsx` - Desktop persistent sidebar — brand, primary nav, theme toggle, drawer trigger. Auth-aware: minimal chrome for public visitors, full nav for logged-in users.
+- `BottomTabBar.tsx` - Mobile fixed bottom tab bar (Home / Teams / Messages / Stats / Drawer). Auth-aware like the sidebar.
+- `AppDrawer.tsx` - Slide-in drawer with secondary nav (profile, settings, operator-org switcher, sign-out). Drawer is the home for nav items that don't fit on the sidebar/tab bar.
+- `AppDrawer.test.tsx` - Tests for the drawer's per-org operator shortcuts and auth-gated content.
+- `OperatorOrgRow.tsx` - Drawer row showing one of the user's operator orgs with quick-jump links to the dashboard. Used inside `<AppDrawer>` when the member is a league operator.
+
 #### Form Components (`/components/forms/`)
 
 Reusable wizard/form step components
@@ -620,6 +783,15 @@ Reusable wizard/form step components
 - `MatchInfoCard.tsx` - Match info display
 - `PlayerRoster.tsx` - Player roster
 - `TestModeToggle.tsx` - Test mode toggle
+- `DuplicateNicknameWarning.tsx` - Inline warning when two roster players share a nickname (impacts scoring identification).
+- `FargoStartPointsCard.tsx` - Card surface for the Fargo start-points negotiation (per-team, captain-confirmable).
+- `HandicapCell.tsx` - Compact cell rendering a player's handicap + chart-derived bonus.
+- `HandicapSummary.tsx` - Per-team handicap-summary block (totals, bonus distribution).
+- `OpponentSubstituteModal.tsx` - Modal opened when the opposing team wants to substitute a player; supports accept/reject flow.
+- `PlayerSelectionRow.tsx` - One row in the player picker grid (selectable, shows handicap + warnings).
+- `PrepStatusBanner.tsx` - Banner reflecting `prep_match` RPC status (ready / blocked / waiting on opponent).
+- `SubResolutionBanner.tsx` - Banner shown while a substitute resolution is pending captain confirmation.
+- `SubstituteInfo.tsx` - Inline info chip showing why a slot is a substitute (no roster spot, missed practice, etc.).
 
 #### Scoring Components (`/components/scoring/`)
 - `UnifiedScoreboard.tsx` - **Single live-match scoreboard for all configs** (replaces former ThreeVThree / FiveVFive / TenSeven). Reads match-row source-of-truth, schema-derived display hints, calculator-driven per-player points column, R22 Fargo start-points display.
@@ -629,13 +801,26 @@ Reusable wizard/form step components
 - `GameButtonRow.tsx` - Game row with breaker vs racker buttons (extracted from ScoreMatch)
 - `ScoringDialog.tsx` - Game winner selection with B&R and Golden Break (extracted from ScoreMatch)
 - `ConfirmationDialog.tsx` - Opponent score confirmation and vacate requests (extracted from ScoreMatch)
+- `ConfirmationModal.tsx` - Modal variant of the confirmation dialog (used in different layouts).
 - `EditGameDialog.tsx` - Vacate winner request dialog (extracted from ScoreMatch)
+- `LineupChangeModal.tsx` - In-scoring lineup substitution modal (captain-driven mid-match swap).
+- `LineupChangeRequestModal.tsx` - Opposing-team lineup-change request modal (must be accepted by the other captain).
+- `ManualTiebreakerDialog.tsx` - Manual tiebreaker entry dialog for cases where the auto-tiebreaker can't determine a winner.
+- `VacateModal.tsx` - Vacate-game confirmation modal (clears a recorded result, used when a game was entered wrong).
+- `TableNumberBar.tsx` - Compact bar showing the venue table number assigned to this match.
+- `AdaptiveCounter.tsx` - Tap-target counter optimized for thumb input on mobile scoring.
 - `scoreboardColors.ts` - Single source of truth for team colors (home: blue, away: orange)
+- `__tests__/UnifiedScoreboard.test.tsx` - Unit tests for the unified scoreboard (preset paths).
+- `__tests__/UnifiedScoreboard.offPreset.test.tsx` - Tests covering off-preset combos (different lineup / scoring calculator combos).
+- `__tests__/TiebreakerScoreboard.test.tsx` - Tests for the best-of-3 tiebreaker panel.
+- `__tests__/AdaptiveCounter.test.tsx` - Tests for the adaptive counter component.
 
 #### Messaging Components (`/components/messages/`)
-- `MessageView.tsx` - Main message view
-- `MessageInput.tsx` - Message input
-- `MessageBubble.tsx` - Message bubble
+- `MessageView.tsx` - Main message view — orchestrates header, message list (via `MessageList`), composer / read-only banner, leave + block dialogs.
+- `MessageInput.tsx` - Message input — composer. Clears on send-attempt regardless of outcome; failure rendering lives in the conversation thread via `MessageList`, not here.
+- `MessageBubble.tsx` - Message bubble — three variants: default user-to-user, Unit 7 centered/italic system-message, Unit 8 destructive failed-send (used inline in `MessageList` for failed outgoing entries).
+- `messageview/MessageList.tsx` - Scrollable message list extracted from `MessageView`. Owns the `Message` interface (exported), loading + empty states, auto-scroll, the system-message branch (`is_system → MessageBubble isSystem`), AND the Unit 8 inline-failed-send rendering: optimistic outgoing entries (pending + failed) render after the confirmed list with the appropriate `MessageBubble` variant per status.
+- `messageview/useOutgoingMessages.ts` - Local-state hook for optimistic outgoing messages (Unit 8 inline pattern). Tracks `{ clientId, content, status: 'sending' | 'failed', errorMessage?, createdAt }` entries; exposes `addPending` / `markPending` / `markFailed` / `remove`. Used by `MessageView` to thread an optimistic bubble into `MessageList` and convert it to a retryable failed bubble when the mutation rejects.
 - `ConversationList.tsx` - Conversation list
 - `ConversationHeader.tsx` - Conversation header
 - `MessagesEmptyState.tsx` - Empty state
@@ -644,29 +829,94 @@ Reusable wizard/form step components
 - `MessageSettingsModal.tsx` - Settings modal
 - `BlockedUsersModal.tsx` - Blocked users modal
 - `UserListItem.tsx` - User list item
+- `CreateTeamChatPrompt.tsx` - **Phase 1 / Unit 5** — banner shown to captains whose teams are missing an auto-managed team chat (e.g., team created before the trigger landed); offers one-tap creation via `useCaptainTeamsMissingChat`.
+- `ReadOnlyBanner.tsx` - **Phase 1 / Unit 6** — banner rendered at the top of a conversation when the viewer is a past member or non-staff in an announcement chat. Replaces the composer with a read-only explanation.
+- `__tests__/ConversationList.profanity.test.tsx` - RTL test ensuring the conversation list applies the profanity filter to preview snippets per the viewer's `profanity_filter_enabled`.
+- `__tests__/CreateTeamChatPrompt.test.tsx` - RTL test for the create-team-chat banner (visibility predicate, click → mutation, post-success dismissal).
+- `__tests__/MessageBubble.system-message.test.tsx` - RTL test for the centered/italic system-message variant of `MessageBubble`.
+- `__tests__/ReadOnlyBanner.test.tsx` - RTL test for the Unit 6 read-only banner (announcement-non-staff + past-member triggers).
+- `messageview/__tests__/MessageList.outgoing.test.tsx` - RTL test exercising the inline failed-send rendering inside `MessageList` (Unit 8).
+- `messageview/__tests__/useOutgoingMessages.test.ts` - Unit test for the optimistic-outgoing-messages state hook (Unit 8).
+
+###### Announcement composer (`/components/messages/announcements/`)
+Subtree behind the **announcement modal** — operator/captain-only broadcast composer.
+- `AnnouncementTextInput.tsx` - Text input with length counter for the announcement body.
+- `TargetSelector.tsx` - Picker for which scope(s) the announcement targets (league / season / team / org).
+- `SelectedTargetChips.tsx` - Chip strip showing the currently-selected targets with remove buttons.
+- `useAnnouncementTargets.ts` - Hook that loads the targetable scopes for the current sender + maintains the selection state.
+
+###### New-message composer (`/components/messages/newmessage/`)
+Subtree behind the **new direct/group message modal**.
+- `UserSearchInput.tsx` - Debounced user-search input — drives the member picker.
+- `MemberList.tsx` - Selectable list of matched members; supports single (direct) or multi (group) selection.
+- `GroupNameInput.tsx` - Group-name input shown when ≥2 members are selected (creates a named group chat).
+- `useFilteredMembers.ts` - Hook that filters the member pool by the search query + excludes already-selected members.
+
+###### Message settings panel (`/components/messages/settings/`)
+Subtree behind the **message settings modal** — per-user messaging preferences.
+- `ProfanityFilterSection.tsx` - Toggle for the per-viewer profanity filter (forced ON for known minors per `useProfanityFilter`).
+- `PrivacySafetyActions.tsx` - Block-user / unblock-user actions and link to the blocked-users modal.
+- `StatusAlert.tsx` - Inline alert banner showing the result of the most recent setting change.
+
+#### Onboarding Components (`/components/onboarding/`)
+- `ProfanityOnboardingModal.tsx` - **Messaging Phase 1 / Unit 9** — shadcn `Dialog` shown once, the first time a member opens the Messages page (gated by a NULL `members.profanity_onboarding_completed_at`). One-time, defaulted-ON framing: copy explains the filter is on by default and changeable in Settings, then asks if they'd like to turn it off. Two buttons ("Turn filter off" → enabled=false, "Keep filter on" → enabled=true); dismissing (Escape / backdrop / X) is treated as "keep on" (enabled=true). Every exit path writes `completed=now()` so it never reappears. Calls `useMarkProfanityOnboardingComplete`; `onResolved` fires only on a successful write (a rejected mutation leaves the modal open for retry).
+- `__tests__/ProfanityOnboardingModal.test.tsx` - **Messaging Phase 1 / Unit 9** — RTL test: copy + two buttons render, "Keep filter on" persists `filterEnabled=true`, "Turn filter off" persists `false`, Escape defaults to `true`, `onResolved` fires once per success, rejected mutation does NOT resolve (retry works), choice-then-dismiss only resolves once. 7 cases.
 
 #### Operator Components (`/components/operator/`)
 - `ActiveLeagues.tsx` - Active leagues overview (uses LeagueStatusCard)
+- `AuthorizeNewPlayersCard.tsx` - Org-level toggle: whether new player applications need LO approval before joining.
+- `BlackoutDatesCard.tsx` - Org-level blackout dates editor (holidays, no-play dates inherited by season scheduling).
 - `ContactInfoCard.tsx` - Organization contact info editor (email/phone with visibility)
+- `ContentModerationCard.tsx` - Org-level content-moderation settings card (wraps `ContentModerationSection` in preferences/).
 - `DashboardCard.tsx` - Dashboard card wrapper
 - `LeagueOverviewCard.tsx` - League overview
 - `LeagueProgressBar.tsx` - League progress bar component (used by LeagueStatusCard)
 - `LeagueStatusCard.tsx` - **UNIFIED league status component** - Single source of truth for league/season status, progress, and next actions (used on both Dashboard and League Detail pages)
 - `OrganizationBasicInfoCard.tsx` - Organization name and mailing address editor
 - `OrganizationPreferencesCard.tsx` - Organization-level preferences editor (handicap, format, rules defaults)
+- `OrganizationStaffCard.tsx` - Staff roster editor — invite/remove additional league operators within the org.
 - `PaymentMethodCard.tsx` - Payment method card (Stripe integration placeholder)
-- `QuickStats.tsx` - Quick statistics
+- `PendingInvitesList.tsx` - Pending placeholder-player invites list (operator view of invites waiting on acceptance).
+- `PlayoffsCard.tsx` - Playoffs entry-point card on the league page (links to playoff setup/preview/standings).
+- `PreferencesCard.tsx` - **Unified preferences card** — composes the five section components from `preferences/`. Used for both org-level and league-level preferences editing.
+- `QuickStats.tsx` - Quick statistics (legacy; see also `QuickStatsCard.tsx`).
+- `QuickStatsCard.tsx` - Dashboard quick-stats card (active leagues, active seasons, member count).
 - `ScheduleCard.tsx` - Schedule card
 - `SeasonStatusCard.tsx` - Season status
 - `SeasonsCard.tsx` - Seasons list card
+- `StatsCard.tsx` - Stats & Standings entry-point card on the league page (links to standings, top shooters, team stats, feats).
+- `TableBadgePopover.tsx` - Popover badge showing per-venue table configuration summary (count, table numbers).
+- `TableConfigureModal.tsx` - Modal for editing a venue's table configuration (count, numbers, types).
 - `TeamsCard.tsx` - Teams card
 - `VenueCard.tsx` - Venue card
 - `VenueCreationModal.tsx` - Venue creation modal
+- `VenueTableInputs.tsx` - Reusable table-config inputs (used by venue creation/edit flows).
+- `VenueTableSummaryCard.tsx` - Read-only table-config summary card for a venue.
+
+##### Preferences Sections (`/components/operator/preferences/`)
+
+Reusable section components composed by `PreferencesCard.tsx`. Same components drive both organization-level and league-level preference editing.
+
+- `HandicapSettingsSection.tsx` - Handicap type + downstream modular axes (rating, scoring calculator, threshold strategy).
+- `RosterSettingsSection.tsx` - Lineup size, roster max, sub rules.
+- `MatchRulesSection.tsx` - Match-level rules (games-to-win, race lengths, tiebreaker behavior).
+- `PlayerAuthorizationSection.tsx` - Toggle for whether new player applications require LO approval.
+- `ContentModerationSection.tsx` - Profanity filter + content-moderation defaults (drives the messaging Phase 1 profanity onboarding flow).
+- `index.ts` - Barrel exports for the five sections.
 
 #### Playoff Components (`/components/playoff/`)
 - `ParticipationSettingsCard.tsx` - Playoff participation/qualification settings with collapsible edit controls
 - `PlayoffWeeksCard.tsx` - Playoff weeks selector with add weeks modal and payment method options
 - `WildcardSettingsCard.tsx` - Wildcard spots configuration for random selection from non-qualifying teams
+- `ExampleTeamCountCard.tsx` - Card showing example bracket sizes given the current team count + qualification rules.
+- `PlayoffBracketCard.tsx` - Renders the playoff bracket (single/double elimination layouts).
+- `PlayoffBracketPreviewCard.tsx` - Read-only preview of the bracket pre-finalization (used in the setup flow).
+- `PlayoffMatchRulesCard.tsx` - Playoff-specific match-rule overrides (race lengths, tiebreakers).
+- `PlayoffMatchupCard.tsx` - Single-matchup card within the bracket display.
+- `PlayoffSeedingCard.tsx` - Seed-order editor (drag-to-reorder or manual entry).
+- `PlayoffSettingsCard.tsx` - Top-level playoff settings card (format, weeks, payment, etc.).
+- `PlayoffStandingsTable.tsx` - Standings projected into playoff seeding context.
+- `PlayoffTemplateSelector.tsx` - Picks a bracket template (4-team / 6-team / 8-team / etc.).
 
 #### Match Components (`/components/match/`)
 - `MatchPhaseGuard.tsx` - Server-state route guard. Reads `matches.status` via `useMatchPhase`, dispatches lineup vs scoring vs recovery rendering, holds the compound `key={matchId:recoveryEpoch}` that drives in-place subtree remounts on Hard Reset.
@@ -738,13 +988,15 @@ Reusable wizard/form step components
 
 #### Team & Match Management
 - `useTeamManagement.ts` - Team management
-- `useMatchLineup.ts` - Match lineup editor
+- *(`useMatchLineup.ts` was extracted into the dedicated `/hooks/lineup/` subtree — see Lineup Hooks below.)*
 - `useMatchScoring.ts` - Match scoring state (data fetching)
 - `useMatchScoringMutations.ts` - Match scoring mutations (database operations)
 - `useRosterEditor.ts` - Roster editing
+- `useSpectateMatch.ts` - Hook used by the spectator views to subscribe to a live match.
 
 #### Form & Validation
-- `useProfanityFilter.ts` - Profanity filtering
+- `useProfanityFilter.ts` - Profanity filtering — two-tier rule: when `isMinor(date_of_birth)` is true the filter is forced ON and `canToggle: false` (R4 under-18 enforcement); otherwise respects `members.profanity_filter_enabled`. DOB is optional, so unknown-age falls back to the user's stored preference.
+- `__tests__/useProfanityFilter.test.ts` - **Profanity filter hook tests** (10 cases) — loading state, fail-open on error / no data, forced ON for known minors (incl. day-before-18th-birthday boundary), adult preference both directions, null DOB respects preference, null `profanity_filter_enabled` coerces to false.
 - `useOperatorProfanityFilter.ts` - Operator profanity filter
 - `useChampionshipAutoFill.ts` - Championship date autofill
 
@@ -755,6 +1007,20 @@ Reusable wizard/form step components
 #### Playoff Hooks (`/hooks/playoff/`)
 - `usePlayoffSettingsReducer.ts` - Playoff settings state management with useReducer pattern
 
+#### Lineup Hooks (`/hooks/lineup/`)
+
+Lineup-page workhorse hooks. Extracted from the monolithic `useMatchLineup` so each one has a single responsibility and can be tested independently.
+
+- `useLineupState.ts` - Owns the in-flight lineup form state (slots, substitute flags) before persistence.
+- `useLineupPersistence.ts` - Save/load mutations for the lineup row + optimistic update wiring.
+- `useLineupValidation.ts` - Pre-submit validation (roster coverage, handicap totals, duplicate nicknames).
+- `useMatchPreparation.ts` - Drives the `prep_match` RPC + reads/writes the prep status banner state.
+- `useOpponentStatus.ts` - Tracks the opponent's lineup state for the "waiting on opponent" UI.
+- `useHandicapCalculations.ts` - Computes per-player + per-team handicap totals from the current lineup.
+- `useFargoStartPointsNegotiation.ts` - Fargo start-points negotiation flow (proposal, confirm, override).
+- `useTiebreakerLineup.ts` - Separate lineup state for the best-of-3 tiebreaker.
+- `index.ts` - Barrel exports.
+
 ---
 
 ### 🛠️ Utilities (`/utils/`)
@@ -764,6 +1030,8 @@ Reusable wizard/form step components
 > **CRITICAL**: Always use `formatters.ts` for timezone-safe date handling
 
 - `formatters.ts` - **Timezone-safe date utilities** (parseLocalDate, formatLocalDate, etc.)
+- `age.ts` - **Age calculation utilities** — `calculateAge(dob)` and `isMinor(dob)` built on `parseLocalDate` so DOB strings anchor to the local calendar (avoids the UTC off-by-one-day bug). Consumed by `useProfanityFilter` for R4 under-18 enforcement; returns `null` / `false` for missing or malformed DOB.
+- `__tests__/age.test.ts` - **Age util tests** (10 cases) — `calculateAge` null/malformed/whole-years/birthday-not-yet/birthday-today; `isMinor` unknown DOB → false, clear minors → true, day-before-18 → true, exact 18th birthday → false, adults → false. Uses `vi.setSystemTime` to pin "today" to 2026-05-12.
 - `holidayUtils.ts` - Holiday detection and handling
 
 #### Schedule & Matchup
@@ -777,7 +1045,33 @@ Reusable wizard/form step components
 #### Match Running Totals (`/utils/match/`)
 - `computeMatchRunningTotals.ts` - **Per-mutation running-totals calculator** (Phase 5 Unit 5.5) — pure helper that filters confirmed regular games, runs the snapshot's points calculator, and returns `{ home_games_won, away_games_won, home_points_earned, away_points_earned }`. Eager recompute on every scoring mutation keeps the match row consistent with the live scoreboard. Tiebreaker games and unconfirmed games are excluded from regular running totals.
 - `auditScoringConsistency.ts` - **Match-completion scoring-consistency audit** (Phase 5 Unit 5.6) — pure `compareRunningTotals(actual, expected)` helper that returns per-field discrepancies between the match row's stored totals and a fresh recompute. Match record is never modified — divergence is logged to `app_logs` for the dev to investigate. Reusable for on-demand audits.
+- `engineRunningTotals.ts` - **Strand-B engine running-totals (post-flip source of truth).** `computeEngineRunningTotals` runs the NEW modular Points System engine (`src/systems/points-system/match-adapter.ts`) on the frozen prep snapshot (snapshotted threshold columns + LOCKED `match_lineups` ratings/team-bonus) and returns the four totals the match row is written with; `runningTotalsDiffer` is the audit comparator. Never throws — returns `null` on any failure so `updateMatchRunningTotals` falls back to legacy `computeMatchRunningTotals` (which also stays on as the auditor: "two paths audit each other"). Was the shadow auditor pre-flip; the roles reversed at the flip.
 - `__tests__/computeMatchRunningTotals.test.ts` - **Running-totals tests** (10 cases): confirmation filtering, tiebreaker exclusion, linear_above_threshold above/tie/below bands, LOCKED tie-band-with-tiebreaker invariant, accumulated_per_game (Fargo 10-7), null calculator, unknown calculator
+
+#### Lineup Utils (`/utils/lineup/`)
+
+Pure helpers extracted from the lineup page. No React. Imported by both the page components and the hooks under `/hooks/lineup/`.
+
+- `index.ts` - Barrel exports.
+- `lineupValidation.ts` - Lineup-level validators (slot coverage, captain requirement, handicap totals).
+- `lineupCompleteness.ts` - Computes "is this lineup ready to submit" + reasons it isn't.
+- `computePrepBlockedReason.ts` - Maps `prep_match` RPC state + lineup status to a human-friendly blocked-reason string for the banner.
+- `getMatchTotalGames.ts` - Returns the expected total game count for a match given its system snapshot.
+- `handicapFormatters.ts` - Per-player handicap display formatting.
+- `substituteHelpers.ts` - Helpers for substitute slot logic (eligibility, missing-roster-spot detection).
+- `__tests__/computePrepBlockedReason.test.ts`, `__tests__/getMatchTotalGames.test.ts`, `__tests__/lineupCompleteness.test.ts`, `__tests__/substituteHelpers.test.ts` - Tests for the four most load-bearing helpers.
+
+#### Standings + Tiebreaker (`/utils/standings/`, `/utils/tiebreaker/`)
+- `standings/sortStandings.ts` + `__tests__/sortStandings.test.ts` - Sort helper for the standings table (W → Pts → Games tiebreak chain).
+- `tiebreaker/gameNumbers.ts` + `__tests__/gameNumbers.test.ts` - Game-number assignment for best-of-3 tiebreakers.
+
+#### Misc utility files
+- `fargoMatchTotals.ts` - Fargo per-match totals helpers (used by `computeMatchRunningTotals` for the Fargo path).
+- `getUserTeamInfo.ts` - Looks up the current user's team membership for the active league.
+- `goldenBreakRules.ts` - Golden break eligibility rules (per-game flag setter).
+- `logger.ts` - Client-side logger (writes to `app_logs` when configured).
+- `__tests__/age.test.ts` - already indexed above under Date & Time.
+- `__tests__/calculateHandicapThresholds.characterization.test.ts`, `determineMatchResult.characterization.test.ts`, `fargoMatchTotals.characterization.test.ts`, `gameOrder.characterization.test.ts`, `getTeamHandicapBonus.characterization.test.ts`, `goldenBreakRules.characterization.test.ts`, `handicapCalculations.characterization.test.ts`, `playoffGenerator.standingsSort.characterization.test.ts` - **Characterization tests** locking in pre-refactor behavior for legacy utilities; consumed by the modular handicap/scoring refactor as a regression guard.
 - `__tests__/auditScoringConsistency.test.ts` - **Audit comparison tests** (7 cases): in-sync match returns ok, single-field divergence on games_won / points_earned, multi-field divergence, diff sign convention (positive = stored too high), input non-mutation
 
 #### Team & Player
@@ -801,10 +1095,10 @@ Reusable wizard/form step components
 - `tournamentUtils.ts` - Tournament utilities
 
 #### Messaging
-- `messageQueries.ts` - Message database queries
-- `messageFormatters.ts` - Message formatting
-- `messageValidators.ts` - Message validation
-- `profanityFilter.ts` - Profanity filtering
+- *(`messageQueries.ts` was migrated into `src/api/queries/messages.ts` and `src/api/queries/conversations.ts` — see API Layer.)*
+- `messageFormatters.ts` - Message formatting helpers (timestamps, previews).
+- `messageValidators.ts` - Message validation (length, content, profanity gates).
+- `profanityFilter.ts` - Profanity filtering shared util (consumed by `useProfanityFilter` + `messageValidators`).
 
 #### Membership & Reporting
 - `membershipUtils.ts` - Membership utilities
@@ -836,12 +1130,58 @@ High-level business logic services
 
 - `members.ts` - **✅ Member queries** (getCurrentMember, getMemberProfile, getOperatorId, etc.)
 - `matchGames.ts` - **✅ Match game queries** (fetchPlayerGameHistory for handicap calculations)
+- `conversations.ts` - Conversation list/detail reads.
+- `featsStats.ts` - Feats-of-excellence aggregation queries (break-and-run, etc.).
+- `handicaps.ts` - Per-member handicap fetches.
+- `leagues.ts` - League list/detail reads.
+- `matches.ts` - Match list/detail reads (separate from mutations file).
+- `members.ts` — see above; also exposes additional org-scoped reads.
+- `memberSearch.ts` - Server-side member-search query (used by the new-message modal + operator player picker).
+- `messages.ts` - Message list/detail reads.
+- `operators.ts` - Operator list/detail reads.
+- `operatorStats.ts` - Operator-dashboard aggregate stats.
+- `organizations.ts` - Org list/detail reads.
+- `organizationStaff.ts` - Org-staff list query.
+- `players.ts` - Player list/detail reads.
+- `playerStats.ts` - Per-player stats aggregations.
+- `preferences.ts` - Org/league/season resolved-preference queries.
+- `reports.ts` - User-report queries.
+- `seasons.ts` - Season list/detail reads.
+- `standings.ts` - Standings aggregation query.
+- `teams.ts` - Team list/detail reads.
+- `teamStats.ts` - Per-team stats aggregations.
+- `thresholdLookup.ts` - Modular threshold-chart lookup query (used by the system resolver).
+- `venueDuplicates.ts` - Detects duplicate venues during creation flows.
+- `venues.ts` - Venue list/detail reads.
+- `__tests__/thresholdLookup.test.ts` - Tests for the threshold-chart lookup.
 
 #### Mutations (`/mutations/`) - Write Operations
 *Create/Update/Delete operations with automatic cache invalidation*
 
 - `matches.ts` - **✅ Match mutations** (generic updateMatch for any match field updates)
 - `matchLineups.ts` - **✅ Match lineup mutations** (generic updateMatchLineup + specific save/lock/unlock)
+- `announcements.ts` - Announcement-channel mutations (post / edit / archive).
+- `autoConversations.ts` - Helper mutations for the season-activation auto-chats (manual create-missing-chat path).
+- `championshipDates.ts` - Championship date CRUD.
+- `conversations.ts` - Conversation create/archive/leave mutations.
+- `houseRules.ts` - House-rules CRUD (org-scope + league-scope rules).
+- `leagues.ts` - League CRUD.
+- `leagueVenues.ts` - League↔venue linking mutations.
+- `members.ts` - Member CRUD (including profanity-onboarding completion writer).
+- `messages.ts` - Message send/edit/delete mutations (uses the timeout wrapper).
+- `operatorBlackoutPreferences.ts` - Blackout-date preference CRUD.
+- `organizations.ts` - Organization CRUD.
+- `organizationStaff.ts` - Org-staff invite/remove mutations.
+- `playoffConfigurations.ts` - Playoff config CRUD.
+- `preferences.ts` - Preference CRUD across org / league / season scopes.
+- `preferenceTypes.ts` - Shared preference type definitions used by `preferences.ts`.
+- `ratingMutations.ts` - Member-rating edit RPC writers (writes audit row alongside the change).
+- `reports.ts` - User-report CRUD.
+- `schedules.ts` - Schedule CRUD (seasons-weeks + matches).
+- `seasons.ts` - Season CRUD.
+- `teams.ts` - Team CRUD.
+- `venues.ts` - Venue CRUD.
+- `__tests__/sendMessage.timeout.test.ts` - Timeout-wrapper test for the sendMessage mutation (Unit 16 bounded-send).
 
 #### Hooks (`/hooks/`) - React Query Hooks
 *React-specific wrappers combining queries with useQuery/useMutation*
@@ -852,9 +1192,132 @@ High-level business logic services
 - `useUserProfile.ts` - **✅ User profile hook** (full member data + role utilities)
 - `useOperatorId.ts` - **✅ Operator ID hook** (operator lookup with caching)
 - `useMatchPhase.ts` - **✅ Match-phase status query** (minimal id/status/started_at slice; staleTime: 0; foreground 7s polling while status='scheduled' as Defense 7 backstop for dropped realtime). Distinct cache key from `useMatchById` — see file header for rationale.
+- `useAnnouncementMutations.ts` - Announcement-channel mutation hooks.
+- `useCaptainTeamsMissingChat.ts` - Detects captain teams that don't have an auto-managed team chat yet; drives the `CreateTeamChatPrompt` banner.
+- `useChampionshipDateMutations.ts` - Championship-date CRUD hooks.
+- `useConversationMutations.ts` - Conversation create/archive/leave mutation hooks.
+- `useConversationQueries.ts` - Conversation list/detail query hooks.
+- `useFeatsStats.ts` - Feats-of-excellence stats hook.
+- `useHandicaps.ts` - Handicap-fetch hooks.
+- `useIsWizard2League.ts` - Returns whether a league was created via Wizard V2 (drives some routing decisions).
+- `useLeagueMutations.ts` - League CRUD hooks.
+- `useLeagues.ts` - League query hooks.
+- `useLeagueVenueMutations.ts` - League↔venue linking hooks.
+- `useMatches.ts` - Match query hooks.
+- `useMatchLineupMutations.ts` - Match-lineup CRUD hooks.
+- `useMatchMutations.ts` - Match-state mutation hooks.
+- `useMemberMutations.ts` - Member CRUD hooks.
+- `useMemberSearch.ts` - Member-search hook (debounced).
+- `useMessageComposerStatus.ts` - Tracks composer state (sending / failed / idle) for inline feedback.
+- `useMessageMutations.ts` - Message send/edit/delete hooks.
+- `useMessages.ts` - Message query hooks.
+- `useMessagingRealtime.ts` - Supabase realtime subscription for the messages channels.
+- `useOperatorBlackoutPreferenceMutations.ts` - Blackout-preference CRUD hooks.
+- `useOperatorProfile.ts` - Operator profile query hook.
+- `useOperatorStats.ts` - Operator-dashboard stats hook.
+- `useOrganizationInvites.ts` - Org-invite query hooks.
+- `useOrganizationMutations.ts` - Org CRUD hooks.
+- `useOrganizations.ts` - Org list/detail hooks.
+- `useOrganizationStaff.ts` - Org-staff query hook.
+- `useOrganizationStaffMutations.ts` - Org-staff invite/remove hooks.
+- `usePlayerHandicaps.ts` - Per-player handicap query hook.
+- `usePlayerTeamCount.ts` - Returns a player's team count for the current scope.
+- `usePlayoffConfigurations.ts` - Playoff config query hooks.
+- `usePreferenceMutations.ts` - Preference CRUD hooks.
+- `usePreferences.ts` - Preference query hooks (resolved + raw).
+- `useReportMutations.ts` - User-report CRUD hooks.
+- `useReportQueries.ts` - User-report query hooks.
+- `useResolvedLeaguePrefs.ts` - Resolved-preference reader (the single shared resolver for org→league→season inheritance).
+- `useScheduleMutations.ts` - Schedule CRUD hooks.
+- `useSeasonMutations.ts` - Season CRUD hooks.
+- `useSeasons.ts` - Season query hooks.
+- `useStandings.ts` - Standings query hook.
+- `useTeamMutations.ts` - Team CRUD hooks.
+- `useTeams.ts` - Team query hooks.
+- `useTeamStats.ts` - Per-team stats hook.
+- `useTopShooters.ts` - Top-shooters stats hook.
+- `useVenueMutations.ts` - Venue CRUD hooks.
+- `useVenues.ts` - Venue list/detail hooks.
 - `index.ts` - Central export point for all hooks
+- `__tests__/computePhaseRefetchInterval.test.ts` - Tests for the phase-refetch interval helper.
 
 **Migration Status**: Phase 1 Complete (foundation), Phase 2 Next (migrate member/user data)
+
+---
+
+### 🧙 Wizards (`/wizards/`)
+
+Multi-step setup flows backed by the shared WizardFlowShell scaffold. Each wizard family owns its config, types, mutation hook, and one folder per step. The `_flowContext` slot on `formData` carries cross-step state (orgId, leagueId, etc.) without prop-drilling.
+
+#### League Wizard V2 (`/wizards/league-v2/`)
+The current LO league-creation flow (replaces the legacy wizard). Modular axes (handicap / scoring / threshold / mechanism) each have their own step. The TestedPreset → ad-hoc path is decided by `comboCoherence.ts`.
+
+- `LeagueWizardV2Page.tsx` - Top-level page that mounts the flow + handles route params.
+- `LeagueCreatedScreen.tsx` - Success screen rendered after league insert completes.
+- `leagueWizardConfig.ts` - Step list, navigation rules, validators per step.
+- `leagueWizardTypes.ts` - Form-data types + per-step input/output shapes.
+- `leagueWizardHelpers.ts` - Shared helpers (formatting, name derivation).
+- `comboCoherence.ts` - **Modular-axis coherence checker** — decides whether the current axis selections match a TestedPreset or are an ad-hoc combo; gates the review step's warning copy.
+- `presetMappings.ts` - Maps `handicap_type` to default values for every downstream axis (rating / scoring / threshold).
+- `useCreateLeagueV2.ts` - Mutation hook performing the actual league insert (atomic via RPC).
+- `useFlowStageDetection.ts` - Detects where in the flow the user dropped out so resume works.
+- `useFlowStageHandlers.ts` - Per-step submit handlers.
+- `steps/LeagueIntroStep.tsx` - Welcome / overview step.
+- `steps/GameTypeStep.tsx` - 8-ball / 9-ball / 10-ball / scotch doubles picker.
+- `steps/LeagueFormatStep.tsx` + `leagueFormatOptions.ts` - Format chooser (singles / doubles / team).
+- `steps/LineupSizeStep.tsx` - Lineup geometry (3v3 / 4v4 / 5v5 / etc.).
+- `steps/RosterSizeStep.tsx` - Roster max.
+- `steps/HandicapSystemStep.tsx` - `handicap_type` picker (BCA / Fargo / APA / off).
+- `steps/MechanismStep.tsx` - Threshold mechanism axis (extra_games / start_points / race_length_adjustment / none).
+- `steps/PointsCalculatorStep.tsx` - Points-calculator axis picker (linear_above_threshold / accumulate_with_milestone_jumps / accumulated_per_game / custom).
+- `steps/ThresholdSourceStep.tsx` - Threshold-chart source axis (chart-by-id vs ad-hoc).
+- `steps/PairingFormatStep.tsx` - Round-robin / Swiss / etc.
+- `steps/MatchFormatStep.tsx` - Match-format details (races, games-to-win).
+- `steps/WinConditionStep.tsx` - Win-condition axis.
+- `steps/QualifierStep.tsx` - Qualifier rules (if any).
+- `steps/StandingsSortStep.tsx` - Standings sort priorities.
+- `steps/TiebreakerStep.tsx` - Tiebreaker rule picker.
+- `steps/StartDateStep.tsx` - League start date.
+- `steps/ReviewStep.tsx` - Final review + create button (shows preset-vs-ad-hoc copy from `comboCoherence`).
+- `__tests__/comboCoherence.test.ts`, `presetMappings.test.ts`, `ThresholdSourceStep.test.tsx`, `useCreateLeagueV2.contract.test.ts` - Coverage for the wizard's load-bearing pieces.
+
+#### Season Wizard V2 (`/wizards/season-v2/`)
+Season-creation flow. Less branchy than the league wizard.
+
+- `seasonWizardConfig.ts` - Step list + validators.
+- `seasonWizardTypes.ts` - Form-data shape.
+- `useCreateSeasonV2.ts` - Season-insert mutation hook.
+- `playoffPresetMappings.ts` - Maps playoff format to default playoff-config values.
+- `steps/SeasonIntroStep.tsx`, `steps/SeasonStartDateStep.tsx`, `steps/SeasonLengthStep.tsx`, `steps/PlayoffFormatStep.tsx` + `playoffFormatOptions.ts`, `steps/PlayoffWeeksStep.tsx` - The five season-wizard steps.
+
+#### Schedule Wizard V2 (`/wizards/schedule-v2/`)
+Round-robin / Swiss / custom schedule generation.
+
+- `ScheduleWizardStep.tsx` - Single-step shell that orchestrates the schedule generator.
+- `scheduleWizardConfig.ts`, `scheduleWizardTypes.ts` - Config + types.
+- `useExistingWeeks.ts` - Loads existing scheduled weeks for replay/append flows.
+- `useSaveScheduleV2.ts` - Save-mutation hook for the generated schedule.
+- `ChampionshipStep.tsx` - Optional championship-date step.
+
+#### Matchups Wizard V2 (`/wizards/matchups-v2/`)
+Per-match position assignment within a season.
+
+- `matchupsWizardConfig.ts`, `matchupsWizardTypes.ts` - Config + types.
+- `steps/PositionsStep.tsx`, `steps/ReviewStep.tsx` - The two matchups-wizard steps.
+
+#### Teams Wizard V2 (`/wizards/teams-v2/`)
+Captain + team setup flow.
+
+- `teamsWizardConfig.ts`, `teamsWizardTypes.ts` - Config + types.
+- `useSaveTeamsV2.ts` - Save-mutation hook.
+- `steps/CaptainsTeamsStep.tsx` - Captain → team mapping step.
+- `steps/VenueSelectionStep.tsx` - Per-team venue picker.
+
+#### Next-Season Wizard (`/wizards/next-season/`) — **draft PR #120**
+*Fast-track wizard for cloning the previous season's setup. Currently on the `feat/new-season-from-previous` branch; the directory exists on disk pending merge.*
+
+- `useNextSeasonFlowHandlers.ts` - Per-step handlers reusing existing wizard scaffold steps.
+- `useNextSeasonStageDetection.ts` - Resume-from-stage detection.
 
 ---
 
@@ -947,6 +1410,9 @@ Calculator-as-type-with-params registry. Each shipped points formula implements 
 - `accumulated_per_game.ts` - **`accumulated_per_game` calculator** (Phase 1 Unit 1.4) — per-game accumulation with the per-side fixed-or-counter pattern. Each side independently configurable: `{kind: 'fixed', points: number}` OR `{kind: 'counter', min, max, label}`. Tested Preset value: Fargo 10-7 (winner=fixed-10, loser=counter-0-7 "Balls pocketed"). Per-game `scoringPopupFields` adapts to the params. Counter values clamped to [min, max]; null score → min fallback. Tiebreaker filtering is the caller's responsibility.
 - `__tests__/accumulated_per_game.test.ts` - **Per-game accumulation tests** (31 cases) — Fargo 10-7 default with mixed game outcomes, counter clamping (above max, below min, null, NaN), winner=counter forward-extension, both-sides-fixed configs, both-sides-counter LO-driven scoring, game filtering (skip null winner, do NOT internally filter tiebreakers), defensive behavior, characterization equivalence with legacy fargo5v5 per-game accumulation.
 - `__tests__/off_preset_combinations.test.ts` - **Off-preset combination tests** (15 cases, supplement Section 8.2 mandate) — all three calculators exercised at lineup geometries other than their Tested Preset's lineup (linear at 4v4/5v5/6v6, milestone-jumps at 3v3/6v6, accumulated_per_game at 3v3/4v4 with custom 15/X scoring). Plus `registerTestedPresetCalculators()` registration verification (idempotent). Plus a "same league, three calculators" cross-test proving lineup is independent of calculator choice.
+- `resolveParams.ts` - Parameter resolution helper — merges calculator params from preferences with overrides/defaults so callers get a fully-shaped params object regardless of which fields the LO actually configured.
+- `__tests__/types.contract.test.ts` - **Contract tests** locking the `PointsCalculator<P>` discriminated-union shape — every shipped calculator must conform to either `kind: 'aggregate'` or `kind: 'per_game'` with the matching input signature.
+- `__tests__/displayHints.test.ts` - Tests for calculator-driven display hints (scoring popup field shapes) used by the per-game UI to render the right inputs for the active calculator.
 
 ---
 
@@ -1040,6 +1506,8 @@ Supabase local configuration and migrations
 | `supabase/migrations/20260420120000_leagues_ignore_org_house_rules.sql` | `leagues.ignore_org_house_rules` column for per-league pure-CSI opt-out |
 | `database/dev_bootstrap_lo.sql` | DEV-ONLY: given an email, upserts member + org (owner via trigger) + one empty league. Paste into Studio. |
 | `database/dev_bootstrap_full.sql` | DEV-ONLY: full fixture — org + venue + league + active 12-week season + 4 teams with 5-player rosters + full round-robin schedule. Paste into Studio. |
+| `database/dev_seed_full.sql` | **DEV-ONLY: canonical full test environment (post-modular).** 4 logins (all captains, password "password"), Tester Org + venue, ~100 placeholders with random handicaps (3v3/5v5/fargo), and 3 leagues — one per packaged scoring system (3v3 points / 5v5 percentage / 5v5 fargo 10-7, prefs = byte-exact PRESET_MAPPINGS) — each with 4 captained teams, lineup_size+1 rosters, and a scheduled round-robin. Idempotent. Paste into Studio after `pnpm db:reset`. Use this to test scoring across all 3 systems. |
+| `database/dev_seed_minimal.sql` | DEV-ONLY: foundation-only seed (4 logins, org, 130 FL placeholders, handicaps) — no leagues/teams; build those via the wizard. Use when testing the wizard itself. |
 | `supabase/migrations/20260418000000_add_leagues_system_overrides.sql` | **Phase 2 Unit 4** — adds `leagues.system_overrides JSONB` for per-league dial overrides |
 | `supabase/migrations/20260418000001_add_fargo_match_columns.sql` | **Phase 2 Unit 5** — adds `matches.fargo_start_points` + `match_games.winner_points`/`loser_points`/`loser_balls_pocketed` |
 | `supabase/migrations/20260418000002_lock_tier1_preferences.sql` | **Phase 2 Unit 6** — DB trigger blocking UPDATE of `handicap_type` and `lineup_size` on league preferences (tier 1 mutability) |
@@ -1051,6 +1519,77 @@ Supabase local configuration and migrations
 | `supabase/migrations/20260501000004_backfill_null_bye_matches.sql` | **PR 1 bye-as-real-team** — one-time backfill: replaces NULL `home_team_id`/`away_team_id` on legacy matches with real per-season bye-team rows. Includes pre-flight DO block enumerating abort conditions. |
 | `supabase/migrations/20260501000001_team_fks_cascade_to_restrict.sql` | **PR 0 cascade safety net** — flips `matches.home_team_id`, `matches.away_team_id`, and `match_lineups.team_id` from `ON DELETE CASCADE` to `ON DELETE RESTRICT` so deleting a team can no longer silently destroy match/lineup history. See `docs/plans/2026-04-29-001-fix-team-cascade-deletion-plan.md`. |
 | `supabase/migrations/20260504000000_harden_prep_match_write_guards.sql` | **Lineup→scoring transition stability fix** — replaces `prep_match` body so ALL writes (thresholds, status, started_at) are guarded by `WHERE status = 'scheduled'`; drops `IF NOT FOUND` exception and wraps INSERT in `IF FOUND` so race-loser calls are true no-ops. See `docs/plans/2026-05-04-001-fix-lineup-to-scoring-transition-stability-plan.md`. |
+| `supabase/migrations/20260509000001_messaging_phase1_conversations_participants.sql` | **Messaging Phase 1 / Unit 1** — schema foundations: `conversations.archived_at` (Phase 6 read-only gate prep), `conversation_participants.notification_mode` (tri-state replacement for legacy `is_muted` + `notifications_enabled`, with backfill), `conversation_participants.cannot_leave` (captain-force-membership flag, used by Unit 5 + Unit 6). Plus three CHECK-constraint widenings: `conversation_type` gains `'match_chat'`, `scope_type` gains `'match'`, participant `role` gains `'observer'`. All additive; legacy columns stay during deprecation window. |
+| `supabase/migrations/20260509000002_messaging_phase1_messages_members.sql` | **Messaging Phase 1 / Unit 2** — `messages.is_system` flag + nullable `sender_id` + paired `messages_is_system_shape` CHECK (every row is either system-with-NULL-sender or user-with-sender, no other shape). `members.profanity_onboarding_completed_at` (Unit 9 modal). `members.deleted_at` (soft-delete, read by Unit 5 trigger). Intentionally ships **no RLS policies** — those tables have `rowsecurity=false` in dev (RLS-enablement is a separate planned effort). |
+| `supabase/migrations/20260509000003_messaging_phase1_season_activation_trigger.sql` | **Messaging Phase 1 / Unit 4** — adds SECURITY DEFINER `auto_create_season_conversations(uuid)` plus trigger wrapper; trigger fires `AFTER UPDATE OF status ON seasons WHEN status flips to 'active'` and creates one team chat per team, one captain chat, one season-announcements chat, and an org-announcements chat (idempotent). Each chat creation is wrapped in `BEGIN/EXCEPTION` so a single failure doesn't strand others. Also adds `conversations` to the `supabase_realtime` publication. See `docs/plans/2026-05-09-001-feat-messaging-overhaul-phase-1-plan.md`. |
+| `supabase/migrations/20260509000004_messaging_phase1_roster_captain_triggers.sql` | **Messaging Phase 1 / Unit 5** — four trigger functions that keep auto-managed chats in sync with roster + captain state: `team_players` INSERT (add participant, post "joined" only on real inserts via `xmax = 0`), `team_players` DELETE (set `left_at`, post "left" only when newly set), `teams` UPDATE OF `captain_id` (flip `cannot_leave` in both team and captain chats; multi-team captains keep `cannot_leave` on captain chat), `members` UPDATE OF `deleted_at` NULL→ts (mark every active participant row as left). All `SECURITY DEFINER`, `search_path = public, pg_catalog`, REVOKE PUBLIC/authenticated. See `docs/plans/2026-05-09-001-feat-messaging-overhaul-phase-1-plan.md`. |
+| `supabase/migrations/20260513000001_messaging_phase1_unit7_polish.sql` | **Messaging Phase 1 / Unit 7 (polish)** — two changes. (1) `COMMENT ON COLUMN public.members.profanity_filter_enabled` reworded from "Forced ON for users under 18, optional for adults" to reflect the DOB-optional reality (forced ON only for *known* minors; toggleable for adults and members with no DOB on file). (2) `CREATE OR REPLACE FUNCTION public.increment_unread_count()` adds an explicit `IF NEW.is_system THEN RETURN NEW; END IF;` early-return so system messages never bump unread counts; today the implicit SQL NULL semantics achieve the same result but the explicit guard makes intent visible and survives future schema changes. Both statements are idempotent. See `docs/plans/2026-05-09-001-feat-messaging-overhaul-phase-1-plan.md` (Unit 7). |
+| **Migrations backfilled by TOC sync — concise descriptions** | (the entries below were missing from the TOC; descriptions inferred from filename + adjacent context. Cross-reference the migration files for full SQL.) |
+| `supabase/migrations/20251130010824_baseline.sql` | Initial schema baseline — all core tables (members, organizations, leagues, seasons, teams, matches, etc.) as they existed at the start of tracked migrations. |
+| `supabase/migrations/20251130014152_add_rls_policies.sql` | First-pass RLS policies layered onto the baseline schema. |
+| `supabase/migrations/20251201174359_add_app_logs_table.sql` | `app_logs` table for client-side logger output (used by `src/utils/logger.ts`). |
+| `supabase/migrations/20251202194308_authorize_new_players.sql` | Org-level "require LO authorization before new players can join" flag + supporting logic. |
+| `supabase/migrations/20251206000000_playoff_configurations.sql` | `playoff_configurations` table + related schema for per-season playoff config (bracket size, qualification rules). |
+| `supabase/migrations/20251211000000_add_lineup_change_request.sql` | `lineup_change_requests` table for in-match captain-to-captain lineup change negotiations. |
+| `supabase/migrations/20251212000000_enable_realtime.sql` | Adds core tables (matches, match_lineups, match_games, etc.) to the `supabase_realtime` publication. |
+| `supabase/migrations/20251213000000_sync_match_lineups_with_matches.sql` | Trigger keeping `match_lineups` rows in sync with their parent `matches` row (status, timing). |
+| `supabase/migrations/20251214114804_venue_table_configuration.sql` | Per-venue table-count + table-numbering configuration columns. |
+| `supabase/migrations/20251214211103_match_table_assignment.sql` | `matches.table_number` + assignment logic so a match can be pinned to a specific venue table. |
+| `supabase/migrations/20251215165551_allow_nullable_member_fields.sql` | Loosens NOT NULL on members fields that placeholder players don't have (email, etc.). |
+| `supabase/migrations/20251216121115_placeholder_player_merge_system.sql` | **Placeholder-player merge** — foundational merge function + supporting columns for converting a placeholder into a registered member. |
+| `supabase/migrations/20251216140000_allow_nullable_member_fields.sql` | Follow-up nullable relaxations for additional placeholder-friendly columns. |
+| `supabase/migrations/20251216180000_enhanced_placeholder_search.sql` | RPC for placeholder search across multiple fields (nickname, alias, partial name). |
+| `supabase/migrations/20251217144653_invite_tokens.sql` | `invite_tokens` table — one-time tokens for placeholder→registered claim flow. |
+| `supabase/migrations/20251217152629_merge_placeholder_player.sql` | `merge_placeholder_player(...)` RPC — the actual merge entry point. |
+| `supabase/migrations/20251217170000_check_pending_invites.sql` | `get_my_pending_invites` RPC + supporting view for the pending-invites modal. |
+| `supabase/migrations/20251219103904_get_operator_player_stats.sql` | `get_operator_player_stats` RPC — operator-side aggregated stats per member across their orgs. |
+| `supabase/migrations/20251219113254_get_operator_placeholders.sql` | `get_operator_placeholders` RPC — list of placeholder members owned by an org. |
+| `supabase/migrations/20251219113430_remove_placeholder_from_team.sql` | RPC: safely remove a placeholder from a team without losing match history. |
+| `supabase/migrations/20260410000000_extend_preferences_modular.sql` | **Modular handicap/scoring foundation** — adds modular preference columns (rating axis, scoring calculator, threshold strategy) to org/league preferences. |
+| `supabase/migrations/20260410000001_add_fargo_to_members.sql` | `members.fargo_rating` column + supporting indexes for Fargo handicap support. |
+| `supabase/migrations/20260410000002_threshold_charts.sql` | `threshold_charts` table — modular threshold lookup keyed by lineup geometry + chart strategy. |
+| `supabase/migrations/20260410000003_seed_threshold_charts.sql` | Seeds the shipped threshold charts (BCA 3v3, BCA 5v5, etc.) into `threshold_charts`. |
+| `supabase/migrations/20260410000004_add_threshold_chart_fk.sql` | FK from preferences to `threshold_charts` so leagues reference a chart by ID, not by string. |
+| `supabase/migrations/20260415000000_seed_apa_2026.sql` | Seeds the APA 2026 preset (handicap chart + rules). |
+| `supabase/migrations/20260417000000_add_modular_to_resolved_view.sql` | Extends the `resolved_preferences` view to project the modular axes through the org→league inheritance chain. |
+| `supabase/migrations/20260420000000_relax_teams_roster_size_check.sql` | Loosens the `teams_roster_size_check` CHECK constraint to accommodate the incremental-roster-slots flow. |
+| `supabase/migrations/20260422000000_placeholder_has_stats_function.sql` | **Placeholder lifecycle PR (1/23)** — `placeholder_has_stats(member_id)` helper used by the archive flow. |
+| `supabase/migrations/20260422000001_archived_placeholders_table.sql` | **Placeholder lifecycle PR (2/23)** — `archived_placeholders` table for soft-archived placeholder members. |
+| `supabase/migrations/20260422000002_placeholder_audit_log_table.sql` | **Placeholder lifecycle PR (3/23)** — audit-log table for every placeholder mutation (create/merge/archive/remove). |
+| `supabase/migrations/20260422000003_add_match_lineups_player_fk.sql` | **Placeholder lifecycle PR (4/23)** — adds player_id FK on `match_lineups` so history survives merges. |
+| `supabase/migrations/20260422000004_merge_placeholder_snapshot_and_audit.sql` | **Placeholder lifecycle PR (5/23)** — extends merge RPC to write a pre-merge snapshot + audit row. |
+| `supabase/migrations/20260422000005_undo_merge_placeholder_rpc.sql` | **Placeholder lifecycle PR (6/23)** — `undo_merge_placeholder` RPC for rolling back a recent merge using the snapshot. |
+| `supabase/migrations/20260422000006_invite_tokens_rejected_status.sql` | **Placeholder lifecycle PR (7/23)** — adds `'rejected'` to `invite_tokens.status` enum + supporting logic. |
+| `supabase/migrations/20260422000007_auto_invite_on_placeholder_email.sql` | **Placeholder lifecycle PR (8/23)** — trigger auto-creates an invite token when a placeholder is given an email. |
+| `supabase/migrations/20260422000008_pending_invites_left_join_team.sql` | **Placeholder lifecycle PR (9/23)** — fixes `pending_invites` view to LEFT JOIN teams (so invites without a team aren't dropped). |
+| `supabase/migrations/20260422000009_enrich_pending_invites_rpc.sql` | **Placeholder lifecycle PR (10/23)** — extends `get_my_pending_invites` with org/league context fields. |
+| `supabase/migrations/20260422000010_members_created_by_member_id.sql` | **Placeholder lifecycle PR (11/23)** — `members.created_by_member_id` column for attribution. |
+| `supabase/migrations/20260422000011_placeholder_org_scoping.sql` | **Placeholder lifecycle PR (12/23)** — scopes placeholder visibility to the org that created them. |
+| `supabase/migrations/20260422000012_fix_placeholder_trigger_split.sql` | **Placeholder lifecycle PR (13/23)** — splits an overloaded placeholder trigger into two narrower triggers. |
+| `supabase/migrations/20260422000013_fix_get_invite_details_left_join.sql` | **Placeholder lifecycle PR (14/23)** — fixes a JOIN bug in `get_invite_details`. |
+| `supabase/migrations/20260422000014_invite_tokens_fk_set_null.sql` | **Placeholder lifecycle PR (15/23)** — flips invite_tokens FKs to ON DELETE SET NULL so token rows survive parent deletions. |
+| `supabase/migrations/20260422000015_audit_placeholder_to_registered_conversion.sql` | **Placeholder lifecycle PR (16/23)** — audit-row writer for the placeholder→registered conversion path. |
+| `supabase/migrations/20260422000016_org_placeholders_for_merge.sql` | **Placeholder lifecycle PR (17/23)** — RPC listing org placeholders that are candidates for a target merge. |
+| `supabase/migrations/20260422000017_delete_unused_placeholder_rpc.sql` | **Placeholder lifecycle PR (18/23)** — RPC to delete a placeholder that has no match history (safe path). |
+| `supabase/migrations/20260422000018_placeholder_archive_flag.sql` | **Placeholder lifecycle PR (19/23)** — `members.archived_at` for soft archive (parallel to `deleted_at`). |
+| `supabase/migrations/20260422000019_placeholder_remove_context.sql` | **Placeholder lifecycle PR (20/23)** — adds the team/league context onto remove-placeholder audit rows. |
+| `supabase/migrations/20260422000020_merge_v2_org_check_via_members_column.sql` | **Placeholder lifecycle PR (21/23)** — tightens merge org-scope check using the members column rather than an indirect lookup. |
+| `supabase/migrations/20260422000021_get_org_recent_merges_rpc.sql` | **Placeholder lifecycle PR (22/23)** — `get_org_recent_merges` RPC for the "recent merges" audit view. |
+| `supabase/migrations/20260422000022_invite_tokens_optional_team_and_inviter.sql` | **Placeholder lifecycle PR (23/23)** — relaxes invite_tokens to allow NULL team_id/inviter for system-issued tokens. |
+| `supabase/migrations/20260424000000_prep_match_rpc.sql` | First version of the `prep_match` RPC (later hardened by `20260504000000`). |
+| `supabase/migrations/20260425000000_drop_fargo_start_points_columns.sql` | Drops the legacy `matches.fargo_start_points` family of columns superseded by the negotiated value. |
+| `supabase/migrations/20260425000001_members_bca_number_unique.sql` | UNIQUE constraint on `members.bca_number`. |
+| `supabase/migrations/20260429000000_replace_tier1_lock_with_status_aware.sql` | Replaces the blunt tier-1 lock trigger with a status-aware version that only blocks edits after the league has matches. |
+| `supabase/migrations/20260429000001_extend_preferences_phase2_modular_axes.sql` | **Phase 2** — adds the second wave of modular axis columns to preferences. |
+| `supabase/migrations/20260429000002_resolved_view_phase2_modular_axes.sql` | **Phase 2** — extends `resolved_preferences` view to project the new axes. |
+| `supabase/migrations/20260429000003_rating_edit_audit_log_table.sql` | `rating_edit_audit_log` table — tracks operator edits to member ratings. |
+| `supabase/migrations/20260429000004_threshold_charts_rls_production.sql` | Production-ready RLS policies for `threshold_charts`. |
+| `supabase/migrations/20260429000005_rating_mutation_rpcs.sql` | `set_member_rating` + supporting RPCs that write the audit row alongside the rating change. |
+| `supabase/migrations/20260501000000_matches_modular_columns.sql` | Modular-axis columns on `matches` (per-match frozen tier-3 dials). |
+| `supabase/migrations/20260502000000_drop_team_format.sql` | Drops the legacy `team_format` column (superseded by the modular axis system). |
+| `supabase/migrations/20260502000001_set_member_starting_handicap_rpc.sql` | `set_member_starting_handicap` RPC for the wizard's per-player handicap seeding step. |
+| `supabase/migrations/20260502000002_prep_match_rpc_renamed_columns.sql` | Renames a handful of columns referenced by `prep_match` to align with the modular-axis naming. |
+| `supabase/migrations/20260505000000_match_games_value_columns.sql` | Adds `match_games.winner_balls_pocketed` / `loser_balls_pocketed` / counter-value columns for the per-game-points calculator (`accumulated_per_game`). |
 | `supabase/seed.sql` | Full local dev DB dump — auto-applied on `supabase db reset`. **Local only, never runs against production.** |
 | `supabase/seed_test_users.sql` | 4 synthetic test auth users (player/operator/captain/owner, password `test-password-123`). **Dev-only — run manually via `docker exec ... psql`.** |
 | `supabase/seed_members.sql` | 20 placeholder players (no `user_id`) spanning Fargo 300–580 ratings for wizard/team-management testing. **Dev-only — not wired into auto-seed; run manually when the local DB needs a bench of fake members.** |
@@ -1069,9 +1608,7 @@ Supabase local configuration and migrations
 
 ### 🟡 Legacy/Deprecated Files (DELETE AFTER VERIFICATION)
 
-| File | Status | Action |
-|------|--------|--------|
-| `cUsersshodbpersonalsupabase-learning-hubsrcutilsscheduleGenerator.ts` | Corrupt file path? | **DELETE** |
+*(Previously listed entry for `cUsersshodbpersonalsupabase-learning-hubsrcutilsscheduleGenerator.ts` — confirmed not present on disk during the 2026-05-19 TOC sync; removed.)*
 
 ### 🟠 Organizational Issues
 
@@ -1095,15 +1632,15 @@ See [RESTRUCTURE_PLAN.md](RESTRUCTURE_PLAN.md) for complete list of 20 organizat
 | **League Management** | `/wizards/league-v2`, `/operator`, `/leagueOperator`, `/components/operator`, `/services` | `LeagueWizardV2Page.tsx`, `createNewLeagueFlow.ts`, `leagueService.ts`, `leagues.sql` |
 | **Season Management** | `/operator`, `/components/season`, `/services` | `SeasonCreationWizard.tsx`, `seasonService.ts`, `seasons.sql` |
 | **Schedule Generation** | `/operator`, `/components/schedule`, `/utils`, `/data/matchupTables` | `scheduleGenerator.ts`, `SeasonScheduleManager.tsx` |
-| **Team Management** | `/operator`, `/components/player`, `/hooks` | `TeamManagement.tsx`, `useTeamManagement.ts`, `teams.sql` |
-| **Match Lineup** | `/player`, `/components/lineup`, `/hooks` | `MatchLineup.tsx`, `useMatchLineup.ts`, `lineups.sql` |
-| **Scoring (3x3)** | `/player`, `/components/scoring`, `/hooks`, `/database/scoring3x3` | `ScoreMatch.tsx`, `useMatchScoring.ts`, `match_games.sql` |
-| **Messaging** | `/pages`, `/components/messages`, `/hooks`, `/utils`, `/database/messaging` | `Messages.tsx`, `useMessages.ts`, `messageQueries.ts` |
+| **Team Management** | `/operator`, `/components/player`, `/hooks`, `/api/hooks`, `/api/mutations` | `TeamManagement.tsx`, `useTeamManagement.ts`, `useTeams.ts`, `useTeamMutations.ts`, `teams.sql` |
+| **Match Lineup** | `/player`, `/components/lineup`, `/hooks/lineup`, `/utils/lineup`, `/api/hooks` | `MatchLineup.tsx`, `useLineupState.ts` + sibling hooks under `/hooks/lineup/`, `useMatchLineupMutations.ts`, `lineups.sql` |
+| **Scoring (3x3)** | `/player`, `/components/scoring`, `/hooks`, `/database/scoring3x3` | `ScoreMatch.tsx`, `UnifiedScoreboard.tsx`, `useMatchScoring.ts`, `match_games.sql` |
+| **Messaging** | `/pages`, `/components/messages`, `/api/queries`, `/api/mutations`, `/api/hooks`, `/database/messaging` | `Messages.tsx`, `MessageView.tsx`, `useMessages.ts`, `api/queries/messages.ts`, `api/mutations/messages.ts` |
 | **Venues** | `/operator`, `/components/operator` | `VenueManagement.tsx`, `VenueCard.tsx`, `venues.sql` |
 | **Official Rulebook Reader** | `/rules`, `/officalBCARulebook/cleaned`, `/scripts/clean-rulebook` | `RulesPage.tsx`, `RuleDetailPage.tsx`, `useRulebook.ts`, `scripts/clean-rulebook.ts`, `rules_page_events.sql` |
 | **League House Rules** | `/rules` (reader overlay), `/rules/house/:scope/:scopeId/:ruleId`, `/league-rules/:orgId`, `/league-settings/:leagueId` (authoring) | `HouseRuleForm.tsx`, `HouseRulesList.tsx`, `HouseRuleDetailPage.tsx`, `LeagueHouseRulesSection.tsx`, `useHouseRules.ts`, `house_rules.sql`, `leagues_ignore_org_house_rules.sql` |
 | **Player Registration** | `/newPlayer` | `NewPlayerForm.tsx`, `usePlayerFormSubmission.ts` |
-| **Reporting** | `/operator`, `/pages`, `/database/reporting` | `ReportsManagement.tsx`, `AdminReports.tsx`, `user_reports.sql` |
+| **Reporting** | `/operator`, `/pages` | `ReportsManagement.tsx`, `AdminReports.tsx` (live schema in `supabase/migrations/20251130010824_baseline.sql`; legacy drafts archived 2026-05-13) |
 | **Wizards/Forms** | `/wizards`, `/components/wizard`, `/components/forms`, `/data`, `/flows` | `WizardFlowShell.tsx`, `createNewLeagueFlow.ts`, `seasonWizardSteps.tsx` |
 
 ---

@@ -91,8 +91,8 @@ export function ReportsManagement() {
    */
   useEffect(() => {
     if (!orgId) {
-      // No org ID - redirect to dashboard
-      navigate('/dashboard');
+      // No org ID - redirect to My Teams
+      navigate('/my-teams');
       return;
     }
     loadReports();

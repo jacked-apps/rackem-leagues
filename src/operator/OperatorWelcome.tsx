@@ -120,16 +120,16 @@ export const OperatorWelcome: React.FC = () => {
                 </Button>
               </Link>
             ) : (
-              <Link to="/dashboard">
+              <Link to="/my-teams">
                 <Button
                   loadingText="none"
                   className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg font-semibold"
                 >
-                  Go to Dashboard
+                  Go to My Teams
                 </Button>
               </Link>
             )}
-            <Link to="/dashboard">
+            <Link to="/my-teams">
               <Button
                 variant="outline"
                 className="w-full sm:w-auto px-8 py-3 text-lg border-border"

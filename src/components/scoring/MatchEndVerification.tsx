@@ -28,7 +28,7 @@ import {
   tiebreakerGameToPosition,
   tiebreakerGameSpecs,
 } from '@/utils/tiebreaker/gameNumbers';
-import { getMatchTotalGames } from '@/utils/lineup/getMatchTotalGames';
+import { computeGameCount } from '@/systems/team-geometry';
 import { logger } from '@/utils/logger';
 
 interface MatchEndVerificationProps {
@@ -131,7 +131,7 @@ export function MatchEndVerification({
   const lineupSize = snapshot?.lineup_size ?? leaguePrefs?.lineup_size ?? 3;
   const gameGeneration =
     snapshot?.game_generation ?? leaguePrefs?.game_generation ?? 'double_round_robin';
-  const matchTotalGames = getMatchTotalGames({ lineupSize, gameGeneration });
+  const matchTotalGames = computeGameCount(lineupSize, gameGeneration);
   const winCondition: 'games' | 'points' =
     (snapshot?.win_condition as 'games' | 'points' | undefined) ??
     (leaguePrefs?.win_condition as 'games' | 'points' | undefined) ??
@@ -483,8 +483,8 @@ export function MatchEndVerification({
           setIsCompleting(false); // Reset completing state before navigation
           navigate(`/match/${matchId}/lineup`);
         } else {
-          // Match has a winner - navigate to dashboard
-          navigate('/dashboard');
+          // Match has a winner - navigate to My Teams
+          navigate('/my-teams');
         }
       } catch (error) {
         logger.error('Failed to complete match', { error: error instanceof Error ? error.message : String(error) });

@@ -12,7 +12,8 @@
  */
 
 import { lazy, Suspense } from 'react';
-import { createBrowserRouter, Outlet } from 'react-router-dom';
+import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
+import { MemberLayout } from '../components/layout/MemberLayout';
 import { Home } from '../home/Home';
 import { RulesSkeleton } from '../rules/RulesSkeleton';
 import { RulesErrorBoundary } from '../rules/RulesErrorBoundary';
@@ -26,7 +27,6 @@ import { About } from '../about/About';
 import { Pricing } from '../about/Pricing';
 import { NewPlayerForm } from '../newPlayer/NewPlayerForm';
 import { CompleteProfileForm } from '../completeProfile';
-import { Dashboard } from '../dashboard/Dashboard';
 import { Profile } from '../profile/Profile';
 import { MyMatch } from '../player/MyMatch';
 import { MyTeams } from '../player/MyTeams';
@@ -159,36 +159,6 @@ export const router = createBrowserRouter([
       { path: '8-man-format-details', element: <EightManFormatDetails /> },
       { path: 'format-comparison', element: <FormatComparison /> },
       { path: 'test/handicap-lookup', element: <HandicapLookupTest /> },
-      {
-        path: 'rules',
-        element: (
-          <RulesErrorBoundary>
-            <Suspense fallback={<RulesSkeleton />}>
-              <RulesPage />
-            </Suspense>
-          </RulesErrorBoundary>
-        ),
-      },
-      {
-        path: 'rules/:game/:ruleId',
-        element: (
-          <RulesErrorBoundary>
-            <Suspense fallback={<RulesSkeleton />}>
-              <RuleDetailPage />
-            </Suspense>
-          </RulesErrorBoundary>
-        ),
-      },
-      {
-        path: 'rules/house/:scope/:scopeId/:ruleId',
-        element: (
-          <RulesErrorBoundary>
-            <Suspense fallback={<RulesSkeleton />}>
-              <HouseRuleDetailPage />
-            </Suspense>
-          </RulesErrorBoundary>
-        ),
-      },
 
       // === Development-only Routes ===
       { path: 'dev/rls-tests', element: <DevOnly><RLSTestPage /></DevOnly> },
@@ -199,49 +169,89 @@ export const router = createBrowserRouter([
       { path: 'become-league-operator', element: withAuth(<BecomeLeagueOperator />) },
       { path: 'league-operator-application', element: withAuth(<LeagueOperatorApplication />) },
 
-      // === Member Routes (require login + approved application) ===
-      { path: 'dashboard', element: withMember(<Dashboard />) },
-      { path: 'profile', element: withMember(<Profile />) },
-      { path: 'messages', element: withMember(<Messages />) },
-      { path: 'player/:playerId', element: withMember(<PlayerProfile />) },
-      { path: 'my-teams', element: withMember(<MyTeams />) },
-      { path: 'my-match', element: withMember(<MyMatch />) },
-      { path: 'stats', element: withMember(<PlayerStats />) },
-      { path: 'team/:teamId/schedule', element: withMember(<TeamSchedule />) },
-      { path: 'match/:matchId/lineup', element: withMember(<MatchLineup />) },
-      { path: 'match/:matchId/score', element: withMember(<ScoreMatch />) },
-      { path: 'league/:leagueId/live', element: withMember(<SpectateLiveMatches />) },
-      { path: 'live', element: withMember(<SpectateMyLiveMatches />) },
-      // Stats & Standings pages (accessible to all members)
-      { path: 'league/:leagueId/season/:seasonId/standings', element: withMember(<Standings />) },
-      { path: 'league/:leagueId/season/:seasonId/top-shooters', element: withMember(<TopShooters />) },
-      { path: 'league/:leagueId/season/:seasonId/team-stats', element: withMember(<TeamStats />) },
-      { path: 'league/:leagueId/season/:seasonId/feats', element: withMember(<FeatsOfExcellence />) },
-      { path: 'league/:leagueId/season/:seasonId/match-data', element: withMember(<MatchDataViewer />) },
+      // === Authenticated Routes (wrapped in MemberLayout for shared nav) ===
+      {
+        element: <MemberLayout />,
+        children: [
+          // --- Member Routes (require login + approved application) ---
+          { path: 'dashboard', element: <Navigate to="/my-teams" replace /> },
+          { path: 'profile', element: withMember(<Profile />) },
+          { path: 'messages', element: withMember(<Messages />) },
+          { path: 'player/:playerId', element: withMember(<PlayerProfile />) },
+          { path: 'my-teams', element: withMember(<MyTeams />) },
+          { path: 'my-match', element: withMember(<MyMatch />) },
+          { path: 'stats', element: withMember(<PlayerStats />) },
+          // Rules pages — public (no auth wrapper) but rendered inside
+          // MemberLayout so logged-in users keep their sidebar/tab bar.
+          // AppSidebar and BottomTabBar both auth-gate their nav content,
+          // so public visitors see a minimal chrome (brand + theme toggle).
+          {
+            path: 'rules',
+            element: (
+              <RulesErrorBoundary>
+                <Suspense fallback={<RulesSkeleton />}>
+                  <RulesPage />
+                </Suspense>
+              </RulesErrorBoundary>
+            ),
+          },
+          {
+            path: 'rules/:game/:ruleId',
+            element: (
+              <RulesErrorBoundary>
+                <Suspense fallback={<RulesSkeleton />}>
+                  <RuleDetailPage />
+                </Suspense>
+              </RulesErrorBoundary>
+            ),
+          },
+          {
+            path: 'rules/house/:scope/:scopeId/:ruleId',
+            element: (
+              <RulesErrorBoundary>
+                <Suspense fallback={<RulesSkeleton />}>
+                  <HouseRuleDetailPage />
+                </Suspense>
+              </RulesErrorBoundary>
+            ),
+          },
+          { path: 'team/:teamId/schedule', element: withMember(<TeamSchedule />) },
+          { path: 'match/:matchId/lineup', element: withMember(<MatchLineup />) },
+          { path: 'match/:matchId/score', element: withMember(<ScoreMatch />) },
+          { path: 'league/:leagueId/live', element: withMember(<SpectateLiveMatches />) },
+          { path: 'live', element: withMember(<SpectateMyLiveMatches />) },
+          // Stats & Standings pages (accessible to all members)
+          { path: 'league/:leagueId/season/:seasonId/standings', element: withMember(<Standings />) },
+          { path: 'league/:leagueId/season/:seasonId/top-shooters', element: withMember(<TopShooters />) },
+          { path: 'league/:leagueId/season/:seasonId/team-stats', element: withMember(<TeamStats />) },
+          { path: 'league/:leagueId/season/:seasonId/feats', element: withMember(<FeatsOfExcellence />) },
+          { path: 'league/:leagueId/season/:seasonId/match-data', element: withMember(<MatchDataViewer />) },
 
-      // === Operator Routes (require league_operator role) ===
-      { path: 'operator-welcome', element: withOperator(OperatorWelcome) },
-      { path: 'operator-dashboard/:orgId', element: withOperator(OperatorDashboard) },
-      { path: 'operator-reports/:orgId', element: withOperator(ReportsManagement) },
-      { path: 'manage-players/:orgId', element: withOperator(PlayerManagement) },
-      { path: 'create-league/:orgId', element: withOperator(LeagueWizardV2Page) },
-      { path: 'operator-settings/:orgId', element: withOperator(OrganizationSettings) },
-      { path: 'operator-settings/:orgId/playoffs', element: withOperator(OrganizationPlayoffSettings) },
-      { path: 'league-rules/:orgId', element: withOperator(LeagueRules) },
-      { path: 'league/:leagueId', element: withOperator(LeagueDetail) },
-      { path: 'league/:leagueId/settings', element: withOperator(LeagueSettings) },
-      { path: 'league/:leagueId/create-season', element: withOperator(SeasonCreationWizard) },
-      { path: 'league/:leagueId/season/:seasonId/manage-schedule', element: withOperator(SeasonScheduleManager) },
-      { path: 'league/:leagueId/manage-teams', element: withOperator(TeamManagement) },
-      { path: 'league/:leagueId/season/:seasonId/playoffs-setup', element: withOperator(PlayoffsSetupWizard) },
-      { path: 'league/:leagueId/season/:seasonId/schedule-setup', element: withOperator(ScheduleSetupPage) },
-      { path: 'league/:leagueId/season/:seasonId/schedule', element: withOperator(SeasonSchedulePage) },
-      { path: 'league/:leagueId/season/:seasonId/playoffs', element: withOperator(PlayoffSetup) },
-      { path: 'operator/league/:leagueId/playoffs/:orgId', element: withOperator(LeaguePlayoffSettings) },
-      { path: 'venues/:orgId', element: withOperator(VenueManagement) },
+          // --- Operator Routes (require league_operator role) ---
+          { path: 'operator-welcome', element: withOperator(OperatorWelcome) },
+          { path: 'operator-dashboard/:orgId', element: withOperator(OperatorDashboard) },
+          { path: 'operator-reports/:orgId', element: withOperator(ReportsManagement) },
+          { path: 'manage-players/:orgId', element: withOperator(PlayerManagement) },
+          { path: 'create-league/:orgId', element: withOperator(LeagueWizardV2Page) },
+          { path: 'operator-settings/:orgId', element: withOperator(OrganizationSettings) },
+          { path: 'operator-settings/:orgId/playoffs', element: withOperator(OrganizationPlayoffSettings) },
+          { path: 'league-rules/:orgId', element: withOperator(LeagueRules) },
+          { path: 'league/:leagueId', element: withOperator(LeagueDetail) },
+          { path: 'league/:leagueId/settings', element: withOperator(LeagueSettings) },
+          { path: 'league/:leagueId/create-season', element: withOperator(SeasonCreationWizard) },
+          { path: 'league/:leagueId/season/:seasonId/manage-schedule', element: withOperator(SeasonScheduleManager) },
+          { path: 'league/:leagueId/manage-teams', element: withOperator(TeamManagement) },
+          { path: 'league/:leagueId/season/:seasonId/playoffs-setup', element: withOperator(PlayoffsSetupWizard) },
+          { path: 'league/:leagueId/season/:seasonId/schedule-setup', element: withOperator(ScheduleSetupPage) },
+          { path: 'league/:leagueId/season/:seasonId/schedule', element: withOperator(SeasonSchedulePage) },
+          { path: 'league/:leagueId/season/:seasonId/playoffs', element: withOperator(PlayoffSetup) },
+          { path: 'operator/league/:leagueId/playoffs/:orgId', element: withOperator(LeaguePlayoffSettings) },
+          { path: 'venues/:orgId', element: withOperator(VenueManagement) },
 
-      // === Developer Routes (require developer role) ===
-      { path: 'admin-reports', element: withDeveloper(<AdminReports />) },
+          // --- Developer Routes (require developer role) ---
+          { path: 'admin-reports', element: withDeveloper(<AdminReports />) },
+        ],
+      },
     ],
   },
 ]);

@@ -31,7 +31,8 @@ interface ConfirmationDialogProps {
     breakFouled: boolean;
     runout: boolean;
     winByForfeit: boolean;
-    loserBallsPocketed: number | null;
+    winnerValue: number | null;
+    loserValue: number | null;
     isResetRequest?: boolean;
   } | null;
   /** Game type for golden break label (8-ball, 9-ball, 10-ball, etc.) */
@@ -165,13 +166,13 @@ export function ConfirmationDialog({
                     Break was fouled (re-rack with opposite breaker)
                   </div>
                 )}
-                {game.loserBallsPocketed !== null && (
+                {game.loserValue !== null && (
                   <div className="text-foreground">
                     Opponent pocketed{' '}
                     <span className="font-semibold">
-                      {game.loserBallsPocketed}
+                      {game.loserValue}
                     </span>{' '}
-                    {game.loserBallsPocketed === 1 ? 'ball' : 'balls'}
+                    {game.loserValue === 1 ? 'ball' : 'balls'}
                   </div>
                 )}
               </div>

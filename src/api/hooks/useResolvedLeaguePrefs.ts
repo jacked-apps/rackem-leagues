@@ -53,6 +53,14 @@ export interface ResolvedLeaguePrefs {
    */
   points_calculator?: string | null;
   /**
+   * Active points calculator params (jsonb). Forwarded to the calculator's
+   * `compute()` and `scoringPopupFields()` calls. The calculator handles
+   * empty/missing params (`{}` or `null`) by falling back to its defaults
+   * — callers do not interpret the params themselves. Optional because
+   * legacy resolved-preferences views may not select it.
+   */
+  points_calculator_params?: Record<string, unknown> | null;
+  /**
    * Per-league dial overrides from `leagues.system_overrides` (not part of the
    * preferences cascade — stored directly on the league row). Always an object;
    * `{}` if no overrides are set. Merged over SystemModule defaults at read time.

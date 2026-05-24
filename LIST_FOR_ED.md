@@ -403,7 +403,16 @@ for full details.
 
 ---
 
-## 4. Better Dashboard Button on Home Page
+## ~~4. Better Dashboard Button on Home Page~~ ✅ CLOSED 2026-05-17
+
+> **Closed 2026-05-17** — added a full-width "Go to My Dashboard"
+> primary button at the top of `src/home/Home.tsx`, visible only when
+> the user is signed in (uses `useUser().isLoggedIn`). Signed-out
+> users still see the Explore cards alone. Dashboard is now one tap
+> from the home page; no need to dig into the hamburger menu.
+> Original entry preserved below for reference.
+
+### Original entry
 
 **Discovered:** 2026-04-17
 
@@ -439,7 +448,30 @@ bulk actions, table number assignments.
 
 ---
 
-## 6. Wizard: Placeholder Captain Not Auto-Assigned + Dropdown Stale
+## ~~6. Wizard: Placeholder Captain Not Auto-Assigned + Dropdown Stale~~ ✅ CLOSED 2026-05-17 (PR #79)
+
+> **Closed 2026-05-17** — already fixed by PR #79 (`d4d110d`,
+> 2026-04-25, six days after this item was filed). The commit
+> description literally says: "Mirror the pattern from
+> TeamEditorModal: keep locally-created placeholders" — fixes both
+> parts of the bug.
+>
+> - **Part 1 (PP not assigned as captain)** — `MemberCombobox.tsx`
+>   line ~268 now calls `onValueChange(newMember.id)` on PP creation,
+>   auto-selecting the new placeholder. The wizard flow then treats
+>   it as the selected captain on the next submit.
+> - **Part 2 (stale dropdown)** — `CreatePlaceholderModal.tsx` calls
+>   `queryClient.invalidateQueries({ queryKey: queryKeys.members.all })`
+>   on PP-create success, plus the `onPlaceholderCreated` callback
+>   lets the parent inject the new player into its local list
+>   immediately. So the new PP is visible without a page refresh.
+>
+> No code change in this PR — just closing the entry. Triage from
+> the agent triage pass missed this one because it didn't search
+> git history for the specific fix commit.
+> Original entry preserved below for reference.
+
+### Original entry
 
 **Discovered:** 2026-04-19
 **Severity:** Low — has a workaround (refresh the page)
@@ -464,7 +496,42 @@ them from the dropdown as captain.
 
 ---
 
-## 7. New Org Not Visible on Dashboard After LO Application
+## 🛠️ Tool: League Intake Agent (use when onboarding new LOs)
+
+When you sit with a league operator (like Ozzy) and they describe a league that may or may not fit your existing modular Scoring System: use the **League Intake Agent**. It's a Claude session loaded with the modular framework docs that intakes the LO's description and maps it to the 9 Modules.
+
+**How to run it:** see [`docs/league-system/intake-agent-howto.md`](docs/league-system/intake-agent-howto.md) for step-by-step (terminal commands, copy-paste flow, troubleshooting).
+
+**TL;DR:** `cd ~/Programming/rackem-leagues` → `claude` → paste the prompt from `docs/league-system/intake-agent-prompt.md` → hand keyboard to the LO or describe their league yourself. Output is a structured table flagging each Module as ✓ existing variant / ⚠ new variant needed / 🔴 new Module needed.
+
+**The prompt itself:** [`docs/league-system/intake-agent-prompt.md`](docs/league-system/intake-agent-prompt.md)
+
+---
+
+## ~~7. New Org Not Visible on Dashboard After LO Application~~ ✅ CLOSED 2026-05-17
+
+> **Closed 2026-05-17** — root cause was subtler than first guessed.
+> The two mutations (`useCreateOrganization`, `useUpdateMemberRole`)
+> WERE calling `invalidateQueries`, but `invalidateQueries`'s default
+> behavior only refetches *active* queries. The dashboard's org-list
+> query is NOT mounted during the LO application flow, so the cache
+> was marked stale but never actually refetched. The user navigates
+> to /dashboard, the component mounts, and there's a brief window
+> where the stale cache renders before the refetch completes —
+> hence "doesn't appear until refresh."
+>
+> Fixed by switching both mutations to `invalidateQueries({...,
+> refetchType: 'all' })` inside async `onSuccess` handlers that
+> await the refetch. Forces inactive-query refetches AND holds the
+> mutation open until the cache is genuinely fresh. The previous
+> 500ms `setTimeout` hack in the LO application's `handleSubmit`
+> was removed — there's no race left to paper over.
+>
+> Files touched: `useOrganizationMutations.ts`,
+> `useMemberMutations.ts`, `LeagueOperatorApplication.tsx`.
+> Original entry preserved below for reference.
+
+### Original entry
 
 **Discovered:** 2026-05-02 during modular-league-system test pass
 **Severity:** Low — has a workaround (refresh the page)
@@ -487,7 +554,22 @@ dashboard's org-list query.
 
 ---
 
-## 8. Org Dashboard Loads Scrolled Below the Top
+## ~~8. Org Dashboard Loads Scrolled Below the Top~~ ✅ CLOSED 2026-05-17
+
+> **Closed 2026-05-17** — root cause: React Router doesn't reset
+> `window.scrollTo(0, 0)` on navigation by default, so coming from a
+> scrolled-down page (e.g. a long player-management list) would
+> land the user partway down the OperatorDashboard. Fixed with a
+> targeted `useEffect(() => window.scrollTo(0, 0), [orgId])` on the
+> `OperatorDashboard` component. Per-page fix instead of a global
+> `<ScrollToTop>` handler — some pages (wizards, scroll-anchor
+> navigation) intentionally manage their own scroll state and
+> shouldn't be force-reset.
+>
+> Files touched: `src/operator/OperatorDashboard.tsx`.
+> Original entry preserved below for reference.
+
+### Original entry
 
 **Discovered:** 2026-05-02 during modular-league-system test pass
 **Severity:** Low (cosmetic)
@@ -511,7 +593,16 @@ on mount.
 
 ---
 
-## 9. First-Lineup-Lock Stuck on Match Setup (Pre-Existing Intermittent)
+## 9. First-Lineup-Lock Stuck on Match Setup (Pre-Existing Intermittent) ⚠️ NEEDS-ED-CONFIRM 2026-05-17
+
+> **Triaged 2026-05-17** — PR #100 ("rock-solid lineup → scoring transition")
+> shipped retry logic in the `prep_match` RPC, but the original entry's
+> root cause (realtime-visibility lag on the second team's lineup row) is
+> not obviously addressed. Symptom could still reproduce. **Ed: try to
+> force the original failure and confirm before closing.** Original entry
+> preserved below.
+
+### Original entry
 
 **Discovered:** before 2026-04-01 (long-running)
 **Re-confirmed:** 2026-05-02 during modular-league-system test pass
@@ -569,7 +660,14 @@ visibility of the second team's lineup row.
 
 ---
 
-## 10. Scoreboard Number Layout Confusing — Threshold Duplicated
+## ~~10. Scoreboard Number Layout Confusing — Threshold Duplicated~~ ✅ CLOSED 2026-05-17 (PR #99)
+
+> **Closed 2026-05-17** — verified resolved by PR #99 (unified scoreboard
+> ships `UnifiedScoreboard.tsx`, reads `home_games_won` / `away_games_won`
+> directly from the match row; the redundant threshold display is gone).
+> Original entry preserved below for reference.
+
+### Original entry
 
 **Discovered:** 2026-05-02 during modular-league-system test pass
 **Severity:** Low (cosmetic / UX)
@@ -598,7 +696,15 @@ subtitle.
 
 ---
 
-## 11. Architectural Decision — Where Should the Live Scoreboard Read From?
+## ~~11. Architectural Decision — Where Should the Live Scoreboard Read From?~~ ✅ CLOSED 2026-05-17 (PR #99)
+
+> **Closed 2026-05-17** — decision made + implemented in PR #98/#99.
+> `home_games_won` / `away_games_won` on the `match` row are the
+> running totals; both `MatchEndVerification` and the live scoreboard
+> read from there. Architectural debate resolved.
+> Original entry preserved below for reference.
+
+### Original entry
 
 **Discovered:** 2026-05-02 during modular-league-system test pass
 **Severity:** Architectural — discuss with Jack before deciding
@@ -657,7 +763,17 @@ enough.
 
 ---
 
-## 12. One-Team Screen Flashes / Rapidly Re-renders Around Tiebreaker
+## 12. One-Team Screen Flashes / Rapidly Re-renders Around Tiebreaker ⚠️ PARTIALLY-RESOLVED 2026-05-17
+
+> **Triaged 2026-05-17** — PR #100 added `stableMatchForMutations`
+> memoization to `ScoreMatch.tsx`, which removes one source of the
+> flashing. The same treatment is NOT yet applied to `MatchLineup.tsx`,
+> so the tiebreaker-setup flash is likely mitigated but not fully gone.
+> Keeping open until either (a) the second component gets the same
+> memoization, or (b) Ed confirms the symptom is invisible in normal use.
+> Original entry preserved below.
+
+### Original entry
 
 **Discovered:** 2026-05-02 during modular-league-system test pass
 **Severity:** Medium — has a workaround (browser refresh)
@@ -767,7 +883,15 @@ games are excluded by design — Phase 5 Unit 5.5 locked invariant).
 
 ---
 
-## 14. Live-Scoring Page Doesn't Clear Completed Matches
+## ~~14. Live-Scoring Page Doesn't Clear Completed Matches~~ ✅ CLOSED 2026-05-17 (PR #99)
+
+> **Closed 2026-05-17** — verified resolved. `getLiveMatchesForLeague`
+> and `getLiveMatchesForMember` in `src/api/queries/matches.ts` both
+> filter with `.neq('status', 'completed')`, so completed matches no
+> longer linger on the live-scoring index.
+> Original entry preserved below for reference.
+
+### Original entry
 
 **Discovered:** 2026-05-02 during modular-league-system test pass
 **Severity:** Medium — visible UX bug (stale data showing)
@@ -817,7 +941,16 @@ query layer.
 
 ---
 
-## 15. MatchEndVerification Re-fires Completion on Already-Completed Match
+## ~~15. MatchEndVerification Re-fires Completion on Already-Completed Match~~ ✅ CLOSED 2026-05-17 (PR #100)
+
+> **Closed 2026-05-17** — verified resolved by PR #100. The exact guard
+> suggested in the original entry (`if (match?.status === 'completed') return;`)
+> was added near the top of the completion `useEffect` in
+> `src/components/scoring/MatchEndVerification.tsx`. Re-fires on already-
+> completed matches no longer happen.
+> Original entry preserved below for reference.
+
+### Original entry
 
 **Discovered:** 2026-05-02 during modular-league-system test pass
 **Severity:** Low — DB uniqueness constraint catches the duplicate, but
@@ -860,7 +993,32 @@ if status is 'completed').
 
 ---
 
-## 16. Team-Builder UX — Lineup-Size Slots + "Add Player" for Substitutes
+## ~~16. Team-Builder UX — Lineup-Size Slots + "Add Player" for Substitutes~~ ✅ CLOSED 2026-05-17
+
+> **Closed 2026-05-17** — `TeamEditorModal` now renders exactly the
+> slots needed: the lineup baseline (`lineupSize - 1`, since captain
+> takes one of the active lineup spots), PLUS every already-filled
+> slot, PLUS one extra empty dropdown at the bottom. As the user
+> fills that trailing dropdown, a new empty one appears below it.
+> Once the roster reaches `rosterSize - 1` (the hard cap), the
+> trailing empty disappears too.
+>
+> No "+ Add Player" button — the empty dropdown itself is the
+> affordance, killing one click per substitute add. Pure derived
+> render from `playerIds.filter(Boolean).length` — no state, no
+> useEffect, no opportunity for stale visible-count drift.
+>
+> Wiring: new `lineupSize` prop on `TeamEditorModal`; `TeamManagement`
+> passes `leaguePrefs.lineup_size`; `MyTeams` (captain side) gets
+> `editData.lineupSize` (the `getCaptainTeamEditData` query was
+> extended to also fetch `lineup_size` from `resolved_league_preferences`).
+>
+> Files touched: `src/operator/TeamEditorModal.tsx`,
+> `src/operator/TeamManagement.tsx`, `src/player/MyTeams.tsx`,
+> `src/api/queries/teams.ts`.
+> Original entry preserved below for reference.
+
+### Original entry
 
 **Discovered:** 2026-05-03 during modular-league-system test pass
 **Severity:** Enhancement — current behavior renders all max_roster_size
@@ -967,7 +1125,16 @@ collection once there's enough volume.
 
 ---
 
-## 18. Unified Scoreboard — One Component for All Configs
+## ~~18. Unified Scoreboard — One Component for All Configs~~ ✅ CLOSED 2026-05-17 (PR #99)
+
+> **Closed 2026-05-17** — verified resolved by PR #99. New
+> `UnifiedScoreboard.tsx` is the single component for all configs;
+> the routing no longer reaches the legacy `ThreeVThreeScoreboard` /
+> `FiveVFiveScoreboard` / `TenSevenScoreboard` trio (the old files
+> still exist on disk but are dead code — separate cleanup task).
+> Original entry preserved below for reference.
+
+### Original entry
 
 **Discovered:** 2026-05-03 during 5v5 Fargo + games-won test pass
 **Severity:** Architectural / next-branch brainstorm
@@ -1216,7 +1383,17 @@ treats them as synonyms is wrong.
 
 ---
 
-## 19. Cross-Match State Bleed — Fresh Match Shows "Tiebreak Needed"
+## 19. Cross-Match State Bleed — Fresh Match Shows "Tiebreak Needed" ⚠️ NEEDS-ED-CONFIRM 2026-05-17
+
+> **Triaged 2026-05-17** — PR #100 tightened realtime cache and component
+> identity around match-prep, which may have collateral-fixed this. But
+> the original symptom is specifically about navigation from match A →
+> match B, and that path wasn't explicitly addressed. **Ed: try to
+> reproduce the original repro (open abandoned match A, then navigate
+> to fresh match B) and confirm before closing.** Original entry
+> preserved below.
+
+### Original entry
 
 **Discovered:** 2026-05-03 during modular-league-system testing
 **Severity:** Medium (refresh-recoverable, no data corruption)
@@ -1300,7 +1477,15 @@ dashboard. Match data is already correct on the server.
 
 ---
 
-## 20. Dark Mode Breaks Date Picker — For Jack
+## ~~20. Dark Mode Breaks Date Picker — For Jack~~ ↗ MOVED to LIST_FOR_JACK.md #18 (2026-05-17)
+
+> **Moved 2026-05-17** — owner was always Jack ("design / styling pass"),
+> so it belongs on his list rather than mine. Same entry copied to
+> LIST_FOR_JACK.md #18 with the adjacent dark-mode bullet (scoreboard
+> player-drawer names invisible) preserved. Original entry preserved
+> below for reference.
+
+### Original entry
 
 **Discovered:** 2026-05-04 during unified-scoreboard smoke-testing
 **Severity:** Medium (functionally usable but visually broken)
@@ -1364,7 +1549,26 @@ an unrecoverable state.
 
 ---
 
-## 22. Re-asks for Fargo Initial-Points Confirmation After Going Back to Lineup
+## ~~22. Re-asks for Fargo Initial-Points Confirmation After Going Back to Lineup~~ ✅ CLOSED 2026-05-17 (obsolete — negotiation hidden)
+
+> **Closed 2026-05-17** — obsolete. The Fargo start-points negotiation
+> flow that this bug was filed against is now hidden by default
+> (`AUTO_AGREE_START_POINTS = true` in
+> `src/hooks/lineup/useFargoStartPointsNegotiation.ts`). The home
+> client's initial write stamps BOTH `_to_lose` columns, so
+> `bothConfirmed=true` on first render → the `FargoStartPointsCard`
+> self-hides → there's no UI to re-ask. The math still applies; only
+> the human-in-the-loop step is gone.
+>
+> Reason for hiding: the negotiation was added so captains could
+> reconcile our Fargo math against BCAPL's official FargoRate app in
+> live matches. No league actually adopted the flow, so the
+> verification never happened. Trust the math; keep the negotiation
+> code as a bandaid (flip the flag to `false` to bring it back if
+> the math turns out to be off).
+> Original entry preserved below for reference.
+
+### Original entry
 
 **Discovered:** 2026-05-04 during unified-scoreboard smoke-testing,
 multi-device captain scenario.
@@ -1401,7 +1605,15 @@ already started" short-circuits the confirmation prompt.
 
 ---
 
-## 23. First Winner-Selection Modal Missing Loser-Points Selector (Fargo)
+## ~~23. First Winner-Selection Modal Missing Loser-Points Selector (Fargo)~~ ✅ CLOSED 2026-05-17 (PR #104)
+
+> **Closed 2026-05-17** — PR #104 explicitly closes this. `ScoringDialog`
+> now falls back to the live `leaguePrefs.points_calculator` when the
+> snapshot is null, so the game-1 modal renders the loser-points selector
+> correctly for Fargo matches.
+> Original entry preserved below for reference.
+
+### Original entry
 
 **Discovered:** 2026-05-04 during unified-scoreboard smoke-testing.
 **Severity:** Medium-High (silent loss of loser points on game 1 of
@@ -1438,40 +1650,547 @@ recoverable.
 
 ---
 
-## 24. Flaky Captain Black Mark
+## ~~24. Fargo Initial-Points Confirmation Only Requires One Side (Consider Removing Entirely)~~ ✅ CLOSED 2026-05-17 (obsolete — negotiation hidden, math trusted)
 
-**Branch needed:** `captain-flake-flag`
-**Discovered:** 2026-04-28
-**Priority:** Low — nice-to-have, not blocking
+> **Closed 2026-05-17** — the "Consider Removing Entirely" hint in
+> the title was the right call. The Fargo start-points negotiation
+> flow is now hidden by default via `AUTO_AGREE_START_POINTS = true`
+> in `src/hooks/lineup/useFargoStartPointsNegotiation.ts`. The math
+> still runs, the points still go to the correct team, but there's
+> no per-captain confirmation step to be "one-sided" or otherwise.
+>
+> See #22's closure note for the full reasoning. Same fix; both
+> items closed in the same PR.
+>
+> Code is still in place — flip `AUTO_AGREE_START_POINTS` to `false`
+> to bring back the manual two-captain negotiation if the math is
+> ever shown to be off.
+> Original entry preserved below for reference.
 
-**Problem:** When a team drops mid-season, it's almost always the captain's
-fault — they've broken their commitment to keep the team running. Today there
-is no signal to a different LO later that this person has flaked before. They
-can be made captain again and repeat the pattern with no warning.
+### Original entry
 
-**Solution:** Track a flake count (or flag) on the member, and surface it in
-any captain-selection UI as a soft warning ("This member has been recorded as
-flaking on a captain role X time(s). Consider another captain.").
+**Discovered:** 2026-05-09
+**Severity:** Low-Medium (working "well enough" but the design isn't
+doing what it claims to do)
+**Owner:** unassigned
 
-**Possible shapes:**
-1. **Simple counter** — add `captain_flake_count int default 0` to `members`.
-   Increment when a team is marked withdrawn while they were captain.
-2. **Flag table** — `member_flags` table with `member_id`, `flag_type`,
-   `season_id`, `notes`, `created_by`. Richer, supports other flag types
-   later (skipped payment, behavior issues, etc.).
+**Symptom:** The Fargo initial start-points credit is supposed to be
+a *two-team negotiation* — both captains need to confirm before the
+match proceeds. In practice, only one side's confirmation is being
+required (or only one side's confirmation is being read), and the
+match proceeds anyway. The gating mechanism isn't actually gating.
 
-**Recommended:** Option 2 (flag table). More flexible, supports future flag
-types without further schema changes. One row per incident keeps history.
+**Proposed direction (Ed's call, 2026-05-09):** rather than chase the
+bug to make confirmation work as designed, remove the confirmation
+requirement entirely. Compute the start-points credit from the lineup
+ratings, apply it, let the match proceed. If we ever find out the
+auto-computed value is wrong, fix it as a per-match adjustment after
+the fact (vacate-and-rescore-style intervention) rather than gating
+every match on a confirmation prompt.
 
-**Where the warning should appear:**
-- Captain dropdown in team creation/edit
-- Anywhere an LO assigns a captain
-- Should be a soft warning (informational), not a block
+**Rationale:**
+- The two-side confirmation only matters when teams actually disagree
+  on the right credit. In practice, captains aren't second-guessing
+  the math; they're confirming what the system already computed. The
+  confirmation step is theater, not a real safety net.
+- The current half-broken confirmation creates UX friction (re-prompts
+  after return-to-lineup, see #22) without actually achieving the
+  negotiation it's named for.
+- Trusting the computed value and adjusting after-the-fact is a
+  smaller surface area: one path, no race conditions between two
+  devices, no captain-confirmation hook to maintain.
 
-**When to write a flag:**
-- Automatically when a team is set to `status = 'withdrawn'` mid-season —
-  write a flag row for the captain at that moment
-- Manually by an LO via a "report flake" button (optional, future)
+**What removing it would touch:**
+- The captain-confirmation prompt on the lineup page.
+- The `*_to_lose` scratch-state columns currently used to flag captain
+  confirmations (per the `useMatchPreparation.ts` comment block, those
+  columns are repurposed as scratch state for "this captain confirmed
+  with player number X").
+- `prep_match`'s logic that gates on confirmation flags.
+- Possibly relates to and supersedes issues #21 and #22.
 
-**Tied to:** Item above this section (mid-season team-drop / soft-delete
-work). The flag write happens inside the same drop-team flow.
+**When to revisit:** if a real-world case surfaces where the
+auto-computed start-points value was wrong AND the captain-
+confirmation step would've caught it. So far that hasn't happened.
+
+---
+
+## 25. Inline LO-Edit Mode in Scoring Modal (Branch B Architecture Requirement)
+
+**Discovered:** 2026-05-09 (during Branch A modal verification).
+**Severity:** Feature request — must be designed-into Branch B from
+the start, not bolted on later.
+**Owner:** unassigned
+
+**The idea:** the scoring modal should support an LO-only inline edit
+mode that lets a league operator hide/show specific events directly
+from within the modal, without leaving the live-scoring page. Same
+component is also reused as a live-preview-and-edit surface in the
+operator office's preferences page. One component, two entry points,
+same persistence.
+
+### UX flow
+
+1. While viewing the scoring modal as an LO of this match's league,
+   a pencil/edit icon appears in the top-right corner of the modal
+   (only visible to LOs of this specific league).
+2. Tapping the pencil flips the modal into "LO edit" shape:
+   instead of the normal scoring controls, the body shows a list of
+   every registry event with a "hide / achievement" checkbox column:
+
+   ```
+   hide   achievement
+   [ ]    Break and Run
+   [ ]    Win by forfeit
+   [x]    Scratch on 8        ← currently hidden for this league
+   [ ]    Early 8
+   ...
+   ```
+
+3. Toggling a checkbox writes to `event_preferences` immediately
+   (or commits via a Save action — UX call). LO exits edit mode →
+   modal returns to normal scoring shape with the new visibility set.
+4. Same component, called with `mode='preview'`, is what the
+   operator office's preferences page renders so the LO sees a
+   live representation of "what scorers will see in the modal" while
+   they configure the league.
+
+### Why this is the right shape
+
+- **Edit-where-you-look.** LO sees a checkbox they don't want during
+  a live match → taps pencil → hides → done. No menu-diving.
+- **8-on-the-break is the canonical example.** BCA = not a win;
+  APA = tracked; many bar-leagues = auto-win. Same event, three
+  different LO preferences. Inline edit makes this trivial.
+- **Component reuse as preferences preview.** The LO office's
+  preferences page would otherwise be a separate UI rendering of
+  "current toggles." Sharing the modal component as the preview
+  means what they see in office matches what scorers see at
+  game time — no drift, no double-implementation.
+
+### Architecture requirements for Branch B (must be designed-in)
+
+Branch B's `game_events` registry + `event_preferences` table work
+needs to reckon with this from the start, not bolt it on later:
+
+1. **`event_preferences` schema must support per-league toggles
+   that the LO can write from anywhere they have permission.**
+   Org-level vs league-level is the natural granularity — both
+   should be writable. (Org-level toggle = "apply to all my
+   leagues"; league-level toggle = "this league only.")
+2. **The scoring modal component must accept a `mode` prop**
+   (`'score' | 'edit' | 'preview'`) from day one of Branch B. The
+   `score` mode is what scorers see; `edit` is what LOs see when
+   they tap the pencil; `preview` is the office-page render. All
+   three share the same registry rendering — they differ in which
+   controls are interactive and what writes happen on toggle.
+3. **Authorization gating: LO of this match's league.** Pencil
+   only renders when:
+   - Current user has `league_operator` (or `developer`) role, AND
+   - The match's league belongs to an org this LO administrates.
+   An LO of a different league should NOT see the pencil on this
+   match.
+4. **Realtime propagation across active scorers** is preferred but
+   acceptable to defer. When LO toggles "Scratch on 8" off mid-
+   match, scorers' open modals can either update live (Supabase
+   realtime subscription on `event_preferences`) or update on
+   next-modal-open (acceptable; explicit). Pick one and document.
+5. **The "preview" entry point lives on the operator office's
+   preferences page** as the visual representation of which events
+   are toggled. Office form for the LO to configure events should
+   reuse this rendering, not build a parallel form.
+
+### Out of scope for this item (don't conflate)
+
+- Editing event NAMES / labels (e.g., changing "Loser balls
+  pocketed" → "Points earned"). That's calculator-params territory
+  (the calculator's params already have a `label` field) and is its
+  own LO surface.
+- Editing event APPLICABILITY rules (e.g., "show Runout when winner
+  is breaker too"). That's registry-definition territory, owned by
+  developers, not per-league config.
+
+### Cross-references
+
+- Branch A's planned scope: docs/plans/2026-05-05-001-feat-scoring-modal-plumbing-plan.md
+- Branch B not yet planned. When Branch B's brainstorm/plan is written,
+  this item must be a first-class requirement, not a future-considerations
+  bullet.
+- Related: project_lo_inline_placeholder_handling memory (similar
+  edit-from-where-you-look pattern for placeholder players).
+## 26. Team Chat — Allow Manual Adds of Non-Team Members (Phase 2+)
+
+**Discovered:** 2026-05-12 during Unit 3 captain-fallback button scoping
+**Severity:** LOW — enhancement, not a bug
+
+**Idea:** Today the auto-managed team chat is locked to the team roster
+(roster triggers in Unit 5 will keep membership in sync with `team_players`).
+Ed asked whether a captain could manually add a non-team member to the team
+chat — e.g., a player's spouse who wants to see league updates. Schema-wise
+this is already possible (`conversation_participants.user_id` doesn't require
+team membership), but there's no UI for it and Unit 5's roster triggers would
+ignore the outsider on roster changes (which is actually the desired
+behavior — manual-in, manual-out).
+
+**Scope when picked up:**
+- "Add member" UI inside the team chat conversation view, captain-only
+- Distinguish "auto-managed roster member" from "manually added outsider"
+  visually (e.g., small "guest" badge) so the captain knows roster triggers
+  won't sweep them
+- Make sure Unit 5 roster triggers only touch participants whose user_id
+  matches a current team roster member — outsiders are left alone
+- Add a "remove" affordance for captains on guest entries
+
+**Deferred from:** Phase 1 Unit 3 (captain manual-fallback button) on
+2026-05-12. Out of scope for that unit; logged here so it isn't lost.
+
+---
+
+## 27. Adversarial Failure-Isolation Test for Season-Activation Trigger
+
+**Discovered:** 2026-05-12 while writing Unit 4 tests
+**Severity:** LOW — the safety mechanism exists in code, but lacks a runtime test
+
+**The issue:** The plan's Unit 4 calls for an adversarial test that forces
+one team chat to fail and asserts the trigger's `BEGIN/EXCEPTION` blocks
+isolate the failure (other chats still create, season UPDATE still
+succeeds). The current schema has FK constraints strict enough that
+manufacturing a synthetic per-chat failure from outside the function
+requires destructive setup (deleting members cascades the roster;
+bypassing FKs via `session_replication_role = replica` is too hacky for
+a test fixture).
+
+**The risk:** Low. The `BEGIN/EXCEPTION WHEN OTHERS THEN RAISE WARNING`
+pattern is present in the function source, and the logic is short enough
+to verify by inspection. But there's no runtime evidence that a real
+failure stays isolated.
+
+**Possible test approaches when revisiting:**
+1. Add a small helper SQL function that raises an exception, called from
+   a fork of `auto_create_season_conversations` wired up in the test
+   only. Heavy.
+2. Use a custom Postgres role with constrained INSERT privileges so the
+   function fails on a specific block. Cleaner but needs RLS / role setup.
+3. Refactor the function to take an injectable "force-failure-for-team"
+   debug param. Adds prod surface for a test-only need.
+
+**Where this came from:** `docs/plans/2026-05-09-001-feat-messaging-overhaul-phase-1-plan.md`,
+the *Adversarial* test scenario under Unit 4. The trigger ships with
+the EXCEPTION blocks; this is purely a test-coverage gap.
+
+---
+
+## 28. DB-Backed Messaging Tests Cannot Run in Parallel — FIXED 2026-05-12
+
+**Discovered + resolved:** 2026-05-12 while wrapping up Unit 5
+
+**The issue (kept for institutional memory):** The three messaging
+DB-backed test files (`messaging-phase1-createTeamChat.test.ts`,
+`messaging-phase1-season-activation.rls.test.ts`,
+`messaging-phase1-roster-triggers.rls.test.ts`) all share one local
+Postgres and pick fixtures off the same seeded teams/seasons. Vitest's
+default file-level parallelism raced them — one test deleted a team
+chat while another expected it to exist, etc.
+
+**The fix:** `vitest.config.ts` now uses two `test.projects`:
+- `unit`: every other test file. Parallel, happy-dom.
+- `db`: `src/__tests__/database/**`. **Sequential**
+  (`fileParallelism: false`), jsdom.
+
+Vitest picks the right project per file automatically based on the path.
+No flag needed. `pnpm test:run` runs both projects with the right
+parallelism rules out of the box. Future CI workflows that invoke
+`pnpm test:run` inherit the behavior with zero config.
+
+**If you ever add another set of DB-backed tests** (outside
+`src/__tests__/database/`), add their path to the `db` project's
+`include` array in `vitest.config.ts` — or move them under that
+directory so they're auto-picked-up.
+
+**Future enhancement (not urgent):** the per-test fixture-overlap
+problem could be solved more cleanly by having each file pick a
+disjoint test team, or by transaction-wrapping each test with rollback.
+Either would let DB tests run in parallel again. Until the test suite
+gets big enough to make sequential DB tests painful, the project-pin
+fix is sufficient.
+
+---
+
+## 29. Messaging Unit 6 — Past-Member + Announcement-Read-Only RLS (deferred)
+
+**Discovered:** 2026-05-12 while implementing Unit 6
+**Severity:** MEDIUM — defense-in-depth gap until the RLS-enablement project ships
+
+**Context:** Unit 6 of the Phase 1 messaging plan calls for both a UI
+banner AND a set of Postgres RLS policies that enforce read-only at
+the data layer. Per the existing project decision to defer all RLS
+work to a dedicated "RLS-enablement project" (see
+[[project_rls_disabled_in_dev]]), only the UI portion shipped on
+2026-05-12. This entry captures what needs to land at the data layer
+whenever the RLS project gets picked up, so nothing has to be
+re-derived from the plan.
+
+**The gap:** Today a sophisticated user could bypass the
+`ReadOnlyBanner` by making a direct `supabase-js .insert()` call from
+the browser console, posting a message into an announcements chat or
+into a chat they've been removed from. The UI prevents the casual
+case; the data layer doesn't prevent the determined case.
+
+**Policies to add when RLS gets enabled** (against tables `messages`
+and `conversation_participants`):
+
+1. **`messages` SELECT policy** — past-members can read messages
+   posted up to and including their `left_at` timestamp:
+   ```
+   EXISTS (
+     SELECT 1 FROM conversation_participants cp
+     WHERE cp.conversation_id = messages.conversation_id
+       AND cp.user_id = get_current_member_id()
+       AND (cp.left_at IS NULL OR messages.created_at <= cp.left_at)
+   )
+   ```
+   Use `get_current_member_id()` (returns `members.id`); do NOT
+   compare `members.id` to `auth.uid()` directly — the
+   `auth.uid() → members.user_id` indirection is handled inside the
+   helper.
+
+2. **`messages` INSERT policy** — active participants only:
+   ```
+   EXISTS (
+     SELECT 1 FROM conversation_participants cp
+     WHERE cp.conversation_id = messages.conversation_id
+       AND cp.user_id = get_current_member_id()
+       AND cp.left_at IS NULL
+   )
+   ```
+
+3. **Announcements INSERT gate** — only `organization_staff` may
+   INSERT into a conversation whose `conversation_type='announcements'`:
+   ```
+   EXISTS (
+     SELECT 1
+     FROM conversations c
+     LEFT JOIN seasons s ON s.id = c.scope_id AND c.scope_type = 'season'
+     LEFT JOIN leagues l ON l.id = s.league_id
+     JOIN organization_staff os
+       ON os.organization_id = COALESCE(
+            CASE WHEN c.scope_type = 'organization' THEN c.scope_id END,
+            l.organization_id
+          )
+     WHERE c.id = messages.conversation_id
+       AND c.conversation_type = 'announcements'
+       AND os.member_id = get_current_member_id()
+   )
+   ```
+   Combine with the active-participant INSERT policy via `OR` — or
+   build it as a separate explicit policy that augments INSERT only
+   for announcement conversations. The plan author's note: be careful
+   the staff-only gate doesn't accidentally close the door on
+   non-announcement chats (use a `conversation_type='announcements'`
+   guard).
+
+4. **`conversation_participants` UPDATE/DELETE lockdown** — only
+   triggers (SECURITY DEFINER) and `service_role` may set `left_at`.
+   Without this, a malicious user could push their own `left_at` into
+   the future to keep reading post-removal messages, or set it to NULL
+   to lift the INSERT block:
+   ```
+   REVOKE UPDATE (left_at), DELETE ON conversation_participants
+     FROM authenticated;
+   GRANT UPDATE (notification_mode, last_read_at, is_muted,
+                 notifications_enabled, unread_count)
+     ON conversation_participants TO authenticated;
+   ```
+
+5. **Required test scenarios** (from the plan):
+   - Past-member SELECT before `left_at` succeeds; after `left_at` blocked
+   - Past-member INSERT blocked
+   - Active member SELECT + INSERT normal
+   - Boundary: `left_at = messages.created_at` is INCLUSIVE on SELECT
+   - Non-participant SELECT blocked
+   - User attempts to UPDATE their own `left_at` → blocked
+   - Test against a user whose `auth.uid() != any members.id` they
+     ever appear in (catches the production-bug class of using
+     `members.id = auth.uid()` instead of `members.user_id`)
+
+**Migration filename slot (reserved):**
+`supabase/migrations/<future_date>_messaging_phase1_past_member_rls.sql`
+
+**Existing tests to keep passing:**
+`src/__tests__/database/messaging.rls.test.ts`,
+`src/__tests__/database/members.rls.test.ts`.
+
+**Why it was deferred 2026-05-12:** Ed has historically had
+poor experiences debugging Supabase RLS policies that "don't even make
+sense" and pays the iteration cost upfront on every feature. The
+project's working pattern is "build features RLS-off, harden with RLS
+later in one dedicated pass." This entry exists so when that pass
+happens, none of the design work above has to be re-derived from the
+plan.
+
+
+---
+
+## 30. Optional LO-Created Org-Wide Group Chat
+
+**Discovered:** 2026-05-12 while finalizing the messaging Phase 1 chat model
+**Severity:** LOW — future feature, not Phase 1
+
+**The idea:** Today, the four auto-created chats per season are:
+captain chat, team chats, season announcements (one-way), org
+announcements (one-way). There is intentionally no auto-created
+back-and-forth "everyone in the org" chat — a 200-player free-for-all
+is a moderation disaster.
+
+But: an LO may someday want a deliberate, opt-in, org-wide group chat
+("the league's clubhouse"). The current data model already supports it
+— the existing `createGroupConversation` SECURITY DEFINER function
+handles arbitrary group chats. All this feature needs is:
+
+1. An LO-only UI button: **"Start an org-wide chat"**
+2. On click, call `createGroupConversation` with `member_ids` = every
+   player currently active across the org's active seasons (same query
+   as `createOrgAnnouncementsChat`'s participants snapshot).
+3. The new chat is a normal back-and-forth `conversations` row —
+   not `auto_managed=true`, so it doesn't get re-created by any
+   trigger. The LO owns its lifecycle (rename, leave, delete).
+4. Probably hide the button until the LO has at least, say, 5 active
+   members in the org — guard against accidental creation in an empty
+   org.
+
+**Out of scope for Phase 1.** No schema change required when this lands.
+
+
+## 31. Messaging Phase 2 — Plan Doc Needs Writing
+
+**Discovered:** 2026-05-15 while triaging post-Phase-1 next steps
+**Severity:** MEDIUM — not blocking, but Phase 2 is the next significant
+chunk of the messaging overhaul and there's no plan doc for it yet.
+
+**Context:** Phase 1 of the messaging overhaul is code-complete (units
+1–9 shipped; units 10–14 added 2026-05-15 for polish, pending build +
+final test). Phase 2 (push notifications, per-chat tri-state controls,
+quiet hours, rate-limit, pause picker, `@mention` notification
+routing) is fully described in the requirements brainstorm
+(`docs/brainstorms/2026-04-21-messaging-system-overhaul-requirements.md`
+§ "Phase 2 — Notification subsystem") but has **no plan doc** in
+`docs/plans/` yet.
+
+**Why this matters:** Phase 2 is what makes the messaging system
+actually *trustworthy* — without push, mutes, rate-limits, and pause
+controls, every new message tries to interrupt the user. The
+hypothesis Phase 3 is supposed to test ("captains will use this over
+SMS") only really tests fairly once Phase 2 has tamed notification
+behavior. So this is *important*, not just *next*.
+
+**What's needed:**
+
+1. Read the brainstorm's Phase 2 section as the source of truth.
+2. Write a `docs/plans/<date>-001-feat-messaging-overhaul-phase-2-plan.md`
+   following the structure of the Phase 1 plan (Overview / Requirements
+   Trace / Scope Boundaries / Open Questions / Implementation Units
+   etc.). Use `ce-plan` if appropriate, or write directly.
+3. Particular open questions from the brainstorm that the plan must
+   close:
+   - **Dispatch worker shape** (single Edge Function subscribing to
+     INSERTs vs. DB-trigger + pg_net → worker?).
+   - **APNs / FCM coordination with Jack** (mobile partner) — who
+     holds the push-tokens table of record, who handles stale-token
+     cleanup.
+   - **pg_cron vs. Supabase Scheduled Edge Function** for any
+     scheduled work (also Phase 3 question).
+4. Schema items deferred from Phase 1 that land in Phase 2:
+   - `members.notifications_paused_until` (the pause picker UI).
+
+**When to start:** after Phase 1 ships (units 10–14 built + tests
+pass + merge).
+
+**Files this entry should disappear from once a plan exists:** delete
+this entry from `LIST_FOR_ED.md` when the plan doc is written and
+committed. The plan doc + its branch will then be the working record.
+
+
+## 32. Pre-existing DB-Test Drift — 4 RLS Test Files Reference Dead Columns / Stale Embeds
+
+**Discovered:** 2026-05-15 during Phase 1 end-to-end test pass
+**Severity:** MEDIUM — tests are silently broken on main; nothing in
+production is wrong, but the test suite gives a false sense of
+coverage on the affected tables until fixed.
+
+**Branch suggested:** `fix-drifted-rls-tests` (a small, scoped branch
+— probably 30–60 min of mechanical edits).
+
+**Context:** When the Phase 1 messaging-overhaul work cleaned up the
+vitest config to stop sweeping `.worktrees/` (commit `41c4038`), the
+full `pnpm test:run` got a real signal for the first time in a while
+— and surfaced 15 failures spread across 4 non-messaging test files.
+None are new failures from messaging work; all are pre-existing main
+bugs where a migration renamed/dropped a column (or restructured a
+relationship) and the corresponding test file was never updated. The
+failures were hidden previously because the worktree noise drowned
+the signal.
+
+The messaging-side equivalent of this drift was fixed inline on the
+messaging branch (commit `61794ca`, file `messaging.rls.test.ts`).
+The 4 files below are non-messaging and were left for a separate fix
+branch per scope.
+
+**Files + drift:**
+
+1. `src/__tests__/database/matchLineups.rls.test.ts` (**7 failures**)
+   References `lineup_position` and `player_id` on `match_lineups`,
+   which were renamed by the Phase 2 modular-system rename family
+   (look at the `home_to_win` / `home_to_tie` rename migration
+   `20260502000002_prep_match_rpc_renamed_columns.sql` and related
+   commits — the lineup column names changed in that family).
+   Fix: read the current `match_lineups` schema in
+   `20251130010824_baseline.sql` (+ any later ALTERs), update the
+   test's `.select` / `.update` / `.insert` column names to match.
+
+2. `src/__tests__/database/operator.rls.test.ts` (**6 failures**)
+   PostgREST ambiguous-embedding error:
+   `PGRST201 — Could not embed because more than one relationship
+   was found for 'organizations' and 'members'`. Two FKs now connect
+   the tables: `members.organization_id` (placeholder org
+   attribution) AND `organizations.created_by` → `members.id` (LO
+   creator). PostgREST refuses to auto-pick.
+   Fix: in any `.select(\`*, members(...)\`)` style embed in the
+   test, disambiguate with the explicit FK syntax PostgREST
+   suggests: `members!members_organization_id_fkey(...)` or
+   `members!organizations_created_by_fkey(...)` depending on
+   which side the test means.
+
+3. `src/__tests__/database/matches.rls.test.ts` (**1 failure**)
+   References `match_date` column on `matches`, which doesn't exist
+   (the actual column is likely `scheduled_at` or similar — check
+   the baseline migration).
+   Fix: one-line rename in the INSERT around test file line 216.
+
+4. `src/__tests__/database/venues.rls.test.ts` (**1 failure**)
+   References `venues.address` column, which doesn't exist on the
+   current `venues` table (the venue-table-configuration migrations
+   restructured this).
+   Fix: read the current `venues` columns and update the test's
+   embed/select.
+
+**How to verify a fix:**
+
+```
+pnpm db:reset
+# paste database/dev_starting_point.sql in Studio SQL editor → Run
+pnpm test:run > test-output.log 2>&1
+```
+
+Expected after fix: zero failures across all 4 files.
+
+**Note on RLS posture:** Per project memory
+`project_rls_disabled_in_dev`, RLS is currently DISABLED on most
+tables in dev. So these files are functioning as schema-CRUD smoke
+tests today, not actual RLS enforcement tests. Fixing the column
+drift now means they'll start *actually testing* what they claim to
+as soon as the RLS-enablement project (LIST_FOR_ED #29) gets picked
+up. This work and the RLS enablement are independent — either can
+ship first.
+
+
+

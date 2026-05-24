@@ -64,7 +64,7 @@ export function TeamSchedule() {
       <div className="min-h-screen bg-muted p-4">
         <Card>
           <CardContent className="p-6">
-            <p className="text-red-600">{error || 'Team not found'}</p>
+            <p className="text-destructive">{error || 'Team not found'}</p>
             <Link to="/my-teams">
               <Button variant="outline" className="mt-4">
                 Back to My Teams
@@ -82,11 +82,6 @@ export function TeamSchedule() {
     : null;
 
   // Helper: Check if match needs makeup (scheduled date passed but not completed)
-  // TODO: VERIFY MAKEUP MATCH COLOR SCHEME
-  // Once you have an incomplete match in the past, check that the orange background
-  // (bg-orange-50), orange border (border-orange-600), and orange text (text-orange-700)
-  // look good and are easy to distinguish from completed (green) and scheduled (white) matches.
-  // May need to adjust colors for better visual hierarchy.
   const needsMakeup = (match: MatchWithDetails): boolean => {
     if (match.status === 'completed') return false;
     if (!match.scheduled_date) return false;
@@ -189,11 +184,11 @@ export function TeamSchedule() {
                   value={match.id}
                   className={`border rounded-lg shadow-sm ${
                     match.status === 'completed'
-                      ? 'bg-green-50 border-green-800'
+                      ? 'bg-success/10 border-success/40'
                       : isMakeup
-                      ? 'bg-orange-50 border-orange-600'
+                      ? 'bg-warning/10 border-warning/40'
                       : isUpcoming
-                      ? 'bg-blue-50 border-blue-600'
+                      ? 'bg-info/10 border-info/40'
                       : 'bg-card'
                   }`}
                 >
@@ -243,25 +238,25 @@ export function TeamSchedule() {
                       </div>
                       {/* Status Indicator */}
                       {match.status === 'completed' && (
-                        <div className="flex items-center gap-1 text-xs font-medium text-green-800">
+                        <div className="flex items-center gap-1 text-xs font-medium text-success">
                           <Trophy className="h-3 w-3" />
                           <span>Complete</span>
                         </div>
                       )}
                       {isMakeup && match.status !== 'completed' && (
-                        <div className="flex items-center gap-1 text-xs font-medium text-orange-700">
+                        <div className="flex items-center gap-1 text-xs font-medium text-warning">
                           <AlertCircle className="h-3 w-3" />
                           <span>Makeup</span>
                         </div>
                       )}
                       {match.status === 'in_progress' && !isMakeup && (
-                        <div className="flex items-center gap-1 text-xs font-medium text-blue-700">
+                        <div className="flex items-center gap-1 text-xs font-medium text-info">
                           <Trophy className="h-3 w-3" />
                           <span>In Progress</span>
                         </div>
                       )}
                       {match.id === upcomingMatchId && match.status !== 'in_progress' && !isMakeup && match.status !== 'completed' && (
-                        <div className="flex items-center gap-1 text-xs font-medium text-blue-700">
+                        <div className="flex items-center gap-1 text-xs font-medium text-info">
                           <Calendar className="h-3 w-3" />
                           <span>Upcoming</span>
                         </div>
@@ -301,18 +296,18 @@ export function TeamSchedule() {
                               className="block hover:bg-muted rounded-lg p-2 -m-2 transition-colors"
                             >
                               <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
-                                <MapPin className="h-4 w-4 text-blue-600" />
+                                <MapPin className="h-4 w-4 text-primary" />
                                 <span>Venue</span>
                                 {isOverflow && (
-                                  <span className="text-xs text-orange-600 font-medium">(overflow)</span>
+                                  <span className="text-xs text-warning font-medium">(overflow)</span>
                                 )}
-                                <span className="text-xs text-blue-600">(tap for directions)</span>
+                                <span className="text-xs text-primary">(tap for directions)</span>
                               </div>
                               <div className="ml-6">
                                 <p className="text-base text-foreground">
                                   {venue.name}
                                   {match.assigned_table_number && (
-                                    <span className="ml-2 text-sm font-medium text-blue-700">
+                                    <span className="ml-2 text-sm font-medium text-primary">
                                       Table {match.assigned_table_number}
                                     </span>
                                   )}
@@ -358,17 +353,17 @@ export function TeamSchedule() {
             {playoffWeeks.map((week) => (
               <Card
                 key={week.id}
-                className="bg-purple-50 border-purple-300"
+                className="bg-highlight/10 border-highlight/40"
               >
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <Trophy className="h-5 w-5 text-purple-600" />
+                      <Trophy className="h-5 w-5 text-highlight" />
                       <div>
-                        <div className="font-semibold text-purple-900">
+                        <div className="font-semibold text-highlight">
                           {week.week_name}
                         </div>
-                        <div className="text-sm text-purple-700">
+                        <div className="text-sm text-highlight/80">
                           {parseLocalDate(week.scheduled_date).toLocaleDateString(
                             'en-US',
                             {
@@ -380,7 +375,7 @@ export function TeamSchedule() {
                         </div>
                       </div>
                     </div>
-                    <div className="text-sm font-medium text-purple-600 italic">
+                    <div className="text-sm font-medium text-highlight italic">
                       TBD
                     </div>
                   </div>

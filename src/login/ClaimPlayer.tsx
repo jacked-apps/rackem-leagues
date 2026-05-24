@@ -435,7 +435,7 @@ export const ClaimPlayer: React.FC = () => {
           </p>
         </div>
         <CardFooter className="mt-4 text-sm flex justify-around w-full">
-          <Link to="/dashboard">Go to Dashboard</Link>
+          <Link to="/my-teams">Go to My Teams</Link>
         </CardFooter>
       </LoginCard>
     );
@@ -463,7 +463,7 @@ export const ClaimPlayer: React.FC = () => {
           </p>
         </div>
         <CardFooter className="mt-4 text-sm flex justify-around w-full">
-          <Link to="/dashboard">Go to Dashboard</Link>
+          <Link to="/my-teams">Go to My Teams</Link>
         </CardFooter>
       </LoginCard>
     );
@@ -489,7 +489,7 @@ export const ClaimPlayer: React.FC = () => {
           </p>
         </div>
         <CardFooter className="mt-4 text-sm flex justify-around w-full">
-          <Link to="/dashboard">Go to Dashboard</Link>
+          <Link to="/my-teams">Go to My Teams</Link>
         </CardFooter>
       </LoginCard>
     );
@@ -524,8 +524,8 @@ export const ClaimPlayer: React.FC = () => {
               </ul>
             </div>
           )}
-          <Button className="w-full" loadingText="none" onClick={() => navigate('/dashboard')}>
-            Go to Dashboard
+          <Button className="w-full" loadingText="none" onClick={() => navigate('/my-teams')}>
+            Go to My Teams
           </Button>
         </div>
       </LoginCard>
@@ -551,8 +551,8 @@ export const ClaimPlayer: React.FC = () => {
             Your league operator will see the placeholder still needs a match
             and can reach out if needed.
           </p>
-          <Button className="w-full" loadingText="none" onClick={() => navigate('/dashboard')}>
-            Go to Dashboard
+          <Button className="w-full" loadingText="none" onClick={() => navigate('/my-teams')}>
+            Go to My Teams
           </Button>
         </div>
       </LoginCard>
@@ -573,7 +573,7 @@ export const ClaimPlayer: React.FC = () => {
           </Button>
         </div>
         <CardFooter className="mt-4 text-sm flex justify-around w-full">
-          <Link to="/dashboard">Go to Dashboard</Link>
+          <Link to="/my-teams">Go to My Teams</Link>
         </CardFooter>
       </LoginCard>
     );

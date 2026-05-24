@@ -1,5 +1,30 @@
 # Messaging System Implementation Progress
 
+> ## ⚠️ HISTORICAL DOCUMENT — read the banner before relying on anything below
+>
+> **Last meaningful update:** 2025-01-19. **Current as of:** Phase 5 (Realtime Features) of *this document's* old plan. This doc has not been kept current with the database baseline migration (`supabase/migrations/20251130010824_baseline.sql`) or the messaging overhaul that started 2026-04-21.
+>
+> **Current sources of truth (use these, not this doc):**
+>
+> - **Requirements:** `docs/brainstorms/2026-04-21-messaging-system-overhaul-requirements.md`
+> - **Phase 1 implementation plan:** `docs/plans/2026-05-09-001-feat-messaging-overhaul-phase-1-plan.md`
+> - **Authoritative schema:** `supabase/migrations/20251130010824_baseline.sql` (the SQL CREATE statements shown below this banner are stale — the live schema differs in column names and constraints)
+> - **Findings from review:** `docs/brainstorms/2026-04-21-messaging-system-overhaul-findings.md`
+>
+> **Phase numbering caveat:** This document uses its own internal "Phase 1–9" numbering for the original messaging build (UI → schema → real data → realtime → user safety → etc.). The 2026-04-21 messaging overhaul uses a *different* "Phase 1–5" numbering for the rebuild (foundations → notifications → match-night chats → social polish → moderation). **The two numbering schemes are unrelated.** When this doc says "Phase 3 (auto-created conversations)" it does NOT mean Phase 3 of the overhaul (match-night chats); it means a piece of work that was deferred in 2025 and is now being picked up as part of overhaul Phase 1.
+>
+> **Salvageable content** (still useful, cited by the new Phase 1 plan):
+>
+> - The Phase 3 design notes below (utility names: `createSeasonConversations`, `addCaptainsAndOperators`, `addTeamMembers`; the operator-also-captain dedup guard). The Phase 1 plan reuses these names and the dedup pattern.
+>
+> **Do NOT rely on this doc for:**
+>
+> - Current SQL schemas — they're stale; use the baseline migration
+> - Current "what's done" status — it's a January 2025 snapshot
+> - Phase numbering when discussing the 2026 overhaul
+
+---
+
 ## Overview
 
 Building a real-time messaging system for league communications with support for:

@@ -67,8 +67,8 @@ export function SpectateMyLiveMatches() {
   return (
     <div className="min-h-screen bg-muted flex flex-col">
       <PageHeader
-        backTo="/dashboard"
-        backLabel="Back to Dashboard"
+        backTo="/my-teams"
+        backLabel="Back to My Teams"
         title="Live Matches"
       >
         <div className="flex items-center gap-2 mt-1 text-foreground">

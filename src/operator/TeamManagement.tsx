@@ -61,6 +61,10 @@ export const TeamManagement: React.FC = () => {
   // Resolved preferences — lazy-migrates legacy leagues on first access
   const { data: leaguePrefs } = useResolvedLeaguePrefs(leagueId);
   const maxRosterSize: number = leaguePrefs?.max_roster_size ?? 8;
+  // Active-lineup size — drives the default number of roster slots
+  // rendered in TeamEditorModal (LIST_FOR_ED #16 — incremental slots
+  // pattern: lineup_size shown initially, "+ Add Player" for the rest).
+  const lineupSize: number = leaguePrefs?.lineup_size ?? 5;
 
   // Get organization ID from the league once it's loaded
   const organizationId = league?.organization_id || null;
@@ -475,7 +479,7 @@ export const TeamManagement: React.FC = () => {
             <Button
               onClick={() => {
                 setIsNavigating(true);
-                navigate(organizationId ? `/operator-dashboard/${organizationId}` : '/dashboard');
+                navigate(organizationId ? `/operator-dashboard/${organizationId}` : '/my-teams');
               }}
               disabled={isNavigating}
               isLoading={isNavigating}
@@ -795,6 +799,7 @@ export const TeamManagement: React.FC = () => {
             leagueId={leagueId!}
             seasonId={seasonId}
             rosterSize={maxRosterSize}
+            lineupSize={lineupSize}
             venues={venues}
             leagueVenues={leagueVenues}
             members={members}

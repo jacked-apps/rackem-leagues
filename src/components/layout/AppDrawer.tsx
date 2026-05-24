@@ -1,36 +1,31 @@
 /**
  * @fileoverview AppDrawer — content of the global hamburger drawer.
  *
- * Mounted inside the Sheet portal owned by `PageHeader`. Renders three role-
- * aware branches based on auth state: logged-out, logged-in player, logged-in
- * operator. The drawer is the app's primary global navigation surface — the
- * dashboard remains the in-your-face home page; this drawer is a traveling
- * shortcut from any page to any root destination (and, for operators, to any
- * specific org's Dashboard / Create League / Reports).
+ * Mounted inside the Sheet portal owned by `PageHeader` (mobile only — desktop
+ * has the persistent `<AppSidebar>` and the hamburger is `lg:hidden`).
  *
- * Key design notes (see docs/plans/2026-04-27-001-feat-global-header-nav-rework-plan.md):
- * - Stateless top-level component. Open/close state lives in PageHeader.
- * - Hooks fire only when the component is mounted, and PageHeader lazy-mounts
- *   AppDrawer only while the Sheet is open. So the drawer's data layer is
- *   dormant on every page where the user never opens the menu.
- * - Per-org Reports badges are owned by `OperatorOrgRow`, satisfying React's
- *   Rules of Hooks (hook count per render fixed by component shape).
- * - Drawer-internal `(N)` text suffixes for unread/pending counts. No dots
- *   or pills on the always-visible chrome.
- * - Operator section caps at 4 visible orgs (owners first, alphabetical staff
- *   next, "More on Dashboard →" overflow).
+ * Visually mirrors `<AppSidebar>`: logo header, profile row (when logged in),
+ * Simonis-blue nav links with active-state highlight. Public visitors get a
+ * minimal Home / About / Pricing / Rules / Sign-in list since the mobile
+ * drawer is the only nav surface on small viewports for public pages.
+ *
+ * Theme picker and Sign Out live on the Profile page (Player Settings) — not
+ * the drawer — because they're infrequent actions and shouldn't crowd the
+ * everyday nav surface.
+ *
+ * Lazy-mounted by PageHeader (`{open ? <AppDrawer/> : null}`) so the drawer's
+ * data hooks (`useOrganizations`, `useUnreadMessageCount`, per-org Reports
+ * counts) only fire when the user actually opens the menu.
  */
 
-import { Link } from 'react-router-dom';
-import { LogOut, LogIn } from 'lucide-react';
-import { ThemeToggle } from '@/components/ThemeToggle';
+import { Link, useLocation } from 'react-router-dom';
+import { LogIn } from 'lucide-react';
 import {
+  SheetClose,
   SheetHeader,
   SheetTitle,
   SheetDescription,
-  SheetClose,
 } from '@/components/ui/sheet';
-import { Button } from '@/components/ui/button';
 import { useUser } from '@/context/useUser';
 import { useUserProfile } from '@/api/hooks/useUserProfile';
 import { useOrganizations } from '@/api/hooks/useOrganizations';
@@ -40,28 +35,19 @@ import { OperatorOrgRow } from './OperatorOrgRow';
 interface AppDrawerProps {
   /** Whether the parent Sheet is open. */
   open: boolean;
-  /** Setter for the parent Sheet's open state. Used for actions like Sign Out
-   *  that don't navigate via a Link (and therefore can't rely on SheetClose). */
+  /** Setter for the parent Sheet's open state. */
   onOpenChange: (open: boolean) => void;
 }
 
-/** Cap on the number of operator orgs visible in the drawer. Realistic
- *  distribution: most LOs run 1; engaged LOs are staff on 1-3 others. */
+/** Cap on the number of operator orgs visible in the drawer — matches AppSidebar. */
 const OPERATOR_ORG_CAP = 4;
 
-/** Organization shape returned by useOrganizations — kept loose to tolerate
- *  the field set drifting (e.g., new role variants added later). */
 interface OperatorOrg {
   id: string;
   organization_name?: string | null;
   position?: string | null;
 }
 
-/**
- * Sort orgs into "owned first, then staff alphabetical" and slice to the cap.
- * `position === 'owner'` → owned tier; everything else (`'admin'`, `'league_rep'`,
- * `null`, future variants) → staff tier.
- */
 function pickVisibleOrgs(orgs: OperatorOrg[], cap: number): OperatorOrg[] {
   const owned = orgs
     .filter((o) => o.position === 'owner')
@@ -69,42 +55,68 @@ function pickVisibleOrgs(orgs: OperatorOrg[], cap: number): OperatorOrg[] {
   const staff = orgs
     .filter((o) => o.position !== 'owner')
     .sort((a, b) => (a.organization_name ?? '').localeCompare(b.organization_name ?? ''));
-
   return [...owned, ...staff].slice(0, cap);
 }
 
-export function AppDrawer({ onOpenChange }: AppDrawerProps) {
-  const { isLoggedIn, logout } = useUser();
+export function AppDrawer(_props: AppDrawerProps) {
+  const { isLoggedIn } = useUser();
   const { member, canAccessLeagueOperatorFeatures } = useUserProfile();
   const isOperator = canAccessLeagueOperatorFeatures();
-
   const { organizations } = useOrganizations(member?.id);
   const { data: unreadCount = 0 } = useUnreadMessageCount(member?.id);
 
-  // Brand text in the drawer header. Always rendered.
-  const brandTitle = 'Rack ‘Em';
-
-  // Identity line beneath the brand: full name when available, falls back to
-  // email or a generic prompt.
-  const identityLine = (() => {
-    if (!isLoggedIn) return 'Not signed in';
+  const displayName = (() => {
     if (member?.first_name || member?.last_name) {
       return [member.first_name, member.last_name].filter(Boolean).join(' ');
     }
     return 'Signed in';
   })();
 
-  const handleSignOut = () => {
-    onOpenChange(false);
-    logout();
-  };
-
   return (
     <>
-      <SheetHeader>
-        <SheetTitle>{brandTitle}</SheetTitle>
-        <SheetDescription>{identityLine}</SheetDescription>
+      {/* Accessible label for the Sheet — visually hidden because the logo
+          image and profile row carry the visible identity. */}
+      <SheetHeader className="sr-only">
+        <SheetTitle>Rack &lsquo;Em Leagues</SheetTitle>
+        <SheetDescription>{isLoggedIn ? displayName : 'Not signed in'}</SheetDescription>
       </SheetHeader>
+
+      {/* Brand header — same logo treatment as AppSidebar (width-driven, 80%,
+          theme-swapped). Closes the drawer on tap via SheetClose. */}
+      <SheetClose asChild>
+        <Link
+          to={isLoggedIn ? '/my-teams' : '/'}
+          aria-label="Rack 'Em Leagues — home"
+          className="flex items-center justify-center border-b px-3 py-3 transition-opacity hover:opacity-80"
+        >
+          <img
+            src="/logo-main.png"
+            alt="Rack 'Em Leagues"
+            className="block h-auto w-4/5 dark:hidden"
+          />
+          <img
+            src="/logo-main-dark.png"
+            alt="Rack 'Em Leagues"
+            className="hidden h-auto w-4/5 dark:block"
+          />
+        </Link>
+      </SheetClose>
+
+      {/* Profile row — mirrors AppSidebar */}
+      {isLoggedIn ? (
+        <SheetClose asChild>
+          <Link
+            to="/profile"
+            aria-label={`${displayName} — open profile`}
+            className="flex items-center gap-3 border-b px-4 py-3 text-primary transition-colors hover:bg-primary/10"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-primary/40 bg-primary/10 text-xs font-semibold text-primary">
+              {computeInitials(member?.first_name, member?.last_name)}
+            </span>
+            <span className="truncate text-sm font-medium">{displayName}</span>
+          </Link>
+        </SheetClose>
+      ) : null}
 
       <nav aria-label="Main navigation" className="flex-1 overflow-y-auto p-4">
         {!isLoggedIn ? (
@@ -113,27 +125,14 @@ export function AppDrawer({ onOpenChange }: AppDrawerProps) {
           <>
             <PlayerSection unreadCount={unreadCount} />
             {isOperator ? <OperatorSection orgs={organizations as OperatorOrg[]} /> : null}
-            <SignedInFooter onSignOut={handleSignOut} />
           </>
         )}
-
-        <div className="mt-6 border-t pt-4">
-          <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Theme
-          </h3>
-          <ThemeToggle />
-        </div>
       </nav>
     </>
   );
 }
 
-/**
- * Logged-out: Home / About / Pricing / Rules / Sign in.
- * The Sign-in entry here is in addition to the right-slot Sign-in button in
- * PageHeader; the drawer item ensures the action is reachable even on routes
- * where the right slot is suppressed (none today, but future-proofing).
- */
+/** Logged-out: Home / About / Pricing / Rules / Sign in. */
 function PublicSection() {
   return (
     <ul className="space-y-1">
@@ -145,7 +144,7 @@ function PublicSection() {
         <SheetClose asChild>
           <Link
             to="/login"
-            className="flex min-h-11 items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent"
+            className="flex min-h-11 items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
           >
             <LogIn className="h-4 w-4" />
             Sign in
@@ -156,20 +155,12 @@ function PublicSection() {
   );
 }
 
-/**
- * Logged-in player roots. "My Match" sits at the top because once the
- * live-match jump-in feature is built, it will be the single most-used
- * button on league night — players need it in one tap from anywhere.
- * Today the link goes to a placeholder page (see src/player/MyMatch.tsx).
- *
- * Order: My Match / Dashboard / My Teams / Stats / Rules / Messages / Profile.
- */
+/** Mirrors SidebarPlayerSection. */
 function PlayerSection({ unreadCount }: { unreadCount: number }) {
   const messagesLabel = unreadCount > 0 ? `Messages (${unreadCount})` : 'Messages';
   return (
     <ul className="space-y-1">
       <DrawerLink to="/my-match" label="My Match" />
-      <DrawerLink to="/dashboard" label="Dashboard" />
       <DrawerLink to="/my-teams" label="My Teams" />
       <DrawerLink to="/stats" label="Stats" />
       <DrawerLink to="/rules" label="Rules" />
@@ -179,18 +170,11 @@ function PlayerSection({ unreadCount }: { unreadCount: number }) {
   );
 }
 
-/**
- * Operator section: caps at OPERATOR_ORG_CAP visible orgs. Single-org path
- * renders three flat links for the only org; multi-org renders a collapsible
- * group per org.
- */
+/** Mirrors SidebarOperatorSection. */
 function OperatorSection({ orgs }: { orgs: OperatorOrg[] }) {
-  // While orgs are loading or empty, render nothing — keeps the drawer
-  // skeleton-free and never crashes.
   if (!orgs || orgs.length === 0) return null;
 
   const visible = pickVisibleOrgs(orgs, OPERATOR_ORG_CAP);
-  const hasOverflow = orgs.length > OPERATOR_ORG_CAP;
   const isSingleOrg = visible.length === 1;
 
   return (
@@ -217,46 +201,33 @@ function OperatorSection({ orgs }: { orgs: OperatorOrg[] }) {
           ))}
         </ul>
       )}
-      {hasOverflow ? (
-        <SheetClose asChild>
-          <Link
-            to="/dashboard"
-            className="mt-2 flex min-h-11 items-center rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent"
-          >
-            More on Dashboard →
-          </Link>
-        </SheetClose>
-      ) : null}
     </div>
   );
 }
 
-/** Sign Out is a mutation, not a route. Calls onSignOut directly. */
-function SignedInFooter({ onSignOut }: { onSignOut: () => void }) {
-  return (
-    <div className="mt-6 border-t pt-4">
-      <Button
-        type="button"
-        variant="ghost"
-        loadingText="none"
-        onClick={onSignOut}
-        className="w-full justify-start gap-2 px-3 text-sm"
-      >
-        <LogOut className="h-4 w-4" />
-        Sign out
-      </Button>
-    </div>
-  );
+/** Two-letter initials from first + last; falls back to "?" — mirrors the
+ *  helper in AppSidebar.tsx. */
+function computeInitials(firstName?: string | null, lastName?: string | null): string {
+  const first = firstName?.trim()?.charAt(0) ?? '';
+  const last = lastName?.trim()?.charAt(0) ?? '';
+  return (`${first}${last}`.toUpperCase()) || '?';
 }
 
-/** Helper: a drawer link wrapped in SheetClose so it auto-closes on tap. */
+/** Drawer nav link — visually identical to SidebarLink in AppSidebar.tsx
+ *  (Simonis-blue text, hover tint, active-state highlight). Wrapped in
+ *  SheetClose so taps auto-close the drawer. */
 function DrawerLink({ to, label }: { to: string; label: string }) {
+  const location = useLocation();
+  const isActive = location.pathname === to || location.pathname.startsWith(`${to}/`);
+
   return (
     <li>
       <SheetClose asChild>
         <Link
           to={to}
-          className="flex min-h-11 items-center rounded-md px-3 py-2 text-sm hover:bg-accent"
+          className={`flex min-h-11 items-center rounded-md px-3 py-2 text-sm text-primary transition-colors hover:bg-primary/10 ${
+            isActive ? 'bg-primary/15 font-semibold' : ''
+          }`}
         >
           {label}
         </Link>

@@ -367,30 +367,40 @@ export function useMatchPreparation(params: MatchPreparationParams) {
             // games). Per Ed 2026-05-04: "the inital points show up at the
             // beginning ... in all the matches where points are counted."
             //
-            // Fire-and-forget: the seed write is non-fatal (the next score
-            // event will repopulate if it fails) and serial-awaiting it
-            // here blocks navigation by ~2-4 Supabase round-trips. The
-            // realtime subscription on the scoring page picks up the seed
-            // when it lands.
-            void (async () => {
-              try {
-                const { updateMatchRunningTotals } = await import(
-                  '@/api/queries/matches'
-                );
-                await updateMatchRunningTotals(matchId);
-              } catch (seedErr) {
-                logger.warn('Failed to seed initial running totals at prep_match', {
-                  matchId,
-                  error: seedErr instanceof Error ? seedErr.message : String(seedErr),
-                });
-              }
-            })();
+            // AWAITED (not fire-and-forget): per Ed, navigation to the scoring
+            // screen must not race ahead of prep. The points must be written
+            // before we leave the lineup screen so the scoring page opens on
+            // complete data. A failed seed is still non-fatal (the next score
+            // event repopulates) — we log and continue.
+            try {
+              const { updateMatchRunningTotals } = await import(
+                '@/api/queries/matches'
+              );
+              await updateMatchRunningTotals(matchId);
+            } catch (seedErr) {
+              logger.warn('Failed to seed initial running totals at prep_match', {
+                matchId,
+                error: seedErr instanceof Error ? seedErr.message : String(seedErr),
+              });
+            }
+            // Drop the lineup-era cache for this match so the scoring page
+            // mounts on FRESH data. prep_match just flipped status to
+            // 'in_progress', froze the thresholds, and created the games — but
+            // the query cache from the lineup screen still holds the stale
+            // 'scheduled' match with zero games and null thresholds. Without
+            // this invalidation the scoring screen renders that stale snapshot
+            // and only a realtime tick (or a manual refresh) corrects it —
+            // exactly the navigate-before-prep-settles race. Invalidating the
+            // whole match subtree (detail + lineup + games) forces a fresh
+            // fetch on mount. Awaited so navigation waits for prep to be fully
+            // reflected before leaving the lineup screen.
+            await queryClient.invalidateQueries({
+              queryKey: queryKeys.matches.detail(matchId),
+            });
             setIsPreparingMatch?.(false);
             // Prime the phase cache so MatchPhaseGuard reads the fresh
-            // 'in_progress' status when the scoring page mounts. Without
-            // this, the guard's redirect effect sees a stale 'scheduled'
-            // and bounces the user back to /lineup until the realtime
-            // tick lands ~100-500ms later (C-01).
+            // 'in_progress' status when the scoring page mounts (after the
+            // invalidation above, so the prime isn't immediately discarded).
             primePhaseAsInProgress(matchId);
             navigate(`/match/${matchId}/score`);
             return;

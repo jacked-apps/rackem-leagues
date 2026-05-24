@@ -298,32 +298,41 @@ export async function getMembersByIds(memberIds: string[]) {
 }
 
 /**
- * Profanity filter settings for a member
+ * Profanity filter settings for a member.
+ *
+ * `date_of_birth` is included so the consuming hook can force the filter
+ * ON for under-18 users when we happen to know their DOB. DOB is an
+ * optional field on the profile (may be required by CSI/BCA partnerships
+ * for identification), so it can legitimately be null — `isMinor()` in
+ * `@/utils/age` treats null as "unknown → not a minor".
  */
 export interface MemberProfanitySettings {
   profanity_filter_enabled: boolean;
+  date_of_birth: string | null;
 }
 
 /**
  * Fetch member's profanity filter settings
  *
- * Gets filter preference for the user.
- * All users can control their own filter preference.
+ * Gets the user's filter preference plus their DOB (if known) so the
+ * caller can decide whether minor-enforcement applies.
  *
  * @param userId - Supabase auth user ID
- * @returns Object with profanity_filter_enabled
+ * @returns Object with profanity_filter_enabled + date_of_birth
  * @throws Error if member not found or database error
  *
  * @example
  * const settings = await getMemberProfanitySettings(user.id);
- * const shouldFilter = settings.profanity_filter_enabled;
+ * const shouldFilter = isMinor(settings.date_of_birth)
+ *   ? true
+ *   : settings.profanity_filter_enabled;
  */
 export async function getMemberProfanitySettings(
   userId: string
 ): Promise<MemberProfanitySettings> {
   const { data, error } = await supabase
     .from('members')
-    .select('profanity_filter_enabled')
+    .select('profanity_filter_enabled, date_of_birth')
     .eq('user_id', userId)
     .single();
 

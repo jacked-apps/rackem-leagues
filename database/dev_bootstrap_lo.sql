@@ -47,7 +47,8 @@ DECLARE
   v_org_phone      TEXT := '555-0100';
   v_game_type      TEXT := 'eight_ball';  -- eight_ball | nine_ball | ten_ball
   v_day_of_week    TEXT := 'tuesday';
-  v_team_format    TEXT := '5_man';
+  -- (team_format was dropped from `leagues` in 20260502000000 — lineup size is
+  --  now a modular league preference, configured via the app after seeding.)
   -- ===== END EDIT =====
 
   v_user_id   UUID;
@@ -102,9 +103,9 @@ BEGIN
 
   -- Create one league under the org.
   INSERT INTO leagues (
-    organization_id, game_type, day_of_week, team_format, league_start_date
+    organization_id, game_type, day_of_week, league_start_date
   ) VALUES (
-    v_org_id, v_game_type, v_day_of_week, v_team_format, CURRENT_DATE
+    v_org_id, v_game_type, v_day_of_week, CURRENT_DATE
   ) RETURNING id INTO v_league_id;
 
   RAISE NOTICE '=== Bootstrap complete ===';

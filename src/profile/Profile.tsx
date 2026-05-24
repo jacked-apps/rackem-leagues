@@ -26,7 +26,13 @@ import { PersonalInfoSection } from './PersonalInfoSection';
 import { ContactInfoSection } from './ContactInfoSection';
 import { AddressSection } from './AddressSection';
 import { PrivacySettingsSection } from './PrivacySettingsSection';
+import { Link } from 'react-router-dom';
+import { LogOut } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
+import { ShareAppCard } from '@/components/ShareAppCard';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 /**
  * Member Profile Page Component
@@ -44,7 +50,7 @@ import { PageHeader } from '@/components/PageHeader';
  * - Comprehensive member data display
  */
 export const Profile: React.FC = () => {
-  const { user } = useUser();
+  const { user, logout } = useUser();
   const { member, loading } = useUserProfile();
 
   // Get all form state and handlers from custom hook
@@ -97,8 +103,6 @@ export const Profile: React.FC = () => {
   return (
     <div className="min-h-screen bg-muted">
       <PageHeader
-        backTo="/dashboard"
-        backLabel="Dashboard"
         title="Player Settings"
         subtitle="Manage your personal information and account details"
       />
@@ -158,6 +162,60 @@ export const Profile: React.FC = () => {
               </div>
             </div>
           </div>
+          {/* Share the app with teammates */}
+          <ShareAppCard
+            title="Invite teammates"
+            description="Scan the QR code or share the link to get your teammates on Rack'em Leagues."
+          />
+
+          {/* Become League Operator CTA — only for regular players */}
+          {member.role === 'player' && (
+            <Card>
+              <CardContent className="p-6">
+                <h3 className="font-semibold text-foreground mb-2">
+                  Run Your Own League?
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Become a league operator and manage pool leagues at your local venue
+                </p>
+                <Link to="/become-league-operator">
+                  <Button variant="outline" loadingText="none" className="w-full">
+                    Learn More
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Account — appearance + sign out. Lives here (not in nav) since
+              they're infrequent actions, not at-your-fingertips ones. */}
+          <Card>
+            <CardContent className="p-6 space-y-6">
+              <div>
+                <h3 className="font-semibold text-foreground mb-1">Appearance</h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Choose how Rack 'Em looks on this device.
+                </p>
+                <ThemeToggle />
+              </div>
+              <div className="border-t pt-6">
+                <h3 className="font-semibold text-foreground mb-1">Sign Out</h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  End your session on this device.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  loadingText="none"
+                  onClick={logout}
+                  className="w-full sm:w-auto gap-2"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign out
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

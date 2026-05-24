@@ -53,7 +53,7 @@ describe('accumulated_per_game — calculator metadata', () => {
   it('has Fargo 10-7 default params', () => {
     expect(accumulatedPerGame.defaultParams).toEqual({
       winner: { kind: 'fixed', points: 10 },
-      loser: { kind: 'counter', min: 0, max: 7, label: 'Balls pocketed' },
+      loser: { kind: 'counter', min: 0, max: 7, label: 'Points earned in this loss' },
     });
   });
 
@@ -108,14 +108,14 @@ describe('accumulated_per_game — scoringPopupFields adapts to params', () => {
     );
     expect(spec.perSideInputs).toEqual({
       winner: { kind: 'fixed', points: 10 },
-      loser: { kind: 'counter', min: 0, max: 7, label: 'Balls pocketed' },
+      loser: { kind: 'counter', min: 0, max: 7, label: 'Points earned in this loss' },
     });
   });
 
   it('LO-edited winner_points: spec reflects new value', () => {
     const params: AccumulatedPerGameParams = {
       winner: { kind: 'fixed', points: 15 },
-      loser: { kind: 'counter', min: 0, max: 7, label: 'Balls pocketed' },
+      loser: { kind: 'counter', min: 0, max: 7, label: 'Points earned in this loss' },
     };
     const spec = accumulatedPerGame.scoringPopupFields(params);
     expect(spec.perSideInputs?.winner).toEqual({ kind: 'fixed', points: 15 });

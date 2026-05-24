@@ -143,11 +143,11 @@ describe('buildSystemFromPreferences — preset fast-path', () => {
 });
 
 // ============================================================================
-// Ad-hoc path: teamFormat
+// Ad-hoc path: teamGeometry
 // ============================================================================
 
-describe('buildSystemFromPreferences — ad-hoc teamFormat derivation', () => {
-  it('derives teamFormat from prefs (4v4 single-RR + Fargo)', () => {
+describe('buildSystemFromPreferences — ad-hoc teamGeometry derivation', () => {
+  it('derives teamGeometry from prefs (4v4 single-RR + Fargo, 16 games)', () => {
     const mod = buildSystemFromPreferences(
       makeConfig({
         lineup_size: 4,
@@ -159,10 +159,11 @@ describe('buildSystemFromPreferences — ad-hoc teamFormat derivation', () => {
       }),
       EMPTY_OVERRIDES,
     );
-    expect(mod.teamFormat).toEqual({
+    expect(mod.teamGeometry).toEqual({
       lineupSize: 4,
       maxRosterSize: 6,
       gameGeneration: 'single_round_robin',
+      gameCount: 16,
     });
   });
 
@@ -175,7 +176,7 @@ describe('buildSystemFromPreferences — ad-hoc teamFormat derivation', () => {
       }),
       EMPTY_OVERRIDES,
     );
-    expect(mod.teamFormat.gameGeneration).toBe('single_round_robin');
+    expect(mod.teamGeometry.gameGeneration).toBe('single_round_robin');
   });
 
   it('produces a deterministic ad-hoc key', () => {
@@ -196,8 +197,8 @@ describe('buildSystemFromPreferences — ad-hoc teamFormat derivation', () => {
 // Ad-hoc path: rating dispatch
 // ============================================================================
 
-describe('buildSystemFromPreferences — rating dispatch', () => {
-  it('routes handicap_type=points to bca3v3 rating shape', () => {
+describe('buildSystemFromPreferences — handicapSystem dispatch', () => {
+  it('routes handicap_type=points to the Points Handicap System', () => {
     const mod = buildSystemFromPreferences(
       makeConfig({
         lineup_size: 4,
@@ -207,13 +208,11 @@ describe('buildSystemFromPreferences — rating dispatch', () => {
       }),
       EMPTY_OVERRIDES,
     );
-    // bca3v3 displays signed integers
-    expect(mod.rating.displayFormat(2)).toBe('+2');
-    expect(mod.rating.displayFormat(-1)).toBe('-1');
-    expect(mod.rating.requiresManualEntry).toBe(false);
+    expect(mod.handicapSystem?.kind).toBe('points');
+    expect(mod.handicapSystem?.requiresManualEntry).toBe(false);
   });
 
-  it('routes handicap_type=percentage to bca5v5 rating shape', () => {
+  it('routes handicap_type=percentage to the Percentage Handicap System', () => {
     const mod = buildSystemFromPreferences(
       makeConfig({
         lineup_size: 6,
@@ -223,10 +222,11 @@ describe('buildSystemFromPreferences — rating dispatch', () => {
       }),
       EMPTY_OVERRIDES,
     );
-    expect(mod.rating.displayFormat(85)).toBe('85%');
+    expect(mod.handicapSystem?.kind).toBe('percentage');
+    expect(mod.handicapSystem?.requiresManualEntry).toBe(false);
   });
 
-  it('routes handicap_type=fargo to fargo5v5 rating shape with manual entry', () => {
+  it('routes handicap_type=fargo to the FargoRate Handicap System (manual entry)', () => {
     const mod = buildSystemFromPreferences(
       makeConfig({
         lineup_size: 4,
@@ -236,11 +236,11 @@ describe('buildSystemFromPreferences — rating dispatch', () => {
       }),
       EMPTY_OVERRIDES,
     );
-    expect(mod.rating.requiresManualEntry).toBe(true);
-    expect(mod.rating.displayFormat(575)).toBe('575');
+    expect(mod.handicapSystem?.kind).toBe('fargo');
+    expect(mod.handicapSystem?.requiresManualEntry).toBe(true);
   });
 
-  it('provides a stub for handicap_type=skill_level (BCAPL SL)', () => {
+  it('routes handicap_type=skill_level to the Skill Level Handicap System (reserved)', () => {
     const mod = buildSystemFromPreferences(
       makeConfig({
         lineup_size: 5,
@@ -252,14 +252,12 @@ describe('buildSystemFromPreferences — rating dispatch', () => {
       }),
       EMPTY_OVERRIDES,
     );
-    expect(mod.rating.displayFormat(5)).toBe('SL5');
-    expect(mod.rating.validate(5)).toEqual({ ok: true, value: 5 });
-    expect(mod.rating.validate(0).ok).toBe(false);
-    expect(mod.rating.validate(10).ok).toBe(false);
-    expect(mod.rating.validate(5.5).ok).toBe(false);
+    expect(mod.handicapSystem?.kind).toBe('skill_level');
   });
 
-  it('provides a stub for handicap_type=none (no-handicap leagues)', () => {
+  it('returns null handicapSystem for handicap_type=none (no-handicap leagues)', () => {
+    // Per the locked Handicap Systems blueprint: 'none' is "no Module" rather
+    // than a 5th variant — the league self-sorts into skill tiers.
     const mod = buildSystemFromPreferences(
       makeConfig({
         handicap_type: 'none',
@@ -267,18 +265,16 @@ describe('buildSystemFromPreferences — rating dispatch', () => {
       }),
       EMPTY_OVERRIDES,
     );
-    expect(mod.rating.displayFormat(500)).toBe('—');
-    expect(mod.rating.validate(0)).toEqual({ ok: true, value: 0 });
-    expect(mod.rating.validate('not-a-number').ok).toBe(false);
+    expect(mod.handicapSystem).toBeNull();
   });
 
-  it('falls back to bca5v5 rating shape with a warn for unknown handicap_type', () => {
+  it('returns null handicapSystem with a warn for unknown handicap_type', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const mod = buildSystemFromPreferences(
       makeConfig({ handicap_type: 'experimental_rating' }),
       EMPTY_OVERRIDES,
     );
-    expect(mod.rating.displayFormat(50)).toBe('50%');
+    expect(mod.handicapSystem).toBeNull();
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
   });
@@ -302,10 +298,10 @@ describe('buildSystemFromPreferences — scoring dispatch', () => {
     expect(mod.scoring.method).toBe('points_accumulated');
     // Sanity: recordGameOutcome works for a Fargo-style outcome
     const recorded = mod.scoring.recordGameOutcome(
-      { winnerTeam: 'home', loserBallsPocketed: 4 },
+      { winnerTeam: 'home', loserValue: 4 },
       EMPTY_OVERRIDES,
     );
-    expect(recorded.loser_balls_pocketed).toBe(4);
+    expect(recorded.loser_value).toBe(4);
   });
 
   it('stubs points_calculator=linear_above_threshold (legacy paths still in use)', () => {
@@ -347,12 +343,12 @@ describe('buildSystemFromPreferences — scoring dispatch', () => {
 // Ad-hoc path: threshold dispatch
 // ============================================================================
 
-describe('buildSystemFromPreferences — threshold dispatch by mechanism', () => {
+describe('buildSystemFromPreferences — handicapMechanism dispatch', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
 
-  it('mechanism=extra_games + handicap_type=points → 3v3 chart values', () => {
+  it('mechanism=extra_games + handicap_type=points → ExtraGames Mechanism bound to 3v3 chart', () => {
     const mod = buildSystemFromPreferences(
       makeConfig({
         lineup_size: 4,
@@ -362,15 +358,15 @@ describe('buildSystemFromPreferences — threshold dispatch by mechanism', () =>
       }),
       EMPTY_OVERRIDES,
     );
-    expect(mod.threshold.mode).toBe('extra_games');
-    if (mod.threshold.mode === 'extra_games') {
+    expect(mod.handicapMechanism?.kind).toBe('extra_games');
+    if (mod.handicapMechanism?.kind === 'extra_games') {
       // handicap diff 0 from the 3v3 chart: games_to_win = 10
-      const result = mod.threshold.compute(0, EMPTY_OVERRIDES);
+      const result = mod.handicapMechanism!.compute(0, EMPTY_OVERRIDES);
       expect(result.games_to_win).toBe(10);
     }
   });
 
-  it('mechanism=extra_games + handicap_type=percentage → 5v5 chart values', () => {
+  it('mechanism=extra_games + handicap_type=percentage → ExtraGames Mechanism bound to 5v5 chart', () => {
     const mod = buildSystemFromPreferences(
       makeConfig({
         lineup_size: 6,
@@ -380,16 +376,15 @@ describe('buildSystemFromPreferences — threshold dispatch by mechanism', () =>
       }),
       EMPTY_OVERRIDES,
     );
-    expect(mod.threshold.mode).toBe('extra_games');
-    if (mod.threshold.mode === 'extra_games') {
+    expect(mod.handicapMechanism?.kind).toBe('extra_games');
+    if (mod.handicapMechanism?.kind === 'extra_games') {
       // handicap diff 0 from the 5v5 chart: games_to_win = 13 (decisive)
-      const result = mod.threshold.compute(0, EMPTY_OVERRIDES);
+      const result = mod.handicapMechanism!.compute(0, EMPTY_OVERRIDES);
       expect(result.games_to_win).toBeGreaterThan(0);
     }
   });
 
-  it('mechanism=extra_games + handicap_type=fargo → zero-handicap fallback with warn (no Layer 1 yet)', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it('mechanism=extra_games + handicap_type=fargo → null (no calibrated Chart for this combo)', () => {
     const mod = buildSystemFromPreferences(
       makeConfig({
         lineup_size: 4,
@@ -399,15 +394,11 @@ describe('buildSystemFromPreferences — threshold dispatch by mechanism', () =>
       }),
       EMPTY_OVERRIDES,
     );
-    expect(mod.threshold.mode).toBe('extra_games');
-    if (mod.threshold.mode === 'extra_games') {
-      const result = mod.threshold.compute(50, EMPTY_OVERRIDES);
-      expect(result).toEqual({ games_to_win: 0, games_to_tie: null, games_to_lose: null });
-      expect(warn).toHaveBeenCalled();
-    }
+    // No calibrated extra_games Chart for fargo encoding today; Mechanism is null.
+    expect(mod.handicapMechanism).toBeNull();
   });
 
-  it('mechanism=start_points + handicap_type=fargo → fargo5v5 start-points formula (works for any roster)', () => {
+  it('mechanism=start_points + handicap_type=fargo → StartPoints Mechanism (roster-agnostic formula)', () => {
     const mod = buildSystemFromPreferences(
       makeConfig({
         lineup_size: 4,
@@ -417,10 +408,10 @@ describe('buildSystemFromPreferences — threshold dispatch by mechanism', () =>
       }),
       EMPTY_OVERRIDES,
     );
-    expect(mod.threshold.mode).toBe('start_points');
-    if (mod.threshold.mode === 'start_points') {
+    expect(mod.handicapMechanism?.kind).toBe('start_points');
+    if (mod.handicapMechanism?.kind === 'start_points') {
       // 4v4 even-rated teams → 0 start points, even
-      const result = mod.threshold.compute(
+      const result = mod.handicapMechanism!.compute(
         [500, 500, 500, 500],
         [500, 500, 500, 500],
         EMPTY_OVERRIDES,
@@ -430,8 +421,7 @@ describe('buildSystemFromPreferences — threshold dispatch by mechanism', () =>
     }
   });
 
-  it('mechanism=start_points + non-fargo handicap → zero start-points fallback with warn', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it('mechanism=start_points + non-fargo handicap → null (no calibrated start-points Chart for this encoding)', () => {
     const mod = buildSystemFromPreferences(
       makeConfig({
         handicap_type: 'percentage',
@@ -440,16 +430,10 @@ describe('buildSystemFromPreferences — threshold dispatch by mechanism', () =>
       }),
       EMPTY_OVERRIDES,
     );
-    expect(mod.threshold.mode).toBe('start_points');
-    if (mod.threshold.mode === 'start_points') {
-      const result = mod.threshold.compute([60], [40], EMPTY_OVERRIDES);
-      expect(result).toEqual({ startPointsForWeakerTeam: 0, weakerTeam: 'even' });
-      expect(warn).toHaveBeenCalled();
-    }
+    expect(mod.handicapMechanism).toBeNull();
   });
 
-  it('mechanism=race_length_adjustment → equal race lengths from prefs.race_length with warn (no chart yet)', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it('mechanism=race_length_adjustment → null (both Race Charts are RESERVED stubs)', () => {
     const mod = buildSystemFromPreferences(
       makeConfig({
         handicap_type: 'skill_level',
@@ -460,34 +444,10 @@ describe('buildSystemFromPreferences — threshold dispatch by mechanism', () =>
       }),
       EMPTY_OVERRIDES,
     );
-    expect(mod.threshold.mode).toBe('race_length_adjustment');
-    if (mod.threshold.mode === 'race_length_adjustment') {
-      const result = mod.threshold.compute([5], [3], EMPTY_OVERRIDES);
-      expect(result).toEqual({ homeRaceLength: 5, awayRaceLength: 5 });
-      expect(warn).toHaveBeenCalled();
-    }
+    expect(mod.handicapMechanism).toBeNull();
   });
 
-  it('mechanism=race_length_adjustment → defaults to 7 when prefs.race_length is null', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const mod = buildSystemFromPreferences(
-      makeConfig({
-        handicap_type: 'skill_level',
-        mechanism: 'race_length_adjustment',
-        pairing_format: 'race_to_n',
-        points_calculator: null,
-        race_length: null,
-      }),
-      EMPTY_OVERRIDES,
-    );
-    if (mod.threshold.mode === 'race_length_adjustment') {
-      const result = mod.threshold.compute([5], [3], EMPTY_OVERRIDES);
-      expect(result.homeRaceLength).toBe(7);
-      expect(result.awayRaceLength).toBe(7);
-    }
-  });
-
-  it('mechanism=none → zero-handicap extra_games shape (unhandicapped match)', () => {
+  it('mechanism=none → noneMechanism (zero-handicap extra_games shape for unhandicapped matches)', () => {
     const mod = buildSystemFromPreferences(
       makeConfig({
         handicap_type: 'none',
@@ -495,23 +455,21 @@ describe('buildSystemFromPreferences — threshold dispatch by mechanism', () =>
       }),
       EMPTY_OVERRIDES,
     );
-    expect(mod.threshold.mode).toBe('extra_games');
-    if (mod.threshold.mode === 'extra_games') {
-      const result = mod.threshold.compute(99, EMPTY_OVERRIDES);
+    expect(mod.handicapMechanism?.kind).toBe('extra_games');
+    if (mod.handicapMechanism?.kind === 'extra_games') {
+      const result = mod.handicapMechanism!.compute(99, EMPTY_OVERRIDES);
       expect(result).toEqual({ games_to_win: 0, games_to_tie: null, games_to_lose: null });
     }
   });
 
-  it('unknown mechanism → zero-handicap fallback with warn', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it('unknown mechanism → null (no Mechanism factory for the unknown kind)', () => {
     const mod = buildSystemFromPreferences(
       makeConfig({
         mechanism: 'experimental_mechanism' as ResolvedSystemConfig['mechanism'],
       }),
       EMPTY_OVERRIDES,
     );
-    expect(mod.threshold.mode).toBe('extra_games');
-    expect(warn).toHaveBeenCalled();
+    expect(mod.handicapMechanism).toBeNull();
   });
 });
 
@@ -537,6 +495,6 @@ describe('resolveSystem (resolver.ts wrapper)', () => {
       EMPTY_OVERRIDES,
     );
     expect(mod.key).toBe('custom_4v4_fargo_start_points_accumulated_per_game');
-    expect(mod.threshold.mode).toBe('start_points');
+    expect(mod.handicapMechanism?.kind).toBe('start_points');
   });
 });

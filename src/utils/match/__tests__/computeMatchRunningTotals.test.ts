@@ -30,7 +30,8 @@ const AWAY_THRESHOLDS = { games_to_win: 10, games_to_tie: 9, games_to_lose: 8 };
 function regularGame(winner: string | null, ballsPocketed: number | null = null): MinimalMatchGame {
   return {
     winner_team_id: winner,
-    loser_balls_pocketed: ballsPocketed,
+    winner_value: null,
+    loser_value: ballsPocketed,
     is_tiebreaker: false,
     confirmed_by_home: 'home-member-id',
     confirmed_by_away: 'away-member-id',
@@ -40,7 +41,8 @@ function regularGame(winner: string | null, ballsPocketed: number | null = null)
 function unconfirmedGame(winner: string): MinimalMatchGame {
   return {
     winner_team_id: winner,
-    loser_balls_pocketed: null,
+    winner_value: null,
+    loser_value: null,
     is_tiebreaker: false,
     confirmed_by_home: 'home-member-id',
     confirmed_by_away: null,
@@ -50,7 +52,8 @@ function unconfirmedGame(winner: string): MinimalMatchGame {
 function tiebreakerGame(winner: string): MinimalMatchGame {
   return {
     winner_team_id: winner,
-    loser_balls_pocketed: null,
+    winner_value: null,
+    loser_value: null,
     is_tiebreaker: true,
     confirmed_by_home: 'home-member-id',
     confirmed_by_away: 'away-member-id',

@@ -27,7 +27,7 @@ export function PlayerStats() {
   return (
     <div className="min-h-screen bg-muted">
       <PageHeader
-        backTo="/dashboard"
+        backTo="/my-teams"
         backLabel="Home"
         title="My Stats"
         subtitle="Your personal stats across every league you play in"

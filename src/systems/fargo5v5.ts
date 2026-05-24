@@ -33,23 +33,28 @@
  *   to catch any drift from the official number.
  *
  * Storage:
- *   Per-game scoring stores only `match_games.loser_balls_pocketed` — winner and
- *   loser points are derived at read time from the league's snapshotted dials.
+ *   Per-game scoring stores only `match_games.loser_value` (renamed from
+ *   `loser_balls_pocketed` by Branch A) — winner and loser points are derived
+ *   at read time from the league's snapshotted dials.
  *   Start-points are stored on the weaker team's `matches.home_to_win` or
  *   `matches.away_to_win` column (the stronger team's gets 0).
  */
 
 import type {
-  FargoStartPointsResult,
   GameOutcome,
   GameRecordFields,
   MatchResult,
-  RatingValidationResult,
-  RatingValue,
   StoredGameRecord,
   SystemModule,
 } from './types';
 import type { SystemOverrides } from '@/types/systemOverrides';
+import { getWinCalculator } from './win-calculators';
+import { getTeamGeometry } from './team-geometry';
+import { getMatchFormat } from './match-format';
+import { fargoRateHandicapSystem } from './handicap-systems';
+import { fargoFormulaChart } from './threshold-charts';
+import { createStartPointsMechanism } from './handicap-mechanisms';
+import { buildTenPointComposition } from './points-system/compositions/10-point';
 
 // ============================================================================
 // Constants (module defaults — overridable via SystemOverrides)
@@ -59,97 +64,8 @@ const DEFAULT_WINNER_POINTS = 10;
 const DEFAULT_LOSER_POINTS_METHOD = 'balls_pocketed' as const;
 const DEFAULT_LOSER_POINTS_MAX = 7;
 
-/**
- * Empirically calibrated average loser points per game. Used in the start-points
- * formula to estimate the per-game point differential. See file header for the
- * calibration note. If future real-match test cases diverge significantly from
- * our computed value, revisit this constant or move to a gap-sensitive formula.
- */
-const AVG_LOSER_POINTS = 4.2;
-
-// ============================================================================
-// Rating
-// ============================================================================
-
-const FARGO_RATING_MIN = 100;
-const FARGO_RATING_MAX = 850;
-
-function validateRating(value: unknown): RatingValidationResult {
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
-    return { ok: false, message: 'Fargo rating must be a number' };
-  }
-  if (!Number.isInteger(value)) {
-    return { ok: false, message: 'Fargo rating must be a whole integer' };
-  }
-  if (value < FARGO_RATING_MIN || value > FARGO_RATING_MAX) {
-    return {
-      ok: false,
-      message: `Fargo rating must be between ${FARGO_RATING_MIN} and ${FARGO_RATING_MAX}`,
-    };
-  }
-  return { ok: true, value };
-}
-
-// ============================================================================
-// Threshold (start-points formula)
-// ============================================================================
-
-/** Transform a single rating into FargoRate's "T" value (2^(rating/100)). */
-function transformRating(rating: RatingValue): number {
-  return Math.pow(2, rating / 100);
-}
-
 function resolveWinnerPoints(overrides: SystemOverrides): number {
   return overrides.winner_points ?? DEFAULT_WINNER_POINTS;
-}
-
-function computeStartPoints(
-  homeRatings: RatingValue[],
-  awayRatings: RatingValue[],
-  overrides: SystemOverrides,
-): FargoStartPointsResult {
-  if (homeRatings.length === 0 || awayRatings.length === 0) {
-    throw new Error('fargo5v5.threshold.compute requires non-empty ratings arrays');
-  }
-  if (homeRatings.some((r) => !Number.isFinite(r))) {
-    throw new Error('fargo5v5.threshold.compute received a non-finite home rating');
-  }
-  if (awayRatings.some((r) => !Number.isFinite(r))) {
-    throw new Error('fargo5v5.threshold.compute received a non-finite away rating');
-  }
-
-  const tHome = homeRatings.reduce((sum, r) => sum + transformRating(r), 0);
-  const tAway = awayRatings.reduce((sum, r) => sum + transformRating(r), 0);
-
-  // Single round robin: every home player plays every away player once
-  const totalGames = homeRatings.length * awayRatings.length;
-
-  const pHomeWins = tHome / (tHome + tAway);
-  const pAwayWins = 1 - pHomeWins;
-
-  const winnerPoints = resolveWinnerPoints(overrides);
-
-  // Per-game expected score for each team
-  const homePerGame = pHomeWins * winnerPoints + pAwayWins * AVG_LOSER_POINTS;
-  const awayPerGame = pAwayWins * winnerPoints + pHomeWins * AVG_LOSER_POINTS;
-
-  // Match-level expected totals
-  const homeTotal = homePerGame * totalGames;
-  const awayTotal = awayPerGame * totalGames;
-
-  const diff = Math.abs(homeTotal - awayTotal);
-  const startPoints = Math.floor(diff);
-
-  let weakerTeam: 'home' | 'away' | 'even';
-  if (startPoints === 0) {
-    weakerTeam = 'even';
-  } else if (homeTotal < awayTotal) {
-    weakerTeam = 'home';
-  } else {
-    weakerTeam = 'away';
-  }
-
-  return { startPointsForWeakerTeam: startPoints, weakerTeam };
 }
 
 // ============================================================================
@@ -170,19 +86,22 @@ function recordGameOutcome(
   outcome: GameOutcome,
   overrides: SystemOverrides,
 ): GameRecordFields {
-  // Per the revised schema, Fargo stores only loser_balls_pocketed. Winner points
-  // and loser points are derived at read time from the snapshotted dials.
-  const loserBalls = clampLoserBalls(outcome.loserBallsPocketed, overrides);
+  // Per the revised schema, Fargo stores only the loser-side value (renamed from
+  // loser_balls_pocketed to loser_value by Branch A). Winner points and loser
+  // points are derived at read time from the snapshotted dials. winner_value
+  // stays null for today's calculators (kind: 'fixed' on winner side).
+  const loserBalls = clampLoserBalls(outcome.loserValue, overrides);
   return {
     winner_points: null,
     loser_points: null,
-    loser_balls_pocketed: loserBalls,
+    winner_value: null,
+    loser_value: loserBalls,
   };
 }
 
 /** Derive loser points for a stored game based on the league's loser_points_method dial. */
 function deriveLoserPoints(
-  loserBallsPocketed: number | null,
+  loserValue: number | null,
   overrides: SystemOverrides,
 ): number {
   const method = overrides.loser_points_method ?? DEFAULT_LOSER_POINTS_METHOD;
@@ -192,7 +111,7 @@ function deriveLoserPoints(
     return overrides.loser_points_max ?? DEFAULT_LOSER_POINTS_MAX;
   }
   // 'balls_pocketed' — read the stored value (0 if not recorded for some reason)
-  return loserBallsPocketed ?? 0;
+  return loserValue ?? 0;
 }
 
 function computeMatchResult(
@@ -208,7 +127,7 @@ function computeMatchResult(
   let awayGames = 0;
 
   for (const g of games) {
-    const loserPoints = deriveLoserPoints(g.loser_balls_pocketed, overrides);
+    const loserPoints = deriveLoserPoints(g.loser_value, overrides);
     if (g.winner_team === 'home') {
       homePoints += winnerPoints;
       awayPoints += loserPoints;
@@ -265,19 +184,13 @@ function computeMatchResult(
 export const fargo5v5: SystemModule = {
   key: 'fargo5v5',
 
-  teamFormat: {
-    lineupSize: 5,
-    maxRosterSize: 8,
-    gameGeneration: 'single_round_robin',
-  },
+  // Team Geometry Module — the three structural axes plus derived gameCount.
+  // Replaces the legacy teamFormat field (Phase D of the Team Geometry migration).
+  teamGeometry: getTeamGeometry(5, 8, 'single_round_robin'),
 
-  rating: {
-    requiresManualEntry: true,
-    // Fargo ratings are externally sourced; no history-based computation.
-    computeFromHistory: () => null,
-    displayFormat: (value) => String(Math.round(value)),
-    validate: validateRating,
-  },
+  // Match Format Module — Fargo 5v5 ships single_rack pairings (no race_length).
+  // See bca3v3.ts for the strangler-fig rationale.
+  matchFormat: getMatchFormat('single_rack', null),
 
   scoring: {
     method: 'points_accumulated',
@@ -285,8 +198,30 @@ export const fargo5v5: SystemModule = {
     computeMatchResult,
   },
 
-  threshold: {
-    mode: 'start_points',
-    compute: computeStartPoints,
-  },
+  // Fargo 5v5 ships with win_condition='points' — a one-entry metric stack with
+  // points_earned. Per Unit 1 of the modular-framework migration plan, this Module
+  // shape replaces the runtime branching on win_condition. Consumers call
+  // winCalculator.decide(matchData) instead of switching on win_condition inline.
+  winCalculator: getWinCalculator('points'),
+
+  // Handicap System Module — FargoRate variant (integer 100–850, manually entered).
+  // Replaces the legacy `rating` capability deleted in Phase D of Handicap Systems.
+  handicapSystem: fargoRateHandicapSystem,
+
+  // Threshold Chart Module — FargoRate Formula chart (FargoRate × start_points).
+  // Owns the start-points formula. Consumers route through the Handicap Mechanism
+  // (below); the Chart is the data layer the Mechanism delegates to.
+  thresholdChart: fargoFormulaChart,
+
+  // Handicap Mechanism Module — start_points bound to the FargoRate Formula Chart.
+  // Coexists with `threshold` until Phase D.
+  handicapMechanism: createStartPointsMechanism(fargoFormulaChart),
+
+  // Points System Module — FargoRate 10-Point 5-Man composition: 2 receipt
+  // triggers (award handicap-driven initial points to each side) + per-game
+  // allocator (winner = 10 fixed, loser = counter 0-7 balls pocketed).
+  // The initial points value is read from prefs at evaluation time (caller
+  // pre-computes via the Handicap Mechanism's start_points logic per the
+  // D3 dual-identity resolution).
+  pointsSystem: buildTenPointComposition({}),
 };

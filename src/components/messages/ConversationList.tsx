@@ -16,6 +16,8 @@ import { Button } from '@/components/ui/button';
 import { Search, MessageSquarePlus, Settings, Megaphone, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useConversations, useConversationsRealtime } from '@/api/hooks';
+import { useProfanityFilter } from '@/hooks/useProfanityFilter';
+import { censorProfanity } from '@/utils/profanityFilter';
 import { formatDistanceToNow } from 'date-fns';
 import { LoadingState, EmptyState } from '@/components/shared';
 
@@ -28,6 +30,13 @@ interface Conversation {
   lastMessagePreview: string | null;
   unreadCount: number;
   createdAt: string;
+  /** True when the current user is a past-member of this conversation
+   *  (their `conversation_participants.left_at` is non-NULL). Past-member
+   *  rows render under an "Archived" group at the bottom of the list,
+   *  visually muted; tapping still opens the chat so the user can read
+   *  history, but the composer is replaced by the past-member banner
+   *  (handled by `useMessageComposerStatus` + `ReadOnlyBanner`). */
+  isPastMember?: boolean;
 }
 
 interface ConversationListProps {
@@ -60,6 +69,12 @@ export function ConversationList({
 
   // Real-time subscriptions (auto-manages channels and cleanup)
   useConversationsRealtime(userId);
+
+  // R4 (Unit 7): apply the user's profanity filter to the last-message
+  // preview snippet. The DB row + unread-count badge stay unaffected —
+  // this is a display-only transform. When the filter is off, the
+  // preview renders raw.
+  const { shouldFilter } = useProfanityFilter();
 
   // Filter conversations based on search
   const filteredConversations = conversations.filter((conv) => {
@@ -151,7 +166,9 @@ export function ConversationList({
         </div>
       )}
 
-      {/* Conversation list */}
+      {/* Conversation list — split into active + archived (past-member)
+          sections per Unit 20. The archived section only renders when the
+          user actually has past-member chats, so most users never see it. */}
       <div className="flex-1 overflow-y-auto">
         {loading ? (
           <LoadingState message="Loading conversations..." />
@@ -162,48 +179,75 @@ export function ConversationList({
             description="Start a new conversation to get started"
           />
         ) : (
-          filteredConversations.map((conversation) => {
-            const isAnnouncement = conversation.conversationType === 'announcements';
-            const displayTitle = conversation.title || 'Direct Message';
+          (() => {
+            const activeList = filteredConversations.filter((c) => !c.isPastMember);
+            const archivedList = filteredConversations.filter((c) => c.isPastMember);
 
-            return (
-              <button
-                key={conversation.id}
-                onClick={() => onSelectConversation(conversation.id)}
-                className={cn(
-                  // Mobile-first: Larger touch targets with responsive padding
-                  'w-full p-4 md:p-3 text-left border-b border-border hover:bg-muted active:bg-accent transition-colors',
-                  // Min height for touch targets (60px on mobile, 56px on desktop)
-                  'min-h-[60px] md:min-h-[56px]',
-                  selectedConversationId === conversation.id && 'bg-blue-50 hover:bg-blue-100'
-                )}
-              >
-                <div className="flex items-start justify-between mb-1.5 md:mb-1">
-                  <span className="font-semibold text-sm md:text-base flex items-center gap-2">
-                    {displayTitle}
-                    {isAnnouncement && (
-                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
-                        Announcement
+            const renderRow = (conversation: Conversation) => {
+              const isAnnouncement = conversation.conversationType === 'announcements';
+              const displayTitle = conversation.title || 'Direct Message';
+              const rawPreview = conversation.lastMessagePreview;
+              const preview =
+                rawPreview && shouldFilter ? censorProfanity(rawPreview) : rawPreview;
+
+              return (
+                <button
+                  key={conversation.id}
+                  onClick={() => onSelectConversation(conversation.id)}
+                  className={cn(
+                    'w-full p-4 md:p-3 text-left border-b border-border hover:bg-muted active:bg-accent transition-colors',
+                    'min-h-[60px] md:min-h-[56px]',
+                    selectedConversationId === conversation.id && 'bg-blue-50 hover:bg-blue-100',
+                    // Past-member rows render muted so they read as "history I
+                    // can still browse" rather than as live chats.
+                    conversation.isPastMember && 'opacity-60',
+                  )}
+                >
+                  <div className="flex items-start justify-between mb-1.5 md:mb-1">
+                    <span className="font-semibold text-sm md:text-base flex items-center gap-2">
+                      {displayTitle}
+                      {isAnnouncement && (
+                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                          Announcement
+                        </span>
+                      )}
+                    </span>
+                    <span className="text-xs md:text-xs text-muted-foreground flex-shrink-0 ml-2">
+                      {formatTimestamp(conversation.lastMessageAt)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm md:text-sm text-muted-foreground truncate flex-1">
+                      {preview || 'No messages yet'}
+                    </p>
+                    {/* Hide unread badge for past-member rows — the trigger
+                        stops incrementing unread_count once left_at is set,
+                        so any leftover number is just stale state from
+                        before they left. Showing it would be misleading. */}
+                    {!conversation.isPastMember && conversation.unreadCount > 0 && (
+                      <span className="ml-2 bg-blue-600 text-white text-xs font-medium rounded-full h-6 w-6 md:h-5 md:w-5 flex items-center justify-center flex-shrink-0">
+                        {conversation.unreadCount}
                       </span>
                     )}
-                  </span>
-                  <span className="text-xs md:text-xs text-muted-foreground flex-shrink-0 ml-2">
-                    {formatTimestamp(conversation.lastMessageAt)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm md:text-sm text-muted-foreground truncate flex-1">
-                    {conversation.lastMessagePreview || 'No messages yet'}
-                  </p>
-                  {conversation.unreadCount > 0 && (
-                    <span className="ml-2 bg-blue-600 text-white text-xs font-medium rounded-full h-6 w-6 md:h-5 md:w-5 flex items-center justify-center flex-shrink-0">
-                      {conversation.unreadCount}
-                    </span>
-                  )}
-                </div>
-              </button>
+                  </div>
+                </button>
+              );
+            };
+
+            return (
+              <>
+                {activeList.map(renderRow)}
+                {archivedList.length > 0 && (
+                  <>
+                    <div className="px-4 py-2 md:py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground bg-muted/40 border-b border-border">
+                      Archived
+                    </div>
+                    {archivedList.map(renderRow)}
+                  </>
+                )}
+              </>
             );
-          })
+          })()
         )}
       </div>
 
@@ -211,7 +255,7 @@ export function ConversationList({
       {onExit && (
         <div className="md:hidden border-t bg-gray-300 px-4 py-4 flex justify-end flex-shrink-0">
           <Button loadingText="none" onClick={onExit}>
-            Exit to Dashboard
+            Exit to My Teams
           </Button>
         </div>
       )}

@@ -125,6 +125,33 @@ function ScoreMatchBody() {
   const { data: leaguePrefs } = useResolvedLeaguePrefs(match?.league?.id);
   const handicapType = leaguePrefs?.handicap_type ?? 'points';
 
+  // Resolve the active points calculator name with live-prefs fallback.
+  // Mirrors src/components/scoring/UnifiedScoreboard.tsx:614-617. The snapshot
+  // is captured lazily at the first scoring event (PR #98), so on game 1 it's
+  // null — falling back to the live league preference avoids hiding calculator-
+  // aware modal sections (LIST_FOR_ED #23). Uses `!== undefined` (not `??`) so
+  // a deliberately-null snapshot value (a league opting out of points tracking)
+  // is preserved.
+  const snapshotPointsCalculator = (
+    match?.system_snapshot as { points_calculator?: string | null } | null
+  )?.points_calculator;
+  const resolvedPointsCalculator =
+    snapshotPointsCalculator !== undefined
+      ? snapshotPointsCalculator
+      : (leaguePrefs?.points_calculator ?? null);
+
+  // Resolve the active calculator's params with the same snapshot-vs-live
+  // fallback. The calculator's scoringPopupFields(params) reads these to
+  // produce the per-side input spec. Empty params (`{}`) cause the
+  // calculator to use its defaults — the modal does not interpret params.
+  const snapshotPointsCalculatorParams = (
+    match?.system_snapshot as { points_calculator_params?: Record<string, unknown> | null } | null
+  )?.points_calculator_params;
+  const resolvedPointsCalculatorParams =
+    snapshotPointsCalculatorParams !== undefined
+      ? snapshotPointsCalculatorParams
+      : (leaguePrefs?.points_calculator_params as Record<string, unknown> | null | undefined) ?? null;
+
   // Get handicaps for roster players (for lineup change requests)
   const rosterPlayerIds = teamRoster.map((tp: any) => tp.member_id).filter(Boolean);
   const { handicaps: rosterHandicaps } = usePlayerHandicaps({
@@ -185,11 +212,12 @@ function ScoreMatchBody() {
   const [breakAndRun, setBreakAndRun] = useState(false);
   const [goldenBreak, setGoldenBreak] = useState(false);
   // Unit 11b: configurable scoring fields. All default false/null; Fargo
-  // matches require `loserBallsPocketed` before submit (0 is a valid pick).
+  // matches require `loserValue` before submit (0 is a valid pick).
   const [breakFouled, setBreakFouled] = useState(false);
   const [winByForfeit, setWinByForfeit] = useState(false);
   const [runout, setRunout] = useState(false);
-  const [loserBallsPocketed, setLoserBallsPocketed] = useState<number | null>(null);
+  const [loserValue, setLoserValue] = useState<number | null>(null);
+  const [winnerValue, setWinnerValue] = useState<number | null>(null);
 
   // Opponent confirmation modal state
   const [confirmationGame, setConfirmationGame] = useState<{
@@ -200,7 +228,8 @@ function ScoreMatchBody() {
     breakFouled: boolean;
     runout: boolean;
     winByForfeit: boolean;
-    loserBallsPocketed: number | null;
+    winnerValue: number | null;
+    loserValue: number | null;
     isResetRequest?: boolean; // True if this is a request to reset the game
   } | null>(null);
 
@@ -378,6 +407,28 @@ function ScoreMatchBody() {
    * Uses function from useMatchScoring hook
    */
   const getPlayerDisplayName = getPlayerDisplayNameFromHook;
+
+  /**
+   * Resolve the loser's display name for the currently-open scoring modal.
+   * The modal opens with a winner already selected; the loser is whichever
+   * player on that game's row is NOT the winner. Used by the scoring modal
+   * to surface attribution disclosure ("Recorded as [Loser Name]") on
+   * loss-cause events like Win-by-forfeit.
+   *
+   * Returns null when scoringGame is null (modal closed), the game record
+   * isn't loaded yet, or the loser's player_id is unavailable. Modal
+   * gracefully omits the attribution text in those cases.
+   */
+  const loserPlayerName = (() => {
+    if (!scoringGame) return null;
+    const game = gameResults.get(scoringGame.gameNumber);
+    if (!game) return null;
+    const loserPlayerId =
+      scoringGame.winnerPlayerId === game.home_player_id
+        ? game.away_player_id
+        : game.home_player_id;
+    return loserPlayerId ? getPlayerDisplayName(loserPlayerId) : null;
+  })();
 
   /**
    * Get player stats (wins/losses) for a specific player and position
@@ -637,8 +688,8 @@ function ScoreMatchBody() {
       const teamId = playerIsHomeTeam ? match.home_team_id : match.away_team_id;
       if (game.winner_team_id === teamId) {
         total += fargoWinnerPoints;
-      } else if (game.loser_balls_pocketed !== null && game.loser_balls_pocketed !== undefined) {
-        total += game.loser_balls_pocketed;
+      } else if (game.loser_value !== null && game.loser_value !== undefined) {
+        total += game.loser_value;
       }
     }
     return total;
@@ -652,11 +703,11 @@ function ScoreMatchBody() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/my-teams')}
             className="flex items-center gap-1"
           >
             <ArrowLeft className="h-4 w-4" />
-            Dashboard
+            My Teams
           </Button>
           {/* Team Name */}
           <div className="text-lg font-semibold text-foreground">
@@ -782,7 +833,8 @@ function ScoreMatchBody() {
               breakFouled: game.break_fouled,
               runout: game.runout,
               winByForfeit: game.win_by_forfeit,
-              loserBallsPocketed: game.loser_balls_pocketed,
+              winnerValue: game.winner_value,
+              loserValue: game.loser_value,
               isResetRequest: true,
             });
           }
@@ -802,14 +854,14 @@ function ScoreMatchBody() {
         goldenBreakCountsAsWin={goldenBreakCountsAsWin}
         gameType={gameType}
         handicapType={handicapType}
-        pointsCalculator={
-          (match?.system_snapshot as { points_calculator?: string | null } | null)
-            ?.points_calculator ?? null
-        }
+        pointsCalculator={resolvedPointsCalculator}
+        pointsCalculatorParams={resolvedPointsCalculatorParams}
         breakFouled={breakFouled}
         winByForfeit={winByForfeit}
         runout={runout}
-        loserBallsPocketed={loserBallsPocketed}
+        loserValue={loserValue}
+        winnerValue={winnerValue}
+        loserPlayerName={loserPlayerName}
         onBreakAndRunChange={(checked) => {
           setBreakAndRun(checked);
           if (checked) setGoldenBreak(false);
@@ -821,7 +873,8 @@ function ScoreMatchBody() {
         onBreakFouledChange={setBreakFouled}
         onWinByForfeitChange={setWinByForfeit}
         onRunoutChange={setRunout}
-        onLoserBallsPocketedChange={setLoserBallsPocketed}
+        onLoserValueChange={setLoserValue}
+        onWinnerValueChange={setWinnerValue}
         onCancel={() => {
           setScoringGame(null);
           setBreakAndRun(false);
@@ -829,7 +882,8 @@ function ScoreMatchBody() {
           setBreakFouled(false);
           setWinByForfeit(false);
           setRunout(false);
-          setLoserBallsPocketed(null);
+          setLoserValue(null);
+          setWinnerValue(null);
         }}
         onConfirm={() => {
           if (scoringGame) {
@@ -844,9 +898,10 @@ function ScoreMatchBody() {
                 setBreakFouled(false);
                 setWinByForfeit(false);
                 setRunout(false);
-                setLoserBallsPocketed(null);
+                setLoserValue(null);
+                setWinnerValue(null);
               },
-              { breakFouled, runout, winByForfeit, loserBallsPocketed }
+              { breakFouled, runout, winByForfeit, winnerValue, loserValue }
             );
           }
         }}

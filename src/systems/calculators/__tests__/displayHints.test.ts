@@ -95,7 +95,7 @@ describe('displayHints — accumulated_per_game', () => {
       kind: 'counter',
       min: 0,
       max: 7,
-      label: 'Balls pocketed',
+      label: 'Points earned in this loss',
     });
   });
 });

@@ -40,6 +40,7 @@ import { TeamNameLink } from '@/components/TeamNameLink';
 import { UserRoundPen } from 'lucide-react';
 import { getTeamColors } from './scoreboardColors';
 import { getCalculator } from '@/systems/calculators';
+import { resolveCalculatorParams } from '@/systems/calculators/resolveParams';
 import type { DisplayHint } from '@/systems/calculators/types';
 import type {
   Lineup,
@@ -118,25 +119,6 @@ export interface UnifiedScoreboardProps {
 // ============================================================================
 // Helpers
 // ============================================================================
-
-/**
- * Resolve calculator params: when the snapshot stores an empty object `{}`
- * (the wizard's default for unmodified-from-defaults leagues), fall back to
- * the calculator's `defaultParams`. Mirrors the same fallback logic the
- * calculator's own `compute()` already does, so display + math agree.
- */
-function resolveCalculatorParams(
-  calculatorName: string | null | undefined,
-  params: unknown,
-): unknown {
-  if (!calculatorName || calculatorName === 'none') return params;
-  const calc = getCalculator(calculatorName);
-  if (!calc) return params;
-  const isEmpty =
-    params == null ||
-    (typeof params === 'object' && Object.keys(params as object).length === 0);
-  return isEmpty ? calc.defaultParams : params;
-}
 
 /**
  * Resolve the active calculator's display hints to a flat runtime list. Tries
