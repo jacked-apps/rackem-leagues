@@ -29,7 +29,7 @@ Pairings Generator is *active*, not *passive*. It does real work each time a mat
 - **Tiebreaker pairings** — when [Win Calculator](win-calculator.md)'s metric stack walker reaches `edge` and fires the [Tiebreak System](tiebreak-system/README.md) chain, the [`mini_match`](tiebreak-system/mini-match.md) Tiebreak Mechanism needs a pairing set for its short round. Either a future variant of this Module (re-invoked with mini-match parameters) or a peer Tiebreaker Pairings Generator handles those slots.
 - **Individual race pairings** — when `pairing_format='race_to_n'` lands (future format), each pairing becomes a race-to-N sub-match. The pairing-generation pattern is the same (lineups → ordered pairings) but the per-pairing internal structure is different. Likely another future variant of this Module's family (or a peer Race Pairings Generator).
 
-Round-robin, tiebreaker, and race generators share the architectural pattern (chain-pattern System taking lineups + rules and producing a deterministic game-slot list) but each handles a distinct invocation context. This blueprint covers the round-robin case currently shipped in the 3 prepackaged Scoring Systems; the other two are future scope.
+Round-robin, tiebreaker, and race generators share the architectural pattern (chain-pattern System taking lineups + rules and producing a deterministic game-slot list) but each handles a distinct invocation context. This blueprint covers the round-robin case; the tiebreaker and race generators are future scope.
 
 ## Why Pairings Generator exists
 
