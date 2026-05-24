@@ -47,11 +47,12 @@ describe('bca3v3 SystemModule — characterization', () => {
       expect(bca3v3.key).toBe('bca3v3');
     });
 
-    it('teamFormat: 3-player lineup, 5-player roster, double round-robin', () => {
-      expect(bca3v3.teamFormat).toEqual({
+    it('teamGeometry: 3-player lineup, 5-player roster, double round-robin, 18 games', () => {
+      expect(bca3v3.teamGeometry).toEqual({
         lineupSize: 3,
         maxRosterSize: 5,
         gameGeneration: 'double_round_robin',
+        gameCount: 18,
       });
     });
 
@@ -60,78 +61,14 @@ describe('bca3v3 SystemModule — characterization', () => {
     });
 
     it('threshold.mode is "extra_games" (mechanism: extra games)', () => {
-      expect(bca3v3.threshold.mode).toBe('extra_games');
+      expect(bca3v3.handicapMechanism?.kind).toBe('extra_games');
     });
 
-    it('rating.requiresManualEntry is false (BCA derives rating from history)', () => {
-      expect(bca3v3.rating.requiresManualEntry).toBe(false);
-    });
-  });
-
-  describe('rating.displayFormat — points handicap ranges -2..+2', () => {
-    it.each([
-      [-2, '-2'],
-      [-1, '-1'],
-      [0, '0'],
-      [1, '+1'],
-      [2, '+2'],
-    ])('value %i displays as "%s"', (value, expected) => {
-      expect(bca3v3.rating.displayFormat(value)).toBe(expected);
-    });
-  });
-
-  describe('rating.validate', () => {
-    it.each([-2, -1, 0, 1, 2])('accepts valid integer %i', (value) => {
-      expect(bca3v3.rating.validate(value)).toEqual({ ok: true, value });
-    });
-
-    it('rejects strings', () => {
-      expect(bca3v3.rating.validate('1')).toEqual({
-        ok: false,
-        message: 'Rating must be a number',
-      });
-    });
-
-    it('rejects null', () => {
-      expect(bca3v3.rating.validate(null)).toEqual({
-        ok: false,
-        message: 'Rating must be a number',
-      });
-    });
-
-    it('rejects undefined', () => {
-      expect(bca3v3.rating.validate(undefined)).toEqual({
-        ok: false,
-        message: 'Rating must be a number',
-      });
-    });
-
-    it('rejects NaN', () => {
-      expect(bca3v3.rating.validate(NaN)).toEqual({
-        ok: false,
-        message: 'Rating must be a number',
-      });
-    });
-
-    it.each([Infinity, -Infinity])('rejects %s', (value) => {
-      expect(bca3v3.rating.validate(value)).toEqual({
-        ok: false,
-        message: 'Rating must be a number',
-      });
-    });
-
-    it.each([0.5, 1.5, -1.5, 0.1])('rejects fractional %f', (value) => {
-      expect(bca3v3.rating.validate(value)).toEqual({
-        ok: false,
-        message: 'Points handicap must be an integer',
-      });
-    });
-
-    it.each([-3, 3, -100, 100])('rejects out-of-range integer %i', (value) => {
-      expect(bca3v3.rating.validate(value)).toEqual({
-        ok: false,
-        message: 'Points handicap must be between -2 and +2',
-      });
+    it('handicapSystem is wired to the Points variant (kind: "points")', () => {
+      // Full displayFormat / validate / requiresManualEntry coverage lives in
+      // src/systems/handicap-systems/__tests__/points.test.ts. This assertion
+      // is the integration check: the BCA 3v3 system picks the Points Module.
+      expect(bca3v3.handicapSystem?.kind).toBe('points');
     });
   });
 
@@ -141,10 +78,10 @@ describe('bca3v3 SystemModule — characterization', () => {
     // These tests verify the module-level wrapper is a faithful delegate.
     it('threshold.compute(0) matches get3v3GamesNeeded(0)', () => {
       // Type narrows via mode discriminator — bca3v3 is BCAThreshold
-      if (bca3v3.threshold.mode !== 'extra_games') {
+      if (bca3v3.handicapMechanism?.kind !== 'extra_games') {
         throw new Error('expected BCA threshold mode');
       }
-      expect(bca3v3.threshold.compute(0, NO_OVERRIDES)).toEqual(
+      expect(bca3v3.handicapMechanism!.compute(0, NO_OVERRIDES)).toEqual(
         get3v3GamesNeeded(0)
       );
     });
@@ -152,29 +89,29 @@ describe('bca3v3 SystemModule — characterization', () => {
     it.each([-12, -7, -1, 0, 1, 5, 12])(
       'threshold.compute(%i) returns the same shape as get3v3GamesNeeded(%i)',
       (diff) => {
-        if (bca3v3.threshold.mode !== 'extra_games') {
+        if (bca3v3.handicapMechanism?.kind !== 'extra_games') {
           throw new Error('expected BCA threshold mode');
         }
-        expect(bca3v3.threshold.compute(diff, NO_OVERRIDES)).toEqual(
+        expect(bca3v3.handicapMechanism!.compute(diff, NO_OVERRIDES)).toEqual(
           get3v3GamesNeeded(diff)
         );
       }
     );
 
     it('threshold.compute caps diffs above +12', () => {
-      if (bca3v3.threshold.mode !== 'extra_games') {
+      if (bca3v3.handicapMechanism?.kind !== 'extra_games') {
         throw new Error('expected BCA threshold mode');
       }
-      expect(bca3v3.threshold.compute(20, NO_OVERRIDES)).toEqual(
+      expect(bca3v3.handicapMechanism!.compute(20, NO_OVERRIDES)).toEqual(
         get3v3GamesNeeded(12)
       );
     });
 
     it('threshold.compute caps diffs below -12', () => {
-      if (bca3v3.threshold.mode !== 'extra_games') {
+      if (bca3v3.handicapMechanism?.kind !== 'extra_games') {
         throw new Error('expected BCA threshold mode');
       }
-      expect(bca3v3.threshold.compute(-20, NO_OVERRIDES)).toEqual(
+      expect(bca3v3.handicapMechanism!.compute(-20, NO_OVERRIDES)).toEqual(
         get3v3GamesNeeded(-12)
       );
     });
@@ -210,13 +147,13 @@ describe('bca3v3 SystemModule — characterization', () => {
     ])(
       'home diff %i: home and away thresholds are both direct chart lookups',
       (homeDiff) => {
-        if (bca3v3.threshold.mode !== 'extra_games') {
+        if (bca3v3.handicapMechanism?.kind !== 'extra_games') {
           throw new Error('expected BCA threshold mode');
         }
         // From the home team's perspective: handicap diff is +homeDiff.
-        const homeThresholds = bca3v3.threshold.compute(homeDiff, NO_OVERRIDES);
+        const homeThresholds = bca3v3.handicapMechanism!.compute(homeDiff, NO_OVERRIDES);
         // From the away team's perspective: handicap diff is -homeDiff.
-        const awayThresholds = bca3v3.threshold.compute(
+        const awayThresholds = bca3v3.handicapMechanism!.compute(
           -homeDiff,
           NO_OVERRIDES
         );
@@ -234,11 +171,11 @@ describe('bca3v3 SystemModule — characterization', () => {
    */
   describe('equality rule', () => {
     it('handicap diff 0: home and away thresholds are identical', () => {
-      if (bca3v3.threshold.mode !== 'extra_games') {
+      if (bca3v3.handicapMechanism?.kind !== 'extra_games') {
         throw new Error('expected BCA threshold mode');
       }
-      const home = bca3v3.threshold.compute(0, NO_OVERRIDES);
-      const away = bca3v3.threshold.compute(0, NO_OVERRIDES);
+      const home = bca3v3.handicapMechanism!.compute(0, NO_OVERRIDES);
+      const away = bca3v3.handicapMechanism!.compute(0, NO_OVERRIDES);
       expect(home).toEqual(away);
       expect(home.games_to_win).toBe(10);
       expect(home.games_to_tie).toBe(9);
@@ -248,11 +185,11 @@ describe('bca3v3 SystemModule — characterization', () => {
     it.each([1, 2, 3, 5, 7, 12])(
       'handicap diff %i: home and away games_to_win MUST differ',
       (diff) => {
-        if (bca3v3.threshold.mode !== 'extra_games') {
+        if (bca3v3.handicapMechanism?.kind !== 'extra_games') {
           throw new Error('expected BCA threshold mode');
         }
-        const home = bca3v3.threshold.compute(diff, NO_OVERRIDES);
-        const away = bca3v3.threshold.compute(-diff, NO_OVERRIDES);
+        const home = bca3v3.handicapMechanism!.compute(diff, NO_OVERRIDES);
+        const away = bca3v3.handicapMechanism!.compute(-diff, NO_OVERRIDES);
         expect(home.games_to_win).not.toBe(away.games_to_win);
       }
     );
@@ -273,11 +210,11 @@ describe('bca3v3 SystemModule — characterization', () => {
     it.each([-12, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12])(
       'even diff %i has a non-null games_to_tie',
       (diff) => {
-        if (bca3v3.threshold.mode !== 'extra_games') {
+        if (bca3v3.handicapMechanism?.kind !== 'extra_games') {
           throw new Error('expected BCA threshold mode');
         }
         expect(
-          bca3v3.threshold.compute(diff, NO_OVERRIDES).games_to_tie
+          bca3v3.handicapMechanism!.compute(diff, NO_OVERRIDES).games_to_tie
         ).not.toBeNull();
       }
     );
@@ -285,11 +222,11 @@ describe('bca3v3 SystemModule — characterization', () => {
     it.each([-11, -9, -7, -5, -3, -1, 1, 3, 5, 7, 9, 11])(
       'odd diff %i has games_to_tie === null',
       (diff) => {
-        if (bca3v3.threshold.mode !== 'extra_games') {
+        if (bca3v3.handicapMechanism?.kind !== 'extra_games') {
           throw new Error('expected BCA threshold mode');
         }
         expect(
-          bca3v3.threshold.compute(diff, NO_OVERRIDES).games_to_tie
+          bca3v3.handicapMechanism!.compute(diff, NO_OVERRIDES).games_to_tie
         ).toBeNull();
       }
     );

@@ -18,8 +18,14 @@
  * for the design rationale.
  */
 
-import type { HandicapThresholds } from '@/types/match';
 import type { SystemOverrides } from '@/types/systemOverrides';
+import type { WinCalculator } from './win-calculators/types';
+import type { TeamGeometry } from './team-geometry/types';
+import type { MatchFormat } from './match-format/types';
+import type { HandicapSystem } from './handicap-systems/types';
+import type { ThresholdChart } from './threshold-charts/types';
+import type { HandicapMechanism } from './handicap-mechanisms/types';
+import type { PointsSystem } from './points-system/types';
 
 // ============================================================================
 // Ratings
@@ -131,78 +137,13 @@ export interface MatchResult {
 }
 
 // ============================================================================
-// Thresholds (discriminated union)
+// Threshold / Mechanism output shapes (consumed by Handicap Mechanism variants)
 // ============================================================================
 
 /**
- * Threshold mechanism: extra-games handicap (the higher-rated team must win
- * MORE games than the lower-rated team to compensate for skill diff).
- *
- * Used by BCA points (3v3) and BCA percentage (5v5) systems. Will be used
- * by Fargo games-won format and any other system whose handicap is expressed
- * as "win N games" rather than start-points or race-length.
- *
- * Returns the shape already used across the codebase
- * (src/types/match.ts HandicapThresholds).
- *
- * Renamed from `BCAThreshold` (mode `'games_to_win'`) — see the modular-
- * league plan Phase 1 Unit 1.3. The discriminator now describes the
- * MECHANISM (extra_games / start_points / race_length_adjustment) rather
- * than the rating system, so combos like (BCA-rating + 10-7 scoring +
- * start-points-mechanism) have a valid output shape.
- */
-export interface ExtraGamesThreshold {
-  mode: 'extra_games';
-  compute: (handicapDiff: number, overrides: SystemOverrides) => HandicapThresholds;
-}
-
-/**
- * Threshold mechanism: start-points handicap (the lower-rated team starts
- * the match with bonus points already on the board).
- *
- * Used by Fargo 5v5 10-7 today; could be paired with any rating system.
- * Takes both teams' rosters (ratings) because the calculation depends on
- * the full lineup, not a single diff scalar.
- *
- * Renamed from `FargoThreshold` — type rename only; mode tag unchanged.
- */
-export interface StartPointsThreshold {
-  mode: 'start_points';
-  compute: (
-    homeRatings: RatingValue[],
-    awayRatings: RatingValue[],
-    overrides: SystemOverrides
-  ) => FargoStartPointsResult;
-}
-
-/**
- * Threshold mechanism: race-length-adjustment handicap (each pairing plays
- * a race-to-N where N differs by skill diff — higher-rated player has a
- * longer race).
- *
- * Used by BCAPL Skill Level (SL1-SL9) race format. Not yet wired to a
- * shipped module — the type is in place so future modules can implement
- * it without restructuring the union. Per the plan, BCAPL SL is a future
- * Phase 2/3 addition.
- *
- * Output shape: per-pairing race lengths for home and away. The runtime
- * uses these to score race-to-N pairings; first to N racks wins the
- * pairing (and contributes one game-win to the team).
- */
-export interface RaceLengthThreshold {
-  mode: 'race_length_adjustment';
-  compute: (
-    homeRatings: RatingValue[],
-    awayRatings: RatingValue[],
-    overrides: SystemOverrides
-  ) => RaceLengthResult;
-}
-
-/**
- * Output of `StartPointsThreshold.compute()`. `weakerTeam` identifies which
- * team receives the deficit (or 'even' if teams are perfectly matched).
- * `startPointsForWeakerTeam` is always non-negative — 0 means no handicap
- * applies.
+ * Output of the Start Points Mechanism's `compute()`. `weakerTeam` identifies
+ * which team receives the deficit (or 'even' if teams are perfectly matched).
+ * `startPointsForWeakerTeam` is always non-negative — 0 means no handicap applies.
  */
 export interface FargoStartPointsResult {
   startPointsForWeakerTeam: number;
@@ -210,31 +151,12 @@ export interface FargoStartPointsResult {
 }
 
 /**
- * Output of `RaceLengthThreshold.compute()`. Per-pairing race targets for
- * each side. Both must be ≥ 1.
+ * Output of the Race Length Adjustment Mechanism's `compute()`. Per-pairing race
+ * targets for each side. Both must be ≥ 1.
  */
 export interface RaceLengthResult {
   homeRaceLength: number;
   awayRaceLength: number;
-}
-
-// ============================================================================
-// Team format
-// ============================================================================
-
-/**
- * Structural facts about how a preset's matches are shaped.
- * Used by lineup and schedule code to know roster size, lineup size, and RR mode.
- */
-export interface TeamFormatConstants {
-  /** Players per team in a match night's lineup (3 for 3v3, 5 for 5v5). */
-  lineupSize: number;
-
-  /** Maximum roster size a team can carry (5 for 3v3, 8 for 5v5). */
-  maxRosterSize: number;
-
-  /** How games are generated from the lineup. */
-  gameGeneration: 'double_round_robin' | 'single_round_robin';
 }
 
 // ============================================================================
@@ -261,34 +183,6 @@ export interface SystemModule {
    * fallback) to honor the graceful-degradation principle.
    */
   key: string;
-
-  /** Structural team-format constants for this preset. */
-  teamFormat: TeamFormatConstants;
-
-  /** Rating computation, validation, and display. */
-  rating: {
-    /**
-     * True for Fargo (operator enters rating manually at lineup time).
-     * False for BCA (rating derives from history).
-     */
-    requiresManualEntry: boolean;
-
-    /**
-     * Compute a rating from a player's recent game history.
-     * Undefined for Fargo (manual-only). Returns null when the player has
-     * insufficient history for the module's formula.
-     */
-    computeFromHistory?: (ctx: PlayerHistoryContext) => RatingValue | null;
-
-    /** Format a numeric rating for display (e.g., '+2', '85%', '575'). */
-    displayFormat: (value: RatingValue) => string;
-
-    /**
-     * Parse unknown input (string/number/null from a form field) into a
-     * validated rating value. UI uses the error message when ok is false.
-     */
-    validate: (value: unknown) => RatingValidationResult;
-  };
 
   /** Game outcome recording and match-result computation. */
   scoring: {
@@ -320,10 +214,190 @@ export interface SystemModule {
     ) => MatchResult;
   };
 
-  /** Threshold lookup — discriminated union by mode. */
   /**
-   * Threshold lookup — discriminated union by **mechanism**, not rating
-   * system (per Phase 1 Unit 1.3 restructuring).
+   * Team Geometry Module — passive configuration record bundling the three
+   * structural axes (lineup_size, max_roster_size, game_generation) plus the
+   * derived game_count (lineup_size² × multiplier(game_generation)).
+   *
+   * Added in the new Unit 1 of the modular-framework migration (per
+   * `docs/plans/2026-05-17-001-refactor-modular-framework-migration-plan.md`).
+   *
+   * Coexists with the existing `teamFormat` field during the strangler-fig
+   * transition — both fields carry the same axis values; consumers gradually
+   * migrate from `teamFormat` to `teamGeometry` in Phase C. The legacy field
+   * gets deprecated/removed once no consumers remain.
+   *
+   * @see src/systems/team-geometry/index.ts — `getTeamGeometry()` factory
+   * @see docs/league-system/modules/team-geometry.md — the locked blueprint
    */
-  threshold: ExtraGamesThreshold | StartPointsThreshold | RaceLengthThreshold;
+  teamGeometry: TeamGeometry;
+
+  /**
+   * Match Format Module — passive configuration record bundling the two per-pairing
+   * structural axes (pairing_format, race_length).
+   *
+   * Added in the Match Format extraction Unit (per
+   * `docs/plans/2026-05-17-001-refactor-modular-framework-migration-plan.md`),
+   * following the strangler-fig pattern proven by Team Geometry.
+   *
+   * Currently no SystemModule consumer reads pairing_format / race_length directly —
+   * the Pairings Generator code that would do so is itself a future extraction Unit
+   * (currently bundled into runtime code). When that landlines, it'll consume
+   * `matchFormat.pairingFormat` and `matchFormat.raceLength` via the Module rather
+   * than via scattered preference reads.
+   *
+   * @see src/systems/match-format/index.ts — `getMatchFormat()` factory
+   * @see docs/league-system/modules/match-format.md — the locked blueprint
+   */
+  matchFormat: MatchFormat;
+
+  /**
+   * Win Calculator Module — the metric-precedence-stack walker that decides
+   * the match winner. Added in Unit 1 of the modular-framework migration
+   * (per `docs/plans/2026-05-17-001-refactor-modular-framework-migration-plan.md`).
+   *
+   * Replaces the runtime branching on `win_condition` that lived in
+   * `computeMatchRunningTotals`, `MatchEndVerification`, and other
+   * consumers. Each SystemModule declares which Win Calculator it uses;
+   * the runtime calls `winCalculator.decide(matchData)` to get a typed
+   * `WinnerDecision` ('home_win' / 'away_win' / 'tied').
+   *
+   * In Unit 1, every Win Calculator's metric stack has exactly one entry
+   * (matching the SystemModule's traditional `win_condition` value).
+   * Multi-entry stacks, the `edge` entry, and the Tiebreak System trigger
+   * integration are enabled by the interface but not implemented until
+   * Unit 9 (Tiebreak System extraction).
+   *
+   * @see src/systems/win-calculators/index.ts — `getWinCalculator()` factory
+   * @see docs/league-system/modules/win-calculator.md — the locked blueprint
+   */
+  winCalculator: WinCalculator;
+
+  /**
+   * Handicap System Module — encapsulates the player rating encoding (kind,
+   * manual-vs-derived, displayFormat, validate, optional computeFromHistory).
+   *
+   * Added in the Handicap Systems extraction Unit (per
+   * `docs/plans/2026-05-17-001-refactor-modular-framework-migration-plan.md`),
+   * following the strangler-fig pattern proven by Team Geometry and Match Format.
+   *
+   * Replaces the legacy `rating` capability that was a stranded API — declared
+   * but never consumed by production code. Phase C was a no-op (no consumers to
+   * swap); Phase D deleted the field and its 4 construction sites.
+   *
+   * The four shipping variants:
+   * - Points (kind: 'points')           — BCA 3v3
+   * - Percentage (kind: 'percentage')   — BCA 5v5
+   * - FargoRate (kind: 'fargo')         — Fargo 5v5
+   * - Skill Level (kind: 'skill_level') — reserved; no current consumer
+   *
+   * `null` reflects the blueprint's "no handicap" case (`handicap_type='none'` —
+   * league self-sorts into skill tiers; no equalization Module is applied).
+   * The locked Handicap Systems README explicitly defines this as "no Module"
+   * rather than a 5th variant.
+   *
+   * @see src/systems/handicap-systems/index.ts — `getHandicapSystem()` factory
+   * @see docs/league-system/modules/handicap-systems/README.md — the locked blueprint
+   */
+  handicapSystem: HandicapSystem | null;
+
+  /**
+   * Threshold Chart Module — the passive data lookup that maps a handicap
+   * input (a difference, a rating pair, or a derived value) to a threshold
+   * value that the active Mechanism applies to match setup.
+   *
+   * Added in the Threshold Charts extraction Unit (per
+   * `docs/plans/2026-05-17-001-refactor-modular-framework-migration-plan.md`),
+   * following the strangler-fig pattern proven by Team Geometry / Match Format
+   * / Handicap Systems.
+   *
+   * Coexists with the legacy `threshold` capability above during the
+   * strangler-fig transition — the legacy field's `compute` function internally
+   * delegates to the same Chart code paths this field references. Consumers
+   * gradually migrate from `systemModule.threshold.compute(...)` to
+   * `systemModule.thresholdChart.compute(...)` in Phase C; the legacy
+   * `threshold` capability is removed in Phase D.
+   *
+   * The five shipping variants:
+   * - games_needed_3v3 — BCA 3v3 (Points × extra_games)
+   * - games_needed_5v5 — BCA 5v5 (Percentage × extra_games)
+   * - fargo_formula   — Fargo 5v5 (FargoRate × start_points)
+   * - race_points     — RESERVED (Points × race_length_adjustment)
+   * - race_percentage — RESERVED (Percentage × race_length_adjustment)
+   *
+   * `null` reflects combos with no calibrated Chart for the active
+   * (handicap_type × mechanism) pairing — e.g., `handicap_type='none'`
+   * (no handicap applied) or unknown/unbuilt combinations. The legacy
+   * `threshold` field continues to provide a zero-handicap fallback in
+   * those cases so the match still plays.
+   *
+   * @see src/systems/threshold-charts/index.ts — `getThresholdChart()` factory
+   * @see docs/league-system/modules/threshold-charts/README.md — the locked blueprint
+   */
+  thresholdChart: ThresholdChart | null;
+
+  /**
+   * Handicap Mechanism Module — declares the KIND of asymmetry the handicap
+   * creates in match setup (extra games to win, start points, race-length
+   * adjustment). Bundled internally with the active Chart at construction.
+   *
+   * Added in the Handicap Mechanisms extraction Unit (per
+   * `docs/plans/2026-05-17-001-refactor-modular-framework-migration-plan.md`),
+   * following the strangler-fig pattern proven by Team Geometry / Match Format /
+   * Handicap Systems / Threshold Charts.
+   *
+   * Coexists with the legacy `threshold` capability above during the
+   * strangler-fig transition — both ultimately compute the same values
+   * (the Mechanism's `compute` delegates to its bound Chart, same path as
+   * the legacy field after Threshold Charts Phase D). Consumers gradually
+   * migrate from `systemModule.threshold.compute(...)` to
+   * `systemModule.handicapMechanism.compute(...)` in Phase C; the legacy
+   * `threshold` capability is removed in Phase D, completing the cleanup
+   * that Threshold Charts Phase D deferred.
+   *
+   * Variants per the locked 2x2 taxonomy:
+   * - extra_games (BCA 3v3 + BCA 5v5)
+   * - start_points (Fargo 5v5)
+   * - race_length_adjustment (RESERVED — no shipping consumer)
+   *
+   * `null` reflects combos with no calibrated (Mechanism × Chart) pairing —
+   * e.g., `handicap_type='none'` (no handicap applied) or unknown combos.
+   * For `mechanism='none'` configs, the `noneMechanism` zero-handicap
+   * instance fills this slot rather than null, so consumers see a uniform
+   * shape per the locked spec.
+   *
+   * @see src/systems/handicap-mechanisms/index.ts — `buildHandicapMechanism()` factory
+   * @see docs/league-system/modules/handicap-mechanisms/README.md — locked blueprint
+   */
+  handicapMechanism: HandicapMechanism | null;
+
+  /**
+   * Points System Module — the composed per-match point allocation rule set.
+   * A `PointsSystem` is a structured-slot composition of primitives
+   * (thresholds, optional per-game allocator, triggers, optional end-of-match
+   * aggregate) per the locked Points System README and the Ed-walked
+   * decomposition in
+   * `docs/brainstorms/2026-05-18-points-system-decomposition-requirements.md`.
+   *
+   * Added in Phase B of the Points System extraction Unit (Unit 5). Coexists
+   * with the legacy `scoring` capability above + the calculator-registry
+   * dispatch (`src/systems/calculators/`) during the strangler-fig transition;
+   * Phase C swaps consumers to the composed Points System; Phase D removes
+   * the legacy calculator registry.
+   *
+   * The three prepackaged Scoring Systems each declare their composition:
+   * - Points 3-Man — buildPoints3ManComposition() (just an end-of-match aggregate)
+   * - Percentage 5-Man — buildPercent5ManComposition() (allocator + 2 jump triggers)
+   * - 10-Point Scoring System — buildTenPointComposition() (initial points + allocator)
+   *
+   * `null` reflects combos where no Points System applies — currently the
+   * `handicap_type='none' + mechanism='none'` case (a league running with
+   * no points tracking at all). Cross-audited byte-equivalent to the legacy
+   * bundled calculators across exhaustive input sweeps; see
+   * `src/systems/points-system/__tests__/cross-audit-*.test.ts`.
+   *
+   * @see src/systems/points-system/runtime.ts — evaluatePointsSystem()
+   * @see docs/league-system/modules/points-system/README.md — the locked blueprint
+   */
+  pointsSystem: PointsSystem | null;
 }

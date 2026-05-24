@@ -63,38 +63,44 @@ describe('pickModule', () => {
     });
   });
 
-  describe('returned modules expose expected teamFormat constants', () => {
-    it('bca3v3 is 3v3 double round robin', () => {
+  describe('returned modules expose expected teamGeometry constants', () => {
+    it('bca3v3 is 3v3 double round robin (18 games)', () => {
       const mod = pickModule('points');
-      expect(mod.teamFormat).toEqual({
+      expect(mod.teamGeometry).toEqual({
         lineupSize: 3,
         maxRosterSize: 5,
         gameGeneration: 'double_round_robin',
+        gameCount: 18,
       });
     });
 
-    it('bca5v5 is 5v5 single round robin', () => {
+    it('bca5v5 is 5v5 single round robin (25 games)', () => {
       const mod = pickModule('percentage');
-      expect(mod.teamFormat).toEqual({
+      expect(mod.teamGeometry).toEqual({
         lineupSize: 5,
         maxRosterSize: 8,
         gameGeneration: 'single_round_robin',
+        gameCount: 25,
       });
     });
 
-    it('fargo5v5 is 5v5 single round robin with manual rating entry', () => {
+    it('fargo5v5 is 5v5 single round robin (25 games) with the FargoRate Handicap System', () => {
       const mod = pickModule('fargo');
-      expect(mod.teamFormat).toEqual({
+      expect(mod.teamGeometry).toEqual({
         lineupSize: 5,
         maxRosterSize: 8,
         gameGeneration: 'single_round_robin',
+        gameCount: 25,
       });
-      expect(mod.rating.requiresManualEntry).toBe(true);
+      expect(mod.handicapSystem?.kind).toBe('fargo');
+      expect(mod.handicapSystem?.requiresManualEntry).toBe(true);
     });
 
-    it('BCA modules do not require manual rating entry', () => {
-      expect(pickModule('points').rating.requiresManualEntry).toBe(false);
-      expect(pickModule('percentage').rating.requiresManualEntry).toBe(false);
+    it('BCA modules pick the Points and Percentage Handicap Systems (history-derived)', () => {
+      expect(pickModule('points').handicapSystem?.kind).toBe('points');
+      expect(pickModule('points').handicapSystem?.requiresManualEntry).toBe(false);
+      expect(pickModule('percentage').handicapSystem?.kind).toBe('percentage');
+      expect(pickModule('percentage').handicapSystem?.requiresManualEntry).toBe(false);
     });
   });
 
@@ -109,14 +115,14 @@ describe('pickModule', () => {
     });
   });
 
-  describe('returned modules expose expected threshold mode', () => {
-    it('BCA modules use extra_games threshold mode (renamed from games_to_win in Phase 1 Unit 1.3)', () => {
-      expect(pickModule('points').threshold.mode).toBe('extra_games');
-      expect(pickModule('percentage').threshold.mode).toBe('extra_games');
+  describe('returned modules expose expected Handicap Mechanism kind', () => {
+    it('BCA modules use extra_games Mechanism', () => {
+      expect(pickModule('points').handicapMechanism?.kind).toBe('extra_games');
+      expect(pickModule('percentage').handicapMechanism?.kind).toBe('extra_games');
     });
 
-    it('Fargo module uses start_points threshold mode', () => {
-      expect(pickModule('fargo').threshold.mode).toBe('start_points');
+    it('Fargo module uses start_points Mechanism', () => {
+      expect(pickModule('fargo').handicapMechanism?.kind).toBe('start_points');
     });
   });
 });
