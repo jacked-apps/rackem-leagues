@@ -47,6 +47,7 @@ import { UnifiedScoreboard } from '@/components/scoring/UnifiedScoreboard';
 import { TiebreakerScoreboard } from '@/components/scoring/TiebreakerScoreboard';
 import { GamesList } from '@/components/scoring/GamesList';
 import { TableNumberBar } from '@/components/scoring/TableNumberBar';
+import { ConnectionIndicator } from '@/components/match/ConnectionIndicator';
 import { queryKeys } from '@/api/queryKeys';
 import { getTeamStats, getPlayerStats as getPlayerStatsUtil } from '@/types';
 import { getCalculator } from '@/systems/calculators';
@@ -96,6 +97,7 @@ function ScoreMatchBody() {
     addToConfirmationQueue: addToConfirmationQueueFromHook,
     removeFromConfirmationQueue,
     myVacateRequests,
+    connectionHealth,
     loading,
     error,
   } = useMatchScoring({
@@ -714,6 +716,10 @@ function ScoreMatchBody() {
             {isHomeTeam ? match.home_team?.team_name : match.away_team?.team_name}
           </div>
           <div className="flex items-center gap-2">
+            {/* Calm connection indicator — renders nothing while healthy, a
+                quiet "catching up" pill while degraded, one calm note on a
+                sustained outage. Active scorer only (this is the scoring page). */}
+            <ConnectionIndicator health={connectionHealth} />
             <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
               <input
                 type="checkbox"
