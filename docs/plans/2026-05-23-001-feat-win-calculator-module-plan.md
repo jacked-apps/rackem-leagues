@@ -30,7 +30,7 @@ Every match tracks two metrics: **games** (recorded per game) and **points** (al
 **When it runs:** the instant the runtime sees the **end-match chip** OR the last game has been played. Not before.
 
 **What it does, in order:**
-1. **Win chip set?** If a winner (`home`/`away`) is already written into the shared bag under `result`, that side won. Stop. (The chip is an unconditional override — usually written by a clinch trigger; the Win Calc neither knows nor cares who wrote it.)
+1. **Win chip set?** If a winner (`home`/`away`) is already written into the shared bag under `edge`, that side won. Stop. (The chip is an unconditional override — usually written by a clinch trigger; the Win Calc neither knows nor cares who wrote it.)
 2. **No chip?** Walk the LO-assigned comparators in the LO-assigned **order** (the LO may enable only one). There are exactly two possible comparators:
    - a **games comparator** with a mode dial: **most** (higher count wins; equal → no decision) or **met goal** (a side reaching its games target wins; neither → no decision),
    - a **points comparator** with the same **most**/**met goal** mode dial.
@@ -53,7 +53,7 @@ Head start and easier path are the same math seen from opposite ends (race-to-10
 
 - **R1.** Win Calc is a pure function over (its own config) + (the shared state bag); it imports/queries no other module and infers nothing from handicap/threshold/trigger modules.
 - **R2.** Output is a **winner only** (`home`/`away`) or **no-winner** (tie residue). It never stores/produces a "tie" value and holds no tie slot/chip.
-- **R3.** Win-chip override: if `result` is set in the bag, return that side and skip comparators.
+- **R3.** Win-chip override: if `edge` is set in the bag, return that side and skip comparators.
 - **R4.** Exactly two comparators (games, points), each with a `most`/`met_goal` mode, plus an LO order that may enable one or both.
 - **R5.** Never throws. On any internal error it logs and bypasses (treats that comparator as "no decision"), consistent with the engine's never-break contract.
 - **R6.** Live: it is the source of truth for the recorded match winner (`matches.winner_team_id` / `matches.match_result`), replacing the inline logic in `MatchEndVerification.tsx`.
@@ -109,18 +109,23 @@ None needed — this is internal architecture against an internal spec, mirrorin
 - **The judge is a pure function `decideWinner(state, config) → Verdict`** where `Verdict = { winner: 'home' | 'away' } | { tie: true }`. No I/O, no module imports, no throws.
 - **Config shape (serializable, named dials):** `{ order: ('games'|'points')[]; games?: { mode: 'most'|'met_goal' }; points?: { mode: 'most'|'met_goal' } }`. A metric absent from `order` is "off" (the "look at only one" case). The win-chip check is implicit and always first. This is exactly the shape a future workshop screen fills in.
 - **Config is built in code for now, keyed off today's `win_condition`** — mirroring how Points compositions are picked by `points_calculator`. This reproduces *current* behavior exactly for every league (preset and ad-hoc); the most/met-goal *choice* is not yet exposed to LOs (that's the workshop). No DB/wizard/RLS work. (Decided with Ed: code-defined interim, serializable shape for easy workshop bolt-on later.)
-- **State the judge reads** (sourced from the live engine bag / values already in `MatchEndVerification`): `home_games`, `away_games`, `home_points`, `away_points`, per-side games/points targets, and optional `result` chip. For met-goal, only the **win** target affects the outcome — today's `determineMatchResult` returns `'tie'` on both its tie-target and default branches, so the comparator needs only `home/away win target` to be parity-exact (the tie target is cosmetic in current code; documented).
+- **State the judge reads** (sourced from the live engine bag / values already in `MatchEndVerification`): `home_games`, `away_games`, `home_points`, `away_points`, per-side games/points targets, and the optional `edge` chip (the winner chip). For met-goal, only the **win** target affects the outcome — today's `determineMatchResult` returns `'tie'` on both its tie-target and default branches, so the comparator needs only `home/away win target` to be parity-exact (the tie target is cosmetic in current code; documented).
+- **Doc concept names vs code symbols.** The doc names the *concept* with a stable canonical name; code symbols may differ to dodge clashes, tied by a single-sourced mapping. The one hard contract is the **state-bag key** — every module touching a value must use the same key, so it lives as one shared constant. Concretely: the winner chip's key is **`edge`** (the doc term + the key existing clinch triggers already write), deliberately distinct from `MatchEndVerification`'s existing local `result` var (the DB string `'home_win'|'away_win'|'tie'`). Using `edge` for the chip matches the established key and avoids colliding with that `result` var.
 - **Points met-goal has no target substrate today (feasibility-review finding).** `HandicapThresholds` (`src/types/match.ts`) carries only `games_to_win`/`games_to_tie`/`games_to_lose`; there is **no `points_to_win`/`points_to_tie` field**, and `games_to_win` (which doubles as a points target) is null in shipped points formats (Fargo plays all games). This is fine for parity because the points config uses `points → most` (needs no target). But it means a points **`met_goal`** comparator is **unbuilt plumbing**, not merely deferred config — `WinCalcState.home/away_points_target` will be null/absent until a points-target source is added (workshop-era). Document this on the type; do not pretend the substrate exists.
 - **Full live cutover, phased** (decided with Ed): build + parity in isolation (Phase 1–2), then swap the live path with legacy as fallback + auditor (Phase 3). Avoids re-creating dead scaffolding.
 - **New module directory `src/systems/win-calculator/` (singular)** signals the clean break from the dead plural `win-calculators/`. Internal naming is a developer call.
 
 ## v2 Validation Findings (the gate deliverable)
 
-Running this plan against v2 surfaced the following. None blocks building; items 1–2 are **required cheap edits to the unlocked v2 draft** before ratification; item 3 is a **ratification consequence** for the cold-read gate; items 4–5 are clarifications.
+Running this plan against v2 surfaced the following. None blocks building. Items 1–2 were **applied to the v2 draft (2026-05-23)**; item 3 records the **gate step 2 (puzzle-fit) outcome**; items 4–5 are clarifications.
 
-1. **Comparator structure is tighter than v2 says — REQUIRED v2 trim.** v2 §"The comparator switch" describes "an LO-ordered set of comparators" as "a 2×2 of four." The real model is **two comparators (one games, one points), each with a `most`/`met_goal` mode, plus an order filter** (and each may be off). Same capability, cleaner shape. Replace the "ordered set of four" framing accordingly. (The 2×2 of *what×how* survives as "two metrics × two modes"; it just isn't four independent, repeatable list entries.)
-2. **No tie slot / Allow-Ties inside Win Calc — REQUIRED v2 trim.** v2 §"Ties and the Tiebreak System" adds an "**Allow-Ties** module" that "occupies the tie slot" and says tie-handling "**Config lives here**." Per Ed, the Win Calc holds *no* tie config of any kind — it only reports "no winner," and what to do about it belongs to a separate isolated module. Delete the Allow-Ties-module / tie-slot / "config lives here" content from the Win Calc doc (it moves to the future tie-resolution module). v2's correct, surviving framing: a tie is the *absence* of a winner, concluded only at match-end, handed to the runtime.
-3. **Locked cross-doc drift — RATIFICATION CONSEQUENCE (not this plan's work).** The locked [`tiebreak-system/README.md`](../league-system/modules/tiebreak-system/README.md) still describes Win Calc as consuming "**edge** as the lowest-precedence metric in its stack" and "owns the decision to fire" the tiebreak — both deleted by v2 (and by this model). The migration plan `docs/plans/2026-05-17-001-refactor-modular-framework-migration-plan.md` (Units 1 & 9) likewise still speaks the metric-stack/`edge` language. Ratifying v2 will require a Principle-7 unlock + revision of the tiebreak README and a note that those migration-plan units are superseded. The 3-cold-read gate should catch this; flagging now so it isn't a surprise.
+1. **Comparator structure is tighter than v2 says — v2 trim APPLIED (2026-05-23).** v2 §"The comparator switch" describes "an LO-ordered set of comparators" as "a 2×2 of four." The real model is **two comparators (one games, one points), each with a `most`/`met_goal` mode, plus an order filter** (and each may be off). Same capability, cleaner shape. Replace the "ordered set of four" framing accordingly. (The 2×2 of *what×how* survives as "two metrics × two modes"; it just isn't four independent, repeatable list entries.)
+2. **No tie slot / Allow-Ties inside Win Calc — v2 trim APPLIED (2026-05-23).** v2 §"Ties and the Tiebreak System" adds an "**Allow-Ties** module" that "occupies the tie slot" and says tie-handling "**Config lives here**." Per Ed, the Win Calc holds *no* tie config of any kind — it only reports "no winner," and what to do about it belongs to a separate isolated module. Delete the Allow-Ties-module / tie-slot / "config lives here" content from the Win Calc doc (it moves to the future tie-resolution module). v2's correct, surviving framing: a tie is the *absence* of a winner, concluded only at match-end, handed to the runtime.
+3. **Cross-doc puzzle-fit — gate step 2 RAN (2026-05-23); outcome recorded here.** Four parallel cold reads checked v2 against the locked docs. Keeping the winner chip named **`edge`** (its established term across the puzzle) dissolved most apparent conflicts — `trigger.md`, points-system README, threshold-charts, and the league README already use `edge`, so they now agree with v2's vocabulary. The one real remaining mismatch: a few docs still say the **Win Calc fires** the tiebreak, whereas v2 moves firing to the **runtime** (pure judge). Resolution by doc:
+   - **team-geometry.md** — was a *finished* module blurring into the tiebreak (it described the Win Calc's stack + edge-as-fallback + firing). **Trimmed via the Principle-7 gate (2026-05-23)** to state only its own fact (even game counts can tie on games, odd can't).
+   - **threshold-charts/5v5-games-needed.md** (the universal Percentage Games-Needed formula — misleadingly named) — same finished-module over-reach (it narrated the Win Calc's metric stack / tiebreak firing / edge metric, plus a peek at the Points tie-band rule). **Trimmed via the Principle-7 gate (2026-05-23)** at 4 spots to state only its own parity-output facts + clean hand-off disclaimers; the formula, calibration, and I/O are untouched.
+   - **tiebreak-system/README.md** and **pairings-generator.md** — both are *not finished* (each pending its own modular v2). Their firing-ownership fix is **DEFERRED and logged** as a required delta for those future v2s — NOT a blocker on win-calculator-v2 ratification (don't hold a finished module hostage to unfinished siblings). **Logged delta for both:** the Win Calculator does not fire the tiebreak — it concludes a tie; the *runtime* fires the tiebreak; `edge` is the winner chip the Win Calc consumes (not a lowest-precedence stack metric). pairings-generator keeps its legitimate `mini_match`-uses-pairings link.
+   - **migration plan** `2026-05-17-001-...` (Units 1 & 9) still uses metric-stack/`edge` language — superseded; update when those units are next touched.
 4. **Where the win chip lives between clinch and match-end — clarification.** v2 doesn't say. In threshold-mode (full game count always played) the engine re-runs over all games on each evaluation, so a clinch trigger re-fires deterministically and the chip is **reconstructed in the bag at match-end** — no new persistence needed. Chip persistence becomes necessary only for the **end-match chip / race-mode early-stop** (deferred). Recommend a one-line v2 note tying this to the open "race-mode" item.
 5. **Input substrate — clarification.** v2 stays conceptual ("examines the collected match data"). The concrete substrate is the engine's `MatchStateBag`. For *this* cutover the judge reads the same scalars `MatchEndVerification` already has (no bag-surfacing needed); reading the richer bag is the future chip/clinch path. Recommend naming `MatchStateBag` in v2's "Current implementation status".
 
@@ -146,8 +151,8 @@ runtime sees end-match chip OR last game played
         │
         ▼
 decideWinner(state, config):
-    if state.result in {home, away}:        # win-chip override
-        return { winner: state.result }
+    if state.edge in {home, away}:          # win-chip override
+        return { winner: state.edge }
     for metric in config.order:             # e.g. ['points','games'] or ['games']
         mode = config[metric].mode          # 'most' | 'met_goal'
         w = comparator(metric, mode, state) # → 'home' | 'away' | null   (null = no decision)
@@ -195,7 +200,7 @@ Parity mapping (today's fixed behavior, reproduced by `buildWinCalcConfig`):
 - `Verdict = { winner: 'home' | 'away' } | { tie: true }`.
 - `ComparatorMode = 'most' | 'met_goal'`.
 - `WinCalcConfig = { order: ('games'|'points')[]; games?: { mode: ComparatorMode }; points?: { mode: ComparatorMode } }` — metric absent from `order` = off. Document that this is the future workshop's dial shape.
-- `WinCalcState = { home_games; away_games; home_points; away_points: number; home_games_target; away_games_target; home_points_target; away_points_target: number | null; result?: 'home' | 'away' | null }`.
+- `WinCalcState = { home_games; away_games; home_points; away_points: number; home_games_target; away_games_target; home_points_target; away_points_target: number | null; edge?: 'home' | 'away' | null }` (the `edge` field is the winner chip — same key the existing clinch triggers write).
 - Full `@fileoverview` + JSDoc per repo docs standard; name each field as a "dial" where it maps to one.
 
 **Patterns to follow:** `src/systems/points-system/types.ts` (state-bag types, doc density).
@@ -244,7 +249,7 @@ Parity mapping (today's fixed behavior, reproduced by `buildWinCalcConfig`):
 - Test: `src/systems/win-calculator/__tests__/judge.test.ts`
 
 **Approach:**
-- Win-chip override first: `if (state.result === 'home' || state.result === 'away') return { winner: state.result }`.
+- Win-chip override first: `if (state.edge === 'home' || state.edge === 'away') return { winner: state.edge }`.
 - Else walk `config.order`; for each metric, dispatch to `most`/`met_goal` per its mode using the matching state fields; first non-null → `{ winner }`.
 - Exhausted → `{ tie: true }`.
 - Wrap each comparator dispatch in try/catch: on error, log (structured, for a future notify hook) + treat as no-decision. The judge itself never throws.
@@ -254,7 +259,7 @@ Parity mapping (today's fixed behavior, reproduced by `buildWinCalcConfig`):
 **Patterns to follow:** never-break style of `src/systems/points-system/runtime.ts` `fireTrigger`.
 
 **Test scenarios:**
-- Happy: chip `result='away'` set → `{winner:'away'}` even though comparators would say home (override proven).
+- Happy: chip `edge='away'` set → `{winner:'away'}` even though comparators would say home (override proven).
 - Happy: no chip, `order:['games'], games:met_goal`, home meets target → `{winner:'home'}`.
 - Happy: no chip, `order:['points','games']` both `most`, points decide → winner from points; points tied, games decide → winner from games.
 - Edge: no chip, single comparator, no decision → `{tie:true}`.
@@ -340,7 +345,7 @@ Parity mapping (today's fixed behavior, reproduced by `buildWinCalcConfig`):
 - Test: `src/components/scoring/__tests__/MatchEndVerification.winner.test.tsx` (new) or extend existing scoring tests
 
 **Approach:**
-- Build `WinCalcState` from values already in scope (4 totals from the match row; per-side targets from the same source `determineMatchResult` uses; `result` chip absent today). Build config via `buildWinCalcConfig(snapshot.win_condition)`.
+- Build `WinCalcState` from values already in scope (4 totals from the match row; per-side targets from the same source `determineMatchResult` uses; `edge` chip absent today). Build config via `buildWinCalcConfig(snapshot.win_condition)`.
 - Call `decideWinner`; map `Verdict` → existing `result: 'home_win'|'away_win'|'tie'` + `winnerTeamId`. The judge is authoritative.
 - Keep `determineMatchResult` + the points ternary computed in parallel as **legacy**; log any divergence (reuse/mirror `auditMatchScoringConsistency`); if the judge somehow returns malformed output, fall back to legacy (never-break).
 - A `{ tie: true }` verdict feeds the **existing** tiebreaker branches unchanged (manual dialog / auto short-race, keyed off `tiebreaker_format`). This plan does not touch tie resolution.

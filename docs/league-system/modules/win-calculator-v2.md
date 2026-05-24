@@ -62,15 +62,15 @@ A configuration may enable just one comparator or both, in the LO's chosen order
 
 The two comparators, their modes, and the order are what make the Win Calculator *configurable*. Each Scoring System composition picks them, and they are stored as data so the build/tinker workspace can expose them.
 
-## The winner chip and `result`
+## The winner chip and `edge`
 
-The Win Calculator's output is **`result`**, holding a **winner only** (`home` or `away`) — never "tie" (a tie is the absence of a winner; see [Ties](#ties-and-the-tiebreak-system)). The **winner chip** is any affirmative write of a winner into `result`. It can come from three interchangeable producers, all meaning the same thing to the judge:
+The Win Calculator's output is **`edge`**, holding a **winner only** (`home` or `away`) — never "tie" (a tie is the absence of a winner; see [Ties](#ties-and-the-tiebreak-system)). The **winner chip** is any affirmative write of a winner into `edge`. It can come from three interchangeable producers, all meaning the same thing to the judge:
 
 - a **win-threshold trigger** during play (a side met its win-target — a clinch), firing mid-match or on the final game;
 - a **comparator**, at match end;
 - the **[Tiebreak System](tiebreak-system/README.md)**, after a tie has been concluded.
 
-The chip is **checked first — an override**: if `result` is already set, the comparators do not run. This is mandatory because compare-to-target targets are asymmetric per side, so comparing raw counts across sides is meaningless — a clinch must bind unconditionally. **Recalc** is simply re-running the judge after a producer has written `result`; the Tiebreak path is guaranteed to terminate it (the Tiebreak System always produces a winner — its chain auto-appends a terminal human-handoff).
+The chip is **checked first — an override**: if `edge` is already set, the comparators do not run. This is mandatory because compare-to-target targets are asymmetric per side, so comparing raw counts across sides is meaningless — a clinch must bind unconditionally. **Recalc** is simply re-running the judge after a producer has written `edge`; the Tiebreak path is guaranteed to terminate it (the Tiebreak System always produces a winner — its chain auto-appends a terminal human-handoff).
 
 ## Ties and the Tiebreak System
 
@@ -79,9 +79,9 @@ A tie is a **conclusion, not a signal**. A win is an event a side achieves and g
 - In a **compare-to-target** rule, a tie is recognized only at match end, when no winner chip fired and neither side reached its win-target.
 - In a **compare-totals** rule, a tie is simply equal totals at the end.
 
-When the comparators yield no winner, the **scoring runtime** runs the LO's configured Tiebreak System. It produces a winner, which is written as the `result` chip; the Win Calculator then recalcs and declares that side the winner.
+When the comparators yield no winner, the **scoring runtime** runs the LO's configured Tiebreak System. It produces a winner, which is written as the `edge` chip; the Win Calculator then recalcs and declares that side the winner.
 
-**Win Calculator is "dumb" about how the tiebreak winner was produced.** It just sees a winner in `result` and uses it; it doesn't know or care whether that came from a coin flip or a single-rack tiebreaker game. This keeps Win Calculator the sole authority on "who won the match" while the Tiebreak System owns the *how*.
+**Win Calculator is "dumb" about how the tiebreak winner was produced.** It just sees a winner in `edge` and uses it; it doesn't know or care whether that came from a coin flip or a single-rack tiebreaker game. This keeps Win Calculator the sole authority on "who won the match" while the Tiebreak System owns the *how*.
 
 **A concluded tie is handed off, not handled here.** The Win Calculator reports one of two findings — a winner, or no winner. What becomes of a no-winner result — broken or allowed to stand — belongs to a separate module, executed by the runtime (a mini-match tiebreaker is literally a second match, and matches are runtime-run).
 
@@ -102,7 +102,7 @@ Beyond the comparator switch and Tiebreak System integration documented above, t
 
 - **Upstream**: consumes the two **metrics** (Games and Points data) plus the **thresholds** declared by [Handicap Mechanisms](handicap-mechanisms/README.md) and the point totals produced by the [Points System](points-system/README.md). The per-game data feeding those metrics arrives via the scoring runtime, which fills in the game slots produced by the [Pairings Generator](pairings-generator.md) — the Win Calculator does not read Pairings Generator's output directly, but its inputs originate downstream of that Module's slot list.
 - **Output**: the match result — the declared winner, or a tie when no winner is produced.
-- **Tiebreak**: when the comparators yield no winner, the scoring runtime fires the [Tiebreak System](tiebreak-system/README.md); the winner it produces re-enters as the `result` chip and the Win Calculator recalcs. Sequential, not circular: comparators conclude tie → runtime runs Tiebreak System → winner written → Win Calc recalcs.
+- **Tiebreak**: when the comparators yield no winner, the scoring runtime fires the [Tiebreak System](tiebreak-system/README.md); the winner it produces re-enters as the `edge` chip and the Win Calculator recalcs. Sequential, not circular: comparators conclude tie → runtime runs Tiebreak System → winner written → Win Calc recalcs.
 - **Downstream**: the per-match result feeds the Standings concern (outside the modular Scoring System catalog — its architectural shape is a separate future brainstorm) for season-level ranking. The Win Calculator answers *"who won this match"*; the future Standings concern answers *"given the season's match results, who finishes where."*
 
 ## Changes vs the locked v1 (draft-only — remove at ratification)
@@ -110,7 +110,7 @@ Beyond the comparator switch and Tiebreak System integration documented above, t
 The complete diff against [`win-calculator.md`](win-calculator.md). Everything not listed here is preserved verbatim.
 
 1. **One judge, not a two-mode split.** The 2026-05-18 chip-mode/cascade-mode framing is gone; the judge is chip-checked-first + an LO-ordered comparator switch. ("chip-mode" = a compare-to-target comparator configured; "cascade-mode" = compare-totals comparators.)
-2. **`result` is win-only; a tie is a concluded residue.** v1's "metric precedence stack with `edge` as the lowest entry" is replaced by the winner chip (override) + recalc; there is no `edge`-as-bottom-metric.
+2. **`edge` is a win-only override chip, not a metric in a stack.** v1 placed `edge` as the lowest-precedence entry in a metric stack; here `edge` is the winner chip — checked first as an override — and a tie is a concluded residue (no `edge` written), not a bottom-of-stack fallback.
 3. **Two comparators (games, points), each with a compare-totals/compare-to-target mode, plus an order filter** — in place of the abstract "metric precedence stack." Not an open-ended set: exactly one comparator per metric, either may be off.
 4. **`endMatch` is its own flow-control token**, separate from the winner declaration (v1 did not model termination as a token; the 2026-05-18 draft lumped "end game now" onto the chip).
 5. **Orchestration removed from Win Calculator.** v1 had it "own the decision to fire" the tiebreak; here the Win Calculator is a pure judge that *concludes* a tie, and the **scoring runtime/director** fires the tiebreak and sequences point awards, confirmation, undo, and recording.
