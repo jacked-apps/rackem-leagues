@@ -439,6 +439,13 @@ The Step-2 refactor (per the comparison brainstorm's verdict) lifts Team Geometr
 - `src/wizards/league-v2/steps/` — wizard step(s) collecting `lineup_size` + `max_roster_size`; `game_generation` is currently derived from preset selection rather than independently chosen (a Step-2 refactor opportunity)
 - `src/__tests__/database/lock_tier1_preferences.db.test.ts` (if present, naming approximate) — characterization of the lock trigger's behavior
 
+### Inline status & code refs (borderline pass)
+
+- Shipped triples: 3v3 Points (lineup 3, roster 5, double_round_robin, 18 games); 5v5 Percentage + 5v5 Fargo (lineup 5, roster 8, single_round_robin, 25 games).
+- `max_roster_size`: schema cap 20 via `preferences_max_roster_size_check`; not consumed by scoring/threshold/win-calc/standings/pairings code; teams' actual sizes live in `teams.player_count`.
+- Game-order shortcuts: hardcoded `src/utils/gameOrder.ts` table for 3v3 DRR, inline for 5v5 SRR; Step-2 replaces with the universal Pairings Generator.
+- Consumers: scoring runtime `src/utils/match/computeMatchRunningTotals.ts`; lineup UI `src/components/lineup/`.
+
 ## modules/threshold-charts/3v3-games-needed.md
 
 _Extracted 2026-05-24 from the locked design doc [modules/threshold-charts/3v3-games-needed.md](modules/threshold-charts/3v3-games-needed.md)._
