@@ -4,6 +4,63 @@ Tasks and refactoring items for Ed to work on.
 
 ---
 
+## ⭐ 2026-05-24 NEXT BRANCH — Match realtime resilience (handoff must survive dropped connections)
+
+**Discovered:** 2026-05-24 while testing the Win Calculator cutover — the realtime subscription fell into a `CLOSED → re-subscribe → TIMED_OUT` loop and the two-scorekeeper handoff stopped syncing.
+**Severity:** IMPORTANT — Ed flagged this as the very next branch to work on.
+**Branch needed:** `feat/match-realtime-resilience` — its own focused branch, NOT a quick fix.
+
+**The problem:** the live-scoring handoff between the two teams rides entirely on Supabase realtime (`src/realtime/useMatchRealtime.ts`). That hook is well-built *against re-subscribe churn* (deps are `[matchId]` only; callbacks/options held in refs; it does not tight-retry), BUT it has **no app-level resilience**: no explicit re-subscribe when the channel drops (`CLOSED`), no "reconnecting…" indicator for the scorekeeper, and no fallback (e.g. polling) when realtime degrades. It trusts realtime to stay up plus whatever the Supabase client reconnects on its own. A dropped/blipped connection in production can leave one device out of sync until a manual refresh.
+
+**Why it matters (not polish):** live scoring happens in pool halls, which routinely have flaky wifi. "The handoff survives a dropped connection" is real product robustness for launch.
+
+**What is NOT the bug (don't chase these):**
+- The recurring local `CLOSED/TIMED_OUT` loops in dev are usually the **local Supabase realtime container** being unhealthy (worse after schema/config changes). Dev fix = `supabase stop && supabase start` (data is preserved). Environment quirk, not this code.
+- The hook's subscription *wiring* is sound — don't rewrite it; ADD a resilience layer around it.
+
+**Fix direction (for the focused branch):**
+- Re-subscribe on `CLOSED` with sensible backoff (not a tight loop).
+- A user-facing "reconnecting… / offline" indicator on the scoring + lineup screens so a scorekeeper knows sync is degraded.
+- A fallback (e.g. short-interval polling refetch) so scoring still works while realtime is down, resuming realtime when it recovers.
+- Test by simulating dropped/timed-out connections, not just the happy path.
+
+**Until fixed:** in dev, restart Supabase when the subscription loops. In production, a realtime blip can desync a scorekeeper's device until manual refresh — the handoff is a single point of failure with no graceful degradation.
+
+---
+
+## ⭐ 2026-05-24 OWN BRANCH — Purge code references from the league-system design docs
+
+**Discovered:** 2026-05-24 while finishing the Win Calculator module — a locked module doc's "Source of truth" section pointed at a `src/` directory I'd just deleted and said "the model above is not yet in code."
+**Severity:** IMPORTANT (design-canon integrity) — these docs are the contract the code must abide by.
+**Branch needed:** its own focused branch; uses the Principle-7 unlock ritual per doc.
+
+**The principle:** every `docs/league-system/modules/**` doc is a **design document** — it must read as the spec for a brand-new program that has not been built yet. It describes what the Module IS and how it behaves, NOT the code that implements it.
+
+**What to strip (canon-wide drift, found 2026-05-24):**
+- ~23 docs reference `src/...` paths.
+- 9 docs have a "## Source of truth" section listing implementing code.
+- 20 docs have "current implementation status" / "current code" / "not yet in code" / "halted Unit N scaffolding" lines.
+
+All of that comes out. No `src/` paths, no source-of-truth code lists, no build-status notes. The build-state tracking lives in plans, the TOC, and chat — never in the canon doc.
+
+**Folds in:** the win-calculator.md stale-anchor cleanup (was the Win Calc plan's R9 doc item) — handled as part of this purge, NOT in isolation, so the canon stays consistent.
+
+---
+
+## 2026-05-24 CLEANUP — Remove the dead `scoring.computeMatchResult` capability
+
+**Discovered:** 2026-05-24 during Win Calculator Unit 7 (deferred deliberately to keep that PR scoped to Win Calc).
+**Severity:** LOW — dead code, no runtime impact.
+**Branch needed:** small, its own task.
+
+**What's dead:** `calculateFargoMatchTotals` (`src/utils/fargoMatchTotals.ts`) has zero non-test callers; the only call to `fargo5v5.scoring.computeMatchResult` is inside it. The match winner is now the Win Calculator's job; per-match totals come from the live points engine.
+
+**Why it wasn't done with Win Calc:** it's a separate capability — `computeMatchResult` is a **required field on the shared `scoring` interface** (`SystemModule.scoring`, `src/systems/types.ts`), so removal touches the interface + bca3v3/bca5v5 (stubs that throw) + fargo5v5 (real) + `pickScoring`, and possibly the `MatchResult`/`StoredGameRecord` types. Bundling it into the Win Calc PR would have blurred the scope.
+
+**Before deleting:** `src/components/scoring/UnifiedScoreboard.tsx:14` tags `calculateFargoMatchTotals` as part of the "two-paths-audit" pattern — confirm it's genuinely orphaned (not the active auditor) before removing it.
+
+---
+
 ## 🚨 2026-04-21 STAGING TEST — Multiple Critical Failures
 
 **Discovered:** 2026-04-21 during first real-player staging test at the league event
