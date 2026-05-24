@@ -473,6 +473,12 @@ _Extracted 2026-05-24 from the locked design doc [modules/threshold-charts/READM
 - Per-Chart code anchors live in each variant page's *Current code state* section
 - `src/utils/handicap/fargoGamesWonThresholds.ts` — Fargo formula entry point (formula-shaped Chart, not stored in the SQL tables)
 
+### Inline status & code refs (borderline pass)
+
+- Converter capability: no Converter implementations exist in code yet — the prepackaged Scoring Systems' internal types already line up, so it hasn't been exercised.
+- Implementation status: the current codebase couples specific Charts to specific encoding-runners (e.g., the 3v3 Points Chart is hardcoded inside the `bca3v3` SystemModule rather than queried as an independent Chart Module) — implementation artifact; Step-2 lifts Charts out as first-class Modules selected by the league config.
+- Cascade store: stored Charts live in the `threshold_charts` table; the schema's `comp_1`/`comp_2` pair supports 2D lookups today.
+
 ## modules/threshold-charts/fargo-formula.md
 
 _Extracted 2026-05-24 from the locked design doc [modules/threshold-charts/fargo-formula.md](modules/threshold-charts/fargo-formula.md)._
