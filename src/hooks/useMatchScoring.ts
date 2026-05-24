@@ -453,7 +453,10 @@ export function useMatchScoring({
     queryClient.invalidateQueries({ queryKey: queryKeys.matches.games(matchId || '') });
   }, [queryClient, matchId]);
 
-  useMatchRealtime(matchId, {
+  // `connectionStatus` is the coarse realtime health (live | reconnecting |
+  // error). Surfaced through this hook so the scoring screen can render a calm
+  // connection indicator and (Unit 3) drive a polling fallback while degraded.
+  const { connectionStatus } = useMatchRealtime(matchId, {
     onMatchUpdate: handleMatchInvalidate,
     onLineupUpdate: handleLineupInvalidate,
     onGamesUpdate: handleGamesInvalidate,
@@ -506,6 +509,9 @@ export function useMatchScoring({
     addToConfirmationQueue,
     removeFromConfirmationQueue,
     myVacateRequests,
+
+    // Connection resilience
+    connectionStatus,
 
     // State
     loading,
