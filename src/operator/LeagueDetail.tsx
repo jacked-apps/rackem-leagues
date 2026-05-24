@@ -16,7 +16,6 @@ import { LeagueStatusCard } from '@/components/operator/LeagueStatusCard';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { logger } from '@/utils/logger';
 import { LeagueOverviewCard } from '@/components/operator/LeagueOverviewCard';
-import { LeagueFinancesSection } from '@/components/operator/finances/LeagueFinancesSection';
 import { LeagueReupStatusCard } from '@/components/operator/LeagueReupStatusCard';
 import { TeamsCard } from '@/components/operator/TeamsCard';
 import { ScheduleCard } from '@/components/operator/ScheduleCard';
@@ -24,7 +23,7 @@ import { StatsCard } from '@/components/operator/StatsCard';
 import { PlayoffsCard } from '@/components/operator/PlayoffsCard';
 import { Button } from '@/components/ui/button';
 import { DashboardCard } from '@/components/operator/DashboardCard';
-import { Calendar, Settings, Users } from 'lucide-react';
+import { Calendar, DollarSign, Settings, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { useIsWizard2League, useFlowStageDetection } from '@/api/hooks';
 import { useDeleteSeason } from '@/api/hooks/useSeasonMutations';
@@ -255,13 +254,20 @@ export const LeagueDetail: React.FC = () => {
           />
         </div>
 
-        {/* Finances Section (Unit 2+ of the finance calculator feature) */}
-        <LeagueFinancesSection
-          leagueId={league.id}
-          seasonId={activeSeason?.id ?? null}
-          teamCount={activeSeason?.team_count ?? 0}
-          totalWeeks={activeSeason?.season_length ?? 0}
-        />
+        {/* Finances entry — lives on its own page so the league
+            detail stays focused on season-running bits. Not every
+            operator uses payouts/expenses, so we hide the cards
+            behind a single link rather than render them inline. */}
+        <div className="mb-6">
+          <DashboardCard
+            icon={<DollarSign className="h-6 w-6" />}
+            iconColor="text-emerald-600"
+            title="Finances"
+            description="Track expenses, dropped teams, projected income, and calculate end-of-season payouts."
+            buttonText="Open Finances"
+            linkTo={`/league/${league.id}/finances`}
+          />
+        </div>
 
         {/* Teams Section */}
         <TeamsCard leagueId={league.id} />
@@ -365,7 +371,20 @@ function ActionCard({
             isLoading={isNavigating}
             onClick={() => {
               setIsNavigating(true);
-              navigate(`/create-league/${league.organization_id}?leagueId=${league.id}`);
+              // Route resume: if the league already has an active or
+              // queued season, the in-progress build must be the
+              // NEXT-season wizard (only that flow leaves an
+              // upcoming season behind while the previous one's
+              // still live). Sending the operator to the first-time
+              // route would lose `previousSeasonVenueIds` /
+              // `reupResponses` and they'd see empty venue + captain
+              // editors — defeating the whole purpose of "Continue."
+              const isNextSeasonResume = !!activeSeason || !!scheduledSeason;
+              navigate(
+                isNextSeasonResume
+                  ? `/operator/start-next-season/${league.id}`
+                  : `/create-league/${league.organization_id}?leagueId=${league.id}`,
+              );
             }}
             disabled={isNavigating}
             size="lg"

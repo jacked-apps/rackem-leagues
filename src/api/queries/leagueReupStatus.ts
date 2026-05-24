@@ -14,7 +14,11 @@ export type ReupResponseState =
   | { kind: 'returning_same'; submittedAt: string }
   | { kind: 'returning_new_captain'; submittedAt: string; nextCaptainName: string }
   | { kind: 'not_returning'; submittedAt: string }
-  | { kind: 'no_response' };
+  /** dismissedAt non-null = captain saw the modal and tapped "Not now".
+   *  null = no row in season_reup_responses at all (captain hasn't been
+   *  prompted yet or just hasn't logged in). LO's "Remind" button uses
+   *  this to know whether there's a dismissal to clear. */
+  | { kind: 'no_response'; dismissedAt: string | null };
 
 export interface LeagueReupStatusEntry {
   teamId: string;
@@ -28,6 +32,10 @@ export interface LeagueReupStatus {
    *  next 21 days. The status card should only render when this is
    *  true — outside the window, no card. */
   withinWindow: boolean;
+  /** Active season id — surfaced so the LO's "Remind" buttons can
+   *  scope the dismissal-clearing mutation. Null when no active
+   *  season exists. */
+  seasonId: string | null;
   seasonEndDate: string | null;
   entries: LeagueReupStatusEntry[];
   countSubmitted: number;
@@ -48,14 +56,14 @@ export async function getLeagueReupStatus(
     .maybeSingle();
 
   if (!season) {
-    return { withinWindow: false, seasonEndDate: null, entries: [], countSubmitted: 0, countNoResponse: 0 };
+    return { withinWindow: false, seasonId: null, seasonEndDate: null, entries: [], countSubmitted: 0, countNoResponse: 0 };
   }
 
   const endDate = new Date(season.end_date);
   const now = new Date();
   const daysUntilEnd = (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
   if (daysUntilEnd > 21) {
-    return { withinWindow: false, seasonEndDate: season.end_date, entries: [], countSubmitted: 0, countNoResponse: 0 };
+    return { withinWindow: false, seasonId: season.id, seasonEndDate: season.end_date, entries: [], countSubmitted: 0, countNoResponse: 0 };
   }
 
   // Active teams in this season + each team's captain
@@ -72,7 +80,7 @@ export async function getLeagueReupStatus(
   const { data: responses } = teamIds.length > 0
     ? await supabase
         .from('season_reup_responses')
-        .select(`team_id, returning_next_season, next_captain_id, submitted_at,
+        .select(`team_id, returning_next_season, next_captain_id, submitted_at, dismissed_at,
                  next_captain:members!next_captain_id(first_name, last_name)`)
         .eq('season_id', season.id)
         .in('team_id', teamIds)
@@ -92,7 +100,7 @@ export async function getLeagueReupStatus(
 
     let state: ReupResponseState;
     if (!r || !r.submitted_at) {
-      state = { kind: 'no_response' };
+      state = { kind: 'no_response', dismissedAt: r?.dismissed_at ?? null };
       countNoResponse++;
     } else if (r.returning_next_season === false) {
       state = { kind: 'not_returning', submittedAt: r.submitted_at };
@@ -117,6 +125,7 @@ export async function getLeagueReupStatus(
 
   return {
     withinWindow: true,
+    seasonId: season.id,
     seasonEndDate: season.end_date,
     entries,
     countSubmitted,

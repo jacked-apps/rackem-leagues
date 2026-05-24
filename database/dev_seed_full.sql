@@ -87,6 +87,10 @@ DECLARE
 
   -- Per-league config (index 1=3v3 points, 2=5v5 percentage, 3=5v5 fargo).
   v_names      TEXT[] := ARRAY['3v3 Points League','5v5 Percentage League','5v5 Fargo 10-7 League'];
+  -- Short labels used in team names so they fit the UI's 20-char team
+  -- name limit. Full league names live in the league row; team names
+  -- only need enough to disambiguate within the operator's dashboard.
+  v_short      TEXT[] := ARRAY['3v3','5v5%','Fargo'];
   v_lineup     INT[]  := ARRAY[3,5,5];
   v_maxroster  INT[]  := ARRAY[5,8,8];
   v_gamegen    TEXT[] := ARRAY['double_round_robin','single_round_robin','single_round_robin'];
@@ -288,7 +292,9 @@ BEGIN
       v_team_id := gen_random_uuid();
       INSERT INTO teams (id, league_id, season_id, team_name, captain_id, roster_size, home_venue_id, status)
       VALUES (v_team_id, v_league_id, v_season_id,
-              v_nicks[v_t] || '''s ' || v_names[v_i] || ' Team',
+              -- Short team name (keeps under the UI's 20-char limit).
+              -- Example: "Lo's 3v3", "Johnny's Fargo", "Smitty's 5v5%".
+              v_nicks[v_t] || '''s ' || v_short[v_i],
               v_cap_member_ids[v_t], v_maxroster[v_i], v_venue_id, 'active');
       v_team_ids := array_append(v_team_ids, v_team_id);
 

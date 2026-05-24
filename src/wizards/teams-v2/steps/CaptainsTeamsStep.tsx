@@ -91,19 +91,37 @@ export function CaptainsTeamsStep({
   // so the filter drops them — leaving the operator with an empty
   // editor. The re-up context already carries `captainName`, which is
   // everything the row needs to render.
-  const prefillFiredRef = useRef(false);
+  //
+  // Pre-fill fires ONCE per mount when:
+  //   - reupResponses is present (next-season flow)
+  //   - captains is empty (no in-progress edits to clobber)
+  // The mount-once guard via `didPrefillRef` lets the operator REMOVE
+  // captains later without the effect re-populating them. A full
+  // unmount/remount (e.g., navigating back to the league and re-
+  // entering the wizard) resets the ref and re-pre-fills, which is
+  // the recovery path operators expect.
+  const didPrefillRef = useRef(false);
   useEffect(() => {
-    if (prefillFiredRef.current) return;
+    if (didPrefillRef.current) return;
     if (!flowContext?.reupResponses?.length) return;
-    if (captains.length > 0) return;
+    didPrefillRef.current = true;
+
+    if (captains.length > 0) return; // operator already has rows — keep them
 
     const prefill: TeamCaptainEntry[] = [];
     for (const entry of flowContext.reupResponses) {
       const captainId = entry.nextCaptainId ?? entry.currentCaptainId ?? null;
       if (!captainId) continue; // no captain to pre-fill against
+      // When the re-up included a captain swap, pre-fill the NEW name
+      // (otherwise the row reads as the old captain even though the
+      // captainId pointed at the swap target). Falls back to the
+      // current captain's name when no swap was submitted.
+      const captainName = entry.nextCaptainId
+        ? entry.nextCaptainName || 'Unknown captain'
+        : entry.captainName || 'Unknown captain';
       prefill.push({
         captainId,
-        captainName: entry.captainName || 'Unknown captain',
+        captainName,
         teamName: entry.teamName,
       });
     }
@@ -111,9 +129,8 @@ export function CaptainsTeamsStep({
     if (prefill.length > 0) {
       onChange(prefill);
     }
-    prefillFiredRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [flowContext?.reupResponses?.length]);
+  }, [flowContext?.reupResponses]);
 
   // Map captainId → re-up status icon for per-row display in the team
   // list below. The captainId on the prefilled entry is either the

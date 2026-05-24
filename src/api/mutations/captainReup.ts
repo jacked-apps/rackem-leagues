@@ -78,3 +78,42 @@ export async function dismissCaptainReup(
     throw new Error(`Failed to dismiss re-up: ${error.message}`);
   }
 }
+
+/**
+ * LO-facing "Remind" — clears `dismissed_at` so a captain who tapped
+ * "Not now" sees the modal again on their next login. Only updates
+ * EXISTING rows where dismissed_at IS NOT NULL AND submitted_at IS NULL;
+ * a no-op for captains who never opened the modal (no row) or already
+ * answered (submitted_at set).
+ *
+ * Two shapes:
+ *   - Single team: pass seasonId + teamId
+ *   - Whole season: pass seasonId only — clears every dismissal for
+ *     the league's active season at once.
+ */
+export interface ClearReupDismissalsParams {
+  seasonId: string;
+  /** Optional. Omit to clear every dismissal for the season. */
+  teamId?: string;
+}
+
+export async function clearReupDismissals(
+  params: ClearReupDismissalsParams,
+): Promise<{ updated: number }> {
+  let query = supabase
+    .from('season_reup_responses')
+    .update({ dismissed_at: null })
+    .eq('season_id', params.seasonId)
+    .is('submitted_at', null)
+    .not('dismissed_at', 'is', null);
+  if (params.teamId) {
+    query = query.eq('team_id', params.teamId);
+  }
+  // .select() after .update() returns the affected rows so we can
+  // report the count back to the LO ("3 reminders sent").
+  const { data, error } = await query.select('id');
+  if (error) {
+    throw new Error(`Failed to clear re-up dismissal: ${error.message}`);
+  }
+  return { updated: data?.length ?? 0 };
+}

@@ -203,6 +203,10 @@ export interface ReupResponseContextEntry {
   returningNextSeason: boolean | null;
   /** NULL = same captain; non-null = captain change */
   nextCaptainId: string | null;
+  /** Display name of the swap captain (when `nextCaptainId` is set).
+   *  Lets the gate render "Johnny → Player 39" instead of just showing
+   *  the old captain name with a ✅ that hides the change. */
+  nextCaptainName: string | null;
 }
 
 /**

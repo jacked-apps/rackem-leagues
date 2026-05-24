@@ -260,6 +260,7 @@ export function useNextSeasonStageDetection(
         );
         reupResponses = (prevTeams ?? []).map((t: { id: string; team_name: string; home_venue_id: string | null; captain_id: string | null }) => {
           const r = responsesByTeamId.get(t.id);
+          const nextCaptainId = r?.submitted_at ? (r.next_captain_id ?? null) : null;
           return {
             sourceTeamId: t.id,
             teamName: t.team_name,
@@ -269,7 +270,8 @@ export function useNextSeasonStageDetection(
             // step treats this as "not returning + warn"). Submitted
             // → use the actual answer.
             returningNextSeason: r?.submitted_at ? (r.returning_next_season ?? null) : null,
-            nextCaptainId: r?.submitted_at ? (r.next_captain_id ?? null) : null,
+            nextCaptainId,
+            nextCaptainName: nextCaptainId ? (captainNameById.get(nextCaptainId) ?? '') : null,
           };
         });
       }

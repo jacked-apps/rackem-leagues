@@ -9,9 +9,20 @@
  * `withinWindow: false` and we render null.
  */
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle2, UserPlus, XCircle, AlertTriangle, ClipboardCheck } from 'lucide-react';
+import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import { CheckCircle2, UserPlus, XCircle, AlertTriangle, ClipboardCheck, Bell } from 'lucide-react';
 import { useLeagueReupStatus } from '@/api/hooks/useLeagueReupStatus';
+import { clearReupDismissals } from '@/api/mutations/captainReup';
 import type { ReupResponseState } from '@/api/queries/leagueReupStatus';
 
 interface LeagueReupStatusCardProps {
@@ -20,48 +31,135 @@ interface LeagueReupStatusCardProps {
 
 export function LeagueReupStatusCard({ leagueId }: LeagueReupStatusCardProps) {
   const { data, isLoading } = useLeagueReupStatus(leagueId);
+  const queryClient = useQueryClient();
+  // Track which row is currently being reminded so its button can show
+  // a per-row loading state without blocking the others.
+  const [pendingTeamId, setPendingTeamId] = useState<string | null>(null);
 
-  if (isLoading || !data || !data.withinWindow) return null;
+  const remindMutation = useMutation({
+    mutationFn: clearReupDismissals,
+    onSettled: () => {
+      // Refresh the LO card + invalidate the captain modal's cache so
+      // the next captain page load sees the cleared dismissal.
+      queryClient.invalidateQueries({ queryKey: ['leagueReupStatus', leagueId] });
+      queryClient.invalidateQueries({ queryKey: ['captainReupPrompt'] });
+    },
+  });
+
+  if (isLoading || !data || !data.withinWindow || !data.seasonId) return null;
   if (data.entries.length === 0) return null;
 
+  // "Remind all" appears when ANY team is still missing a submission —
+  // the LO doesn't need to know "dismissed vs never-seen" plumbing.
+  // Both states resolve to "captain will see the modal next page load"
+  // after the mutation clears any dismissals.
+  const noResponseCount = data.entries.filter(
+    (e) => e.state.kind === 'no_response',
+  ).length;
+
+  const remindOne = async (teamId: string) => {
+    setPendingTeamId(teamId);
+    try {
+      await remindMutation.mutateAsync({ seasonId: data.seasonId!, teamId });
+      toast.success('Captain will see the re-up prompt on their next page load.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to remind');
+    } finally {
+      setPendingTeamId(null);
+    }
+  };
+
+  const remindAll = async () => {
+    setPendingTeamId('__all__');
+    try {
+      await remindMutation.mutateAsync({ seasonId: data.seasonId! });
+      toast.success('All pending captains will see the prompt on their next page load.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to remind');
+    } finally {
+      setPendingTeamId(null);
+    }
+  };
+
   return (
-    <Card className="mb-6">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <ClipboardCheck className="h-5 w-5 text-blue-600" />
-          Re-up Status
-          <span className="text-sm font-normal text-muted-foreground ml-2">
-            {data.countSubmitted} of {data.entries.length} confirmed
-            {data.countNoResponse > 0 &&
-              ` · ${data.countNoResponse} still waiting`}
-          </span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ul className="space-y-2">
-          {data.entries.map((entry) => (
-            <li
-              key={entry.teamId}
-              className="flex items-center justify-between gap-3 p-2 rounded hover:bg-muted/50"
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <StateIcon state={entry.state} />
-                <div className="min-w-0">
-                  <div className="font-medium truncate">{entry.teamName}</div>
-                  {entry.captainName && (
-                    <div className="text-xs text-muted-foreground">
-                      Captain: {entry.captainName}
+    <Card className="mb-6 px-4">
+      {/* Wrapped in an accordion so the operator can collapse it once
+          they've eyeballed the status. Defaults to closed — the header
+          alone (counts) is usually enough at-a-glance; the per-team
+          list is on-demand. */}
+      <Accordion type="single" collapsible>
+        <AccordionItem value="reup" className="border-b-0">
+          <AccordionTrigger className="py-3 hover:no-underline">
+            <div className="flex items-center gap-2 text-lg font-semibold">
+              <ClipboardCheck className="h-5 w-5 text-blue-600" />
+              Re-up Status
+              <span className="text-sm font-normal text-muted-foreground ml-2">
+                {data.countSubmitted} of {data.entries.length} confirmed
+                {data.countNoResponse > 0 &&
+                  ` · ${data.countNoResponse} still waiting`}
+              </span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent>
+            {noResponseCount > 0 && (
+              <div className="flex justify-end mb-2">
+                <Button
+                  variant="outline"
+                  loadingText="Sending…"
+                  isLoading={pendingTeamId === '__all__'}
+                  onClick={remindAll}
+                  disabled={pendingTeamId !== null}
+                >
+                  <Bell className="size-4" />
+                  Remind all ({noResponseCount})
+                </Button>
+              </div>
+            )}
+            <ul className="space-y-2">
+              {data.entries.map((entry) => {
+                const canRemind = entry.state.kind === 'no_response';
+                return (
+                  <li
+                    key={entry.teamId}
+                    className="flex items-center gap-3 p-2 rounded hover:bg-muted/50"
+                  >
+                    {/* Remind button on the LEFT. Rendered with
+                        `invisible` for submitted rows so the column
+                        stays aligned across all rows. Mobile: just
+                        the bell icon (sm:inline shows the word on
+                        desktop). */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      loadingText="…"
+                      isLoading={pendingTeamId === entry.teamId}
+                      onClick={() => remindOne(entry.teamId)}
+                      disabled={pendingTeamId !== null || !canRemind}
+                      className={canRemind ? '' : 'invisible'}
+                      aria-label="Remind"
+                    >
+                      <Bell className="size-4" />
+                      <span className="hidden sm:inline">Remind</span>
+                    </Button>
+                    <StateIcon state={entry.state} />
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium truncate">{entry.teamName}</div>
+                      {entry.captainName && (
+                        <div className="text-xs text-muted-foreground">
+                          Captain: {entry.captainName}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </div>
-              <div className="text-sm text-right flex-shrink-0">
-                <StateLabel state={entry.state} />
-              </div>
-            </li>
-          ))}
-        </ul>
-      </CardContent>
+                    <div className="text-sm text-right flex-shrink-0">
+                      <StateLabel state={entry.state} />
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </Card>
   );
 }

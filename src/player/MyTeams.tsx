@@ -9,10 +9,12 @@
 
 import { useContext, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { UserContext } from '@/context/UserContext';
 import { useMemberId } from '@/api/hooks';
 import { usePlayerTeams, useCaptainTeamEditData, useMatchesByTeam } from '@/api/hooks';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
+import { useCaptainReupPrompt } from '@/hooks/useCaptainReupPrompt';
 import { queryKeys } from '@/api/queryKeys';
 import { TeamEditorModal } from '@/operator/TeamEditorModal';
 import {
@@ -29,7 +31,7 @@ import { formatGameType, formatDayOfWeek } from '@/types/league';
 import { PlayerNameLink } from '@/components/PlayerNameLink';
 import { PlayerRoster } from '@/components/PlayerRoster';
 import { PageHeader } from '@/components/PageHeader';
-import { MapPin, Users, AlertCircle, ArrowRight, Pencil } from 'lucide-react';
+import { MapPin, Users, AlertCircle, ArrowRight, Pencil, Bell } from 'lucide-react';
 import { parseLocalDate } from '@/utils/formatters';
 import { buildLeagueTitle, getTimeOfYear } from '@/utils/leagueUtils';
 import { TenBallIcon } from '@/components/icons/TenBallIcon';
@@ -86,14 +88,20 @@ interface TeamData {
 function TeamAccordionItem({
   teamData,
   memberId,
+  needsReup,
   onEditTeam,
 }: {
   teamData: TeamData;
   memberId: string | null;
+  /** True if this team is in the captain's re-up prompt list — i.e.,
+   *  the season is in its last 3 weeks and no submitted answer exists.
+   *  Drives the "Re-up needed" pill below the team name. */
+  needsReup: boolean;
   onEditTeam: (teamId: string) => void;
 }) {
   const team = teamData.teams;
   const isCaptain = team.captain_id === memberId;
+  const navigate = useNavigate();
   const leagueId = team.season.league.id;
 
   // Resolved preferences — lazy-migrates legacy leagues on first access
@@ -211,6 +219,25 @@ function TeamAccordionItem({
               {team.team_name}
             </h2>
           </div>
+
+          {/* Row 2.5: Re-up reminder pill — only for captains whose
+              team is in the last 3 weeks of the season and hasn't
+              answered yet. Clicking takes the captain straight to the
+              /reup page where they can submit. */}
+          {isCaptain && needsReup && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate('/reup');
+              }}
+              className="self-start flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 px-3 py-1.5 text-sm font-medium text-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
+            >
+              <Bell className="size-4" />
+              Re-up needed for next season
+              <ArrowRight className="size-4" />
+            </button>
+          )}
 
           {/* Rows 3+: Actionable matches or setup incomplete warning */}
           {!isReady && actionableMatches.length > 0 ? (
@@ -401,6 +428,13 @@ export function MyTeams() {
   const teams = (teamsData || []) as unknown as TeamData[];
   const error = teamsError ? 'Unable to load your teams' : null;
 
+  // Teams in the re-up window that this captain still owes an answer
+  // for. We pass each team's id down to TeamAccordionItem so the pill
+  // shows on the right row(s). Empty/idle for non-captains and for
+  // seasons not in the 3-week window.
+  const { data: reupPrompts = [] } = useCaptainReupPrompt();
+  const reupTeamIds = new Set(reupPrompts.map((p) => p.teamId));
+
   // Team editing modal state
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
 
@@ -477,6 +511,7 @@ export function MyTeams() {
                 key={teamData.teams.id}
                 teamData={teamData}
                 memberId={memberId}
+                needsReup={reupTeamIds.has(teamData.teams.id)}
                 onEditTeam={handleEditTeam}
               />
             ))}
