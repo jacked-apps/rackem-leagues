@@ -349,6 +349,12 @@ The Step-2 refactor lifts Pairings Generator out as a first-class Module with it
 - `src/types/match.ts` — `GameSlot` (or equivalent) is the output record shape; each slot carries pairing + game_number + break/rack annotations consumed by the scoring runtime
 - No wizard step currently collects Pairings Generator configuration (the sub-Mechanism choices are bundled implicitly in per-Scoring-System code); a Step-2-or-later wizard step would expose the three stages as dials
 
+### Inline status & code refs (borderline pass)
+
+- Tiebreaker pairings: today the runtime appends hardcoded tiebreaker game slots (games 19-21 for 3v3 best-of-3); Step-3+ formalizes this as a distinct generator the `mini_match` Mechanism invokes.
+- Reproducibility persistence is the `matches.system_snapshot` frozen-config column.
+- Shipped sub-Mechanism variants are bundled implicitly in per-Scoring-System code (`src/utils/gameOrder.ts` for 3v3 DRR; inline for 5v5 SRR); scoring runtime entry `src/utils/match/computeMatchRunningTotals.ts`.
+
 ## modules/points-system/README.md
 
 _Extracted 2026-05-24 from the locked design doc [modules/points-system/README.md](modules/points-system/README.md)._
