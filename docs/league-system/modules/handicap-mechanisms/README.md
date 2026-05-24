@@ -56,8 +56,8 @@ That gives **four fundamental cells**. Each cell can host multiple variant imple
 
 | | **Games axis** | **Points axis** |
 |---|---|---|
-| **Head-start** *(start line varies)* | *Future:* games on the wire | [**Start Points**](start-points.md) — `start_points` *(current)* |
-| **Extended-finish** *(finish line varies)* | [**Extra Games**](extra-games.md) — `extra_games` *(current)* <br> [**Race Length Adjustment**](race-length-adjustment.md) — `race_length_adjustment` *(current)* | *Future:* extra_points |
+| **Head-start** *(start line varies)* | games on the wire | [**Start Points**](start-points.md) — `start_points` |
+| **Extended-finish** *(finish line varies)* | [**Extra Games**](extra-games.md) — `extra_games` <br> [**Race Length Adjustment**](race-length-adjustment.md) — `race_length_adjustment` | extra_points |
 
 ### Mode flags within a cell
 
@@ -66,7 +66,7 @@ Variants within the same cell share the fundamental mechanism shape but differ o
 - **Scope** — *team-aggregate* (sum team handicaps, apply to the whole team match) vs *per-pairing* (use individual handicap, apply per head-to-head). Scope is just an aggregation choice at the input stage; the downstream sequence (find diff → apply formula → produce target) is the same.
 - **Termination** — *threshold* (play to a fixed game count and evaluate at end) vs *race* (match ends when someone hits the target).
 
-Currently-shipping variant implementations:
+Variant implementations:
 
 | Variant | Cell | Scope | Termination |
 |---|---|---|---|

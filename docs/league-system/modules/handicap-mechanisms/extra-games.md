@@ -33,7 +33,7 @@ The mechanism's output is a pair of per-team target wins (`target_home`, `target
 ## When you'd use it / pros
 
 - **Operators preferring a "you have to earn it" feel** — the stronger team can't coast; they have to outperform the rating gap on the table.
-- **Pairs naturally with a game-counting Win Calculator** — when match victory is decided by reaching game-win targets (currently `win_condition='games'`), extra_games' asymmetric targets directly determine the winner. If the Win Calculator instead consults accumulated points, the asymmetric targets are recorded but don't decide the match.
+- **Pairs naturally with a game-counting Win Calculator** — when match victory is decided by reaching game-win targets, extra_games' asymmetric targets directly determine the winner. If the Win Calculator instead consults accumulated points, the asymmetric targets are recorded but don't decide the match.
 - **Clear and intuitive for players** — "your team needs to win 8 games, theirs needs 5" is easy to communicate at lineup time.
 
 ## When you wouldn't / cons
@@ -45,7 +45,7 @@ The mechanism's output is a pair of per-team target wins (`target_home`, `target
 ## Interactions
 
 - **Upstream**: works with [any Handicap System](../handicap-systems/README.md) whose chart can produce a per-team target-wins pair.
-- **Currently wired in code** for [Points](../handicap-systems/points.md) (via [3v3 games-needed chart](../threshold-charts/3v3-games-needed.md)) and [Percentage](../handicap-systems/percentage.md) (via [5v5 games-needed chart](../threshold-charts/5v5-games-needed.md)). Unwired for FargoRate and Skill Level — those combos would need calibrated extra_games charts.
+- **Pairs with** [Points](../handicap-systems/points.md) (via the [3v3 games-needed chart](../threshold-charts/3v3-games-needed.md)) and [Percentage](../handicap-systems/percentage.md) (via the [5v5 games-needed chart](../threshold-charts/5v5-games-needed.md)). FargoRate and Skill Level would each need a calibrated extra_games chart to pair.
 - **Compatible with [1-Point Scoring System](../points-system/one-point-scoring.md)** — the asymmetric target wins map cleanly to a "first team to its target" victory rule.
 
 ## Possible modifications

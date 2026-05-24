@@ -12,9 +12,9 @@ locked: true
 
 # Race Length Adjustment
 
-A peer variant of the **[Handicap Mechanisms](README.md)** Module. **Reserved**: schema present, no calibrated chart exists for any current Handicap System pairing, so no shipping Scoring System uses this mechanism today.
+A peer variant of the **[Handicap Mechanisms](README.md)** Module. Applying it requires a calibrated per-pairing race chart for the Handicap System it pairs with.
 
-> **Reading this cold?** A handicap mechanism is *how* the league applies a strength difference between teams or players. (If the sides are evenly matched, no handicap is applied.) This page describes the **Race Length Adjustment** variant: per-pairing race lengths differ by the individual skill gap between the two paired players. Of the currently-defined mechanisms, this is the one that operates at the *per-pairing* level (the others — extra_games and start_points — work at the team level). Other variants exist (see the [Module README](README.md) for the full picture).
+> **Reading this cold?** A handicap mechanism is *how* the league applies a strength difference between teams or players. (If the sides are evenly matched, no handicap is applied.) This page describes the **Race Length Adjustment** variant: per-pairing race lengths differ by the individual skill gap between the two paired players. Of the defined mechanisms, this is the one that operates at the *per-pairing* level (the others — extra_games and start_points — work at the team level). Other variants exist (see the [Module README](README.md) for the full picture).
 
 ## What it is
 
@@ -31,9 +31,9 @@ Both of these are aggregation/timing choices on top of the same fundamental shap
 
 ## How it works
 
-The mechanism's output is a per-pairing tuple `(race_for_player_A, race_for_player_B)`, computed from the *individual* rating pair (not the team aggregate). Each pairing is **inherently race-mode**: it terminates when either player reaches their respective race target, regardless of how many games remain unplayed in the pairing. (This is structurally different from extra_games and start_points, which operate at the team level with currently-threshold-mode semantics.) The pairing outcomes (who won each head-to-head) are then handed off to the **[Win Calculator](../win-calculator.md)** for team-level match victory determination.
+The mechanism's output is a per-pairing tuple `(race_for_player_A, race_for_player_B)`, computed from the *individual* rating pair (not the team aggregate). Each pairing is **inherently race-mode**: it terminates when either player reaches their respective race target, regardless of how many games remain unplayed in the pairing. (This is structurally different from extra_games and start_points, which operate at the team level in threshold mode.) The pairing outcomes (who won each head-to-head) are then handed off to the **[Win Calculator](../win-calculator.md)** for team-level match victory determination.
 
-A [Threshold Chart](../threshold-charts/README.md) keyed on individual rating pairs would be required for any Handicap System using this mechanism. None currently exists in the codebase.
+A [Threshold Chart](../threshold-charts/README.md) keyed on individual rating pairs would be required for any Handicap System using this mechanism.
 
 ## When you'd use it / pros
 
@@ -45,12 +45,12 @@ A [Threshold Chart](../threshold-charts/README.md) keyed on individual rating pa
 
 - **More complex to administer and explain** — every pairing has different race targets; players need a chart or app lookup at lineup time.
 - **Doesn't apply cleanly to team-aggregate scoring** — the mechanism's outputs are per-pairing, so team-level victory rules need to consume pairing outcomes (not raw points).
-- **No calibrated chart currently exists** — for this mechanism to ship, someone would need to author or import a per-pairing race chart for the chosen Handicap System.
+- **Requires a calibrated per-pairing race chart** — someone must author or import a per-pairing race chart for the chosen Handicap System before it can be applied.
 
 ## Interactions
 
 - **Upstream**: works with [any Handicap System](../handicap-systems/README.md) whose chart can produce per-pairing race lengths from individual rating pairs.
-- **No current shipping pairing.** Theoretically pairs naturally with [Skill Level](../handicap-systems/skill-level.md) — APA's SL race chart is the canonical real-world example of this mechanism. Could also pair with [FargoRate](../handicap-systems/fargorate.md) (FargoRate has chart precedent for per-pairing matchups in their "HOT race chart").
+- **Pairs naturally with** [Skill Level](../handicap-systems/skill-level.md) — APA's SL race chart is the canonical real-world example of this mechanism. Could also pair with [FargoRate](../handicap-systems/fargorate.md) (FargoRate has chart precedent for per-pairing matchups in their "HOT race chart").
 - **Compatible with [1-Point Scoring System](../points-system/one-point-scoring.md)** — pairing-level race-to outcomes map cleanly to a Win Calculator rule that counts how many pairings each side won and declares the team with more pairing wins the match winner.
 
 ## Possible modifications

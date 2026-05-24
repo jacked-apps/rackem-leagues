@@ -118,6 +118,7 @@ _Extracted 2026-05-24 from the locked design doc [modules/handicap-mechanisms/RE
 - Architectural-intent note: the current codebase has wiring for specific encoding-mechanism combinations only (see variant pages for wired vs unwired) — implementation status, not architectural intent; future work fills the gaps.
 - `mechanism='none'` collapses in code to a zero-handicap `extra_games` shape for type-system convenience — callers see `threshold.mode === 'extra_games'` with no per-side delta.
 - The `manual_entry` term lives in `src/wizards/league-v2/steps/ThresholdSourceStep.tsx` — a threshold-chart-source classification (not a mechanism).
+- Taxonomy realization: shipped variants are `start_points`, `extra_games`, `race_length_adjustment`; the `games-on-the-wire` and `extra_points` cells of the 2×2 are unrealized (future).
 
 ## modules/handicap-mechanisms/extra-games.md
 
