@@ -46,7 +46,7 @@ export function OrgSwitcher() {
   // Single-org: static display
   if (isSingleOrg) {
     return (
-      <div className="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm text-muted-foreground">
+      <div className="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm text-primary">
         <Building2 className="h-4 w-4 shrink-0" />
         <span className="truncate max-w-32">{organizations[0].organization_name}</span>
       </div>
@@ -59,7 +59,7 @@ export function OrgSwitcher() {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm text-muted-foreground hover:bg-accent"
+          className="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm text-primary transition-colors hover:bg-primary/10"
         >
           <Building2 className="h-4 w-4 shrink-0" />
           <span className="truncate max-w-32">{displayName}</span>
@@ -71,7 +71,7 @@ export function OrgSwitcher() {
           <DropdownMenuItem
             key={org.id}
             onClick={() => navigate(`/operator-dashboard/${org.id}`)}
-            className={org.id === activeOrgId ? 'bg-accent font-medium' : ''}
+            className={org.id === activeOrgId ? 'bg-primary/15 font-medium text-primary' : ''}
           >
             <Building2 className="mr-2 h-4 w-4" />
             <span className="truncate">{org.organization_name}</span>

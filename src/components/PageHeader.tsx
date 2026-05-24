@@ -176,7 +176,7 @@ export function PageHeader({
               <button
                 type="button"
                 aria-label="Open menu"
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md hover:bg-accent"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-primary transition-colors hover:bg-primary/10"
               >
                 <Menu className="h-5 w-5" />
               </button>
@@ -319,7 +319,7 @@ function BackAffordance({
   // flex row so the cap-height of the back-button text aligns with the
   // cap-height of the (larger) title. The 40px tap target is preserved;
   // it just sits in the upper portion of the bar instead of centered.
-  const className = 'flex h-10 shrink-0 items-center gap-1 self-start rounded-md px-2 text-sm text-muted-foreground hover:bg-accent';
+  const className = 'flex h-10 shrink-0 items-center gap-1 self-start rounded-md px-2 text-sm text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary';
 
   if (onBackClick) {
     return (
@@ -374,7 +374,7 @@ function IdentitySlot({ pathname }: { pathname: string }) {
     <Link
       to="/login"
       aria-label="Sign in"
-      className="flex h-10 shrink-0 items-center gap-1 rounded-md border px-3 text-sm hover:bg-accent"
+      className="flex h-10 shrink-0 items-center gap-1 rounded-md border border-primary/40 px-3 text-sm text-primary transition-colors hover:bg-primary/10"
     >
       <LogIn className="h-4 w-4" />
       <span className="hidden sm:inline">Sign in</span>
