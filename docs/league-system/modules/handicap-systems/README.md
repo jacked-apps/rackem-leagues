@@ -62,7 +62,7 @@ The variants split along one fundamental axis: **who computes the rating**. This
 
 *The app derives the rating from match history in the league's own database. The league owns the math.*
 
-| Variant | Code value | Range |
+| Variant | Identifier | Range |
 |---|---|---|
 | [**Points**](points.md) | `'points'` | -2 to +2 (integer) |
 | [**Percentage**](percentage.md) | `'percentage'` | 0 – 100 |
@@ -71,7 +71,7 @@ The variants split along one fundamental axis: **who computes the rating**. This
 
 *An outside organization computes the rating. The app imports it via API, manual entry, or fallback to a stored value. The league does not own the math.*
 
-| Variant | Code value | Range | External source |
+| Variant | Identifier | Range | External source |
 |---|---|---|---|
 | [**FargoRate**](fargorate.md) | `'fargo'` | 100 – 850 | FargoRate (CSI-mandated for BCAPL Handicapped Worlds) |
 | [**Skill Level**](skill-level.md) | `'skill_level'` | 1 – 9 (APA grade) | APA — **reserved** |
