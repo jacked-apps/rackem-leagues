@@ -111,7 +111,3 @@ A formula-shaped Chart in code can be re-expressed at any scope as a saved discr
 - **Cross-axis charts (multi-input)** — lookups that consume more than one independent input (e.g., handicap difference *and* match length *and* venue type) to produce a calibrated threshold. Two inputs are supported today; consuming more is a future extension.
 - **Calibration-by-data tools** — generating a new Chart by fitting historical match outcomes to a desired competitive balance target. Removes the manual calibration burden.
 - **Per-Mechanism Chart families** — distinct Chart sets calibrated for different Mechanisms (e.g., a "Points encoding × start_points Mechanism" Chart that doesn't exist today because the Mechanism pairing isn't wired).
-
-## Anti-conflation note
-
-**Anti-conflation note.** The word **chart** appears in several adjacent meanings — *threshold chart* (this Module), *handicap chart* (an operator-colloquial term sometimes covering both encoding and lookup together), *standings chart* (the table of team standings). When writing or reading, lowercase *"chart"* is the abstract noun; capitalized *"Chart"* or *"Threshold Chart"* refers to this Module specifically (per [PRINCIPLES § Chart — § 7](../../PRINCIPLES.md#7-naming-charts)).
