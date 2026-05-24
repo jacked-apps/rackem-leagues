@@ -48,7 +48,6 @@ import type {
   SystemModule,
 } from './types';
 import type { SystemOverrides } from '@/types/systemOverrides';
-import { getWinCalculator } from './win-calculators';
 import { getTeamGeometry } from './team-geometry';
 import { getMatchFormat } from './match-format';
 import { fargoRateHandicapSystem } from './handicap-systems';
@@ -197,12 +196,6 @@ export const fargo5v5: SystemModule = {
     recordGameOutcome,
     computeMatchResult,
   },
-
-  // Fargo 5v5 ships with win_condition='points' — a one-entry metric stack with
-  // points_earned. Per Unit 1 of the modular-framework migration plan, this Module
-  // shape replaces the runtime branching on win_condition. Consumers call
-  // winCalculator.decide(matchData) instead of switching on win_condition inline.
-  winCalculator: getWinCalculator('points'),
 
   // Handicap System Module — FargoRate variant (integer 100–850, manually entered).
   // Replaces the legacy `rating` capability deleted in Phase D of Handicap Systems.

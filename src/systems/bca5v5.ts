@@ -10,7 +10,6 @@
  */
 
 import type { SystemModule } from './types';
-import { getWinCalculator } from './win-calculators';
 import { getTeamGeometry } from './team-geometry';
 import { getMatchFormat } from './match-format';
 import { percentageHandicapSystem } from './handicap-systems';
@@ -41,10 +40,6 @@ export const bca5v5: SystemModule = {
       throw new Error(NOT_YET_WIRED);
     },
   },
-
-  // BCA 5v5 ships with win_condition='games' — a one-entry metric stack with games_won.
-  // See bca3v3.ts for the rationale; same shape applies here.
-  winCalculator: getWinCalculator('games'),
 
   // Handicap System Module — Percentage variant (0–100 with `%` display).
   // Replaces the legacy `rating` capability deleted in Phase D.
