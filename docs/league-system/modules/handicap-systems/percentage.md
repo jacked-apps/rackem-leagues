@@ -61,14 +61,14 @@ CSI's *LO Handbook 2020* (page 38) names a method called **Average Handicapping*
 
 ## Interactions
 
-- **Compatible with [`extra_games`](../handicap-mechanisms/extra-games.md) mechanism** (current usage in the [Percentage 5-Man](../../scoring-systems/percentage-5man.md) Scoring System).
-- **No current chart for [`start_points`](../handicap-mechanisms/start-points.md)** with Percentage handicap.
+- **Compatible with [`extra_games`](../handicap-mechanisms/extra-games.md) mechanism** (used by the [Percentage 5-Man](../../scoring-systems/percentage-5man.md) Scoring System).
+- **No calibrated chart for [`start_points`](../handicap-mechanisms/start-points.md)** with Percentage handicap.
 - **Compatible with [1-Point Scoring System](../points-system/one-point-scoring.md)**.
-- **Pairs with [5v5 games-needed chart](../threshold-charts/5v5-games-needed.md)** today.
+- **Pairs with [5v5 games-needed chart](../threshold-charts/5v5-games-needed.md)**.
 
 ## Possible modifications
 
 - **Different range** — the *reduced* variant uses `0–50` (input is `winPct / 2`)
 - **Different chart granularity** — re-bucket which percentage spreads map to which threshold values
-- **History-window adjustment** — currently uses up to 200 most-recent games; configurable per-league cap
+- **History-window adjustment** — the up-to-200-most-recent-games window could be a configurable per-league cap
 - **Switch source from win-rate to true points-average** — would migrate this variant toward CSI's Average Handicapping (would need a different name and different chart)

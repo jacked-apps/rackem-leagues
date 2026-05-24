@@ -42,8 +42,6 @@ If a proposed feature changes how a player's strength number is *computed* or *e
 
 Any Handicap System variant should be **composable** with any Mechanism, any Threshold Chart, and any Scoring System (assuming a calibrated chart exists for the specific encoding-mechanism pair). Encodings are interconvertible in principle — e.g., a Percentage rating could be bucketed into Points ranges (0–20% = -2, 21–40% = -1, etc.) and fed into any chart that accepts Points-style integer differences; FargoRate values could similarly be bucketed.
 
-The current codebase has historical bundlings — `bca3v3` calls a specific threshold chart directly, `fargo5v5` bundles rating math with start-points math, and similar patterns elsewhere. These are **implementation artifacts from before the modular axes were fully separated** — NOT statements of intended architecture. Future refactors will progressively decouple them so any rating encoding can pair with any downstream Module. Variant pages flag the specific bundlings in their *Current code state* sections; this Module-level note establishes the principle once so individual variant pages don't need to re-justify it.
-
 ## CSI's published taxonomy (context)
 
 The *BCAPL LO Handbook 2020* (page 38, "Popular League Handicapping Methods") enumerates only **two** named handicap methods:
@@ -76,7 +74,7 @@ The variants split along one fundamental axis: **who computes the rating**. This
 | Variant | Code value | Range | External source |
 |---|---|---|---|
 | [**FargoRate**](fargorate.md) | `'fargo'` | 100 – 850 | FargoRate (CSI-mandated for BCAPL Handicapped Worlds) |
-| [**Skill Level**](skill-level.md) | `'skill_level'` | 1 – 9 (APA grade) | APA — **reserved** (schema present; wizard card hidden in step 2 until usable implementation lands) |
+| [**Skill Level**](skill-level.md) | `'skill_level'` | 1 – 9 (APA grade) | APA — **reserved** |
 
 ### The `'none'` value
 
@@ -102,9 +100,9 @@ This app applies the same idea differently per variant:
 
 - **[Internally-Computed variants](#internally-computed-ratings) ([Points](points.md), [Percentage](percentage.md)).** A new player starts with a **default starting handicap** (`0` for Points, `40` for Percentage). The LO can **optionally** override this default if they know the player from outside this league (e.g., they've played in the LO's other leagues, or the LO knows them from tournaments). The starting handicap holds for the first **~15 games** (roughly 3 weekly match nights for a 3-person team), after which the formula takes over and the rating is computed from observed wins/losses inside this league.
 - **[FargoRate](fargorate.md) (Externally-Sourced).** FargoRate maintains its own Robustness metric on their side. We just import the rating value; we don't compute or display robustness ourselves. A player's "starting Fargo" — and how quickly it firms up — is whatever FargoRate gives us when we look them up.
-- **[Skill Level](skill-level.md) (Externally-Sourced, reserved).** APA's algorithm presumably has its own confidence-with-data behavior; we don't compute or import it. When the variant is revived for manual entry, the LO would enter whatever current grade APA reports.
+- **[Skill Level](skill-level.md) (Externally-Sourced, reserved).** APA's algorithm presumably has its own confidence-with-data behavior; we don't compute or import it. If used via manual entry, the LO would enter whatever current grade APA reports.
 
-The 15-game threshold for internally-computed variants is **hardcoded today**. A future Module-customization pass could expose it as an LO-configurable dial.
+The 15-game threshold for internally-computed variants is fixed. A future Module-customization pass could expose it as an LO-configurable dial.
 
 ## How this Module interacts
 

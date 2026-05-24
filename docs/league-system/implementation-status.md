@@ -171,6 +171,12 @@ _Extracted 2026-05-24 from the locked design doc [modules/handicap-systems/READM
 
 Step-2 rename targets: none at the Module level (the file structure is not being renamed; only the SystemModule keys / prepackaged Scoring System preset keys are).
 
+### Inline status & code refs (borderline pass)
+
+- Architectural-intent: the current codebase has historical bundlings — `bca3v3` calls a threshold chart directly, `fargo5v5` bundles rating math with start-points math — implementation artifacts, not intent; future refactors decouple so any encoding pairs with any downstream Module.
+- Skill Level: schema present; wizard card hidden in step 2 until a usable implementation lands.
+- The 15-game starting-handicap threshold is hardcoded today (not yet LO-configurable).
+
 ## modules/handicap-systems/fargorate.md
 
 _Extracted 2026-05-24 from the locked design doc [modules/handicap-systems/fargorate.md](modules/handicap-systems/fargorate.md)._
@@ -201,6 +207,10 @@ The two layers connect via `handicap_type='fargo'`: the wizard preset sets the p
 | `fargo_5v5` (wizard preset key) | `fargo_10pt_5man` |
 
 The new name `fargo_10pt_5man` makes the bundled choices explicit: FargoRate handicap **+** 10-Point Scoring **+** 5-Man lineup. This anticipates a future second Fargo Scoring System (e.g., `fargo_1pt_5man` for the Race-To variant) where the disambiguation matters.
+
+### Inline status & code refs (borderline pass)
+
+- Rating sourcing (`calculateFargoHandicap` three-step fallback): the FargoRate API is not yet integrated (TODO); the live fallback reads the last stored rating from the most recent `match_lineups` row, flagged `stale: true`; no data returns `null`.
 
 ## modules/handicap-systems/percentage.md
 

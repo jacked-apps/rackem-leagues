@@ -26,9 +26,9 @@ A player's **FargoRate** — an integer rating from **100 to 850** (effective ra
 
 The app **does not compute** FargoRate ratings. They are sourced externally:
 
-1. **FargoRate API** (TODO — not yet integrated). When available, the app will call FargoRate's API with the player's linked Fargo ID and pull the current rating.
-2. **Last match's stored handicap** (current behavior). The app reads the rating recorded in the most recent `match_lineups` row that includes the player. Marked `stale: true` so the UI can flag it (e.g., display "491*" rather than "491").
-3. **No data** — returned as `null`. Display as "Unrated" or prompt manual entry.
+1. **FargoRate API** (future integration). When available, the app will call FargoRate's API with the player's linked Fargo ID and pull the current rating.
+2. **Last stored rating** (fallback). The app reads the most recently recorded rating for the player, marked stale so the UI can flag it (e.g., display "491*" rather than "491").
+3. **No data** — show "Unrated" or prompt manual entry.
 
 For ratings calibration and updates, the authoritative source is FargoRate itself (`fargorate.com`). The app stores point-in-time values; updates flow through new lineups, not through a re-rating computation.
 
@@ -62,16 +62,16 @@ The win-expectancy is *this variant's output* to downstream Modules. What downst
 
 - **Players must have a FargoRate.** New players or players from non-Fargo regions need ratings established (FargoRate provides paths, but it is friction).
 - **External dependency.** Rating logic lives at FargoRate. If FargoRate's API changes or their methodology shifts, the league has no local control.
-- **API access has cost and friction** for app integration (the current TODO state).
+- **API access has cost and friction** for app integration.
 - **Less transparent to players** than a "you win 75% of your games" percentage. Some players resist a number whose computation they can't fully audit.
 
 ## Interactions
 
-- **Compatible with [`start_points`](../handicap-mechanisms/start-points.md) mechanism** (current usage in the [FargoRate 10-Point 5-Man](../../scoring-systems/fargo-10pt-5man.md) Scoring System).
-- **Compatible with [10-Point Scoring System](../points-system/ten-point-scoring.md)** — CSI's published Fargo+10-Point combo is the most prominent BCAPL handicapped configuration today.
-- **Could also pair with [1-Point Scoring System](../points-system/one-point-scoring.md)** (CSI has signaled future "FargoRate + Race-To" Scoring Systems — see the strategic brainstorm `modular-league-system-requirements.md`).
-- **Compatible with [`race_length_adjustment`](../handicap-mechanisms/race-length-adjustment.md) mechanism** in theory; no current shipping configuration uses this combo.
-- **Pairs with [Fargo formula chart](../threshold-charts/fargo-formula.md)** today.
+- **Compatible with [`start_points`](../handicap-mechanisms/start-points.md) mechanism** (used by the [FargoRate 10-Point 5-Man](../../scoring-systems/fargo-10pt-5man.md) Scoring System).
+- **Compatible with [10-Point Scoring System](../points-system/ten-point-scoring.md)** — CSI's published Fargo+10-Point combo is the most prominent BCAPL handicapped configuration.
+- **Could also pair with [1-Point Scoring System](../points-system/one-point-scoring.md)** (CSI has signaled future "FargoRate + Race-To" Scoring Systems).
+- **Compatible with [`race_length_adjustment`](../handicap-mechanisms/race-length-adjustment.md) mechanism** in theory.
+- **Pairs with [Fargo formula chart](../threshold-charts/fargo-formula.md)**.
 
 ## Possible modifications
 

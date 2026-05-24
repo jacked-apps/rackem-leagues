@@ -58,14 +58,14 @@ The team-level handicap is the sum of the active lineup's individual ratings. Th
 
 ## Interactions
 
-- **Compatible with [`extra_games`](../handicap-mechanisms/extra-games.md) mechanism** (current usage in the [Points 3-Man](../../scoring-systems/points-3man.md) Scoring System).
-- **No current chart for [`start_points`](../handicap-mechanisms/start-points.md)** with Points handicap — combination is not blocked at the schema level but no calibrated chart exists, so it would not produce sensible values.
+- **Compatible with [`extra_games`](../handicap-mechanisms/extra-games.md) mechanism** (used by the [Points 3-Man](../../scoring-systems/points-3man.md) Scoring System).
+- **No calibrated chart for [`start_points`](../handicap-mechanisms/start-points.md)** with Points handicap — the combination is allowed, but without a calibrated chart it would not produce sensible values.
 - **Compatible with [1-Point Scoring System](../points-system/one-point-scoring.md)**.
-- **Pairs with [3v3 games-needed chart](../threshold-charts/3v3-games-needed.md)** today. Could pair with any threshold chart that consumes integer differences.
+- **Pairs with [3v3 games-needed chart](../threshold-charts/3v3-games-needed.md)**. Could pair with any threshold chart that consumes integer differences.
 
 ## Possible modifications
 
 - **Different range** — `-3 to +3`, `-1 to +1` (the *reduced* variant exists today; uses `±1` cap)
 - **Different chart granularity** — change which integer difference maps to which target wins
 - **Computed-from-formula instead of LO-assigned** — auto-derive from prior season win-rate, a Fargo bucket, or a USAPL grade
-- **Adjustable weeks-per-week assumption** — currently hardcoded to 6 games/week; an LO could parameterize for non-standard schedules
+- **Adjustable weeks-per-week assumption** — the 6-games/week assumption could be parameterized for non-standard schedules
