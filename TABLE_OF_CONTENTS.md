@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-04 (Unit 7 of unified-scoreboard plan: deleted three legacy scoreboards (`ThreeVThreeScoreboard.tsx`, `FiveVFiveScoreboard.tsx`, `TenSevenScoreboard.tsx`) plus the orphaned `TeamStatsCard.tsx`. `UnifiedScoreboard.tsx` is now the single live-match scoreboard for all configs; both `ScoreMatch.tsx` and `SpectateMatchCard.tsx` route through it. The `useMatchScoring().calculatePoints` hook re-export was dropped (verified zero non-test consumers). Plan: `docs/plans/2026-05-03-001-feat-unified-scoreboard-plan.md`.)
+> **Last Updated**: 2026-05-24 (Added `docs/brainstorms/2026-05-24-live-scoring-resilience-requirements.md` — requirements for robust multi-device live match scoring: connection resilience + concurrency correctness. Branch `docs/live-scoring-resilience-brainstorm`.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -57,6 +57,7 @@
 | `docs/brainstorms/modular-league-system-requirements.md` | Requirements for fully modular league configuration | Deprecates `5_man`/`8_man`; any-combo support; 3-layer threshold strategy; supersedes April 18 modular-handicap-scoring doc |
 | `docs/brainstorms/lineup-to-scoring-transition-requirements.md` | Requirements for the lineup → scoring transition stability fix | 7-defense architecture; supersedes cache/recovery aspects of the prior race-condition brainstorm; closes LIST_FOR_ED #21/#22 |
 | `docs/brainstorms/unified-scoreboard-requirements.md` | Requirements for collapsing 4 scoreboards to 1 + tiebreaker | Schema-derived display hints (escape hatch), mobile-first compact mode, "stadium not sportsbook" focus; depends on PR #98 merge |
+| `docs/brainstorms/2026-05-24-live-scoring-resilience-requirements.md` | Requirements for robust multi-device live scoring (connection resilience + concurrency correctness) | Invisible-robustness north star; hold-and-send taps; many-eyes confirm/deny with captain backstop; smoke-detector-not-judge; branch `docs/live-scoring-resilience-brainstorm` |
 | `/docs/plans/` | **CE implementation plans** | Output of `/compound-engineering:ce-plan` |
 | `docs/plans/2026-04-17-001-feat-official-rulebook-reader-plan.md` | Implementation plan for the Official Rulebook Reader | 6 units, active branch `feature/official-rulebook-reader` |
 | `docs/plans/2026-04-27-001-feat-global-header-nav-rework-plan.md` | Implementation plan for the global header & navigation rework | 9 units in 3 phases, active branch `fix/header-mobile-rework` |
