@@ -127,7 +127,6 @@ export function ChampionshipStep({
 // ----------------------------------------------------------------------------
 
 export function ChampionshipModeStep({
-  value,
   onChange,
   onNext,
   formData,
@@ -146,12 +145,8 @@ export function ChampionshipModeStep({
     trackApa: tracking.trackApa,
   };
 
-  // Snapshot the defaults on mount so summary + downstream creation
-  // have values even before the user clicks Keep.
-  useEffect(() => {
-    if (!value) onChange(keepSnapshot);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tracking.trackBca, tracking.trackApa]);
+  // No mount auto-fill: the summary should only reflect the operator's
+  // active choices. The Keep button writes the snapshot.
 
   const handleKeep = () => {
     onChange(keepSnapshot);

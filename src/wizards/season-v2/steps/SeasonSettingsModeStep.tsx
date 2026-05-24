@@ -15,7 +15,6 @@
  * individual steps directly.
  */
 
-import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import type { WizardStepProps } from '@/components/wizard';
@@ -41,7 +40,6 @@ function summarizePlayoffWeeks(weeks: number): string {
 }
 
 export function SeasonSettingsModeStep({
-  value,
   onChange,
   onNext,
   formData,
@@ -61,12 +59,9 @@ export function SeasonSettingsModeStep({
     },
   };
 
-  // Snapshot the defaults on mount so summary + downstream creation
-  // have values even before the user clicks Keep.
-  useEffect(() => {
-    if (!value) onChange(keepSnapshot);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [previousLength, previousPlayoffWeeks]);
+  // No mount auto-fill: the summary panel should only show what the
+  // operator actively confirmed in this wizard, not the previous
+  // season's defaults. The Keep button below writes the snapshot.
 
   const handleKeep = () => {
     onChange(keepSnapshot);

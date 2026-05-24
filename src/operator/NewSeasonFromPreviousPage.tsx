@@ -1,5 +1,5 @@
 /**
- * @fileoverview "Start Next Season" page entry point.
+ * @fileoverview "Create Next Season" page entry point.
  *
  * Thin wrapper around the existing `WizardFlowShell` framework. The
  * heavy lifting lives in:
@@ -17,7 +17,7 @@
  *
  * Pause/resume behavior: this wizard creates an upcoming season at
  * the end of Stage 1. From that point, leaving and coming back to
- * the league page → clicking "Start Next Season" again → drops the
+ * the league page → clicking "Create Next Season" again → drops the
  * operator at whichever stage was next, same as the first-time
  * wizard's "Continue Setup" behavior.
  */
@@ -51,7 +51,7 @@ export default function NewSeasonFromPreviousPage() {
       <PageHeader
         backTo={leagueId ? `/league/${leagueId}` : '/dashboard'}
         backLabel="Back to League"
-        title="Start Next Season"
+        title="Create Next Season"
       />
       <div className="container mx-auto px-4 max-w-4xl py-8">
         <WizardFlowShell

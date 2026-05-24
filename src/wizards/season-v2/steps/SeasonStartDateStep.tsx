@@ -16,7 +16,7 @@
  * today (original behavior).
  */
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { DateStepper } from '@/components/wizard';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -107,11 +107,9 @@ function NextSeasonStartDatePicker({
 
   const [editing, setEditing] = useState(false);
 
-  // Snapshot the "start immediately" default on first mount.
-  useEffect(() => {
-    if (!value) onChange(startImmediate);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [startImmediate]);
+  // No mount auto-fill: the summary should only show what the operator
+  // has actively chosen. The 3 buttons below are the only way to set a
+  // value here.
 
   const handlePick = (next: string) => {
     onChange(next);

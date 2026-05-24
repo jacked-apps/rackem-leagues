@@ -131,6 +131,11 @@ export interface FlowContext {
   /** Generated season name (e.g., "8 Ball Monday Blue Fall 2026") */
   seasonName?: string;
 
+  /** ISO date of this season's first regular-season week (separate from
+   *  the LEAGUE's start_date — a league has many seasons over time, each
+   *  with its own start). Surfaced for the summary panel. */
+  seasonStartDate?: string;
+
   /** Number of regular season weeks (from Season wizard) */
   seasonLength?: number;
 
@@ -139,6 +144,16 @@ export interface FlowContext {
 
   /** True once the schedule stage has saved weeks to the DB */
   scheduleComplete?: boolean;
+
+  /** Org-level championship tracking preferences carried into the
+   *  next-season flow. Drives the Season wizard's championship gate
+   *  and the summary panel's "Championship Tracking" row. */
+  championshipTracking?: {
+    trackBca: boolean;
+    trackApa: boolean;
+    bcaDates?: string;
+    apaDates?: string;
+  };
 
   /** Number of teams created for the current season (set after Stage 4) */
   teamCount?: number;
@@ -177,6 +192,13 @@ export interface ReupResponseContextEntry {
   /** Previous season's team name — used for display when warning the
    *  operator that a no-response team is being dropped by default */
   teamName: string;
+  /** Display name of the current captain (resolved from members table).
+   *  Empty string if the team had no captain assigned. */
+  captainName: string;
+  /** Member ID of the previous season's captain. Used to pre-fill the
+   *  Teams editor when the captain hasn't yet submitted a re-up answer
+   *  (so the operator sees the team and can decide). */
+  currentCaptainId: string | null;
   /** NULL = no submitted answer (treat as "not returning + warn") */
   returningNextSeason: boolean | null;
   /** NULL = same captain; non-null = captain change */

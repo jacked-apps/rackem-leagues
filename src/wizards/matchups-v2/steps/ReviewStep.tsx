@@ -48,7 +48,12 @@ export function ReviewStep({ formData, onBack }: WizardStepProps<unknown, Matchu
     | undefined;
   const seasonId = ctx?.seasonId ?? '';
   const leagueId = ctx?.leagueId ?? '';
-  const positions = formData.positions ?? [];
+  // Positions can come from either:
+  //   - formData.positions (manual path — operator went through PositionsStep)
+  //   - formData['matchups-mode'].positions (fast-track — gate randomized them
+  //     and skipped PositionsStep entirely)
+  const positions =
+    formData.positions ?? formData['matchups-mode']?.positions ?? [];
 
   const queryClient = useQueryClient();
   const { confirm, ConfirmDialogComponent } = useConfirmDialog();

@@ -121,21 +121,42 @@ export const seasonWizardConfig: WizardConfig<SeasonWizardFormData> = {
       (formData['playoff-format'] as { format?: string; wildcard?: boolean } | undefined) ??
       gate?.playoff;
 
+    // Championship tracking — only appears after the operator has
+    // actively clicked Keep or Change on the championships-mode gate.
+    // Source of truth here is formData, not the org-level pref in
+    // flowContext (which would always be present). The Edit step writes
+    // its toggles to `championships-edit`; the gate writes to
+    // `championships-mode`.
+    const champGate = formData['championships-mode'];
+    const champEdit = formData['championships-edit'] as
+      | { trackBca?: boolean; trackApa?: boolean }
+      | undefined;
+    const champ = champEdit ?? champGate;
+    const championshipValue: string | undefined = (() => {
+      if (!champ) return undefined;
+      const orgs = [champ.trackBca && 'BCA', champ.trackApa && 'APA'].filter(Boolean);
+      return orgs.length === 0 ? 'None' : orgs.join(' + ');
+    })();
+
     // Season Name shows only when all upstream answers are committed.
     const showSeasonName =
       !!derivedSeasonName && lengthValue != null && !!playoffValue?.format;
 
+    // Labels here MATCH the flow's getContextSummaryItems labels so the
+    // panel reads continuously: an in-progress row in Stage 1 turns into
+    // the committed row in Stage 2 without re-titling.
     return [
+      { label: 'Season Name', value: showSeasonName ? derivedSeasonName : undefined },
       {
         label: 'Start Date',
         value: startDateStr ? formatDateForSummary(startDateStr) : undefined,
       },
       {
-        label: 'Regular Season',
+        label: 'Season Length',
         value: lengthValue != null ? `${lengthValue} weeks` : undefined,
       },
       { label: 'Playoffs', value: formatPlayoffFormat(playoffValue) },
-      { label: 'Season Name', value: showSeasonName ? derivedSeasonName : undefined },
+      { label: 'Championship Tracking', value: championshipValue },
     ];
   },
   steps: [

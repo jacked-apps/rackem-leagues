@@ -1,5 +1,5 @@
 /**
- * @fileoverview Stage detection for the "Start Next Season" flow.
+ * @fileoverview Stage detection for the "Create Next Season" flow.
  *
  * Mirrors `useFlowStageDetection` from the first-time flow but
  * scoped to the next-season's 4-stage shape and gated on the latest
@@ -19,6 +19,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/supabaseClient';
 import type { ReupResponseContextEntry } from '@/components/wizard';
+import { buildLeagueTitle } from '@/utils/leagueUtils';
 
 interface NextSeasonStageDetectionResult {
   isLoading: boolean;
@@ -37,7 +38,10 @@ interface NextSeasonStageDetectionResult {
     division?: string;
     seasonId?: string;
     seasonName?: string;
+    seasonStartDate?: string;
     seasonLength?: number;
+    playoffWeeks?: number;
+    scheduleComplete?: boolean;
     teamCount?: number;
     venueCount?: number;
     /** ISO date of the last `season_weeks` row (regular OR playoffs) for the
@@ -67,6 +71,10 @@ interface NextSeasonStageDetectionResult {
       bcaDates?: string;
       apaDates?: string;
     };
+    /** Unique venue IDs used by the previous season's active teams.
+     *  Drives the Teams wizard's "Same venues?" gate (next-season
+     *  only). Undefined for first-time leagues. */
+    previousSeasonVenueIds?: string[];
     reupResponses?: ReupResponseContextEntry[];
   };
 }
@@ -168,10 +176,12 @@ export function useNextSeasonStageDetection(
         previousSeason?.season_length ?? undefined;
 
       // for the previous season, PLUS the count of playoff weeks, AND
-      // re-up responses + previous teams. Only when a previous season
-      // exists — first-time leagues have nothing to carry forward.
+      // re-up responses + previous teams + venue IDs. Only when a
+      // previous season exists — first-time leagues have nothing to
+      // carry forward.
       let previousSeasonLastWeekDate: string | undefined;
       let previousSeasonPlayoffWeeks: number | undefined;
+      let previousSeasonVenueIds: string[] | undefined;
       let reupResponses: ReupResponseContextEntry[] = [];
       if (previousSeason?.id) {
         const [
@@ -194,7 +204,7 @@ export function useNextSeasonStageDetection(
             .eq('week_type', 'playoffs'),
           supabase
             .from('teams')
-            .select('id, team_name')
+            .select('id, team_name, home_venue_id, captain_id')
             .eq('season_id', previousSeason.id)
             .eq('status', 'active'),
           supabase
@@ -204,6 +214,33 @@ export function useNextSeasonStageDetection(
         ]);
         previousSeasonLastWeekDate = lastWeek?.scheduled_date ?? undefined;
         previousSeasonPlayoffWeeks = playoffWeekCount ?? 0;
+
+        // Look up captain display names so the captains-mode gate can
+        // show "TeamName — CaptainName — confirmed?" rows. We collect
+        // captain IDs from BOTH the current captain (teams.captain_id)
+        // and any re-up "next_captain_id" answers so a captain swap is
+        // displayable too.
+        const captainIds = new Set<string>();
+        for (const t of (prevTeams ?? []) as { captain_id: string | null }[]) {
+          if (t.captain_id) captainIds.add(t.captain_id);
+        }
+        for (const r of responses ?? []) {
+          if (r.next_captain_id) captainIds.add(r.next_captain_id);
+        }
+        let captainNameById = new Map<string, string>();
+        if (captainIds.size > 0) {
+          const { data: members } = await supabase
+            .from('members')
+            .select('id, first_name, last_name')
+            .in('id', Array.from(captainIds));
+          captainNameById = new Map(
+            (members ?? []).map((m: { id: string; first_name: string | null; last_name: string | null }) => [
+              m.id,
+              [m.first_name, m.last_name].filter(Boolean).join(' '),
+            ]),
+          );
+        }
+
         const responsesByTeamId = new Map<string, { returning_next_season: boolean | null; next_captain_id: string | null; submitted_at: string | null }>();
         for (const r of responses ?? []) {
           responsesByTeamId.set(r.team_id, {
@@ -212,11 +249,22 @@ export function useNextSeasonStageDetection(
             submitted_at: r.submitted_at,
           });
         }
-        reupResponses = (prevTeams ?? []).map((t: { id: string; team_name: string }) => {
+        // Derive unique venue IDs used by the previous season's
+        // active teams. Drives the Teams wizard's "Same venues?" gate.
+        previousSeasonVenueIds = Array.from(
+          new Set(
+            (prevTeams ?? [])
+              .map((t: { home_venue_id: string | null }) => t.home_venue_id)
+              .filter((id: string | null): id is string => !!id),
+          ),
+        );
+        reupResponses = (prevTeams ?? []).map((t: { id: string; team_name: string; home_venue_id: string | null; captain_id: string | null }) => {
           const r = responsesByTeamId.get(t.id);
           return {
             sourceTeamId: t.id,
             teamName: t.team_name,
+            captainName: t.captain_id ? (captainNameById.get(t.captain_id) ?? '') : '',
+            currentCaptainId: t.captain_id ?? null,
             // No submission yet → returningNextSeason is null (Teams
             // step treats this as "not returning + warn"). Submitted
             // → use the actual answer.
@@ -229,14 +277,20 @@ export function useNextSeasonStageDetection(
       // Downstream progress checks (only meaningful if we have an
       // upcoming season).
       let hasSchedule = false;
+      let upcomingPlayoffWeeks: number | undefined;
       let teamCount = 0;
       let venueCount = 0;
       if (upcomingSeason?.id) {
-        const [weeksRes, teamsRes] = await Promise.all([
+        const [weeksRes, playoffWeeksRes, teamsRes] = await Promise.all([
           supabase
             .from('season_weeks')
             .select('*', { count: 'exact', head: true })
             .eq('season_id', upcomingSeason.id),
+          supabase
+            .from('season_weeks')
+            .select('*', { count: 'exact', head: true })
+            .eq('season_id', upcomingSeason.id)
+            .eq('week_type', 'playoffs'),
           supabase
             .from('teams')
             .select('home_venue_id', { count: 'exact' })
@@ -244,6 +298,7 @@ export function useNextSeasonStageDetection(
             .eq('status', 'active'),
         ]);
         hasSchedule = (weeksRes.count ?? 0) > 0;
+        upcomingPlayoffWeeks = playoffWeeksRes.count ?? 0;
         teamCount = teamsRes.count ?? 0;
         const venueIds = new Set(
           (teamsRes.data ?? [])
@@ -258,12 +313,14 @@ export function useNextSeasonStageDetection(
         prefs,
         upcomingSeason,
         hasSchedule,
+        upcomingPlayoffWeeks,
         teamCount,
         venueCount,
         previousSeasonLastWeekDate,
         previousSeasonLength,
         previousSeasonPlayoffWeeks,
         championshipTracking,
+        previousSeasonVenueIds,
         reupResponses,
       };
     },
@@ -278,7 +335,14 @@ export function useNextSeasonStageDetection(
     };
   }
 
-  const { league, prefs, upcomingSeason, hasSchedule, teamCount, venueCount, previousSeasonLastWeekDate, previousSeasonLength, previousSeasonPlayoffWeeks, championshipTracking, reupResponses } = data;
+  const { league, prefs, upcomingSeason, hasSchedule, upcomingPlayoffWeeks, teamCount, venueCount, previousSeasonLastWeekDate, previousSeasonLength, previousSeasonPlayoffWeeks, championshipTracking, previousSeasonVenueIds, reupResponses } = data;
+
+  // Build league name from its parts (same convention used everywhere else).
+  const leagueName = buildLeagueTitle({
+    gameType: league?.game_type,
+    dayOfWeek: league?.day_of_week,
+    division: league?.division,
+  });
 
   // Resolve stage. With NO upcoming season, the operator starts at
   // stage 0 (Season). With one in progress, walk the cascade.
@@ -296,6 +360,7 @@ export function useNextSeasonStageDetection(
     context: {
       organizationId: league?.organization_id ?? undefined,
       leagueId: leagueId ?? undefined,
+      leagueName: leagueName || undefined,
       leagueStartDate: league?.league_start_date,
       gameType: league?.game_type,
       dayOfWeek: league?.day_of_week,
@@ -306,13 +371,17 @@ export function useNextSeasonStageDetection(
       matchFormat: prefs?.game_generation,
       seasonId: upcomingSeason?.id,
       seasonName: upcomingSeason?.season_name,
+      seasonStartDate: upcomingSeason?.start_date ?? undefined,
       seasonLength: upcomingSeason?.season_length,
+      playoffWeeks: upcomingPlayoffWeeks,
+      scheduleComplete: hasSchedule || undefined,
       teamCount: teamCount || undefined,
       venueCount: venueCount || undefined,
       previousSeasonLastWeekDate,
       previousSeasonLength,
       previousSeasonPlayoffWeeks,
       championshipTracking,
+      previousSeasonVenueIds: previousSeasonVenueIds?.length ? previousSeasonVenueIds : undefined,
       reupResponses: reupResponses?.length ? reupResponses : undefined,
     },
   };

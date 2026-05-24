@@ -53,7 +53,7 @@ export interface UpdateSeasonParams {
   startDate?: string;
   endDate?: string;
   seasonLength?: number;
-  status?: 'upcoming' | 'active' | 'completed' | 'cancelled';
+  status?: 'upcoming' | 'scheduled' | 'active' | 'completed' | 'cancelled';
 }
 
 /**

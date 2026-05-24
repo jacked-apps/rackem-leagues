@@ -1,0 +1,41 @@
+-- =============================================================================
+-- Add 'scheduled' status to the seasons lifecycle.
+-- =============================================================================
+--
+-- Before this migration the seasons table had four statuses:
+--   upcoming  → being built in the wizard, no schedule yet
+--   active    → activated; conflated "playing right now" with "queued
+--               for later" because the wizard flipped status='active'
+--               regardless of whether start_date had arrived
+--   completed → past end_date
+--   cancelled → operator killed it
+--
+-- The wizard's "Create Next Season" flow exposed the conflation:
+-- operators set up the next season weeks before it starts. Two
+-- chronologically-non-overlapping seasons both ended up with
+-- status='active', confusing the league page and breaking the
+-- isNextSeasonRipe gate.
+--
+-- This migration adds a fifth status, `scheduled`, sitting between
+-- `upcoming` and `active`:
+--
+--   upcoming  → wizard in progress
+--   scheduled → wizard done, season fully prepped, start_date in future
+--   active    → start_date has arrived, matches can be scored
+--   completed → past end_date
+--   cancelled → operator killed it
+--
+-- Transition `scheduled → active` happens via a daily job / trigger that
+-- flips the status when start_date <= CURRENT_DATE. That trigger lives
+-- in a follow-up migration; for now the wizard will set status correctly
+-- on activate and the existing `scheduled` rows can be flipped manually
+-- if needed.
+--
+-- The pre-existing DB had NO check constraint on seasons.status (only
+-- `seasons_season_length_check`), so this migration ADDS the constraint
+-- with all five valid values rather than dropping-and-recreating.
+-- =============================================================================
+
+ALTER TABLE seasons
+  ADD CONSTRAINT seasons_status_check
+  CHECK (status IN ('upcoming', 'scheduled', 'active', 'completed', 'cancelled'));

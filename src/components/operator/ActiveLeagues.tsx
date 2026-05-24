@@ -177,13 +177,14 @@ export const ActiveLeagues: React.FC<ActiveLeaguesProps> = ({ operatorId }) => {
           // Subtle hint badge: this league is ripe for starting the
           // next season (last 2 weeks of current season OR previous
           // season completed). Click takes the operator to the league
-          // page where the full ActionCard "Start Next Season" CTA
+          // page where the full ActionCard "Create Next Season" CTA
           // lives — the org page lists many leagues, so the badge is
           // intentionally low-chrome to avoid noise.
-          const progress = (league as { _progress?: { activeSeason?: { end_date?: string | null }; seasonCount?: number } })._progress;
+          const progress = (league as { _progress?: { activeSeason?: { end_date?: string | null }; seasonCount?: number; hasScheduledSeason?: boolean } })._progress;
           const seasonRipe = isNextSeasonRipe(
             progress?.activeSeason ?? null,
             progress?.seasonCount ?? 0,
+            progress?.hasScheduledSeason ?? false,
           );
 
           return (

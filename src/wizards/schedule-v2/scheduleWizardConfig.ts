@@ -17,6 +17,11 @@ export const scheduleWizardConfig: WizardConfig<ScheduleWizardFormData> = {
   schemaVersion: 1,
   initialFormData: {},
   getSummaryItems: (formData) => {
+    // In-progress preview for the first-time flow's championship step.
+    // Next-season flows skip this step (championship lives in the Season
+    // wizard) — `champs` stays undefined, so this row drops out cleanly.
+    // Label / join format matches `createNewLeagueFlow` and
+    // `createNextSeasonFlow` so the row transitions continuously.
     const champs = formData['championships'];
     const tracked: string[] = [];
     if (champs?.trackBca) tracked.push('BCA');
@@ -24,7 +29,7 @@ export const scheduleWizardConfig: WizardConfig<ScheduleWizardFormData> = {
     return [
       {
         label: 'Championship Tracking',
-        value: champs ? (tracked.length ? tracked.join(' & ') : 'None') : undefined,
+        value: champs ? (tracked.length ? tracked.join(' + ') : 'None') : undefined,
       },
     ];
   },

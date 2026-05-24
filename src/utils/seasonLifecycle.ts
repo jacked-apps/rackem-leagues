@@ -1,7 +1,7 @@
 /**
  * @fileoverview Helpers for the season lifecycle — used by both the
  * org dashboard (ActiveLeagues hint badge) and the league detail page
- * (ActionCard "Start Next Season" button) so the gating logic is in
+ * (ActionCard "Create Next Season" button) so the gating logic is in
  * one place.
  */
 
@@ -18,19 +18,31 @@
  *     season to copy from (i.e., the previous season was just
  *     completed and a new one hasn't been activated yet).
  *
- * Returns false for brand-new leagues (seasonCount === 0) — those go
- * through the first-time setup flow instead.
+ * Returns false in two extra cases:
+ *   - Brand-new leagues (seasonCount === 0) — those go through the
+ *     first-time setup flow instead.
+ *   - A `scheduled` season already exists for this league — the
+ *     operator already set up the next season and it's just waiting
+ *     for its start date. Showing the CTA again would offer them a
+ *     SECOND next-next-season, which isn't what they want.
  *
- * @param activeSeason The league's most-recent season row (may be
- *   active, upcoming, or completed) — falsy if the league has none.
+ * @param activeSeason The league's most-recent active season row —
+ *   falsy if the league has none.
  * @param seasonCount Total seasons the league has had (active +
- *   completed + upcoming).
+ *   completed + upcoming + scheduled).
+ * @param hasScheduledSeason True if the league already has a season
+ *   with status='scheduled' (created via the wizard but not yet live).
  */
 export function isNextSeasonRipe(
   activeSeason: { end_date?: string | null; status?: string } | null | undefined,
   seasonCount: number,
+  hasScheduledSeason: boolean = false,
 ): boolean {
   if (seasonCount === 0) return false; // no previous season to copy
+  // A scheduled season already covers "what's next" — hide the CTA
+  // so the operator doesn't accidentally build a third overlapping
+  // season on top of one that's just queued.
+  if (hasScheduledSeason) return false;
   if (!activeSeason) return true; // had seasons, none active now → previous done
 
   // Active or upcoming season with an end_date — check if we're

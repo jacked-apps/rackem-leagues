@@ -12,7 +12,7 @@
  * show when user picks "Custom" format).
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import type { WizardStepConfig } from './types';
 
 interface UseWizardStateOptions<TFormData> {
@@ -67,19 +67,52 @@ export function useWizardState<TFormData>({
   const currentIndex = steps.findIndex((s) => s.id === currentStepId);
   const currentStep = currentIndex >= 0 ? steps[currentIndex] : null;
 
+  // Mirror of `formData` in a ref so goNext / goBack always evaluate
+  // `showIf` against the LATEST formData — not the closure-captured
+  // copy. Without this, a step that does `onChange(newValue); onNext()`
+  // back-to-back computes the next visible step from the OLD formData
+  // (the state update is batched and hasn't applied yet), so steps
+  // whose visibility depends on the value just written get skipped.
+  const formDataRef = useRef<TFormData>(formData);
+  formDataRef.current = formData;
+
   const updateFormData = useCallback((updater: (prev: TFormData) => TFormData) => {
-    setFormData(updater);
+    setFormData((prev) => {
+      const next = updater(prev);
+      formDataRef.current = next;
+      return next;
+    });
   }, []);
 
   const goNext = useCallback(() => {
-    const nextIndex = findNextVisibleIndex(steps, formData, currentIndex, 1);
+    const nextIndex = findNextVisibleIndex(steps, formDataRef.current, currentIndex, 1);
     if (nextIndex >= 0) setCurrentStepId(steps[nextIndex].id);
-  }, [steps, formData, currentIndex]);
+  }, [steps, currentIndex]);
 
   const goBack = useCallback(() => {
-    const prevIndex = findNextVisibleIndex(steps, formData, currentIndex, -1);
+    const prevIndex = findNextVisibleIndex(steps, formDataRef.current, currentIndex, -1);
     if (prevIndex >= 0) setCurrentStepId(steps[prevIndex].id);
-  }, [steps, formData, currentIndex]);
+  }, [steps, currentIndex]);
+
+  /** Look up the ID of the next visible step against the LATEST formData
+   *  (via ref). Returns null if there is no further visible step.
+   *  Use this instead of the `isLastStep` boolean below when you need to
+   *  decide whether to advance vs. complete in response to a click that
+   *  just wrote to formData — `isLastStep` is snapshotted from React
+   *  state and won't see the just-written value yet. */
+  const peekNextStepId = useCallback((): string | null => {
+    const nextIndex = findNextVisibleIndex(steps, formDataRef.current, currentIndex, 1);
+    return nextIndex >= 0 ? steps[nextIndex].id : null;
+  }, [steps, currentIndex]);
+
+  /** Read the LATEST formData via the ref — synchronously, not via
+   *  React state. Use this when a click handler must observe a write
+   *  that just happened in the same event handler (e.g., onComplete
+   *  must see the gate-step value written immediately before the
+   *  flow finishes; the React state hasn't applied yet). */
+  const getLatestFormData = useCallback((): TFormData => {
+    return formDataRef.current;
+  }, []);
 
   const isFirstStep = findNextVisibleIndex(steps, formData, currentIndex, -1) === -1;
   const isLastStep = findNextVisibleIndex(steps, formData, currentIndex, 1) === -1;
@@ -104,6 +137,8 @@ export function useWizardState<TFormData>({
     visibleStepIndex,
     goNext,
     goBack,
+    peekNextStepId,
+    getLatestFormData,
     isFirstStep,
     isLastStep,
   };

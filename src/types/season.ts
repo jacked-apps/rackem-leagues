@@ -6,8 +6,15 @@
 
 /**
  * Season status types
+ *
+ * Lifecycle:
+ *   upcoming  → wizard in progress, no schedule yet
+ *   scheduled → wizard finished, season fully prepped, start_date in future
+ *   active    → start_date has arrived, matches can be scored
+ *   completed → past end_date
+ *   cancelled → operator killed it (soft delete)
  */
-export type SeasonStatus = 'upcoming' | 'active' | 'completed' | 'cancelled';
+export type SeasonStatus = 'upcoming' | 'scheduled' | 'active' | 'completed' | 'cancelled';
 
 /**
  * Holiday object from date-holidays package or championship events

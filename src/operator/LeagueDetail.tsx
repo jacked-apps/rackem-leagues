@@ -24,8 +24,11 @@ import { StatsCard } from '@/components/operator/StatsCard';
 import { PlayoffsCard } from '@/components/operator/PlayoffsCard';
 import { Button } from '@/components/ui/button';
 import { DashboardCard } from '@/components/operator/DashboardCard';
-import { Settings } from 'lucide-react';
+import { Calendar, Settings, Users } from 'lucide-react';
+import { toast } from 'sonner';
 import { useIsWizard2League, useFlowStageDetection } from '@/api/hooks';
+import { useDeleteSeason } from '@/api/hooks/useSeasonMutations';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { isNextSeasonRipe } from '@/utils/seasonLifecycle';
 
 /**
@@ -49,6 +52,10 @@ export const LeagueDetail: React.FC = () => {
   const lineupSize = leaguePrefs?.lineup_size;
   const [seasonCount, setSeasonCount] = useState(0);
   const [activeSeason, setActiveSeason] = useState<any | null>(null);
+  // `scheduledSeason` is a season the operator already set up that hasn't
+  // started yet (status='scheduled'). Rendered as a second "Next season"
+  // panel alongside the current one so the operator knows it's queued.
+  const [scheduledSeason, setScheduledSeason] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   // Track navigation loading state for lazy-loaded pages
@@ -83,17 +90,29 @@ export const LeagueDetail: React.FC = () => {
           .eq('league_id', leagueId);
         setSeasonCount(seasonCountResult || 0);
 
-        // Fetch active season (if any)
+        // Fetch the currently-active season (if any) — there should be
+        // at most one row with status='active' per league once the new
+        // 'scheduled' lifecycle is in place.
         const { data: activeSeasonData } = await supabase
           .from('seasons')
           .select('*')
           .eq('league_id', leagueId)
           .eq('status', 'active')
           .maybeSingle();
+        if (activeSeasonData) setActiveSeason(activeSeasonData);
 
-        if (activeSeasonData) {
-          setActiveSeason(activeSeasonData);
-        }
+        // Fetch the queued (next) season if one exists. Earliest
+        // start_date wins if there are multiples (shouldn't happen
+        // under normal use, but defensive).
+        const { data: scheduledSeasonData } = await supabase
+          .from('seasons')
+          .select('*')
+          .eq('league_id', leagueId)
+          .eq('status', 'scheduled')
+          .order('start_date', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        if (scheduledSeasonData) setScheduledSeason(scheduledSeasonData);
       } catch (err) {
         logger.error('Error fetching league', { error: err instanceof Error ? err.message : String(err) });
         setError('Failed to load league details');
@@ -194,11 +213,24 @@ export const LeagueDetail: React.FC = () => {
             league={league}
             seasonCount={seasonCount}
             activeSeason={activeSeason}
+            scheduledSeason={scheduledSeason}
             isNavigating={isNavigating}
             setIsNavigating={setIsNavigating}
             navigate={navigate}
           />
         </div>
+
+        {/* Next-season banner — visible only when the operator has
+            already set up the next season (status='scheduled', start
+            date in the future). Tells them "yes, you finished the
+            wizard, it's queued, here's when it goes live." */}
+        {scheduledSeason && league && (
+          <NextSeasonBanner
+            season={scheduledSeason}
+            leagueId={league.id}
+            onCancelled={() => setScheduledSeason(null)}
+          />
+        )}
 
         {/* Re-up Status — only renders when the league's active season
             is in its last 3 weeks; otherwise the card returns null and
@@ -252,6 +284,7 @@ function ActionCard({
   league,
   seasonCount,
   activeSeason,
+  scheduledSeason,
   isNavigating,
   setIsNavigating,
   navigate,
@@ -259,6 +292,7 @@ function ActionCard({
   league: League;
   seasonCount: number;
   activeSeason: { end_date?: string | null; status?: string } | null;
+  scheduledSeason: { id?: string; start_date?: string; season_name?: string } | null;
   isNavigating: boolean;
   setIsNavigating: (v: boolean) => void;
   navigate: ReturnType<typeof useNavigate>;
@@ -268,12 +302,15 @@ function ActionCard({
   const flowComplete = firstIncompleteStage >= 5;
   const showContinueSetup = isV2 && !flowComplete;
 
-  // "Start Next Season" takes priority over the generic "Let's Go" CTA
+  // "Create Next Season" takes priority over the generic "Let's Go" CTA
   // when the league is in the natural end-of-season window. Setup-in-
   // progress takes priority over everything (mid-wizard users haven't
   // even launched their first season yet).
+  // hasScheduledSeason short-circuits the ripe check — if the next
+  // season is already queued, the operator doesn't need a "create
+  // next season" prompt.
   const showStartNextSeason =
-    !showContinueSetup && isNextSeasonRipe(activeSeason, seasonCount);
+    !showContinueSetup && isNextSeasonRipe(activeSeason, seasonCount, !!scheduledSeason);
 
   const STAGE_LABELS = ['League', 'Season', 'Schedule', 'Teams', 'Matchups'];
   const nextStageName = STAGE_LABELS[firstIncompleteStage] ?? 'Setup';
@@ -284,7 +321,7 @@ function ActionCard({
       <div className="lg:bg-card lg:rounded-xl lg:shadow-sm p-6 flex flex-col items-center justify-center border-2 border-blue-200 bg-blue-50">
         <div className="text-6xl mb-4">📅</div>
         <h3 className="text-lg font-semibold text-foreground mb-2 text-center">
-          Start Next Season
+          Create Next Season
         </h3>
         <p className="text-sm text-muted-foreground mb-6 text-center">
           {hasActive
@@ -301,7 +338,7 @@ function ActionCard({
           disabled={isNavigating}
           size="lg"
         >
-          Start Next Season
+          Create Next Season
         </Button>
       </div>
     );
@@ -350,6 +387,112 @@ function ActionCard({
           </Button>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Shows up at the top of the league page when a season is queued
+ * (status='scheduled'): wizard finished, but start_date hasn't arrived
+ * yet. Distinct from the current active season so the LO sees both
+ * side by side instead of wondering "which season am I looking at?"
+ *
+ * Action buttons let the LO View Schedule, Manage Teams, or Cancel the
+ * queued season before it goes live — completing the wizard's loop so
+ * the next season isn't a black box after the wizard finishes.
+ */
+function NextSeasonBanner({
+  season,
+  leagueId,
+  onCancelled,
+}: {
+  season: { id: string; season_name?: string; start_date?: string };
+  leagueId: string;
+  onCancelled: () => void;
+}) {
+  const navigate = useNavigate();
+  const { confirm, ConfirmDialogComponent } = useConfirmDialog();
+  const deleteSeason = useDeleteSeason();
+  const [isCancelling, setIsCancelling] = useState(false);
+
+  const startLabel = season.start_date
+    ? parseLocalDate(season.start_date).toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      })
+    : 'an upcoming date';
+
+  const handleCancel = async () => {
+    const ok = await confirm({
+      title: 'Cancel this queued season?',
+      message:
+        'The season will be marked as cancelled. Its schedule weeks and teams stay in the database for historical record, but the season will no longer go live on its start date.\n\nYou\'ll be able to start a fresh next-season wizard afterward.',
+      confirmText: 'Yes, cancel season',
+      cancelText: 'Keep it',
+      confirmVariant: 'destructive',
+    });
+    if (!ok) return;
+    setIsCancelling(true);
+    try {
+      await deleteSeason.mutateAsync({ seasonId: season.id });
+      toast.success('Queued season cancelled.');
+      onCancelled();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to cancel season');
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  return (
+    <div className="mb-6 rounded-lg border-2 border-blue-300 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-800 p-4">
+      <div className="flex items-start gap-3">
+        <div className="text-2xl">🔵</div>
+        <div className="flex-1 space-y-3">
+          <div>
+            <h3 className="font-semibold text-blue-900 dark:text-blue-200">
+              Next season queued
+            </h3>
+            <p className="text-sm text-blue-800 dark:text-blue-300 mt-1">
+              <strong>{season.season_name ?? 'A new season'}</strong> is all
+              set up and goes live on <strong>{startLabel}</strong>. Players
+              won&rsquo;t see it until then.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              loadingText="none"
+              onClick={() =>
+                navigate(`/league/${leagueId}/season/${season.id}/schedule`)
+              }
+            >
+              <Calendar className="size-4" />
+              View Schedule
+            </Button>
+            <Button
+              variant="outline"
+              loadingText="none"
+              onClick={() => navigate(`/league/${leagueId}/manage-teams`)}
+            >
+              <Users className="size-4" />
+              Manage Teams
+            </Button>
+            <Button
+              variant="destructive"
+              loadingText="Cancelling"
+              isLoading={isCancelling}
+              onClick={handleCancel}
+              disabled={isCancelling}
+            >
+              Cancel Season
+            </Button>
+          </div>
+        </div>
+      </div>
+      {ConfirmDialogComponent}
     </div>
   );
 }

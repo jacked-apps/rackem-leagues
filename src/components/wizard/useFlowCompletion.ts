@@ -30,7 +30,12 @@ export function useFlowCompletion({ state, stageHandlers, onComplete }: UseFlowC
     const handler = stageHandlers?.[state.currentStage.id];
     if (handler && formData) {
       try {
-        contextUpdates = await handler(formData);
+        // Pass live state.context (NOT props-closure context). Stage N
+        // needs to read context updates set by Stage N-1's handler —
+        // e.g., the Schedule handler needs the seasonId the Season
+        // handler just set. Without this, the handler closes over a
+        // stale context from initial mount.
+        contextUpdates = await handler(formData, state.context);
       } catch (err) {
         toast.error(err instanceof Error ? err.message : 'Something went wrong');
         return;
