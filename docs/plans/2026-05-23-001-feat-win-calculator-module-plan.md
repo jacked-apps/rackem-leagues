@@ -3,7 +3,7 @@ title: "feat: Win Calculator Module — pure judge (games + points comparators, 
 type: feat
 status: active
 date: 2026-05-23
-origin: docs/league-system/modules/win-calculator-v2.md
+origin: docs/league-system/modules/win-calculator.md
 branch: docs/win-calculator-endgame-brainstorm
 ---
 
@@ -13,7 +13,7 @@ branch: docs/win-calculator-endgame-brainstorm
 
 Build the **Win Calculator** as a real, live, isolated module: a "stupid" pure judge that, when a match ends, reads only its own LO-assigned config plus the final values in the shared match-state bag, and returns **a winner (`home`/`away`)** — or **no winner** (a tie, which it hands up to the runtime and forgets about). It replaces today's inline winner logic in `MatchEndVerification.tsx` and deletes the dead, wrong-architecture scaffolding in `src/systems/win-calculators/`.
 
-This plan is built against the **unlocked v2 draft** ([`docs/league-system/modules/win-calculator-v2.md`](../league-system/modules/win-calculator-v2.md)), not the locked v1. Per the [revision protocol](../league-system/revision-protocol.md), **this plan is v2's validation gate** — friction surfaced during planning is resolved by changing the plan OR by a cheap edit to the draft, never by ratifying first. The [v2 Validation Findings](#v2-validation-findings-the-gate-deliverable) section is the required output of that gate.
+This plan was built against the Win Calculator v2 draft — now **ratified into the locked [`win-calculator.md`](../league-system/modules/win-calculator.md)** (2026-05-23). Per the [revision protocol](../league-system/revision-protocol.md), this plan served as that draft's **validation gate** — friction surfaced during planning was resolved by changing the plan or by cheap edits to the draft before ratifying. The [v2 Validation Findings](#v2-validation-findings-the-gate-deliverable) section is that gate's output.
 
 The corrected model below **supersedes v2's "LO-ordered set of four comparators" framing** — it emerged from the 2026-05-23 planning dialogue and tightens the design. The two required v2 trims are listed in the findings section.
 
@@ -124,7 +124,7 @@ Running this plan against v2 surfaced the following. None blocks building. Items
 3. **Cross-doc puzzle-fit — gate step 2 RAN (2026-05-23); outcome recorded here.** Four parallel cold reads checked v2 against the locked docs. Keeping the winner chip named **`edge`** (its established term across the puzzle) dissolved most apparent conflicts — `trigger.md`, points-system README, threshold-charts, and the league README already use `edge`, so they now agree with v2's vocabulary. The one real remaining mismatch: a few docs still say the **Win Calc fires** the tiebreak, whereas v2 moves firing to the **runtime** (pure judge). Resolution by doc:
    - **team-geometry.md** — was a *finished* module blurring into the tiebreak (it described the Win Calc's stack + edge-as-fallback + firing). **Trimmed via the Principle-7 gate (2026-05-23)** to state only its own fact (even game counts can tie on games, odd can't).
    - **threshold-charts/5v5-games-needed.md** (the universal Percentage Games-Needed formula — misleadingly named) — same finished-module over-reach (it narrated the Win Calc's metric stack / tiebreak firing / edge metric, plus a peek at the Points tie-band rule). **Trimmed via the Principle-7 gate (2026-05-23)** at 4 spots to state only its own parity-output facts + clean hand-off disclaimers; the formula, calibration, and I/O are untouched.
-   - **tiebreak-system/README.md** and **pairings-generator.md** — both are *not finished* (each pending its own modular v2). Their firing-ownership fix is **DEFERRED and logged** as a required delta for those future v2s — NOT a blocker on win-calculator-v2 ratification (don't hold a finished module hostage to unfinished siblings). **Logged delta for both:** the Win Calculator does not fire the tiebreak — it concludes a tie; the *runtime* fires the tiebreak; `edge` is the winner chip the Win Calc consumes (not a lowest-precedence stack metric). pairings-generator keeps its legitimate `mini_match`-uses-pairings link.
+   - **tiebreak-system/README.md** and **pairings-generator.md** — both are *not finished* (each pending its own modular v2). Their firing-ownership fix is **DEFERRED and logged** as a required delta for those future v2s — NOT a blocker on win-calculator ratification (don't hold a finished module hostage to unfinished siblings). **Logged delta for both:** the Win Calculator does not fire the tiebreak — it concludes a tie; the *runtime* fires the tiebreak; `edge` is the winner chip the Win Calc consumes (not a lowest-precedence stack metric). pairings-generator keeps its legitimate `mini_match`-uses-pairings link.
    - **migration plan** `2026-05-17-001-...` (Units 1 & 9) still uses metric-stack/`edge` language — superseded; update when those units are next touched.
 4. **Where the win chip lives between clinch and match-end — clarification.** v2 doesn't say. In threshold-mode (full game count always played) the engine re-runs over all games on each evaluation, so a clinch trigger re-fires deterministically and the chip is **reconstructed in the bag at match-end** — no new persistence needed. Chip persistence becomes necessary only for the **end-match chip / race-mode early-stop** (deferred). Recommend a one-line v2 note tying this to the open "race-mode" item.
 5. **Input substrate — clarification.** v2 stays conceptual ("examines the collected match data"). The concrete substrate is the engine's `MatchStateBag`. For *this* cutover the judge reads the same scalars `MatchEndVerification` already has (no bag-surfacing needed); reading the richer bag is the future chip/clinch path. Recommend naming `MatchStateBag` in v2's "Current implementation status".
@@ -377,7 +377,7 @@ Parity mapping (today's fixed behavior, reproduced by `buildWinCalcConfig`):
 - Modify: `src/systems/types.ts` — drop the **required** `winCalculator` field from the `SystemModule` interface (and the old `WinCalculator`/`MetricStackEntry` types)
 - Modify: `src/systems/{bca3v3,bca5v5,fargo5v5}.ts` and `src/systems/buildSystemFromPreferences.ts` — remove the `getWinCalculator(...)` import + the `winCalculator:` assignment on each module (this is the "~5 files" surgery the field touches)
 - Modify: `src/utils/fargoMatchTotals.ts` — remove orphaned `calculateFargoMatchTotals` (zero non-test callers); `src/systems/fargo5v5.ts` — remove `computeMatchResult` **only after** grep-confirming `SystemModule.scoring.computeMatchResult` is never invoked (it is still live-assigned)
-- Modify (docs): `TABLE_OF_CONTENTS.md`; update "Source of truth" anchors in the v2 draft to reference `src/systems/win-calculator/`
+- Modify (docs): `TABLE_OF_CONTENTS.md`; update the "Source of truth" anchors in `win-calculator.md` to reference `src/systems/win-calculator/`
 
 **Approach:**
 - Order matters: drop the `winCalculator` field from the `SystemModule` interface first, let the compiler point at every assignment to remove, then delete the `win-calculators/` dir.
@@ -405,18 +405,18 @@ Parity mapping (today's fixed behavior, reproduced by `buildWinCalcConfig`):
 | "Dead" code is actually wired-but-inert | `getWinCalculator`/`winCalculator` are assigned across ~5 files and `winCalculator` is a **required** `SystemModule` field — removal is interface surgery, not an `rm`. `fargo5v5.scoring.computeMatchResult` is still live-assigned. Grep-confirm each symbol's runtime invocation before deleting (Unit 7) |
 | Per-side targets unavailable at match-end for met-goal | They already feed `determineMatchResult` today; the judge reads the same values |
 | Reintroducing cross-module inference (drift) | Judge reads only its config + named bag values; no handicap/threshold/trigger imports — enforced by the isolated test suite |
-| v2 ratified before plan-driven trims | Plan explicitly lists the two required v2 trims; do not lock v2 until applied + cold-read gate passes |
+| v2 ratified before plan-driven trims | RESOLVED — the two trims were applied to the draft and the 3-cold-read gate passed before the swap into `win-calculator.md` (2026-05-23) |
 | Prereq ordering (Threshold Charts → Trigger → Win Calc) | Sequenced as named prerequisites; cutover preserves parity with the chip path dormant if built earlier |
 
 ## Documentation / Operational Notes
 
-- **v2 ratification path (after this plan validates the design):** apply trims #1 and #2 to the unlocked v2 draft; then run the [revision-protocol](../league-system/revision-protocol.md) 3-cold-read gate; the gate must reconcile the locked `tiebreak-system/README.md` drift (finding #3) via a Principle-7 unlock before/with the swap.
+- **v2 ratification — DONE (2026-05-23):** trims #1 and #2 were applied to the draft, it passed the [revision-protocol](../league-system/revision-protocol.md) 3-cold-read gate, and the body was swapped into the locked `win-calculator.md` (draft file removed). The `tiebreak-system/README.md` + `pairings-generator.md` firing-ownership drift (finding #3) was **deferred** to those docs' own v2s — not reconciled at this ratification.
 - **No DB migration** in this plan (config is code-defined). If/when a data-driven comparator column is added later: NOT-NULL string sentinels + CHECK, and verify it survives the `resolved_league_preferences` COALESCE cascade.
 - **Notes files** (`TABLE_OF_CONTENTS.md`, memory-bank, any LIST_FOR_*) ride with the working commits.
 
 ## Sources & References
 
-- **Spec (origin):** [docs/league-system/modules/win-calculator-v2.md](../league-system/modules/win-calculator-v2.md) (unlocked v2 draft) — and the corrected 2-comparator model captured above (supersedes v2's "set of four" framing).
+- **Spec:** [docs/league-system/modules/win-calculator.md](../league-system/modules/win-calculator.md) — the ratified pure-judge canon (was the v2 draft this plan validated); the corrected 2-comparator model is captured above.
 - **Revision protocol:** [docs/league-system/revision-protocol.md](../league-system/revision-protocol.md)
 - **Locked v1 (do not edit):** [docs/league-system/modules/win-calculator.md](../league-system/modules/win-calculator.md)
 - **Trigger primitive (prereq spec):** [docs/league-system/modules/points-system/trigger.md](../league-system/modules/points-system/trigger.md)
