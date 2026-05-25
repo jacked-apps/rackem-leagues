@@ -7,7 +7,7 @@ Use it as input to `docs/audits/screen-audit.md` (the per-screen audit checklist
 
 ## Summary
 
-- **Files with unpaired hardcoded colored shades:** 181
+- **Files with unpaired hardcoded colored shades:** 171
 - **Files with native HTML form elements:** 23
 
 ## Cascade priority — shared components
@@ -1335,48 +1335,6 @@ etc.) chosen by semantic meaning, not literal color match._
 - L293: `<span className="text-blue-700"> · self-claim</span>`
 - L374: `<ul className="list-disc list-inside text-red-900 space-y-0.5 mt-1">`
 
-### `src/operator/OrganizationSettings.tsx`
-
-- L61: `<h3 className="text-red-600 text-lg font-semibold mb-4">Error</h3>`
-- L67: `className="px-4 py-2 bg-blue-600 text-white rounded-lg"`
-- L114: `iconColor="text-teal-600"`
-- L124: `iconColor="text-blue-600"`
-- L140: `iconColor="text-purple-600"`
-
-### `src/operator/PlayoffSetup.tsx`
-
-- L89: `<td className="py-2 px-3 text-center text-green-600 font-medium">{team.matchWins}</td>`
-- L90: `<td className="py-2 px-3 text-center text-red-600 font-medium">{team.matchLosses}</td>`
-- L108: `<div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">`
-- L110: `<AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />`
-- L112: `<div className="font-medium text-yellow-800">Team Not In Playoffs</div>`
-- L113: `<div className="text-sm text-yellow-700 mt-1">`
-- L407: `<Card className="border-red-200 bg-red-50">`
-- L410: `<AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />`
-- L412: `<div className="font-medium text-red-800">Error</div>`
-- L413: `<div className="text-sm text-red-700 mt-1">{error}</div>`
-- L445: `<div className="flex items-center gap-2 text-purple-700">`
-- L462: `<div className="flex items-center gap-2 text-green-600">`
-- L467: `<div className="flex items-center gap-2 text-yellow-600">`
-- L483: `<p className="text-sm text-yellow-700 bg-yellow-50 p-3 rounded-lg">`
-- L560: `className="bg-purple-600 hover:bg-purple-700"`
-
-### `src/operator/PlayoffsSetupWizard.tsx`
-
-- L342: `<Card className="border-blue-200 bg-blue-50">`
-- L345: `<Users className="h-6 w-6 text-blue-600" />`
-- L347: `<div className="font-semibold text-blue-900">`
-- L350: `<div className="text-sm text-blue-700">`
-- L361: `<Card className="border-amber-200 bg-amber-50">`
-- L364: `<Trophy className="h-6 w-6 text-amber-600" />`
-- L366: `<div className="font-semibold text-amber-900">`
-- L369: `<div className="text-sm text-amber-700">`
-
-### `src/operator/ReportsManagement.tsx`
-
-- L443: `<div key={action.id} className="text-sm border-l-2 border-red-500 pl-3 py-1">`
-- L453: `<div className="text-xs text-red-600">`
-
 ### `src/operator/ScheduleSetup.tsx`
 
 - L320: `<div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">`
@@ -1387,42 +1345,9 @@ etc.) chosen by semantic meaning, not literal color match._
 - L437: `<div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">`
 - L438: `<p className="text-red-800 text-sm font-medium">{error}</p>`
 
-### `src/operator/ScheduleSetupPage.tsx`
-
-- L102: `<h3 className="text-red-600 text-lg font-semibold mb-4">Error</h3>`
-
 ### `src/operator/ScheduleView.tsx`
 
 - L133: `<h3 className="text-red-600 text-lg font-semibold mb-4">Error</h3>`
-
-### `src/operator/SeasonCreationWizard.tsx`
-
-- L271: `<h3 className="text-red-600 text-lg font-semibold mb-4">Error</h3>`
-- L538: `className="text-red-600 hover:text-red-800"`
-- L689: `<p className="text-red-600 text-sm">{state.validationError}</p>`
-- L741: `className="bg-blue-600 hover:bg-blue-700"`
-
-### `src/operator/SeasonScheduleManager.tsx`
-
-- L382: `<h3 className="text-red-600 text-lg font-semibold mb-4">Error</h3>`
-- L441: `<div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">`
-- L446: `<span className="font-semibold text-blue-900">Starting Date:</span>`
-- L447: `<span className="ml-2 text-blue-800">`
-- L452: `<span className="font-semibold text-blue-900">Season Length:</span>`
-- L453: `<span className="ml-2 text-blue-800">`
-- L462: `<span className="font-semibold text-blue-900">BCA Championship:</span>`
-- L463: `<span className="ml-2 text-blue-800">`
-- L479: `<span className="font-semibold text-blue-900">APA Championship:</span>`
-- L480: `<span className="ml-2 text-blue-800">`
-- L500: `<div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">`
-- L501: `<p className="text-red-800">{error}</p>`
-
-### `src/operator/SeasonSchedulePage.tsx`
-
-- L71: `bgColor: 'bg-purple-50 rounded-t-xl -my-6 py-3',`
-- L73: `badgeColor: 'bg-purple-600 text-white',`
-- L83: `bgColor: 'bg-yellow-50 rounded-t-xl -my-6 py-3',`
-- L85: `badgeColor: 'bg-yellow-600 text-white',`
 
 ### `src/operator/TeamEditorModal.tsx`
 
@@ -1432,14 +1357,6 @@ etc.) chosen by semantic meaning, not literal color match._
 - L551: `className="h-6 w-6 p-0 text-muted-foreground hover:text-red-600"`
 - L588: `<div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">`
 - L589: `<p className="text-red-800 text-sm font-medium">{error || rosterError}</p>`
-
-### `src/operator/TeamManagement.tsx`
-
-- L477: `<h3 className="text-red-600 text-lg font-semibold mb-4">Error</h3>`
-- L596: `<span className={\`font-medium ${isAtMaxTeams ? 'text-orange-600' : 'text-foreground'}\`}>`
-- L720: `<div className="text-center py-8 bg-blue-50 border border-blue-200 rounded-lg">`
-- L721: `<p className="text-blue-800 mb-2">Assign at least one venue before adding teams</p>`
-- L722: `<p className="text-sm text-blue-600">Teams need a venue to call home</p>`
 
 ### `src/operator/VenueLimitModal.tsx`
 
@@ -1455,16 +1372,6 @@ etc.) chosen by semantic meaning, not literal color match._
 - L503: `<p className="text-xs text-orange-700">`
 - L515: `<div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-3">`
 - L516: `<p className="text-sm text-red-800">`
-
-### `src/operator/VenueManagement.tsx`
-
-- L194: `<div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">`
-- L196: `<Check className="h-5 w-5 text-blue-600" />`
-- L198: `<p className="text-sm font-medium text-blue-900">`
-- L201: `<p className="text-xs text-blue-700 mt-1">`
-- L234: `<div className={\`absolute top-0 left-0 right-0 z-10 p-3 rounded-t-xl ${assigned ? 'bg-green-50' : 'bg-muted'}\`}>`
-- L245: `className={\`text-sm font-medium ${assigned ? 'text-green-700' : 'text-muted-foreground'}\`}`
-- L261: `<div className="mt-2 text-xs text-green-700">`
 
 ### `src/pages/AdminReports.tsx`
 

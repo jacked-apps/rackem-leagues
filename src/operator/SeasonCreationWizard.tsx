@@ -268,7 +268,7 @@ export const SeasonCreationWizard: React.FC = () => {
       <div className="min-h-screen bg-muted py-8">
         <div className="container mx-auto px-4 max-w-2xl">
           <div className="bg-card rounded-xl shadow-sm p-6">
-            <h3 className="text-red-600 text-lg font-semibold mb-4">Error</h3>
+            <h3 className="text-destructive text-lg font-semibold mb-4">Error</h3>
             <p className="text-foreground mb-4">{state.error || 'League not found'}</p>
             <Button onClick={() => navigate(`/operator-dashboard/${organizationId}`)} loadingText="none">
               Back to Dashboard
@@ -535,7 +535,7 @@ export const SeasonCreationWizard: React.FC = () => {
             variant="ghost"
             size="sm"
             onClick={handleClearForm}
-            className="text-red-600 hover:text-red-800"
+            className="text-destructive hover:text-destructive/80 transition-colors"
           >
             Clear Form
           </Button>
@@ -686,7 +686,7 @@ export const SeasonCreationWizard: React.FC = () => {
                 className="text-lg"
               />
               {state.validationError && (
-                <p className="text-red-600 text-sm">{state.validationError}</p>
+                <p className="text-destructive text-sm">{state.validationError}</p>
               )}
             </div>
           )}
@@ -738,7 +738,6 @@ export const SeasonCreationWizard: React.FC = () => {
                     disabled={state.isCreating}
                     isLoading={state.isCreating}
                     loadingText="Creating Season..."
-                    className="bg-blue-600 hover:bg-blue-700"
                   >
                     Create Season
                   </Button>

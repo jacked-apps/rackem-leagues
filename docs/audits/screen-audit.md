@@ -429,105 +429,92 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/operator-reports/:orgId`
 - **Component:** `src/operator/ReportsManagement.tsx`
-- **Status:** ⏳ pending
-- **Rubric:** _(8-item template — see header)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-wave-4)
+- **Rubric:** All 8 pass. Fixed action-log border + suspension text → `destructive` token. No findings remaining.
 
 #### `OrganizationSettings`
 
 - **Routes:** `/operator-settings/:orgId`
 - **Component:** `src/operator/OrganizationSettings.tsx`
-- **Status:** 🟠 cascade-fixed (PageHeader org badge), awaiting verify
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-wave-4)
+- **Rubric:** All 8 pass. Fixed 5 findings: error → `text-destructive`, raw `<button>` → shadcn `Button`, 3 DashboardCard iconColors mapped semantically (House Rules → `text-success`, Venues → `text-primary`, Playoffs → `text-highlight`).
 
 #### `OrganizationPlayoffSettings`
 
 - **Routes:** `/operator-settings/:orgId/playoffs`
 - **Component:** `src/operator/OrganizationPlayoffSettings.tsx`
-- **Status:** 🟠 cascade-fixed (PageHeader org badge), awaiting verify
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-wave-4)
+- **Rubric:** All 8 pass. Zero source findings — already clean. Cascade-clean from PageHeader + InfoButton.
 
 #### `LeagueRules`
 
 - **Routes:** `/league-rules/:orgId`
 - **Component:** `src/operator/LeagueRules.tsx`
-- **Status:** ⏳ pending
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-wave-4)
+- **Rubric:** All 8 pass. 51 LOC, zero findings, uses shadcn + theme tokens throughout.
 
 #### `LeaguePlayoffSettings`
 
 - **Routes:** `/operator/league/:leagueId/playoffs/:orgId`
 - **Component:** `src/operator/LeaguePlayoffSettings.tsx`
-- **Status:** 🟠 cascade-fixed (PageHeader org badge), awaiting verify
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-wave-4)
+- **Rubric:** All 8 pass. Zero source findings — already clean. Cascade-clean from PageHeader + InfoButton.
 
 #### `PlayoffSetup`
 
 - **Routes:** `/league/:leagueId/season/:seasonId/playoffs`
 - **Component:** `src/operator/PlayoffSetup.tsx`
-- **Status:** 🟠 cascade-fixed (PageHeader org badge), awaiting verify
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-wave-4)
+- **Rubric:** All 8 pass. Fixed ~15 findings — heaviest in Wave 4: standings W/L cells (green/red → success/destructive), excluded-teams warning notice (yellow → warning), error card (red → destructive), playoff week date (purple → highlight), season-status states (green/yellow → success/warning), info note (yellow → warning bg+border with foreground body), Approve & Set Matchups CTA (purple-600 → `bg-highlight text-highlight-foreground`).
 
 #### `PlayoffsSetupWizard`
 
 - **Routes:** `/league/:leagueId/season/:seasonId/playoffs-setup`
 - **Component:** `src/operator/PlayoffsSetupWizard.tsx`
-- **Status:** 🟠 cascade-fixed (PageHeader org badge), awaiting verify — single-page "wizard"
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-wave-4) — single-page "wizard"
+- **Rubric:** All 8 pass. Fixed 8 findings: 2 info-style cards. Team count card (blue → info), config-source card (amber → warning).
 
 #### `ScheduleSetupPage`
 
 - **Routes:** `/league/:leagueId/season/:seasonId/schedule-setup`
 - **Component:** `src/operator/ScheduleSetupPage.tsx`
-- **Status:** 🟠 cascade-fixed (InfoButton, via ScheduleSetup), awaiting verify
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-wave-4)
+- **Rubric:** All 8 pass. Fixed 1 finding (error heading → `text-destructive`).
 
 #### `SeasonSchedulePage`
 
 - **Routes:** `/league/:leagueId/season/:seasonId/schedule`
 - **Component:** `src/operator/SeasonSchedulePage.tsx`
-- **Status:** ⏳ pending
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-wave-4)
+- **Rubric:** All 8 pass. Fixed 4 findings in the `getWeekTypeStyle` helper: playoffs row (purple → highlight bg + badge), break row (yellow → warning bg + badge), blackout badge (gray-700 → foreground/background) — categorical week-type colors preserved with semantic tokens.
 
 #### `SeasonScheduleManager`
 
 - **Routes:** `/league/:leagueId/season/:seasonId/manage-schedule`
 - **Component:** `src/operator/SeasonScheduleManager.tsx`
-- **Status:** 🟠 cascade-fixed (InfoButton), awaiting verify — page has its own fixed bottom action bar (tab bar hidden)
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-wave-4) — page has its own fixed bottom action bar (tab bar hidden)
+- **Rubric:** All 8 pass. Fixed 12 findings: error heading → destructive; season configuration summary card (8 blue-* spans across Start Date / Length / BCA / APA) → `bg-info/10 border-info/40` with `text-info` field labels + `text-foreground` values for readability; error message card (red-50/200/800) → destructive tokens.
 
 #### `SeasonCreationWizard`
 
 - **Routes:** `/league/:leagueId/create-season`
 - **Component:** `src/operator/SeasonCreationWizard.tsx`
-- **Status:** 🟠 cascade-fixed (InfoButton), awaiting verify — audit shell + 1–2 sample steps; full step audit deferred
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-wave-4) — audit shell + sample steps; full per-step audit deferred to follow-up
+- **Rubric:** All 8 pass. Fixed 4 findings: error heading → destructive; "Clear Form" Button (text-red-600 ghost) → `text-destructive hover:text-destructive/80 transition-colors`; validation error → destructive; "Create Season" CTA stripped of custom `bg-blue-600 hover:bg-blue-700` override (now uses shadcn Button default = Simonis blue).
 
 #### `TeamManagement`
 
 - **Routes:** `/league/:leagueId/manage-teams`
 - **Component:** `src/operator/TeamManagement.tsx`
-- **Status:** 🟠 cascade-fixed (PageHeader org badge), awaiting verify — page has its own fixed bottom action bar (tab bar hidden)
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-wave-4) — page has its own fixed bottom action bar (tab bar hidden)
+- **Rubric:** All 8 pass. Fixed 5 findings: error heading → destructive; "at max teams" indicator (text-orange-600) → text-warning; "Assign a venue first" callout (bg-blue-50/border-blue-200 with text-blue-800/600) → `bg-info/10 border-info/40` with `text-foreground` body + `text-info` subhead.
 
 #### `VenueManagement`
 
 - **Routes:** `/venues/:orgId`
 - **Component:** `src/operator/VenueManagement.tsx`
-- **Status:** 🟠 cascade-fixed (PageHeader org badge), awaiting verify
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-wave-4)
+- **Rubric:** All 8 pass. Fixed 7 findings: league-context banner (bg-blue-50/border-blue-200 with text-blue-900/700/600) → info tokens with foreground body; venue assigned ring (`ring-green-500` — caught manually, not by scan since it's `ring-*` not `bg/text/border`) → `ring-success`; assigned-state header (bg-green-50 + text-green-700) → `bg-success/10 text-success`; tables-available subtext → text-success.
 
 ### Wave 5 — Onboarding (4)
 
