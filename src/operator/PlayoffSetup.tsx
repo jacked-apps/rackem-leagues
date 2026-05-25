@@ -86,8 +86,8 @@ function StandingsTable({ teams }: { teams: SeededTeam[] }) {
                 </span>
               </td>
               <td className="py-2 px-3 font-medium text-foreground">{team.teamName}</td>
-              <td className="py-2 px-3 text-center text-green-600 font-medium">{team.matchWins}</td>
-              <td className="py-2 px-3 text-center text-red-600 font-medium">{team.matchLosses}</td>
+              <td className="py-2 px-3 text-center text-success font-medium">{team.matchWins}</td>
+              <td className="py-2 px-3 text-center text-destructive font-medium">{team.matchLosses}</td>
               <td className="py-2 px-3 text-center text-foreground">{team.points}</td>
               <td className="py-2 px-3 text-center text-foreground">{team.gamesWon}</td>
             </tr>
@@ -105,12 +105,12 @@ function ExcludedTeamsNotice({ teams }: { teams: ExcludedTeam[] }) {
   if (teams.length === 0) return null;
 
   return (
-    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+    <div className="bg-warning/10 border border-warning/40 rounded-lg p-4">
       <div className="flex items-start gap-3">
-        <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
+        <AlertCircle className="h-5 w-5 text-warning mt-0.5" />
         <div>
-          <div className="font-medium text-yellow-800">Team Not In Playoffs</div>
-          <div className="text-sm text-yellow-700 mt-1">
+          <div className="font-medium text-warning">Team Not In Playoffs</div>
+          <div className="text-sm text-foreground mt-1">
             {teams.map((team) => (
               <div key={team.teamId}>
                 <span className="font-medium">{team.teamName}</span>
@@ -404,13 +404,13 @@ export const PlayoffSetup: React.FC = () => {
       <div className="container mx-auto px-4 max-w-4xl py-8 space-y-6">
         {/* Error Display */}
         {error && (
-          <Card className="border-red-200 bg-red-50">
+          <Card className="border-destructive/40 bg-destructive/10">
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
                 <div>
-                  <div className="font-medium text-red-800">Error</div>
-                  <div className="text-sm text-red-700 mt-1">{error}</div>
+                  <div className="font-medium text-destructive">Error</div>
+                  <div className="text-sm text-foreground mt-1">{error}</div>
                   {matchesExist && (
                     <Button
                       variant="outline"
@@ -442,7 +442,7 @@ export const PlayoffSetup: React.FC = () => {
             <CardContent className="space-y-4">
               {/* Playoff Week Date */}
               {playoffWeek && (
-                <div className="flex items-center gap-2 text-purple-700">
+                <div className="flex items-center gap-2 text-highlight">
                   <Trophy className="h-5 w-5" />
                   <span className="font-medium">{playoffWeek.week_name}:</span>
                   <span>
@@ -459,12 +459,12 @@ export const PlayoffSetup: React.FC = () => {
               {/* Regular Season Progress */}
               <div className="flex items-center gap-4">
                 {seasonStatus.isComplete ? (
-                  <div className="flex items-center gap-2 text-green-600">
+                  <div className="flex items-center gap-2 text-success">
                     <Check className="h-5 w-5" />
                     <span className="font-medium">Regular Season Complete</span>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 text-yellow-600">
+                  <div className="flex items-center gap-2 text-warning">
                     <AlertCircle className="h-5 w-5" />
                     <span className="font-medium">Regular Season In Progress</span>
                   </div>
@@ -480,7 +480,7 @@ export const PlayoffSetup: React.FC = () => {
               </div>
 
               {!seasonStatus.isComplete && (
-                <p className="text-sm text-yellow-700 bg-yellow-50 p-3 rounded-lg">
+                <p className="text-sm text-foreground bg-warning/10 border border-warning/40 p-3 rounded-lg">
                   You can configure playoff settings now, but playoff matches cannot be created until all regular season matches are complete.
                   The bracket preview below is based on current standings and will update as more matches are played.
                 </p>
@@ -557,7 +557,7 @@ export const PlayoffSetup: React.FC = () => {
               isLoading={creating}
               onClick={handleCreateMatches}
               disabled={creating || !seasonStatus?.isComplete}
-              className="bg-purple-600 hover:bg-purple-700"
+              className="bg-highlight text-highlight-foreground hover:bg-highlight/90"
             >
               {!seasonStatus?.isComplete
                   ? 'Complete Regular Season First'

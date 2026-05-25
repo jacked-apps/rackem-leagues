@@ -68,21 +68,21 @@ function getWeekTypeStyle(weekType: string): { bgColor: string; badge: string; b
   switch (weekType) {
     case 'playoffs':
       return {
-        bgColor: 'bg-purple-50 rounded-t-xl -my-6 py-3',
+        bgColor: 'bg-highlight/10 rounded-t-xl -my-6 py-3',
         badge: 'PLAYOFFS',
-        badgeColor: 'bg-purple-600 text-white',
+        badgeColor: 'bg-highlight text-highlight-foreground',
       };
     case 'blackout':
       return {
         bgColor: 'bg-muted rounded-t-xl -my-6 py-3',
         badge: 'BLACKOUT',
-        badgeColor: 'bg-gray-700 text-white',
+        badgeColor: 'bg-foreground text-background',
       };
     case 'season_end_break':
       return {
-        bgColor: 'bg-yellow-50 rounded-t-xl -my-6 py-3',
+        bgColor: 'bg-warning/10 rounded-t-xl -my-6 py-3',
         badge: 'BREAK',
-        badgeColor: 'bg-yellow-600 text-white',
+        badgeColor: 'bg-warning text-warning-foreground',
       };
     default:
       return {
