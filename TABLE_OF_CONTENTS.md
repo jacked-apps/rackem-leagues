@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-25 (Added Pairings Generator v1 extraction brainstorm — ready-for-planning requirements doc for Module #8 slot creation: one Module + three internal stages untangled, positions-in positions-out, today's algorithm only.) Earlier: 2026-05-24 (Added live-scoring-resilience brainstorm + implementation plan: `docs/brainstorms/2026-05-24-live-scoring-resilience-requirements.md` and `docs/plans/2026-05-24-001-feat-live-scoring-resilience-plan.md` — robust multi-device live match scoring (connection resilience + concurrency correctness). Branch `docs/live-scoring-resilience-brainstorm`.)
+> **Last Updated**: 2026-05-25 (Added Pairings Generator v1 extraction PLAN — 8-unit implementation plan for Module #8 slot creation: lift `gameOrder.ts` into `src/systems/pairings/`, three internal stages, lineups in / player-id-tagged GameSlot[] out, output shape variant-agnostic for future race-mode. Earlier same-day: brainstorm + reviewer-refined requirements doc.) Earlier: 2026-05-24 (Added live-scoring-resilience brainstorm + implementation plan: `docs/brainstorms/2026-05-24-live-scoring-resilience-requirements.md` and `docs/plans/2026-05-24-001-feat-live-scoring-resilience-plan.md` — robust multi-device live match scoring (connection resilience + concurrency correctness). Branch `docs/live-scoring-resilience-brainstorm`.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -93,7 +93,7 @@
 | `docs/brainstorms/2026-05-17-tie-resolution-ownership-requirements.md` | Captured architectural direction for Win Calc metric stack + Tiebreak System | Drove the locked-doc edits + new Tiebreak System Module (#9 in catalog, replacing dissolved Standings & Tiebreakers) |
 | `docs/brainstorms/2026-05-21-lo-primitive-naming-layer-requirements.md` | Naming/identity layer for LO-built primitives — locks the internal-name / display-name / description / label glossary; mirror is workshop-authoring-only | Design (future workshop); NOT locked canon |
 | `docs/brainstorms/2026-05-21-scoreboard-module-design-requirements.md` | ROUGH: scoreboard = slots per side filled by modules that read the state bag + render labeled values; LO-customizable; stress-tests the naming layer | Rough draft — Ed's idea, to flesh out |
-| `docs/brainstorms/2026-05-25-pairings-generator-extraction-requirements.md` | Pairings Generator (Module #8) v1 extraction — one Module slot, three internal stages untangled; positions-in positions-out; today's algorithm only, no preferences/workshop work | Ready for planning |
+| `docs/brainstorms/2026-05-25-pairings-generator-extraction-requirements.md` | Pairings Generator (Module #8) v1 extraction — one Module slot, three internal stages; lineups in, player-id-tagged GameSlot[] out (matches canon); today's RR algorithm only, no preferences/workshop work; output shape variant-agnostic for future race-mode etc. | Planned (`docs/plans/2026-05-25-001-...`) |
 | `/docs/plans/` | **CE implementation plans** | Output of `/compound-engineering:ce-plan` |
 | `docs/plans/2026-04-17-001-feat-official-rulebook-reader-plan.md` | Implementation plan for the Official Rulebook Reader | 6 units, active branch `feature/official-rulebook-reader` |
 | `docs/plans/2026-04-27-001-feat-global-header-nav-rework-plan.md` | Implementation plan for the global header & navigation rework | 9 units in 3 phases, active branch `fix/header-mobile-rework` |
@@ -115,6 +115,7 @@
 | `docs/plans/2026-05-17-002-feat-captain-reup-sheet-plan.md` | Implementation plan for the captain re-up sheet | Draft PR #121 |
 | `docs/plans/2026-04-28-001-feat-modular-league-system-plan-supplements/` | Supplements directory for the modular league system plan | Append-only addenda used during execution |
 | `docs/plans/2026-05-17-001-refactor-modular-framework-migration-plan.md` | Strangler-fig migration plan for the modular Scoring System refactor | Unit 1 (Win Calculator extraction) detailed; Units 2-9 sketched; each Unit extracts one Module piece-by-piece without breaking the shipping prepackaged Scoring Systems |
+| `docs/plans/2026-05-25-001-refactor-pairings-generator-extraction-plan.md` | Implementation plan for Pairings Generator (Module #8) v1 extraction | 8 units; lifts `gameOrder.ts` into `src/systems/pairings/` (three internal stages: pair-gen / ordering / break-rack); lineups in, player-id-tagged GameSlot[] out; deletes dead helpers; output shape variant-agnostic for future race-mode etc. Branch `feat/pairings-generator-extraction` |
 
 ### Future Work Folder
 
