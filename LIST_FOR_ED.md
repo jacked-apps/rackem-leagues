@@ -2110,7 +2110,7 @@ this entry from `LIST_FOR_ED.md` when the plan doc is written and
 committed. The plan doc + its branch will then be the working record.
 
 
-## 32. Pre-existing DB-Test Drift — 4 RLS Test Files Reference Dead Columns / Stale Embeds
+## 32. Pre-existing DB-Test Drift — 5 RLS Test Files Reference Dead Columns / Stale Embeds
 
 **Discovered:** 2026-05-15 during Phase 1 end-to-end test pass
 **Severity:** MEDIUM — tests are silently broken on main; nothing in
@@ -2173,6 +2173,28 @@ branch per scope.
    Fix: read the current `venues` columns and update the test's
    embed/select.
 
+5. `src/__tests__/database/matchGames.rls.test.ts` (**4 failures**)
+   *(Added 2026-05-25 during many-eyes Phase 1 — a 5th drifted file
+   beyond the original 4.)* Two drifts: (a) it `update({confirmed_by_home:
+   true, confirmed_by_away: true})`, but those columns are `uuid` (the
+   confirmer's member id) in the baseline — Postgres rejects `"true"` as
+   a uuid; (b) the break_and_run / golden_break tests share one
+   `testGameId` and don't reset it, so setting `golden_break=true` after
+   `break_and_run=true` trips the `NOT(break_and_run AND golden_break)`
+   CHECK. Fix: set `confirmed_by_*` to a real member uuid (or drop those
+   asserts), and reset the game row between the B&R / golden-break cases.
+   **Proven pre-existing** (fails identically at base commit `073c7d2`,
+   before any many-eyes work).
+
+**Why these were invisible until now (2026-05-25):** the `db` vitest
+project couldn't even boot locally — `jsdom` was declared in
+`package.json` + the lockfile but never materialized into `node_modules`,
+so `pnpm test:run` errored the whole `db` project ("Cannot find package
+'jsdom'") instead of running it. A plain `pnpm install` materialized it,
+which unmasked all of these pre-existing failures (and let the new
+many-eyes db-tests run). If `pnpm test:run` was "green" before, it was
+because the db project was silently not executing.
+
 **How to verify a fix:**
 
 ```
@@ -2181,7 +2203,7 @@ pnpm db:reset
 pnpm test:run > test-output.log 2>&1
 ```
 
-Expected after fix: zero failures across all 4 files.
+Expected after fix: zero failures across all 5 files.
 
 **Note on RLS posture:** Per project memory
 `project_rls_disabled_in_dev`, RLS is currently DISABLED on most

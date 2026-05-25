@@ -14,6 +14,7 @@ import { getTeamStats, getPlayerStats, getCompletedGamesCount, TIEBREAKER_THRESH
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/api/queryKeys';
 import { useMatchWithLeagueSettings, useMatchLineups, useMatchGames } from '@/api/hooks/useMatches';
+import { useGameConfirmations } from '@/api/hooks/useGameConfirmations';
 import { useUserTeamInMatch, useTeamDetails } from '@/api/hooks/useTeams';
 import { useMembersByIds } from '@/api/hooks/useCurrentMember';
 import { useMatchRealtime } from '@/realtime/useMatchRealtime';
@@ -88,6 +89,14 @@ export function useMatchScoring({
     data: gamesData = [],
     isLoading: gamesLoading,
   } = useMatchGames(matchId);
+
+  // Fetch many-eyes confirmations (Layer-2 witness records). useGameConfirmations
+  // OWNS the fetch; the realtime handler below invalidates it on a
+  // game_confirmations event. Phase 2/3 (per-person prompt, dissent flag,
+  // tap-to-peek) consume these rows; Phase 1 just keeps them live.
+  const {
+    data: gameConfirmations = [],
+  } = useGameConfirmations(matchId);
 
   // Fetch FULL team rosters (not just lineup players)
   // This allows us to look up ANY player on either team, including swap candidates
@@ -454,6 +463,9 @@ export function useMatchScoring({
   const handleGamesInvalidate = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: queryKeys.matches.games(matchId || '') });
   }, [queryClient, matchId]);
+  const handleConfirmationsInvalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.matches.confirmations(matchId || '') });
+  }, [queryClient, matchId]);
 
   // `connectionStatus` is the coarse realtime status (live | reconnecting |
   // error). Surfaced through this hook so the scoring screen can render a calm
@@ -462,6 +474,7 @@ export function useMatchScoring({
     onMatchUpdate: handleMatchInvalidate,
     onLineupUpdate: handleLineupInvalidate,
     onGamesUpdate: handleGamesInvalidate,
+    onConfirmationsUpdate: handleConfirmationsInvalidate,
     gameUpdateOptions: {
       match,
       userTeamId,
@@ -491,6 +504,7 @@ export function useMatchScoring({
     const id = setInterval(() => {
       handleMatchInvalidate();
       handleGamesInvalidate();
+      handleConfirmationsInvalidate();
     }, interval);
     return () => clearInterval(id);
   }, [
@@ -498,6 +512,7 @@ export function useMatchScoring({
     matchData?.status,
     handleMatchInvalidate,
     handleGamesInvalidate,
+    handleConfirmationsInvalidate,
   ]);
 
   // ============================================================================
@@ -510,6 +525,7 @@ export function useMatchScoring({
     homeLineup,
     awayLineup,
     gameResults,
+    gameConfirmations,
     players,
     homeTeamHandicap,
     homeThresholds,

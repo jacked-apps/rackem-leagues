@@ -1210,6 +1210,7 @@ High-level business logic services
 - `useLeagues.ts` - League query hooks.
 - `useLeagueVenueMutations.ts` - League↔venue linking hooks.
 - `useMatches.ts` - Match query hooks.
+- `useGameConfirmations.ts` - **Many-eyes Layer-2 / Unit 3.** Query hook that OWNS the `game_confirmations` fetch for a match (live fresh-data config); `useMatchScoring` consumes it and wires the realtime invalidation. Phase 2/3 read the rows.
 - `useMatchLineupMutations.ts` - Match-lineup CRUD hooks.
 - `useMatchMutations.ts` - Match-state mutation hooks.
 - `useMemberMutations.ts` - Member CRUD hooks.
