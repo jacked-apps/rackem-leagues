@@ -7,7 +7,7 @@ Use it as input to `docs/audits/screen-audit.md` (the per-screen audit checklist
 
 ## Summary
 
-- **Files with unpaired hardcoded colored shades:** 190
+- **Files with unpaired hardcoded colored shades:** 186
 - **Files with native HTML form elements:** 23
 
 ## Cascade priority — shared components
@@ -1552,10 +1552,6 @@ etc.) chosen by semantic meaning, not literal color match._
 - L75: `<p className="text-center text-red-600">Error loading matches: {(error as Error).message}</p>`
 - L92: `<div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs">`
 
-### `src/pages/Messages.tsx`
-
-- L249: `<div className="hidden md:flex border-t bg-green-300 px-4 md:px-6 py-4 justify-end flex-shrink-0">`
-
 ### `src/pages/PlayerProfile.tsx`
 
 - L150: `<p className="text-center text-red-600">{error || 'Player not found'}</p>`
@@ -1576,38 +1572,6 @@ etc.) chosen by semantic meaning, not literal color match._
 
 - L90: `<p className="text-sm text-red-600">`
 - L95: `<div className="text-center py-8 text-red-500">`
-
-### `src/player/MyTeams.tsx`
-
-- L219: `<span className="text-xs font-bold px-2 py-0.5 rounded text-yellow-700 bg-yellow-100">`
-- L229: `const tagColor = isMakeup ? 'text-orange-700 bg-orange-100' : 'text-blue-700 bg-blue-100';`
-- L251: `? 'text-orange-700 hover:text-orange-800 hover:bg-orange-50'`
-- L252: `: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'`
-- L298: `<div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">`
-- L300: `<AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />`
-- L302: `<p className="text-sm font-semibold text-yellow-900">`
-- L305: `<ul className="text-sm text-yellow-800 mt-1 space-y-1">`
-- L352: `? 'font-semibold text-blue-600'`
-### `src/player/MatchLineup.tsx`
-
-- L1054: `<div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">`
-
-### `src/player/ScoreMatch.tsx`
-
-- L600: `<div className="text-lg font-semibold text-red-600 mb-2">`
-- L625: `<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" />`
-
-### `src/player/SpectateLiveMatches.tsx`
-
-- L67: `<span className="absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75 animate-ping" />`
-- L68: `<span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />`
-- L89: `<div className="text-center text-sm text-red-600 py-8">`
-
-### `src/player/SpectateMyLiveMatches.tsx`
-
-- L76: `<span className="absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75 animate-ping" />`
-- L77: `<span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />`
-- L100: `<div className="text-center text-sm text-red-600 py-8">`
 
 ### `src/profile/AddressSection.tsx`
 
