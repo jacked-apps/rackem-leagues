@@ -11,6 +11,8 @@ import { describe, it, expect } from 'vitest';
 import {
   gameNeedsMyConfirmation,
   buildConfirmationItem,
+  gameHasPendingVacateForMe,
+  buildVacateConfirmationItem,
 } from '../pendingConfirmations';
 import type { MatchGame, Player } from '@/types';
 
@@ -33,6 +35,7 @@ function game(overrides: Partial<MatchGame>): MatchGame {
     win_by_forfeit: false,
     winner_value: null,
     loser_value: null,
+    vacate_requested_by: null,
     ...overrides,
   } as MatchGame;
 }
@@ -85,6 +88,48 @@ describe('gameNeedsMyConfirmation', () => {
     const g = game({ winner_player_id: 'p1' });
     expect(gameNeedsMyConfirmation(g, HOME, HOME)).toBe(false);
     expect(gameNeedsMyConfirmation(g, AWAY, HOME)).toBe(false);
+  });
+});
+
+describe('gameHasPendingVacateForMe', () => {
+  it('opponent (away) requested vacate → home is prompted', () => {
+    const g = game({ winner_player_id: 'p1', vacate_requested_by: 'away' });
+    expect(gameHasPendingVacateForMe(g, HOME, HOME)).toBe(true);
+  });
+
+  it('opponent (home) requested vacate → away is prompted', () => {
+    const g = game({ winner_player_id: 'p1', vacate_requested_by: 'home' });
+    expect(gameHasPendingVacateForMe(g, AWAY, HOME)).toBe(true);
+  });
+
+  it('the requesting side is NOT prompted about its own request (survives refresh)', () => {
+    const g = game({ winner_player_id: 'p1', vacate_requested_by: 'away' });
+    // away asked — away must not be prompted, even with no local state to lean on
+    expect(gameHasPendingVacateForMe(g, AWAY, HOME)).toBe(false);
+  });
+
+  it('no prompt when no vacate is pending', () => {
+    const g = game({ winner_player_id: 'p1', vacate_requested_by: null });
+    expect(gameHasPendingVacateForMe(g, HOME, HOME)).toBe(false);
+  });
+
+  it('no prompt when there is no winner to vacate', () => {
+    const g = game({ winner_player_id: null, vacate_requested_by: 'away' });
+    expect(gameHasPendingVacateForMe(g, HOME, HOME)).toBe(false);
+  });
+});
+
+describe('buildVacateConfirmationItem', () => {
+  const players: Map<string, Player> = new Map([
+    ['p1', { id: 'p1', first_name: 'John', last_name: 'Doe', nickname: 'Johnny' }],
+  ]);
+
+  it('marks the item as a vacate request and carries the winner detail', () => {
+    const g = game({ game_number: 3, winner_player_id: 'p1', vacate_requested_by: 'away' });
+    const item = buildVacateConfirmationItem(g, players);
+    expect(item.isVacateRequest).toBe(true);
+    expect(item.gameNumber).toBe(3);
+    expect(item.winnerPlayerName).toBe('Johnny');
   });
 });
 

@@ -176,7 +176,7 @@ interface GameUpdateOptions {
     winByForfeit: boolean;
     winnerValue: number | null;
     loserValue: number | null;
-    isResetRequest?: boolean;
+    isVacateRequest?: boolean;
   }) => void;
   /** Current editing game (to suppress own vacate requests) */
   editingGame?: { gameNumber: number; currentWinnerName: string } | null;
@@ -341,7 +341,7 @@ export function useMatchRealtime(
             const updatedGame = payload.new as MatchGame;
 
             // Detect if this is a vacate request
-            const isVacateRequest = !!(updatedGame as any).vacate_requested_by;
+            const isVacateRequest = !!updatedGame.vacate_requested_by;
 
             // Handle vacate requests (check this FIRST, before normal confirmation logic)
             if (isVacateRequest) {
@@ -370,7 +370,7 @@ export function useMatchRealtime(
                   winByForfeit: updatedGame.win_by_forfeit,
                   loserValue: updatedGame.loser_value,
                   winnerValue: updatedGame.winner_value,
-                  isResetRequest: true,
+                  isVacateRequest: true,
                 });
               }
               return;
@@ -403,7 +403,7 @@ export function useMatchRealtime(
                   winByForfeit: updatedGame.win_by_forfeit,
                   loserValue: updatedGame.loser_value,
                   winnerValue: updatedGame.winner_value,
-                  isResetRequest: false,
+                  isVacateRequest: false,
                 });
               }
             }

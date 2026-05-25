@@ -52,7 +52,7 @@ interface UseMatchGamesRealtimeOptions {
     winByForfeit: boolean;
     winnerValue: number | null;
     loserValue: number | null;
-    isResetRequest?: boolean;
+    isVacateRequest?: boolean;
   }) => void;
   /** Current editing game (to suppress own vacate requests) */
   editingGame?: { gameNumber: number; currentWinnerName: string } | null;
@@ -148,7 +148,7 @@ export function useMatchGamesRealtime(
                   winByForfeit: updatedGame.win_by_forfeit,
                   loserValue: updatedGame.loser_value,
                   winnerValue: updatedGame.winner_value,
-                  isResetRequest: true
+                  isVacateRequest: true
                 });
               }
               return;
@@ -182,7 +182,7 @@ export function useMatchGamesRealtime(
                   winByForfeit: updatedGame.win_by_forfeit,
                   loserValue: updatedGame.loser_value,
                   winnerValue: updatedGame.winner_value,
-                  isResetRequest: false
+                  isVacateRequest: false
                 });
               }
             }

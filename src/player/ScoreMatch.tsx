@@ -51,6 +51,8 @@ import { ConnectionIndicator } from '@/components/match/ConnectionIndicator';
 import {
   gameNeedsMyConfirmation,
   buildConfirmationItem,
+  gameHasPendingVacateForMe,
+  buildVacateConfirmationItem,
 } from '@/utils/match/pendingConfirmations';
 import { queryKeys } from '@/api/queryKeys';
 import { getTeamStats, getPlayerStats as getPlayerStatsUtil } from '@/types';
@@ -244,7 +246,7 @@ function ScoreMatchBody() {
     winByForfeit: boolean;
     winnerValue: number | null;
     loserValue: number | null;
-    isResetRequest?: boolean; // True if this is a request to reset the game
+    isVacateRequest?: boolean; // True if this is a request to vacate (undo) the game
   } | null>(null);
 
   // Edit game modal state
@@ -506,30 +508,38 @@ function ScoreMatchBody() {
   // Store mutations in ref for use in real-time subscription callback
   mutationsRef.current = mutations;
 
-  // ── State-derived confirmation handoff ──────────────────────────────────
-  // The confirm prompt must NOT depend on catching a live realtime message.
-  // On every games change (initial load, realtime tick, catch-up refetch, or
-  // the degraded polling fallback), scan for games the opponent has scored
-  // that still need MY confirmation and surface them — so a dropped/missed
-  // event (StrictMode remount, socket blip, refresh) can delay the prompt by
-  // a few seconds but can never lose it. Realtime stays the fast path; this is
-  // the backstop that makes the handoff self-healing. Deduped against the
-  // queue, the open modal, my own in-flight vacate requests, and games I just
-  // acted on (handledConfirmations) so nothing double-pops.
+  // ── State-derived confirmation + vacate handoff ─────────────────────────
+  // Neither prompt may depend on catching a live realtime message. On every
+  // games change (initial load, realtime tick, catch-up refetch, or the
+  // degraded polling fallback), scan for games that need MY action and surface
+  // the right prompt — so a dropped/missed event (StrictMode remount, socket
+  // blip, refresh) can delay the prompt by a few seconds but can never lose it.
+  // Two kinds of pending action, both derived from the row:
+  //   • the opponent scored a game I haven't confirmed  → confirm prompt
+  //   • the opponent asked to vacate (undo) a game        → vacate prompt
+  // Realtime stays the fast path; this is the self-healing backstop. Deduped
+  // against the queue, the open modal, the game I'm editing, my own in-flight
+  // vacate requests, and games I just acted on (handledConfirmations).
   useEffect(() => {
     if (!userTeamId || !match) return;
     gameResults.forEach((game) => {
-      if (!gameNeedsMyConfirmation(game, userTeamId, match.home_team_id)) {
-        // Server caught up (confirmed/vacated) — re-arm for a future rescore.
+      const needsConfirm = gameNeedsMyConfirmation(game, userTeamId, match.home_team_id);
+      const needsVacate = gameHasPendingVacateForMe(game, userTeamId, match.home_team_id);
+      if (!needsConfirm && !needsVacate) {
+        // Server caught up (confirmed/vacated/denied) — re-arm for next time.
         handledConfirmations.current.delete(game.game_number);
         return;
       }
       if (confirmationGame?.gameNumber === game.game_number) return; // showing
       if (confirmationQueue.some((c) => c.gameNumber === game.game_number)) return; // queued
+      if (editingGame?.gameNumber === game.game_number) return; // I'm editing it
       if (myVacateRequests.current.has(game.game_number)) return; // my own action
       if (handledConfirmations.current.has(game.game_number)) return; // just acted
 
-      if (autoConfirm) {
+      if (needsVacate) {
+        // Vacating is destructive — always a human decision, never auto.
+        addToConfirmationQueueFromHook(buildVacateConfirmationItem(game, players));
+      } else if (autoConfirm) {
         handledConfirmations.current.add(game.game_number);
         void mutationsRef.current?.confirmOpponentScore(game.game_number);
       } else {
@@ -543,6 +553,7 @@ function ScoreMatchBody() {
     match,
     confirmationGame,
     confirmationQueue,
+    editingGame,
     autoConfirm,
     players,
     addToConfirmationQueueFromHook,
@@ -895,7 +906,7 @@ function ScoreMatchBody() {
               winByForfeit: game.win_by_forfeit,
               winnerValue: game.winner_value,
               loserValue: game.loser_value,
-              isResetRequest: true,
+              isVacateRequest: true,
             });
           }
         }}
@@ -972,15 +983,15 @@ function ScoreMatchBody() {
         open={confirmationGame !== null}
         game={confirmationGame}
         gameType={gameType}
-        onConfirm={(gameNumber, isResetRequest) => {
+        onConfirm={(gameNumber, isVacateRequest) => {
           // Mark handled so the state-derived scan doesn't re-pop this game
           // during the ~500ms before the confirm write propagates back.
           handledConfirmations.current.add(gameNumber);
-          mutations.confirmOpponentScore(gameNumber, isResetRequest);
+          mutations.confirmOpponentScore(gameNumber, isVacateRequest);
         }}
-        onDeny={(gameNumber, isResetRequest) => {
+        onDeny={(gameNumber, isVacateRequest) => {
           handledConfirmations.current.add(gameNumber);
-          mutations.denyOpponentScore(gameNumber, isResetRequest);
+          mutations.denyOpponentScore(gameNumber, isVacateRequest);
         }}
         onClose={() => setConfirmationGame(null)}
       />
