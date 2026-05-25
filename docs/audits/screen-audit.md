@@ -268,81 +268,81 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/messages`
 - **Component:** `src/pages/Messages.tsx`
-- **Status:** ⏳ pending
+- **Status:** ✅ done (PR — chore/audit-wave-2)
 - **Rubric:**
-  - [ ] 1. Color tokens
-  - [ ] 2. Component primitives
-  - [ ] 3. Active/hover states
-  - [ ] 4. Spacing rhythm
-  - [ ] 5. Empty state
-  - [ ] 6. Loading state
-  - [ ] 7. Error state
-  - [ ] 8. PageHeader correct
-- **Notes:**
+  - [x] 1. Color tokens — fixed L249 desktop footer (`bg-green-300` → `bg-muted`). The green-300 was a placeholder/oddity, not a deliberate semantic — neutral `bg-muted` fits the conversation-list footer purpose.
+  - [x] 2. Component primitives — pass (shadcn `Button`; rendered children like `ConversationList`, `MessageView`, `MessagesEmptyState`, `*Modal` are composed components)
+  - [x] 3. Active/hover states — pass (shadcn variants in this file; child components own their own surfaces)
+  - [x] 4. Spacing rhythm — pass (split-pane layout with `w-full md:w-80` conversation list + `flex-1` message view; intentional non-standard container for this 2-pane UI)
+  - [x] 5. Empty state — pass (`<MessagesEmptyState />` rendered when no conversation selected on desktop)
+  - [x] 6. Loading state — pass (sub-components own their loading state)
+  - [x] 7. Error state — pass (sub-components own their error state; this page is layout-only)
+  - [x] 8. PageHeader correct — pass (uses `<PageHeader>` with promoted IdentitySlot for the no-subheader case; see the PageHeader improvements from the IA branch)
+- **Notes:** Messages is a layout-only page that delegates most work to `<ConversationList>`, `<MessageView>`, and several modals. Those sub-components have their own rubric items (out of v1 scope; modal audit deferred).
 
 #### `Profile`
 
 - **Routes:** `/profile`
 - **Component:** `src/profile/Profile.tsx`
-- **Status:** 🟠 cascade-fixed (InfoButton, via PersonalInfoSection), awaiting verify — recently restructured; Theme + Sign Out section added
+- **Status:** ✅ done (PR — chore/audit-wave-2) — recently restructured; Theme + Sign Out section added in IA branch
 - **Rubric:**
-  - [ ] 1. Color tokens
-  - [ ] 2. Component primitives
-  - [ ] 3. Active/hover states
-  - [ ] 4. Spacing rhythm
-  - [ ] 5. Empty state
-  - [ ] 6. Loading state
-  - [ ] 7. Error state
-  - [ ] 8. PageHeader correct
-- **Notes:**
+  - [x] 1. Color tokens — pass (zero findings on this file; sub-sections like `PersonalInfoSection`/`PrivacySettingsSection` have their own findings out of scope here)
+  - [x] 2. Component primitives — pass (shadcn `Card`, `Button`, `ThemeToggle`; sub-section components own their own form primitives)
+  - [x] 3. Active/hover states — pass (shadcn `Button` variants for Sign Out + Learn More CTAs; ThemeToggle uses internal shadcn pattern)
+  - [x] 4. Spacing rhythm — pass (`max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6` + `space-y-6`)
+  - [N/A] 5. Empty state — Profile always has data when reachable; "Profile Not Found" fallback covers the rare missing case
+  - [x] 6. Loading state — pass ("Loading your profile..." text)
+  - [x] 7. Error state — pass ("Profile Not Found" with helpful contact-support message when member data missing)
+  - [x] 8. PageHeader correct — pass (`title="Player Settings"`, `subtitle="Manage your personal information and account details"`; no `backTo` — top-level destination)
+- **Notes:** Five section components do the heavy lifting (`PersonalInfoSection`, `ContactInfoSection`, `AddressSection`, `PrivacySettingsSection`, plus inline BCA status card + Account card). Cascade-clean from InfoButton via `PersonalInfoSection`. Section components have their own rubric items but that's per-section, not per-screen.
 
 #### `PlayerStats`
 
 - **Routes:** `/stats`
 - **Component:** `src/player/PlayerStats.tsx`
-- **Status:** ⏳ pending
+- **Status:** ✅ done (PR — chore/audit-wave-2)
 - **Rubric:**
-  - [ ] 1. Color tokens
-  - [ ] 2. Component primitives
-  - [ ] 3. Active/hover states
-  - [ ] 4. Spacing rhythm
-  - [ ] 5. Empty state
-  - [ ] 6. Loading state
-  - [ ] 7. Error state
-  - [ ] 8. PageHeader correct
-- **Notes:**
+  - [x] 1. Color tokens — pass (zero findings; uses theme tokens throughout)
+  - [x] 2. Component primitives — pass (shadcn `Card`, `CardHeader`, `CardTitle`, `CardContent`)
+  - [N/A] 3. Active/hover states — no interactive nav elements
+  - [x] 4. Spacing rhythm — pass (`container mx-auto max-w-2xl px-4 py-6` matches sibling player pages)
+  - [N/A] 5. Empty state — page is effectively a placeholder/empty state
+  - [N/A] 6. Loading state — no async fetches
+  - [N/A] 7. Error state — no async fetches
+  - [x] 8. PageHeader correct — pass (`backTo="/my-teams"`, `backLabel="Home"`, `title="My Stats"`, `subtitle`)
+- **Notes:** Placeholder page until personal-stats build-out ships. Same shape as `MyMatch`. No source changes needed.
 
 #### `SpectateMyLiveMatches`
 
 - **Routes:** `/live`
 - **Component:** `src/player/SpectateMyLiveMatches.tsx`
-- **Status:** ⏳ pending
+- **Status:** ✅ done (PR — chore/audit-wave-2)
 - **Rubric:**
-  - [ ] 1. Color tokens
-  - [ ] 2. Component primitives
-  - [ ] 3. Active/hover states
-  - [ ] 4. Spacing rhythm
-  - [ ] 5. Empty state
-  - [ ] 6. Loading state
-  - [ ] 7. Error state
-  - [ ] 8. PageHeader correct
-- **Notes:**
+  - [x] 1. Color tokens — fixed 3 findings: live-indicator ping (L76 `bg-red-400` → `bg-destructive`), live-indicator dot (L77 `bg-red-500` → `bg-destructive`), error text (L100 `text-red-600` → `text-destructive`). `destructive` token used for the LIVE pulsing dot — semantic stretch (destructive ≠ live-recording), but it's our only red token and visually correct. Documented choice.
+  - [x] 2. Component primitives — pass (no native form elements; renders `<SpectateMatchCard>` per match)
+  - [x] 3. Active/hover states — pass (each match card is a Link; hover styled by SpectateMatchCard)
+  - [x] 4. Spacing rhythm — pass (`flex-1 overflow-y-auto px-4 py-3 space-y-6`)
+  - [x] 5. Empty state — pass ("Nothing happening right now" muted-foreground text when no matches)
+  - [x] 6. Loading state — pass (Loader2 spinner + "Loading live matches…" text)
+  - [x] 7. Error state — pass (now `text-destructive` "Couldn't load live matches" message)
+  - [x] 8. PageHeader correct — pass (`backTo="/my-teams"`, `backLabel`, `title="Live Matches"`, with pulsing-dot indicator + match-count subtitle slotted into header children)
+- **Notes:** `destructive` semantic stretch is documented. If a future `--live` token gets added (broadcast-red convention), swap is a single grep.
 
 #### `SpectateLiveMatches`
 
 - **Routes:** `/league/:leagueId/live`
 - **Component:** `src/player/SpectateLiveMatches.tsx`
-- **Status:** ⏳ pending
+- **Status:** ✅ done (PR — chore/audit-wave-2)
 - **Rubric:**
-  - [ ] 1. Color tokens
-  - [ ] 2. Component primitives
-  - [ ] 3. Active/hover states
-  - [ ] 4. Spacing rhythm
-  - [ ] 5. Empty state
-  - [ ] 6. Loading state
-  - [ ] 7. Error state
-  - [ ] 8. PageHeader correct
-- **Notes:**
+  - [x] 1. Color tokens — fixed 3 findings (same pattern as `SpectateMyLiveMatches`): live ping/dot → `bg-destructive`, error text → `text-destructive`.
+  - [x] 2. Component primitives — pass
+  - [x] 3. Active/hover states — pass
+  - [x] 4. Spacing rhythm — pass (`flex-1 overflow-y-auto px-4 py-3 space-y-6` matches sibling)
+  - [x] 5. Empty state — pass (handled by the `matches.length === 0` branch)
+  - [x] 6. Loading state — pass
+  - [x] 7. Error state — pass
+  - [x] 8. PageHeader correct — pass (`backTo`, `backLabel`, dynamic `title={leagueLabel}` + pulsing-dot indicator in children)
+- **Notes:** Sister screen to `SpectateMyLiveMatches`; nearly identical structure. The duplication itself isn't a rubric issue but is a refactor opportunity for a follow-up.
 
 ### Wave 3 — Operator main (5)
 
