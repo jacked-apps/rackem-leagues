@@ -35,7 +35,6 @@ interface UseMatchScoringOptions {
   memberId: string | undefined | null;
   matchType: MatchType;
   autoConfirm?: boolean;
-  confirmOpponentScore?: (gameNumber: number, isVacateRequest?: boolean) => Promise<void>;
 }
 
 // ============================================================================
@@ -47,7 +46,6 @@ export function useMatchScoring({
   memberId,
   matchType,
   autoConfirm = false,
-  confirmOpponentScore
 }: UseMatchScoringOptions) {
   const queryClient = useQueryClient();
 
@@ -471,7 +469,6 @@ export function useMatchScoring({
       myVacateRequests,
       addToConfirmationQueue,
       autoConfirm,
-      confirmOpponentScore,
     },
   });
 

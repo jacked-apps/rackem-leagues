@@ -49,9 +49,8 @@ import { GamesList } from '@/components/scoring/GamesList';
 import { TableNumberBar } from '@/components/scoring/TableNumberBar';
 import { ConnectionIndicator } from '@/components/match/ConnectionIndicator';
 import {
-  gameNeedsMyConfirmation,
+  decidePendingAction,
   buildConfirmationItem,
-  gameHasPendingVacateForMe,
   buildVacateConfirmationItem,
 } from '@/utils/match/pendingConfirmations';
 import { queryKeys } from '@/api/queryKeys';
@@ -119,15 +118,6 @@ function ScoreMatchBody() {
     memberId,
     matchType: '3v3',
     autoConfirm,
-    confirmOpponentScore: async (gameNumber, isVacateRequest) => {
-      // This will be called by real-time subscription when autoConfirm is enabled
-      if (mutationsRef.current) {
-        await mutationsRef.current.confirmOpponentScore(
-          gameNumber,
-          isVacateRequest
-        );
-      }
-    },
   });
 
   // Get user's team roster from the hook (already fetched for both teams)
@@ -523,9 +513,13 @@ function ScoreMatchBody() {
   useEffect(() => {
     if (!userTeamId || !match) return;
     gameResults.forEach((game) => {
-      const needsConfirm = gameNeedsMyConfirmation(game, userTeamId, match.home_team_id);
-      const needsVacate = gameHasPendingVacateForMe(game, userTeamId, match.home_team_id);
-      if (!needsConfirm && !needsVacate) {
+      const action = decidePendingAction(
+        game,
+        userTeamId,
+        match.home_team_id,
+        autoConfirm
+      );
+      if (action === 'none') {
         // Server caught up (confirmed/vacated/denied) — re-arm for next time.
         handledConfirmations.current.delete(game.game_number);
         return;
@@ -536,12 +530,21 @@ function ScoreMatchBody() {
       if (myVacateRequests.current.has(game.game_number)) return; // my own action
       if (handledConfirmations.current.has(game.game_number)) return; // just acted
 
-      if (needsVacate) {
+      if (action === 'vacate') {
         // Vacating is destructive — always a human decision, never auto.
         addToConfirmationQueueFromHook(buildVacateConfirmationItem(game, players));
-      } else if (autoConfirm) {
-        handledConfirmations.current.add(game.game_number);
-        void mutationsRef.current?.confirmOpponentScore(game.game_number);
+      } else if (action === 'autoconfirm') {
+        // The single auto-confirm site (the realtime fast-path defers to here).
+        // Mark handled BEFORE the async write so a refetch in the propagation
+        // window can't re-fire it; clear it back out if the write fails so the
+        // game re-arms instead of silently sticking unconfirmed.
+        const gameNumber = game.game_number;
+        handledConfirmations.current.add(gameNumber);
+        void mutationsRef.current
+          ?.confirmOpponentScore(gameNumber)
+          .then((ok) => {
+            if (!ok) handledConfirmations.current.delete(gameNumber);
+          });
       } else {
         addToConfirmationQueueFromHook(buildConfirmationItem(game, players));
       }
@@ -985,13 +988,22 @@ function ScoreMatchBody() {
         gameType={gameType}
         onConfirm={(gameNumber, isVacateRequest) => {
           // Mark handled so the state-derived scan doesn't re-pop this game
-          // during the ~500ms before the confirm write propagates back.
+          // during the ~500ms before the write propagates back; clear it again
+          // if the write fails so the prompt re-arms instead of sticking.
           handledConfirmations.current.add(gameNumber);
-          mutations.confirmOpponentScore(gameNumber, isVacateRequest);
+          void mutations
+            .confirmOpponentScore(gameNumber, isVacateRequest)
+            .then((ok) => {
+              if (!ok) handledConfirmations.current.delete(gameNumber);
+            });
         }}
         onDeny={(gameNumber, isVacateRequest) => {
           handledConfirmations.current.add(gameNumber);
-          mutations.denyOpponentScore(gameNumber, isVacateRequest);
+          void mutations
+            .denyOpponentScore(gameNumber, isVacateRequest)
+            .then((ok) => {
+              if (!ok) handledConfirmations.current.delete(gameNumber);
+            });
         }}
         onClose={() => setConfirmationGame(null)}
       />

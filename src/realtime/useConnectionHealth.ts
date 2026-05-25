@@ -95,9 +95,15 @@ async function defaultReachabilityProbe(): Promise<boolean> {
   const url = import.meta.env.VITE_SUPABASE_URL;
   if (!url) return true;
   try {
+    // Bound the probe: on a congested pool-hall network a slow/half-open
+    // connection could otherwise leave this fetch pending for the browser's
+    // default timeout (tens of seconds to minutes), stranding `probeReachable`
+    // and the health classification. A 5s timeout aborts → caught → treated as
+    // unreachable (offline), which is the correct conservative result.
     await fetch(`${url}/rest/v1/`, {
       method: 'HEAD',
       headers: { apikey: import.meta.env.VITE_SUPABASE_ANON_KEY ?? '' },
+      signal: AbortSignal.timeout(5000),
     });
     return true;
   } catch {

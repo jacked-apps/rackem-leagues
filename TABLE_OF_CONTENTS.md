@@ -471,6 +471,7 @@ how to add a new test, demo recording, cleanup model).
 | `App.tsx` | Main application component with routing |
 | `main.tsx` | Application entry point |
 | `supabaseClient.ts` | Supabase client configuration |
+| `supabaseClient.test.ts` | Tests for the realtime survival heartbeat handler (worker + reconnect-on-dead-socket) |
 | `vite-env.d.ts` | Vite TypeScript definitions |
 | `config/environment.ts` | App environment detection (dev/staging/prod) + banner config |
 | `components/EnvironmentBanner.tsx` | Top-of-app banner labeling non-production builds |
@@ -920,6 +921,7 @@ Reusable section components composed by `PreferencesCard.tsx`. Same components d
 - `MatchPhaseGuard.tsx` - Server-state route guard. Reads `matches.status` via `useMatchPhase`, dispatches lineup vs scoring vs recovery rendering, holds the compound `key={matchId:recoveryEpoch}` that drives in-place subtree remounts on Hard Reset.
 - `MatchTransitionRecovery.tsx` - Unified recovery surface for the lineup → scoring transition. Reason-aware copy (connection / match_not_found / auth_expired / server_error / unknown_status), two-level Try Again (soft refetch first, Hard Reset only after soft fails — with confirmation dialog).
 - `ConnectionIndicator.tsx` - Calm connection indicator for the active scorer. Renders nothing while live, a quiet "Catching up…" pill while degraded, and a single calm note only after a sustained offline outage (north star: invisible robustness).
+- `ConnectionIndicator.test.tsx` - Tests for ConnectionIndicator (live=nothing, degraded=quiet pill, sustained-offline=calm note + threshold).
 
 #### Player Components (`/components/player/`)
 - `TeamCard.tsx` - Player team card ⚠️ **DUPLICATE** (also in `/components`)
@@ -1432,7 +1434,7 @@ Supabase real-time subscription hooks for live data updates
 
 - `useMatchRealtime.ts` - Unified real-time subscription for the whole match flow (matches/lineups/games); surfaces connection status + fires a catch-up refetch on re-subscribe after a drop
 - `useConnectionHealth.ts` - Classifies realtime trouble into actionable health (realtime-down vs offline) via one cheap reachability probe; drives the degraded polling fallback cadence
-- `useMatchGamesRealtime.ts` - Real-time subscription for match games (scoring updates, confirmation requests)
+- `useConnectionHealth.test.ts` - Tests for classifyHealth + computeDegradedPollInterval + the useConnectionHealth probe/online-offline behavior
 - `useMatchLineupsRealtime.ts` - Real-time subscription for match lineups (lineup status changes, lock/unlock events)
 
 ---

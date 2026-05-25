@@ -13,6 +13,7 @@ import {
   buildConfirmationItem,
   gameHasPendingVacateForMe,
   buildVacateConfirmationItem,
+  decidePendingAction,
 } from '../pendingConfirmations';
 import type { MatchGame, Player } from '@/types';
 
@@ -116,6 +117,35 @@ describe('gameHasPendingVacateForMe', () => {
   it('no prompt when there is no winner to vacate', () => {
     const g = game({ winner_player_id: null, vacate_requested_by: 'away' });
     expect(gameHasPendingVacateForMe(g, HOME, HOME)).toBe(false);
+  });
+});
+
+describe('decidePendingAction', () => {
+  it('opponent scored, I have not confirmed, auto-confirm OFF → confirm', () => {
+    const g = game({ winner_player_id: 'p1', confirmed_by_away: true as unknown as boolean });
+    expect(decidePendingAction(g, HOME, HOME, false)).toBe('confirm');
+  });
+
+  it('same, auto-confirm ON → autoconfirm', () => {
+    const g = game({ winner_player_id: 'p1', confirmed_by_away: true as unknown as boolean });
+    expect(decidePendingAction(g, HOME, HOME, true)).toBe('autoconfirm');
+  });
+
+  it('opponent requested a vacate → vacate (takes precedence over auto-confirm)', () => {
+    const g = game({ winner_player_id: 'p1', vacate_requested_by: 'away' });
+    expect(decidePendingAction(g, HOME, HOME, true)).toBe('vacate');
+    expect(decidePendingAction(g, HOME, HOME, false)).toBe('vacate');
+  });
+
+  it('nothing pending → none', () => {
+    const g = game({ winner_player_id: null });
+    expect(decidePendingAction(g, HOME, HOME, false)).toBe('none');
+    expect(decidePendingAction(g, HOME, HOME, true)).toBe('none');
+  });
+
+  it('the scorer side is owed nothing on its own game → none', () => {
+    const g = game({ winner_player_id: 'p1', confirmed_by_away: true as unknown as boolean });
+    expect(decidePendingAction(g, AWAY, HOME, false)).toBe('none');
   });
 });
 

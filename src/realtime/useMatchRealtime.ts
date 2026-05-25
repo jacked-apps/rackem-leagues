@@ -43,7 +43,8 @@ import { useEffect, useRef, useState } from 'react';
 import { REALTIME_SUBSCRIBE_STATES } from '@supabase/supabase-js';
 import { supabase } from '@/supabaseClient';
 import { getPlayerNicknameById } from '@/types/member';
-import type { MatchBasic, Player, MatchGame } from '@/types';
+import { logger } from '@/utils/logger';
+import type { MatchBasic, Player, MatchGame, ConfirmationQueueItem } from '@/types';
 
 /**
  * Coarse realtime connection status surfaced to the scoring UI.
@@ -166,24 +167,13 @@ interface GameUpdateOptions {
   myVacateRequests: React.MutableRefObject<Set<number>>;
   /** Function to add confirmation to queue. Accepts the full confirmation
    *  payload so the dialog can render every field the scorer entered. */
-  addToConfirmationQueue: (confirmation: {
-    gameNumber: number;
-    winnerPlayerName: string;
-    breakAndRun: boolean;
-    goldenBreak: boolean;
-    breakFouled: boolean;
-    runout: boolean;
-    winByForfeit: boolean;
-    winnerValue: number | null;
-    loserValue: number | null;
-    isVacateRequest?: boolean;
-  }) => void;
+  addToConfirmationQueue: (confirmation: ConfirmationQueueItem) => void;
   /** Current editing game (to suppress own vacate requests) */
   editingGame?: { gameNumber: number; currentWinnerName: string } | null;
-  /** Auto-confirm setting (bypass confirmation modal) */
+  /** Auto-confirm setting. When on, this fast-path skips the modal and lets
+   *  the state-derived scan in ScoreMatch perform the auto-confirm — keeping
+   *  auto-confirm a single decision site (no duplicate write). */
   autoConfirm?: boolean;
-  /** Function to auto-confirm opponent score */
-  confirmOpponentScore?: (gameNumber: number) => void;
 }
 
 interface UseMatchRealtimeOptions {
@@ -270,7 +260,7 @@ export function useMatchRealtime(
     // "socket dropped" (catch up).
     subscribeFlagsRef.current = { hasSubscribed: false, reconnecting: false };
 
-    console.log(`[useMatchRealtime] Setting up subscription for match ${matchId}`);
+    logger.debug('[useMatchRealtime] Setting up subscription', { matchId });
 
     const channel = supabase
       .channel(`match_${matchId}`)
@@ -285,7 +275,7 @@ export function useMatchRealtime(
           filter: `id=eq.${matchId}`,
         },
         (payload) => {
-          console.log('[useMatchRealtime] Match update received:', payload.eventType);
+          logger.debug('[useMatchRealtime] Match update received', { eventType: payload.eventType });
           onMatchUpdateRef.current?.();
         }
       )
@@ -300,7 +290,7 @@ export function useMatchRealtime(
           filter: `match_id=eq.${matchId}`,
         },
         (payload) => {
-          console.log('[useMatchRealtime] Lineup update received:', payload.eventType);
+          logger.debug('[useMatchRealtime] Lineup update received', { eventType: payload.eventType });
           onLineupUpdateRef.current?.();
         }
       )
@@ -315,7 +305,7 @@ export function useMatchRealtime(
           filter: `match_id=eq.${matchId}`,
         },
         async (payload) => {
-          console.log('[useMatchRealtime] Game update received:', payload.eventType);
+          logger.debug('[useMatchRealtime] Game update received', { eventType: payload.eventType });
           // Always refetch games
           onGamesUpdateRef.current?.();
 
@@ -333,7 +323,6 @@ export function useMatchRealtime(
               addToConfirmationQueue,
               editingGame = null,
               autoConfirm = false,
-              confirmOpponentScore,
             } = currentGameUpdateOptions;
 
             if (!match || !userTeamId) return;
@@ -385,11 +374,11 @@ export function useMatchRealtime(
               const needMyConfirmation = (isHomeTeamScorer && !iAmHome) || (isAwayTeamScorer && iAmHome);
 
               if (needMyConfirmation) {
-                // If auto-confirm is enabled, automatically confirm without showing modal
-                if (autoConfirm && confirmOpponentScore) {
-                  confirmOpponentScore(updatedGame.game_number);
-                  return;
-                }
+                // Auto-confirm on: skip the modal here and let the state-derived
+                // scan in ScoreMatch perform the auto-confirm. Keeping auto-confirm
+                // a single decision site avoids this fast-path and the scan both
+                // writing the same confirmation (the dup the review flagged).
+                if (autoConfirm) return;
 
                 const winnerName = getPlayerNicknameById(updatedGame.winner_player_id, players);
                 // Forward every scored field — dumb dialog renders whatever is truthy.
@@ -411,7 +400,7 @@ export function useMatchRealtime(
         }
       )
       .subscribe((status, err) => {
-        console.log(`[useMatchRealtime] Subscription status: ${status}`, err ? `Error: ${err.message}` : '');
+        logger.debug('[useMatchRealtime] Subscription status', { status, error: err?.message });
 
         // Classify the status into a coarse UI state + a catch-up decision.
         // The pure classifier carries the per-subscription flags forward.
@@ -428,7 +417,7 @@ export function useMatchRealtime(
         // only thing that closes the gap and brings the board back in sync —
         // no manual refresh needed. Fires at most once per drop (see classifier).
         if (result.catchUp) {
-          console.log('[useMatchRealtime] Re-subscribed after drop — catch-up refetch');
+          logger.debug('[useMatchRealtime] Re-subscribed after drop — catch-up refetch');
           onMatchUpdateRef.current?.();
           onLineupUpdateRef.current?.();
           onGamesUpdateRef.current?.();
@@ -436,7 +425,7 @@ export function useMatchRealtime(
       });
 
     return () => {
-      console.log(`[useMatchRealtime] Cleaning up subscription for match ${matchId}`);
+      logger.debug('[useMatchRealtime] Cleaning up subscription', { matchId });
       supabase.removeChannel(channel);
     };
     // gameUpdateOptions is intentionally NOT in this dep array — the

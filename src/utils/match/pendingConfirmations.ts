@@ -50,6 +50,42 @@ export function gameNeedsMyConfirmation(
 }
 
 /**
+ * The action the viewer owes on a game, derived purely from its row + the
+ * viewer's auto-confirm setting. The single decision the ScoreMatch derive-scan
+ * dispatches on (the scan keeps the stateful dedup guards; this stays pure and
+ * testable).
+ *
+ * - `vacate`      — the opponent asked to undo this game; prompt to agree/deny.
+ * - `autoconfirm` — the opponent scored a game I haven't confirmed AND I have
+ *                   auto-confirm on; confirm it without a modal.
+ * - `confirm`     — same, but auto-confirm is off; show the confirm modal.
+ * - `none`        — nothing owed.
+ *
+ * Vacate takes precedence: a vacate request rides on an already-confirmed game,
+ * so the two conditions are mutually exclusive in practice, but ordering keeps
+ * the contract explicit.
+ *
+ * @param game - The match game row.
+ * @param userTeamId - The viewer's team id in this match.
+ * @param homeTeamId - The match's home team id.
+ * @param autoConfirm - Whether the viewer has auto-confirm enabled.
+ */
+export type PendingAction = 'vacate' | 'autoconfirm' | 'confirm' | 'none';
+
+export function decidePendingAction(
+  game: MatchGame,
+  userTeamId: string,
+  homeTeamId: string,
+  autoConfirm: boolean
+): PendingAction {
+  if (gameHasPendingVacateForMe(game, userTeamId, homeTeamId)) return 'vacate';
+  if (gameNeedsMyConfirmation(game, userTeamId, homeTeamId)) {
+    return autoConfirm ? 'autoconfirm' : 'confirm';
+  }
+  return 'none';
+}
+
+/**
  * Does this game have a pending vacate (undo) request from the OTHER team that
  * the viewer must agree to or deny?
  *
