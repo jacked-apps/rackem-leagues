@@ -48,6 +48,10 @@ import { TiebreakerScoreboard } from '@/components/scoring/TiebreakerScoreboard'
 import { GamesList } from '@/components/scoring/GamesList';
 import { TableNumberBar } from '@/components/scoring/TableNumberBar';
 import { ConnectionIndicator } from '@/components/match/ConnectionIndicator';
+import {
+  gameNeedsMyConfirmation,
+  buildConfirmationItem,
+} from '@/utils/match/pendingConfirmations';
 import { queryKeys } from '@/api/queryKeys';
 import { getTeamStats, getPlayerStats as getPlayerStatsUtil } from '@/types';
 import { getCalculator } from '@/systems/calculators';
@@ -78,6 +82,13 @@ function ScoreMatchBody() {
   // changes shape.
   const mutationsRef = useRef<ReturnType<typeof useMatchScoringMutations> | null>(null);
 
+  // Games this device has already acted on (confirmed/denied/auto-confirmed)
+  // but whose server state hasn't propagated back yet. confirmOpponentScore
+  // waits ~500ms before invalidating, so without this guard the state-derived
+  // scan below would re-pop a modal the scorer just resolved. Cleared per game
+  // once the data shows it no longer needs my confirmation (server caught up).
+  const handledConfirmations = useRef<Set<number>>(new Set());
+
   // Use central scoring hook (replaces all manual data fetching)
   const {
     match,
@@ -97,6 +108,7 @@ function ScoreMatchBody() {
     addToConfirmationQueue: addToConfirmationQueueFromHook,
     removeFromConfirmationQueue,
     myVacateRequests,
+    players,
     connectionHealth,
     loading,
     error,
@@ -493,6 +505,48 @@ function ScoreMatchBody() {
 
   // Store mutations in ref for use in real-time subscription callback
   mutationsRef.current = mutations;
+
+  // ── State-derived confirmation handoff ──────────────────────────────────
+  // The confirm prompt must NOT depend on catching a live realtime message.
+  // On every games change (initial load, realtime tick, catch-up refetch, or
+  // the degraded polling fallback), scan for games the opponent has scored
+  // that still need MY confirmation and surface them — so a dropped/missed
+  // event (StrictMode remount, socket blip, refresh) can delay the prompt by
+  // a few seconds but can never lose it. Realtime stays the fast path; this is
+  // the backstop that makes the handoff self-healing. Deduped against the
+  // queue, the open modal, my own in-flight vacate requests, and games I just
+  // acted on (handledConfirmations) so nothing double-pops.
+  useEffect(() => {
+    if (!userTeamId || !match) return;
+    gameResults.forEach((game) => {
+      if (!gameNeedsMyConfirmation(game, userTeamId, match.home_team_id)) {
+        // Server caught up (confirmed/vacated) — re-arm for a future rescore.
+        handledConfirmations.current.delete(game.game_number);
+        return;
+      }
+      if (confirmationGame?.gameNumber === game.game_number) return; // showing
+      if (confirmationQueue.some((c) => c.gameNumber === game.game_number)) return; // queued
+      if (myVacateRequests.current.has(game.game_number)) return; // my own action
+      if (handledConfirmations.current.has(game.game_number)) return; // just acted
+
+      if (autoConfirm) {
+        handledConfirmations.current.add(game.game_number);
+        void mutationsRef.current?.confirmOpponentScore(game.game_number);
+      } else {
+        addToConfirmationQueueFromHook(buildConfirmationItem(game, players));
+      }
+    });
+    // myVacateRequests / handledConfirmations / mutationsRef are refs (stable).
+  }, [
+    gameResults,
+    userTeamId,
+    match,
+    confirmationGame,
+    confirmationQueue,
+    autoConfirm,
+    players,
+    addToConfirmationQueueFromHook,
+  ]);
 
   /**
    * Handle player button click to score a game
@@ -919,9 +973,13 @@ function ScoreMatchBody() {
         game={confirmationGame}
         gameType={gameType}
         onConfirm={(gameNumber, isResetRequest) => {
+          // Mark handled so the state-derived scan doesn't re-pop this game
+          // during the ~500ms before the confirm write propagates back.
+          handledConfirmations.current.add(gameNumber);
           mutations.confirmOpponentScore(gameNumber, isResetRequest);
         }}
         onDeny={(gameNumber, isResetRequest) => {
+          handledConfirmations.current.add(gameNumber);
           mutations.denyOpponentScore(gameNumber, isResetRequest);
         }}
         onClose={() => setConfirmationGame(null)}
