@@ -350,81 +350,78 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/operator-dashboard/:orgId`
 - **Component:** `src/operator/OperatorDashboard.tsx`
-- **Status:** 🟠 cascade-fixed (PageHeader org badge), awaiting verify — has tabbed inner views; audit each visible tab as a sub-section
+- **Status:** ✅ done (PR — chore/audit-wave-3)
 - **Rubric:**
-  - [ ] 1. Color tokens
-  - [ ] 2. Component primitives
-  - [ ] 3. Active/hover states
-  - [ ] 4. Spacing rhythm
-  - [ ] 5. Empty state
-  - [ ] 6. Loading state
-  - [ ] 7. Error state
-  - [ ] 8. PageHeader correct
-- **Notes:**
+  - [x] 1. Color tokens — fixed ~10 findings. 4 `DashboardCard` iconColor props now use status tokens semantically: Messaging → `text-highlight`, Manage Players → `text-success`, Reports → `text-destructive`, Org Settings → `text-primary`. "Need Help?" card migrated: `bg-blue-50/border-blue-200` → `bg-info/10 border-info/40`; title/links → `text-info` with `hover:text-info/80 transition-colors`.
+  - [x] 2. Component primitives — pass (shadcn `Card`, `Button`; renders composed children like `DashboardCard`, `ActiveLeagues`, `QuickStatsCard`)
+  - [x] 3. Active/hover states — pass (Help-card links now have token-based hover with transition)
+  - [x] 4. Spacing rhythm — pass (`container mx-auto px-4 max-w-7xl py-8` + `grid lg:grid-cols-3 gap-6`)
+  - [N/A] 5. Empty state — page always has org context; sub-components handle their own empty states
+  - [x] 6. Loading state — pass (org loading handled at component level)
+  - [x] 7. Error state — pass (handled via routing guards)
+  - [x] 8. PageHeader correct — pass (`title` + `subtitle` with operator name)
 
 #### `OperatorWelcome`
 
 - **Routes:** `/operator-welcome`
 - **Component:** `src/operator/OperatorWelcome.tsx`
-- **Status:** ⏳ pending — flagged as bypassing `<PageHeader>` (rubric 8 risk)
+- **Status:** ✅ done (PR — chore/audit-wave-3), with R8 as documented exception
 - **Rubric:**
-  - [ ] 1. Color tokens
-  - [ ] 2. Component primitives
-  - [ ] 3. Active/hover states
-  - [ ] 4. Spacing rhythm
-  - [ ] 5. Empty state
-  - [ ] 6. Loading state
-  - [ ] 7. Error state
-  - [ ] 8. PageHeader correct
-- **Notes:**
+  - [x] 1. Color tokens — fixed ~14 findings: gradient bg → `from-info/10 to-success/10`; "League Operator" h2 → `text-primary`; 3 tile cards → semantic status bgs (`bg-info/10`, `bg-success/10`, `bg-highlight/10`); amber "Ready to Get Started?" callout → `bg-warning/10 border-warning/40` with `text-warning` heading + `text-foreground` body + numbered list markers `text-warning`; 3 CTAs stripped custom `bg-blue-600 text-white` overrides — now use shadcn `Button` default (Simonis blue) with just size styling; 3 support links → `text-primary hover:text-primary/80 transition-colors`.
+  - [x] 2. Component primitives — pass (shadcn `Button` throughout; no native form elements)
+  - [x] 3. Active/hover states — pass (CTAs use Button defaults; links use `transition-colors`)
+  - [x] 4. Spacing rhythm — pass (`container mx-auto px-4 max-w-4xl` + `bg-card rounded-2xl shadow-xl p-8 md:p-12` + sectional spacing)
+  - [N/A] 5. Empty state — celebration page, not data-driven
+  - [x] 6. Loading state — pass (button shows "Loading..." while org fetch in flight)
+  - [N/A] 7. Error state — no fail path; org fetch is gated
+  - [x] 8. PageHeader correct — **documented exception**: this is a one-time celebration page with a full-bleed gradient background and no app-nav chrome. Adding `<PageHeader>` would impose persistent app navigation that breaks the celebration moment. Pass with documented intent.
+- **Notes:** Major styling rewrite — heaviest screen in Wave 3 (~14 findings). All buttons stripped of `bg-blue-600 text-white` overrides; they now inherit shadcn `Button`'s default (Simonis blue) which is more consistent with the rest of the app.
 
 #### `PlayerManagement`
 
 - **Routes:** `/manage-players/:orgId`
 - **Component:** `src/operator/PlayerManagement.tsx`
-- **Status:** 🟠 cascade-fixed (PageHeader org badge), awaiting verify — scan flagged 6+ color findings still inline
+- **Status:** ✅ done (PR — chore/audit-wave-3)
 - **Rubric:**
-  - [ ] 1. Color tokens
-  - [ ] 2. Component primitives
-  - [ ] 3. Active/hover states
-  - [ ] 4. Spacing rhythm
-  - [ ] 5. Empty state
-  - [ ] 6. Loading state
-  - [ ] 7. Error state
-  - [ ] 8. PageHeader correct
-- **Notes:**
+  - [x] 1. Color tokens — fixed ~14 findings across multiple sections: Developer impersonation card → `bg-warning/10 border-warning/40 text-warning`; Active Players stat icon → `bg-success/15 text-success`; Alias/ID'd stats → `text-warning`/`text-info`; Status field colors (Registered/Alias-ID'd/-) → success/warning/muted-foreground; Total Games card → `bg-info/10 text-info`; Membership Status link → `text-primary`; Membership state colors → success/warning/muted; "Player Not Authorized" warning card → `bg-warning/10 border-warning/40` + `text-warning` header + `text-foreground` body; Set Starting Handicaps toggle button → `text-primary hover:text-primary/80 transition-colors`; Invites card icon + 3 stat counts → info/warning/success tokens; null-handicap indicators → `text-warning`.
+  - [x] 2. Component primitives — pass (shadcn `Card`, `Button`, `Select`, `Label`, `Input` throughout; one internal toggle `<button>` with type="button" added — tightly-styled inline element, not asChild-able, documented as exception per conventions)
+  - [x] 3. Active/hover states — pass (toggle now token-based; shadcn variants elsewhere)
+  - [x] 4. Spacing rhythm — pass (`max-w-2xl px-0 lg:px-4 py-8 space-y-6` with cards `rounded-none lg:rounded-xl` for mobile edge-to-edge)
+  - [x] 5. Empty state — pass (no-player-selected case is the default friendly state)
+  - [x] 6. Loading state — pass (`isLoadingDetails` shows "Loading player details..." card)
+  - [x] 7. Error state — pass (sub-components handle their own errors)
+  - [x] 8. PageHeader correct — pass (`title`, `subtitle`; org context from sidebar)
+- **Notes:** Heaviest screen in Wave 3 by line-count of changes (~15 token swaps). Many semantic mappings: `green` always became `success`, `amber` became `warning`, `blue` became either `info` (stats) or `primary` (interactive). Color choices preserved categorical distinctions.
 
 #### `LeagueDetail`
 
 - **Routes:** `/league/:leagueId`
 - **Component:** `src/operator/LeagueDetail.tsx`
-- **Status:** 🟠 cascade-fixed (InfoButton), awaiting verify
+- **Status:** ✅ done (PR — chore/audit-wave-3)
 - **Rubric:**
-  - [ ] 1. Color tokens
-  - [ ] 2. Component primitives
-  - [ ] 3. Active/hover states
-  - [ ] 4. Spacing rhythm
-  - [ ] 5. Empty state
-  - [ ] 6. Loading state
-  - [ ] 7. Error state
-  - [ ] 8. PageHeader correct
-- **Notes:**
+  - [x] 1. Color tokens — fixed 3 findings: error heading `text-red-600` → `text-destructive`; "Back to Dashboard" button (was raw `<button class="bg-blue-600 text-white ...">`) → shadcn `Button`; DashboardCard iconColor `text-indigo-600` → `text-primary`.
+  - [x] 2. Component primitives — pass (replaced one raw `<button>` with shadcn `Button` as part of color fix; rest already shadcn)
+  - [x] 3. Active/hover states — pass (shadcn Button + InfoButton variants)
+  - [x] 4. Spacing rhythm — pass (`container mx-auto lg:px-4 w-full lg:max-w-7xl py-8` with `grid lg:grid-cols-3 gap-6 mb-6`)
+  - [x] 5. Empty state — pass ("No active season" / "League not found" branches handled)
+  - [x] 6. Loading state — pass (skeleton-style loading via composed `LeagueStatusCard`, `StatsCard`, etc.)
+  - [x] 7. Error state — pass (error card with "Back to Dashboard" CTA)
+  - [x] 8. PageHeader correct — pass (`backTo`, `backLabel`, dynamic `title`, with lineup-size + InfoButton in header children)
 
 #### `LeagueSettings`
 
 - **Routes:** `/league/:leagueId/settings`
 - **Component:** `src/operator/LeagueSettings.tsx`
-- **Status:** ⏳ pending
+- **Status:** ✅ done (PR — chore/audit-wave-3)
 - **Rubric:**
-  - [ ] 1. Color tokens
-  - [ ] 2. Component primitives
-  - [ ] 3. Active/hover states
-  - [ ] 4. Spacing rhythm
-  - [ ] 5. Empty state
-  - [ ] 6. Loading state
-  - [ ] 7. Error state
-  - [ ] 8. PageHeader correct
-- **Notes:**
+  - [x] 1. Color tokens — fixed 3 findings: error heading → `text-destructive`; "Go Back" raw `<button class="bg-blue-600 text-white ...">` → shadcn `Button`; DashboardCard iconColor → `text-primary`.
+  - [x] 2. Component primitives — pass (raw `<button>` replaced with shadcn `Button`; rest already shadcn)
+  - [x] 3. Active/hover states — pass
+  - [x] 4. Spacing rhythm — pass (`container mx-auto px-4 max-w-6xl py-8` + `grid md:grid-cols-2 gap-6`)
+  - [x] 5. Empty state — pass ("League not found" handled)
+  - [x] 6. Loading state — pass (loading branch)
+  - [x] 7. Error state — pass (error card)
+  - [x] 8. PageHeader correct — pass (`backTo`, `backLabel`, `title="League Settings"`, dynamic `subtitle={getLeagueName(league)}`)
 
 ### Wave 4 — Other operator (12)
 
