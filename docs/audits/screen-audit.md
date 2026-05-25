@@ -101,8 +101,8 @@ per-screen sweep begins in earnest.**
 | Order | Component | Consumers | Status |
 |---|---|---|---|
 | 1 | `src/components/PageHeader.tsx` | 39 | ✅ done (PR — chore/audit-page-header) |
-| 2 | `src/components/InfoButton.tsx` | 22 | ⏳ pending |
-| 3 | `src/components/StatsNavBar.tsx` | 4 | ⏳ pending |
+| 2 | `src/components/InfoButton.tsx` | 22 | ✅ done (PR #137) |
+| 3 | `src/components/StatsNavBar.tsx` | 4 | ✅ done (PR — chore/audit-stats-nav-bar) |
 | 4 | `src/components/PlayerNameLink.tsx` | 5 | ⏳ pending |
 | 5 | `src/components/playoff/PlayoffTemplateSelector.tsx` | 4 | ⏳ pending |
 | 6 | `src/components/playoff/PlayoffSettingsCard.tsx` | 4 | ⏳ pending |
@@ -137,6 +137,23 @@ Re-run `pnpm audit:scan` after each cascade PR — the table will update with ne
 Direct page-level: `ScoreMatch`, `NewPlayerForm`, `FeatsOfExcellence`, `LeagueDetail`, `OrganizationPlayoffSettings`, `SeasonScheduleManager`, `ScheduleSetupPage` (via `ScheduleSetup`), `TeamManagement`, `PlayerManagement`, `LeaguePlayoffSettings`, `SeasonCreationWizard`, `PlayoffsSetupWizard`, `PlayoffSetup`. Transitive (via shared components like `wizard/*`, `lineup/*`, `season/*`, `operator/preferences/*`, `FormField`, `PersonalInfoSection`): also `Profile`, `LeagueWizardV2Page` (and its sub-wizards), and any operator preferences/settings flows.
 
 Wherever an InfoButton "?" appears on screen, it now reads as the punchier `info` blue (distinct from the Simonis-blue nav). Pages affected flip to **🟠 cascade-fixed, awaiting verify** below.
+
+### `StatsNavBar` — 2026-05-24 — branch `chore/audit-stats-nav-bar`
+
+**Rubric pass:**
+
+- [x] 1. Color tokens — fixed L75 active-tab styling (`border-blue-600 text-blue-600` → `border-primary text-primary`). Zero remaining findings on this file.
+- [x] 2. Component primitives — four native `<button>` elements (one per tab). Documented exception: tab-style triggers with border-underline transitions don't map cleanly to shadcn `Button` variants; the styling is tightly coupled to the tab pattern.
+- [x] 3. Active/hover states — active tab uses `border-primary text-primary font-semibold` (Simonis blue underline + text). Inactive hover uses `hover:text-foreground hover:border-border`, which is the standard tab convention (text strengthens + border hint appears) rather than the sidebar `hover:bg-primary/10` pattern. Internally consistent and uses brand tokens.
+- [x] 4. Spacing rhythm — `gap-1` between tabs, `px-4 py-3` per tab, `mb-6 -mx-4 px-4` on the container. Consistent.
+- [N/A] 5. Empty state — purely structural nav, no data.
+- [N/A] 6. Loading state — no async.
+- [N/A] 7. Error state — no async.
+- [N/A] 8. PageHeader correct — this is a helper, not a page.
+
+**Consumers downstream (4 importers):**
+
+`Standings`, `TopShooters`, `TeamStats`, `FeatsOfExcellence`. All four stats-detail pages get the Simonis-blue active-tab styling for free. They flip to **🟠 cascade-fixed, awaiting verify** below (FeatsOfExcellence was already flipped by the InfoButton cascade — adds another reason).
 
 ---
 
@@ -648,7 +665,7 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/league/:leagueId/season/:seasonId/standings`
 - **Component:** `src/pages/Standings.tsx`
-- **Status:** ⏳ pending
+- **Status:** 🟠 cascade-fixed (StatsNavBar), awaiting verify
 - **Rubric:** _(8-item template)_
 - **Notes:**
 
@@ -656,7 +673,7 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/league/:leagueId/season/:seasonId/top-shooters`
 - **Component:** `src/pages/TopShooters.tsx`
-- **Status:** ⏳ pending
+- **Status:** 🟠 cascade-fixed (StatsNavBar), awaiting verify
 - **Rubric:** _(8-item template)_
 - **Notes:**
 
@@ -664,7 +681,7 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/league/:leagueId/season/:seasonId/team-stats`
 - **Component:** `src/pages/TeamStats.tsx`
-- **Status:** ⏳ pending
+- **Status:** 🟠 cascade-fixed (StatsNavBar), awaiting verify
 - **Rubric:** _(8-item template)_
 - **Notes:**
 
@@ -672,7 +689,7 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/league/:leagueId/season/:seasonId/feats`
 - **Component:** `src/pages/FeatsOfExcellence.tsx`
-- **Status:** 🟠 cascade-fixed (InfoButton), awaiting verify
+- **Status:** 🟠 cascade-fixed (InfoButton + StatsNavBar), awaiting verify
 - **Rubric:** _(8-item template)_
 - **Notes:**
 
