@@ -630,11 +630,6 @@ etc.) chosen by semantic meaning, not literal color match._
 - L84: `<span className="text-[10px] text-blue-600 mt-0.5">`
 - L94: `<p className="text-xs text-blue-600 pt-2 border-t border-blue-200">`
 
-### `src/components/PageHeader.tsx`
-
-- L260: `<Building2 className="h-4 w-4 text-blue-600 lg:h-5 lg:w-5" />`
-- L261: `<span className="text-sm font-medium text-blue-600 lg:text-base">`
-
 ### `src/components/PaymentCardForm.tsx`
 
 - L154: `<div className="bg-green-50 border border-green-200 rounded-lg p-4 animate-in slide-in-from-top-2 duration-300">`

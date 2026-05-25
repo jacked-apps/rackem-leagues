@@ -100,8 +100,8 @@ per-screen sweep begins in earnest.**
 
 | Order | Component | Consumers | Status |
 |---|---|---|---|
-| 1 | `src/components/PageHeader.tsx` | 39 | ⏳ pending |
-| 2 | `src/components/InfoButton.tsx` | 22 | ✅ done (PR — chore/audit-info-button) |
+| 1 | `src/components/PageHeader.tsx` | 39 | ✅ done (PR — chore/audit-page-header) |
+| 2 | `src/components/InfoButton.tsx` | 22 | ⏳ pending |
 | 3 | `src/components/StatsNavBar.tsx` | 4 | ⏳ pending |
 | 4 | `src/components/PlayerNameLink.tsx` | 5 | ⏳ pending |
 | 5 | `src/components/playoff/PlayoffTemplateSelector.tsx` | 4 | ⏳ pending |
@@ -324,7 +324,7 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/operator-dashboard/:orgId`
 - **Component:** `src/operator/OperatorDashboard.tsx`
-- **Status:** ⏳ pending — has tabbed inner views; audit each visible tab as a sub-section
+- **Status:** 🟠 cascade-fixed (PageHeader org badge), awaiting verify — has tabbed inner views; audit each visible tab as a sub-section
 - **Rubric:**
   - [ ] 1. Color tokens
   - [ ] 2. Component primitives
@@ -356,7 +356,7 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/manage-players/:orgId`
 - **Component:** `src/operator/PlayerManagement.tsx`
-- **Status:** ⏳ pending — scan flagged 6+ color findings
+- **Status:** 🟠 cascade-fixed (PageHeader org badge), awaiting verify — scan flagged 6+ color findings still inline
 - **Rubric:**
   - [ ] 1. Color tokens
   - [ ] 2. Component primitives
@@ -414,7 +414,7 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/operator-settings/:orgId`
 - **Component:** `src/operator/OrganizationSettings.tsx`
-- **Status:** ⏳ pending
+- **Status:** 🟠 cascade-fixed (PageHeader org badge), awaiting verify
 - **Rubric:** _(8-item template)_
 - **Notes:**
 
@@ -422,7 +422,7 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/operator-settings/:orgId/playoffs`
 - **Component:** `src/operator/OrganizationPlayoffSettings.tsx`
-- **Status:** ⏳ pending
+- **Status:** 🟠 cascade-fixed (PageHeader org badge), awaiting verify
 - **Rubric:** _(8-item template)_
 - **Notes:**
 
@@ -438,7 +438,7 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/operator/league/:leagueId/playoffs/:orgId`
 - **Component:** `src/operator/LeaguePlayoffSettings.tsx`
-- **Status:** ⏳ pending
+- **Status:** 🟠 cascade-fixed (PageHeader org badge), awaiting verify
 - **Rubric:** _(8-item template)_
 - **Notes:**
 
@@ -446,7 +446,7 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/league/:leagueId/season/:seasonId/playoffs`
 - **Component:** `src/operator/PlayoffSetup.tsx`
-- **Status:** ⏳ pending
+- **Status:** 🟠 cascade-fixed (PageHeader org badge), awaiting verify
 - **Rubric:** _(8-item template)_
 - **Notes:**
 
@@ -454,7 +454,7 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/league/:leagueId/season/:seasonId/playoffs-setup`
 - **Component:** `src/operator/PlayoffsSetupWizard.tsx`
-- **Status:** ⏳ pending — single-page "wizard"
+- **Status:** 🟠 cascade-fixed (PageHeader org badge), awaiting verify — single-page "wizard"
 - **Rubric:** _(8-item template)_
 - **Notes:**
 
@@ -494,7 +494,7 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/league/:leagueId/manage-teams`
 - **Component:** `src/operator/TeamManagement.tsx`
-- **Status:** ⏳ pending — page has its own fixed bottom action bar (tab bar hidden)
+- **Status:** 🟠 cascade-fixed (PageHeader org badge), awaiting verify — page has its own fixed bottom action bar (tab bar hidden)
 - **Rubric:** _(8-item template)_
 - **Notes:**
 
@@ -502,7 +502,7 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/venues/:orgId`
 - **Component:** `src/operator/VenueManagement.tsx`
-- **Status:** ⏳ pending
+- **Status:** 🟠 cascade-fixed (PageHeader org badge), awaiting verify
 - **Rubric:** _(8-item template)_
 - **Notes:**
 
@@ -713,7 +713,7 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/create-league/:orgId`
 - **Component:** `src/wizards/league-v2/LeagueWizardV2Page.tsx`
-- **Status:** ⏳ pending — single audit entry for the page chrome + `WizardFlowShell`. Composes 27 sub-steps via `createNewLeagueFlow` (league/schedule/teams/matchups). Per-step audit is deferred to a follow-up.
+- **Status:** 🟠 cascade-fixed (PageHeader org badge), awaiting verify — single audit entry for the page chrome + `WizardFlowShell`. Composes 27 sub-steps via `createNewLeagueFlow` (league/schedule/teams/matchups). Per-step audit is deferred to a follow-up.
 - **Rubric:** _(8-item template)_
 - **Notes:**
 
