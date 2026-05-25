@@ -7,8 +7,8 @@ Use it as input to `docs/audits/screen-audit.md` (the per-screen audit checklist
 
 ## Summary
 
-- **Files with unpaired hardcoded colored shades:** 192
-- **Files with native HTML form elements:** 24
+- **Files with unpaired hardcoded colored shades:** 190
+- **Files with native HTML form elements:** 23
 
 ## Cascade priority — shared components
 
@@ -1577,10 +1577,6 @@ etc.) chosen by semantic meaning, not literal color match._
 - L90: `<p className="text-sm text-red-600">`
 - L95: `<div className="text-center py-8 text-red-500">`
 
-### `src/player/MatchLineup.tsx`
-
-- L1054: `<div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">`
-
 ### `src/player/MyTeams.tsx`
 
 - L219: `<span className="text-xs font-bold px-2 py-0.5 rounded text-yellow-700 bg-yellow-100">`
@@ -1592,11 +1588,6 @@ etc.) chosen by semantic meaning, not literal color match._
 - L302: `<p className="text-sm font-semibold text-yellow-900">`
 - L305: `<ul className="text-sm text-yellow-800 mt-1 space-y-1">`
 - L352: `? 'font-semibold text-blue-600'`
-
-### `src/player/ScoreMatch.tsx`
-
-- L600: `<div className="text-lg font-semibold text-red-600 mb-2">`
-- L625: `<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" />`
 
 ### `src/player/SpectateLiveMatches.tsx`
 
@@ -1818,10 +1809,6 @@ eyeball each occurrence to confirm it's actually a violation._
 - L36: `<button onClick={() => increment(setHomeHandicap)}>+</button>`
 - L53: `<button onClick={() => decrement(setAwayHandicap)}>-</button>`
 - L57: `<button onClick={() => increment(setAwayHandicap)}>+</button>`
-
-### `src/player/ScoreMatch.tsx`
-
-- L717: `<label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">`
 
 ### `src/rules/RulesPage.tsx`
 

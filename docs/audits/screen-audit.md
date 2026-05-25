@@ -177,17 +177,17 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/my-match`
 - **Component:** `src/player/MyMatch.tsx`
-- **Status:** ⏳ pending
+- **Status:** ✅ done (PR — chore/audit-wave-1-remainder)
 - **Rubric:**
-  - [ ] 1. Color tokens
-  - [ ] 2. Component primitives
-  - [ ] 3. Active/hover states
-  - [ ] 4. Spacing rhythm
-  - [ ] 5. Empty state
-  - [ ] 6. Loading state
-  - [ ] 7. Error state
-  - [ ] 8. PageHeader correct
-- **Notes:**
+  - [x] 1. Color tokens — pass (zero findings)
+  - [x] 2. Component primitives — pass (shadcn `Card`, `CardContent`, `CardHeader`, `CardTitle`)
+  - [N/A] 3. Active/hover states — no interactive nav elements on this page
+  - [x] 4. Spacing rhythm — pass (`container mx-auto max-w-2xl px-4 py-6` matches sibling player pages)
+  - [N/A] 5. Empty state — the page IS effectively a placeholder/empty state
+  - [N/A] 6. Loading state — no async fetches
+  - [N/A] 7. Error state — no async fetches
+  - [x] 8. PageHeader correct — pass (`backTo="/my-teams"`, `backLabel`, `title`, `subtitle` set; no `organizationId` needed — player page)
+- **Notes:** Placeholder page until live-match jump-in feature ships. No source changes needed in this audit; uses theme tokens throughout.
 
 #### `MyTeams`
 
@@ -209,49 +209,51 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/team/:teamId/schedule`
 - **Component:** `src/player/TeamSchedule.tsx`
-- **Status:** ⏳ pending — partial fixes already landed in IA branch (status cards migrated to status tokens); re-audit
+- **Status:** ✅ done (PR — chore/audit-wave-1-remainder) — color migrations landed in earlier IA branch; this audit confirms full rubric pass
 - **Rubric:**
-  - [ ] 1. Color tokens
-  - [ ] 2. Component primitives
-  - [ ] 3. Active/hover states
-  - [ ] 4. Spacing rhythm
-  - [ ] 5. Empty state
-  - [ ] 6. Loading state
-  - [ ] 7. Error state
-  - [ ] 8. PageHeader correct
-- **Notes:**
+  - [x] 1. Color tokens — pass (zero findings; status cards use `bg-success/10`, `bg-warning/10`, `bg-info/10`, `bg-highlight/10` with matching borders + text)
+  - [x] 2. Component primitives — pass (shadcn `Button`, `Card`, `Accordion`)
+  - [x] 3. Active/hover states — pass (Accordion items + Button hover are shadcn defaults)
+  - [x] 4. Spacing rhythm — pass (`max-w-2xl mx-auto px-4 py-6` matches `MyTeams` sibling)
+  - [x] 5. Empty state — pass (`Calendar` icon + friendly "No upcoming matches" / "No matches scheduled yet" card)
+  - [x] 6. Loading state — pass ("Loading schedule..." text — functional but minimal, same minor polish opportunity as MyTeams)
+  - [x] 7. Error state — pass (`text-destructive` error message)
+  - [x] 8. PageHeader correct — pass (`backTo="/my-teams"`, `backLabel`, dynamic `title={team.team_name}`, dynamic `subtitle` for day-of-week, with a Show/Hide Completed Button slotted into the header's children prop)
+- **Notes:** Cleanest screen in the audit so far. The IA branch did the heavy lifting; this pass just confirms.
 
 #### `MatchLineup`
 
 - **Routes:** `/match/:matchId/lineup`
 - **Component:** `src/player/MatchLineup.tsx`
-- **Status:** ⏳ pending — flagged as bypassing `<PageHeader>` (rubric 8 risk)
+- **Status:** ✅ done (PR — chore/audit-wave-1-remainder), with rubric 8 deferred
 - **Rubric:**
-  - [ ] 1. Color tokens
-  - [ ] 2. Component primitives
-  - [ ] 3. Active/hover states
-  - [ ] 4. Spacing rhythm
-  - [ ] 5. Empty state
-  - [ ] 6. Loading state
-  - [ ] 7. Error state
-  - [ ] 8. PageHeader correct
-- **Notes:**
+  - [x] 1. Color tokens — fixed L1054 Fargo banner (`border-amber-200 bg-amber-50 text-amber-900` → `border-warning/40 bg-warning/10` with `text-warning` heading + `text-foreground` body for readability)
+  - [x] 2. Component primitives — pass (uses shadcn `Button`, `Input`, `Select`, `Label`, plus several composed components like `MatchInfoCard`, `LineupActions`)
+  - [x] 3. Active/hover states — pass (shadcn variants throughout)
+  - [x] 4. Spacing rhythm — pass (`max-w-2xl mx-auto px-4 py-6 space-y-6` matches sibling player pages)
+  - [N/A] 5. Empty state — every state branch returns something meaningful; no list with possible empty
+  - [x] 6. Loading state — pass (`useQueryStates` unified wrapper renders loading)
+  - [x] 7. Error state — pass (`useQueryStates` unified wrapper renders errors)
+  - [ ] 8. **Deferred** — uses a custom sticky `<header>` (L982-995) with a manual "Back to Schedule" Link + large title, instead of `<PageHeader>`. Migration would require resolving custom title sizing + the screen's existing visual contract. See deferrals.
+- **Deferred:**
+  - **PageHeader migration** — custom `<header>` works fine for the screen's existing visual contract (large `text-4xl` title). Migrating means deciding whether to keep the oversized title or accept PageHeader's smaller one. Tracked for a focused follow-up.
+- **Notes:** 1274 LOC file; the diff in this PR is one line (the Fargo banner).
 
 #### `ScoreMatch`
 
 - **Routes:** `/match/:matchId/score`
 - **Component:** `src/player/ScoreMatch.tsx`
-- **Status:** 🟠 cascade-fixed (InfoButton), awaiting verify — also flagged as bypassing `<PageHeader>` (rubric 8 risk)
+- **Status:** ✅ done (PR — chore/audit-wave-1-remainder)
 - **Rubric:**
-  - [ ] 1. Color tokens
-  - [ ] 2. Component primitives
-  - [ ] 3. Active/hover states
-  - [ ] 4. Spacing rhythm
-  - [ ] 5. Empty state
-  - [ ] 6. Loading state
-  - [ ] 7. Error state
-  - [ ] 8. PageHeader correct
-- **Notes:**
+  - [x] 1. Color tokens — fixed L600 error heading (`text-red-600` → `text-destructive`) and L625 loading spinner (`border-blue-600` → `border-primary`)
+  - [x] 2. Component primitives — fixed L717 Auto-Confirm: swapped native `<label>` + `<input type="checkbox">` for shadcn `Checkbox` + `Label` with `htmlFor` wiring. ScoreMatch is now fully shadcn-native.
+  - [x] 3. Active/hover states — pass (shadcn `Button` variants throughout)
+  - [x] 4. Spacing rhythm — pass (compact `h-screen flex flex-col` layout is deliberate for the scoring UI — fixed header + scrollable middle + fixed bottom action bar)
+  - [N/A] 5. Empty state — every render branch returns meaningful content; this isn't a list view
+  - [x] 6. Loading state — pass (fallback spinner when guarded data is null)
+  - [x] 7. Error state — pass (error card with `text-destructive` heading and "Go Back" button)
+  - [x] 8. PageHeader correct — **documented exception**: ScoreMatch uses a custom compact header (back button + team name + Auto-Confirm checkbox + InfoButton, all in one strip) because the scoring UI has unique requirements (`h-screen` layout, fixed header, persistent visibility of team + auto-confirm during scoring). Migrating to `<PageHeader>` would lose the Auto-Confirm placement and harm the screen's primary task. Pass with documented intent.
+- **Notes:** 1012 LOC file; diff in this PR is ~10 lines (2 color fixes + checkbox+label primitive swap). Native checkbox swap is a real behavior upgrade — shadcn Checkbox provides proper focus rings, keyboard support, and ARIA wiring.
 
 ### Wave 2 — Player social, stats, live (5)
 
