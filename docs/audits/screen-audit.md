@@ -101,7 +101,7 @@ per-screen sweep begins in earnest.**
 | Order | Component | Consumers | Status |
 |---|---|---|---|
 | 1 | `src/components/PageHeader.tsx` | 39 | ⏳ pending |
-| 2 | `src/components/InfoButton.tsx` | 22 | ⏳ pending |
+| 2 | `src/components/InfoButton.tsx` | 22 | ✅ done (PR — chore/audit-info-button) |
 | 3 | `src/components/StatsNavBar.tsx` | 4 | ⏳ pending |
 | 4 | `src/components/PlayerNameLink.tsx` | 5 | ⏳ pending |
 | 5 | `src/components/playoff/PlayoffTemplateSelector.tsx` | 4 | ⏳ pending |
@@ -114,6 +114,29 @@ per-screen sweep begins in earnest.**
 | 12 | `src/components/operator/VenueCreationModal.tsx` | 3 | ⏳ pending |
 
 Re-run `pnpm audit:scan` after each cascade PR — the table will update with new counts.
+
+---
+
+## Cascade-fix log
+
+### `InfoButton` — 2026-05-24 — branch `chore/audit-info-button`
+
+**Rubric pass:**
+
+- [x] 1. Color tokens — fixed L139 (`bg-blue-100 text-blue-600 hover:bg-blue-200` → `bg-info/15 text-info hover:bg-info/25 transition-colors`). Picked `text-info` over `text-primary` because this is informational chrome, semantically distinct from brand-nav. Also fixed a no-op hover on the close × button (`hover:text-muted-foreground` → `hover:text-foreground`).
+- [x] 2. Component primitives — two native `<button>` elements remain (round "?" trigger + close ×), both intentional: tightly-styled small elements where a shadcn `Button` swap would obscure intent. Documented as exceptions per the conventions.
+- [x] 3. Active/hover states — popup trigger now uses `bg-info/15 text-info hover:bg-info/25 transition-colors`; close × uses `text-muted-foreground hover:text-foreground transition-colors`.
+- [x] 4. Spacing rhythm — popup uses `p-4`, `mb-2`, `w-80` consistently; trigger has size-variant `w-4 h-4` / `w-6 h-6`.
+- [N/A] 5. Empty state — no data view.
+- [N/A] 6. Loading state — synchronous render.
+- [N/A] 7. Error state — synchronous render.
+- [N/A] 8. PageHeader correct — this is a helper, not a page.
+
+**Consumers downstream (22 importers, page-level surfaces below):**
+
+Direct page-level: `ScoreMatch`, `NewPlayerForm`, `FeatsOfExcellence`, `LeagueDetail`, `OrganizationPlayoffSettings`, `SeasonScheduleManager`, `ScheduleSetupPage` (via `ScheduleSetup`), `TeamManagement`, `PlayerManagement`, `LeaguePlayoffSettings`, `SeasonCreationWizard`, `PlayoffsSetupWizard`, `PlayoffSetup`. Transitive (via shared components like `wizard/*`, `lineup/*`, `season/*`, `operator/preferences/*`, `FormField`, `PersonalInfoSection`): also `Profile`, `LeagueWizardV2Page` (and its sub-wizards), and any operator preferences/settings flows.
+
+Wherever an InfoButton "?" appears on screen, it now reads as the punchier `info` blue (distinct from the Simonis-blue nav). Pages affected flip to **🟠 cascade-fixed, awaiting verify** below.
 
 ---
 
@@ -201,7 +224,7 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/match/:matchId/score`
 - **Component:** `src/player/ScoreMatch.tsx`
-- **Status:** ⏳ pending — flagged as bypassing `<PageHeader>` (rubric 8 risk)
+- **Status:** 🟠 cascade-fixed (InfoButton), awaiting verify — also flagged as bypassing `<PageHeader>` (rubric 8 risk)
 - **Rubric:**
   - [ ] 1. Color tokens
   - [ ] 2. Component primitives
@@ -235,7 +258,7 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/profile`
 - **Component:** `src/profile/Profile.tsx`
-- **Status:** ⏳ pending — recently restructured; Theme + Sign Out section added
+- **Status:** 🟠 cascade-fixed (InfoButton, via PersonalInfoSection), awaiting verify — recently restructured; Theme + Sign Out section added
 - **Rubric:**
   - [ ] 1. Color tokens
   - [ ] 2. Component primitives
@@ -349,7 +372,7 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/league/:leagueId`
 - **Component:** `src/operator/LeagueDetail.tsx`
-- **Status:** ⏳ pending
+- **Status:** 🟠 cascade-fixed (InfoButton), awaiting verify
 - **Rubric:**
   - [ ] 1. Color tokens
   - [ ] 2. Component primitives
@@ -439,7 +462,7 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/league/:leagueId/season/:seasonId/schedule-setup`
 - **Component:** `src/operator/ScheduleSetupPage.tsx`
-- **Status:** ⏳ pending
+- **Status:** 🟠 cascade-fixed (InfoButton, via ScheduleSetup), awaiting verify
 - **Rubric:** _(8-item template)_
 - **Notes:**
 
@@ -455,7 +478,7 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/league/:leagueId/season/:seasonId/manage-schedule`
 - **Component:** `src/operator/SeasonScheduleManager.tsx`
-- **Status:** ⏳ pending — page has its own fixed bottom action bar (tab bar hidden)
+- **Status:** 🟠 cascade-fixed (InfoButton), awaiting verify — page has its own fixed bottom action bar (tab bar hidden)
 - **Rubric:** _(8-item template)_
 - **Notes:**
 
@@ -463,7 +486,7 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/league/:leagueId/create-season`
 - **Component:** `src/operator/SeasonCreationWizard.tsx`
-- **Status:** ⏳ pending — audit shell + 1–2 sample steps; full step audit deferred
+- **Status:** 🟠 cascade-fixed (InfoButton), awaiting verify — audit shell + 1–2 sample steps; full step audit deferred
 - **Rubric:** _(8-item template)_
 - **Notes:**
 
@@ -497,7 +520,7 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/new-player`
 - **Component:** `src/newPlayer/NewPlayerForm.tsx`
-- **Status:** ⏳ pending
+- **Status:** 🟠 cascade-fixed (InfoButton, via FormField), awaiting verify
 - **Rubric:** _(8-item template)_
 - **Notes:**
 
@@ -649,7 +672,7 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/league/:leagueId/season/:seasonId/feats`
 - **Component:** `src/pages/FeatsOfExcellence.tsx`
-- **Status:** ⏳ pending
+- **Status:** 🟠 cascade-fixed (InfoButton), awaiting verify
 - **Rubric:** _(8-item template)_
 - **Notes:**
 

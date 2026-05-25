@@ -7,7 +7,7 @@ Use it as input to `docs/audits/screen-audit.md` (the per-screen audit checklist
 
 ## Summary
 
-- **Files with unpaired hardcoded colored shades:** 195
+- **Files with unpaired hardcoded colored shades:** 194
 - **Files with native HTML form elements:** 24
 
 ## Cascade priority — shared components
@@ -121,10 +121,6 @@ etc.) chosen by semantic meaning, not literal color match._
 ### `src/components/forms/WizardProgress.tsx`
 
 - L30: `progressBarColor = 'bg-blue-600',`
-
-### `src/components/InfoButton.tsx`
-
-- L139: `className={\`rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 flex items-center justify-center font-bold ${`
 
 ### `src/components/invite/DeviceHandoffForm.tsx`
 
@@ -932,21 +928,21 @@ etc.) chosen by semantic meaning, not literal color match._
 
 ### `src/components/scoring/MatchEndVerification.tsx`
 
-- L508: `<div className="text-lg font-bold text-blue-600 mt-1">`
-- L513: `<div className="text-lg font-bold text-orange-600 mt-1">`
-- L532: `result === 'home_win' ? 'bg-blue-50' : ''`
-- L538: `? 'text-lg font-bold text-blue-600'`
-- L547: `? 'text-lg font-bold text-blue-600'`
-- L556: `? 'text-lg font-bold text-blue-600'`
-- L570: `result === 'away_win' ? 'bg-orange-50' : ''`
-- L576: `? 'text-lg font-bold text-blue-600'`
-- L585: `? 'text-lg font-bold text-blue-600'`
-- L594: `? 'text-lg font-bold text-blue-600'`
-- L607: `<div className="bg-purple-50 px-3 py-2 text-center">`
-- L608: `<span className="text-sm font-bold text-purple-600">`
-- L622: `homeVerified ? 'text-green-600' : 'text-muted-foreground'`
-- L629: `awayVerified ? 'text-green-600' : 'text-muted-foreground'`
-- L658: `<div className="text-center text-sm font-medium text-green-600">`
+- L573: `<div className="text-lg font-bold text-blue-600 mt-1">`
+- L578: `<div className="text-lg font-bold text-orange-600 mt-1">`
+- L597: `result === 'home_win' ? 'bg-blue-50' : ''`
+- L603: `? 'text-lg font-bold text-blue-600'`
+- L612: `? 'text-lg font-bold text-blue-600'`
+- L621: `? 'text-lg font-bold text-blue-600'`
+- L635: `result === 'away_win' ? 'bg-orange-50' : ''`
+- L641: `? 'text-lg font-bold text-blue-600'`
+- L650: `? 'text-lg font-bold text-blue-600'`
+- L659: `? 'text-lg font-bold text-blue-600'`
+- L672: `<div className="bg-purple-50 px-3 py-2 text-center">`
+- L673: `<span className="text-sm font-bold text-purple-600">`
+- L687: `homeVerified ? 'text-green-600' : 'text-muted-foreground'`
+- L694: `awayVerified ? 'text-green-600' : 'text-muted-foreground'`
+- L723: `<div className="text-center text-sm font-medium text-green-600">`
 
 ### `src/components/scoring/TableNumberBar.tsx`
 
