@@ -292,6 +292,88 @@ export type Database = {
         }
         Relationships: []
       }
+      game_confirmations: {
+        Row: {
+          action: string
+          break_and_run: boolean
+          break_fouled: boolean
+          confirmer_id: string
+          created_at: string
+          game_id: string
+          game_number: number
+          golden_break: boolean
+          id: string
+          loser_value: number | null
+          match_id: string
+          runout: boolean
+          side: string
+          win_by_forfeit: boolean
+          winner_player_id: string | null
+          winner_team_id: string | null
+          winner_value: number | null
+        }
+        Insert: {
+          action?: string
+          break_and_run?: boolean
+          break_fouled?: boolean
+          confirmer_id: string
+          created_at?: string
+          game_id: string
+          game_number: number
+          golden_break?: boolean
+          id?: string
+          loser_value?: number | null
+          match_id: string
+          runout?: boolean
+          side: string
+          win_by_forfeit?: boolean
+          winner_player_id?: string | null
+          winner_team_id?: string | null
+          winner_value?: number | null
+        }
+        Update: {
+          action?: string
+          break_and_run?: boolean
+          break_fouled?: boolean
+          confirmer_id?: string
+          created_at?: string
+          game_id?: string
+          game_number?: number
+          golden_break?: boolean
+          id?: string
+          loser_value?: number | null
+          match_id?: string
+          runout?: boolean
+          side?: string
+          win_by_forfeit?: boolean
+          winner_player_id?: string | null
+          winner_team_id?: string | null
+          winner_value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_confirmations_confirmer_id_fkey"
+            columns: ["confirmer_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_confirmations_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "match_games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_confirmations_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       handicap_chart_3vs3: {
         Row: {
           games_to_lose: number
@@ -2534,10 +2616,7 @@ export type Database = {
         }
         Returns: string
       }
-      daitch_mokotoff: {
-        Args: { "": string }
-        Returns: string[]
-      }
+      daitch_mokotoff: { Args: { "": string }; Returns: string[] }
       delete_unused_placeholder: {
         Args: {
           p_actor_member_id: string
@@ -2549,18 +2628,9 @@ export type Database = {
           success: boolean
         }[]
       }
-      dmetaphone: {
-        Args: { "": string }
-        Returns: string
-      }
-      dmetaphone_alt: {
-        Args: { "": string }
-        Returns: string
-      }
-      get_current_member_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      dmetaphone: { Args: { "": string }; Returns: string }
+      dmetaphone_alt: { Args: { "": string }; Returns: string }
+      get_current_member_id: { Args: never; Returns: string }
       get_invite_details: {
         Args: { p_token: string }
         Returns: {
@@ -2590,7 +2660,7 @@ export type Database = {
         }[]
       }
       get_my_pending_invites: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           captain_name: string
           creator_name: string
@@ -2609,18 +2679,9 @@ export type Database = {
           token: string
         }[]
       }
-      get_operator_placeholders: {
-        Args: { p_org_id: string }
-        Returns: Json
-      }
-      get_operator_player_stats: {
-        Args: { p_org_id: string }
-        Returns: Json
-      }
-      get_operator_stats: {
-        Args: { operator_id_param: string }
-        Returns: Json
-      }
+      get_operator_placeholders: { Args: { p_org_id: string }; Returns: Json }
+      get_operator_player_stats: { Args: { p_org_id: string }; Returns: Json }
+      get_operator_stats: { Args: { operator_id_param: string }; Returns: Json }
       get_org_placeholders_for_merge: {
         Args: { p_include_archived?: boolean; p_org_id: string }
         Returns: {
@@ -2659,26 +2720,6 @@ export type Database = {
           is_correct: boolean
           team_name: string
         }[]
-      }
-      gtrgm_compress: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      gtrgm_decompress: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      gtrgm_in: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      gtrgm_options: {
-        Args: { "": unknown }
-        Returns: undefined
-      }
-      gtrgm_out: {
-        Args: { "": unknown }
-        Returns: unknown
       }
       is_conversation_participant: {
         Args: { conv_id: string; uid: string }
@@ -2730,10 +2771,7 @@ export type Database = {
           total_rows_updated: number
         }[]
       }
-      placeholder_has_stats: {
-        Args: { p_member_id: string }
-        Returns: boolean
-      }
+      placeholder_has_stats: { Args: { p_member_id: string }; Returns: boolean }
       prep_match: {
         Args: { p_game_rows: Json; p_match_id: string; p_thresholds: Json }
         Returns: undefined
@@ -2827,10 +2865,6 @@ export type Database = {
           total_score: number
         }[]
       }
-      set_limit: {
-        Args: { "": number }
-        Returns: number
-      }
       set_match_lineup_rating: {
         Args: {
           p_match_lineup_id: string
@@ -2849,22 +2883,10 @@ export type Database = {
         }
         Returns: string
       }
-      show_limit: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      show_trgm: {
-        Args: { "": string }
-        Returns: string[]
-      }
-      soundex: {
-        Args: { "": string }
-        Returns: string
-      }
-      text_soundex: {
-        Args: { "": string }
-        Returns: string
-      }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
+      soundex: { Args: { "": string }; Returns: string }
+      text_soundex: { Args: { "": string }; Returns: string }
       undo_merge_placeholder: {
         Args: {
           p_actor_member_id: string
