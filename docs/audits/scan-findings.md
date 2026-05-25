@@ -7,7 +7,7 @@ Use it as input to `docs/audits/screen-audit.md` (the per-screen audit checklist
 
 ## Summary
 
-- **Files with unpaired hardcoded colored shades:** 194
+- **Files with unpaired hardcoded colored shades:** 192
 - **Files with native HTML form elements:** 24
 
 ## Cascade priority — shared components
@@ -993,10 +993,6 @@ etc.) chosen by semantic meaning, not literal color match._
 - L28: `<Users className="h-4 w-4 text-blue-600" />`
 - L29: `<span className="text-sm font-medium text-blue-900">`
 - L37: `className="bg-card border border-blue-300 rounded-full px-3 py-1 text-sm flex items-center gap-2"`
-
-### `src/components/StatsNavBar.tsx`
-
-- L75: `? 'border-blue-600 text-blue-600 font-semibold'`
 
 ### `src/components/TableSizeLabel.tsx`
 
