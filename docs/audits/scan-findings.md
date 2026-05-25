@@ -122,10 +122,6 @@ etc.) chosen by semantic meaning, not literal color match._
 
 - L30: `progressBarColor = 'bg-blue-600',`
 
-### `src/components/InfoButton.tsx`
-
-- L139: `className={\`rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 flex items-center justify-center font-bold ${`
-
 ### `src/components/invite/DeviceHandoffForm.tsx`
 
 - L156: `<div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">`

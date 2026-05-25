@@ -136,7 +136,7 @@ export const InfoButton: React.FC<InfoButtonProps> = ({
         <button
           ref={buttonRef}
           onClick={togglePopup}
-          className={`rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 flex items-center justify-center font-bold ${
+          className={`rounded-full bg-info/15 text-info hover:bg-info/25 flex items-center justify-center font-bold transition-colors ${
             size === 'sm' ? 'w-4 h-4 text-xs' : 'w-6 h-6 text-sm'
           }`}
           title="More information"
@@ -155,7 +155,7 @@ export const InfoButton: React.FC<InfoButtonProps> = ({
             <h3 className="font-semibold text-foreground">{title}</h3>
             <button
               onClick={togglePopup}
-              className="w-5 h-5 text-muted-foreground hover:text-muted-foreground"
+              className="w-5 h-5 text-muted-foreground transition-colors hover:text-foreground"
               aria-label="Close"
             >
               ×
