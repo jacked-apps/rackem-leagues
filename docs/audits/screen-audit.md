@@ -193,17 +193,24 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/my-teams`
 - **Component:** `src/player/MyTeams.tsx`
-- **Status:** ⏳ pending — **pilot screen**, scaffold workflow here
+- **Status:** ✅ done (PR — chore/audit-my-teams) — **pilot screen** for the per-screen sweep
 - **Rubric:**
-  - [ ] 1. Color tokens
-  - [ ] 2. Component primitives
-  - [ ] 3. Active/hover states
-  - [ ] 4. Spacing rhythm
-  - [ ] 5. Empty state
-  - [ ] 6. Loading state
-  - [ ] 7. Error state
-  - [ ] 8. PageHeader correct
-- **Notes:**
+  - [x] 1. Color tokens — fixed 8 findings, all migrated to status tokens with semantic intent: `SETUP INCOMPLETE` badge → `text-warning bg-warning/15`; MAKEUP tag → `text-warning bg-warning/15`; UPCOMING/IN PROGRESS tag → `text-info bg-info/15`; Quick Score buttons → `text-warning hover:bg-warning/10` / `text-info hover:bg-info/10`; Team Setup Incomplete callout → `bg-warning/10 border-warning/40 text-warning`; captain self-highlight → `text-primary`. Zero remaining findings.
+  - [x] 2. Component primitives — uses shadcn `Button`, `Card`, `Accordion`. One exception: Quick Score uses `<div role="button">` because it sits inside an `AccordionTrigger` (a `<button>`) and HTML forbids nested buttons. See deferrals.
+  - [x] 3. Active/hover states — Quick Score buttons now use `hover:bg-{warning|info}/10` (token-based); shadcn `Button` variants used elsewhere. No nav-like elements on this screen.
+  - [x] 4. Spacing rhythm — accordion uses `space-y-4`; per-item `pl-4 pr-1 py-4`; content `px-4 pb-4 pt-2 space-y-4`. Container `max-w-2xl mx-auto px-4 py-6` matches `TeamSchedule` (sibling player page). Consistent.
+  - [x] 5. Empty state — friendly "You are not currently on any teams" card with Users icon (L466-472).
+  - [x] 6. Loading state — "Loading your teams..." text. Functional but minimal — could be a skeleton; deferred polish.
+  - [x] 7. Error state — `text-destructive` error message on fetch failure (L440-446).
+  - [x] 8. PageHeader correct — `<PageHeader title="My Teams" />`. No `backTo` (correct — top-level destination); no `subtitle` (acceptable, optional); no `organizationId` (correct — player-scoped, multi-org).
+- **Deferred (not in scope for this audit):**
+  - **`<div role="button">` for Quick Score** (L246-266) — nested interactive workaround inside `AccordionTrigger`. Real fix would restructure so Quick Score lives outside the trigger. Tracked for a follow-up component refactor.
+  - **`window.location.href` for navigation** (L256, L286, L380) — full-page reload instead of React Router `useNavigate`. Three call sites. Pre-existing pattern; not introduced or worsened here.
+  - **Minimal loading state** — text-only "Loading your teams..." could be a skeleton. Polish, not consistency.
+- **Pilot workflow notes:**
+  - Per-screen entries are best as a "Status + rubric + Deferred + Notes" 4-block structure (vs the cascade-fix log's "Rubric pass + Consumers downstream"). Different shape, same spirit.
+  - Workflow per screen took ~15 min: read file → cross-reference scan findings → fix → re-scan → update checklist. Manageable.
+  - Status-token mapping isn't always 1:1 with the original color: `yellow` could map to `warning` (status) or kept as text-foreground (body). Semantic choice matters more than literal color match — repeated the guideline from conventions.
 
 #### `TeamSchedule`
 
