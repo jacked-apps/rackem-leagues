@@ -7,7 +7,7 @@ Use it as input to `docs/audits/screen-audit.md` (the per-screen audit checklist
 
 ## Summary
 
-- **Files with unpaired hardcoded colored shades:** 186
+- **Files with unpaired hardcoded colored shades:** 181
 - **Files with native HTML form elements:** 23
 
 ## Cascade priority — shared components
@@ -1335,50 +1335,6 @@ etc.) chosen by semantic meaning, not literal color match._
 - L293: `<span className="text-blue-700"> · self-claim</span>`
 - L374: `<ul className="list-disc list-inside text-red-900 space-y-0.5 mt-1">`
 
-### `src/operator/LeagueDetail.tsx`
-
-- L139: `<h3 className="text-red-600 text-lg font-semibold mb-4">Error</h3>`
-- L143: `className="px-4 py-2 bg-blue-600 text-white rounded-lg"`
-- L209: `iconColor="text-indigo-600"`
-
-### `src/operator/LeagueSettings.tsx`
-
-- L95: `<h3 className="text-red-600 text-lg font-semibold mb-4">Error</h3>`
-- L99: `className="px-4 py-2 bg-blue-600 text-white rounded-lg"`
-- L126: `iconColor="text-blue-600"`
-
-### `src/operator/OperatorDashboard.tsx`
-
-- L74: `iconColor="text-purple-600"`
-- L83: `iconColor="text-green-600"`
-- L92: `iconColor="text-red-600"`
-- L109: `iconColor="text-indigo-600"`
-- L126: `<Card className="bg-blue-50 border-blue-200">`
-- L128: `<CardTitle className="text-lg text-blue-900">Need Help?</CardTitle>`
-- L132: `<Link to="#" className="flex items-center gap-2 text-blue-700 hover:text-blue-900">`
-- L136: `<Link to="#" className="flex items-center gap-2 text-blue-700 hover:text-blue-900">`
-- L140: `<Link to="#" className="flex items-center gap-2 text-blue-700 hover:text-blue-900">`
-- L144: `<Link to="#" className="flex items-center gap-2 text-blue-700 hover:text-blue-900">`
-
-### `src/operator/OperatorWelcome.tsx`
-
-- L43: `<h2 className="text-2xl text-blue-600 font-semibold mb-4">`
-- L58: `<div className="text-center p-6 bg-blue-50 rounded-xl">`
-- L65: `<div className="text-center p-6 bg-green-50 rounded-xl">`
-- L72: `<div className="text-center p-6 bg-purple-50 rounded-xl">`
-- L83: `<div className="mb-10 bg-amber-50 border border-amber-200 rounded-xl p-6">`
-- L84: `<h3 className="text-xl font-bold text-amber-800 mb-4">`
-- L87: `<div className="space-y-3 text-amber-800">`
-- L89: `<span className="font-bold text-amber-600">1.</span>`
-- L93: `<span className="font-bold text-amber-600">2.</span>`
-- L97: `<span className="font-bold text-amber-600">3.</span>`
-- L109: `className="w-full sm:w-auto bg-blue-600 text-white px-8 py-3 text-lg font-semibold"`
-- L117: `className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg font-semibold"`
-- L126: `className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg font-semibold"`
-- L148: `<a href="#" className="text-blue-600 hover:text-blue-800 font-medium">`
-- L151: `<a href="#" className="text-blue-600 hover:text-blue-800 font-medium">`
-- L154: `<a href="#" className="text-blue-600 hover:text-blue-800 font-medium">`
-
 ### `src/operator/OrganizationSettings.tsx`
 
 - L61: `<h3 className="text-red-600 text-lg font-semibold mb-4">Error</h3>`
@@ -1386,34 +1342,6 @@ etc.) chosen by semantic meaning, not literal color match._
 - L114: `iconColor="text-teal-600"`
 - L124: `iconColor="text-blue-600"`
 - L140: `iconColor="text-purple-600"`
-
-### `src/operator/PlayerManagement.tsx`
-
-- L212: `<Card className="rounded-none lg:rounded-xl bg-yellow-50 border-yellow-200">`
-- L217: `className="text-sm font-semibold text-yellow-900"`
-- L259: `<div className="p-3 bg-green-100 rounded-lg">`
-- L260: `<Users className="h-8 w-8 text-green-600" />`
-- L276: `<p className="text-xl font-bold text-amber-600">{playerStats?.placeholders ?? '-'}</p>`
-- L280: `<p className="text-xl font-bold text-blue-600">{playerStats?.identified_placeholders ?? '-'}</p>`
-- L328: `? 'text-green-600'`
-- L330: `? 'text-amber-600'`
-- L429: `<p className="text-xs text-blue-600 hover:text-blue-800 uppercase mb-1">`
-- L436: `? 'text-green-600'`
-- L437: `: 'text-amber-600'`
-- L490: `<Card className="rounded-none lg:rounded-xl border-amber-300 bg-amber-50">`
-- L493: `<AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />`
-- L495: `<p className="font-medium text-amber-800">`
-- L498: `<p className="text-sm text-amber-700 mt-1">`
-- L514: `<div className="p-3 bg-blue-50 rounded-md">`
-- L516: `<p className="text-2xl font-bold text-blue-600">`
-- L610: `? 'text-amber-600'`
-- L624: `? 'text-amber-600'`
-- L640: `className="text-blue-600 hover:text-blue-800 font-medium"`
-- L742: `<div className="p-2 bg-blue-100 rounded-lg">`
-- L743: `<Mail className="h-5 w-5 text-blue-600" />`
-- L749: `<p className="text-2xl font-bold text-blue-600">{pendingCount}</p>`
-- L753: `<p className="text-2xl font-bold text-amber-600">{expiredCount}</p>`
-- L757: `<p className="text-2xl font-bold text-green-600">{claimedCount}</p>`
 
 ### `src/operator/PlayoffSetup.tsx`
 

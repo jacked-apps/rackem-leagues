@@ -10,6 +10,7 @@ import { supabase } from '@/supabaseClient';
 import type { League } from '@/types/league';
 import { parseLocalDate } from '@/utils/formatters';
 import { buildLeagueTitle, getTimeOfYear } from '@/utils/leagueUtils';
+import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
 import { PreferencesCard } from '@/components/operator/PreferencesCard';
 import { DashboardCard } from '@/components/operator/DashboardCard';
@@ -92,14 +93,11 @@ export const LeagueSettings: React.FC = () => {
       <div className="min-h-screen bg-muted py-8">
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="bg-card rounded-xl shadow-sm p-6">
-            <h3 className="text-red-600 text-lg font-semibold mb-4">Error</h3>
+            <h3 className="text-destructive text-lg font-semibold mb-4">Error</h3>
             <p className="text-foreground mb-4">{error || 'League not found'}</p>
-            <button
-              onClick={() => navigate(-1)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg"
-            >
+            <Button onClick={() => navigate(-1)} loadingText="none">
               Go Back
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -123,7 +121,7 @@ export const LeagueSettings: React.FC = () => {
 
           <DashboardCard
             icon={<Building2 className="h-6 w-6" />}
-            iconColor="text-blue-600"
+            iconColor="text-primary"
             title="Venue Management"
             description="Assign venues and set table limits for this league"
             buttonText="Manage Venues"

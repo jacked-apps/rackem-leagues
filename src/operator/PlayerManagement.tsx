@@ -209,12 +209,12 @@ export const PlayerManagement: React.FC = () => {
       <div className="container mx-auto px-0 lg:px-4 py-8 max-w-2xl space-y-6">
         {/* Developer Impersonation Dropdown */}
         {isDeveloper && allOperators && allOperators.length > 0 && (
-          <Card className="rounded-none lg:rounded-xl bg-yellow-50 border-yellow-200">
+          <Card className="rounded-none lg:rounded-xl bg-warning/10 border-warning/40">
             <CardContent className="p-4 lg:p-6">
               <div className="flex flex-col gap-2">
                 <Label
                   htmlFor="impersonate-operator"
-                  className="text-sm font-semibold text-yellow-900"
+                  className="text-sm font-semibold text-warning"
                 >
                   Developer Mode: Impersonate Operator
                 </Label>
@@ -256,8 +256,8 @@ export const PlayerManagement: React.FC = () => {
               <div className="flex items-center gap-6">
                 {/* Main stat: Active Players */}
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-green-100 rounded-lg">
-                    <Users className="h-8 w-8 text-green-600" />
+                  <div className="p-3 bg-success/15 rounded-lg">
+                    <Users className="h-8 w-8 text-success" />
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Active Players</p>
@@ -273,11 +273,11 @@ export const PlayerManagement: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Alias</p>
-                    <p className="text-xl font-bold text-amber-600">{playerStats?.placeholders ?? '-'}</p>
+                    <p className="text-xl font-bold text-warning">{playerStats?.placeholders ?? '-'}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">ID'd</p>
-                    <p className="text-xl font-bold text-blue-600">{playerStats?.identified_placeholders ?? '-'}</p>
+                    <p className="text-xl font-bold text-info">{playerStats?.identified_placeholders ?? '-'}</p>
                   </div>
                 </div>
               </div>
@@ -325,9 +325,9 @@ export const PlayerManagement: React.FC = () => {
                         </p>
                         <p className={`font-medium ${
                           playerDetails.user_id
-                            ? 'text-green-600'
+                            ? 'text-success'
                             : playerDetails.email
-                              ? 'text-amber-600'
+                              ? 'text-warning'
                               : 'text-muted-foreground'
                         }`}>
                           {playerDetails.user_id
@@ -426,15 +426,15 @@ export const PlayerManagement: React.FC = () => {
                           onClick={() => setShowDuesModal(true)}
                           className="text-left w-full hover:bg-muted -m-2 p-2 rounded transition-colors"
                         >
-                          <p className="text-xs text-blue-600 hover:text-blue-800 uppercase mb-1">
+                          <p className="text-xs text-primary uppercase mb-1">
                             Membership Status
                           </p>
                           <p className={`font-medium ${
                             !playerDetails.membership_paid_date
                               ? 'text-muted-foreground'
                               : new Date(playerDetails.membership_paid_date).getFullYear() === new Date().getFullYear()
-                                ? 'text-green-600'
-                                : 'text-amber-600'
+                                ? 'text-success'
+                                : 'text-warning'
                           }`}>
                             {!playerDetails.membership_paid_date
                               ? 'Never Paid'
@@ -487,15 +487,15 @@ export const PlayerManagement: React.FC = () => {
 
                 {/* Unauthorized Player Warning - only show for players who need manual authorization */}
                 {!playerIsAuthorized && (
-                  <Card className="rounded-none lg:rounded-xl border-amber-300 bg-amber-50">
+                  <Card className="rounded-none lg:rounded-xl border-warning/40 bg-warning/10">
                     <CardContent className="p-4 lg:p-6">
                       <div className="flex items-start gap-3">
-                        <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+                        <AlertCircle className="h-5 w-5 text-warning mt-0.5 shrink-0" />
                         <div>
-                          <p className="font-medium text-amber-800">
+                          <p className="font-medium text-warning">
                             Player Not Authorized
                           </p>
-                          <p className="text-sm text-amber-700 mt-1">
+                          <p className="text-sm text-foreground mt-1">
                             This player has {playerDetails.gameCounts.total} of 15 games needed to be established in the system. Set their starting handicaps below to authorize them for use in a restricted league match.
                           </p>
                         </div>
@@ -511,9 +511,9 @@ export const PlayerManagement: React.FC = () => {
                   </CardHeader>
                   <CardContent className="p-4 lg:p-6 pt-0 space-y-4">
                     {/* Total Games */}
-                    <div className="p-3 bg-blue-50 rounded-md">
+                    <div className="p-3 bg-info/10 rounded-md">
                       <p className="text-sm text-muted-foreground">Total Games</p>
-                      <p className="text-2xl font-bold text-blue-600">
+                      <p className="text-2xl font-bold text-info">
                         {playerDetails.gameCounts.total}
                       </p>
                     </div>
@@ -607,7 +607,7 @@ export const PlayerManagement: React.FC = () => {
                           <span
                             className={`font-semibold ${
                               playerDetails.starting_handicap_3v3 === null
-                                ? 'text-amber-600'
+                                ? 'text-warning'
                                 : ''
                             }`}
                           >
@@ -621,7 +621,7 @@ export const PlayerManagement: React.FC = () => {
                           <span
                             className={`font-semibold ${
                               playerDetails.starting_handicap_5v5 === null
-                                ? 'text-amber-600'
+                                ? 'text-warning'
                                 : ''
                             }`}
                           >
@@ -636,8 +636,9 @@ export const PlayerManagement: React.FC = () => {
                     {/* Toggle Link for Starting Handicaps */}
                     <div className="flex items-center justify-center gap-2 mt-4">
                       <button
+                        type="button"
                         onClick={() => setIsHandicapOpen(!isHandicapOpen)}
-                        className="text-blue-600 hover:text-blue-800 font-medium"
+                        className="text-primary hover:text-primary/80 font-medium transition-colors"
                       >
                         {isHandicapOpen
                           ? 'Hide Form'
@@ -739,22 +740,22 @@ export const PlayerManagement: React.FC = () => {
             <CardHeader className="p-4 lg:p-6 pb-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <Mail className="h-5 w-5 text-blue-600" />
+                  <div className="p-2 bg-info/15 rounded-lg">
+                    <Mail className="h-5 w-5 text-info" />
                   </div>
                   <CardTitle>Invites</CardTitle>
                 </div>
                 <div className="flex items-center gap-4 text-sm">
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-blue-600">{pendingCount}</p>
+                    <p className="text-2xl font-bold text-info">{pendingCount}</p>
                     <p className="text-xs text-muted-foreground">Pending</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-amber-600">{expiredCount}</p>
+                    <p className="text-2xl font-bold text-warning">{expiredCount}</p>
                     <p className="text-xs text-muted-foreground">Expired</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-green-600">{claimedCount}</p>
+                    <p className="text-2xl font-bold text-success">{claimedCount}</p>
                     <p className="text-xs text-muted-foreground">Claimed</p>
                   </div>
                 </div>
