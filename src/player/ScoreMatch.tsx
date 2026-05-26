@@ -52,6 +52,7 @@ import {
   decidePendingAction,
   buildConfirmationItem,
   buildVacateConfirmationItem,
+  buildPersonalConfirmContext,
 } from '@/utils/match/pendingConfirmations';
 import { queryKeys } from '@/api/queryKeys';
 import { getTeamStats, getPlayerStats as getPlayerStatsUtil } from '@/types';
@@ -96,6 +97,7 @@ function ScoreMatchBody() {
     homeLineup,
     awayLineup,
     gameResults,
+    gameConfirmations,
     homeThresholds,
     awayThresholds,
     homeTeamRoster,
@@ -498,6 +500,18 @@ function ScoreMatchBody() {
   // Store mutations in ref for use in real-time subscription callback
   mutationsRef.current = mutations;
 
+  // Many-eyes Unit 4: pre-derive the per-person prompt context from
+  // gameConfirmations + my memberId. The scan reads it via a cheap Set/Map
+  // lookup per game (one pass over confirmations here, O(1) per game below).
+  // Staleness is in the SAFE direction: a stale confirmations cache only
+  // causes RE-prompts (the append's no-exact-dup guard absorbs them) — it
+  // can never LOSE a prompt, preserving Layer-1's "delay possible, loss
+  // impossible" guarantee on the data-derived handoff.
+  const personalCtx = useMemo(
+    () => buildPersonalConfirmContext(gameConfirmations, memberId ?? null),
+    [gameConfirmations, memberId]
+  );
+
   // ── State-derived confirmation + vacate handoff ─────────────────────────
   // Neither prompt may depend on catching a live realtime message. On every
   // games change (initial load, realtime tick, catch-up refetch, or the
@@ -505,8 +519,10 @@ function ScoreMatchBody() {
   // the right prompt — so a dropped/missed event (StrictMode remount, socket
   // blip, refresh) can delay the prompt by a few seconds but can never lose it.
   // Two kinds of pending action, both derived from the row:
-  //   • the opponent scored a game I haven't confirmed  → confirm prompt
-  //   • the opponent asked to vacate (undo) a game        → vacate prompt
+  //   • the opponent scored a game I haven't (PERSONALLY) confirmed → confirm prompt
+  //     (Phase 2 per-person: each confirming-side member is prompted until
+  //     they personally vouch, so several can tap to confirm — many-eyes)
+  //   • the opponent asked to vacate (undo) a game                  → vacate prompt
   // Realtime stays the fast path; this is the self-healing backstop. Deduped
   // against the queue, the open modal, the game I'm editing, my own in-flight
   // vacate requests, and games I just acted on (handledConfirmations).
@@ -517,7 +533,8 @@ function ScoreMatchBody() {
         game,
         userTeamId,
         match.home_team_id,
-        autoConfirm
+        autoConfirm,
+        personalCtx
       );
       if (action === 'none') {
         // Server caught up (confirmed/vacated/denied) — re-arm for next time.
@@ -559,6 +576,7 @@ function ScoreMatchBody() {
     editingGame,
     autoConfirm,
     players,
+    personalCtx,
     addToConfirmationQueueFromHook,
   ]);
 

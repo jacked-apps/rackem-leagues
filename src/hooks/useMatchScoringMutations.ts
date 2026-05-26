@@ -277,20 +277,30 @@ export function useMatchScoringMutations({
             result: resultFromGame(existingGame),
           });
         } else {
-          // Normal score confirmation - only update OUR confirmation, don't touch opponent's
+          // Normal score confirmation - only update OUR confirmation, don't touch opponent's.
+          //
+          // Many-eyes Unit 4: gate the column write on `confirmed_by_<my-side> IS NULL`
+          // so only the FIRST per-side vouch sets the officiality column. Extras
+          // (subsequent same-side confirmers via the per-person prompt) silently no-op
+          // on the column write (0 rows affected, no error) but still append their
+          // 'confirm' row below — recording the extra witness without rewriting WHO
+          // the official confirmer was.
           const updateData = isHomeTeam
             ? { confirmed_by_home: memberId }
             : { confirmed_by_away: memberId };
+          const officialityColumn = isHomeTeam ? 'confirmed_by_home' : 'confirmed_by_away';
 
           const { error } = await supabase
             .from('match_games')
             .update(updateData)
-            .eq('id', existingGame.id);
+            .eq('id', existingGame.id)
+            .is(officialityColumn, null);
 
           if (error) throw error;
 
           // Many-eyes: record my vouch for the result I just confirmed.
-          // Officiality (the column above) stays authoritative; this is additive.
+          // Officiality (the column above) stays authoritative — when it's already
+          // set by a teammate, this append is the only record of my extra witness.
           await appendConfirmation({
             gameId: existingGame.id,
             matchId: match.id,

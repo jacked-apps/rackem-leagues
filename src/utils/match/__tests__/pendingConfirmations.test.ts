@@ -14,6 +14,9 @@ import {
   gameHasPendingVacateForMe,
   buildVacateConfirmationItem,
   decidePendingAction,
+  buildPersonalConfirmContext,
+  type ConfirmationRowLike,
+  type PersonalConfirmContext,
 } from '../pendingConfirmations';
 import type { MatchGame, Player } from '@/types';
 
@@ -146,6 +149,191 @@ describe('decidePendingAction', () => {
   it('the scorer side is owed nothing on its own game → none', () => {
     const g = game({ winner_player_id: 'p1', confirmed_by_away: true as unknown as boolean });
     expect(decidePendingAction(g, AWAY, HOME, false)).toBe('none');
+  });
+});
+
+// ── Many-eyes Unit 4: per-person prompt context ─────────────────────────────
+
+const MEMBER_A = 'member-a';
+const MEMBER_B = 'member-b';
+const GAME_1_ID = 'g1';
+
+function confirmRow(overrides: Partial<ConfirmationRowLike>): ConfirmationRowLike {
+  return {
+    game_id: GAME_1_ID,
+    confirmer_id: MEMBER_A,
+    side: 'home',
+    action: 'confirm',
+    created_at: '2026-05-25T12:00:00.000Z',
+    ...overrides,
+  };
+}
+
+describe('buildPersonalConfirmContext', () => {
+  it('records games where MY member id has a confirm row', () => {
+    const ctx = buildPersonalConfirmContext(
+      [
+        confirmRow({ game_id: 'g1', confirmer_id: MEMBER_A }),
+        confirmRow({ game_id: 'g2', confirmer_id: MEMBER_B }),
+        confirmRow({ game_id: 'g3', confirmer_id: MEMBER_A }),
+      ],
+      MEMBER_A
+    );
+    expect(ctx.myVouchedGameIds.has('g1')).toBe(true);
+    expect(ctx.myVouchedGameIds.has('g2')).toBe(false);
+    expect(ctx.myVouchedGameIds.has('g3')).toBe(true);
+  });
+
+  it('ignores vacate markers when counting personal vouches', () => {
+    const ctx = buildPersonalConfirmContext(
+      [confirmRow({ confirmer_id: MEMBER_A, action: 'vacate' })],
+      MEMBER_A
+    );
+    expect(ctx.myVouchedGameIds.size).toBe(0);
+  });
+
+  it('picks the OLDEST confirm row per game as the scoring side', () => {
+    const ctx = buildPersonalConfirmContext(
+      [
+        // Older home vouch — the initial scorer.
+        confirmRow({ side: 'home', created_at: '2026-05-25T12:00:00.000Z' }),
+        // Later away vouch — the confirmer.
+        confirmRow({ side: 'away', created_at: '2026-05-25T12:05:00.000Z' }),
+        // Even later away extra — must not flip the scoring side.
+        confirmRow({ side: 'away', created_at: '2026-05-25T12:10:00.000Z' }),
+      ],
+      MEMBER_A
+    );
+    expect(ctx.scoringSideByGameId.get(GAME_1_ID)).toBe('home');
+  });
+
+  it('ignores vacate markers when deriving the scoring side', () => {
+    const ctx = buildPersonalConfirmContext(
+      [
+        // A vacate marker that's the oldest row — must not be picked.
+        confirmRow({ side: 'home', action: 'vacate', created_at: '2026-05-25T11:00:00.000Z' }),
+        confirmRow({ side: 'away', created_at: '2026-05-25T12:00:00.000Z' }),
+      ],
+      MEMBER_A
+    );
+    expect(ctx.scoringSideByGameId.get(GAME_1_ID)).toBe('away');
+  });
+
+  it('a game with no confirm rows is absent from scoringSideByGameId (predicate falls back)', () => {
+    const ctx = buildPersonalConfirmContext([], MEMBER_A);
+    expect(ctx.scoringSideByGameId.has(GAME_1_ID)).toBe(false);
+  });
+
+  it('memberId === null produces an empty vouched set (safe default)', () => {
+    const ctx = buildPersonalConfirmContext(
+      [confirmRow({ confirmer_id: MEMBER_A })],
+      null
+    );
+    expect(ctx.myVouchedGameIds.size).toBe(0);
+    // Still derives the scoring side.
+    expect(ctx.scoringSideByGameId.get(GAME_1_ID)).toBe('home');
+  });
+});
+
+describe('gameNeedsMyConfirmation — per-person (Phase 2)', () => {
+  function ctxFor(rows: Partial<ConfirmationRowLike>[]): PersonalConfirmContext {
+    return buildPersonalConfirmContext(
+      rows.map((r) => confirmRow(r)),
+      MEMBER_A
+    );
+  }
+
+  it('confirming-side viewer with no personal vouch → prompted', () => {
+    const g = game({ id: GAME_1_ID, winner_player_id: 'p1' });
+    // Home scored; I'm on AWAY with no personal vouch.
+    expect(
+      gameNeedsMyConfirmation(g, AWAY, HOME, ctxFor([{ side: 'home', confirmer_id: MEMBER_B }]))
+    ).toBe(true);
+  });
+
+  it('scoring-side viewer (extras come via Phase-3 tap-to-confirm) → NOT prompted', () => {
+    const g = game({ id: GAME_1_ID, winner_player_id: 'p1' });
+    // Home scored; I'm on HOME — even without a personal vouch, no live prompt.
+    expect(
+      gameNeedsMyConfirmation(g, HOME, HOME, ctxFor([{ side: 'home', confirmer_id: MEMBER_B }]))
+    ).toBe(false);
+  });
+
+  it('already personally vouched → NOT prompted (even if my side has extras pending)', () => {
+    const g = game({ id: GAME_1_ID, winner_player_id: 'p1' });
+    // Home scored; I'm on AWAY and have already personally vouched.
+    expect(
+      gameNeedsMyConfirmation(
+        g,
+        AWAY,
+        HOME,
+        ctxFor([
+          { side: 'home', confirmer_id: MEMBER_B },
+          { side: 'away', confirmer_id: MEMBER_A },
+        ])
+      )
+    ).toBe(false);
+  });
+
+  it('extra witness: my side ALREADY confirmed (column set) but I personally have not → still prompted', () => {
+    const g = game({
+      id: GAME_1_ID,
+      winner_player_id: 'p1',
+      // Both columns set (game is official); ME personally still hasn't vouched.
+      confirmed_by_home: true as unknown as boolean,
+      confirmed_by_away: true as unknown as boolean,
+    });
+    expect(
+      gameNeedsMyConfirmation(
+        g,
+        AWAY,
+        HOME,
+        ctxFor([
+          { side: 'home', confirmer_id: MEMBER_B },
+          // Some other away member confirmed; not me.
+          { side: 'away', confirmer_id: 'other-away-member' },
+        ])
+      )
+    ).toBe(true);
+  });
+
+  it('no confirmations yet (pre-Phase-1 game) → falls back to Layer-1 column logic', () => {
+    const g = game({
+      id: GAME_1_ID,
+      winner_player_id: 'p1',
+      confirmed_by_away: true as unknown as boolean, // opponent scored, mine empty
+    });
+    expect(gameNeedsMyConfirmation(g, HOME, HOME, ctxFor([]))).toBe(true);
+  });
+});
+
+describe('decidePendingAction — per-person', () => {
+  it('vacate request still takes precedence over per-person context', () => {
+    const g = game({ id: GAME_1_ID, winner_player_id: 'p1', vacate_requested_by: 'away' });
+    const ctx = buildPersonalConfirmContext(
+      [confirmRow({ side: 'home', confirmer_id: MEMBER_B })],
+      MEMBER_A
+    );
+    expect(decidePendingAction(g, HOME, HOME, false, ctx)).toBe('vacate');
+  });
+
+  it('scoring-side viewer (with context) → none, regardless of autoConfirm', () => {
+    const g = game({ id: GAME_1_ID, winner_player_id: 'p1' });
+    const ctx = buildPersonalConfirmContext(
+      [confirmRow({ side: 'home', confirmer_id: MEMBER_B })],
+      MEMBER_A
+    );
+    expect(decidePendingAction(g, HOME, HOME, true, ctx)).toBe('none');
+    expect(decidePendingAction(g, HOME, HOME, false, ctx)).toBe('none');
+  });
+
+  it('confirming-side viewer without personal vouch + autoConfirm ON → autoconfirm', () => {
+    const g = game({ id: GAME_1_ID, winner_player_id: 'p1' });
+    const ctx = buildPersonalConfirmContext(
+      [confirmRow({ side: 'home', confirmer_id: MEMBER_B })],
+      MEMBER_A
+    );
+    expect(decidePendingAction(g, AWAY, HOME, true, ctx)).toBe('autoconfirm');
   });
 });
 
