@@ -145,5 +145,22 @@ export interface OrderedPairRecord extends PairRecord {
   readonly gameNumber: number;
 }
 
+/**
+ * **Internal** — Stage 3 (break/rack assignment) output record.
+ *
+ * `OrderedPairRecord` plus the break/rack annotations. The composer
+ * strips `roundIndex` from this shape to produce the outer `GameSlot`
+ * (which has all the same fields except `roundIndex`).
+ *
+ * Not exported from `index.ts`; lives inside the Module.
+ */
+export interface InternalSlot extends OrderedPairRecord {
+  /** Home side action this game. Opposite of `awayAction`. */
+  readonly homeAction: 'breaks' | 'racks';
+
+  /** Away side action this game. Opposite of `homeAction`. */
+  readonly awayAction: 'breaks' | 'racks';
+}
+
 // Re-export GameGeneration for callers that want it from `@/systems/pairings`.
 export type { GameGeneration };
