@@ -43,7 +43,14 @@ import type { MatchGame, ConfirmationQueueItem, Player } from '@/types';
  */
 export interface PersonalConfirmContext {
   myVouchedGameIds: Set<string>;
-  scoringSideByGameId: Map<string, 'home' | 'away'>;
+  /**
+   * Per game id, the SET of sides that have at least one `is_initiator=true`
+   * row (post-latest-vacate). Plural by design — multiple initiators per side
+   * are valid (agreement = stronger confirmation), and cross-side initiations
+   * are possible during the modal-race window (both sides initiated; resolved
+   * by Amendment D's auto-clear path).
+   */
+  initiatorSidesByGameId: Map<string, Set<'home' | 'away'>>;
 }
 
 /**
@@ -56,6 +63,7 @@ export interface ConfirmationRowLike {
   confirmer_id: string | null;
   side: string; // 'home' | 'away' — narrowed below
   action: string; // 'confirm' | 'vacate' — narrowed below
+  is_initiator: boolean;
   created_at: string;
 }
 
@@ -67,23 +75,22 @@ export interface ConfirmationRowLike {
  * - `myVouchedGameIds`: every game id with a `confirm` row whose `confirmer_id`
  *   matches `memberId`. `vacate` markers are deliberately excluded — they
  *   don't count as a personal vouch.
- * - `scoringSideByGameId`: per game, the side from the OLDEST `confirm` row
- *   (the initial scorer's vouch, appended right after the officiality column
- *   write). Tie-broken by created_at ascending; vacate markers ignored. A game
- *   with no `confirm` rows is absent from the map (predicate falls back to
- *   Layer-1 column logic).
+ * - `initiatorSidesByGameId`: per game, the set of sides that have at least
+ *   one `is_initiator=true` row (Amendment C). Replaces the previous
+ *   oldest-row-by-side heuristic with the explicit column. A game with no
+ *   initiator rows is absent from the map (predicate falls back to Layer-1
+ *   column logic).
  *
  * `memberId === null` is safe: `myVouchedGameIds` will be empty (no member can
  * match), so the predicate's per-person check returns "not yet vouched" — the
- * scoring-side filter still keeps the scorer out of prompts.
+ * initiator-side filter still keeps the scorer out of prompts.
  */
 export function buildPersonalConfirmContext(
   confirmations: readonly ConfirmationRowLike[],
   memberId: string | null
 ): PersonalConfirmContext {
   const myVouchedGameIds = new Set<string>();
-  // Track the oldest `confirm` row per game so we can extract its `side`.
-  const oldestConfirmByGame = new Map<string, ConfirmationRowLike>();
+  const initiatorSidesByGameId = new Map<string, Set<'home' | 'away'>>();
 
   for (const row of confirmations) {
     if (row.action !== 'confirm') continue; // vacate markers don't count
@@ -92,20 +99,17 @@ export function buildPersonalConfirmContext(
       myVouchedGameIds.add(row.game_id);
     }
 
-    const current = oldestConfirmByGame.get(row.game_id);
-    if (!current || row.created_at < current.created_at) {
-      oldestConfirmByGame.set(row.game_id, row);
+    if (row.is_initiator && (row.side === 'home' || row.side === 'away')) {
+      let sides = initiatorSidesByGameId.get(row.game_id);
+      if (!sides) {
+        sides = new Set();
+        initiatorSidesByGameId.set(row.game_id, sides);
+      }
+      sides.add(row.side);
     }
   }
 
-  const scoringSideByGameId = new Map<string, 'home' | 'away'>();
-  for (const [gameId, row] of oldestConfirmByGame) {
-    if (row.side === 'home' || row.side === 'away') {
-      scoringSideByGameId.set(gameId, row.side);
-    }
-  }
-
-  return { myVouchedGameIds, scoringSideByGameId };
+  return { myVouchedGameIds, initiatorSidesByGameId };
 }
 
 /**
@@ -145,11 +149,21 @@ export function gameNeedsMyConfirmation(
   if (personal) {
     // Dedup guard: I've already personally vouched → no re-prompt.
     if (personal.myVouchedGameIds.has(game.id)) return false;
-    // If we know who scored, prompt me iff I'm on the confirming (non-scoring) side.
-    const scoringSide = personal.scoringSideByGameId.get(game.id);
-    if (scoringSide) return scoringSide !== mySide;
-    // Else: no confirmations yet for this game (e.g. pre-Phase-1) → fall through
-    // to the Layer-1 column check below.
+
+    // Per-person rule (Amendment C):
+    //   - Prompt me iff the OPPOSITE side has at least one initiator AND MY
+    //     side has none. My side already initiating means I'm on the scoring
+    //     team (extras vouch via Phase-3 tap-to-confirm, not the live prompt).
+    //   - When BOTH sides have initiators (the cross-side modal-race window),
+    //     no live prompt fires — the dispute-banner path (Amendments D + F)
+    //     takes over.
+    const sides = personal.initiatorSidesByGameId.get(game.id);
+    if (sides) {
+      const oppSide: 'home' | 'away' = mySide === 'home' ? 'away' : 'home';
+      return sides.has(oppSide) && !sides.has(mySide);
+    }
+    // Else: no initiator rows yet for this game (pre-Phase-1 or a not-yet-
+    // recorded game) → fall through to the Layer-1 column check below.
   }
 
   const myConfirmed = mySide === 'home' ? game.confirmed_by_home : game.confirmed_by_away;

@@ -47,6 +47,7 @@ function confirm(overrides: Partial<ConfirmationWithResult>): ConfirmationWithRe
     confirmer_id: MEMBER_A,
     side: 'away',
     action: 'confirm',
+    is_initiator: false,
     created_at: '2026-05-25T12:00:00.000Z',
     winner_team_id: HOME_TEAM,
     winner_player_id: PLAYER_X,

@@ -45,6 +45,7 @@ export interface ConfirmationWithResult extends ResultLike {
   confirmer_id: string | null;
   side: string; // 'home' | 'away' — narrowed in output
   action: string; // 'confirm' | 'vacate'
+  is_initiator: boolean; // Amendment B — surfaced here for Amendment F (dispute detection)
   created_at: string;
 }
 
