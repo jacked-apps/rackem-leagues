@@ -48,6 +48,7 @@ import { TiebreakerScoreboard } from '@/components/scoring/TiebreakerScoreboard'
 import { GamesList } from '@/components/scoring/GamesList';
 import { DissentFlag } from '@/components/scoring/DissentFlag';
 import { DisputeBanner } from '@/components/scoring/DisputeBanner';
+import { DisputeDetailModal } from '@/components/scoring/DisputeDetailModal';
 import {
   deriveDissents,
   type GameForDissent,
@@ -83,6 +84,10 @@ function ScoreMatchBody() {
 
   // Verification state
   const [isVerifying, setIsVerifying] = useState(false);
+
+  // Many-eyes Amendment G: which disputed game (if any) is open in the
+  // detail modal. `null` = modal closed.
+  const [disputeDetailGameId, setDisputeDetailGameId] = useState<string | null>(null);
 
   // Ref to store mutations for use in real-time subscription
   // Holds the latest `mutations` object returned by useMatchScoringMutations
@@ -959,12 +964,28 @@ function ScoreMatchBody() {
         />
       )}
 
-      {/* Many-eyes Layer-2 / Amendment F: persistent dispute banner.
-          Auto-cleared games (two initiators disagreed via Amendment D)
-          surface here — loud, visible to everyone, ordered above dissent
-          flags because the integrity risk is higher. Amendment G will wire
-          the click handler to open a side-by-side detail modal. */}
-      <DisputeBanner disputes={disputes} />
+      {/* Many-eyes Layer-2 / Amendment F + G: persistent dispute banner +
+          tap-to-see-conflicts detail modal. Auto-cleared games (two initiators
+          disagreed via Amendment D) surface here — loud, visible to everyone,
+          ordered above dissent flags because the integrity risk is higher.
+          Tapping a row opens the side-by-side detail modal (Amendment G).
+          Re-scoring happens via the normal player-tap flow in the games list
+          (the modal is informational; no Re-score button by design). */}
+      <DisputeBanner
+        disputes={disputes}
+        onDisputeClick={setDisputeDetailGameId}
+      />
+      <DisputeDetailModal
+        dispute={
+          disputeDetailGameId
+            ? disputes.find((d) => d.game_id === disputeDetailGameId) ?? null
+            : null
+        }
+        onOpenChange={(open) => {
+          if (!open) setDisputeDetailGameId(null);
+        }}
+        getPlayerDisplayName={getPlayerDisplayName}
+      />
 
       {/* Many-eyes Layer-2 / Unit 5: team-visible dissent flag.
           One flag per game with a differing vouch from my side; calm
