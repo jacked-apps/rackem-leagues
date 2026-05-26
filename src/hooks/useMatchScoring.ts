@@ -36,6 +36,13 @@ interface UseMatchScoringOptions {
   memberId: string | undefined | null;
   matchType: MatchType;
   autoConfirm?: boolean;
+  /**
+   * Game number the user currently has the initiator (scoring) modal open
+   * for — passed through to the realtime handler so it can suppress the
+   * confirm-opponent prompt for that game (Amendment H). ScoreMatch owns
+   * this state; this hook just forwards it.
+   */
+  scoringGame?: { gameNumber: number } | null;
 }
 
 // ============================================================================
@@ -47,6 +54,7 @@ export function useMatchScoring({
   memberId,
   matchType,
   autoConfirm = false,
+  scoringGame = null,
 }: UseMatchScoringOptions) {
   const queryClient = useQueryClient();
 
@@ -482,6 +490,7 @@ export function useMatchScoring({
       myVacateRequests,
       addToConfirmationQueue,
       autoConfirm,
+      scoringGame,
     },
   });
 

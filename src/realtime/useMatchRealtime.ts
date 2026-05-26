@@ -171,6 +171,15 @@ interface GameUpdateOptions {
   addToConfirmationQueue: (confirmation: ConfirmationQueueItem) => void;
   /** Current editing game (to suppress own vacate requests) */
   editingGame?: { gameNumber: number; currentWinnerName: string } | null;
+  /**
+   * Game number the viewer currently has the initiator (scoring) modal open
+   * for. When set, the realtime handler suppresses confirm-opponent queue
+   * entries for that game — the user's high-effort initiator submission will
+   * trigger Amendment D's race-handling (agree → strong confirmation; differ
+   * → auto-clear), so a stacked confirm modal would be both redundant and
+   * UX-broken. Phase 2 Amendment H.
+   */
+  scoringGame?: { gameNumber: number } | null;
   /** Auto-confirm setting. When on, this fast-path skips the modal and lets
    *  the state-derived scan in ScoreMatch perform the auto-confirm — keeping
    *  auto-confirm a single decision site (no duplicate write). */
@@ -329,6 +338,7 @@ export function useMatchRealtime(
               myVacateRequests,
               addToConfirmationQueue,
               editingGame = null,
+              scoringGame = null,
               autoConfirm = false,
             } = currentGameUpdateOptions;
 
@@ -381,6 +391,18 @@ export function useMatchRealtime(
               const needMyConfirmation = (isHomeTeamScorer && !iAmHome) || (isAwayTeamScorer && iAmHome);
 
               if (needMyConfirmation) {
+                // Amendment H: suppress the confirm queue entry when the user
+                // has their initiator (scoring) modal open for this same game.
+                // Their submit will trigger Amendment D's race-detection
+                // (agree → silent strong confirmation; differ → auto-clear).
+                // Stacking a confirm-opponent modal on top of their open
+                // initiator would be both redundant and UX-broken.
+                if (
+                  scoringGame &&
+                  scoringGame.gameNumber === updatedGame.game_number
+                ) {
+                  return;
+                }
                 // Auto-confirm on: skip the modal here and let the state-derived
                 // scan in ScoreMatch perform the auto-confirm. Keeping auto-confirm
                 // a single decision site avoids this fast-path and the scan both

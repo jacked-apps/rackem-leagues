@@ -106,6 +106,19 @@ function ScoreMatchBody() {
   // once the data shows it no longer needs my confirmation (server caught up).
   const handledConfirmations = useRef<Set<number>>(new Set());
 
+  // Scoring modal state — declared up here (rather than next to the other
+  // local UI state below) so Amendment H can pass it through useMatchScoring
+  // into useMatchRealtime's gameUpdateOptions. The realtime handler reads it
+  // to suppress the confirm-opponent prompt while the user's own initiator
+  // modal is open for the same game.
+  const [scoringGame, setScoringGame] = useState<{
+    gameNumber: number;
+    winnerTeamId: string;
+    winnerPlayerId: string;
+    winnerPlayerName: string;
+    winnerWasScheduledBreaker: boolean;
+  } | null>(null);
+
   // Use central scoring hook (replaces all manual data fetching)
   const {
     match,
@@ -135,6 +148,12 @@ function ScoreMatchBody() {
     memberId,
     matchType: '3v3',
     autoConfirm,
+    // Amendment H: forward the open-initiator state so the realtime handler
+    // can suppress confirm-opponent queue entries for that game while the
+    // user is mid-fill (the user's submit will trigger Amendment D's
+    // race-handling — a stacked confirm modal would be redundant + UX-broken).
+    // Narrow to just the gameNumber the realtime handler reads.
+    scoringGame: scoringGame ? { gameNumber: scoringGame.gameNumber } : null,
   });
 
   // Get user's team roster from the hook (already fetched for both teams)
@@ -224,14 +243,8 @@ function ScoreMatchBody() {
     },
   });
 
-  // Scoring modal state
-  const [scoringGame, setScoringGame] = useState<{
-    gameNumber: number;
-    winnerTeamId: string;
-    winnerPlayerId: string;
-    winnerPlayerName: string;
-    winnerWasScheduledBreaker: boolean;
-  } | null>(null);
+  // (scoringGame state lives above useMatchScoring so Amendment H can thread
+  // it into the realtime handler — see declaration near the top of the body.)
   const [breakAndRun, setBreakAndRun] = useState(false);
   const [goldenBreak, setGoldenBreak] = useState(false);
   // Unit 11b: configurable scoring fields. All default false/null; Fargo
@@ -607,6 +620,9 @@ function ScoreMatchBody() {
       if (confirmationGame?.gameNumber === game.game_number) return; // showing
       if (confirmationQueue.some((c) => c.gameNumber === game.game_number)) return; // queued
       if (editingGame?.gameNumber === game.game_number) return; // I'm editing it
+      // Amendment H: my own initiator modal is open for this game — my submit
+      // will trigger Amendment D's race-handling, so don't stack a confirm prompt.
+      if (scoringGame?.gameNumber === game.game_number) return;
       if (myVacateRequests.current.has(game.game_number)) return; // my own action
       if (handledConfirmations.current.has(game.game_number)) return; // just acted
 
@@ -637,6 +653,7 @@ function ScoreMatchBody() {
     confirmationGame,
     confirmationQueue,
     editingGame,
+    scoringGame,
     autoConfirm,
     players,
     personalCtx,
