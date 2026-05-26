@@ -44,9 +44,9 @@ export const FiveManFormatDetails: React.FC = () => {
             The 5-man team format is a modern approach to league pool that prioritizes player experience,
             faster matches, and fair competition through an innovative handicap system.
           </p>
-          <div className="bg-blue-50 p-4 rounded-md border border-blue-200">
-            <p className="font-semibold text-blue-900">Key Benefits:</p>
-            <ul className="list-disc ml-5 mt-2 text-blue-800">
+          <div className="bg-info/10 p-4 rounded-md border border-info/40">
+            <p className="font-semibold text-info">Key Benefits:</p>
+            <ul className="list-disc ml-5 mt-2 text-foreground">
               <li>Matches finish 28% faster (2-2.5 hours vs 3-4 hours)</li>
               <li>More playing time per person (6 games vs 5 games)</li>
               <li>Less crowded tables (6 shooters vs 10 shooters)</li>
@@ -56,12 +56,12 @@ export const FiveManFormatDetails: React.FC = () => {
             </ul>
           </div>
 
-          <div className="bg-yellow-50 p-4 rounded-md border border-yellow-200 mt-4">
-            <p className="text-sm text-yellow-900 mb-2">
+          <div className="bg-warning/10 p-4 rounded-md border border-warning/40 mt-4">
+            <p className="text-sm text-warning mb-2">
               <strong>We know this is a lot to read.</strong> This system was designed by a league operator with 15 years
               of experience running leagues and extensive playing experience in both traditional BCA and APA formats.
             </p>
-            <p className="text-sm text-yellow-800">
+            <p className="text-sm text-foreground">
               We believe this is by far the best system available - more fair than traditional BCA while still
               weighted toward higher skilled players (unlike APA). Every detail has been refined through real-world
               experience to create the fairest, most enjoyable league format possible.
@@ -93,9 +93,9 @@ export const FiveManFormatDetails: React.FC = () => {
               </ul>
             </div>
 
-            <div className="bg-yellow-50 p-4 rounded-md border border-yellow-200">
-              <h4 className="font-semibold text-yellow-900 mb-2">Important: All 18 Games Are Played</h4>
-              <p className="text-sm text-yellow-800">
+            <div className="bg-warning/10 p-4 rounded-md border border-warning/40">
+              <h4 className="font-semibold text-warning mb-2">Important: All 18 Games Are Played</h4>
+              <p className="text-sm text-foreground">
                 All 18 games are played to completion regardless of when a team clinches victory.
                 This ensures every player's performance is tracked for accurate handicap calculations.
               </p>
@@ -195,7 +195,7 @@ export const FiveManFormatDetails: React.FC = () => {
             <div>
               <h3 className="text-lg font-semibold text-foreground mb-3">Skill Level Calculation</h3>
 
-              <div className="bg-blue-50 p-4 rounded-md border border-blue-200">
+              <div className="bg-info/10 p-4 rounded-md border border-info/40">
                 <p className="font-mono text-center text-lg mb-2">
                   Skill Level = (Wins - Losses) ÷ Weeks Played
                 </p>
@@ -232,13 +232,13 @@ export const FiveManFormatDetails: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="bg-yellow-50 p-4 rounded-md border border-yellow-200 mt-4">
-                  <p className="font-semibold text-yellow-900 mb-2">Starting Skill Level</p>
-                  <p className="text-sm text-yellow-800">
+                <div className="bg-warning/10 p-4 rounded-md border border-warning/40 mt-4">
+                  <p className="font-semibold text-warning mb-2">Starting Skill Level</p>
+                  <p className="text-sm text-foreground">
                     All players start as <strong>skill level 0</strong> and remain at 0 for their first 3 matches (18 games).
                     After week 3, their skill level is calculated based on actual performance.
                   </p>
-                  <p className="text-xs text-yellow-700 mt-2 italic">
+                  <p className="text-xs text-warning mt-2 italic">
                     * Exception: Operators can manually adjust the starting skill level for players who are known to be
                     highly skilled or very unskilled. This manual override only applies for the first 3 weeks.
                   </p>
@@ -252,7 +252,7 @@ export const FiveManFormatDetails: React.FC = () => {
                 The team handicap for each match is calculated by combining individual skill levels
                 with a team modifier based on standings:
               </p>
-              <div className="bg-blue-50 p-4 rounded-md border border-blue-200 mb-4">
+              <div className="bg-info/10 p-4 rounded-md border border-info/40 mb-4">
                 <p className="font-mono text-center text-lg mb-2">
                   Team Handicap = (Player 1 + Player 2 + Player 3) + Team Modifier
                 </p>
@@ -280,7 +280,7 @@ export const FiveManFormatDetails: React.FC = () => {
                   <div className="space-y-2">
                     <p className="font-semibold text-foreground">Team Modifier Examples:</p>
 
-                    <div className="bg-blue-50 p-3 rounded-md border border-blue-200">
+                    <div className="bg-info/10 p-3 rounded-md border border-info/40">
                       <p className="text-sm text-foreground">
                         <strong>Team A (home) vs Team B (away):</strong><br />
                         Win difference: 8 - 7 = 1 win ahead<br />
@@ -288,7 +288,7 @@ export const FiveManFormatDetails: React.FC = () => {
                       </p>
                     </div>
 
-                    <div className="bg-blue-50 p-3 rounded-md border border-blue-200">
+                    <div className="bg-info/10 p-3 rounded-md border border-info/40">
                       <p className="text-sm text-foreground">
                         <strong>Team A (home) vs Team C (away):</strong><br />
                         Win difference: 8 - 5 = 3 wins ahead<br />
@@ -296,7 +296,7 @@ export const FiveManFormatDetails: React.FC = () => {
                       </p>
                     </div>
 
-                    <div className="bg-blue-50 p-3 rounded-md border border-blue-200">
+                    <div className="bg-info/10 p-3 rounded-md border border-info/40">
                       <p className="text-sm text-foreground">
                         <strong>Team A (home) vs Team D (away):</strong><br />
                         Win difference: 8 - 4 = 4 wins ahead<br />
@@ -304,7 +304,7 @@ export const FiveManFormatDetails: React.FC = () => {
                       </p>
                     </div>
 
-                    <div className="bg-blue-50 p-3 rounded-md border border-blue-200">
+                    <div className="bg-info/10 p-3 rounded-md border border-info/40">
                       <p className="text-sm text-foreground">
                         <strong>Team D (home) vs Team B (away):</strong><br />
                         Win difference: 4 - 7 = 3 wins behind<br />
@@ -312,9 +312,9 @@ export const FiveManFormatDetails: React.FC = () => {
                       </p>
                     </div>
 
-                    <div className="bg-green-50 p-3 rounded-md border border-green-200 mt-4">
-                      <p className="font-semibold text-green-900 mb-1">Why This Matters:</p>
-                      <p className="text-sm text-green-800">
+                    <div className="bg-success/10 p-3 rounded-md border border-success/40 mt-4">
+                      <p className="font-semibold text-success mb-1">Why This Matters:</p>
+                      <p className="text-sm text-foreground">
                         This system keeps the standings competitive throughout the season. It prevents runaway leaders from
                         dominating unchallenged and ensures teams at the top must continue playing their best. Lower-ranked
                         teams get a fair chance to climb back up, maintaining excitement and engagement for all teams until
@@ -332,7 +332,7 @@ export const FiveManFormatDetails: React.FC = () => {
               {/* Two column layout: 2/3 text, 1/3 chart */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {/* Left column - Example Calculation (2/3 width) */}
-                <div className="lg:col-span-2 bg-blue-50 p-4 rounded-md border border-blue-200">
+                <div className="lg:col-span-2 bg-info/10 p-4 rounded-md border border-info/40">
                   <p className="font-semibold text-foreground mb-3 text-base">Example Calculation:</p>
 
                   <div className="space-y-3">
@@ -354,7 +354,7 @@ export const FiveManFormatDetails: React.FC = () => {
                       </p>
                     </div>
 
-                    <div className="pt-2 border-t border-blue-300">
+                    <div className="pt-2 border-t border-info/40">
                       <p className="text-foreground mb-2">
                         <strong>Handicap Difference:</strong><br />
                         Team A: 6 - 0 = <strong className="text-xl">+6</strong><br />
@@ -380,7 +380,7 @@ export const FiveManFormatDetails: React.FC = () => {
                     </div>
                   </div>
 
-                  <p className="text-sm text-blue-800 mt-3 font-medium italic">
+                  <p className="text-sm text-foreground mt-3 font-medium italic">
                     Both teams have a realistic path to victory - keeping matches competitive and engaging.
                   </p>
                 </div>
@@ -396,9 +396,9 @@ export const FiveManFormatDetails: React.FC = () => {
                       <thead>
                         <tr className="border-b-2 border-gray-400">
                           <th className="text-center py-2 px-1 bg-accent">H/C</th>
-                          <th className="text-center py-2 px-1 bg-green-100">Win</th>
-                          <th className="text-center py-2 px-1 bg-yellow-100">Tie</th>
-                          <th className="text-center py-2 px-1 bg-red-100">Loss</th>
+                          <th className="text-center py-2 px-1 bg-success/15">Win</th>
+                          <th className="text-center py-2 px-1 bg-warning/15">Tie</th>
+                          <th className="text-center py-2 px-1 bg-destructive/15">Loss</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
@@ -414,7 +414,7 @@ export const FiveManFormatDetails: React.FC = () => {
                         <tr><td className="py-1 px-1 text-center font-mono">+3</td><td className="py-1 px-1 text-center">11</td><td className="py-1 px-1 text-center">—</td><td className="py-1 px-1 text-center">10</td></tr>
                         <tr><td className="py-1 px-1 text-center font-mono">+2</td><td className="py-1 px-1 text-center">11</td><td className="py-1 px-1 text-center">10</td><td className="py-1 px-1 text-center">9</td></tr>
                         <tr><td className="py-1 px-1 text-center font-mono">+1</td><td className="py-1 px-1 text-center">10</td><td className="py-1 px-1 text-center">—</td><td className="py-1 px-1 text-center">9</td></tr>
-                        <tr className="bg-blue-50"><td className="py-1 px-1 text-center font-mono font-bold">0</td><td className="py-1 px-1 text-center font-bold">10</td><td className="py-1 px-1 text-center font-bold">9</td><td className="py-1 px-1 text-center font-bold">8</td></tr>
+                        <tr className="bg-info/10"><td className="py-1 px-1 text-center font-mono font-bold">0</td><td className="py-1 px-1 text-center font-bold">10</td><td className="py-1 px-1 text-center font-bold">9</td><td className="py-1 px-1 text-center font-bold">8</td></tr>
                         <tr><td className="py-1 px-1 text-center font-mono">-1</td><td className="py-1 px-1 text-center">9</td><td className="py-1 px-1 text-center">—</td><td className="py-1 px-1 text-center">8</td></tr>
                         <tr><td className="py-1 px-1 text-center font-mono">-2</td><td className="py-1 px-1 text-center">9</td><td className="py-1 px-1 text-center">8</td><td className="py-1 px-1 text-center">7</td></tr>
                         <tr><td className="py-1 px-1 text-center font-mono">-3</td><td className="py-1 px-1 text-center">8</td><td className="py-1 px-1 text-center">—</td><td className="py-1 px-1 text-center">7</td></tr>
@@ -448,9 +448,9 @@ export const FiveManFormatDetails: React.FC = () => {
               If the match ends in a tie after all 18 games, one additional round is played to determine the match winner:
             </p>
 
-            <div className="bg-blue-50 p-4 rounded-md border border-blue-200">
-              <h4 className="font-semibold text-blue-900 mb-3">Playoff Rules:</h4>
-              <ul className="list-disc ml-5 text-sm text-blue-800 space-y-2">
+            <div className="bg-info/10 p-4 rounded-md border border-info/40">
+              <h4 className="font-semibold text-info mb-3">Playoff Rules:</h4>
+              <ul className="list-disc ml-5 text-sm text-foreground space-y-2">
                 <li>
                   <strong>Best 2 out of 3:</strong> Teams play up to 3 games. First team to win 2 games wins the match.
                   If one team wins the first two games, the third game is not played.
@@ -465,12 +465,12 @@ export const FiveManFormatDetails: React.FC = () => {
               </ul>
             </div>
 
-            <div className="bg-green-50 p-4 rounded-md border border-green-200">
-              <h4 className="font-semibold text-green-900 mb-2">Playoff Handicap Scoring:</h4>
-              <p className="text-sm text-green-800 mb-2">
+            <div className="bg-success/10 p-4 rounded-md border border-success/40">
+              <h4 className="font-semibold text-success mb-2">Playoff Handicap Scoring:</h4>
+              <p className="text-sm text-foreground mb-2">
                 Playoff results affect player handicaps differently than regular games:
               </p>
-              <ul className="list-disc ml-5 text-sm text-green-800 space-y-1">
+              <ul className="list-disc ml-5 text-sm text-foreground space-y-1">
                 <li>
                   <strong>Winning Team:</strong> All 3 players in the playoff each get <strong>+1 win</strong> counted toward their handicap,
                   even if one of them lost their individual game.
@@ -480,7 +480,7 @@ export const FiveManFormatDetails: React.FC = () => {
                   Their handicaps remain unchanged.
                 </li>
               </ul>
-              <p className="text-xs text-green-700 mt-3 italic">
+              <p className="text-xs text-success mt-3 italic">
                 This team-based scoring for playoffs ensures players are incentivized to play their best without being
                 individually penalized for a tie-breaker loss.
               </p>
@@ -498,25 +498,25 @@ export const FiveManFormatDetails: React.FC = () => {
             </p>
 
             <div className="space-y-4">
-              <div className="bg-blue-50 p-4 rounded-md border border-blue-200">
-                <h4 className="font-semibold text-blue-900 mb-2">1. Team Match Wins (Primary)</h4>
-                <p className="text-sm text-blue-800 mb-2">
+              <div className="bg-info/10 p-4 rounded-md border border-info/40">
+                <h4 className="font-semibold text-info mb-2">1. Team Match Wins (Primary)</h4>
+                <p className="text-sm text-foreground mb-2">
                   After each match night, a team either wins or loses the match based on whether they reached their target games.
                   This is the <strong>most important factor</strong> in determining standings.
                 </p>
-                <p className="text-xs text-blue-700 italic">
+                <p className="text-xs text-info italic">
                   Example: A team with 8 match wins and 2 match losses is ranked higher than a team with 7 wins and 3 losses,
                   regardless of other factors.
                 </p>
               </div>
 
-              <div className="bg-green-50 p-4 rounded-md border border-green-200">
-                <h4 className="font-semibold text-green-900 mb-2">2. Team Points (Secondary)</h4>
-                <p className="text-sm text-green-800 mb-3">
+              <div className="bg-success/10 p-4 rounded-md border border-success/40">
+                <h4 className="font-semibold text-success mb-2">2. Team Points (Secondary)</h4>
+                <p className="text-sm text-foreground mb-3">
                   If teams have the same number of match wins, team points are used to break the tie.
                   Points are earned or lost based on performance beyond your target:
                 </p>
-                <ul className="list-disc ml-5 text-sm text-green-800 space-y-2">
+                <ul className="list-disc ml-5 text-sm text-foreground space-y-2">
                   <li>
                     <strong>Winning by more than needed:</strong> If you need 12 games to win and you win 14 games,
                     you earn <strong>+2 team points</strong>
@@ -529,18 +529,18 @@ export const FiveManFormatDetails: React.FC = () => {
                     <strong>Ties:</strong> Ties always result in <strong>0 team points</strong>, regardless of games won or lost
                   </li>
                 </ul>
-                <p className="text-xs text-green-700 mt-2 italic">
+                <p className="text-xs text-success mt-2 italic">
                   Team points accumulate throughout the season, rewarding dominant performances and penalizing poor showings.
                 </p>
               </div>
 
-              <div className="bg-yellow-50 p-4 rounded-md border border-yellow-200">
-                <h4 className="font-semibold text-yellow-900 mb-2">3. Total Games Won (Tie-Breaker)</h4>
-                <p className="text-sm text-yellow-800 mb-2">
+              <div className="bg-warning/10 p-4 rounded-md border border-warning/40">
+                <h4 className="font-semibold text-warning mb-2">3. Total Games Won (Tie-Breaker)</h4>
+                <p className="text-sm text-foreground mb-2">
                   If teams have identical match wins <strong>and</strong> identical team points, the total number of
                   individual games won by all players across the entire season is used as the final tie-breaker.
                 </p>
-                <p className="text-xs text-yellow-700 italic">
+                <p className="text-xs text-warning italic">
                   Note: This scenario is extremely rare - in 15 years of operation, teams tying on both match wins and
                   team points has only occurred a handful of times. All three categories tying has never been observed.
                 </p>
@@ -607,48 +607,48 @@ export const FiveManFormatDetails: React.FC = () => {
             </p>
 
             <div className="space-y-3">
-              <div className="bg-green-50 p-4 rounded-md border border-green-200">
-                <h4 className="font-semibold text-green-900 mb-2">✓ Transparent Calculations</h4>
-                <p className="text-sm text-green-800">
+              <div className="bg-success/10 p-4 rounded-md border border-success/40">
+                <h4 className="font-semibold text-success mb-2">✓ Transparent Calculations</h4>
+                <p className="text-sm text-foreground">
                   The simple formula (Wins - Losses ÷ Weeks) is easy to understand and verify.
                   Players can see exactly how their handicap is calculated - no mysterious adjustments or subjective decisions.
                 </p>
               </div>
 
-              <div className="bg-green-50 p-4 rounded-md border border-green-200">
-                <h4 className="font-semibold text-green-900 mb-2">✓ Team Modifier Balancing</h4>
-                <p className="text-sm text-green-800">
+              <div className="bg-success/10 p-4 rounded-md border border-success/40">
+                <h4 className="font-semibold text-success mb-2">✓ Team Modifier Balancing</h4>
+                <p className="text-sm text-foreground">
                   Teams that dominate the standings get a positive modifier that makes it harder to win,
                   while struggling teams get help through negative modifiers. This keeps competition fair
                   and prevents runaway leaders.
                 </p>
               </div>
 
-              <div className="bg-green-50 p-4 rounded-md border border-green-200">
-                <h4 className="font-semibold text-green-900 mb-2">✓ Every Single Game Matters</h4>
-                <p className="text-sm text-green-800">
+              <div className="bg-success/10 p-4 rounded-md border border-success/40">
+                <h4 className="font-semibold text-success mb-2">✓ Every Single Game Matters</h4>
+                <p className="text-sm text-foreground">
                   Because the team modifier keeps standings competitive, team points become crucial for ranking.
                   Every game won or lost directly affects team points, which means every game has real impact on your
                   season placement. Players stay engaged and motivated throughout the entire match.
                 </p>
               </div>
 
-              <div className="bg-green-50 p-4 rounded-md border border-green-200">
-                <h4 className="font-semibold text-green-900 mb-2">✓ Handicap Responsiveness</h4>
-                <p className="text-sm text-green-800 mb-2">
+              <div className="bg-success/10 p-4 rounded-md border border-success/40">
+                <h4 className="font-semibold text-success mb-2">✓ Handicap Responsiveness</h4>
+                <p className="text-sm text-foreground mb-2">
                   Skill levels recalculate every week based on actual performance. The system (by default, but adjustable
                   by the operator) counts the most recent 250 games a player has played to calculate their handicap.
                 </p>
-                <p className="text-sm text-green-800">
+                <p className="text-sm text-foreground">
                   This amount provides stability - one or two bad nights won't drastically change your handicap - while
                   remaining responsive enough to stay current with a player's actual skill level. Players can't stay at
                   a low handicap if they're winning consistently.
                 </p>
               </div>
 
-              <div className="bg-green-50 p-4 rounded-md border border-green-200">
-                <h4 className="font-semibold text-green-900 mb-2">✓ Hard to Game</h4>
-                <p className="text-sm text-green-800">
+              <div className="bg-success/10 p-4 rounded-md border border-success/40">
+                <h4 className="font-semibold text-success mb-2">✓ Hard to Game</h4>
+                <p className="text-sm text-foreground">
                   To maintain a false low handicap, a player would need to lose consistently, which means
                   their team loses and they accumulate negative team points.
                 </p>
@@ -702,23 +702,23 @@ export const FiveManFormatDetails: React.FC = () => {
 
           <ul className="space-y-3 text-foreground">
             <li className="flex items-start">
-              <span className="text-green-600 font-bold mr-2">✓</span>
+              <span className="text-success font-bold mr-2">✓</span>
               <span><strong>Easier Team Building:</strong> Only need 5 players instead of 8+ to field a team</span>
             </li>
             <li className="flex items-start">
-              <span className="text-green-600 font-bold mr-2">✓</span>
+              <span className="text-success font-bold mr-2">✓</span>
               <span><strong>Better Venue Relations:</strong> Shorter matches mean less table time required. Busy venues may rent tables earlier for additional revenue.</span>
             </li>
             <li className="flex items-start">
-              <span className="text-green-600 font-bold mr-2">✓</span>
+              <span className="text-success font-bold mr-2">✓</span>
               <span><strong>Fewer Complaints:</strong> Transparent and robust handicap system reduces disputes</span>
             </li>
             <li className="flex items-start">
-              <span className="text-green-600 font-bold mr-2">✓</span>
+              <span className="text-success font-bold mr-2">✓</span>
               <span><strong>Higher Retention:</strong> Players stay engaged when they play more and wait less</span>
             </li>
             <li className="flex items-start">
-              <span className="text-green-600 font-bold mr-2">✓</span>
+              <span className="text-success font-bold mr-2">✓</span>
               <span><strong>Eliminates Bias:</strong> Operators have no control over individual handicaps (except initial 3-week assignments). Handicaps come directly from each player's record, allowing operators to deflect complaints with "Your handicap reflects your performance - I can't change your record."</span>
             </li>
           </ul>

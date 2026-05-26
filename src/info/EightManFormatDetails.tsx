@@ -45,9 +45,9 @@ export const EightManFormatDetails: React.FC = () => {
             used for decades in pool leagues across the country. It's familiar to experienced players and
             follows well-established rules and handicap systems.
           </p>
-          <div className="bg-blue-50 p-4 rounded-md border border-blue-200">
-            <p className="font-semibold text-blue-900">Key Characteristics:</p>
-            <ul className="list-disc ml-5 mt-2 text-blue-800">
+          <div className="bg-info/10 p-4 rounded-md border border-info/40">
+            <p className="font-semibold text-info">Key Characteristics:</p>
+            <ul className="list-disc ml-5 mt-2 text-foreground">
               <li>Traditional format with established history</li>
               <li>Larger rosters (8+ players per team)</li>
               <li>BCA standard handicap tables</li>
@@ -104,17 +104,17 @@ export const EightManFormatDetails: React.FC = () => {
               from 2 to 7, based on demonstrated ability and performance.
             </p>
 
-            <div className="bg-yellow-50 p-4 rounded-md border border-yellow-200">
-              <p className="font-semibold text-yellow-900 mb-2">Traditional Approach:</p>
-              <p className="text-sm text-yellow-800">
+            <div className="bg-warning/10 p-4 rounded-md border border-warning/40">
+              <p className="font-semibold text-warning mb-2">Traditional Approach:</p>
+              <p className="text-sm text-foreground">
                 Skill levels are often assigned based on observation and adjusted manually by the league operator
                 or handicap committee. This can lead to subjective decisions and occasional disputes about fair ratings.
               </p>
             </div>
 
-            <div className="bg-blue-50 p-4 rounded-md border border-blue-200">
-              <p className="font-semibold text-blue-900 mb-2">BCA Handicap Tables:</p>
-              <p className="text-sm text-blue-800">
+            <div className="bg-info/10 p-4 rounded-md border border-info/40">
+              <p className="font-semibold text-info mb-2">BCA Handicap Tables:</p>
+              <p className="text-sm text-foreground">
                 Pre-calculated tables determine how many games are needed to win based on the skill level
                 difference between players. These tables are standardized across BCA leagues.
               </p>
@@ -137,9 +137,9 @@ export const EightManFormatDetails: React.FC = () => {
               </ul>
             </div>
 
-            <div className="bg-yellow-50 p-4 rounded-md border border-yellow-200 mt-4">
-              <h4 className="font-semibold text-yellow-900 mb-2">Considerations:</h4>
-              <ul className="list-disc ml-5 text-sm text-yellow-800 space-y-1">
+            <div className="bg-warning/10 p-4 rounded-md border border-warning/40 mt-4">
+              <h4 className="font-semibold text-warning mb-2">Considerations:</h4>
+              <ul className="list-disc ml-5 text-sm text-foreground space-y-1">
                 <li>Harder to recruit full rosters (need 8+ committed players per team)</li>
                 <li>More crowding around tables (10-16 people when full rosters show up)</li>
                 <li>Longer time commitment per match night</li>
