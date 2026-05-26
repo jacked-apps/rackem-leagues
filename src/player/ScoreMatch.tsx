@@ -47,10 +47,15 @@ import { UnifiedScoreboard } from '@/components/scoring/UnifiedScoreboard';
 import { TiebreakerScoreboard } from '@/components/scoring/TiebreakerScoreboard';
 import { GamesList } from '@/components/scoring/GamesList';
 import { DissentFlag } from '@/components/scoring/DissentFlag';
+import { DisputeBanner } from '@/components/scoring/DisputeBanner';
 import {
   deriveDissents,
   type GameForDissent,
 } from '@/utils/match/deriveDissents';
+import {
+  deriveDisputes,
+  type GameForDispute,
+} from '@/utils/match/deriveDisputes';
 import { TableNumberBar } from '@/components/scoring/TableNumberBar';
 import { ConnectionIndicator } from '@/components/match/ConnectionIndicator';
 import {
@@ -551,6 +556,20 @@ function ScoreMatchBody() {
     return dissents.filter((d) => d.dissenters.some((diss) => diss.side === mySide));
   }, [dissents, userTeamId, match]);
 
+  // Many-eyes Amendment F: cleared games where two initiators disagreed.
+  // Shown to EVERYONE (not filtered by side) — the integrity risk is high
+  // enough that all devices should see it, not just the dissenter's team.
+  const disputes = useMemo(() => {
+    const gamesForDispute: GameForDispute[] = Array.from(gameResults.values()).map(
+      (g) => ({
+        game_id: g.id,
+        game_number: g.game_number,
+        hasWinner: !!g.winner_player_id,
+      })
+    );
+    return deriveDisputes(gamesForDispute, gameConfirmations);
+  }, [gameResults, gameConfirmations]);
+
   // ── State-derived confirmation + vacate handoff ─────────────────────────
   // Neither prompt may depend on catching a live realtime message. On every
   // games change (initial load, realtime tick, catch-up refetch, or the
@@ -939,6 +958,13 @@ function ScoreMatchBody() {
           getPlayerPoints={isPerGameCalculator ? getPlayerPoints : undefined}
         />
       )}
+
+      {/* Many-eyes Layer-2 / Amendment F: persistent dispute banner.
+          Auto-cleared games (two initiators disagreed via Amendment D)
+          surface here — loud, visible to everyone, ordered above dissent
+          flags because the integrity risk is higher. Amendment G will wire
+          the click handler to open a side-by-side detail modal. */}
+      <DisputeBanner disputes={disputes} />
 
       {/* Many-eyes Layer-2 / Unit 5: team-visible dissent flag.
           One flag per game with a differing vouch from my side; calm
