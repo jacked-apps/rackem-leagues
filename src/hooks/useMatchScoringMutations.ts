@@ -266,7 +266,8 @@ export function useMatchScoringMutations({
 
           // Many-eyes: record the vacate as an append-only marker. The pre-wipe
           // snapshot is `existingGame` (still the in-memory pre-update state).
-          // Best-effort — never blocks the vacate.
+          // Best-effort — never blocks the vacate. is_initiator=false: a vacate
+          // is not an initiation of new score details.
           await appendConfirmation({
             gameId: existingGame.id,
             matchId: match.id,
@@ -274,6 +275,7 @@ export function useMatchScoringMutations({
             confirmerId: memberId,
             side: isHomeTeam ? 'home' : 'away',
             action: 'vacate',
+            isInitiator: false,
             result: resultFromGame(existingGame),
           });
         } else {
@@ -301,6 +303,8 @@ export function useMatchScoringMutations({
           // Many-eyes: record my vouch for the result I just confirmed.
           // Officiality (the column above) stays authoritative — when it's already
           // set by a teammate, this append is the only record of my extra witness.
+          // is_initiator=false: tapping Confirm on someone else's already-entered
+          // details, not filling out details from scratch.
           await appendConfirmation({
             gameId: existingGame.id,
             matchId: match.id,
@@ -308,6 +312,7 @@ export function useMatchScoringMutations({
             confirmerId: memberId,
             side: isHomeTeam ? 'home' : 'away',
             action: 'confirm',
+            isInitiator: false,
             result: resultFromGame(existingGame),
           });
         }
@@ -392,7 +397,8 @@ export function useMatchScoringMutations({
 
           // Many-eyes: a denied score wipes the game — record it as an
           // append-only vacate marker (pre-wipe snapshot is `existingGame`).
-          // Best-effort — never blocks the deny.
+          // Best-effort — never blocks the deny. is_initiator=false: a vacate
+          // is not an initiation of new score details.
           await appendConfirmation({
             gameId: existingGame.id,
             matchId: match.id,
@@ -400,6 +406,7 @@ export function useMatchScoringMutations({
             confirmerId: memberId,
             side: userTeamId === match.home_team_id ? 'home' : 'away',
             action: 'vacate',
+            isInitiator: false,
             result: resultFromGame(existingGame),
           });
         }
@@ -562,6 +569,8 @@ export function useMatchScoringMutations({
         // Many-eyes: record the scorer's vouch for the result just entered.
         // The officiality write above (confirmed_by_<side>) already succeeded;
         // this is additive + best-effort and never blocks scoring.
+        // is_initiator=true: this is the high-effort act of filling out the
+        // details from scratch (winner + extras + points).
         await appendConfirmation({
           gameId: existingGame.id,
           matchId: match.id,
@@ -569,6 +578,7 @@ export function useMatchScoringMutations({
           confirmerId: memberId,
           side: isHomeTeamScoring ? 'home' : 'away',
           action: 'confirm',
+          isInitiator: true,
           result: resultFromGame(gameData),
         });
 
