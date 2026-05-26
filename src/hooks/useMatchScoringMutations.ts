@@ -375,41 +375,92 @@ export function useMatchScoringMutations({
 
           if (error) throw error;
         } else {
-          // Deny normal score: reset the game back to unscored state
-          const { error } = await supabase
-            .from('match_games')
-            .update({
-              winner_team_id: null,
-              winner_player_id: null,
-              break_and_run: false,
-              golden_break: false,
-              break_fouled: false,
-              runout: false,
-              win_by_forfeit: false,
-              winner_value: null,
-              loser_value: null,
-              confirmed_by_home: null,
-              confirmed_by_away: null,
-              confirmed_at: null,
-            })
-            .eq('id', existingGame.id);
+          // Deny normal score. Amendment E: count distinct endorsers first —
+          // if extras have endorsed this result, one denier shouldn't be able
+          // to wipe a game multiple people stood behind. The deny is still
+          // recorded (as a vacate marker), and the existing dissent flag
+          // surfaces it to the denier's team; the OFFICIAL result stays put,
+          // and proper correction is the deliberate vacate-and-rescore path.
+          //
+          // Pair-only (≤2 distinct endorsers post-latest-vacate) = the standard
+          // initiator + first-per-side-confirmer; deny wipes (current behavior).
+          // Extras (>2 distinct endorsers) = deny becomes a dissent contribution
+          // without a wipe.
+          const { data: latestVacate } = await supabase
+            .from('game_confirmations')
+            .select('created_at')
+            .eq('game_id', existingGame.id)
+            .eq('action', 'vacate')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
 
-          if (error) throw error;
+          let confirmsQuery = supabase
+            .from('game_confirmations')
+            .select('confirmer_id')
+            .eq('game_id', existingGame.id)
+            .eq('action', 'confirm');
+          if (latestVacate?.created_at) {
+            confirmsQuery = confirmsQuery.gt('created_at', latestVacate.created_at);
+          }
+          const { data: confirmRows } = await confirmsQuery;
+          const endorsers = new Set(
+            (confirmRows ?? [])
+              .map((r) => r.confirmer_id)
+              .filter((id): id is string => !!id)
+          );
 
-          // Many-eyes: a denied score wipes the game — record it as an
-          // append-only vacate marker (pre-wipe snapshot is `existingGame`).
-          // Best-effort — never blocks the deny. is_initiator=false: a vacate
-          // is not an initiation of new score details.
-          await appendConfirmation({
-            gameId: existingGame.id,
-            matchId: match.id,
-            gameNumber,
-            confirmerId: memberId,
-            side: userTeamId === match.home_team_id ? 'home' : 'away',
-            action: 'vacate',
-            isInitiator: false,
-            result: resultFromGame(existingGame),
-          });
+          if (endorsers.size > 2) {
+            // Extras present — record the deny but DON'T wipe. The dissent
+            // flag (Unit 5) reads this as a differing view; vacate-and-rescore
+            // remains the deliberate correction path.
+            await appendConfirmation({
+              gameId: existingGame.id,
+              matchId: match.id,
+              gameNumber,
+              confirmerId: memberId,
+              side: userTeamId === match.home_team_id ? 'home' : 'away',
+              action: 'vacate',
+              isInitiator: false,
+              result: resultFromGame(existingGame),
+            });
+            toast.info(
+              `Game ${gameNumber}: ${endorsers.size} people endorsed this — your dissent is recorded but the game stays scored. Talk it over; vacate-and-rescore if needed.`
+            );
+          } else {
+            // Standard wipe — only the officiality pair has vouched.
+            const { error } = await supabase
+              .from('match_games')
+              .update({
+                winner_team_id: null,
+                winner_player_id: null,
+                break_and_run: false,
+                golden_break: false,
+                break_fouled: false,
+                runout: false,
+                win_by_forfeit: false,
+                winner_value: null,
+                loser_value: null,
+                confirmed_by_home: null,
+                confirmed_by_away: null,
+                confirmed_at: null,
+              })
+              .eq('id', existingGame.id);
+            if (error) throw error;
+
+            // Many-eyes: record the vacate marker (pre-wipe snapshot is
+            // `existingGame`). Best-effort — never blocks the deny.
+            await appendConfirmation({
+              gameId: existingGame.id,
+              matchId: match.id,
+              gameNumber,
+              confirmerId: memberId,
+              side: userTeamId === match.home_team_id ? 'home' : 'away',
+              action: 'vacate',
+              isInitiator: false,
+              result: resultFromGame(existingGame),
+            });
+          }
         }
 
         // Phase 5 Unit 5.5: denial / vacate-deny clears confirmations or
