@@ -18,6 +18,7 @@ import type { Lineup, MatchGame } from '@/types/match';
 import { queryKeys } from '@/api/queryKeys';
 import { populateMatchSnapshotIfNeeded, updateMatchRunningTotals } from '@/api/queries/matches';
 import { appendConfirmation, type ConfirmationResult } from '@/api/mutations/appendConfirmation';
+import { resultsDiffer } from '@/utils/match/deriveDissents';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
 
@@ -519,6 +520,106 @@ export function useMatchScoringMutations({
           confirmed_by_home: isHomeTeamScoring ? memberId : null,
           confirmed_by_away: !isHomeTeamScoring ? memberId : null,
         };
+
+        // ── Amendment D: initiator-race detection ─────────────────────────────
+        // Before writing to match_games, re-read the row fresh from the DB.
+        // The window between when the modal opened and now is a real race
+        // window — another scorer (same side OR opposite side) may have
+        // submitted their own initiation. Two outcomes:
+        //
+        //   AGREEMENT  — their result matches mine → just append my initiator
+        //                row alongside theirs (strongest confirmation; both
+        //                people independently filled the details and got the
+        //                same answer). No overwrite of match_games.
+        //
+        //   DISAGREEMENT — their result differs from mine → AUTO-CLEAR.
+        //                Append my initiator row (records what I tried), append
+        //                a vacate marker (scopes future dissent comparisons to
+        //                post-clear), clear match_games winner fields, surface
+        //                to the user. Both initiator rows stay in the log; the
+        //                persistent dispute banner (Amendment F) reads them.
+        //
+        // No existing winner = fresh game, take the standard write path below.
+        const myResult = resultFromGame(gameData);
+        const { data: freshRow } = await supabase
+          .from('match_games')
+          .select(
+            'winner_team_id, winner_player_id, break_and_run, golden_break, break_fouled, runout, win_by_forfeit, winner_value, loser_value'
+          )
+          .eq('id', existingGame.id)
+          .maybeSingle();
+
+        if (freshRow?.winner_player_id) {
+          // resultsDiffer works on the snake_case DB shape — `freshRow` (from
+          // supabase) and `gameData` (the about-to-write payload) both match
+          // structurally. `myResult` (camelCase) is used for the appendConfirmation
+          // calls below.
+          if (resultsDiffer(freshRow, gameData)) {
+            // DISAGREEMENT — auto-clear the game's winner fields and record
+            // both my initiator attempt + a vacate marker. Officiality columns
+            // also cleared so the next initiator can take the slot cleanly.
+            await appendConfirmation({
+              gameId: existingGame.id,
+              matchId: match.id,
+              gameNumber: scoringGame.gameNumber,
+              confirmerId: memberId,
+              side: isHomeTeamScoring ? 'home' : 'away',
+              action: 'confirm',
+              isInitiator: true,
+              result: myResult,
+            });
+            await appendConfirmation({
+              gameId: existingGame.id,
+              matchId: match.id,
+              gameNumber: scoringGame.gameNumber,
+              confirmerId: memberId,
+              side: isHomeTeamScoring ? 'home' : 'away',
+              action: 'vacate',
+              isInitiator: false,
+              result: myResult,
+            });
+            const { error: clearError } = await supabase
+              .from('match_games')
+              .update({
+                winner_team_id: null,
+                winner_player_id: null,
+                break_and_run: false,
+                golden_break: false,
+                break_fouled: false,
+                runout: false,
+                win_by_forfeit: false,
+                winner_value: null,
+                loser_value: null,
+                confirmed_by_home: null,
+                confirmed_by_away: null,
+                confirmed_at: null,
+              })
+              .eq('id', existingGame.id);
+            if (clearError) throw clearError;
+
+            if (match?.id) await updateMatchRunningTotals(match.id);
+            toast.error(
+              `Game ${scoringGame.gameNumber}: scores didn't match. Cleared — please re-enter together.`
+            );
+            onSuccess();
+            return;
+          }
+
+          // AGREEMENT — append my initiator row alongside theirs. No overwrite.
+          await appendConfirmation({
+            gameId: existingGame.id,
+            matchId: match.id,
+            gameNumber: scoringGame.gameNumber,
+            confirmerId: memberId,
+            side: isHomeTeamScoring ? 'home' : 'away',
+            action: 'confirm',
+            isInitiator: true,
+            result: myResult,
+          });
+          if (match?.id) await updateMatchRunningTotals(match.id);
+          onSuccess();
+          return;
+        }
 
         // Check if game already exists (using same game we fetched earlier)
         if (existingGame) {

@@ -82,8 +82,12 @@ export interface GameDissent {
  * Returns true if any tracked field on `vouch` differs from `official`. Strict
  * equality is correct here — all fields are primitives (string/uuid/bool/int)
  * or null; `0 !== null` and `false !== null` are the right discriminations.
+ *
+ * Exported because the race-detection path in `handleConfirmScore` (Amendment D)
+ * needs the same byte-for-byte comparison to decide "two initiators agree vs
+ * disagree" — single source of truth for "what counts as a different result."
  */
-function resultsDiffer(official: ResultLike, vouch: ResultLike): boolean {
+export function resultsDiffer(official: ResultLike, vouch: ResultLike): boolean {
   return (
     official.winner_team_id !== vouch.winner_team_id ||
     official.winner_player_id !== vouch.winner_player_id ||
