@@ -2214,5 +2214,28 @@ as soon as the RLS-enablement project (LIST_FOR_ED #29) gets picked
 up. This work and the RLS enablement are independent — either can
 ship first.
 
+---
 
+## 33. LO Team-Edit Nav — Don't Force Matchups Page After
+
+**Discovered:** 2026-05-26 while setting up multi-confirmer test logins
+for many-eyes Phase 2 manual testing.
+
+**The issue:** When an LO edits a team (adding/removing players, swapping
+roster), the app navigates them into the season's matchups page after
+the save. That's an unnecessary forced detour — LOs editing rosters
+don't need to land on matchups; they may want to return to the team
+list, the org dashboard, or just stay on the team page they were on.
+
+**Fix:** Either (a) stay on the team-edit page (or the team-list page) on
+save, or (b) navigate back to wherever the user came FROM (the previous
+route in history) — the latter is the more general "respect where the
+user was" fix.
+
+**Where to look:** the team-edit save handler / mutation. Likely in
+`src/operator/TeamManagement.tsx` or similar — wherever the post-save
+`navigate(...)` call lives that ends up at the matchups route.
+
+**Severity:** LOW — UX papercut, no data risk. Just annoying when doing
+roster work that doesn't need matchups context.
 

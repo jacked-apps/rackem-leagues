@@ -993,16 +993,37 @@ function ScoreMatchBody() {
           a result. Correction path is the existing vacate-and-rescore. */}
       {visibleDissents.length > 0 && (
         <div className="mb-3 space-y-2">
-          {visibleDissents.map((d) => (
-            <DissentFlag
-              key={d.game_id}
-              gameNumber={d.game_number}
-              dissenterName={getPlayerDisplayName(d.dissenters[0].confirmer_id)}
-              agreeingConfirmerNames={d.agreeingConfirmers.map((a) =>
-                getPlayerDisplayName(a.confirmer_id)
-              )}
-            />
-          ))}
+          {visibleDissents.map((d) => {
+            // The recorded (official) result the flag asks people to verify
+            // comes from the match_games row — same source the rest of the
+            // scoring UI shows.
+            const official = gameResults.get(d.game_number);
+            if (!official || !official.winner_player_id) return null;
+            return (
+              <DissentFlag
+                key={d.game_id}
+                gameNumber={d.game_number}
+                recordedResult={{
+                  winner_team_id: official.winner_team_id,
+                  winner_player_id: official.winner_player_id,
+                  break_and_run: official.break_and_run,
+                  golden_break: official.golden_break,
+                  break_fouled: official.break_fouled,
+                  runout: official.runout,
+                  win_by_forfeit: official.win_by_forfeit,
+                  winner_value: official.winner_value,
+                  loser_value: official.loser_value,
+                }}
+                winnerPlayerName={getPlayerDisplayName(official.winner_player_id)}
+                agreeingConfirmerNames={d.agreeingConfirmers.map((a) =>
+                  getPlayerDisplayName(a.confirmer_id)
+                )}
+                disagreeingConfirmerNames={d.dissenters.map((diss) =>
+                  getPlayerDisplayName(diss.confirmer_id)
+                )}
+              />
+            );
+          })}
         </div>
       )}
 
