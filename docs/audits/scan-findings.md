@@ -1,13 +1,13 @@
 # Screen-audit scan findings
 
-_Generated 2026-05-24 by `scripts/audit-scan.sh`. Regenerate with `pnpm audit:scan`._
+_Generated 2026-05-25 by `scripts/audit-scan.sh`. Regenerate with `pnpm audit:scan`._
 
 **Do not hand-edit this file.** It is regenerated each run from the source tree.
 Use it as input to `docs/audits/screen-audit.md` (the per-screen audit checklist).
 
 ## Summary
 
-- **Files with unpaired hardcoded colored shades:** 171
+- **Files with unpaired hardcoded colored shades:** 160
 - **Files with native HTML form elements:** 23
 
 ## Cascade priority — shared components
@@ -37,25 +37,6 @@ _Lines matching `(bg|text|border)-{color}-{shade}` where the same line has no
 `dark:` variant. These are the most broken in dark mode. Replace with theme
 tokens (`bg-success/10`, `text-info`, `border-warning/40`, `text-destructive`,
 etc.) chosen by semantic meaning, not literal color match._
-
-### `src/about/About.tsx`
-
-- L125: `<Link to="/pricing" className="text-blue-600 hover:text-blue-800 font-medium">`
-- L145: `<Link to="/login" className="text-blue-600 hover:text-blue-800 font-medium">`
-
-### `src/about/Pricing.tsx`
-
-- L34: `<h3 className="text-lg font-semibold mb-2 text-blue-600">Per Season Setup</h3>`
-- L39: `<h3 className="text-lg font-semibold mb-2 text-blue-600">Weekly Platform Fee</h3>`
-- L100: `<Card className="mb-8 border-blue-200 bg-blue-50">`
-- L128: `<span className="font-mono text-blue-600">$138</span>`
-- L143: `<div className="bg-green-100 p-4 rounded border border-green-300">`
-- L144: `<p className="font-semibold text-green-800">`
-
-### `src/completeProfile/CompleteProfileForm.tsx`
-
-- L124: `<div className="p-3 bg-red-50 border border-red-200 rounded-md">`
-- L125: `<p className="text-sm text-red-600">{state.errors.general}</p>`
 
 ### `src/components/AlertDialog.tsx`
 
@@ -1173,37 +1154,11 @@ etc.) chosen by semantic meaning, not literal color match._
 - L113: `<p className="text-sm text-green-800 mb-3">Best for:</p>`
 - L114: `<ul className="list-disc ml-5 text-sm text-green-800 space-y-1">`
 
-### `src/leagueOperator/BecomeLeagueOperator.tsx`
-
-- L41: `<Button loadingText="none" size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-8">`
-- L57: `<div className="bg-green-50 rounded-lg p-6">`
-- L58: `<h3 className="font-semibold text-green-800 mb-4 text-lg">Benefits</h3>`
-- L59: `<ul className="space-y-2 text-green-700">`
-- L61: `<span className="text-green-600 mr-2">✓</span>`
-- L65: `<span className="text-green-600 mr-2">✓</span>`
-- L69: `<span className="text-green-600 mr-2">✓</span>`
-- L73: `<span className="text-green-600 mr-2">✓</span>`
-- L77: `<span className="text-green-600 mr-2">✓</span>`
-- L81: `<span className="text-green-600 mr-2">✓</span>`
-- L86: `<div className="bg-blue-50 rounded-lg p-6">`
-- L87: `<h3 className="font-semibold text-blue-800 mb-4 text-lg">Perfect For</h3>`
-- L88: `<ul className="space-y-2 text-blue-700">`
-- L107: `<div className="text-sm text-blue-200 mb-1">only</div>`
-- L109: `<div className="text-blue-100">per team, per week</div>`
-- L110: `<div className="text-xs text-blue-200 mt-2">+ $10 setup per season</div>`
-- L139: `<Link to="/pricing" className="text-blue-600 hover:text-blue-800 font-medium text-lg">`
-- L176: `<p className="text-blue-100 mb-6 text-lg">`
-- L180: `<Button loadingText="none" size="lg" className="bg-card text-blue-600 hover:bg-muted px-8">`
-
 ### `src/leagueOperator/ChoiceStep.tsx`
 
 - L94: `? 'bg-blue-600 hover:bg-blue-700 text-white'`
 - L113: `<p className="text-red-500 text-sm mt-2">{error}</p>`
 - L129: `className="bg-blue-600 hover:bg-blue-700 text-white"`
-
-### `src/leagueOperator/LeagueOperatorApplication.tsx`
-
-- L347: `className="bg-blue-600 hover:bg-blue-700 text-white"`
 
 ### `src/leagueOperator/questionDefinitions.tsx`
 
@@ -1236,63 +1191,12 @@ etc.) chosen by semantic meaning, not literal color match._
 
 - L87: `? 'border-blue-500 bg-blue-500'`
 
-### `src/login/ClaimPlayer.tsx`
-
-- L430: `<AlertTriangle className="h-16 w-16 text-amber-500" />`
-- L450: `<Clock className="h-16 w-16 text-amber-500" />`
-- L478: `<UserCheck className="h-16 w-16 text-green-600" />`
-- L504: `<CheckCircle className="h-16 w-16 text-green-600" />`
-- L510: `<div className="bg-green-50 border border-green-200 rounded-lg p-4 text-left">`
-- L511: `<p className="text-sm font-medium text-green-800 mb-2">`
-- L514: `<ul className="text-sm text-green-700 space-y-1">`
-- L568: `<AlertTriangle className="h-16 w-16 text-red-500" />`
-- L596: `<div className="bg-blue-50 border border-blue-200 rounded-lg p-4">`
-- L598: `<Users className="h-6 w-6 text-blue-600 mt-0.5" />`
-- L600: `<p className="font-medium text-blue-900">`
-- L607: `<p className="text-sm text-blue-700 mb-2">`
-- L612: `<li key={team.team_id} className="text-base font-semibold text-blue-800">`
-- L619: `<p className="text-lg font-semibold text-blue-800 mt-1">`
-- L657: `<div className="bg-amber-50 border border-amber-200 rounded-lg p-3">`
-- L659: `<AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />`
-- L660: `<div className="text-sm text-amber-800">`
-
-### `src/login/EmailConfirmation.tsx`
-
-- L64: `<div className="text-green-600">{message}</div>`
-- L67: `<div className="text-red-600">{message}</div>`
-
-### `src/login/ForgotPassword.tsx`
-
-- L69: `<Mail className="h-16 w-16 text-blue-600" />`
-- L104: `<p className={\`text-sm mt-2 ${resendMessage.includes('Error') ? 'text-red-500' : 'text-green-600'}\`}>`
-
-### `src/login/Login.tsx`
-
-- L131: `<p className={\`text-sm mt-4 text-center ${message.includes('Error') ? 'text-red-500' : 'text-green-600'}\`}>`
-
-### `src/login/Register.tsx`
-
-- L243: `<AlertTriangle className="h-16 w-16 text-amber-500" />`
-- L268: `<UserCheck className="h-16 w-16 text-green-600" />`
-- L270: `<Mail className="h-16 w-16 text-green-600" />`
-- L311: `<p className={\`text-sm mt-2 ${resendMessage.includes('Error') ? 'text-red-500' : 'text-green-600'}\`}>`
-- L334: `<div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">`
-- L336: `<UserCheck className="h-5 w-5 text-blue-600 shrink-0" />`
-- L338: `<p className="text-sm font-medium text-blue-900">`
-- L341: `<p className="text-xs text-blue-700">`
-- L443: `<p className="text-sm mt-2 text-red-500">`
-
 ### `src/newPlayer/FormField.tsx`
 
 - L49: `{required && <span className="text-red-500 ml-1">*</span>}`
 - L66: `<p className="text-sm text-red-500 mt-1">{error}</p>`
 - L85: `{required && <span className="text-red-500 ml-1">*</span>}`
 - L100: `<p className="text-sm text-red-500 mt-1">{error}</p>`
-
-### `src/newPlayer/NewPlayerForm.tsx`
-
-- L153: `<div className="p-3 bg-red-50 border border-red-200 rounded-md">`
-- L154: `<p className="text-sm text-red-600">{state.errors.general}</p>`
 
 ### `src/operator/components/AttachPlaceholderDialog.tsx`
 

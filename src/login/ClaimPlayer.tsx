@@ -427,7 +427,7 @@ export const ClaimPlayer: React.FC = () => {
       <LoginCard title="Invalid Invite" description="There was a problem with your invite link">
         <div className="text-center space-y-4">
           <div className="flex justify-center">
-            <AlertTriangle className="h-16 w-16 text-amber-500" />
+            <AlertTriangle className="h-16 w-16 text-warning" />
           </div>
           <p className="text-foreground">{errorMessage}</p>
           <p className="text-muted-foreground text-sm">
@@ -447,7 +447,7 @@ export const ClaimPlayer: React.FC = () => {
       <LoginCard title="Invite Expired" description="This invite link has expired">
         <div className="text-center space-y-4">
           <div className="flex justify-center">
-            <Clock className="h-16 w-16 text-amber-500" />
+            <Clock className="h-16 w-16 text-warning" />
           </div>
           <p className="text-foreground">
             The invite to join <strong>{inviteDetails.team_name}</strong> has expired.
@@ -475,7 +475,7 @@ export const ClaimPlayer: React.FC = () => {
       <LoginCard title="Already Claimed" description="This invite has already been used">
         <div className="text-center space-y-4">
           <div className="flex justify-center">
-            <UserCheck className="h-16 w-16 text-green-600" />
+            <UserCheck className="h-16 w-16 text-success" />
           </div>
           <p className="text-foreground">
             The player profile for{' '}
@@ -501,17 +501,17 @@ export const ClaimPlayer: React.FC = () => {
       <LoginCard title="Success!" description="Your player history has been merged">
         <div className="text-center space-y-4">
           <div className="flex justify-center">
-            <CheckCircle className="h-16 w-16 text-green-600" />
+            <CheckCircle className="h-16 w-16 text-success" />
           </div>
           <p className="text-foreground">
             You've successfully joined <strong>{inviteDetails.team_name}</strong>!
           </p>
           {mergeStats && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-left">
-              <p className="text-sm font-medium text-green-800 mb-2">
+            <div className="bg-success/10 border border-success/40 rounded-lg p-4 text-left">
+              <p className="text-sm font-medium text-success mb-2">
                 Merged into your account:
               </p>
-              <ul className="text-sm text-green-700 space-y-1">
+              <ul className="text-sm text-foreground space-y-1">
                 {mergeStats.teamsJoined > 0 && (
                   <li>• {mergeStats.teamsJoined} team membership(s)</li>
                 )}
@@ -565,7 +565,7 @@ export const ClaimPlayer: React.FC = () => {
       <LoginCard title="Error" description="Something went wrong">
         <div className="text-center space-y-4">
           <div className="flex justify-center">
-            <AlertTriangle className="h-16 w-16 text-red-500" />
+            <AlertTriangle className="h-16 w-16 text-destructive" />
           </div>
           <p className="text-foreground">{errorMessage}</p>
           <Button variant="outline" onClick={() => setClaimState('valid')}>
@@ -593,30 +593,30 @@ export const ClaimPlayer: React.FC = () => {
       >
         <div className="space-y-6">
           {/* Invite details card */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="bg-info/10 border border-info/40 rounded-lg p-4">
             <div className="flex items-start gap-3">
-              <Users className="h-6 w-6 text-blue-600 mt-0.5" />
+              <Users className="h-6 w-6 text-info mt-0.5" />
               <div>
-                <p className="font-medium text-blue-900">
+                <p className="font-medium text-info">
                   {inviteDetails.captain_name
                     ? `${inviteDetails.captain_name} invited you to join`
                     : 'You\'ve been invited to join'}
                 </p>
                 {hasMultipleTeams ? (
                   <div className="mt-2">
-                    <p className="text-sm text-blue-700 mb-2">
+                    <p className="text-sm text-foreground mb-2">
                       Your player profile is on {allTeams.length} teams:
                     </p>
                     <ul className="space-y-1">
                       {allTeams.map((team) => (
-                        <li key={team.team_id} className="text-base font-semibold text-blue-800">
+                        <li key={team.team_id} className="text-base font-semibold text-foreground">
                           • {team.team_name}
                         </li>
                       ))}
                     </ul>
                   </div>
                 ) : (
-                  <p className="text-lg font-semibold text-blue-800 mt-1">
+                  <p className="text-lg font-semibold text-foreground mt-1">
                     {inviteDetails.team_name}
                   </p>
                 )}
@@ -654,10 +654,10 @@ export const ClaimPlayer: React.FC = () => {
 
           {/* Multiple teams notice */}
           {hasMultipleTeams && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+            <div className="bg-warning/10 border border-warning/40 rounded-lg p-3">
               <div className="flex items-start gap-2">
-                <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
-                <div className="text-sm text-amber-800">
+                <AlertTriangle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
+                <div className="text-sm text-foreground">
                   <p className="font-medium mb-1">Important:</p>
                   <p>
                     Accepting this invite will add you to all {allTeams.length} teams listed above.
