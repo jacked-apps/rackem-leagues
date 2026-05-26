@@ -303,6 +303,7 @@ export type Database = {
           game_number: number
           golden_break: boolean
           id: string
+          is_initiator: boolean
           loser_value: number | null
           match_id: string
           runout: boolean
@@ -322,6 +323,7 @@ export type Database = {
           game_number: number
           golden_break?: boolean
           id?: string
+          is_initiator?: boolean
           loser_value?: number | null
           match_id: string
           runout?: boolean
@@ -341,6 +343,7 @@ export type Database = {
           game_number?: number
           golden_break?: boolean
           id?: string
+          is_initiator?: boolean
           loser_value?: number | null
           match_id?: string
           runout?: boolean
