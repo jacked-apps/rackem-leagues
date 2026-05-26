@@ -150,8 +150,8 @@ export const NewPlayerForm: React.FC = () => {
 
         {/* Show general error messages (like database errors) */}
         {state.errors.general && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-sm text-red-600">{state.errors.general}</p>
+          <div className="p-3 bg-destructive/10 border border-destructive/40 rounded-md">
+            <p className="text-sm text-destructive">{state.errors.general}</p>
           </div>
         )}
 

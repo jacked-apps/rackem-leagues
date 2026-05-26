@@ -128,7 +128,7 @@ export const Login: React.FC = () => {
       </Button>
 
       {message && (
-        <p className={`text-sm mt-4 text-center ${message.includes('Error') ? 'text-red-500' : 'text-green-600'}`}>
+        <p className={`text-sm mt-4 text-center ${message.includes('Error') ? 'text-destructive' : 'text-success'}`}>
           {message}
         </p>
       )}

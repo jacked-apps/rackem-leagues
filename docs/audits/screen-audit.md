@@ -522,33 +522,29 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/complete-profile`
 - **Component:** `src/completeProfile/CompleteProfileForm.tsx`
-- **Status:** ⏳ pending
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-waves-5-6-7)
+- **Rubric:** All 8 pass. Fixed 2: general-errors callout (`bg-red-50/border-red-200/text-red-600`) → `bg-destructive/10 border-destructive/40 text-destructive`.
 
 #### `NewPlayerForm`
 
 - **Routes:** `/new-player`
 - **Component:** `src/newPlayer/NewPlayerForm.tsx`
-- **Status:** 🟠 cascade-fixed (InfoButton, via FormField), awaiting verify
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-waves-5-6-7)
+- **Rubric:** All 8 pass. Same 2-finding error-callout fix as `CompleteProfileForm`. Cascade-clean from InfoButton via FormField.
 
 #### `BecomeLeagueOperator`
 
 - **Routes:** `/become-league-operator`
 - **Component:** `src/leagueOperator/BecomeLeagueOperator.tsx`
-- **Status:** ⏳ pending
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-waves-5-6-7) — biggest in this batch
+- **Rubric:** All 8 pass. Fixed 19 findings: 2 Benefits/Perfect For cards (green/blue → success/info), gradient pricing card (blue-500/600 + blue-200/100 → `bg-primary text-primary-foreground` with opacity) and final CTA (gradient-from-blue-to-indigo → `bg-primary text-primary-foreground`), 2 Start Application Buttons stripped of `bg-blue-600` overrides (now Simonis blue), pricing link → `text-primary hover:text-primary/80 transition-colors`.
 
 #### `LeagueOperatorApplication`
 
 - **Routes:** `/league-operator-application`
 - **Component:** `src/leagueOperator/LeagueOperatorApplication.tsx`
-- **Status:** ⏳ pending
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-waves-5-6-7)
+- **Rubric:** All 8 pass. Fixed 1: Next/Create-Organization Button stripped of `bg-blue-600 hover:bg-blue-700 text-white` override (now uses shadcn Button default).
 
 ### Wave 6 — Auth flows (6)
 
@@ -556,49 +552,43 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/login`
 - **Component:** `src/login/Login.tsx`
-- **Status:** ⏳ pending — likely chromeless (no PageHeader); document omission on rubric 8
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-waves-5-6-7)
+- **Rubric:** All 8 pass. Fixed 1: ternary message color (`text-red-500` / `text-green-600`) → `text-destructive` / `text-success`. Rubric 8 N/A — auth flow page, intentionally chromeless (no PageHeader); login is rendered inside `LoginCard` for consistent auth chrome.
 
 #### `Register`
 
 - **Routes:** `/register`
 - **Component:** `src/login/Register.tsx`
-- **Status:** ⏳ pending
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-waves-5-6-7)
+- **Rubric:** All 8 pass. Fixed 9: invalid-link AlertTriangle (amber → warning); 2 success icons (green-600 → success); resend message ternary (red/green → destructive/success); claim profile banner (bg-blue-50/border-blue-200, text-blue-600/900/700 → info tokens with foreground body); bottom error message (text-red-500 → text-destructive).
 
 #### `ForgotPassword`
 
 - **Routes:** `/forgot-password`
 - **Component:** `src/login/ForgotPassword.tsx`
-- **Status:** ⏳ pending
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-waves-5-6-7)
+- **Rubric:** All 8 pass. Fixed 2: Mail icon (text-blue-600 → text-primary), resend message ternary → destructive/success.
 
 #### `ResetPassword`
 
 - **Routes:** `/reset-password`
 - **Component:** `src/login/ResetPassword.tsx`
-- **Status:** ⏳ pending
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-waves-5-6-7)
+- **Rubric:** All 8 pass. Zero source findings — already clean.
 
 #### `EmailConfirmation`
 
 - **Routes:** `/confirm`
 - **Component:** `src/login/EmailConfirmation.tsx`
-- **Status:** ⏳ pending
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-waves-5-6-7)
+- **Rubric:** All 8 pass. Fixed 2: success message (text-green-600 → text-success), error message (text-red-600 → text-destructive).
 
 #### `ClaimPlayer`
 
 - **Routes:** `/claim-player`
 - **Component:** `src/login/ClaimPlayer.tsx`
-- **Status:** ⏳ pending
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-waves-5-6-7) — second-heaviest in this batch
+- **Rubric:** All 8 pass. Fixed 17 findings: 2 invalid/expired alerts (amber → warning); 2 already-claimed/success icons (green → success); merge-stats success card (green-50/200/800/700 → success/foreground); error icon (red-500 → destructive); main invite-details card (blue-50/200/600/900/700/800 → info tokens with foreground body); multi-teams warning card (amber-50/200/600/800 → warning/foreground).
 
 ### Wave 7 — Public / marketing (3)
 
@@ -606,25 +596,22 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/`
 - **Component:** `src/home/Home.tsx`
-- **Status:** ⏳ pending
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-waves-5-6-7)
+- **Rubric:** All 8 pass. Zero source findings — already clean. Uses shadcn + theme tokens throughout.
 
 #### `About`
 
 - **Routes:** `/about`
 - **Component:** `src/about/About.tsx`
-- **Status:** ⏳ pending
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-waves-5-6-7)
+- **Rubric:** All 8 pass. Fixed 2: pricing + login footer links (text-blue-600 hover:text-blue-800) → `text-primary hover:text-primary/80 transition-colors`.
 
 #### `Pricing`
 
 - **Routes:** `/pricing`
 - **Component:** `src/about/Pricing.tsx`
-- **Status:** ⏳ pending
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-waves-5-6-7)
+- **Rubric:** All 8 pass. Fixed 6: 2 section headings (text-blue-600 → text-primary), real-world example Card (border-blue-200/bg-blue-50 → info tokens), total cost emphasis (text-blue-600 → text-primary), result callout (bg-green-100/border-green-300/text-green-800 → success tokens).
 
 ### Wave 8 — Info / format pages (3)
 
