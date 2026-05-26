@@ -2237,5 +2237,47 @@ eventually wants a larger lineup.
 - `src/systems/pairings/__tests__/pairings.test.ts` — the Module
   tests that prove 6v6 already works at the Module level.
 
+---
+
+## 2026-05-26 — Substitution system broken at lineup-lock (duplicate-players error)
+
+**Branch needed:** investigation branch — e.g. `fix/lineup-sub-duplicate-players`
+
+**Discovered:** 2026-05-26 during the Pairings Generator (Module #8)
+smoke test. Trying to enter an **anonymous sub** in a lineup and lock
+it now throws an error referencing "duplicate players not allowed."
+
+**Likely NOT caused by the Pairings Generator extraction** — that
+change only affected the per-row mapping at prep_match time. The
+lineup-assembly path (`myLineup` build-up) and sentinel handling for
+anonymous subs were left untouched. More likely fallout from an
+earlier modular change (suspect: a recent DB constraint addition or
+prep_match RPC change). Verification needed: try anonymous sub on an
+older commit (before this branch) to confirm the bug pre-exists.
+
+**Reproduction:**
+- Open a match (any league)
+- Try to lock a lineup that includes an anonymous sub placeholder
+- Error appears mentioning duplicate players
+
+**Untested as of this note:**
+- The **double-duty** sub path — needs to be re-checked separately;
+  unknown if it's broken too or if only the anonymous-sub path is
+  affected. Recommend retesting both before opening a fix branch so
+  the scope is clear.
+
+**Severity:** HIGH if confirmed — sub workflows are core to match-night
+operations. Captains MUST be able to use anonymous subs (and
+double-duty) without errors.
+
+**Fix direction (once root cause is identified):**
+- Find the source of the "duplicate players not allowed" check —
+  could be a UNIQUE constraint added in a recent migration, an
+  app-level guard, or a CHECK constraint on `match_games`.
+- Decide whether sentinel values should bypass the duplicate check,
+  or whether the sentinel scheme itself needs to change to produce
+  unique per-row sentinels.
+- Verify the fix on both anonymous-sub and double-duty paths.
+
 
 
