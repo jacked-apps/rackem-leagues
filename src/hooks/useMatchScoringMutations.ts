@@ -280,30 +280,68 @@ export function useMatchScoringMutations({
             result: resultFromGame(existingGame),
           });
         } else {
-          // Normal score confirmation - only update OUR confirmation, don't touch opponent's.
+          // Normal score confirmation — Amendment I: three-step check before
+          // locking officiality. The user's vouch is ALWAYS appended (records
+          // their intent for the audit log), but the `confirmed_by_<my-side>`
+          // column only gets written when ALL three are true at write time:
+          //   (1) The opponent's column is set (there's something official to
+          //       confirm — not a winnerless / auto-cleared state).
+          //   (2) My side's column is null (we haven't locked officiality on
+          //       this side yet — handled by the .is(null) filter below).
+          //   (3) My modal's snapshot still matches the current official
+          //       result (no re-score or edit happened underneath me).
           //
-          // Many-eyes Unit 4: gate the column write on `confirmed_by_<my-side> IS NULL`
-          // so only the FIRST per-side vouch sets the officiality column. Extras
-          // (subsequent same-side confirmers via the per-person prompt) silently no-op
-          // on the column write (0 rows affected, no error) but still append their
-          // 'confirm' row below — recording the extra witness without rewriting WHO
-          // the official confirmer was.
-          const updateData = isHomeTeam
-            ? { confirmed_by_home: memberId }
-            : { confirmed_by_away: memberId };
+          // When the checks block the column write, the user sees a toast
+          // explaining their vouch was recorded but the game state changed.
+          // The dissent flag (Unit 5) surfaces any divergence to the team.
           const officialityColumn = isHomeTeam ? 'confirmed_by_home' : 'confirmed_by_away';
 
-          const { error } = await supabase
+          // Read fresh state. Pulling all the comparison fields in one shot.
+          const { data: freshRow } = await supabase
             .from('match_games')
-            .update(updateData)
+            .select(
+              'confirmed_by_home, confirmed_by_away, winner_team_id, winner_player_id, break_and_run, golden_break, break_fouled, runout, win_by_forfeit, winner_value, loser_value'
+            )
             .eq('id', existingGame.id)
-            .is(officialityColumn, null);
+            .maybeSingle();
 
-          if (error) throw error;
+          const opponentConfirmed = freshRow
+            ? !!(isHomeTeam ? freshRow.confirmed_by_away : freshRow.confirmed_by_home)
+            : false;
+          const dataMatches = freshRow ? !resultsDiffer(freshRow, existingGame) : false;
+          const stateChanged = !freshRow || !opponentConfirmed || !dataMatches;
 
-          // Many-eyes: record my vouch for the result I just confirmed.
-          // Officiality (the column above) stays authoritative — when it's already
-          // set by a teammate, this append is the only record of my extra witness.
+          if (!stateChanged) {
+            // All checks pass — attempt to lock officiality. The `.is(null)`
+            // filter is the final atomic safety against same-side races
+            // (extras: 0 rows affected, no error — Unit 4's behavior).
+            const updateData = isHomeTeam
+              ? { confirmed_by_home: memberId }
+              : { confirmed_by_away: memberId };
+            const { error } = await supabase
+              .from('match_games')
+              .update(updateData)
+              .eq('id', existingGame.id)
+              .is(officialityColumn, null);
+            if (error) throw error;
+          } else if (freshRow) {
+            // Surface to the user — their tap landed but the official state
+            // is different from their modal. Tone is informational, not error;
+            // their vouch is still recorded below.
+            if (!opponentConfirmed) {
+              toast.info(
+                `Game ${gameNumber}: was cleared since you opened this — your vouch was logged.`
+              );
+            } else {
+              toast.info(
+                `Game ${gameNumber}: score changed since you opened this — your vouch was logged, please review.`
+              );
+            }
+          }
+
+          // Many-eyes: ALWAYS record my vouch attempt — even when the column
+          // write was blocked above, the row preserves what I tried to vouch
+          // for, with my snapshot. The dissent flag surfaces any divergence.
           // is_initiator=false: tapping Confirm on someone else's already-entered
           // details, not filling out details from scratch.
           await appendConfirmation({
