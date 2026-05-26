@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-25 (Added Pairings Generator v1 extraction PLAN — 8-unit implementation plan for Module #8 slot creation: lift `gameOrder.ts` into `src/systems/pairings/`, three internal stages, lineups in / player-id-tagged GameSlot[] out, output shape variant-agnostic for future race-mode. Earlier same-day: brainstorm + reviewer-refined requirements doc.) Earlier: 2026-05-24 (Added live-scoring-resilience brainstorm + implementation plan: `docs/brainstorms/2026-05-24-live-scoring-resilience-requirements.md` and `docs/plans/2026-05-24-001-feat-live-scoring-resilience-plan.md` — robust multi-device live match scoring (connection resilience + concurrency correctness). Branch `docs/live-scoring-resilience-brainstorm`.)
+> **Last Updated**: 2026-05-26 (Pairings Generator Module #8 v1 extraction COMPLETE. Module lives at `src/systems/pairings/` with three internal pure-function stages (pair generation / game ordering / break-rack assignment); `generatePairings()` factory + narrow precondition + roundIndex-strip composer. Live caller `useMatchPreparation` migrated to new Module + `computeGameCount`. Dead `gameOrder.ts` + `gameOrder.characterization.test.ts` deleted (no live callers). 29 Module tests pin byte-for-byte parity with prior shipped algorithm. Branch `feat/pairings-generator-extraction`.) Earlier: 2026-05-25 (Added Pairings Generator v1 extraction PLAN — 8-unit implementation plan for Module #8 slot creation: lift `gameOrder.ts` into `src/systems/pairings/`, three internal stages, lineups in / player-id-tagged GameSlot[] out, output shape variant-agnostic for future race-mode. Earlier same-day: brainstorm + reviewer-refined requirements doc.) Earlier: 2026-05-24 (Added live-scoring-resilience brainstorm + implementation plan: `docs/brainstorms/2026-05-24-live-scoring-resilience-requirements.md` and `docs/plans/2026-05-24-001-feat-live-scoring-resilience-plan.md` — robust multi-device live match scoring (connection resilience + concurrency correctness). Branch `docs/live-scoring-resilience-brainstorm`.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -1044,7 +1044,6 @@ Lineup-page workhorse hooks. Extracted from the monolithic `useMatchLineup` so e
 - `scheduleDisplayUtils.ts` - Schedule display helpers
 - `matchupTables.ts` - Matchup table utilities
 - `conflictDetectionUtils.ts` - Schedule conflict detection
-- `gameOrder.ts` - Game order utilities
 
 #### Match Running Totals (`/utils/match/`)
 - `computeMatchRunningTotals.ts` - **Per-mutation running-totals calculator** (Phase 5 Unit 5.5) — pure helper that filters confirmed regular games, runs the snapshot's points calculator, and returns `{ home_games_won, away_games_won, home_points_earned, away_points_earned }`. Eager recompute on every scoring mutation keeps the match row consistent with the live scoreboard. Tiebreaker games and unconfirmed games are excluded from regular running totals.
@@ -1075,7 +1074,7 @@ Pure helpers extracted from the lineup page. No React. Imported by both the page
 - `goldenBreakRules.ts` - Golden break eligibility rules (per-game flag setter).
 - `logger.ts` - Client-side logger (writes to `app_logs` when configured).
 - `__tests__/age.test.ts` - already indexed above under Date & Time.
-- `__tests__/calculateHandicapThresholds.characterization.test.ts`, `determineMatchResult.characterization.test.ts`, `fargoMatchTotals.characterization.test.ts`, `gameOrder.characterization.test.ts`, `getTeamHandicapBonus.characterization.test.ts`, `goldenBreakRules.characterization.test.ts`, `handicapCalculations.characterization.test.ts`, `playoffGenerator.standingsSort.characterization.test.ts` - **Characterization tests** locking in pre-refactor behavior for legacy utilities; consumed by the modular handicap/scoring refactor as a regression guard.
+- `__tests__/calculateHandicapThresholds.characterization.test.ts`, `determineMatchResult.characterization.test.ts`, `fargoMatchTotals.characterization.test.ts`, `getTeamHandicapBonus.characterization.test.ts`, `goldenBreakRules.characterization.test.ts`, `handicapCalculations.characterization.test.ts`, `playoffGenerator.standingsSort.characterization.test.ts` - **Characterization tests** locking in pre-refactor behavior for legacy utilities; consumed by the modular handicap/scoring refactor as a regression guard.
 - `__tests__/auditScoringConsistency.test.ts` - **Audit comparison tests** (7 cases): in-sync match returns ok, single-field divergence on games_won / points_earned, multi-field divergence, diff sign convention (positive = stored too high), input non-mutation
 
 #### Team & Player

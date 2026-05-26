@@ -14,11 +14,12 @@
  * geometry. The MatchEndVerification refactor (Unit 5.2 — separate PR)
  * reads matchTotalGames from the match's system_snapshot.
  *
- * The 18-game 3v3 case is locked by characterization tests in
- * src/utils/__tests__/gameOrder.characterization.test.ts (the
- * isTiebreakerGame predicate's "games 19-21 are tiebreakers" rule).
- * That test continues to pass when MatchEndVerification calls into
- * this helper with matchTotalGames=18.
+ * The 18-game 3v3 case is locked by `tiebreakerGameNumbers(18, 3)`
+ * returning `[19, 20, 21]` — see `./__tests__/gameNumbers.test.ts`.
+ * (Previously cross-referenced the legacy `isTiebreakerGame` predicate
+ * in `src/utils/__tests__/gameOrder.characterization.test.ts`; that
+ * helper was retired alongside the Pairings Generator extraction —
+ * see `docs/plans/2026-05-25-001-refactor-pairings-generator-extraction-plan.md`.)
  */
 
 /**
