@@ -46,6 +46,11 @@ import { EditGameDialog } from '@/components/scoring/EditGameDialog';
 import { UnifiedScoreboard } from '@/components/scoring/UnifiedScoreboard';
 import { TiebreakerScoreboard } from '@/components/scoring/TiebreakerScoreboard';
 import { GamesList } from '@/components/scoring/GamesList';
+import { DissentFlag } from '@/components/scoring/DissentFlag';
+import {
+  deriveDissents,
+  type GameForDissent,
+} from '@/utils/match/deriveDissents';
 import { TableNumberBar } from '@/components/scoring/TableNumberBar';
 import { ConnectionIndicator } from '@/components/match/ConnectionIndicator';
 import {
@@ -512,6 +517,40 @@ function ScoreMatchBody() {
     [gameConfirmations, memberId]
   );
 
+  // Many-eyes Unit 5: per-game dissents (a vouch differs from the official
+  // result). Pure derivation over the games + confirmations; the helper
+  // already scopes confirms to those newer than the latest 'vacate' marker
+  // so a vacate-and-rescore can't falsely flag pre-rescore agreers.
+  const dissents = useMemo(() => {
+    const gamesForDissent: GameForDissent[] = Array.from(gameResults.values()).map(
+      (g) => ({
+        game_id: g.id,
+        game_number: g.game_number,
+        hasWinner: !!g.winner_player_id,
+        winner_team_id: g.winner_team_id,
+        winner_player_id: g.winner_player_id,
+        break_and_run: g.break_and_run,
+        golden_break: g.golden_break,
+        break_fouled: g.break_fouled,
+        runout: g.runout,
+        win_by_forfeit: g.win_by_forfeit,
+        winner_value: g.winner_value,
+        loser_value: g.loser_value,
+      })
+    );
+    return deriveDissents(gamesForDissent, gameConfirmations);
+  }, [gameResults, gameConfirmations]);
+
+  // Show each flag only to the dissenter's TEAM (per brainstorm R8). My side is
+  // 'home' when my team id matches the match's home team. A dissent surfaces if
+  // any of its dissenters share my side.
+  const visibleDissents = useMemo(() => {
+    if (!match || !userTeamId) return [];
+    const mySide: 'home' | 'away' =
+      userTeamId === match.home_team_id ? 'home' : 'away';
+    return dissents.filter((d) => d.dissenters.some((diss) => diss.side === mySide));
+  }, [dissents, userTeamId, match]);
+
   // ── State-derived confirmation + vacate handoff ─────────────────────────
   // Neither prompt may depend on catching a live realtime message. On every
   // games change (initial load, realtime tick, catch-up refetch, or the
@@ -899,6 +938,25 @@ function ScoreMatchBody() {
           // get undefined here, hiding the P column entirely.
           getPlayerPoints={isPerGameCalculator ? getPlayerPoints : undefined}
         />
+      )}
+
+      {/* Many-eyes Layer-2 / Unit 5: team-visible dissent flag.
+          One flag per game with a differing vouch from my side; calm
+          conversation prompt — never blocks scoring, never auto-changes
+          a result. Correction path is the existing vacate-and-rescore. */}
+      {visibleDissents.length > 0 && (
+        <div className="mb-3 space-y-2">
+          {visibleDissents.map((d) => (
+            <DissentFlag
+              key={d.game_id}
+              gameNumber={d.game_number}
+              dissenterName={getPlayerDisplayName(d.dissenters[0].confirmer_id)}
+              agreeingConfirmerNames={d.agreeingConfirmers.map((a) =>
+                getPlayerDisplayName(a.confirmer_id)
+              )}
+            />
+          ))}
+        </div>
       )}
 
       {/* Game list section - ALL data from database */}
