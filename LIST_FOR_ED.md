@@ -2192,5 +2192,50 @@ as soon as the RLS-enablement project (LIST_FOR_ED #29) gets picked
 up. This work and the RLS enablement are independent — either can
 ship first.
 
+---
+
+## 2026-05-26 — Relax `match_games` position CHECK constraint for 6v6+
+
+**Branch needed:** small migration PR — e.g. `chore/relax-match-games-position-check`
+
+**Discovered:** 2026-05-26 during the Pairings Generator (Module #8)
+v1 extraction. The new Module itself is lineupSize-agnostic — it
+accepts any positive integer + either round-robin mode and produces
+the correct slot list. Cross-combo tests confirm 6v6 SRR (36 games)
+and 6v6 DRR (72 games) generate cleanly.
+
+**The problem:** the DATABASE blocks 6v6+ even though the Module
+allows it. `match_games.home_position` and `match_games.away_position`
+have CHECK constraints capping the value at 5:
+
+```
+CONSTRAINT match_games_home_position_check
+  CHECK ((home_position >= 1) AND (home_position <= 5))
+CONSTRAINT match_games_away_position_check
+  CHECK ((away_position >= 1) AND (away_position <= 5))
+```
+
+So if a league ever configures `lineup_size = 6` (or larger), the
+prep_match RPC would fail at insert time with a constraint violation
+the moment it tries to write the first row with `home_position = 6`.
+
+**Fix direction:** one tiny migration that drops the two CHECK
+constraints and replaces them with looser ones (e.g. `>= 1 AND <=
+20`, matching the `preferences_max_roster_size_check` ceiling that
+already exists). No data backfill needed; this only widens what's
+acceptable for future writes.
+
+**Status:** no plan exists yet. Not blocking anything today since no
+shipping system uses 6v6+. Just sitting on the bottleneck so the
+Module's lineupSize-agnosticism is realized end-to-end when an LO
+eventually wants a larger lineup.
+
+**See also:**
+- `docs/plans/2026-05-25-001-refactor-pairings-generator-extraction-plan.md`
+  Scope Boundaries section ("No `match_games` schema change") — this
+  ticket is the explicit follow-on noted there.
+- `src/systems/pairings/__tests__/pairings.test.ts` — the Module
+  tests that prove 6v6 already works at the Module level.
+
 
 
