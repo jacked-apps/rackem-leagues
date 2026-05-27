@@ -29,7 +29,7 @@ import type { ResultLike } from '@/utils/match/deriveDissents';
 // ── Copy (Ed's spec — keep tight, factual; no fancy wording) ───────────────
 const TITLE = (gameNumber: number) => `Game ${gameNumber} — Conflict!`;
 const RECORDED_LABEL = 'Recorded result:';
-const NO_EXTRAS = 'no extras';
+const NO_ACHIEVEMENTS = 'none';
 const CALL_TO_ACTION =
   'Please verify all scoring details are correct. Vacate the score to make any corrections.';
 
@@ -81,7 +81,7 @@ export function DissentFlag({
         <div>
           <p className="font-medium">{RECORDED_LABEL}</p>
           <p>Winner: {winnerPlayerName}</p>
-          <p>Extras: {extras || NO_EXTRAS}</p>
+          <p>Achievements: {extras || NO_ACHIEVEMENTS}</p>
           {hasPoints && (
             <p>
               Points: W {recordedResult.winner_value ?? '—'} / L{' '}

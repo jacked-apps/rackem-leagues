@@ -63,7 +63,7 @@ function InitiationCard({
           <dd>{getPlayerDisplayName(init.snapshot.winner_player_id)}</dd>
         </div>
         <div className="flex gap-2">
-          <dt className="text-muted-foreground">Extras:</dt>
+          <dt className="text-muted-foreground">Achievements:</dt>
           <dd>{formatExtras(init.snapshot) || <em className="text-muted-foreground">none</em>}</dd>
         </div>
         {(init.snapshot.winner_value != null || init.snapshot.loser_value != null) && (

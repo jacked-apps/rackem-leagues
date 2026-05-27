@@ -52,7 +52,7 @@ describe('<DissentFlag />', () => {
     expect(screen.getByText(/Alice/)).toBeInTheDocument();
   });
 
-  it('lists truthy extras; "no extras" when none', () => {
+  it('lists truthy achievements; "none" when there are no truthy flags', () => {
     const { rerender } = render(
       <DissentFlag
         gameNumber={1}
@@ -74,7 +74,7 @@ describe('<DissentFlag />', () => {
         disagreeingConfirmerNames={['Jack']}
       />
     );
-    expect(screen.getByText(/no extras/i)).toBeInTheDocument();
+    expect(screen.getByText(/Achievements: none/i)).toBeInTheDocument();
   });
 
   it('shows points when present, hides the row when both are null', () => {
