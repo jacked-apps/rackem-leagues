@@ -1122,6 +1122,16 @@ function ScoreMatchBody() {
         }}
         onConfirm={() => {
           if (scoringGame) {
+            // Amendment J: mark this game as "I just acted on it" BEFORE the
+            // async submit. Closes the race window where (a) auto-clear runs
+            // and `scoringGame` becomes null on success, (b) Amendment H's
+            // guard no longer suppresses, (c) the realtime auto-clear update
+            // hasn't reached this device yet, so `gameResults` still shows
+            // the (pre-clear) winner — and the data-derived scan would queue
+            // a spurious confirm-opponent modal from that stale cache. The
+            // scan already skips games in `handledConfirmations`; it
+            // self-clears once realtime arrives and `action === 'none'` fires.
+            handledConfirmations.current.add(scoringGame.gameNumber);
             mutations.handleConfirmScore(
               scoringGame,
               breakAndRun,
