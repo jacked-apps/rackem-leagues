@@ -143,16 +143,81 @@ describe('generatePairings — 5v5 SRR characterization (the other shipped combo
   });
 
   it('first game of each round follows per-round alternation', () => {
-    // 5 rounds of 5 games. Round 0,2,4 → home breaks; Round 1,3 → home racks.
+    // 5 rounds of 5 games. Round 0,2,4 → home breaks the FIRST game;
+    // Round 1,3 → home racks. (The LAST round — round 4 — alternates per
+    // game per the fairness-pass rule; the first game still home-breaks.)
     expect(slots[0].homeAction).toBe('breaks'); // game 1, round 0
     expect(slots[5].homeAction).toBe('racks');  // game 6, round 1
     expect(slots[10].homeAction).toBe('breaks'); // game 11, round 2
     expect(slots[15].homeAction).toBe('racks'); // game 16, round 3
-    expect(slots[20].homeAction).toBe('breaks'); // game 21, round 4
+    expect(slots[20].homeAction).toBe('breaks'); // game 21, round 4 (first of last)
+  });
+
+  it('last round (round 4) alternates per game — fairness pass for odd totalRounds', () => {
+    // 5 rounds is ODD. Stage 3's fairness pass: alternate per game in
+    // the last round to narrow the break-count gap from 5 → 1.
+    // Round 4 = games 21..25. Round 4 % 2 == 0 → start with home.
+    expect(slots[20]).toMatchObject({ gameNumber: 21, homeAction: 'breaks', awayAction: 'racks' });
+    expect(slots[21]).toMatchObject({ gameNumber: 22, homeAction: 'racks',  awayAction: 'breaks' });
+    expect(slots[22]).toMatchObject({ gameNumber: 23, homeAction: 'breaks', awayAction: 'racks' });
+    expect(slots[23]).toMatchObject({ gameNumber: 24, homeAction: 'racks',  awayAction: 'breaks' });
+    expect(slots[24]).toMatchObject({ gameNumber: 25, homeAction: 'breaks', awayAction: 'racks' });
+  });
+
+  it('break counts are balanced within 1 (home: 13, away: 12) — fairness invariant', () => {
+    // Pre-fix: home would have 15 breaks vs away 10 (off by 5). With the
+    // last-round alternation, home gets 13 and away 12 (off by 1).
+    const homeBreaks = slots.filter((s) => s.homeAction === 'breaks').length;
+    const awayBreaks = slots.filter((s) => s.awayAction === 'breaks').length;
+    expect(homeBreaks).toBe(13);
+    expect(awayBreaks).toBe(12);
+    expect(Math.abs(homeBreaks - awayBreaks)).toBeLessThanOrEqual(1);
   });
 
   it('25 is odd — ties impossible at this combo level', () => {
     expect(slots.length % 2).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 3v3 SRR — odd-totalRounds fairness pass (smaller exemplar; not shipped)
+// ---------------------------------------------------------------------------
+
+describe('generatePairings — 3v3 SRR (odd totalRounds fairness smoke)', () => {
+  // Not a shipped combo, but the smallest case that exercises the
+  // odd-totalRounds last-round alternation. 3 rounds × 3 games = 9 games.
+  const slots = generatePairings({
+    lineupSize: 3,
+    gameGeneration: 'single_round_robin',
+    homeLineup: [...HOME_3V3],
+    awayLineup: [...AWAY_3V3],
+  });
+
+  it('produces exactly 9 slots', () => {
+    expect(slots).toHaveLength(9);
+  });
+
+  it('rounds 0 and 1 uniform; round 2 (last, odd) alternates per game', () => {
+    // Round 0 (games 1-3): all home breaks
+    expect(slots[0].homeAction).toBe('breaks');
+    expect(slots[1].homeAction).toBe('breaks');
+    expect(slots[2].homeAction).toBe('breaks');
+    // Round 1 (games 4-6): all home racks
+    expect(slots[3].homeAction).toBe('racks');
+    expect(slots[4].homeAction).toBe('racks');
+    expect(slots[5].homeAction).toBe('racks');
+    // Round 2 (games 7-9): alternates starting with home
+    expect(slots[6].homeAction).toBe('breaks');
+    expect(slots[7].homeAction).toBe('racks');
+    expect(slots[8].homeAction).toBe('breaks');
+  });
+
+  it('break counts are balanced within 1 (home: 5, away: 4)', () => {
+    const homeBreaks = slots.filter((s) => s.homeAction === 'breaks').length;
+    const awayBreaks = slots.filter((s) => s.awayAction === 'breaks').length;
+    expect(homeBreaks).toBe(5);
+    expect(awayBreaks).toBe(4);
+    expect(Math.abs(homeBreaks - awayBreaks)).toBeLessThanOrEqual(1);
   });
 });
 
