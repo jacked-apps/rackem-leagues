@@ -29,6 +29,14 @@ interface GamesListProps {
   getPlayerDisplayName: (playerId: string | null) => string;
   onGameClick: (gameNumber: number, playerId: string, playerName: string, teamId: string) => void;
   onVacateClick: (gameNumber: number, currentWinnerName: string) => void;
+  /**
+   * Optional peek-on-confirmed-game handler (many-eyes Unit 6). When provided,
+   * the player-name areas in a fully-confirmed game row become tappable —
+   * tapping opens the peek/confirm dialog. NOT overloading `onGameClick`
+   * (which is the scoring-shaped contract for the pending state) so the
+   * pending-state tests + behavior stay untouched.
+   */
+  onPeekClick?: (gameNumber: number) => void;
   onVacateRequestClick?: (gameNumber: number, currentWinnerName: string) => void;
   homeTeamId: string;
   awayTeamId: string;
@@ -52,6 +60,7 @@ export function GamesList({
   getPlayerDisplayName,
   onGameClick,
   onVacateClick,
+  onPeekClick,
   onVacateRequestClick,
   homeTeamId,
   awayTeamId,
@@ -246,14 +255,25 @@ export function GamesList({
                 );
               }
 
-              // If confirmed, show divs with trophy on winner and Vacate button in middle
+              // If confirmed, show divs with trophy on winner and Vacate button in middle.
+              // Unit 6: when onPeekClick is provided, the player-name areas become
+              // tappable buttons that open the peek/confirm dialog. The Vacate
+              // button stays as the deliberate destructive action — separate concern.
+              const handlePeek = onPeekClick
+                ? () => onPeekClick(gameResult.game_number)
+                : undefined;
               return (
                 <div key={gameResult.game_number} className="grid grid-cols-[auto_1fr_auto_1fr] gap-2 items-center text-sm py-2 border-b">
                   <div className="font-semibold">{gameResult.game_number}.</div>
-                  <div className={`text-center p-2 rounded ${leftWon ? winnerClass : loserClass}`}>
+                  <button
+                    type="button"
+                    disabled={!handlePeek}
+                    onClick={handlePeek}
+                    className={`text-center p-2 rounded ${leftWon ? winnerClass : loserClass} ${handlePeek ? 'transition hover:opacity-80 cursor-pointer' : 'cursor-default'}`}
+                  >
                     {leftWon && <span className="mr-1">🏆</span>}
                     {leftDisplayName}
-                  </div>
+                  </button>
                   <Button
                     variant="outline"
                     size="sm"
@@ -264,10 +284,15 @@ export function GamesList({
                   >
                     Vacate
                   </Button>
-                  <div className={`text-center p-2 rounded ${rightWon ? winnerClass : loserClass}`}>
+                  <button
+                    type="button"
+                    disabled={!handlePeek}
+                    onClick={handlePeek}
+                    className={`text-center p-2 rounded ${rightWon ? winnerClass : loserClass} ${handlePeek ? 'transition hover:opacity-80 cursor-pointer' : 'cursor-default'}`}
+                  >
                     {rightWon && <span className="mr-1">🏆</span>}
                     {rightDisplayName}
-                  </div>
+                  </button>
                 </div>
               );
             }
