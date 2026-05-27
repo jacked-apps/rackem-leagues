@@ -42,7 +42,7 @@ export function DisputeBanner({ disputes, onDisputeClick }: DisputeBannerProps) 
 
   return (
     <Alert variant="destructive">
-      <AlertTitle>{TITLE}</AlertTitle>
+      <AlertTitle className="text-lg font-bold">{TITLE}</AlertTitle>
       <AlertDescription>
         <ul className="space-y-1">
           {disputes.map((d) => (
