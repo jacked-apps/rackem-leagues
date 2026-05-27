@@ -20,10 +20,10 @@ import { Button } from '@/components/ui/button';
 import type { GameDispute } from '@/utils/match/deriveDisputes';
 
 // ── Copy (deferrable to Ed) ────────────────────────────────────────────────
-const TITLE_ONE = '1 game has a scoring dispute';
-const TITLE_MANY = (n: number) => `${n} games have a scoring dispute`;
-const CALL_TO_ACTION =
-  "Scores didn't match — please resolve before finishing the match.";
+// Banner is a loud category header — the count is implicit in the list of
+// rows below, and the modal opened by tapping a row carries the full
+// explanation (so no description line here, to avoid duplication).
+const TITLE = 'SCORING DISPUTE!';
 const ROW_PREFIX = 'Game';
 
 export interface DisputeBannerProps {
@@ -42,12 +42,9 @@ export function DisputeBanner({ disputes, onDisputeClick }: DisputeBannerProps) 
 
   return (
     <Alert variant="destructive">
-      <AlertTitle>
-        {disputes.length === 1 ? TITLE_ONE : TITLE_MANY(disputes.length)}
-      </AlertTitle>
+      <AlertTitle>{TITLE}</AlertTitle>
       <AlertDescription>
-        <p>{CALL_TO_ACTION}</p>
-        <ul className="mt-2 space-y-1">
+        <ul className="space-y-1">
           {disputes.map((d) => (
             <li key={d.game_id}>
               {onDisputeClick ? (
