@@ -26,8 +26,8 @@ import type { ResultLike } from '@/utils/match/deriveDissents';
 
 // ── Copy (deferrable to Ed) ────────────────────────────────────────────────
 const TITLE = (n: number) => `Game ${n}: scoring dispute`;
-const DESCRIPTION =
-  "Two scorers entered different details. Compare what each person said, then re-enter the correct result from the games list.";
+const DESCRIPTION = (n: number) =>
+  `${n} scorers entered different results. This game could not be recorded. Please re-score the game with all the correct details.`;
 
 export interface DisputeDetailModalProps {
   /** The dispute to show, or null when closed. */
@@ -107,7 +107,7 @@ export function DisputeDetailModal({
           <>
             <DialogHeader>
               <DialogTitle>{TITLE(dispute.game_number)}</DialogTitle>
-              <DialogDescription>{DESCRIPTION}</DialogDescription>
+              <DialogDescription>{DESCRIPTION(dispute.initiations.length)}</DialogDescription>
             </DialogHeader>
 
             <div className="space-y-2">
