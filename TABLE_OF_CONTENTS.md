@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-24 (Added live-scoring-resilience brainstorm + implementation plan: `docs/brainstorms/2026-05-24-live-scoring-resilience-requirements.md` and `docs/plans/2026-05-24-001-feat-live-scoring-resilience-plan.md` — robust multi-device live match scoring (connection resilience + concurrency correctness). Branch `docs/live-scoring-resilience-brainstorm`.)
+> **Last Updated**: 2026-05-27 (Added dev/staging-only Fargo Handicap Calculator at `/tools/handicap-calculator`. New self-contained folder `src/handicapCalculator/` (page + math util + local route gate + index). Hidden from production via `VITE_APP_ENV` gate. Branch `feat/handicap-calculator`.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -665,6 +665,15 @@ how to add a new test, demo recording, cleanup model).
 - `FormatComparison.tsx` - Format comparison
 - `EightManFormatDetails.tsx` - 8-man format details
 - `FiveManFormatDetails.tsx` - 5-man format details
+
+#### Handicap Calculator (`/handicapCalculator/`) — **dev/staging only**
+
+Standalone explainer at `/tools/calc`. Estimates Fargo-style team handicap for a 5v5 / 25-game match. Entry point is a small "LMS Calc" link at the bottom of the Profile page (dev/staging only). Self-contained — to remove the feature entirely: delete the `/handicapCalculator/` folder and remove the marked blocks (grep for `Handicap Calculator`) in `navigation/NavRoutes.tsx` and `profile/Profile.tsx`.
+
+- `HandicapCalculator.tsx` - The page: 10 rating inputs + result card
+- `fargoHandicap.ts` - Educational handicap-spot approximation (gap / 65, capped)
+- `NonProdGate.tsx` - Local route gate; redirects to `/` in production
+- `index.ts` - Public surface (page + gate re-exports)
 
 #### Official Rulebook Reader (`/rules/`)
 

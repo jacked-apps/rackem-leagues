@@ -33,6 +33,8 @@ import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
 import { ShareAppCard } from '@/components/ShareAppCard';
 import { ThemeToggle } from '@/components/ThemeToggle';
+// --- Handicap Calculator entry point (dev/staging only) — remove this import + the marked block at the bottom of the page to remove the entry point ---
+import { isProduction } from '@/config/environment';
 
 /**
  * Member Profile Page Component
@@ -216,6 +218,17 @@ export const Profile: React.FC = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* --- Handicap Calculator entry point (dev/staging only) — remove this block + the import above to remove the entry point --- */}
+          {!isProduction && (
+            <div className="flex justify-center pt-2">
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/tools/calc" className="text-xs text-muted-foreground">
+                  LMS Calc
+                </Link>
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>
