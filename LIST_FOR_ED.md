@@ -2239,3 +2239,48 @@ user was" fix.
 **Severity:** LOW — UX papercut, no data risk. Just annoying when doing
 roster work that doesn't need matchups context.
 
+---
+
+## 34. Tappable PlayerName Component — Reveal Full Name on Tap
+
+**Discovered:** 2026-05-27 while polishing the many-eyes Phase 2 dispute
+modal copy.
+
+**The issue:** Across the app, we display player names as plain text via
+`getPlayerDisplayName` / `getPlayerNicknameById`. Per
+`feedback_nickname_is_mobile_primary`, nickname IS the mobile primary
+display — but users sometimes need to see the full name to disambiguate
+(two "Jack"s on different teams, a nickname they don't recognize, etc.).
+Today there's no way to surface the full name without leaving the screen.
+
+**The behavior we want:** any place a nickname is shown should be
+tappable; tapping reveals the player's full name (first + last) in a
+tooltip / popover / expanded inline element. Consistent everywhere — not
+piecemeal.
+
+**Surfaces affected (incomplete list):**
+- Dispute UI (`DissentFlag.tsx`, `DisputeDetailModal.tsx`) — Phase 2.
+- `GamesList.tsx` — player buttons + completed-game labels.
+- `UnifiedScoreboard.tsx` — score rows.
+- `ConfirmationDialog.tsx` — winner name in the prompt modal.
+- The lineup chain, MyTeams cards, anywhere `getPlayerDisplayName` is
+  the visible output.
+
+**Approach (suggested):**
+1. Build a shared `<PlayerName />` component (props: full Player object
+   with `first_name`, `last_name`, `nickname`). Renders nickname; on
+   tap/hover, shows a popover with the full name + maybe BCA# if known.
+   Reuses shadcn `Popover` or `Tooltip`.
+2. Adopt incrementally — start with one surface (e.g. dispute UI), then
+   roll through the others one PR at a time. Each adoption is mechanical
+   (replace `{getPlayerDisplayName(id)}` with
+   `<PlayerName player={players.get(id)} />`).
+
+**Severity:** MEDIUM — real UX gap (especially in larger leagues with
+nickname collisions), but no data integrity risk. Best done as its own
+focused branch so the component lands properly + gets adopted
+consistently.
+
+**Family:** related to `project_placeholder_badge_remaining_surfaces` —
+both are "consistent player-info display across the app" cleanups.
+
