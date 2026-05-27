@@ -165,23 +165,23 @@ export function GamesList({
             // the Pairings Generator computed at lineup-lock.
             const breakBadge = (
               <span
-                className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-foreground text-background text-xs font-bold mr-1.5 leading-none"
+                className="absolute left-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-5 h-5 rounded-full bg-foreground text-background text-xs font-bold leading-none"
                 aria-label="Breaks"
               >
                 B
               </span>
             );
             const leftDisplayName = (
-              <>
+              <span className="relative flex items-center justify-center w-full">
                 {leftIsBreaker && breakBadge}
                 {leftName}
-              </>
+              </span>
             );
             const rightDisplayName = (
-              <>
+              <span className="relative flex items-center justify-center w-full">
                 {rightIsBreaker && breakBadge}
                 {rightName}
-              </>
+              </span>
             );
 
             // Check game status
