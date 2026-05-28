@@ -161,7 +161,7 @@ graph LR
 
 ### Unit 1: Glossary skeleton + first seed entry
 
-- [ ] **Unit 1**
+- [x] **Unit 1** ✅
 
 **Goal:** Stand up the glossary data source as scaffolding, seeded with exactly ONE entry (FargoRate) so downstream units have something real to consume. Bulk seeding happens in Units 4 + 5 as each surface is covered.
 

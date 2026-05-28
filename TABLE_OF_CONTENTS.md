@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-28 (Added operator-help-system brainstorm + Phase 1 plan: `docs/brainstorms/2026-05-28-operator-help-system-requirements.md` and `docs/plans/2026-05-28-001-feat-operator-help-system-phase-1-plan.md` — phased operator-facing help architecture: glossary data source + GlossaryInfoButton wrapper + InfoButton coverage in Phase 1; persistent Help button + Walkthroughs/Concepts deferred to Phase 2.)
+> **Last Updated**: 2026-05-28 (Operator help system Phase 1 — Unit 1 shipped: `src/glossary/` registry seeded with FargoRate entry. Schema + per-domain entry files + lookup/search/helper functions. See `docs/plans/2026-05-28-001-feat-operator-help-system-phase-1-plan.md`.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -1417,6 +1417,18 @@ Calculator-as-type-with-params registry. Each shipped points formula implements 
 - `resolveParams.ts` - Parameter resolution helper — merges calculator params from preferences with overrides/defaults so callers get a fully-shaped params object regardless of which fields the LO actually configured.
 - `__tests__/types.contract.test.ts` - **Contract tests** locking the `PointsCalculator<P>` discriminated-union shape — every shipped calculator must conform to either `kind: 'aggregate'` or `kind: 'per_game'` with the matching input signature.
 - `__tests__/displayHints.test.ts` - Tests for calculator-driven display hints (scoring popup field shapes) used by the per-game UI to render the right inputs for the active calculator.
+
+---
+
+### 📖 Glossary (`/glossary/`) **NEW — Operator-facing term registry**
+
+Single source of truth for operator help terminology. Slug-keyed TS module registry; entries carry canonical name + aliases + short def + long def (rich content) + L1 anchor + related slugs. Consumed by `GlossaryInfoButton`, the Learn-hub Glossary page, and the `pnpm glossary:verify` drift audit. See `docs/plans/2026-05-28-001-feat-operator-help-system-phase-1-plan.md` Unit 1.
+
+- `types.ts` — `GlossaryEntry` and `L1Anchor` schema. **R4 contract**: every entry has slug, canonicalName, aliases, shortDef (string, ≤2 sentences), longDef (`React.ReactNode`), `l1_anchor`, related.
+- `index.tsx` — registry merge across per-domain entry files. Exports `GlossarySlug` union (compile-time enforced), `getGlossaryEntry(slug)`, `getAllGlossaryEntries()`, `searchGlossary(query)` (substring on canonical + aliases), `useGlossarySearch` hook, `glossaryToInfoButtonProps(slug)` helper.
+- `entries/handicap.tsx` — handicap-related entries. Seeded in Unit 1 with `fargorate`. Units 4 + 5 extend.
+- `entries/scoring.tsx`, `entries/match-format.tsx`, `entries/standings.tsx`, `entries/general.tsx` — empty placeholders, filled in Units 4 + 5.
+- `__tests__/glossary.test.ts` — schema completeness, slug uniqueness, alias collisions, related-dial integrity, search behavior.
 
 ---
 
