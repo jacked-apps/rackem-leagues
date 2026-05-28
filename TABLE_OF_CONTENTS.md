@@ -40,6 +40,7 @@
 | `MVP_FEATURE_LIST.md` | Minimum viable product feature list | **Active - MVP tracker** |
 | `LIST_FOR_JACK.md` | Design and styling tasks for Jack | **Active - UI/UX improvements** |
 | `LIST_FOR_ED.md` | Tasks and refactoring items for Ed | **Active - travels with branch commits** |
+| `PRE_LAUNCH_CHECKLIST.md` | Single source of "must do before production go-live" | **🚨 GATE** — RLS pass + auth email-confirmations + passwordless go-live items |
 
 ### Reference Documentation Folder
 
