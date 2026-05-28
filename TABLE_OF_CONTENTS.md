@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-24 (Added live-scoring-resilience brainstorm + implementation plan: `docs/brainstorms/2026-05-24-live-scoring-resilience-requirements.md` and `docs/plans/2026-05-24-001-feat-live-scoring-resilience-plan.md` — robust multi-device live match scoring (connection resilience + concurrency correctness). Branch `docs/live-scoring-resilience-brainstorm`.)
+> **Last Updated**: 2026-05-28 (Added operator-help-system brainstorm: `docs/brainstorms/2026-05-28-operator-help-system-requirements.md` — phased operator-facing help architecture: glossary data source + InfoButton coverage in Phase 1, persistent Help button + Walkthroughs/Concepts deferred to Phase 2.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -93,6 +93,7 @@
 | `docs/brainstorms/2026-05-17-tie-resolution-ownership-requirements.md` | Captured architectural direction for Win Calc metric stack + Tiebreak System | Drove the locked-doc edits + new Tiebreak System Module (#9 in catalog, replacing dissolved Standings & Tiebreakers) |
 | `docs/brainstorms/2026-05-21-lo-primitive-naming-layer-requirements.md` | Naming/identity layer for LO-built primitives — locks the internal-name / display-name / description / label glossary; mirror is workshop-authoring-only | Design (future workshop); NOT locked canon |
 | `docs/brainstorms/2026-05-21-scoreboard-module-design-requirements.md` | ROUGH: scoreboard = slots per side filled by modules that read the state bag + render labeled values; LO-customizable; stress-tests the naming layer | Rough draft — Ed's idea, to flesh out |
+| `docs/brainstorms/2026-05-28-operator-help-system-requirements.md` | Phased operator-facing help: glossary data source + GlossaryInfoButton wrapper + InfoButton coverage on operator wizards (Phase 1); persistent Help button + Walkthroughs/Concepts (Phase 2, evidence-gated) | L3 of the four-layer doc model; adds alias/synonym layer for operator vocabulary collisions |
 | `/docs/plans/` | **CE implementation plans** | Output of `/compound-engineering:ce-plan` |
 | `docs/plans/2026-04-17-001-feat-official-rulebook-reader-plan.md` | Implementation plan for the Official Rulebook Reader | 6 units, active branch `feature/official-rulebook-reader` |
 | `docs/plans/2026-04-27-001-feat-global-header-nav-rework-plan.md` | Implementation plan for the global header & navigation rework | 9 units in 3 phases, active branch `fix/header-mobile-rework` |
