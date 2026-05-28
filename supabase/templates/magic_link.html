@@ -1,0 +1,11 @@
+<!--
+  Passwordless sign-in email — typed CODE (not a magic link).
+  signInWithOtp() renders this magic_link template; {{ .Token }} is the 6-digit
+  code. Locally, Mailpit (http://localhost:54324) captures this email for testing.
+-->
+<h2>Sign in to Rack'em</h2>
+<p>Enter this code to finish signing in:</p>
+<p style="font-size: 28px; font-weight: bold; letter-spacing: 4px; margin: 16px 0;">{{ .Token }}</p>
+<p style="color: #666; font-size: 13px;">
+  This code expires in 1 hour. If you didn't try to sign in, you can ignore this email.
+</p>
