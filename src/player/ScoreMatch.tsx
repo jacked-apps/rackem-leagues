@@ -643,7 +643,9 @@ function ScoreMatchBody() {
         const gameNumber = game.game_number;
         handledConfirmations.current.add(gameNumber);
         void mutationsRef.current
-          ?.confirmOpponentScore(gameNumber)
+          // autoConfirmed=true: scan-fired, no modal — recorded as the
+          // integrity metric on the vouch row (never affects officiality).
+          ?.confirmOpponentScore(gameNumber, false, true)
           .then((ok) => {
             if (!ok) handledConfirmations.current.delete(gameNumber);
           });
@@ -686,7 +688,9 @@ function ScoreMatchBody() {
         setBreakAndRun(false);
         setGoldenBreak(false);
       },
-      (gameNumber) => mutations.confirmOpponentScore(gameNumber)
+      // This callback is only invoked from handlePlayerClick's auto-confirm
+      // branch, so the vouch is auto-confirmed (metric only).
+      (gameNumber) => mutations.confirmOpponentScore(gameNumber, false, true)
     );
   };
 
