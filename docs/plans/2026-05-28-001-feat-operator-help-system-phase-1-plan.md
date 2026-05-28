@@ -137,130 +137,60 @@ Out of scope (Phase 2):
 - **Scroll-into-view behavior on deep-link** — Smooth scroll vs jump; implementer picks based on visual feel during Unit 6.
 - **Whether Unit 3's prop change needs a codemod helper** — Depends on call-site count discovered while migrating; if >20 mechanical edits, write a tiny `tsx scripts/migrate-info-button-slugs.ts` helper.
 
-## High-Level Technical Design
+## Architecture in one paragraph
 
-> *This illustrates the intended approach and is directional guidance for review, not implementation specification. The implementing agent should treat it as context, not code to reproduce.*
-
-```mermaid
-graph TB
-  subgraph DataLayer["Data layer"]
-    G[src/glossary/index.ts<br/>slug-keyed registry]
-    GE[src/glossary/entries/*.ts<br/>per-domain entries]
-    GE --> G
-  end
-
-  subgraph Render["UI / Render layer"]
-    GIB[GlossaryInfoButton<br/>by slug]
-    IB[InfoButton<br/>existing, base]
-    GIB --> IB
-  end
-
-  subgraph WizardSurfaces["Phase 1 coverage surfaces"]
-    SCO[SelectableCard.tsx<br/>infoButton: slug | content]
-    CSE[CardSelector.tsx<br/>labelInfoButton: slug | content]
-    L2[league-v2 steps]
-    S2[season-v2 steps]
-    OP[operator/* screens]
-    SCO -.uses.-> GIB
-    CSE -.uses.-> GIB
-    L2 -.uses.-> SCO
-    L2 -.uses.-> CSE
-    S2 -.uses.-> SCO
-    OP -.uses.-> GIB
-  end
-
-  subgraph LearnHub["Learn hub at /operator-learn"]
-    OL[OperatorLearn.tsx page]
-    GV[GlossaryView<br/>list + search]
-    GVE[GlossaryEntry<br/>deep-link target #slug]
-    OL --> GV
-    GV --> GVE
-    GV -.queries.-> G
-  end
-
-  GIB -- 'Learn more →' new tab --> OL
-
-  subgraph Audit["Drift audit (CI / pre-commit)"]
-    SCR[scripts/audit-glossary.ts]
-    L1[docs/league-system/<br/>locked, read-only]
-    SCR -.reads.-> G
-    SCR -.verifies path+anchor.-> L1
-  end
-
-  G -- slug union type --> GIB
-```
-
-**Dependency direction summary:**
-- Glossary is the single content source. Render-layer (`GlossaryInfoButton`), wizard-wrapper props, Learn hub, and audit script all consume it.
-- The base `InfoButton` is unchanged and continues to serve non-glossary inline help (one-off page guidance).
-- `docs/league-system/` is read by the audit script only — never written to by Phase 1 code.
+Glossary is the single content source (slug-keyed TS registry). The render layer wraps the existing `InfoButton` as `GlossaryInfoButton`, which looks up an entry by slug, shows `shortDef` in the popover, and links to `/operator-learn#<slug>` for the rich `longDef`. Wizard wrappers (`SelectableCard`, `CardSelector`) get a slug-prop variant — additive, no migration. The Learn hub queries the same registry; the drift audit reads it to verify L1 anchors. L1 itself stays read-only.
 
 ## Implementation Units
 
 ```mermaid
 graph LR
-  U1[Unit 1<br/>Glossary data source] --> U2[Unit 2<br/>GlossaryInfoButton]
-  U1 --> U7[Unit 7<br/>Drift audit script]
-  U2 --> U3a[Unit 3a<br/>Slug-aware<br/>wizard wrapper props]
-  U3a --> U4[Unit 4<br/>Coverage: wizards]
-  U3a --> U5[Unit 5<br/>Coverage: operator screens]
-  U2 --> U6[Unit 6<br/>Learn hub route + page]
+  U1[Unit 1<br/>Glossary skeleton<br/>+ 1 seed entry] --> U2[Unit 2<br/>GlossaryInfoButton]
+  U2 --> U25[Unit 2.5<br/>First live slice<br/>smoke test]
+  U25 --> U3a[Unit 3a<br/>Slug-aware<br/>wrapper props]
+  U25 --> U6[Unit 6<br/>Learn hub]
+  U3a --> U4[Unit 4<br/>Coverage + seed:<br/>wizards]
+  U3a --> U5[Unit 5<br/>Coverage + seed:<br/>operator screens]
+  U1 --> U7[Unit 7<br/>Drift audit]
   U4 --> U8[Unit 8<br/>Outside-LO walk]
   U5 --> U8
   U6 --> U8
   U7 --> U8
-  U8 --> U3b[Unit 3b<br/>infoContent audit<br/>+ migration<br/>gated]
+  U8 --> U3b[Unit 3b<br/>infoContent<br/>migration<br/>gated]
 ```
 
-### Unit 1: Glossary data source — schema, per-domain entries, registry
+### Unit 1: Glossary skeleton + first seed entry
 
 - [ ] **Unit 1**
 
-**Goal:** Stand up the single glossary data source. Define the `GlossaryEntry` type, seed initial per-domain entries (the league-v2 + season-v2 wizard term coverage), and expose a slug-keyed lookup.
+**Goal:** Stand up the glossary data source as scaffolding, seeded with exactly ONE entry (FargoRate) so downstream units have something real to consume. Bulk seeding happens in Units 4 + 5 as each surface is covered.
 
-**Requirements:** R4, R5, R6
+**Requirements:** R4, R5, R6 (partial — schema set, full seed deferred)
 
 **Dependencies:** None
 
 **Files:**
-- Create: `src/glossary/types.ts` (the `GlossaryEntry` interface; `GlossarySlug` string union derived from entries)
-- Create: `src/glossary/entries/handicap.ts` (handicap-related terms)
-- Create: `src/glossary/entries/scoring.ts` (scoring-related terms)
-- Create: `src/glossary/entries/match-format.ts` (race, pairing, lineup terms)
-- Create: `src/glossary/entries/standings.ts` (standings, tiebreaker terms)
-- Create: `src/glossary/entries/general.ts` (Division, Module, Spot, Win, etc.)
-- Create: `src/glossary/index.ts` (registry merge, `getGlossaryEntry(slug)`, `searchGlossary(query)`)
-- Create: `src/glossary/__tests__/glossary.test.ts`
-- Modify: `TABLE_OF_CONTENTS.md` (add new directory)
+- Create: `src/glossary/types.ts` — `GlossaryEntry` interface; `GlossarySlug` string union derived from entries.
+- Create: `src/glossary/entries/handicap.ts` — seed with `fargorate` entry only.
+- Create: `src/glossary/entries/scoring.ts`, `match-format.ts`, `standings.ts`, `general.ts` — empty per-domain files (placeholders for Units 4/5 to fill).
+- Create: `src/glossary/index.ts` — registry merge, `getGlossaryEntry(slug)`, `searchGlossary(query)`, `glossaryToInfoButtonProps(slug)` helper.
+- Create: `src/glossary/__tests__/glossary.test.ts`.
+- Modify: `TABLE_OF_CONTENTS.md`.
 
 **Approach:**
-- `GlossaryEntry` fields: `slug` (kebab-case), `canonicalName` (string), `aliases` (string[]), `shortDef` (**string**, max 1–2 sentences, plain text — Design Principle 3), `longDef` (**`React.ReactNode`**, rich content — bullet lists, bold, links, examples — Design Principle 4), `l1_anchor` (`{ path: string; anchor?: string }`), `related` (string[] of related slugs).
-- Each `entries/*.ts` file exports a typed `const entries = { [slug]: GlossaryEntry } satisfies Record<string, GlossaryEntry>`.
-- `src/glossary/index.ts` merges all per-domain entries, exports `GlossarySlug` as the union of all keys, exports `getGlossaryEntry(slug: GlossarySlug): GlossaryEntry` (no `| null` — slug is type-checked).
-- `searchGlossary` is a pure function: lowercase + substring on canonical names and aliases, returns `{ entry, matchType, matchIndex }[]`. Mirrors `searchRulebook` shape.
-- Seed sources for the initial entries (per R6): Ed's experience + BCAPL LO Handbook 2020 (already cited in L1) + FargoRate glossary references already in L1 + the planned outside-LO interview (informs alias backlog post-launch).
-- Initial term scope: cover every glossary-eligible term in the league-v2 + season-v2 wizard steps (per R7a rubric). Operator-area screen terms get a second pass during Unit 5.
+- `GlossaryEntry` fields per Key Decisions: `slug`, `canonicalName`, `aliases`, `shortDef` (string, max 1–2 sentences), `longDef` (`React.ReactNode`), `l1_anchor: { path; anchor? }`, `related` (slug[]).
+- Each `entries/*.ts` exports `const entries = { ... } satisfies Record<string, GlossaryEntry>`.
+- `index.ts` merges entries, exports `GlossarySlug` union of all keys, exports `getGlossaryEntry(slug: GlossarySlug)` (no `| null` — slug is type-checked).
+- `searchGlossary` mirrors `searchRulebook`: lowercase substring on canonical + aliases, returns `{ entry, matchType: 'canonical' | 'alias', matchIndex }[]`.
 
-**Patterns to follow:**
-- Registry shape: `src/systems/handicap-systems/index.ts` (typed switch-with-throw — but here we use a record lookup since slugs are type-checked).
-- Test shape: `src/systems/handicap-systems/__tests__/registry.test.ts`.
-- Lookup function shape: `src/rules/resolveRuleId.ts`.
-- Search function shape: `src/rules/useRulebookSearch.ts` (`searchRulebook` pure function).
-- Per-area file split: `src/constants/infoContent/*.tsx`.
+**Patterns to follow:** `src/systems/handicap-systems/index.ts` (registry shape), `src/rules/resolveRuleId.ts` (lookup), `src/rules/useRulebookSearch.ts` (search).
 
 **Test scenarios:**
-- *Happy path:* Every `entries/*.ts` file's exports compile under `satisfies Record<string, GlossaryEntry>` — TypeScript catches schema violations at build time.
-- *Schema completeness:* For every entry, assert all required fields present and non-empty (`canonicalName`, `shortDef`, `longDef`, `l1_anchor.path`).
-- *Slug uniqueness:* Iterate the merged registry; assert no duplicate slugs across entry files (a JS object key collision would have happened, but we still test the merge result).
-- *Alias collisions:* For every entry, assert no alias matches another entry's `canonicalName` (ambiguous search) and no alias is duplicated across entries.
-- *Related-dial integrity:* Every slug in any entry's `related` array exists in the merged registry.
-- *Search happy path:* `searchGlossary('golden break')` returns the `break-and-run` entry with `matchType: 'alias'`. `searchGlossary('FargoRate')` returns the `fargorate` entry with `matchType: 'canonical'`.
-- *Search edge cases:* Empty query returns empty array. Mixed-case query matches (`'FARGORATE'`). Query with no matches returns empty array.
+- Schema/slug/alias/related-integrity tests against the FargoRate entry (the pattern, not the volume, is what's validated here).
+- `searchGlossary('fargo')` returns the FargoRate entry with `matchType: 'canonical'`.
+- TypeScript blocks `getGlossaryEntry('not-a-slug')` at compile time.
 
-**Verification:**
-- `pnpm test:run` passes the new test file.
-- `pnpm typecheck` (via `pnpm build`) passes — the `GlossarySlug` union compiles and resolves to the merged entry keys.
-- `getGlossaryEntry('break-and-run')` returns the canonical entry from any importing module.
+**Verification:** `pnpm test:run` and `pnpm typecheck` pass.
 
 ---
 
@@ -301,6 +231,39 @@ graph LR
 **Verification:**
 - All Unit 2 tests pass.
 - TypeScript blocks `<GlossaryInfoButton slug="totally-fake" />` at the call site (slug union enforcement).
+
+---
+
+### Unit 2.5: First live slice (smoke test)
+
+- [ ] **Unit 2.5**
+
+**Goal:** Wire the architecture end-to-end on ONE term in ONE wizard step, manually verify it works, THEN scale out. Catches architectural mistakes before they're baked into ~50 file migrations.
+
+**Requirements:** Architecture validation (no requirement directly; protects R1, R2, R-INFRA1)
+
+**Dependencies:** Units 1, 2, 6 (Unit 6 ships its skeleton in parallel; 2.5 needs only the route + a minimal Glossary view)
+
+**Files:**
+- Modify: `src/wizards/league-v2/steps/HandicapSystemStep.tsx` — replace ONE existing inline InfoButton (the FargoRate term) with `<GlossaryInfoButton slug="fargorate" />`.
+- No other coverage migrations in this unit.
+
+**Approach:**
+- Pick HandicapSystemStep because it already imports InfoButton and FargoRate is a prominent term there.
+- Swap exactly one InfoButton call site for the slug-bound variant.
+- Manually verify in dev: open the league-v2 wizard → reach the HandicapSystemStep → click the "?" next to FargoRate → popover shows canonical name + 1–2 sentence shortDef → click "Learn more →" → new tab opens at `/operator-learn#fargorate` → page scrolls to and highlights the entry.
+- Smoke-walk on both desktop and mobile widths (per `feedback_dark_mode_fixed_bg_text_colors`, also catches visual issues).
+- Document the smoke walk in a single-line note on the Unit 2.5 task or PR description.
+
+**Patterns to follow:** Existing FargoRate InfoButton call site in `HandicapSystemStep.tsx`.
+
+**Test scenarios:**
+- *Manual smoke (the deliverable):* dev walkthrough described above passes.
+- *Regression:* `pnpm test:run` + `pnpm typecheck` still pass after the swap.
+
+**Verification:**
+- Smoke walk works as described.
+- If anything is off (popover doesn't render, deep-link doesn't scroll, mobile breaks), STOP and fix before proceeding to Units 3a/4/5. This is the architectural sanity check.
 
 ---
 
@@ -397,26 +360,18 @@ graph LR
 - Modify: `TABLE_OF_CONTENTS.md` if new files added
 
 **Approach:**
-- Per step file: walk every term, dial, field label, status badge. Apply R7a (rubric: not-a-plain-English-noun OR has-aliases OR badge-meaning-not-literal-word). For each match, ensure a glossary slug exists (add to Unit 1's entries if missing — this is the bulk of the seed-list authoring work).
-- **Density check (Design Principle 2):** when 3+ options in a group share a concept, attach a single group-level `labelInfoButton` on the `CardSelector` instead of a per-option `infoButton`. Don't `?` every word. Visual target: no more than ~3 InfoButtons in one card's vertical space.
-- Where existing `InfoButton` / `infoButton: { title, content }` already covers the term, replace with `{ slug }` and verify the glossary entry's `shortDef` reads at least as well as the existing copy. Improve glossary copy if the prior inline copy was better.
-- New coverage: add `GlossaryInfoButton slug={...}` directly, or use the slug variant of the wizard wrappers (SelectableCard / CardSelector).
+- **This unit owns the bulk of the glossary seed work** (Unit 1 only seeded FargoRate). For each term that meets R7a (rubric: not-a-plain-English-noun OR has-aliases OR badge-meaning-not-literal-word), add a glossary entry under the appropriate `src/glossary/entries/*.ts` file AND mount a slug-bound InfoButton on the surface that uses it.
+- **Density rule (Design Principle 2):** when 3+ options in a group share a concept, use one group-level `labelInfoButton` on the `CardSelector` instead of per-option `?` icons. Target ~3 InfoButtons max in one card's vertical space.
+- Existing inline InfoButtons covering glossary terms get swapped to the slug variant; their original copy informs the glossary entry's `shortDef`.
 
-**Patterns to follow:**
-- Live call-site examples (research summary): `src/wizards/league-v2/steps/QualifierStep.tsx`, `HandicapSystemStep.tsx`.
-- Glossary slug consumption shape from Unit 2.
+**Patterns to follow:** `src/wizards/league-v2/steps/QualifierStep.tsx`, `HandicapSystemStep.tsx` (existing call sites).
 
 **Test scenarios:**
-- *Coverage assertion test (Unit 4 deliverable):* mount-and-render integration test in `src/__tests__/integration/wizardGlossaryCoverage.test.tsx`. For each step file, mount the step inside a test harness, query all rendered `GlossaryInfoButton` instances via test-id or component-name, and assert each instance's resolved slug exists in the registry. (Replaces an earlier grep-based approach — runtime rendering catches dynamic slug usage that grep misses.)
-- *Integration:* Mount a representative step (`HandicapSystemStep`) in a test, verify GlossaryInfoButton renders for each slug-bound term, verify "Learn more →" links to `/operator-learn#<slug>`.
-- *Density check:* one snapshot or assertion-count test per step asserting the InfoButton count stays at or below the density target.
-- *Smoke:* `pnpm test:run` passes the full suite after migration (no existing wizard test breaks).
+- *Coverage test:* mount-and-render integration test (`src/__tests__/integration/wizardGlossaryCoverage.test.tsx`) — mount each step, find all rendered `GlossaryInfoButton` instances, assert each resolved slug exists in the registry. Runtime rendering catches dynamic slug usage that source-grep misses.
+- *Density check:* assertion-count test per step asserting InfoButton count stays at or below the density target.
+- Regression: existing wizard tests still pass.
 
-**Verification:**
-- Every wizard step file's InfoButton-bearing terms resolve to a glossary slug (verified by coverage test).
-- `pnpm typecheck` passes.
-- `pnpm test:run` passes.
-- Visual smoke walk of league-v2 wizard in dev: every InfoButton opens with the expected glossary entry; "Learn more →" opens `/operator-learn#<slug>` in a new tab.
+**Verification:** coverage test passes; visual smoke walk confirms every "?" opens with the expected glossary entry and "Learn more →" deep-links correctly.
 
 ---
 
@@ -437,23 +392,11 @@ graph LR
 - Modify: `TABLE_OF_CONTENTS.md` if new files added
 - **`infoContent` file deletion happens in Unit 3b, not here** — Unit 5 only adds coverage; the migration + deletion is gated on Unit 8 validation.
 
-**Approach:**
-- Same survey-and-apply pattern as Unit 4, applied to operator-area screens. Same density rule applies — don't crowd a card with `?` icons; prefer group-level help.
-- Operator-component cards (e.g., `LeagueOverviewCard`, `OrganizationStaffCard`, `TeamsCard`) often render status badges and threshold values that meet R7a's badge clause; these need slug-bound InfoButtons.
-- Coverage uses the Unit 3a slug-variant wizard wrappers and `GlossaryInfoButton` directly. No `infoContent` files are touched in Unit 5 — they stay until Unit 3b decides what to migrate vs keep.
+**Approach:** Same survey-and-apply pattern as Unit 4 (add glossary entries as needed; mount slug-bound InfoButtons; density rule applies). Operator-component cards (e.g., `LeagueOverviewCard`, `OrganizationStaffCard`, `TeamsCard`) often render status badges and threshold values that meet R7a's badge clause. `infoContent` files are NOT touched in Unit 5 — they stay until Unit 3b decides what to migrate vs keep.
 
-**Patterns to follow:**
-- Same as Unit 4.
+**Test scenarios:** extend the Unit 4 coverage test to walk operator-area screens listed in R8.
 
-**Test scenarios:**
-- *Coverage assertion test extension:* Extend the Unit 4 coverage test to also walk operator-area screens listed in R8 — every InfoButton-shaped prop resolves to a glossary slug.
-- *Integration:* `OperatorDashboard.tsx` renders without referencing any deleted `infoContent` import (compile-time check).
-- *Smoke:* `pnpm test:run` passes after the cleanup.
-
-**Verification:**
-- `pnpm typecheck` passes (no dangling imports).
-- `pnpm test:run` passes.
-- Visual smoke of `OperatorDashboard` and one league-detail screen: InfoButtons open with glossary entries.
+**Verification:** coverage test passes; visual smoke of `OperatorDashboard` + one league-detail screen.
 
 ---
 
@@ -611,50 +554,31 @@ graph LR
 
 ## System-Wide Impact
 
-- **Interaction graph:**
-  - **New flow path** — Wizard step renders → `SelectableCard` or `CardSelector` with slug → `GlossaryInfoButton` (lookup via `getGlossaryEntry`) → `InfoButton` popover → user clicks "Learn more →" → new-tab navigation to `/operator-learn#<slug>` → Learn hub scrolls to entry.
-  - **Existing flow path** — Base `InfoButton` with inline `title + children` continues to work for non-glossary one-off page guidance (e.g., a temporary system status note).
-- **Error propagation:**
-  - Missing slug at runtime → `GlossaryInfoButton` dev-mode visible error + `console.error`, production console.warn + literal-slug fallback (does not crash the page).
-  - Broken `l1_anchor` → Unit 7 audit catches at build/test time; CI gate fails. No runtime error path.
-  - `GlossaryView` search with no matches → "no results" UI, no crash.
-- **State lifecycle risks:**
-  - Glossary is a static module-level constant — no state, no cache, no concurrency concerns.
-  - `GlossaryView`'s search is `useMemo`-wrapped; re-renders are tied to query state only.
-- **API surface parity:**
-  - `SelectableCard` and `CardSelector` `infoButton` props remain backwards compatible (existing `{ title, content }` shape still works). The added `{ slug }` variant is additive.
-  - Base `InfoButton` API is unchanged.
-- **Integration coverage:**
-  - The Unit 4 + Unit 5 coverage tests are the cross-layer scenario tests — they walk wizard/screen files, extract slug references, and assert they resolve in the registry.
-  - The Unit 6 deep-link test verifies the cross-boundary flow (`GlossaryInfoButton` → URL fragment → `GlossaryEntry` scroll-into-view).
-- **Unchanged invariants:**
-  - `docs/league-system/` content remains untouched. L1 policy gate (`PRINCIPLES.md §7`) is honored.
-  - `src/components/InfoButton.tsx` API is unchanged; the 62 existing call sites continue to work without migration.
-  - `src/wizards/teams-v2/`, `matchups-v2/`, `schedule-v2/` — not in Phase 1 scope; no changes.
-  - `withMember` shared routes (Standings, ScoreMatch, TeamStats) — not in Phase 1 scope; no operator-voice content added.
+- **Flow:** wizard step → wrapper with slug → `GlossaryInfoButton` → `InfoButton` popover → "Learn more →" opens `/operator-learn#<slug>` in new tab.
+- **Error paths:** missing slug → dev-visible error + console.error; production console.warn + literal-slug fallback (no crash). Broken `l1_anchor` → caught by Unit 7 audit at CI; no runtime error path. Search no-results → "no results" UI; no crash.
+- **API parity:** base `InfoButton` API unchanged (62 existing direct callers untouched). Wizard wrapper `infoButton` props gain `{ slug }` variant — additive, backwards-compatible.
+- **State:** glossary is a static module-level constant; no caches, no concurrency.
+- **Unchanged invariants:** `docs/league-system/` is read-only. `withMember` routes (Standings, ScoreMatch, TeamStats) and `teams-v2`/`matchups-v2`/`schedule-v2` wizards are out of scope — no changes.
 
 ## Risks & Dependencies
 
 | Risk | Mitigation |
 |------|------------|
-| Outside LO not reachable during Phase 1 timeline | Documented fallback per brainstorm: Ed simulates a first-time walk with written disclaimer. Unit 8 still produces an audit doc. |
-| `src/constants/infoContent/*.tsx` migration breaks an unknown wizard import path | Unit 3 keeps re-export shims under the same const names; `pnpm typecheck` catches any missed import before merge. |
-| Glossary entry copy quality is uneven (Ed authoring + outside LO seed) | Unit 8 walk surfaces low-quality entries empirically; iterate in-branch before opening PR. |
-| Coverage rubric (R7a) interpretation drifts as multiple agents author entries | The rubric is in code-review reach (cited in the brainstorm and the plan); the outside-LO walk is the empirical check. |
-| Wizard wrapper prop change (Unit 3) breaks an undiscovered call site shape | Discriminated union in TS makes missed migrations compile errors; no silent breakage path. |
-| Glossary registry grows past ~100 lines per per-domain file | Already split by domain (`entries/handicap.ts`, `scoring.ts`, etc.). Further split is a follow-up if any single file balloons. |
-| Audit script (Unit 7) false positives when L1 maintainers move sections legitimately | Pending-file allowlist tolerates documented L1 pending state. For real moves, the audit failure IS the signal — L1 maintainer updates the `l1_anchor`. This is the intended behavior. |
-| Phase 1 PR opens before Unit 8 walk completes | Plan's Unit 8 explicitly gates PR opening; this plan and `feedback_ask_before_pr` aligned. |
-| New `/operator-learn` page violates dark-mode token rules | `pnpm audit:scan` run as part of Unit 6 verification. |
+| Jack and friend-tier validators unreachable in Phase 1 window | Phase 1 ship delays. No Ed-simulation fallback (reviewed out — Ed can't simulate first-time confusion). |
+| Unit 3b's `infoContent` migration breaks a wizard import | Audit-before-migrate; thin re-export shims preserve import names; `pnpm typecheck` catches missed imports. |
+| Glossary copy quality uneven | Unit 2.5 catches architectural issues early; Unit 8 walk surfaces copy issues empirically. |
+| R7a rubric interpretation drifts | Rubric quoted in Key Decisions and Unit 4; density rule reinforces it; outside-LO walk is the empirical check. |
+| Wizard wrapper prop change (Unit 3a) breaks an undiscovered call site shape | Additive discriminated union — existing shape continues to work; TS enforces at compile time. |
+| Audit script false positives when L1 maintainers move sections legitimately | Pending-file allowlist parsed from `implementation-status.md`; for real moves, audit failure IS the signal to update `l1_anchor`. |
+| `/operator-learn` page violates dark-mode token rules | `pnpm audit:scan` run as part of Unit 6 verification. |
 
-## Documentation / Operational Notes
+## Operational Notes
 
-- **`TABLE_OF_CONTENTS.md`** updated in every unit's commit per `feedback_table_of_contents_always`.
-- **No L1 edits.** Plan never touches `docs/league-system/`. The audit script is the only code that reads L1, and it reads only.
-- **Branch:** create `feat/operator-help-phase-1` from `main` (NOT from the brainstorm branch) before starting Unit 1. Phase 1 code does not commingle with the brainstorm doc commit.
-- **PR opening posture:** Per `feedback_ask_before_pr`, do not open the Phase 1 PR until Unit 8 is complete (or its documented fallback applies). Confirm with Ed before opening.
-- **`pnpm audit:scan`** must pass before declaring Unit 6 done (dark-mode + semantic-token check on the new `/operator-learn` page).
-- **`pnpm glossary:verify`** runs as part of the test suite (Unit 7's vitest test calls the same verifier); CI gate is automatic from that point.
+- **Branch:** `feat/operator-help-phase-1` from `main` (NOT from the brainstorm branch).
+- **Per-unit commit hygiene:** `TABLE_OF_CONTENTS.md` updated in same commit when files are created/moved/deleted (`feedback_table_of_contents_always`).
+- **L1 is read-only.** Plan never touches `docs/league-system/`.
+- **PR posture:** do not open the Phase 1 PR until Unit 8 is complete. Confirm with Ed before opening (`feedback_ask_before_pr`).
+- **Pre-merge checks:** `pnpm test:run` + `pnpm typecheck` + `pnpm audit:scan` + `pnpm glossary:verify` all pass.
 
 ## Sources & References
 
