@@ -19,9 +19,13 @@ password login/register and forgot-password flows are **kept but demoted** behin
 a "prefer a password?" link — nothing is removed.
 
 This is the "build first" companion to the player-onboarding cold-start work
-(see origin). Because the code is typed in-page, the onboarding "join intent"
-never has to survive an email hop — the user stays on the join/claim screen the
-whole time, which dissolves that doc's hardest requirement.
+(its requirements doc lives on the sibling branch
+`docs/player-onboarding-cold-start-brainstorm`). Because the code is typed
+in-page, this **removes the auth-confirmation email hop**. The onboarding join
+intent still threads through sign-in via the `?redirect` param (repaired in
+Unit 4) — so **Unit 4, not the OTP change itself, is the load-bearing mechanism
+for join-intent survival**. The net effect is that no fragile cross-device token
+is needed.
 
 ## Problem Frame
 
@@ -49,7 +53,12 @@ once. (See origin: `docs/brainstorms/2026-05-28-passwordless-sign-in-requirement
   nothing to reset (request another code).
 - R8. Tapping a team join link → sign in → land back on the **join in progress**,
   not a generic home page (repair the dead `?redirect` thread across all auth
-  paths).
+  paths). The redirect value is constrained to **same-origin relative paths**
+  (open-redirect guard), and the intent must also survive the
+  profileless→`/complete-profile` detour that a brand-new user hits (see Unit 4).
+- R11. The public email box must be protected against code-spam / shell-account
+  abuse (bot check + send throttle), without adding meaningful friction for a
+  non-tech user.
 - R9. New-player name/profile collection is **out of scope** (owned by the
   onboarding doc's progressive-profile work); this plan ends at "signed in."
 - R10. Email is the only delivery channel; SMS is a standing exclusion.
@@ -164,10 +173,34 @@ once. (See origin: `docs/brainstorms/2026-05-28-passwordless-sign-in-requirement
   + a tracked risk.
 - **Facebook is a can-lag unit** — built and wired now, public-live after FB App
   Review; handle the missing-email edge (phone-only accounts) without crashing.
-- **Reuse session + guard layers** — `onAuthStateChange` auto-updates `UserProvider`;
-  follow `EmailConfirmation.tsx` and also `setUser`/`setIsLoggedIn` before navigate
-  to avoid a navigate-before-state-settles race. Don't duplicate the
+- **Reuse session + guard layers** — `onAuthStateChange` auto-updates `UserProvider`,
+  and the client's `detectSessionInUrl` default already establishes the session
+  from the OAuth hash, so the OAuth landing only needs to **read `returnTo`**, not
+  re-establish auth. Update context (`setUser`/`setIsLoggedIn`) on success as
+  belt-and-suspenders (mirroring `EmailConfirmation.tsx`), but treat
+  `onAuthStateChange` as the primary sync. Don't duplicate the
   profileless→`/complete-profile` logic.
+- **Abuse control on the public email box (R11)** — because `shouldCreateUser` is
+  true on an unauthenticated screen, anyone can request codes for arbitrary
+  addresses (email-bombing, shell-account creation, sender-domain reputation
+  damage), and raising the mail cap via custom SMTP removes the only default
+  throttle. Add a low-friction bot check (e.g. Cloudflare Turnstile / hCaptcha,
+  both supported by Supabase Auth) plus a sane per-email / per-IP send limit. Keep
+  it as close to invisible as possible to honor the "dead simple" goal.
+- **Enforceable launch gate, not just a checklist** — the safety properties below
+  depend on hosted-dashboard settings no test can verify. Gate the new one-door
+  behind a **feature flag / env guard** so the code cannot go live before the
+  production config (email confirmations ON + custom SMTP) is in place.
+- **Enabling email confirmations changes the kept password path** — turning
+  confirmations on in prod (required for safe auto-linking) means the demoted
+  password `signUp` no longer returns an immediately usable session, and
+  `Register.tsx`'s synchronous placeholder-link after `signUp` would run against an
+  unconfirmed user. So "password behavior unchanged" holds only in dev;
+  Unit 6 must verify the password-register + claim-link path under confirmations-ON.
+- **Carry the redirect intent as router `location.state` where possible** — the
+  claim `?redirect` currently puts the invite token in the URL (history, logs,
+  referrers). Prefer React Router `location.state` for the in-page intent carry to
+  keep the token out of the URL; the OAuth round-trip still needs it in `redirectTo`.
 
 ## Open Questions
 
@@ -193,9 +226,9 @@ once. (See origin: `docs/brainstorms/2026-05-28-passwordless-sign-in-requirement
 - Final structure of the OAuth `returnTo` carry (a dedicated callback landing route
   vs. reading `redirectTo` on `/my-teams`) — decide when wiring Unit 4 against real
   redirect behavior.
-- Whether the password sub-view is an in-place toggle on `/login` or a navigation to
-  the existing `/login`-password/`/register` routes — pick the lower-churn option
-  when editing the component.
+- (Resolved → Unit 3) The password sub-view is an **in-place toggle** on `/login`
+  that preserves the typed email — not a navigation away. The `/register`,
+  `/forgot-password`, `/reset-password` routes remain for the deeper password flows.
 - Microcopy for the "or passwordless" label — validate plainness with a non-tech
   reader during build (origin R4).
 
@@ -239,32 +272,52 @@ multi-provider same-email convergence safe in production.
 **Dependencies:** None (do first — unblocks local OTP testing).
 
 **Files:**
-- Modify: `supabase/config.toml` (confirm `otp_length`/`otp_expiry`; note resend
-  `max_frequency` + `[auth.rate_limit]`; Facebook block prep for Unit 5).
-- Create: `docs/ops/passwordless-auth-setup.md` (hosted-dashboard checklist —
-  email template `{{ .Token }}`, custom SMTP via Resend, **enable email
-  confirmations**, allow-list redirect URLs).
+- Modify: `supabase/config.toml` (confirm `otp_length`/`otp_expiry`; set resend
+  `max_frequency` toward the 60s the UI assumes; note `[auth.rate_limit]`; add a
+  local Magic Link template override).
+- Create: `supabase/templates/magic_link.html` (local code template containing
+  `{{ .Token }}` so Mailpit shows a typed code, not a link).
+- Create: `docs/ops/passwordless-auth-setup.md` (create the `docs/ops/` dir;
+  hosted-dashboard checklist — see Approach).
+- Add: a feature flag / env guard fronting the new one-door (see Approach).
 
 **Approach:**
-- Local: the Magic Link template must contain `{{ .Token }}` so the typed-code flow
-  works; verify codes land in Mailpit/Inbucket (`localhost:54324`). A
-  `db:stop && db:start` may be needed after config changes.
-- Production (hosted): document required dashboard actions — set the OTP email
-  template, configure custom SMTP (default mailer is 2/hr, unusable), enable email
-  confirmations (required for safe auto-linking), and add redirect URLs to the
-  allow-list.
+- Local code template (concrete mechanism — `config.toml` currently has no email
+  template block and no `supabase/templates/`): add a
+  `[auth.email.template.magic_link]` block with a `content_path` to
+  `supabase/templates/magic_link.html` containing `{{ .Token }}`, so the local
+  typed-code flow is reproducible in Mailpit (`localhost:54324`). Run
+  `db:stop && db:start` after `config.toml` changes.
+- Production (hosted, documented in the ops doc): set the Magic Link template to
+  `{{ .Token }}`; configure **custom SMTP** via Resend (default mailer is 2/hr,
+  unusable); **enable email confirmations** (required for safe auto-linking); list
+  the **exact redirect allow-list URLs** (production `site_url`, the OAuth
+  landing / `/auth-callback` route from Unit 4 — every environment needs its own
+  entry); set OTP `max_frequency` + `email_sent` / `sign_in_sign_ups` rate limits
+  for prod volume; register the OAuth callback in the Google and Facebook developer
+  consoles.
+- **Launch gate (enforceable):** front the one-door with a feature flag / env guard
+  so it cannot serve real users until the above is done — a markdown checklist is
+  not an enforceable gate.
+- **Abuse control (R11):** enable Supabase's `[auth.captcha]` (Cloudflare
+  Turnstile / hCaptcha) so the public email box is bot-checked, and set the
+  per-email / per-IP send limits in `[auth.rate_limit]`. The captcha widget itself
+  renders on the Unit 3 screen; keep it as invisible as the provider allows.
 
-**Execution note:** Config + ops, not feature code.
+**Execution note:** Mostly config + ops; the feature-flag guard is the only code.
 
 **Test scenarios:**
-- `Test expectation: none — config/ops.` Manual verification: a local
-  `signInWithOtp` request produces a 6-digit code visible in Mailpit, and
-  `verifyOtp({type:'email'})` with that code establishes a session.
+- `Test expectation: none for the config / template / ops parts.` Manual: a local
+  `signInWithOtp` produces a 6-digit code in Mailpit, and `verifyOtp({type:'email'})`
+  with it signs in.
+- Happy path (flag, if implemented in code): gate OFF → old login serves; gate ON →
+  one-door serves.
 
 **Verification:**
 - Locally, requesting a code shows a numeric code (not a link) in Mailpit, and
-  typing it signs in. The ops checklist enumerates every hosted-dashboard step,
-  including email-confirmations-on and custom SMTP.
+  typing it signs in. The ops checklist enumerates every hosted step (template,
+  custom SMTP, email-confirmations-ON, exact redirect URLs, rate limits, console
+  registration). The one-door is flag-gated until production config is verified.
 
 - [ ] **Unit 2: Passwordless auth helpers (`requestEmailCode` / `verifyEmailCode`)**
 
@@ -314,42 +367,62 @@ labeled email→code flow + "prefer a password?" entry.
 
 **Files:**
 - Modify: `src/login/Login.tsx`
-- Create (optional, if it keeps the file readable): `src/login/EmailCodeStep.tsx`
+- Create (extract once `Login.tsx` exceeds the project's ~100-line file norm):
+  `src/login/EmailCodeStep.tsx`
 - Test: `src/login/Login.test.tsx`
 
 **Approach:**
 - Step enum `'choose' | 'code'` rendered as early-return sub-views inside one
   `LoginCard` (mirrors `Register.tsx`/`ClaimPlayer.tsx`).
-- `choose`: existing Google button (kept), Facebook button placeholder wired in
-  Unit 5, an "or passwordless" divider, the email input + Continue, and a small
-  "prefer a password?" link that reveals the classic email+password form (reuse the
-  existing password logic — additive, R6).
-- `code`: a 6-digit input + Verify + a Resend control (respecting the 60s cooldown),
-  calling `verifyEmailCode`; on success `setUser`/`setIsLoggedIn` then navigate
-  (navigation target handled in Unit 4).
-- Use `Button` `isLoading`/`loadingText`/`message`; single `message` string for
-  errors per existing convention.
+- `choose`: Google (kept) + Facebook (Unit 5) buttons, an "or passwordless"
+  divider, the email input + Continue, and a small **"prefer a password?"** link
+  that reveals the classic email+password form **in place, preserving the email
+  already typed** (additive, R6). Tapping a social button **disables all three
+  entry paths** and shows `isLoading` on the tapped button until redirect or error.
+- `code`: a single numeric code input (`inputmode="numeric"`,
+  `autocomplete="one-time-code"`, explicit label "Enter the 6-digit code we sent to
+  <email>", accepts paste and leading zeros) + Verify + a **Resend** control that
+  disables with a visible countdown for the cooldown, then re-enables. Calls
+  `verifyEmailCode`; on success update context, then navigate (target from Unit 4).
+- A **"wrong email? go back"** affordance returns to `choose`. **Distinguish
+  expired-code from wrong-code:** expired → message offers Resend directly; wrong →
+  "that code didn't match, try again." Never surface the raw Supabase error string.
+- **Already-signed-in guard:** if a signed-in user lands on `/login`, redirect to
+  the `?redirect` target (or `/my-teams`) instead of starting a new OTP flow.
+- Use `Button` `isLoading`/`loadingText`/`message`; single `message` string per
+  existing convention.
 
 **Patterns to follow:** `src/login/Login.tsx` (current structure, Google button
 markup), `src/login/Register.tsx` (sub-view returns), `src/login/LoginCard.tsx`,
-`src/login/EmailConfirmation.tsx` (`setUser`/`setIsLoggedIn` before navigate),
-`src/test/utils.tsx` `renderWithProviders({ userContext: { isLoggedIn:false, user:null }})`.
+`src/login/EmailConfirmation.tsx` (context update on success; `onAuthStateChange` is
+the primary sync), `src/test/utils.tsx`
+`renderWithProviders({ userContext: { isLoggedIn:false, user:null }})`.
 
 **Test scenarios:**
-- Happy path: signed-out render shows Google, Facebook, the email box, and "prefer
-  a password?"; entering an email + Continue calls `requestEmailCode` and advances
-  to the code step.
-- Happy path: entering a valid code calls `verifyEmailCode` and triggers navigation.
-- Edge: invalid email format blocks submit; empty code blocks verify.
-- Error path: `requestEmailCode`/`verifyEmailCode` rejection shows the error
-  `message` and keeps the user on the step (no navigation).
-- Happy path: "prefer a password?" reveals the password form, and the existing
-  `signInWithPassword` path still works.
-- Integration: a successful verify updates `UserProvider` (mock `onAuthStateChange`
-  / `setUser`) so the app sees the user as logged in.
+- Happy path: signed-out render shows Google, Facebook, the email box, "or
+  passwordless", and "prefer a password?"; email + Continue calls `requestEmailCode`
+  and advances to `code`.
+- Happy path: a valid code calls `verifyEmailCode` and triggers navigation; the code
+  input carries `inputmode="numeric"` + `autocomplete="one-time-code"`.
+- Edge: invalid email blocks submit; empty/short code blocks verify; a pasted code
+  with leading zeros is accepted.
+- Error path: an **expired** code shows a resend-offering message; a **wrong** code
+  shows a retry message; neither navigates; neither leaks the raw error.
+- Happy path: Resend disables with a countdown then re-enables; "wrong email? go
+  back" returns to `choose`.
+- Happy path: tapping Google/Facebook disables all entry paths and shows loading on
+  that button.
+- Happy path: an already-signed-in visit to `/login` redirects out instead of
+  showing the form.
+- Happy path: "prefer a password?" reveals the password form in place with the email
+  preserved, and `signInWithPassword` still works.
+- Integration: a successful verify updates `UserProvider` so the app sees the user
+  as logged in.
 
-**Verification:** Signed-out user can complete email→code→signed-in entirely on one
-screen; Google still works; the password form is reachable and functional.
+**Verification:** A signed-out user completes email→code→signed-in on one screen
+with a numeric keyboard, a working resend countdown, clear expired/wrong-code
+recovery, and a back path; Google works; the password form is reachable in place
+with the email preserved.
 
 - [ ] **Unit 4: Redirect-after-auth threading (R8 repair)**
 
@@ -361,22 +434,36 @@ fixing the dead `?redirect` param.
 **Dependencies:** Unit 3.
 
 **Files:**
-- Modify: `src/login/Login.tsx` (read `?redirect`/`?claim`; navigate to it on
-  success across OTP + password paths; encode it into OAuth `redirectTo`).
-- Modify: `src/components/ProtectedRoute.tsx` (write the attempted location into
-  `?redirect` when bouncing to `/login`).
-- Modify/Create: OAuth return handling — read `returnTo` on the landing route (a
-  small `/auth-callback` handler or reading it on `/my-teams`); decision deferred
-  to implementation.
+- Modify: `src/login/Login.tsx` (read the intent from `location.state` or
+  `?redirect`; navigate to it on success across OTP + password paths; encode it
+  into OAuth `redirectTo`).
+- Modify: `src/components/ProtectedRoute.tsx` (add `useLocation()` and bounce to
+  `/login?redirect=${encodeURIComponent(location.pathname + location.search)}` — it
+  currently imports no location hook, so this is real new wiring, not a one-liner).
+- Modify: the `/complete-profile` flow (preserve + forward the intent so a brand-new
+  user bounced there still lands on the join afterward).
+- Modify/Create: OAuth return handling — read `returnTo` on the landing route
+  (`/auth-callback` or `/my-teams`); the session is already established by the
+  client's `detectSessionInUrl` default, so only the param needs reading. Add the
+  chosen landing URL to the redirect allow-list (Unit 1).
 - Test: `src/login/Login.redirect.test.tsx`
 
 **Approach:**
-- In-page paths (OTP, password): `const redirect = searchParams.get('redirect')`;
-  `navigate(redirect ?? '/my-teams')`.
-- OAuth: append the return target to `redirectTo` (the only thing that survives the
-  provider round-trip) and consume it on landing.
-- `ProtectedRoute`: redirect to `/login?redirect=<current location>` instead of a
-  bare `/login`, so a deep link bounced through auth comes back.
+- In-page paths (OTP, password): read the intent from `location.state` when present
+  (preferred — keeps the invite token out of the URL/logs) else `?redirect`; then
+  `navigate(target ?? '/my-teams')`.
+- **Open-redirect guard (explicit rule):** honor the target only if it is a
+  same-origin **relative path** — starts with a single `/`, contains no `://`, and
+  does not begin with `//` (checked after one `decodeURIComponent`). Otherwise fall
+  back to `/my-teams`.
+- OAuth: append the target to `redirectTo` (the only thing surviving the provider
+  round-trip) and consume it on landing.
+- `ProtectedRoute`: bounce to `/login?redirect=<attempted location>` via
+  `useLocation()` instead of a bare `/login`.
+- **New-user detour (the headline case):** a brand-new OTP user with no `members`
+  row is bounced by `ProtectedRoute` to `/complete-profile`; the intent must carry
+  THROUGH that step so first-timers — not just returning users — land on the join.
+  Coordinate with onboarding's progressive-profile work, which owns that screen.
 
 **Execution note:** Characterization-first — pin the current "redirect is dropped"
 behavior with a failing test, then fix.
@@ -385,17 +472,21 @@ behavior with a failing test, then fix.
 writer), `useSearchParams` usage in `Register.tsx`.
 
 **Test scenarios:**
-- Happy path: visiting `/login?redirect=/claim-player?claim=X&token=Y` and
-  completing OTP navigates to that claim URL, not `/my-teams`.
-- Happy path: no `redirect` param → defaults to `/my-teams`.
+- Happy path: visiting `/login?redirect=/claim-player?...` (or intent in
+  `location.state`) and completing OTP navigates to that claim target, not
+  `/my-teams`.
+- Happy path: no intent → defaults to `/my-teams`.
 - Integration: an unauthenticated visit to a protected route lands on
-  `/login?redirect=<that route>`, and after sign-in returns there.
-- Edge: malformed/encoded `redirect` is decoded safely; external/absolute URLs are
-  rejected (only same-origin paths honored) to avoid open-redirect.
-- Happy path (password): the password sub-view also honors `redirect`.
+  `/login?redirect=<that route>` and returns there after sign-in.
+- Integration: a brand-new user (no member row) tapping a join link signs in,
+  passes through `/complete-profile`, and still lands on the join target.
+- Error path (open-redirect): `//evil.com`, `https://evil.com`, `%2F%2Fevil.com`,
+  and a double-encoded variant are all rejected → fall back to `/my-teams`.
+- Happy path (password): the password sub-view also honors the intent.
 
-**Verification:** Tapping a team join link while signed out routes through `/login`
-and lands back on the join; no path hardcodes `/my-teams` when a redirect is present.
+**Verification:** Tapping a team join link while signed out — as a returning OR a
+brand-new user — lands back on the join; no path hardcodes `/my-teams` when an
+intent is present; external redirect targets are refused.
 
 - [ ] **Unit 5: Facebook OAuth button (can lag on App Review)**
 
@@ -407,60 +498,79 @@ and lands back on the join; no path hardcodes `/my-teams` when a redirect is pre
 
 **Files:**
 - Modify: `src/login/Login.tsx` (Facebook button + `signInWithOAuth({ provider: 'facebook' })`).
-- Modify: `supabase/config.toml` (enable `[auth.external.facebook]` for local;
-  needs `db:stop && db:start`).
-- Modify: `docs/ops/passwordless-auth-setup.md` (Facebook developer-app + App Review
-  + redirect-URI steps).
+- Modify: `supabase/config.toml` — **create** a new `[auth.external.facebook]` block
+  (enabled, `client_id`, `secret = env(...)`). Today the file has only
+  `[auth.external.apple]`; Facebook is merely named in a comment, so this is a
+  create, not an enable. Needs `db:stop && db:start`.
+- Modify: `docs/ops/passwordless-auth-setup.md` (Facebook developer-app, **App
+  Review** for the `email` permission, redirect-URI + callback registration).
 
 **Approach:**
 - Copy the Google button shape (inline SVG + `signInWithOAuth`); set `redirectTo`
   per Unit 4.
-- Handle the **missing-email** edge: a phone-only Facebook account may return no
-  email — the post-auth path must not crash and should route such a user to profile
-  completion rather than assuming an email anchor.
-- Flag clearly: public sign-in works only after Facebook App Review clears; until
-  then it works for app-role/tester accounts.
+- **Missing-email edge (resolve the anchor, don't just avoid a crash):** a phone-only
+  Facebook account may return no email. Route such a user to profile completion and
+  **collect an email there** — without one they can never satisfy the claim flow's
+  `userEmail === inviteEmail` check and would be locked out of claiming an invite,
+  and email-keyed auto-linking can't work for them.
+- **Hide, don't disable, before review:** until Facebook App Review clears, only
+  app-role/tester accounts can sign in. Show the button only to testers (or behind
+  the launch flag) so end users don't tap it and hit an error.
+- **Local testing reality:** Facebook OAuth cannot redirect to a bare
+  `http://localhost` / `127.0.0.1` origin — test against a deployed/preview URL or an
+  HTTPS tunnel (e.g. ngrok), and add that origin to the allow-list.
 
 **Patterns to follow:** the Google OAuth block in `src/login/Login.tsx`.
 
 **Test scenarios:**
 - Happy path: clicking Facebook calls `signInWithOAuth` with
-  `{ provider: 'facebook', options: { redirectTo: <includes returnTo> } }`.
-- Edge: a returned session with no email does not crash the post-auth flow.
+  `{ provider: 'facebook', options: { redirectTo: <includes the intent> } }`.
+- Edge: a returned session with no email routes to profile completion / email
+  collection rather than crashing or locking the user out.
+- Happy path: the Facebook button is hidden for non-tester users until review clears
+  (or behind the launch flag).
 
-**Verification:** Facebook button calls the provider with the correct redirect;
-ops doc lists the App Review gate and setup; missing-email does not error.
+**Verification:** Facebook button calls the provider with the correct redirect; the
+no-email path routes to email collection (no crash, no lockout); the ops doc lists
+the App Review gate, console setup, and the local-tunnel requirement.
 
-- [ ] **Unit 6: Demote the password path (additive, nothing removed)**
+- [ ] **Unit 6: Verify the demoted password path (additive, nothing removed)**
 
-**Goal:** Keep email+password login, register, and reset fully working, just out of
-the way behind the "prefer a password?" entry.
+**Goal:** Confirm email+password login, register, and reset still work fully — just
+out of the way. The "prefer a password?" reveal is built in Unit 3; this unit is the
+**verification gate**, not duplicate wiring.
 
 **Requirements:** R6, R7.
 
-**Dependencies:** Unit 3.
+**Dependencies:** Unit 3 (builds the in-place password reveal), Unit 1 (the
+email-confirmations decision).
 
 **Files:**
-- Modify: `src/login/Login.tsx` (the "prefer a password?" affordance wired to the
-  password sub-view / routes).
-- Modify (light): `src/login/Register.tsx` (reachable from the password path; entry
-  copy only — no behavior change).
-- Verify-only: `src/navigation/NavRoutes.tsx` (`/register`, `/forgot-password`,
-  `/reset-password` routes remain registered).
+- Verify-only: `src/login/Login.tsx` (the Unit 3 reveal), `src/login/Register.tsx`,
+  `src/login/ForgotPassword.tsx` / `ResetPassword.tsx`, and
+  `src/navigation/NavRoutes.tsx` (`/register`, `/forgot-password`,
+  `/reset-password` remain registered).
+- Modify (light, only if needed): `src/login/Register.tsx` entry copy — no behavior
+  change.
 
 **Approach:**
-- No deletion. Ensure the demoted password flow (login, register, forgot/reset) is
-  reachable and unchanged; only its prominence moves.
+- No deletion; only prominence moves (built in Unit 3).
+- **Regression check under confirmations-ON:** because Unit 1 enables email
+  confirmations in prod, re-verify the password **register** path — `signUp` no
+  longer returns an immediately usable session, and `Register.tsx`'s synchronous
+  placeholder-link after `signUp` now runs against an unconfirmed user. Confirm the
+  claim+register flow still completes (or adjust it) under confirmations-ON, not just
+  the confirmations-OFF dev default.
 
 **Test scenarios:**
-- Happy path: "prefer a password?" exposes the password form; `signInWithPassword`
-  still signs in.
-- Happy path: a link from the password path reaches `/register`; the existing
-  password register + claim still works.
+- Happy path: the Unit 3 "prefer a password?" reveal exposes the form;
+  `signInWithPassword` still signs in.
+- Happy path: a link from the password path reaches `/register`; password
+  register + claim still works **with email confirmations ON** (the prod posture).
 - Edge: forgot-password/reset routes still resolve and function.
 
-**Verification:** Every pre-existing password capability still works; only its entry
-point is demoted.
+**Verification:** Every pre-existing password capability still works (including
+register+claim under confirmations-ON); only its entry point is demoted.
 
 ## System-Wide Impact
 
@@ -490,14 +600,18 @@ point is demoted.
 
 | Risk | Mitigation |
 |------|------------|
-| Production has email confirmations **off** → same-email Google/Facebook/OTP create duplicate or unlinked users (and pre-account-takeover exposure) | Unit 1 ops checklist requires enabling email confirmations + custom SMTP in the hosted project before relying on multi-provider convergence; tracked as a launch gate. |
+| Production has email confirmations **off** → same-email Google/Facebook/OTP create duplicate or unlinked users (and pre-account-takeover exposure) | Enable confirmations + custom SMTP in the hosted project (Unit 1), gated by an **enforceable feature flag / env guard** — not just a checklist — so the one-door can't go live before the config is verified. |
 | Default Supabase mailer = **2 emails/hour project-wide** → OTP unusable at any real volume | Unit 1 requires custom SMTP (Resend already used for invites) before launch. |
 | **Facebook App Review** delays public Facebook sign-in | Unit 5 is build-and-wire now, public-live later; Google + email cover everyone meanwhile; testable with tester accounts. |
-| Facebook returns **no email** (phone-only accounts) → breaks email anchor + auto-linking | Unit 5 handles missing-email without crashing; routes to profile completion. |
+| Facebook returns **no email** (phone-only accounts) → breaks email anchor + auto-linking, and would lock the user out of the claim email-match check | Unit 5 routes them to profile completion to **collect an email** (resolve the anchor), not just avoid a crash. |
+| Public email box + `shouldCreateUser=true` → code-spam / shell accounts / sender-reputation damage (custom SMTP removes the only default throttle) | R11: low-friction bot check (Turnstile/hCaptcha) + per-email/IP send limit (Key Decisions, Unit 1). |
+| Enabling email confirmations in prod changes the kept **password-register** path (no immediate session; sync placeholder-link runs against an unconfirmed user) | Unit 6 re-verifies register+claim under confirmations-ON; not assumed "unchanged." |
+| Brand-new user's join intent dropped at the `/complete-profile` detour | Unit 4 forwards the intent through profile completion (coordinated with onboarding). |
 | Copying `EmailConfirmation.tsx`'s legacy `type: 'signup'` into the new flow | Key Decision + Unit 2 test assert `type: 'email'`. |
-| `?redirect` open-redirect via attacker-supplied absolute URL | Unit 4 honors only same-origin relative paths. |
+| `?redirect` open-redirect via attacker-supplied absolute URL | Unit 4 honors only same-origin relative paths (explicit reject rule + tests). |
 | First-ever auth tests → no established `supabase.auth` mock | Unit 2 establishes the mock pattern test-first; later units reuse it. |
 | Local config changes (Facebook provider, templates) silently not applied | Run `pnpm run db:stop && pnpm run db:start` after `config.toml` edits (per project memory). |
+| Local OAuth can't redirect to bare `localhost` | Test Google/Facebook against a deployed/preview URL or HTTPS tunnel; add it to the allow-list (Unit 5). |
 
 ## Documentation / Operational Notes
 
