@@ -174,6 +174,10 @@ function ScoreMatchBody() {
     memberId,
     matchType: '3v3',
     autoConfirm,
+    // "I'm not scoring": forwarded so the realtime fast-path suppresses
+    // confirm/vacate modals too (the scan guard alone misses realtime-driven
+    // prompts).
+    notScoring,
     // Amendment H: forward the open-initiator state so the realtime handler
     // can suppress confirm-opponent queue entries for that game while the
     // user is mid-fill (the user's submit will trigger Amendment D's

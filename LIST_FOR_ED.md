@@ -2284,3 +2284,33 @@ consistently.
 **Family:** related to `project_placeholder_badge_remaining_surfaces` —
 both are "consistent player-info display across the app" cleanups.
 
+## 35. InfoButton Popup Renders Half-Off-Screen — Global Fix (Portal)
+
+**Problem:** `InfoButton`'s `?` help popup sometimes lands half off the
+edge of the screen. It's been a recurring annoyance for a while, and it
+shows up worst inside the new scoring **settings gear** popover
+(`ScoringSettingsMenu.tsx`).
+
+**Root cause (the class of bug):** `InfoButton` positions its popup with
+`position: fixed` + viewport-coordinate math (measure the trigger button,
+clamp to the screen edges — see `src/components/InfoButton.tsx`, the
+`useLayoutEffect`). That math assumes `position: fixed` means
+"relative to the viewport." But **any ancestor with a CSS `transform`
+(or `filter` / `perspective`) becomes the containing block for
+`position: fixed` descendants** — so the popup is positioned relative to
+that transformed ancestor instead of the viewport, and the clamp-to-edge
+math is computing against the wrong box. Radix's `Popover`/`Tooltip`
+content uses a `transform` to position itself, which is exactly why it's
+worst inside the gear menu. It'll misbehave anywhere an InfoButton sits
+inside a transformed container (animated panels, Radix popovers/tooltips,
+some modals).
+
+**Suggested fix (one place, fixes every instance):** render the popup
+through a **React portal to `document.body`** (`createPortal`) so it
+escapes any transformed ancestor — then the existing viewport-coordinate
+math works again everywhere. Likely a ~5-line change in
+`InfoButton.tsx`; no API change for the ~dozens of call sites.
+
+**Severity:** LOW-MEDIUM — cosmetic/usability, no data risk, but it's
+everywhere and the fix is cheap + global. Own small branch.
+

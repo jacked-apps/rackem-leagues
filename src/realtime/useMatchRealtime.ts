@@ -184,6 +184,11 @@ interface GameUpdateOptions {
    *  the state-derived scan in ScoreMatch perform the auto-confirm — keeping
    *  auto-confirm a single decision site (no duplicate write). */
   autoConfirm?: boolean;
+  /** "I'm not scoring" mode. When on, this fast-path suppresses every
+   *  confirm/vacate prompt (no modal, no auto-action) — the viewer opted out.
+   *  Mirrors the state-derived scan's guard so neither path surfaces a modal.
+   *  Peek-and-confirm still works (that's a deliberate tap, not this path). */
+  notScoring?: boolean;
 }
 
 interface UseMatchRealtimeOptions {
@@ -340,9 +345,16 @@ export function useMatchRealtime(
               editingGame = null,
               scoringGame = null,
               autoConfirm = false,
+              notScoring = false,
             } = currentGameUpdateOptions;
 
             if (!match || !userTeamId) return;
+
+            // "I'm not scoring": suppress this fast-path entirely (both vacate
+            // and confirm prompts). Mirrors the scan's guard so an opted-out
+            // viewer never sees a modal from either source. The refetch above
+            // (onGamesUpdate) still ran, so the data stays current.
+            if (notScoring) return;
 
             const updatedGame = payload.new as MatchGame;
 
