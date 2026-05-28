@@ -67,6 +67,9 @@ import {
   buildPersonalConfirmContext,
 } from '@/utils/match/pendingConfirmations';
 import { queryKeys } from '@/api/queryKeys';
+import { useScoringParticipationModes } from '@/hooks/useScoringParticipationModes';
+import { useGameDisplayMode } from '@/hooks/useGameDisplayMode';
+import { ScoringSettingsMenu } from '@/components/scoring/ScoringSettingsMenu';
 import { getTeamStats, getPlayerStats as getPlayerStatsUtil } from '@/types';
 import { getCalculator } from '@/systems/calculators';
 import { logger } from '@/utils/logger';
@@ -80,8 +83,17 @@ function ScoreMatchBody() {
   const { data: member } = useCurrentMember();
   const memberId = member?.id;
 
-  // Auto-confirm setting (bypass confirmation modal)
-  const [autoConfirm, setAutoConfirm] = useState(false);
+  // Scoring participation modes (Auto-Confirm + I'm-Not-Scoring) with
+  // consequence-scaled persistence — see useScoringParticipationModes. Auto-
+  // Confirm survives a refresh but resets on leaving the page; I'm-Not-Scoring
+  // lasts the whole match. The two are mutually exclusive.
+  const { autoConfirm, setAutoConfirm, notScoring, setNotScoring } =
+    useScoringParticipationModes(matchId);
+
+  // Games-list column ordering (Break/Rack vs Home/Away), lifted here so both
+  // the list's header bar and the settings gear stay in sync. Global + forever
+  // (a pure display preference — see useGameDisplayMode).
+  const { displayMode, toggleDisplayMode } = useGameDisplayMode();
 
   // Verification state
   const [isVerifying, setIsVerifying] = useState(false);
@@ -633,6 +645,13 @@ function ScoreMatchBody() {
         dismissedConfirmations.current.delete(game.game_number);
         return;
       }
+      // "I'm Not Scoring": suppress every auto prompt (confirm, vacate, and
+      // auto-confirm). No modal, no auto-vouch, no auto-deny — just silence.
+      // Deliberate engagement still works: tapping a game to peek-and-confirm,
+      // or tapping a player to score, both go through their own handlers, not
+      // this scan. Placed after the 'none' re-arm so that bookkeeping still
+      // runs while the person is opted out.
+      if (notScoring) return;
       if (confirmationGame?.gameNumber === game.game_number) return; // showing
       if (confirmationQueue.some((c) => c.gameNumber === game.game_number)) return; // queued
       if (editingGame?.gameNumber === game.game_number) return; // I'm editing it
@@ -674,6 +693,7 @@ function ScoreMatchBody() {
     editingGame,
     scoringGame,
     autoConfirm,
+    notScoring,
     players,
     personalCtx,
     addToConfirmationQueueFromHook,
@@ -907,20 +927,17 @@ function ScoreMatchBody() {
                 quiet "catching up" pill while degraded, one calm note on a
                 sustained outage. Active scorer only (this is the scoring page). */}
             <ConnectionIndicator health={connectionHealth} />
-            <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
-              <input
-                type="checkbox"
-                checked={autoConfirm}
-                onChange={(e) => setAutoConfirm(e.target.checked)}
-                className="w-3 h-3"
-              />
-              Auto-Confirm
-            </label>
-            <InfoButton title="Auto-Confirm Opponent Selections" className="relative">
-              <p className="text-sm">
-                By enabling this your opponents game result selections will automatically be confirmed for your team. Your team is still responsible for ensuring the scoring is accurate. This option simply removes the need to confirm each game individually.
-              </p>
-            </InfoButton>
+            {/* Settings gear — houses Auto-Confirm, I'm-Not-Scoring, and the
+                game-order toggle (the corner was too cramped for inline
+                controls). */}
+            <ScoringSettingsMenu
+              autoConfirm={autoConfirm}
+              onAutoConfirmChange={setAutoConfirm}
+              notScoring={notScoring}
+              onNotScoringChange={setNotScoring}
+              displayMode={displayMode}
+              onToggleDisplayMode={toggleDisplayMode}
+            />
           </div>
         </div>
       </div>
@@ -1167,6 +1184,8 @@ function ScoreMatchBody() {
         awayTeamId={match.away_team_id}
         totalGames={filteredGameResults.size}
         isHomeTeam={isHomeTeam}
+        displayMode={displayMode}
+        onToggleDisplayMode={toggleDisplayMode}
       />
 
       {/* Win Confirmation Modal */}
