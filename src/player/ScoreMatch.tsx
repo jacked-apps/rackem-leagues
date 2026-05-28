@@ -112,6 +112,14 @@ function ScoreMatchBody() {
   // once the data shows it no longer needs my confirmation (server caught up).
   const handledConfirmations = useRef<Set<number>>(new Set());
 
+  // Games this device has DISMISSED — tapped Cancel / the X / Escape on the
+  // confirm prompt without confirming or denying ("not sure / didn't witness").
+  // The scan below skips these so the prompt doesn't keep re-popping. Session-
+  // scoped on purpose (lowest-consequence setting — a dismiss is just "not now",
+  // not a vouch or a wipe): cleared per game once the data shows it no longer
+  // needs my action (so a later re-score re-arms a fresh prompt).
+  const dismissedConfirmations = useRef<Set<number>>(new Set());
+
   // Scoring modal state — declared up here (rather than next to the other
   // local UI state below) so Amendment H can pass it through useMatchScoring
   // into useMatchRealtime's gameUpdateOptions. The realtime handler reads it
@@ -619,8 +627,10 @@ function ScoreMatchBody() {
         personalCtx
       );
       if (action === 'none') {
-        // Server caught up (confirmed/vacated/denied) — re-arm for next time.
+        // Server caught up (confirmed/vacated/denied) — re-arm for next time,
+        // including clearing any dismiss so a re-score brings a fresh prompt.
         handledConfirmations.current.delete(game.game_number);
+        dismissedConfirmations.current.delete(game.game_number);
         return;
       }
       if (confirmationGame?.gameNumber === game.game_number) return; // showing
@@ -631,6 +641,7 @@ function ScoreMatchBody() {
       if (scoringGame?.gameNumber === game.game_number) return;
       if (myVacateRequests.current.has(game.game_number)) return; // my own action
       if (handledConfirmations.current.has(game.game_number)) return; // just acted
+      if (dismissedConfirmations.current.has(game.game_number)) return; // dismissed this session
 
       if (action === 'vacate') {
         // Vacating is destructive — always a human decision, never auto.
@@ -1253,6 +1264,12 @@ function ScoreMatchBody() {
             .then((ok) => {
               if (!ok) handledConfirmations.current.delete(gameNumber);
             });
+        }}
+        onDismiss={(gameNumber) => {
+          // Neither vouch nor wipe — just stop re-prompting this game this
+          // session. onClose (below) closes the modal and lets the queue
+          // advance to the next pending confirmation, if any.
+          dismissedConfirmations.current.add(gameNumber);
         }}
         onClose={() => setConfirmationGame(null)}
       />

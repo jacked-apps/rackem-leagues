@@ -801,7 +801,7 @@ Reusable wizard/form step components
 - `GamesList.tsx` - Games list
 - `GameButtonRow.tsx` - Game row with breaker vs racker buttons (extracted from ScoreMatch)
 - `ScoringDialog.tsx` - Game winner selection with B&R and Golden Break (extracted from ScoreMatch)
-- `ConfirmationDialog.tsx` - Opponent score confirmation and vacate requests (extracted from ScoreMatch)
+- `ConfirmationDialog.tsx` - Opponent score confirmation and vacate requests (extracted from ScoreMatch). Has a neutral **Cancel** dismiss (also the X / Escape) that neither confirms nor denies — "not sure / didn't witness"; the caller suppresses re-prompting that game for the session. Outside-click stays prevented so a stray backdrop tap can't dismiss.
 - `ConfirmationModal.tsx` - Modal variant of the confirmation dialog (used in different layouts).
 - `EditGameDialog.tsx` - Vacate winner request dialog (extracted from ScoreMatch)
 - `LineupChangeModal.tsx` - In-scoring lineup substitution modal (captain-driven mid-match swap).
