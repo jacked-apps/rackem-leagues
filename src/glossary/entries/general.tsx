@@ -466,30 +466,58 @@ export const entries = {
     shortDef:
       'One team-vs-team event played on a specific date; contains multiple games.',
     longDef: (
-      <div className="space-y-2">
+      <div className="space-y-3">
         <p>
-          A match is the singular event a{' '}
-          <a href="#matchup" className="text-info hover:underline">matchup</a>{' '}
-          provides. Two teams meet, play through their{' '}
-          <a href="#lineup" className="text-info hover:underline">lineups</a>,
-          and one wins. A match is made up of{' '}
-          <a href="#game" className="text-info hover:underline">games</a> —
-          the number depends on the{' '}
+          A match is one team vs one team on a single night. It's the
+          played event — where the actual{' '}
+          <a href="#game" className="text-info hover:underline">games</a>{' '}
+          happen — and the record of what occurred: the{' '}
+          <a href="#lineup" className="text-info hover:underline">lineups</a>{' '}
+          each team brought, the scores, who won, and any notes.
+        </p>
+        <p>The hierarchy:</p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>
+            A{' '}
+            <a href="#matchup" className="text-info hover:underline">matchup</a>{' '}
+            (one week) is a group of matches.
+          </li>
+          <li>
+            A match (one team vs one team, one night) is a group of{' '}
+            <a href="#game" className="text-info hover:underline">games</a>.
+          </li>
+          <li>
+            A{' '}
+            <a href="#game" className="text-info hover:underline">game</a>{' '}
+            is a single rack between two players.
+          </li>
+        </ul>
+        <p>
+          The number of games inside a match depends on the{' '}
           <a href="#lineup-size" className="text-info hover:underline">lineup size</a>{' '}
           and the{' '}
-          <a href="#match-format" className="text-info hover:underline">match format</a>{' '}
-          (single or double{' '}
-          <a href="#round-robin" className="text-info hover:underline">round robin</a>, etc.).
+          <a href="#match-format" className="text-info hover:underline">match format</a>.
+          For example, a 3v3 double round robin produces 18 games per
+          match; a 5v5 single round robin produces 25.
         </p>
         <p className="text-sm text-muted-foreground">
-          A note on the word: "match" is also sometimes used in the wild to
-          describe a single game or round. In this app, match always means
-          the team-vs-team event.
+          <strong>A note on the word.</strong> &ldquo;Match&rdquo; sometimes
+          gets used informally to mean a single game or round. In this app,
+          match always means the team-vs-team event on a single night.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#matchup" className="text-info hover:underline">matchup</a>,{' '}
+          <a href="#game" className="text-info hover:underline">game</a>,{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>,{' '}
+          <a href="#lineup-size" className="text-info hover:underline">lineup size</a>,{' '}
+          <a href="#match-format" className="text-info hover:underline">match format</a>.
         </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['matchup', 'game'],
+    related: ['pairing', 'team', 'scorekeeper'],
+    reviewedByEd: '2026-05-29',
   },
 
   game: {
