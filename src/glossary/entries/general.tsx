@@ -464,7 +464,7 @@ export const entries = {
     canonicalName: 'Match',
     aliases: [],
     shortDef:
-      'One team-vs-team event played on a specific date; contains multiple games.',
+      'One team vs one team on a single night — holds the scores, lineups, and games played.',
     longDef: (
       <div className="space-y-3">
         <p>
