@@ -1,20 +1,19 @@
 /**
  * @fileoverview GlossaryView — the Phase 1 Glossary surface on the Learn hub.
  *
- * Three states (per the plan's design spec):
- *   - Empty query: full alphabetical browse, grouped by first-letter headers.
- *   - Query with results: filtered results only; browse hidden.
- *   - Query with no matches: short message + browse stays visible below.
- *
- * Deep-link behavior: on mount + on hashchange, reads `window.location.hash`,
- * scrolls the matching entry into view, and highlights it for ~1.5s using a
- * semantic accent token so it works in dark mode.
- *
- * Search is plain substring on canonical + aliases (per the `useRulebookSearch`
- * precedent); upgrade path to Fuse.js when zero-result rates tell us we need it.
+ * Three modes (resolved by URL hash + current search query):
+ *   - **Single-entry mode** (URL hash set, no active search) — shows only
+ *     the entry the user deep-linked to. Reached by clicking "Learn more →"
+ *     from a wizard's GlossaryInfoButton popover. NOT a dump of the entire
+ *     glossary.
+ *   - **Search mode** (search input non-empty) — filtered results only.
+ *     Alias matches render the alias-arrow subtitle.
+ *   - **Browse mode** (no hash, no search) — full alphabetical glossary
+ *     grouped by first-letter headers. Reached by clicking "Learn" in the
+ *     sidebar or by clicking "Browse all terms →" from a single-entry view.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import {
   getAllGlossaryEntries,
@@ -22,8 +21,6 @@ import {
   type GlossaryEntry as GlossaryEntryType,
 } from '@/glossary';
 import { GlossaryEntryView } from './GlossaryEntry';
-
-const HIGHLIGHT_MS = 1500;
 
 function groupByLetter(
   entries: readonly GlossaryEntryType[],
@@ -40,44 +37,44 @@ function groupByLetter(
 
 export function GlossaryView() {
   const [query, setQuery] = useState('');
-  const [highlightedSlug, setHighlightedSlug] = useState<string | null>(null);
-  const highlightTimeout = useRef<number | null>(null);
+  const [landedSlug, setLandedSlug] = useState<string | null>(null);
 
   const trimmed = query.trim();
   const all = useMemo(() => getAllGlossaryEntries(), []);
   const grouped = useMemo(() => groupByLetter(all), [all]);
   const results = useMemo(() => searchGlossary(trimmed), [trimmed]);
 
-  const isBrowse = trimmed.length === 0;
+  // Read the URL hash on mount and on every hashchange. The hash carries the
+  // slug the user deep-linked to, which selects single-entry mode.
+  useEffect(() => {
+    function readHash() {
+      const slug = window.location.hash.slice(1);
+      setLandedSlug(slug || null);
+      // Scroll the page to top so the entry is the first thing visible.
+      if (slug) {
+        requestAnimationFrame(() => {
+          window.scrollTo({ top: 0, behavior: 'auto' });
+        });
+      }
+    }
+    readHash();
+    window.addEventListener('hashchange', readHash);
+    return () => window.removeEventListener('hashchange', readHash);
+  }, []);
+
+  const isSearching = trimmed.length > 0;
+  const landedEntry = landedSlug
+    ? all.find((e) => e.slug === landedSlug)
+    : null;
+  const isSingleEntry = !isSearching && landedEntry != null;
   const hasResults = results.length > 0;
 
-  // Deep-link scroll + highlight on mount and on hashchange.
-  useEffect(() => {
-    function handleHash() {
-      const slug = window.location.hash.slice(1);
-      if (!slug) return;
-      setHighlightedSlug(slug);
-      // Wait one frame so the entry's DOM node exists post-layout.
-      requestAnimationFrame(() => {
-        const el = document.getElementById(slug);
-        el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
-      if (highlightTimeout.current) {
-        window.clearTimeout(highlightTimeout.current);
-      }
-      highlightTimeout.current = window.setTimeout(() => {
-        setHighlightedSlug(null);
-      }, HIGHLIGHT_MS);
+  function browseAll() {
+    setLandedSlug(null);
+    if (window.location.hash) {
+      window.history.replaceState(null, '', window.location.pathname);
     }
-    handleHash();
-    window.addEventListener('hashchange', handleHash);
-    return () => {
-      window.removeEventListener('hashchange', handleHash);
-      if (highlightTimeout.current) {
-        window.clearTimeout(highlightTimeout.current);
-      }
-    };
-  }, []);
+  }
 
   return (
     <div className="space-y-6">
@@ -85,47 +82,50 @@ export function GlossaryView() {
         type="search"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder='Search by name or alias (try "golden break")…'
+        placeholder='Search by name or alias (try "fargo rating")…'
         aria-label="Search glossary"
         className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
       />
 
-      {isBrowse && (
-        <BrowseList
-          grouped={grouped}
-          highlightedSlug={highlightedSlug}
-        />
+      {isSingleEntry && landedEntry && (
+        <div className="space-y-6">
+          <GlossaryEntryView entry={landedEntry} isHighlighted={false} />
+          <button
+            type="button"
+            onClick={browseAll}
+            className="text-sm text-info hover:underline"
+          >
+            Browse all terms →
+          </button>
+        </div>
       )}
 
-      {!isBrowse && hasResults && (
-        <SearchResults
-          results={results}
-          highlightedSlug={highlightedSlug}
-        />
+      {isSearching && hasResults && (
+        <SearchResults results={results} />
       )}
 
-      {!isBrowse && !hasResults && (
+      {isSearching && !hasResults && (
         <div className="space-y-6">
           <p className="text-muted-foreground">
             No glossary terms match &ldquo;{trimmed}&rdquo;. Try a shorter
             search, or browse below.
           </p>
-          <BrowseList
-            grouped={grouped}
-            highlightedSlug={highlightedSlug}
-          />
+          <BrowseList grouped={grouped} />
         </div>
+      )}
+
+      {!isSearching && !isSingleEntry && (
+        <BrowseList grouped={grouped} />
       )}
     </div>
   );
 }
 
-interface BrowseListProps {
+function BrowseList({
+  grouped,
+}: {
   grouped: [string, GlossaryEntryType[]][];
-  highlightedSlug: string | null;
-}
-
-function BrowseList({ grouped, highlightedSlug }: BrowseListProps) {
+}) {
   return (
     <div className="space-y-10">
       {grouped.map(([letter, entries]) => (
@@ -141,7 +141,7 @@ function BrowseList({ grouped, highlightedSlug }: BrowseListProps) {
               <GlossaryEntryView
                 key={entry.slug}
                 entry={entry}
-                isHighlighted={highlightedSlug === entry.slug}
+                isHighlighted={false}
               />
             ))}
           </div>
@@ -151,25 +151,22 @@ function BrowseList({ grouped, highlightedSlug }: BrowseListProps) {
   );
 }
 
-interface SearchResultsProps {
+function SearchResults({
+  results,
+}: {
   results: ReturnType<typeof searchGlossary>;
-  highlightedSlug: string | null;
-}
-
-function SearchResults({ results, highlightedSlug }: SearchResultsProps) {
+}) {
   return (
     <div className="space-y-8">
       {results.map((r) => (
         <div key={r.entry.slug}>
           {r.matchType === 'alias' && r.matchedAlias && (
             <p className="mb-1 text-sm text-muted-foreground">
-              &ldquo;{r.matchedAlias}&rdquo; → <strong>{r.entry.canonicalName}</strong>
+              &ldquo;{r.matchedAlias}&rdquo; →{' '}
+              <strong>{r.entry.canonicalName}</strong>
             </p>
           )}
-          <GlossaryEntryView
-            entry={r.entry}
-            isHighlighted={highlightedSlug === r.entry.slug}
-          />
+          <GlossaryEntryView entry={r.entry} isHighlighted={false} />
         </div>
       ))}
     </div>
