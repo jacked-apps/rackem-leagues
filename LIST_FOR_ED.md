@@ -135,7 +135,25 @@ blocks any meaningful Fargo league use.
 
 ---
 
-## 🚨 CRITICAL BUG: Team Deletion Destroys Matches
+## ~~🚨 CRITICAL BUG: Team Deletion Destroys Matches~~ ✅ CLOSED 2026-05-29
+
+> **Closed 2026-05-29** — verified fully fixed at BOTH layers, so the
+> "mitigation only — NOT a real fix" note below is now stale:
+> - **DB layer:** migration `20260501000001_team_fks_cascade_to_restrict.sql`
+>   (2026-05-01) changed `matches.home_team_id` and `matches.away_team_id`
+>   from `ON DELETE CASCADE` → `ON DELETE RESTRICT`. The baseline had them as
+>   CASCADE (the original bug). A raw team DELETE that still has matches now
+>   ERRORS instead of silently destroying them.
+> - **App layer:** `handleDeleteTeam` in `src/operator/TeamManagement.tsx`
+>   pre-flight counts the team's matches (home or away); when any exist it
+>   blocks with a clear toast pointing to the Drop Team workflow, and only
+>   deletes when the count is zero.
+>
+> The "Drop Team" workflow (mark withdrawn + reassign matches to a bye row)
+> is a separate enhancement — not the data-loss bug. Original entry preserved
+> below for reference.
+
+### Original entry
 
 **Discovered:** 2026-04-09 during wizard 2.0 planning
 **Severity:** HIGH — could destroy season data with one click
