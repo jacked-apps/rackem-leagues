@@ -196,13 +196,6 @@ origin: `docs/brainstorms/2026-05-28-player-onboarding-cold-start-requirements.m
 ## Open Questions
 
 ### Resolve Before Building
-- **[Ed decision] The "existing short profile form" is actually long.** The current
-  new-player/complete-profile form requires first/last, **phone, full street address,
-  city, state, zip, and date of birth** — not just name + nickname. Register-first
-  puts all of that in front of every brand-new player *at the door*, which is friction
-  on the exact non-tech cold-start cohort the cascade is meant to unburden. Decide:
-  **trim a join-context variant** (name + nickname, the rest progressive) or **accept
-  the full form**. (The origin's "progressive profile" principle favors trimming.)
 - **Escalate the `send-invite` caller-authz fix to before-ship.** The cascade adds a
   new public read (`get_team_join_view`) + a team-scoped mutation; the pre-existing
   unauthenticated `send-invite` hole widens the blast radius. Also: `submitJoinRequest`
@@ -210,6 +203,10 @@ origin: `docs/brainstorms/2026-05-28-player-onboarding-cold-start-requirements.m
 
 ### Resolved During Planning
 
+- *Is the door form too long?* No — the join flow uses the **short**
+  `CompleteProfileForm` (first/last + nickname + city + state; no DOB/address/phone).
+  The reviewers cited the heavy `NewPlayerForm` "application," which is a separate,
+  later lifecycle step — not this flow.
 - *Merge engine can't fit a brand-new player* → register-first: Add (no merge) /
   Replace (merge into the now-registered member).
 - *Cross-device join intent* (origin requirement) → persist server-side keyed to
@@ -340,12 +337,14 @@ also surface "you're approved — go to your team"; Test
   keyed to identity so a cross-device/closed-tab return still recovers it (R10).
 - Signed in, **member already exists**, no prior request → show team + league + a
   single **Join** button → submit directly (skip the form).
-- Signed in, **no member yet** → the existing profile form, with its terminal
-  redirect made **flow-aware** (it currently hard-navigates to `/my-teams` via
-  `window.location.href` in `usePlayerFormSubmission`) so completion returns to
-  `/join/:token` and auto-submits, not to My Teams. On completion they're a
-  registered member. *(That form is fuller than name+nickname — see Open Questions →
-  Resolve Before Building.)*
+- Signed in, **no member yet** → the **short profile form**
+  (`completeProfile/CompleteProfileForm` + `useShortProfileForm` — first/last +
+  nickname + city + state; **no DOB/address/phone**; the heavy
+  `newPlayer/NewPlayerForm` "application" is a separate, *later* lifecycle step, NOT
+  this flow). Make its terminal redirect **flow-aware** (`useShortProfileSubmission`
+  currently hard-navigates to `/my-teams` via `window.location.href`) so completion
+  returns to `/join/:token` and auto-submits. On completion they're a registered
+  member.
 - Submit a `team_join_request` (claim → `claimed_member_id`; self-add → none). Show
   "waiting for the captain."
 - **Notify on approval:** reuse the `get_my_pending_invites`/`PendingInvitesModal`
