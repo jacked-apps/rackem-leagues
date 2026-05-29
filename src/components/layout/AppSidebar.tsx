@@ -118,6 +118,7 @@ function SidebarPlayerSection({ unreadCount }: { unreadCount: number }) {
       <SidebarLink to="/my-teams" label="My Teams" />
       <SidebarLink to="/stats" label="Stats" />
       <SidebarLink to="/rules" label="Rules" />
+      <SidebarLink to="/learn" label="Learn" />
       <SidebarLink to="/messages" label={messagesLabel} />
       <SidebarLink to="/profile" label="Profile" />
     </ul>
@@ -125,7 +126,8 @@ function SidebarPlayerSection({ unreadCount }: { unreadCount: number }) {
 }
 
 function SidebarOperatorSection({ orgs }: { orgs: OperatorOrg[] }) {
-  const visible = orgs ? pickVisibleOrgs(orgs, OPERATOR_ORG_CAP) : [];
+  if (!orgs || orgs.length === 0) return null;
+  const visible = pickVisibleOrgs(orgs, OPERATOR_ORG_CAP);
   const isSingleOrg = visible.length === 1;
 
   return (
@@ -133,9 +135,6 @@ function SidebarOperatorSection({ orgs }: { orgs: OperatorOrg[] }) {
       <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         Operator
       </h3>
-      <ul className="mb-2 space-y-1">
-        <SidebarLink to="/operator-learn" label="Learn" />
-      </ul>
       {visible.length > 0 &&
         (isSingleOrg ? (
           <OperatorOrgRow

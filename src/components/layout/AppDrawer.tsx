@@ -164,6 +164,7 @@ function PlayerSection({ unreadCount }: { unreadCount: number }) {
       <DrawerLink to="/my-teams" label="My Teams" />
       <DrawerLink to="/stats" label="Stats" />
       <DrawerLink to="/rules" label="Rules" />
+      <DrawerLink to="/learn" label="Learn" />
       <DrawerLink to="/messages" label={messagesLabel} />
       <DrawerLink to="/profile" label="Profile" />
     </ul>
@@ -172,7 +173,8 @@ function PlayerSection({ unreadCount }: { unreadCount: number }) {
 
 /** Mirrors SidebarOperatorSection. */
 function OperatorSection({ orgs }: { orgs: OperatorOrg[] }) {
-  const visible = orgs ? pickVisibleOrgs(orgs, OPERATOR_ORG_CAP) : [];
+  if (!orgs || orgs.length === 0) return null;
+  const visible = pickVisibleOrgs(orgs, OPERATOR_ORG_CAP);
   const isSingleOrg = visible.length === 1;
 
   return (
@@ -180,16 +182,6 @@ function OperatorSection({ orgs }: { orgs: OperatorOrg[] }) {
       <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         Operator
       </h3>
-      <ul className="mb-2 space-y-1">
-        <SheetClose asChild>
-          <Link
-            to="/operator-learn"
-            className="flex min-h-11 items-center rounded-md px-3 py-2 text-sm text-primary transition-colors hover:bg-primary/10"
-          >
-            Learn
-          </Link>
-        </SheetClose>
-      </ul>
       {visible.length > 0 &&
         (isSingleOrg ? (
           <OperatorOrgRow

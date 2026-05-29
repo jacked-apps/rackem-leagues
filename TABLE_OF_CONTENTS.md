@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-29 (Operator help system Phase 1 — Unit 7 shipped: `pnpm glossary:verify` drift audit. Walks every entry's `l1_anchor` and checks the L1 file exists (and anchor, when set, via `github-slugger`). Pending-file allowlist parsed from `implementation-status.md`. Exposed as vitest test so it runs on every `pnpm test:run`. **Current: 66/66 entries clean, 0 violations.**)
+> **Last Updated**: 2026-05-29 (Renamed `/operator-learn` → `/learn`. Files moved from `src/operator/OperatorLearn.tsx` + `src/operator/learn/` to `src/pages/Learn.tsx` + `src/pages/learn/`. Sidebar/drawer "Learn" link moved from Operator section to Player section so all signed-in users see it. GlossaryInfoButton's "Learn more →" now points at `/learn#<slug>`. Tests: 26 pass.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -565,12 +565,14 @@ how to add a new test, demo recording, cleanup model).
 #### Operator Pages (`/operator/`)
 
 **Dashboards & Overview**
-- `OperatorDashboard.tsx` - Main operator dashboard. "Need Help?" card's "Operator Handbook" link now points at `/operator-learn`.
+- `OperatorDashboard.tsx` - Main operator dashboard. "Need Help?" card's "Operator Handbook" link points at `/learn`.
 - `OperatorWelcome.tsx` - Welcome screen
-- `OperatorLearn.tsx` — **NEW** Phase 1 Learn hub at `/operator-learn`. Page shell + Glossary section.
-- `learn/GlossaryView.tsx` — search input + 3-state UI (empty browse, has results, no results with browse) + deep-link scroll/highlight on `#<slug>`.
-- `learn/GlossaryEntry.tsx` — single entry render: canonical heading + aliases ("also called: …") + shortDef + longDef + related links.
-- `learn/__tests__/GlossaryView.test.tsx` — 6 tests covering the 3-state UI and the alias-match subtitle.
+
+**Learn hub** (moved to `src/pages/` in 2026-05-29 rename — visible to all signed-in users, not just operators):
+- `src/pages/Learn.tsx` — Phase 1 Learn hub at `/learn`. Page shell + Glossary section. Was `src/operator/OperatorLearn.tsx` at `/operator-learn`.
+- `src/pages/learn/GlossaryView.tsx` — search input + 3-state UI (single-entry on deep-link, browse on direct nav, search filtered when typing).
+- `src/pages/learn/GlossaryEntry.tsx` — single entry render: canonical heading + aliases ("also called: …") + shortDef + longDef + related links.
+- `src/pages/learn/__tests__/GlossaryView.test.tsx` — 6 tests covering the 3-state UI and the alias-match subtitle.
 
 **League Management**
 - `LeagueDetail.tsx` - League details page

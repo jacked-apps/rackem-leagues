@@ -110,7 +110,7 @@ export function GlossaryInfoButton({
         <div className="space-y-2">
           <p>{entry.shortDef}</p>
           <a
-            href={`/operator-learn#${slug}`}
+            href={`/learn#${slug}`}
             target="_blank"
             rel="noopener noreferrer"
             onClick={stop}

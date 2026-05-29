@@ -40,7 +40,7 @@ describe('GlossaryInfoButton', () => {
     fireEvent.click(screen.getByTitle('More information'));
 
     const learnMore = screen.getByRole('link', { name: /learn more/i });
-    expect(learnMore).toHaveAttribute('href', '/operator-learn#fargorate');
+    expect(learnMore).toHaveAttribute('href', '/learn#fargorate');
     expect(learnMore).toHaveAttribute('target', '_blank');
     expect(learnMore).toHaveAttribute('rel', 'noopener noreferrer');
   });
