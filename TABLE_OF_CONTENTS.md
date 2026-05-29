@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-28 (Operator help system Phase 1 — Unit 1 shipped: `src/glossary/` registry seeded with FargoRate entry. Schema + per-domain entry files + lookup/search/helper functions. See `docs/plans/2026-05-28-001-feat-operator-help-system-phase-1-plan.md`.)
+> **Last Updated**: 2026-05-29 (Operator help system Phase 1 — glossary expanded: 15 handicap entries + 27 general entries (keystone containers, game types, teams/roster with 4 new terms — anonymous-sub, double-duty, racker, scorekeeper — tiebreakers, qualifier). NO DRIFT discipline. Plus `docs/audits/2026-05-28-wizard-copy-fixes-needed.md` cleanup list.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -1426,8 +1426,9 @@ Single source of truth for operator help terminology. Slug-keyed TS module regis
 
 - `types.ts` — `GlossaryEntry` and `L1Anchor` schema. **R4 contract**: every entry has slug, canonicalName, aliases, shortDef (string, ≤2 sentences), longDef (`React.ReactNode`), `l1_anchor`, related.
 - `index.tsx` — registry merge across per-domain entry files. Exports `GlossarySlug` union (compile-time enforced), `getGlossaryEntry(slug)`, `getAllGlossaryEntries()`, `searchGlossary(query)` (substring on canonical + aliases), `useGlossarySearch` hook, `glossaryToInfoButtonProps(slug)` helper.
-- `entries/handicap.tsx` — handicap-related entries. Seeded in Unit 1 with `fargorate`. Units 4 + 5 extend.
-- `entries/scoring.tsx`, `entries/match-format.tsx`, `entries/standings.tsx`, `entries/general.tsx` — empty placeholders, filled in Units 4 + 5.
+- `entries/handicap.tsx` — handicap-related entries (15 terms): fargorate, handicap, handicap-system, handicap-mechanism, points/percentage/no-handicap, extra-games, start-points, race-length-adjustment, threshold + chart, calibrated, manual-entry, rating.
+- `entries/general.tsx` — cross-cutting entries (27 terms): keystone containers (league, season, matchup, match, game, pairing), game types (8/9/10-ball), teams/roster (lineup, lineup-size, roster, roster-size, substitute, anonymous-sub, double-duty, captain, scorekeeper, lineup-lock, racker, breaker), tiebreakers (tiebreaker, extra-round, single-short-race, accept-tie, manual-tiebreaker), start-date, qualifier (with descriptor + division-descriptor aliases).
+- `entries/scoring.tsx`, `entries/match-format.tsx`, `entries/standings.tsx` — empty placeholders, filled next.
 - `__tests__/glossary.test.ts` — schema completeness, slug uniqueness, alias collisions, related-dial integrity, search behavior.
 
 ---
