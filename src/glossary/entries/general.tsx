@@ -398,42 +398,64 @@ export const entries = {
     canonicalName: 'Matchup',
     aliases: ['matchups'],
     shortDef:
-      'Which team plays which team on a given night — one matchup is one team-vs-team meeting.',
+      'The list of who plays whom in a given week — that week\'s slate of team-vs-team matches.',
     longDef: (
       <div className="space-y-3">
         <p>
-          A matchup is one team-vs-team meeting scheduled for a given match
-          night. &ldquo;Kings vs Knights&rdquo; is a matchup.
-          &ldquo;Eagles vs Ravens&rdquo; is another. Each matchup yields
-          one{' '}
-          <a href="#match" className="text-info hover:underline">match</a>{' '}
-          — the played event between those two teams.
+          A matchup is the list of who plays whom in a given week. For a
+          week where 12 teams are scheduled to play, the matchup is the
+          full set of 6 team-vs-team meetings happening that week (e.g.,
+          Kings vs Knights, Eagles vs Ravens, Wolves vs Bears, …). Each
+          team-vs-team meeting inside the list is a{' '}
+          <a href="#match" className="text-info hover:underline">match</a>.
         </p>
         <p>
-          The hierarchy:{' '}
-          <strong>matchups are a group of matches</strong>, the same way a{' '}
-          <a href="#match" className="text-info hover:underline">match</a>{' '}
-          is a group of{' '}
-          <a href="#game" className="text-info hover:underline">games</a>.
-          A night with 12 teams scheduled = 6 matchups = 6 matches.
+          <strong>Matchups</strong> (plural) is the list of all the weekly
+          matchups across a{' '}
+          <a href="#season" className="text-info hover:underline">season</a>{' '}
+          — i.e., the team-pairing part of the season's{' '}
+          <a href="#schedule" className="text-info hover:underline">schedule</a>,
+          week by week.
         </p>
+        <p>The hierarchy:</p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>
+            A matchup (one week) is a group of{' '}
+            <a href="#match" className="text-info hover:underline">matches</a>.
+          </li>
+          <li>
+            A{' '}
+            <a href="#match" className="text-info hover:underline">match</a>{' '}
+            (one team-vs-team event) is a group of{' '}
+            <a href="#game" className="text-info hover:underline">games</a>.
+          </li>
+          <li>
+            A{' '}
+            <a href="#game" className="text-info hover:underline">game</a>{' '}
+            is a single rack between two players.
+          </li>
+        </ul>
         <p>
           <strong>Don't confuse matchup with pairing.</strong> A matchup is
-          team-level (team vs team). A{' '}
+          team-level (which teams play whom this week). A{' '}
           <a href="#pairing" className="text-info hover:underline">pairing</a>{' '}
-          is player-level (single player vs single player, specifically in
-          race-to-N formats). Different layers of the hierarchy.
+          is player-level — a single player vs a single player, inside a
+          specific{' '}
+          <a href="#match" className="text-info hover:underline">match</a>{' '}
+          (race-to-N formats). Different layers of the hierarchy.
         </p>
         <p className="text-sm text-muted-foreground">
           Relevant topics:{' '}
           <a href="#match" className="text-info hover:underline">match</a>,{' '}
           <a href="#game" className="text-info hover:underline">game</a>,{' '}
-          <a href="#pairing" className="text-info hover:underline">pairing</a>.
+          <a href="#pairing" className="text-info hover:underline">pairing</a>,{' '}
+          <a href="#season" className="text-info hover:underline">season</a>,{' '}
+          <a href="#schedule" className="text-info hover:underline">schedule</a>.
         </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['season', 'team', 'schedule'],
+    related: ['team', 'match-format'],
     reviewedByEd: '2026-05-29',
   },
 
