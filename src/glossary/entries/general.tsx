@@ -70,6 +70,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['season', 'matchup', 'match', 'qualifier', 'start-date'],
+    reviewedByEd: '2026-05-29',
   },
 
   season: {

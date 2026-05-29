@@ -26,7 +26,8 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:demo": "E2E_DEMO=1 playwright test",
     "test:e2e:report": "playwright show-report",
-    "audit:scan": "bash scripts/audit-scan.sh > docs/audits/scan-findings.md"
+    "audit:scan": "bash scripts/audit-scan.sh > docs/audits/scan-findings.md",
+    "glossary:progress": "tsx scripts/glossary-progress.ts"
   },
   "dependencies": {
     "@2toad/profanity": "^3.2.0",

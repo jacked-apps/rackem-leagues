@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-29 (Operator help system Phase 1 — Unit 6 shipped: Learn hub at `/operator-learn` (withAuth, lazy). Glossary section with alphabetical browse + alias-aware search + deep-link scroll + highlight. Sidebar/drawer "Learn" link in Operator section. OperatorDashboard's "Operator Handbook" link repointed. `pnpm audit:scan` clean on new files.)
+> **Last Updated**: 2026-05-29 (Operator help system Phase 1 — added `reviewedByEd?: string` field on `GlossaryEntry` schema for tracking Ed's per-entry content reviews + `pnpm glossary:progress` script that lists reviewed vs unreviewed entries. Workflow: as Ed approves an entry's rendered content, it gets marked.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 

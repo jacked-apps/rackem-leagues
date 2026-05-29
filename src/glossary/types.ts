@@ -44,4 +44,11 @@ export interface GlossaryEntry {
   l1_anchor: L1Anchor;
   /** Other glossary slugs related to this one. */
   related: readonly string[];
+  /**
+   * ISO date Ed personally reviewed this entry's content. Hidden from the
+   * UI — purely a content-tracking marker so we can see which entries
+   * still need a focused review pass. Run `pnpm glossary:progress` to
+   * list reviewed vs unreviewed.
+   */
+  reviewedByEd?: string;
 }
