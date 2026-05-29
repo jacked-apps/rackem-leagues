@@ -22,22 +22,45 @@ export const entries = {
     shortDef:
       'A specific game + weekly time slot that runs over time (e.g., "8-Ball on Mondays") — set up once, then hosts recurring seasons.',
     longDef: (
-      <div className="space-y-2">
+      <div className="space-y-3">
         <p>
-          A league is the long-running container. It picks the game (8-Ball,
-          9-Ball, etc.), the night of the week matches play, the format
-          (lineup size, handicap, scoring), and the rules. You set this up
-          once.
+          A league is the long-running container. You pick the game, the
+          night of the week matches play, the format ({' '}
+          <a href="#lineup-size" className="text-info hover:underline">lineup size</a>,{' '}
+          <a href="#handicap-system" className="text-info hover:underline">handicap system</a>,{' '}
+          <a href="#match-format" className="text-info hover:underline">match format</a>),
+          and the rules. You set this up once.
         </p>
         <p>
-          Under the league, seasons run one after another. The league
-          provides the consistent shape; each season is one chapter of play
-          within that shape.
+          <strong>The name is composed automatically from your answers.</strong>{' '}
+          The shape is:{' '}
+          <em>[Game] [Day] [Qualifier?] [Season] [Year]</em>. As you walk the
+          wizard, a live preview shows the name building from the parts you've
+          answered so far. The day-of-week, season name
+          (Spring/Summer/Fall/Winter), and year all come from the{' '}
+          <a href="#start-date" className="text-info hover:underline">start date</a>{' '}
+          you pick. A{' '}
+          <a href="#qualifier" className="text-info hover:underline">qualifier</a>{' '}
+          is optional — used when you run multiple leagues of the same game
+          on the same day.
+        </p>
+        <p>
+          <strong>Examples.</strong> A 9-Ball league starting Tuesday March
+          4, 2026, no qualifier → <strong>&ldquo;9 Ball Tuesday Spring
+          2026&rdquo;</strong>. Add a qualifier like &ldquo;East Side&rdquo;
+          and it becomes <strong>&ldquo;9 Ball Tuesday East Side Spring
+          2026&rdquo;</strong>.
+        </p>
+        <p>
+          Under the league,{' '}
+          <a href="#season" className="text-info hover:underline">seasons</a>{' '}
+          run one after another. The league provides the consistent shape;
+          each season is one chapter of play within that shape.
         </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['season', 'matchup', 'match'],
+    related: ['season', 'matchup', 'match', 'qualifier', 'start-date'],
   },
 
   season: {
