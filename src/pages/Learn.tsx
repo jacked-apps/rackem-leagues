@@ -27,9 +27,9 @@ export default function Learn() {
         <p className="text-xs text-muted-foreground/80">
           <strong>Heads up:</strong> these are how we use these words{' '}
           <em>in this app</em>. Pool terminology varies across regions and
-          other systems — some words here have additional meanings outside
-          the app, and some won't match how you've heard them used elsewhere.
-          We try to use them strictly here for consistency.
+          other systems, and many terms here carry additional meanings
+          elsewhere. Inside the app we hold to these definitions strictly —
+          less confusion when complex ideas build on them.
         </p>
       </header>
       <GlossaryView />
