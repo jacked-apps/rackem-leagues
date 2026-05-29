@@ -42,7 +42,13 @@ export interface GlossaryEntry {
   longDef: ReactNode;
   /** Reference to the matching L1 page for the drift audit. */
   l1_anchor: L1Anchor;
-  /** Other glossary slugs related to this one. */
+  /**
+   * Other glossary slugs to explore — **adjacent concepts NOT already
+   * linked in the body prose.** In-body term mentions are inline links
+   * by convention, so duplicating them in `related` is DRY violation.
+   * Reserve this field for "more to explore" beyond what the longDef
+   * covers.
+   */
   related: readonly string[];
   /**
    * ISO date Ed personally reviewed this entry's content. Hidden from the
