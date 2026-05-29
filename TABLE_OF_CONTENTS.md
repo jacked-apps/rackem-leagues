@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-29 (Operator help system Phase 1 — added `reviewedByEd?: string` field on `GlossaryEntry` schema for tracking Ed's per-entry content reviews + `pnpm glossary:progress` script that lists reviewed vs unreviewed entries. Workflow: as Ed approves an entry's rendered content, it gets marked.)
+> **Last Updated**: 2026-05-29 (Operator help system Phase 1 — Unit 7 shipped: `pnpm glossary:verify` drift audit. Walks every entry's `l1_anchor` and checks the L1 file exists (and anchor, when set, via `github-slugger`). Pending-file allowlist parsed from `implementation-status.md`. Exposed as vitest test so it runs on every `pnpm test:run`. **Current: 66/66 entries clean, 0 violations.**)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
