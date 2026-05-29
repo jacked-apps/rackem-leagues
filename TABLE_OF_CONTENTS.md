@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-29 (Renamed `/operator-learn` → `/learn`. Files moved from `src/operator/OperatorLearn.tsx` + `src/operator/learn/` to `src/pages/Learn.tsx` + `src/pages/learn/`. Sidebar/drawer "Learn" link moved from Operator section to Player section so all signed-in users see it. GlossaryInfoButton's "Learn more →" now points at `/learn#<slug>`. Tests: 26 pass.)
+> **Last Updated**: 2026-05-29 (Step 4 = validate + keep fresh. Three deliverables: (a) zero-result search breadcrumb — `console.warn` on `/learn` when a search returns nothing, captures missing-alias signal; (b) outside-LO walkthrough checklist at `docs/audits/2026-05-29-outside-LO-walkthrough.md`; (c) glossary maintenance cadence at `docs/audits/2026-05-29-glossary-maintenance-cadence.md`.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
