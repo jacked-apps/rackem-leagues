@@ -41,8 +41,10 @@ export function GlossaryEntryView({ entry, isHighlighted }: GlossaryEntryViewPro
           also called: {entry.aliases.join(', ')}
         </p>
       )}
-      <p className="mt-3 text-foreground">{entry.shortDef}</p>
-      <div className="mt-4 space-y-3 text-foreground">{entry.longDef}</div>
+      <blockquote className="mt-3 border-l-4 border-info/40 pl-3 italic text-muted-foreground">
+        {entry.shortDef}
+      </blockquote>
+      <div className="mt-5 space-y-3 text-foreground">{entry.longDef}</div>
       {entry.related.length > 0 && (
         <p className="mt-4 text-sm text-muted-foreground">
           <span className="font-medium">Related:</span>{' '}
