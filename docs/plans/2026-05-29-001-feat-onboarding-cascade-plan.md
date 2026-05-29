@@ -174,9 +174,11 @@ origin: `docs/brainstorms/2026-05-28-player-onboarding-cold-start-requirements.m
 - **Captain seat = a placeholder too.** A team is always created with a captain
   (placeholder or lookup), so onboarding a captain is the same Replace/claim against
   the captain seat. LO-as-own-captain needs no invite (assigned = himself).
-- **`captain_approve` actor_role.** Add `'captain_approve'` to the
-  `merge_placeholder_into_member_v2` `p_actor_role` whitelist (migration) so the
-  approve path audits correctly (today only `'invite_accept'|'lo_initiated'`).
+- **`captain_approve` actor_role (two places).** Add `'captain_approve'` to **both**
+  the `merge_placeholder_into_member_v2` `p_actor_role` whitelist **and** the
+  `archived_placeholders.actor_role` CHECK — the merge writes the role into that
+  table, so a whitelist-only change makes every Replace silent-fail (the RPC returns
+  `success=false`, not a throw). Today both allow only `'invite_accept'|'lo_initiated'`.
 - **One approve surface, two scopes.** A single triage component (request list +
   Add/Replace/Decline + the record-flagged placeholder picker); a captain mounts it
   for his team, the LO mounts it across all org teams. Every item shows person +
@@ -184,10 +186,27 @@ origin: `docs/brainstorms/2026-05-28-player-onboarding-cold-start-requirements.m
 - **Server-side, identity-keyed join intent (R10).** Persist the pending join
   server-side keyed to the joiner's email/identity (not browser-only) so it survives
   the sign-in window + any device; the `team_join_requests` row is the durable record
-  post-submit. Reuse the `get_my_pending_invites`/`PendingInvitesModal` pull pattern
-  to notify the joiner on approval.
+  post-submit. **Notify on approval via the poll-and-popup PATTERN only** — NOT
+  `get_my_pending_invites` (it's bound to `invite_tokens`/email and can't read
+  `team_join_requests`). Add a `get_my_approved_join_requests` RPC
+  (`team_join_requests` WHERE `requested_by_user_id = auth.uid()` AND
+  `status='approved'` AND `acknowledged_at IS NULL`) feeding a **sibling** modal that
+  routes the joiner to their team and stamps `acknowledged_at` so it shows once.
 
 ## Open Questions
+
+### Resolve Before Building
+- **[Ed decision] The "existing short profile form" is actually long.** The current
+  new-player/complete-profile form requires first/last, **phone, full street address,
+  city, state, zip, and date of birth** — not just name + nickname. Register-first
+  puts all of that in front of every brand-new player *at the door*, which is friction
+  on the exact non-tech cold-start cohort the cascade is meant to unburden. Decide:
+  **trim a join-context variant** (name + nickname, the rest progressive) or **accept
+  the full form**. (The origin's "progressive profile" principle favors trimming.)
+- **Escalate the `send-invite` caller-authz fix to before-ship.** The cascade adds a
+  new public read (`get_team_join_view`) + a team-scoped mutation; the pre-existing
+  unauthenticated `send-invite` hole widens the blast radius. Also: `submitJoinRequest`
+  must require a JWT and derive `requested_by_user_id` from it (never client input).
 
 ### Resolved During Planning
 
@@ -249,9 +268,12 @@ race/dedup guards, and the approve audit role.
 
 **Files:**
 - Create: `supabase/migrations/<ts>_team_join_cascade.sql` (`teams.join_token`
-  unique default `gen_random_uuid()`, backfilled; `team_join_requests` + the two
-  partial unique indexes; add `'captain_approve'` to the merge RPC's actor_role
-  whitelist).
+  unique default `gen_random_uuid()`, backfilled; `team_join_requests` with
+  `expires_at` default `now()+30d` and `acknowledged_at`, + the two partial unique
+  indexes; widen `'captain_approve'` into **both** the merge RPC's actor_role
+  whitelist **AND** the `archived_placeholders.actor_role` CHECK — the merge INSERTs
+  the actor_role into `archived_placeholders`, so a whitelist-only change would
+  silent-fail every Replace).
 - Modify: `src/types/database.types.ts` (`pnpm db:types`).
 - Test: `src/__tests__/database/team-join-cascade.test.ts`.
 
@@ -316,8 +338,14 @@ also surface "you're approved — go to your team"; Test
 **Approach:**
 - Not signed in → passwordless sign-in; persist the pending-join intent server-side
   keyed to identity so a cross-device/closed-tab return still recovers it (R10).
-- Signed in, no member yet → the **existing short profile form** (name + nickname
-  etc.); on completion they are a registered member.
+- Signed in, **member already exists**, no prior request → show team + league + a
+  single **Join** button → submit directly (skip the form).
+- Signed in, **no member yet** → the existing profile form, with its terminal
+  redirect made **flow-aware** (it currently hard-navigates to `/my-teams` via
+  `window.location.href` in `usePlayerFormSubmission`) so completion returns to
+  `/join/:token` and auto-submits, not to My Teams. On completion they're a
+  registered member. *(That form is fuller than name+nickname — see Open Questions →
+  Resolve Before Building.)*
 - Submit a `team_join_request` (claim → `claimed_member_id`; self-add → none). Show
   "waiting for the captain."
 - **Notify on approval:** reuse the `get_my_pending_invites`/`PendingInvitesModal`
@@ -361,6 +389,10 @@ learns when approved — even if they closed the tab.
   caller); resolve `org_id` via team→season→league; authorize caller = team
   `captain_id` **or** org staff; 403 otherwise. If `captain_id IS NULL`, org-staff
   only.
+- **Actor from JWT, check the result:** pass `p_actor_member_id` resolved from the
+  verified JWT (`members.id WHERE user_id = <jwt user>`), never from client input.
+  The merge RPC returns a row (not a throw) — inspect its `success` flag and return
+  a non-2xx on failure; never return 200 on a silent `success=false`.
 - **Race:** re-read the request `FOR UPDATE`; if not `pending`, return a friendly
   "already handled" (don't let the merge RPC's raw error be the race signal).
 - **Add:** insert the joiner's registered member into `team_players` (no merge).
@@ -401,8 +433,10 @@ picker; captain sees his team, LO sees all org teams.
 
 **Files:** Create `src/onboarding/components/JoinRequestList.tsx` +
 `PlaceholderPicker.tsx`; `src/api/hooks/useTeamJoinRequests.ts`; Modify
-`src/player/MyTeams.tsx` (captain: mount for his team) + an LO all-teams surface
-(operator view); Test `src/onboarding/components/JoinRequestList.test.tsx`,
+`src/player/MyTeams.tsx` (captain: mount for his team) + **the operator dashboard
+(add a "Join requests" section/route as the concrete LO all-teams surface — the
+doorbell's link target; not an unnamed "operator view")**; Test
+`src/onboarding/components/JoinRequestList.test.tsx`,
 `PlaceholderPicker.test.tsx`.
 
 **Approach:**
@@ -410,9 +444,14 @@ picker; captain sees his team, LO sees all org teams.
 - **Replace** opens `PlaceholderPicker` — the team's unclaimed placeholders, each
   flagged via `placeholder_has_stats` (e.g. "Jon Smyth · 3 games"); the name-match
   (if any) pre-highlighted as a shortcut; available **whenever placeholders exist**,
-  match or not (protects the misspelled record).
-- Soft guardrail: tapping **Add** while unclaimed placeholders exist → a one-line
-  "still have open spots — is this one of them?" nudge (non-blocking).
+  match or not (protects the misspelled record). Choosing one shows a **confirm step**
+  ("Link John Smith → Jon Smyth · 3 games?", refetched on open) before the
+  irreversible merge fires; the picker shows a loading skeleton and a per-row
+  in-flight/error state (the LO may be actioning many at once).
+- **Add-vs-duplicate guard:** if a **name-similar** unclaimed placeholder exists,
+  tapping **Add** first asks "Is this Jon Smyth · 3 games? [Link] / [No, add new]" —
+  a real confirm, because a wrong Add strands that record. With no similar
+  placeholder, Add is one tap.
 - Scope by data: captain query filters to his team(s); LO query spans org teams. Same
   component.
 
@@ -444,10 +483,13 @@ record-flagged placeholder; LO sees all teams in one place.
 `src/components/layout/BottomTabBar.tsx`, + the LO surface; Test
 `src/api/hooks/usePendingJoinRequestCount.test.ts`.
 
-**Approach:** One hook summing pending requests for the caller's scope —
-captain: requests on teams where they're `captain_id`; LO: across org teams (and an
-org-staff variant, so staff approvers see it too). Joins `team_join_requests → teams`
-(tolerate null `captain_id`). Renders only when count > 0; clears when handled.
+**Approach:** One hook computing pending requests over **every team the caller can
+approve** as a single **UNION-DISTINCT** (teams where `captain_id = me` **OR** I'm
+org staff), **de-duplicated by request id** — so an LO who also captains a team in
+his own org doesn't double-count or see a request twice. Join `team_join_requests →
+teams` (tolerate null `captain_id`); filter `status='pending' AND expires_at > now()`.
+Renders only when > 0; clears when handled. The bottom-bar badge sits on the existing
+Teams tab and taps through to MyTeams (informational; doesn't interrupt scoring).
 
 **Test scenarios:**
 - Happy: count > 0 → home card + menu "(N)" + bottom-bar badge; 0 → none render.
@@ -465,10 +507,13 @@ it disappears when the queue empties.
 
 **Dependencies:** Unit 1 (the token).
 
-**Files:** Create `src/onboarding/InviteMyTeamButton.tsx` (captain),
-`src/onboarding/OnboardCaptainsList.tsx` (LO), `src/wizards/captain-onboarding-v2/`
-(thin 3-card wizard); Modify `src/player/MyTeams.tsx` + the LO surface; Test
-`src/onboarding/OnboardCaptainsList.test.tsx`, `captain-onboarding-v2/*.test.tsx`.
+**Files:** Create (new top-level `src/onboarding/`, sibling of `src/player/`):
+`InviteMyTeamButton.tsx` (captain — share `/join/:token` via `ShareLinkSection` + a
+**"Rotate link"** affordance that regenerates `join_token`; submitted requests are
+unaffected since they key on `team_id`), `OnboardCaptainsList.tsx` (LO — **first
+check** whether it can extend the existing operator team list rather than a new
+component); Modify `src/player/MyTeams.tsx` + the operator dashboard; Test
+`src/onboarding/OnboardCaptainsList.test.tsx`.
 
 **Approach:**
 - Captain: **"Invite my team"** → `ShareLinkSection` with the `/join/:token` URL +
@@ -478,9 +523,13 @@ it disappears when the queue empties.
   A captain on multiple teams shows on multiple rows (or grouped "Send all"); the
   LO-as-own-captain row needs no send. If a captain's phone/email is on file, pre-fill
   the message; else copy-paste.
-- Wizard (captain): 3 cards (get/copy your link → share it → approve people as they
-  appear → points at the approve surface). Plain `useState`, < 100-line files,
-  `queryKeys.members.all`. A seen-flag on `members` (cross-device, not localStorage).
+- First-run guidance (captain): **a dismissible inline tip on the "Invite my team"
+  button** (get link → share → approve people as they appear), **NOT a new wizard
+  scaffold** — it's 3 informational lines pointing at a button that already exists.
+  Dismissal flag in `localStorage` (per-device is fine for a one-time tip; avoids a
+  `members` migration). Trigger: shown on the captain's first MyTeams visit while
+  the team has no approved (non-placeholder) members. If a fuller wizard proves
+  needed, add it later.
 
 **Test scenarios:**
 - Happy: "Invite my team" shows the team's `/join/:token` link + QR.
@@ -545,6 +594,9 @@ one tap to scoring; if not, a clean team page (no broken "tonight" UI).
 | `send-invite` authz hole | Out of scope; flagged for its own fix; don't widen. |
 | Roster names exposed via the token | Accepted per design (shared within team); names only; revisit token rotation if leaks become real. |
 | Can't test links cross-device locally | Verify on staging (like Facebook OAuth). |
+| Replace silent-fails if only the merge RPC whitelist is widened | Unit 1 widens BOTH the RPC whitelist AND the `archived_placeholders.actor_role` CHECK. |
+| Stale pending requests pile up / lock the per-user dedup across seasons | `team_join_requests.expires_at` (30d) + a self-cancel path; doorbell/triage filter `expires_at > now()`. |
+| Add strands a record when the joiner already has a placeholder | Add-vs-duplicate guard: a name-similar placeholder forces an "is this them?" confirm before a no-merge Add (Unit 5). |
 
 ## Documentation / Operational Notes
 
