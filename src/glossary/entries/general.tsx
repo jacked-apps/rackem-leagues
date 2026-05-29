@@ -398,23 +398,43 @@ export const entries = {
     canonicalName: 'Matchup',
     aliases: ['matchups'],
     shortDef:
-      'The schedule of who plays who in a given setting — at the team level (Kings vs Knights) or the player level (Joe vs John).',
+      'Which team plays which team on a given night — one matchup is one team-vs-team meeting.',
     longDef: (
-      <div className="space-y-2">
+      <div className="space-y-3">
         <p>
-          A matchup is the pairing. It says who's playing who. At the team
-          level, a night's matchups are the slate of teams paired up. At the
-          player level, a matchup is one player against one other.
+          A matchup is one team-vs-team meeting scheduled for a given match
+          night. &ldquo;Kings vs Knights&rdquo; is a matchup.
+          &ldquo;Eagles vs Ravens&rdquo; is another. Each matchup yields
+          one{' '}
+          <a href="#match" className="text-info hover:underline">match</a>{' '}
+          — the played event between those two teams.
         </p>
         <p>
-          The relationship is layered: <strong>matchups are a group of
-          matches</strong>, the same way a match is a group of games. 12
-          teams scheduled for a night gives you 6 matchups (= 6 matches).
+          The hierarchy:{' '}
+          <strong>matchups are a group of matches</strong>, the same way a{' '}
+          <a href="#match" className="text-info hover:underline">match</a>{' '}
+          is a group of{' '}
+          <a href="#game" className="text-info hover:underline">games</a>.
+          A night with 12 teams scheduled = 6 matchups = 6 matches.
+        </p>
+        <p>
+          <strong>Don't confuse matchup with pairing.</strong> A matchup is
+          team-level (team vs team). A{' '}
+          <a href="#pairing" className="text-info hover:underline">pairing</a>{' '}
+          is player-level (single player vs single player, specifically in
+          race-to-N formats). Different layers of the hierarchy.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#match" className="text-info hover:underline">match</a>,{' '}
+          <a href="#game" className="text-info hover:underline">game</a>,{' '}
+          <a href="#pairing" className="text-info hover:underline">pairing</a>.
         </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['match', 'pairing', 'season'],
+    related: ['season', 'team', 'schedule'],
+    reviewedByEd: '2026-05-29',
   },
 
   match: {
