@@ -18,7 +18,7 @@ export const entries = {
   league: {
     slug: 'league',
     canonicalName: 'League',
-    aliases: [],
+    aliases: ['division'],
     shortDef:
       'An ongoing team competition for one game on one weekly night — run by an operator, with its own rules, scoring, and handicap setup.',
     longDef: (
@@ -45,7 +45,9 @@ export const entries = {
           creating a new league is cleaner than reconfiguring an existing one.
         </p>
         <p>
-          <strong>The name is composed automatically from the operator's setup.</strong>{' '}
+          <strong>The{' '}
+          <a href="#league-name" className="text-info hover:underline">name</a>{' '}
+          is composed automatically from the operator's setup.</strong>{' '}
           The shape is:{' '}
           <em>
             [<a href="#game-type" className="text-info hover:underline">Game</a>]{' '}
@@ -66,10 +68,29 @@ export const entries = {
           and it becomes <strong>&ldquo;9 Ball Tuesday East Side Spring
           2026&rdquo;</strong>.
         </p>
+        <p className="text-sm text-muted-foreground">
+          <strong>A note on the word.</strong> Other pool league systems —
+          notably CSI's LMS (the official BCAPL platform) — call this
+          concept a <em>division</em>. We chose &ldquo;league&rdquo;
+          because that's what people actually say in everyday speech
+          (&ldquo;I play my 8-Ball Tuesday league,&rdquo; not &ldquo;I
+          play my 8-Ball Tuesday division&rdquo;). Matching natural
+          language reduces friction when operators talk about the app
+          with players.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#handicap-system" className="text-info hover:underline">handicap system</a>,{' '}
+          <a href="#season" className="text-info hover:underline">season</a>,{' '}
+          <a href="#league-name" className="text-info hover:underline">league name</a>,{' '}
+          <a href="#game-type" className="text-info hover:underline">game type</a>,{' '}
+          <a href="#qualifier" className="text-info hover:underline">qualifier</a>,{' '}
+          <a href="#start-date" className="text-info hover:underline">start-date</a>.
+        </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['season', 'matchup', 'match', 'qualifier', 'start-date'],
+    related: ['matchup', 'match', 'team'],
     reviewedByEd: '2026-05-29',
   },
 
