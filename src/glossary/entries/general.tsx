@@ -20,16 +20,29 @@ export const entries = {
     canonicalName: 'League',
     aliases: [],
     shortDef:
-      'A specific game + weekly time slot that runs over time (e.g., "8-Ball on Mondays") — set up once, then hosts recurring seasons.',
+      'An ongoing team competition for one game on one weekly night — run by an operator, with its own rules, scoring, and handicap setup.',
     longDef: (
       <div className="space-y-3">
         <p>
-          A league is the long-running container. You pick the game, the
-          night of the week matches play, the format ({' '}
-          <a href="#lineup-size" className="text-info hover:underline">lineup size</a>,{' '}
-          <a href="#handicap-system" className="text-info hover:underline">handicap system</a>,{' '}
-          <a href="#match-format" className="text-info hover:underline">match format</a>),
-          and the rules. You set this up once.
+          A league operator starts an ongoing team competition for a specific
+          game on a specific night, with its own rules, scoring, and{' '}
+          <a href="#handicap-system" className="text-info hover:underline">handicap</a>{' '}
+          setup. The competition is divided up into{' '}
+          <a href="#season" className="text-info hover:underline">seasons</a> —
+          each can vary in length and may or may not end with playoffs.
+        </p>
+        <p>
+          <strong>What makes one league distinct from another:</strong>
+        </p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>Same game on a different night → <strong>different league</strong>.</li>
+          <li>Different game on the same night → <strong>still a different league</strong>.</li>
+        </ul>
+        <p>
+          Each league runs mostly the same metrics across its seasons. Small
+          changes can be made while a season is in progress; larger changes
+          are best made between seasons. Some changes are big enough that
+          creating a new league is cleaner than reconfiguring an existing one.
         </p>
         <p>
           <strong>The name is composed automatically from your answers.</strong>{' '}
@@ -50,12 +63,6 @@ export const entries = {
           2026&rdquo;</strong>. Add a qualifier like &ldquo;East Side&rdquo;
           and it becomes <strong>&ldquo;9 Ball Tuesday East Side Spring
           2026&rdquo;</strong>.
-        </p>
-        <p>
-          Under the league,{' '}
-          <a href="#season" className="text-info hover:underline">seasons</a>{' '}
-          run one after another. The league provides the consistent shape;
-          each season is one chapter of play within that shape.
         </p>
       </div>
     ),

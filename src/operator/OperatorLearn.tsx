@@ -17,11 +17,18 @@ import { GlossaryView } from './learn/GlossaryView';
 export default function OperatorLearn() {
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8">
-      <header className="mb-8">
+      <header className="mb-8 space-y-2">
         <h1 className="text-3xl font-bold text-foreground">Learn</h1>
-        <p className="mt-2 text-muted-foreground">
+        <p className="text-muted-foreground">
           Browse pool league terminology. Search by your own word — if it's
           an alias we know, we'll find the canonical term.
+        </p>
+        <p className="text-xs text-muted-foreground/80">
+          <strong>Heads up:</strong> these are how we use these words{' '}
+          <em>in this app</em>. Pool terminology varies across regions and
+          other systems — some words here have additional meanings outside
+          the app, and some won't match how you've heard them used elsewhere.
+          We try to use them strictly here for consistency.
         </p>
       </header>
       <GlossaryView />
