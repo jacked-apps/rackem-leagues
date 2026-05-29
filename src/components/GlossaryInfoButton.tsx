@@ -107,17 +107,22 @@ export function GlossaryInfoButton({
         label={label}
         className={className}
       >
-        <div className="space-y-2">
+        <div>
           <p>{entry.shortDef}</p>
-          <a
-            href={`/learn#${slug}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={stop}
-            className="inline-block text-sm text-info hover:underline"
-          >
-            Learn more →
-          </a>
+          <div className="mt-4">
+            <p className="text-sm font-medium text-foreground">
+              Why is this so important?
+            </p>
+            <a
+              href={`/learn#${slug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={stop}
+              className="mt-1 inline-block text-sm text-info hover:underline"
+            >
+              Learn more →
+            </a>
+          </div>
         </div>
       </InfoButton>
     </span>
