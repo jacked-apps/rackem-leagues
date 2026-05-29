@@ -91,10 +91,26 @@ export const entries = {
         </p>
         <p>What a season holds:</p>
         <ul className="list-disc space-y-1 pl-5">
-          <li>A <strong>length</strong> (number of weeks).</li>
-          <li>An optional <strong>playoffs</strong> at the end.</li>
-          <li>A generated <strong>schedule</strong> of every match night.</li>
-          <li>The specific <strong>teams</strong> registered for this season.</li>
+          <li>
+            A{' '}
+            <a href="#season-length" className="text-info hover:underline">length</a>{' '}
+            (number of weeks).
+          </li>
+          <li>
+            An optional{' '}
+            <a href="#playoffs" className="text-info hover:underline">playoffs</a>{' '}
+            at the end.
+          </li>
+          <li>
+            A generated{' '}
+            <a href="#schedule" className="text-info hover:underline">schedule</a>{' '}
+            of every match night.
+          </li>
+          <li>
+            The specific{' '}
+            <a href="#team" className="text-info hover:underline">teams</a>{' '}
+            registered for this season.
+          </li>
           <li>
             The{' '}
             <a href="#match" className="text-info hover:underline">matches</a>{' '}
@@ -113,9 +129,10 @@ export const entries = {
           </li>
         </ul>
         <p>
-          Practically: when someone in the app says "the standings" or "the
-          schedule," they mean <em>this</em> season's. Past seasons stay
-          archived under the same{' '}
+          Practically: when someone in the app says "the standings" or "the{' '}
+          <a href="#schedule" className="text-info hover:underline">schedule</a>,"
+          they mean <em>this</em> season's. Past seasons stay archived under
+          the same{' '}
           <a href="#league" className="text-info hover:underline">league</a>;
           future seasons are scheduled but not yet active.
         </p>
@@ -131,6 +148,10 @@ export const entries = {
           Relevant topics:{' '}
           <a href="#league" className="text-info hover:underline">league</a>,{' '}
           <a href="#league-name" className="text-info hover:underline">league name</a>,{' '}
+          <a href="#season-length" className="text-info hover:underline">season length</a>,{' '}
+          <a href="#playoffs" className="text-info hover:underline">playoffs</a>,{' '}
+          <a href="#schedule" className="text-info hover:underline">schedule</a>,{' '}
+          <a href="#team" className="text-info hover:underline">team</a>,{' '}
           <a href="#match" className="text-info hover:underline">match</a>,{' '}
           <a href="#matchup" className="text-info hover:underline">matchup</a>,{' '}
           <a href="#standings" className="text-info hover:underline">standings</a>,{' '}
@@ -141,6 +162,215 @@ export const entries = {
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['roster', 'captain'],
     reviewedByEd: '2026-05-29',
+  },
+
+  'season-length': {
+    slug: 'season-length',
+    canonicalName: 'Season Length',
+    aliases: [],
+    shortDef:
+      'How many weeks of regular play a season runs — set per-season, not at the league level.',
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          Each{' '}
+          <a href="#season" className="text-info hover:underline">season</a>{' '}
+          has its own length, expressed in weeks. The length drives how many
+          match nights the{' '}
+          <a href="#schedule" className="text-info hover:underline">schedule</a>{' '}
+          spans before regular play ends.
+        </p>
+        <p>
+          Length is configured per-season, not at the{' '}
+          <a href="#league" className="text-info hover:underline">league</a>{' '}
+          level — so different seasons under the same league can run for
+          different durations (e.g., a 10-week summer season and a 16-week
+          fall season).
+        </p>
+        <p>
+          Season length only counts regular play.{' '}
+          <a href="#playoffs" className="text-info hover:underline">Playoffs</a>{' '}
+          (when configured) run AFTER the season-length weeks complete and
+          are counted separately.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#season" className="text-info hover:underline">season</a>,{' '}
+          <a href="#schedule" className="text-info hover:underline">schedule</a>,{' '}
+          <a href="#league" className="text-info hover:underline">league</a>,{' '}
+          <a href="#playoffs" className="text-info hover:underline">playoffs</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: [],
+  },
+
+  playoffs: {
+    slug: 'playoffs',
+    canonicalName: 'Playoffs',
+    aliases: ['playoff', 'post-season', 'postseason'],
+    shortDef:
+      'An optional end-of-season elimination round that decides the season\'s champion.',
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          Playoffs are an optional extension to a{' '}
+          <a href="#season" className="text-info hover:underline">season</a>.
+          After regular play (the{' '}
+          <a href="#season-length" className="text-info hover:underline">season length</a>{' '}
+          weeks) ends, the top teams from the regular-season{' '}
+          <a href="#standings" className="text-info hover:underline">standings</a>{' '}
+          qualify for a playoff bracket. The bracket plays out across one or
+          more match nights and crowns the season's champion.
+        </p>
+        <p>What playoffs configuration covers:</p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>
+            How many{' '}
+            <a href="#team" className="text-info hover:underline">teams</a>{' '}
+            qualify (e.g., top 4, top 8).
+          </li>
+          <li>
+            The bracket format (single elimination, double, round robin, etc.).
+          </li>
+          <li>The number of playoff weeks.</li>
+        </ul>
+        <p>
+          Playoffs are configured per-season, so a{' '}
+          <a href="#league" className="text-info hover:underline">league</a>{' '}
+          can choose to run them some seasons and skip others. Skipping
+          playoffs is legitimate — many leagues prefer the regular-season{' '}
+          <a href="#standings" className="text-info hover:underline">standings</a>{' '}
+          to decide the champion.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#season" className="text-info hover:underline">season</a>,{' '}
+          <a href="#season-length" className="text-info hover:underline">season length</a>,{' '}
+          <a href="#standings" className="text-info hover:underline">standings</a>,{' '}
+          <a href="#team" className="text-info hover:underline">team</a>,{' '}
+          <a href="#league" className="text-info hover:underline">league</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['tiebreaker'],
+  },
+
+  schedule: {
+    slug: 'schedule',
+    canonicalName: 'Schedule',
+    aliases: ['season schedule'],
+    shortDef:
+      'The list of match nights and which teams play whom — auto-generated from the season\'s teams, length, and match format.',
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          Once a{' '}
+          <a href="#season" className="text-info hover:underline">season</a>{' '}
+          begins, the app generates a schedule: every match night, the
+          teams that meet, and the venue (when multiple venues are in play).
+          The schedule is the master list of who plays whom and when.
+        </p>
+        <p>What drives the schedule:</p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>
+            The number of{' '}
+            <a href="#team" className="text-info hover:underline">teams</a>{' '}
+            registered for the season.
+          </li>
+          <li>
+            The{' '}
+            <a href="#season-length" className="text-info hover:underline">season length</a>{' '}
+            (how many weeks of regular play).
+          </li>
+          <li>
+            The{' '}
+            <a href="#match-format" className="text-info hover:underline">match format</a>{' '}
+            (single or double round robin, or individual races).
+          </li>
+          <li>
+            The day-of-week and{' '}
+            <a href="#start-date" className="text-info hover:underline">start-date</a>{' '}
+            inherited from the{' '}
+            <a href="#league" className="text-info hover:underline">league</a>.
+          </li>
+        </ul>
+        <p>
+          Operators can adjust the schedule mid-season — cancel a{' '}
+          <a href="#match" className="text-info hover:underline">match</a>,
+          reschedule, swap venues — without affecting the overall structure.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#season" className="text-info hover:underline">season</a>,{' '}
+          <a href="#team" className="text-info hover:underline">team</a>,{' '}
+          <a href="#season-length" className="text-info hover:underline">season length</a>,{' '}
+          <a href="#match-format" className="text-info hover:underline">match format</a>,{' '}
+          <a href="#start-date" className="text-info hover:underline">start-date</a>,{' '}
+          <a href="#league" className="text-info hover:underline">league</a>,{' '}
+          <a href="#match" className="text-info hover:underline">match</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['matchup'],
+  },
+
+  team: {
+    slug: 'team',
+    canonicalName: 'Team',
+    aliases: ['teams'],
+    shortDef:
+      'A group of players competing together in a season — has a name, a captain, and a roster.',
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          A team is the unit of competition in a{' '}
+          <a href="#season" className="text-info hover:underline">season</a>.
+          A team is made up of:
+        </p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>A name (chosen by the captain or operator).</li>
+          <li>
+            A{' '}
+            <a href="#captain" className="text-info hover:underline">captain</a>{' '}
+            who manages the team day-to-day.
+          </li>
+          <li>
+            A{' '}
+            <a href="#roster" className="text-info hover:underline">roster</a>{' '}
+            of registered players.
+          </li>
+        </ul>
+        <p>
+          Each season, teams play{' '}
+          <a href="#match" className="text-info hover:underline">matches</a>{' '}
+          against other teams across the season's{' '}
+          <a href="#schedule" className="text-info hover:underline">schedule</a>.
+          Match results accumulate into the team's record in the season{' '}
+          <a href="#standings" className="text-info hover:underline">standings</a>.
+        </p>
+        <p>
+          Teams are registered per-season. A team might exist across multiple
+          seasons (same name, same captain, same core roster) — but each
+          season the team is registered fresh: rosters can change, names
+          can shift, and the team's record starts over.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#season" className="text-info hover:underline">season</a>,{' '}
+          <a href="#captain" className="text-info hover:underline">captain</a>,{' '}
+          <a href="#roster" className="text-info hover:underline">roster</a>,{' '}
+          <a href="#match" className="text-info hover:underline">match</a>,{' '}
+          <a href="#schedule" className="text-info hover:underline">schedule</a>,{' '}
+          <a href="#standings" className="text-info hover:underline">standings</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['lineup'],
   },
 
   matchup: {
