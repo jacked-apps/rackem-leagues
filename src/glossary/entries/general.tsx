@@ -48,10 +48,14 @@ export const entries = {
       'One run of league play under a league — has a start date, weekly matches, and ends with playoffs (if configured).',
     longDef: (
       <p>
-        Seasons run one after another under the same league to form
-        consistent ongoing play. Each season has its own schedule, teams,
-        rosters, and standings. When a season ends, the next one starts
-        under the same league shape.
+        Seasons run one after another under the same{' '}
+        <a href="#league" className="text-info hover:underline">league</a>{' '}
+        to form consistent ongoing play. Each season has its own schedule,{' '}
+        <a href="#matchup" className="text-info hover:underline">matchups</a>,{' '}
+        <a href="#roster" className="text-info hover:underline">rosters</a>,
+        and{' '}
+        <a href="#standings" className="text-info hover:underline">standings</a>.
+        When a season ends, the next one starts under the same league shape.
       </p>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
@@ -91,10 +95,18 @@ export const entries = {
     longDef: (
       <div className="space-y-2">
         <p>
-          A match is the singular event a matchup provides. Two teams meet,
-          play through their lineups, and one wins. A match is made up of
-          games — the number of games depends on the lineup size and the
-          match format (single or double round robin etc.).
+          A match is the singular event a{' '}
+          <a href="#matchup" className="text-info hover:underline">matchup</a>{' '}
+          provides. Two teams meet, play through their{' '}
+          <a href="#lineup" className="text-info hover:underline">lineups</a>,
+          and one wins. A match is made up of{' '}
+          <a href="#game" className="text-info hover:underline">games</a> —
+          the number depends on the{' '}
+          <a href="#lineup-size" className="text-info hover:underline">lineup size</a>{' '}
+          and the{' '}
+          <a href="#match-format" className="text-info hover:underline">match format</a>{' '}
+          (single or double{' '}
+          <a href="#round-robin" className="text-info hover:underline">round robin</a>, etc.).
         </p>
         <p className="text-sm text-muted-foreground">
           A note on the word: "match" is also sometimes used in the wild to
@@ -559,10 +571,15 @@ export const entries = {
       'The date of the first match — sets the season\'s day-of-week, season name (Spring/Summer/Fall/Winter), and year.',
     longDef: (
       <p>
-        Picking a start date does more than schedule the first match. It
-        anchors the whole season: matches repeat weekly on the same day,
-        the season name (Spring/Summer/Fall/Winter) is derived from the
-        date, and the year shows up in the league name.
+        Picking a start date does more than schedule the first{' '}
+        <a href="#match" className="text-info hover:underline">match</a>. It
+        anchors the whole{' '}
+        <a href="#season" className="text-info hover:underline">season</a>:
+        matches repeat weekly on the same day, the season name
+        (Spring/Summer/Fall/Winter) is derived from the date, and the year
+        shows up in the{' '}
+        <a href="#league" className="text-info hover:underline">league</a>{' '}
+        name.
       </p>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },

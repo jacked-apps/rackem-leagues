@@ -89,14 +89,23 @@ export function GlossaryView() {
 
       {isSingleEntry && landedEntry && (
         <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => window.history.back()}
+              className="text-sm text-info hover:underline"
+            >
+              ← Back
+            </button>
+            <button
+              type="button"
+              onClick={browseAll}
+              className="text-sm text-muted-foreground hover:text-info hover:underline"
+            >
+              Browse all terms →
+            </button>
+          </div>
           <GlossaryEntryView entry={landedEntry} isHighlighted={false} />
-          <button
-            type="button"
-            onClick={browseAll}
-            className="text-sm text-info hover:underline"
-          >
-            Browse all terms →
-          </button>
         </div>
       )}
 
