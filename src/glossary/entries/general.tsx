@@ -69,14 +69,13 @@ export const entries = {
           2026&rdquo;</strong>.
         </p>
         <p className="text-sm text-muted-foreground">
-          <strong>A note on the word.</strong> Other pool league systems —
-          notably CSI's LMS (the official BCAPL platform) — call this
-          concept a <em>division</em>. We chose &ldquo;league&rdquo;
-          because that's what people actually say in everyday speech
-          (&ldquo;I play my 8-Ball Tuesday league,&rdquo; not &ldquo;I
-          play my 8-Ball Tuesday division&rdquo;). Matching natural
-          language reduces friction when operators talk about the app
-          with players.
+          <strong>A note on the word.</strong> Other pool league systems
+          call this concept a <em>division</em>. We chose
+          &ldquo;league&rdquo; because that's what people actually say in
+          everyday speech (&ldquo;I play my 8-Ball Tuesday league,&rdquo;
+          not &ldquo;I play my 8-Ball Tuesday division&rdquo;). Matching
+          natural language reduces friction when operators talk about the
+          app with players.
         </p>
         <p className="text-sm text-muted-foreground">
           Relevant topics:{' '}
