@@ -78,21 +78,69 @@ export const entries = {
     canonicalName: 'Season',
     aliases: [],
     shortDef:
-      'One run of league play under a league — has a start date, weekly matches, and ends with playoffs (if configured).',
+      'One run of league play inside a league — its own teams, schedule, length, standings, and (optionally) playoffs.',
     longDef: (
-      <p>
-        Seasons run one after another under the same{' '}
-        <a href="#league" className="text-info hover:underline">league</a>{' '}
-        to form consistent ongoing play. Each season has its own schedule,{' '}
-        <a href="#matchup" className="text-info hover:underline">matchups</a>,{' '}
-        <a href="#roster" className="text-info hover:underline">rosters</a>,
-        and{' '}
-        <a href="#standings" className="text-info hover:underline">standings</a>.
-        When a season ends, the next one starts under the same league shape.
-      </p>
+      <div className="space-y-3">
+        <p>
+          A season is the current chapter of league play. Each season is its
+          own self-contained competitive period inside a longer-running{' '}
+          <a href="#league" className="text-info hover:underline">league</a>{' '}
+          — when one season ends, the next starts under the same league
+          shape, one after another. Multiple seasons stack up over the life
+          of a league.
+        </p>
+        <p>What a season holds:</p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>A <strong>length</strong> (number of weeks).</li>
+          <li>An optional <strong>playoffs</strong> at the end.</li>
+          <li>A generated <strong>schedule</strong> of every match night.</li>
+          <li>The specific <strong>teams</strong> registered for this season.</li>
+          <li>
+            The{' '}
+            <a href="#match" className="text-info hover:underline">matches</a>{' '}
+            and{' '}
+            <a href="#matchup" className="text-info hover:underline">matchups</a>{' '}
+            for every team across the schedule.
+          </li>
+          <li>
+            Its own{' '}
+            <a href="#standings" className="text-info hover:underline">standings</a>{' '}
+            and stats — independent from past or future seasons.
+          </li>
+          <li>
+            A name (so players can identify "this season" vs "last season"
+            vs "next season").
+          </li>
+        </ul>
+        <p>
+          Practically: when someone in the app says "the standings" or "the
+          schedule," they mean <em>this</em> season's. Past seasons stay
+          archived under the same{' '}
+          <a href="#league" className="text-info hover:underline">league</a>;
+          future seasons are scheduled but not yet active.
+        </p>
+        <p>
+          The season name is auto-generated, similar to the{' '}
+          <a href="#league-name" className="text-info hover:underline">league name</a>{' '}
+          but anchored to this season's{' '}
+          <a href="#start-date" className="text-info hover:underline">start-date</a>{' '}
+          — so a single league hosts a series of distinctly-named seasons
+          over time.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#league" className="text-info hover:underline">league</a>,{' '}
+          <a href="#league-name" className="text-info hover:underline">league name</a>,{' '}
+          <a href="#match" className="text-info hover:underline">match</a>,{' '}
+          <a href="#matchup" className="text-info hover:underline">matchup</a>,{' '}
+          <a href="#standings" className="text-info hover:underline">standings</a>,{' '}
+          <a href="#start-date" className="text-info hover:underline">start-date</a>.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['league', 'matchup', 'match'],
+    related: ['roster', 'captain'],
+    reviewedByEd: '2026-05-29',
   },
 
   matchup: {
