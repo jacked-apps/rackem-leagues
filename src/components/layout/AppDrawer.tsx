@@ -172,9 +172,7 @@ function PlayerSection({ unreadCount }: { unreadCount: number }) {
 
 /** Mirrors SidebarOperatorSection. */
 function OperatorSection({ orgs }: { orgs: OperatorOrg[] }) {
-  if (!orgs || orgs.length === 0) return null;
-
-  const visible = pickVisibleOrgs(orgs, OPERATOR_ORG_CAP);
+  const visible = orgs ? pickVisibleOrgs(orgs, OPERATOR_ORG_CAP) : [];
   const isSingleOrg = visible.length === 1;
 
   return (
@@ -182,25 +180,36 @@ function OperatorSection({ orgs }: { orgs: OperatorOrg[] }) {
       <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         Operator
       </h3>
-      {isSingleOrg ? (
-        <OperatorOrgRow
-          orgId={visible[0].id}
-          orgName={visible[0].organization_name ?? ''}
-          mode="flat"
-        />
-      ) : (
-        <ul className="space-y-1">
-          {visible.map((org) => (
-            <li key={org.id}>
-              <OperatorOrgRow
-                orgId={org.id}
-                orgName={org.organization_name ?? ''}
-                mode="collapsible"
-              />
-            </li>
-          ))}
-        </ul>
-      )}
+      <ul className="mb-2 space-y-1">
+        <SheetClose asChild>
+          <Link
+            to="/operator-learn"
+            className="flex min-h-11 items-center rounded-md px-3 py-2 text-sm text-primary transition-colors hover:bg-primary/10"
+          >
+            Learn
+          </Link>
+        </SheetClose>
+      </ul>
+      {visible.length > 0 &&
+        (isSingleOrg ? (
+          <OperatorOrgRow
+            orgId={visible[0].id}
+            orgName={visible[0].organization_name ?? ''}
+            mode="flat"
+          />
+        ) : (
+          <ul className="space-y-1">
+            {visible.map((org) => (
+              <li key={org.id}>
+                <OperatorOrgRow
+                  orgId={org.id}
+                  orgName={org.organization_name ?? ''}
+                  mode="collapsible"
+                />
+              </li>
+            ))}
+          </ul>
+        ))}
     </div>
   );
 }

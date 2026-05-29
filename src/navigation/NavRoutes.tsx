@@ -80,6 +80,7 @@ const PlayoffSetup = lazy(() => import('../operator/PlayoffSetup'));
 const OrganizationPlayoffSettings = lazy(() => import('../operator/OrganizationPlayoffSettings'));
 const LeaguePlayoffSettings = lazy(() => import('../operator/LeaguePlayoffSettings'));
 const PlayoffsSetupWizard = lazy(() => import('../operator/PlayoffsSetupWizard'));
+const OperatorLearn = lazy(() => import('../operator/OperatorLearn'));
 
 /**
  * Helper to wrap element with ProtectedRoute for auth-only routes
@@ -226,6 +227,10 @@ export const router = createBrowserRouter([
           { path: 'league/:leagueId/season/:seasonId/team-stats', element: withMember(<TeamStats />) },
           { path: 'league/:leagueId/season/:seasonId/feats', element: withMember(<FeatsOfExcellence />) },
           { path: 'league/:leagueId/season/:seasonId/match-data', element: withMember(<MatchDataViewer />) },
+
+          // --- Operator Learn — any signed-in user (so operator-applicants
+          //     following "Learn more →" deep links don't hit a 403) ---
+          { path: 'operator-learn', element: withAuth(<Suspense fallback={<LoadingSpinner />}><OperatorLearn /></Suspense>) },
 
           // --- Operator Routes (require league_operator role) ---
           { path: 'operator-welcome', element: withOperator(OperatorWelcome) },

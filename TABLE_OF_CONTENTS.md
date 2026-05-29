@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-29 (Operator help system Phase 1 — Units 2 + 2.5 shipped: `src/components/GlossaryInfoButton.tsx` wrapper around InfoButton with slug lookup + "Learn more →" deep link + click-propagation guard. First live slice: `StartDateStep` swapped to `<GlossaryInfoButton slug="start-date" />`.)
+> **Last Updated**: 2026-05-29 (Operator help system Phase 1 — Unit 6 shipped: Learn hub at `/operator-learn` (withAuth, lazy). Glossary section with alphabetical browse + alias-aware search + deep-link scroll + highlight. Sidebar/drawer "Learn" link in Operator section. OperatorDashboard's "Operator Handbook" link repointed. `pnpm audit:scan` clean on new files.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -565,8 +565,12 @@ how to add a new test, demo recording, cleanup model).
 #### Operator Pages (`/operator/`)
 
 **Dashboards & Overview**
-- `OperatorDashboard.tsx` - Main operator dashboard
+- `OperatorDashboard.tsx` - Main operator dashboard. "Need Help?" card's "Operator Handbook" link now points at `/operator-learn`.
 - `OperatorWelcome.tsx` - Welcome screen
+- `OperatorLearn.tsx` — **NEW** Phase 1 Learn hub at `/operator-learn`. Page shell + Glossary section.
+- `learn/GlossaryView.tsx` — search input + 3-state UI (empty browse, has results, no results with browse) + deep-link scroll/highlight on `#<slug>`.
+- `learn/GlossaryEntry.tsx` — single entry render: canonical heading + aliases ("also called: …") + shortDef + longDef + related links.
+- `learn/__tests__/GlossaryView.test.tsx` — 6 tests covering the 3-state UI and the alias-match subtitle.
 
 **League Management**
 - `LeagueDetail.tsx` - League details page
