@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-29 (Added live-match jump-in brainstorm: `docs/brainstorms/2026-05-29-live-match-jumpin-requirements.md` — the "My Match" one-tap shortcut into the active live match, via the bottom-nav tab + a drawer section mirroring AppDrawer's OperatorSection pattern. Branch `chore/safe-meantime-work`.)
+> **Last Updated**: 2026-05-29 (Added live-match jump-in brainstorm + implementation plan: `docs/brainstorms/2026-05-29-live-match-jumpin-requirements.md` and `docs/plans/2026-05-29-002-feat-my-match-jump-in-plan.md` — the "My Match" one-tap shortcut into the active live match, via the bottom-nav tab + a drawer section mirroring AppDrawer's OperatorSection pattern. 5 implementation units: team-scoped query + aggregate hook with realtime + three consumer surfaces. Branch `chore/safe-meantime-work`.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -115,6 +115,7 @@
 | `docs/plans/2026-05-17-002-feat-captain-reup-sheet-plan.md` | Implementation plan for the captain re-up sheet | Draft PR #121 |
 | `docs/plans/2026-04-28-001-feat-modular-league-system-plan-supplements/` | Supplements directory for the modular league system plan | Append-only addenda used during execution |
 | `docs/plans/2026-05-17-001-refactor-modular-framework-migration-plan.md` | Strangler-fig migration plan for the modular Scoring System refactor | Unit 1 (Win Calculator extraction) detailed; Units 2-9 sketched; each Unit extracts one Module piece-by-piece without breaking the shipping prepackaged Scoring Systems |
+| `docs/plans/2026-05-29-002-feat-my-match-jump-in-plan.md` | Implementation plan for the "My Match" live-match jump-in shortcut | 5 units: team-scoped `getMyMatchMatches` query + `useMyMatchSurfaces` aggregate hook with lightweight realtime + BottomTabBar tab repurpose + AppDrawer "My Match" section (OperatorSection-mirrored) + AppSidebar parity; no DB schema changes; coordinates with future captain-doorbell on bottom-bar; branch `chore/safe-meantime-work` |
 
 ### Future Work Folder
 
