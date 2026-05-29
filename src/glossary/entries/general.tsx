@@ -655,13 +655,16 @@ export const entries = {
           new{' '}
           <a href="#league" className="text-info hover:underline">league</a>.
         </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#league" className="text-info hover:underline">league</a>,{' '}
+          <a href="#league-name" className="text-info hover:underline">league name</a>,{' '}
+          <a href="#season" className="text-info hover:underline">season</a>,{' '}
+          <a href="#match" className="text-info hover:underline">match</a>.
+        </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    // Convention (per Ed 2026-05-29): `related` carries adjacent concepts
-    // NOT mentioned in the body. In-body term mentions are already inline
-    // links, so duplicating them here was DRY violation. Reserve `related`
-    // for "things to explore next" beyond what the prose covers.
     related: ['qualifier'],
     reviewedByEd: '2026-05-29',
   },

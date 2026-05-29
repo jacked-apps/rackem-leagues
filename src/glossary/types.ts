@@ -43,11 +43,21 @@ export interface GlossaryEntry {
   /** Reference to the matching L1 page for the drift audit. */
   l1_anchor: L1Anchor;
   /**
-   * Other glossary slugs to explore — **adjacent concepts NOT already
-   * linked in the body prose.** In-body term mentions are inline links
-   * by convention, so duplicating them in `related` is DRY violation.
-   * Reserve this field for "more to explore" beyond what the longDef
-   * covers.
+   * Other glossary slugs to explore — **adjacent concepts NOT mentioned
+   * in the body prose.** Rendered as a "Related:" list at the bottom of
+   * each entry on the Learn page.
+   *
+   * Convention (per Ed 2026-05-29) — each entry has three distinct link
+   * roles, no duplication across them:
+   *   1. In-body links: every term mentioned in longDef is an inline
+   *      link (`<a href="#slug">`). Click while reading.
+   *   2. "Relevant topics:" line at the end of longDef: a tidy menu of
+   *      the same in-body links, gathered for a quick "next read."
+   *   3. `related` (this field): edge concepts NOT in the body — things
+   *      to explore beyond what the prose covered.
+   *
+   * Don't put in-body terms in `related`. Don't omit the "Relevant
+   * topics:" menu from longDef when you have multiple in-body links.
    */
   related: readonly string[];
   /**
