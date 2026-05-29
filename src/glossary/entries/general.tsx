@@ -627,38 +627,26 @@ export const entries = {
     longDef: (
       <div className="space-y-3">
         <p>
-          Picking the league start date locks in more than just the first
-          match. The system derives several values from it and bakes them
-          into the league's identity:
+          Start date is more than just the first day of league play. It
+          helps us name the league and seasons so players can tell which
+          league they're looking for.
         </p>
-        <ul className="list-disc space-y-1 pl-5">
-          <li>
-            <strong>The day of the week</strong> the league plays on. Pick
-            a Tuesday → matches repeat every Tuesday for the life of the
-            league. <strong>This cannot be changed later.</strong> A
-            different night means a different league.
-          </li>
-          <li>
-            <strong>The season name</strong> (Spring, Summer, Fall, Winter)
-            — derived from the month.
-          </li>
-          <li>
-            <strong>The year.</strong>
-          </li>
-        </ul>
+        <p>From the start date we get:</p>
+        <div className="space-y-1 pl-4">
+          <p>A. The day of the week</p>
+          <p>B. The time of year (Spring, Summer, Fall, Winter)</p>
+          <p>C. The year</p>
+        </div>
         <p>
-          The day-of-week, season name, and year all flow into the
-          auto-generated{' '}
-          <a href="#league" className="text-info hover:underline">league</a>{' '}
-          name. So this single date drives both the schedule and a chunk
-          of the league's identity — choose deliberately.
+          The day of the week is especially important because it gets{' '}
+          <strong>locked in</strong>. For example: this league plays 8-Ball
+          on Tuesdays. If you want a different night, you create a new
+          league.
         </p>
         <p className="text-sm text-muted-foreground">
-          Note: this is the <em>league</em> start date. Each{' '}
-          <a href="#season" className="text-info hover:underline">season</a>{' '}
-          has its own start date (set later, in the season wizard) — that
-          one just schedules the season's first match without re-locking
-          the day-of-week or the league's identity.
+          Relevant topics:{' '}
+          <a href="#league" className="text-info hover:underline">league</a>,{' '}
+          <a href="#season" className="text-info hover:underline">season</a>.
         </p>
       </div>
     ),
