@@ -1,588 +1,565 @@
 ---
-title: "feat: Player/captain onboarding cold-start cascade (team join link → claim → approve)"
+title: "feat: Player/captain onboarding cold-start cascade (share link → sign in → approve)"
 type: feat
 status: active
 date: 2026-05-29
 origin: docs/brainstorms/2026-05-28-player-onboarding-cold-start-requirements.md
+deepened: 2026-05-29
 ---
 
 # feat: Player/captain onboarding cold-start cascade
 
+> **Rewritten 2026-05-29** after a multi-persona review + an Ed walkthrough that
+> simplified the design. The spine is now **register-first**: the joiner signs in
+> and fills the existing short profile form *before* they reach the approver, so
+> the approver sees a **name** (not an email) and — because the joiner is a real
+> account by then — "Replace" is a clean stat-transfer and "Add" needs no merge.
+> This dissolved the review's worst finding (the merge engine choking on a player
+> with no account yet).
+
 ## Overview
 
-Give every team a **persistent, forwardable join link/QR** ("the address"). A
-player opens it, sees the team's roster (open spots claimable, taken spots
-shown), claims their spot — or taps "I'm not listed, add me" — and lands on a
-**captain approve list**. The captain taps **approve** ("the door") and the
-player is on the team, looking at tonight's match. The captain's job collapses
-to *share one link + tap approve*; no typing emails, no per-player data entry.
+Every team has a **persistent, forwardable join link/QR** ("the address"). A
+person taps it, signs in (passwordless code), fills the existing short profile
+form, and lands in the approver's list as a recognizable name. The approver taps
+**Add** (new) / **Replace** (this is a placeholder I already listed → transfer its
+spot + record) / **Decline** ("the door"). Approved → they're on the team, looking
+at tonight's match.
 
-This is **additive** — the existing per-placeholder email invite / QR / device-
-handoff flows (`InvitePlayerModal`, `send-invite`, `ClaimPlayer.tsx`) stay
-untouched. It reuses the shipped merge plumbing (`merge_placeholder_into_member_v2`)
-at approval time, and **builds on the just-shipped passwordless sign-in** (PR
-#159): because the player types a code in-page instead of chasing an email link,
-the join intent rides the existing `?redirect`/`location.state` machinery
-straight back to the join — no fragile cross-device token needed.
+It's **one machine — "link a person to a team"** — used at two scopes:
+- a **captain** runs it for **his one team** (his players);
+- an **LO** runs it for **every team in his org** (his captains, and a backstop for
+  any player on any team).
+
+A **captain is just a person linked to a team in the captain role**; onboarding a
+captain is the same flow with the captain seat as the target. Additive: the
+existing per-placeholder email/QR/device-handoff flows stay untouched.
 
 ## Problem Frame
 
-Getting 60–70 non-tech players onto the correct team at a brand-new league's
-cold start is the product's #1 friction, and today it routes through the LO as a
-one-to-one "type every email" help desk. The cascade distributes that load: the
-LO onboards ~10 captains; each captain self-serves their own ~5–8 players via one
-shared link + approve taps. (See origin:
-`docs/brainstorms/2026-05-28-player-onboarding-cold-start-requirements.md`.)
+A brand-new league's cold start drops 60–70 non-tech players (and ~10 captains)
+onto the right teams at once, today routed through the LO as a one-to-one "type
+every email" help desk. The cascade distributes it: the LO onboards captains; each
+captain self-serves their ~5–8 players with one shared link + approve taps. (See
+origin: `docs/brainstorms/2026-05-28-player-onboarding-cold-start-requirements.md`.)
 
 ## Requirements Trace
 
-- R1. **Persistent, roster-aware team join link/QR** — lives with the team all
-  season; on open, reads the **live roster** (open placeholder spots claimable,
-  claimed spots visible-but-taken).
-- R2. **Self-claim an open spot** — a player claims an existing open placeholder
-  spot; the claim is a **request until the captain approves**.
-- R3. **"I'm not listed — add me"** — the player provides their own name;
-  approval creates *and* fills the spot in one tap (match-or-create).
-- R4. **Captain approval is the gate** — every claim (in-person or remote) is a
-  request; one approve tap per claim. No bulk action; no in-person auto-approve.
-- R5. **Approval is match-or-create** — the captain can link a self-add to an
-  existing placeholder / returning player (reusing the merge path) instead of
-  creating a duplicate, preventing split stats.
-- R6. **Team page is the triage board** — per-team: claimed / waiting-for-
-  approval / open spots, with the approve action inline.
-- R7. **The "doorbell"** — pending claims surface where the captain is: a
-  "N waiting to join" home card + a menu count + a mobile bottom-bar indicator;
-  shown only while pending, cleared when handled (act-now signal, not permanent
-  chrome).
-- R8. **Land on tonight's match** — once approved/on the team, the player lands
-  on their team with tonight's match front-and-center + a one-tap path to scoring.
-- R9. **Thin first-run wizard** — captain: 3 cards (get/copy link → share → approve
-  people as they appear), reusing the Wizard 2.0 scaffold.
-- R10. **Join intent survives sign-in** — a not-yet-authenticated visitor who
-  opens the link signs in (passwordless) and lands back on the join, never a
-  generic home page.
-- R11. **Additive** — nothing that works today (email/QR/device-handoff, manual
-  placeholders) is removed.
+- R1. **Persistent team join link/QR** — `teams.join_token`; lives all season,
+  forwardable; route `/join/:token`. On open, shows the team + its spots.
+- R2. **Register-first self-add (the cold-start spine)** — empty roster is normal;
+  a brand-new person taps the link, signs in, fills the short profile form, and is
+  submitted as a join **request** (no pre-made placeholder required).
+- R3. **Claim a pre-made spot (the returning/known case)** — if the captain *did*
+  list placeholders, a joiner can claim one; otherwise everyone self-adds (R2).
+- R4. **Approval is the gate** — every request (in-person or remote) is pending
+  until the approver taps approve; one tap; no bulk; no in-person auto-approve.
+- R5. **Approve = Add / Replace / Decline** — **Add** (put the registered person on
+  the roster, no merge); **Replace** (link to a placeholder → transfer its spot +
+  record via merge); **Decline** (the gate). Replace is **always available when the
+  team has placeholders**, with a manual picker (record-flagged) — auto-match by
+  name is only a shortcut, so a misspelled placeholder never strands its record.
+- R6. **Approve surface shows person + team + league** — one component; the captain
+  sees his team, the LO sees all his org's teams; no hunting for which team.
+- R7. **The "doorbell"** — pending-request count surfaces where the approver is
+  (home card + menu count + mobile bottom-bar), only while pending, cleared when
+  handled (act-now, not permanent chrome). Captain = his teams; LO = all org teams.
+- R8. **Land on tonight's match** — after approval the joiner lands on their team
+  with tonight's match front-and-center (reusing the existing match surfacing).
+- R9. **LO captain-distribution made easy** — an "Onboard my captains" list, one
+  row per team (Team · its assigned captain · Send-link), pre-paired (free, because
+  a team is created *with* a captain assigned), so the right link reaches the right
+  captain with no manual matching. Plus a thin first-run wizard.
+- R10. **Join intent survives sign-in, server-side** — the intent is persisted
+  server-side keyed to the joiner's identity (not browser-only), so it survives the
+  sign-in window and any device; once submitted, the `team_join_requests` row is the
+  durable record. (Honors the origin's cross-device requirement; Ed: "just make it
+  seamless.")
+- R11. **Additive** — existing email/QR/device-handoff + manual placeholders stay.
 
 ## Scope Boundaries
 
-- **Steady-state / returning-player onboarding** — handled by season carryover.
-- **Public "Find a League" discovery**, **LO/captain lost-player *search***,
-  **just-in-time at-the-table claim as a distinct flow** — deferred follow-ons
-  (origin Non-Goals).
-- **Reworking auth/registration** — done separately (passwordless, PR #159);
-  this plan assumes it exists.
+- Steady-state/returning-player onboarding (season carryover); public Find-a-League;
+  LO/captain lost-player *search*; just-in-time at-the-table as a distinct flow —
+  deferred follow-ons (origin Non-Goals).
+- Reworking auth — done in passwordless (PR #159); this plan assumes/stacks on it.
 
 ### Deferred to Separate Tasks
 
-- **LO → captains mirror cascade** (org-level join link + captain self-claim):
-  the same primitive one level up. The LO load is small (~10 captains, already
-  served by the teams-v2 wizard + `InvitePlayerModal`), so the org-level link is
-  a fast-follow phase. *This plan ships the captain's first-run wizard (R9) but
-  scopes the org→captain link to a later task.*
-- **`send-invite` caller-authz hole** (any authed user can fire invites for any
-  team) — a pre-existing bug, not introduced here; fix on its own small PR
-  (noted in Risks).
-- **Per-token request rate-limiting / captcha** on the public join page — a
-  hardening fast-follow (the approval gate is the functional safety net now;
-  see Risks).
+- **`send-invite` caller-authz hole** (pre-existing: any authed user can fire
+  invites for any team) — fix on its own small PR; do not widen it.
+- **User-to-user merge** (linking a returning *registered* player, not a
+  placeholder) — a separate unbuilt RPC; the "Replace" picker here links to
+  **placeholders** only. A returning registered player just uses **Add** (they keep
+  their own account/stats); de-duping two registered accounts is out of scope.
+- **Per-token rate-limit / captcha** beyond the dedup constraint below — hardening
+  fast-follow.
+- **`MyMatch` full page build** — its own effort; Unit 8 only reuses existing match
+  surfacing to satisfy R8.
 
 ## Context & Research
 
 ### Relevant Code and Patterns
 
-- **Invite/merge substrate (reuse at approval time, do not rebuild):**
-  - `supabase/migrations/20251217144653_invite_tokens.sql` + the auto-invite
-    trigger `ensure_placeholder_invite_token()` (`20260422000007`).
-  - `merge_placeholder_into_member_v2` RPC (params: `p_placeholder_member_id`,
-    `p_target_member_id`, `p_actor_member_id`, `p_actor_role`,
-    `p_organization_id`) — called by `supabase/functions/claim-placeholder/`.
-  - `placeholder_has_stats(member_id)` predicate; `lo-merge-placeholder` /
-    `lo-undo-merge` edge functions; `archived_placeholders` (PII, deny-all RLS).
-  - `src/api/mutations/members.ts` `createPlaceholderMember`; `src/login/ClaimPlayer.tsx`;
-    `src/components/modals/PendingInvitesModal.tsx`; `src/api/hooks/{useInviteStatuses,useOrganizationInvites,usePendingInvites}.ts`.
-- **Roster model:** `teams` + `team_players` (join table; `member_id` → a
-  placeholder member with `user_id IS NULL` = an "open spot"). `src/hooks/useRosterEditor.ts`,
-  `src/wizards/teams-v2/steps/CaptainsTeamsStep.tsx`, `src/api/mutations/teams.ts` `createTeam`.
-- **Triage-board home:** `src/player/MyTeams.tsx` (per-team accordion, readiness,
-  `PlayerRoster`, captain-only "Edit Team"). No `team/:teamId` index route exists — free for use.
-- **Doorbell surfaces:** `src/player/MyTeams.tsx` (home card), `src/components/layout/{AppDrawer,AppSidebar}.tsx`
-  ("Messages (N)" label via `useUnreadMessageCount`), `src/components/layout/BottomTabBar.tsx`
-  (`TabItem.badge` red pill — the exact count mechanism).
-- **Wizard scaffold:** `src/components/wizard/` (Wizard 2.0 — `WizardShell`,
-  `WizardConfig`, `WizardStepProps`, plain `useState`, zod-on-Next, string-ID step
-  registry, files < 100 lines). Live example: `src/wizards/teams-v2/`.
-- **Share/QR:** `src/components/invite/ShareLinkSection.tsx` (`QRCodeSVG` from
-  `qrcode.react`); link composed in `src/components/InvitePlayerModal.tsx`.
-- **Tonight's match:** `src/player/MyMatch.tsx` (placeholder stub), `matches` +
-  `season_weeks.scheduled_date`, `src/api/hooks/useMatches.ts` `useMatchesByTeam`,
-  `useMatchPhase` / `MatchPhaseGuard`, routes `/match/:matchId/{lineup,score}`.
-- **Conventions:** `src/api/{mutations,queries,hooks}` split; `src/api/queryKeys.ts`
-  (use `queryKeys.members.all` — avoids the R8 stale-cache bug); RPCs via
-  `supabase.rpc`; migrations in **`supabase/migrations/`** (timestamped);
-  edge functions in `supabase/functions/<name>/`; vitest `unit` vs `db` projects.
+- **Substrate (reuse, don't rebuild):** `merge_placeholder_into_member_v2` RPC
+  (params `p_placeholder_member_id`, `p_target_member_id`, `p_actor_member_id`,
+  `p_actor_role`, `p_organization_id`) — used by `supabase/functions/claim-placeholder/`;
+  `placeholder_has_stats(member_id)` predicate; `archived_placeholders` (PII,
+  deny-all RLS); `merge_placeholder_into_member_v2` rewrites `match_lineups.playerN_id`
+  rows via FK discovery (the `match_lineups`→`members` FKs already exist —
+  migration `20260422000003`; **not a to-do**).
+- `src/api/mutations/members.ts` `createPlaceholderMember`; `src/login/ClaimPlayer.tsx`;
+  `src/components/modals/PendingInvitesModal.tsx` + `usePendingInvites` /
+  `get_my_pending_invites` (the "you have something waiting" auto-popup pattern to
+  reuse for R8's notify-on-approval).
+- **Roster:** `teams` (+ `captain_id`) + `team_players` (`UNIQUE(team_id, member_id)`;
+  a placeholder = a row whose `member_id` has `user_id IS NULL`). `src/hooks/useRosterEditor.ts`,
+  `src/wizards/teams-v2/steps/CaptainsTeamsStep.tsx`, `src/api/mutations/teams.ts`.
+  Org chain: `team_players → teams → seasons → leagues → organization_id`.
+- **Approve-surface home:** `src/player/MyTeams.tsx` (per-team accordion). LO
+  all-teams view: a new operator surface (or extend an operator dashboard).
+- **Doorbell:** `src/player/MyTeams.tsx` (home card), `src/components/layout/{AppDrawer,AppSidebar}.tsx`
+  ("Messages (N)" via `useUnreadMessageCount`), `src/components/layout/BottomTabBar.tsx`
+  (`TabItem.badge`).
+- **Share/QR:** `src/components/invite/ShareLinkSection.tsx` (`QRCodeSVG`).
+- **Tonight's match:** `useNextMatchForTeam` (already exported from `src/api/hooks/index.ts`)
+  + `MyTeams.tsx`'s existing "Quick Score" cards (today/in_progress) → `/match/:id/lineup`
+  via `useMatchPhase`/`MatchPhaseGuard`. **Reuse — do not add a parallel hook.**
+- **Wizard scaffold:** `src/components/wizard/` (Wizard 2.0; plain `useState`;
+  string-ID step registry; files < 100 lines; use `queryKeys.members.all` to avoid
+  the wizard query-key stale-cache bug seen in `CaptainsTeamsStep`).
+- **Conventions:** `src/api/{mutations,queries,hooks}` + `src/api/queryKeys.ts`;
+  RPCs via `supabase.rpc`; migrations in `supabase/migrations/` (additive — **never
+  `supabase db reset`**, live test data); edge functions in `supabase/functions/`
+  (new ones need a full `db:stop && db:start`); vitest `unit` vs `db` projects.
 
 ### Institutional Learnings
 
-- `memory-bank/PLAN-email-invites.md` — the email-as-identity-anchor model and
-  the **`userEmail === inviteEmail` 403** stolen-link guard. This cascade
-  deliberately trades that guard away (shared link) and makes **captain approval
-  the safety net** — so approval authz must be real (Unit 4).
-- `docs/plans/2026-04-22-001-feat-placeholder-player-lifecycle-plan.md` — merge
-  is schema-aware; **`match_lineups.playerN_id` are plain UUIDs, not FKs**, so the
-  merge loop can miss them (the lifecycle plan declares the constraints — verify
-  that fix landed before relying on merge). Org-scope chain
-  `team_players → teams → seasons → leagues → organization_id`; match-or-create
-  "link to existing" must be **hard-scoped to org**. The dead **`merge_requests`
-  table** (`20251216121115`) is unwired — build the new requests table fresh.
-- `docs/brainstorms/header-mobile-rework-requirements.md` R24 — the "you have
-  mail" badge convention; the doorbell is its **act-now refinement** (surface
-  where the captain is, clear when handled, never permanent chrome).
-- Memory: RLS is disabled — authz lives in **edge functions / RPC args**, not
-  RLS. Don't `supabase db reset` (live test data); migrations are additive.
-  Localhost links can't be tested cross-device — link/QR verification needs staging.
+- `memory-bank/PLAN-email-invites.md` — the email-match 403 stolen-link guard
+  (per-placeholder email flow, **unchanged**). The forwardable team link trades that
+  for the **approval gate**; authz must be real (Unit 4).
+- `docs/plans/2026-04-22-001-feat-placeholder-player-lifecycle-plan.md` — merge is
+  org-scoped; the dead **`merge_requests` table is unwired — build fresh**, don't
+  revive it. `placeholder_has_stats` drives the record-flag in the Replace picker.
+- `docs/brainstorms/header-mobile-rework-requirements.md` R24 — "you have mail"
+  badge convention; the doorbell is its act-now refinement.
+- RLS off → authz in edge functions/RPC args. Localhost links can't be tested
+  cross-device — verify on staging.
 
 ### External References
 
-- None needed — deep local prior art; no external research run.
+- None — deep local prior art.
 
 ## Key Technical Decisions
 
-- **Persistent team link = a per-team `join_token` (UUID) on `teams`.** Stable
-  for the season, forwardable; the route is `/join/:token`. Distinct from the
-  per-placeholder `invite_tokens` (which stay for the email flow).
-- **New `team_join_requests` table for the claim→approve lifecycle** — *not* the
-  email-gated `invite_tokens`, and *not* the dead `merge_requests` table. Columns
-  (directional): `id`, `team_id`, `requested_by_user_id`, `claimed_member_id`
-  (nullable — the open placeholder being claimed), `provided_name` (nullable —
-  for "add me"), `status` (`pending` | `approved` | `rejected` | `cancelled`),
-  `created_at`, `resolved_at`, `resolved_by_member_id`.
-- **Reading the join view is unauthenticated; claiming requires sign-in.** A
-  public RPC `get_team_join_view(token)` returns team name + spots (open vs
-  taken) — names only, no contact info. Submitting a claim requires an
-  authenticated user (passwordless), so the request carries a real `user_id`.
-- **Approval is an edge function, `approve-join-request`** — authz: the caller
-  must be the team's captain (or org staff). It does **match-or-create**: if the
-  request targets an existing placeholder (`claimed_member_id`) or the captain
-  links it to one, route through `merge_placeholder_into_member_v2`; if "add me"
-  with no target, create a member + `team_players` row. Marks the request
-  resolved. (RLS-off → authz MUST be enforced here, not by RLS.)
-- **The approval gate replaces link secrecy.** Because the link is forwardable,
-  the email-match 403 guard cannot apply to shared-link claims — the captain's
-  approve tap is the only gate, by design. (The per-placeholder email flow keeps
-  its 403 guard untouched.)
-- **Triage board lives on `MyTeams.tsx`**, in the existing per-team accordion —
-  the captain already lands there. No new route needed.
-- **Doorbell reuses existing badge mechanisms** — `BottomTabBar` `TabItem.badge`,
-  the `AppDrawer`/`AppSidebar` "(N)" label, and a `MyTeams` home card; a single
-  `usePendingJoinRequestCount(captainMemberId)` hook feeds all three.
-- **"Open spot" = an unclaimed placeholder already on the roster** (the captain
-  pre-makes name-only placeholders, as today). Claiming one targets that
-  placeholder; "add me" creates a new one at approval. No new "spot" entity.
+- **Register-first spine.** The joiner completes the existing short profile form
+  *before* reaching the approve list. So at approve-time they are a **registered
+  member** → **Add** = add their member to the roster (no merge); **Replace** =
+  `merge_placeholder_into_member_v2` (placeholder source, their registered member as
+  target — the RPC fits). No pre-made placeholders needed at cold start.
+- **New `team_join_requests` table** (not the dead `merge_requests`, not the
+  email-gated `invite_tokens`): `id, team_id, requested_by_user_id, requested_member_id
+  (the joiner's member once formed), claimed_member_id (nullable — placeholder being
+  claimed), status (pending|approved|rejected|cancelled), created_at, resolved_at,
+  resolved_by_member_id`. **Two partial unique indexes:** `(team_id,
+  requested_by_user_id) WHERE status='pending'` (dedup — one pending request per
+  person per team) and `(team_id, claimed_member_id) WHERE status='pending' AND
+  claimed_member_id IS NOT NULL` (one pending claim per open spot → clean race).
+- **Approve is captain-OR-LO, server-side authz.** `approve-join-request` reads
+  `team_id` from the stored request row (never client input), resolves `org_id` by
+  walking `team→season→league→organization_id`, and authorizes the caller as the
+  team's captain **or** org staff. Handle nullable `captain_id` (bye/edge teams):
+  if null, fall through to org-staff only. Re-read the request `FOR UPDATE` and
+  short-circuit to a friendly "already handled" if not `pending` (the race).
+- **Captain seat = a placeholder too.** A team is always created with a captain
+  (placeholder or lookup), so onboarding a captain is the same Replace/claim against
+  the captain seat. LO-as-own-captain needs no invite (assigned = himself).
+- **`captain_approve` actor_role.** Add `'captain_approve'` to the
+  `merge_placeholder_into_member_v2` `p_actor_role` whitelist (migration) so the
+  approve path audits correctly (today only `'invite_accept'|'lo_initiated'`).
+- **One approve surface, two scopes.** A single triage component (request list +
+  Add/Replace/Decline + the record-flagged placeholder picker); a captain mounts it
+  for his team, the LO mounts it across all org teams. Every item shows person +
+  team + league.
+- **Server-side, identity-keyed join intent (R10).** Persist the pending join
+  server-side keyed to the joiner's email/identity (not browser-only) so it survives
+  the sign-in window + any device; the `team_join_requests` row is the durable record
+  post-submit. Reuse the `get_my_pending_invites`/`PendingInvitesModal` pull pattern
+  to notify the joiner on approval.
 
 ## Open Questions
 
 ### Resolved During Planning
 
-- *Extend `invite_tokens` or new table?* New `team_join_requests` — `invite_tokens`
-  is per-placeholder + email-gated; the team-link request is a different shape.
-- *Revive `merge_requests`?* No — build fresh; that table is dead/unwired.
-- *How does join intent survive sign-in?* Reuse PR #159's `?redirect`/`location.state`
-  threading — the `/join/:token` route is the redirect target.
-- *Is the join view a privacy risk?* It exposes roster **names** to anyone with
-  the link — acceptable per the design (the link is shared within the team); no
-  contact info exposed.
+- *Merge engine can't fit a brand-new player* → register-first: Add (no merge) /
+  Replace (merge into the now-registered member).
+- *Cross-device join intent* (origin requirement) → persist server-side keyed to
+  identity; the request row is durable; reuse the pending-invites pull to notify.
+- *Captain onboarding* → same machine; captain seat is the target; LO scope = all
+  teams; pre-paired distribution list.
+- *match_lineups FK* → already present (`20260422000003`); merge rewrites lineups.
+- *Revive `merge_requests`?* → No; new `team_join_requests`.
 
 ### Deferred to Implementation
 
-- Exact `team_join_requests` columns/indexes and the `get_team_join_view` /
-  `approve-join-request` signatures — finalize against the real schema while coding.
-- Whether `approve-join-request` is a new edge function vs an extension of
-  `claim-placeholder` — decide when wiring (lean: new function, single
-  responsibility).
-- The precise "tonight's match" predicate (today vs in-progress vs next-up) and
-  how much of `MyMatch` to build here vs in its own effort — scope at Unit 8.
-- Confirm the `match_lineups.playerN_id` FK fix from the lifecycle plan is live;
-  if not, include it before relying on merge.
+- Exact `team_join_requests` columns/indexes + the `get_team_join_view` /
+  `approve-join-request` signatures — finalize against the live schema.
+- The precise place to stash the pre-submit pending-join (a server row keyed to
+  email vs. a short-lived token) — decide when wiring Unit 3 against passwordless.
+- The "tonight's match" predicate — reuse `MyTeams`'s existing definition, don't
+  invent a second.
 
 ## High-Level Technical Design
 
-> *This illustrates the intended approach and is directional guidance for review,
-> not implementation specification. The implementing agent should treat it as
-> context, not code to reproduce.*
+> *Directional guidance for review, not implementation spec.*
 
 ```mermaid
 sequenceDiagram
-    participant P as Player (phone browser)
-    participant J as /join/:token page
-    participant Auth as Passwordless sign-in (PR #159)
+    participant P as Joiner (phone)
+    participant J as /join/:token
+    participant Auth as Passwordless (PR #159)
     participant DB as team_join_requests
-    participant C as Captain (MyTeams triage + doorbell)
+    participant A as Approver (captain=1 team / LO=all teams)
 
-    P->>J: open shared link / scan QR
-    J->>DB: get_team_join_view(token) → spots (open/taken)
+    P->>J: tap shared link / scan QR
+    J->>DB: get_team_join_view(token) → team + spots
     alt not signed in
-        J->>Auth: /login?redirect=/join/:token
-        Auth-->>J: signed in, back on /join (intent preserved)
+        J->>Auth: sign in (code, in-page); intent persisted server-side (R10)
+        Auth-->>J: back on /join (or recovered post-auth)
     end
-    P->>DB: claim open spot OR "add me" → INSERT request (pending)
-    Note over C: doorbell lights: "N waiting to join"
-    C->>DB: approve-join-request (authz: captain)
-    DB->>DB: match-or-create (merge_placeholder_into_member_v2 OR create+fill)
-    DB-->>P: on the team → land on tonight's match
+    P->>P: fill EXISTING short profile form → now a registered member
+    P->>DB: submit join request (pending) — dedup + per-spot unique guards
+    Note over A: doorbell: "N waiting" (item shows name + team + league)
+    A->>DB: approve — Add (no merge) | Replace (merge placeholder→member) | Decline
+    DB-->>P: on the team (+ notify via pending-invites pull) → tonight's match
 ```
 
 ## Implementation Units
 
 ### Phase 1 — Data model + read
 
-- [ ] **Unit 1: Schema — team join token + join-request lifecycle**
+- [ ] **Unit 1: Schema — join token, requests table, guards, actor_role**
 
-**Goal:** A persistent per-team join token and a clean requests table for the
-claim→approve lifecycle.
+**Goal:** The durable spine: a per-team join token, a clean requests table with
+race/dedup guards, and the approve audit role.
 
-**Requirements:** R1, R2, R3, R4.
+**Requirements:** R1, R2, R4, R5, R10.
 
-**Dependencies:** None (do first).
+**Dependencies:** None (first).
 
 **Files:**
-- Create: `supabase/migrations/<ts>_team_join_cascade.sql` (adds `teams.join_token`
-  UUID default `gen_random_uuid()` unique; creates `team_join_requests`).
-- Modify: `src/types/database.types.ts` (regenerate via `pnpm db:types`).
+- Create: `supabase/migrations/<ts>_team_join_cascade.sql` (`teams.join_token`
+  unique default `gen_random_uuid()`, backfilled; `team_join_requests` + the two
+  partial unique indexes; add `'captain_approve'` to the merge RPC's actor_role
+  whitelist).
+- Modify: `src/types/database.types.ts` (`pnpm db:types`).
 - Test: `src/__tests__/database/team-join-cascade.test.ts`.
 
-**Approach:**
-- `teams.join_token` — backfill existing teams; never regenerated (persistent).
-- `team_join_requests` per Key Decisions; index on `(team_id, status)` for the
-  triage/doorbell queries; FK `requested_by_user_id` → `auth.users`,
-  `claimed_member_id` → `members` (nullable).
-- Additive migration only — **do not** `supabase db reset`. Verify the
-  `match_lineups.playerN_id` FK fix (lifecycle plan) is present; add if missing.
-
-**Execution note:** DB-touching → goes in the `db` test project.
-
-**Patterns to follow:** `supabase/migrations/20251217144653_invite_tokens.sql`,
-`20260422000007_*` trigger style.
+**Approach:** Additive only (no reset). Index `(team_id,status)` for triage/doorbell.
 
 **Test scenarios:**
-- Happy path: a new team gets a non-null unique `join_token`; existing teams are
-  backfilled.
-- Happy path: inserting a `team_join_requests` row with `claimed_member_id`
-  (claim) and with `provided_name` (add-me) both persist with `status='pending'`.
-- Edge: `status` CHECK rejects unknown values; `(team_id,status)` index exists.
-- Integration: deleting a team cascades its join requests (or restricts —
-  match the teams cascade policy).
+- Happy: new + backfilled teams have a unique `join_token`; both request shapes
+  (claim w/ `claimed_member_id`, self-add w/o) insert as `pending`.
+- Edge: second pending request from the same user on the same team is rejected by
+  the dedup unique index; a second pending claim on the same `claimed_member_id` is
+  rejected by the per-spot index.
+- Edge: `merge_placeholder_into_member_v2` now accepts `p_actor_role='captain_approve'`.
+- Integration: deleting a team cascades/restricts its requests per the teams policy.
 
-**Verification:** Migration applies cleanly on top of current schema (no reset);
-types regenerate; both request shapes insert.
+**Verification:** Migration applies on top of current schema; guards reject the
+race/dup at the DB layer; types regenerate.
 
 - [ ] **Unit 2: `get_team_join_view(token)` RPC + read hook**
 
-**Goal:** Resolve a join token to the team + its claimable/taken spots, readable
-without authentication.
+**Goal:** Resolve a token to team + spots, readable pre-auth, names only.
 
-**Requirements:** R1.
-
-**Dependencies:** Unit 1.
-
-**Files:**
-- Create: `supabase/migrations/<ts>_get_team_join_view.sql` (RPC).
-- Create: `src/api/queries/teamJoin.ts`, `src/api/hooks/useTeamJoinView.ts`.
-- Test: `src/__tests__/database/get-team-join-view.test.ts`, `src/api/hooks/useTeamJoinView.test.ts`.
-
-**Approach:**
-- RPC returns `{ team_name, org_name, spots: [{ member_id, display_name,
-  is_open }] }` where `is_open` = placeholder (`user_id IS NULL`) not yet claimed.
-  **Names only** — no email/phone.
-- Invalid/unknown token → empty/error result the page renders as "link not valid."
-
-**Patterns to follow:** `get_my_pending_invites` enriched-RPC style; the
-`src/api/queries` + `src/api/hooks` split.
-
-**Test scenarios:**
-- Happy path: valid token returns the team with open placeholder spots flagged
-  `is_open=true` and claimed/registered members `is_open=false`.
-- Edge: unknown/garbage token returns no team (page shows invalid-link state).
-- Edge: a team with a full roster returns all spots `is_open=false`.
-- Integration: a placeholder that gets claimed (Unit 4) flips to `is_open=false`
-  on the next read.
-
-**Verification:** Opening the RPC with a real token lists the roster with correct
-open/taken flags and no contact info.
-
-### Phase 2 — Claim + approve (the cascade core)
-
-- [ ] **Unit 3: The join page (`/join/:token`)**
-
-**Goal:** The player-facing page: see spots, claim one or "add me," submit a
-request — threading passwordless sign-in.
-
-**Requirements:** R2, R3, R10.
-
-**Dependencies:** Unit 2, passwordless sign-in (PR #159).
-
-**Files:**
-- Create: `src/onboarding/TeamJoinPage.tsx` (+ small sub-components if > ~100 lines).
-- Create: `src/api/mutations/teamJoin.ts` (`submitJoinRequest`), `src/api/hooks/useSubmitJoinRequest.ts`.
-- Modify: `src/navigation/NavRoutes.tsx` (public route `/join/:token`).
-- Test: `src/onboarding/TeamJoinPage.test.tsx`, `src/api/hooks/useSubmitJoinRequest.test.ts`.
-
-**Approach:**
-- Reads `useTeamJoinView`. Shows open spots (tap "that's me") + an "I'm not
-  listed — add me" affordance (name input).
-- If not authenticated, route to `/login?redirect=/join/:token` (PR #159
-  threading) and return here after sign-in.
-- Submitting inserts a `team_join_requests` row (claim → `claimed_member_id`;
-  add-me → `provided_name`). After submit, show "waiting for the captain" state.
-- Use `queryKeys` for cache; invalidate the join-view + the captain's
-  pending-count queries.
-
-**Patterns to follow:** `src/login/ClaimPlayer.tsx` state-machine + sub-views;
-`renderWithProviders` + the supabase mock pattern for tests.
-
-**Test scenarios:**
-- Happy path: signed-in user taps an open spot → `submitJoinRequest` called with
-  `claimed_member_id`; UI shows "waiting for approval."
-- Happy path: "add me" with a typed name → request with `provided_name`.
-- Edge: unauthenticated visit → redirected to `/login?redirect=/join/:token`.
-- Edge: a taken spot is not tappable.
-- Error: submit failure surfaces a message and stays on the page.
-- Integration: after submit, the join view reflects the pending claim.
-
-**Verification:** A signed-out player opens the link, signs in, claims a spot,
-and sees "waiting for the captain" — all on the join page.
-
-- [ ] **Unit 4: Approve action — `approve-join-request` edge function (match-or-create)**
-
-**Goal:** The captain's one-tap approve: authz-gated, match-or-create, resolves
-the request and puts the player on the team.
-
-**Requirements:** R4, R5.
+**Requirements:** R1, R3.
 
 **Dependencies:** Unit 1.
 
-**Files:**
-- Create: `supabase/functions/approve-join-request/index.ts`.
-- Create: `src/api/mutations/teamJoin.ts` (`approveJoinRequest`, `rejectJoinRequest`),
-  `src/api/hooks/useApproveJoinRequest.ts`.
-- Test: `src/__tests__/database/approve-join-request.test.ts` (db project).
+**Files:** Create `supabase/migrations/<ts>_get_team_join_view.sql`,
+`src/api/queries/teamJoin.ts`, `src/api/hooks/useTeamJoinView.ts`; Test
+`src/__tests__/database/get-team-join-view.test.ts`, `src/api/hooks/useTeamJoinView.test.ts`.
+
+**Approach:** SECURITY DEFINER, **column-projected to names only** (no contact
+info — RLS is off, so the RPC itself is the boundary). Returns `{ team_name,
+league_name, spots:[{member_id, display_name, is_open}] }` + whether the
+authenticated caller already has a pending/approved request here.
+
+**Test scenarios:**
+- Happy: valid token → team + open placeholders flagged `is_open`, taken ones not.
+- Edge: unknown token → no team (invalid-link state); full roster → all taken.
+- Edge: a caller with a pending request gets that flag (drives the "waiting" state).
+- Security: response contains no email/phone columns.
+
+**Verification:** A real token lists the roster with correct open/taken flags and
+no contact info.
+
+### Phase 2 — Join + approve (the core)
+
+- [ ] **Unit 3: The join page + register-first submit + notify-on-approval**
+
+**Goal:** `/join/:token`: tap → sign in → existing profile form → submit request →
+"waiting"; and the joiner learns when they're approved.
+
+**Requirements:** R2, R3, R10, R8 (landing handoff).
+
+**Dependencies:** Unit 2; passwordless (PR #159 branch).
+
+**Files:** Create `src/onboarding/TeamJoinPage.tsx`, `src/api/mutations/teamJoin.ts`
+(`submitJoinRequest`), `src/api/hooks/useSubmitJoinRequest.ts`; Modify
+`src/navigation/NavRoutes.tsx` (public `/join/:token`), the profile-form step to be
+reachable in this flow, `PendingInvitesModal`/`usePendingInvites` (or a sibling) to
+also surface "you're approved — go to your team"; Test
+`src/onboarding/TeamJoinPage.test.tsx`, `src/api/hooks/useSubmitJoinRequest.test.ts`.
 
 **Approach:**
-- **Authz (load-bearing, RLS-off):** verify the Bearer-token caller is the
-  team's captain (`teams.captain_id`) or org staff; 403 otherwise.
-- **Match-or-create:** claim of an existing placeholder, or captain links to one →
-  `merge_placeholder_into_member_v2` (org-scoped); "add me" with no target →
-  create member + `team_players` row. Mark the request `approved`.
-- Reject path flips to `rejected`, no roster change.
-- New edge function → **full Supabase restart** to register locally.
+- Not signed in → passwordless sign-in; persist the pending-join intent server-side
+  keyed to identity so a cross-device/closed-tab return still recovers it (R10).
+- Signed in, no member yet → the **existing short profile form** (name + nickname
+  etc.); on completion they are a registered member.
+- Submit a `team_join_request` (claim → `claimed_member_id`; self-add → none). Show
+  "waiting for the captain."
+- **Notify on approval:** reuse the `get_my_pending_invites`/`PendingInvitesModal`
+  pull so a returning/closed-tab joiner is told they're in and routed to their team.
+- Existing-state guards: already a confirmed member of this team → "you're already
+  on this team"; existing pending request → show "waiting" immediately; full team →
+  "this team's roster is full — contact the captain"; rejected → a clear "not added —
+  ask your captain" state (not a silent dead-end).
 
-**Execution note:** Start with a failing db-project test for the captain-authz
-gate (security-critical) before the merge/create logic.
+**Execution note:** Stacks on `feat/passwordless-sign-in` (PR #159, unmerged).
+
+**Test scenarios:**
+- Happy: signed-out tap → sign-in → profile form → submit → "waiting"; request row
+  created with the team.
+- Happy: signed-in member with no prior request → submit → "waiting."
+- Edge: unauthenticated → routed to sign-in and returned to the join (intent
+  preserved across the round-trip).
+- Edge: already on this team → "already on this team"; existing pending → "waiting"
+  on load (no duplicate submit); full roster → "full" state.
+- Error: rejected request → actionable "not added" state.
+- Integration: on approval, the pull surfaces "you're in" and routes to the team.
+
+**Verification:** A signed-out person completes tap → code → name → "waiting," and
+learns when approved — even if they closed the tab.
+
+- [ ] **Unit 4: `approve-join-request` engine (Add / Replace / Decline)**
+
+**Goal:** The approver's one-tap decision, authz-gated, race-safe.
+
+**Requirements:** R4, R5, R6.
+
+**Dependencies:** Unit 1.
+
+**Files:** Create `supabase/functions/approve-join-request/index.ts`,
+`src/api/mutations/teamJoin.ts` (`approveJoinRequest`, `rejectJoinRequest`),
+`src/api/hooks/useApproveJoinRequest.ts`; Test
+`src/__tests__/database/approve-join-request.test.ts`.
+
+**Approach:**
+- **Server-side resolution + authz:** read `team_id` from the request row (not the
+  caller); resolve `org_id` via team→season→league; authorize caller = team
+  `captain_id` **or** org staff; 403 otherwise. If `captain_id IS NULL`, org-staff
+  only.
+- **Race:** re-read the request `FOR UPDATE`; if not `pending`, return a friendly
+  "already handled" (don't let the merge RPC's raw error be the race signal).
+- **Add:** insert the joiner's registered member into `team_players` (no merge).
+- **Replace:** `merge_placeholder_into_member_v2(placeholder=chosen, target=joiner's
+  member, actor=approver, role='captain_approve', org)`. Org-scoped.
+- **Decline:** flip to `rejected`; no roster change.
+- New edge function → full `db:stop && db:start` locally.
+
+**Execution note:** Start with a failing db-project test for the captain/LO authz
+gate before the Add/Replace logic.
 
 **Patterns to follow:** `supabase/functions/claim-placeholder/index.ts` (JWT gate,
-service-role client, the merge RPC call, `archived_placeholders.transferred_rows`).
+service-role client, server-side org resolution, the merge RPC call).
 
 **Test scenarios:**
-- Happy path (claim): approving a request targeting placeholder X merges X into
-  the requesting user; the team_players row now points at the user; request
-  `approved`.
-- Happy path (add-me): approving creates a member + roster row; request `approved`.
-- Edge (match-or-create): captain links an "add me" to an existing placeholder →
-  merge instead of duplicate (no split stats).
-- Error (authz): a non-captain / non-staff caller gets 403 and no mutation.
-- Error: approving an already-resolved or expired request is a no-op/error.
-- Integration: org-scope — cannot link to a placeholder outside the team's org.
+- Happy (Add): approving a self-add inserts the registered member into the roster;
+  request `approved`; no merge.
+- Happy (Replace): approving with a chosen placeholder merges it into the joiner's
+  member (spot + record transfer); request `approved`.
+- Error (authz): non-captain / non-org-staff → 403, no mutation; null captain → org
+  staff still works, others 403.
+- Edge (race): two pending requests, approve both → second returns "already handled,"
+  not a 500.
+- Edge (org-scope): cannot Replace with a placeholder outside the team's org.
+- Decline: flips to `rejected`; roster unchanged.
 
-**Verification:** Captain approval puts the player on the roster via merge-or-
-create; non-captains are refused; no duplicate members on the match-or-create path.
+**Verification:** Approver puts the person on the roster (Add or Replace);
+non-approvers refused; double-approve is graceful; no duplicate members.
 
-- [ ] **Unit 5: Captain triage board on the team accordion**
+- [ ] **Unit 5: The approve surface (one component, two scopes)**
 
-**Goal:** Per-team claimed / waiting / open view with inline approve/reject.
+**Goal:** The request list + Add/Replace/Decline + the record-flagged placeholder
+picker; captain sees his team, LO sees all org teams.
 
-**Requirements:** R6.
+**Requirements:** R5, R6.
 
 **Dependencies:** Unit 2, Unit 4.
 
-**Files:**
-- Create: `src/player/components/TeamTriageBoard.tsx` (or extend `TeamAccordionItem`).
-- Create: `src/api/hooks/useTeamJoinRequests.ts`.
-- Modify: `src/player/MyTeams.tsx` (mount the board in the captain's team item).
-- Test: `src/player/components/TeamTriageBoard.test.tsx`.
+**Files:** Create `src/onboarding/components/JoinRequestList.tsx` +
+`PlaceholderPicker.tsx`; `src/api/hooks/useTeamJoinRequests.ts`; Modify
+`src/player/MyTeams.tsx` (captain: mount for his team) + an LO all-teams surface
+(operator view); Test `src/onboarding/components/JoinRequestList.test.tsx`,
+`PlaceholderPicker.test.tsx`.
 
 **Approach:**
-- Three groups: **claimed** (registered/real players), **waiting** (pending
-  requests with an Approve + Reject button each), **open** (unclaimed
-  placeholders). Captain-only.
-- Approve/Reject call Unit 4; optimistic invalidate of the join-view, triage, and
-  doorbell-count queries.
-
-**Patterns to follow:** `MyTeams.tsx` `TeamAccordionItem` + `PlayerRoster`;
-`useRosterEditor`; `placeholder_has_stats` to flag spots with stats.
+- Each row: **person name + team + league** + **[Add] / [Replace ▾] / [Decline]**.
+- **Replace** opens `PlaceholderPicker` — the team's unclaimed placeholders, each
+  flagged via `placeholder_has_stats` (e.g. "Jon Smyth · 3 games"); the name-match
+  (if any) pre-highlighted as a shortcut; available **whenever placeholders exist**,
+  match or not (protects the misspelled record).
+- Soft guardrail: tapping **Add** while unclaimed placeholders exist → a one-line
+  "still have open spots — is this one of them?" nudge (non-blocking).
+- Scope by data: captain query filters to his team(s); LO query spans org teams. Same
+  component.
 
 **Test scenarios:**
-- Happy path: a team with 2 pending requests shows them under "waiting" with
-  Approve/Reject; non-captain viewer sees no approve controls.
-- Happy path: approving removes the row from "waiting" and the player appears
-  under "claimed."
-- Edge: zero pending → no "waiting" group, board still shows claimed/open.
-- Integration: approving updates the roster (claimed count) without a manual refresh.
+- Happy: a team with pending requests shows them with Add/Replace/Decline; non-approver
+  sees no controls.
+- Happy: Replace → picker lists unclaimed placeholders with record flags; choosing
+  one calls approve-as-Replace; the row leaves "waiting."
+- Edge: no placeholders → no Replace option (Add only); a name match is pre-highlighted.
+- Edge (LO): the LO surface shows requests across all org teams, each labeled with its
+  team + league.
+- Integration: approving updates the roster without manual refresh.
 
-**Verification:** The captain sees claimed/waiting/open at a glance and approves
-inline; the board updates live.
+**Verification:** Approver sees a recognizable name + team, can Add or hand-link to a
+record-flagged placeholder; LO sees all teams in one place.
 
-### Phase 3 — Surfacing, guidance, landing
+### Phase 3 — Surface, distribute, land
 
-- [ ] **Unit 6: The "doorbell"**
+- [ ] **Unit 6: The doorbell**
 
-**Goal:** Surface pending-claim counts where the captain is, cleared when handled.
+**Goal:** Pending-request counts where the approver is, cleared when handled.
 
 **Requirements:** R7.
 
 **Dependencies:** Unit 1.
 
-**Files:**
-- Create: `src/api/hooks/usePendingJoinRequestCount.ts`.
-- Modify: `src/player/MyTeams.tsx` (a "N waiting to join" card), `src/components/layout/{AppDrawer,AppSidebar}.tsx`
-  (a "(N)" on the My Teams entry), `src/components/layout/BottomTabBar.tsx` (`TabItem.badge` on My Teams).
-- Test: `src/api/hooks/usePendingJoinRequestCount.test.ts`, plus assertions in the
-  layout tests.
+**Files:** Create `src/api/hooks/usePendingJoinRequestCount.ts`; Modify
+`src/player/MyTeams.tsx` (home card), `src/components/layout/{AppDrawer,AppSidebar}.tsx`,
+`src/components/layout/BottomTabBar.tsx`, + the LO surface; Test
+`src/api/hooks/usePendingJoinRequestCount.test.ts`.
 
-**Approach:**
-- One hook summing pending requests across the captain's teams feeds all three
-  surfaces. Appears only when count > 0; clears when handled. **Not** a permanent
-  chrome badge (honors the "act-now, not always-on" rule).
-
-**Patterns to follow:** `useUnreadMessageCount` + the `BottomTabBar` `TabItem.badge`
-red-pill; the "Messages (N)" label in `AppDrawer`/`AppSidebar`.
+**Approach:** One hook summing pending requests for the caller's scope —
+captain: requests on teams where they're `captain_id`; LO: across org teams (and an
+org-staff variant, so staff approvers see it too). Joins `team_join_requests → teams`
+(tolerate null `captain_id`). Renders only when count > 0; clears when handled.
 
 **Test scenarios:**
-- Happy path: count > 0 → home card + menu "(N)" + bottom-bar badge render.
-- Happy path: count 0 → none of the three render.
-- Edge: a non-captain (no teams they captain) never sees the doorbell.
-- Integration: approving the last pending request clears all three surfaces.
+- Happy: count > 0 → home card + menu "(N)" + bottom-bar badge; 0 → none render.
+- Edge: a non-captain/non-staff never sees it; org staff with pending requests do.
+- Integration: handling the last request clears all surfaces.
 
-**Verification:** A captain with pending claims sees the doorbell on home, menu,
-and bottom bar; it disappears when the queue is empty.
+**Verification:** An approver with pending requests sees the doorbell where they are;
+it disappears when the queue empties.
 
-- [ ] **Unit 7: Thin captain first-run wizard**
+- [ ] **Unit 7: Distribution — share link + LO captain list + first-run wizard**
 
-**Goal:** A 3-card guided intro that removes fear-of-the-unfamiliar.
+**Goal:** Make sharing the *right* link effortless for both captain and LO.
 
-**Requirements:** R9.
+**Requirements:** R1, R9.
 
-**Dependencies:** Unit 2 (the link), Unit 5 (the board).
+**Dependencies:** Unit 1 (the token).
 
-**Files:**
-- Create: `src/wizards/captain-onboarding-v2/` (`captainOnboardingConfig.ts` + 3
-  step components) following the Wizard 2.0 contract.
-- Modify: `src/player/MyTeams.tsx` (first-run entry for a captain who hasn't
-  shared yet) + a dismissed/seen flag (localStorage or a `members` column).
-- Test: `src/wizards/captain-onboarding-v2/captainOnboarding.test.tsx`.
+**Files:** Create `src/onboarding/InviteMyTeamButton.tsx` (captain),
+`src/onboarding/OnboardCaptainsList.tsx` (LO), `src/wizards/captain-onboarding-v2/`
+(thin 3-card wizard); Modify `src/player/MyTeams.tsx` + the LO surface; Test
+`src/onboarding/OnboardCaptainsList.test.tsx`, `captain-onboarding-v2/*.test.tsx`.
 
 **Approach:**
-- Card 1: here's your team link + QR (reuse `ShareLinkSection` with the
-  `/join/:token` URL). Card 2: share it (copy / show QR). Card 3: approve people
-  as they appear (points at the triage board).
-- Plain `useState`, < 100-line files, `WizardStepProps`. Use `queryKeys.members.all`
-  if any member data is touched (avoid the R8 stale-cache bug).
-
-**Patterns to follow:** `src/wizards/teams-v2/` config + `src/components/wizard/`
-(`WizardShell`, `WizardConfig`).
+- Captain: **"Invite my team"** → `ShareLinkSection` with the `/join/:token` URL +
+  QR.
+- LO: **"Onboard my captains"** = one row per team — **Team · assigned captain ·
+  [Send/Copy link]** — pre-paired (the captain placeholder was set at team creation).
+  A captain on multiple teams shows on multiple rows (or grouped "Send all"); the
+  LO-as-own-captain row needs no send. If a captain's phone/email is on file, pre-fill
+  the message; else copy-paste.
+- Wizard (captain): 3 cards (get/copy your link → share it → approve people as they
+  appear → points at the approve surface). Plain `useState`, < 100-line files,
+  `queryKeys.members.all`. A seen-flag on `members` (cross-device, not localStorage).
 
 **Test scenarios:**
-- Happy path: the wizard renders 3 steps; Card 1 shows the team's `/join/:token`
-  link + QR; Next/Back work.
-- Happy path: completing/dismissing sets the seen flag so it doesn't reappear.
-- Edge: a non-captain never sees the captain wizard.
+- Happy: "Invite my team" shows the team's `/join/:token` link + QR.
+- Happy (LO): the list shows each team with its assigned captain pre-paired to that
+  team's link; a multi-team captain appears per team.
+- Happy: completing/dismissing the wizard sets the `members` seen-flag (no reappear).
+- Edge: non-captain sees no captain wizard.
 
-**Verification:** A first-time captain is walked link → share → approve and lands
-on the triage board.
+**Verification:** A captain shares one link in two taps; an LO sends each captain the
+correct team link by scrolling a pre-paired list.
 
-- [ ] **Unit 8: Land on tonight's match**
+- [ ] **Unit 8: Land on tonight's match (reuse, don't rebuild)**
 
-**Goal:** After joining/approval, the player lands on their team with tonight's
-match front-and-center + a one-tap path into scoring.
+**Goal:** A freshly-approved joiner lands on their team with tonight's match.
 
 **Requirements:** R8.
 
-**Dependencies:** Unit 4 (approval completes the join).
+**Dependencies:** Unit 4.
 
-**Files:**
-- Create: `src/api/hooks/useTonightsMatch.ts` (or extend `useMatchesByTeam`).
-- Modify: `src/player/MyTeams.tsx` (surface tonight's match prominently),
-  `src/player/MyMatch.tsx` (wire the detection stub into a real card).
-- Test: `src/api/hooks/useTonightsMatch.test.ts`.
+**Files:** Modify `src/player/MyTeams.tsx` (ensure the post-approval landing surfaces
+the existing match card prominently); Test `src/player/MyTeams.tonightsmatch.test.tsx`.
 
-**Approach:**
-- Detect a match for the player's team(s) scheduled today or `in_progress`
-  (`season_weeks.scheduled_date` + `matches.status`); one-tap to
-  `/match/:matchId/lineup` via the existing `useMatchPhase`/`MatchPhaseGuard`.
-- Scope: build the detection + the MyTeams surfacing here; the full `MyMatch`
-  page build can remain its own effort if it grows (note at implementation).
-
-**Patterns to follow:** `useMatchesByTeam` (`scheduled_date` flatten),
-`MyTeams.tsx` existing "match today / in-progress" inline filter, `MatchPhaseGuard`.
+**Approach:** **Reuse `useNextMatchForTeam` + the existing `MyTeams` "Quick Score"
+card** (today/in_progress → `/match/:id/lineup`). Do **not** add a parallel
+`useTonightsMatch` hook or build `MyMatch`. Handle the true cold-start case where the
+schedule isn't generated yet (no matches) → land on the team page (roster/triage),
+no error, no empty "tonight" card.
 
 **Test scenarios:**
-- Happy path: a team with a match scheduled today surfaces it with a "go" CTA to
-  `/match/:id/lineup`.
-- Happy path: an `in_progress` match is surfaced as "jump in."
-- Edge: no match today → no tonight's-match card (no error).
-- Edge: a player on multiple teams with matches today sees each.
+- Happy: a team with a match today/in_progress surfaces the existing Quick Score CTA.
+- Edge: no schedule yet (brand-new league) → land on the team page, no error.
+- Edge: player on multiple teams → each team's match shown.
 
-**Verification:** A freshly-approved player lands on their team and sees tonight's
-match with one tap into scoring.
+**Verification:** An approved joiner lands on their team; if a match exists it's
+one tap to scoring; if not, a clean team page (no broken "tonight" UI).
 
 ## System-Wide Impact
 
-- **Interaction graph:** approval mutates `team_players` (roster) + resolves
-  `team_join_requests` + may run `merge_placeholder_into_member_v2` (touches
-  stats/lineups). The doorbell, triage board, and join view all read
-  `team_join_requests` — invalidate them together on approve/reject.
-- **Error propagation:** edge functions throw → mutations throw → hooks surface a
-  message; never silently drop a claim.
-- **State lifecycle risks:** **two players claiming the same open spot** (race) —
-  approval must be idempotent/guarded (first approve wins; second sees
-  "already resolved"). A forwarded link inviting many requests — bounded by the
-  approval gate.
-- **Security invariants (must hold):** the per-placeholder `userEmail===inviteEmail`
-  403 guard in `claim-placeholder` is **unchanged** (email flow). The new
-  shared-link path is gated solely by **captain approval** + the
-  `approve-join-request` captain-authz check (RLS-off, so authz lives there).
-  Match-or-create is **org-scoped**.
-- **Unchanged invariants:** existing `InvitePlayerModal` / `send-invite` /
-  `ClaimPlayer` per-placeholder email + QR + device-handoff flows; manual
-  placeholder creation; `invite_tokens` and its trigger. All additive.
+- **Interaction graph:** approve mutates `team_players` + resolves the request +
+  (Replace only) runs the merge; doorbell, approve surface, and join view all read
+  `team_join_requests` — invalidate together.
+- **State lifecycle:** the two partial unique indexes make the dup/race a clean DB
+  reject; the `FOR UPDATE` re-check makes double-approve graceful.
+- **Security invariants:** the per-placeholder `userEmail===inviteEmail` 403 (email
+  flow) is **unchanged**; the forwardable-link path is gated by approval +
+  `approve-join-request` server-side authz; `get_team_join_view` exposes names only;
+  Replace is org-scoped.
+- **Unchanged invariants:** existing email/QR/device-handoff + manual placeholders +
+  `invite_tokens` trigger. Additive.
 
 ## Risks & Dependencies
 
 | Risk | Mitigation |
 |------|------------|
-| Forwardable link removes the email-match guard → wrong person claims a spot | Captain approval is the gate (R4); `approve-join-request` is captain-authz'd; names shown so the captain recognizes claimants. |
-| Two players claim the same open spot (race) | Approval guarded/idempotent — first approve wins; second request shows "already resolved." |
-| Match-or-create creates duplicate players / split stats | Approval routes through `merge_placeholder_into_member_v2`; captain can link an "add me" to an existing placeholder; org-scoped. |
-| `match_lineups.playerN_id` not declared FK → merge misses lineup rows | Verify/include the lifecycle-plan FK fix before relying on merge (Unit 1). |
-| Public join page spammed with requests | Approval gate absorbs it functionally; per-token rate-limit/captcha is a deferred hardening. |
-| Pre-existing `send-invite` caller-authz hole | Out of scope here; flagged for its own fix (don't widen it). |
-| Can't test links cross-device on localhost | Verify the full link/QR/device-switch flow on staging (same constraint as Facebook OAuth). |
-| New edge function not registered locally | Full `db:stop && db:start` after adding `approve-join-request`. |
+| Brand-new joiner has no account → merge can't run | Register-first: they're a member before approve; Add needs no merge, Replace merges into the real member. |
+| Forwardable link → wrong person claims a named spot | Approval gate + recognizable **name** in the list; approver authz server-side. |
+| Claim/approve race or request spam | Two partial unique indexes (per-spot, per-user) + `FOR UPDATE` re-check. |
+| Misspelled placeholder strands its record | Replace always available with a manual, record-flagged picker (auto-match is just a shortcut). |
+| Joiner never learns they're approved | Reuse `get_my_pending_invites`/`PendingInvitesModal` pull to notify + route. |
+| Cross-device / closed-tab sign-in loses intent | Server-side identity-keyed pending-join (R10); the request row is durable post-submit. |
+| Returning *registered* player dedup | Out of scope (needs user-to-user merge); they use Add and keep their own account. |
+| `send-invite` authz hole | Out of scope; flagged for its own fix; don't widen. |
+| Roster names exposed via the token | Accepted per design (shared within team); names only; revisit token rotation if leaks become real. |
+| Can't test links cross-device locally | Verify on staging (like Facebook OAuth). |
 
 ## Documentation / Operational Notes
 
-- Update `TABLE_OF_CONTENTS.md` for new files (route, page, hooks, edge function,
+- Update `TABLE_OF_CONTENTS.md` for new files (route, pages, hooks, edge function,
   migrations, wizard).
-- Dangling refs in the origin brainstorm to flag to Ed: `docs/brainstorms/2026-05-17-bca-pitch-strategy.md`
-  and the `memory-bank/futureFeatures.md` "Affiliation/Find-a-League" section
-  appear not to exist — harmless to the build, worth correcting in the doc.
-- Staging/launch: link+QR+device-switch verification, and the join flow end-to-end,
-  must be exercised on staging (localhost can't). Add to the onboarding go-live notes.
+- Staging: the full link/QR/cross-device + join flow must be verified on staging.
+- The origin brainstorm references two docs that don't exist
+  (`2026-05-17-bca-pitch-strategy.md`, a `futureFeatures.md` affiliation section) —
+  harmless; correct when convenient.
 
 ## Sources & References
 
-- **Origin document:** `docs/brainstorms/2026-05-28-player-onboarding-cold-start-requirements.md`
-- Companion (built first): `docs/plans/2026-05-28-001-feat-passwordless-sign-in-plan.md` (PR #159)
+- **Origin:** `docs/brainstorms/2026-05-28-player-onboarding-cold-start-requirements.md`
+- Companion (build-first): `docs/plans/2026-05-28-001-feat-passwordless-sign-in-plan.md` (PR #159)
 - Prior art: `memory-bank/PLAN-email-invites.md`, `docs/plans/2026-04-22-001-feat-placeholder-player-lifecycle-plan.md`
 - Reuse: `merge_placeholder_into_member_v2`, `supabase/functions/claim-placeholder/`,
-  `src/login/ClaimPlayer.tsx`, `src/player/MyTeams.tsx`, `src/components/wizard/`,
-  `src/components/invite/ShareLinkSection.tsx`, `src/components/layout/BottomTabBar.tsx`
+  `src/player/MyTeams.tsx`, `useNextMatchForTeam`, `src/components/invite/ShareLinkSection.tsx`,
+  `src/components/modals/PendingInvitesModal.tsx`, `src/components/wizard/`
