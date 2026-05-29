@@ -14,7 +14,7 @@
  */
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation, Link } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
@@ -23,6 +23,7 @@ import { CardAction, CardFooter } from '@/components/ui/card';
 import { LoginCard } from './LoginCard';
 import { EmailCodeStep } from './EmailCodeStep';
 import { requestEmailCode } from './passwordlessAuth';
+import { getSafeRedirectPath } from './redirect';
 import { useUser } from '../context/useUser';
 import { PASSWORDLESS_SIGN_IN_ENABLED } from '../config/featureFlags';
 import type { Session, User } from '@supabase/supabase-js';
@@ -41,7 +42,15 @@ const Divider: React.FC<{ label: string }> = ({ label }) => (
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
   const { isLoggedIn, setUser, setIsLoggedIn } = useUser();
+
+  // Where to land after auth: a safe ?redirect / location.state path, else My Teams.
+  const redirectTarget =
+    getSafeRedirectPath((location.state as { redirect?: string } | null)?.redirect) ??
+    getSafeRedirectPath(searchParams.get('redirect')) ??
+    '/my-teams';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -56,8 +65,8 @@ export const Login: React.FC = () => {
 
   // Already-signed-in guard: don't show the form to a logged-in user.
   useEffect(() => {
-    if (isLoggedIn) navigate('/my-teams');
-  }, [isLoggedIn, navigate]);
+    if (isLoggedIn) navigate(redirectTarget);
+  }, [isLoggedIn, navigate, redirectTarget]);
   if (isLoggedIn) return null;
 
   const handleGoogleLogin = async () => {
@@ -65,7 +74,7 @@ export const Login: React.FC = () => {
     setMessage('');
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/my-teams` },
+      options: { redirectTo: `${window.location.origin}${redirectTarget}` },
     });
     if (error) {
       setMessage(`Error: ${error.message}`);
@@ -83,7 +92,7 @@ export const Login: React.FC = () => {
       setMessage(`Error: ${error.message}`);
       setPasswordLoading(false);
     } else {
-      navigate('/my-teams');
+      navigate(redirectTarget);
     }
   };
 
@@ -106,7 +115,7 @@ export const Login: React.FC = () => {
       setUser(result.user);
       setIsLoggedIn(true);
     }
-    navigate('/my-teams');
+    navigate(redirectTarget);
   };
 
   // --- Code step (passwordless only) ---

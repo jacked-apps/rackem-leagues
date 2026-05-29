@@ -3,7 +3,7 @@
  * Handles multiple levels of access control including authentication, roles, and application status
  */
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useUser } from '../context/useUser';
 import { useUserProfile } from '@/api/hooks';
 import type { UserRole } from '@/types';
@@ -43,6 +43,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 }) => {
   const { user, loading: authLoading } = useUser();
   const { member, loading: profileLoading } = useUserProfile();
+  const location = useLocation();
 
   // Show loading state while checking authentication or fetching member data
   if (authLoading || profileLoading) {
@@ -55,7 +56,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // First check: Authentication requirement
   if (requireAuth && !user) {
-    return <Navigate to={redirectTo} replace />;
+    // Preserve where they were headed so the login screen can send them back.
+    const attempted = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`${redirectTo}?redirect=${attempted}`} replace />;
   }
 
   // Second check: Role-based access control
@@ -74,7 +77,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Third check: Application completion requirement
   if (requireApprovedApplication && !member) {
-    return <Navigate to="/complete-profile" replace />; // Send to short profile form
+    // Carry the intent through profile completion (consumed once onboarding's
+    // progressive-profile work lands; harmless until then).
+    const attempted = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`/complete-profile?redirect=${attempted}`} replace />;
   }
 
   // All checks passed - render the protected content
