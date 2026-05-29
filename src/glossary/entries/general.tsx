@@ -627,9 +627,17 @@ export const entries = {
     longDef: (
       <div className="space-y-3">
         <p>
-          Start date is more than just the first day of league play. It
-          helps us name the league and seasons so players can tell which
-          league they're looking for.
+          Start date is more than just the first day of{' '}
+          <a href="#league" className="text-info hover:underline">league</a>{' '}
+          play. It helps us{' '}
+          <a href="#league-name" className="text-info hover:underline">name</a>{' '}
+          the{' '}
+          <a href="#league" className="text-info hover:underline">league</a>{' '}
+          and{' '}
+          <a href="#season" className="text-info hover:underline">seasons</a>{' '}
+          so players can tell which{' '}
+          <a href="#league" className="text-info hover:underline">league</a>{' '}
+          they're looking for.
         </p>
         <p>From the start date we get:</p>
         <div className="space-y-1 pl-4">
@@ -639,23 +647,73 @@ export const entries = {
         </div>
         <p>
           The day of the week is especially important because it gets{' '}
-          <strong>locked in</strong>. For example: this league plays 8-Ball
-          on Tuesdays. If you want a different night, you create a new
-          league.
+          <strong>locked in</strong>. For example: this{' '}
+          <a href="#league" className="text-info hover:underline">league</a>{' '}
+          plays 8-Ball on Tuesdays — every{' '}
+          <a href="#match" className="text-info hover:underline">match</a>{' '}
+          falls on a Tuesday. If you want a different night, you create a
+          new{' '}
+          <a href="#league" className="text-info hover:underline">league</a>.
         </p>
         <p className="text-sm text-muted-foreground">
           Relevant topics:{' '}
           <a href="#league" className="text-info hover:underline">league</a>,{' '}
-          <a href="#season" className="text-info hover:underline">season</a>.
+          <a href="#league-name" className="text-info hover:underline">league name</a>,{' '}
+          <a href="#season" className="text-info hover:underline">season</a>,{' '}
+          <a href="#match" className="text-info hover:underline">match</a>.
         </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['league', 'season', 'match'],
+    related: ['league', 'league-name', 'season', 'match'],
     reviewedByEd: '2026-05-29',
   },
 
   // ---- Qualifier / descriptor ------------------------------------------
+
+  'league-name': {
+    slug: 'league-name',
+    canonicalName: 'League Name',
+    aliases: ['league title'],
+    shortDef:
+      'The auto-generated name of a league — composed from the game, day-of-week, optional qualifier, season, and year.',
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          Each{' '}
+          <a href="#league" className="text-info hover:underline">league</a>{' '}
+          gets a name automatically. The shape is:
+        </p>
+        <p className="pl-4">
+          <em>
+            [<a href="#game-type" className="text-info hover:underline">Game</a>]{' '}
+            [Day-of-Week]{' '}
+            [<a href="#qualifier" className="text-info hover:underline">Qualifier</a>?]{' '}
+            [<a href="#season" className="text-info hover:underline">Season</a>]{' '}
+            [Year]
+          </em>
+        </p>
+        <p>
+          Most of these come from the league's{' '}
+          <a href="#start-date" className="text-info hover:underline">start-date</a>{' '}
+          and{' '}
+          <a href="#qualifier" className="text-info hover:underline">qualifier</a>.
+          The day-of-week, season name (Spring/Summer/Fall/Winter), and year
+          are all derived from the start-date the operator picked.
+        </p>
+        <p>
+          <strong>Examples.</strong> A 9-Ball league starting Tuesday March
+          4, 2026, no qualifier → <strong>&ldquo;9 Ball Tuesday Spring
+          2026&rdquo;</strong>. With a qualifier &ldquo;East Side&rdquo; it
+          becomes <strong>&ldquo;9 Ball Tuesday East Side Spring
+          2026&rdquo;</strong>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['league', 'start-date', 'qualifier', 'season', 'game-type'],
+    reviewedByEd: '2026-05-29',
+  },
 
   qualifier: {
     slug: 'qualifier',
