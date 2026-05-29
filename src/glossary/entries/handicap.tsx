@@ -1,8 +1,9 @@
 /**
  * @fileoverview Handicap-related glossary entries.
  *
- * Seeded in Unit 1 with FargoRate. Units 4 and 5 extend this file with the
- * remaining handicap vocabulary surfaced during wizard / operator-area coverage.
+ * Definitions follow the NO DRIFT principle: describe what each thing IS,
+ * not which preset uses it. Preset names can change; the underlying concept
+ * shouldn't be tied to a specific package.
  */
 
 import type { GlossaryEntry } from '../types';
@@ -13,32 +14,28 @@ export const entries = {
     canonicalName: 'FargoRate',
     aliases: ['fargo', 'fargo rating', 'fargo rate'],
     shortDef:
-      'A national pool skill rating from 100 to 850, maintained by FargoRate. Higher is stronger.',
+      'A national pool skill rating maintained by FargoRate. Higher is stronger; ratings typically run 100–850 but have no hard cap by design.',
     longDef: (
       <div className="space-y-3">
         <p>
-          FargoRate is to pool what an ELO rating is to chess — a single national
-          number that says how strong a player is.
+          FargoRate is to pool what an ELO rating is to chess — a single
+          national number that says how strong a player is.
         </p>
         <ul className="list-disc pl-5">
-          <li>
-            <strong>350</strong> — beginner
-          </li>
-          <li>
-            <strong>500</strong> — solid league player
-          </li>
-          <li>
-            <strong>700</strong> — tournament shark
-          </li>
+          <li><strong>350</strong> — beginner</li>
+          <li><strong>500</strong> — solid league player</li>
+          <li><strong>700</strong> — tournament shark</li>
         </ul>
         <p>
-          The rating lives at fargorate.com and updates automatically as a player
-          plays rated events. This app reads the number; it does not compute it.
+          The rating lives at fargorate.com and updates automatically as a
+          player plays rated events. This app reads the number; it does not
+          compute it. Ratings can in principle go over 1000 — there's no hard
+          cap by design.
         </p>
         <p>
-          <strong>How the gap works:</strong> every 100-point gap roughly doubles
-          the stronger player's odds. A 500-vs-400 matchup &mdash; the 500 wins
-          about 2 out of 3 head-to-head games. A 700-vs-400 &mdash; the 700 wins
+          <strong>How the gap works:</strong> every 100-point gap roughly
+          doubles the stronger player's odds. A 500-vs-400 matchup &mdash; the
+          500 wins about 2 out of 3 games. A 700-vs-400 &mdash; the 700 wins
           about 8 out of 9.
         </p>
       </div>
@@ -46,6 +43,368 @@ export const entries = {
     l1_anchor: {
       path: 'docs/league-system/modules/handicap-systems/fargorate.md',
     },
-    related: [],
+    related: ['handicap', 'handicap-system', 'rating'],
+  },
+
+  handicap: {
+    slug: 'handicap',
+    canonicalName: 'Handicap',
+    aliases: [],
+    shortDef:
+      'A skill-compensation mechanism that lets uneven players compete more fairly.',
+    longDef: (
+      <div className="space-y-2">
+        <p>
+          Pool isn't fully fair just because both players follow the same
+          rules — a stronger player still wins most of the time. A handicap is
+          the system's way of making the matchup <em>more</em> fair: it shifts
+          targets, points, or race lengths so the weaker side has a real shot.
+        </p>
+        <p>
+          The HOW varies. Some leagues require the stronger team to win more
+          games (extra games). Some give the weaker team a points head start
+          (start points). Some shorten races for the weaker player (race
+          length adjustment). The right choice depends on which formula the
+          league has agreed on.
+        </p>
+      </div>
+    ),
+    l1_anchor: {
+      path: 'docs/league-system/modules/handicap-systems/README.md',
+    },
+    related: ['handicap-system', 'handicap-mechanism', 'threshold', 'rating'],
+  },
+
+  'handicap-system': {
+    slug: 'handicap-system',
+    canonicalName: 'Handicap System',
+    aliases: [],
+    shortDef:
+      'The method used to calculate each player\'s skill number — e.g., Points, Percentage, FargoRate.',
+    longDef: (
+      <div className="space-y-2">
+        <p>
+          A handicap system is the <em>formula</em> that produces a player's
+          skill number. Different systems take different inputs and produce
+          different scales:
+        </p>
+        <ul className="list-disc pl-5">
+          <li><strong>Points</strong> — straight (wins − losses) over weeks played.</li>
+          <li><strong>Percentage</strong> — wins divided by total games played.</li>
+          <li><strong>FargoRate</strong> — an externally-maintained national rating.</li>
+        </ul>
+        <p>
+          The system decides the number. The <em>mechanism</em> (separate
+          choice) decides how that number gets applied to a match.
+        </p>
+      </div>
+    ),
+    l1_anchor: {
+      path: 'docs/league-system/modules/handicap-systems/README.md',
+    },
+    related: ['handicap', 'handicap-mechanism', 'rating'],
+  },
+
+  'handicap-mechanism': {
+    slug: 'handicap-mechanism',
+    canonicalName: 'Handicap Mechanism',
+    aliases: [],
+    shortDef:
+      'How the handicap result is applied to a match — extra games to win, bonus start points, race-length adjustment, or none.',
+    longDef: (
+      <div className="space-y-2">
+        <p>
+          The handicap system tells you who's stronger. The mechanism tells you
+          what to <em>do</em> about it in a match. The same skill gap can be
+          compensated three different ways:
+        </p>
+        <ul className="list-disc pl-5">
+          <li>
+            <strong>Extra Games</strong> — the stronger team needs more
+            game wins to take the match.
+          </li>
+          <li>
+            <strong>Start Points</strong> — the weaker team begins the match
+            with a points credit.
+          </li>
+          <li>
+            <strong>Race Length Adjustment</strong> — each individual matchup
+            races to a different number based on the rating gap.
+          </li>
+        </ul>
+      </div>
+    ),
+    l1_anchor: {
+      path: 'docs/league-system/modules/handicap-mechanisms/README.md',
+    },
+    related: [
+      'handicap',
+      'handicap-system',
+      'extra-games',
+      'start-points',
+      'race-length-adjustment',
+    ],
+  },
+
+  'points-handicap': {
+    slug: 'points-handicap',
+    canonicalName: 'Points Handicap',
+    aliases: ['points handicap system', 'plus-minus handicap'],
+    shortDef:
+      'A handicap formula based on (wins − losses) divided by weeks played; produces a value from −2 to +2.',
+    longDef: (
+      <div className="space-y-2">
+        <p>
+          A simple integer-style handicap. Each player carries a running
+          (wins − losses)/(weeks played) value, clamped to the range −2 to +2.
+          Positive numbers mean the player is winning more than they're
+          losing; negative means the reverse.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Note: a "points handicap" is not the same as "points scoring." Points
+          handicap is about a player's <em>rating</em>. Points scoring is
+          about how the <em>match</em> is decided.
+        </p>
+      </div>
+    ),
+    l1_anchor: {
+      path: 'docs/league-system/modules/handicap-systems/points.md',
+    },
+    related: ['handicap-system', 'rating'],
+  },
+
+  'percentage-handicap': {
+    slug: 'percentage-handicap',
+    canonicalName: 'Percentage Handicap',
+    aliases: ['percentage handicap system', 'win percentage'],
+    shortDef:
+      'A handicap formula that\'s a straight win/loss percentage — wins divided by total games played.',
+    longDef: (
+      <p>
+        A player's percentage handicap is their straight win rate: total games
+        won divided by total games played, expressed as a percent. A player at
+        60% has won 60 of their last 100 games. The number lives between 0%
+        and 100% and updates as more games are played.
+      </p>
+    ),
+    l1_anchor: {
+      path: 'docs/league-system/modules/handicap-systems/percentage.md',
+    },
+    related: ['handicap-system', 'rating'],
+  },
+
+  'no-handicap': {
+    slug: 'no-handicap',
+    canonicalName: 'No Handicap',
+    aliases: ['unhandicapped', 'no handicap system', 'flat'],
+    shortDef:
+      'All players compete on equal terms; no skill compensation applied.',
+    longDef: (
+      <p>
+        The league plays without any handicap. Every team needs the same number
+        of wins regardless of skill. Suitable for tournaments, leagues where
+        ratings aren't tracked, or leagues whose members are roughly evenly
+        matched.
+      </p>
+    ),
+    l1_anchor: {
+      path: 'docs/league-system/modules/handicap-systems/README.md',
+    },
+    related: ['handicap', 'handicap-system'],
+  },
+
+  'extra-games': {
+    slug: 'extra-games',
+    canonicalName: 'Extra Games',
+    aliases: ['games handicap', 'extra-game handicap'],
+    shortDef:
+      'A handicap mechanism where the stronger team has to win more games than the weaker team to take the match.',
+    longDef: (
+      <div className="space-y-2">
+        <p>
+          The handicap chart maps each team's rating sum to a target number of
+          game wins. Stronger teams need a higher target; weaker teams need a
+          lower one. Both teams play the same total games, but the bar to
+          "win" is set asymmetrically.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Race Length Adjustment is functionally similar — both shift the
+          finish line based on rating gap. Extra Games shifts the team-level
+          target; Race Length Adjustment shifts per-pairing race lengths.
+        </p>
+      </div>
+    ),
+    l1_anchor: {
+      path: 'docs/league-system/modules/handicap-mechanisms/extra-games.md',
+    },
+    related: ['handicap-mechanism', 'threshold', 'race-length-adjustment'],
+  },
+
+  'start-points': {
+    slug: 'start-points',
+    canonicalName: 'Start Points',
+    aliases: ['start-points handicap', 'points credit', 'spot points'],
+    shortDef:
+      'A handicap mechanism where the weaker team begins the match with a points credit calculated from the rating gap.',
+    longDef: (
+      <p>
+        Before any game is played, the system credits the weaker team with a
+        number of points based on each team's ratings. From there, both sides
+        play the full match and earn points the normal way. Whoever has more
+        points at the end wins.
+      </p>
+    ),
+    l1_anchor: {
+      path: 'docs/league-system/modules/handicap-mechanisms/start-points.md',
+    },
+    related: ['handicap-mechanism', 'rating'],
+  },
+
+  'race-length-adjustment': {
+    slug: 'race-length-adjustment',
+    canonicalName: 'Race Length Adjustment',
+    aliases: ['race adjustment', 'asymmetric race'],
+    shortDef:
+      'A handicap mechanism where each individual matchup races to a different number of racks based on the rating gap.',
+    longDef: (
+      <div className="space-y-2">
+        <p>
+          The handicap chart maps each (stronger, weaker) pairing to a
+          (race_high, race_low) target. Both players race, but to different
+          numbers — the weaker player needs fewer racks to win the matchup.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Functionally similar to Extra Games — both shift where the finish
+          line sits based on rating gap. Extra Games adjusts at the team
+          level; Race Length Adjustment adjusts per individual matchup.
+        </p>
+      </div>
+    ),
+    l1_anchor: {
+      path: 'docs/league-system/modules/handicap-mechanisms/race-length-adjustment.md',
+    },
+    related: ['handicap-mechanism', 'extra-games'],
+  },
+
+  threshold: {
+    slug: 'threshold',
+    canonicalName: 'Threshold',
+    aliases: ['benchmark', 'milestone', 'target', 'target games', 'target points'],
+    shortDef:
+      'The target number of games (or points) a team needs to hit during a match — set by the handicap chart for that match\'s lineup.',
+    longDef: (
+      <div className="space-y-2">
+        <p>
+          The threshold is the bar the team has to clear. Hit your threshold,
+          you win the match. Land below it, you lose. Land between the win
+          threshold and the tie threshold, the match ties.
+        </p>
+        <p>
+          Different handicap mechanisms produce different thresholds. The
+          threshold chart is the lookup (or formula) that turns "your team's
+          combined rating" into "your team's target."
+        </p>
+      </div>
+    ),
+    l1_anchor: {
+      path: 'docs/league-system/modules/threshold-charts/README.md',
+    },
+    related: ['threshold-chart', 'handicap'],
+  },
+
+  'threshold-chart': {
+    slug: 'threshold-chart',
+    canonicalName: 'Threshold Chart',
+    aliases: ['handicap chart', 'handicap table'],
+    shortDef:
+      'A lookup table — or a formula that produces one — that maps team ratings to the thresholds for a match.',
+    longDef: (
+      <div className="space-y-2">
+        <p>
+          The chart is how the abstract "skill compensation" idea becomes
+          concrete numbers. The system takes each team's combined rating, runs
+          it through the chart (or the formula behind it), and gets back the
+          target number of games (or points) each side needs.
+        </p>
+        <p>
+          Some charts are static lookups (fixed values for every rating
+          combination). Some are formulas that compute targets on the fly.
+        </p>
+      </div>
+    ),
+    l1_anchor: {
+      path: 'docs/league-system/modules/threshold-charts/README.md',
+    },
+    related: ['threshold', 'calibrated', 'manual-entry'],
+  },
+
+  calibrated: {
+    slug: 'calibrated',
+    canonicalName: 'Calibrated',
+    aliases: ['tested', 'tested preset'],
+    shortDef:
+      'A threshold chart that\'s been tested against real-world play and ships with the app as a known-good package.',
+    longDef: (
+      <p>
+        A calibrated chart isn't theoretical — it's been run against actual
+        league seasons and the numbers produce balanced matches. Operators
+        picking a calibrated package get a turnkey config; they don't have to
+        invent or hand-tune any numbers.
+      </p>
+    ),
+    l1_anchor: {
+      path: 'docs/league-system/modules/threshold-charts/README.md',
+    },
+    related: ['threshold-chart', 'manual-entry'],
+  },
+
+  'manual-entry': {
+    slug: 'manual-entry',
+    canonicalName: 'Manual Entry',
+    aliases: ['manual handicap', 'hand-entered handicap'],
+    shortDef:
+      'Any time a team, captain, scorekeeper, or operator hand-enters a handicap value — a threshold, a start-points credit, or a target — instead of using a calculated chart.',
+    longDef: (
+      <p>
+        Some combinations of choices don't have a calibrated chart in the app.
+        For those, the league agrees on the numbers themselves and someone
+        enters them by hand at lineup lock (or at scoring time). Manual entry
+        is the fallback that keeps the league running even when no built-in
+        formula fits.
+      </p>
+    ),
+    l1_anchor: {
+      path: 'docs/league-system/modules/threshold-charts/README.md',
+    },
+    related: ['threshold-chart', 'calibrated'],
+  },
+
+  rating: {
+    slug: 'rating',
+    canonicalName: 'Rating',
+    aliases: ['skill rating', 'skill number'],
+    shortDef:
+      'A player\'s skill number, calculated by whichever handicap system the league uses.',
+    longDef: (
+      <div className="space-y-2">
+        <p>
+          A rating is the output of a handicap system. Different systems
+          produce different scales:
+        </p>
+        <ul className="list-disc pl-5">
+          <li>A FargoRate rating might be 491.</li>
+          <li>A points rating might be +1 or −2.</li>
+          <li>A percentage rating might be 60%.</li>
+        </ul>
+        <p>
+          The system the league uses decides what shape the rating takes.
+          Higher is always stronger.
+        </p>
+      </div>
+    ),
+    l1_anchor: {
+      path: 'docs/league-system/modules/handicap-systems/README.md',
+    },
+    related: ['handicap-system', 'fargorate'],
   },
 } as const satisfies Record<string, GlossaryEntry>;
