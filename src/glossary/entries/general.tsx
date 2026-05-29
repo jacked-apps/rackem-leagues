@@ -45,17 +45,18 @@ export const entries = {
           creating a new league is cleaner than reconfiguring an existing one.
         </p>
         <p>
-          <strong>The name is composed automatically from your answers.</strong>{' '}
+          <strong>The name is composed automatically from the operator's setup.</strong>{' '}
           The shape is:{' '}
-          <em>[Game] [Day] [Qualifier?] [Season] [Year]</em>. As you walk the
-          wizard, a live preview shows the name building from the parts you've
-          answered so far. The day-of-week, season name
-          (Spring/Summer/Fall/Winter), and year all come from the{' '}
+          <em>[Game] [Day] [Qualifier?] [Season] [Year]</em>. The
+          day-of-week, season name (Spring/Summer/Fall/Winter), and year
+          are all derived from the{' '}
           <a href="#start-date" className="text-info hover:underline">start date</a>{' '}
-          you pick. A{' '}
+          the operator picked. A{' '}
           <a href="#qualifier" className="text-info hover:underline">qualifier</a>{' '}
-          is optional — used when you run multiple leagues of the same game
-          on the same day.
+          is optional — used when an operator runs multiple leagues for the
+          same game on the same day. While the operator walks the league
+          wizard, a live preview shows the name building from the parts
+          answered so far.
         </p>
         <p>
           <strong>Examples.</strong> A 9-Ball league starting Tuesday March
