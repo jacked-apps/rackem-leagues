@@ -47,16 +47,17 @@ export const entries = {
         <p>
           <strong>The name is composed automatically from the operator's setup.</strong>{' '}
           The shape is:{' '}
-          <em>[Game] [Day] [Qualifier?] [Season] [Year]</em>. The
-          day-of-week, season name (Spring/Summer/Fall/Winter), and year
-          are all derived from the{' '}
-          <a href="#start-date" className="text-info hover:underline">start date</a>{' '}
-          the operator picked. A{' '}
-          <a href="#qualifier" className="text-info hover:underline">qualifier</a>{' '}
-          is optional — used when an operator runs multiple leagues for the
-          same game on the same day. While the operator walks the league
-          wizard, a live preview shows the name building from the parts
-          answered so far.
+          <em>
+            [<a href="#game-type" className="text-info hover:underline">Game</a>]{' '}
+            [Day-of-Week]{' '}
+            [<a href="#qualifier" className="text-info hover:underline">Qualifier</a>?]{' '}
+            [<a href="#season" className="text-info hover:underline">Season</a>]{' '}
+            [Year]
+          </em>
+          . Most of these come from the league's{' '}
+          <a href="#start-date" className="text-info hover:underline">start-date</a>{' '}
+          and{' '}
+          <a href="#qualifier" className="text-info hover:underline">qualifier</a>.
         </p>
         <p>
           <strong>Examples.</strong> A 9-Ball league starting Tuesday March
@@ -195,6 +196,28 @@ export const entries = {
   },
 
   // ---- Game types ------------------------------------------------------
+
+  'game-type': {
+    slug: 'game-type',
+    canonicalName: 'Game Type',
+    aliases: [],
+    shortDef:
+      'The specific pool game a league plays — 8-Ball, 9-Ball, or 10-Ball. Set once at league creation.',
+    longDef: (
+      <p>
+        Each league plays one game type. The options are{' '}
+        <a href="#eight-ball" className="text-info hover:underline">8-Ball</a>,{' '}
+        <a href="#nine-ball" className="text-info hover:underline">9-Ball</a>,
+        or{' '}
+        <a href="#ten-ball" className="text-info hover:underline">10-Ball</a>.
+        The choice also affects how the app tracks stats and achievements —
+        8-Ball break-and-runs and 9-Ball break-and-runs are tracked
+        separately, for example.
+      </p>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['eight-ball', 'nine-ball', 'ten-ball', 'league'],
+  },
 
   'eight-ball': {
     slug: 'eight-ball',
