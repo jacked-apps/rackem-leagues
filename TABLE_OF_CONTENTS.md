@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-29 (Operator help system Phase 1 — glossary content complete: **64 entries** across 5 domain files (handicap, general, scoring, match-format, standings). Next: Unit 2 — GlossaryInfoButton wrapper component, then Unit 2.5 smoke test.)
+> **Last Updated**: 2026-05-29 (Operator help system Phase 1 — Units 2 + 2.5 shipped: `src/components/GlossaryInfoButton.tsx` wrapper around InfoButton with slug lookup + "Learn more →" deep link + click-propagation guard. First live slice: `StartDateStep` swapped to `<GlossaryInfoButton slug="start-date" />`.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
