@@ -623,22 +623,48 @@ export const entries = {
     canonicalName: 'Start Date',
     aliases: [],
     shortDef:
-      'The date of the first match — sets the season\'s day-of-week, season name (Spring/Summer/Fall/Winter), and year.',
+      'The date your league starts. This choice locks in your league\'s day of the week (and more) — choose carefully.',
     longDef: (
-      <p>
-        Picking a start date does more than schedule the first{' '}
-        <a href="#match" className="text-info hover:underline">match</a>. It
-        anchors the whole{' '}
-        <a href="#season" className="text-info hover:underline">season</a>:
-        matches repeat weekly on the same day, the season name
-        (Spring/Summer/Fall/Winter) is derived from the date, and the year
-        shows up in the{' '}
-        <a href="#league" className="text-info hover:underline">league</a>{' '}
-        name.
-      </p>
+      <div className="space-y-3">
+        <p>
+          Picking the league start date locks in more than just the first
+          match. The system derives several values from it and bakes them
+          into the league's identity:
+        </p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>
+            <strong>The day of the week</strong> the league plays on. Pick
+            a Tuesday → matches repeat every Tuesday for the life of the
+            league. <strong>This cannot be changed later.</strong> A
+            different night means a different league.
+          </li>
+          <li>
+            <strong>The season name</strong> (Spring, Summer, Fall, Winter)
+            — derived from the month.
+          </li>
+          <li>
+            <strong>The year.</strong>
+          </li>
+        </ul>
+        <p>
+          The day-of-week, season name, and year all flow into the
+          auto-generated{' '}
+          <a href="#league" className="text-info hover:underline">league</a>{' '}
+          name. So this single date drives both the schedule and a chunk
+          of the league's identity — choose deliberately.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Note: this is the <em>league</em> start date. Each{' '}
+          <a href="#season" className="text-info hover:underline">season</a>{' '}
+          has its own start date (set later, in the season wizard) — that
+          one just schedules the season's first match without re-locking
+          the day-of-week or the league's identity.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['season', 'match'],
+    related: ['league', 'season', 'match'],
+    reviewedByEd: '2026-05-29',
   },
 
   // ---- Qualifier / descriptor ------------------------------------------
