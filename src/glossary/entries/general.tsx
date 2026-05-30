@@ -998,13 +998,15 @@ export const entries = {
         <ul className="list-disc pl-5 space-y-1">
           <li>
             <strong>Team chat</strong> — every current member of the team,
-            in one place for general communication. The league operator
-            is included as a read-only observer (a visible banner says so).
+            in one place for general communication. Day-to-day team issues
+            are handled by the captain.
           </li>
           <li>
             <strong>Captains chat</strong> — every current captain in the
-            league plus the league operator, for scheduling and
-            league-side coordination.
+            league plus the league operator. A space for captains to
+            coordinate scheduling and settle issues across teams without
+            regular players piping in. The LO is in the room because most
+            issues that surface here are ones they may need to weigh in on.
           </li>
         </ul>
         <p className="text-sm text-muted-foreground">
