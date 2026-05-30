@@ -203,4 +203,33 @@ export const entries = {
     },
     related: ['linear-above-threshold', 'points-calculator'],
   },
+
+  // DRAFT STUB — created on the Mac branch so other entries can link here.
+  // "Scoring System" is the umbrella term for the whole modular structure:
+  // the top-level Module that composes all component Modules (per
+  // docs/league-system/README.md). This is an IMPORTANT entry that Ed will
+  // expand with an extensive, educational explanation later. Left without
+  // `reviewedByEd` so `pnpm glossary:progress` flags it as needing work.
+  // Do NOT create a duplicate `scoring-system` entry on the PC branch.
+  'scoring-system': {
+    slug: 'scoring-system',
+    canonicalName: 'Scoring System',
+    aliases: ['scoring', 'scoring setup'],
+    shortDef:
+      'The complete rule set that decides how a league’s matches are scored and won — assembled from modular parts the operator can customize.',
+    longDef: (
+      <p>
+        A scoring system is the whole configured rule set that scores a match.
+        It’s built from modular parts — how handicaps work, how points are
+        earned, how a match win is decided, the{' '}
+        <a href="#match-format" className="text-info hover:underline">match format</a>,
+        and more — that the league operator assembles and can customize. The
+        app ships a few tested setups to start from, and others can be built.
+      </p>
+    ),
+    l1_anchor: {
+      path: 'docs/league-system/README.md',
+    },
+    related: ['match-format'],
+  },
 } as const satisfies Record<string, GlossaryEntry>;

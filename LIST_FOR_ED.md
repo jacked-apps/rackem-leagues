@@ -4,6 +4,22 @@ Tasks and refactoring items for Ed to work on.
 
 ---
 
+## 📘 2026-05-30 GLOSSARY — `scoring-system` entry is a DRAFT STUB (important)
+
+**Branch:** `feat/operator-help-phase-1-mac` (glossary definition pass)
+
+`src/glossary/entries/scoring.tsx` now has a `scoring-system` entry, but it's
+a **placeholder stub**. "Scoring System" is the umbrella term for the entire
+modular structure (the top-level Module composing all 9 components, per
+`docs/league-system/README.md`) — Ed flagged it as an important entry that
+needs an **extensive, educational explanation**. It's intentionally left
+without `reviewedByEd`, so `pnpm glossary:progress` lists it as unreviewed.
+
+Other entries (e.g. `total-points`) already link to `#scoring-system`, so the
+stub keeps those links alive until the full write-up lands.
+
+---
+
 ## 🚨 2026-04-21 STAGING TEST — Multiple Critical Failures
 
 **Discovered:** 2026-04-21 during first real-player staging test at the league event
