@@ -180,6 +180,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['roster', 'captain'],
+    reviewedByEd: '2026-05-30',
   },
 
   'season-length': {
