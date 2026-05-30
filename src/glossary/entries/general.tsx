@@ -1726,6 +1726,30 @@ export const entries = {
     related: ['lineup', 'manual-entry'],
   },
 
+  rack: {
+    slug: 'rack',
+    canonicalName: 'Rack',
+    aliases: [],
+    shortDef:
+      'In pool, "rack" can mean the triangle of balls at the start of a game, the act of racking them, or the racker (the player whose role it is to rack). In this app it most often refers to the racker.',
+    longDef: (
+      <p>
+        "Rack" has several common pool meanings: the physical triangle
+        or diamond of balls at the start of a{' '}
+        <a href="#game" className="text-info hover:underline">game</a>,
+        the verb "to rack" (setting up those balls), or sometimes a
+        synonym for the game itself. In this app, when you see "rack"
+        in a match context it most often refers to the{' '}
+        <a href="#racker" className="text-info hover:underline">racker</a>{' '}
+        — the player whose role it is to rack the balls (the opposite
+        of the{' '}
+        <a href="#breaker" className="text-info hover:underline">breaker</a>).
+      </p>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: [],
+  },
+
   racker: {
     slug: 'racker',
     canonicalName: 'Racker',
