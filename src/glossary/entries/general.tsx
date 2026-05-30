@@ -804,17 +804,32 @@ export const entries = {
     canonicalName: 'Lineup',
     aliases: [],
     shortDef:
-      'The set of players from a team who actually play in a given match (chosen from the larger roster).',
+      'The set of players from a team who actually play in a given match — chosen from the larger roster.',
     longDef: (
-      <p>
-        Before a match begins, each captain picks which of their roster
-        players will play that match. That's the lineup. Lineup size is set
-        at the league level (e.g., 3 for 3v3, 5 for 5v5). Anyone on the
-        roster not in the lineup is available as a substitute.
-      </p>
+      <div className="space-y-3">
+        <p>
+          Before a{' '}
+          <a href="#match" className="text-info hover:underline">match</a>{' '}
+          begins, a{' '}
+          <a href="#team" className="text-info hover:underline">team</a>{' '}
+          picks which of their{' '}
+          <a href="#roster" className="text-info hover:underline">roster</a>{' '}
+          players will play. That's the lineup. The{' '}
+          <a href="#lineup-size" className="text-info hover:underline">lineup size</a>{' '}
+          is set at the league level. Anyone on the roster not in the
+          lineup sits the match out.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#match" className="text-info hover:underline">match</a>,{' '}
+          <a href="#team" className="text-info hover:underline">team</a>,{' '}
+          <a href="#roster" className="text-info hover:underline">roster</a>,{' '}
+          <a href="#lineup-size" className="text-info hover:underline">lineup size</a>.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
-    related: ['lineup-size', 'roster', 'captain', 'substitute', 'lineup-lock'],
+    related: ['captain', 'lineup-lock', 'substitute'],
   },
 
   'lineup-size': {
@@ -1391,17 +1406,19 @@ export const entries = {
     canonicalName: 'Lineup Lock',
     aliases: [],
     shortDef:
-      'The moment a captain finalizes their lineup before a match — also when manual handicap thresholds get entered for off-preset combos.',
+      'The moment a team finalizes their lineup before a match — after which players can no longer be swapped.',
     longDef: (
       <p>
-        Lineup lock is the point of no return. Before lock, the captain can
-        swap players in and out. After lock, the lineup is committed and the
-        match's handicap thresholds (when not from a calibrated chart) are
-        whatever the captain entered.
+        Lineup lock is the point of no return for the{' '}
+        <a href="#lineup" className="text-info hover:underline">lineup</a>.
+        Before lock, players can be swapped in and out. After lock, the
+        lineup is committed and the match can begin. It's also typically
+        when any manual handicap thresholds get entered, for leagues
+        that don't use a calibrated chart.
       </p>
     ),
     l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
-    related: ['captain', 'lineup', 'manual-entry'],
+    related: ['lineup', 'manual-entry'],
   },
 
   racker: {
