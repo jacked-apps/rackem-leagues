@@ -971,20 +971,25 @@ export const entries = {
         <p>
           A captain is the representative for a{' '}
           <a href="#team" className="text-info hover:underline">team</a>{' '}
-          to the league operator. The app gives captains real control so
-          they can run their team independently — and a couple of
-          communication channels to make their league-side responsibilities
-          easier.
+          to the{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>.
+          The app gives captains real control so they can run their team
+          independently — and a couple of communication channels to make
+          their league-side responsibilities easier.
         </p>
         <p><strong>What a captain can do:</strong></p>
         <ul className="list-disc pl-5 space-y-1">
           <li>
-            Change the team's name (the LO can restrict this if needed).
+            Change the team's name (the{' '}
+            <a href="#league-operator" className="text-info hover:underline">LO</a>{' '}
+            can restrict this if needed).
           </li>
           <li>
             Add and remove{' '}
             <a href="#roster" className="text-info hover:underline">roster</a>{' '}
-            players (the LO can restrict this too).
+            players (the{' '}
+            <a href="#league-operator" className="text-info hover:underline">LO</a>{' '}
+            can restrict this too).
           </li>
         </ul>
         <p className="text-sm">
@@ -1003,15 +1008,19 @@ export const entries = {
           </li>
           <li>
             <strong>Captains chat</strong> — every current captain in the
-            league plus the league operator. A space for captains to
-            coordinate scheduling and settle issues across teams without
-            regular players piping in. The LO is in the room because most
-            issues that surface here are ones they may need to weigh in on.
+            league plus the{' '}
+            <a href="#league-operator" className="text-info hover:underline">league operator</a>.
+            A space for captains to coordinate scheduling and settle issues
+            across teams without regular players piping in. The{' '}
+            <a href="#league-operator" className="text-info hover:underline">LO</a>{' '}
+            is in the room because most issues that surface here are ones
+            they may need to weigh in on.
           </li>
         </ul>
         <p className="text-sm text-muted-foreground">
           Relevant topics:{' '}
           <a href="#team" className="text-info hover:underline">team</a>,{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>,{' '}
           <a href="#roster" className="text-info hover:underline">roster</a>,{' '}
           <a href="#lineup" className="text-info hover:underline">lineup</a>,{' '}
           <a href="#match" className="text-info hover:underline">match</a>.
@@ -1021,6 +1030,43 @@ export const entries = {
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['scorekeeper'],
     reviewedByEd: '2026-05-30',
+  },
+
+  'league-operator': {
+    slug: 'league-operator',
+    canonicalName: 'League Operator',
+    aliases: ['LO', 'league op', 'operator'],
+    shortDef:
+      'The person who runs a league — sets it up in the app, manages its teams and seasons, and handles escalations from the captains chat.',
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          The league operator (LO for short) is the person responsible for
+          a <a href="#league" className="text-info hover:underline">league</a>.
+          They configure how it runs — every setting marked{' '}
+          <em>League Operator setting</em> on these pages is something they
+          control.
+        </p>
+        <p>
+          During the season the LO is the escalation point for the{' '}
+          <a href="#captain" className="text-info hover:underline">captains</a>{' '}
+          when cross-team scheduling, disputes, or rule questions come up —
+          which is why they're in the captains chat as an active participant.
+        </p>
+        <p className="text-sm">
+          An LO can also be the{' '}
+          <a href="#captain" className="text-info hover:underline">captain</a>{' '}
+          of one of their teams, and they don't have to play on any team at all.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#league" className="text-info hover:underline">league</a>,{' '}
+          <a href="#captain" className="text-info hover:underline">captain</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['scorekeeper'],
   },
 
   scorekeeper: {
