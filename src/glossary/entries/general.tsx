@@ -343,7 +343,7 @@ export const entries = {
     canonicalName: 'Team',
     aliases: ['teams'],
     shortDef:
-      'A group of players competing together in a season — has a name, a captain, and a roster.',
+      'A group of players competing together against other teams in a season.',
     longDef: (
       <div className="space-y-3">
         <p>
@@ -361,9 +361,17 @@ export const entries = {
           <li>
             A{' '}
             <a href="#roster" className="text-info hover:underline">roster</a>{' '}
-            of registered players.
+            of registered players or{' '}
+            <a href="#placeholder-player" className="text-info hover:underline">placeholder players</a>.
           </li>
         </ul>
+        <p>
+          Placeholder players are roster slots a captain can add by name
+          for players who haven't registered an app account yet. This lets
+          the team be roster-complete from day one — so lineups, match
+          math, and handicaps all work right away, without waiting on
+          everyone to register.
+        </p>
         <p>
           Each season, teams play{' '}
           <a href="#match" className="text-info hover:underline">matches</a>{' '}
@@ -383,6 +391,7 @@ export const entries = {
           <a href="#season" className="text-info hover:underline">season</a>,{' '}
           <a href="#captain" className="text-info hover:underline">captain</a>,{' '}
           <a href="#roster" className="text-info hover:underline">roster</a>,{' '}
+          <a href="#placeholder-player" className="text-info hover:underline">placeholder player</a>,{' '}
           <a href="#match" className="text-info hover:underline">match</a>,{' '}
           <a href="#schedule" className="text-info hover:underline">schedule</a>,{' '}
           <a href="#standings" className="text-info hover:underline">standings</a>.
@@ -391,6 +400,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['lineup'],
+    reviewedByEd: '2026-05-30',
   },
 
   matchup: {
@@ -1207,6 +1217,29 @@ export const entries = {
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['team-chat'],
     reviewedByEd: '2026-05-30',
+  },
+
+  'placeholder-player': {
+    slug: 'placeholder-player',
+    canonicalName: 'Placeholder Player',
+    aliases: ['placeholder', 'placeholder players'],
+    shortDef:
+      "A roster slot a captain can add by name for a player who hasn't registered an app account yet.",
+    longDef: (
+      <p>
+        Placeholder players let a{' '}
+        <a href="#captain" className="text-info hover:underline">captain</a>{' '}
+        build a complete{' '}
+        <a href="#roster" className="text-info hover:underline">roster</a>{' '}
+        for their{' '}
+        <a href="#team" className="text-info hover:underline">team</a>{' '}
+        even when not every player has registered on the app yet. The
+        slot has a name and counts as part of the roster, so lineups,
+        match math, and handicaps all work from day one.
+      </p>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['roster', 'team'],
   },
 
   'team-chat': {
