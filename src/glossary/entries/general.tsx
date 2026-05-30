@@ -372,6 +372,7 @@ export const entries = {
           <li>Holidays (Thanksgiving week, Christmas / New Year's, etc.).</li>
           <li>National championship travel — when players are away competing.</li>
           <li>Venue conflicts — the bar is hosting another event.</li>
+          <li>Local events — a parade, festival, or other community happening that could interfere with play or with players getting to the venue.</li>
           <li>Weeks off between seasons — the gap before the next{' '}
             <a href="#season" className="text-info hover:underline">season</a>{' '}
             starts.
@@ -387,6 +388,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['schedule', 'season'],
+    reviewedByEd: '2026-05-30',
   },
 
   team: {
