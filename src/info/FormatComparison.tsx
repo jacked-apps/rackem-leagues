@@ -46,59 +46,59 @@ export const FormatComparison: React.FC = () => {
               <thead>
                 <tr className="border-b-2 border-border">
                   <th className="text-left py-3 pr-4">Feature</th>
-                  <th className="text-left py-3 px-4 bg-green-50">5-Man Format</th>
+                  <th className="text-left py-3 px-4 bg-success/10">5-Man Format</th>
                   <th className="text-left py-3 pl-4 bg-muted">8-Man Format</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 <tr>
                   <td className="py-3 pr-4 font-medium">Roster Size</td>
-                  <td className="py-3 px-4 bg-green-50">5 players</td>
+                  <td className="py-3 px-4 bg-success/10">5 players</td>
                   <td className="py-3 pl-4 bg-muted">8+ players</td>
                 </tr>
                 <tr>
                   <td className="py-3 pr-4 font-medium">Players Per Night</td>
-                  <td className="py-3 px-4 bg-green-50">3 vs 3 (6 total)</td>
+                  <td className="py-3 px-4 bg-success/10">3 vs 3 (6 total)</td>
                   <td className="py-3 pl-4 bg-muted">5 vs 5 (10 total)</td>
                 </tr>
                 <tr>
                   <td className="py-3 pr-4 font-medium">Games Per Player</td>
-                  <td className="py-3 px-4 bg-green-50">6 games</td>
+                  <td className="py-3 px-4 bg-success/10">6 games</td>
                   <td className="py-3 pl-4 bg-muted">5 games</td>
                 </tr>
                 <tr>
                   <td className="py-3 pr-4 font-medium">Total Games</td>
-                  <td className="py-3 px-4 bg-green-50">18 games</td>
+                  <td className="py-3 px-4 bg-success/10">18 games</td>
                   <td className="py-3 pl-4 bg-muted">25 games</td>
                 </tr>
                 <tr>
                   <td className="py-3 pr-4 font-medium">Match Format</td>
-                  <td className="py-3 px-4 bg-green-50">Double round robin</td>
+                  <td className="py-3 px-4 bg-success/10">Double round robin</td>
                   <td className="py-3 pl-4 bg-muted">Single round robin</td>
                 </tr>
                 <tr>
                   <td className="py-3 pr-4 font-medium">Match Duration</td>
-                  <td className="py-3 px-4 bg-green-50">2-2.5 hours</td>
+                  <td className="py-3 px-4 bg-success/10">2-2.5 hours</td>
                   <td className="py-3 pl-4 bg-muted">3-4 hours</td>
                 </tr>
                 <tr>
                   <td className="py-3 pr-4 font-medium">Crowding (Full Rosters)</td>
-                  <td className="py-3 px-4 bg-green-50">6-10 people around tables</td>
+                  <td className="py-3 px-4 bg-success/10">6-10 people around tables</td>
                   <td className="py-3 pl-4 bg-muted">10-16 people around tables</td>
                 </tr>
                 <tr>
                   <td className="py-3 pr-4 font-medium">Handicap System</td>
-                  <td className="py-3 px-4 bg-green-50">Dynamic, auto-adjusting</td>
+                  <td className="py-3 px-4 bg-success/10">Dynamic, auto-adjusting</td>
                   <td className="py-3 pl-4 bg-muted">BCA standard tables</td>
                 </tr>
                 <tr>
                   <td className="py-3 pr-4 font-medium">Handicap Complaints</td>
-                  <td className="py-3 px-4 bg-green-50">Minimal</td>
+                  <td className="py-3 px-4 bg-success/10">Minimal</td>
                   <td className="py-3 pl-4 bg-muted">Common</td>
                 </tr>
                 <tr>
                   <td className="py-3 pr-4 font-medium">Team Building Difficulty</td>
-                  <td className="py-3 px-4 bg-green-50">Easier (5 players)</td>
+                  <td className="py-3 px-4 bg-success/10">Easier (5 players)</td>
                   <td className="py-3 pl-4 bg-muted">Harder (8+ players)</td>
                 </tr>
               </tbody>
@@ -108,10 +108,10 @@ export const FormatComparison: React.FC = () => {
 
         {/* Quick Summary */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <Card className="p-6 bg-green-50 border-green-200">
-            <h3 className="text-xl font-bold text-green-900 mb-3">5-Man Format</h3>
-            <p className="text-sm text-green-800 mb-3">Best for:</p>
-            <ul className="list-disc ml-5 text-sm text-green-800 space-y-1">
+          <Card className="p-6 bg-success/10 border-success/40">
+            <h3 className="text-xl font-bold text-success mb-3">5-Man Format</h3>
+            <p className="text-sm text-foreground mb-3">Best for:</p>
+            <ul className="list-disc ml-5 text-sm text-foreground space-y-1">
               <li>Modern leagues prioritizing player experience</li>
               <li>Venues wanting faster turnaround</li>
               <li>Operators wanting fewer handicap disputes</li>

@@ -297,6 +297,12 @@ export interface MatchGame {
   // the league does not track points.
   winner_value: number | null;
   loser_value: number | null;
+  // The side ('home' | 'away') that has requested to vacate (undo) this
+  // already-scored game, pending the other side's agreement. NULL when no
+  // vacate is pending. Source of truth for the data-derived vacate prompt
+  // (see gameHasPendingVacateForMe) — which side asked is what lets the
+  // OTHER side's prompt survive a dropped realtime event.
+  vacate_requested_by: 'home' | 'away' | null;
 }
 
 /**

@@ -201,11 +201,11 @@ export function useMatchScoringMutations({
    * @param isVacateRequest - True if confirming a vacate request
    */
   const confirmOpponentScore = useCallback(
-    async (gameNumber: number, isVacateRequest?: boolean) => {
-      if (!match) return;
+    async (gameNumber: number, isVacateRequest?: boolean): Promise<boolean> => {
+      if (!match) return false;
 
       const existingGame = gameResults.get(gameNumber);
-      if (!existingGame) return;
+      if (!existingGame) return false;
 
       try {
         const isHomeTeam = userTeamId === match.home_team_id;
@@ -266,9 +266,12 @@ export function useMatchScoringMutations({
             });
           }
         }, 500);
+
+        return true;
       } catch (err: any) {
         logger.error('Error confirming game', { error: err instanceof Error ? err.message : String(err) });
         toast.error(`Failed to confirm game: ${err.message}`);
+        return false;
       }
     },
     [match, userTeamId, gameResults, queryClient]
@@ -281,11 +284,11 @@ export function useMatchScoringMutations({
    * @param isVacateRequest - True if denying a vacate request
    */
   const denyOpponentScore = useCallback(
-    async (gameNumber: number, isVacateRequest?: boolean) => {
-      if (!match) return;
+    async (gameNumber: number, isVacateRequest?: boolean): Promise<boolean> => {
+      if (!match) return false;
 
       const existingGame = gameResults.get(gameNumber);
-      if (!existingGame) return;
+      if (!existingGame) return false;
 
       try {
         if (isVacateRequest) {
@@ -330,9 +333,11 @@ export function useMatchScoringMutations({
         }
 
         // Game results will be automatically refreshed by real-time subscription
+        return true;
       } catch (err: any) {
         logger.error('Error denying game', { error: err instanceof Error ? err.message : String(err) });
         toast.error(`Failed to deny game: ${err.message}`);
+        return false;
       }
     },
     [match, gameResults]

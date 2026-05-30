@@ -17,6 +17,10 @@ import { useMatchWithLeagueSettings, useMatchLineups, useMatchGames } from '@/ap
 import { useUserTeamInMatch, useTeamDetails } from '@/api/hooks/useTeams';
 import { useMembersByIds } from '@/api/hooks/useCurrentMember';
 import { useMatchRealtime } from '@/realtime/useMatchRealtime';
+import {
+  useConnectionHealth,
+  computeDegradedPollInterval,
+} from '@/realtime/useConnectionHealth';
 import { logger } from '@/utils/logger';
 import type {
   Player,
@@ -31,7 +35,6 @@ interface UseMatchScoringOptions {
   memberId: string | undefined | null;
   matchType: MatchType;
   autoConfirm?: boolean;
-  confirmOpponentScore?: (gameNumber: number, isVacateRequest?: boolean) => Promise<void>;
 }
 
 // ============================================================================
@@ -43,7 +46,6 @@ export function useMatchScoring({
   memberId,
   matchType,
   autoConfirm = false,
-  confirmOpponentScore
 }: UseMatchScoringOptions) {
   const queryClient = useQueryClient();
 
@@ -453,7 +455,10 @@ export function useMatchScoring({
     queryClient.invalidateQueries({ queryKey: queryKeys.matches.games(matchId || '') });
   }, [queryClient, matchId]);
 
-  useMatchRealtime(matchId, {
+  // `connectionStatus` is the coarse realtime status (live | reconnecting |
+  // error). Surfaced through this hook so the scoring screen can render a calm
+  // connection indicator and drive the polling fallback while degraded.
+  const { connectionStatus } = useMatchRealtime(matchId, {
     onMatchUpdate: handleMatchInvalidate,
     onLineupUpdate: handleLineupInvalidate,
     onGamesUpdate: handleGamesInvalidate,
@@ -464,9 +469,36 @@ export function useMatchScoring({
       myVacateRequests,
       addToConfirmationQueue,
       autoConfirm,
-      confirmOpponentScore,
     },
   });
+
+  // Classify realtime trouble into actionable health (realtime-down vs
+  // offline) via a single cheap reachability probe — see useConnectionHealth.
+  const { health: connectionHealth } = useConnectionHealth(connectionStatus);
+
+  // Degraded polling fallback: while realtime is down but the server is
+  // reachable AND the match is in progress, poll match + games on a modest
+  // cadence so scoring stays in sync without realtime. Stops the instant
+  // realtime returns (health → live) or the match leaves in_progress. This is
+  // the in-progress analog of useMatchPhase's "Defense 7" scheduled-phase poll.
+  useEffect(() => {
+    const interval = computeDegradedPollInterval(
+      connectionHealth,
+      matchData?.status
+    );
+    if (interval === false) return;
+
+    const id = setInterval(() => {
+      handleMatchInvalidate();
+      handleGamesInvalidate();
+    }, interval);
+    return () => clearInterval(id);
+  }, [
+    connectionHealth,
+    matchData?.status,
+    handleMatchInvalidate,
+    handleGamesInvalidate,
+  ]);
 
   // ============================================================================
   // PUBLIC API
@@ -506,6 +538,10 @@ export function useMatchScoring({
     addToConfirmationQueue,
     removeFromConfirmationQueue,
     myVacateRequests,
+
+    // Connection resilience
+    connectionStatus,
+    connectionHealth,
 
     // State
     loading,
