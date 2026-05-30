@@ -28,8 +28,9 @@ export default function Learn() {
           <strong>Heads up:</strong> these are how we use these words{' '}
           <em>in this app</em>. Pool terminology varies across regions and
           other systems, and many terms here carry additional meanings
-          elsewhere. Inside the app we try to hold to these definitions
-          strictly — less confusion when complex ideas build on them.
+          elsewhere. Sticking with these definitions matters to us —
+          more complex ideas build on top of them, so we work to stay
+          consistent.
         </p>
       </header>
       <GlossaryView />
