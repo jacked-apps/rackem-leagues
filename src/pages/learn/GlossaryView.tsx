@@ -50,8 +50,13 @@ export function GlossaryView() {
     function readHash() {
       const slug = window.location.hash.slice(1);
       setLandedSlug(slug || null);
-      // Scroll the page to top so the entry is the first thing visible.
       if (slug) {
+        // Clear any active search so the target entry actually shows.
+        // Without this, clicking a hash link inside a search-filtered
+        // result kept the page in search mode and the new hash had no
+        // matching entry to scroll to.
+        setQuery('');
+        // Scroll the page to top so the entry is the first thing visible.
         requestAnimationFrame(() => {
           window.scrollTo({ top: 0, behavior: 'auto' });
         });

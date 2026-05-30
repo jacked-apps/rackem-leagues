@@ -90,6 +90,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['matchup', 'match', 'team'],
+    reviewedByEd: '2026-05-30',
   },
 
   season: {
@@ -102,11 +103,10 @@ export const entries = {
       <div className="space-y-3">
         <p>
           A season is the current chapter of league play. Each season is its
-          own self-contained competitive period inside a longer-running{' '}
+          own self-contained competitive period inside a{' '}
           <a href="#league" className="text-info hover:underline">league</a>{' '}
           — when one season ends, the next starts under the same league
-          shape, one after another. Multiple seasons stack up over the life
-          of a league.
+          shape, one after another.
         </p>
         <p>What a season holds:</p>
         <ul className="list-disc space-y-1 pl-5">
@@ -180,6 +180,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['roster', 'captain'],
+    reviewedByEd: '2026-05-30',
   },
 
   'season-length': {
@@ -222,45 +223,49 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: [],
+    reviewedByEd: '2026-05-30',
   },
 
   playoffs: {
     slug: 'playoffs',
     canonicalName: 'Playoffs',
-    aliases: ['playoff', 'post-season', 'postseason'],
+    aliases: ['playoff', 'post-season', 'postseason', 'money round'],
     shortDef:
-      'An optional end-of-season elimination round that decides the season\'s champion.',
+      "Extra weeks of play past the regular season, used to decide awards. Comes in different flavors depending on what the LO wants.",
     longDef: (
       <div className="space-y-3">
         <p>
-          Playoffs are an optional extension to a{' '}
-          <a href="#season" className="text-info hover:underline">season</a>.
-          After regular play (the{' '}
-          <a href="#season-length" className="text-info hover:underline">season length</a>{' '}
-          weeks) ends, the top teams from the regular-season{' '}
+          Playoffs are any extra weeks of play a{' '}
+          <a href="#league" className="text-info hover:underline">league</a>{' '}
+          tacks on after the regular{' '}
+          <a href="#season" className="text-info hover:underline">season</a>{' '}
+          ends, used to decide some kind of award. They're optional —
+          many leagues just let the regular-season{' '}
           <a href="#standings" className="text-info hover:underline">standings</a>{' '}
-          qualify for a playoff bracket. The bracket plays out across one or
-          more matches and crowns the season's champion.
+          decide the champion and skip playoffs entirely.
         </p>
-        <p>What playoffs configuration covers:</p>
-        <ul className="list-disc space-y-1 pl-5">
+        <p><strong>Common flavors:</strong></p>
+        <ul className="list-disc pl-5 space-y-1">
           <li>
-            How many{' '}
-            <a href="#team" className="text-info hover:underline">teams</a>{' '}
-            qualify (e.g., top 4, top 8).
+            <strong>Money round.</strong> All teams play one extra
+            match paired by standings position — 1st vs last, 2nd vs
+            2nd-to-last, and so on. Each pairing has its own cash
+            prize, and whoever wins the match takes the money. Usually
+            one week.
           </li>
           <li>
-            The bracket format (single elimination, double, round robin, etc.).
+            <strong>Bracket.</strong> The top N teams (top 4, top 8,
+            etc.) play an elimination bracket for the main prize.
+            Usually two or more weeks.
           </li>
-          <li>The number of playoff weeks.</li>
+          <li>
+            <strong>Custom.</strong> Whatever else the LO designs.
+          </li>
         </ul>
         <p>
-          Playoffs are configured per-season, so a{' '}
-          <a href="#league" className="text-info hover:underline">league</a>{' '}
-          can choose to run them some seasons and skip others. Skipping
-          playoffs is legitimate — many leagues prefer the regular-season{' '}
-          <a href="#standings" className="text-info hover:underline">standings</a>{' '}
-          to decide the champion.
+          Playoffs are configured per-season, so the LO can run them
+          one way one season and a different way the next — or skip
+          them.
         </p>
         <p className="text-sm text-muted-foreground">
           Relevant topics:{' '}
@@ -268,12 +273,14 @@ export const entries = {
           <a href="#season-length" className="text-info hover:underline">season length</a>,{' '}
           <a href="#standings" className="text-info hover:underline">standings</a>,{' '}
           <a href="#team" className="text-info hover:underline">team</a>,{' '}
-          <a href="#league" className="text-info hover:underline">league</a>.
+          <a href="#league" className="text-info hover:underline">league</a>,{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>.
         </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['tiebreaker'],
+    reviewedByEd: '2026-05-30',
   },
 
   schedule: {
@@ -281,17 +288,25 @@ export const entries = {
     canonicalName: 'Schedule',
     aliases: ['season schedule'],
     shortDef:
-      'The list of matches and which teams play whom — auto-generated from the season\'s teams, length, and match format.',
+      "The full week-by-week calendar a league runs on. Includes match weeks, blackout dates (holidays, championship travel), playoffs, and weeks off between seasons.",
     longDef: (
       <div className="space-y-3">
         <p>
           Once a{' '}
           <a href="#season" className="text-info hover:underline">season</a>{' '}
-          begins, the app generates a schedule: every match, the
-          teams that meet, and the venue (when multiple venues are in play).
-          The schedule is the master list of who plays whom and when.
+          begins, the app generates the schedule — the week-by-week
+          calendar the league runs on. It covers every{' '}
+          <a href="#match" className="text-info hover:underline">match</a>{' '}
+          (which teams meet, at which venue) plus the weeks where no
+          matches happen.
         </p>
-        <p>What drives the schedule:</p>
+        <p><strong>Scheduled gaps include:</strong></p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><a href="#blackout-dates" className="text-info hover:underline">Blackout dates</a></li>
+          <li><a href="#playoffs" className="text-info hover:underline">Playoffs</a></li>
+          <li><a href="#blackout-dates" className="text-info hover:underline">Weeks off between seasons</a></li>
+        </ul>
+        <p><strong>What drives match-week generation:</strong></p>
         <ul className="list-disc space-y-1 pl-5">
           <li>
             The number of{' '}
@@ -334,6 +349,44 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['matchup'],
+  },
+
+  'blackout-dates': {
+    slug: 'blackout-dates',
+    canonicalName: 'Blackout Dates',
+    aliases: ['blackout', 'blackout date', 'weeks off', 'weeks off between seasons'],
+    shortDef:
+      "Weeks the LO marks off in the schedule when no matches will be played — for holidays, championship travel, weeks off between seasons, or anything else the league needs to skip.",
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          Blackout dates are weeks the{' '}
+          <a href="#league-operator" className="text-info hover:underline">LO</a>{' '}
+          deliberately removes from play. The{' '}
+          <a href="#schedule" className="text-info hover:underline">schedule</a>{' '}
+          still tracks them — they're known gaps, not accidents — but
+          no matches are generated for those weeks.
+        </p>
+        <p>Common reasons to blackout a week:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Holidays (Thanksgiving week, Christmas / New Year's, etc.).</li>
+          <li>National championship travel — when players are away competing.</li>
+          <li>Venue conflicts — the bar is hosting another event.</li>
+          <li>Weeks off between seasons — the gap before the next{' '}
+            <a href="#season" className="text-info hover:underline">season</a>{' '}
+            starts.
+          </li>
+        </ul>
+        <p>
+          The gap between one season and the next is essentially a
+          blackout — known weeks with no play — so "weeks off between
+          seasons" and "blackout dates" describe the same thing in
+          different contexts.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['schedule', 'season'],
   },
 
   team: {
@@ -705,6 +758,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['racker'],
+    reviewedByEd: '2026-05-30',
   },
 
   pairing: {
@@ -740,6 +794,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/modules/match-format.md' },
     related: ['race-length-adjustment'],
+    reviewedByEd: '2026-05-30',
   },
 
   // ---- Game types ------------------------------------------------------
@@ -1291,6 +1346,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['league-operator', 'league', 'golden-break'],
+    reviewedByEd: '2026-05-30',
   },
 
   'captains-chat': {
@@ -1379,6 +1435,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['game-type'],
+    reviewedByEd: '2026-05-30',
   },
 
   'break-and-run': {
@@ -1398,6 +1455,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['table-run', 'game', 'achievements'],
+    reviewedByEd: '2026-05-30',
   },
 
   'table-run': {
@@ -1429,6 +1487,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['break-and-run', 'game', 'achievements'],
+    reviewedByEd: '2026-05-30',
   },
 
   'golden-break': {
@@ -1501,6 +1560,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: [],
+    reviewedByEd: '2026-05-30',
   },
 
   'break-foul': {
@@ -1534,6 +1594,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['breaker', 'game'],
+    reviewedByEd: '2026-05-30',
   },
 
   'win-by-forfeit': {
@@ -1555,6 +1616,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['game'],
+    reviewedByEd: '2026-05-30',
   },
 
   'placeholder-player': {
@@ -1694,6 +1756,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: [],
+    reviewedByEd: '2026-05-30',
   },
 
   // TODO: Ed to revisit prize-calculator entry when the feature ships.
@@ -1785,6 +1848,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['matchup'],
+    reviewedByEd: '2026-05-30',
   },
 
   rack: {
@@ -1809,6 +1873,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: [],
+    reviewedByEd: '2026-05-30',
   },
 
   racker: {
