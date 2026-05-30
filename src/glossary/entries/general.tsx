@@ -712,26 +712,24 @@ export const entries = {
     canonicalName: 'Pairing',
     aliases: [],
     shortDef:
-      'A single player against a single opponent — the player-level unit in individual-race formats. Different from matchup, which is team-level.',
+      "Any single-player-vs-single-player encounter inside a match — the player-level unit. Different from matchup, which is team-level.",
     longDef: (
       <div className="space-y-3">
         <p>
-          Pairing is the player-level unit: a single player against a
-          single opposing player. It applies specifically to
-          individual-race formats — each player gets paired against one
-          opponent and they play a race together (race to 7, race to 5,
-          etc.). Whichever player gets there first wins the pairing.
+          Pairing is the player-level unit: any single-player-vs-single-
+          player encounter inside a{' '}
+          <a href="#match" className="text-info hover:underline">match</a>.
+          It applies across formats — a single rack in a round-robin is
+          a pairing; a race in an individual-race format is also a
+          pairing. The unit is "two players, one encounter," regardless
+          of the format's shape.
         </p>
         <p>
           <strong>Don't confuse pairing with matchup.</strong> A{' '}
           <a href="#matchup" className="text-info hover:underline">matchup</a>{' '}
           is team-level — which teams play whom in a given week. A
-          pairing is player-level — which player plays which other player,
-          inside a{' '}
-          <a href="#match" className="text-info hover:underline">match</a>.
-          In round-robin formats, players don't have "pairings" in this
-          sense — every player faces every opponent in a sequence of
-          single racks.
+          pairing is player-level — which player plays which other
+          player, inside a specific match.
         </p>
         <p className="text-sm text-muted-foreground">
           Relevant topics:{' '}
