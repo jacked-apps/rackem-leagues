@@ -997,12 +997,14 @@ export const entries = {
         <p><strong>App-provided support for the role:</strong></p>
         <ul className="list-disc pl-5 space-y-1">
           <li>
-            <strong>Team chat</strong> — every current member of the team
-            in one place for general communication.
+            <strong>Team chat</strong> — every current member of the team,
+            in one place for general communication. The league operator
+            is included as a read-only observer (a visible banner says so).
           </li>
           <li>
             <strong>Captains chat</strong> — every current captain in the
-            league in one place for scheduling and league-side coordination.
+            league plus the league operator, for scheduling and
+            league-side coordination.
           </li>
         </ul>
         <p className="text-sm text-muted-foreground">
