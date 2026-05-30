@@ -1816,15 +1816,15 @@ export const entries = {
     canonicalName: 'Lineup Lock',
     aliases: [],
     shortDef:
-      'The moment a team finalizes their lineup before a match — after which players can no longer be swapped.',
+      "The moment a team commits their lineup for a match — after which the lineup is set and the match can begin.",
     longDef: (
       <p>
-        Lineup lock is the point of no return for the{' '}
-        <a href="#lineup" className="text-info hover:underline">lineup</a>.
-        Before lock, players can be swapped in and out. After lock, the
-        lineup is committed and the match can begin. It's also typically
-        when any manual handicap thresholds get entered, for leagues
-        that don't use a calibrated chart.
+        Lineup lock is when a team commits their{' '}
+        <a href="#lineup" className="text-info hover:underline">lineup</a>{' '}
+        for the match. Before lock, players can be swapped in and out
+        freely. Once locked, the lineup is set and the match can
+        begin. It's also typically when any manual handicap thresholds
+        get entered, for leagues that don't use a calibrated chart.
       </p>
     ),
     l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
