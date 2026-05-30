@@ -1325,12 +1325,14 @@ export const entries = {
         <p><strong>Tracked achievements:</strong></p>
         <ul className="list-disc pl-5 space-y-1">
           <li><a href="#break-and-run" className="text-info hover:underline">Break and run</a></li>
+          <li><a href="#table-run" className="text-info hover:underline">Table run</a></li>
           <li><a href="#golden-break" className="text-info hover:underline">Golden break</a></li>
         </ul>
         <p className="text-sm text-muted-foreground">
           Relevant topics:{' '}
           <a href="#game" className="text-info hover:underline">game</a>,{' '}
           <a href="#break-and-run" className="text-info hover:underline">break and run</a>,{' '}
+          <a href="#table-run" className="text-info hover:underline">table run</a>,{' '}
           <a href="#golden-break" className="text-info hover:underline">golden break</a>.
         </p>
       </div>
@@ -1342,19 +1344,51 @@ export const entries = {
   'break-and-run': {
     slug: 'break-and-run',
     canonicalName: 'Break and Run',
-    aliases: ['table run', 'runout', 'run-out', 'run the table'],
+    aliases: [],
     shortDef:
-      'Running the table from the break — sinking every ball without missing or losing your turn.',
+      "The breaker breaks, makes a ball, and then runs out the rest of the rack to win the game — the opponent never gets to shoot.",
     longDef: (
       <p>
-        A break and run is when a player breaks, sinks at least one ball,
-        and proceeds to clear the rest of their balls and the winning ball
-        without ever losing their turn. The same feat goes by several
-        names: table run, runout, run-out, or just "running the table."
+        A break and run is when the{' '}
+        <a href="#breaker" className="text-info hover:underline">breaker</a>{' '}
+        sinks at least one ball on the break (so they continue shooting)
+        and then pockets every remaining ball to win the game. Their
+        opponent never gets to the table.
       </p>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['game', 'achievements'],
+    related: ['table-run', 'game', 'achievements'],
+  },
+
+  'table-run': {
+    slug: 'table-run',
+    canonicalName: 'Table Run',
+    aliases: ['runout', 'run-out'],
+    shortDef:
+      "The breaker breaks and immediately turns over the table; the incoming player runs out the rest of the rack to win without the breaker shooting again.",
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          A table run is when the{' '}
+          <a href="#breaker" className="text-info hover:underline">breaker</a>{' '}
+          breaks but doesn't get to continue. The break either goes dry
+          (no ball pocketed) or scratches (cue-ball foul, even if balls
+          dropped). Either way, the breaker's turn ends at the break.
+          The incoming player — the{' '}
+          <a href="#racker" className="text-info hover:underline">racker</a>{' '}
+          — takes over and pockets every remaining ball to win the
+          game without the breaker getting back to the table.
+        </p>
+        <p>
+          <strong>Important:</strong> the breaker must ONLY break. If
+          they take even one extra shot and miss, it doesn't count. The
+          breaker doing nothing beyond the break is what defines the
+          achievement.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['break-and-run', 'game', 'achievements'],
   },
 
   'golden-break': {
