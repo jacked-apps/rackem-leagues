@@ -850,24 +850,34 @@ export const entries = {
     longDef: (
       <div className="space-y-3">
         <p>
-          The maximum number of players a{' '}
+          Roster size is the cap on how many players a{' '}
           <a href="#team" className="text-info hover:underline">team</a>{' '}
-          is allowed to have on its{' '}
+          can carry on its{' '}
           <a href="#roster" className="text-info hover:underline">roster</a>.
-        </p>
-        <p>
-          A higher roster size means more{' '}
-          <a href="#substitute" className="text-info hover:underline">substitute</a>{' '}
-          coverage when regular players can't make a{' '}
+          Think of it as how deep the bench is — a larger list of players a{' '}
+          <a href="#captain" className="text-info hover:underline">captain</a>{' '}
+          can choose from when setting the{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>{' '}
+          for each{' '}
           <a href="#match" className="text-info hover:underline">match</a>.
-          A lower size keeps the team tighter and gives everyone more
-          playing time.
         </p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>
+            <strong>Larger roster:</strong> a bigger pool to draw from. Someone
+            missing a match becomes much less of a problem — somebody else on
+            the roster steps in.
+          </li>
+          <li>
+            <strong>Smaller roster:</strong> each player gets more playing
+            time, but everyone has to show up more reliably.
+          </li>
+        </ul>
         <p className="text-sm text-muted-foreground">
           Relevant topics:{' '}
           <a href="#team" className="text-info hover:underline">team</a>,{' '}
           <a href="#roster" className="text-info hover:underline">roster</a>,{' '}
-          <a href="#substitute" className="text-info hover:underline">substitute</a>,{' '}
+          <a href="#captain" className="text-info hover:underline">captain</a>,{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>,{' '}
           <a href="#match" className="text-info hover:underline">match</a>.
         </p>
       </div>
