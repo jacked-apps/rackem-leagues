@@ -797,17 +797,35 @@ export const entries = {
     canonicalName: 'Lineup Size',
     aliases: [],
     shortDef:
-      'How many players per team actually play in each match — set at the league level.',
+      'Solely how many players from a team actually play in any given match.',
     longDef: (
-      <p>
-        Lineup size determines the shape of every match in the league. A
-        3-person lineup pairs each of the 3 players against each opponent,
-        which produces 9 games per single round robin or 18 per double. A
-        5-person lineup produces 25 or 50.
-      </p>
+      <div className="space-y-3">
+        <p>
+          How many players from a{' '}
+          <a href="#team" className="text-info hover:underline">team</a>{' '}
+          actually play in any given{' '}
+          <a href="#match" className="text-info hover:underline">match</a>.
+        </p>
+        <p>
+          The app uses lineup size as one of the inputs to figure out how
+          many{' '}
+          <a href="#game" className="text-info hover:underline">games</a>{' '}
+          each match contains, and it's one of the values that defines
+          the league's{' '}
+          <a href="#match-format" className="text-info hover:underline">match format</a>.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#team" className="text-info hover:underline">team</a>,{' '}
+          <a href="#match" className="text-info hover:underline">match</a>,{' '}
+          <a href="#game" className="text-info hover:underline">game</a>,{' '}
+          <a href="#match-format" className="text-info hover:underline">match format</a>.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
     related: ['lineup', 'roster-size'],
+    reviewedByEd: '2026-05-30',
   },
 
   roster: {
@@ -833,17 +851,35 @@ export const entries = {
     canonicalName: 'Roster Size',
     aliases: [],
     shortDef:
-      'The maximum number of players a team can carry on its roster — must be at least the lineup size.',
+      'Solely the maximum number of players a team is allowed to have on its roster.',
     longDef: (
-      <p>
-        The cap on how many players a team can register. A higher roster
-        size means more substitute coverage when starters can't play. A
-        lower size keeps the team tighter and gives everyone more weekly
-        playing time.
-      </p>
+      <div className="space-y-3">
+        <p>
+          The maximum number of players a{' '}
+          <a href="#team" className="text-info hover:underline">team</a>{' '}
+          is allowed to have on its{' '}
+          <a href="#roster" className="text-info hover:underline">roster</a>.
+        </p>
+        <p>
+          A higher roster size means more{' '}
+          <a href="#substitute" className="text-info hover:underline">substitute</a>{' '}
+          coverage when regular players can't make a{' '}
+          <a href="#match" className="text-info hover:underline">match</a>.
+          A lower size keeps the team tighter and gives everyone more
+          playing time.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#team" className="text-info hover:underline">team</a>,{' '}
+          <a href="#roster" className="text-info hover:underline">roster</a>,{' '}
+          <a href="#substitute" className="text-info hover:underline">substitute</a>,{' '}
+          <a href="#match" className="text-info hover:underline">match</a>.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
-    related: ['roster', 'lineup-size'],
+    related: ['lineup-size'],
+    reviewedByEd: '2026-05-30',
   },
 
   substitute: {
