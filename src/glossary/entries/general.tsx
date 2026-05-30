@@ -1614,15 +1614,48 @@ export const entries = {
     canonicalName: 'Player Reports',
     aliases: ['report', 'reports', 'reporting'],
     shortDef:
-      'A way for any player to flag a problem to the league operator for review.',
+      "A way for any player to flag a problem about another player to the league operator for review. Wired into messages, lineup, and player profiles. In progress — full workflow is still being built out.",
     longDef: (
-      <p>
-        Any player can submit a report about another player, an incident,
-        or anything else the{' '}
-        <a href="#league-operator" className="text-info hover:underline">league operator</a>{' '}
-        should know about. The LO is the one who decides what to do with
-        each report.
-      </p>
+      <div className="space-y-3">
+        <p>
+          Player reports let any player flag a problem — about another
+          player, a message, or an incident — for the{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>{' '}
+          to review. The report-creation surfaces are wired in across
+          the app:
+        </p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Inside a chat — report a specific message.</li>
+          <li>Player profile links — report a player directly.</li>
+          <li>Lineup actions — report from match-time context.</li>
+        </ul>
+        <p>
+          Categories cover harassment, cheating, inappropriate message,
+          spam, fake account, poor sportsmanship, impersonation, and
+          other. When a report is filed, the app captures the evidence
+          (e.g., the message text) and context (which conversation,
+          which match) automatically — the reporter doesn't have to
+          assemble proof manually.
+        </p>
+        <p>
+          The LO sees the reports for their{' '}
+          <a href="#organization" className="text-info hover:underline">organization</a>,
+          can move them through statuses (pending → investigating →
+          resolved or dismissed), add review notes, and escalate to
+          the rackem-leagues team if it's beyond what they can handle.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          <strong>Status:</strong> the report-creation and LO review
+          surfaces are in place. The fuller end-to-end workflow
+          (notifications, follow-ups, appeals) isn't completely
+          finished yet.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>,{' '}
+          <a href="#organization" className="text-info hover:underline">organization</a>.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: [],
