@@ -741,6 +741,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/modules/match-format.md' },
     related: ['race-length-adjustment'],
+    reviewedByEd: '2026-05-30',
   },
 
   // ---- Game types ------------------------------------------------------
