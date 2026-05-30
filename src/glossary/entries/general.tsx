@@ -1471,19 +1471,31 @@ export const entries = {
   'break-foul': {
     slug: 'break-foul',
     canonicalName: 'Break Foul',
-    aliases: ['breakfoul', 'foul on the break'],
+    aliases: ['breakfoul', 'illegal break'],
     shortDef:
-      "A foul committed by the breaker on the break shot — e.g., scratching the cue ball or failing to drive enough balls to a rail.",
+      "A break-shot violation that costs the breaker their break — the opponent gets to take the break instead (or can make the offender break again).",
     longDef: (
-      <p>
-        A break foul is when the{' '}
-        <a href="#breaker" className="text-info hover:underline">breaker</a>{' '}
-        commits a foul on the break shot itself. Common cases: scratching
-        the cue ball, the cue ball leaving the table, or not driving the
-        required number of balls to a rail. The app flags it on the
-        game; the actual consequences (ball-in-hand, re-rack, etc.)
-        follow the league's rules.
-      </p>
+      <div className="space-y-3">
+        <p>
+          A break foul is any break-shot violation that costs the{' '}
+          <a href="#breaker" className="text-info hover:underline">breaker</a>{' '}
+          their break. The opponent gets a choice: take the break
+          themselves (re-rack and break), or make the offending player
+          re-rack and break again.
+        </p>
+        <p>
+          Per BCA rules, the most common cause is failing to legally
+          pocket a ball AND failing to drive at least four object balls
+          to one or more cushions. Specifics vary by game-type — the
+          rulebook covers each.
+        </p>
+        <p>
+          Note: a regular scratch on a legal break is "just a foul" —
+          the opponent gets ball-in-hand and play continues. That's
+          different from a break foul, which is about losing the right
+          to break in the first place.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['breaker', 'game'],
