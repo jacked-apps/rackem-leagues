@@ -9,95 +9,96 @@
 import type { GlossaryEntry } from '../types';
 
 export const entries = {
+  'pairing-calculator': {
+    slug: 'pairing-calculator',
+    canonicalName: 'Pairing Calculator',
+    aliases: ['pairings', 'pairing generator'],
+    shortDef:
+      'Works out the full set of pairings for a match — who plays whom, and how many games — from the lineup size and the match format.',
+    longDef: (
+      <div className="space-y-2">
+        <p>
+          The pairing calculator takes two settings — the{' '}
+          <a href="#lineup-size" className="text-info hover:underline">lineup size</a>{' '}
+          (how many players each team fields) and the{' '}
+          <a href="#match-format" className="text-info hover:underline">match format</a>{' '}
+          (single round robin, double round robin, or individual races) — and
+          works out the full set of{' '}
+          <a href="#pairing" className="text-info hover:underline">pairings</a>{' '}
+          for a match: who plays whom, and how many games there are.
+        </p>
+        <p>
+          It only decides the matchups and the game count. What each of those
+          games looks like — a single rack or a race — is the{' '}
+          <a href="#pairing-format" className="text-info hover:underline">pairing format</a>,
+          a separate setting.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/modules/pairings-generator.md' },
+    related: ['lineup-size', 'match-format', 'pairing', 'pairing-format'],
+    reviewedByEd: '2026-05-30',
+  },
+
   'match-format': {
     slug: 'match-format',
     canonicalName: 'Match Format',
     aliases: [],
     shortDef:
-      'How the individual games inside a match are generated — round robin variants, individual races, and so on.',
+      'Which way a match’s pairings are arranged — single round robin, double round robin, or individual races.',
     longDef: (
       <div className="space-y-2">
         <p>
-          Match format is the answer to "how many games does this match
-          contain, and who plays whom?" Common shapes:
+          Match format is the arrangement pattern a league picks for its
+          pairings. The{' '}
+          <a href="#pairing-calculator" className="text-info hover:underline">
+            pairing calculator
+          </a>{' '}
+          combines it with the{' '}
+          <a href="#lineup-size" className="text-info hover:underline">lineup size</a>{' '}
+          to work out the actual games. The choices:
         </p>
         <ul className="list-disc pl-5">
           <li>
-            <strong>Single Round Robin</strong> — every player on one team
-            plays every player on the other team once.
+            <strong>
+              <a href="#round-robin" className="text-info hover:underline">
+                Round Robin
+              </a>
+            </strong>{' '}
+            — every player faces every opposing player, once (single) or twice
+            (double).
           </li>
           <li>
-            <strong>Double Round Robin</strong> — same pairings twice; once
-            breaking, once racking.
-          </li>
-          <li>
-            <strong>Individual Races</strong> — each opposing-player pair
-            plays a race together rather than single racks.
+            <strong>
+              <a href="#individual-races" className="text-info hover:underline">
+                Individual Races
+              </a>
+            </strong>{' '}
+            — each pairing plays a race rather than single racks.
           </li>
         </ul>
       </div>
     ),
-    l1_anchor: { path: 'docs/league-system/modules/match-format.md' },
-    related: [
-      'round-robin',
-      'single-round-robin',
-      'double-round-robin',
-      'individual-races',
-    ],
+    l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
+    related: ['pairing-calculator', 'lineup-size', 'round-robin', 'individual-races'],
   },
 
   'round-robin': {
     slug: 'round-robin',
     canonicalName: 'Round Robin',
-    aliases: ['rr'],
+    aliases: ['rr', 'single round robin', 'double round robin'],
     shortDef:
-      'A format where every player on one team faces every player on the other team.',
+      'An arrangement where every player faces every opposing player — once (single) or twice (double).',
     longDef: (
       <p>
-        Round robin is a fairness pattern: nobody gets to avoid anyone. Each
-        player on the home team takes a turn against each player on the away
-        team. The variants are about repetition — single round robin runs
-        each opposing pair once; double runs each pair twice, flipping who
-        breaks.
+        Round robin is a fairness pattern: nobody gets to avoid anyone. Every
+        player takes a turn against every player on the other team. It comes in
+        two depths — <strong>single</strong> runs each opposing pair once;{' '}
+        <strong>double</strong> runs each pair twice, flipping who breaks.
       </p>
     ),
-    l1_anchor: { path: 'docs/league-system/modules/match-format.md' },
-    related: ['single-round-robin', 'double-round-robin', 'match-format'],
-  },
-
-  'single-round-robin': {
-    slug: 'single-round-robin',
-    canonicalName: 'Single Round Robin',
-    aliases: ['single rr', 'srr'],
-    shortDef:
-      'Each player faces each opposing player exactly once.',
-    longDef: (
-      <p>
-        In a 5v5 single round robin, each home player meets each away
-        player one time — 25 games total. Faster than a double round robin,
-        but only one of the two players in any pairing gets to break.
-      </p>
-    ),
-    l1_anchor: { path: 'docs/league-system/modules/match-format.md' },
-    related: ['round-robin', 'double-round-robin'],
-  },
-
-  'double-round-robin': {
-    slug: 'double-round-robin',
-    canonicalName: 'Double Round Robin',
-    aliases: ['double rr', 'drr'],
-    shortDef:
-      'Each player faces each opposing player twice — once breaking, once racking.',
-    longDef: (
-      <p>
-        In a 3v3 double round robin, each home player meets each away player
-        twice — 18 games total. The two meetings split the break: each
-        player gets to break against the same opponent once and rack once.
-        Eliminates any "luck of the break" advantage at the pairing level.
-      </p>
-    ),
-    l1_anchor: { path: 'docs/league-system/modules/match-format.md' },
-    related: ['round-robin', 'single-round-robin', 'racker', 'breaker'],
+    l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
+    related: [],
   },
 
   'individual-races': {
