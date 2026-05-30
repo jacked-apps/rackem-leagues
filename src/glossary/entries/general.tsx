@@ -1328,12 +1328,19 @@ export const entries = {
           <li><a href="#table-run" className="text-info hover:underline">Table run</a></li>
           <li><a href="#golden-break" className="text-info hover:underline">Golden break</a></li>
         </ul>
+        <p><strong>Also tracked per-game (not achievements):</strong></p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><a href="#break-foul" className="text-info hover:underline">Break foul</a></li>
+          <li><a href="#win-by-forfeit" className="text-info hover:underline">Win by forfeit</a></li>
+        </ul>
         <p className="text-sm text-muted-foreground">
           Relevant topics:{' '}
           <a href="#game" className="text-info hover:underline">game</a>,{' '}
           <a href="#break-and-run" className="text-info hover:underline">break and run</a>,{' '}
           <a href="#table-run" className="text-info hover:underline">table run</a>,{' '}
-          <a href="#golden-break" className="text-info hover:underline">golden break</a>.
+          <a href="#golden-break" className="text-info hover:underline">golden break</a>,{' '}
+          <a href="#break-foul" className="text-info hover:underline">break foul</a>,{' '}
+          <a href="#win-by-forfeit" className="text-info hover:underline">win by forfeit</a>.
         </p>
       </div>
     ),
@@ -1459,6 +1466,48 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: [],
+  },
+
+  'break-foul': {
+    slug: 'break-foul',
+    canonicalName: 'Break Foul',
+    aliases: ['breakfoul', 'foul on the break'],
+    shortDef:
+      "A foul committed by the breaker on the break shot — e.g., scratching the cue ball or failing to drive enough balls to a rail.",
+    longDef: (
+      <p>
+        A break foul is when the{' '}
+        <a href="#breaker" className="text-info hover:underline">breaker</a>{' '}
+        commits a foul on the break shot itself. Common cases: scratching
+        the cue ball, the cue ball leaving the table, or not driving the
+        required number of balls to a rail. The app flags it on the
+        game; the actual consequences (ball-in-hand, re-rack, etc.)
+        follow the league's rules.
+      </p>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['breaker', 'game'],
+  },
+
+  'win-by-forfeit': {
+    slug: 'win-by-forfeit',
+    canonicalName: 'Win by Forfeit',
+    aliases: ['forfeit win', 'forfeited game'],
+    shortDef:
+      "A game credited to the winning side because the opposing player couldn't or didn't play it — no game actually contested.",
+    longDef: (
+      <p>
+        A win by forfeit is recorded when an opposing player doesn't
+        show up, can't continue, or otherwise can't play their game.
+        The winning side gets credit, but no actual{' '}
+        <a href="#game" className="text-info hover:underline">game</a>{' '}
+        was contested. The flag is tracked separately so stats and
+        achievements can be filtered accordingly — a feat during a
+        forfeit win isn't the same as one in a contested game.
+      </p>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['game'],
   },
 
   'placeholder-player': {
