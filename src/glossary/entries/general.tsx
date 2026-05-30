@@ -658,7 +658,7 @@ export const entries = {
     canonicalName: 'Game',
     aliases: [],
     shortDef:
-      'A single rack between two players; you win a game by winning the rack.',
+      'A single rack between two players — the smallest unit of play. Also used as shorthand for the game-type a league plays (8-Ball, 9-Ball, 10-Ball).',
     longDef: (
       <div className="space-y-3">
         <p>
@@ -669,10 +669,37 @@ export const entries = {
           <a href="#match" className="text-info hover:underline">match</a>{' '}
           contains many games — how many depends on the league's format.
         </p>
+        <p>Game results feed several places:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>
+            <a href="#win-condition" className="text-info hover:underline">Win condition</a>{' '}
+            — games are one of the metrics that can decide a match's
+            outcome (points are the other).
+          </li>
+          <li>
+            <a href="#points-calculator" className="text-info hover:underline">Points calculator</a>{' '}
+            — games can drive how points accumulate.
+          </li>
+          <li>
+            <a href="#achievements" className="text-info hover:underline">Achievements</a>{' '}
+            — per-game feats the app keeps track of.
+          </li>
+        </ul>
+        <p className="text-sm text-muted-foreground">
+          <strong>A note on the word.</strong> "Game" is also used as
+          shorthand for the{' '}
+          <a href="#game-type" className="text-info hover:underline">game-type</a>{' '}
+          the league plays (8-Ball, 9-Ball, 10-Ball). Context tells you
+          which sense.
+        </p>
         <p className="text-sm text-muted-foreground">
           Relevant topics:{' '}
           <a href="#match" className="text-info hover:underline">match</a>,{' '}
-          <a href="#breaker" className="text-info hover:underline">breaker</a>.
+          <a href="#breaker" className="text-info hover:underline">breaker</a>,{' '}
+          <a href="#game-type" className="text-info hover:underline">game type</a>,{' '}
+          <a href="#win-condition" className="text-info hover:underline">win condition</a>,{' '}
+          <a href="#points-calculator" className="text-info hover:underline">points calculator</a>,{' '}
+          <a href="#achievements" className="text-info hover:underline">achievements</a>.
         </p>
       </div>
     ),
@@ -1273,6 +1300,27 @@ export const entries = {
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['team-chat'],
     reviewedByEd: '2026-05-30',
+  },
+
+  achievements: {
+    slug: 'achievements',
+    canonicalName: 'Achievements',
+    aliases: ['feats', 'feats of excellence'],
+    shortDef:
+      'Per-game feats the app tracks over time — break-and-runs, 8-on-the-break, and similar notable events.',
+    longDef: (
+      <p>
+        Achievements are noteworthy events the app records as they happen
+        during{' '}
+        <a href="#game" className="text-info hover:underline">games</a>{' '}
+        — things like break-and-runs, 8-on-the-break, and other feats
+        specific to each{' '}
+        <a href="#game-type" className="text-info hover:underline">game-type</a>.
+        They show up on player profiles and team stats pages over time.
+      </p>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: [],
   },
 
   'placeholder-player': {
