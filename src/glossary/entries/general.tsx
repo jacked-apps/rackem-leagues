@@ -914,6 +914,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
     related: ['captain', 'lineup-lock', 'substitute'],
+    reviewedByEd: '2026-05-30',
   },
 
   'lineup-size': {
