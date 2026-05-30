@@ -687,25 +687,36 @@ export const entries = {
     canonicalName: 'Pairing',
     aliases: [],
     shortDef:
-      'An individual player-vs-player race — used when teams play individual races instead of round-robin.',
+      'A single player against a single opponent — the player-level unit in individual-race formats. Different from matchup, which is team-level.',
     longDef: (
-      <div className="space-y-2">
+      <div className="space-y-3">
         <p>
-          Pairing is reserved for the individual-race style of match. In
-          that format, each player gets paired against one opponent and
-          they play a race together (race to 7, race to 5, etc.). Whoever
-          gets there first wins the pairing.
+          Pairing is the player-level unit: a single player against a
+          single opposing player. It applies specifically to
+          individual-race formats — each player gets paired against one
+          opponent and they play a race together (race to 7, race to 5,
+          etc.). Whichever player gets there first wins the pairing.
+        </p>
+        <p>
+          <strong>Don't confuse pairing with matchup.</strong> A{' '}
+          <a href="#matchup" className="text-info hover:underline">matchup</a>{' '}
+          is team-level — which teams play whom in a given week. A
+          pairing is player-level — which player plays which other player,
+          inside a{' '}
+          <a href="#match" className="text-info hover:underline">match</a>.
+          In round-robin formats, players don't have "pairings" in this
+          sense — every player faces every opponent in a sequence of
+          single racks.
         </p>
         <p className="text-sm text-muted-foreground">
-          In round-robin formats, players don't have "pairings" in this
-          sense — every player faces every opponent in a sequence of single
-          racks. Matchup is the broader scheduling word; pairing is the
-          specific race-format unit.
+          Relevant topics:{' '}
+          <a href="#matchup" className="text-info hover:underline">matchup</a>,{' '}
+          <a href="#match" className="text-info hover:underline">match</a>.
         </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/match-format.md' },
-    related: ['matchup', 'race-length-adjustment'],
+    related: ['race-length-adjustment'],
   },
 
   // ---- Game types ------------------------------------------------------
