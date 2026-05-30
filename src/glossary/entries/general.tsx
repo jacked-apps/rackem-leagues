@@ -965,26 +965,58 @@ export const entries = {
     canonicalName: 'Captain',
     aliases: ['team captain'],
     shortDef:
-      'The team leader. Manages the team in almost every way — name, players, lineups, handicap adjustments at lock.',
+      "The team's representative to the league operator — handles team basics and speaks for the team on league matters.",
     longDef: (
-      <div className="space-y-2">
+      <div className="space-y-3">
         <p>
-          The captain runs the team within this app. Specifically they can:
+          A captain is the representative for a{' '}
+          <a href="#team" className="text-info hover:underline">team</a>{' '}
+          to the league operator. The app gives captains real control so
+          they can run their team independently — and a couple of
+          communication channels to make their league-side responsibilities
+          easier.
         </p>
-        <ul className="list-disc pl-5">
-          <li>Change the team's name.</li>
-          <li>Add and remove roster players.</li>
-          <li>Set the lineup for each match.</li>
-          <li>Adjust handicap thresholds at lineup lock (for combos that need manual entry).</li>
+        <p><strong>What a captain can do:</strong></p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>
+            Change the team's name (the LO can restrict this if needed).
+          </li>
+          <li>
+            Add and remove{' '}
+            <a href="#roster" className="text-info hover:underline">roster</a>{' '}
+            players (the LO can restrict this too).
+          </li>
+        </ul>
+        <p className="text-sm">
+          Note: setting the{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>{' '}
+          for a{' '}
+          <a href="#match" className="text-info hover:underline">match</a>{' '}
+          isn't captain-only — anyone on the team can do it.
+        </p>
+        <p><strong>App-provided support for the role:</strong></p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>
+            <strong>Team chat</strong> — every current member of the team
+            in one place for general communication.
+          </li>
+          <li>
+            <strong>Captains chat</strong> — every current captain in the
+            league in one place for scheduling and league-side coordination.
+          </li>
         </ul>
         <p className="text-sm text-muted-foreground">
-          Other team management actions live with the captain too — they're
-          the operator's primary point of contact for anything team-level.
+          Relevant topics:{' '}
+          <a href="#team" className="text-info hover:underline">team</a>,{' '}
+          <a href="#roster" className="text-info hover:underline">roster</a>,{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>,{' '}
+          <a href="#match" className="text-info hover:underline">match</a>.
         </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['lineup', 'lineup-lock', 'manual-entry'],
+    related: ['scorekeeper'],
+    reviewedByEd: '2026-05-30',
   },
 
   scorekeeper: {
