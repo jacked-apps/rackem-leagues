@@ -2192,5 +2192,46 @@ as soon as the RLS-enablement project (LIST_FOR_ED #29) gets picked
 up. This work and the RLS enablement are independent — either can
 ship first.
 
+## 36. Anti-Sandbag Integrity Detector (Many-Eyes Layer-2 — Deferred)
+
+The "many-eyes" confirmation tracking (built across PRs #147→#155→#156,
+plus participation modes in #157) records an append-only audit trail of
+*who vouched for what* on every game. That was always framed as **deterrent
++ audit trail, not cheat-prevention** — the actual analyzer that *reads*
+the trail to flag suspicious patterns (sandbagging, collusion, one person
+rubber-stamping everything) was deliberately deferred.
+
+**The data is already in place to feed it:**
+- `game_confirmations` — every vouch, with the full result snapshot,
+  `is_initiator` (filled details vs just tapped Confirm), and
+  `auto_confirmed` (Auto-Confirm produced it = weaker evidence than a
+  deliberate manual vouch).
+- Dissents + disputes are already derived for live display; the detector
+  would mine the same rows historically/cross-match.
+
+**Still to design/build:** what patterns count as suspicious, how to
+surface them (LO dashboard? flags on a player?), false-positive handling,
+and whether it runs live or as a batch job. Needs its own brainstorm.
+
+**Source of the deferral:**
+`docs/brainstorms/2026-05-25-many-eyes-confirmation-tracking-requirements.md`
+(value = deterrent + audit trail; detector explicitly out of scope).
+
+## 37. Full Offline Scoring (Live-Scoring Resilience — Deferred)
+
+Live-scoring resilience (PR #143) hardened the *online-but-flaky* case —
+realtime reconnect, catch-up refetch, a degraded-mode polling fallback, and
+a calm connection indicator. What it does **not** do is let a phone keep
+scoring with **no connection at all** and sync back later. That full-offline
+capability was deferred as **its own future brainstorm** — it's a much
+bigger problem (local write queue, conflict resolution on reconnect,
+offline-first data layer) than the resilience work tackled.
+
+**Source of the deferral:**
+`docs/brainstorms/2026-05-24-live-scoring-resilience-requirements.md` /
+`docs/plans/2026-05-24-001-feat-live-scoring-resilience-plan.md` (scope
+boundary: full-offline is its own brainstorm). Needs its own brainstorm
+before any build.
+
 
 
