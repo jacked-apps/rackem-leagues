@@ -543,6 +543,8 @@ how to add a new test, demo recording, cleanup model).
 - `useCaptainTeamsMissingChat.ts` - **Messaging Phase 1 / Unit 3 helper 6/6** — TanStack Query hook. Returns the list of teams the current user captains in an active season that lack an auto-managed team chat. Used by `CreateTeamChatPrompt`.
 - `messaging-phase1-season-activation.rls.test.ts` - **Messaging Phase 1 / Unit 4** — DB-backed coverage of the season-activation trigger: team chats per team, captain chat, season + org announcements, idempotent re-fire, no-fire on non-status UPDATEs, no-fire when status flips away from active.
 - `messaging-phase1-roster-triggers.rls.test.ts` - **Messaging Phase 1 / Unit 5** — DB-backed coverage of the four roster/captain lifecycle triggers: INSERT (join + msg only on real inserts), DELETE (deferred constraint trigger; sets `left_at` and posts "left" only on real removals, silent on wholesale-replace), captain change (cannot_leave flip in team + captain chats; multi-team captain edge case), member soft-delete. **Note:** the three messaging DB-backed test files race each other under default vitest file parallelism — run with `--no-file-parallelism` when executing the full directory. See `LIST_FOR_ED.md` #27.
+- `gameConfirmations.schema.db.test.ts` - **Many-eyes Layer-2 / Unit 1** — schema verification for the append-only `game_confirmations` table: exists + on the `supabase_realtime` publication, full-vouch insert defaults (`action='confirm'`, `created_at`), `action='vacate'` marker accepted, side/action CHECK rejections, FK rejections (game_id, confirmer_id), snapshot `winner_team_id` is FK-free (history must not mutate on team delete), and `match_games` officiality columns left intact. 9 tests.
+- `appendConfirmation.db.test.ts` - **Many-eyes Layer-2 / Unit 2** — behavior of `appendConfirmation` against the local DB: confirm append carries the full snapshot, append NEVER modifies the `match_games` row (officiality preserved), exact re-tap no-op + change-of-mind new row, extra witnesses accrue without touching `match_games`, vacate marker recorded, finalized match no-op, missing confirmer no-op, and a failure is swallowed (best-effort, never throws). 9 tests.
 
 #### Test Utilities (`/test/`)
 - `setup.ts` - Test environment setup
@@ -1012,7 +1014,8 @@ Reusable section components composed by `PreferencesCard.tsx`. Same components d
 - `useTeamManagement.ts` - Team management
 - *(`useMatchLineup.ts` was extracted into the dedicated `/hooks/lineup/` subtree — see Lineup Hooks below.)*
 - `useMatchScoring.ts` - Match scoring state (data fetching)
-- `useMatchScoringMutations.ts` - Match scoring mutations (database operations)
+- `useMatchScoringMutations.ts` - Match scoring mutations (database operations). **Many-eyes Layer-2:** each vouch path (`handleConfirmScore`, `confirmOpponentScore`) now also appends a `confirm` row, and the wipe paths (`confirmOpponentScore` accept-vacate, `denyOpponentScore` deny-score) append a `vacate` marker, via `api/mutations/appendConfirmation.ts` — officiality writes stay first/authoritative.
+- `api/mutations/appendConfirmation.ts` - **Many-eyes Layer-2 / Unit 2.** The single best-effort "record a vouch" path: appends to `game_confirmations` (confirm or vacate marker), never touches `match_games` officiality, never throws into scoring; append-only (exact re-tap = no-op, change of mind = new row), no-op when match finalized or no confirmer.
 - `useRosterEditor.ts` - Roster editing
 - `useSpectateMatch.ts` - Hook used by the spectator views to subscribe to a live match.
 
@@ -1227,6 +1230,7 @@ High-level business logic services
 - `useLeagues.ts` - League query hooks.
 - `useLeagueVenueMutations.ts` - League↔venue linking hooks.
 - `useMatches.ts` - Match query hooks.
+- `useGameConfirmations.ts` - **Many-eyes Layer-2 / Unit 3.** Query hook that OWNS the `game_confirmations` fetch for a match (live fresh-data config); `useMatchScoring` consumes it and wires the realtime invalidation. Phase 2/3 read the rows.
 - `useMatchLineupMutations.ts` - Match-lineup CRUD hooks.
 - `useMatchMutations.ts` - Match-state mutation hooks.
 - `useMemberMutations.ts` - Member CRUD hooks.
@@ -1615,6 +1619,7 @@ Supabase local configuration and migrations
 | `supabase/migrations/20260502000001_set_member_starting_handicap_rpc.sql` | `set_member_starting_handicap` RPC for the wizard's per-player handicap seeding step. |
 | `supabase/migrations/20260502000002_prep_match_rpc_renamed_columns.sql` | Renames a handful of columns referenced by `prep_match` to align with the modular-axis naming. |
 | `supabase/migrations/20260505000000_match_games_value_columns.sql` | Adds `match_games.winner_balls_pocketed` / `loser_balls_pocketed` / counter-value columns for the per-game-points calculator (`accumulated_per_game`). |
+| `supabase/migrations/20260525000000_game_confirmations.sql` | **Many-eyes Layer-2 / Unit 1** — append-only `game_confirmations` table (every vouch + full result snapshot + `action` confirm/vacate marker); FKs on match_id/game_id/confirmer_id, snapshot columns FK-free; on the `supabase_realtime` publication + `REPLICA IDENTITY FULL`. Officiality stays on `match_games.confirmed_by_*` (additive only). |
 | `supabase/seed.sql` | Full local dev DB dump — auto-applied on `supabase db reset`. **Local only, never runs against production.** |
 | `supabase/seed_test_users.sql` | 4 synthetic test auth users (player/operator/captain/owner, password `test-password-123`). **Dev-only — run manually via `docker exec ... psql`.** |
 | `supabase/seed_members.sql` | 20 placeholder players (no `user_id`) spanning Fargo 300–580 ratings for wizard/team-management testing. **Dev-only — not wired into auto-seed; run manually when the local DB needs a bench of fake members.** |

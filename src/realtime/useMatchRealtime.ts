@@ -5,6 +5,7 @@
  * - matches: Match status, lineup IDs, results
  * - match_lineups: Lineup selections, lock status
  * - match_games: Game results, confirmations, tiebreaker assignments
+ * - game_confirmations: Many-eyes witness records (every vouch + vacate markers)
  *
  * Used throughout the entire match lifecycle:
  * - Normal lineup selection
@@ -183,6 +184,8 @@ interface UseMatchRealtimeOptions {
   onLineupUpdate?: () => void;
   /** Callback to refetch games data */
   onGamesUpdate?: () => void;
+  /** Callback to refetch game_confirmations data (many-eyes Layer-2) */
+  onConfirmationsUpdate?: () => void;
   /** Additional options for game update handling (scoring page) */
   gameUpdateOptions?: GameUpdateOptions;
 }
@@ -190,10 +193,11 @@ interface UseMatchRealtimeOptions {
 /**
  * Subscribe to real-time updates for entire match
  *
- * Listens for INSERT/UPDATE/DELETE events on three tables:
+ * Listens for INSERT/UPDATE/DELETE events on four tables:
  * - matches: Match-level changes (status, results, lineup IDs)
  * - match_lineups: Lineup changes (player selections, lock status)
  * - match_games: Game changes (scores, confirmations, tiebreaker assignments)
+ * - game_confirmations: Many-eyes witness records (refetch trigger only)
  *
  * When updates occur, triggers appropriate TanStack Query refetch callbacks.
  * Optionally handles game confirmation logic for scoring page.
@@ -212,6 +216,7 @@ export function useMatchRealtime(
     onMatchUpdate,
     onLineupUpdate,
     onGamesUpdate,
+    onConfirmationsUpdate,
     gameUpdateOptions,
   } = options;
 
@@ -225,6 +230,7 @@ export function useMatchRealtime(
   const onMatchUpdateRef = useRef(onMatchUpdate);
   const onLineupUpdateRef = useRef(onLineupUpdate);
   const onGamesUpdateRef = useRef(onGamesUpdate);
+  const onConfirmationsUpdateRef = useRef(onConfirmationsUpdate);
   const gameUpdateOptionsRef = useRef(gameUpdateOptions);
 
   // Coarse connection status surfaced to the scoring UI. Starts optimistic
@@ -244,8 +250,9 @@ export function useMatchRealtime(
     onMatchUpdateRef.current = onMatchUpdate;
     onLineupUpdateRef.current = onLineupUpdate;
     onGamesUpdateRef.current = onGamesUpdate;
+    onConfirmationsUpdateRef.current = onConfirmationsUpdate;
     gameUpdateOptionsRef.current = gameUpdateOptions;
-  }, [onMatchUpdate, onLineupUpdate, onGamesUpdate, gameUpdateOptions]);
+  }, [onMatchUpdate, onLineupUpdate, onGamesUpdate, onConfirmationsUpdate, gameUpdateOptions]);
 
   useEffect(() => {
     if (!matchId) return;
@@ -399,6 +406,23 @@ export function useMatchRealtime(
           }
         }
       )
+
+      // Watch game_confirmations table (many-eyes Layer-2 witness records).
+      // A simple refetch trigger — no confirmation-queue logic here; the
+      // per-person prompt + dissent flag derive from the refetched rows.
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'game_confirmations',
+          filter: `match_id=eq.${matchId}`,
+        },
+        (payload) => {
+          logger.debug('[useMatchRealtime] Confirmation update received', { eventType: payload.eventType });
+          onConfirmationsUpdateRef.current?.();
+        }
+      )
       .subscribe((status, err) => {
         logger.debug('[useMatchRealtime] Subscription status', { status, error: err?.message });
 
@@ -421,6 +445,7 @@ export function useMatchRealtime(
           onMatchUpdateRef.current?.();
           onLineupUpdateRef.current?.();
           onGamesUpdateRef.current?.();
+          onConfirmationsUpdateRef.current?.();
         }
       });
 

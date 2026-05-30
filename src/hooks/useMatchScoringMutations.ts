@@ -17,8 +17,39 @@ import { supabase } from '@/supabaseClient';
 import type { Lineup, MatchGame } from '@/types/match';
 import { queryKeys } from '@/api/queryKeys';
 import { populateMatchSnapshotIfNeeded, updateMatchRunningTotals } from '@/api/queries/matches';
+import { appendConfirmation, type ConfirmationResult } from '@/api/mutations/appendConfirmation';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
+
+/**
+ * Map a scored game row (or the snapshot being confirmed/vacated) to the
+ * `ConfirmationResult` shape the many-eyes append helper records. Both the live
+ * `match_games` row and the in-flight `gameData` object share these field
+ * names, so this works for the confirm path and the vacate-marker path alike.
+ */
+function resultFromGame(g: {
+  winner_team_id: string | null;
+  winner_player_id: string | null;
+  break_and_run: boolean;
+  golden_break: boolean;
+  break_fouled: boolean;
+  runout: boolean;
+  win_by_forfeit: boolean;
+  winner_value: number | null;
+  loser_value: number | null;
+}): ConfirmationResult {
+  return {
+    winnerTeamId: g.winner_team_id,
+    winnerPlayerId: g.winner_player_id,
+    breakAndRun: g.break_and_run,
+    goldenBreak: g.golden_break,
+    breakFouled: g.break_fouled,
+    runout: g.runout,
+    winByForfeit: g.win_by_forfeit,
+    winnerValue: g.winner_value,
+    loserValue: g.loser_value,
+  };
+}
 
 interface UseMatchScoringMutationsParams {
   /** Current match data */
@@ -232,6 +263,19 @@ export function useMatchScoringMutations({
             .eq('id', existingGame.id);
 
           if (error) throw error;
+
+          // Many-eyes: record the vacate as an append-only marker. The pre-wipe
+          // snapshot is `existingGame` (still the in-memory pre-update state).
+          // Best-effort — never blocks the vacate.
+          await appendConfirmation({
+            gameId: existingGame.id,
+            matchId: match.id,
+            gameNumber,
+            confirmerId: memberId,
+            side: isHomeTeam ? 'home' : 'away',
+            action: 'vacate',
+            result: resultFromGame(existingGame),
+          });
         } else {
           // Normal score confirmation - only update OUR confirmation, don't touch opponent's
           const updateData = isHomeTeam
@@ -244,6 +288,18 @@ export function useMatchScoringMutations({
             .eq('id', existingGame.id);
 
           if (error) throw error;
+
+          // Many-eyes: record my vouch for the result I just confirmed.
+          // Officiality (the column above) stays authoritative; this is additive.
+          await appendConfirmation({
+            gameId: existingGame.id,
+            matchId: match.id,
+            gameNumber,
+            confirmerId: memberId,
+            side: isHomeTeam ? 'home' : 'away',
+            action: 'confirm',
+            result: resultFromGame(existingGame),
+          });
         }
 
         // Phase 5 Unit 5.5: eagerly recompute the match row's running totals
@@ -274,7 +330,7 @@ export function useMatchScoringMutations({
         return false;
       }
     },
-    [match, userTeamId, gameResults, queryClient]
+    [match, userTeamId, gameResults, queryClient, memberId]
   );
 
   /**
@@ -323,6 +379,19 @@ export function useMatchScoringMutations({
             .eq('id', existingGame.id);
 
           if (error) throw error;
+
+          // Many-eyes: a denied score wipes the game — record it as an
+          // append-only vacate marker (pre-wipe snapshot is `existingGame`).
+          // Best-effort — never blocks the deny.
+          await appendConfirmation({
+            gameId: existingGame.id,
+            matchId: match.id,
+            gameNumber,
+            confirmerId: memberId,
+            side: userTeamId === match.home_team_id ? 'home' : 'away',
+            action: 'vacate',
+            result: resultFromGame(existingGame),
+          });
         }
 
         // Phase 5 Unit 5.5: denial / vacate-deny clears confirmations or
@@ -340,7 +409,7 @@ export function useMatchScoringMutations({
         return false;
       }
     },
-    [match, gameResults]
+    [match, gameResults, memberId, userTeamId]
   );
 
   /**
@@ -480,6 +549,19 @@ export function useMatchScoringMutations({
           if (error) throw error;
         }
 
+        // Many-eyes: record the scorer's vouch for the result just entered.
+        // The officiality write above (confirmed_by_<side>) already succeeded;
+        // this is additive + best-effort and never blocks scoring.
+        await appendConfirmation({
+          gameId: existingGame.id,
+          matchId: match.id,
+          gameNumber: scoringGame.gameNumber,
+          confirmerId: memberId,
+          side: isHomeTeamScoring ? 'home' : 'away',
+          action: 'confirm',
+          result: resultFromGame(gameData),
+        });
+
         // Phase 5 Unit 5.5: eagerly recompute the match row's running totals
         // from the current set of confirmed match_games. The new game write
         // may flip a previously-confirmed game (re-score after auto-confirm
@@ -498,7 +580,7 @@ export function useMatchScoringMutations({
         toast.error(`Failed to save game score: ${err.message}`);
       }
     },
-    [match, homeLineup, awayLineup, userTeamId, gameResults]
+    [match, homeLineup, awayLineup, userTeamId, gameResults, memberId]
   );
 
   return {
