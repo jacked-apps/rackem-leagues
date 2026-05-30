@@ -871,18 +871,37 @@ export const entries = {
     canonicalName: 'Roster',
     aliases: [],
     shortDef:
-      'The full set of players signed up to a team — must be at least the lineup size; extras serve as substitutes.',
+      "The full set of players signed up to a team. Must hold at least the lineup size and not exceed the roster size.",
     longDef: (
-      <p>
-        The roster is everyone on the team. The captain picks a lineup from
-        the roster each match. Roster size is capped at the league level
-        (e.g., 5 for a 3v3 team, 8 for a 5v5 team). Players beyond the
-        lineup serve as substitutes when starters can't play.
-      </p>
+      <div className="space-y-3">
+        <p>
+          The roster is every player signed up to a{' '}
+          <a href="#team" className="text-info hover:underline">team</a>.
+          The{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>{' '}
+          for each{' '}
+          <a href="#match" className="text-info hover:underline">match</a>{' '}
+          is drawn from the roster.
+        </p>
+        <p>
+          The{' '}
+          <a href="#lineup-size" className="text-info hover:underline">lineup size</a>{' '}
+          sets the floor (a roster has to hold at least that many) and the{' '}
+          <a href="#roster-size" className="text-info hover:underline">roster size</a>{' '}
+          sets the cap.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#team" className="text-info hover:underline">team</a>,{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>,{' '}
+          <a href="#match" className="text-info hover:underline">match</a>,{' '}
+          <a href="#lineup-size" className="text-info hover:underline">lineup size</a>,{' '}
+          <a href="#roster-size" className="text-info hover:underline">roster size</a>.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
-    related: ['roster-size', 'lineup', 'substitute', 'captain'],
-    loSetting: 'live',
+    related: ['captain', 'placeholder-player', 'substitute'],
   },
 
   'roster-size': {
