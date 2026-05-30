@@ -41,6 +41,21 @@ export function GlossaryEntryView({ entry, isHighlighted }: GlossaryEntryViewPro
           also called: {entry.aliases.join(', ')}
         </p>
       )}
+      {entry.loSetting && (
+        <p className="mt-2">
+          <span
+            className={`inline-block rounded-full border px-2 py-0.5 text-xs font-medium ${
+              entry.loSetting === 'live'
+                ? 'border-info/40 bg-info/10 text-info'
+                : 'border-muted-foreground/40 bg-muted text-muted-foreground'
+            }`}
+          >
+            {entry.loSetting === 'live'
+              ? 'League Operator setting'
+              : 'Planned League Operator setting'}
+          </span>
+        </p>
+      )}
       <blockquote className="mt-3 border-l-4 border-info/40 pl-3 italic text-muted-foreground">
         {entry.shortDef}
       </blockquote>

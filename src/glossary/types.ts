@@ -67,4 +67,17 @@ export interface GlossaryEntry {
    * list reviewed vs unreviewed.
    */
   reviewedByEd?: string;
+  /**
+   * Marks this term as a League Operator (LO) controllable setting. Renders
+   * as a small chip at the top of the Learn page entry so:
+   *   - operators see "I control that" at a glance
+   *   - players see "I can ask my operator to try this"
+   *
+   *   - 'live'    — the LO can configure this in the current wizard
+   *   - 'planned' — designed as an LO setting but not yet in the wizard
+   *
+   * Omit for terms that aren't operator-configurable (concepts, vocabulary,
+   * mechanics).
+   */
+  loSetting?: 'live' | 'planned';
 }
