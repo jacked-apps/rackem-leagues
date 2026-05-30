@@ -1373,7 +1373,7 @@ export const entries = {
       'snap-8',
     ],
     shortDef:
-      "Sinking the winning ball on the break. Whether it counts as a win is controlled by a league setting the LO can toggle.",
+      "Sinking the winning ball on the break. CSI rules count it in 9-Ball and 10-Ball but not 8-Ball — the LO can flip any of these via house rule.",
     longDef: (
       <div className="space-y-3">
         <p>
@@ -1383,15 +1383,28 @@ export const entries = {
           already knows which{' '}
           <a href="#game-type" className="text-info hover:underline">game-type</a>{' '}
           is being played, so the record is just "golden break: true."
-          From that we know whether it was 8 on the break, 9 on the
-          break, or 10 on the break.
         </p>
+        <p><strong>CSI official defaults:</strong></p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>
+            <a href="#nine-ball" className="text-info hover:underline">9-Ball</a>{' '}
+            — counts as a win.
+          </li>
+          <li>
+            <a href="#ten-ball" className="text-info hover:underline">10-Ball</a>{' '}
+            — counts as a win.
+          </li>
+          <li>
+            <a href="#eight-ball" className="text-info hover:underline">8-Ball</a>{' '}
+            — officially does NOT count.
+          </li>
+        </ul>
         <p>
-          Whether a golden break <em>counts as a win</em> is controlled
-          by a per-league setting the{' '}
+          The{' '}
           <a href="#league-operator" className="text-info hover:underline">LO</a>{' '}
-          toggles. CSI rules provide the defaults, but any game-type's
-          default can be flipped as a house rule.
+          can flip ANY of these as a house rule. A 9-Ball league can
+          decide not to count them; an 8-Ball league can decide they DO
+          count. The setting is per-league.
         </p>
         <p>
           All the colloquial names — "8 on the break," "9 on the snap,"
@@ -1400,6 +1413,9 @@ export const entries = {
         </p>
         <p className="text-sm text-muted-foreground">
           Relevant topics:{' '}
+          <a href="#nine-ball" className="text-info hover:underline">9-Ball</a>,{' '}
+          <a href="#ten-ball" className="text-info hover:underline">10-Ball</a>,{' '}
+          <a href="#eight-ball" className="text-info hover:underline">8-Ball</a>,{' '}
           <a href="#game" className="text-info hover:underline">game</a>,{' '}
           <a href="#game-type" className="text-info hover:underline">game type</a>,{' '}
           <a href="#league-operator" className="text-info hover:underline">league operator</a>,{' '}
