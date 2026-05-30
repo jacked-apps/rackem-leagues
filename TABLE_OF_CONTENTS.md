@@ -483,6 +483,7 @@ how to add a new test, demo recording, cleanup model).
 | `App.tsx` | Main application component with routing |
 | `main.tsx` | Application entry point |
 | `supabaseClient.ts` | Supabase client configuration |
+| `supabaseClient.test.ts` | Tests for the realtime survival heartbeat handler (worker + reconnect-on-dead-socket) |
 | `vite-env.d.ts` | Vite TypeScript definitions |
 | `config/environment.ts` | App environment detection (dev/staging/prod) + banner config |
 | `components/EnvironmentBanner.tsx` | Top-of-app banner labeling non-production builds |
@@ -940,6 +941,8 @@ Reusable section components composed by `PreferencesCard.tsx`. Same components d
 #### Match Components (`/components/match/`)
 - `MatchPhaseGuard.tsx` - Server-state route guard. Reads `matches.status` via `useMatchPhase`, dispatches lineup vs scoring vs recovery rendering, holds the compound `key={matchId:recoveryEpoch}` that drives in-place subtree remounts on Hard Reset.
 - `MatchTransitionRecovery.tsx` - Unified recovery surface for the lineup → scoring transition. Reason-aware copy (connection / match_not_found / auth_expired / server_error / unknown_status), two-level Try Again (soft refetch first, Hard Reset only after soft fails — with confirmation dialog).
+- `ConnectionIndicator.tsx` - Calm connection indicator for the active scorer. Renders nothing while live, a quiet "Catching up…" pill while degraded, and a single calm note only after a sustained offline outage (north star: invisible robustness).
+- `ConnectionIndicator.test.tsx` - Tests for ConnectionIndicator (live=nothing, degraded=quiet pill, sustained-offline=calm note + threshold).
 
 #### Player Components (`/components/player/`)
 - `TeamCard.tsx` - Player team card ⚠️ **DUPLICATE** (also in `/components`)
@@ -1065,6 +1068,8 @@ Lineup-page workhorse hooks. Extracted from the monolithic `useMatchLineup` so e
 - `auditScoringConsistency.ts` - **Match-completion scoring-consistency audit** (Phase 5 Unit 5.6) — pure `compareRunningTotals(actual, expected)` helper that returns per-field discrepancies between the match row's stored totals and a fresh recompute. Match record is never modified — divergence is logged to `app_logs` for the dev to investigate. Reusable for on-demand audits.
 - `engineRunningTotals.ts` - **Strand-B engine running-totals (post-flip source of truth).** `computeEngineRunningTotals` runs the NEW modular Points System engine (`src/systems/points-system/match-adapter.ts`) on the frozen prep snapshot (snapshotted threshold columns + LOCKED `match_lineups` ratings/team-bonus) and returns the four totals the match row is written with; `runningTotalsDiffer` is the audit comparator. Never throws — returns `null` on any failure so `updateMatchRunningTotals` falls back to legacy `computeMatchRunningTotals` (which also stays on as the auditor: "two paths audit each other"). Was the shadow auditor pre-flip; the roles reversed at the flip.
 - `__tests__/computeMatchRunningTotals.test.ts` - **Running-totals tests** (10 cases): confirmation filtering, tiebreaker exclusion, linear_above_threshold above/tie/below bands, LOCKED tie-band-with-tiebreaker invariant, accumulated_per_game (Fargo 10-7), null calculator, unknown calculator
+- `pendingConfirmations.ts` - **Data-derived live-scoring handoff** — pure helpers that compute "which games need MY action" from the `match_games` rows: `gameNeedsMyConfirmation` (opponent scored + confirmed, I haven't), `gameHasPendingVacateForMe` (opponent requested an undo, derived from `vacate_requested_by` so the requester never self-prompts), plus `buildConfirmationItem` / `buildVacateConfirmationItem`. Run on every load/refetch/poll so the confirm + vacate prompts survive a dropped realtime event (delayed, never lost). Realtime stays the fast path.
+- `__tests__/pendingConfirmations.test.ts` - **Pending-confirmation tests** (13 cases): confirm predicate (happy/edge), vacate predicate incl. requester-never-self-prompts, and the item builders.
 
 #### Lineup Utils (`/utils/lineup/`)
 
@@ -1447,7 +1452,9 @@ Zod validation schemas
 
 Supabase real-time subscription hooks for live data updates
 
-- `useMatchGamesRealtime.ts` - Real-time subscription for match games (scoring updates, confirmation requests)
+- `useMatchRealtime.ts` - Unified real-time subscription for the whole match flow (matches/lineups/games); surfaces connection status + fires a catch-up refetch on re-subscribe after a drop
+- `useConnectionHealth.ts` - Classifies realtime trouble into actionable health (realtime-down vs offline) via one cheap reachability probe; drives the degraded polling fallback cadence
+- `useConnectionHealth.test.ts` - Tests for classifyHealth + computeDegradedPollInterval + the useConnectionHealth probe/online-offline behavior
 - `useMatchLineupsRealtime.ts` - Real-time subscription for match lineups (lineup status changes, lock/unlock events)
 
 ---

@@ -262,83 +262,39 @@ follow-on polish.
 
 ---
 
-## 20. Look Into ACH (Stripe Bank Debit) — Real Fee Saver
+## 19. Scoring App — Confirmation/Vacate Modal Unreadable in Dark Mode + No Theme Toggle on Scoring Screen
 
-**TL;DR:** Stripe cards are 2.9% + $0.30. Stripe **ACH** (`us_bank_account`
-direct debit) is **0.8% capped at $5.00**. For our recurring B2B charges
-that's roughly a **75% fee cut**, and it gets even better the bigger the
-charge (because of the $5 cap). Worth wiring ACH in as the *encouraged*
-payment rail.
+**Discovered:** 2026-05-25 during live-scoring resilience testing (Ed)
+**Severity:** Medium — the modal is functionally reachable but visually
+unreadable in dark mode, and the user can't switch to light to work
+around it from the scoring screen. Two compounding issues:
 
-**Where it bites today (card math):**
-- LO platform fee, ~$138/season (8-team example): card = 2.9% + $0.30 =
-  **~$4.30** (~3.1%). ACH = 0.8% × $138 = **~$1.10** (under the $5 cap).
-- At 1,000 leagues × 3 seasons: card ~**$13K/yr** vs ACH ~**$3.3K/yr** →
-  **~$10K/yr saved** just on the platform fee.
-- The savings is much larger once we collect BCA dues (see #21) — bunched
-  dues charges are big, so the $5 cap makes ACH dramatically cheaper than a
-  ~3% card cut.
+**(a) The confirm/vacate modal is unreadable in dark mode.**
+- **Where:** `src/components/scoring/ConfirmationDialog.tsx` — the
+  opponent-confirm + vacate ("Agree – Vacate Winner / Deny – Keep
+  Winner") modal used during live scoring.
+- **Symptom:** in dark mode the modal's text/contrast collapses
+  (same class of bug as the date picker #18 and the messaging input
+  #16 — almost certainly hardcoded light-theme colors instead of
+  theme-aware `text-foreground` / `bg-card` tokens).
+- **Fix direction:** open the modal in light + dark side-by-side,
+  audit the color classes in `ConfirmationDialog.tsx` (and the dialog
+  primitives it uses) for hardcoded values; switch to theme-aware
+  tokens. Worth doing in the same pass as #16/#18 — likely one shared
+  root cause across these scoring/messaging surfaces.
 
-**The $0.30 is the real villain on small charges.** It's a flat per-
-transaction fee, so it dominates tiny payments (a $20 individual dues
-charge is 2.9% + $0.30 = $0.88 → **4.4%**). Two defenses: (1) keep charges
-chunky — we already bill the platform fee once per season, not weekly;
-(2) ACH removes the $0.30 entirely.
-
-**Trade-offs to design around:** ACH settles in a few business days (not
-instant), can fail on insufficient funds, and needs bank-account linking
-(slightly more onboarding friction than a card). All fine for a *recurring
-operator fee* — it's not an impulse buy. Suggested shape: ACH as the
-default/encouraged method for LOs + bunched dues; card as the convenience
-option (optionally surcharged so card-payers cover their own ~3%).
-
-**Action:** evaluate Stripe ACH Direct Debit (`us_bank_account` payment
-method + mandates) for the LO fee and the dues flow. Confirm current
-pricing/cap on Stripe's page — these drift.
-
-## 21. Stripe Connect — What It Is + Why It Matters For BCA/CSI Dues
-
-**Why this note exists:** Jack knows Stripe, but Stripe **Connect** is a
-different product with potential I don't think is on the radar yet — and
-it's the right tool for the BCA/CSI dues idea (collecting CSI's $20/year
-membership dues through our app, a known pain point for Ozzy = a real
-selling point if we handle the flow).
-
-**The core problem Connect solves:** BCA dues are **CSI's money, not
-ours.** If we just add "BCA dues" as a product in our own Stripe, the $20
-lands in *our* account and we now *owe* CSI. At scale that inflates our
-books with pass-through money, creates remittance/accounting headaches,
-and can wander into **money-transmitter** regulatory territory (holding
-other people's funds). Bad as a real flow.
-
-**What Connect does:** it's Stripe's platform/marketplace product for
-collecting money and routing it to third parties ("connected accounts").
-We collect the $20, optionally skim a small **application fee** (our
-handling cut), and Connect routes the rest **straight to CSI's connected
-account** automatically. Clean books, liability stays with CSI, we're the
-pipe (+ our cut). It's the **same Stripe account** — Connect is enabled on
-it; CSI becomes a connected account (likely **Standard** or **Express**
-onboarding for a real partner org). Connect adds its own small per-account
-/ per-payout fees — minor at this scale, but verify.
-
-**The potential (why it's worth understanding):**
-- Lets us *be the payment rail* for CSI/BCA dues without becoming their
-  bank — the thing that makes "we'll handle dues collection" pitchable to
-  Ozzy.
-- Same machinery handles "bunch" collection (an LO pays all their players'
-  dues in one charge → cheaper fees, see #20) and individual player
-  payments, both routing to CSI.
-- Generalizes to any future "collect on behalf of others" flow.
-
-**Action / sequencing (don't build speculatively):** this needs CSI buy-in
-first — pin down their current collection workflow + pain, build a small
-working demo of the flow (player/LO pays → routes to CSI → dashboard of
-who's paid), then validate deal terms with Ozzy (fee split, who onboards
-the Connect account, who eats the Stripe fee, syncing BCA membership
-numbers) before building the full rail. Dovetails with the BCA-number work
-already planned — "collect dues" and "know who's a paid BCA member" are the
-same data story.
+**(b) Can't change theme (light/dark) from the scoring screen.**
+- **Where:** `src/player/ScoreMatch.tsx` renders a custom full-screen
+  scoring layout with its own header (back button / team name /
+  auto-confirm) and does NOT surface the app's theme toggle. So a
+  scorer who happens to be in dark mode is stuck — they can't flip to
+  light to dodge issue (a) without leaving the match.
+- **Fix direction:** either expose the theme toggle on the scoring
+  screen, or (cleaner once (a) is fixed) ensure the scoring surfaces
+  are fully theme-aware so the toggle isn't needed as a workaround.
+- **Note:** fixing (a) is the real fix; (b) is why (a) is more painful
+  than it looks (no escape hatch mid-match).
 
 ---
 
-*Last Updated: 2026-05-28*
+*Last Updated: 2026-05-25*

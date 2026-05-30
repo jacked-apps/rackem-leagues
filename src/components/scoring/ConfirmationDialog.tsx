@@ -33,14 +33,14 @@ interface ConfirmationDialogProps {
     winByForfeit: boolean;
     winnerValue: number | null;
     loserValue: number | null;
-    isResetRequest?: boolean;
+    isVacateRequest?: boolean;
   } | null;
   /** Game type for golden break label (8-ball, 9-ball, 10-ball, etc.) */
   gameType: string;
   /** Handler for confirm/agree button */
-  onConfirm: (gameNumber: number, isResetRequest?: boolean) => void;
+  onConfirm: (gameNumber: number, isVacateRequest?: boolean) => void;
   /** Handler for deny button */
-  onDeny: (gameNumber: number, isResetRequest?: boolean) => void;
+  onDeny: (gameNumber: number, isVacateRequest?: boolean) => void;
   /** Handler when dialog closes */
   onClose: () => void;
 }
@@ -62,7 +62,7 @@ export function ConfirmationDialog({
 }: ConfirmationDialogProps) {
   if (!game) return null;
 
-  const isVacateRequest = game.isResetRequest;
+  const isVacateRequest = game.isVacateRequest;
 
   // Get golden break label based on game type
   const getGoldenBreakLabel = () => {
