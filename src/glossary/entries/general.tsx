@@ -1360,29 +1360,51 @@ export const entries = {
   'golden-break': {
     slug: 'golden-break',
     canonicalName: 'Golden Break',
-    aliases: ['9 on the break', '9 on the snap', 'snap-9', '8 on the break', '8 on the snap', '8-ball break', 'snap-8'],
+    aliases: [
+      '9 on the break',
+      '9 on the snap',
+      'snap-9',
+      '10 on the break',
+      '10 on the snap',
+      'snap-10',
+      '8 on the break',
+      '8 on the snap',
+      '8-ball break',
+      'snap-8',
+    ],
     shortDef:
-      'Sinking the winning ball on the break. Officially recognized only for the 9 in 9-Ball.',
+      'Sinking the winning ball on the break. A win in 9-Ball and 10-Ball by standard rules; in 8-Ball it depends on the league\'s house rules.',
     longDef: (
       <div className="space-y-3">
         <p>
           A golden break is when the winning ball drops on the break shot
-          itself. By the official rules of the sport, that's the 9 in{' '}
-          <a href="#nine-ball" className="text-info hover:underline">9-Ball</a>{' '}
-          only — a legal break that sinks the 9 ends the rack as a win.
+          itself. The app's rules are taken from CSI:
         </p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>
+            <a href="#nine-ball" className="text-info hover:underline">9-Ball</a>{' '}
+            — sinking the 9 on the break wins the rack.
+          </li>
+          <li>
+            <a href="#ten-ball" className="text-info hover:underline">10-Ball</a>{' '}
+            — sinking the 10 on the break wins the rack.
+          </li>
+          <li>
+            <a href="#eight-ball" className="text-info hover:underline">8-Ball</a>{' '}
+            — sinking the 8 on the break is NOT a default win. The league
+            operator can flip this with a house rule ("Golden Break
+            Counts as Win" league setting), which would make it count.
+          </li>
+        </ul>
         <p>
-          <strong>About "8 on the break."</strong> In{' '}
-          <a href="#eight-ball" className="text-info hover:underline">8-Ball</a>,
-          sinking the 8 on the break isn't a uniform win — most official
-          rule sets treat it as a re-rack, the opponent's choice, or even
-          a loss. People call it a golden break colloquially ("8 on the
-          break," "snap-8"), but the sport doesn't officially count it
-          as one. Those terms still land here so searches resolve.
+          All the colloquial names — "8 on the break," "9 on the snap,"
+          "snap-8," "10 on the break," etc. — land on this page so
+          searches resolve to one consistent def.
         </p>
         <p className="text-sm text-muted-foreground">
           Relevant topics:{' '}
           <a href="#nine-ball" className="text-info hover:underline">9-Ball</a>,{' '}
+          <a href="#ten-ball" className="text-info hover:underline">10-Ball</a>,{' '}
           <a href="#eight-ball" className="text-info hover:underline">8-Ball</a>,{' '}
           <a href="#game" className="text-info hover:underline">game</a>,{' '}
           <a href="#achievements" className="text-info hover:underline">achievements</a>.
