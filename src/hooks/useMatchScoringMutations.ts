@@ -242,6 +242,25 @@ export function useMatchScoringMutations({
       try {
         const isHomeTeam = userTeamId === match.home_team_id;
 
+        // Unit 7: finalization safety. The primary freeze is MatchEndVerification's
+        // nav-off — when both teams verify, every device gets navigated away from
+        // the scoring page. But a sub-second race between finalization and that
+        // navigation could fire this mutation, and unguarded writes here would
+        // mutate match_games AFTER finalization (set/clear confirmed_by_<side>
+        // on a completed match). One small read of matches.status as
+        // belt-and-suspenders — bail before touching match_games when completed.
+        const { data: matchStatusRow } = await supabase
+          .from('matches')
+          .select('status')
+          .eq('id', match.id)
+          .maybeSingle();
+        if (matchStatusRow?.status === 'completed') {
+          toast.info(
+            `Game ${gameNumber}: the match has ended — your action was not recorded.`
+          );
+          return false;
+        }
+
         if (isVacateRequest) {
           // For vacate requests, clear the game entirely (accept the vacate)
           // Also clear the vacate_requested_by flag
@@ -401,6 +420,20 @@ export function useMatchScoringMutations({
       if (!existingGame) return false;
 
       try {
+        // Unit 7: finalization safety (same reasoning as the other mutations).
+        // Belt-and-suspenders behind MatchEndVerification's nav-off.
+        const { data: matchStatusRow } = await supabase
+          .from('matches')
+          .select('status')
+          .eq('id', match.id)
+          .maybeSingle();
+        if (matchStatusRow?.status === 'completed') {
+          toast.info(
+            `Game ${gameNumber}: the match has ended — your action was not recorded.`
+          );
+          return false;
+        }
+
         if (isVacateRequest) {
           // Deny vacate request: Just clear the vacate_requested_by flag
           // Original confirmations are preserved, so just remove the vacate flag
@@ -558,6 +591,23 @@ export function useMatchScoringMutations({
       const loserValue = extras.loserValue ?? null;
 
       try {
+        // Unit 7: finalization safety (same reasoning as in confirmOpponentScore).
+        // Belt-and-suspenders behind MatchEndVerification's nav-off — a sub-second
+        // race could fire this mutation between bothVerified flipping and the
+        // page navigating away. Bail before any writes (including Amendment D's
+        // auto-clear, which would otherwise clear a finalized game's winner).
+        const { data: matchStatusRow } = await supabase
+          .from('matches')
+          .select('status')
+          .eq('id', match.id)
+          .maybeSingle();
+        if (matchStatusRow?.status === 'completed') {
+          toast.info(
+            `Game ${scoringGame.gameNumber}: the match has ended — score not recorded.`
+          );
+          return;
+        }
+
         // Tier 3 mutability: populate system_snapshot at the first scoring event.
         // No-op if already populated. Runs before the score write so the snapshot
         // reflects league state as of the moment the first game was scored.

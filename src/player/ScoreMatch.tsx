@@ -49,6 +49,7 @@ import { GamesList } from '@/components/scoring/GamesList';
 import { DissentFlag } from '@/components/scoring/DissentFlag';
 import { DisputeBanner } from '@/components/scoring/DisputeBanner';
 import { DisputeDetailModal } from '@/components/scoring/DisputeDetailModal';
+import { PeekConfirmDialog } from '@/components/scoring/PeekConfirmDialog';
 import {
   deriveDissents,
   type GameForDissent,
@@ -88,6 +89,11 @@ function ScoreMatchBody() {
   // Many-eyes Amendment G: which disputed game (if any) is open in the
   // detail modal. `null` = modal closed.
   const [disputeDetailGameId, setDisputeDetailGameId] = useState<string | null>(null);
+
+  // Many-eyes Unit 6: which fully-confirmed game (if any) is open in the
+  // peek/confirm dialog. `null` = dialog closed. Triggered by tapping a
+  // confirmed-state player name in GamesList.
+  const [peekGameNumber, setPeekGameNumber] = useState<number | null>(null);
 
   // Ref to store mutations for use in real-time subscription
   // Holds the latest `mutations` object returned by useMatchScoringMutations
@@ -1004,6 +1010,70 @@ function ScoreMatchBody() {
         getPlayerDisplayName={getPlayerDisplayName}
       />
 
+      {/* Many-eyes Layer-2 / Unit 6: peek-and-confirm dialog. Opened when
+          the viewer taps a confirmed game row in GamesList. Shows the
+          recorded result + Confirm (add my vouch as an extra witness via
+          confirmOpponentScore — Amendment I's 3-step check makes this
+          safe and Phase 1's helper appends my row regardless). */}
+      {(() => {
+        const peekGame = peekGameNumber !== null ? gameResults.get(peekGameNumber) : null;
+        if (peekGameNumber === null || !peekGame || !peekGame.winner_player_id) {
+          // Render with null gameNumber so the dialog is closed; covers the
+          // case where the game was vacated between tap and render.
+          return (
+            <PeekConfirmDialog
+              gameNumber={null}
+              winnerPlayerName=""
+              recordedResult={{
+                winner_team_id: null,
+                winner_player_id: null,
+                break_and_run: false,
+                golden_break: false,
+                break_fouled: false,
+                runout: false,
+                win_by_forfeit: false,
+                winner_value: null,
+                loser_value: null,
+              }}
+              alreadyVouched={false}
+              onOpenChange={(open) => {
+                if (!open) setPeekGameNumber(null);
+              }}
+              onConfirm={() => {}}
+            />
+          );
+        }
+        return (
+          <PeekConfirmDialog
+            gameNumber={peekGameNumber}
+            winnerPlayerName={getPlayerDisplayName(peekGame.winner_player_id)}
+            recordedResult={{
+              winner_team_id: peekGame.winner_team_id,
+              winner_player_id: peekGame.winner_player_id,
+              break_and_run: peekGame.break_and_run,
+              golden_break: peekGame.golden_break,
+              break_fouled: peekGame.break_fouled,
+              runout: peekGame.runout,
+              win_by_forfeit: peekGame.win_by_forfeit,
+              winner_value: peekGame.winner_value,
+              loser_value: peekGame.loser_value,
+            }}
+            alreadyVouched={personalCtx.myVouchedGameIds.has(peekGame.id)}
+            onOpenChange={(open) => {
+              if (!open) setPeekGameNumber(null);
+            }}
+            onConfirm={() => {
+              // Fire the same confirm path the live prompt uses. Amendment I's
+              // 3-step check covers correctness; the append helper records my
+              // row as an extra witness even when the officiality column is
+              // already set (`.is(null)` no-op). Close the dialog on success.
+              void mutationsRef.current?.confirmOpponentScore(peekGameNumber);
+              setPeekGameNumber(null);
+            }}
+          />
+        );
+      })()}
+
       {/* Many-eyes Layer-2 / Unit 5: team-visible dissent flag.
           One flag per game with a differing vouch from my side; calm
           conversation prompt — never blocks scoring, never auto-changes
@@ -1049,6 +1119,10 @@ function ScoreMatchBody() {
         gameResults={filteredGameResults}
         getPlayerDisplayName={getPlayerDisplayName}
         onGameClick={handlePlayerClick}
+        // Many-eyes Unit 6: tapping a player name on a fully-confirmed
+        // row opens the peek dialog (review the recorded result + add
+        // my vouch as an extra witness).
+        onPeekClick={setPeekGameNumber}
         onVacateClick={(gameNumber, winnerName) => {
           setEditingGame({
             gameNumber,
