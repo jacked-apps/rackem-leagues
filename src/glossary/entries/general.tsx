@@ -103,11 +103,10 @@ export const entries = {
       <div className="space-y-3">
         <p>
           A season is the current chapter of league play. Each season is its
-          own self-contained competitive period inside a longer-running{' '}
+          own self-contained competitive period inside a{' '}
           <a href="#league" className="text-info hover:underline">league</a>{' '}
           — when one season ends, the next starts under the same league
-          shape, one after another. Multiple seasons stack up over the life
-          of a league.
+          shape, one after another.
         </p>
         <p>What a season holds:</p>
         <ul className="list-disc space-y-1 pl-5">
