@@ -94,6 +94,7 @@
 | `docs/brainstorms/2026-05-17-tie-resolution-ownership-requirements.md` | Captured architectural direction for Win Calc metric stack + Tiebreak System | Drove the locked-doc edits + new Tiebreak System Module (#9 in catalog, replacing dissolved Standings & Tiebreakers) |
 | `docs/brainstorms/2026-05-21-lo-primitive-naming-layer-requirements.md` | Naming/identity layer for LO-built primitives — locks the internal-name / display-name / description / label glossary; mirror is workshop-authoring-only | Design (future workshop); NOT locked canon |
 | `docs/brainstorms/2026-05-21-scoreboard-module-design-requirements.md` | ROUGH: scoreboard = slots per side filled by modules that read the state bag + render labeled values; LO-customizable; stress-tests the naming layer | Rough draft — Ed's idea, to flesh out |
+| `docs/brainstorms/2026-05-25-pairings-generator-extraction-requirements.md` | Pairings Generator (Module #8) v1 extraction — one Module slot, three internal stages; lineups in, player-id-tagged GameSlot[] out (matches canon); today's RR algorithm only, no preferences/workshop work; output shape variant-agnostic for future race-mode etc. | Planned (`docs/plans/2026-05-25-001-...`) |
 | `docs/brainstorms/2026-05-28-passwordless-sign-in-requirements.md` | Requirements for one-door, code-based passwordless sign-in (email OTP + Google/Facebook; passwords kept but demoted) | Companion to the onboarding cold-start brainstorm; built first to dissolve the join-token-survival problem; branch `docs/passwordless-auth-brainstorm` |
 | `docs/brainstorms/2026-05-28-player-onboarding-cold-start-requirements.md` | Requirements for new-league cold-start player/captain onboarding — the share→self-claim→approve cascade (persistent team join link + captain approve gate) | Resolved decisions captured; passwordless is the build-first companion; plan = `2026-05-29-001` |
 | `/docs/plans/` | **CE implementation plans** | Output of `/compound-engineering:ce-plan` |
@@ -119,6 +120,7 @@
 | `docs/plans/2026-05-17-002-feat-captain-reup-sheet-plan.md` | Implementation plan for the captain re-up sheet | Draft PR #121 |
 | `docs/plans/2026-04-28-001-feat-modular-league-system-plan-supplements/` | Supplements directory for the modular league system plan | Append-only addenda used during execution |
 | `docs/plans/2026-05-17-001-refactor-modular-framework-migration-plan.md` | Strangler-fig migration plan for the modular Scoring System refactor | Unit 1 (Win Calculator extraction) detailed; Units 2-9 sketched; each Unit extracts one Module piece-by-piece without breaking the shipping prepackaged Scoring Systems |
+| `docs/plans/2026-05-25-001-refactor-pairings-generator-extraction-plan.md` | Implementation plan for Pairings Generator (Module #8) v1 extraction | 8 units; lifts `gameOrder.ts` into `src/systems/pairings/` (three internal stages: pair-gen / ordering / break-rack); lineups in, player-id-tagged GameSlot[] out; deletes dead helpers; output shape variant-agnostic for future race-mode etc. Branch `feat/pairings-generator-extraction` |
 | `docs/plans/2026-05-29-001-feat-onboarding-cascade-plan.md` | Implementation plan for the player/captain onboarding cold-start cascade (team join link → claim → captain approve) | 8 units / 3 phases; new `teams.join_token` + `team_join_requests` table; `/join/:token` page; `approve-join-request` edge fn (match-or-create via merge); triage board on MyTeams; doorbell; thin captain wizard; land-on-tonight's-match; builds on passwordless PR #159; origin 2026-05-28 brainstorm |
 
 ### Future Work Folder
@@ -1057,7 +1059,6 @@ Lineup-page workhorse hooks. Extracted from the monolithic `useMatchLineup` so e
 - `scheduleDisplayUtils.ts` - Schedule display helpers
 - `matchupTables.ts` - Matchup table utilities
 - `conflictDetectionUtils.ts` - Schedule conflict detection
-- `gameOrder.ts` - Game order utilities
 
 #### Match Running Totals (`/utils/match/`)
 - `computeMatchRunningTotals.ts` - **Per-mutation running-totals calculator** (Phase 5 Unit 5.5) — pure helper that filters confirmed regular games, runs the snapshot's points calculator, and returns `{ home_games_won, away_games_won, home_points_earned, away_points_earned }`. Eager recompute on every scoring mutation keeps the match row consistent with the live scoreboard. Tiebreaker games and unconfirmed games are excluded from regular running totals.
@@ -1088,7 +1089,7 @@ Pure helpers extracted from the lineup page. No React. Imported by both the page
 - `goldenBreakRules.ts` - Golden break eligibility rules (per-game flag setter).
 - `logger.ts` - Client-side logger (writes to `app_logs` when configured).
 - `__tests__/age.test.ts` - already indexed above under Date & Time.
-- `__tests__/calculateHandicapThresholds.characterization.test.ts`, `determineMatchResult.characterization.test.ts`, `fargoMatchTotals.characterization.test.ts`, `gameOrder.characterization.test.ts`, `getTeamHandicapBonus.characterization.test.ts`, `goldenBreakRules.characterization.test.ts`, `handicapCalculations.characterization.test.ts`, `playoffGenerator.standingsSort.characterization.test.ts` - **Characterization tests** locking in pre-refactor behavior for legacy utilities; consumed by the modular handicap/scoring refactor as a regression guard.
+- `__tests__/calculateHandicapThresholds.characterization.test.ts`, `determineMatchResult.characterization.test.ts`, `fargoMatchTotals.characterization.test.ts`, `getTeamHandicapBonus.characterization.test.ts`, `goldenBreakRules.characterization.test.ts`, `handicapCalculations.characterization.test.ts`, `playoffGenerator.standingsSort.characterization.test.ts` - **Characterization tests** locking in pre-refactor behavior for legacy utilities; consumed by the modular handicap/scoring refactor as a regression guard.
 - `__tests__/auditScoringConsistency.test.ts` - **Audit comparison tests** (7 cases): in-sync match returns ok, single-field divergence on games_won / points_earned, multi-field divergence, diff sign convention (positive = stored too high), input non-mutation
 
 #### Team & Player
