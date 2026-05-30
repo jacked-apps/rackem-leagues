@@ -117,3 +117,56 @@ BEGIN
   RAISE NOTICE 'House rules URL: /league-rules/%', v_org_id;
   RAISE NOTICE 'League settings: /league-settings/%', v_league_id;
 END $$;
+
+
+-- ============================================================================
+-- Anonymous-sub sentinel members (required by match_lineups FK).
+-- ============================================================================
+--
+-- The lineup-page anonymous-sub workflow writes these sentinel UUIDs into
+-- match_lineups.player{1..N}_id. Without rows in the members table for
+-- these UUIDs, the FK constraint match_lineups_player*_id_fkey fires with
+-- HTTP 409 Conflict at lock time.
+--
+-- The canonical supabase/seed.sql includes these rows, but local dev
+-- bootstrap files historically omitted them. ON CONFLICT (id) DO NOTHING
+-- makes this idempotent — re-running the bootstrap is safe. nextval on
+-- the system_player_number sequence prevents UNIQUE collisions with any
+-- members the bootstrap inserted above this block.
+-- ============================================================================
+
+INSERT INTO public.members (
+  id, user_id, first_name, last_name, nickname, phone, email,
+  address, city, state, zip_code, date_of_birth, role,
+  system_player_number, bca_member_number, membership_paid_date,
+  created_at, updated_at, profanity_filter_enabled
+) VALUES
+  ('00000000-0000-0000-0000-000000000001'::uuid, NULL, 'Home', 'Substitute', 'Sub (Home)', '000-000-0001', 'sub.home@placeholder.local', 'N/A', 'N/A', 'NA', '00000', '1900-01-01'::date, 'player', nextval('public.members_system_player_number_seq'), NULL, NULL, now(), now(), false),
+  ('00000000-0000-0000-0000-000000000002'::uuid, NULL, 'Away', 'Substitute', 'Sub (Away)', '000-000-0002', 'sub.away@placeholder.local', 'N/A', 'N/A', 'NA', '00000', '1900-01-01'::date, 'player', nextval('public.members_system_player_number_seq'), NULL, NULL, now(), now(), false)
+ON CONFLICT (id) DO NOTHING;
+
+
+-- ============================================================================
+-- Double-duty sentinel members (required by match_lineups FK).
+-- ============================================================================
+--
+-- Sibling to the anonymous-sub sentinels above. The double-duty
+-- (5v5 double-duty) workflow writes these sentinel UUIDs into
+-- match_lineups.player{1..N}_id while awaiting the opposing captain's
+-- OpponentSubstituteModal. Without rows in the members table for these
+-- UUIDs, the FK fires the same 409 Conflict the anonymous subs hit.
+--
+-- Nicknames are capped at varchar(12) by the schema — 'Sub (HomeDD)'
+-- and 'Sub (AwayDD)' are exactly 12 chars and parallel the existing
+-- 'Sub (Home)' / 'Sub (Away)' style.
+-- ============================================================================
+
+INSERT INTO public.members (
+  id, user_id, first_name, last_name, nickname, phone, email,
+  address, city, state, zip_code, date_of_birth, role,
+  system_player_number, bca_member_number, membership_paid_date,
+  created_at, updated_at, profanity_filter_enabled
+) VALUES
+  ('00000000-0000-0000-0000-000000000011'::uuid, NULL, 'Home', 'Double Duty', 'Sub (HomeDD)', '000-000-0011', 'sub.home.dd@placeholder.local', 'N/A', 'N/A', 'NA', '00000', '1900-01-01'::date, 'player', nextval('public.members_system_player_number_seq'), NULL, NULL, now(), now(), false),
+  ('00000000-0000-0000-0000-000000000012'::uuid, NULL, 'Away', 'Double Duty', 'Sub (AwayDD)', '000-000-0012', 'sub.away.dd@placeholder.local', 'N/A', 'N/A', 'NA', '00000', '1900-01-01'::date, 'player', nextval('public.members_system_player_number_seq'), NULL, NULL, now(), now(), false)
+ON CONFLICT (id) DO NOTHING;

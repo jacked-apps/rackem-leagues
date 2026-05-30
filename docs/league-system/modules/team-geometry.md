@@ -36,9 +36,9 @@ The three-axis cluster also encodes a **strategic shape choice** with downstream
 
 - **Smaller lineups + DRR** (e.g., 3v3 × DRR = 18 games) — higher per-player game count per night; favors leagues where individual stamina, late-night consistency, and pairing-by-pairing rotation matter
 - **Larger lineups + SRR** (e.g., 5v5 × SRR = 25 games) — broader per-player exposure; favors leagues prioritizing roster breadth, social variety, and shorter individual playing time per night
-- **Mid-size + either** (e.g., 4v4) — open design space; not currently shipped as a tested Scoring System but architecturally valid
+- **Mid-size + either** (e.g., 4v4) — open design space; architecturally valid
 
-Without Team Geometry as a distinct Module, these structural decisions would be implicitly baked into per-system code (the historical bundling state — see [§Current code state](#current-code-state)) and impossible to vary without rewriting. With it, the same Handicap System + Points System + Win Calculator stack can drop into a 3v3, 4v4, or 5v5 chassis just by changing this Module's tuple.
+Without Team Geometry as a distinct Module, these structural decisions would be implicitly baked into per-system code and impossible to vary without rewriting. With it, the same Handicap System + Points System + Win Calculator stack can drop into a 3v3, 4v4, or 5v5 chassis just by changing this Module's tuple.
 
 ## Boundary
 
@@ -75,7 +75,6 @@ Each axis has a value-space, a default, and a validation rule. The axes are pres
 |---|---|
 | **Type** | positive integer |
 | **Realistic range** | 2..8 (theoretical: anything ≥ 1; below 2 collapses to singles play; above ~8 strains scheduling and venue capacity) |
-| **Currently shipped values** | `3` (Points 3-Man), `5` (Percentage 5-Man, FargoRate 10-Point 5-Man) |
 | **Default for new leagues** | unset — LO must choose explicitly |
 | **Validation** | `> 0`; `<= max_roster_size`; reasonable upper bound enforced at the wizard layer not the schema (the schema allows any positive int) |
 
@@ -89,11 +88,10 @@ Each axis has a value-space, a default, and a validation rule. The axes are pres
 |---|---|
 | **Type** | positive integer |
 | **Realistic range** | 3..20 (lower bound = lineup_size; upper bound is a soft cap to prevent UI degradation) |
-| **Currently shipped values** | `5` (Points 3-Man), `8` (Percentage 5-Man, FargoRate 10-Point 5-Man) |
 | **Default for new leagues** | unset — LO must choose explicitly |
 | **Season-stability** | NOT season-stable; may be modified mid-season at any time |
-| **Downstream consumers** | only the lineup-page UI (renders this many player-selection slots; enforces the cap on roster-management operations). Not consumed by scoring, threshold, win-calculator, standings, or pairings code. |
-| **Validation** | `>= lineup_size`; schema-level cap at `20` enforced by `preferences_max_roster_size_check` from the earlier modular-extension migration |
+| **Downstream consumers** | only the lineup-page UI (renders this many player-selection slots; enforces the cap on roster-management operations). Not consumed by scoring, threshold, win-calculator, standings, or pairings. |
+| **Validation** | `>= lineup_size`; schema-level cap at `20` |
 
 **Operational meaning.** The ceiling on roster size — how many player slots a team may carry between match nights. It exists so the lineup-page UI knows how many player-selection dropdowns to render and so the application can enforce the cap when teams add players. Substitutions, additions, and drops operate within this cap, but the cap value itself is not part of any scoring or standings calculation.
 
@@ -101,14 +99,13 @@ Each axis has a value-space, a default, and a validation rule. The axes are pres
 
 **Why a cap matters even though rosters are dynamic.** Without a cap, a team could carry an unbounded roster of low-engagement players. The cap is the league's commitment to a maximum-team-size norm; the lineup-size floor (`max_roster_size >= lineup_size`) ensures the team can always field a legal night.
 
-**Anti-conflation note.** `max_roster_size` is the cap, not the floor or the typical size. A team with `max_roster_size=8` may carry 6 players for a season and still be compliant; the cap only kicks in when a team tries to exceed it. This Module declares the cap; teams' actual sizes are tracked in `teams.player_count` (or equivalent) at the data layer.
+**Anti-conflation note.** `max_roster_size` is the cap, not the floor or the typical size. A team with `max_roster_size=8` may carry 6 players for a season and still be compliant; the cap only kicks in when a team tries to exceed it. This Module declares the cap; teams' actual sizes are tracked at the data layer.
 
 ### `game_generation` — how lineups arrange into a game count
 
 | Attribute | Value |
 |---|---|
 | **Type** | enum: `'single_round_robin'` \| `'double_round_robin'` |
-| **Currently shipped values** | `'double_round_robin'` (Points 3-Man), `'single_round_robin'` (Percentage 5-Man, FargoRate 10-Point 5-Man) |
 | **Default for new leagues** | unset — LO must choose explicitly |
 | **Validation** | enum check (DB CHECK constraint); no inter-axis constraints |
 
@@ -129,11 +126,11 @@ Cross-axis validation is minimal but mandatory. The invariants below are enforce
 |---|---|---|
 | `lineup_size > 0` | application layer (no schema CHECK currently) | preference write rejected with operator-facing error |
 | `max_roster_size >= lineup_size` | application layer | preference write rejected; LO must increase roster cap or decrease lineup size |
-| `max_roster_size <= 20` | schema CHECK constraint `preferences_max_roster_size_check` | DB rejects with constraint violation |
+| `max_roster_size <= 20` | schema CHECK constraint | DB rejects with constraint violation |
 | `game_generation IN ('single_round_robin', 'double_round_robin')` | schema CHECK constraint | DB rejects unknown values |
 | `lineup_size` and `game_generation` immutable post-season-lock (NOT `max_roster_size`) | schema-level season-stability lock trigger applied to those two columns; `max_roster_size` is NOT in the lock set and may be updated mid-season | UPDATE on locked preferences blocked at DB layer for the two season-stable axes only |
 
-**Downstream compatibility (not enforced as an invariant).** Pairings Generator's round-robin algorithm is universal (works for any `lineup_size`); the formula-shape [Points Games-Needed Formula](threshold-charts/3v3-games-needed.md) and [Percentage Games-Needed Formula](threshold-charts/5v5-games-needed.md) take `game_count` as a parameter and produce calibrated output for any team size. So any valid `lineup_size` produces a valid downstream chain — there's nothing for Team Geometry to enforce here. The current code has team-size-specific shortcuts (hardcoded `gameOrder.ts` table for 3v3 DRR; inline computation for 5v5 SRR) that the Step-2 refactor will replace with the universal Pairings Generator implementation per its own blueprint. These shortcuts are implementation conveniences for the currently-shipped triples; they do not represent an architectural limitation on which triples are supported.
+**Downstream compatibility (not enforced as an invariant).** Pairings Generator's round-robin algorithm is universal (works for any `lineup_size`); the formula-shape [Points Games-Needed Formula](threshold-charts/3v3-games-needed.md) and [Percentage Games-Needed Formula](threshold-charts/5v5-games-needed.md) take `game_count` as a parameter and produce calibrated output for any team size. So any valid `lineup_size` produces a valid downstream chain — there's nothing for Team Geometry to enforce here.
 
 ## Math: game count derivation
 
@@ -148,21 +145,21 @@ game_count = lineup_size² × multiplier(game_generation)
 
 **Concrete instantiations:**
 
-| `lineup_size` | `game_generation` | `game_count` | Shipped? |
-|:---:|:---:|:---:|:---:|
-| 3 | single_round_robin | 9 | no |
-| 3 | double_round_robin | **18** | ✓ Points 3-Man |
-| 4 | single_round_robin | 16 | no |
-| 4 | double_round_robin | 32 | no |
-| 5 | single_round_robin | **25** | ✓ Percentage 5-Man, FargoRate 10-Point 5-Man |
-| 5 | double_round_robin | 50 | no |
-| 6 | single_round_robin | 36 | no |
-| 6 | double_round_robin | 72 | no |
+| `lineup_size` | `game_generation` | `game_count` |
+|:---:|:---:|:---:|
+| 3 | single_round_robin | 9 |
+| 3 | double_round_robin | **18** |
+| 4 | single_round_robin | 16 |
+| 4 | double_round_robin | 32 |
+| 5 | single_round_robin | **25** |
+| 5 | double_round_robin | 50 |
+| 6 | single_round_robin | 36 |
+| 6 | double_round_robin | 72 |
 
 **Downstream consumers that read `game_count`.** Several other Modules' calibration depends on it:
 
 - **[Threshold Charts](threshold-charts/README.md)** — charts whose math expresses targets as a function of total games (e.g., "stronger team needs ⌈game_count/2⌉ + handicap_diff wins") must read this value. Charts calibrated for one game count do not transfer to another without re-calibration; see the Threshold Charts encoding-locked-input contract.
-- **[Win Calculator](win-calculator.md)** — does not consume `game_count` at runtime. Its only relevance is parity: an **even** `game_count` can tie on the games metric, an **odd** one cannot.
+- **[Win Calculator](win-calculator.md)** — does not consume `game_count`. Its only relevance is parity: an **even** `game_count` can tie on the games metric, an **odd** one cannot.
 - **[Points System](points-system/README.md)** — some calculator variants' math depends on `game_count` (e.g., end-of-match scoring formulas where targets scale with total games). Per-calculator dependence is documented in the Points System's own variant pages, not here.
 - **The Standings concern (outside this catalog)** — reads `game_count` for normalization of per-team statistics (a team that wins 11 of 18 carries differently than 11 of 25). The Standings concern is being designed in a separate brainstorm; its architectural shape isn't fixed yet. Whatever shape it takes will consume `game_count` from this Module. If `game_count` varied across the season, normalization would be ill-defined; the season-stability invariant prevents this.
 
@@ -174,28 +171,17 @@ Team Geometry sits at the **structural root** of the Scoring System composition.
 
 **Downstream (Modules that consume Team Geometry's output):**
 
-- **[Pairings Generator](pairings-generator.md)** — consumes Team Geometry's `lineup_size` and `game_generation` (plus Match Format's per-pairing rule and the locked lineups) to produce the concrete `Array<GameSlot>` at lineup-lock time. Currently bundled inside `src/utils/gameOrder.ts` for the 3v3 case (hardcoded 18-game DRR table) and computed inline elsewhere for the 5v5 SRR case; the Step-2 refactor extracts Pairings Generator as a centralized Module with its three sub-Mechanisms (pair generation, game ordering, break/rack assignment) as first-class composable stages.
+- **[Pairings Generator](pairings-generator.md)** — consumes Team Geometry's `lineup_size` and `game_generation` (plus Match Format's per-pairing rule and the locked lineups) to produce the concrete `Array<GameSlot>` at lineup-lock time.
 - **[Threshold Charts](threshold-charts/README.md)** — formula-shape Charts ([Points Games-Needed Formula](threshold-charts/3v3-games-needed.md), [Percentage Games-Needed Formula](threshold-charts/5v5-games-needed.md), [FargoRate Formula](threshold-charts/fargo-formula.md)) take `game_count` as input and produce calibrated targets for any team size. Discrete-table deployments (per-league LO-customized stored tables) consume `game_count` implicitly via the rows they were calibrated for.
 - **The Standings concern (outside this catalog)** — reads `game_count` for normalization; reads `lineup_size` implicitly via per-player game count = `game_count / lineup_size` for per-player statistics. Architectural shape TBD via separate future brainstorm.
-- **The scoring runtime** (`src/utils/match/computeMatchRunningTotals.ts` etc.) — reads `lineup_size` and `game_count` to know when a match is structurally complete (all games played) vs. terminated early (race-mode, forfeit, etc.).
-- **The lineup-management UI** (`src/components/lineup/`, the wizard, roster pages) — reads `lineup_size` to size lineup-entry forms; reads `max_roster_size` to enforce roster-cap admin operations.
+- **The scoring runtime** — reads `lineup_size` and `game_count` to know when a match is structurally complete (all games played) vs. terminated early (race-mode, forfeit, etc.).
+- **The lineup-management UI** (the lineup forms, the wizard, roster pages) — reads `lineup_size` to size lineup-entry forms; reads `max_roster_size` to enforce roster-cap admin operations.
 - **The scoresheet renderer** — reads `lineup_size` to lay out the pairing matrix display. (Also reads `pairing_format` from [Match Format](match-format.md) to decide per-cell rendering — single rack vs race-counter widget. The renderer is a shared consumer of both Modules.)
 
 **Sibling (composes alongside, no direct dependency):**
 
 - **[Match Format](match-format.md)** — declares the per-pairing format (single rack vs race-to-N) and base race length. Match Format does NOT read Team Geometry; both Modules feed the runtime (Pairings Generator and the scoresheet renderer use both). Team Geometry sets *how many pairings exist*; Match Format sets *what shape each pairing has*. Orthogonal — changing either Module's axes doesn't require changing the other.
 - **[Handicap Systems](handicap-systems/README.md)**, **[Handicap Mechanisms](handicap-mechanisms/README.md)**, **[Points System](points-system/README.md)**, **[Win Calculator](win-calculator.md)** — all compose independently. Changing Team Geometry does not require changing any of these.
-
-## Implementation status
-
-The locked [`README.md`](../README.md) and [Handicap Systems README's "Architectural intent: modules are orthogonal" section](handicap-systems/README.md#architectural-intent-modules-are-orthogonal) both establish the principle that current code bundlings are *implementation artifacts from before the modular axes were fully separated, NOT statements of intended architecture*. Team Geometry's situation in current code matches:
-
-- The triple lives partly in `preferences` columns (`lineup_size`, `max_roster_size`, `game_generation`) and partly bundled inside `SystemModule.teamFormat` (a `TeamFormatConstants` interface in `src/systems/types.ts`).
-- The three prepackaged Scoring System triples are wired into the three bundled SystemModule files (`bca3v3.ts`, `bca5v5.ts`, `fargo5v5.ts`).
-- Game-order generation for 3v3 is hardcoded in `src/utils/gameOrder.ts` (the 18-game DRR table); 5v5 SRR generation is computed inline elsewhere. **There is no unified [Pairings Generator](pairings-generator.md) engine today** — the Module is recognized in the locked Module catalog, but the implementation is still bundled inside per-Scoring-System code awaiting Step-2 extraction.
-- Validation invariants are partly schema-enforced, partly application-enforced, and not centralized.
-
-The Step-2 refactor (per the comparison brainstorm's verdict) lifts Team Geometry out as a first-class Module with its own typed contract, extracts [Pairings Generator](pairings-generator.md) as the centralized runtime instantiator with its three sub-Mechanisms as first-class stages, and dissolves the `SystemModule.teamFormat` bundling. The 3 prepackaged Scoring System triples become declarations on the composition pages.
 
 ## Future possibilities
 
@@ -206,16 +192,3 @@ The Step-2 refactor (per the comparison brainstorm's verdict) lifts Team Geometr
 - **LO-customizable game-count formulas.** Letting an LO declare a non-RR `game_count = explicit_count` for venues with strict time limits (e.g., "we always play exactly 20 games per night, paired however the scheduler decides"). This breaks the `game_count = lineup_size² × multiplier` invariant and requires a `game_count_override` axis — non-trivial but architecturally allowable.
 
 The category is open. Adding a new `game_generation` rule requires: (a) a game-count formula, (b) corresponding [Pairings Generator](pairings-generator.md) sub-Mechanism variants (pair generation algorithm + game ordering + break/rack assignment), (c) calibration guidance for downstream Threshold Charts at the new game count, (d) a wizard option.
-
-## Source of truth
-
-- `src/types/preferences.ts` — `lineup_size`, `max_roster_size`, `game_generation` column types in the `preferences` row shape
-- `src/types/resolvedSystemConfig.ts` — `ResolvedSystemConfig` carries the resolved Team Geometry triple post-cascade
-- `supabase/migrations/20260410000000_extend_preferences_modular.sql` — original `lineup_size`, `max_roster_size`, `game_generation` columns + initial CHECK constraints + `preferences_max_roster_size_check`
-- `supabase/migrations/20260418000002_lock_tier1_preferences.sql` — Postgres trigger enforcing season-stability immutability (Team Geometry's `lineup_size` and `game_generation` are in the lock set; `max_roster_size` is NOT in the lock set and remains mutable mid-season)
-- `supabase/migrations/20260429000002_resolved_view_phase2_modular_axes.sql` — `resolved_league_preferences` view applies the 3-tier cascade for Team Geometry's axes
-- `src/systems/types.ts` — `TeamFormatConstants` interface (bundled inside `SystemModule.teamFormat`; the Step-2 refactor lifts this out)
-- `src/systems/{bca3v3,bca5v5,fargo5v5}.ts` — `teamFormat` declarations for the three prepackaged Scoring System triples
-- `src/utils/gameOrder.ts` — hardcoded 18-game DRR table for 3v3 (the current bundled implementation that [Pairings Generator](pairings-generator.md) will extract from); the 5v5 SRR case is computed inline in the scoring runtime
-- `src/wizards/league-v2/steps/` — wizard step(s) collecting `lineup_size` + `max_roster_size`; `game_generation` is currently derived from preset selection rather than independently chosen (a Step-2 refactor opportunity)
-- `src/__tests__/database/lock_tier1_preferences.db.test.ts` (if present, naming approximate) — characterization of the lock trigger's behavior

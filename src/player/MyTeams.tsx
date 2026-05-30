@@ -216,7 +216,7 @@ function TeamAccordionItem({
           {!isReady && actionableMatches.length > 0 ? (
             // Show single setup incomplete flag if team not ready
             <div className="flex items-center justify-end w-full">
-              <span className="text-xs font-bold px-2 py-0.5 rounded text-yellow-700 bg-yellow-100">
+              <span className="text-xs font-bold px-2 py-0.5 rounded text-warning bg-warning/15">
                 SETUP INCOMPLETE
               </span>
             </div>
@@ -226,7 +226,7 @@ function TeamAccordionItem({
               const isMakeup = makeupMatches.some(m => m.id === match.id);
               const isInProgress = match.status === 'in_progress';
               const tagText = isMakeup ? 'MAKEUP' : isInProgress ? 'IN PROGRESS' : 'UPCOMING';
-              const tagColor = isMakeup ? 'text-orange-700 bg-orange-100' : 'text-blue-700 bg-blue-100';
+              const tagColor = isMakeup ? 'text-warning bg-warning/15' : 'text-info bg-info/15';
 
               return (
                 <div key={match.id} className="flex items-center justify-between w-full">
@@ -248,8 +248,8 @@ function TeamAccordionItem({
                       tabIndex={0}
                       className={`inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors cursor-pointer px-2 h-7 ${
                         isMakeup
-                          ? 'text-orange-700 hover:text-orange-800 hover:bg-orange-50'
-                          : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                          ? 'text-warning hover:bg-warning/10'
+                          : 'text-info hover:bg-info/10'
                       }`}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -295,14 +295,14 @@ function TeamAccordionItem({
 
           {/* Team Readiness Warning (Captains Only) */}
           {isCaptain && !isReady && (
-            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="p-3 bg-warning/10 border border-warning/40 rounded-lg">
               <div className="flex items-start gap-2">
-                <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                <AlertCircle className="h-5 w-5 text-warning mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-yellow-900">
+                  <p className="text-sm font-semibold text-warning">
                     Team Setup Incomplete
                   </p>
-                  <ul className="text-sm text-yellow-800 mt-1 space-y-1">
+                  <ul className="text-sm text-foreground mt-1 space-y-1">
                     {!hasVenue && <li>• Home venue required</li>}
                     {!hasMinRoster && (
                       <li>
@@ -349,7 +349,7 @@ function TeamAccordionItem({
             <div
               className={`text-base ml-6 ${
                 team.captain.id === memberId
-                  ? 'font-semibold text-blue-600'
+                  ? 'font-semibold text-primary'
                   : 'text-foreground'
               }`}
             >

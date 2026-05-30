@@ -24,6 +24,8 @@ import { supabase } from '@/supabaseClient';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { ArrowLeft } from 'lucide-react';
 import { useCurrentMember } from '@/api/hooks';
 import { InfoButton } from '@/components/InfoButton';
@@ -667,7 +669,7 @@ function ScoreMatchBody() {
         <Card className="max-w-md w-full">
           <CardContent className="pt-6">
             <div className="text-center">
-              <div className="text-lg font-semibold text-red-600 mb-2">
+              <div className="text-lg font-semibold text-destructive mb-2">
                 Error
               </div>
               <div className="text-foreground mb-4">{error}</div>
@@ -692,7 +694,7 @@ function ScoreMatchBody() {
     return (
       <div className="min-h-screen bg-muted flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
         </div>
       </div>
     );
@@ -788,15 +790,19 @@ function ScoreMatchBody() {
                 quiet "catching up" pill while degraded, one calm note on a
                 sustained outage. Active scorer only (this is the scoring page). */}
             <ConnectionIndicator health={connectionHealth} />
-            <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
-              <input
-                type="checkbox"
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="score-match-auto-confirm"
                 checked={autoConfirm}
-                onChange={(e) => setAutoConfirm(e.target.checked)}
-                className="w-3 h-3"
+                onCheckedChange={(c) => setAutoConfirm(c === true)}
               />
-              Auto-Confirm
-            </label>
+              <Label
+                htmlFor="score-match-auto-confirm"
+                className="text-xs text-muted-foreground cursor-pointer"
+              >
+                Auto-Confirm
+              </Label>
+            </div>
             <InfoButton title="Auto-Confirm Opponent Selections" className="relative">
               <p className="text-sm">
                 By enabling this your opponents game result selections will automatically be confirmed for your team. Your team is still responsible for ensuring the scoring is accurate. This option simply removes the need to confirm each game individually.

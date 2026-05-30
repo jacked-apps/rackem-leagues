@@ -440,7 +440,7 @@ export function ReportsManagement() {
 
                     {/* Actions Taken */}
                     {selectedReport.actions.map((action: any) => (
-                      <div key={action.id} className="text-sm border-l-2 border-red-500 pl-3 py-1">
+                      <div key={action.id} className="text-sm border-l-2 border-destructive pl-3 py-1">
                         <div className="font-medium">
                           Action: {action.action_type.replace('_', ' ')}
                         </div>
@@ -450,7 +450,7 @@ export function ReportsManagement() {
                         </div>
                         <div className="text-xs mt-1">{action.action_notes}</div>
                         {action.suspension_until && (
-                          <div className="text-xs text-red-600">
+                          <div className="text-xs text-destructive">
                             Suspended until: {new Date(action.suspension_until).toLocaleString()}
                           </div>
                         )}

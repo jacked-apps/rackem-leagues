@@ -87,12 +87,12 @@ export function TopShooters() {
         <Card>
           <CardHeader>
             <CardTitle>Top Shooter</CardTitle>
-            <p className="text-sm text-red-600">
+            <p className="text-sm text-destructive">
               Failed to load player statistics
             </p>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8 text-red-500">
+            <div className="text-center py-8 text-destructive">
               Error: {error.message}
             </div>
           </CardContent>

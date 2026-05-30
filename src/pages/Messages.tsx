@@ -246,7 +246,7 @@ export function Messages() {
           )}
 
           {/* Exit Button - Only show on desktop */}
-          <div className="hidden md:flex border-t bg-green-300 px-4 md:px-6 py-4 justify-end flex-shrink-0">
+          <div className="hidden md:flex border-t bg-muted px-4 md:px-6 py-4 justify-end flex-shrink-0">
             <Button onClick={() => navigate('/my-teams')} loadingText="none">
               Exit to My Teams
             </Button>

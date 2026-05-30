@@ -147,7 +147,7 @@ export function PlayerProfile() {
   if (error || !player) {
     return (
       <div className="container mx-auto p-6">
-        <p className="text-center text-red-600">{error || 'Player not found'}</p>
+        <p className="text-center text-destructive">{error || 'Player not found'}</p>
         <div className="flex justify-center mt-4">
           <Button onClick={() => window.history.back()} variant="outline">
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -183,7 +183,7 @@ export function PlayerProfile() {
               <Mail className="h-4 w-4 text-muted-foreground" />
               <a
                 href={`mailto:${player.email}`}
-                className="text-blue-600 hover:underline"
+                className="text-primary hover:underline transition-colors"
               >
                 {player.email}
               </a>
@@ -215,7 +215,7 @@ export function PlayerProfile() {
                       <p className="font-semibold text-foreground">
                         {teamData.team.team_name}
                         {teamData.is_captain && (
-                          <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                          <span className="ml-2 text-xs bg-info/15 text-info px-2 py-0.5 rounded">
                             Captain
                           </span>
                         )}
@@ -256,7 +256,7 @@ export function PlayerProfile() {
         <CardContent>
           {player.bca_member_number ? (
             <div className="flex items-center gap-2">
-              <span className="text-sm bg-green-100 text-green-800 px-2 py-1 rounded">Active</span>
+              <span className="text-sm bg-success/15 text-success px-2 py-1 rounded">Active</span>
               <span className="text-foreground">Member #{player.bca_member_number}</span>
             </div>
           ) : (

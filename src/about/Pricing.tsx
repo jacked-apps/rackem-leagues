@@ -31,12 +31,12 @@ export const Pricing: React.FC = () => {
         <CardContent className="space-y-4">
           <div className="grid md:grid-cols-2 gap-6">
             <div>
-              <h3 className="text-lg font-semibold mb-2 text-blue-600">Per Season Setup</h3>
+              <h3 className="text-lg font-semibold mb-2 text-primary">Per Season Setup</h3>
               <p className="text-3xl font-bold">$10</p>
               <p className="text-sm text-muted-foreground mt-1">One-time per season</p>
             </div>
             <div>
-              <h3 className="text-lg font-semibold mb-2 text-blue-600">Weekly Platform Fee</h3>
+              <h3 className="text-lg font-semibold mb-2 text-primary">Weekly Platform Fee</h3>
               <p className="text-3xl font-bold">$1</p>
               <p className="text-sm text-muted-foreground mt-1">Per team, per week (regular season only)</p>
             </div>
@@ -97,7 +97,7 @@ export const Pricing: React.FC = () => {
       </Card>
 
       {/* Real-World Example */}
-      <Card className="mb-8 border-blue-200 bg-blue-50">
+      <Card className="mb-8 border-info/40 bg-info/10">
         <CardHeader>
           <CardTitle className="text-2xl">Real Example: 8-Team League</CardTitle>
         </CardHeader>
@@ -125,7 +125,7 @@ export const Pricing: React.FC = () => {
               </div>
               <div className="flex justify-between border-t pt-2 font-bold text-lg">
                 <span>Total Season Cost:</span>
-                <span className="font-mono text-blue-600">$138</span>
+                <span className="font-mono text-primary">$138</span>
               </div>
             </div>
           </div>
@@ -140,8 +140,8 @@ export const Pricing: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-green-100 p-4 rounded border border-green-300">
-            <p className="font-semibold text-green-800">
+          <div className="bg-success/15 p-4 rounded border border-success/40">
+            <p className="font-semibold text-success">
               💡 Result: Season paid in full from less than one week of your collected dues!
             </p>
           </div>

@@ -71,7 +71,7 @@ export const OperatorDashboard: React.FC = () => {
           {/* Row 1 - Quick Actions */}
           <DashboardCard
             icon={<MessageSquare className="h-6 w-6" />}
-            iconColor="text-purple-600"
+            iconColor="text-highlight"
             title="Messaging"
             description="Send messages and announcements"
             buttonText="Open Messages"
@@ -80,7 +80,7 @@ export const OperatorDashboard: React.FC = () => {
 
           <DashboardCard
             icon={<Users className="h-6 w-6" />}
-            iconColor="text-green-600"
+            iconColor="text-success"
             title="Manage Players"
             description="View registrations and player stats"
             buttonText="View Players"
@@ -89,7 +89,7 @@ export const OperatorDashboard: React.FC = () => {
 
           <DashboardCard
             icon={<Flag className="h-6 w-6" />}
-            iconColor="text-red-600"
+            iconColor="text-destructive"
             title="Reports Management"
             description="Review and manage user reports"
             buttonText="View Reports"
@@ -106,7 +106,7 @@ export const OperatorDashboard: React.FC = () => {
             {/* Organization Settings */}
             <DashboardCard
               icon={<Settings className="h-6 w-6" />}
-              iconColor="text-indigo-600"
+              iconColor="text-primary"
               title="Organization Settings"
               description="Edit your contact info and address"
               buttonText="Manage Organization"
@@ -123,25 +123,25 @@ export const OperatorDashboard: React.FC = () => {
             />
 
             {/* Help & Resources */}
-            <Card className="bg-blue-50 border-blue-200">
+            <Card className="bg-info/10 border-info/40">
               <CardHeader>
-                <CardTitle className="text-lg text-blue-900">Need Help?</CardTitle>
+                <CardTitle className="text-lg text-info">Need Help?</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3 text-sm">
-                  <Link to="#" className="flex items-center gap-2 text-blue-700 hover:text-blue-900">
+                  <Link to="#" className="flex items-center gap-2 text-info hover:text-info/80 transition-colors">
                     <BookOpen className="h-4 w-4" />
                     Operator Handbook
                   </Link>
-                  <Link to="#" className="flex items-center gap-2 text-blue-700 hover:text-blue-900">
+                  <Link to="#" className="flex items-center gap-2 text-info hover:text-info/80 transition-colors">
                     <Video className="h-4 w-4" />
                     Video Tutorials
                   </Link>
-                  <Link to="#" className="flex items-center gap-2 text-blue-700 hover:text-blue-900">
+                  <Link to="#" className="flex items-center gap-2 text-info hover:text-info/80 transition-colors">
                     <MessageCircle className="h-4 w-4" />
                     Community Forum
                   </Link>
-                  <Link to="#" className="flex items-center gap-2 text-blue-700 hover:text-blue-900">
+                  <Link to="#" className="flex items-center gap-2 text-info hover:text-info/80 transition-colors">
                     <Phone className="h-4 w-4" />
                     Contact Support
                   </Link>

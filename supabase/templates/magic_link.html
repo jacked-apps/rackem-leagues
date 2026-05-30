@@ -1,0 +1,58 @@
+<!--
+  Passwordless sign-in email — branded, CODE-ONLY (no magic link).
+
+  LOCAL template (wired via config.toml `content_path`). The hosted/prod project's
+  "Magic Link" template is configured separately in the Supabase dashboard and
+  should mirror this HTML (with the logo pointed at the production asset URL).
+
+  {{ .Token }}   = the 6-digit sign-in code.
+  {{ .SiteURL }} = the configured site_url, so the logo resolves per environment.
+
+  Email HTML note: clients (Gmail/Outlook) ignore modern CSS, so this uses
+  table layout + inline styles for consistent rendering.
+-->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+       style="background:#f6f7f8;padding:24px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">
+  <tr>
+    <td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+             style="max-width:480px;background:#ffffff;border-radius:12px;border:1px solid #e6e8ea;">
+        <tr>
+          <td align="center" style="padding:28px 24px 8px;">
+            <img src="{{ .SiteURL }}/logo-main.png" alt="Rack'em Leagues" height="44"
+                 style="height:44px;width:auto;display:block;border:0;" />
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:8px 32px 0;color:#1a1a1a;">
+            <h1 style="font-size:20px;margin:16px 0 4px;text-align:center;">Sign in to Rack'em</h1>
+            <p style="font-size:15px;color:#555;text-align:center;margin:0 0 20px;">
+              Enter this code to finish signing in:
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding:0 32px;">
+            <div style="display:inline-block;background:#f0f8fb;border:1px solid #50a6c2;border-radius:10px;padding:16px 28px;font-size:32px;font-weight:700;letter-spacing:8px;color:#0a3a47;">
+              {{ .Token }}
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:24px 32px 0;">
+            <p style="font-size:13px;color:#888;text-align:center;margin:0;">
+              This code expires in 1 hour. If you didn't try to sign in, you can ignore this email.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:16px 32px 28px;">
+            <p style="font-size:12px;color:#aaa;text-align:center;margin:16px 0 0;border-top:1px solid #eee;padding-top:16px;">
+              Rack'em Leagues
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
