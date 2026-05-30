@@ -1,7 +1,7 @@
 /**
  * @fileoverview Match-format glossary entries — how games inside a match
  * are generated (round-robin variants, individual races) and how each
- * matchup is decided (single rack vs race to N).
+ * pairing is decided (single rack vs race to N).
  *
  * NO DRIFT: no preset names embedded in definitions.
  */
@@ -27,7 +27,7 @@ export const entries = {
             plays every player on the other team once.
           </li>
           <li>
-            <strong>Double Round Robin</strong> — same matchups twice; once
+            <strong>Double Round Robin</strong> — same pairings twice; once
             breaking, once racking.
           </li>
           <li>
@@ -75,7 +75,7 @@ export const entries = {
       <p>
         In a 5v5 single round robin, each home player meets each away
         player one time — 25 games total. Faster than a double round robin,
-        but only one of the two players in any matchup gets to break.
+        but only one of the two players in any pairing gets to break.
       </p>
     ),
     l1_anchor: { path: 'docs/league-system/modules/match-format.md' },
@@ -93,7 +93,7 @@ export const entries = {
         In a 3v3 double round robin, each home player meets each away player
         twice — 18 games total. The two meetings split the break: each
         player gets to break against the same opponent once and rack once.
-        Eliminates any "luck of the break" advantage at the matchup level.
+        Eliminates any "luck of the break" advantage at the pairing level.
       </p>
     ),
     l1_anchor: { path: 'docs/league-system/modules/match-format.md' },
@@ -128,13 +128,13 @@ export const entries = {
     canonicalName: 'Pairing Format',
     aliases: [],
     shortDef:
-      'Whether each player-vs-player matchup is decided by a single rack or by a race to N.',
+      'Whether each pairing is decided by a single rack or by a race to N.',
     longDef: (
       <p>
-        Pairing format is the per-matchup decision rule. Single Rack means
+        Pairing format is the per-pairing decision rule. Single Rack means
         one rack settles it. Race to N means the two players play until one
         reaches a target rack count. The choice changes how long each
-        matchup takes and how much skill variance gets averaged out.
+        pairing takes and how much skill variance gets averaged out.
       </p>
     ),
     l1_anchor: { path: 'docs/league-system/modules/match-format.md' },
@@ -146,12 +146,12 @@ export const entries = {
     canonicalName: 'Single Rack',
     aliases: ['one rack'],
     shortDef:
-      'One rack per matchup — whoever wins that rack takes the matchup.',
+      'One rack per pairing — whoever wins that rack takes the pairing.',
     longDef: (
       <p>
         The most common pairing shape. Each home player meets each away
         player and they play exactly one rack against each other. The
-        rack's winner is the matchup's winner. Fast, decisive, and easy to
+        rack's winner is the pairing's winner. Fast, decisive, and easy to
         track on a scoreboard.
       </p>
     ),
@@ -164,11 +164,11 @@ export const entries = {
     canonicalName: 'Race to N',
     aliases: ['race format', 'race to', 'first to n'],
     shortDef:
-      'Each matchup plays a race to N racks — first player to N wins the matchup.',
+      'Each pairing plays a race to N racks — first player to N wins the pairing.',
     longDef: (
       <div className="space-y-2">
         <p>
-          Each matchup is a race instead of a single rack. The two players
+          Each pairing is a race instead of a single rack. The two players
           play until one reaches the target — race to 7 means first to win 7
           racks. The race length can be the same for everyone, or can be
           adjusted per pairing based on skill gap (race length adjustment).
@@ -188,7 +188,7 @@ export const entries = {
     longDef: (
       <p>
         "Race" is the generic word for any first-to-target format. It can
-        describe a single matchup (race to 7 between two players) or a
+        describe a single pairing (race to 7 between two players) or a
         whole match in formats that use individual races. The "N" is set by
         the league or by the handicap chart per pair.
       </p>
