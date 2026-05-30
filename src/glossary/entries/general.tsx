@@ -124,7 +124,7 @@ export const entries = {
           <li>
             A generated{' '}
             <a href="#schedule" className="text-info hover:underline">schedule</a>{' '}
-            of every match night.
+            of every match.
           </li>
           <li>
             The specific{' '}
@@ -924,26 +924,30 @@ export const entries = {
     canonicalName: 'Substitute',
     aliases: ['sub'],
     shortDef:
-      'A roster player who isn\'t in the lineup for a given match — or fills in for a missing player.',
+      'A player who fills in for a missing team member. The app supports two patterns: anonymous subs and double duty.',
     longDef: (
-      <div className="space-y-2">
-        <p>The app supports two specific sub patterns:</p>
-        <ul className="list-disc pl-5">
+      <div className="space-y-3">
+        <p>
+          A substitute is a player who fills in for a missing team
+          member. The app supports two patterns:
+        </p>
+        <ul className="list-disc pl-5 space-y-1">
           <li>
-            <strong>Anonymous Sub</strong> — a player whose handicap the
-            league already knows plays in place of a missing player, but
-            their results don't affect their own rating.
+            <a href="#anonymous-sub" className="text-info hover:underline">Anonymous Sub</a>
           </li>
           <li>
-            <strong>Double Duty</strong> — a player in the lineup plays in
-            two positions in the same match; the opposing team picks which
-            roster player takes the doubled role.
+            <a href="#double-duty" className="text-info hover:underline">Double Duty</a>
           </li>
         </ul>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#anonymous-sub" className="text-info hover:underline">anonymous sub</a>,{' '}
+          <a href="#double-duty" className="text-info hover:underline">double duty</a>.
+        </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
-    related: ['anonymous-sub', 'double-duty', 'roster', 'lineup'],
+    related: ['roster', 'lineup'],
   },
 
   'anonymous-sub': {
