@@ -1726,6 +1726,30 @@ export const entries = {
     related: ['lineup', 'manual-entry'],
   },
 
+  bye: {
+    slug: 'bye',
+    canonicalName: 'Bye',
+    aliases: ['bye week'],
+    shortDef:
+      "A \"filler\" team the app uses when the league has an odd number of teams. The team scheduled against the bye gets the match off and receives a \"win\" for it.",
+    longDef: (
+      <p>
+        When a{' '}
+        <a href="#league" className="text-info hover:underline">league</a>{' '}
+        has an odd number of{' '}
+        <a href="#team" className="text-info hover:underline">teams</a>,
+        one team would otherwise have no opponent for any given week.
+        The bye is a placeholder team that fills the empty slot in the{' '}
+        <a href="#schedule" className="text-info hover:underline">schedule</a>.
+        The team paired against the bye that week gets the match off —
+        they don't play — and the app records the result as a win for
+        them.
+      </p>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['matchup'],
+  },
+
   rack: {
     slug: 'rack',
     canonicalName: 'Rack',
