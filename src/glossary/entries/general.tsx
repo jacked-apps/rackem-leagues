@@ -1614,7 +1614,7 @@ export const entries = {
     canonicalName: 'Player Reports',
     aliases: ['report', 'reports', 'reporting'],
     shortDef:
-      "A way for any player to flag a problem about another player to the league operator for review. Wired into messages, lineup, and player profiles. In progress — full workflow is still being built out.",
+      "A way for any player to flag a problem about another player to the league operator for review — wired into messages, lineup, and player profiles. In progress.",
     longDef: (
       <div className="space-y-3">
         <p>
