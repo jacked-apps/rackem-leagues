@@ -464,17 +464,40 @@ export const entries = {
     canonicalName: 'Match',
     aliases: [],
     shortDef:
-      'One team vs one team on a single night — holds the scores, lineups, and games played.',
+      'One team vs one team played in a single session — holds the scores, lineups, and games played.',
     longDef: (
       <div className="space-y-3">
         <p>
-          A match is one team vs one team on a single night. It's the
-          played event — where the actual{' '}
+          A match is one team vs one team played in a single session.
+          It's the played event — where the actual{' '}
           <a href="#game" className="text-info hover:underline">games</a>{' '}
-          happen — and the record of what occurred: the{' '}
-          <a href="#lineup" className="text-info hover:underline">lineups</a>{' '}
-          each team brought, the scores, who won, and any notes.
+          happen — and the record of what occurred.
         </p>
+        <p>What a match record holds:</p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>
+            The two{' '}
+            <a href="#team" className="text-info hover:underline">teams</a>{' '}
+            that played (home and away), and the date.
+          </li>
+          <li>
+            Each team's{' '}
+            <a href="#lineup" className="text-info hover:underline">lineup</a>{' '}
+            — which players from the{' '}
+            <a href="#roster" className="text-info hover:underline">roster</a>{' '}
+            (drawn within the{' '}
+            <a href="#roster-size" className="text-info hover:underline">roster size</a>{' '}
+            cap) filled the{' '}
+            <a href="#lineup-size" className="text-info hover:underline">lineup size</a>{' '}
+            slots.
+          </li>
+          <li>The result of every individual game played (winner + score).</li>
+          <li>Total games won by each team.</li>
+          <li>Total points earned by each team (when the league tracks points).</li>
+          <li>The match winner.</li>
+          <li>Status — scheduled, in progress, completed, forfeit, makeup, preplayed.</li>
+          <li>Any operator or captain notes attached to the match.</li>
+        </ul>
         <p>The hierarchy:</p>
         <ul className="list-disc space-y-1 pl-5">
           <li>
@@ -483,7 +506,7 @@ export const entries = {
             (one week) is a group of matches.
           </li>
           <li>
-            A match (one team vs one team, one night) is a group of{' '}
+            A match (one team vs one team) is a group of{' '}
             <a href="#game" className="text-info hover:underline">games</a>.
           </li>
           <li>
@@ -493,31 +516,138 @@ export const entries = {
           </li>
         </ul>
         <p>
+          Matches are booked weekly in this app — each team plays one
+          match per week of the{' '}
+          <a href="#season-length" className="text-info hover:underline">season length</a>.
           The number of games inside a match depends on the{' '}
           <a href="#lineup-size" className="text-info hover:underline">lineup size</a>{' '}
           and the{' '}
-          <a href="#match-format" className="text-info hover:underline">match format</a>.
-          For example, a 3v3 double round robin produces 18 games per
-          match; a 5v5 single round robin produces 25.
+          <a href="#match-format" className="text-info hover:underline">match format</a>:
+          a 3v3 double round robin produces 18 games per match; a 5v5
+          single round robin produces 25.
+        </p>
+        <p>
+          <strong>Scheduling exceptions.</strong> When a team can't make
+          their scheduled week (illness, venue conflict, work, travel),
+          the match can be played outside its normal slot. A{' '}
+          <a href="#makeup-match" className="text-info hover:underline">makeup match</a>{' '}
+          is played AFTER the scheduled week. A{' '}
+          <a href="#preplayed-match" className="text-info hover:underline">preplayed match</a>{' '}
+          is played BEFORE it. Both still count toward the season{' '}
+          <a href="#standings" className="text-info hover:underline">standings</a>{' '}
+          exactly like a normal-week match.
         </p>
         <p className="text-sm text-muted-foreground">
-          <strong>A note on the word.</strong> &ldquo;Match&rdquo; sometimes
-          gets used informally to mean a single game or round. In this app,
-          match always means the team-vs-team event on a single night.
+          <strong>A note on the word.</strong> &ldquo;Match&rdquo;
+          sometimes gets used informally to mean a single game or round.
+          In this app, match always means the team-vs-team event.
         </p>
         <p className="text-sm text-muted-foreground">
           Relevant topics:{' '}
           <a href="#matchup" className="text-info hover:underline">matchup</a>,{' '}
           <a href="#game" className="text-info hover:underline">game</a>,{' '}
+          <a href="#team" className="text-info hover:underline">team</a>,{' '}
           <a href="#lineup" className="text-info hover:underline">lineup</a>,{' '}
           <a href="#lineup-size" className="text-info hover:underline">lineup size</a>,{' '}
-          <a href="#match-format" className="text-info hover:underline">match format</a>.
+          <a href="#roster" className="text-info hover:underline">roster</a>,{' '}
+          <a href="#roster-size" className="text-info hover:underline">roster size</a>,{' '}
+          <a href="#match-format" className="text-info hover:underline">match format</a>,{' '}
+          <a href="#season-length" className="text-info hover:underline">season length</a>,{' '}
+          <a href="#standings" className="text-info hover:underline">standings</a>,{' '}
+          <a href="#makeup-match" className="text-info hover:underline">makeup match</a>,{' '}
+          <a href="#preplayed-match" className="text-info hover:underline">preplayed match</a>.
         </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['pairing', 'team', 'scorekeeper'],
-    reviewedByEd: '2026-05-29',
+    related: ['pairing', 'scorekeeper', 'captain'],
+    reviewedByEd: '2026-05-30',
+  },
+
+  'makeup-match': {
+    slug: 'makeup-match',
+    canonicalName: 'Makeup Match',
+    aliases: ['makeup matches'],
+    shortDef:
+      'A match played AFTER its scheduled week — usually because a team couldn\'t make the original date.',
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          A makeup match is a{' '}
+          <a href="#match" className="text-info hover:underline">match</a>{' '}
+          played later than its originally scheduled week. Common reasons:
+          a team couldn't field a{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>{' '}
+          on the scheduled date (illness, work conflict, venue
+          unavailable), or the league granted a postponement.
+        </p>
+        <p>
+          The match record is marked as a makeup so it's traceable, but
+          it still counts toward the{' '}
+          <a href="#season" className="text-info hover:underline">season</a>{' '}
+          <a href="#standings" className="text-info hover:underline">standings</a>{' '}
+          exactly like a normal-week match.
+        </p>
+        <p>
+          Opposite of a{' '}
+          <a href="#preplayed-match" className="text-info hover:underline">preplayed match</a>,
+          which is played BEFORE its scheduled week.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#match" className="text-info hover:underline">match</a>,{' '}
+          <a href="#preplayed-match" className="text-info hover:underline">preplayed match</a>,{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>,{' '}
+          <a href="#season" className="text-info hover:underline">season</a>,{' '}
+          <a href="#standings" className="text-info hover:underline">standings</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['schedule'],
+  },
+
+  'preplayed-match': {
+    slug: 'preplayed-match',
+    canonicalName: 'Preplayed Match',
+    aliases: ['preplayed matches', 'pre-played match'],
+    shortDef:
+      'A match played BEFORE its scheduled week — usually because a team knows in advance they can\'t make the original date.',
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          A preplayed match is a{' '}
+          <a href="#match" className="text-info hover:underline">match</a>{' '}
+          played earlier than its originally scheduled week. Common reasons:
+          a team knows in advance they can't field a{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>{' '}
+          on the scheduled date (travel, planned absence) and chooses to
+          play early instead.
+        </p>
+        <p>
+          The match record is marked as preplayed so it's traceable, but
+          it still counts toward the{' '}
+          <a href="#season" className="text-info hover:underline">season</a>{' '}
+          <a href="#standings" className="text-info hover:underline">standings</a>{' '}
+          exactly like a normal-week match.
+        </p>
+        <p>
+          Opposite of a{' '}
+          <a href="#makeup-match" className="text-info hover:underline">makeup match</a>,
+          which is played AFTER its scheduled week.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#match" className="text-info hover:underline">match</a>,{' '}
+          <a href="#makeup-match" className="text-info hover:underline">makeup match</a>,{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>,{' '}
+          <a href="#season" className="text-info hover:underline">season</a>,{' '}
+          <a href="#standings" className="text-info hover:underline">standings</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['schedule'],
   },
 
   game: {
