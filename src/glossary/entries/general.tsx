@@ -288,17 +288,35 @@ export const entries = {
     canonicalName: 'Schedule',
     aliases: ['season schedule'],
     shortDef:
-      'The list of matches and which teams play whom — auto-generated from the season\'s teams, length, and match format.',
+      "The full week-by-week calendar a league runs on. Includes match weeks, blackout dates (holidays, championship travel), playoffs, and weeks off between seasons.",
     longDef: (
       <div className="space-y-3">
         <p>
           Once a{' '}
           <a href="#season" className="text-info hover:underline">season</a>{' '}
-          begins, the app generates a schedule: every match, the
-          teams that meet, and the venue (when multiple venues are in play).
-          The schedule is the master list of who plays whom and when.
+          begins, the app generates the schedule — the week-by-week
+          calendar the league runs on. It covers every{' '}
+          <a href="#match" className="text-info hover:underline">match</a>{' '}
+          (which teams meet, at which venue) plus the weeks where no
+          matches happen.
         </p>
-        <p>What drives the schedule:</p>
+        <p><strong>Scheduled gaps include:</strong></p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>
+            <strong>Blackout dates</strong> the LO sets — holidays,
+            national championship travel, or anything else the league
+            needs to skip.
+          </li>
+          <li>
+            <a href="#playoffs" className="text-info hover:underline">Playoffs</a>{' '}
+            at the end of regular play, when configured.
+          </li>
+          <li>
+            <strong>Weeks off between seasons</strong> — the gap before
+            the next season starts.
+          </li>
+        </ul>
+        <p><strong>What drives match-week generation:</strong></p>
         <ul className="list-disc space-y-1 pl-5">
           <li>
             The number of{' '}
