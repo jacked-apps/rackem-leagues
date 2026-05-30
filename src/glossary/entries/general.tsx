@@ -898,14 +898,17 @@ export const entries = {
           players will play. That's the lineup. The{' '}
           <a href="#lineup-size" className="text-info hover:underline">lineup size</a>{' '}
           is set at the league level. Anyone on the roster not in the
-          lineup sits the match out.
+          lineup sits the match out — but they can still participate by{' '}
+          <a href="#scorekeeper" className="text-info hover:underline">scoring</a>{' '}
+          the match or watching the live scoreboards.
         </p>
         <p className="text-sm text-muted-foreground">
           Relevant topics:{' '}
           <a href="#match" className="text-info hover:underline">match</a>,{' '}
           <a href="#team" className="text-info hover:underline">team</a>,{' '}
           <a href="#roster" className="text-info hover:underline">roster</a>,{' '}
-          <a href="#lineup-size" className="text-info hover:underline">lineup size</a>.
+          <a href="#lineup-size" className="text-info hover:underline">lineup size</a>,{' '}
+          <a href="#scorekeeper" className="text-info hover:underline">scorekeeper</a>.
         </p>
       </div>
     ),
