@@ -1661,6 +1661,7 @@ export const entries = {
     related: [],
   },
 
+  // TODO: Ed to revisit prize-calculator entry when the feature ships.
   'prize-calculator': {
     slug: 'prize-calculator',
     canonicalName: 'Prize Calculator',
@@ -1668,13 +1669,20 @@ export const entries = {
     shortDef:
       'A tool that helps the league operator work out money in (from teams) and prize splits at season end. Currently in progress.',
     longDef: (
-      <p>
-        The prize calculator helps the{' '}
-        <a href="#league-operator" className="text-info hover:underline">league operator</a>{' '}
-        handle the money side of running a league — total fees collected,
-        prize pool breakdown, payout splits. The calculator is partially
-        built; basics are in place.
-      </p>
+      <div className="space-y-3">
+        <p>
+          The prize calculator helps the{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>{' '}
+          handle the money side of running a league — total fees
+          collected, prize pool breakdown, payout splits. The calculator
+          is partially built; basics are in place.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          <strong>Status:</strong> this page is intentionally light
+          because the feature is still being built. Will fill in once
+          the calculator is finished and Ed can verify what it does.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: [],
