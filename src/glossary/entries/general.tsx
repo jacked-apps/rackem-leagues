@@ -20,12 +20,12 @@ export const entries = {
     canonicalName: 'League',
     aliases: ['division'],
     shortDef:
-      'An ongoing team competition for one game on one weekly night — run by an operator, with its own rules, scoring, and handicap setup.',
+      'An ongoing team competition for one game on one recurring day each week — run by an operator, with its own rules, scoring, and handicap setup.',
     longDef: (
       <div className="space-y-3">
         <p>
           A league operator starts an ongoing team competition for a specific
-          game on a specific night, with its own rules, scoring, and{' '}
+          game on a specific day, with its own rules, scoring, and{' '}
           <a href="#handicap-system" className="text-info hover:underline">handicap</a>{' '}
           setup. The competition is divided up into{' '}
           <a href="#season" className="text-info hover:underline">seasons</a> —
@@ -35,8 +35,8 @@ export const entries = {
           <strong>What makes one league distinct from another:</strong>
         </p>
         <ul className="list-disc space-y-1 pl-5">
-          <li>Same game on a different night → <strong>different league</strong>.</li>
-          <li>Different game on the same night → <strong>still a different league</strong>.</li>
+          <li>Same game on a different day → <strong>different league</strong>.</li>
+          <li>Different game on the same day → <strong>still a different league</strong>.</li>
         </ul>
         <p>
           Each league runs mostly the same metrics across its seasons. Small
@@ -90,7 +90,6 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['matchup', 'match', 'team'],
-    reviewedByEd: '2026-05-29',
   },
 
   season: {
@@ -181,7 +180,6 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['roster', 'captain'],
-    reviewedByEd: '2026-05-29',
   },
 
   'season-length': {
@@ -196,7 +194,7 @@ export const entries = {
           Each{' '}
           <a href="#season" className="text-info hover:underline">season</a>{' '}
           has its own length, expressed in weeks. The length drives how many
-          match nights the{' '}
+          matches the{' '}
           <a href="#schedule" className="text-info hover:underline">schedule</a>{' '}
           spans before regular play ends.
         </p>
@@ -242,7 +240,7 @@ export const entries = {
           weeks) ends, the top teams from the regular-season{' '}
           <a href="#standings" className="text-info hover:underline">standings</a>{' '}
           qualify for a playoff bracket. The bracket plays out across one or
-          more match nights and crowns the season's champion.
+          more matches and crowns the season's champion.
         </p>
         <p>What playoffs configuration covers:</p>
         <ul className="list-disc space-y-1 pl-5">
@@ -283,13 +281,13 @@ export const entries = {
     canonicalName: 'Schedule',
     aliases: ['season schedule'],
     shortDef:
-      'The list of match nights and which teams play whom — auto-generated from the season\'s teams, length, and match format.',
+      'The list of matches and which teams play whom — auto-generated from the season\'s teams, length, and match format.',
     longDef: (
       <div className="space-y-3">
         <p>
           Once a{' '}
           <a href="#season" className="text-info hover:underline">season</a>{' '}
-          begins, the app generates a schedule: every match night, the
+          begins, the app generates a schedule: every match, the
           teams that meet, and the venue (when multiple venues are in play).
           The schedule is the master list of who plays whom and when.
         </p>
@@ -1590,7 +1588,7 @@ export const entries = {
           <a href="#league" className="text-info hover:underline">league</a>{' '}
           plays 8-Ball on Tuesdays — every{' '}
           <a href="#match" className="text-info hover:underline">match</a>{' '}
-          falls on a Tuesday. If you want a different night, you create a
+          falls on a Tuesday. If you want a different day, you create a
           new{' '}
           <a href="#league" className="text-info hover:underline">league</a>.
         </p>
@@ -1605,7 +1603,6 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['qualifier'],
-    reviewedByEd: '2026-05-29',
   },
 
   // ---- Qualifier / descriptor ------------------------------------------
