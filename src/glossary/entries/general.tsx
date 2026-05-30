@@ -1136,25 +1136,35 @@ export const entries = {
     canonicalName: 'Staff',
     aliases: ['org staff', 'league staff'],
     shortDef:
-      "People the LO appoints to help run the organization — scorekeepers, league reps, anyone with extra access beyond a regular player.",
+      "People the LO appoints to help run the organization. A staff member currently has almost LO-level authority, with a few specific limitations.",
     longDef: (
-      <div className="space-y-2">
+      <div className="space-y-3">
         <p>
           Staff are the{' '}
           <a href="#league-operator" className="text-info hover:underline">league operator's</a>{' '}
-          appointed helpers — people who handle parts of running an{' '}
+          appointed helpers — anyone given access to the{' '}
           <a href="#organization" className="text-info hover:underline">organization</a>{' '}
-          that the LO can't or doesn't want to do alone.
+          beyond a regular player. Right now a staff member has almost
+          the same authority as the LO, with a few specific exceptions.
         </p>
+        <p><strong>Staff can be temporary.</strong></p>
         <p>
-          Common roles include the{' '}
-          <a href="#scorekeeper" className="text-info hover:underline">scorekeeper</a>{' '}
-          and other helpers the LO designates.
+          Common use case: an LO needs help figuring out a setup or a
+          setting. They appoint a temporary helper — either the
+          rackem-leagues team or an experienced LO friend — who steps
+          in to make the adjustments and then "leaves the organization"
+          when done. No long-term commitment.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>,{' '}
+          <a href="#organization" className="text-info hover:underline">organization</a>.
         </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: [],
+    reviewedByEd: '2026-05-30',
   },
 
   'captains-chat': {
