@@ -850,11 +850,9 @@ export const entries = {
     longDef: (
       <div className="space-y-3">
         <p>
-          Roster size is the cap on how many players a{' '}
-          <a href="#team" className="text-info hover:underline">team</a>{' '}
-          can carry on its{' '}
-          <a href="#roster" className="text-info hover:underline">roster</a>.
-          Think of it as how deep the bench is — a larger list of players a{' '}
+          Roster size is the maximum number of players that can join a single{' '}
+          <a href="#team" className="text-info hover:underline">team</a>.
+          Think of it as how deep the bench is — the list of players a{' '}
           <a href="#captain" className="text-info hover:underline">captain</a>{' '}
           can choose from when setting the{' '}
           <a href="#lineup" className="text-info hover:underline">lineup</a>{' '}
@@ -865,7 +863,9 @@ export const entries = {
           <li>
             <strong>Larger roster:</strong> a bigger pool to draw from. Someone
             missing a match becomes much less of a problem — somebody else on
-            the roster steps in.
+            the{' '}
+            <a href="#roster" className="text-info hover:underline">roster</a>{' '}
+            steps in.
           </li>
           <li>
             <strong>Smaller roster:</strong> each player gets more playing
