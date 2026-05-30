@@ -302,19 +302,9 @@ export const entries = {
         </p>
         <p><strong>Scheduled gaps include:</strong></p>
         <ul className="list-disc pl-5 space-y-1">
-          <li>
-            <strong>Blackout dates</strong> the LO sets — holidays,
-            national championship travel, or anything else the league
-            needs to skip.
-          </li>
-          <li>
-            <a href="#playoffs" className="text-info hover:underline">Playoffs</a>{' '}
-            at the end of regular play, when configured.
-          </li>
-          <li>
-            <strong>Weeks off between seasons</strong> — the gap before
-            the next season starts.
-          </li>
+          <li><a href="#blackout-dates" className="text-info hover:underline">Blackout dates</a></li>
+          <li><a href="#playoffs" className="text-info hover:underline">Playoffs</a></li>
+          <li><a href="#blackout-dates" className="text-info hover:underline">Weeks off between seasons</a></li>
         </ul>
         <p><strong>What drives match-week generation:</strong></p>
         <ul className="list-disc space-y-1 pl-5">
@@ -359,6 +349,44 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['matchup'],
+  },
+
+  'blackout-dates': {
+    slug: 'blackout-dates',
+    canonicalName: 'Blackout Dates',
+    aliases: ['blackout', 'blackout date', 'weeks off', 'weeks off between seasons'],
+    shortDef:
+      "Weeks the LO marks off in the schedule when no matches will be played — for holidays, championship travel, weeks off between seasons, or anything else the league needs to skip.",
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          Blackout dates are weeks the{' '}
+          <a href="#league-operator" className="text-info hover:underline">LO</a>{' '}
+          deliberately removes from play. The{' '}
+          <a href="#schedule" className="text-info hover:underline">schedule</a>{' '}
+          still tracks them — they're known gaps, not accidents — but
+          no matches are generated for those weeks.
+        </p>
+        <p>Common reasons to blackout a week:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Holidays (Thanksgiving week, Christmas / New Year's, etc.).</li>
+          <li>National championship travel — when players are away competing.</li>
+          <li>Venue conflicts — the bar is hosting another event.</li>
+          <li>Weeks off between seasons — the gap before the next{' '}
+            <a href="#season" className="text-info hover:underline">season</a>{' '}
+            starts.
+          </li>
+        </ul>
+        <p>
+          The gap between one season and the next is essentially a
+          blackout — known weeks with no play — so "weeks off between
+          seasons" and "blackout dates" describe the same thing in
+          different contexts.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['schedule', 'season'],
   },
 
   team: {
