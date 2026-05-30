@@ -1371,8 +1371,8 @@ export const entries = {
         <p>
           A table run is when the{' '}
           <a href="#breaker" className="text-info hover:underline">breaker</a>{' '}
-          breaks but doesn't get to continue. The break either goes dry
-          (no ball pocketed) or scratches (cue-ball foul, even if balls
+          breaks but doesn't get to continue. It's either a dry break
+          (no ball pocketed) or a scratch (cue-ball foul, even if balls
           dropped). Either way, the breaker's turn ends at the break.
           The incoming player — the{' '}
           <a href="#racker" className="text-info hover:underline">racker</a>{' '}
