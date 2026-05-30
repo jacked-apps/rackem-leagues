@@ -474,7 +474,7 @@ export const TeamManagement: React.FC = () => {
       <div className="min-h-screen bg-muted py-8">
         <div className="container mx-auto px-4 max-w-7xl">
           <div className="bg-card rounded-xl shadow-sm p-6">
-            <h3 className="text-red-600 text-lg font-semibold mb-4">Error</h3>
+            <h3 className="text-destructive text-lg font-semibold mb-4">Error</h3>
             <p className="text-foreground mb-4">{error || 'League not found'}</p>
             <Button
               onClick={() => {
@@ -593,7 +593,7 @@ export const TeamManagement: React.FC = () => {
                       )}
                     </InfoButton>
                   </div>
-                  <span className={`font-medium ${isAtMaxTeams ? 'text-orange-600' : 'text-foreground'}`}>
+                  <span className={`font-medium ${isAtMaxTeams ? 'text-warning' : 'text-foreground'}`}>
                     {teams.length}/{maxTeams}
                   </span>
                 </div>
@@ -717,9 +717,9 @@ export const TeamManagement: React.FC = () => {
             </div>
 
             {leagueVenues.length === 0 ? (
-              <div className="text-center py-8 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-blue-800 mb-2">Assign at least one venue before adding teams</p>
-                <p className="text-sm text-blue-600">Teams need a venue to call home</p>
+              <div className="text-center py-8 bg-info/10 border border-info/40 rounded-lg">
+                <p className="text-foreground mb-2">Assign at least one venue before adding teams</p>
+                <p className="text-sm text-info">Teams need a venue to call home</p>
               </div>
             ) : teams.length === 0 ? (
               <div className="text-center py-8">

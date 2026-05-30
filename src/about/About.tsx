@@ -122,7 +122,7 @@ export const About: React.FC = () => {
             dues to pay for the entire season before week 5. Playoffs are free.
           </p>
           <p className="mb-4">
-            <Link to="/pricing" className="text-blue-600 hover:text-blue-800 font-medium">
+            <Link to="/pricing" className="text-primary hover:text-primary/80 font-medium transition-colors">
               View detailed pricing breakdown with examples →
             </Link>
           </p>
@@ -142,7 +142,7 @@ export const About: React.FC = () => {
         </section>
 
         <div className="pt-4 border-t">
-          <Link to="/login" className="text-blue-600 hover:text-blue-800 font-medium">
+          <Link to="/login" className="text-primary hover:text-primary/80 font-medium transition-colors">
             Get Started →
           </Link>
         </div>

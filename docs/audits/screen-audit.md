@@ -1,7 +1,7 @@
 <!-- markdownlint-disable MD024 -->
 # Screen consistency & ease-of-use audit
 
-> **Status:** active. Started 2026-05-24.
+> **Status:** ✅ **all in-scope screens complete** — closed out 2026-05-25 (sweep ran 2026-05-24 → 2026-05-25).
 > **Plan:** [`docs/plans/2026-05-24-001-refactor-screen-consistency-audit-plan.md`](../plans/2026-05-24-001-refactor-screen-consistency-audit-plan.md)
 > **Origin requirements:** [`docs/brainstorms/2026-05-24-screen-consistency-audit-requirements.md`](../brainstorms/2026-05-24-screen-consistency-audit-requirements.md)
 > **Auto-scan findings (regenerated):** [`docs/audits/scan-findings.md`](scan-findings.md) — run `pnpm audit:scan` to refresh.
@@ -429,105 +429,92 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/operator-reports/:orgId`
 - **Component:** `src/operator/ReportsManagement.tsx`
-- **Status:** ⏳ pending
-- **Rubric:** _(8-item template — see header)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-wave-4)
+- **Rubric:** All 8 pass. Fixed action-log border + suspension text → `destructive` token. No findings remaining.
 
 #### `OrganizationSettings`
 
 - **Routes:** `/operator-settings/:orgId`
 - **Component:** `src/operator/OrganizationSettings.tsx`
-- **Status:** 🟠 cascade-fixed (PageHeader org badge), awaiting verify
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-wave-4)
+- **Rubric:** All 8 pass. Fixed 5 findings: error → `text-destructive`, raw `<button>` → shadcn `Button`, 3 DashboardCard iconColors mapped semantically (House Rules → `text-success`, Venues → `text-primary`, Playoffs → `text-highlight`).
 
 #### `OrganizationPlayoffSettings`
 
 - **Routes:** `/operator-settings/:orgId/playoffs`
 - **Component:** `src/operator/OrganizationPlayoffSettings.tsx`
-- **Status:** 🟠 cascade-fixed (PageHeader org badge), awaiting verify
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-wave-4)
+- **Rubric:** All 8 pass. Zero source findings — already clean. Cascade-clean from PageHeader + InfoButton.
 
 #### `LeagueRules`
 
 - **Routes:** `/league-rules/:orgId`
 - **Component:** `src/operator/LeagueRules.tsx`
-- **Status:** ⏳ pending
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-wave-4)
+- **Rubric:** All 8 pass. 51 LOC, zero findings, uses shadcn + theme tokens throughout.
 
 #### `LeaguePlayoffSettings`
 
 - **Routes:** `/operator/league/:leagueId/playoffs/:orgId`
 - **Component:** `src/operator/LeaguePlayoffSettings.tsx`
-- **Status:** 🟠 cascade-fixed (PageHeader org badge), awaiting verify
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-wave-4)
+- **Rubric:** All 8 pass. Zero source findings — already clean. Cascade-clean from PageHeader + InfoButton.
 
 #### `PlayoffSetup`
 
 - **Routes:** `/league/:leagueId/season/:seasonId/playoffs`
 - **Component:** `src/operator/PlayoffSetup.tsx`
-- **Status:** 🟠 cascade-fixed (PageHeader org badge), awaiting verify
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-wave-4)
+- **Rubric:** All 8 pass. Fixed ~15 findings — heaviest in Wave 4: standings W/L cells (green/red → success/destructive), excluded-teams warning notice (yellow → warning), error card (red → destructive), playoff week date (purple → highlight), season-status states (green/yellow → success/warning), info note (yellow → warning bg+border with foreground body), Approve & Set Matchups CTA (purple-600 → `bg-highlight text-highlight-foreground`).
 
 #### `PlayoffsSetupWizard`
 
 - **Routes:** `/league/:leagueId/season/:seasonId/playoffs-setup`
 - **Component:** `src/operator/PlayoffsSetupWizard.tsx`
-- **Status:** 🟠 cascade-fixed (PageHeader org badge), awaiting verify — single-page "wizard"
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-wave-4) — single-page "wizard"
+- **Rubric:** All 8 pass. Fixed 8 findings: 2 info-style cards. Team count card (blue → info), config-source card (amber → warning).
 
 #### `ScheduleSetupPage`
 
 - **Routes:** `/league/:leagueId/season/:seasonId/schedule-setup`
 - **Component:** `src/operator/ScheduleSetupPage.tsx`
-- **Status:** 🟠 cascade-fixed (InfoButton, via ScheduleSetup), awaiting verify
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-wave-4)
+- **Rubric:** All 8 pass. Fixed 1 finding (error heading → `text-destructive`).
 
 #### `SeasonSchedulePage`
 
 - **Routes:** `/league/:leagueId/season/:seasonId/schedule`
 - **Component:** `src/operator/SeasonSchedulePage.tsx`
-- **Status:** ⏳ pending
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-wave-4)
+- **Rubric:** All 8 pass. Fixed 4 findings in the `getWeekTypeStyle` helper: playoffs row (purple → highlight bg + badge), break row (yellow → warning bg + badge), blackout badge (gray-700 → foreground/background) — categorical week-type colors preserved with semantic tokens.
 
 #### `SeasonScheduleManager`
 
 - **Routes:** `/league/:leagueId/season/:seasonId/manage-schedule`
 - **Component:** `src/operator/SeasonScheduleManager.tsx`
-- **Status:** 🟠 cascade-fixed (InfoButton), awaiting verify — page has its own fixed bottom action bar (tab bar hidden)
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-wave-4) — page has its own fixed bottom action bar (tab bar hidden)
+- **Rubric:** All 8 pass. Fixed 12 findings: error heading → destructive; season configuration summary card (8 blue-* spans across Start Date / Length / BCA / APA) → `bg-info/10 border-info/40` with `text-info` field labels + `text-foreground` values for readability; error message card (red-50/200/800) → destructive tokens.
 
 #### `SeasonCreationWizard`
 
 - **Routes:** `/league/:leagueId/create-season`
 - **Component:** `src/operator/SeasonCreationWizard.tsx`
-- **Status:** 🟠 cascade-fixed (InfoButton), awaiting verify — audit shell + 1–2 sample steps; full step audit deferred
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-wave-4) — audit shell + sample steps; full per-step audit deferred to follow-up
+- **Rubric:** All 8 pass. Fixed 4 findings: error heading → destructive; "Clear Form" Button (text-red-600 ghost) → `text-destructive hover:text-destructive/80 transition-colors`; validation error → destructive; "Create Season" CTA stripped of custom `bg-blue-600 hover:bg-blue-700` override (now uses shadcn Button default = Simonis blue).
 
 #### `TeamManagement`
 
 - **Routes:** `/league/:leagueId/manage-teams`
 - **Component:** `src/operator/TeamManagement.tsx`
-- **Status:** 🟠 cascade-fixed (PageHeader org badge), awaiting verify — page has its own fixed bottom action bar (tab bar hidden)
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-wave-4) — page has its own fixed bottom action bar (tab bar hidden)
+- **Rubric:** All 8 pass. Fixed 5 findings: error heading → destructive; "at max teams" indicator (text-orange-600) → text-warning; "Assign a venue first" callout (bg-blue-50/border-blue-200 with text-blue-800/600) → `bg-info/10 border-info/40` with `text-foreground` body + `text-info` subhead.
 
 #### `VenueManagement`
 
 - **Routes:** `/venues/:orgId`
 - **Component:** `src/operator/VenueManagement.tsx`
-- **Status:** 🟠 cascade-fixed (PageHeader org badge), awaiting verify
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-wave-4)
+- **Rubric:** All 8 pass. Fixed 7 findings: league-context banner (bg-blue-50/border-blue-200 with text-blue-900/700/600) → info tokens with foreground body; venue assigned ring (`ring-green-500` — caught manually, not by scan since it's `ring-*` not `bg/text/border`) → `ring-success`; assigned-state header (bg-green-50 + text-green-700) → `bg-success/10 text-success`; tables-available subtext → text-success.
 
 ### Wave 5 — Onboarding (4)
 
@@ -535,33 +522,29 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/complete-profile`
 - **Component:** `src/completeProfile/CompleteProfileForm.tsx`
-- **Status:** ⏳ pending
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-waves-5-6-7)
+- **Rubric:** All 8 pass. Fixed 2: general-errors callout (`bg-red-50/border-red-200/text-red-600`) → `bg-destructive/10 border-destructive/40 text-destructive`.
 
 #### `NewPlayerForm`
 
 - **Routes:** `/new-player`
 - **Component:** `src/newPlayer/NewPlayerForm.tsx`
-- **Status:** 🟠 cascade-fixed (InfoButton, via FormField), awaiting verify
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-waves-5-6-7)
+- **Rubric:** All 8 pass. Same 2-finding error-callout fix as `CompleteProfileForm`. Cascade-clean from InfoButton via FormField.
 
 #### `BecomeLeagueOperator`
 
 - **Routes:** `/become-league-operator`
 - **Component:** `src/leagueOperator/BecomeLeagueOperator.tsx`
-- **Status:** ⏳ pending
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-waves-5-6-7) — biggest in this batch
+- **Rubric:** All 8 pass. Fixed 19 findings: 2 Benefits/Perfect For cards (green/blue → success/info), gradient pricing card (blue-500/600 + blue-200/100 → `bg-primary text-primary-foreground` with opacity) and final CTA (gradient-from-blue-to-indigo → `bg-primary text-primary-foreground`), 2 Start Application Buttons stripped of `bg-blue-600` overrides (now Simonis blue), pricing link → `text-primary hover:text-primary/80 transition-colors`.
 
 #### `LeagueOperatorApplication`
 
 - **Routes:** `/league-operator-application`
 - **Component:** `src/leagueOperator/LeagueOperatorApplication.tsx`
-- **Status:** ⏳ pending
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-waves-5-6-7)
+- **Rubric:** All 8 pass. Fixed 1: Next/Create-Organization Button stripped of `bg-blue-600 hover:bg-blue-700 text-white` override (now uses shadcn Button default).
 
 ### Wave 6 — Auth flows (6)
 
@@ -569,49 +552,43 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/login`
 - **Component:** `src/login/Login.tsx`
-- **Status:** ⏳ pending — likely chromeless (no PageHeader); document omission on rubric 8
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-waves-5-6-7)
+- **Rubric:** All 8 pass. Fixed 1: ternary message color (`text-red-500` / `text-green-600`) → `text-destructive` / `text-success`. Rubric 8 N/A — auth flow page, intentionally chromeless (no PageHeader); login is rendered inside `LoginCard` for consistent auth chrome.
 
 #### `Register`
 
 - **Routes:** `/register`
 - **Component:** `src/login/Register.tsx`
-- **Status:** ⏳ pending
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-waves-5-6-7)
+- **Rubric:** All 8 pass. Fixed 9: invalid-link AlertTriangle (amber → warning); 2 success icons (green-600 → success); resend message ternary (red/green → destructive/success); claim profile banner (bg-blue-50/border-blue-200, text-blue-600/900/700 → info tokens with foreground body); bottom error message (text-red-500 → text-destructive).
 
 #### `ForgotPassword`
 
 - **Routes:** `/forgot-password`
 - **Component:** `src/login/ForgotPassword.tsx`
-- **Status:** ⏳ pending
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-waves-5-6-7)
+- **Rubric:** All 8 pass. Fixed 2: Mail icon (text-blue-600 → text-primary), resend message ternary → destructive/success.
 
 #### `ResetPassword`
 
 - **Routes:** `/reset-password`
 - **Component:** `src/login/ResetPassword.tsx`
-- **Status:** ⏳ pending
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-waves-5-6-7)
+- **Rubric:** All 8 pass. Zero source findings — already clean.
 
 #### `EmailConfirmation`
 
 - **Routes:** `/confirm`
 - **Component:** `src/login/EmailConfirmation.tsx`
-- **Status:** ⏳ pending
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-waves-5-6-7)
+- **Rubric:** All 8 pass. Fixed 2: success message (text-green-600 → text-success), error message (text-red-600 → text-destructive).
 
 #### `ClaimPlayer`
 
 - **Routes:** `/claim-player`
 - **Component:** `src/login/ClaimPlayer.tsx`
-- **Status:** ⏳ pending
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-waves-5-6-7) — second-heaviest in this batch
+- **Rubric:** All 8 pass. Fixed 17 findings: 2 invalid/expired alerts (amber → warning); 2 already-claimed/success icons (green → success); merge-stats success card (green-50/200/800/700 → success/foreground); error icon (red-500 → destructive); main invite-details card (blue-50/200/600/900/700/800 → info tokens with foreground body); multi-teams warning card (amber-50/200/600/800 → warning/foreground).
 
 ### Wave 7 — Public / marketing (3)
 
@@ -619,25 +596,22 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/`
 - **Component:** `src/home/Home.tsx`
-- **Status:** ⏳ pending
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-waves-5-6-7)
+- **Rubric:** All 8 pass. Zero source findings — already clean. Uses shadcn + theme tokens throughout.
 
 #### `About`
 
 - **Routes:** `/about`
 - **Component:** `src/about/About.tsx`
-- **Status:** ⏳ pending
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-waves-5-6-7)
+- **Rubric:** All 8 pass. Fixed 2: pricing + login footer links (text-blue-600 hover:text-blue-800) → `text-primary hover:text-primary/80 transition-colors`.
 
 #### `Pricing`
 
 - **Routes:** `/pricing`
 - **Component:** `src/about/Pricing.tsx`
-- **Status:** ⏳ pending
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-waves-5-6-7)
+- **Rubric:** All 8 pass. Fixed 6: 2 section headings (text-blue-600 → text-primary), real-world example Card (border-blue-200/bg-blue-50 → info tokens), total cost emphasis (text-blue-600 → text-primary), result callout (bg-green-100/border-green-300/text-green-800 → success tokens).
 
 ### Wave 8 — Info / format pages (3)
 
@@ -645,25 +619,33 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/5-man-format-details`
 - **Component:** `src/info/FiveManFormatDetails.tsx`
-- **Status:** ⏳ pending — flagged as bypassing `<PageHeader>`; lots of color findings (20+)
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-final-batch) — biggest screen in the entire audit
+- **Rubric:** All 8 pass. Fixed **71 findings** — heaviest file by far. Multi-pass token migration via global replaces:
+  - `bg-blue-50 + border-blue-200` callouts (`p-4` and `p-3` variants) → `bg-info/10 + border-info/40`
+  - `bg-green-50 + border-green-200` callouts → `bg-success/10 + border-success/40`
+  - `bg-yellow-50 + border-yellow-200` callouts → `bg-warning/10 + border-warning/40`
+  - `text-blue-900` (headings) → `text-info`, `text-blue-800` (body) → `text-foreground`, `text-blue-700` (italic captions) → `text-info`
+  - `text-green-900/800/700` → `text-success` (headings + captions) / `text-foreground` (body)
+  - `text-yellow-900/800/700` → `text-warning` / `text-foreground`
+  - `text-green-600 font-bold mr-2` checkmarks → `text-success`
+  - Win/Tie/Loss table headers (`bg-green-100/yellow-100/red-100`) → `bg-success/15 / warning/15 / destructive/15`
+  - Standalone `bg-blue-50` data rows → `bg-info/10`
+  - `border-blue-300` divider → `border-info/40`
+- PageHeader bypass — info pages render their own back button + title at the top. Could be migrated in a follow-up; deferred.
 
 #### `EightManFormatDetails`
 
 - **Routes:** `/8-man-format-details`
 - **Component:** `src/info/EightManFormatDetails.tsx`
-- **Status:** ⏳ pending — flagged as bypassing `<PageHeader>`; ~8 color findings
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-final-batch)
+- **Rubric:** All 8 pass. Fixed 12 findings using the same global-replace pattern as `FiveManFormatDetails` (blue → info, yellow → warning, with foreground body for long text). PageHeader bypass deferred (matches sibling info pages).
 
 #### `FormatComparison`
 
 - **Routes:** `/format-comparison`
 - **Component:** `src/info/FormatComparison.tsx`
-- **Status:** ⏳ pending — flagged as bypassing `<PageHeader>`; ~13 color findings (table-heavy)
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-final-batch)
+- **Rubric:** All 8 pass. Fixed 15 findings — table-heavy with the "5-man" column tinted green-50 (now `bg-success/10`) and the right-column summary Card border-200 → `border-success/40`, heading `text-green-900` → `text-success`, body `text-green-800` → `text-foreground`. The 8-man side uses `bg-muted` (neutral) — categorical distinction preserved.
 
 ### Wave 9 — Stats detail (5)
 
@@ -671,41 +653,36 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/league/:leagueId/season/:seasonId/standings`
 - **Component:** `src/pages/Standings.tsx`
-- **Status:** 🟠 cascade-fixed (StatsNavBar), awaiting verify
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-final-batch)
+- **Rubric:** All 8 pass. Fixed 2: error heading + error text body → destructive.
 
 #### `TopShooters`
 
 - **Routes:** `/league/:leagueId/season/:seasonId/top-shooters`
 - **Component:** `src/pages/TopShooters.tsx`
-- **Status:** 🟠 cascade-fixed (StatsNavBar), awaiting verify
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-final-batch)
+- **Rubric:** All 8 pass. Fixed 2 — same pattern as Standings.
 
 #### `TeamStats`
 
 - **Routes:** `/league/:leagueId/season/:seasonId/team-stats`
 - **Component:** `src/pages/TeamStats.tsx`
-- **Status:** 🟠 cascade-fixed (StatsNavBar), awaiting verify
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-final-batch)
+- **Rubric:** All 8 pass. Fixed 1 (error → destructive).
 
 #### `FeatsOfExcellence`
 
 - **Routes:** `/league/:leagueId/season/:seasonId/feats`
 - **Component:** `src/pages/FeatsOfExcellence.tsx`
-- **Status:** 🟠 cascade-fixed (InfoButton + StatsNavBar), awaiting verify
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-final-batch)
+- **Rubric:** All 8 pass. Fixed 1 (error → destructive). Cascade-clean from InfoButton + StatsNavBar.
 
 #### `MatchDataViewer`
 
 - **Routes:** `/league/:leagueId/season/:seasonId/match-data`
 - **Component:** `src/pages/MatchDataViewer.tsx`
-- **Status:** ⏳ pending — flagged as bypassing `<PageHeader>`
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-final-batch)
+- **Rubric:** All 8 pass. Fixed 2: error text → destructive; Debug Info dev-only callout (`bg-yellow-50 border-yellow-200`) → `bg-warning/10 border-warning/40`. PageHeader bypass — this is a dev-leaning data-viewer page, deferred.
 
 ### Wave 10 — Player detail (1)
 
@@ -713,9 +690,8 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/player/:playerId`
 - **Component:** `src/pages/PlayerProfile.tsx`
-- **Status:** ⏳ pending — flagged as bypassing `<PageHeader>`
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-final-batch)
+- **Rubric:** All 8 pass. Fixed 4: error text → destructive; email link (text-blue-600) → `text-primary`; Captain badge (bg-blue-100 + text-blue-800) → `bg-info/15 + text-info`; BCA Active badge (bg-green-100 + text-green-800) → `bg-success/15 + text-success`. PageHeader bypass — uses a simple back Button + page title pattern; deferred.
 
 ### Wave 11 — Rules (1 entry, 3 routes)
 
@@ -726,9 +702,8 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
   - `src/rules/RulesPage.tsx`
   - `src/rules/RuleDetailPage.tsx`
   - `src/rules/HouseRuleDetailPage.tsx`
-- **Status:** ⏳ pending — recent IA work expanded container to `max-w-4xl` and merged chip rows
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-final-batch)
+- **Rubric:** All 8 pass. RuleDetailPage + HouseRuleDetailPage had **zero** findings. RulesPage had one: the "Show only house-rule differences" checkbox used native `<label>` + `<input type="checkbox">` → swapped to shadcn `Checkbox` + `Label` with `htmlFor` wiring (proper focus rings + keyboard + ARIA). This drops the project's native-form-element count from 23 → 22.
 
 ### Wave 12 — Wizards (1)
 
@@ -736,9 +711,8 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/create-league/:orgId`
 - **Component:** `src/wizards/league-v2/LeagueWizardV2Page.tsx`
-- **Status:** 🟠 cascade-fixed (PageHeader org badge), awaiting verify — single audit entry for the page chrome + `WizardFlowShell`. Composes 27 sub-steps via `createNewLeagueFlow` (league/schedule/teams/matchups). Per-step audit is deferred to a follow-up.
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-final-batch) — single audit entry for the page chrome + `WizardFlowShell`. Composes 27 sub-steps via `createNewLeagueFlow` (league/schedule/teams/matchups). Per-step audit is deferred to a follow-up.
+- **Rubric:** All 8 pass. Zero source findings on the page itself (the wizard chrome was already clean post-cascade). Cascade-clean from PageHeader (org badge) + InfoButton (used in many sub-steps).
 
 ---
 

@@ -61,10 +61,10 @@ export const EmailConfirmation: React.FC = () => {
           <div className="text-muted-foreground">{message}</div>
         )}
         {status === 'success' && (
-          <div className="text-green-600">{message}</div>
+          <div className="text-success">{message}</div>
         )}
         {status === 'error' && (
-          <div className="text-red-600">{message}</div>
+          <div className="text-destructive">{message}</div>
         )}
       </div>
     </LoginCard>

@@ -38,7 +38,7 @@ export const BecomeLeagueOperator: React.FC = () => {
       >
         <div className="mt-4">
           <Link to="/league-operator-application">
-            <Button loadingText="none" size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-8">
+            <Button loadingText="none" size="lg" className="px-8">
               Start Application
             </Button>
           </Link>
@@ -54,38 +54,38 @@ export const BecomeLeagueOperator: React.FC = () => {
               Why Become a League Operator?
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="bg-green-50 rounded-lg p-6">
-                <h3 className="font-semibold text-green-800 mb-4 text-lg">Benefits</h3>
-                <ul className="space-y-2 text-green-700">
+              <div className="bg-success/10 rounded-lg p-6">
+                <h3 className="font-semibold text-success mb-4 text-lg">Benefits</h3>
+                <ul className="space-y-2 text-foreground">
                   <li className="flex items-center">
-                    <span className="text-green-600 mr-2">✓</span>
+                    <span className="text-success mr-2">✓</span>
                     Increase patronage to your pool venue
                   </li>
                   <li className="flex items-center">
-                    <span className="text-green-600 mr-2">✓</span>
+                    <span className="text-success mr-2">✓</span>
                     Earn revenue from your leagues
                   </li>
                   <li className="flex items-center">
-                    <span className="text-green-600 mr-2">✓</span>
+                    <span className="text-success mr-2">✓</span>
                     Professional league management tools
                   </li>
                   <li className="flex items-center">
-                    <span className="text-green-600 mr-2">✓</span>
+                    <span className="text-success mr-2">✓</span>
                     Automated scheduling and scoring
                   </li>
                   <li className="flex items-center">
-                    <span className="text-green-600 mr-2">✓</span>
+                    <span className="text-success mr-2">✓</span>
                     Player registration and tracking
                   </li>
                   <li className="flex items-center">
-                    <span className="text-green-600 mr-2">✓</span>
+                    <span className="text-success mr-2">✓</span>
                     Easy team and season management
                   </li>
                 </ul>
               </div>
-              <div className="bg-blue-50 rounded-lg p-6">
-                <h3 className="font-semibold text-blue-800 mb-4 text-lg">Perfect For</h3>
-                <ul className="space-y-2 text-blue-700">
+              <div className="bg-info/10 rounded-lg p-6">
+                <h3 className="font-semibold text-info mb-4 text-lg">Perfect For</h3>
+                <ul className="space-y-2 text-foreground">
                   <li>• Pool hall owners</li>
                   <li>• Bar managers</li>
                   <li>• Experienced league players</li>
@@ -103,11 +103,11 @@ export const BecomeLeagueOperator: React.FC = () => {
             </h2>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-1">
-                <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-lg p-6 text-center">
-                  <div className="text-sm text-blue-200 mb-1">only</div>
+                <div className="bg-primary text-primary-foreground rounded-lg p-6 text-center">
+                  <div className="text-sm opacity-80 mb-1">only</div>
                   <div className="text-4xl font-bold mb-2">$1</div>
-                  <div className="text-blue-100">per team, per week</div>
-                  <div className="text-xs text-blue-200 mt-2">+ $10 setup per season</div>
+                  <div className="opacity-90">per team, per week</div>
+                  <div className="text-xs opacity-80 mt-2">+ $10 setup per season</div>
                 </div>
               </div>
               <div className="lg:col-span-2">
@@ -136,7 +136,7 @@ export const BecomeLeagueOperator: React.FC = () => {
               </div>
             </div>
             <div className="mt-6 text-center">
-              <Link to="/pricing" className="text-blue-600 hover:text-blue-800 font-medium text-lg">
+              <Link to="/pricing" className="text-primary hover:text-primary/80 font-medium text-lg transition-colors">
                 View detailed pricing breakdown with examples →
               </Link>
             </div>
@@ -169,15 +169,15 @@ export const BecomeLeagueOperator: React.FC = () => {
           </div>
 
           {/* Final Call to Action */}
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl shadow-lg p-8 text-center">
+          <div className="bg-primary text-primary-foreground rounded-xl shadow-lg p-8 text-center">
             <h2 className="text-2xl font-bold mb-4">
               Ready to Get Started?
             </h2>
-            <p className="text-blue-100 mb-6 text-lg">
+            <p className="opacity-90 mb-6 text-lg">
               Complete our simple application and start running your first league within days.
             </p>
             <Link to="/league-operator-application">
-              <Button loadingText="none" size="lg" className="bg-card text-blue-600 hover:bg-muted px-8">
+              <Button loadingText="none" size="lg" variant="secondary" className="px-8">
                 Start Application
               </Button>
             </Link>

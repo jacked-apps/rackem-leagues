@@ -156,9 +156,33 @@ export function GamesList({
             // In break-rack mode, right is always racker; in home-away mode, check if away breaks
             const rightIsBreaker = displayMode === 'break-rack' ? false : !breakerIsHome;
 
-            // Display names with ⚡ (break) or △ (rack) prefix
-            const leftDisplayName = `${leftIsBreaker ? '⚡' : '△'} ${leftName}`;
-            const rightDisplayName = `${rightIsBreaker ? '⚡' : '△'} ${rightName}`;
+            // Break indicator: small filled "B" badge before the breaker's
+            // name; no marker on the racker. Uses bg-foreground / text-background
+            // for an automatic dark/light mode flip (dark chip / light text in
+            // light mode; light chip / dark text in dark mode — always
+            // high-contrast, no fixed colors to maintain). Tied to the same
+            // home_action source as the rest of the row, so it tracks whatever
+            // the Pairings Generator computed at lineup-lock.
+            const breakBadge = (
+              <span
+                className="absolute left-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-5 h-5 rounded-full bg-foreground text-background text-xs font-bold leading-none"
+                aria-label="Breaks"
+              >
+                B
+              </span>
+            );
+            const leftDisplayName = (
+              <span className="relative flex items-center justify-center w-full">
+                {leftIsBreaker && breakBadge}
+                {leftName}
+              </span>
+            );
+            const rightDisplayName = (
+              <span className="relative flex items-center justify-center w-full">
+                {rightIsBreaker && breakBadge}
+                {rightName}
+              </span>
+            );
 
             // Check game status
             const hasWinner = gameResult.winner_player_id;

@@ -1,14 +1,14 @@
 # Screen-audit scan findings
 
-_Generated 2026-05-24 by `scripts/audit-scan.sh`. Regenerate with `pnpm audit:scan`._
+_Generated 2026-05-25 by `scripts/audit-scan.sh`. Regenerate with `pnpm audit:scan`._
 
 **Do not hand-edit this file.** It is regenerated each run from the source tree.
 Use it as input to `docs/audits/screen-audit.md` (the per-screen audit checklist).
 
 ## Summary
 
-- **Files with unpaired hardcoded colored shades:** 181
-- **Files with native HTML form elements:** 23
+- **Files with unpaired hardcoded colored shades:** 151
+- **Files with native HTML form elements:** 22
 
 ## Cascade priority — shared components
 
@@ -37,25 +37,6 @@ _Lines matching `(bg|text|border)-{color}-{shade}` where the same line has no
 `dark:` variant. These are the most broken in dark mode. Replace with theme
 tokens (`bg-success/10`, `text-info`, `border-warning/40`, `text-destructive`,
 etc.) chosen by semantic meaning, not literal color match._
-
-### `src/about/About.tsx`
-
-- L125: `<Link to="/pricing" className="text-blue-600 hover:text-blue-800 font-medium">`
-- L145: `<Link to="/login" className="text-blue-600 hover:text-blue-800 font-medium">`
-
-### `src/about/Pricing.tsx`
-
-- L34: `<h3 className="text-lg font-semibold mb-2 text-blue-600">Per Season Setup</h3>`
-- L39: `<h3 className="text-lg font-semibold mb-2 text-blue-600">Weekly Platform Fee</h3>`
-- L100: `<Card className="mb-8 border-blue-200 bg-blue-50">`
-- L128: `<span className="font-mono text-blue-600">$138</span>`
-- L143: `<div className="bg-green-100 p-4 rounded border border-green-300">`
-- L144: `<p className="font-semibold text-green-800">`
-
-### `src/completeProfile/CompleteProfileForm.tsx`
-
-- L124: `<div className="p-3 bg-red-50 border border-red-200 rounded-md">`
-- L125: `<p className="text-sm text-red-600">{state.errors.general}</p>`
 
 ### `src/components/AlertDialog.tsx`
 
@@ -1066,144 +1047,11 @@ etc.) chosen by semantic meaning, not literal color match._
 - L633: `<div className="text-green-600 font-semibold">✅ TEST PASSED</div>`
 - L635: `<div className="text-red-600 font-semibold">❌ TEST FAILED</div>`
 
-### `src/info/EightManFormatDetails.tsx`
-
-- L48: `<div className="bg-blue-50 p-4 rounded-md border border-blue-200">`
-- L49: `<p className="font-semibold text-blue-900">Key Characteristics:</p>`
-- L50: `<ul className="list-disc ml-5 mt-2 text-blue-800">`
-- L107: `<div className="bg-yellow-50 p-4 rounded-md border border-yellow-200">`
-- L108: `<p className="font-semibold text-yellow-900 mb-2">Traditional Approach:</p>`
-- L109: `<p className="text-sm text-yellow-800">`
-- L115: `<div className="bg-blue-50 p-4 rounded-md border border-blue-200">`
-- L116: `<p className="font-semibold text-blue-900 mb-2">BCA Handicap Tables:</p>`
-- L117: `<p className="text-sm text-blue-800">`
-- L140: `<div className="bg-yellow-50 p-4 rounded-md border border-yellow-200 mt-4">`
-- L141: `<h4 className="font-semibold text-yellow-900 mb-2">Considerations:</h4>`
-- L142: `<ul className="list-disc ml-5 text-sm text-yellow-800 space-y-1">`
-
-### `src/info/FiveManFormatDetails.tsx`
-
-- L47: `<div className="bg-blue-50 p-4 rounded-md border border-blue-200">`
-- L48: `<p className="font-semibold text-blue-900">Key Benefits:</p>`
-- L49: `<ul className="list-disc ml-5 mt-2 text-blue-800">`
-- L59: `<div className="bg-yellow-50 p-4 rounded-md border border-yellow-200 mt-4">`
-- L60: `<p className="text-sm text-yellow-900 mb-2">`
-- L64: `<p className="text-sm text-yellow-800">`
-- L96: `<div className="bg-yellow-50 p-4 rounded-md border border-yellow-200">`
-- L97: `<h4 className="font-semibold text-yellow-900 mb-2">Important: All 18 Games Are Played</h4>`
-- L98: `<p className="text-sm text-yellow-800">`
-- L198: `<div className="bg-blue-50 p-4 rounded-md border border-blue-200">`
-- L235: `<div className="bg-yellow-50 p-4 rounded-md border border-yellow-200 mt-4">`
-- L236: `<p className="font-semibold text-yellow-900 mb-2">Starting Skill Level</p>`
-- L237: `<p className="text-sm text-yellow-800">`
-- L241: `<p className="text-xs text-yellow-700 mt-2 italic">`
-- L255: `<div className="bg-blue-50 p-4 rounded-md border border-blue-200 mb-4">`
-- L283: `<div className="bg-blue-50 p-3 rounded-md border border-blue-200">`
-- L291: `<div className="bg-blue-50 p-3 rounded-md border border-blue-200">`
-- L299: `<div className="bg-blue-50 p-3 rounded-md border border-blue-200">`
-- L307: `<div className="bg-blue-50 p-3 rounded-md border border-blue-200">`
-- L315: `<div className="bg-green-50 p-3 rounded-md border border-green-200 mt-4">`
-- L316: `<p className="font-semibold text-green-900 mb-1">Why This Matters:</p>`
-- L317: `<p className="text-sm text-green-800">`
-- L335: `<div className="lg:col-span-2 bg-blue-50 p-4 rounded-md border border-blue-200">`
-- L357: `<div className="pt-2 border-t border-blue-300">`
-- L383: `<p className="text-sm text-blue-800 mt-3 font-medium italic">`
-- L399: `<th className="text-center py-2 px-1 bg-green-100">Win</th>`
-- L400: `<th className="text-center py-2 px-1 bg-yellow-100">Tie</th>`
-- L401: `<th className="text-center py-2 px-1 bg-red-100">Loss</th>`
-- L417: `<tr className="bg-blue-50"><td className="py-1 px-1 text-center font-mono font-bold">0</td><td className="py-1 px-1 text-center font-bold">1`
-- L451: `<div className="bg-blue-50 p-4 rounded-md border border-blue-200">`
-- L452: `<h4 className="font-semibold text-blue-900 mb-3">Playoff Rules:</h4>`
-- L453: `<ul className="list-disc ml-5 text-sm text-blue-800 space-y-2">`
-- L468: `<div className="bg-green-50 p-4 rounded-md border border-green-200">`
-- L469: `<h4 className="font-semibold text-green-900 mb-2">Playoff Handicap Scoring:</h4>`
-- L470: `<p className="text-sm text-green-800 mb-2">`
-- L473: `<ul className="list-disc ml-5 text-sm text-green-800 space-y-1">`
-- L483: `<p className="text-xs text-green-700 mt-3 italic">`
-- L501: `<div className="bg-blue-50 p-4 rounded-md border border-blue-200">`
-- L502: `<h4 className="font-semibold text-blue-900 mb-2">1. Team Match Wins (Primary)</h4>`
-- L503: `<p className="text-sm text-blue-800 mb-2">`
-- L507: `<p className="text-xs text-blue-700 italic">`
-- L513: `<div className="bg-green-50 p-4 rounded-md border border-green-200">`
-- L514: `<h4 className="font-semibold text-green-900 mb-2">2. Team Points (Secondary)</h4>`
-- L515: `<p className="text-sm text-green-800 mb-3">`
-- L519: `<ul className="list-disc ml-5 text-sm text-green-800 space-y-2">`
-- L532: `<p className="text-xs text-green-700 mt-2 italic">`
-- L537: `<div className="bg-yellow-50 p-4 rounded-md border border-yellow-200">`
-- L538: `<h4 className="font-semibold text-yellow-900 mb-2">3. Total Games Won (Tie-Breaker)</h4>`
-- L539: `<p className="text-sm text-yellow-800 mb-2">`
-- L543: `<p className="text-xs text-yellow-700 italic">`
-- L610: `<div className="bg-green-50 p-4 rounded-md border border-green-200">`
-- L611: `<h4 className="font-semibold text-green-900 mb-2">✓ Transparent Calculations</h4>`
-- L612: `<p className="text-sm text-green-800">`
-- L618: `<div className="bg-green-50 p-4 rounded-md border border-green-200">`
-- L619: `<h4 className="font-semibold text-green-900 mb-2">✓ Team Modifier Balancing</h4>`
-- L620: `<p className="text-sm text-green-800">`
-- L627: `<div className="bg-green-50 p-4 rounded-md border border-green-200">`
-- L628: `<h4 className="font-semibold text-green-900 mb-2">✓ Every Single Game Matters</h4>`
-- L629: `<p className="text-sm text-green-800">`
-- L636: `<div className="bg-green-50 p-4 rounded-md border border-green-200">`
-- L637: `<h4 className="font-semibold text-green-900 mb-2">✓ Handicap Responsiveness</h4>`
-- L638: `<p className="text-sm text-green-800 mb-2">`
-- L642: `<p className="text-sm text-green-800">`
-- L649: `<div className="bg-green-50 p-4 rounded-md border border-green-200">`
-- L650: `<h4 className="font-semibold text-green-900 mb-2">✓ Hard to Game</h4>`
-- L651: `<p className="text-sm text-green-800">`
-- L705: `<span className="text-green-600 font-bold mr-2">✓</span>`
-- L709: `<span className="text-green-600 font-bold mr-2">✓</span>`
-- L713: `<span className="text-green-600 font-bold mr-2">✓</span>`
-- L717: `<span className="text-green-600 font-bold mr-2">✓</span>`
-- L721: `<span className="text-green-600 font-bold mr-2">✓</span>`
-
-### `src/info/FormatComparison.tsx`
-
-- L49: `<th className="text-left py-3 px-4 bg-green-50">5-Man Format</th>`
-- L56: `<td className="py-3 px-4 bg-green-50">5 players</td>`
-- L61: `<td className="py-3 px-4 bg-green-50">3 vs 3 (6 total)</td>`
-- L66: `<td className="py-3 px-4 bg-green-50">6 games</td>`
-- L71: `<td className="py-3 px-4 bg-green-50">18 games</td>`
-- L76: `<td className="py-3 px-4 bg-green-50">Double round robin</td>`
-- L81: `<td className="py-3 px-4 bg-green-50">2-2.5 hours</td>`
-- L86: `<td className="py-3 px-4 bg-green-50">6-10 people around tables</td>`
-- L91: `<td className="py-3 px-4 bg-green-50">Dynamic, auto-adjusting</td>`
-- L96: `<td className="py-3 px-4 bg-green-50">Minimal</td>`
-- L101: `<td className="py-3 px-4 bg-green-50">Easier (5 players)</td>`
-- L111: `<Card className="p-6 bg-green-50 border-green-200">`
-- L112: `<h3 className="text-xl font-bold text-green-900 mb-3">5-Man Format</h3>`
-- L113: `<p className="text-sm text-green-800 mb-3">Best for:</p>`
-- L114: `<ul className="list-disc ml-5 text-sm text-green-800 space-y-1">`
-
-### `src/leagueOperator/BecomeLeagueOperator.tsx`
-
-- L41: `<Button loadingText="none" size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-8">`
-- L57: `<div className="bg-green-50 rounded-lg p-6">`
-- L58: `<h3 className="font-semibold text-green-800 mb-4 text-lg">Benefits</h3>`
-- L59: `<ul className="space-y-2 text-green-700">`
-- L61: `<span className="text-green-600 mr-2">✓</span>`
-- L65: `<span className="text-green-600 mr-2">✓</span>`
-- L69: `<span className="text-green-600 mr-2">✓</span>`
-- L73: `<span className="text-green-600 mr-2">✓</span>`
-- L77: `<span className="text-green-600 mr-2">✓</span>`
-- L81: `<span className="text-green-600 mr-2">✓</span>`
-- L86: `<div className="bg-blue-50 rounded-lg p-6">`
-- L87: `<h3 className="font-semibold text-blue-800 mb-4 text-lg">Perfect For</h3>`
-- L88: `<ul className="space-y-2 text-blue-700">`
-- L107: `<div className="text-sm text-blue-200 mb-1">only</div>`
-- L109: `<div className="text-blue-100">per team, per week</div>`
-- L110: `<div className="text-xs text-blue-200 mt-2">+ $10 setup per season</div>`
-- L139: `<Link to="/pricing" className="text-blue-600 hover:text-blue-800 font-medium text-lg">`
-- L176: `<p className="text-blue-100 mb-6 text-lg">`
-- L180: `<Button loadingText="none" size="lg" className="bg-card text-blue-600 hover:bg-muted px-8">`
-
 ### `src/leagueOperator/ChoiceStep.tsx`
 
 - L94: `? 'bg-blue-600 hover:bg-blue-700 text-white'`
 - L113: `<p className="text-red-500 text-sm mt-2">{error}</p>`
 - L129: `className="bg-blue-600 hover:bg-blue-700 text-white"`
-
-### `src/leagueOperator/LeagueOperatorApplication.tsx`
-
-- L347: `className="bg-blue-600 hover:bg-blue-700 text-white"`
 
 ### `src/leagueOperator/questionDefinitions.tsx`
 
@@ -1236,63 +1084,12 @@ etc.) chosen by semantic meaning, not literal color match._
 
 - L87: `? 'border-blue-500 bg-blue-500'`
 
-### `src/login/ClaimPlayer.tsx`
-
-- L430: `<AlertTriangle className="h-16 w-16 text-amber-500" />`
-- L450: `<Clock className="h-16 w-16 text-amber-500" />`
-- L478: `<UserCheck className="h-16 w-16 text-green-600" />`
-- L504: `<CheckCircle className="h-16 w-16 text-green-600" />`
-- L510: `<div className="bg-green-50 border border-green-200 rounded-lg p-4 text-left">`
-- L511: `<p className="text-sm font-medium text-green-800 mb-2">`
-- L514: `<ul className="text-sm text-green-700 space-y-1">`
-- L568: `<AlertTriangle className="h-16 w-16 text-red-500" />`
-- L596: `<div className="bg-blue-50 border border-blue-200 rounded-lg p-4">`
-- L598: `<Users className="h-6 w-6 text-blue-600 mt-0.5" />`
-- L600: `<p className="font-medium text-blue-900">`
-- L607: `<p className="text-sm text-blue-700 mb-2">`
-- L612: `<li key={team.team_id} className="text-base font-semibold text-blue-800">`
-- L619: `<p className="text-lg font-semibold text-blue-800 mt-1">`
-- L657: `<div className="bg-amber-50 border border-amber-200 rounded-lg p-3">`
-- L659: `<AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />`
-- L660: `<div className="text-sm text-amber-800">`
-
-### `src/login/EmailConfirmation.tsx`
-
-- L64: `<div className="text-green-600">{message}</div>`
-- L67: `<div className="text-red-600">{message}</div>`
-
-### `src/login/ForgotPassword.tsx`
-
-- L69: `<Mail className="h-16 w-16 text-blue-600" />`
-- L104: `<p className={\`text-sm mt-2 ${resendMessage.includes('Error') ? 'text-red-500' : 'text-green-600'}\`}>`
-
-### `src/login/Login.tsx`
-
-- L131: `<p className={\`text-sm mt-4 text-center ${message.includes('Error') ? 'text-red-500' : 'text-green-600'}\`}>`
-
-### `src/login/Register.tsx`
-
-- L243: `<AlertTriangle className="h-16 w-16 text-amber-500" />`
-- L268: `<UserCheck className="h-16 w-16 text-green-600" />`
-- L270: `<Mail className="h-16 w-16 text-green-600" />`
-- L311: `<p className={\`text-sm mt-2 ${resendMessage.includes('Error') ? 'text-red-500' : 'text-green-600'}\`}>`
-- L334: `<div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">`
-- L336: `<UserCheck className="h-5 w-5 text-blue-600 shrink-0" />`
-- L338: `<p className="text-sm font-medium text-blue-900">`
-- L341: `<p className="text-xs text-blue-700">`
-- L443: `<p className="text-sm mt-2 text-red-500">`
-
 ### `src/newPlayer/FormField.tsx`
 
 - L49: `{required && <span className="text-red-500 ml-1">*</span>}`
 - L66: `<p className="text-sm text-red-500 mt-1">{error}</p>`
 - L85: `{required && <span className="text-red-500 ml-1">*</span>}`
 - L100: `<p className="text-sm text-red-500 mt-1">{error}</p>`
-
-### `src/newPlayer/NewPlayerForm.tsx`
-
-- L153: `<div className="p-3 bg-red-50 border border-red-200 rounded-md">`
-- L154: `<p className="text-sm text-red-600">{state.errors.general}</p>`
 
 ### `src/operator/components/AttachPlaceholderDialog.tsx`
 
@@ -1335,48 +1132,6 @@ etc.) chosen by semantic meaning, not literal color match._
 - L293: `<span className="text-blue-700"> · self-claim</span>`
 - L374: `<ul className="list-disc list-inside text-red-900 space-y-0.5 mt-1">`
 
-### `src/operator/OrganizationSettings.tsx`
-
-- L61: `<h3 className="text-red-600 text-lg font-semibold mb-4">Error</h3>`
-- L67: `className="px-4 py-2 bg-blue-600 text-white rounded-lg"`
-- L114: `iconColor="text-teal-600"`
-- L124: `iconColor="text-blue-600"`
-- L140: `iconColor="text-purple-600"`
-
-### `src/operator/PlayoffSetup.tsx`
-
-- L89: `<td className="py-2 px-3 text-center text-green-600 font-medium">{team.matchWins}</td>`
-- L90: `<td className="py-2 px-3 text-center text-red-600 font-medium">{team.matchLosses}</td>`
-- L108: `<div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">`
-- L110: `<AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />`
-- L112: `<div className="font-medium text-yellow-800">Team Not In Playoffs</div>`
-- L113: `<div className="text-sm text-yellow-700 mt-1">`
-- L407: `<Card className="border-red-200 bg-red-50">`
-- L410: `<AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />`
-- L412: `<div className="font-medium text-red-800">Error</div>`
-- L413: `<div className="text-sm text-red-700 mt-1">{error}</div>`
-- L445: `<div className="flex items-center gap-2 text-purple-700">`
-- L462: `<div className="flex items-center gap-2 text-green-600">`
-- L467: `<div className="flex items-center gap-2 text-yellow-600">`
-- L483: `<p className="text-sm text-yellow-700 bg-yellow-50 p-3 rounded-lg">`
-- L560: `className="bg-purple-600 hover:bg-purple-700"`
-
-### `src/operator/PlayoffsSetupWizard.tsx`
-
-- L342: `<Card className="border-blue-200 bg-blue-50">`
-- L345: `<Users className="h-6 w-6 text-blue-600" />`
-- L347: `<div className="font-semibold text-blue-900">`
-- L350: `<div className="text-sm text-blue-700">`
-- L361: `<Card className="border-amber-200 bg-amber-50">`
-- L364: `<Trophy className="h-6 w-6 text-amber-600" />`
-- L366: `<div className="font-semibold text-amber-900">`
-- L369: `<div className="text-sm text-amber-700">`
-
-### `src/operator/ReportsManagement.tsx`
-
-- L443: `<div key={action.id} className="text-sm border-l-2 border-red-500 pl-3 py-1">`
-- L453: `<div className="text-xs text-red-600">`
-
 ### `src/operator/ScheduleSetup.tsx`
 
 - L320: `<div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">`
@@ -1387,42 +1142,9 @@ etc.) chosen by semantic meaning, not literal color match._
 - L437: `<div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">`
 - L438: `<p className="text-red-800 text-sm font-medium">{error}</p>`
 
-### `src/operator/ScheduleSetupPage.tsx`
-
-- L102: `<h3 className="text-red-600 text-lg font-semibold mb-4">Error</h3>`
-
 ### `src/operator/ScheduleView.tsx`
 
 - L133: `<h3 className="text-red-600 text-lg font-semibold mb-4">Error</h3>`
-
-### `src/operator/SeasonCreationWizard.tsx`
-
-- L271: `<h3 className="text-red-600 text-lg font-semibold mb-4">Error</h3>`
-- L538: `className="text-red-600 hover:text-red-800"`
-- L689: `<p className="text-red-600 text-sm">{state.validationError}</p>`
-- L741: `className="bg-blue-600 hover:bg-blue-700"`
-
-### `src/operator/SeasonScheduleManager.tsx`
-
-- L382: `<h3 className="text-red-600 text-lg font-semibold mb-4">Error</h3>`
-- L441: `<div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">`
-- L446: `<span className="font-semibold text-blue-900">Starting Date:</span>`
-- L447: `<span className="ml-2 text-blue-800">`
-- L452: `<span className="font-semibold text-blue-900">Season Length:</span>`
-- L453: `<span className="ml-2 text-blue-800">`
-- L462: `<span className="font-semibold text-blue-900">BCA Championship:</span>`
-- L463: `<span className="ml-2 text-blue-800">`
-- L479: `<span className="font-semibold text-blue-900">APA Championship:</span>`
-- L480: `<span className="ml-2 text-blue-800">`
-- L500: `<div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">`
-- L501: `<p className="text-red-800">{error}</p>`
-
-### `src/operator/SeasonSchedulePage.tsx`
-
-- L71: `bgColor: 'bg-purple-50 rounded-t-xl -my-6 py-3',`
-- L73: `badgeColor: 'bg-purple-600 text-white',`
-- L83: `bgColor: 'bg-yellow-50 rounded-t-xl -my-6 py-3',`
-- L85: `badgeColor: 'bg-yellow-600 text-white',`
 
 ### `src/operator/TeamEditorModal.tsx`
 
@@ -1432,14 +1154,6 @@ etc.) chosen by semantic meaning, not literal color match._
 - L551: `className="h-6 w-6 p-0 text-muted-foreground hover:text-red-600"`
 - L588: `<div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">`
 - L589: `<p className="text-red-800 text-sm font-medium">{error || rosterError}</p>`
-
-### `src/operator/TeamManagement.tsx`
-
-- L477: `<h3 className="text-red-600 text-lg font-semibold mb-4">Error</h3>`
-- L596: `<span className={\`font-medium ${isAtMaxTeams ? 'text-orange-600' : 'text-foreground'}\`}>`
-- L720: `<div className="text-center py-8 bg-blue-50 border border-blue-200 rounded-lg">`
-- L721: `<p className="text-blue-800 mb-2">Assign at least one venue before adding teams</p>`
-- L722: `<p className="text-sm text-blue-600">Teams need a venue to call home</p>`
 
 ### `src/operator/VenueLimitModal.tsx`
 
@@ -1456,50 +1170,10 @@ etc.) chosen by semantic meaning, not literal color match._
 - L515: `<div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-3">`
 - L516: `<p className="text-sm text-red-800">`
 
-### `src/operator/VenueManagement.tsx`
-
-- L194: `<div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">`
-- L196: `<Check className="h-5 w-5 text-blue-600" />`
-- L198: `<p className="text-sm font-medium text-blue-900">`
-- L201: `<p className="text-xs text-blue-700 mt-1">`
-- L234: `<div className={\`absolute top-0 left-0 right-0 z-10 p-3 rounded-t-xl ${assigned ? 'bg-green-50' : 'bg-muted'}\`}>`
-- L245: `className={\`text-sm font-medium ${assigned ? 'text-green-700' : 'text-muted-foreground'}\`}`
-- L261: `<div className="mt-2 text-xs text-green-700">`
-
 ### `src/pages/AdminReports.tsx`
 
 - L514: `<div key={action.id} className="text-sm border-l-2 border-red-500 pl-3 py-1">`
 - L524: `<div className="text-xs text-red-600">`
-
-### `src/pages/FeatsOfExcellence.tsx`
-
-- L66: `<div className="text-center text-red-600">`
-
-### `src/pages/MatchDataViewer.tsx`
-
-- L75: `<p className="text-center text-red-600">Error loading matches: {(error as Error).message}</p>`
-- L92: `<div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs">`
-
-### `src/pages/PlayerProfile.tsx`
-
-- L150: `<p className="text-center text-red-600">{error || 'Player not found'}</p>`
-- L186: `className="text-blue-600 hover:underline"`
-- L218: `<span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">`
-- L259: `<span className="text-sm bg-green-100 text-green-800 px-2 py-1 rounded">Active</span>`
-
-### `src/pages/Standings.tsx`
-
-- L69: `<p className="text-sm text-red-600">Failed to load standings</p>`
-- L72: `<div className="text-center py-8 text-red-500">`
-
-### `src/pages/TeamStats.tsx`
-
-- L109: `<div className="text-center text-red-600">`
-
-### `src/pages/TopShooters.tsx`
-
-- L90: `<p className="text-sm text-red-600">`
-- L95: `<div className="text-center py-8 text-red-500">`
 
 ### `src/profile/AddressSection.tsx`
 
@@ -1709,8 +1383,4 @@ eyeball each occurrence to confirm it's actually a violation._
 - L36: `<button onClick={() => increment(setHomeHandicap)}>+</button>`
 - L53: `<button onClick={() => decrement(setAwayHandicap)}>-</button>`
 - L57: `<button onClick={() => increment(setAwayHandicap)}>+</button>`
-
-### `src/rules/RulesPage.tsx`
-
-- L325: `<label className="flex cursor-pointer items-center gap-2 text-sm">`
 
