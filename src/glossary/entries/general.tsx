@@ -1360,20 +1360,37 @@ export const entries = {
   'golden-break': {
     slug: 'golden-break',
     canonicalName: 'Golden Break',
-    aliases: ['8-ball break', '8 on the break', '8 on the snap', 'snap-8'],
+    aliases: ['9 on the break', '9 on the snap', 'snap-9', '8 on the break', '8 on the snap', '8-ball break', 'snap-8'],
     shortDef:
-      'Sinking the winning ball on the break — e.g., the 8 in 8-Ball.',
+      'Sinking the winning ball on the break. Officially recognized only for the 9 in 9-Ball.',
     longDef: (
-      <p>
-        A golden break is when the winning ball drops on the break shot
-        itself — most famously the 8 in{' '}
-        <a href="#eight-ball" className="text-info hover:underline">8-Ball</a>.
-        Many names for the same feat: "8 on the break," "8 on the snap,"
-        "snap-8," etc. All land here.
-      </p>
+      <div className="space-y-3">
+        <p>
+          A golden break is when the winning ball drops on the break shot
+          itself. By the official rules of the sport, that's the 9 in{' '}
+          <a href="#nine-ball" className="text-info hover:underline">9-Ball</a>{' '}
+          only — a legal break that sinks the 9 ends the rack as a win.
+        </p>
+        <p>
+          <strong>About "8 on the break."</strong> In{' '}
+          <a href="#eight-ball" className="text-info hover:underline">8-Ball</a>,
+          sinking the 8 on the break isn't a uniform win — most official
+          rule sets treat it as a re-rack, the opponent's choice, or even
+          a loss. People call it a golden break colloquially ("8 on the
+          break," "snap-8"), but the sport doesn't officially count it
+          as one. Those terms still land here so searches resolve.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#nine-ball" className="text-info hover:underline">9-Ball</a>,{' '}
+          <a href="#eight-ball" className="text-info hover:underline">8-Ball</a>,{' '}
+          <a href="#game" className="text-info hover:underline">game</a>,{' '}
+          <a href="#achievements" className="text-info hover:underline">achievements</a>.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['game', 'achievements'],
+    related: [],
   },
 
   'placeholder-player': {
