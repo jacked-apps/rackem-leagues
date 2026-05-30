@@ -1176,15 +1176,16 @@ export const entries = {
     longDef: (
       <div className="space-y-3">
         <p>
-          The captains chat is an in-app group chat that lets every team's{' '}
+          The captains chat is an in-app group chat where every team's{' '}
           <a href="#captain" className="text-info hover:underline">captain</a>{' '}
           in a{' '}
           <a href="#league" className="text-info hover:underline">league</a>{' '}
-          communicate with each other and with the league{' '}
+          can coordinate scheduling, resolve disputes, and communicate
+          with each other and with the league{' '}
           <a href="#staff" className="text-info hover:underline">staff</a>{' '}
           (including the{' '}
-          <a href="#league-operator" className="text-info hover:underline">league operator</a>).
-          Regular players aren't in the room.
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>)
+          — without player interference.
         </p>
         <p>
           It's created automatically when the LO activates a new{' '}
@@ -1204,8 +1205,32 @@ export const entries = {
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: [],
+    related: ['team-chat'],
     reviewedByEd: '2026-05-30',
+  },
+
+  'team-chat': {
+    slug: 'team-chat',
+    canonicalName: 'Team Chat',
+    aliases: [],
+    shortDef:
+      'An in-app group chat for every current member of a single team — created when their season activates.',
+    longDef: (
+      <p>
+        The team chat is an in-app group chat that includes every current
+        member of one{' '}
+        <a href="#team" className="text-info hover:underline">team</a>.
+        It's created automatically when the LO activates a{' '}
+        <a href="#season" className="text-info hover:underline">season</a>,
+        and the membership auto-updates as the team's{' '}
+        <a href="#roster" className="text-info hover:underline">roster</a>{' '}
+        changes or the{' '}
+        <a href="#captain" className="text-info hover:underline">captain</a>{' '}
+        changes.
+      </p>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['captains-chat'],
   },
 
   'player-reports': {
