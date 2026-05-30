@@ -1373,40 +1373,36 @@ export const entries = {
       'snap-8',
     ],
     shortDef:
-      'Sinking the winning ball on the break. A win in 9-Ball and 10-Ball by standard rules; in 8-Ball it depends on the league\'s house rules.',
+      "Sinking the winning ball on the break. Whether it counts as a win is controlled by a league setting the LO can toggle.",
     longDef: (
       <div className="space-y-3">
         <p>
-          A golden break is when the winning ball drops on the break shot
-          itself. The app's rules are taken from CSI:
+          A golden break is when the winning ball drops on the break shot.
+          The app tracks it as a per-game event — the{' '}
+          <a href="#game" className="text-info hover:underline">game</a>{' '}
+          already knows which{' '}
+          <a href="#game-type" className="text-info hover:underline">game-type</a>{' '}
+          is being played, so the record is just "golden break: true."
+          From that we know whether it was 8 on the break, 9 on the
+          break, or 10 on the break.
         </p>
-        <ul className="list-disc pl-5 space-y-1">
-          <li>
-            <a href="#nine-ball" className="text-info hover:underline">9-Ball</a>{' '}
-            — sinking the 9 on the break wins the rack.
-          </li>
-          <li>
-            <a href="#ten-ball" className="text-info hover:underline">10-Ball</a>{' '}
-            — sinking the 10 on the break wins the rack.
-          </li>
-          <li>
-            <a href="#eight-ball" className="text-info hover:underline">8-Ball</a>{' '}
-            — sinking the 8 on the break is NOT a default win. The league
-            operator can flip this with a house rule ("Golden Break
-            Counts as Win" league setting), which would make it count.
-          </li>
-        </ul>
+        <p>
+          Whether a golden break <em>counts as a win</em> is controlled
+          by a per-league setting the{' '}
+          <a href="#league-operator" className="text-info hover:underline">LO</a>{' '}
+          toggles. CSI rules provide the defaults, but any game-type's
+          default can be flipped as a house rule.
+        </p>
         <p>
           All the colloquial names — "8 on the break," "9 on the snap,"
-          "snap-8," "10 on the break," etc. — land on this page so
-          searches resolve to one consistent def.
+          "snap-8," "10 on the break," etc. — land here so searches
+          resolve to one consistent def.
         </p>
         <p className="text-sm text-muted-foreground">
           Relevant topics:{' '}
-          <a href="#nine-ball" className="text-info hover:underline">9-Ball</a>,{' '}
-          <a href="#ten-ball" className="text-info hover:underline">10-Ball</a>,{' '}
-          <a href="#eight-ball" className="text-info hover:underline">8-Ball</a>,{' '}
           <a href="#game" className="text-info hover:underline">game</a>,{' '}
+          <a href="#game-type" className="text-info hover:underline">game type</a>,{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>,{' '}
           <a href="#achievements" className="text-info hover:underline">achievements</a>.
         </p>
       </div>
