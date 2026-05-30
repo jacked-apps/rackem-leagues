@@ -231,9 +231,16 @@ export function useMatchScoringMutations({
    *
    * @param gameNumber - Game number to confirm
    * @param isVacateRequest - True if confirming a vacate request
+   * @param autoConfirmed - True when fired by the confirmer's Auto-Confirm mode
+   *   (no modal). Recorded on the vouch row as an integrity metric only; never
+   *   affects officiality. Defaults false (a manually-tapped confirm).
    */
   const confirmOpponentScore = useCallback(
-    async (gameNumber: number, isVacateRequest?: boolean): Promise<boolean> => {
+    async (
+      gameNumber: number,
+      isVacateRequest?: boolean,
+      autoConfirmed = false
+    ): Promise<boolean> => {
       if (!match) return false;
 
       const existingGame = gameResults.get(gameNumber);
@@ -371,6 +378,7 @@ export function useMatchScoringMutations({
             side: isHomeTeam ? 'home' : 'away',
             action: 'confirm',
             isInitiator: false,
+            autoConfirmed,
             result: resultFromGame(existingGame),
           });
         }

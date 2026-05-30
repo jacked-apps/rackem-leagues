@@ -307,4 +307,28 @@ describe('appendConfirmation (many-eyes Unit 2 + Amendment B)', () => {
     );
     expect(rows.length).toBe(1);
   });
+
+  // ── auto_confirmed metric (scoring participation modes) ──────────────────────
+
+  it('defaults auto_confirmed to false when the caller omits it (manual vouch)', async () => {
+    expect(await append({})).toBe(true);
+
+    const rows = await executeSql(
+      `SELECT auto_confirmed FROM public.game_confirmations WHERE game_id = $1 AND confirmer_id = $2`,
+      [gameId, memberA]
+    );
+    expect(rows.length).toBe(1);
+    expect(rows[0].auto_confirmed).toBe(false);
+  });
+
+  it('records auto_confirmed=true when the vouch came from Auto-Confirm mode', async () => {
+    expect(await append({ autoConfirmed: true })).toBe(true);
+
+    const rows = await executeSql(
+      `SELECT auto_confirmed FROM public.game_confirmations WHERE game_id = $1 AND confirmer_id = $2`,
+      [gameId, memberA]
+    );
+    expect(rows.length).toBe(1);
+    expect(rows[0].auto_confirmed).toBe(true);
+  });
 });

@@ -37,6 +37,12 @@ interface UseMatchScoringOptions {
   matchType: MatchType;
   autoConfirm?: boolean;
   /**
+   * "I'm not scoring" mode. When on, the realtime fast-path suppresses all
+   * confirm/vacate prompts (mirrors the state-derived scan's guard) so an
+   * opted-out viewer never sees a modal. ScoreMatch owns this; forwarded here.
+   */
+  notScoring?: boolean;
+  /**
    * Game number the user currently has the initiator (scoring) modal open
    * for — passed through to the realtime handler so it can suppress the
    * confirm-opponent prompt for that game (Amendment H). ScoreMatch owns
@@ -54,6 +60,7 @@ export function useMatchScoring({
   memberId,
   matchType,
   autoConfirm = false,
+  notScoring = false,
   scoringGame = null,
 }: UseMatchScoringOptions) {
   const queryClient = useQueryClient();
@@ -490,6 +497,7 @@ export function useMatchScoring({
       myVacateRequests,
       addToConfirmationQueue,
       autoConfirm,
+      notScoring,
       scoringGame,
     },
   });

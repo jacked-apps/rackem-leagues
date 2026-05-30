@@ -67,6 +67,9 @@ import {
   buildPersonalConfirmContext,
 } from '@/utils/match/pendingConfirmations';
 import { queryKeys } from '@/api/queryKeys';
+import { useScoringParticipationModes } from '@/hooks/useScoringParticipationModes';
+import { useGameDisplayMode } from '@/hooks/useGameDisplayMode';
+import { ScoringSettingsMenu } from '@/components/scoring/ScoringSettingsMenu';
 import { getTeamStats, getPlayerStats as getPlayerStatsUtil } from '@/types';
 import { getCalculator } from '@/systems/calculators';
 import { logger } from '@/utils/logger';
@@ -80,8 +83,17 @@ function ScoreMatchBody() {
   const { data: member } = useCurrentMember();
   const memberId = member?.id;
 
-  // Auto-confirm setting (bypass confirmation modal)
-  const [autoConfirm, setAutoConfirm] = useState(false);
+  // Scoring participation modes (Auto-Confirm + I'm-Not-Scoring) with
+  // consequence-scaled persistence — see useScoringParticipationModes. Auto-
+  // Confirm survives a refresh but resets on leaving the page; I'm-Not-Scoring
+  // lasts the whole match. The two are mutually exclusive.
+  const { autoConfirm, setAutoConfirm, notScoring, setNotScoring } =
+    useScoringParticipationModes(matchId);
+
+  // Games-list column ordering (Break/Rack vs Home/Away), lifted here so both
+  // the list's header bar and the settings gear stay in sync. Global + forever
+  // (a pure display preference — see useGameDisplayMode).
+  const { displayMode, toggleDisplayMode } = useGameDisplayMode();
 
   // Verification state
   const [isVerifying, setIsVerifying] = useState(false);
@@ -111,6 +123,14 @@ function ScoreMatchBody() {
   // scan below would re-pop a modal the scorer just resolved. Cleared per game
   // once the data shows it no longer needs my confirmation (server caught up).
   const handledConfirmations = useRef<Set<number>>(new Set());
+
+  // Games this device has DISMISSED — tapped Cancel / the X / Escape on the
+  // confirm prompt without confirming or denying ("not sure / didn't witness").
+  // The scan below skips these so the prompt doesn't keep re-popping. Session-
+  // scoped on purpose (lowest-consequence setting — a dismiss is just "not now",
+  // not a vouch or a wipe): cleared per game once the data shows it no longer
+  // needs my action (so a later re-score re-arms a fresh prompt).
+  const dismissedConfirmations = useRef<Set<number>>(new Set());
 
   // Scoring modal state — declared up here (rather than next to the other
   // local UI state below) so Amendment H can pass it through useMatchScoring
@@ -154,6 +174,10 @@ function ScoreMatchBody() {
     memberId,
     matchType: '3v3',
     autoConfirm,
+    // "I'm not scoring": forwarded so the realtime fast-path suppresses
+    // confirm/vacate modals too (the scan guard alone misses realtime-driven
+    // prompts).
+    notScoring,
     // Amendment H: forward the open-initiator state so the realtime handler
     // can suppress confirm-opponent queue entries for that game while the
     // user is mid-fill (the user's submit will trigger Amendment D's
@@ -619,10 +643,19 @@ function ScoreMatchBody() {
         personalCtx
       );
       if (action === 'none') {
-        // Server caught up (confirmed/vacated/denied) — re-arm for next time.
+        // Server caught up (confirmed/vacated/denied) — re-arm for next time,
+        // including clearing any dismiss so a re-score brings a fresh prompt.
         handledConfirmations.current.delete(game.game_number);
+        dismissedConfirmations.current.delete(game.game_number);
         return;
       }
+      // "I'm Not Scoring": suppress every auto prompt (confirm, vacate, and
+      // auto-confirm). No modal, no auto-vouch, no auto-deny — just silence.
+      // Deliberate engagement still works: tapping a game to peek-and-confirm,
+      // or tapping a player to score, both go through their own handlers, not
+      // this scan. Placed after the 'none' re-arm so that bookkeeping still
+      // runs while the person is opted out.
+      if (notScoring) return;
       if (confirmationGame?.gameNumber === game.game_number) return; // showing
       if (confirmationQueue.some((c) => c.gameNumber === game.game_number)) return; // queued
       if (editingGame?.gameNumber === game.game_number) return; // I'm editing it
@@ -631,6 +664,7 @@ function ScoreMatchBody() {
       if (scoringGame?.gameNumber === game.game_number) return;
       if (myVacateRequests.current.has(game.game_number)) return; // my own action
       if (handledConfirmations.current.has(game.game_number)) return; // just acted
+      if (dismissedConfirmations.current.has(game.game_number)) return; // dismissed this session
 
       if (action === 'vacate') {
         // Vacating is destructive — always a human decision, never auto.
@@ -643,7 +677,9 @@ function ScoreMatchBody() {
         const gameNumber = game.game_number;
         handledConfirmations.current.add(gameNumber);
         void mutationsRef.current
-          ?.confirmOpponentScore(gameNumber)
+          // autoConfirmed=true: scan-fired, no modal — recorded as the
+          // integrity metric on the vouch row (never affects officiality).
+          ?.confirmOpponentScore(gameNumber, false, true)
           .then((ok) => {
             if (!ok) handledConfirmations.current.delete(gameNumber);
           });
@@ -661,6 +697,7 @@ function ScoreMatchBody() {
     editingGame,
     scoringGame,
     autoConfirm,
+    notScoring,
     players,
     personalCtx,
     addToConfirmationQueueFromHook,
@@ -686,7 +723,9 @@ function ScoreMatchBody() {
         setBreakAndRun(false);
         setGoldenBreak(false);
       },
-      (gameNumber) => mutations.confirmOpponentScore(gameNumber)
+      // This callback is only invoked from handlePlayerClick's auto-confirm
+      // branch, so the vouch is auto-confirmed (metric only).
+      (gameNumber) => mutations.confirmOpponentScore(gameNumber, false, true)
     );
   };
 
@@ -892,20 +931,17 @@ function ScoreMatchBody() {
                 quiet "catching up" pill while degraded, one calm note on a
                 sustained outage. Active scorer only (this is the scoring page). */}
             <ConnectionIndicator health={connectionHealth} />
-            <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
-              <input
-                type="checkbox"
-                checked={autoConfirm}
-                onChange={(e) => setAutoConfirm(e.target.checked)}
-                className="w-3 h-3"
-              />
-              Auto-Confirm
-            </label>
-            <InfoButton title="Auto-Confirm Opponent Selections" className="relative">
-              <p className="text-sm">
-                By enabling this your opponents game result selections will automatically be confirmed for your team. Your team is still responsible for ensuring the scoring is accurate. This option simply removes the need to confirm each game individually.
-              </p>
-            </InfoButton>
+            {/* Settings gear — houses Auto-Confirm, I'm-Not-Scoring, and the
+                game-order toggle (the corner was too cramped for inline
+                controls). */}
+            <ScoringSettingsMenu
+              autoConfirm={autoConfirm}
+              onAutoConfirmChange={setAutoConfirm}
+              notScoring={notScoring}
+              onNotScoringChange={setNotScoring}
+              displayMode={displayMode}
+              onToggleDisplayMode={toggleDisplayMode}
+            />
           </div>
         </div>
       </div>
@@ -1152,6 +1188,8 @@ function ScoreMatchBody() {
         awayTeamId={match.away_team_id}
         totalGames={filteredGameResults.size}
         isHomeTeam={isHomeTeam}
+        displayMode={displayMode}
+        onToggleDisplayMode={toggleDisplayMode}
       />
 
       {/* Win Confirmation Modal */}
@@ -1249,6 +1287,12 @@ function ScoreMatchBody() {
             .then((ok) => {
               if (!ok) handledConfirmations.current.delete(gameNumber);
             });
+        }}
+        onDismiss={(gameNumber) => {
+          // Neither vouch nor wipe — just stop re-prompting this game this
+          // session. onClose (below) closes the modal and lets the queue
+          // advance to the next pending confirmation, if any.
+          dismissedConfirmations.current.add(gameNumber);
         }}
         onClose={() => setConfirmationGame(null)}
       />

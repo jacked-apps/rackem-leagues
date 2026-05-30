@@ -295,6 +295,7 @@ export type Database = {
       game_confirmations: {
         Row: {
           action: string
+          auto_confirmed: boolean
           break_and_run: boolean
           break_fouled: boolean
           confirmer_id: string
@@ -315,6 +316,7 @@ export type Database = {
         }
         Insert: {
           action?: string
+          auto_confirmed?: boolean
           break_and_run?: boolean
           break_fouled?: boolean
           confirmer_id: string
@@ -335,6 +337,7 @@ export type Database = {
         }
         Update: {
           action?: string
+          auto_confirmed?: boolean
           break_and_run?: boolean
           break_fouled?: boolean
           confirmer_id?: string

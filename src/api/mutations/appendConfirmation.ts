@@ -78,6 +78,16 @@ export interface AppendConfirmationParams {
    * No default — every caller must be explicit about the role they're recording.
    */
   isInitiator: boolean;
+  /**
+   * `true` when this vouch was produced automatically by the confirmer's
+   * Auto-Confirm mode (no modal — the scan fired it). `false` (default) for a
+   * manually-tapped confirm, an initiator's hand-entered result, or a vacate
+   * marker. Integrity metric only: an auto-confirmed vouch is weaker evidence
+   * than a manual one (the person trusted the scorekeeping rather than actively
+   * verifying), so a future analyzer can weight them differently. Never affects
+   * officiality or counting.
+   */
+  autoConfirmed?: boolean;
 }
 
 /** Row shape we read back when checking the member's latest vouch. */
@@ -139,6 +149,7 @@ export async function appendConfirmation(
     result,
     action = 'confirm',
     isInitiator,
+    autoConfirmed = false,
   } = params;
 
   try {
@@ -190,6 +201,7 @@ export async function appendConfirmation(
       side,
       action,
       is_initiator: isInitiator,
+      auto_confirmed: autoConfirmed,
       winner_team_id: result.winnerTeamId,
       winner_player_id: result.winnerPlayerId,
       break_and_run: result.breakAndRun,

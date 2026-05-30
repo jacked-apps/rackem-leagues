@@ -228,4 +228,44 @@ describe('game_confirmations schema', () => {
     insertedIds.push(b[0].id);
     expect(b.length).toBe(1);
   });
+
+  // ── auto_confirmed column (scoring participation modes) ───────────────────
+
+  it('has the auto_confirmed column with default false', async () => {
+    const rows = await executeSql(
+      `SELECT column_default, is_nullable, data_type
+         FROM information_schema.columns
+         WHERE table_name = 'game_confirmations' AND column_name = 'auto_confirmed'`
+    );
+    expect(rows.length).toBe(1);
+    expect(rows[0].data_type).toBe('boolean');
+    expect(rows[0].is_nullable).toBe('NO');
+    expect(rows[0].column_default).toBe('false');
+  });
+
+  it('defaults auto_confirmed to false (a vouch is manual unless flagged)', async () => {
+    const rows = await executeSql(
+      `INSERT INTO public.game_confirmations
+         (match_id, game_id, game_number, confirmer_id, side)
+       VALUES ($1, $2, $3, $4, 'home')
+       RETURNING id, auto_confirmed`,
+      [matchId, gameId, gameNumber, confirmerId]
+    );
+    expect(rows.length).toBe(1);
+    insertedIds.push(rows[0].id);
+    expect(rows[0].auto_confirmed).toBe(false);
+  });
+
+  it('accepts auto_confirmed=true (Auto-Confirm mode produced this vouch)', async () => {
+    const rows = await executeSql(
+      `INSERT INTO public.game_confirmations
+         (match_id, game_id, game_number, confirmer_id, side, auto_confirmed)
+       VALUES ($1, $2, $3, $4, 'home', true)
+       RETURNING id, auto_confirmed`,
+      [matchId, gameId, gameNumber, confirmerId]
+    );
+    expect(rows.length).toBe(1);
+    insertedIds.push(rows[0].id);
+    expect(rows[0].auto_confirmed).toBe(true);
+  });
 });
