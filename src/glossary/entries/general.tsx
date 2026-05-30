@@ -1224,22 +1224,45 @@ export const entries = {
     canonicalName: 'Placeholder Player',
     aliases: ['placeholder', 'placeholder players'],
     shortDef:
-      "A roster slot a captain can add by name for a player who hasn't registered an app account yet.",
+      "A stand-in for a real player who hasn't registered for the app yet. Plays and accumulates stats normally, then hands them off when the real person registers.",
     longDef: (
-      <p>
-        Placeholder players let a{' '}
-        <a href="#captain" className="text-info hover:underline">captain</a>{' '}
-        build a complete{' '}
-        <a href="#roster" className="text-info hover:underline">roster</a>{' '}
-        for their{' '}
-        <a href="#team" className="text-info hover:underline">team</a>{' '}
-        even when not every player has registered on the app yet. The
-        slot has a name and counts as part of the roster, so lineups,
-        match math, and handicaps all work from day one.
-      </p>
+      <div className="space-y-3">
+        <p>
+          A placeholder player is a representation of an actual person
+          who's on the{' '}
+          <a href="#team" className="text-info hover:underline">team</a>{' '}
+          but hasn't registered an account on the app yet. The{' '}
+          <a href="#captain" className="text-info hover:underline">captain</a>{' '}
+          creates the placeholder by name, and from there it behaves
+          like any other{' '}
+          <a href="#roster" className="text-info hover:underline">roster</a>{' '}
+          player.
+        </p>
+        <p>
+          The placeholder can be played in{' '}
+          <a href="#match" className="text-info hover:underline">matches</a>,
+          gets their full play history recorded, and their results count
+          exactly like a registered player's would — handicap, standings,
+          stats, everything.
+        </p>
+        <p>
+          When the real person finally registers on the app, the
+          placeholder's accumulated history can (and should) be transferred
+          onto their new registered account. Basically: the app creates a
+          fake "Bob" until the real Bob shows up and takes over.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#captain" className="text-info hover:underline">captain</a>,{' '}
+          <a href="#team" className="text-info hover:underline">team</a>,{' '}
+          <a href="#roster" className="text-info hover:underline">roster</a>,{' '}
+          <a href="#match" className="text-info hover:underline">match</a>.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['roster', 'team'],
+    related: [],
+    reviewedByEd: '2026-05-30',
   },
 
   'team-chat': {
