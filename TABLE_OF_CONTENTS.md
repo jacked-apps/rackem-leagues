@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-28 (Added passwordless sign-in brainstorm + implementation plan: `docs/brainstorms/2026-05-28-passwordless-sign-in-requirements.md` and `docs/plans/2026-05-28-001-feat-passwordless-sign-in-plan.md` — one-door, code-based login (email OTP + Google/Facebook), passwords kept but demoted. Companion to the player-onboarding cold-start brainstorm; built first. Branch `docs/passwordless-auth-brainstorm`.)
+> **Last Updated**: 2026-05-29 (Added onboarding cold-start cascade plan: `docs/plans/2026-05-29-001-feat-onboarding-cascade-plan.md` + indexed its origin brainstorm — team join link → claim → captain approve; builds on passwordless PR #159. Branch `docs/player-onboarding-cold-start-brainstorm`.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -95,6 +95,7 @@
 | `docs/brainstorms/2026-05-21-lo-primitive-naming-layer-requirements.md` | Naming/identity layer for LO-built primitives — locks the internal-name / display-name / description / label glossary; mirror is workshop-authoring-only | Design (future workshop); NOT locked canon |
 | `docs/brainstorms/2026-05-21-scoreboard-module-design-requirements.md` | ROUGH: scoreboard = slots per side filled by modules that read the state bag + render labeled values; LO-customizable; stress-tests the naming layer | Rough draft — Ed's idea, to flesh out |
 | `docs/brainstorms/2026-05-28-passwordless-sign-in-requirements.md` | Requirements for one-door, code-based passwordless sign-in (email OTP + Google/Facebook; passwords kept but demoted) | Companion to the onboarding cold-start brainstorm; built first to dissolve the join-token-survival problem; branch `docs/passwordless-auth-brainstorm` |
+| `docs/brainstorms/2026-05-28-player-onboarding-cold-start-requirements.md` | Requirements for new-league cold-start player/captain onboarding — the share→self-claim→approve cascade (persistent team join link + captain approve gate) | Resolved decisions captured; passwordless is the build-first companion; plan = `2026-05-29-001` |
 | `/docs/plans/` | **CE implementation plans** | Output of `/compound-engineering:ce-plan` |
 | `docs/plans/2026-04-17-001-feat-official-rulebook-reader-plan.md` | Implementation plan for the Official Rulebook Reader | 6 units, active branch `feature/official-rulebook-reader` |
 | `docs/plans/2026-04-27-001-feat-global-header-nav-rework-plan.md` | Implementation plan for the global header & navigation rework | 9 units in 3 phases, active branch `fix/header-mobile-rework` |
@@ -118,6 +119,7 @@
 | `docs/plans/2026-05-17-002-feat-captain-reup-sheet-plan.md` | Implementation plan for the captain re-up sheet | Draft PR #121 |
 | `docs/plans/2026-04-28-001-feat-modular-league-system-plan-supplements/` | Supplements directory for the modular league system plan | Append-only addenda used during execution |
 | `docs/plans/2026-05-17-001-refactor-modular-framework-migration-plan.md` | Strangler-fig migration plan for the modular Scoring System refactor | Unit 1 (Win Calculator extraction) detailed; Units 2-9 sketched; each Unit extracts one Module piece-by-piece without breaking the shipping prepackaged Scoring Systems |
+| `docs/plans/2026-05-29-001-feat-onboarding-cascade-plan.md` | Implementation plan for the player/captain onboarding cold-start cascade (team join link → claim → captain approve) | 8 units / 3 phases; new `teams.join_token` + `team_join_requests` table; `/join/:token` page; `approve-join-request` edge fn (match-or-create via merge); triage board on MyTeams; doorbell; thin captain wizard; land-on-tonight's-match; builds on passwordless PR #159; origin 2026-05-28 brainstorm |
 
 ### Future Work Folder
 
@@ -669,6 +671,15 @@ how to add a new test, demo recording, cleanup model).
 - `FormatComparison.tsx` - Format comparison
 - `EightManFormatDetails.tsx` - 8-man format details
 - `FiveManFormatDetails.tsx` - 5-man format details
+
+#### Handicap Calculator (`/handicapCalculator/`) — **dev/staging only**
+
+Standalone explainer at `/tools/calc`. Estimates Fargo-style team handicap for a 5v5 / 25-game match. Entry point is a small "LMS Calc" link at the bottom of the Profile page (dev/staging only). Self-contained — to remove the feature entirely: delete the `/handicapCalculator/` folder and remove the marked blocks (grep for `Handicap Calculator`) in `navigation/NavRoutes.tsx` and `profile/Profile.tsx`.
+
+- `HandicapCalculator.tsx` - The page: 10 rating inputs + result card
+- `fargoHandicap.ts` - Educational handicap-spot approximation (gap / 65, capped)
+- `NonProdGate.tsx` - Local route gate; redirects to `/` in production
+- `index.ts` - Public surface (page + gate re-exports)
 
 #### Official Rulebook Reader (`/rules/`)
 
