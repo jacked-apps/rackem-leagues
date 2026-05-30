@@ -1097,7 +1097,7 @@ export const entries = {
     shortDef:
       'The top-level container an LO operates under — the business, club, or group that holds the leagues together. One organization can run any number of leagues.',
     longDef: (
-      <div className="space-y-2">
+      <div className="space-y-3">
         <p>
           An organization is the umbrella the{' '}
           <a href="#league-operator" className="text-info hover:underline">league operator</a>{' '}
@@ -1112,10 +1112,23 @@ export const entries = {
           — anyone appointed by the LO works at the org level and has
           visibility across the org's leagues.
         </p>
+        <p>
+          Think of the{' '}
+          <a href="#league-operator" className="text-info hover:underline">LO</a>'s
+          section of the app as the organization's office — its command
+          center.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>,{' '}
+          <a href="#league" className="text-info hover:underline">league</a>,{' '}
+          <a href="#staff" className="text-info hover:underline">staff</a>.
+        </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: [],
+    reviewedByEd: '2026-05-30',
   },
 
   staff: {
