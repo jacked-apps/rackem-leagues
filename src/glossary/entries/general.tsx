@@ -1267,26 +1267,32 @@ export const entries = {
     canonicalName: 'House Rules',
     aliases: ['house rule'],
     shortDef:
-      "LO decisions that override the sport's official defaults for a specific league. Each league can decide some rules differently from the standard.",
+      "The local rules an LO sets for their league. Pool's governing bodies (BCA, CSI) publish game rules; league-level rules are entirely the LO's call.",
     longDef: (
-      <p>
-        House rules are how the{' '}
-        <a href="#league-operator" className="text-info hover:underline">LO</a>{' '}
-        tailors their{' '}
-        <a href="#league" className="text-info hover:underline">league</a>{' '}
-        beyond the sport's defaults. Pool's governing bodies (e.g., CSI)
-        provide the baseline rules; house rules are where the LO can
-        change those baselines to fit their players, venue, or tradition.
-        The clearest example in this app is the "Golden Break Counts as
-        Win" toggle — official defaults say it counts in 9-Ball and
-        10-Ball but not 8-Ball, and the LO can flip any of them as a
-        house rule. Other LO-controllable settings on these glossary
-        pages (marked with the <em>League Operator setting</em> chip)
-        are similar in spirit.
-      </p>
+      <div className="space-y-3">
+        <p>
+          House rules are the local rules an{' '}
+          <a href="#league-operator" className="text-info hover:underline">LO</a>{' '}
+          puts on their{' '}
+          <a href="#league" className="text-info hover:underline">league</a>.
+          Organizations like BCA and CSI publish general pool rules and
+          the rules of each{' '}
+          <a href="#game-type" className="text-info hover:underline">game</a>{' '}
+          (8-Ball, 9-Ball, 10-Ball) — but how a league actually runs is
+          entirely the LO's call. They don't specify "league" rules.
+        </p>
+        <p>
+          House rules cover decisions like the "Golden Break Counts as
+          Win" toggle, tie handling, payout structure, attendance
+          policies, and anything else the LO wants spelled out for their
+          players. Many of the LO-controllable settings on these glossary
+          pages (marked with the <em>League Operator setting</em> chip)
+          are house-rule-style decisions.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['league-operator', 'golden-break'],
+    related: ['league-operator', 'league', 'golden-break'],
   },
 
   'captains-chat': {
