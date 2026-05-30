@@ -1065,19 +1065,9 @@ export const entries = {
         </p>
         <p><strong>Tools the app provides:</strong></p>
         <ul className="list-disc pl-5 space-y-1">
-          <li>
-            <strong>Captains chat</strong> — cross-team coordination
-            and a channel where captains can bring issues to the LO
-            directly.
-          </li>
-          <li>
-            <strong>Player reports</strong> — any player can flag a
-            problem for the LO to review.
-          </li>
-          <li>
-            <strong>Prize calculator</strong> — helps work out money
-            in and prize splits (in progress — basics are there).
-          </li>
+          <li><a href="#captains-chat" className="text-info hover:underline">Captains chat</a></li>
+          <li><a href="#player-reports" className="text-info hover:underline">Player reports</a></li>
+          <li><a href="#prize-calculator" className="text-info hover:underline">Prize calculator</a></li>
         </ul>
         <p className="text-sm">
           The LO's role as operator is separate from their participation.
@@ -1149,6 +1139,67 @@ export const entries = {
           and other helpers the LO designates.
         </p>
       </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: [],
+  },
+
+  'captains-chat': {
+    slug: 'captains-chat',
+    canonicalName: 'Captains Chat',
+    aliases: ['captain chat'],
+    shortDef:
+      "One of the app's coordination tools — a chat for every current captain in the league plus the league operator.",
+    longDef: (
+      <p>
+        The captains chat is a coordination channel that includes every
+        team's{' '}
+        <a href="#captain" className="text-info hover:underline">captain</a>{' '}
+        in the{' '}
+        <a href="#league" className="text-info hover:underline">league</a>,
+        plus the{' '}
+        <a href="#league-operator" className="text-info hover:underline">league operator</a>.
+        Regular players aren't in the room. See the captain entry for
+        the natural-progression model the chat fits into.
+      </p>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: [],
+  },
+
+  'player-reports': {
+    slug: 'player-reports',
+    canonicalName: 'Player Reports',
+    aliases: ['report', 'reports', 'reporting'],
+    shortDef:
+      'A way for any player to flag a problem to the league operator for review.',
+    longDef: (
+      <p>
+        Any player can submit a report about another player, an incident,
+        or anything else the{' '}
+        <a href="#league-operator" className="text-info hover:underline">league operator</a>{' '}
+        should know about. The LO is the one who decides what to do with
+        each report.
+      </p>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: [],
+  },
+
+  'prize-calculator': {
+    slug: 'prize-calculator',
+    canonicalName: 'Prize Calculator',
+    aliases: ['prize calc'],
+    shortDef:
+      'A tool that helps the league operator work out money in (from teams) and prize splits at season end. Currently in progress.',
+    longDef: (
+      <p>
+        The prize calculator helps the{' '}
+        <a href="#league-operator" className="text-info hover:underline">league operator</a>{' '}
+        handle the money side of running a league — total fees collected,
+        prize pool breakdown, payout splits. The calculator is partially
+        built; basics are in place.
+      </p>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: [],
