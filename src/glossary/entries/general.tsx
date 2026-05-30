@@ -527,15 +527,10 @@ export const entries = {
           single round robin produces 25.
         </p>
         <p>
-          <strong>Scheduling exceptions.</strong> When a team can't make
-          their scheduled week (illness, venue conflict, work, travel),
-          the match can be played outside its normal slot. A{' '}
-          <a href="#makeup-match" className="text-info hover:underline">makeup match</a>{' '}
-          is played AFTER the scheduled week. A{' '}
-          <a href="#preplayed-match" className="text-info hover:underline">preplayed match</a>{' '}
-          is played BEFORE it. Both still count toward the season{' '}
-          <a href="#standings" className="text-info hover:underline">standings</a>{' '}
-          exactly like a normal-week match.
+          <strong>Scheduling exceptions.</strong> Matches can be played
+          early (<a href="#preplayed-match" className="text-info hover:underline">preplayed match</a>){' '}
+          or late (<a href="#makeup-match" className="text-info hover:underline">makeup match</a>){' '}
+          when scheduling issues come up.
         </p>
         <p className="text-sm text-muted-foreground">
           <strong>A note on the word.</strong> &ldquo;Match&rdquo;
