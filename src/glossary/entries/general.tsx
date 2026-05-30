@@ -1147,7 +1147,9 @@ export const entries = {
           <a href="#match-format" className="text-info hover:underline">format</a>{' '}
           each league uses, the team format, how much freedom{' '}
           <a href="#captain" className="text-info hover:underline">captains</a>{' '}
-          get, the house rules, and the money coming in and going out.
+          get, the{' '}
+          <a href="#house-rules" className="text-info hover:underline">house rules</a>,
+          and the money coming in and going out.
           Complete control.
         </p>
         <p>
@@ -1258,6 +1260,33 @@ export const entries = {
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: [],
     reviewedByEd: '2026-05-30',
+  },
+
+  'house-rules': {
+    slug: 'house-rules',
+    canonicalName: 'House Rules',
+    aliases: ['house rule'],
+    shortDef:
+      "LO decisions that override the sport's official defaults for a specific league. Each league can decide some rules differently from the standard.",
+    longDef: (
+      <p>
+        House rules are how the{' '}
+        <a href="#league-operator" className="text-info hover:underline">LO</a>{' '}
+        tailors their{' '}
+        <a href="#league" className="text-info hover:underline">league</a>{' '}
+        beyond the sport's defaults. Pool's governing bodies (e.g., CSI)
+        provide the baseline rules; house rules are where the LO can
+        change those baselines to fit their players, venue, or tradition.
+        The clearest example in this app is the "Golden Break Counts as
+        Win" toggle — official defaults say it counts in 9-Ball and
+        10-Ball but not 8-Ball, and the LO can flip any of them as a
+        house rule. Other LO-controllable settings on these glossary
+        pages (marked with the <em>League Operator setting</em> chip)
+        are similar in spirit.
+      </p>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['league-operator', 'golden-break'],
   },
 
   'captains-chat': {
@@ -1443,7 +1472,9 @@ export const entries = {
         <p>
           The{' '}
           <a href="#league-operator" className="text-info hover:underline">LO</a>{' '}
-          can flip ANY of these as a house rule. A 9-Ball league can
+          can flip ANY of these as a{' '}
+          <a href="#house-rules" className="text-info hover:underline">house rule</a>.
+          A 9-Ball league can
           decide not to count them; an 8-Ball league can decide they DO
           count. The setting is per-league.
         </p>
