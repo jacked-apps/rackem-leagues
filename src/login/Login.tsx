@@ -1,134 +1,271 @@
-import React, { useState } from 'react';
+/**
+ * @fileoverview One-door sign-in screen.
+ *
+ * Single entry point replacing the separate login/register screens on the
+ * default path. When the passwordless launch flag is ON (local dev, or prod once
+ * verified — see `config/featureFlags`), it shows Google + an "enter email →
+ * type the code" flow (the code is verified in `EmailCodeStep` without leaving
+ * the page), plus a "prefer a password?" reveal for the kept email+password
+ * form. When the flag is OFF, it falls back to today's Google + email/password
+ * login. Additive: nothing is removed.
+ *
+ * NOTE: post-auth navigation currently hardcodes `/my-teams`; honoring the
+ * `?redirect` / join intent across all paths is Unit 4 of the plan.
+ */
+import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation, Link } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { CardAction, CardFooter } from '@/components/ui/card';
 import { LoginCard } from './LoginCard';
+import { EmailCodeStep } from './EmailCodeStep';
+import { requestEmailCode } from './passwordlessAuth';
+import { getSafeRedirectPath } from './redirect';
+import { useUser } from '../context/useUser';
+import { PASSWORDLESS_SIGN_IN_ENABLED } from '../config/featureFlags';
+import type { Session, User } from '@supabase/supabase-js';
+
+/** Labeled "or …" separator between the social and email options. */
+const Divider: React.FC<{ label: string }> = ({ label }) => (
+  <div className="relative my-6">
+    <div className="absolute inset-0 flex items-center">
+      <span className="w-full border-t" />
+    </div>
+    <div className="relative flex justify-center text-xs uppercase">
+      <span className="bg-card px-2 text-muted-foreground">{label}</span>
+    </div>
+  </div>
+);
 
 export const Login: React.FC = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const { isLoggedIn, setUser, setIsLoggedIn } = useUser();
+
+  // Where to land after auth: a safe ?redirect / location.state path, else My Teams.
+  const redirectTarget =
+    getSafeRedirectPath((location.state as { redirect?: string } | null)?.redirect) ??
+    getSafeRedirectPath(searchParams.get('redirect')) ??
+    '/my-teams';
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
-  const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
-  const navigate = useNavigate();
+
+  // Passwordless flow state (only used when the flag is on).
+  const [step, setStep] = useState<'choose' | 'code'>('choose');
+  const [codeLoading, setCodeLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+
+  // Already-signed-in guard: don't show the form to a logged-in user.
+  useEffect(() => {
+    if (isLoggedIn) navigate(redirectTarget);
+  }, [isLoggedIn, navigate, redirectTarget]);
+  if (isLoggedIn) return null;
 
   const handleGoogleLogin = async () => {
     setOauthLoading(true);
     setMessage('');
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/my-teams`,
-      },
+      options: { redirectTo: `${window.location.origin}${redirectTarget}` },
     });
     if (error) {
       setMessage(`Error: ${error.message}`);
       setOauthLoading(false);
     }
-    // Note: On success, user is redirected to Google, so no need to handle success here
+    // On success the browser redirects to Google, so there's nothing to do here.
   };
 
-  const handleLogin = async (e?: React.FormEvent) => {
+  const handlePasswordLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    setPasswordLoading(true);
+    setMessage('');
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setMessage(`Error: ${error.message}`);
-      setLoading(false);
+      setPasswordLoading(false);
     } else {
-      setMessage('Login successful!');
-      setLoading(false);
-      navigate('/my-teams');
+      navigate(redirectTarget);
     }
   };
 
-  return (
-    <LoginCard
-      title="Login"
-      description="Enter your credentials to access your account"
+  const handleRequestCode = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setCodeLoading(true);
+    setMessage('');
+    try {
+      await requestEmailCode(email);
+      setStep('code');
+    } catch (err) {
+      setMessage(`Error: ${err instanceof Error ? err.message : 'Could not send a code.'}`);
+    } finally {
+      setCodeLoading(false);
+    }
+  };
+
+  const handleAuthenticated = (result: { user: User | null; session: Session | null }) => {
+    if (result.user) {
+      setUser(result.user);
+      setIsLoggedIn(true);
+    }
+    navigate(redirectTarget);
+  };
+
+  // --- Code step (passwordless only) ---
+  if (PASSWORDLESS_SIGN_IN_ENABLED && step === 'code') {
+    return (
+      <LoginCard title="Check your email" description="Enter the code we sent you">
+        <EmailCodeStep
+          email={email}
+          onBack={() => setStep('choose')}
+          onAuthenticated={handleAuthenticated}
+        />
+      </LoginCard>
+    );
+  }
+
+  const googleButton = (
+    <Button
+      variant="outline"
+      className="w-full"
+      onClick={handleGoogleLogin}
+      disabled={oauthLoading || codeLoading || passwordLoading}
     >
-      <form onSubmit={handleLogin}>
-        <div className="mb-4">
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="Enter your email"
-            value={email}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-            autoComplete="email"
-            required
-          />
-        </div>
-        <div className="mb-4">
-          <Label htmlFor="password">Password</Label>
-          <PasswordInput
-            id="password"
-            placeholder="Enter your password"
-            value={password}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-            autoComplete="current-password"
-            required
-          />
-        </div>
-        <CardAction>
-          <Button
-            type="submit"
-            loadingText="Logging in..."
-            isLoading={loading}
-            disabled={loading}
-            message={message}
-          >
-            Login
-          </Button>
-        </CardAction>
-      </form>
+      <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+        <path
+          d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+          fill="#4285F4"
+        />
+        <path
+          d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+          fill="#34A853"
+        />
+        <path
+          d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+          fill="#FBBC05"
+        />
+        <path
+          d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+          fill="#EA4335"
+        />
+      </svg>
+      {oauthLoading ? 'Connecting...' : 'Continue with Google'}
+    </Button>
+  );
 
-      <div className="relative my-6">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
-        </div>
+  // Shared email+password form (primary when the flag is off; behind the reveal when on).
+  const passwordForm = (
+    <form onSubmit={handlePasswordLogin}>
+      <div className="mb-4">
+        <Label htmlFor="email">Email</Label>
+        <Input
+          id="email"
+          type="email"
+          placeholder="Enter your email"
+          value={email}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+          autoComplete="email"
+          required
+        />
       </div>
+      <div className="mb-4">
+        <Label htmlFor="password">Password</Label>
+        <PasswordInput
+          id="password"
+          placeholder="Enter your password"
+          value={password}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+          autoComplete="current-password"
+          required
+        />
+      </div>
+      <CardAction>
+        <Button
+          type="submit"
+          loadingText="Signing in..."
+          isLoading={passwordLoading}
+          disabled={passwordLoading}
+        >
+          Sign in with password
+        </Button>
+      </CardAction>
+    </form>
+  );
 
-      <Button
-        variant="outline"
-        className="w-full"
-        onClick={handleGoogleLogin}
-        disabled={oauthLoading}
-      >
-        <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
-          <path
-            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-            fill="#4285F4"
-          />
-          <path
-            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-            fill="#34A853"
-          />
-          <path
-            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-            fill="#FBBC05"
-          />
-          <path
-            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-            fill="#EA4335"
-          />
-        </svg>
-        {oauthLoading ? 'Connecting...' : 'Continue with Google'}
-      </Button>
+  // Passwordless "email me a code" form.
+  const codeRequestForm = (
+    <form onSubmit={handleRequestCode}>
+      <div className="mb-4">
+        <Label htmlFor="email">Email</Label>
+        <Input
+          id="email"
+          type="email"
+          placeholder="Enter your email"
+          value={email}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+          autoComplete="email"
+          required
+        />
+      </div>
+      <CardAction>
+        <Button
+          type="submit"
+          loadingText="Sending code..."
+          isLoading={codeLoading}
+          disabled={codeLoading}
+        >
+          Email me a code
+        </Button>
+      </CardAction>
+    </form>
+  );
+
+  return (
+    <LoginCard title="Sign in to Rack'em" description="No password needed — we'll email you a code">
+      {googleButton}
+
+      {PASSWORDLESS_SIGN_IN_ENABLED ? (
+        showPassword ? (
+          <>
+            <Divider label="or use a password" />
+            {passwordForm}
+            <div className="mt-2 text-center">
+              <Button type="button" variant="link" onClick={() => setShowPassword(false)}>
+                Use a code instead
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <Divider label="or passwordless" />
+            {codeRequestForm}
+            <div className="mt-2 text-center">
+              <Button type="button" variant="link" onClick={() => setShowPassword(true)}>
+                Prefer a password?
+              </Button>
+            </div>
+          </>
+        )
+      ) : (
+        <>
+          <Divider label="or continue with email" />
+          {passwordForm}
+        </>
+      )}
 
       {message && (
-        <p className={`text-sm mt-4 text-center ${message.includes('Error') ? 'text-destructive' : 'text-success'}`}>
+        <p
+          className={`text-sm mt-4 text-center ${
+            message.includes('Error') ? 'text-destructive' : 'text-success'
+          }`}
+        >
           {message}
         </p>
       )}
