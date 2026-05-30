@@ -662,15 +662,24 @@ export const entries = {
     shortDef:
       'A single rack between two players; you win a game by winning the rack.',
     longDef: (
-      <p>
-        A game is the smallest unit of play. One rack: balls racked, one
-        player breaks, players exchange shots until the rack is won. A match
-        contains many games (e.g., 18 in a 3v3 double round robin, 25 in a
-        5v5 single round robin).
-      </p>
+      <div className="space-y-3">
+        <p>
+          A game is the smallest unit of play. One rack: balls racked,
+          the{' '}
+          <a href="#breaker" className="text-info hover:underline">breaker</a>{' '}
+          breaks, players exchange shots until the rack is won. A{' '}
+          <a href="#match" className="text-info hover:underline">match</a>{' '}
+          contains many games — how many depends on the league's format.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#match" className="text-info hover:underline">match</a>,{' '}
+          <a href="#breaker" className="text-info hover:underline">breaker</a>.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['match', 'racker', 'breaker'],
+    related: ['racker'],
   },
 
   pairing: {
