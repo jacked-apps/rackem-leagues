@@ -227,40 +227,43 @@ export const entries = {
   playoffs: {
     slug: 'playoffs',
     canonicalName: 'Playoffs',
-    aliases: ['playoff', 'post-season', 'postseason'],
+    aliases: ['playoff', 'post-season', 'postseason', 'money round'],
     shortDef:
-      'An optional end-of-season elimination round that decides the season\'s champion.',
+      "Extra weeks of play past the regular season, used to decide awards. Comes in different flavors depending on what the LO wants.",
     longDef: (
       <div className="space-y-3">
         <p>
-          Playoffs are an optional extension to a{' '}
-          <a href="#season" className="text-info hover:underline">season</a>.
-          After regular play (the{' '}
-          <a href="#season-length" className="text-info hover:underline">season length</a>{' '}
-          weeks) ends, the top teams from the regular-season{' '}
+          Playoffs are any extra weeks of play a{' '}
+          <a href="#league" className="text-info hover:underline">league</a>{' '}
+          tacks on after the regular{' '}
+          <a href="#season" className="text-info hover:underline">season</a>{' '}
+          ends, used to decide some kind of award. They're optional —
+          many leagues just let the regular-season{' '}
           <a href="#standings" className="text-info hover:underline">standings</a>{' '}
-          qualify for a playoff bracket. The bracket plays out across one or
-          more matches and crowns the season's champion.
+          decide the champion and skip playoffs entirely.
         </p>
-        <p>What playoffs configuration covers:</p>
-        <ul className="list-disc space-y-1 pl-5">
+        <p><strong>Common flavors:</strong></p>
+        <ul className="list-disc pl-5 space-y-1">
           <li>
-            How many{' '}
-            <a href="#team" className="text-info hover:underline">teams</a>{' '}
-            qualify (e.g., top 4, top 8).
+            <strong>Money round.</strong> All teams play one extra
+            match paired by standings position — 1st vs last, 2nd vs
+            2nd-to-last, and so on. Each pairing has its own cash
+            prize, and whoever wins the match takes the money. Usually
+            one week.
           </li>
           <li>
-            The bracket format (single elimination, double, round robin, etc.).
+            <strong>Bracket.</strong> The top N teams (top 4, top 8,
+            etc.) play an elimination bracket for the main prize.
+            Usually two or more weeks.
           </li>
-          <li>The number of playoff weeks.</li>
+          <li>
+            <strong>Custom.</strong> Whatever else the LO designs.
+          </li>
         </ul>
         <p>
-          Playoffs are configured per-season, so a{' '}
-          <a href="#league" className="text-info hover:underline">league</a>{' '}
-          can choose to run them some seasons and skip others. Skipping
-          playoffs is legitimate — many leagues prefer the regular-season{' '}
-          <a href="#standings" className="text-info hover:underline">standings</a>{' '}
-          to decide the champion.
+          Playoffs are configured per-season, so the LO can run them
+          one way one season and a different way the next — or skip
+          them.
         </p>
         <p className="text-sm text-muted-foreground">
           Relevant topics:{' '}
@@ -268,12 +271,14 @@ export const entries = {
           <a href="#season-length" className="text-info hover:underline">season length</a>,{' '}
           <a href="#standings" className="text-info hover:underline">standings</a>,{' '}
           <a href="#team" className="text-info hover:underline">team</a>,{' '}
-          <a href="#league" className="text-info hover:underline">league</a>.
+          <a href="#league" className="text-info hover:underline">league</a>,{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>.
         </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['tiebreaker'],
+    reviewedByEd: '2026-05-30',
   },
 
   schedule: {
