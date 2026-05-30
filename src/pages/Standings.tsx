@@ -66,10 +66,10 @@ export function Standings() {
         <Card>
           <CardHeader>
             <CardTitle>Standings</CardTitle>
-            <p className="text-sm text-red-600">Failed to load standings</p>
+            <p className="text-sm text-destructive">Failed to load standings</p>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8 text-red-500">
+            <div className="text-center py-8 text-destructive">
               Error: {error.message}
             </div>
           </CardContent>

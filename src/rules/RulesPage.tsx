@@ -21,6 +21,8 @@ import { ChevronDown, X } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { FilterChip } from '@/components/ui/filter-chip';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { useUser } from '@/context/useUser';
 import { useMyMemberships } from './useMyMemberships';
 
@@ -322,25 +324,28 @@ export default function RulesPage() {
 
         {isSingleScope ? (
           <div className="mt-3 flex items-center justify-end gap-2">
-            <label className="flex cursor-pointer items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                className="h-4 w-4"
-                checked={differencesOnly}
-                onChange={(e) => {
-                  setDifferencesOnly(e.target.checked);
-                  if (e.target.checked && scopeSelection?.kind === 'single') {
-                    const s = scopeSelection.scope;
-                    rulesEvents.logDifferencesOnlyActivated(
-                      s.type === 'organization'
-                        ? { type: 'organization', id: s.organizationId }
-                        : { type: 'league', id: s.leagueId },
-                    );
-                  }
-                }}
-              />
+            <Checkbox
+              id="rules-differences-only"
+              checked={differencesOnly}
+              onCheckedChange={(checked) => {
+                const next = checked === true;
+                setDifferencesOnly(next);
+                if (next && scopeSelection?.kind === 'single') {
+                  const s = scopeSelection.scope;
+                  rulesEvents.logDifferencesOnlyActivated(
+                    s.type === 'organization'
+                      ? { type: 'organization', id: s.organizationId }
+                      : { type: 'league', id: s.leagueId },
+                  );
+                }
+              }}
+            />
+            <Label
+              htmlFor="rules-differences-only"
+              className="cursor-pointer text-sm font-normal"
+            >
               Show only house-rule differences
-            </label>
+            </Label>
           </div>
         ) : null}
 
