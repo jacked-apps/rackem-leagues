@@ -1037,18 +1037,25 @@ export const entries = {
     canonicalName: 'League Operator',
     aliases: ['LO', 'league op', 'operator'],
     shortDef:
-      'The person who runs a league — sets it up in the app, manages its teams and seasons, and handles escalations from the captains chat.',
+      'Basically the CEO of an organization — runs the leagues, sets the house rules, collects the money, hands out the prizes, everything.',
     longDef: (
       <div className="space-y-3">
         <p>
-          The league operator (LO for short) is the person responsible for
-          a <a href="#league" className="text-info hover:underline">league</a>.
-          They configure how it runs — every setting marked{' '}
-          <em>League Operator setting</em> on these pages is something they
-          control.
+          A league operator (LO for short) is basically the CEO of an{' '}
+          <a href="#organization" className="text-info hover:underline">organization</a>{' '}
+          that runs as many{' '}
+          <a href="#league" className="text-info hover:underline">leagues</a>{' '}
+          as they wish. They can appoint{' '}
+          <a href="#staff" className="text-info hover:underline">staff</a>{' '}
+          to help out as the operation grows.
         </p>
         <p>
-          During the season the LO is the escalation point for the{' '}
+          The LO controls everything: house rules, collecting money from
+          teams, paying out prizes — all of it. This app exists to let
+          the LO run their leagues as simply and smoothly as possible.
+        </p>
+        <p>
+          During the season the LO is also the escalation point for the{' '}
           <a href="#captain" className="text-info hover:underline">captains</a>{' '}
           when cross-team scheduling, disputes, or rule questions come up —
           which is why they're in the captains chat as an active participant.
@@ -1056,17 +1063,75 @@ export const entries = {
         <p className="text-sm">
           An LO can also be the{' '}
           <a href="#captain" className="text-info hover:underline">captain</a>{' '}
-          of one of their teams, and they don't have to play on any team at all.
+          of one of their teams, and they don't have to play on any team
+          at all.
         </p>
         <p className="text-sm text-muted-foreground">
           Relevant topics:{' '}
+          <a href="#organization" className="text-info hover:underline">organization</a>,{' '}
           <a href="#league" className="text-info hover:underline">league</a>,{' '}
+          <a href="#staff" className="text-info hover:underline">staff</a>,{' '}
           <a href="#captain" className="text-info hover:underline">captain</a>.
         </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['scorekeeper'],
+    reviewedByEd: '2026-05-30',
+  },
+
+  organization: {
+    slug: 'organization',
+    canonicalName: 'Organization',
+    aliases: ['org'],
+    shortDef:
+      'The top-level container an LO operates under — the business, club, or group that holds the leagues together. One organization can run any number of leagues.',
+    longDef: (
+      <div className="space-y-2">
+        <p>
+          An organization is the umbrella the{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>{' '}
+          runs leagues under — the business, club, or group that holds
+          everything together. One organization can run any number of{' '}
+          <a href="#league" className="text-info hover:underline">leagues</a>,
+          each with its own seasons, teams, and rules.
+        </p>
+        <p>
+          The organization is also the scope for{' '}
+          <a href="#staff" className="text-info hover:underline">staff</a>{' '}
+          — anyone appointed by the LO works at the org level and has
+          visibility across the org's leagues.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: [],
+  },
+
+  staff: {
+    slug: 'staff',
+    canonicalName: 'Staff',
+    aliases: ['org staff', 'league staff'],
+    shortDef:
+      "People the LO appoints to help run the organization — scorekeepers, league reps, anyone with extra access beyond a regular player.",
+    longDef: (
+      <div className="space-y-2">
+        <p>
+          Staff are the{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator's</a>{' '}
+          appointed helpers — people who handle parts of running an{' '}
+          <a href="#organization" className="text-info hover:underline">organization</a>{' '}
+          that the LO can't or doesn't want to do alone.
+        </p>
+        <p>
+          Common roles include the{' '}
+          <a href="#scorekeeper" className="text-info hover:underline">scorekeeper</a>{' '}
+          and other helpers the LO designates.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: [],
   },
 
   scorekeeper: {
