@@ -163,4 +163,69 @@ describe('game_confirmations schema', () => {
     );
     expect(cols.length).toBe(2);
   });
+
+  // ── Amendment A: is_initiator column ──────────────────────────────────────
+
+  it('has the is_initiator column with default false', async () => {
+    const rows = await executeSql(
+      `SELECT column_default, is_nullable, data_type
+         FROM information_schema.columns
+         WHERE table_name = 'game_confirmations' AND column_name = 'is_initiator'`
+    );
+    expect(rows.length).toBe(1);
+    expect(rows[0].data_type).toBe('boolean');
+    expect(rows[0].is_nullable).toBe('NO');
+    expect(rows[0].column_default).toBe('false');
+  });
+
+  it('inserts default the is_initiator column to false (confirmer semantics)', async () => {
+    const rows = await executeSql(
+      `INSERT INTO public.game_confirmations
+         (match_id, game_id, game_number, confirmer_id, side)
+       VALUES ($1, $2, $3, $4, 'home')
+       RETURNING id, is_initiator`,
+      [matchId, gameId, gameNumber, confirmerId]
+    );
+    expect(rows.length).toBe(1);
+    insertedIds.push(rows[0].id);
+    expect(rows[0].is_initiator).toBe(false);
+  });
+
+  it('accepts is_initiator=true (initiator semantics)', async () => {
+    const rows = await executeSql(
+      `INSERT INTO public.game_confirmations
+         (match_id, game_id, game_number, confirmer_id, side, is_initiator)
+       VALUES ($1, $2, $3, $4, 'home', true)
+       RETURNING id, is_initiator`,
+      [matchId, gameId, gameNumber, confirmerId]
+    );
+    expect(rows.length).toBe(1);
+    insertedIds.push(rows[0].id);
+    expect(rows[0].is_initiator).toBe(true);
+  });
+
+  it('allows MULTIPLE is_initiator=true rows per (game_id, side) — no unique constraint', async () => {
+    // The whole point of the model: two independent fills that agree are the
+    // strongest confirmation possible. If they disagree, the dispute path
+    // surfaces it — but the row insertion is never blocked by the schema.
+    const a = await executeSql(
+      `INSERT INTO public.game_confirmations
+         (match_id, game_id, game_number, confirmer_id, side, is_initiator)
+       VALUES ($1, $2, $3, $4, 'home', true)
+       RETURNING id`,
+      [matchId, gameId, gameNumber, confirmerId]
+    );
+    insertedIds.push(a[0].id);
+
+    // Same (game_id, side) + is_initiator=true should NOT error.
+    const b = await executeSql(
+      `INSERT INTO public.game_confirmations
+         (match_id, game_id, game_number, confirmer_id, side, is_initiator)
+       VALUES ($1, $2, $3, $4, 'home', true)
+       RETURNING id`,
+      [matchId, gameId, gameNumber, confirmerId]
+    );
+    insertedIds.push(b[0].id);
+    expect(b.length).toBe(1);
+  });
 });

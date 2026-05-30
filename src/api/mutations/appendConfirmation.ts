@@ -68,6 +68,16 @@ export interface AppendConfirmationParams {
   result: ConfirmationResult;
   /** 'confirm' (default) records a vouch; 'vacate' records a wipe marker. */
   action?: ConfirmationAction;
+  /**
+   * **Required.** `true` when this row was created by a person filling out the
+   * result details from scratch (`handleConfirmScore` — entered winner, extras,
+   * points). `false` when the row was created by tapping Confirm on someone
+   * else's already-entered details (`confirmOpponentScore`) or by a vacate
+   * marker. Multiple `is_initiator=true` rows per `(game_id, side)` are valid:
+   * agreement = stronger confirmation, disagreement = the dispute path.
+   * No default — every caller must be explicit about the role they're recording.
+   */
+  isInitiator: boolean;
 }
 
 /** Row shape we read back when checking the member's latest vouch. */
@@ -128,6 +138,7 @@ export async function appendConfirmation(
     side,
     result,
     action = 'confirm',
+    isInitiator,
   } = params;
 
   try {
@@ -178,6 +189,7 @@ export async function appendConfirmation(
       confirmer_id: confirmerId,
       side,
       action,
+      is_initiator: isInitiator,
       winner_team_id: result.winnerTeamId,
       winner_player_id: result.winnerPlayerId,
       break_and_run: result.breakAndRun,
