@@ -1816,16 +1816,27 @@ export const entries = {
     canonicalName: 'Lineup Lock',
     aliases: [],
     shortDef:
-      "The moment a team commits their lineup for a match — after which the lineup is set and the match can begin.",
+      "The moment a team commits their lineup for a match — when both teams have locked, the match specifics are generated and play can begin.",
     longDef: (
-      <p>
-        Lineup lock is when a team commits their{' '}
-        <a href="#lineup" className="text-info hover:underline">lineup</a>{' '}
-        for the match. Before lock, players can be swapped in and out
-        freely. Once locked, the lineup is set and the match can
-        begin. It's also typically when any manual handicap thresholds
-        get entered, for leagues that don't use a calibrated chart.
-      </p>
+      <div className="space-y-3">
+        <p>
+          Lineup lock is when a team commits their{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>{' '}
+          for the match. Before lock, players can be swapped in and out
+          freely. Once locked, the lineup is set.
+        </p>
+        <p>
+          When BOTH teams have locked their lineups, the app generates
+          the specifics of the match: the number of{' '}
+          <a href="#game" className="text-info hover:underline">games</a>{' '}
+          to be played, the{' '}
+          <a href="#pairing" className="text-info hover:underline">pairings</a>{' '}
+          (who plays whom), handicap{' '}
+          <a href="#threshold" className="text-info hover:underline">thresholds</a>,
+          starting bonuses (where the handicap system uses them), and so
+          on.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
     related: ['lineup', 'manual-entry'],
