@@ -1037,40 +1037,60 @@ export const entries = {
     canonicalName: 'League Operator',
     aliases: ['LO', 'league op', 'operator'],
     shortDef:
-      'Basically the CEO of an organization — runs the leagues, sets the house rules, collects the money, hands out the prizes, everything.',
+      'Basically the CEO of an organization — runs the leagues, sets the format and house rules, collects the money, hands out prizes, settles disputes, everything.',
     longDef: (
       <div className="space-y-3">
         <p>
-          A league operator (LO for short) is basically the CEO of an{' '}
+          The LO sets up an{' '}
           <a href="#organization" className="text-info hover:underline">organization</a>{' '}
-          that runs as many{' '}
+          in this app that can hold as many{' '}
           <a href="#league" className="text-info hover:underline">leagues</a>{' '}
-          as they wish. They can appoint{' '}
+          as they want. They can appoint{' '}
           <a href="#staff" className="text-info hover:underline">staff</a>{' '}
-          to help out as the operation grows.
+          to help with the organization.
         </p>
         <p>
-          The LO controls everything: house rules, collecting money from
-          teams, paying out prizes — all of it. This app exists to let
-          the LO run their leagues as simply and smoothly as possible.
-        </p>
-        <p>
-          During the season the LO is also the escalation point for the{' '}
+          Inside their organization the LO controls all of it: the{' '}
+          <a href="#match-format" className="text-info hover:underline">format</a>{' '}
+          each league uses, the team format, how much freedom{' '}
           <a href="#captain" className="text-info hover:underline">captains</a>{' '}
-          when cross-team scheduling, disputes, or rule questions come up —
-          which is why they're in the captains chat as an active participant.
+          get, the house rules, and the money coming in and going out.
+          Complete control.
         </p>
+        <p>
+          The LO is also the final say on every dispute that escalates
+          to their level — between captains, between players who get
+          reported, between teams. The app gives them tools to make
+          this easier, but the decisions are theirs.
+        </p>
+        <p><strong>Tools the app provides:</strong></p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>
+            <strong>Captains chat</strong> — cross-team coordination
+            and a channel where captains can bring issues to the LO
+            directly.
+          </li>
+          <li>
+            <strong>Player reports</strong> — any player can flag a
+            problem for the LO to review.
+          </li>
+          <li>
+            <strong>Prize calculator</strong> — helps work out money
+            in and prize splits (in progress — basics are there).
+          </li>
+        </ul>
         <p className="text-sm">
-          An LO can also be the{' '}
-          <a href="#captain" className="text-info hover:underline">captain</a>{' '}
-          of one of their teams, and they don't have to play on any team
-          at all.
+          The LO's role as operator is separate from their participation.
+          They might be a <a href="#captain" className="text-info hover:underline">captain</a>{' '}
+          of one of their teams, a regular player on one, or not playing
+          at all — the operator authority is the same either way.
         </p>
         <p className="text-sm text-muted-foreground">
           Relevant topics:{' '}
           <a href="#organization" className="text-info hover:underline">organization</a>,{' '}
           <a href="#league" className="text-info hover:underline">league</a>,{' '}
           <a href="#staff" className="text-info hover:underline">staff</a>,{' '}
+          <a href="#match-format" className="text-info hover:underline">match format</a>,{' '}
           <a href="#captain" className="text-info hover:underline">captain</a>.
         </p>
       </div>
