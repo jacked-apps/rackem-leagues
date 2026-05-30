@@ -1307,20 +1307,73 @@ export const entries = {
     canonicalName: 'Achievements',
     aliases: ['feats', 'feats of excellence'],
     shortDef:
-      'Per-game feats the app tracks over time — break-and-runs, 8-on-the-break, and similar notable events.',
+      'Per-game feats the app tracks over time — break-and-runs, golden breaks, and other notable events.',
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          Achievements are noteworthy events the app records as they
+          happen during{' '}
+          <a href="#game" className="text-info hover:underline">games</a>.
+          They show up on player profiles and team stats over time.
+        </p>
+        <p>
+          Each achievement gets its own entry because pool has many
+          different names for the same feat. Centralizing the def keeps
+          everyone on the same page no matter which term they came in
+          with.
+        </p>
+        <p><strong>Tracked achievements:</strong></p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><a href="#break-and-run" className="text-info hover:underline">Break and run</a></li>
+          <li><a href="#golden-break" className="text-info hover:underline">Golden break</a></li>
+        </ul>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#game" className="text-info hover:underline">game</a>,{' '}
+          <a href="#break-and-run" className="text-info hover:underline">break and run</a>,{' '}
+          <a href="#golden-break" className="text-info hover:underline">golden break</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['game-type'],
+  },
+
+  'break-and-run': {
+    slug: 'break-and-run',
+    canonicalName: 'Break and Run',
+    aliases: ['table run', 'runout', 'run-out', 'run the table'],
+    shortDef:
+      'Running the table from the break — sinking every ball without missing or losing your turn.',
     longDef: (
       <p>
-        Achievements are noteworthy events the app records as they happen
-        during{' '}
-        <a href="#game" className="text-info hover:underline">games</a>{' '}
-        — things like break-and-runs, 8-on-the-break, and other feats
-        specific to each{' '}
-        <a href="#game-type" className="text-info hover:underline">game-type</a>.
-        They show up on player profiles and team stats pages over time.
+        A break and run is when a player breaks, sinks at least one ball,
+        and proceeds to clear the rest of their balls and the winning ball
+        without ever losing their turn. The same feat goes by several
+        names: table run, runout, run-out, or just "running the table."
       </p>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: [],
+    related: ['game', 'achievements'],
+  },
+
+  'golden-break': {
+    slug: 'golden-break',
+    canonicalName: 'Golden Break',
+    aliases: ['8-ball break', '8 on the break', '8 on the snap', 'snap-8'],
+    shortDef:
+      'Sinking the winning ball on the break — e.g., the 8 in 8-Ball.',
+    longDef: (
+      <p>
+        A golden break is when the winning ball drops on the break shot
+        itself — most famously the 8 in{' '}
+        <a href="#eight-ball" className="text-info hover:underline">8-Ball</a>.
+        Many names for the same feat: "8 on the break," "8 on the snap,"
+        "snap-8," etc. All land here.
+      </p>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['game', 'achievements'],
   },
 
   'placeholder-player': {
