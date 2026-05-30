@@ -705,6 +705,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['racker'],
+    reviewedByEd: '2026-05-30',
   },
 
   pairing: {
@@ -1291,6 +1292,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['league-operator', 'league', 'golden-break'],
+    reviewedByEd: '2026-05-30',
   },
 
   'captains-chat': {
@@ -1379,6 +1381,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['game-type'],
+    reviewedByEd: '2026-05-30',
   },
 
   'break-and-run': {
@@ -1398,6 +1401,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['table-run', 'game', 'achievements'],
+    reviewedByEd: '2026-05-30',
   },
 
   'table-run': {
@@ -1429,6 +1433,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['break-and-run', 'game', 'achievements'],
+    reviewedByEd: '2026-05-30',
   },
 
   'golden-break': {
@@ -1501,6 +1506,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: [],
+    reviewedByEd: '2026-05-30',
   },
 
   'break-foul': {
@@ -1534,6 +1540,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['breaker', 'game'],
+    reviewedByEd: '2026-05-30',
   },
 
   'win-by-forfeit': {
@@ -1555,6 +1562,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['game'],
+    reviewedByEd: '2026-05-30',
   },
 
   'placeholder-player': {
@@ -1694,6 +1702,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: [],
+    reviewedByEd: '2026-05-30',
   },
 
   // TODO: Ed to revisit prize-calculator entry when the feature ships.
@@ -1785,6 +1794,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['matchup'],
+    reviewedByEd: '2026-05-30',
   },
 
   rack: {
@@ -1809,6 +1819,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: [],
+    reviewedByEd: '2026-05-30',
   },
 
   racker: {
