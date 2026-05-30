@@ -668,6 +668,15 @@ how to add a new test, demo recording, cleanup model).
 - `EightManFormatDetails.tsx` - 8-man format details
 - `FiveManFormatDetails.tsx` - 5-man format details
 
+#### Handicap Calculator (`/handicapCalculator/`) — **dev/staging only**
+
+Standalone explainer at `/tools/calc`. Estimates Fargo-style team handicap for a 5v5 / 25-game match. Entry point is a small "LMS Calc" link at the bottom of the Profile page (dev/staging only). Self-contained — to remove the feature entirely: delete the `/handicapCalculator/` folder and remove the marked blocks (grep for `Handicap Calculator`) in `navigation/NavRoutes.tsx` and `profile/Profile.tsx`.
+
+- `HandicapCalculator.tsx` - The page: 10 rating inputs + result card
+- `fargoHandicap.ts` - Educational handicap-spot approximation (gap / 65, capped)
+- `NonProdGate.tsx` - Local route gate; redirects to `/` in production
+- `index.ts` - Public surface (page + gate re-exports)
+
 #### Official Rulebook Reader (`/rules/`)
 
 Public feature at `/rules`. Reads the cleaned CSI rulebook from `/src/officalBCARulebook/cleaned/` and renders it as a searchable, mobile-first document. Rule detail lives at `/rules/:game/:ruleId`.

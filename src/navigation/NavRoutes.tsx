@@ -54,6 +54,8 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import HandicapLookupTest from '../pages/HandicapLookupTest';
 import { DevOnly } from '../dev/DevOnly';
 import RLSTestPage from '../dev/RLSTestPage';
+// --- Handicap Calculator (dev/staging only) — remove this import + the route below to delete the feature ---
+import { HandicapCalculator, NonProdGate } from '../handicapCalculator';
 
 // Lazy-loaded public rules reader (keeps the cleaned rulebook data out of the main bundle).
 const RulesPage = lazy(() => import('../rules/RulesPage'));
@@ -162,6 +164,8 @@ export const router = createBrowserRouter([
 
       // === Development-only Routes ===
       { path: 'dev/rls-tests', element: <DevOnly><RLSTestPage /></DevOnly> },
+      // --- Handicap Calculator (dev/staging only) — remove this line + the import above to delete the feature ---
+      { path: 'tools/calc', element: <NonProdGate>{withMember(<HandicapCalculator />)}</NonProdGate> },
 
       // === Auth Routes (require login) ===
       { path: 'complete-profile', element: withAuth(<CompleteProfileForm />) },
