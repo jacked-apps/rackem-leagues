@@ -218,18 +218,24 @@ export const entries = {
     shortDef:
       'The complete rule set that decides how a league’s matches are scored and won — assembled from modular parts the operator can customize.',
     longDef: (
-      <p>
-        A scoring system is the whole configured rule set that scores a match.
-        It’s built from modular parts — how handicaps work, how points are
-        earned, how a match win is decided, the{' '}
-        <a href="#match-format" className="text-info hover:underline">match format</a>,
-        and more — that the league operator assembles and can customize. The
-        app ships a few tested setups to start from, and others can be built.
-      </p>
+      <div className="space-y-2">
+        <p>
+          A scoring system is the whole configured rule set that scores a
+          match. It’s built from modular parts — how handicaps work, how points
+          are earned, how a match win is decided, the{' '}
+          <a href="#match-format" className="text-info hover:underline">match format</a>,
+          and more — that the league operator assembles and can customize. The
+          app ships a few tested setups to start from, and others can be built.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#match-format" className="text-info hover:underline">match format</a>.
+        </p>
+      </div>
     ),
     l1_anchor: {
       path: 'docs/league-system/README.md',
     },
-    related: ['match-format'],
+    related: [],
   },
 } as const satisfies Record<string, GlossaryEntry>;

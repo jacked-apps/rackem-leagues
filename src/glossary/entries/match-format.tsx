@@ -1,9 +1,15 @@
 /**
- * @fileoverview Match-format glossary entries — how games inside a match
- * are generated (round-robin variants, individual races) and how each
- * pairing is decided (single rack vs race to N).
+ * @fileoverview Match-format glossary entries — the pairing calculator and the
+ * two settings it works with: match format (how pairings are arranged — round
+ * robin / individual races) and pairing format (what each pairing is — single
+ * rack / race-to-N).
  *
- * NO DRIFT: no preset names embedded in definitions.
+ * NO DRIFT: no preset names embedded in definitions; describe what each thing
+ * is, not which packaged system happens to use it.
+ *
+ * Link convention (aligned with general.tsx): every glossary term in the prose
+ * is an in-body link; a muted "Relevant topics:" line gathers those in-body
+ * links; the `related` array holds adjacent concepts NOT in the body.
  */
 
 import type { GlossaryEntry } from '../types';
@@ -28,15 +34,22 @@ export const entries = {
           for a match: who plays whom, and how many games there are.
         </p>
         <p>
-          It only decides the matchups and the game count. What each of those
+          It only decides the pairings and the game count. What each of those
           games looks like — a single rack or a race — is the{' '}
           <a href="#pairing-format" className="text-info hover:underline">pairing format</a>,
           a separate setting.
         </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#lineup-size" className="text-info hover:underline">lineup size</a>,{' '}
+          <a href="#match-format" className="text-info hover:underline">match format</a>,{' '}
+          <a href="#pairing" className="text-info hover:underline">pairing</a>,{' '}
+          <a href="#pairing-format" className="text-info hover:underline">pairing format</a>.
+        </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/pairings-generator.md' },
-    related: ['lineup-size', 'match-format', 'pairing', 'pairing-format'],
+    related: ['matchup'],
     reviewedByEd: '2026-05-30',
   },
 
@@ -77,10 +90,17 @@ export const entries = {
             — each pairing plays a race rather than single racks.
           </li>
         </ul>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#pairing-calculator" className="text-info hover:underline">pairing calculator</a>,{' '}
+          <a href="#lineup-size" className="text-info hover:underline">lineup size</a>,{' '}
+          <a href="#round-robin" className="text-info hover:underline">round robin</a>,{' '}
+          <a href="#individual-races" className="text-info hover:underline">individual races</a>.
+        </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
-    related: ['pairing-calculator', 'lineup-size', 'round-robin', 'individual-races'],
+    related: ['pairing-format'],
   },
 
   'round-robin': {
@@ -98,7 +118,7 @@ export const entries = {
       </p>
     ),
     l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
-    related: [],
+    related: ['match-format', 'lineup-size', 'pairing-calculator'],
   },
 
   'individual-races': {
@@ -110,10 +130,19 @@ export const entries = {
     longDef: (
       <div className="space-y-2">
         <p>
-          Instead of running through round-robin pairings as single racks,
-          each pair sits down and plays a race (race to 5, race to 7, etc.).
-          First to the target wins that pairing. The match still has multiple
-          pairings — they just play race-to-N each.
+          Instead of running through{' '}
+          <a href="#round-robin" className="text-info hover:underline">round-robin</a>{' '}
+          <a href="#pairing" className="text-info hover:underline">pairings</a>{' '}
+          as single racks, each pair sits down and plays a{' '}
+          <a href="#race-to-n" className="text-info hover:underline">race</a>{' '}
+          (race to 5, race to 7, etc.). First to the target wins that pairing.
+          The match still has multiple pairings — they just play race-to-N each.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#round-robin" className="text-info hover:underline">round robin</a>,{' '}
+          <a href="#pairing" className="text-info hover:underline">pairing</a>,{' '}
+          <a href="#race-to-n" className="text-info hover:underline">race to N</a>.
         </p>
         <p className="text-sm text-muted-foreground">
           This format is currently disabled in the wizard — coming soon.
@@ -121,7 +150,7 @@ export const entries = {
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/match-format.md' },
-    related: ['match-format', 'race-to-n', 'pairing'],
+    related: ['match-format'],
   },
 
   'pairing-format': {
@@ -131,15 +160,27 @@ export const entries = {
     shortDef:
       'Whether each pairing is decided by a single rack or by a race to N.',
     longDef: (
-      <p>
-        Pairing format is the per-pairing decision rule. Single Rack means
-        one rack settles it. Race to N means the two players play until one
-        reaches a target rack count. The choice changes how long each
-        pairing takes and how much skill variance gets averaged out.
-      </p>
+      <div className="space-y-2">
+        <p>
+          Pairing format is the decision rule for each{' '}
+          <a href="#pairing" className="text-info hover:underline">pairing</a>.{' '}
+          <a href="#single-rack" className="text-info hover:underline">Single Rack</a>{' '}
+          means one rack settles it.{' '}
+          <a href="#race-to-n" className="text-info hover:underline">Race to N</a>{' '}
+          means the two players play until one reaches a target rack count. The
+          choice changes how long each pairing takes and how much skill variance
+          gets averaged out.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#pairing" className="text-info hover:underline">pairing</a>,{' '}
+          <a href="#single-rack" className="text-info hover:underline">single rack</a>,{' '}
+          <a href="#race-to-n" className="text-info hover:underline">race to N</a>.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/match-format.md' },
-    related: ['single-rack', 'race-to-n'],
+    related: ['match-format'],
   },
 
   'single-rack': {
@@ -149,12 +190,19 @@ export const entries = {
     shortDef:
       'One rack per pairing — whoever wins that rack takes the pairing.',
     longDef: (
-      <p>
-        The most common pairing shape. Each home player meets each away
-        player and they play exactly one rack against each other. The
-        rack's winner is the pairing's winner. Fast, decisive, and easy to
-        track on a scoreboard.
-      </p>
+      <div className="space-y-2">
+        <p>
+          The most common{' '}
+          <a href="#pairing" className="text-info hover:underline">pairing</a>{' '}
+          shape. Each home player meets each away player and they play exactly
+          one rack against each other. The rack’s winner is the pairing’s
+          winner. Fast, decisive, and easy to track on a scoreboard.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#pairing" className="text-info hover:underline">pairing</a>.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/match-format.md' },
     related: ['pairing-format', 'race-to-n'],
@@ -169,15 +217,31 @@ export const entries = {
     longDef: (
       <div className="space-y-2">
         <p>
-          Each pairing is a race instead of a single rack. The two players
-          play until one reaches the target — race to 7 means first to win 7
-          racks. The race length can be the same for everyone, or can be
-          adjusted per pairing based on skill gap (race length adjustment).
+          Each{' '}
+          <a href="#pairing" className="text-info hover:underline">pairing</a> is
+          a race instead of a{' '}
+          <a href="#single-rack" className="text-info hover:underline">single rack</a>.
+          The two players play until one reaches the target — race to 7 means
+          first to win 7 racks. The race length can be the same for everyone, or
+          adjusted per pairing based on skill gap (
+          <a href="#race-length-adjustment" className="text-info hover:underline">
+            race length adjustment
+          </a>
+          ).
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#pairing" className="text-info hover:underline">pairing</a>,{' '}
+          <a href="#single-rack" className="text-info hover:underline">single rack</a>,{' '}
+          <a href="#race-length-adjustment" className="text-info hover:underline">
+            race length adjustment
+          </a>
+          .
         </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/match-format.md' },
-    related: ['pairing-format', 'single-rack', 'race', 'race-length-adjustment'],
+    related: ['pairing-format', 'race'],
   },
 
   race: {
@@ -187,12 +251,23 @@ export const entries = {
     shortDef:
       'A first-to-N format — whoever wins N racks first wins the race.',
     longDef: (
-      <p>
-        "Race" is the generic word for any first-to-target format. It can
-        describe a single pairing (race to 7 between two players) or a
-        whole match in formats that use individual races. The "N" is set by
-        the league or by the handicap chart per pair.
-      </p>
+      <div className="space-y-2">
+        <p>
+          “Race” is the generic word for any first-to-target format. It can
+          describe a single{' '}
+          <a href="#pairing" className="text-info hover:underline">pairing</a>{' '}
+          (race to 7 between two players) or a whole match in formats that use{' '}
+          <a href="#individual-races" className="text-info hover:underline">
+            individual races
+          </a>
+          . The “N” is set by the league or by the handicap chart per pair.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#pairing" className="text-info hover:underline">pairing</a>,{' '}
+          <a href="#individual-races" className="text-info hover:underline">individual races</a>.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/match-format.md' },
     related: ['race-to-n', 'race-length-adjustment'],

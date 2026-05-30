@@ -3,6 +3,10 @@
  * table and the metrics that sort it.
  *
  * NO DRIFT: no preset names embedded in definitions.
+ *
+ * Link convention (aligned with general.tsx): every glossary term in the prose
+ * is an in-body link; a muted "Relevant topics:" line gathers those in-body
+ * links; the `related` array holds adjacent concepts NOT in the body.
  */
 
 import type { GlossaryEntry } from '../types';
@@ -39,12 +43,20 @@ export const entries = {
           in{' '}
           <a href="#stats" className="text-info hover:underline">stats</a>.
         </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#match-wins" className="text-info hover:underline">match wins</a>,{' '}
+          <a href="#total-points" className="text-info hover:underline">total points</a>,{' '}
+          <a href="#total-games-won" className="text-info hover:underline">total games won</a>,{' '}
+          <a href="#standings-sort" className="text-info hover:underline">standings sort</a>,{' '}
+          <a href="#stats" className="text-info hover:underline">stats</a>.
+        </p>
       </div>
     ),
     l1_anchor: {
       path: 'docs/league-system/modules/tiebreak-system/README.md',
     },
-    related: ['standings-sort', 'match-wins', 'total-points', 'total-games-won', 'stats'],
+    related: ['season', 'playoffs'],
     reviewedByEd: '2026-05-30',
   },
 
@@ -64,16 +76,20 @@ export const entries = {
         </p>
         <ul className="list-disc pl-5">
           <li>
-            <strong>Match Wins First</strong> — match wins, then games won,
+            <strong>Match Wins First</strong> —{' '}
+            <a href="#match-wins" className="text-info hover:underline">match wins</a>,
+            then{' '}
+            <a href="#total-games-won" className="text-info hover:underline">games won</a>,
+            then{' '}
+            <a href="#total-points" className="text-info hover:underline">points</a>.
+          </li>
+          <li>
+            <strong>Total Points First</strong> — points, then match wins, then
+            games won.
+          </li>
+          <li>
+            <strong>Total Games Won First</strong> — games won, then match wins,
             then points.
-          </li>
-          <li>
-            <strong>Total Points First</strong> — points, then match wins,
-            then games won.
-          </li>
-          <li>
-            <strong>Total Games Won First</strong> — games won, then match
-            wins, then points.
           </li>
         </ul>
         <p>
@@ -82,12 +98,18 @@ export const entries = {
           share a rank for the moment — tied for 2nd, say — until later results
           separate them.
         </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#match-wins" className="text-info hover:underline">match wins</a>,{' '}
+          <a href="#total-games-won" className="text-info hover:underline">total games won</a>,{' '}
+          <a href="#total-points" className="text-info hover:underline">total points</a>.
+        </p>
       </div>
     ),
     l1_anchor: {
       path: 'docs/league-system/modules/tiebreak-system/README.md',
     },
-    related: ['standings', 'match-wins', 'total-points', 'total-games-won'],
+    related: ['standings'],
     reviewedByEd: '2026-05-30',
   },
 
@@ -98,25 +120,34 @@ export const entries = {
     shortDef:
       'How many matches a team has won across the season.',
     longDef: (
-      <p>
-        Match wins counts the accumulation of every{' '}
-        <a href="#match" className="text-info hover:underline">match</a> in
-        which a particular team is victorious. This is often the main metric
-        for the{' '}
-        <a href="#standings-sort" className="text-info hover:underline">
-          standings sort
-        </a>
-        . This is not a count of{' '}
-        <a href="#total-points" className="text-info hover:underline">points</a>{' '}
-        or individual{' '}
-        <a href="#total-games-won" className="text-info hover:underline">games</a>{' '}
-        a team has accrued.
-      </p>
+      <div className="space-y-2">
+        <p>
+          Match wins counts the accumulation of every{' '}
+          <a href="#match" className="text-info hover:underline">match</a> in
+          which a particular team is victorious. This is often the main metric
+          for the{' '}
+          <a href="#standings-sort" className="text-info hover:underline">
+            standings sort
+          </a>
+          . This is not a count of{' '}
+          <a href="#total-points" className="text-info hover:underline">points</a>{' '}
+          or individual{' '}
+          <a href="#total-games-won" className="text-info hover:underline">games</a>{' '}
+          a team has accrued.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#match" className="text-info hover:underline">match</a>,{' '}
+          <a href="#standings-sort" className="text-info hover:underline">standings sort</a>,{' '}
+          <a href="#total-points" className="text-info hover:underline">total points</a>,{' '}
+          <a href="#total-games-won" className="text-info hover:underline">total games won</a>.
+        </p>
+      </div>
     ),
     l1_anchor: {
       path: 'docs/league-system/modules/tiebreak-system/README.md',
     },
-    related: ['match', 'standings-sort', 'total-points', 'total-games-won'],
+    related: ['standings'],
     reviewedByEd: '2026-05-30',
   },
 
@@ -127,24 +158,32 @@ export const entries = {
     shortDef:
       'Total points accumulated across the season — by the team or its players, depending on the table.',
     longDef: (
-      <p>
-        Total points is the sum of every points contribution the team or its
-        players earned across all{' '}
-        <a href="#match" className="text-info hover:underline">matches</a> in
-        the season. The exact source depends on the{' '}
-        <a href="#scoring-system" className="text-info hover:underline">
-          scoring system
-        </a>{' '}
-        the league operator has chosen, which can be customized. For
-        player-level{' '}
-        <a href="#standings" className="text-info hover:underline">standings</a>{' '}
-        it’s tallied per player; for team standings it’s the team total.
-      </p>
+      <div className="space-y-2">
+        <p>
+          Total points is the sum of every points contribution the team or its
+          players earned across all{' '}
+          <a href="#match" className="text-info hover:underline">matches</a> in
+          the season. The exact source depends on the{' '}
+          <a href="#scoring-system" className="text-info hover:underline">
+            scoring system
+          </a>{' '}
+          the league operator has chosen, which can be customized. For
+          player-level{' '}
+          <a href="#standings" className="text-info hover:underline">standings</a>{' '}
+          it’s tallied per player; for team standings it’s the team total.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#match" className="text-info hover:underline">match</a>,{' '}
+          <a href="#scoring-system" className="text-info hover:underline">scoring system</a>,{' '}
+          <a href="#standings" className="text-info hover:underline">standings</a>.
+        </p>
+      </div>
     ),
     l1_anchor: {
       path: 'docs/league-system/modules/tiebreak-system/README.md',
     },
-    related: ['match', 'standings', 'scoring-system'],
+    related: ['match-wins', 'total-games-won'],
     reviewedByEd: '2026-05-30',
   },
 
@@ -155,27 +194,37 @@ export const entries = {
     shortDef:
       'Total individual games won by the team or its players across the entire season.',
     longDef: (
-      <p>
-        Total games won counts every{' '}
-        <a href="#game" className="text-info hover:underline">game</a> the team
-        or its players won across all{' '}
-        <a href="#match" className="text-info hover:underline">matches</a> in
-        the season. It’s the most fundamental performance metric — a team that
-        plays close-but-just-short matches week after week can pile up games
-        won without many{' '}
-        <a href="#match-wins" className="text-info hover:underline">match wins</a>,
-        which can matter for the{' '}
-        <a href="#standings-sort" className="text-info hover:underline">
-          standings sort
-        </a>{' '}
-        when teams are even on match wins near the top of the{' '}
-        <a href="#standings" className="text-info hover:underline">standings</a>.
-      </p>
+      <div className="space-y-2">
+        <p>
+          Total games won counts every{' '}
+          <a href="#game" className="text-info hover:underline">game</a> the team
+          or its players won across all{' '}
+          <a href="#match" className="text-info hover:underline">matches</a> in
+          the season. It’s the most fundamental performance metric — a team that
+          plays close-but-just-short matches week after week can pile up games
+          won without many{' '}
+          <a href="#match-wins" className="text-info hover:underline">match wins</a>,
+          which can matter for the{' '}
+          <a href="#standings-sort" className="text-info hover:underline">
+            standings sort
+          </a>{' '}
+          when teams are even on match wins near the top of the{' '}
+          <a href="#standings" className="text-info hover:underline">standings</a>.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#game" className="text-info hover:underline">game</a>,{' '}
+          <a href="#match" className="text-info hover:underline">match</a>,{' '}
+          <a href="#match-wins" className="text-info hover:underline">match wins</a>,{' '}
+          <a href="#standings-sort" className="text-info hover:underline">standings sort</a>,{' '}
+          <a href="#standings" className="text-info hover:underline">standings</a>.
+        </p>
+      </div>
     ),
     l1_anchor: {
       path: 'docs/league-system/modules/tiebreak-system/README.md',
     },
-    related: ['game', 'match', 'match-wins', 'standings-sort', 'standings'],
+    related: ['total-points'],
     reviewedByEd: '2026-05-30',
   },
 
@@ -191,16 +240,23 @@ export const entries = {
     shortDef:
       'The accumulated team and player numbers across the league — win/loss records and other performance metrics.',
     longDef: (
-      <p>
-        Stats is the fuller picture behind the standings: accumulated team and
-        player numbers — wins, losses, games — plus deeper game metrics the
-        league tracks. Where standings rank teams, stats is where the records
-        and metrics that feed those ranks live.
-      </p>
+      <div className="space-y-2">
+        <p>
+          Stats is the fuller picture behind the{' '}
+          <a href="#standings" className="text-info hover:underline">standings</a>:
+          accumulated team and player numbers — wins, losses, games — plus
+          deeper game metrics the league tracks. Where standings rank teams,
+          stats is where the records and metrics that feed those ranks live.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#standings" className="text-info hover:underline">standings</a>.
+        </p>
+      </div>
     ),
     l1_anchor: {
       path: 'docs/league-system/README.md',
     },
-    related: ['standings'],
+    related: [],
   },
 } as const satisfies Record<string, GlossaryEntry>;
