@@ -1080,7 +1080,7 @@ export const entries = {
     canonicalName: 'Anonymous Sub',
     aliases: ['anon sub', 'anonymous substitute'],
     shortDef:
-      'A substitute whose handicap the league knows, but who plays anonymously so the games don\'t affect their own rating.',
+      "A substitute who is a known player with an established ranking, but anonymous to our system. Their gameplay doesn't affect their own ranking or records.",
     longDef: (
       <div className="space-y-2">
         <p>
