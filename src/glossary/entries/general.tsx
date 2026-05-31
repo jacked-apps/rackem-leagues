@@ -795,14 +795,20 @@ export const entries = {
     canonicalName: '8-Ball',
     aliases: ['8 ball', '8ball'],
     shortDef:
-      'Classic stripes and solids — one player takes stripes, the other takes solids; sink your group, then sink the 8 to win.',
+      "The classic stripes-and-solids pool game — the most popular league game in the US.",
     longDef: (
-      <p>
-        The most common league game in the US. After the break, the table
-        is "open" until one player legally sinks a stripe or solid — that
-        decides which group each player owns. Players sink only their own
-        group, then call a pocket for the 8-ball to win the rack.
-      </p>
+      <div className="space-y-3">
+        <p>
+          Each player tries to sink all the balls in their group before
+          the other player, then sinks the 8-ball to win.
+        </p>
+        <p>
+          The app carries the full official rules; your league may have{' '}
+          <a href="#house-rules" className="text-info hover:underline">house rules</a>{' '}
+          that differ from the official ones — check with your{' '}
+          <a href="#league-operator" className="text-info hover:underline">LO</a>.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['game'],
