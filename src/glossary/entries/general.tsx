@@ -1043,16 +1043,10 @@ export const entries = {
     canonicalName: 'Substitute',
     aliases: ['sub'],
     shortDef:
-      "A player who takes the place of a missing player when a team doesn't have enough players present to fill their lineup. The app supports two patterns: anonymous subs and double duty.",
+      "A player who takes the place of a missing player when a team doesn't have enough players present to fill their lineup.",
     longDef: (
       <div className="space-y-3">
-        <p>
-          A substitute is a player who takes the place of a missing
-          player when a team doesn't have enough players present to
-          fill their{' '}
-          <a href="#lineup" className="text-info hover:underline">lineup</a>.
-          The app supports two patterns:
-        </p>
+        <p>The app supports two sub patterns:</p>
         <ul className="list-disc pl-5 space-y-1">
           <li>
             <a href="#anonymous-sub" className="text-info hover:underline">Anonymous Sub</a>
