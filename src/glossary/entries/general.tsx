@@ -1913,15 +1913,24 @@ export const entries = {
     canonicalName: 'Racker',
     aliases: [],
     shortDef:
-      'In a given game, the player who racks the balls — i.e., the player who is NOT breaking.',
+      "In a given game, the player who is NOT breaking — regardless of who physically racks the balls.",
     longDef: (
-      <p>
-        Pool has two roles each rack: the player who breaks (the breaker)
-        and the player who racks (the racker). They alternate game to game
-        in most formats. The role matters because in some scoring systems
-        the breaker has an advantage, so balancing who breaks is part of
-        the format design.
-      </p>
+      <div className="space-y-3">
+        <p>
+          Pool has two roles each rack: the{' '}
+          <a href="#breaker" className="text-info hover:underline">breaker</a>{' '}
+          and the racker. They alternate game to game in most formats.
+          The role matters because in some scoring systems the breaker
+          has an advantage, so balancing who breaks is part of the
+          format design.
+        </p>
+        <p>
+          <strong>Caveat:</strong> some leagues are "rack your own" —
+          the breaker racks and breaks. In our app, the racker is still
+          strictly the player NOT breaking that game, regardless of who
+          physically handles the balls.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['breaker', 'game'],
@@ -1938,7 +1947,8 @@ export const entries = {
         The breaker hits the cue ball into the racked balls to start the
         game. In most leagues the break alternates from game to game so
         each player gets the same number of breaks. The opposite role is
-        the racker, who sets up the rack the breaker is about to hit.
+        the{' '}
+        <a href="#racker" className="text-info hover:underline">racker</a>.
       </p>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
