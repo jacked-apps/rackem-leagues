@@ -1823,26 +1823,33 @@ export const entries = {
     canonicalName: 'Scorekeeper',
     aliases: ['score keeper', 'scorekeeping'],
     shortDef:
-      "Anyone on either team logging or confirming a game's result during the match. Not a designated role — it can be one person, or different people game to game.",
+      "Anyone on either team can record what happened in a game or confirm what was recorded. Each game and the final match score need at least one confirmation from each team to be finalized.",
     longDef: (
       <div className="space-y-3">
         <p>
-          The app records two confirmations per{' '}
-          <a href="#game" className="text-info hover:underline">game</a>:
-          one from a member of the home{' '}
-          <a href="#team" className="text-info hover:underline">team</a>,
-          one from a member of the away team. The game is finalized
-          only when both confirmations are in. If the two sides
-          disagree, the flow surfaces the conflict for resolution.
+          A{' '}
+          <a href="#game" className="text-info hover:underline">game</a>{' '}
+          is recorded only when its submissions agree. If multiple
+          team members enter the result and they don't match — winner,
+          score, achievements, anything — the app FLAGS the game
+          instead of recording it. Players can investigate, re-score,
+          and resolve the discrepancy.
         </p>
         <p>
-          Because anyone on a team can be the one to confirm, the
-          person acting as scorekeeper can vary game to game — there's
-          no designated role to assign at the start of the match.
+          Opposing-team scorekeepers can also confirm or deny a record.
+          A "deny" flags the game the same way disagreements do — a
+          second consensus layer to keep results honest.
+        </p>
+        <p>
+          Every game needs at least one confirmation from each team to
+          be recorded. The final{' '}
+          <a href="#match" className="text-info hover:underline">match</a>{' '}
+          score follows the same rule.
         </p>
         <p className="text-sm text-muted-foreground">
           Relevant topics:{' '}
           <a href="#game" className="text-info hover:underline">game</a>,{' '}
+          <a href="#match" className="text-info hover:underline">match</a>,{' '}
           <a href="#team" className="text-info hover:underline">team</a>.
         </p>
       </div>
