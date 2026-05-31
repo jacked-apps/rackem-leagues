@@ -810,11 +810,9 @@ export const entries = {
         </p>
         <p className="text-sm text-muted-foreground">
           Fun fact: 8-Ball is so widely played that many people use
-          "pool" and "8-Ball" interchangeably — not realizing{' '}
-          <a href="#nine-ball" className="text-info hover:underline">9-Ball</a>{' '}
-          and{' '}
-          <a href="#ten-ball" className="text-info hover:underline">10-Ball</a>{' '}
-          are different games.
+          "pool" and "8-Ball" interchangeably — not realizing there
+          are a multitude of different pool games, each with their
+          own official rules.
         </p>
       </div>
     ),
