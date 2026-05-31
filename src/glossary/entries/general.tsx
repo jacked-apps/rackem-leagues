@@ -816,10 +816,15 @@ export const entries = {
           are a multitude of different pool games, each with their
           own official rules.
         </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#house-rules" className="text-info hover:underline">house rules</a>,{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>.
+        </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['game', 'house-rules', 'nine-ball', 'ten-ball'],
+    related: ['game', 'nine-ball', 'ten-ball'],
   },
 
   'nine-ball': {
