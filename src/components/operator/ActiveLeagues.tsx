@@ -11,6 +11,7 @@ import { buildLeagueTitle, getTimeOfYear } from '@/utils/leagueUtils';
 import { parseLocalDate } from '@/utils/formatters';
 import { LeagueStatusCard } from './LeagueStatusCard';
 import { DeleteLeagueModal } from '@/components/modals/DeleteLeagueModal';
+import { isNextSeasonRipe } from '@/utils/seasonLifecycle';
 
 interface ActiveLeaguesProps {
   /** Operator ID to fetch leagues for */
@@ -173,6 +174,19 @@ export const ActiveLeagues: React.FC<ActiveLeaguesProps> = ({ operatorId }) => {
 
       <div className="space-y-4">
         {leagues.map((league) => {
+          // Subtle hint badge: this league is ripe for starting the
+          // next season (last 2 weeks of current season OR previous
+          // season completed). Click takes the operator to the league
+          // page where the full ActionCard "Create Next Season" CTA
+          // lives — the org page lists many leagues, so the badge is
+          // intentionally low-chrome to avoid noise.
+          const progress = (league as { _progress?: { activeSeason?: { end_date?: string | null }; seasonCount?: number; hasScheduledSeason?: boolean } })._progress;
+          const seasonRipe = isNextSeasonRipe(
+            progress?.activeSeason ?? null,
+            progress?.seasonCount ?? 0,
+            progress?.hasScheduledSeason ?? false,
+          );
+
           return (
             <div
               key={league.id}
@@ -180,8 +194,16 @@ export const ActiveLeagues: React.FC<ActiveLeaguesProps> = ({ operatorId }) => {
             >
               <div className="flex justify-between items-start p-4 pb-0">
                 <Link to={`/league/${league.id}`} className="flex-1">
-                  <h4 className="font-semibold text-foreground text-lg hover:text-orange-600 transition-colors">
+                  <h4 className="font-semibold text-foreground text-lg hover:text-orange-600 transition-colors flex items-center gap-2 flex-wrap">
                     {getLeagueName(league)}
+                    {seasonRipe && (
+                      <span
+                        className="text-xs font-medium bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full"
+                        data-testid="next-season-ripe-badge"
+                      >
+                        📅 Plan next season
+                      </span>
+                    )}
                   </h4>
                   <p className="text-sm text-muted-foreground">
                     {/* Phase 7 Unit 7.3: roster-format label dropped from

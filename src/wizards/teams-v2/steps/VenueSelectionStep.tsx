@@ -6,7 +6,7 @@
  * Saves the selected venue IDs to form data as a string array.
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -20,9 +20,30 @@ import type { TeamsWizardFormData } from '../teamsWizardTypes';
 export function VenueSelectionStep({
   value,
   onChange,
+  formData,
 }: WizardStepProps<string[] | undefined, TeamsWizardFormData>) {
-  const { orgId } = useParams<{ orgId: string }>();
+  // organizationId comes from the URL on the create-new-league route
+  // (`/create-league/:orgId`) but NOT on the create-next-season route
+  // (`/operator/start-next-season/:leagueId`). The flow context fills
+  // it in for both, so prefer that and fall back to useParams.
+  const { orgId: orgIdFromUrl } = useParams<{ orgId: string }>();
+  const flowContext = (formData as Record<string, unknown>)._flowContext as
+    | { organizationId?: string; previousSeasonVenueIds?: string[] }
+    | undefined;
+  const orgId = flowContext?.organizationId ?? orgIdFromUrl;
   const { data: venues = [], isLoading } = useVenuesByOrganization(orgId);
+
+  // Next-season pre-fill: when the operator clicks "Change venues" on
+  // the gate, drop them into this editor with the previous season's
+  // venues already checked. First-season flows have no
+  // `previousSeasonVenueIds`, so this effect is a no-op there.
+  const prevVenueIds = flowContext?.previousSeasonVenueIds;
+  useEffect(() => {
+    if (!value && prevVenueIds?.length) {
+      onChange([...prevVenueIds]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prevVenueIds?.join('|')]);
   const [showCreate, setShowCreate] = useState(false);
 
   const selected = value ?? [];

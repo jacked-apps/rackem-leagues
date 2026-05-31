@@ -36,7 +36,10 @@ export function useCreateSeasonV2({ leagueId, league }: UseCreateSeasonV2Args) {
       const startDateStr = formData['season-start-date'] ?? intro?.leagueStartDate;
       if (!startDateStr) throw new Error('Start date is required');
 
-      const seasonLength = formData['season-length'] ?? 16;
+      // Read the explicit step value first; fall back to the gate
+      // step's "Keep" snapshot when length step was hidden.
+      const gateSnapshot = formData['season-settings-mode'];
+      const seasonLength = formData['season-length'] ?? gateSnapshot?.length ?? 16;
       const startDate = parseLocalDate(startDateStr);
 
       // Calculate end date (season length in weeks from start)
@@ -67,9 +70,11 @@ export function useCreateSeasonV2({ leagueId, league }: UseCreateSeasonV2Args) {
 
       if (error) throw new Error(`Failed to create season: ${error.message}`);
 
-      // 2. Save playoff configuration from the wizard preset
-      const playoffValue = formData['playoff-format'] as
-        { format?: string; wildcard?: boolean } | undefined;
+      // 2. Save playoff configuration from the wizard preset.
+      // Same fallback: explicit step value first, gate snapshot second.
+      const playoffValue =
+        (formData['playoff-format'] as { format?: string; wildcard?: boolean } | undefined) ??
+        gateSnapshot?.playoff;
 
       if (playoffValue?.format) {
         const preset = PLAYOFF_PRESET_MAPPINGS[playoffValue.format];

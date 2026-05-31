@@ -10,10 +10,13 @@ import { StageTransitionScreen } from './StageTransitionScreen';
 import { FlowStageHeader } from './FlowStageHeader';
 import { useFlowCompletion } from './useFlowCompletion';
 
-/** Per-stage handlers that run when a stage completes (e.g., DB writes). */
+/** Per-stage handlers that run when a stage completes (e.g., DB writes).
+ *  Receives the wizard's live `context` as the second arg so handlers
+ *  always read fresh values (e.g., seasonId set by the previous stage)
+ *  instead of stale props-closure values. */
 export type StageHandlers = Record<
   string,
-  (formData: unknown) => Promise<Partial<FlowContext>>
+  (formData: unknown, context: FlowContext) => Promise<Partial<FlowContext>>
 >;
 
 interface WizardFlowShellProps {

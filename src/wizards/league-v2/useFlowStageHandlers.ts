@@ -9,6 +9,7 @@
 import { toast } from 'sonner';
 import { supabase } from '@/supabaseClient';
 import { buildLeagueTitle } from '@/utils/leagueUtils';
+import { parseLocalDate, formatLocalDate } from '@/utils/formatters';
 import { deriveDateFields } from './leagueWizardHelpers';
 import { getLeaguePresetModularFields } from './presetMappings';
 import { useCreateLeagueV2 } from './useCreateLeagueV2';
@@ -96,7 +97,10 @@ export function useFlowStageHandlers({
         playoffWeeks: playoffMapping?.playoffWeeks ?? 1,
       };
     },
-    schedule: async (formData) => {
+    // ctx is the live wizard state.context; props.context is the stale
+    // initial-load detection result and won't have IDs that earlier
+    // stages just set in the same flow run.
+    schedule: async (formData, ctx) => {
       const fd = formData as ScheduleWizardFormData;
       const schedule = fd['schedule-review'];
       // Empty array = user chose to keep existing schedule, skip save
@@ -104,22 +108,22 @@ export function useFlowStageHandlers({
         toast.success('Keeping existing schedule');
         return { scheduleComplete: true };
       }
-      if (!context.seasonId) {
+      if (!ctx.seasonId) {
         throw new Error('Missing season ID — cannot save schedule');
       }
-      await saveSchedule.mutateAsync({ seasonId: context.seasonId, schedule });
+      await saveSchedule.mutateAsync({ seasonId: ctx.seasonId, schedule });
       toast.success('Schedule saved');
       return { scheduleComplete: true };
     },
-    teams: async (formData) => {
+    teams: async (formData, ctx) => {
       const fd = formData as TeamsWizardFormData;
       const venueIds = fd['venues'] ?? [];
       const captains = fd['captains'] ?? [];
 
-      if (!context.leagueId) {
+      if (!ctx.leagueId) {
         throw new Error('Missing league ID — cannot save teams');
       }
-      if (!context.seasonId) {
+      if (!ctx.seasonId) {
         throw new Error('Missing season ID — cannot save teams');
       }
 
@@ -128,13 +132,13 @@ export function useFlowStageHandlers({
       const { data: prefs } = await supabase
         .from('resolved_league_preferences')
         .select('max_roster_size')
-        .eq('league_id', context.leagueId)
+        .eq('league_id', ctx.leagueId)
         .single();
       const maxRosterSize = prefs?.max_roster_size ?? 5;
 
       const result = await saveTeams.mutateAsync({
-        leagueId: context.leagueId,
-        seasonId: context.seasonId,
+        leagueId: ctx.leagueId,
+        seasonId: ctx.seasonId,
         maxRosterSize,
         venueIds,
         captains,
@@ -148,19 +152,38 @@ export function useFlowStageHandlers({
         venueCount: result.venueCount,
       };
     },
-    matchups: async () => {
-      // User clicked Finish on the Review step — accept the schedule and activate the season.
+    matchups: async (_formData, ctx) => {
+      // User clicked Finish on the Review step — accept the schedule and finalize the season.
       // Matches were already written (by ReviewStep's mount effect) and any per-week edits
       // saved themselves via WeekEditorView's own mutation. All we do here is flip status.
-      if (!context.seasonId) {
+      //
+      // Same lifecycle rule as the next-season flow: a season whose
+      // start_date hasn't arrived gets 'scheduled'; today-or-past gets
+      // 'active'. Prevents two seasons under one league from both being
+      // status='active' at the same time.
+      if (!ctx.seasonId) {
         throw new Error('Missing season ID — cannot activate season');
       }
+      const todayIso = formatLocalDate(new Date());
+      const startsToday = !ctx.seasonStartDate || ctx.seasonStartDate <= todayIso;
+      const nextStatus = startsToday ? 'active' : 'scheduled';
+
       const { error } = await supabase
         .from('seasons')
-        .update({ status: 'active' })
-        .eq('id', context.seasonId);
-      if (error) throw new Error(`Failed to activate season: ${error.message}`);
-      toast.success('League setup complete — season is active!');
+        .update({ status: nextStatus })
+        .eq('id', ctx.seasonId);
+      if (error) throw new Error(`Failed to ${nextStatus === 'active' ? 'activate' : 'schedule'} season: ${error.message}`);
+
+      if (nextStatus === 'active') {
+        toast.success('League setup complete — season is active!');
+      } else {
+        const startDateLabel = parseLocalDate(ctx.seasonStartDate!).toLocaleDateString('en-US', {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric',
+        });
+        toast.success(`League setup complete — season scheduled to go live ${startDateLabel}`);
+      }
       return {};
     },
   };

@@ -3,9 +3,36 @@
 -- ============================================================================
 --
 -- Extends database/dev_bootstrap_lo.sql with everything you need to click
--- around the full app: organization, venue, league, active 12-week season
--- (starting today), 4 teams each filled with 5 placeholder players (1 captain
--- + 4 regulars), and a full round-robin schedule with empty lineups.
+-- around the full app:
+--
+--   - 1 organization + 1 venue
+--   - LEAGUE 1 (fresh): active 12-week season starting TODAY. 4 teams,
+--     each with 7 players (1 captain + 6 regulars — roster intentionally
+--     larger than the 5-man lineup so the dev can swap substitutes
+--     during lineup testing). Full round-robin schedule. Team names
+--     derived from each captain's last name + " Crew" (e.g.,
+--     "Thompson Crew"). Use for testing the normal "new season starts,
+--     players play matches" flow.
+--   - LEAGUE 2 (near end of season): active season started ~11 weeks ago,
+--     ends in 10 days. Past-dated weeks marked completed so the progress
+--     bar reflects "almost done." Same 4 teams × 7 player shape as
+--     League 1, but team names use " Sharks" suffix so they're visually
+--     distinguishable. Use for testing the next-season wizard's entry
+--     points (LeagueDetail "Start Next Season" ActionCard + ActiveLeagues
+--     hint badge) without waiting weeks of calendar time.
+--   - FREE AGENTS: any seeded placeholder members beyond the 56 needed
+--     for the two leagues stay unassigned — they appear in the dev's
+--     player-picker dropdowns as "available to roster" so the captain's
+--     add-player UX has realistic options. Roughly 14 free agents
+--     given the 70-member seed pool.
+--
+-- DEPENDS ON: supabase/seed_members.sql + supabase/seed_extra_players.sql
+-- having been run first. The bootstrap pulls real placeholder members
+-- (with realistic names, handicaps, and BCA numbers) from that pool
+-- instead of generating "Player N Team M" literals. Bootstrap will
+-- abort with a clear message if the pool is too small.
+--
+-- Each league's URLs are printed via RAISE NOTICE at the bottom.
 --
 -- WHAT THIS DOES NOT DO
 --   - Does NOT create the auth.users row. Sign up via /register first.
@@ -58,6 +85,22 @@ DECLARE
   v_week_ids    UUID[];
   v_week_id     UUID;
 
+  -- Second league: a "near end of season" league so the next-season
+  -- wizard's entry-point button is visible immediately (no need to
+  -- run a separate squish script). Season started 11 weeks ago,
+  -- ends 10 days from now. Past weeks marked completed so the
+  -- progress bar reflects "almost done."
+  v_league2_id UUID;
+  v_season2_id UUID;
+  v_start2     DATE := CURRENT_DATE - INTERVAL '11 weeks';
+  v_end2       DATE := CURRENT_DATE + INTERVAL '10 days';
+
+  v_team2_ids    UUID[] := ARRAY[gen_random_uuid(), gen_random_uuid(), gen_random_uuid(), gen_random_uuid()];
+  v_captain2_ids UUID[] := ARRAY[gen_random_uuid(), gen_random_uuid(), gen_random_uuid(), gen_random_uuid()];
+  v_week2_ids    UUID[];
+  v_week2_id     UUID;
+  v_match2_id    UUID;
+
   -- Round-robin pattern captured from the UI's schedule generator. Rows are
   -- (week, match_number, home_team_idx, away_team_idx). Indexes are 1-based.
   v_schedule INT[][] := ARRAY[
@@ -77,8 +120,27 @@ DECLARE
 
   v_row INT[];
   v_i   INT;
+  v_j   INT;
+  v_idx INT;
   v_pp  UUID;
   v_match_id UUID;
+
+  -- Roster shape: each team gets 1 captain + 6 regular roster players
+  -- (7 total per team). Roster intentionally LARGER than the 5-man
+  -- lineup so the dev can test substitute swaps (and so the player
+  -- search has more rows to filter through). 4 teams × 7 = 28 members
+  -- per league, × 2 leagues = 56 needed.
+  v_team_roster_size CONSTANT INT := 7; -- 1 captain + 6 regulars
+
+  -- Pool of pre-seeded placeholder members we'll pick from. Populated
+  -- by querying members where user_id IS NULL — both seed_members.sql
+  -- and seed_extra_players.sql contribute. Bootstrap aborts if the
+  -- pool doesn't have at least v_min_pool_size rows; user runs the
+  -- two seed files first.
+  v_pool         UUID[];
+  v_pool_size    INT;
+  v_min_pool_size CONSTANT INT := 56; -- 4 teams × 7 × 2 leagues
+  v_captain_name TEXT;
 BEGIN
   -- Guards
   IF current_database() <> 'postgres' THEN
@@ -87,6 +149,29 @@ BEGIN
   IF v_email LIKE 'REPLACE%' THEN
     RAISE EXCEPTION 'Edit v_email in the CONFIG block before running.';
   END IF;
+
+  -- 0. Check the seed-player pool is populated. The bootstrap fills
+  --    teams from placeholder members (user_id IS NULL) seeded by
+  --    seed_members.sql + seed_extra_players.sql. Without those, we
+  --    can't fill rosters — bail out with a helpful message rather
+  --    than create empty teams.
+  SELECT array_agg(id ORDER BY created_at) INTO v_pool
+  FROM members
+  WHERE user_id IS NULL
+    AND role = 'player';
+  v_pool_size := COALESCE(array_length(v_pool, 1), 0);
+  IF v_pool_size < v_min_pool_size THEN
+    RAISE EXCEPTION 'Seed pool too small (% placeholder players, need >= %). Run supabase/seed_members.sql + supabase/seed_extra_players.sql first.',
+      v_pool_size, v_min_pool_size;
+  END IF;
+
+  -- Reshape the picked members to match the LO's city/state so the
+  -- player-search filter (which scopes by state) surfaces them. Only
+  -- touches the v_min_pool_size members we'll actually use; leaves
+  -- the free-agent overflow in their seeded city/state for variety.
+  UPDATE members
+  SET city = v_city, state = v_state
+  WHERE id = ANY(v_pool[1:v_min_pool_size]);
 
   -- 1. Find auth user.
   SELECT id INTO v_user_id FROM auth.users WHERE email = v_email;
@@ -152,29 +237,34 @@ BEGIN
   INSERT INTO season_weeks (season_id, scheduled_date, week_name, week_type)
   VALUES (v_season_id, v_start + (12 * 7), 'Season End Break', 'season_end_break');
 
-  -- 8. Captains — four placeholder members. State matches the LO's so the
-  -- dev's player-lookup (filtered by state) still finds them.
+  -- 8. League 1 captains — pull the first 4 members from the pool.
+  --    Pool indexes [1..4] = captains for teams 1..4 respectively.
   FOR v_i IN 1..4 LOOP
-    INSERT INTO members (first_name, last_name, city, state, role)
-    VALUES ('Captain', 'Team ' || v_i, v_city, v_state, 'player')
-    RETURNING id INTO v_pp;
-    v_captain_ids[v_i] := v_pp;
+    v_captain_ids[v_i] := v_pool[v_i];
   END LOOP;
 
-  -- 9. Teams (4) + roster (captain + 4 regulars per team).
+  -- 9. League 1 teams (4) + rosters (7 per team: 1 captain + 6
+  --    regulars). Roster intentionally larger than the 5-man lineup
+  --    so the dev can swap substitutes during lineup testing AND so
+  --    players with duplicate nicknames (which the seed data has on
+  --    purpose) can be swapped in/out without losing a roster slot.
+  --    Team name is derived from the captain's last name so the LO
+  --    sees a recognizable name instead of generic "Team N".
   FOR v_i IN 1..4 LOOP
+    SELECT last_name INTO v_captain_name FROM members WHERE id = v_captain_ids[v_i];
+
     INSERT INTO teams (id, season_id, league_id, team_name, captain_id, roster_size, home_venue_id, status)
-    VALUES (v_team_ids[v_i], v_season_id, v_league_id, 'Team ' || v_i, v_captain_ids[v_i], 5, v_venue_id, 'active');
+    VALUES (v_team_ids[v_i], v_season_id, v_league_id, v_captain_name || ' Crew', v_captain_ids[v_i], v_team_roster_size, v_venue_id, 'active');
 
     INSERT INTO team_players (team_id, season_id, member_id, is_captain, status)
     VALUES (v_team_ids[v_i], v_season_id, v_captain_ids[v_i], TRUE, 'active');
 
-    FOR v_row IN SELECT ARRAY[j] FROM generate_series(1, 4) AS j LOOP
-      INSERT INTO members (first_name, last_name, city, state, role)
-      VALUES ('Player ' || v_row[1], 'Team ' || v_i, v_city, v_state, 'player')
-      RETURNING id INTO v_pp;
+    -- Pool indexes [5..28] = league 1 regulars (6 per team × 4 teams).
+    -- For team v_i, members are at pool indexes 5 + (v_i-1)*6 .. 4 + v_i*6.
+    FOR v_j IN 1..6 LOOP
+      v_idx := 4 + (v_i - 1) * 6 + v_j;
       INSERT INTO team_players (team_id, season_id, member_id, is_captain, status)
-      VALUES (v_team_ids[v_i], v_season_id, v_pp, FALSE, 'active');
+      VALUES (v_team_ids[v_i], v_season_id, v_pool[v_idx], FALSE, 'active');
     END LOOP;
   END LOOP;
 
@@ -191,18 +281,112 @@ BEGIN
     -- match_lineups are auto-created by trigger_auto_create_match_lineups.
   END LOOP;
 
-  -- 11. Done.
+  -- ===========================================================
+  -- SECOND LEAGUE: "near end of season" for next-season-wizard testing
+  -- ===========================================================
+  --
+  -- Same shape as the first league (4 teams, 5 players each, full
+  -- round-robin schedule) but the season started 11 weeks ago and
+  -- ends 10 days from now → falls inside the next-season wizard's
+  -- 21-day ripe window, so the "Start Next Season" button + the
+  -- org-dashboard hint badge appear immediately without needing to
+  -- run a separate squish script.
+  --
+  -- Past-dated weeks get week_completed=true so the LeagueStatusCard
+  -- progress bar reflects "almost done" instead of week 0.
+
+  -- 12. Second league (same org + venue, different day_of_week so
+  --     league names disambiguate visually).
+  INSERT INTO leagues (organization_id, game_type, day_of_week, league_start_date, division, status)
+  VALUES (v_org_id, v_game_type, 'thursday', v_start2, 'Dev League — Near End', 'active')
+  RETURNING id INTO v_league2_id;
+
+  INSERT INTO league_venues (league_id, venue_id) VALUES (v_league2_id, v_venue_id);
+
+  -- 13. Active season ending in 10 days (started 11 weeks ago).
+  INSERT INTO seasons (league_id, season_name, start_date, end_date, season_length, status)
+  VALUES (v_league2_id, 'Dev Season ' || to_char(v_start2, 'YYYY-MM-DD') || ' (near end)', v_start2, v_end2, 12, 'active')
+  RETURNING id INTO v_season2_id;
+
+  -- 14. Weeks 1-12 regular + 1 end break. Mark past weeks completed.
+  v_week2_ids := ARRAY[]::UUID[];
+  FOR v_i IN 1..12 LOOP
+    INSERT INTO season_weeks (season_id, scheduled_date, week_name, week_type, week_completed)
+    VALUES (
+      v_season2_id,
+      v_start2 + ((v_i - 1) * 7),
+      'Week ' || v_i,
+      'regular',
+      (v_start2 + ((v_i - 1) * 7)) < CURRENT_DATE
+    )
+    RETURNING id INTO v_week2_id;
+    v_week2_ids := array_append(v_week2_ids, v_week2_id);
+  END LOOP;
+  INSERT INTO season_weeks (season_id, scheduled_date, week_name, week_type)
+  VALUES (v_season2_id, v_start2 + (12 * 7), 'Season End Break', 'season_end_break');
+
+  -- 15. League 2 captains — pool indexes [29..32].
+  FOR v_i IN 1..4 LOOP
+    v_captain2_ids[v_i] := v_pool[28 + v_i];
+  END LOOP;
+
+  -- 16. League 2 teams (4) + rosters. Same shape as League 1
+  --     (1 captain + 6 regulars per team, name derived from captain).
+  --     Pool indexes [33..56] are these teams' regulars.
+  FOR v_i IN 1..4 LOOP
+    SELECT last_name INTO v_captain_name FROM members WHERE id = v_captain2_ids[v_i];
+
+    INSERT INTO teams (id, season_id, league_id, team_name, captain_id, roster_size, home_venue_id, status)
+    VALUES (v_team2_ids[v_i], v_season2_id, v_league2_id, v_captain_name || ' Sharks', v_captain2_ids[v_i], v_team_roster_size, v_venue_id, 'active');
+
+    INSERT INTO team_players (team_id, season_id, member_id, is_captain, status)
+    VALUES (v_team2_ids[v_i], v_season2_id, v_captain2_ids[v_i], TRUE, 'active');
+
+    FOR v_j IN 1..6 LOOP
+      v_idx := 32 + (v_i - 1) * 6 + v_j;
+      INSERT INTO team_players (team_id, season_id, member_id, is_captain, status)
+      VALUES (v_team2_ids[v_i], v_season2_id, v_pool[v_idx], FALSE, 'active');
+    END LOOP;
+  END LOOP;
+
+  -- 17. Matches + lineups (reuses the same hardcoded round-robin
+  --     pattern from the first league — same week + match numbers,
+  --     just bound to the second league's team + week IDs).
+  FOREACH v_row SLICE 1 IN ARRAY v_schedule LOOP
+    INSERT INTO matches (
+      season_id, season_week_id, home_team_id, away_team_id,
+      match_number, status, scheduled_venue_id
+    ) VALUES (
+      v_season2_id, v_week2_ids[v_row[1]],
+      v_team2_ids[v_row[3]], v_team2_ids[v_row[4]],
+      v_row[2], 'scheduled', v_venue_id
+    ) RETURNING id INTO v_match2_id;
+  END LOOP;
+
+  -- 18. Done.
   RAISE NOTICE '=== Full bootstrap complete ===';
   RAISE NOTICE 'auth.user:         %', v_user_id;
   RAISE NOTICE 'member:            %', v_member_id;
   RAISE NOTICE 'organization:      %', v_org_id;
   RAISE NOTICE 'venue:             %', v_venue_id;
+  RAISE NOTICE '';
+  RAISE NOTICE '--- League 1 (fresh) ---';
   RAISE NOTICE 'league:            %', v_league_id;
   RAISE NOTICE 'season:            % (% → %)', v_season_id, v_start, v_end;
   RAISE NOTICE 'teams:             %', v_team_ids;
+  RAISE NOTICE 'League settings:   /league-settings/%', v_league_id;
+  RAISE NOTICE '';
+  RAISE NOTICE '--- League 2 (near end of season — for next-season wizard testing) ---';
+  RAISE NOTICE 'league:            %', v_league2_id;
+  RAISE NOTICE 'season:            % (% → %)  ends in 10 days', v_season2_id, v_start2, v_end2;
+  RAISE NOTICE 'teams:             %', v_team2_ids;
+  RAISE NOTICE 'League page:       /league/%', v_league2_id;
+  RAISE NOTICE '';
   RAISE NOTICE 'Org URL:           /operator-settings/%', v_org_id;
   RAISE NOTICE 'House rules URL:   /league-rules/%', v_org_id;
-  RAISE NOTICE 'League settings:   /league-settings/%', v_league_id;
+  RAISE NOTICE '';
+  RAISE NOTICE 'Free agents (not on any team): % member(s) — appear in player pickers.',
+    GREATEST(0, v_pool_size - v_min_pool_size);
 END $$;
 
 

@@ -23,15 +23,17 @@ interface WizardSummaryProps {
 }
 
 export function WizardSummary({ title = 'Summary', items }: WizardSummaryProps) {
-  // Don't render if no items have values yet
-  const hasAnyValue = items.some((item) => item.value);
-  if (!hasAnyValue) return null;
+  // Additive summary: only show rows that have actually been answered.
+  // Empty labels (em-dash placeholders) make the panel feel "unfinished"
+  // and bury the impressive list of facts behind blank rows.
+  const answered = items.filter((i) => !!i.value);
+  if (answered.length === 0) return null;
 
-  // First item with a "name" or "title" label gets shown as a headline
-  const headlineItem = items.find(
-    (i) => i.value && i.label.toLowerCase().includes('name'),
+  // First answered item with a "name" or "title" label gets shown as a headline
+  const headlineItem = answered.find(
+    (i) => i.label.toLowerCase().includes('name'),
   );
-  const detailItems = items.filter((i) => i !== headlineItem);
+  const detailItems = answered.filter((i) => i !== headlineItem);
 
   return (
     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -47,11 +49,10 @@ export function WizardSummary({ title = 'Summary', items }: WizardSummaryProps) 
         {detailItems.map((item) => (
           <div key={item.label} className="flex justify-between text-sm">
             <span className="font-medium text-blue-800">{item.label}</span>
-            {item.value ? (
-              <span className="text-foreground">{item.value}</span>
-            ) : (
-              <span className="text-muted-foreground italic">—</span>
-            )}
+            {/* Pin value color to dark blue — the panel's bg-blue-50 stays
+                light in both themes, but `text-foreground` flips white in
+                dark mode and disappears against it. */}
+            <span className="text-blue-900">{item.value}</span>
           </div>
         ))}
       </div>

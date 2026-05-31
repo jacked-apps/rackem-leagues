@@ -82,6 +82,13 @@ export type FlowStage =
  * Holds the IDs of entities created in earlier stages.
  */
 export interface FlowContext {
+  /** ID of the organization the league belongs to. Set from the URL
+   *  in the first-time flow (`/create-league/:orgId`); set from the
+   *  league row in the next-season flow (which only has `leagueId` in
+   *  its URL). Step components should read this from context instead
+   *  of `useParams()` so the same step works on either route. */
+  organizationId?: string;
+
   /** ID of the league this flow is creating/managing (set after Stage 1) */
   leagueId?: string;
 
@@ -124,6 +131,11 @@ export interface FlowContext {
   /** Generated season name (e.g., "8 Ball Monday Blue Fall 2026") */
   seasonName?: string;
 
+  /** ISO date of this season's first regular-season week (separate from
+   *  the LEAGUE's start_date — a league has many seasons over time, each
+   *  with its own start). Surfaced for the summary panel. */
+  seasonStartDate?: string;
+
   /** Number of regular season weeks (from Season wizard) */
   seasonLength?: number;
 
@@ -133,11 +145,68 @@ export interface FlowContext {
   /** True once the schedule stage has saved weeks to the DB */
   scheduleComplete?: boolean;
 
+  /** Org-level championship tracking preferences carried into the
+   *  next-season flow. Drives the Season wizard's championship gate
+   *  and the summary panel's "Championship Tracking" row. */
+  championshipTracking?: {
+    trackBca: boolean;
+    trackApa: boolean;
+    bcaDates?: string;
+    apaDates?: string;
+  };
+
   /** Number of teams created for the current season (set after Stage 4) */
   teamCount?: number;
 
   /** Number of distinct venues in use by those teams */
   venueCount?: number;
+
+  /**
+   * Captain re-up responses for the league's previous season — used by
+   * the next-season wizard's Teams stage to pre-populate team selection
+   * and captain dropdowns. The first-time flow never has any of these
+   * (no previous season exists) and the field stays undefined; the
+   * Teams step falls back to its normal behavior.
+   *
+   * Each entry corresponds to ONE team from the previous season:
+   *   - returningNextSeason=false → row pre-unchecked
+   *   - returningNextSeason=true, nextCaptainId set → captain dropdown
+   *     pre-set to that member
+   *   - returningNextSeason=true, nextCaptainId NULL → captain stays
+   *     the same
+   *   - No entry for a team → no response yet → pre-unchecked with
+   *     warning ("captain hasn't confirmed")
+   */
+  reupResponses?: ReupResponseContextEntry[];
+}
+
+/**
+ * A single team's re-up response, projected into the shape the
+ * wizard's Teams stage needs to apply pre-fill. Owned here (not in
+ * the re-up feature's types) so the flow framework stays decoupled
+ * from the re-up feature's internals.
+ */
+export interface ReupResponseContextEntry {
+  /** Source team ID (from the previous season) */
+  sourceTeamId: string;
+  /** Previous season's team name — used for display when warning the
+   *  operator that a no-response team is being dropped by default */
+  teamName: string;
+  /** Display name of the current captain (resolved from members table).
+   *  Empty string if the team had no captain assigned. */
+  captainName: string;
+  /** Member ID of the previous season's captain. Used to pre-fill the
+   *  Teams editor when the captain hasn't yet submitted a re-up answer
+   *  (so the operator sees the team and can decide). */
+  currentCaptainId: string | null;
+  /** NULL = no submitted answer (treat as "not returning + warn") */
+  returningNextSeason: boolean | null;
+  /** NULL = same captain; non-null = captain change */
+  nextCaptainId: string | null;
+  /** Display name of the swap captain (when `nextCaptainId` is set).
+   *  Lets the gate render "Johnny → Player 39" instead of just showing
+   *  the old captain name with a ✅ that hides the change. */
+  nextCaptainName: string | null;
 }
 
 /**

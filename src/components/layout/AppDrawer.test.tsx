@@ -114,6 +114,10 @@ describe('AppDrawer', () => {
     renderDrawer();
 
     const nav = screen.getByRole('navigation', { name: /main navigation/i });
+    // Post 2026-05 nav overhaul: the player section is My Match / My
+    // Teams / Stats / Rules / Messages / Profile. "Dashboard" moved
+    // into the per-org Operator section (only for operators); Sign
+    // out moved out of the drawer entirely.
     expect(within(nav).getByRole('link', { name: 'My Match' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'My Teams' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Stats' })).toBeInTheDocument();

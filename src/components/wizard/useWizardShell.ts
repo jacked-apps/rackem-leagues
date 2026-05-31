@@ -102,12 +102,28 @@ export function useWizardShell<TFormData>({
       if (!ok) return;
     }
 
-    if (state.isLastStep) {
+    // Re-evaluate "is there a next step?" against the LATEST formData
+    // via peekNextStepId — NOT `state.isLastStep`. The boolean is a
+    // snapshot from React state at render time; if this Next click was
+    // triggered by a gate that just wrote to formData (e.g.,
+    // captains-mode setting `{ mode: 'change' }`), the snapshot still
+    // reflects the pre-click state where the editor step was invisible,
+    // making this look like the last step when it isn't.
+    if (state.peekNextStepId() === null) {
       clearPersisted();
       // Await — onComplete may be async (stage handler doing a DB write).
       // Without awaiting, the caller's pending state resets before the
       // handler finishes, letting a second click fire a duplicate write.
-      await onComplete?.(state.formData);
+      //
+      // Pass `getLatestFormData()` (the ref-backed value) instead of
+      // `state.formData` (React state, stale within this event tick)
+      // so the stage handler sees a gate-step value written by the
+      // same click that just triggered Next. Without this, Keep
+      // workflows that complete the stage in one click — e.g., teams
+      // Keep advancing straight to the stage handler — see an empty
+      // captains-mode slice and the save fails the empty-captains
+      // guard on first click.
+      await onComplete?.(state.getLatestFormData());
     } else {
       state.goNext();
     }

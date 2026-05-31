@@ -19,6 +19,7 @@ import { seasonWizardConfig } from '@/wizards/season-v2/seasonWizardConfig';
 import { scheduleWizardConfig } from '@/wizards/schedule-v2/scheduleWizardConfig';
 import { teamsWizardConfig } from '@/wizards/teams-v2/teamsWizardConfig';
 import { matchupsWizardConfig } from '@/wizards/matchups-v2/matchupsWizardConfig';
+import { parseLocalDate } from '@/utils/formatters';
 
 const HANDICAP_LABELS: Record<string, string> = {
   points: 'Points (-1/+2)',
@@ -34,16 +35,38 @@ const MATCH_FORMAT_LABELS: Record<string, string> = {
   individual_races: 'Individual Races',
 };
 
+function formatDateForSummary(isoDate: string): string {
+  const date = parseLocalDate(isoDate);
+  return date.toLocaleDateString('en-US', {
+    weekday: 'short',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+function titleCase(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 export const createNewLeagueFlow: WizardFlowConfig = {
   id: 'create-new-league',
   title: 'Create New League',
   // Cumulative summary: what's been committed from earlier stages.
   // Rendered above the active wizard's own summary so the user always
   // sees the full picture, not just in-progress choices.
+  // Additive summary: each fact only appears once it's known. The order
+  // below is the order the LO sees as they progress — top-down it reads
+  // like a story of what's been built so far.
   getContextSummaryItems: (context) => {
     const items = [];
+
+    // League identity
     if (context.leagueName) {
       items.push({ label: 'League', value: context.leagueName });
+    }
+    if (context.dayOfWeek) {
+      items.push({ label: 'Night', value: titleCase(context.dayOfWeek) });
     }
     if (context.lineupSize) {
       items.push({ label: 'Lineup Size', value: String(context.lineupSize) });
@@ -63,36 +86,48 @@ export const createNewLeagueFlow: WizardFlowConfig = {
         value: MATCH_FORMAT_LABELS[context.matchFormat] ?? context.matchFormat,
       });
     }
-    if (context.leagueStartDate) {
-      items.push({ label: 'Start Date', value: context.leagueStartDate });
-    }
+
+    // Season facts
     if (context.seasonName) {
-      items.push({ label: 'Season', value: context.seasonName });
+      items.push({ label: 'Season Name', value: context.seasonName });
+    }
+    if (context.seasonStartDate ?? context.leagueStartDate) {
+      const d = context.seasonStartDate ?? context.leagueStartDate!;
+      items.push({ label: 'Start Date', value: formatDateForSummary(d) });
     }
     if (context.seasonLength) {
-      items.push({ label: 'Regular Season', value: `${context.seasonLength} weeks` });
+      items.push({ label: 'Season Length', value: `${context.seasonLength} weeks` });
     }
-    if (context.playoffWeeks) {
+    if (context.playoffWeeks != null) {
       items.push({
-        label: 'Playoff Weeks',
-        value: String(context.playoffWeeks),
+        label: 'Playoffs',
+        value: context.playoffWeeks > 0
+          ? `${context.playoffWeeks} week${context.playoffWeeks === 1 ? '' : 's'}`
+          : 'None',
       });
     }
+
+    // Schedule fact
     if (context.scheduleComplete) {
       items.push({ label: 'Schedule', value: 'Saved' });
     }
-    if (context.teamCount) {
-      items.push({
-        label: 'Teams',
-        value: `${context.teamCount} team${context.teamCount === 1 ? '' : 's'}`,
-      });
-    }
-    if (context.venueCount) {
+
+    // Teams facts. `!= null` (not just truthy) so a 0 surfaces — that's
+    // how the operator catches a broken Stage-3 save where the wizard
+    // advanced with no teams created.
+    if (context.venueCount != null) {
       items.push({
         label: 'Venues',
         value: `${context.venueCount} venue${context.venueCount === 1 ? '' : 's'}`,
       });
     }
+    if (context.teamCount != null) {
+      items.push({
+        label: 'Teams',
+        value: `${context.teamCount} team${context.teamCount === 1 ? '' : 's'}`,
+      });
+    }
+
     return items;
   },
   stages: [

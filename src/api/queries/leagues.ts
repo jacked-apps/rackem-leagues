@@ -23,6 +23,11 @@ export interface LeagueProgress {
   activeSeason: any | null;
   completedWeeks: number;
   totalWeeks: number;
+  /** True if this league has a season with status='scheduled' (wizard
+   *  finished but start_date hasn't arrived yet). Used by
+   *  isNextSeasonRipe to hide the "Create Next Season" CTA — that
+   *  next season already exists. */
+  hasScheduledSeason: boolean;
 }
 
 /**
@@ -202,6 +207,14 @@ export async function calculateLeagueProgress(league: League): Promise<LeagueWit
     scheduleExists = (matchesCount || 0) > 0;
   }
 
+  // Cheap existence check for a queued (scheduled) season — the
+  // "Create Next Season" CTA hides when one already exists.
+  const { count: scheduledCount } = await supabase
+    .from('seasons')
+    .select('*', { count: 'exact', head: true })
+    .eq('league_id', league.id)
+    .eq('status', 'scheduled');
+
   return {
     ...league,
     _progress: {
@@ -212,6 +225,7 @@ export async function calculateLeagueProgress(league: League): Promise<LeagueWit
       activeSeason: activeSeasonData,
       completedWeeks,
       totalWeeks,
+      hasScheduledSeason: (scheduledCount ?? 0) > 0,
     },
   };
 }

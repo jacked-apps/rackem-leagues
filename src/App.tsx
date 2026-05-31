@@ -18,6 +18,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { Toaster } from './components/ui/sonner';
 import { PWAUpdatePrompt } from './components/PWAUpdatePrompt';
 import { EnvironmentBanner } from './components/EnvironmentBanner';
+import { CaptainReupSyncer } from './hooks/useCaptainReupPrompt';
 
 const App: React.FC = () => {
   return (
@@ -34,6 +35,11 @@ const App: React.FC = () => {
         >
           <EnvironmentBanner />
           <UserProvider>
+            {/* End-of-season re-up modal for captains. Mounted once
+                near the root so it pops regardless of which page the
+                captain is on. Renders nothing when the current user
+                isn't a captain or has nothing pending. */}
+            <CaptainReupSyncer />
             <RouterProvider router={router} />
           </UserProvider>
           <Toaster position="top-right" />

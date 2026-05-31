@@ -23,19 +23,25 @@ export function SeasonIntroStep({
   onChange,
   formData,
 }: WizardStepProps<IntroValue | undefined, SeasonWizardFormData>) {
-  // Flow context is injected into formData._flowContext by WizardFlowStageRenderer
+  // Flow context is injected into formData._flowContext by WizardFlowStageRenderer.
+  // `previousSeasonLastWeekDate` is set by the next-season flow's stage detection
+  // when a prior season exists — its presence is the canonical signal that this
+  // is a SUBSEQUENT-season run (vs first-time league creation).
   const flowContext = (formData as Record<string, unknown>)._flowContext as
-    { leagueStartDate?: string } | undefined;
+    | { leagueStartDate?: string; previousSeasonLastWeekDate?: string }
+    | undefined;
 
-  const isFirst = !value?.hasExistingSeasons;
+  const hasExistingSeasons = !!flowContext?.previousSeasonLastWeekDate;
+  const isFirst = !hasExistingSeasons;
   const startDate = value?.leagueStartDate ?? flowContext?.leagueStartDate;
 
-  // Save the intro context to formData on mount so the summary can read it
+  // Save the intro context to formData on mount so the summary can read it +
+  // downstream steps (SeasonStartDateStep's showIf gate) can route correctly.
   useEffect(() => {
     if (!value && startDate) {
-      onChange({ leagueStartDate: startDate, hasExistingSeasons: false });
+      onChange({ leagueStartDate: startDate, hasExistingSeasons });
     }
-  }, [startDate]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [startDate, hasExistingSeasons]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="space-y-4 max-w-lg">

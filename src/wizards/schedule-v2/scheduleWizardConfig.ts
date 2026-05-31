@@ -17,6 +17,11 @@ export const scheduleWizardConfig: WizardConfig<ScheduleWizardFormData> = {
   schemaVersion: 1,
   initialFormData: {},
   getSummaryItems: (formData) => {
+    // In-progress preview for the first-time flow's championship step.
+    // Next-season flows skip this step (championship lives in the Season
+    // wizard) — `champs` stays undefined, so this row drops out cleanly.
+    // Label / join format matches `createNewLeagueFlow` and
+    // `createNextSeasonFlow` so the row transitions continuously.
     const champs = formData['championships'];
     const tracked: string[] = [];
     if (champs?.trackBca) tracked.push('BCA');
@@ -24,7 +29,7 @@ export const scheduleWizardConfig: WizardConfig<ScheduleWizardFormData> = {
     return [
       {
         label: 'Championship Tracking',
-        value: champs ? (tracked.length ? tracked.join(' & ') : 'None') : undefined,
+        value: champs ? (tracked.length ? tracked.join(' + ') : 'None') : undefined,
       },
     ];
   },
@@ -33,6 +38,21 @@ export const scheduleWizardConfig: WizardConfig<ScheduleWizardFormData> = {
       id: 'championships',
       title: 'Championship Tracking',
       optional: true,
+      // Only shown in the FIRST-time league flow — there, championship
+      // tracking is part of building the schedule for the first time
+      // (the operator is making the decision, not confirming it).
+      //
+      // For next-season runs, the championship "is this still right?"
+      // confirmation now lives in the Season wizard (Stage 1) next to
+      // the other settings gates, so Stage 2 jumps straight to the
+      // schedule grid. The presence of `flowContext.championshipTracking`
+      // is the "this is a next-season run" signal.
+      showIf: (fd) => {
+        const ctx = (fd as Record<string, unknown>)._flowContext as
+          | { championshipTracking?: { trackBca: boolean; trackApa: boolean } }
+          | undefined;
+        return !ctx?.championshipTracking;
+      },
       component: ChampionshipStep as WizardConfig<ScheduleWizardFormData>['steps'][number]['component'],
     },
     {
