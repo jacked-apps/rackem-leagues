@@ -592,7 +592,7 @@ export const entries = {
         </p>
         <p>
           <strong>Scheduling exceptions.</strong> Matches can be played
-          early (<a href="#preplayed-match" className="text-info hover:underline">preplayed match</a>){' '}
+          early (<a href="#makeup-match" className="text-info hover:underline">preplayed match</a>){' '}
           or late (<a href="#makeup-match" className="text-info hover:underline">makeup match</a>){' '}
           when scheduling issues come up.
         </p>
@@ -613,8 +613,7 @@ export const entries = {
           <a href="#match-format" className="text-info hover:underline">match format</a>,{' '}
           <a href="#season-length" className="text-info hover:underline">season length</a>,{' '}
           <a href="#standings" className="text-info hover:underline">standings</a>,{' '}
-          <a href="#makeup-match" className="text-info hover:underline">makeup match</a>,{' '}
-          <a href="#preplayed-match" className="text-info hover:underline">preplayed match</a>.
+          <a href="#makeup-match" className="text-info hover:underline">makeup or preplayed match</a>.
         </p>
       </div>
     ),
@@ -625,83 +624,48 @@ export const entries = {
 
   'makeup-match': {
     slug: 'makeup-match',
-    canonicalName: 'Makeup Match',
-    aliases: ['makeup matches'],
+    canonicalName: 'Makeup or Preplayed Match',
+    aliases: [
+      'makeup match',
+      'makeup matches',
+      'preplayed match',
+      'preplayed matches',
+      'pre-played match',
+    ],
     shortDef:
-      'A match played AFTER its scheduled week — usually because a team couldn\'t make the original date.',
+      "A match played on a different day than its scheduled one — either before (preplayed match) or after (makeup match). The LO sets the rules for when this is allowed.",
     longDef: (
       <div className="space-y-3">
         <p>
-          A makeup match is a{' '}
-          <a href="#match" className="text-info hover:underline">match</a>{' '}
-          played later than its originally scheduled week. Common reasons:
-          a team couldn't field a{' '}
-          <a href="#lineup" className="text-info hover:underline">lineup</a>{' '}
-          on the scheduled date (illness, work conflict, venue
-          unavailable), or the league granted a postponement.
+          <a href="#match" className="text-info hover:underline">Matches</a>{' '}
+          are scheduled for a specific date, usually at a specific time.
+          But things happen — someone can't make it, a venue closes,
+          schedules conflict. The app lets a team play their match
+          outside the scheduled date.
         </p>
         <p>
-          The match record is marked as a makeup so it's traceable, but
-          it still counts toward the{' '}
+          A match played <strong>before</strong> its scheduled day is a{' '}
+          <strong>preplayed match</strong>. A match played{' '}
+          <strong>after</strong> is a <strong>makeup match</strong>.
+          Either way, the match record is flagged so it's traceable,
+          but it still counts toward the{' '}
           <a href="#season" className="text-info hover:underline">season</a>{' '}
           <a href="#standings" className="text-info hover:underline">standings</a>{' '}
           exactly like a normal-week match.
         </p>
         <p>
-          Opposite of a{' '}
-          <a href="#preplayed-match" className="text-info hover:underline">preplayed match</a>,
-          which is played BEFORE its scheduled week.
+          The{' '}
+          <a href="#league-operator" className="text-info hover:underline">LO</a>{' '}
+          sets the rules for when this is allowed. Abuse of the ability
+          — too often, too far off-schedule, repeatedly with the same
+          team — can result in the LO restricting it.
         </p>
         <p className="text-sm text-muted-foreground">
           Relevant topics:{' '}
           <a href="#match" className="text-info hover:underline">match</a>,{' '}
-          <a href="#preplayed-match" className="text-info hover:underline">preplayed match</a>,{' '}
-          <a href="#lineup" className="text-info hover:underline">lineup</a>,{' '}
           <a href="#season" className="text-info hover:underline">season</a>,{' '}
-          <a href="#standings" className="text-info hover:underline">standings</a>.
-        </p>
-      </div>
-    ),
-    l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['schedule'],
-  },
-
-  'preplayed-match': {
-    slug: 'preplayed-match',
-    canonicalName: 'Preplayed Match',
-    aliases: ['preplayed matches', 'pre-played match'],
-    shortDef:
-      'A match played BEFORE its scheduled week — usually because a team knows in advance they can\'t make the original date.',
-    longDef: (
-      <div className="space-y-3">
-        <p>
-          A preplayed match is a{' '}
-          <a href="#match" className="text-info hover:underline">match</a>{' '}
-          played earlier than its originally scheduled week. Common reasons:
-          a team knows in advance they can't field a{' '}
-          <a href="#lineup" className="text-info hover:underline">lineup</a>{' '}
-          on the scheduled date (travel, planned absence) and chooses to
-          play early instead.
-        </p>
-        <p>
-          The match record is marked as preplayed so it's traceable, but
-          it still counts toward the{' '}
-          <a href="#season" className="text-info hover:underline">season</a>{' '}
-          <a href="#standings" className="text-info hover:underline">standings</a>{' '}
-          exactly like a normal-week match.
-        </p>
-        <p>
-          Opposite of a{' '}
-          <a href="#makeup-match" className="text-info hover:underline">makeup match</a>,
-          which is played AFTER its scheduled week.
-        </p>
-        <p className="text-sm text-muted-foreground">
-          Relevant topics:{' '}
-          <a href="#match" className="text-info hover:underline">match</a>,{' '}
-          <a href="#makeup-match" className="text-info hover:underline">makeup match</a>,{' '}
-          <a href="#lineup" className="text-info hover:underline">lineup</a>,{' '}
-          <a href="#season" className="text-info hover:underline">season</a>,{' '}
-          <a href="#standings" className="text-info hover:underline">standings</a>.
+          <a href="#standings" className="text-info hover:underline">standings</a>,{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>.
         </p>
       </div>
     ),
