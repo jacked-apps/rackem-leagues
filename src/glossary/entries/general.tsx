@@ -1926,9 +1926,10 @@ export const entries = {
         </p>
         <p>
           <strong>Caveat:</strong> some leagues are "rack your own" —
-          the breaker racks and breaks. In our app, the racker is still
-          strictly the player NOT breaking that game, regardless of who
-          physically handles the balls.
+          the breaker racks and breaks. Or an independent party, like a
+          referee, may do the actual racking. In our app, the racker is
+          still strictly the player NOT breaking that game, regardless
+          of who physically handles the balls.
         </p>
       </div>
     ),
