@@ -1047,11 +1047,12 @@ export const entries = {
     longDef: (
       <div className="space-y-3">
         <p>
-          When one player can't make a match, a substitute steps in
-          to fill that spot in the team's{' '}
+          When one player can't make a{' '}
+          <a href="#match" className="text-info hover:underline">match</a>,
+          a substitute steps in to fill that spot in the team's{' '}
           <a href="#lineup" className="text-info hover:underline">lineup</a>.
-          The app allows one sub per match — so this covers a single
-          absence, not a team-wide gap.
+          The app allows one sub per{' '}
+          <a href="#match" className="text-info hover:underline">match</a>.
         </p>
         <p>The app supports two sub patterns:</p>
         <ul className="list-disc pl-5 space-y-1">
