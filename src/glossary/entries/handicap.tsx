@@ -286,25 +286,37 @@ export const entries = {
     canonicalName: 'Race Length Adjustment',
     aliases: ['race adjustment', 'asymmetric race'],
     shortDef:
-      'A handicap mechanism where each individual matchup races to a different number of racks based on the rating gap.',
+      'A handicap mechanism where each opponent races to a different target, set by the rating gap — the weaker side needs fewer to win.',
     longDef: (
       <div className="space-y-2">
         <p>
-          The handicap chart maps each (stronger, weaker) pairing to a
-          (race_high, race_low) target. Both players race, but to different
-          numbers — the weaker player needs fewer racks to win the matchup.
+          When a contest is settled by a{' '}
+          <a href="#race" className="text-info hover:underline">race</a>, this
+          sets each side’s{' '}
+          <a href="#threshold" className="text-info hover:underline">target</a>{' '}
+          from the rating gap: the weaker side races to a lower number, the
+          stronger side to a higher one — games or points, whichever the race
+          counts. It works the same whether the opponents are two players or two
+          teams.
+        </p>
+        <p>
+          Like{' '}
+          <a href="#extra-games" className="text-info hover:underline">extra games</a>,
+          it shifts the finish line by the rating gap — here by changing the
+          race target.
         </p>
         <p className="text-sm text-muted-foreground">
-          Functionally similar to Extra Games — both shift where the finish
-          line sits based on rating gap. Extra Games adjusts at the team
-          level; Race Length Adjustment adjusts per individual matchup.
+          Relevant topics:{' '}
+          <a href="#race" className="text-info hover:underline">race</a>,{' '}
+          <a href="#threshold" className="text-info hover:underline">threshold</a>,{' '}
+          <a href="#extra-games" className="text-info hover:underline">extra games</a>.
         </p>
       </div>
     ),
     l1_anchor: {
       path: 'docs/league-system/modules/handicap-mechanisms/race-length-adjustment.md',
     },
-    related: ['handicap-mechanism', 'extra-games'],
+    related: ['handicap-mechanism'],
   },
 
   threshold: {
