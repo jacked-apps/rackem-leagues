@@ -1956,6 +1956,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['racker', 'game'],
+    reviewedByEd: '2026-05-31',
   },
 
   // ---- Tiebreaker concepts (features partly speculative) ---------------
