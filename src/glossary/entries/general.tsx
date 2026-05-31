@@ -1082,7 +1082,7 @@ export const entries = {
     shortDef:
       "A substitute who is a known player with an established ranking, but anonymous to our system. Their gameplay doesn't affect their own ranking or records.",
     longDef: (
-      <div className="space-y-2">
+      <div className="space-y-3">
         <p>
           Anonymous subs solve a real problem. If a regular player fills in
           on another team and his games count toward his own rating, he has
@@ -1092,7 +1092,13 @@ export const entries = {
         <p>
           Going anonymous removes that incentive. The team gets a known-skill
           fill-in. The sub gets to play their best without it counting against
-          (or for) their rating. Everyone wins.
+          (or for) their rating.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          <strong>Note:</strong> anonymous-sub removes the rating-tank
+          incentive, but not all of them. A sub from a rival team in your
+          league has their own reason to lose — helping their actual team —
+          and that's on the captain to factor in when picking.
         </p>
       </div>
     ),
