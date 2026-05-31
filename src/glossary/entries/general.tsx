@@ -803,7 +803,9 @@ export const entries = {
           the other player, then sinks the 8-ball to win.
         </p>
         <p>
-          The app carries the full official rules; your league may have{' '}
+          See the{' '}
+          <a href="/rules" className="text-info hover:underline">full official rules</a>{' '}
+          in the app rulebook. Your league may have{' '}
           <a href="#house-rules" className="text-info hover:underline">house rules</a>{' '}
           that differ from the official ones — check with your{' '}
           <a href="#league-operator" className="text-info hover:underline">LO</a>.
@@ -817,7 +819,7 @@ export const entries = {
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['game'],
+    related: ['game', 'house-rules', 'nine-ball', 'ten-ball'],
   },
 
   'nine-ball': {
