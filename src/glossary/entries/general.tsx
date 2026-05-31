@@ -1989,21 +1989,36 @@ export const entries = {
     shortDef:
       'The method used to decide who wins when regular play ends in a tie.',
     longDef: (
-      <div className="space-y-2">
+      <div className="space-y-3">
         <p>
-          Some leagues let ties stand. Others play an extra round, a single
-          short race, or fall back to a hand entry. The tiebreaker setting
-          tells the app which behavior the league agreed on.
+          When a{' '}
+          <a href="#match" className="text-info hover:underline">match</a>{' '}
+          ends in a tie, every league has a way of dealing with it:
+          either let the tie stand as a tie, or run some sort of extra
+          competition to give the final win to a single team. These
+          methods are numerous. We try to handle as many as we can.
         </p>
+        <p>
+          If the way a particular league handles a tie isn't yet
+          supported, the fallback is{' '}
+          <a href="#manual-tiebreaker" className="text-info hover:underline">manual tiebreaker</a>.
+        </p>
+        <p><strong>Tiebreakers we support:</strong></p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><a href="#accept-tie" className="text-info hover:underline">Accept tie</a></li>
+          <li><a href="#extra-round" className="text-info hover:underline">Extra round</a></li>
+          <li><a href="#single-short-race" className="text-info hover:underline">Single short race</a></li>
+          <li><a href="#manual-tiebreaker" className="text-info hover:underline">Manual tiebreaker</a></li>
+        </ul>
         <p className="text-sm text-muted-foreground">
-          Note: most of the specific tiebreaker modules aren't fully coded
-          in the app yet. Manual entry is the safe fallback that always
-          works while the codified options are being built out.
+          Note: the extra-round and single-short-race modules are still
+          being built. Manual tiebreaker is always available as the
+          fallback.
         </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/tiebreak-system/README.md' },
-    related: ['extra-round', 'single-short-race', 'accept-tie', 'manual-tiebreaker'],
+    related: [],
   },
 
   'extra-round': {
