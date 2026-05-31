@@ -1832,8 +1832,9 @@ export const entries = {
           to be played, the{' '}
           <a href="#pairing" className="text-info hover:underline">pairings</a>,
           handicap{' '}
-          <a href="#threshold" className="text-info hover:underline">thresholds</a>,
-          starting bonuses, and so on.
+          <a href="#threshold" className="text-info hover:underline">thresholds</a>,{' '}
+          <a href="#start-points" className="text-info hover:underline">starting bonuses</a>,
+          and so on.
         </p>
       </div>
     ),
