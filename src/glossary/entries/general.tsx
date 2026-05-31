@@ -2032,11 +2032,6 @@ export const entries = {
           <a href="#race" className="text-info hover:underline">race</a>{' '}
           — see race for the underlying mechanic.
         </p>
-        <p className="text-sm text-muted-foreground">
-          This module hasn't been fully coded yet;{' '}
-          <a href="#manual-tiebreaker" className="text-info hover:underline">manual tiebreaker</a>{' '}
-          is the working fallback in the meantime.
-        </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/tiebreak-system/README.md' },
@@ -2051,13 +2046,14 @@ export const entries = {
       'When a match ends tied, the teams play one short race to decide the winner.',
     longDef: (
       <p>
-        A short race plays a single extra rack (or a short race-to-N) and
-        whoever wins takes the match. Faster than an extra round but the
-        module isn't fully coded yet; manual entry covers it for now.
+        The teams play one extra rack — or a short{' '}
+        <a href="#race" className="text-info hover:underline">race</a>{' '}
+        — to decide the winner. Faster than an{' '}
+        <a href="#extra-round" className="text-info hover:underline">extra round</a>.
       </p>
     ),
     l1_anchor: { path: 'docs/league-system/modules/tiebreak-system/README.md' },
-    related: ['tiebreaker', 'manual-tiebreaker'],
+    related: ['tiebreaker'],
   },
 
   'accept-tie': {
