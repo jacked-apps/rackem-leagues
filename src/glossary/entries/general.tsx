@@ -1821,7 +1821,7 @@ export const entries = {
   scorekeeper: {
     slug: 'scorekeeper',
     canonicalName: 'Scorekeeper',
-    aliases: ['score keeper', 'scorekeeping'],
+    aliases: ['score keeper', 'scorekeeping', 'scoring'],
     shortDef:
       "Anyone on either team can record what happened in a game or confirm what was recorded. Each game and the final match score need at least one confirmation from each team to be finalized.",
     longDef: (
@@ -1856,6 +1856,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['captain', 'manual-entry', 'manual-tiebreaker'],
+    reviewedByEd: '2026-05-30',
   },
 
   'lineup-lock': {
