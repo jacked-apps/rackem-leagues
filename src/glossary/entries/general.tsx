@@ -1830,11 +1830,10 @@ export const entries = {
           the specifics of the match: the number of{' '}
           <a href="#game" className="text-info hover:underline">games</a>{' '}
           to be played, the{' '}
-          <a href="#pairing" className="text-info hover:underline">pairings</a>{' '}
-          (who plays whom), handicap{' '}
+          <a href="#pairing" className="text-info hover:underline">pairings</a>,
+          handicap{' '}
           <a href="#threshold" className="text-info hover:underline">thresholds</a>,
-          starting bonuses (where the handicap system uses them), and so
-          on.
+          starting bonuses, and so on.
         </p>
       </div>
     ),
