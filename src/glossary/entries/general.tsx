@@ -808,6 +808,14 @@ export const entries = {
           that differ from the official ones — check with your{' '}
           <a href="#league-operator" className="text-info hover:underline">LO</a>.
         </p>
+        <p className="text-sm text-muted-foreground">
+          Fun fact: 8-Ball is so widely played that many people use
+          "pool" and "8-Ball" interchangeably — not realizing{' '}
+          <a href="#nine-ball" className="text-info hover:underline">9-Ball</a>{' '}
+          and{' '}
+          <a href="#ten-ball" className="text-info hover:underline">10-Ball</a>{' '}
+          are different games.
+        </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
