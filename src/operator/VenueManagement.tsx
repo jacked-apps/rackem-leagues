@@ -191,14 +191,14 @@ export const VenueManagement: React.FC = () => {
       <div className="container mx-auto px-4 max-w-7xl py-8">
         {/* League Context Banner */}
         {leagueId && league && (
-          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="mb-6 bg-info/10 border border-info/40 rounded-lg p-4">
             <div className="flex items-center gap-2">
-              <Check className="h-5 w-5 text-blue-600" />
+              <Check className="h-5 w-5 text-info" />
               <div>
-                <p className="text-sm font-medium text-blue-900">
+                <p className="text-sm font-medium text-info">
                   Managing venues for: <span className="font-bold">{getLeagueName()}</span>
                 </p>
-                <p className="text-xs text-blue-700 mt-1">
+                <p className="text-xs text-foreground mt-1">
                   Toggle venues on/off to assign them to this league. Click &quot;Set Limits&quot; to adjust table availability.
                 </p>
               </div>
@@ -227,11 +227,11 @@ export const VenueManagement: React.FC = () => {
               return (
                 <div
                   key={venue.id}
-                  className={`relative ${leagueId && assigned ? 'ring-2 ring-green-500 rounded-xl' : ''}`}
+                  className={`relative ${leagueId && assigned ? 'ring-2 ring-success rounded-xl' : ''}`}
                 >
                   {/* League assignment controls */}
                   {leagueId && (
-                    <div className={`absolute top-0 left-0 right-0 z-10 p-3 rounded-t-xl ${assigned ? 'bg-green-50' : 'bg-muted'}`}>
+                    <div className={`absolute top-0 left-0 right-0 z-10 p-3 rounded-t-xl ${assigned ? 'bg-success/10' : 'bg-muted'}`}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Switch
@@ -242,7 +242,7 @@ export const VenueManagement: React.FC = () => {
                           />
                           <Label
                             htmlFor={`assign-${venue.id}`}
-                            className={`text-sm font-medium ${assigned ? 'text-green-700' : 'text-muted-foreground'}`}
+                            className={`text-sm font-medium ${assigned ? 'text-success' : 'text-muted-foreground'}`}
                           >
                             {assigned ? 'Assigned' : 'Not Assigned'}
                           </Label>
@@ -258,7 +258,7 @@ export const VenueManagement: React.FC = () => {
                         )}
                       </div>
                       {assigned && leagueVenue && (
-                        <div className="mt-2 text-xs text-green-700">
+                        <div className="mt-2 text-xs text-success">
                           {leagueVenue.available_table_numbers?.length > 0
                             ? `${leagueVenue.available_table_numbers.length} tables available`
                             : 'No tables assigned'}

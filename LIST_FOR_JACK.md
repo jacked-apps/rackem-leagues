@@ -262,4 +262,39 @@ follow-on polish.
 
 ---
 
-*Last Updated: 2026-05-16*
+## 19. Scoring App — Confirmation/Vacate Modal Unreadable in Dark Mode + No Theme Toggle on Scoring Screen
+
+**Discovered:** 2026-05-25 during live-scoring resilience testing (Ed)
+**Severity:** Medium — the modal is functionally reachable but visually
+unreadable in dark mode, and the user can't switch to light to work
+around it from the scoring screen. Two compounding issues:
+
+**(a) The confirm/vacate modal is unreadable in dark mode.**
+- **Where:** `src/components/scoring/ConfirmationDialog.tsx` — the
+  opponent-confirm + vacate ("Agree – Vacate Winner / Deny – Keep
+  Winner") modal used during live scoring.
+- **Symptom:** in dark mode the modal's text/contrast collapses
+  (same class of bug as the date picker #18 and the messaging input
+  #16 — almost certainly hardcoded light-theme colors instead of
+  theme-aware `text-foreground` / `bg-card` tokens).
+- **Fix direction:** open the modal in light + dark side-by-side,
+  audit the color classes in `ConfirmationDialog.tsx` (and the dialog
+  primitives it uses) for hardcoded values; switch to theme-aware
+  tokens. Worth doing in the same pass as #16/#18 — likely one shared
+  root cause across these scoring/messaging surfaces.
+
+**(b) Can't change theme (light/dark) from the scoring screen.**
+- **Where:** `src/player/ScoreMatch.tsx` renders a custom full-screen
+  scoring layout with its own header (back button / team name /
+  auto-confirm) and does NOT surface the app's theme toggle. So a
+  scorer who happens to be in dark mode is stuck — they can't flip to
+  light to dodge issue (a) without leaving the match.
+- **Fix direction:** either expose the theme toggle on the scoring
+  screen, or (cleaner once (a) is fixed) ensure the scoring surfaces
+  are fully theme-aware so the toggle isn't needed as a workaround.
+- **Note:** fixing (a) is the real fix; (b) is why (a) is more painful
+  than it looks (no escape hatch mid-match).
+
+---
+
+*Last Updated: 2026-05-25*

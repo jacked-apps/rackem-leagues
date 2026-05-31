@@ -64,8 +64,8 @@ export function SpectateLiveMatches() {
             indicator that conveys "something is happening right now." */}
         <div className="flex items-center gap-2 mt-1 text-foreground">
           <span className="relative inline-flex h-2.5 w-2.5">
-            <span className="absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75 animate-ping" />
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+            <span className="absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75 animate-ping" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-destructive" />
           </span>
           <span className="text-md lg:text-xl">Live Matches</span>
           {!isLoading && matches.length > 0 && (
@@ -86,7 +86,7 @@ export function SpectateLiveMatches() {
         )}
 
         {!isLoading && error && (
-          <div className="text-center text-sm text-red-600 py-8">
+          <div className="text-center text-sm text-destructive py-8">
             Couldn't load live matches: {error instanceof Error ? error.message : 'Unknown error'}
           </div>
         )}

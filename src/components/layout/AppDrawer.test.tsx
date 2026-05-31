@@ -2,7 +2,7 @@
  * @fileoverview Unit tests for the global AppDrawer.
  *
  * Covers role-aware section rendering (logged-out / player / operator),
- * position-based owner-vs-staff classification, the cap-at-4 + overflow,
+ * position-based owner-vs-staff classification, the cap-at-4 behavior,
  * single-org flat layout vs multi-org collapsible layout, drawer-internal
  * `(N)` badges for unread messages and pending reports, loading/error
  * graceful fallbacks, and SheetClose-driven dismissal on link tap.
@@ -124,6 +124,11 @@ describe('AppDrawer', () => {
     expect(within(nav).getByRole('link', { name: 'Rules' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: /^Messages/ })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Profile' })).toBeInTheDocument();
+    // No "Dashboard" link and no Sign Out in the drawer — the player nav dropped
+    // Dashboard, and Sign Out moved to the bottom of the Profile page (nav
+    // redesign, PR #124/#131).
+    expect(within(nav).queryByRole('link', { name: 'Dashboard' })).not.toBeInTheDocument();
+    expect(within(nav).queryByRole('button', { name: /sign out/i })).not.toBeInTheDocument();
   });
 
   // Happy path — single-org operator
@@ -144,12 +149,12 @@ describe('AppDrawer', () => {
     renderDrawer();
 
     expect(screen.getByText('Operator')).toBeInTheDocument();
-    // Post 2026-05 nav overhaul: the player section no longer has a
-    // "Dashboard" link. The single Dashboard link comes from the org-
-    // scoped Operator section.
-    const dashboardLinks = screen.getAllByRole('link', { name: 'Dashboard' });
-    expect(dashboardLinks).toHaveLength(1);
-    expect(dashboardLinks[0]).toHaveAttribute('href', '/operator-dashboard/org-a');
+    // Only the org-scoped operator Dashboard exists now — the player section no
+    // longer renders a "/dashboard" link.
+    expect(screen.getByRole('link', { name: 'Dashboard' })).toHaveAttribute(
+      'href',
+      '/operator-dashboard/org-a',
+    );
     expect(screen.getByRole('link', { name: 'Create League' })).toHaveAttribute(
       'href',
       '/create-league/org-a',
@@ -267,9 +272,10 @@ describe('AppDrawer', () => {
     // Cut off:
     expect(screen.queryByText('Staff Delta')).not.toBeInTheDocument();
     expect(screen.queryByText('Staff Echo')).not.toBeInTheDocument();
-    // Post 2026-05 nav overhaul: no "More on Dashboard" overflow
-    // link — the cap is silent. Operators with >4 orgs reach the
-    // overflow via the org switcher elsewhere in the chrome.
+    // NOTE: neither the drawer nor the sidebar renders a "More on Dashboard"
+    // overflow link today — overflow-to-/dashboard is a documented-but-unbuilt
+    // design intent, not current behavior.
+    expect(screen.queryByText(/more on dashboard/i)).not.toBeInTheDocument();
   });
 
   // Edge case — operator with 0 owned orgs renders staff orgs only (no owner section)
@@ -312,18 +318,12 @@ describe('AppDrawer', () => {
 
     renderDrawer();
 
-    // Player section still renders; Operator heading is absent until
-    // orgs load. We probe "My Teams" (a stable player-section link)
-    // instead of "Dashboard" (which moved into the per-org Operator
-    // section in the 2026-05 nav overhaul).
+    // Player section still renders; Operator heading is absent until orgs load.
     expect(screen.getByRole('link', { name: 'My Teams' })).toBeInTheDocument();
     expect(screen.queryByText('Operator')).not.toBeInTheDocument();
   });
 
-  // The Sign-out button used to live inside the drawer. The 2026-05
-  // nav overhaul moved it out (it's now on the Profile page). Drawer
-  // dismissal on link tap is covered by the player-root + operator-
-  // section tests above (each uses SheetClose-wrapped DrawerLink).
-  // If/when a sign-out affordance returns to the drawer, restore this
-  // test against the new button.
+  // Sign Out is no longer in the drawer — it moved to the bottom of the Profile
+  // page (nav redesign, PR #124/#131). Its coverage belongs in the Profile test,
+  // not here.
 });

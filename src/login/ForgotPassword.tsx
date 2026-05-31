@@ -66,7 +66,7 @@ export const ForgotPassword: React.FC = () => {
       >
         <div className="text-center space-y-4">
           <div className="flex justify-center">
-            <Mail className="h-16 w-16 text-blue-600" />
+            <Mail className="h-16 w-16 text-primary" />
           </div>
           <p className="text-foreground">
             We sent a password reset link to <strong>{email}</strong>
@@ -101,7 +101,7 @@ export const ForgotPassword: React.FC = () => {
               {resendLoading ? 'Sending...' : 'Resend Reset Link'}
             </Button>
             {resendMessage && (
-              <p className={`text-sm mt-2 ${resendMessage.includes('Error') ? 'text-red-500' : 'text-green-600'}`}>
+              <p className={`text-sm mt-2 ${resendMessage.includes('Error') ? 'text-destructive' : 'text-success'}`}>
                 {resendMessage}
               </p>
             )}

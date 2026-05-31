@@ -258,8 +258,8 @@ function SubHeader({
       <div className="min-w-0 flex-1">
         {organization ? (
           <div className="mb-1 flex items-center gap-2">
-            <Building2 className="h-4 w-4 text-blue-600 lg:h-5 lg:w-5" />
-            <span className="text-sm font-medium text-blue-600 lg:text-base">
+            <Building2 className="h-4 w-4 text-primary lg:h-5 lg:w-5" />
+            <span className="text-sm font-medium text-primary lg:text-base">
               {organization.organization_name}
             </span>
           </div>

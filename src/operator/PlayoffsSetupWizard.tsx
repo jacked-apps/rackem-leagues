@@ -339,15 +339,15 @@ export const PlayoffsSetupWizard: React.FC = () => {
 
       <div className="container mx-auto px-4 max-w-4xl py-8 space-y-6">
         {/* Team Count Info Card */}
-        <Card className="border-blue-200 bg-blue-50">
+        <Card className="border-info/40 bg-info/10">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <Users className="h-6 w-6 text-blue-600" />
+              <Users className="h-6 w-6 text-info" />
               <div>
-                <div className="font-semibold text-blue-900">
+                <div className="font-semibold text-info">
                   {teamCount} Teams in this Season
                 </div>
-                <div className="text-sm text-blue-700">
+                <div className="text-sm text-foreground">
                   {bracketSize} teams will qualify for playoffs based on current settings
                   {bracketSize < teamCount && ` (${teamCount - bracketSize} eliminated)`}
                 </div>
@@ -358,15 +358,15 @@ export const PlayoffsSetupWizard: React.FC = () => {
 
         {/* Current Config Source */}
         {!hasLeagueConfig && resolvedConfig && (
-          <Card className="border-amber-200 bg-amber-50">
+          <Card className="border-warning/40 bg-warning/10">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <Trophy className="h-6 w-6 text-amber-600" />
+                <Trophy className="h-6 w-6 text-warning" />
                 <div>
-                  <div className="font-semibold text-amber-900">
+                  <div className="font-semibold text-warning">
                     Using {configSource}: {resolvedConfig.name}
                   </div>
-                  <div className="text-sm text-amber-700">
+                  <div className="text-sm text-foreground">
                     You can customize these settings for this league or continue with the default.
                   </div>
                 </div>

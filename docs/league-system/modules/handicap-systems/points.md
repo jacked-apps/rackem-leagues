@@ -58,37 +58,14 @@ The team-level handicap is the sum of the active lineup's individual ratings. Th
 
 ## Interactions
 
-- **Compatible with [`extra_games`](../handicap-mechanisms/extra-games.md) mechanism** (current usage in the [Points 3-Man](../../scoring-systems/points-3man.md) Scoring System).
-- **No current chart for [`start_points`](../handicap-mechanisms/start-points.md)** with Points handicap — combination is not blocked at the schema level but no calibrated chart exists, so it would not produce sensible values.
+- **Compatible with [`extra_games`](../handicap-mechanisms/extra-games.md) mechanism** (used by the [Points 3-Man](../../scoring-systems/points-3man.md) Scoring System).
+- **No calibrated chart for [`start_points`](../handicap-mechanisms/start-points.md)** with Points handicap — the combination is allowed, but without a calibrated chart it would not produce sensible values.
 - **Compatible with [1-Point Scoring System](../points-system/one-point-scoring.md)**.
-- **Pairs with [3v3 games-needed chart](../threshold-charts/3v3-games-needed.md)** today. Could pair with any threshold chart that consumes integer differences.
+- **Pairs with [3v3 games-needed chart](../threshold-charts/3v3-games-needed.md)**. Could pair with any threshold chart that consumes integer differences.
 
 ## Possible modifications
 
 - **Different range** — `-3 to +3`, `-1 to +1` (the *reduced* variant exists today; uses `±1` cap)
 - **Different chart granularity** — change which integer difference maps to which target wins
 - **Computed-from-formula instead of LO-assigned** — auto-derive from prior season win-rate, a Fargo bucket, or a USAPL grade
-- **Adjustable weeks-per-week assumption** — currently hardcoded to 6 games/week; an LO could parameterize for non-standard schedules
-
-## Current code state
-
-This handicap system shows up at two code layers, both used by the **Points 3-Man** prepackaged Scoring System (the LO-facing name for the bundle of choices that picks this system):
-
-- **`standard_3v3`** (in `src/wizards/league-v2/presetMappings.ts`) is the **wizard preset key** — the LO-facing "bundle" of 9 Module choices that gets picked during league creation. The preset expands into preferences (`handicap_type='points'`, plus the values for the other 8 Modules).
-- **`bca3v3`** (in `src/systems/bca3v3.ts`) is the **SystemModule key** — the runtime code object handling the Points rating math (validation, history-based computation). The same file *also* currently calls the [3v3 games-needed chart](../threshold-charts/3v3-games-needed.md) directly — that's a separate Module's concern (Threshold Charts) bundled into this file for historical reasons. The bundling is an **implementation artifact, not architectural intent**: future refactors should decouple so any rating encoding can pair with any chart. See the [Module README → Boundary](README.md#boundary) for the orthogonality intent.
-
-The two layers connect via `handicap_type='points'`: the wizard preset sets the preference; `src/systems/resolver.ts` (lines 42–55) then maps that preference back to the `bca3v3` SystemModule at runtime. Step 2 collapses both names into `points_3man` for consistency across layers.
-
-- Code anchors today: `src/systems/bca3v3.ts` (SystemModule); `src/utils/calculatePlayerHandicap.ts` (history-based computation, lines ~78–90); `src/utils/handicap/get3v3GamesNeeded.ts` (threshold chart lookup)
-- DB: `'points'` allowed value in `preferences.handicap_type` CHECK (`supabase/migrations/20260410000000_extend_preferences_modular.sql:58`)
-- Wizard card: `src/wizards/league-v2/steps/HandicapSystemStep.tsx`
-
-**Step 2 rename targets** (tentative — to be confirmed in step-2's plan):
-
-| Current | Step-2 target | Reason |
-|---|---|---|
-| `bca3v3.ts` (filename) | `points_3man.ts` (snake_case per repo precedent) | "BCA" alone is incorrect per [BCA vs BCAPL rule](../../README.md#brand-naming) |
-| `bca3v3` (SystemModule key) | `points_3man` | Same |
-| `standard_3v3` (wizard preset key) | `points_3man` | Names the actual handicap system + lineup size |
-
-CSI's *BCA Pool League Operators' Handbook* (June 2020, p.41 "Name Guidelines") explicitly states "BCA" alone is an incorrect reference — only "BCAPL" or "BCA Pool League" are valid. The current `bca3v3` identifiers literally violate CSI's published guidance, independently of the also-true motivation that the new names better describe what each prepackaged Scoring System actually is.
+- **Adjustable weeks-per-week assumption** — the 6-games/week assumption could be parameterized for non-standard schedules

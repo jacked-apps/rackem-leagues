@@ -106,7 +106,7 @@ export function TeamStats() {
         <div className="container mx-auto px-4 py-8 max-w-7xl">
           <Card>
             <CardContent className="py-8">
-              <div className="text-center text-red-600">
+              <div className="text-center text-destructive">
                 Error loading team stats: {error.message}
               </div>
             </CardContent>

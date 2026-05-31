@@ -72,7 +72,7 @@ export function StatsNavBar({ activePage }: StatsNavBarProps) {
                 flex items-center gap-2 px-4 py-3 border-b-2 transition-colors whitespace-nowrap
                 ${
                   isActive
-                    ? 'border-blue-600 text-blue-600 font-semibold'
+                    ? 'border-primary text-primary font-semibold'
                     : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
                 }
               `}

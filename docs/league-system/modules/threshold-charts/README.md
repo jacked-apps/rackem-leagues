@@ -52,9 +52,7 @@ If a proposed feature changes *how a handicap input becomes a threshold value* (
 
 **Output-shape coupling to the downstream Mechanism.** A Chart's output is shaped for the [Handicap Mechanism](../handicap-mechanisms/README.md) it was calibrated against (asymmetric per-side game targets for `extra_games`; bonus-points value for `start_points`; per-pairing race lengths for `race_length_adjustment`; etc.). A Chart whose output shape doesn't match the active Mechanism's expected input needs an output-side adapter to compose.
 
-**Composability promise (per [Principle 10 — Composability contract](../../PRINCIPLES.md#10-composability-contract--no-break-composition)).** Principle 10 sets the bar: an LO-selected combination of encoding × Chart × Mechanism should chain to a runnable output. The way this gets honored architecturally is that bridging Converters are admitted alongside the typed Modules that need them — when a new Handicap System (or any new typed Module) is admitted, the adapters needed to bridge it to the existing types come with it, so the Chart receives a value in its input domain at runtime. Combinations that lack validation surface a warning. The intent is to handle type-bridging at admission rather than rely on runtime fallbacks. (Per [PRINCIPLES § Converter § 4](../../PRINCIPLES.md#converter--deep-dive), no Converter implementations exist in code yet — the modular Scoring System currently ships with a small set of prepackaged Scoring Systems whose internal types already line up, so the Converter capability hasn't been exercised yet.)
-
-**Implementation status.** The current codebase couples specific Charts to specific encoding-runners (e.g., the 3v3 Points Chart is hardcoded inside the `bca3v3` SystemModule rather than queried as an independent Chart Module). **Implementation artifact, not architectural intent.** Step-2 refactors will lift Charts out as first-class Modules selected by the league configuration.
+**Composability promise (per [Principle 10 — Composability contract](../../PRINCIPLES.md#10-composability-contract--no-break-composition)).** Principle 10 sets the bar: an LO-selected combination of encoding × Chart × Mechanism should chain to a runnable output. The way this gets honored architecturally is that bridging Converters are admitted alongside the typed Modules that need them — when a new Handicap System (or any new typed Module) is admitted, the adapters needed to bridge it to the existing types come with it, so the Chart receives a value in its input domain at runtime. Combinations that lack validation surface a warning. The intent is to handle type-bridging at admission rather than rely on runtime fallbacks.
 
 ## Catalog
 
@@ -96,7 +94,7 @@ A Chart called with input X always returns output Y. No state, no time-varying b
 
 ## Cascade behavior
 
-Stored Charts live in a single `threshold_charts` table keyed by an **owner-scope cascade**: global, organization, or league. A league using a default Chart reads the global row; a league with a customized Chart reads its own row, overriding the more general scope. This makes per-league customization a row insertion at the right scope, not a code change.
+Stored Charts live in a single store keyed by an **owner-scope cascade**: global, organization, or league. A league using a default Chart reads the global row; a league with a customized Chart reads its own row, overriding the more general scope. This makes per-league customization a row insertion at the right scope, not a code change.
 
 Cascade order (most-specific wins):
 
@@ -110,17 +108,6 @@ A formula-shaped Chart in code can be re-expressed at any scope as a saved discr
 
 - **LO-authored custom charts** — operators define their own rows or formula for a league. The cascade already supports the storage shape; the LO-customization UI is the work that exposes it.
 - **Formula ↔ table round-tripping** — start from a formula, render to a table, edit cells, persist as a table; or fit a formula to an existing table via symbolic regression. Useful when an LO wants to start from a clean function and tweak.
-- **Cross-axis charts (multi-input)** — lookups that consume more than one independent input (e.g., handicap difference *and* match length *and* venue type) to produce a calibrated threshold. The current schema's `comp_1` / `comp_2` pair supports 2D today; further extension is a schema-level question.
+- **Cross-axis charts (multi-input)** — lookups that consume more than one independent input (e.g., handicap difference *and* match length *and* venue type) to produce a calibrated threshold. Two inputs are supported today; consuming more is a future extension.
 - **Calibration-by-data tools** — generating a new Chart by fitting historical match outcomes to a desired competitive balance target. Removes the manual calibration burden.
 - **Per-Mechanism Chart families** — distinct Chart sets calibrated for different Mechanisms (e.g., a "Points encoding × start_points Mechanism" Chart that doesn't exist today because the Mechanism pairing isn't wired).
-
-## Source of truth
-
-- `supabase/migrations/20260410000002_threshold_charts.sql` — `threshold_charts` and `threshold_chart_rows` table definitions; the `lookup_threshold()` SQL function that performs the scope-cascade query
-- `supabase/migrations/20260410000003_seed_threshold_charts.sql` — global default rows for the currently-shipped Charts
-- `supabase/migrations/20260410000004_add_threshold_chart_fk.sql` — `preferences.threshold_chart_id` foreign key
-- `supabase/migrations/20260429000004_threshold_charts_rls_production.sql` — row-level security
-- Per-Chart code anchors live in each variant page's *Current code state* section
-- `src/utils/handicap/fargoGamesWonThresholds.ts` — Fargo formula entry point (formula-shaped Chart, not stored in the SQL tables)
-
-**Anti-conflation note.** The word **chart** appears in several adjacent meanings in the codebase — *threshold chart* (this Module), *handicap chart* (an operator-colloquial term sometimes covering both encoding and lookup together), *standings chart* (a UI table of team standings). When writing or reading, lowercase *"chart"* is the abstract noun; capitalized *"Chart"* or *"Threshold Chart"* refers to this Module specifically (per [PRINCIPLES § Chart — § 7](../../PRINCIPLES.md#7-naming-charts)).

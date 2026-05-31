@@ -85,18 +85,14 @@ When the comparators yield no winner, the **scoring runtime** runs the LO's conf
 
 **A concluded tie is handed off, not handled here.** The Win Calculator reports one of two findings — a winner, or no winner. What becomes of a no-winner result — broken or allowed to stand — belongs to a separate module, executed by the runtime (a mini-match tiebreaker is literally a second match, and matches are runtime-run).
 
-## Current implementation status
-
-Today's code is the primitive stand-in: a single binary field, `win_condition`, with values `'games'` or `'points'`. This is equivalent to a one-entry comparator set with no winner chip and no Tiebreak System; ties at the chosen metric are handled by scattered runtime hooks rather than the structured comparator-set-plus-chip model described above. The full model — the comparator switch, the winner chip, and the Tiebreak System integration — is the architectural direction developed in the 2026-05-23 Win Calculator / endgame brainstorm and not yet in code. Notably, **compare-to-target / the clinch chip requires a Threshold Trigger**, which requires the **[Threshold Charts](threshold-charts/README.md)** Module and the **[Trigger](points-system/trigger.md)** primitive to exist in code first; the build order is therefore Threshold Charts → Trigger → this Module. Implementation will require new preference column(s) describing the LO-configured comparator set and the integrated Tiebreak System chain evaluator.
-
 ## Remaining open design space
 
 Beyond the comparator switch and Tiebreak System integration documented above, the Win Calculator's fuller design space still contains genuinely-future items:
 
-1. **Race-mode termination** — the `endMatch` token models early termination, but its "end now" trigger semantics are unbuilt; today every match plays its full game count.
-2. **Cross-axis conditions** — rules that consult both metric axes at once. Example from the Points 3-Man Scoring System: *"positive points are only awarded if the game threshold is reached; it is possible to win the match with zero points."* Currently this kind of cross-axis condition lives inside the Points System calculator (`linear_above_threshold`), not in Win Calculator. A future refactor could lift it.
-3. **Per-game evaluation cadence** — race-mode requires checking after every game; threshold-mode can evaluate once at match-end. Today only threshold-mode is wired; race-mode evaluation cadence is unbuilt.
-4. **Comparator persistence shape** — how the two comparators, their modes, and the order are stored as data (preference column shape) is an implementation-time choice.
+1. **Race-mode termination** — the `endMatch` token models early termination; its "end now" trigger semantics are open design space.
+2. **Cross-axis conditions** — rules that consult both metric axes at once. Example from the Points 3-Man Scoring System: *"positive points are only awarded if the game threshold is reached; it is possible to win the match with zero points."* Whether such a cross-axis condition lives in the Win Calculator or the Points System is open design space.
+3. **Per-game evaluation cadence** — race-mode requires checking after every game; threshold-mode can evaluate once at match-end — the cadence model is open design space.
+4. **Comparator persistence shape** — how the two comparators, their modes, and the order are stored as data is an open design question.
 
 ## How this Module interacts
 
@@ -104,14 +100,3 @@ Beyond the comparator switch and Tiebreak System integration documented above, t
 - **Output**: the match result — the declared winner, or a tie when no winner is produced.
 - **Tiebreak**: when the comparators yield no winner, the scoring runtime fires the [Tiebreak System](tiebreak-system/README.md); the winner it produces re-enters as the `edge` chip and the Win Calculator recalcs. Sequential, not circular: comparators conclude tie → runtime runs Tiebreak System → winner written → Win Calc recalcs.
 - **Downstream**: the per-match result feeds the Standings concern (outside the modular Scoring System catalog — its architectural shape is a separate future brainstorm) for season-level ranking. The Win Calculator answers *"who won this match"*; the future Standings concern answers *"given the season's match results, who finishes where."*
-
-## Source of truth
-
-**Current code (the primitive stand-in):**
-- `src/types/preferences.ts` and `src/types/resolvedSystemConfig.ts` — the `win_condition` column type (`'games' | 'points'`)
-- `supabase/migrations/20260429000001_extend_preferences_phase2_modular_axes.sql` — DB CHECK for `win_condition`
-- `src/systems/buildSystemFromPreferences.ts` — the dispatch that routes match-result determination based on `win_condition`
-- `src/systems/win-calculators/` — scaffolding from the halted Unit 1 extraction; does not implement the model above
-- `src/wizards/league-v2/steps/WinConditionStep.tsx` — wizard UI for selecting the win condition
-
-**The comparator-switch + winner-chip model documented above is not yet in code.**

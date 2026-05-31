@@ -344,7 +344,6 @@ export const LeagueOperatorApplication: React.FC = () => {
               (currentQuestion.type === 'choice' && !currentQuestion.getValue()) ||
               (currentQuestion.type !== 'choice' && !currentInput.trim())
             }
-            className="bg-blue-600 hover:bg-blue-700 text-white"
           >
             {isLastQuestion ? 'Create Organization' : 'Next'}
           </Button>

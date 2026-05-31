@@ -240,7 +240,7 @@ export const Register: React.FC = () => {
       >
         <div className="text-center space-y-4">
           <div className="flex justify-center">
-            <AlertTriangle className="h-16 w-16 text-amber-500" />
+            <AlertTriangle className="h-16 w-16 text-warning" />
           </div>
           <p className="text-foreground">{claimData.errorMessage}</p>
           <p className="text-muted-foreground text-sm">
@@ -265,9 +265,9 @@ export const Register: React.FC = () => {
         <div className="text-center space-y-4">
           <div className="flex justify-center">
             {claimData?.isValid ? (
-              <UserCheck className="h-16 w-16 text-green-600" />
+              <UserCheck className="h-16 w-16 text-success" />
             ) : (
-              <Mail className="h-16 w-16 text-green-600" />
+              <Mail className="h-16 w-16 text-success" />
             )}
           </div>
           {claimData?.isValid && (
@@ -308,7 +308,7 @@ export const Register: React.FC = () => {
               {resendLoading ? 'Sending...' : 'Resend Verification Email'}
             </Button>
             {resendMessage && (
-              <p className={`text-sm mt-2 ${resendMessage.includes('Error') ? 'text-red-500' : 'text-green-600'}`}>
+              <p className={`text-sm mt-2 ${resendMessage.includes('Error') ? 'text-destructive' : 'text-success'}`}>
                 {resendMessage}
               </p>
             )}
@@ -331,14 +331,14 @@ export const Register: React.FC = () => {
     >
       {/* Show claim banner when claiming a profile */}
       {claimData?.isValid && (
-        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="mb-4 p-3 bg-info/10 border border-info/40 rounded-lg">
           <div className="flex items-center gap-2">
-            <UserCheck className="h-5 w-5 text-blue-600 shrink-0" />
+            <UserCheck className="h-5 w-5 text-info shrink-0" />
             <div>
-              <p className="text-sm font-medium text-blue-900">
+              <p className="text-sm font-medium text-info">
                 Claiming profile for: {claimData.playerName}
               </p>
-              <p className="text-xs text-blue-700">
+              <p className="text-xs text-foreground">
                 Your league stats and history will be linked to your account.
               </p>
             </div>
@@ -440,7 +440,7 @@ export const Register: React.FC = () => {
             Register
           </Button>
           {message && (
-            <p className="text-sm mt-2 text-red-500">
+            <p className="text-sm mt-2 text-destructive">
               {message}
             </p>
           )}

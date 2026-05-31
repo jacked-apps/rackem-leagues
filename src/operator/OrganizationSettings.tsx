@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useOrganization } from '@/api/hooks';
 import { useParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import { Button } from '@/components/ui/button';
 import { DashboardCard } from '@/components/operator/DashboardCard';
 import { PageHeader } from '@/components/PageHeader';
 import { BookOpen, Building2, Trophy } from 'lucide-react';
@@ -59,16 +60,13 @@ export const OrganizationSettings: React.FC = () => {
       <div className="min-h-screen bg-muted py-8">
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="bg-card rounded-xl shadow-sm p-6">
-            <h3 className="text-red-600 text-lg font-semibold mb-4">Error</h3>
+            <h3 className="text-destructive text-lg font-semibold mb-4">Error</h3>
             <p className="text-foreground mb-4">
               {error || 'Organization not found.'}
             </p>
-            <button
-              onClick={() => navigate('/my-teams')}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg"
-            >
+            <Button onClick={() => navigate('/my-teams')} loadingText="none">
               Back to My Teams
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -115,7 +113,7 @@ export const OrganizationSettings: React.FC = () => {
           {/* House Rules Card — org-wide manager */}
           <DashboardCard
             icon={<BookOpen className="h-6 w-6" />}
-            iconColor="text-teal-600"
+            iconColor="text-success"
             title="House Rules"
             description="Add rules that apply to every league in this organization"
             buttonText="Manage Rules"
@@ -125,7 +123,7 @@ export const OrganizationSettings: React.FC = () => {
           {/* Venue Management Card */}
           <DashboardCard
             icon={<Building2 className="h-6 w-6" />}
-            iconColor="text-blue-600"
+            iconColor="text-primary"
             title="Venue Management"
             description="Add and manage venues where your leagues play"
             buttonText="Manage Venues"
@@ -141,7 +139,7 @@ export const OrganizationSettings: React.FC = () => {
           {/* Playoff Settings Card */}
           <DashboardCard
             icon={<Trophy className="h-6 w-6" />}
-            iconColor="text-purple-600"
+            iconColor="text-highlight"
             title="Playoff Settings"
             description="Configure default playoff format and rules for your leagues"
             buttonText="View Settings"

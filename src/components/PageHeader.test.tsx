@@ -4,9 +4,9 @@
  * Covers: hamburger trigger + lazy-mounted drawer, conditional back button
  * behavior (none / `backTo` / `onBackClick`), title rendering, sub-header
  * scroll-with-content rendering (subtitle, org badge, decorative children),
- * the right-side identity slot (avatar when logged in, Sign-in when logged
- * out, suppressed on auth-flow routes), and the location-change drawer-close
- * effect.
+ * the right-side identity slot (Sign-in when logged out; no avatar when logged
+ * in — that identity lives in the sidebar/drawer/bottom-tab; suppressed on
+ * auth-flow routes), and the location-change drawer-close effect.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -128,11 +128,15 @@ describe('PageHeader', () => {
     expect(screen.getByTestId('info-chip')).toBeInTheDocument();
   });
 
-  // The avatar/initials link used to live in PageHeader's right
-  // identity slot. The 2026-05 nav overhaul moved profile access to
-  // the sidebar (desktop) + bottom tab bar (mobile), so PageHeader
-  // no longer renders it. Profile-link coverage now lives in the
-  // AppDrawer + sidebar tests instead.
+  it('does not render a profile avatar in the header when logged in (it lives in the sidebar/drawer)', () => {
+    configureProfile({ firstName: 'Bob', lastName: 'Smith' });
+    renderHeader(<PageHeader title="Home" />);
+    // The page-chrome avatar was intentionally removed to avoid duplicating the
+    // identity already shown in the sidebar (desktop), the drawer, and the
+    // bottom tab bar (mobile).
+    expect(screen.queryByRole('link', { name: /open profile/i })).not.toBeInTheDocument();
+    expect(screen.queryByText('BS')).not.toBeInTheDocument();
+  });
 
   it('shows the Sign in button when logged out on a non-auth-flow route', () => {
     renderHeader(<PageHeader title="Home" />, { isLoggedIn: false, initialRoute: '/' });

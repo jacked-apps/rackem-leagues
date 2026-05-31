@@ -379,7 +379,7 @@ export const SeasonScheduleManager: React.FC = () => {
       <div className="min-h-screen bg-muted py-8">
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="bg-card rounded-xl shadow-sm p-6">
-            <h3 className="text-red-600 text-lg font-semibold mb-4">Error</h3>
+            <h3 className="text-destructive text-lg font-semibold mb-4">Error</h3>
             <p className="text-foreground mb-4">{error}</p>
             <Button onClick={() => navigate(`/league/${leagueId}`)} loadingText="none">
               Back to League
@@ -438,19 +438,19 @@ export const SeasonScheduleManager: React.FC = () => {
         </div>
 
         {/* Season Configuration Summary */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div className="bg-info/10 border border-info/40 rounded-lg p-4 mb-6">
           <div className="grid lg:grid-cols-2 gap-3 lg:gap-32 text-sm">
             {/* Left Column: Start Date & Season Length */}
             <div className="space-y-3">
               <div>
-                <span className="font-semibold text-blue-900">Starting Date:</span>
-                <span className="ml-2 text-blue-800">
+                <span className="font-semibold text-info">Starting Date:</span>
+                <span className="ml-2 text-foreground">
                   {season?.start_date ? new Date(season.start_date + 'T00:00:00').toLocaleDateString() : 'N/A'}
                 </span>
               </div>
               <div>
-                <span className="font-semibold text-blue-900">Season Length:</span>
-                <span className="ml-2 text-blue-800">
+                <span className="font-semibold text-info">Season Length:</span>
+                <span className="ml-2 text-foreground">
                   {season?.season_length ? `${season.season_length} weeks` : 'N/A'}
                 </span>
               </div>
@@ -459,8 +459,8 @@ export const SeasonScheduleManager: React.FC = () => {
             {/* Right Column: BCA & APA Championships */}
             <div className="space-y-3">
               <div>
-                <span className="font-semibold text-blue-900">BCA Championship:</span>
-                <span className="ml-2 text-blue-800">
+                <span className="font-semibold text-info">BCA Championship:</span>
+                <span className="ml-2 text-foreground">
                   {(() => {
                     const bcaWeeks = schedule.filter(w =>
                       w.type === 'week-off' &&
@@ -476,8 +476,8 @@ export const SeasonScheduleManager: React.FC = () => {
                 </span>
               </div>
               <div>
-                <span className="font-semibold text-blue-900">APA Championship:</span>
-                <span className="ml-2 text-blue-800">
+                <span className="font-semibold text-info">APA Championship:</span>
+                <span className="ml-2 text-foreground">
                   {(() => {
                     const apaWeeks = schedule.filter(w =>
                       w.type === 'week-off' && w.weekName.toLowerCase().includes('apa')
@@ -497,8 +497,8 @@ export const SeasonScheduleManager: React.FC = () => {
 
         {/* Error message */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <p className="text-red-800">{error}</p>
+          <div className="bg-destructive/10 border border-destructive/40 rounded-lg p-4 mb-6">
+            <p className="text-destructive">{error}</p>
           </div>
         )}
 

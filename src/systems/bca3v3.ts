@@ -21,7 +21,6 @@
  */
 
 import type { SystemModule } from './types';
-import { getWinCalculator } from './win-calculators';
 import { getTeamGeometry } from './team-geometry';
 import { getMatchFormat } from './match-format';
 import { pointsHandicapSystem } from './handicap-systems';
@@ -54,12 +53,6 @@ export const bca3v3: SystemModule = {
       throw new Error(NOT_YET_WIRED);
     },
   },
-
-  // BCA 3v3 ships with win_condition='games' — a one-entry metric stack with games_won.
-  // Per Unit 1 of the modular-framework migration plan, this Module shape replaces the
-  // runtime branching on win_condition. Consumers call winCalculator.decide(matchData)
-  // instead of switching on win_condition inline.
-  winCalculator: getWinCalculator('games'),
 
   // Handicap System Module — Points variant (integer ±2 with explicit sign display).
   // Replaces the legacy `rating` capability deleted in Phase D of the Handicap

@@ -4,11 +4,11 @@
  * Locks the helper that abstracts the previously-hardcoded `[19, 20, 21]`
  * tiebreaker numbers from BCA 3v3 to any match-total-games.
  *
- * Companion to the characterization tests at
- * src/utils/__tests__/gameOrder.characterization.test.ts which lock the
- * legacy "games 19-21 are tiebreakers" rule. Those tests continue to
- * pass when MatchEndVerification calls into this helper with
- * matchTotalGames=18 (the 3v3 case).
+ * This file is now the sole home for the "games 19-21 are tiebreakers
+ * for an 18-game 3v3 match" assertion — see the first test below.
+ * (Previously cross-referenced an `isTiebreakerGame` predicate in
+ * `src/utils/__tests__/gameOrder.characterization.test.ts`; that helper
+ * was retired alongside the Pairings Generator extraction.)
  */
 
 import { describe, it, expect } from 'vitest';

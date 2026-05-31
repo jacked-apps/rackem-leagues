@@ -29,7 +29,7 @@ export const OperatorWelcome: React.FC = () => {
   // Get the first organization (the one just created)
   const primaryOrg = organizations[0];
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-info/10 to-success/10 py-12">
       <div className="container mx-auto px-4 max-w-4xl">
         <div className="bg-card rounded-2xl shadow-xl p-8 md:p-12">
           {/* Hero Section */}
@@ -40,7 +40,7 @@ export const OperatorWelcome: React.FC = () => {
             <h1 className="text-4xl font-bold text-foreground mb-4">
               Congratulations!
             </h1>
-            <h2 className="text-2xl text-blue-600 font-semibold mb-4">
+            <h2 className="text-2xl text-primary font-semibold mb-4">
               You're Now a League Operator!
             </h2>
             <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
@@ -55,21 +55,21 @@ export const OperatorWelcome: React.FC = () => {
               What You Can Do Now
             </h3>
             <div className="grid md:grid-cols-3 gap-6">
-              <div className="text-center p-6 bg-blue-50 rounded-xl">
+              <div className="text-center p-6 bg-info/10 rounded-xl">
                 <div className="text-3xl mb-3">🏆</div>
                 <h4 className="font-semibold text-foreground mb-2">Create Leagues</h4>
                 <p className="text-sm text-muted-foreground">
                   Set up 8-ball, 9-ball, or custom tournaments at your favorite venues
                 </p>
               </div>
-              <div className="text-center p-6 bg-green-50 rounded-xl">
+              <div className="text-center p-6 bg-success/10 rounded-xl">
                 <div className="text-3xl mb-3">👥</div>
                 <h4 className="font-semibold text-foreground mb-2">Manage Players</h4>
                 <p className="text-sm text-muted-foreground">
                   Handle registrations, track standings, and communicate with your league members
                 </p>
               </div>
-              <div className="text-center p-6 bg-purple-50 rounded-xl">
+              <div className="text-center p-6 bg-highlight/10 rounded-xl">
                 <div className="text-3xl mb-3">📊</div>
                 <h4 className="font-semibold text-foreground mb-2">Track Results</h4>
                 <p className="text-sm text-muted-foreground">
@@ -80,21 +80,21 @@ export const OperatorWelcome: React.FC = () => {
           </div>
 
           {/* Next Steps */}
-          <div className="mb-10 bg-amber-50 border border-amber-200 rounded-xl p-6">
-            <h3 className="text-xl font-bold text-amber-800 mb-4">
+          <div className="mb-10 bg-warning/10 border border-warning/40 rounded-xl p-6">
+            <h3 className="text-xl font-bold text-warning mb-4">
               🚀 Ready to Get Started?
             </h3>
-            <div className="space-y-3 text-amber-800">
+            <div className="space-y-3 text-foreground">
               <div className="flex items-start space-x-3">
-                <span className="font-bold text-amber-600">1.</span>
+                <span className="font-bold text-warning">1.</span>
                 <span>Visit your new <strong>League Operator Dashboard</strong> to explore all features</span>
               </div>
               <div className="flex items-start space-x-3">
-                <span className="font-bold text-amber-600">2.</span>
+                <span className="font-bold text-warning">2.</span>
                 <span>Set up your first league using the <strong>League Creation Wizard</strong></span>
               </div>
               <div className="flex items-start space-x-3">
-                <span className="font-bold text-amber-600">3.</span>
+                <span className="font-bold text-warning">3.</span>
                 <span>Contact venues and start recruiting players for your leagues</span>
               </div>
             </div>
@@ -106,7 +106,7 @@ export const OperatorWelcome: React.FC = () => {
               <Button
                 loadingText="none"
                 disabled
-                className="w-full sm:w-auto bg-blue-600 text-white px-8 py-3 text-lg font-semibold"
+                className="w-full sm:w-auto px-8 py-3 text-lg font-semibold"
               >
                 Loading...
               </Button>
@@ -114,7 +114,7 @@ export const OperatorWelcome: React.FC = () => {
               <Link to={`/operator-dashboard/${primaryOrg.id}`}>
                 <Button
                   loadingText="none"
-                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg font-semibold"
+                  className="w-full sm:w-auto px-8 py-3 text-lg font-semibold"
                 >
                   Go to Operator Dashboard
                 </Button>
@@ -123,7 +123,7 @@ export const OperatorWelcome: React.FC = () => {
               <Link to="/my-teams">
                 <Button
                   loadingText="none"
-                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg font-semibold"
+                  className="w-full sm:w-auto px-8 py-3 text-lg font-semibold"
                 >
                   Go to My Teams
                 </Button>
@@ -145,13 +145,13 @@ export const OperatorWelcome: React.FC = () => {
               Need help getting started? We're here to support you!
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center text-sm">
-              <a href="#" className="text-blue-600 hover:text-blue-800 font-medium">
+              <a href="#" className="text-primary hover:text-primary/80 font-medium transition-colors">
                 📧 Email Support
               </a>
-              <a href="#" className="text-blue-600 hover:text-blue-800 font-medium">
+              <a href="#" className="text-primary hover:text-primary/80 font-medium transition-colors">
                 📞 Call (555) 123-POOL
               </a>
-              <a href="#" className="text-blue-600 hover:text-blue-800 font-medium">
+              <a href="#" className="text-primary hover:text-primary/80 font-medium transition-colors">
                 📚 Operator Handbook
               </a>
             </div>
