@@ -1043,7 +1043,7 @@ export const entries = {
     canonicalName: 'Substitute',
     aliases: ['sub'],
     shortDef:
-      "A player who takes the place of a missing player when a team doesn't have enough players present to fill their lineup.",
+      "A player who takes the place of a missing player when a team doesn't have enough players present.",
     longDef: (
       <div className="space-y-3">
         <p>The app supports two sub patterns:</p>
