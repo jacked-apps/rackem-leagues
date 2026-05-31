@@ -1072,6 +1072,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
     related: ['roster', 'lineup'],
+    reviewedByEd: '2026-05-30',
   },
 
   'anonymous-sub': {
