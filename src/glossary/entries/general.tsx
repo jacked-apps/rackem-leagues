@@ -1046,6 +1046,13 @@ export const entries = {
       "A player who takes the place of a missing player when a team doesn't have enough players present.",
     longDef: (
       <div className="space-y-3">
+        <p>
+          When one player can't make a match, a substitute steps in
+          to fill that spot in the team's{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>.
+          The app allows one sub per match — so this covers a single
+          absence, not a team-wide gap.
+        </p>
         <p>The app supports two sub patterns:</p>
         <ul className="list-disc pl-5 space-y-1">
           <li>
