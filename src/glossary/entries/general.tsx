@@ -793,7 +793,7 @@ export const entries = {
   'eight-ball': {
     slug: 'eight-ball',
     canonicalName: '8-Ball',
-    aliases: ['8 ball', '8ball'],
+    aliases: ['8 ball', '8ball', 'eight ball', 'eight-ball'],
     shortDef:
       "The classic stripes-and-solids pool game — the most popular league game in the US.",
     longDef: (
@@ -825,7 +825,7 @@ export const entries = {
   'nine-ball': {
     slug: 'nine-ball',
     canonicalName: '9-Ball',
-    aliases: ['9 ball', '9ball'],
+    aliases: ['9 ball', '9ball', 'nine ball', 'nine-ball'],
     shortDef:
       'Rotation using balls 1–9 — hit the lowest-numbered ball first on every shot; sink the 9 to win the rack.',
     longDef: (
@@ -843,7 +843,7 @@ export const entries = {
   'ten-ball': {
     slug: 'ten-ball',
     canonicalName: '10-Ball',
-    aliases: ['10 ball', '10ball'],
+    aliases: ['10 ball', '10ball', 'ten ball', 'ten-ball'],
     shortDef:
       'Call-pocket rotation using balls 1–10 — you must call a ball AND a pocket for every shot to count.',
     longDef: (
