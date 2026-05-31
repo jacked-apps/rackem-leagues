@@ -351,6 +351,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['matchup'],
+    reviewedByEd: '2026-05-31',
   },
 
   'blackout-dates': {
@@ -396,6 +397,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: [],
+    reviewedByEd: '2026-05-31',
   },
 
   team: {
@@ -801,6 +803,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['league'],
+    reviewedByEd: '2026-05-31',
   },
 
   'eight-ball': {
@@ -1072,6 +1075,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
     related: ['roster'],
+    reviewedByEd: '2026-05-31',
   },
 
   'anonymous-sub': {
@@ -1138,6 +1142,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
     related: ['substitute', 'anonymous-sub'],
+    reviewedByEd: '2026-05-31',
   },
 
   captain: {
@@ -1273,6 +1278,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['scorekeeper'],
+    reviewedByEd: '2026-05-31',
   },
 
   organization: {
@@ -1389,6 +1395,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['golden-break'],
+    reviewedByEd: '2026-05-31',
   },
 
   'captains-chat': {
@@ -1503,6 +1510,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['table-run', 'game', 'achievements'],
+    reviewedByEd: '2026-05-31',
   },
 
   'table-run': {
@@ -1539,6 +1547,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['break-and-run', 'game', 'achievements'],
+    reviewedByEd: '2026-05-31',
   },
 
   'golden-break': {
@@ -1650,6 +1659,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['game'],
+    reviewedByEd: '2026-05-31',
   },
 
   'win-by-forfeit': {
@@ -1677,6 +1687,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: [],
+    reviewedByEd: '2026-05-31',
   },
 
   'placeholder-player': {
@@ -1848,6 +1859,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: [],
+    reviewedByEd: '2026-05-31',
   },
 
   scorekeeper: {
@@ -1928,6 +1940,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
     related: ['manual-entry'],
+    reviewedByEd: '2026-05-31',
   },
 
   bye: {
@@ -1962,6 +1975,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['matchup'],
+    reviewedByEd: '2026-05-31',
   },
 
   rack: {
@@ -1994,6 +2008,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: [],
+    reviewedByEd: '2026-05-31',
   },
 
   racker: {
@@ -2027,6 +2042,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['game'],
+    reviewedByEd: '2026-05-31',
   },
 
   breaker: {
@@ -2054,6 +2070,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['game'],
+    reviewedByEd: '2026-05-31',
   },
 
   // ---- Tiebreaker concepts (features partly speculative) ---------------
@@ -2088,6 +2105,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/modules/tiebreak-system/README.md' },
     related: ['accept-tie', 'extra-round', 'single-short-race'],
+    reviewedByEd: '2026-05-31',
   },
 
   'extra-round': {
@@ -2123,6 +2141,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/modules/tiebreak-system/README.md' },
     related: ['tiebreaker'],
+    reviewedByEd: '2026-05-31',
   },
 
   'single-short-race': {
@@ -2150,6 +2169,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/modules/tiebreak-system/README.md' },
     related: ['tiebreaker'],
+    reviewedByEd: '2026-05-31',
   },
 
   'accept-tie': {
@@ -2195,6 +2215,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/modules/tiebreak-system/README.md' },
     related: ['tiebreaker', 'manual-entry'],
+    reviewedByEd: '2026-05-31',
   },
 
   // ---- Schedule / setup ------------------------------------------------
@@ -2301,6 +2322,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: [],
+    reviewedByEd: '2026-05-31',
   },
 
   qualifier: {
