@@ -2014,11 +2014,12 @@ export const entries = {
     canonicalName: 'Extra Round',
     aliases: ['best of 3', 'best of 5'],
     shortDef:
-      'When a match ends tied, the teams play one more round of games — typically best of 3 or best of 5 — to decide the winner.',
+      'When a match ends tied, the teams play an extra round to decide the winner — typically best of 3 or best of 5.',
     longDef: (
       <div className="space-y-3">
         <p>
-          An extra round is a short additional set of games played
+          An extra round is a short additional{' '}
+          <a href="#race" className="text-info hover:underline">race</a>{' '}
           between the two tied teams to decide the winner. The teams
           use the same{' '}
           <a href="#lineup" className="text-info hover:underline">lineup</a>{' '}
@@ -2028,9 +2029,8 @@ export const entries = {
           determines the maximum number of games possible.
         </p>
         <p>
-          The format is typically a{' '}
-          <a href="#race" className="text-info hover:underline">race</a>{' '}
-          — see race for the underlying mechanic.
+          Whichever team wins the race takes the match — under the
+          league's existing win condition (games or points).
         </p>
       </div>
     ),
@@ -2046,9 +2046,11 @@ export const entries = {
       'When a match ends tied, the teams play one short race to decide the winner.',
     longDef: (
       <p>
-        The teams play one extra rack — or a short{' '}
+        The teams play a single short{' '}
         <a href="#race" className="text-info hover:underline">race</a>{' '}
-        — to decide the winner. Faster than an{' '}
+        — often a single rack — to decide the winner. The win is
+        decided under the league's existing win condition (games or
+        points). Faster than an{' '}
         <a href="#extra-round" className="text-info hover:underline">extra round</a>.
       </p>
     ),
