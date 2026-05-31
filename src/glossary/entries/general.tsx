@@ -2007,6 +2007,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/modules/tiebreak-system/README.md' },
     related: ['accept-tie', 'extra-round', 'single-short-race'],
+    reviewedByEd: '2026-05-31',
   },
 
   'extra-round': {
@@ -2036,6 +2037,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/modules/tiebreak-system/README.md' },
     related: ['tiebreaker', 'race'],
+    reviewedByEd: '2026-05-31',
   },
 
   'single-short-race': {
@@ -2056,6 +2058,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/modules/tiebreak-system/README.md' },
     related: ['tiebreaker'],
+    reviewedByEd: '2026-05-31',
   },
 
   'accept-tie': {
