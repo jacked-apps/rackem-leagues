@@ -2016,15 +2016,31 @@ export const entries = {
     shortDef:
       'When a match ends tied, the teams play one more round of games — typically best of 3 or best of 5 — to decide the winner.',
     longDef: (
-      <p>
-        An extra round runs a short additional bracket between the tied
-        teams. First to a target (2 wins out of 3, 3 out of 5, etc.) takes
-        the match. This module hasn't been fully coded yet; manual entry is
-        the working fallback in the meantime.
-      </p>
+      <div className="space-y-3">
+        <p>
+          An extra round is a short additional set of games played
+          between the two tied teams to decide the winner. The teams
+          use the same{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>{' '}
+          they played in the regular match (some leagues allow
+          reordering the positions, but the players are the same). The{' '}
+          <a href="#lineup-size" className="text-info hover:underline">lineup size</a>{' '}
+          determines the maximum number of games possible.
+        </p>
+        <p>
+          The format is typically a{' '}
+          <a href="#race" className="text-info hover:underline">race</a>{' '}
+          — see race for the underlying mechanic.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          This module hasn't been fully coded yet;{' '}
+          <a href="#manual-tiebreaker" className="text-info hover:underline">manual tiebreaker</a>{' '}
+          is the working fallback in the meantime.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/tiebreak-system/README.md' },
-    related: ['tiebreaker', 'manual-tiebreaker'],
+    related: ['tiebreaker', 'race'],
   },
 
   'single-short-race': {
