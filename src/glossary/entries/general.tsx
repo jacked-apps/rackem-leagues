@@ -2003,22 +2003,10 @@ export const entries = {
           supported, the fallback is{' '}
           <a href="#manual-tiebreaker" className="text-info hover:underline">manual tiebreaker</a>.
         </p>
-        <p><strong>Tiebreakers we support:</strong></p>
-        <ul className="list-disc pl-5 space-y-1">
-          <li><a href="#accept-tie" className="text-info hover:underline">Accept tie</a></li>
-          <li><a href="#extra-round" className="text-info hover:underline">Extra round</a></li>
-          <li><a href="#single-short-race" className="text-info hover:underline">Single short race</a></li>
-          <li><a href="#manual-tiebreaker" className="text-info hover:underline">Manual tiebreaker</a></li>
-        </ul>
-        <p className="text-sm text-muted-foreground">
-          Note: the extra-round and single-short-race modules are still
-          being built. Manual tiebreaker is always available as the
-          fallback.
-        </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/tiebreak-system/README.md' },
-    related: [],
+    related: ['accept-tie', 'extra-round', 'single-short-race'],
   },
 
   'extra-round': {
@@ -2071,6 +2059,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/modules/tiebreak-system/README.md' },
     related: ['tiebreaker'],
+    reviewedByEd: '2026-05-31',
   },
 
   'manual-tiebreaker': {
