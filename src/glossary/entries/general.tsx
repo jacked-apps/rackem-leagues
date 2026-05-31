@@ -1821,16 +1821,31 @@ export const entries = {
   scorekeeper: {
     slug: 'scorekeeper',
     canonicalName: 'Scorekeeper',
-    aliases: ['score keeper'],
+    aliases: ['score keeper', 'scorekeeping'],
     shortDef:
-      'The person entering scores into the app during or after a match.',
+      "Anyone on either team logging or confirming a game's result during the match. Not a designated role — it can be one person, or different people game to game.",
     longDef: (
-      <p>
-        The scorekeeper is whoever is logging games as they happen — usually
-        a captain, a designated team member, or the operator on site. They
-        also handle manual entries (e.g., the result of a tiebreaker that
-        the league handles outside the app).
-      </p>
+      <div className="space-y-3">
+        <p>
+          The app records two confirmations per{' '}
+          <a href="#game" className="text-info hover:underline">game</a>:
+          one from a member of the home{' '}
+          <a href="#team" className="text-info hover:underline">team</a>,
+          one from a member of the away team. The game is finalized
+          only when both confirmations are in. If the two sides
+          disagree, the flow surfaces the conflict for resolution.
+        </p>
+        <p>
+          Because anyone on a team can be the one to confirm, the
+          person acting as scorekeeper can vary game to game — there's
+          no designated role to assign at the start of the match.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#game" className="text-info hover:underline">game</a>,{' '}
+          <a href="#team" className="text-info hover:underline">team</a>.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['captain', 'manual-entry', 'manual-tiebreaker'],
