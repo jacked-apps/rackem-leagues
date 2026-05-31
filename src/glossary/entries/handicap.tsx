@@ -324,25 +324,28 @@ export const entries = {
     canonicalName: 'Threshold',
     aliases: ['benchmark', 'milestone', 'target', 'target games', 'target points'],
     shortDef:
-      'The target number of games (or points) a team needs to hit during a match — set by the handicap chart for that match\'s lineup.',
+      'A target set for a team or player to hit — a set number of games or points (aka milestone, benchmark).',
     longDef: (
       <div className="space-y-2">
         <p>
-          The threshold is the bar the team has to clear. Hit your threshold,
-          you win the match. Land below it, you lose. Land between the win
-          threshold and the tie threshold, the match ties.
+          What a threshold does depends on how the league is set up. Two popular
+          uses: a finish line that wins the match — a{' '}
+          <a href="#win-threshold" className="text-info hover:underline">win threshold</a>{' '}
+          — or a milestone that awards a set number of points when reached.
+          They’re not the only options, though; a league can put thresholds to
+          other uses.
         </p>
-        <p>
-          Different handicap mechanisms produce different thresholds. The
-          threshold chart is the lookup (or formula) that turns "your team's
-          combined rating" into "your team's target."
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#win-threshold" className="text-info hover:underline">win threshold</a>.
         </p>
       </div>
     ),
     l1_anchor: {
       path: 'docs/league-system/modules/threshold-charts/README.md',
     },
-    related: ['threshold-chart', 'handicap'],
+    related: ['threshold-chart', 'scoring-system'],
+    reviewedByEd: '2026-05-31',
   },
 
   'threshold-chart': {

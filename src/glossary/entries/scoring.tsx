@@ -8,37 +8,71 @@
 import type { GlossaryEntry } from '../types';
 
 export const entries = {
+  // DRAFT STUB — created on the Mac branch so win-condition can link here.
+  // The Win Calculator is a built module (src/systems/win-calculator/). This is
+  // an IMPORTANT entry Ed will expand into the full module explainer later
+  // (like scoring-system). Left without reviewedByEd so it shows as unreviewed.
+  // Do NOT create a duplicate win-calculator entry on the PC branch.
+  'win-calculator': {
+    slug: 'win-calculator',
+    canonicalName: 'Win Calculator',
+    aliases: ['win calc'],
+    shortDef:
+      'The judge that decides a match’s winner — it checks the win condition first, then any further metrics in order, and falls back to the tiebreaker.',
+    longDef: (
+      <div className="space-y-2">
+        <p>
+          The win calculator names the winner of a match. It checks the{' '}
+          <a href="#win-condition" className="text-info hover:underline">win condition</a>{' '}
+          (the top metric) first; if both sides come out even, it moves to the
+          next metric in order, and finally to the{' '}
+          <a href="#tiebreaker" className="text-info hover:underline">tiebreaker</a>{' '}
+          if nothing separates them.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#win-condition" className="text-info hover:underline">win condition</a>,{' '}
+          <a href="#tiebreaker" className="text-info hover:underline">tiebreaker</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/modules/win-calculator.md' },
+    related: ['scoring-system'],
+  },
+
   'win-condition': {
     slug: 'win-condition',
     canonicalName: 'Win Condition',
     aliases: ['winning metric'],
     shortDef:
-      'The metric that ultimately decides which team wins a match — usually games or points.',
+      'The metric a match is decided by first — the league’s most important one (e.g. games or points). If both sides come out even on it, the next metric decides.',
     longDef: (
       <div className="space-y-2">
         <p>
-          A match has to end with one team taking it. The win condition is
-          what that decision is based on. Two common options:
+          The win condition is the top metric a match is decided by — the one
+          the{' '}
+          <a href="#win-calculator" className="text-info hover:underline">
+            win calculator
+          </a>{' '}
+          checks first. A league might decide by games first (more games wins)
+          or points first.
         </p>
-        <ul className="list-disc pl-5">
-          <li>
-            <strong>Games</strong> — the team that wins more games (or hits
-            their target number of games) wins the match.
-          </li>
-          <li>
-            <strong>Points</strong> — the team that earned more points (or
-            hits their target number of points) wins the match.
-          </li>
-        </ul>
+        <p>
+          If both sides come out even on the win condition, the win calculator
+          drops to the next metric, and finally to the{' '}
+          <a href="#tiebreaker" className="text-info hover:underline">tiebreaker</a>{' '}
+          if nothing separates them.
+        </p>
         <p className="text-sm text-muted-foreground">
-          The choice pairs with the points calculator. Picking points as the
-          win condition without a points calculator that produces points is
-          a contradiction the app blocks at review time.
+          Relevant topics:{' '}
+          <a href="#win-calculator" className="text-info hover:underline">win calculator</a>,{' '}
+          <a href="#tiebreaker" className="text-info hover:underline">tiebreaker</a>.
         </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/win-calculator.md' },
     related: ['points-calculator', 'threshold'],
+    reviewedByEd: '2026-05-31',
   },
 
   'points-calculator': {
@@ -63,6 +97,7 @@ export const entries = {
       'accumulate-with-milestone-jumps',
       'accumulated-per-game',
     ],
+    reviewedByEd: '2026-05-31',
   },
 
   'linear-above-threshold': {
@@ -152,35 +187,27 @@ export const entries = {
     canonicalName: 'Win Threshold',
     aliases: ['win target'],
     shortDef:
-      'The target number of games (or points) a team needs to win the match outright.',
+      'A threshold that wins the match — reach it and the match is yours.',
     longDef: (
-      <p>
-        Hit your win threshold and the match is yours. This is the upper bar
-        in any handicap chart that supports a tie band; it's the threshold's
-        "you definitely won" line. Different handicap mechanisms produce
-        different win thresholds for each team in the same match.
-      </p>
+      <div className="space-y-2">
+        <p>
+          A win threshold is a{' '}
+          <a href="#threshold" className="text-info hover:underline">threshold</a>{' '}
+          whose payoff is the match itself: reach it and you win. If neither
+          side reaches its win threshold, the match is a tie — the{' '}
+          <a href="#win-calculator" className="text-info hover:underline">win calculator</a>{' '}
+          simply names no winner.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#threshold" className="text-info hover:underline">threshold</a>,{' '}
+          <a href="#win-calculator" className="text-info hover:underline">win calculator</a>.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/threshold-charts/README.md' },
-    related: ['threshold', 'tie-threshold'],
-  },
-
-  'tie-threshold': {
-    slug: 'tie-threshold',
-    canonicalName: 'Tie Threshold',
-    aliases: ['tie target'],
-    shortDef:
-      'The number of games (or points) a team needs to land at to end the match in a tie.',
-    longDef: (
-      <p>
-        Between the tie threshold and the win threshold, the team ends the
-        match tied with the opponent. Below the tie threshold, the team lost.
-        At or above the win threshold, the team won. The gap between the two
-        is where the league's tiebreaker rule fires (if configured).
-      </p>
-    ),
-    l1_anchor: { path: 'docs/league-system/modules/threshold-charts/README.md' },
-    related: ['threshold', 'win-threshold', 'tiebreaker'],
+    related: ['threshold-chart'],
+    reviewedByEd: '2026-05-31',
   },
 
   multiplier: {
