@@ -1840,6 +1840,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
     related: ['lineup', 'manual-entry'],
+    reviewedByEd: '2026-05-30',
   },
 
   bye: {
