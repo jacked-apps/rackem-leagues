@@ -343,13 +343,14 @@ export const entries = {
           <a href="#match-format" className="text-info hover:underline">match format</a>,{' '}
           <a href="#start-date" className="text-info hover:underline">start-date</a>,{' '}
           <a href="#league" className="text-info hover:underline">league</a>,{' '}
-          <a href="#match" className="text-info hover:underline">match</a>.
+          <a href="#match" className="text-info hover:underline">match</a>,{' '}
+          <a href="#blackout-dates" className="text-info hover:underline">blackout dates</a>,{' '}
+          <a href="#playoffs" className="text-info hover:underline">playoffs</a>.
         </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['matchup'],
-    reviewedByEd: '2026-05-30',
   },
 
   'blackout-dates': {
@@ -385,11 +386,16 @@ export const entries = {
           seasons" and "blackout dates" describe the same thing in
           different contexts.
         </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>,{' '}
+          <a href="#schedule" className="text-info hover:underline">schedule</a>,{' '}
+          <a href="#season" className="text-info hover:underline">season</a>.
+        </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['schedule', 'season'],
-    reviewedByEd: '2026-05-30',
+    related: [],
   },
 
   team: {
@@ -786,8 +792,7 @@ export const entries = {
       </p>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['eight-ball', 'nine-ball', 'ten-ball', 'league'],
-    reviewedByEd: '2026-05-31',
+    related: ['league'],
   },
 
   'eight-ball': {
@@ -1056,8 +1061,7 @@ export const entries = {
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
-    related: ['roster', 'lineup'],
-    reviewedByEd: '2026-05-30',
+    related: ['roster'],
   },
 
   'anonymous-sub': {
@@ -1362,8 +1366,7 @@ export const entries = {
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['league-operator', 'league', 'golden-break'],
-    reviewedByEd: '2026-05-30',
+    related: ['golden-break'],
   },
 
   'captains-chat': {
@@ -1610,8 +1613,7 @@ export const entries = {
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['breaker', 'game'],
-    reviewedByEd: '2026-05-30',
+    related: ['game'],
   },
 
   'win-by-forfeit': {
@@ -1632,8 +1634,7 @@ export const entries = {
       </p>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['game'],
-    reviewedByEd: '2026-05-30',
+    related: [],
   },
 
   'placeholder-player': {
@@ -1872,8 +1873,7 @@ export const entries = {
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
-    related: ['lineup', 'manual-entry'],
-    reviewedByEd: '2026-05-30',
+    related: ['manual-entry'],
   },
 
   bye: {
@@ -1954,8 +1954,7 @@ export const entries = {
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['breaker', 'game'],
-    reviewedByEd: '2026-05-31',
+    related: ['game'],
   },
 
   breaker: {
@@ -1975,8 +1974,7 @@ export const entries = {
       </p>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['racker', 'game'],
-    reviewedByEd: '2026-05-31',
+    related: ['game'],
   },
 
   // ---- Tiebreaker concepts (features partly speculative) ---------------
@@ -2035,8 +2033,7 @@ export const entries = {
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/tiebreak-system/README.md' },
-    related: ['tiebreaker', 'race'],
-    reviewedByEd: '2026-05-31',
+    related: ['tiebreaker'],
   },
 
   'single-short-race': {
@@ -2195,8 +2192,7 @@ export const entries = {
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['league', 'start-date', 'qualifier', 'season', 'game-type'],
-    reviewedByEd: '2026-05-29',
+    related: [],
   },
 
   qualifier: {
