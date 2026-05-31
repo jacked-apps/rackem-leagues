@@ -958,37 +958,36 @@ export const entries = {
     canonicalName: 'Roster',
     aliases: [],
     shortDef:
-      "The full set of players signed up to a team. Must hold at least the lineup size and not exceed the roster size.",
+      "The list of every player on a given team.",
     longDef: (
       <div className="space-y-3">
         <p>
-          The roster is every player signed up to a{' '}
+          The roster is the list of every player on a given{' '}
           <a href="#team" className="text-info hover:underline">team</a>.
-          The{' '}
-          <a href="#lineup" className="text-info hover:underline">lineup</a>{' '}
-          for each{' '}
-          <a href="#match" className="text-info hover:underline">match</a>{' '}
-          is drawn from the roster.
+          It has a minimum size (the{' '}
+          <a href="#lineup-size" className="text-info hover:underline">lineup size</a>)
+          and a maximum (the{' '}
+          <a href="#roster-size" className="text-info hover:underline">roster size</a>),
+          both set by the{' '}
+          <a href="#league-operator" className="text-info hover:underline">LO</a>.
         </p>
         <p>
-          The{' '}
-          <a href="#lineup-size" className="text-info hover:underline">lineup size</a>{' '}
-          sets the floor (a roster has to hold at least that many) and the{' '}
-          <a href="#roster-size" className="text-info hover:underline">roster size</a>{' '}
-          sets the cap.
+          Players on the roster can be changed by the{' '}
+          <a href="#captain" className="text-info hover:underline">captain</a>{' '}
+          or the LO.
         </p>
         <p className="text-sm text-muted-foreground">
           Relevant topics:{' '}
           <a href="#team" className="text-info hover:underline">team</a>,{' '}
-          <a href="#lineup" className="text-info hover:underline">lineup</a>,{' '}
-          <a href="#match" className="text-info hover:underline">match</a>,{' '}
           <a href="#lineup-size" className="text-info hover:underline">lineup size</a>,{' '}
-          <a href="#roster-size" className="text-info hover:underline">roster size</a>.
+          <a href="#roster-size" className="text-info hover:underline">roster size</a>,{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>,{' '}
+          <a href="#captain" className="text-info hover:underline">captain</a>.
         </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
-    related: ['captain', 'placeholder-player', 'substitute'],
+    related: ['placeholder-player', 'substitute'],
   },
 
   'roster-size': {
