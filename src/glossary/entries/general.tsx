@@ -1920,9 +1920,8 @@ export const entries = {
           Pool has two roles each rack: the{' '}
           <a href="#breaker" className="text-info hover:underline">breaker</a>{' '}
           and the racker. They alternate game to game in most formats.
-          The role matters because in some scoring systems the breaker
-          has an advantage, so balancing who breaks is part of the
-          format design.
+          The role matters because breaking usually holds a distinct
+          advantage statistically.
         </p>
         <p>
           <strong>Caveat:</strong> some leagues are "rack your own" —
