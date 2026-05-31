@@ -73,21 +73,12 @@ export const entries = {
         </p>
         <ul className="list-disc pl-5">
           <li>
-            <strong>
-              <a href="#round-robin" className="text-info hover:underline">
-                Round Robin
-              </a>
-            </strong>{' '}
-            — every player faces every opposing player, once (single) or twice
-            (double).
+            <a href="#round-robin" className="text-info hover:underline">Round Robin</a>
           </li>
           <li>
-            <strong>
-              <a href="#individual-races" className="text-info hover:underline">
-                Individual Races
-              </a>
-            </strong>{' '}
-            — each pairing plays a race rather than single racks.
+            <a href="#individual-races" className="text-info hover:underline">
+              Individual Races
+            </a>
           </li>
         </ul>
         <p className="text-sm text-muted-foreground">
@@ -101,6 +92,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
     related: ['pairing-format'],
+    reviewedByEd: '2026-05-30',
   },
 
   'round-robin': {
@@ -119,6 +111,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
     related: ['match-format', 'lineup-size', 'pairing-calculator'],
+    reviewedByEd: '2026-05-30',
   },
 
   'individual-races': {
@@ -126,31 +119,26 @@ export const entries = {
     canonicalName: 'Individual Races',
     aliases: ['races format'],
     shortDef:
-      'Each opposing-player pair plays a race together instead of single racks.',
+      'A match format where each player plays one opponent a single time, decided by a race to N rather than a single rack.',
     longDef: (
       <div className="space-y-2">
         <p>
-          Instead of running through{' '}
-          <a href="#round-robin" className="text-info hover:underline">round-robin</a>{' '}
-          <a href="#pairing" className="text-info hover:underline">pairings</a>{' '}
-          as single racks, each pair sits down and plays a{' '}
-          <a href="#race-to-n" className="text-info hover:underline">race</a>{' '}
-          (race to 5, race to 7, etc.). First to the target wins that pairing.
-          The match still has multiple pairings — they just play race-to-N each.
+          In individual races, each player plays one opponent from the other
+          team a single time — one{' '}
+          <a href="#pairing" className="text-info hover:underline">pairing</a>{' '}
+          each, decided by a{' '}
+          <a href="#race-to-n" className="text-info hover:underline">race to N</a>{' '}
+          rather than a single rack.
         </p>
         <p className="text-sm text-muted-foreground">
           Relevant topics:{' '}
-          <a href="#round-robin" className="text-info hover:underline">round robin</a>,{' '}
           <a href="#pairing" className="text-info hover:underline">pairing</a>,{' '}
           <a href="#race-to-n" className="text-info hover:underline">race to N</a>.
-        </p>
-        <p className="text-sm text-muted-foreground">
-          This format is currently disabled in the wizard — coming soon.
         </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/match-format.md' },
-    related: ['match-format'],
+    related: ['match-format', 'race-length-adjustment'],
   },
 
   'pairing-format': {

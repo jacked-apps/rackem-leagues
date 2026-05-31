@@ -243,21 +243,42 @@ export const entries = {
   'start-points': {
     slug: 'start-points',
     canonicalName: 'Start Points',
-    aliases: ['start-points handicap', 'points credit', 'spot points'],
+    aliases: [
+      'start-points handicap',
+      'points credit',
+      'spot points',
+      'starting bonus',
+      'starting bonuses',
+      'games on the wire',
+    ],
     shortDef:
-      'A handicap mechanism where the weaker team begins the match with a points credit calculated from the rating gap.',
+      'A handicap mechanism where both teams share the same finish line, but the weaker team starts with a head start set by the rating gap.',
     longDef: (
-      <p>
-        Before any game is played, the system credits the weaker team with a
-        number of points based on each team's ratings. From there, both sides
-        play the full match and earn points the normal way. Whoever has more
-        points at the end wins.
-      </p>
+      <div className="space-y-2">
+        <p>
+          Before any game is played, the weaker team gets a head start — a
+          number of games or points based on the{' '}
+          <a href="#rating" className="text-info hover:underline">rating</a>{' '}
+          gap. Both teams then race to the same finish line, so the stronger
+          team has to make up that gap to win.
+        </p>
+        <p>
+          It’s the opposite approach to a{' '}
+          <a href="#threshold" className="text-info hover:underline">threshold</a>{' '}
+          handicap: instead of moving where each team’s finish line sits, it
+          moves where the weaker team starts.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#rating" className="text-info hover:underline">rating</a>,{' '}
+          <a href="#threshold" className="text-info hover:underline">threshold</a>.
+        </p>
+      </div>
     ),
     l1_anchor: {
       path: 'docs/league-system/modules/handicap-mechanisms/start-points.md',
     },
-    related: ['handicap-mechanism', 'rating'],
+    related: ['handicap-mechanism', 'extra-games'],
   },
 
   'race-length-adjustment': {
