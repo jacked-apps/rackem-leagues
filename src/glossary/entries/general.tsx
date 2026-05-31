@@ -1135,6 +1135,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
     related: ['substitute', 'anonymous-sub'],
+    reviewedByEd: '2026-05-30',
   },
 
   captain: {
