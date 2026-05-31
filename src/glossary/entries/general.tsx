@@ -1943,13 +1943,14 @@ export const entries = {
     canonicalName: 'Breaker',
     aliases: [],
     shortDef:
-      'In a given game, the player who breaks — i.e., takes the opening shot that scatters the rack.',
+      "The player who gets to shoot first in a game — they shoot the cue ball into the racked cluster of balls and break them apart.",
     longDef: (
       <p>
-        The breaker hits the cue ball into the racked balls to start the
-        game. In most leagues the break alternates from game to game so
-        each player gets the same number of breaks. The opposite role is
-        the{' '}
+        Breaking usually holds a distinct advantage statistically, so
+        most leagues use a{' '}
+        <a href="#match-format" className="text-info hover:underline">match format</a>{' '}
+        that ensures an equal number of breaks for each side. The
+        opposite role is the{' '}
         <a href="#racker" className="text-info hover:underline">racker</a>.
       </p>
     ),
