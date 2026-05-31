@@ -1921,7 +1921,8 @@ export const entries = {
           <a href="#breaker" className="text-info hover:underline">breaker</a>{' '}
           and the racker. They alternate game to game in most formats.
           The role matters because breaking usually holds a distinct
-          advantage statistically.
+          advantage statistically. Balancing who breaks is part of the
+          format design.
         </p>
         <p>
           <strong>Caveat:</strong> some leagues are "rack your own" —
