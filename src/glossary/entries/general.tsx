@@ -1114,13 +1114,24 @@ export const entries = {
     shortDef:
       'One player in the lineup plays in two positions in the same match — the opposing team picks which roster player does it.',
     longDef: (
-      <p>
-        Double duty is a sub workaround when the lineup is short but the
-        team doesn't want to use a regular sub. A player in the lineup plays
-        in two roster positions during the match. The opposing team gets to
-        choose which available player takes the doubled role, which prevents
-        the captain from stacking their strongest player into two slots.
-      </p>
+      <div className="space-y-3">
+        <p>
+          When a team is short a player, they enter the present players
+          into the{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>{' '}
+          in the positions they want them to play. The "missing"
+          position is filled with double duty — a message goes to the
+          opposing team to pick any of the present players to play in
+          two separate positions. That player is essentially two
+          identical players with the same handicap calculations.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          <strong>Note:</strong> strategy varies on who to choose for
+          double duty. Do you pick the lowest-skill player to try for
+          more wins for your team, or do you pick their best player to
+          force that team to win more games?
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
     related: ['substitute', 'anonymous-sub'],
