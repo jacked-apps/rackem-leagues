@@ -2067,14 +2067,17 @@ export const entries = {
     longDef: (
       <p>
         When a league has its own tiebreaker rule that this app doesn't
-        codify yet, manual tiebreaker is the safe path. The league plays
-        whatever they normally play to break the tie, and the scorekeeper
-        enters the winner into the app. The original game scores stay on
-        the scoreboard; the manual entry decides who took the match.
+        yet support, they may use manual tiebreaker. The league plays
+        whatever they normally play to break the tie, and{' '}
+        <a href="#scorekeeper" className="text-info hover:underline">scorekeepers</a>{' '}
+        from each team confirm the winner the same way they would for
+        a regular game. The original game scores stay on the
+        scoreboard; the manual entry decides who took the match.
       </p>
     ),
     l1_anchor: { path: 'docs/league-system/modules/tiebreak-system/README.md' },
-    related: ['tiebreaker', 'scorekeeper', 'manual-entry'],
+    related: ['tiebreaker', 'manual-entry'],
+    reviewedByEd: '2026-05-30',
   },
 
   // ---- Schedule / setup ------------------------------------------------
