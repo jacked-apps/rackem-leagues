@@ -787,6 +787,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['eight-ball', 'nine-ball', 'ten-ball', 'league'],
+    reviewedByEd: '2026-05-31',
   },
 
   'eight-ball': {
