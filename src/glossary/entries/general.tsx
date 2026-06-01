@@ -853,9 +853,8 @@ export const entries = {
     longDef: (
       <div className="space-y-3">
         <p>
-          Players race to legally pocket the 9-ball, sinking other balls
-          along the way. It's faster and more rotation-focused than
-          8-Ball.
+          9-Ball players race to legally pocket the 9-ball. A legal shot
+          must hit the lowest-numbered ball on the table first.
         </p>
         <p>
           See the{' '}
@@ -874,7 +873,6 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['game', 'eight-ball', 'ten-ball'],
-    reviewedByEd: '2026-05-31',
   },
 
   'ten-ball': {
