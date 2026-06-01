@@ -841,6 +841,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['game', 'nine-ball', 'ten-ball'],
+    reviewedByEd: '2026-05-31',
   },
 
   'nine-ball': {
@@ -848,17 +849,32 @@ export const entries = {
     canonicalName: '9-Ball',
     aliases: ['9 ball', '9ball', 'nine ball', 'nine-ball'],
     shortDef:
-      'Rotation using balls 1–9 — hit the lowest-numbered ball first on every shot; sink the 9 to win the rack.',
+      "A rotation pool game played with balls 1–9 — fast-paced and the staple of tournament play.",
     longDef: (
-      <p>
-        Players must contact the lowest-numbered ball on the table first,
-        but any ball that goes in on a legal shot stays sunk. You can win
-        the rack at any point by legally pocketing the 9 — including off a
-        combo, carom, or a break that sinks the 9 outright.
-      </p>
+      <div className="space-y-3">
+        <p>
+          Players race to legally pocket the 9-ball, sinking other balls
+          along the way. It's faster and more rotation-focused than
+          8-Ball.
+        </p>
+        <p>
+          See the{' '}
+          <a href="/rules" className="text-info hover:underline">full official rules</a>{' '}
+          in the app rulebook. Your league may have{' '}
+          <a href="#house-rules" className="text-info hover:underline">house rules</a>{' '}
+          that differ from the official ones — check with your{' '}
+          <a href="#league-operator" className="text-info hover:underline">LO</a>.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#house-rules" className="text-info hover:underline">house rules</a>,{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['game'],
+    related: ['game', 'eight-ball', 'ten-ball'],
+    reviewedByEd: '2026-05-31',
   },
 
   'ten-ball': {
@@ -866,17 +882,32 @@ export const entries = {
     canonicalName: '10-Ball',
     aliases: ['10 ball', '10ball', 'ten ball', 'ten-ball'],
     shortDef:
-      'Call-pocket rotation using balls 1–10 — you must call a ball AND a pocket for every shot to count.',
+      "A call-pocket rotation pool game played with balls 1–10 — widely considered the most skill-rewarding rotation game.",
     longDef: (
-      <p>
-        Like 9-ball with a strictness upgrade: every shot is call-pocket the
-        entire game. You name the ball and the pocket; a ball going in any
-        other pocket doesn't count and your turn ends. Considered the most
-        skill-rewarding rotation game because lucky pockets don't help you.
-      </p>
+      <div className="space-y-3">
+        <p>
+          Like 9-Ball, but every shot must be called — both the ball and
+          the pocket. This removes the role of "slop" (lucky pockets)
+          and makes 10-Ball a purer test of skill.
+        </p>
+        <p>
+          See the{' '}
+          <a href="/rules" className="text-info hover:underline">full official rules</a>{' '}
+          in the app rulebook. Your league may have{' '}
+          <a href="#house-rules" className="text-info hover:underline">house rules</a>{' '}
+          that differ from the official ones — check with your{' '}
+          <a href="#league-operator" className="text-info hover:underline">LO</a>.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#house-rules" className="text-info hover:underline">house rules</a>,{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['game'],
+    related: ['game', 'eight-ball', 'nine-ball'],
+    reviewedByEd: '2026-05-31',
   },
 
   // ---- Teams / players / roster ----------------------------------------
