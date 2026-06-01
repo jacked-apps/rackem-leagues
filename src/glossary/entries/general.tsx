@@ -884,9 +884,10 @@ export const entries = {
     longDef: (
       <div className="space-y-3">
         <p>
-          Like 9-Ball, but every shot must be called — both the ball and
-          the pocket. This removes the role of "slop" (lucky pockets)
-          and makes 10-Ball a purer test of skill.
+          A rotation game using the balls 1–10. Players race to legally
+          pocket the 10-ball. A legal shot must hit the lowest-numbered
+          ball on the table first. The player must call the ball and
+          pocket they intend to make.
         </p>
         <p>
           See the{' '}
@@ -905,7 +906,6 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['game', 'eight-ball', 'nine-ball'],
-    reviewedByEd: '2026-05-31',
   },
 
   // ---- Teams / players / roster ----------------------------------------
