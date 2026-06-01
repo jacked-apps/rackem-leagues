@@ -816,7 +816,8 @@ export const entries = {
       <div className="space-y-3">
         <p>
           Each player tries to sink all the balls in their group before
-          the other player, then sinks the 8-ball to win.
+          the other player, then sinks the 8-ball to win. This game is{' '}
+          <a href="#call-pocket" className="text-info hover:underline">call pocket</a>.
         </p>
         <p>
           See the{' '}
@@ -886,8 +887,8 @@ export const entries = {
         <p>
           A rotation game using the balls 1–10. Players race to legally
           pocket the 10-ball. A legal shot must hit the lowest-numbered
-          ball on the table first. The player must call the ball and
-          pocket they intend to make.
+          ball on the table first. This game is{' '}
+          <a href="#call-pocket" className="text-info hover:underline">call pocket</a>.
         </p>
         <p>
           See the{' '}
@@ -906,6 +907,31 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['game', 'eight-ball', 'nine-ball'],
+  },
+
+  'call-pocket': {
+    slug: 'call-pocket',
+    canonicalName: 'Call Pocket',
+    aliases: ['called pocket', 'called shot', 'call shot'],
+    shortDef:
+      "A shot where the player declares the ball and pocket before shooting. The shot only counts if the called ball drops in the called pocket.",
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          In call-pocket play, the player predicts the result of their
+          shot: which ball will drop into which pocket. Both the ball
+          and the pocket must be indicated before the shot begins.
+        </p>
+        <p>
+          For the shot to count — and for the player to continue
+          shooting — the called ball must fall into the called pocket.
+          Balls that drop into different pockets, or different balls
+          than the one called, don't count as legal pocketings.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['eight-ball', 'ten-ball'],
   },
 
   // ---- Teams / players / roster ----------------------------------------
