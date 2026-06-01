@@ -105,53 +105,57 @@ export const entries = {
     canonicalName: 'Linear Above Threshold',
     aliases: [],
     shortDef:
-      'Points given for each game above the threshold and deducted for each game below — straight linear from the target.',
+      'A point system that awards points for each game a team wins above its target — and docks points for games below it.',
     longDef: (
       <div className="space-y-2">
         <p>
-          The formula is simple: figure out the threshold (the target number
-          of games), then count how far above or below it the team ended.
-          Each game above the threshold adds points. Each game below subtracts
-          points. Between targets, the team scores zero.
+          Each game a team wins above its{' '}
+          <a href="#threshold" className="text-info hover:underline">target</a>{' '}
+          adds points; each game below it docks points. How many points per game
+          — awarded or docked — depends on the league’s settings.
         </p>
-        <p>
-          A multiplier can be applied to either side to shift how aggressively
-          the rewards or penalties scale.
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#threshold" className="text-info hover:underline">threshold</a>.
         </p>
       </div>
     ),
     l1_anchor: {
       path: 'docs/league-system/modules/threshold-charts/race-points.md',
     },
-    related: ['points-calculator', 'threshold', 'multiplier'],
+    related: ['points-calculator'],
+    reviewedByEd: '2026-05-31',
   },
 
+  // DEFERRED — interim def per Ed. This is a composite scoring *style* (two
+  // point mechanisms), really scoring-system-manual material, and Ed is unsure
+  // about the name "Accumulate with Milestone Jumps". Left UNSTAMPED; revisit
+  // the name + full explanation in the scoring-system manual pass.
   'accumulate-with-milestone-jumps': {
     slug: 'accumulate-with-milestone-jumps',
     canonicalName: 'Accumulate with Milestone Jumps',
     aliases: ['milestone jumps', 'jump scoring'],
     shortDef:
-      'Points accumulate per game until the team hits a milestone — then the total "jumps" to a fixed value, replacing whatever they had built up.',
+      'A scoring system that gives points per game, then bonus points when a team hits target numbers of games.',
     longDef: (
       <div className="space-y-2">
         <p>
-          The team adds a small amount per win as the match goes. When they
-          hit a configured milestone (e.g., 70% of the win threshold, or the
-          win threshold itself), the total jumps to a set value. Any points
-          earned before the jump are disregarded — the milestone resets the
-          score to its target.
+          Points add up per game, and a team earns bonus points when it reaches
+          set target numbers of games (
+          <a href="#threshold" className="text-info hover:underline">thresholds</a>
+          ). The per-game amount, the targets, and the bonuses are all league
+          settings.
         </p>
-        <p>
-          Useful when a league wants to encourage hitting milestones rather
-          than scoring incremental wins. The jumps make milestones feel like
-          meaningful achievements instead of just lines on a chart.
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#threshold" className="text-info hover:underline">threshold</a>.
         </p>
       </div>
     ),
     l1_anchor: {
       path: 'docs/league-system/modules/threshold-charts/race-points.md',
     },
-    related: ['points-calculator', 'threshold'],
+    related: ['points-calculator'],
   },
 
   'accumulated-per-game': {
@@ -159,27 +163,26 @@ export const entries = {
     canonicalName: 'Accumulated per Game',
     aliases: ['per-game scoring'],
     shortDef:
-      'Each game contributes a number of points (for the winner, the loser, or both); the totals sum across the match.',
+      'A scoring system that awards points per game — to the winning side, the losing side, or both.',
     longDef: (
       <div className="space-y-2">
         <p>
-          The simplest accumulator: every game contributes points to the team
-          total. The number per game can be:
+          The points awarded per game can be a preset static number, an amount
+          derived from game progress, or entered manually by the{' '}
+          <a href="#scorekeeper" className="text-info hover:underline">scorekeeper</a>.
+          Points may go to the winning side, the losing side, or both.
         </p>
-        <ul className="list-disc pl-5">
-          <li>A set number (e.g., 10 to the winner).</li>
-          <li>Derived from other metrics (e.g., balls pocketed by the loser).</li>
-          <li>Entered manually at scoring time.</li>
-        </ul>
-        <p>
-          The team with the most points at the end of all games wins.
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#scorekeeper" className="text-info hover:underline">scorekeeper</a>.
         </p>
       </div>
     ),
     l1_anchor: {
       path: 'docs/league-system/modules/threshold-charts/race-points.md',
     },
-    related: ['points-calculator', 'win-condition'],
+    related: ['points-calculator'],
+    reviewedByEd: '2026-05-31',
   },
 
   'win-threshold': {
@@ -215,20 +218,27 @@ export const entries = {
     canonicalName: 'Multiplier',
     aliases: ['scoring multiplier'],
     shortDef:
-      'A factor that strengthens or weakens how much the handicap system affects scoring.',
+      'A factor that strengthens or weakens a handicap system’s effect — an adjustment to an established system.',
     longDef: (
-      <p>
-        The multiplier tunes the impact of the points formula. A higher
-        multiplier amplifies the swing between teams above and below their
-        thresholds. A lower multiplier flattens it. Use it to dial in how
-        much a league rewards or penalizes performance relative to the
-        target.
-      </p>
+      <div className="space-y-2">
+        <p>
+          A multiplier turns a{' '}
+          <a href="#handicap" className="text-info hover:underline">handicap</a>{' '}
+          system’s effect up or down. It’s an adjustment layered onto an
+          established system: higher strengthens the handicap’s impact, lower
+          softens it.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#handicap" className="text-info hover:underline">handicap</a>.
+        </p>
+      </div>
     ),
     l1_anchor: {
       path: 'docs/league-system/modules/threshold-charts/race-points.md',
     },
-    related: ['linear-above-threshold', 'points-calculator'],
+    related: ['handicap-system'],
+    reviewedByEd: '2026-05-31',
   },
 
   // DRAFT STUB — created on the Mac branch so other entries can link here.
