@@ -925,8 +925,6 @@ export const entries = {
         <p>
           For the shot to count — and for the player to continue
           shooting — the called ball must fall into the called pocket.
-          Balls that drop into different pockets, or different balls
-          than the one called, don't count as legal pocketings.
         </p>
       </div>
     ),
