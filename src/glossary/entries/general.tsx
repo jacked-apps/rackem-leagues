@@ -842,7 +842,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['game', 'nine-ball', 'ten-ball'],
-    reviewedByEd: '2026-05-31',
+    reviewedByEd: '2026-06-02',
   },
 
   'nine-ball': {
