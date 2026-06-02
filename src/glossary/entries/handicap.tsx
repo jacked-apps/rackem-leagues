@@ -459,12 +459,12 @@ export const entries = {
     canonicalName: 'Threshold Chart',
     aliases: ['handicap chart', 'handicap table'],
     shortDef:
-      'A lookup table — or a formula that produces one — that maps team ratings to the thresholds for a match.',
+      'A lookup table — or a formula that produces one — that maps each side’s rating to the thresholds for a match.',
     longDef: (
       <div className="space-y-2">
         <p>
           The chart is how the abstract "skill compensation" idea becomes
-          concrete numbers. The system takes each team's combined rating, runs
+          concrete numbers. The system takes each side's rating, runs
           it through the chart (or the formula behind it), and gets back the
           target number of games (or points) each side needs.
         </p>
@@ -477,7 +477,8 @@ export const entries = {
     l1_anchor: {
       path: 'docs/league-system/modules/threshold-charts/README.md',
     },
-    related: ['threshold', 'calibrated', 'manual-entry'],
+    related: ['threshold', 'calibrated'],
+    reviewedByEd: '2026-06-02',
   },
 
   calibrated: {
@@ -488,8 +489,8 @@ export const entries = {
       'A threshold chart that\'s been tested against real-world play and ships with the app as a known-good package.',
     longDef: (
       <p>
-        A calibrated chart isn't theoretical — it's been run against actual
-        league seasons and the numbers produce balanced matches. Operators
+        A calibrated chart has been run in actual league play over many
+        seasons; it's known to produce balanced matches. Operators
         picking a calibrated package get a turnkey config; they don't have to
         invent or hand-tune any numbers.
       </p>
@@ -497,7 +498,8 @@ export const entries = {
     l1_anchor: {
       path: 'docs/league-system/modules/threshold-charts/README.md',
     },
-    related: ['threshold-chart', 'manual-entry'],
+    related: ['threshold-chart'],
+    reviewedByEd: '2026-06-02',
   },
 
   'manual-entry': {
@@ -554,29 +556,30 @@ export const entries = {
   rating: {
     slug: 'rating',
     canonicalName: 'Rating',
-    aliases: ['skill rating', 'skill number'],
+    aliases: ['skill rating', 'skill level'],
     shortDef:
-      'A player\'s skill number, calculated by whichever handicap system the league uses.',
+      'A player’s skill level, calculated by a handicap system.',
     longDef: (
       <div className="space-y-2">
         <p>
-          A rating is the output of a handicap system. Different systems
-          produce different scales:
+          A rating reflects the skill level of a player. It’s the output of the
+          specific{' '}
+          <a href="#handicap-system" className="text-info hover:underline">
+            handicap system
+          </a>{' '}
+          used to obtain it: different systems produce different scales, and each
+          can be applied in different ways to handicap a match.
         </p>
-        <ul className="list-disc pl-5">
-          <li>A FargoRate rating might be 491.</li>
-          <li>A points rating might be +1 or −2.</li>
-          <li>A percentage rating might be 60%.</li>
-        </ul>
-        <p>
-          The system the league uses decides what shape the rating takes.
-          Higher is always stronger.
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#handicap-system" className="text-info hover:underline">handicap system</a>.
         </p>
       </div>
     ),
     l1_anchor: {
       path: 'docs/league-system/modules/handicap-systems/README.md',
     },
-    related: ['handicap-system', 'fargorate'],
+    related: ['fargorate'],
+    reviewedByEd: '2026-06-02',
   },
 } as const satisfies Record<string, GlossaryEntry>;
