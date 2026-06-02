@@ -907,6 +907,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['game', 'eight-ball', 'nine-ball'],
+    reviewedByEd: '2026-06-02',
   },
 
   'call-pocket': {
