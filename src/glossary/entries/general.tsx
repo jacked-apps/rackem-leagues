@@ -2398,5 +2398,6 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['league'],
+    reviewedByEd: '2026-06-02',
   },
 } as const satisfies Record<string, GlossaryEntry>;
