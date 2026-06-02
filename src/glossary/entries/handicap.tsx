@@ -51,21 +51,17 @@ export const entries = {
     canonicalName: 'Handicap',
     aliases: [],
     shortDef:
-      'A skill-compensation mechanism that lets uneven players compete more fairly.',
+      'A way to make a contest between unevenly-matched competitors more fair — a bonus for the weaker side, a penalty for the stronger, or both.',
     longDef: (
       <div className="space-y-2">
         <p>
-          Pool isn't fully fair just because both players follow the same
-          rules — a stronger player still wins most of the time. A handicap is
-          the system's way of making the matchup <em>more</em> fair: it shifts
-          targets, points, or race lengths so the weaker side has a real shot.
+          One competitor is usually more skilled than another. A handicap evens
+          that out: a bonus or benefit for the weaker side, a penalty or
+          obstacle for the stronger, or both.
         </p>
         <p>
-          The HOW varies. Some leagues require the stronger team to win more
-          games (extra games). Some give the weaker team a points head start
-          (start points). Some shorten races for the weaker player (race
-          length adjustment). The right choice depends on which formula the
-          league has agreed on.
+          There are many ways to do it, and none is perfect — but each is an
+          attempt to level the playing field.
         </p>
       </div>
     ),
@@ -73,6 +69,7 @@ export const entries = {
       path: 'docs/league-system/modules/handicap-systems/README.md',
     },
     related: ['handicap-system', 'handicap-mechanism', 'threshold', 'rating'],
+    reviewedByEd: '2026-05-31',
   },
 
   'handicap-system': {
@@ -80,29 +77,111 @@ export const entries = {
     canonicalName: 'Handicap System',
     aliases: [],
     shortDef:
-      'The method used to calculate each player\'s skill number — e.g., Points, Percentage, FargoRate.',
+      'The method a league uses to calculate each player’s skill and assign them a rank.',
     longDef: (
       <div className="space-y-2">
         <p>
-          A handicap system is the <em>formula</em> that produces a player's
-          skill number. Different systems take different inputs and produce
-          different scales:
+          A handicap system is how a league measures each player’s skill and
+          gives them a rank. It can use:
         </p>
         <ul className="list-disc pl-5">
-          <li><strong>Points</strong> — straight (wins − losses) over weeks played.</li>
-          <li><strong>Percentage</strong> — wins divided by total games played.</li>
-          <li><strong>FargoRate</strong> — an externally-maintained national rating.</li>
+          <li>
+            <a href="#points-handicap" className="text-info hover:underline">Points</a>
+          </li>
+          <li>
+            <a href="#percentage-handicap" className="text-info hover:underline">Percentage</a>
+          </li>
+          <li>
+            <a href="#fargorate" className="text-info hover:underline">FargoRate</a>
+          </li>
         </ul>
-        <p>
-          The system decides the number. The <em>mechanism</em> (separate
-          choice) decides how that number gets applied to a match.
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#points-handicap" className="text-info hover:underline">points handicap</a>,{' '}
+          <a href="#percentage-handicap" className="text-info hover:underline">percentage handicap</a>,{' '}
+          <a href="#fargorate" className="text-info hover:underline">FargoRate</a>.
         </p>
       </div>
     ),
     l1_anchor: {
       path: 'docs/league-system/modules/handicap-systems/README.md',
     },
-    related: ['handicap', 'handicap-mechanism', 'rating'],
+    related: ['handicap', 'handicap-mechanism'],
+    reviewedByEd: '2026-05-31',
+  },
+
+  'sample-size': {
+    slug: 'sample-size',
+    canonicalName: 'Sample Size',
+    aliases: ['rating window', 'history window', 'handicap window', 'game history'],
+    shortDef:
+      'How much recent game history a handicap calculation uses — adjustable for Points and Percentage (FargoRate is external, so it doesn’t apply).',
+    longDef: (
+      <div className="space-y-2">
+        <p>
+          For the league-computed systems —{' '}
+          <a href="#points-handicap" className="text-info hover:underline">Points</a>{' '}
+          and{' '}
+          <a href="#percentage-handicap" className="text-info hover:underline">Percentage</a>{' '}
+          — you can set how many recent games feed a player’s rank. (
+          <a href="#fargorate" className="text-info hover:underline">FargoRate</a>{' '}
+          is maintained externally, so this doesn’t apply to it.)
+        </p>
+        <p>
+          A small sample makes ranks volatile — a couple of strong or weak
+          matches swing them. A large sample makes ranks sticky — slow to move,
+          and they may not show a player’s skill progression. Balancing the two
+          matters: you want an accurate rank that doesn’t swing so fast it can
+          be gamed (sandbagging).
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#points-handicap" className="text-info hover:underline">points handicap</a>,{' '}
+          <a href="#percentage-handicap" className="text-info hover:underline">percentage handicap</a>,{' '}
+          <a href="#fargorate" className="text-info hover:underline">FargoRate</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: {
+      path: 'docs/league-system/modules/handicap-systems/README.md',
+    },
+    related: ['handicap-system'],
+    reviewedByEd: '2026-05-31',
+  },
+
+  'starting-handicap': {
+    slug: 'starting-handicap',
+    canonicalName: 'Starting Handicap',
+    aliases: ['provisional rank', 'starting rank', 'provisional handicap'],
+    shortDef:
+      'The rank a brand-new player (no game history) starts at — a default the operator can adjust — used for their first few matches before the normal calculation takes over.',
+    longDef: (
+      <div className="space-y-2">
+        <p>
+          A player with no history starts at a default — 40% for{' '}
+          <a href="#percentage-handicap" className="text-info hover:underline">Percentage</a>,
+          0 for{' '}
+          <a href="#points-handicap" className="text-info hover:underline">Points</a>{' '}
+          — and is locked there for their first three matches. After that, the
+          normal calculation takes over.
+        </p>
+        <p>
+          If the operator knows a newcomer plays well above or below that
+          default, they can set a fairer starting rank for those first three
+          matches — which also gives way to the normal calculation afterward.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#points-handicap" className="text-info hover:underline">points handicap</a>,{' '}
+          <a href="#percentage-handicap" className="text-info hover:underline">percentage handicap</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: {
+      path: 'docs/league-system/modules/handicap-systems/README.md',
+    },
+    related: ['handicap-system', 'sample-size'],
+    reviewedByEd: '2026-05-31',
   },
 
   'handicap-mechanism': {
@@ -151,26 +230,40 @@ export const entries = {
     canonicalName: 'Points Handicap',
     aliases: ['points handicap system', 'plus-minus handicap'],
     shortDef:
-      'A handicap formula based on (wins − losses) divided by weeks played; produces a value from −2 to +2.',
+      '(wins − losses) divided by weeks played, producing a rank from −2 to +2.',
     longDef: (
       <div className="space-y-2">
         <p>
-          A simple integer-style handicap. Each player carries a running
-          (wins − losses)/(weeks played) value, clamped to the range −2 to +2.
-          Positive numbers mean the player is winning more than they're
-          losing; negative means the reverse.
+          With only five ranks, Points is the coarsest of the systems — it
+          levels the field the least and favors stronger players.
+        </p>
+        <p>
+          That’s intentional — it rewards skill progression, and it suits
+          players training toward competitions that use{' '}
+          <a href="#no-handicap" className="text-info hover:underline">no handicap</a>{' '}
+          at all.
+        </p>
+        <p>
+          The{' '}
+          <a href="#sample-size" className="text-info hover:underline">sample size</a>{' '}
+          you set matters here — it strongly affects how quickly a rank moves. A
+          new player begins at a{' '}
+          <a href="#starting-handicap" className="text-info hover:underline">starting handicap</a>{' '}
+          until they’ve played enough to rank.
         </p>
         <p className="text-sm text-muted-foreground">
-          Note: a "points handicap" is not the same as "points scoring." Points
-          handicap is about a player's <em>rating</em>. Points scoring is
-          about how the <em>match</em> is decided.
+          Relevant topics:{' '}
+          <a href="#no-handicap" className="text-info hover:underline">no handicap</a>,{' '}
+          <a href="#sample-size" className="text-info hover:underline">sample size</a>,{' '}
+          <a href="#starting-handicap" className="text-info hover:underline">starting handicap</a>.
         </p>
       </div>
     ),
     l1_anchor: {
       path: 'docs/league-system/modules/handicap-systems/points.md',
     },
-    related: ['handicap-system', 'rating'],
+    related: ['handicap-system', 'percentage-handicap', 'fargorate'],
+    reviewedByEd: '2026-05-31',
   },
 
   'percentage-handicap': {
@@ -178,19 +271,33 @@ export const entries = {
     canonicalName: 'Percentage Handicap',
     aliases: ['percentage handicap system', 'win percentage'],
     shortDef:
-      'A handicap formula that\'s a straight win/loss percentage — wins divided by total games played.',
+      'Wins divided by total games played — a straight win percentage.',
     longDef: (
-      <p>
-        A player's percentage handicap is their straight win rate: total games
-        won divided by total games played, expressed as a percent. A player at
-        60% has won 60 of their last 100 games. The number lives between 0%
-        and 100% and updates as more games are played.
-      </p>
+      <div className="space-y-2">
+        <p>
+          The most basic handicap system — just a player’s win percentage,
+          simple to calculate.
+        </p>
+        <p>
+          The{' '}
+          <a href="#sample-size" className="text-info hover:underline">sample size</a>{' '}
+          you set matters here — it strongly affects how quickly a rank moves. A
+          new player begins at a{' '}
+          <a href="#starting-handicap" className="text-info hover:underline">starting handicap</a>{' '}
+          until they’ve played enough to rank.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#sample-size" className="text-info hover:underline">sample size</a>,{' '}
+          <a href="#starting-handicap" className="text-info hover:underline">starting handicap</a>.
+        </p>
+      </div>
     ),
     l1_anchor: {
       path: 'docs/league-system/modules/handicap-systems/percentage.md',
     },
-    related: ['handicap-system', 'rating'],
+    related: ['handicap-system', 'points-handicap', 'fargorate'],
+    reviewedByEd: '2026-05-31',
   },
 
   'no-handicap': {
