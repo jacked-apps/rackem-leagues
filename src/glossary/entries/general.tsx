@@ -343,12 +343,15 @@ export const entries = {
           <a href="#match-format" className="text-info hover:underline">match format</a>,{' '}
           <a href="#start-date" className="text-info hover:underline">start-date</a>,{' '}
           <a href="#league" className="text-info hover:underline">league</a>,{' '}
-          <a href="#match" className="text-info hover:underline">match</a>.
+          <a href="#match" className="text-info hover:underline">match</a>,{' '}
+          <a href="#blackout-dates" className="text-info hover:underline">blackout dates</a>,{' '}
+          <a href="#playoffs" className="text-info hover:underline">playoffs</a>.
         </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['matchup'],
+    reviewedByEd: '2026-05-31',
   },
 
   'blackout-dates': {
@@ -372,6 +375,7 @@ export const entries = {
           <li>Holidays (Thanksgiving week, Christmas / New Year's, etc.).</li>
           <li>National championship travel — when players are away competing.</li>
           <li>Venue conflicts — the bar is hosting another event.</li>
+          <li>Local events — a parade, festival, or other community happening that could interfere with play or with players getting to the venue.</li>
           <li>Weeks off between seasons — the gap before the next{' '}
             <a href="#season" className="text-info hover:underline">season</a>{' '}
             starts.
@@ -383,10 +387,17 @@ export const entries = {
           seasons" and "blackout dates" describe the same thing in
           different contexts.
         </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>,{' '}
+          <a href="#schedule" className="text-info hover:underline">schedule</a>,{' '}
+          <a href="#season" className="text-info hover:underline">season</a>.
+        </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['schedule', 'season'],
+    related: [],
+    reviewedByEd: '2026-05-31',
   },
 
   team: {
@@ -589,7 +600,7 @@ export const entries = {
         </p>
         <p>
           <strong>Scheduling exceptions.</strong> Matches can be played
-          early (<a href="#preplayed-match" className="text-info hover:underline">preplayed match</a>){' '}
+          early (<a href="#makeup-match" className="text-info hover:underline">preplayed match</a>){' '}
           or late (<a href="#makeup-match" className="text-info hover:underline">makeup match</a>){' '}
           when scheduling issues come up.
         </p>
@@ -610,8 +621,7 @@ export const entries = {
           <a href="#match-format" className="text-info hover:underline">match format</a>,{' '}
           <a href="#season-length" className="text-info hover:underline">season length</a>,{' '}
           <a href="#standings" className="text-info hover:underline">standings</a>,{' '}
-          <a href="#makeup-match" className="text-info hover:underline">makeup match</a>,{' '}
-          <a href="#preplayed-match" className="text-info hover:underline">preplayed match</a>.
+          <a href="#makeup-match" className="text-info hover:underline">makeup or preplayed match</a>.
         </p>
       </div>
     ),
@@ -622,88 +632,54 @@ export const entries = {
 
   'makeup-match': {
     slug: 'makeup-match',
-    canonicalName: 'Makeup Match',
-    aliases: ['makeup matches'],
+    canonicalName: 'Makeup or Preplayed Match',
+    aliases: [
+      'makeup match',
+      'makeup matches',
+      'preplayed match',
+      'preplayed matches',
+      'pre-played match',
+    ],
     shortDef:
-      'A match played AFTER its scheduled week — usually because a team couldn\'t make the original date.',
+      "A match played on a different day than its scheduled one — either before (preplayed match) or after (makeup match). The LO sets the rules for when this is allowed.",
     longDef: (
       <div className="space-y-3">
         <p>
-          A makeup match is a{' '}
-          <a href="#match" className="text-info hover:underline">match</a>{' '}
-          played later than its originally scheduled week. Common reasons:
-          a team couldn't field a{' '}
-          <a href="#lineup" className="text-info hover:underline">lineup</a>{' '}
-          on the scheduled date (illness, work conflict, venue
-          unavailable), or the league granted a postponement.
+          <a href="#match" className="text-info hover:underline">Matches</a>{' '}
+          are scheduled for a specific date, usually at a specific time.
+          But things happen — someone can't make it, a venue closes,
+          schedules conflict. The app lets a team play their match
+          outside the scheduled date.
         </p>
         <p>
-          The match record is marked as a makeup so it's traceable, but
-          it still counts toward the{' '}
+          A match played <strong>before</strong> its scheduled day is a{' '}
+          <strong>preplayed match</strong>. A match played{' '}
+          <strong>after</strong> is a <strong>makeup match</strong>.
+          Either way, the match record is flagged so it's traceable,
+          but it still counts toward the{' '}
           <a href="#season" className="text-info hover:underline">season</a>{' '}
           <a href="#standings" className="text-info hover:underline">standings</a>{' '}
           exactly like a normal-week match.
         </p>
         <p>
-          Opposite of a{' '}
-          <a href="#preplayed-match" className="text-info hover:underline">preplayed match</a>,
-          which is played BEFORE its scheduled week.
+          The{' '}
+          <a href="#league-operator" className="text-info hover:underline">LO</a>{' '}
+          sets the rules for when this is allowed. Abuse of the ability
+          — too often, too far off-schedule, repeatedly with the same
+          team — can result in the LO restricting it.
         </p>
         <p className="text-sm text-muted-foreground">
           Relevant topics:{' '}
           <a href="#match" className="text-info hover:underline">match</a>,{' '}
-          <a href="#preplayed-match" className="text-info hover:underline">preplayed match</a>,{' '}
-          <a href="#lineup" className="text-info hover:underline">lineup</a>,{' '}
           <a href="#season" className="text-info hover:underline">season</a>,{' '}
-          <a href="#standings" className="text-info hover:underline">standings</a>.
+          <a href="#standings" className="text-info hover:underline">standings</a>,{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>.
         </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['schedule'],
-  },
-
-  'preplayed-match': {
-    slug: 'preplayed-match',
-    canonicalName: 'Preplayed Match',
-    aliases: ['preplayed matches', 'pre-played match'],
-    shortDef:
-      'A match played BEFORE its scheduled week — usually because a team knows in advance they can\'t make the original date.',
-    longDef: (
-      <div className="space-y-3">
-        <p>
-          A preplayed match is a{' '}
-          <a href="#match" className="text-info hover:underline">match</a>{' '}
-          played earlier than its originally scheduled week. Common reasons:
-          a team knows in advance they can't field a{' '}
-          <a href="#lineup" className="text-info hover:underline">lineup</a>{' '}
-          on the scheduled date (travel, planned absence) and chooses to
-          play early instead.
-        </p>
-        <p>
-          The match record is marked as preplayed so it's traceable, but
-          it still counts toward the{' '}
-          <a href="#season" className="text-info hover:underline">season</a>{' '}
-          <a href="#standings" className="text-info hover:underline">standings</a>{' '}
-          exactly like a normal-week match.
-        </p>
-        <p>
-          Opposite of a{' '}
-          <a href="#makeup-match" className="text-info hover:underline">makeup match</a>,
-          which is played AFTER its scheduled week.
-        </p>
-        <p className="text-sm text-muted-foreground">
-          Relevant topics:{' '}
-          <a href="#match" className="text-info hover:underline">match</a>,{' '}
-          <a href="#makeup-match" className="text-info hover:underline">makeup match</a>,{' '}
-          <a href="#lineup" className="text-info hover:underline">lineup</a>,{' '}
-          <a href="#season" className="text-info hover:underline">season</a>,{' '}
-          <a href="#standings" className="text-info hover:underline">standings</a>.
-        </p>
-      </div>
-    ),
-    l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['schedule'],
+    reviewedByEd: '2026-05-31',
   },
 
   game: {
@@ -806,73 +782,157 @@ export const entries = {
     shortDef:
       'The specific pool game a league plays — 8-Ball, 9-Ball, or 10-Ball. Set once at league creation.',
     longDef: (
-      <p>
-        Each league plays one game type. The options are{' '}
-        <a href="#eight-ball" className="text-info hover:underline">8-Ball</a>,{' '}
-        <a href="#nine-ball" className="text-info hover:underline">9-Ball</a>,
-        or{' '}
-        <a href="#ten-ball" className="text-info hover:underline">10-Ball</a>.
-        The choice also affects how the app tracks stats and achievements —
-        8-Ball break-and-runs and 9-Ball break-and-runs are tracked
-        separately, for example.
-      </p>
+      <div className="space-y-3">
+        <p>
+          Each league plays one game type. The options are{' '}
+          <a href="#eight-ball" className="text-info hover:underline">8-Ball</a>,{' '}
+          <a href="#nine-ball" className="text-info hover:underline">9-Ball</a>,
+          or{' '}
+          <a href="#ten-ball" className="text-info hover:underline">10-Ball</a>.
+          The choice also affects how the app tracks stats and achievements —
+          8-Ball break-and-runs and 9-Ball break-and-runs are tracked
+          separately, for example.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#eight-ball" className="text-info hover:underline">8-Ball</a>,{' '}
+          <a href="#nine-ball" className="text-info hover:underline">9-Ball</a>,{' '}
+          <a href="#ten-ball" className="text-info hover:underline">10-Ball</a>.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['eight-ball', 'nine-ball', 'ten-ball', 'league'],
+    related: ['league'],
+    reviewedByEd: '2026-05-31',
   },
 
   'eight-ball': {
     slug: 'eight-ball',
     canonicalName: '8-Ball',
-    aliases: ['8 ball', '8ball'],
+    aliases: ['8 ball', '8ball', 'eight ball', 'eight-ball'],
     shortDef:
-      'Classic stripes and solids — one player takes stripes, the other takes solids; sink your group, then sink the 8 to win.',
+      "The classic stripes-and-solids pool game — the most popular league game in the US.",
     longDef: (
-      <p>
-        The most common league game in the US. After the break, the table
-        is "open" until one player legally sinks a stripe or solid — that
-        decides which group each player owns. Players sink only their own
-        group, then call a pocket for the 8-ball to win the rack.
-      </p>
+      <div className="space-y-3">
+        <p>
+          Each player tries to sink all the balls in their group before
+          the other player, then sinks the 8-ball to win. This game is{' '}
+          <a href="#call-pocket" className="text-info hover:underline">call pocket</a>.
+        </p>
+        <p>
+          See the{' '}
+          <a href="/rules" className="text-info hover:underline">full official rules</a>{' '}
+          in the app rulebook. Your league may have{' '}
+          <a href="#house-rules" className="text-info hover:underline">house rules</a>{' '}
+          that differ from the official ones — check with your{' '}
+          <a href="#league-operator" className="text-info hover:underline">LO</a>.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Fun fact: 8-Ball is so widely played that many people use
+          "pool" and "8-Ball" interchangeably — not realizing there
+          are a multitude of different pool games, each with their
+          own official rules.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#house-rules" className="text-info hover:underline">house rules</a>,{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['game'],
+    related: ['game', 'nine-ball', 'ten-ball'],
+    reviewedByEd: '2026-06-02',
   },
 
   'nine-ball': {
     slug: 'nine-ball',
     canonicalName: '9-Ball',
-    aliases: ['9 ball', '9ball'],
+    aliases: ['9 ball', '9ball', 'nine ball', 'nine-ball'],
     shortDef:
-      'Rotation using balls 1–9 — hit the lowest-numbered ball first on every shot; sink the 9 to win the rack.',
+      "A rotation pool game played with balls 1–9 — fast-paced and the staple of tournament play.",
     longDef: (
-      <p>
-        Players must contact the lowest-numbered ball on the table first,
-        but any ball that goes in on a legal shot stays sunk. You can win
-        the rack at any point by legally pocketing the 9 — including off a
-        combo, carom, or a break that sinks the 9 outright.
-      </p>
+      <div className="space-y-3">
+        <p>
+          9-Ball players race to legally pocket the 9-ball. A legal shot
+          must hit the lowest-numbered ball on the table first.
+        </p>
+        <p>
+          See the{' '}
+          <a href="/rules" className="text-info hover:underline">full official rules</a>{' '}
+          in the app rulebook. Your league may have{' '}
+          <a href="#house-rules" className="text-info hover:underline">house rules</a>{' '}
+          that differ from the official ones — check with your{' '}
+          <a href="#league-operator" className="text-info hover:underline">LO</a>.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#house-rules" className="text-info hover:underline">house rules</a>,{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['game'],
+    related: ['game', 'eight-ball', 'ten-ball'],
+    reviewedByEd: '2026-06-02',
   },
 
   'ten-ball': {
     slug: 'ten-ball',
     canonicalName: '10-Ball',
-    aliases: ['10 ball', '10ball'],
+    aliases: ['10 ball', '10ball', 'ten ball', 'ten-ball'],
     shortDef:
-      'Call-pocket rotation using balls 1–10 — you must call a ball AND a pocket for every shot to count.',
+      "A call-pocket rotation pool game played with balls 1–10 — widely considered the most skill-rewarding rotation game.",
     longDef: (
-      <p>
-        Like 9-ball with a strictness upgrade: every shot is call-pocket the
-        entire game. You name the ball and the pocket; a ball going in any
-        other pocket doesn't count and your turn ends. Considered the most
-        skill-rewarding rotation game because lucky pockets don't help you.
-      </p>
+      <div className="space-y-3">
+        <p>
+          A rotation game using the balls 1–10. Players race to legally
+          pocket the 10-ball. A legal shot must hit the lowest-numbered
+          ball on the table first. This game is{' '}
+          <a href="#call-pocket" className="text-info hover:underline">call pocket</a>.
+        </p>
+        <p>
+          See the{' '}
+          <a href="/rules" className="text-info hover:underline">full official rules</a>{' '}
+          in the app rulebook. Your league may have{' '}
+          <a href="#house-rules" className="text-info hover:underline">house rules</a>{' '}
+          that differ from the official ones — check with your{' '}
+          <a href="#league-operator" className="text-info hover:underline">LO</a>.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#house-rules" className="text-info hover:underline">house rules</a>,{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['game'],
+    related: ['game', 'eight-ball', 'nine-ball'],
+    reviewedByEd: '2026-06-02',
+  },
+
+  'call-pocket': {
+    slug: 'call-pocket',
+    canonicalName: 'Call Pocket',
+    aliases: ['called pocket', 'called shot', 'call shot'],
+    shortDef:
+      "A shot where the player declares the ball and pocket before shooting. The shot only counts if the called ball drops in the called pocket.",
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          In call-pocket play, the player predicts the result of their
+          shot: which ball will drop into which pocket. Both the ball
+          and the pocket must be indicated before the shot begins.
+        </p>
+        <p>
+          For the shot to count — and for the player to continue
+          shooting — the called ball must fall into the called pocket.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['eight-ball', 'ten-ball'],
+    reviewedByEd: '2026-06-02',
   },
 
   // ---- Teams / players / roster ----------------------------------------
@@ -895,19 +955,23 @@ export const entries = {
           players will play. That's the lineup. The{' '}
           <a href="#lineup-size" className="text-info hover:underline">lineup size</a>{' '}
           is set at the league level. Anyone on the roster not in the
-          lineup sits the match out.
+          lineup sits the match out — but they can still participate by{' '}
+          <a href="#scorekeeper" className="text-info hover:underline">scorekeeping</a>{' '}
+          the match or watching the live scoreboards.
         </p>
         <p className="text-sm text-muted-foreground">
           Relevant topics:{' '}
           <a href="#match" className="text-info hover:underline">match</a>,{' '}
           <a href="#team" className="text-info hover:underline">team</a>,{' '}
           <a href="#roster" className="text-info hover:underline">roster</a>,{' '}
-          <a href="#lineup-size" className="text-info hover:underline">lineup size</a>.
+          <a href="#lineup-size" className="text-info hover:underline">lineup size</a>,{' '}
+          <a href="#scorekeeper" className="text-info hover:underline">scorekeeper</a>.
         </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
     related: ['captain', 'lineup-lock', 'substitute'],
+    reviewedByEd: '2026-05-30',
   },
 
   'lineup-size': {
@@ -951,37 +1015,37 @@ export const entries = {
     canonicalName: 'Roster',
     aliases: [],
     shortDef:
-      "The full set of players signed up to a team. Must hold at least the lineup size and not exceed the roster size.",
+      "The list of every player on a given team.",
     longDef: (
       <div className="space-y-3">
         <p>
-          The roster is every player signed up to a{' '}
+          The roster is the list of every player on a given{' '}
           <a href="#team" className="text-info hover:underline">team</a>.
-          The{' '}
-          <a href="#lineup" className="text-info hover:underline">lineup</a>{' '}
-          for each{' '}
-          <a href="#match" className="text-info hover:underline">match</a>{' '}
-          is drawn from the roster.
+          It has a minimum size (the{' '}
+          <a href="#lineup-size" className="text-info hover:underline">lineup size</a>)
+          and a maximum (the{' '}
+          <a href="#roster-size" className="text-info hover:underline">roster size</a>),
+          both set by the{' '}
+          <a href="#league-operator" className="text-info hover:underline">LO</a>.
         </p>
         <p>
-          The{' '}
-          <a href="#lineup-size" className="text-info hover:underline">lineup size</a>{' '}
-          sets the floor (a roster has to hold at least that many) and the{' '}
-          <a href="#roster-size" className="text-info hover:underline">roster size</a>{' '}
-          sets the cap.
+          Players on the roster can be changed by the{' '}
+          <a href="#captain" className="text-info hover:underline">captain</a>{' '}
+          or the LO.
         </p>
         <p className="text-sm text-muted-foreground">
           Relevant topics:{' '}
           <a href="#team" className="text-info hover:underline">team</a>,{' '}
-          <a href="#lineup" className="text-info hover:underline">lineup</a>,{' '}
-          <a href="#match" className="text-info hover:underline">match</a>,{' '}
           <a href="#lineup-size" className="text-info hover:underline">lineup size</a>,{' '}
-          <a href="#roster-size" className="text-info hover:underline">roster size</a>.
+          <a href="#roster-size" className="text-info hover:underline">roster size</a>,{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>,{' '}
+          <a href="#captain" className="text-info hover:underline">captain</a>.
         </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
-    related: ['captain', 'placeholder-player', 'substitute'],
+    related: ['placeholder-player', 'substitute'],
+    reviewedByEd: '2026-05-30',
   },
 
   'roster-size': {
@@ -1036,13 +1100,18 @@ export const entries = {
     canonicalName: 'Substitute',
     aliases: ['sub'],
     shortDef:
-      'A player who fills in for a missing team member. The app supports two patterns: anonymous subs and double duty.',
+      "A player who takes the place of a missing player when a team doesn't have enough players present.",
     longDef: (
       <div className="space-y-3">
         <p>
-          A substitute is a player who fills in for a missing team
-          member. The app supports two patterns:
+          When one player can't make a{' '}
+          <a href="#match" className="text-info hover:underline">match</a>,
+          a substitute steps in to fill that spot in the team's{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>.
+          The app allows one sub per{' '}
+          <a href="#match" className="text-info hover:underline">match</a>.
         </p>
+        <p>The app supports two sub patterns:</p>
         <ul className="list-disc pl-5 space-y-1">
           <li>
             <a href="#anonymous-sub" className="text-info hover:underline">Anonymous Sub</a>
@@ -1053,13 +1122,16 @@ export const entries = {
         </ul>
         <p className="text-sm text-muted-foreground">
           Relevant topics:{' '}
+          <a href="#match" className="text-info hover:underline">match</a>,{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>,{' '}
           <a href="#anonymous-sub" className="text-info hover:underline">anonymous sub</a>,{' '}
           <a href="#double-duty" className="text-info hover:underline">double duty</a>.
         </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
-    related: ['roster', 'lineup'],
+    related: ['roster'],
+    reviewedByEd: '2026-05-31',
   },
 
   'anonymous-sub': {
@@ -1067,9 +1139,9 @@ export const entries = {
     canonicalName: 'Anonymous Sub',
     aliases: ['anon sub', 'anonymous substitute'],
     shortDef:
-      'A substitute whose handicap the league knows, but who plays anonymously so the games don\'t affect their own rating.',
+      "A substitute who is a known player with an established ranking, but anonymous to our system. Their gameplay doesn't affect their own ranking or records.",
     longDef: (
-      <div className="space-y-2">
+      <div className="space-y-3">
         <p>
           Anonymous subs solve a real problem. If a regular player fills in
           on another team and his games count toward his own rating, he has
@@ -1079,12 +1151,19 @@ export const entries = {
         <p>
           Going anonymous removes that incentive. The team gets a known-skill
           fill-in. The sub gets to play their best without it counting against
-          (or for) their rating. Everyone wins.
+          (or for) their rating.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          <strong>Note:</strong> anonymous-sub removes the rating-tank
+          incentive, but not all of them. A sub from a rival team in your
+          league has their own reason to lose — helping their actual team —
+          and that's on the captain to factor in when picking.
         </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
     related: ['substitute', 'double-duty'],
+    reviewedByEd: '2026-05-30',
   },
 
   'double-duty': {
@@ -1094,16 +1173,32 @@ export const entries = {
     shortDef:
       'One player in the lineup plays in two positions in the same match — the opposing team picks which roster player does it.',
     longDef: (
-      <p>
-        Double duty is a sub workaround when the lineup is short but the
-        team doesn't want to use a regular sub. A player in the lineup plays
-        in two roster positions during the match. The opposing team gets to
-        choose which available player takes the doubled role, which prevents
-        the captain from stacking their strongest player into two slots.
-      </p>
+      <div className="space-y-3">
+        <p>
+          When a team is short a player, they enter the present players
+          into the{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>{' '}
+          in the positions they want them to play. The "missing"
+          position is filled with double duty — a message goes to the
+          opposing team to pick any of the present players to play in
+          two separate positions. That player is essentially two
+          identical players with the same handicap calculations.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          <strong>Note:</strong> strategy varies on who to choose for
+          double duty. Do you pick the lowest-skill player to try for
+          more wins for your team, or do you pick their best player to
+          force that team to win more games?
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
     related: ['substitute', 'anonymous-sub'],
+    reviewedByEd: '2026-05-31',
   },
 
   captain: {
@@ -1229,13 +1324,17 @@ export const entries = {
           <a href="#league" className="text-info hover:underline">league</a>,{' '}
           <a href="#staff" className="text-info hover:underline">staff</a>,{' '}
           <a href="#match-format" className="text-info hover:underline">match format</a>,{' '}
-          <a href="#captain" className="text-info hover:underline">captain</a>.
+          <a href="#captain" className="text-info hover:underline">captain</a>,{' '}
+          <a href="#house-rules" className="text-info hover:underline">house rules</a>,{' '}
+          <a href="#captains-chat" className="text-info hover:underline">captains chat</a>,{' '}
+          <a href="#player-reports" className="text-info hover:underline">player reports</a>,{' '}
+          <a href="#prize-calculator" className="text-info hover:underline">prize calculator</a>.
         </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['scorekeeper'],
-    reviewedByEd: '2026-05-30',
+    reviewedByEd: '2026-05-31',
   },
 
   organization: {
@@ -1342,11 +1441,17 @@ export const entries = {
           pages (marked with the <em>League Operator setting</em> chip)
           are house-rule-style decisions.
         </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>,{' '}
+          <a href="#league" className="text-info hover:underline">league</a>,{' '}
+          <a href="#game-type" className="text-info hover:underline">game type</a>.
+        </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['league-operator', 'league', 'golden-break'],
-    reviewedByEd: '2026-05-30',
+    related: ['golden-break'],
+    reviewedByEd: '2026-05-31',
   },
 
   'captains-chat': {
@@ -1445,17 +1550,23 @@ export const entries = {
     shortDef:
       "The breaker breaks, makes a ball, and then runs out the rest of the rack to win the game — the opponent never gets to shoot.",
     longDef: (
-      <p>
-        A break and run is when the{' '}
-        <a href="#breaker" className="text-info hover:underline">breaker</a>{' '}
-        sinks at least one ball on the break (so they continue shooting)
-        and then pockets every remaining ball to win the game. Their
-        opponent never gets to the table.
-      </p>
+      <div className="space-y-3">
+        <p>
+          A break and run is when the{' '}
+          <a href="#breaker" className="text-info hover:underline">breaker</a>{' '}
+          sinks at least one ball on the break (so they continue shooting)
+          and then pockets every remaining ball to win the game. Their
+          opponent never gets to the table.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#breaker" className="text-info hover:underline">breaker</a>.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['table-run', 'game', 'achievements'],
-    reviewedByEd: '2026-05-30',
+    reviewedByEd: '2026-05-31',
   },
 
   'table-run': {
@@ -1483,11 +1594,16 @@ export const entries = {
           breaker doing nothing beyond the break is what defines the
           achievement.
         </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#breaker" className="text-info hover:underline">breaker</a>,{' '}
+          <a href="#racker" className="text-info hover:underline">racker</a>.
+        </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['break-and-run', 'game', 'achievements'],
-    reviewedByEd: '2026-05-30',
+    reviewedByEd: '2026-05-31',
   },
 
   'golden-break': {
@@ -1554,7 +1670,8 @@ export const entries = {
           <a href="#game" className="text-info hover:underline">game</a>,{' '}
           <a href="#game-type" className="text-info hover:underline">game type</a>,{' '}
           <a href="#league-operator" className="text-info hover:underline">league operator</a>,{' '}
-          <a href="#achievements" className="text-info hover:underline">achievements</a>.
+          <a href="#achievements" className="text-info hover:underline">achievements</a>,{' '}
+          <a href="#house-rules" className="text-info hover:underline">house rules</a>.
         </p>
       </div>
     ),
@@ -1590,11 +1707,15 @@ export const entries = {
           different from a break foul, which is about losing the right
           to break in the first place.
         </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#breaker" className="text-info hover:underline">breaker</a>.
+        </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['breaker', 'game'],
-    reviewedByEd: '2026-05-30',
+    related: ['game'],
+    reviewedByEd: '2026-05-31',
   },
 
   'win-by-forfeit': {
@@ -1604,19 +1725,25 @@ export const entries = {
     shortDef:
       "A game credited to the winning side because the opposing player couldn't or didn't play it — no game actually contested.",
     longDef: (
-      <p>
-        A win by forfeit is recorded when an opposing player doesn't
-        show up, can't continue, or otherwise can't play their game.
-        The winning side gets credit, but no actual{' '}
-        <a href="#game" className="text-info hover:underline">game</a>{' '}
-        was contested. The flag is tracked separately so stats and
-        achievements can be filtered accordingly — a feat during a
-        forfeit win isn't the same as one in a contested game.
-      </p>
+      <div className="space-y-3">
+        <p>
+          A win by forfeit is recorded when an opposing player doesn't
+          show up, can't continue, or otherwise can't play their game.
+          The winning side gets credit, but no actual{' '}
+          <a href="#game" className="text-info hover:underline">game</a>{' '}
+          was contested. The flag is tracked separately so stats and
+          achievements can be filtered accordingly — a feat during a
+          forfeit win isn't the same as one in a contested game.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#game" className="text-info hover:underline">game</a>.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['game'],
-    reviewedByEd: '2026-05-30',
+    related: [],
+    reviewedByEd: '2026-05-31',
   },
 
   'placeholder-player': {
@@ -1780,28 +1907,56 @@ export const entries = {
           because the feature is still being built. Will fill in once
           the calculator is finished and Ed can verify what it does.
         </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>.
+        </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: [],
+    reviewedByEd: '2026-05-31',
   },
 
   scorekeeper: {
     slug: 'scorekeeper',
     canonicalName: 'Scorekeeper',
-    aliases: ['score keeper'],
+    aliases: ['score keeper', 'scorekeeping', 'scoring'],
     shortDef:
-      'The person entering scores into the app during or after a match.',
+      "Anyone on either team can record what happened in a game or confirm what was recorded. Each game and the final match score need at least one confirmation from each team to be finalized.",
     longDef: (
-      <p>
-        The scorekeeper is whoever is logging games as they happen — usually
-        a captain, a designated team member, or the operator on site. They
-        also handle manual entries (e.g., the result of a tiebreaker that
-        the league handles outside the app).
-      </p>
+      <div className="space-y-3">
+        <p>
+          A{' '}
+          <a href="#game" className="text-info hover:underline">game</a>{' '}
+          is recorded only when its submissions agree. If multiple
+          team members enter the result and they don't match — winner,
+          score, achievements, anything — the app FLAGS the game
+          instead of recording it. Players can investigate, re-score,
+          and resolve the discrepancy.
+        </p>
+        <p>
+          Opposing-team scorekeepers can also confirm or deny a record.
+          A "deny" flags the game the same way disagreements do — a
+          second consensus layer to keep results honest.
+        </p>
+        <p>
+          Every game needs at least one confirmation from each team to
+          be recorded. The final{' '}
+          <a href="#match" className="text-info hover:underline">match</a>{' '}
+          score follows the same rule.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#game" className="text-info hover:underline">game</a>,{' '}
+          <a href="#match" className="text-info hover:underline">match</a>,{' '}
+          <a href="#team" className="text-info hover:underline">team</a>.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['captain', 'manual-entry', 'manual-tiebreaker'],
+    reviewedByEd: '2026-05-30',
   },
 
   'lineup-lock': {
@@ -1809,19 +1964,39 @@ export const entries = {
     canonicalName: 'Lineup Lock',
     aliases: [],
     shortDef:
-      'The moment a team finalizes their lineup before a match — after which players can no longer be swapped.',
+      "The moment a team commits their lineup for a match — when both teams have locked, the match specifics are generated and play can begin.",
     longDef: (
-      <p>
-        Lineup lock is the point of no return for the{' '}
-        <a href="#lineup" className="text-info hover:underline">lineup</a>.
-        Before lock, players can be swapped in and out. After lock, the
-        lineup is committed and the match can begin. It's also typically
-        when any manual handicap thresholds get entered, for leagues
-        that don't use a calibrated chart.
-      </p>
+      <div className="space-y-3">
+        <p>
+          Lineup lock is when a team commits their{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>{' '}
+          for the match. Before lock, players can be swapped in and out
+          freely. Once locked, the lineup is set.
+        </p>
+        <p>
+          When BOTH teams have locked their lineups, the app generates
+          the specifics of the match: the number of{' '}
+          <a href="#game" className="text-info hover:underline">games</a>{' '}
+          to be played, the{' '}
+          <a href="#pairing" className="text-info hover:underline">pairings</a>,
+          handicap{' '}
+          <a href="#threshold" className="text-info hover:underline">thresholds</a>,{' '}
+          <a href="#start-points" className="text-info hover:underline">starting bonuses</a>,
+          and so on.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>,{' '}
+          <a href="#game" className="text-info hover:underline">game</a>,{' '}
+          <a href="#pairing" className="text-info hover:underline">pairing</a>,{' '}
+          <a href="#threshold" className="text-info hover:underline">threshold</a>,{' '}
+          <a href="#start-points" className="text-info hover:underline">start points</a>.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
-    related: ['lineup', 'manual-entry'],
+    related: ['manual-entry'],
+    reviewedByEd: '2026-05-31',
   },
 
   bye: {
@@ -1831,24 +2006,32 @@ export const entries = {
     shortDef:
       "A placeholder \"team\" the app adds when a league has an odd number of teams — essentially a team with no players that forfeits every week. Its opponent gets the match off and a \"win.\"",
     longDef: (
-      <p>
-        When a{' '}
-        <a href="#league" className="text-info hover:underline">league</a>{' '}
-        has an odd number of{' '}
-        <a href="#team" className="text-info hover:underline">teams</a>,
-        one team would be left without an opponent each week. The app
-        handles this by creating a bye — a real team row in the
-        database, just with no captain and no roster. The bye is
-        included in the{' '}
-        <a href="#schedule" className="text-info hover:underline">schedule</a>{' '}
-        like any other team but always forfeits — so whoever is paired
-        against it gets the week off and receives a "win" for the
-        match.
-      </p>
+      <div className="space-y-3">
+        <p>
+          When a{' '}
+          <a href="#league" className="text-info hover:underline">league</a>{' '}
+          has an odd number of{' '}
+          <a href="#team" className="text-info hover:underline">teams</a>,
+          one team would be left without an opponent each week. The app
+          handles this by creating a bye — a real team row in the
+          database, just with no captain and no roster. The bye is
+          included in the{' '}
+          <a href="#schedule" className="text-info hover:underline">schedule</a>{' '}
+          like any other team but always forfeits — so whoever is paired
+          against it gets the week off and receives a "win" for the
+          match.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#league" className="text-info hover:underline">league</a>,{' '}
+          <a href="#team" className="text-info hover:underline">team</a>,{' '}
+          <a href="#schedule" className="text-info hover:underline">schedule</a>.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['matchup'],
-    reviewedByEd: '2026-05-30',
+    reviewedByEd: '2026-05-31',
   },
 
   rack: {
@@ -1858,22 +2041,30 @@ export const entries = {
     shortDef:
       'In pool, "rack" can mean the triangle of balls at the start of a game, the act of racking them, or the racker (the player whose role it is to rack). In this app it most often refers to the racker.',
     longDef: (
-      <p>
-        "Rack" has several common pool meanings: the physical triangle
-        or diamond of balls at the start of a{' '}
-        <a href="#game" className="text-info hover:underline">game</a>,
-        the verb "to rack" (setting up those balls), or sometimes a
-        synonym for the game itself. In this app, when you see "rack"
-        in a match context it most often refers to the{' '}
-        <a href="#racker" className="text-info hover:underline">racker</a>{' '}
-        — the player whose role it is to rack the balls (the opposite
-        of the{' '}
-        <a href="#breaker" className="text-info hover:underline">breaker</a>).
-      </p>
+      <div className="space-y-3">
+        <p>
+          "Rack" has several common pool meanings: the physical triangle
+          or diamond of balls at the start of a{' '}
+          <a href="#game" className="text-info hover:underline">game</a>,
+          the verb "to rack" (setting up those balls), or sometimes a
+          synonym for the game itself. In this app, when you see "rack"
+          in a match context it most often refers to the{' '}
+          <a href="#racker" className="text-info hover:underline">racker</a>{' '}
+          — the player whose role it is to rack the balls (the opposite
+          of the{' '}
+          <a href="#breaker" className="text-info hover:underline">breaker</a>).
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#game" className="text-info hover:underline">game</a>,{' '}
+          <a href="#racker" className="text-info hover:underline">racker</a>,{' '}
+          <a href="#breaker" className="text-info hover:underline">breaker</a>.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: [],
-    reviewedByEd: '2026-05-30',
+    reviewedByEd: '2026-05-31',
   },
 
   racker: {
@@ -1881,18 +2072,33 @@ export const entries = {
     canonicalName: 'Racker',
     aliases: [],
     shortDef:
-      'In a given game, the player who racks the balls — i.e., the player who is NOT breaking.',
+      "In a given game, the player who is NOT breaking — regardless of who physically racks the balls.",
     longDef: (
-      <p>
-        Pool has two roles each rack: the player who breaks (the breaker)
-        and the player who racks (the racker). They alternate game to game
-        in most formats. The role matters because in some scoring systems
-        the breaker has an advantage, so balancing who breaks is part of
-        the format design.
-      </p>
+      <div className="space-y-3">
+        <p>
+          Pool has two roles each rack: the{' '}
+          <a href="#breaker" className="text-info hover:underline">breaker</a>{' '}
+          and the racker. They alternate game to game in most formats.
+          The role matters because breaking usually holds a distinct
+          advantage statistically. Balancing who breaks is part of the
+          format design.
+        </p>
+        <p>
+          <strong>Caveat:</strong> some leagues are "rack your own" —
+          the breaker racks and breaks. Or an independent party, like a
+          referee, may do the actual racking. In our app, the racker is
+          still strictly the player NOT breaking that game, regardless
+          of who physically handles the balls.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#breaker" className="text-info hover:underline">breaker</a>.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['breaker', 'game'],
+    related: ['game'],
+    reviewedByEd: '2026-05-31',
   },
 
   breaker: {
@@ -1900,17 +2106,27 @@ export const entries = {
     canonicalName: 'Breaker',
     aliases: [],
     shortDef:
-      'In a given game, the player who breaks — i.e., takes the opening shot that scatters the rack.',
+      "The player who gets to shoot first in a game — they shoot the cue ball into the racked cluster of balls and break them apart.",
     longDef: (
-      <p>
-        The breaker hits the cue ball into the racked balls to start the
-        game. In most leagues the break alternates from game to game so
-        each player gets the same number of breaks. The opposite role is
-        the racker, who sets up the rack the breaker is about to hit.
-      </p>
+      <div className="space-y-3">
+        <p>
+          Breaking usually holds a distinct advantage statistically, so
+          most leagues use a{' '}
+          <a href="#match-format" className="text-info hover:underline">match format</a>{' '}
+          that ensures an equal number of breaks for each side. The
+          opposite role is the{' '}
+          <a href="#racker" className="text-info hover:underline">racker</a>.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#match-format" className="text-info hover:underline">match format</a>,{' '}
+          <a href="#racker" className="text-info hover:underline">racker</a>.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['racker', 'game'],
+    related: ['game'],
+    reviewedByEd: '2026-05-31',
   },
 
   // ---- Tiebreaker concepts (features partly speculative) ---------------
@@ -1922,21 +2138,30 @@ export const entries = {
     shortDef:
       'The method used to decide who wins when regular play ends in a tie.',
     longDef: (
-      <div className="space-y-2">
+      <div className="space-y-3">
         <p>
-          Some leagues let ties stand. Others play an extra round, a single
-          short race, or fall back to a hand entry. The tiebreaker setting
-          tells the app which behavior the league agreed on.
+          When a{' '}
+          <a href="#match" className="text-info hover:underline">match</a>{' '}
+          ends in a tie, every league has a way of dealing with it:
+          either let the tie stand as a tie, or run some sort of extra
+          competition to give the final win to a single team. These
+          methods are numerous. We try to handle as many as we can.
+        </p>
+        <p>
+          If the way a particular league handles a tie isn't yet
+          supported, the fallback is{' '}
+          <a href="#manual-tiebreaker" className="text-info hover:underline">manual tiebreaker</a>.
         </p>
         <p className="text-sm text-muted-foreground">
-          Note: most of the specific tiebreaker modules aren't fully coded
-          in the app yet. Manual entry is the safe fallback that always
-          works while the codified options are being built out.
+          Relevant topics:{' '}
+          <a href="#match" className="text-info hover:underline">match</a>,{' '}
+          <a href="#manual-tiebreaker" className="text-info hover:underline">manual tiebreaker</a>.
         </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/tiebreak-system/README.md' },
-    related: ['extra-round', 'single-short-race', 'accept-tie', 'manual-tiebreaker'],
+    related: ['accept-tie', 'extra-round', 'single-short-race'],
+    reviewedByEd: '2026-05-31',
   },
 
   'extra-round': {
@@ -1944,17 +2169,35 @@ export const entries = {
     canonicalName: 'Extra Round',
     aliases: ['best of 3', 'best of 5'],
     shortDef:
-      'When a match ends tied, the teams play one more round of games — typically best of 3 or best of 5 — to decide the winner.',
+      'When a match ends tied, the teams play an extra round to decide the winner — typically best of 3 or best of 5.',
     longDef: (
-      <p>
-        An extra round runs a short additional bracket between the tied
-        teams. First to a target (2 wins out of 3, 3 out of 5, etc.) takes
-        the match. This module hasn't been fully coded yet; manual entry is
-        the working fallback in the meantime.
-      </p>
+      <div className="space-y-3">
+        <p>
+          An extra round is a short additional{' '}
+          <a href="#race" className="text-info hover:underline">race</a>{' '}
+          between the two tied teams to decide the winner. The teams
+          use the same{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>{' '}
+          they played in the regular match (some leagues allow
+          reordering the positions, but the players are the same). The{' '}
+          <a href="#lineup-size" className="text-info hover:underline">lineup size</a>{' '}
+          determines the maximum number of games possible.
+        </p>
+        <p>
+          Whichever team wins the race takes the match — under the
+          league's existing win condition (games or points).
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#race" className="text-info hover:underline">race</a>,{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>,{' '}
+          <a href="#lineup-size" className="text-info hover:underline">lineup size</a>.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/tiebreak-system/README.md' },
-    related: ['tiebreaker', 'manual-tiebreaker'],
+    related: ['tiebreaker'],
+    reviewedByEd: '2026-05-31',
   },
 
   'single-short-race': {
@@ -1964,14 +2207,25 @@ export const entries = {
     shortDef:
       'When a match ends tied, the teams play one short race to decide the winner.',
     longDef: (
-      <p>
-        A short race plays a single extra rack (or a short race-to-N) and
-        whoever wins takes the match. Faster than an extra round but the
-        module isn't fully coded yet; manual entry covers it for now.
-      </p>
+      <div className="space-y-3">
+        <p>
+          The teams play a single short{' '}
+          <a href="#race" className="text-info hover:underline">race</a>{' '}
+          — often a single rack — to decide the winner. The win is
+          decided under the league's existing win condition (games or
+          points). Faster than an{' '}
+          <a href="#extra-round" className="text-info hover:underline">extra round</a>.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#race" className="text-info hover:underline">race</a>,{' '}
+          <a href="#extra-round" className="text-info hover:underline">extra round</a>.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/tiebreak-system/README.md' },
-    related: ['tiebreaker', 'manual-tiebreaker'],
+    related: ['tiebreaker'],
+    reviewedByEd: '2026-05-31',
   },
 
   'accept-tie': {
@@ -1989,6 +2243,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/modules/tiebreak-system/README.md' },
     related: ['tiebreaker'],
+    reviewedByEd: '2026-05-31',
   },
 
   'manual-tiebreaker': {
@@ -1998,16 +2253,25 @@ export const entries = {
     shortDef:
       'A catch-all way for a league to decide a tied match — scorekeepers enter the agreed result manually.',
     longDef: (
-      <p>
-        When a league has its own tiebreaker rule that this app doesn't
-        codify yet, manual tiebreaker is the safe path. The league plays
-        whatever they normally play to break the tie, and the scorekeeper
-        enters the winner into the app. The original game scores stay on
-        the scoreboard; the manual entry decides who took the match.
-      </p>
+      <div className="space-y-3">
+        <p>
+          When a league has its own tiebreaker rule that this app doesn't
+          yet support, they may use manual tiebreaker. The league plays
+          whatever they normally play to break the tie, and{' '}
+          <a href="#scorekeeper" className="text-info hover:underline">scorekeepers</a>{' '}
+          from each team confirm the winner the same way they would for
+          a regular game. The original game scores stay on the
+          scoreboard; the manual entry decides who took the match.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#scorekeeper" className="text-info hover:underline">scorekeeper</a>.
+        </p>
+      </div>
     ),
     l1_anchor: { path: 'docs/league-system/modules/tiebreak-system/README.md' },
-    related: ['tiebreaker', 'scorekeeper', 'manual-entry'],
+    related: ['tiebreaker', 'manual-entry'],
+    reviewedByEd: '2026-05-31',
   },
 
   // ---- Schedule / setup ------------------------------------------------
@@ -2060,6 +2324,7 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['qualifier'],
+    reviewedByEd: '2026-05-30',
   },
 
   // ---- Qualifier / descriptor ------------------------------------------
@@ -2101,11 +2366,19 @@ export const entries = {
           becomes <strong>&ldquo;9 Ball Tuesday East Side Spring
           2026&rdquo;</strong>.
         </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#league" className="text-info hover:underline">league</a>,{' '}
+          <a href="#game-type" className="text-info hover:underline">game type</a>,{' '}
+          <a href="#qualifier" className="text-info hover:underline">qualifier</a>,{' '}
+          <a href="#season" className="text-info hover:underline">season</a>,{' '}
+          <a href="#start-date" className="text-info hover:underline">start-date</a>.
+        </p>
       </div>
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
-    related: ['league', 'start-date', 'qualifier', 'season', 'game-type'],
-    reviewedByEd: '2026-05-29',
+    related: [],
+    reviewedByEd: '2026-05-31',
   },
 
   qualifier: {
@@ -2125,5 +2398,6 @@ export const entries = {
     ),
     l1_anchor: { path: 'docs/league-system/README.md' },
     related: ['league'],
+    reviewedByEd: '2026-06-02',
   },
 } as const satisfies Record<string, GlossaryEntry>;
