@@ -330,6 +330,7 @@ export const entries = {
       path: 'docs/league-system/modules/handicap-systems/README.md',
     },
     related: ['handicap', 'handicap-system'],
+    reviewedByEd: '2026-05-31',
   },
 
   'extra-games': {
