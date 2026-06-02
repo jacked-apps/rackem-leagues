@@ -503,22 +503,52 @@ export const entries = {
   'manual-entry': {
     slug: 'manual-entry',
     canonicalName: 'Manual Entry',
-    aliases: ['manual handicap', 'hand-entered handicap'],
+    aliases: ['hand entry', 'hand-entered'],
     shortDef:
-      'Any time a team, captain, scorekeeper, or operator hand-enters a handicap value — a threshold, a start-points credit, or a target — instead of using a calculated chart.',
+      'Whenever the app can’t work out a value on its own, it asks a person to enter it by hand.',
     longDef: (
       <p>
-        Some combinations of choices don't have a calibrated chart in the app.
-        For those, the league agrees on the numbers themselves and someone
-        enters them by hand at lineup lock (or at scoring time). Manual entry
-        is the fallback that keeps the league running even when no built-in
-        formula fits.
+        The app calculates whatever it can — but some values it may not have
+        access to, or aren’t yet supported. In those cases it asks the user
+        to enter that information by hand, so the app can carry on with the rest
+        of the information it does have. Manual entry is the fallback that keeps
+        the app functioning with data it doesn’t otherwise support.
       </p>
     ),
     l1_anchor: {
-      path: 'docs/league-system/modules/threshold-charts/README.md',
+      path: 'docs/league-system/README.md',
     },
-    related: ['threshold-chart', 'calibrated'],
+    related: ['manual-handicap', 'manual-tiebreaker'],
+    reviewedByEd: '2026-06-02',
+  },
+
+  'manual-handicap': {
+    slug: 'manual-handicap',
+    canonicalName: 'Manual Handicap',
+    aliases: ['manual handicaps', 'hand-entered handicap'],
+    shortDef:
+      'Handicap information entered by hand before a match starts.',
+    longDef: (
+      <div className="space-y-2">
+        <p>
+          <a href="#handicap" className="text-info hover:underline">Handicap</a>{' '}
+          information that someone enters by hand before the match starts. It’s
+          the handicap case of{' '}
+          <a href="#manual-entry" className="text-info hover:underline">manual entry</a>:
+          once entered, the app treats it like any other handicap data.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#handicap" className="text-info hover:underline">handicap</a>,{' '}
+          <a href="#manual-entry" className="text-info hover:underline">manual entry</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: {
+      path: 'docs/league-system/modules/handicap-systems/README.md',
+    },
+    related: ['rating', 'calibrated'],
+    reviewedByEd: '2026-06-02',
   },
 
   rating: {

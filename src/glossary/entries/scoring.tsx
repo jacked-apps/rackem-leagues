@@ -45,7 +45,7 @@ export const entries = {
     canonicalName: 'Win Condition',
     aliases: ['winning metric'],
     shortDef:
-      'The metric a match is decided by first — the league’s most important one (e.g. games or points). If both sides come out even on it, the next metric decides.',
+      'The metric a match is decided by first — the league’s most important one, such as games or points. If both sides come out even on it, the next metric decides.',
     longDef: (
       <div className="space-y-2">
         <p>
@@ -251,7 +251,7 @@ export const entries = {
   'scoring-system': {
     slug: 'scoring-system',
     canonicalName: 'Scoring System',
-    aliases: ['scoring', 'scoring setup'],
+    aliases: ['scoring setup', 'scoring rules'],
     shortDef:
       'The complete rule set that decides how a league’s matches are scored and won — assembled from modular parts the operator can customize.',
     longDef: (
