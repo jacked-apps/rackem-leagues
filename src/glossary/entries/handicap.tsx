@@ -14,21 +14,29 @@ export const entries = {
     canonicalName: 'FargoRate',
     aliases: ['fargo', 'fargo rating', 'fargo rate'],
     shortDef:
-      'A national pool skill rating maintained by FargoRate. Higher is stronger; ratings typically run 100–850 but have no hard cap by design.',
+      'The most comprehensive handicap system in pool — an international skill rating maintained by FargoRate. Higher is stronger; ratings typically run 100–850 but have no hard cap by design.',
     longDef: (
       <div className="space-y-3">
         <p>
           FargoRate is to pool what an ELO rating is to chess — a single
-          national number that says how strong a player is.
+          international number that says how strong a player is.
         </p>
         <ul className="list-disc pl-5">
-          <li><strong>350</strong> — beginner</li>
+          <li><strong>300</strong> — beginner</li>
           <li><strong>500</strong> — solid league player</li>
           <li><strong>700</strong> — tournament shark</li>
         </ul>
         <p>
-          The rating lives at fargorate.com and updates automatically as a
-          player plays rated events. This app reads the number; it does not
+          The rating lives at{' '}
+          <a
+            href="https://www.fargorate.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-info hover:underline"
+          >
+            fargorate.com
+          </a>{' '}
+          and updates automatically as a player plays rated events. This app reads the number; it does not
           compute it. Ratings can in principle go over 1000 — there's no hard
           cap by design.
         </p>
@@ -44,6 +52,7 @@ export const entries = {
       path: 'docs/league-system/modules/handicap-systems/fargorate.md',
     },
     related: ['handicap', 'handicap-system', 'rating'],
+    reviewedByEd: '2026-05-31',
   },
 
   handicap: {
@@ -187,42 +196,45 @@ export const entries = {
   'handicap-mechanism': {
     slug: 'handicap-mechanism',
     canonicalName: 'Handicap Mechanism',
-    aliases: [],
+    aliases: ['head start', 'weight', 'on the wire'],
     shortDef:
-      'How the handicap result is applied to a match — extra games to win, bonus start points, race-length adjustment, or none.',
+      'How a handicap rank is applied to a match — a head start for the weaker side, added weight on the stronger, or both.',
     longDef: (
       <div className="space-y-2">
         <p>
-          The handicap system tells you who's stronger. The mechanism tells you
-          what to <em>do</em> about it in a match. The same skill gap can be
-          compensated three different ways:
+          The{' '}
+          <a href="#handicap-system" className="text-info hover:underline">handicap system</a>{' '}
+          says who’s stronger; the mechanism is what the match does about it.
+        </p>
+        <p>
+          <strong>Three ways to even a competition.</strong> Picture a 100-yard
+          dash between the tortoise and the hare — the hare is faster, so:
         </p>
         <ul className="list-disc pl-5">
           <li>
-            <strong>Extra Games</strong> — the stronger team needs more
-            game wins to take the match.
+            <strong>Head start</strong> — start the tortoise at the 20-yard
+            line; now it only runs 80 yards. (Pool’s term for a head start is{' '}
+            <em>on the wire</em>.)
           </li>
           <li>
-            <strong>Start Points</strong> — the weaker team begins the match
-            with a points credit.
+            <strong>Weight</strong> — make the hare run 120 yards.
           </li>
           <li>
-            <strong>Race Length Adjustment</strong> — each individual matchup
-            races to a different number based on the rating gap.
+            <strong>Combination</strong> — if the total distance has to stay
+            200 yards, adjust both: the hare runs 110, the tortoise 90.
           </li>
         </ul>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#handicap-system" className="text-info hover:underline">handicap system</a>.
+        </p>
       </div>
     ),
     l1_anchor: {
       path: 'docs/league-system/modules/handicap-mechanisms/README.md',
     },
-    related: [
-      'handicap',
-      'handicap-system',
-      'extra-games',
-      'start-points',
-      'race-length-adjustment',
-    ],
+    related: ['handicap', 'start-points', 'extra-games', 'race-length-adjustment'],
+    reviewedByEd: '2026-05-31',
   },
 
   'points-handicap': {
@@ -325,26 +337,26 @@ export const entries = {
     canonicalName: 'Extra Games',
     aliases: ['games handicap', 'extra-game handicap'],
     shortDef:
-      'A handicap mechanism where the stronger team has to win more games than the weaker team to take the match.',
+      'A handicap mechanism where the stronger side has to win more games than the weaker to take the match.',
     longDef: (
       <div className="space-y-2">
         <p>
-          The handicap chart maps each team's rating sum to a target number of
-          game wins. Stronger teams need a higher target; weaker teams need a
-          lower one. Both teams play the same total games, but the bar to
-          "win" is set asymmetrically.
+          Extra games is the{' '}
+          <a href="#handicap-mechanism" className="text-info hover:underline">weight</a>{' '}
+          approach, in games: the stronger side’s target is raised, so it has to
+          win more games than the weaker side to take the match.
         </p>
         <p className="text-sm text-muted-foreground">
-          Race Length Adjustment is functionally similar — both shift the
-          finish line based on rating gap. Extra Games shifts the team-level
-          target; Race Length Adjustment shifts per-pairing race lengths.
+          Relevant topics:{' '}
+          <a href="#handicap-mechanism" className="text-info hover:underline">handicap mechanism</a>.
         </p>
       </div>
     ),
     l1_anchor: {
       path: 'docs/league-system/modules/handicap-mechanisms/extra-games.md',
     },
-    related: ['handicap-mechanism', 'threshold', 'race-length-adjustment'],
+    related: ['race-length-adjustment', 'threshold'],
+    reviewedByEd: '2026-05-31',
   },
 
   'start-points': {
@@ -356,36 +368,30 @@ export const entries = {
       'spot points',
       'starting bonus',
       'starting bonuses',
-      'games on the wire',
     ],
     shortDef:
-      'A handicap mechanism where both teams share the same finish line, but the weaker team starts with a head start set by the rating gap.',
+      'An amount of points given to a team at the beginning of a match.',
     longDef: (
       <div className="space-y-2">
         <p>
-          Before any game is played, the weaker team gets a head start — a
-          number of games or points based on the{' '}
-          <a href="#rating" className="text-info hover:underline">rating</a>{' '}
-          gap. Both teams then race to the same finish line, so the stronger
-          team has to make up that gap to win.
-        </p>
-        <p>
-          It’s the opposite approach to a{' '}
-          <a href="#threshold" className="text-info hover:underline">threshold</a>{' '}
-          handicap: instead of moving where each team’s finish line sits, it
-          moves where the weaker team starts.
+          At the beginning of a match, the weaker team gets a{' '}
+          <a href="#handicap-mechanism" className="text-info hover:underline">head start</a>{' '}
+          of points, which the stronger team has to overcome by the end of the
+          match. The number of points is calculated from the players’{' '}
+          <a href="#rating" className="text-info hover:underline">ratings</a>.
         </p>
         <p className="text-sm text-muted-foreground">
           Relevant topics:{' '}
-          <a href="#rating" className="text-info hover:underline">rating</a>,{' '}
-          <a href="#threshold" className="text-info hover:underline">threshold</a>.
+          <a href="#handicap-mechanism" className="text-info hover:underline">handicap mechanism</a>,{' '}
+          <a href="#rating" className="text-info hover:underline">rating</a>.
         </p>
       </div>
     ),
     l1_anchor: {
       path: 'docs/league-system/modules/handicap-mechanisms/start-points.md',
     },
-    related: ['handicap-mechanism', 'extra-games'],
+    related: ['extra-games', 'race-length-adjustment'],
+    reviewedByEd: '2026-05-31',
   },
 
   'race-length-adjustment': {
@@ -393,37 +399,29 @@ export const entries = {
     canonicalName: 'Race Length Adjustment',
     aliases: ['race adjustment', 'asymmetric race'],
     shortDef:
-      'A handicap mechanism where each opponent races to a different target, set by the rating gap — the weaker side needs fewer to win.',
+      'A handicap mechanism that adjusts the amount of points or games each opponent needs.',
     longDef: (
       <div className="space-y-2">
         <p>
-          When a contest is settled by a{' '}
-          <a href="#race" className="text-info hover:underline">race</a>, this
-          sets each side’s{' '}
-          <a href="#threshold" className="text-info hover:underline">target</a>{' '}
-          from the rating gap: the weaker side races to a lower number, the
-          stronger side to a higher one — games or points, whichever the race
-          counts. It works the same whether the opponents are two players or two
-          teams.
-        </p>
-        <p>
-          Like{' '}
-          <a href="#extra-games" className="text-info hover:underline">extra games</a>,
-          it shifts the finish line by the rating gap — here by changing the
-          race target.
+          Race length adjustment is a combination of{' '}
+          <a href="#handicap-mechanism" className="text-info hover:underline">head start</a>{' '}
+          and{' '}
+          <a href="#handicap-mechanism" className="text-info hover:underline">weight</a>:
+          it extends the stronger opponent’s target and shortens the weaker
+          opponent’s by the same amount, to allow handicapping of a set number
+          of games.
         </p>
         <p className="text-sm text-muted-foreground">
           Relevant topics:{' '}
-          <a href="#race" className="text-info hover:underline">race</a>,{' '}
-          <a href="#threshold" className="text-info hover:underline">threshold</a>,{' '}
-          <a href="#extra-games" className="text-info hover:underline">extra games</a>.
+          <a href="#handicap-mechanism" className="text-info hover:underline">handicap mechanism</a>.
         </p>
       </div>
     ),
     l1_anchor: {
       path: 'docs/league-system/modules/handicap-mechanisms/race-length-adjustment.md',
     },
-    related: ['handicap-mechanism'],
+    related: ['extra-games', 'start-points'],
+    reviewedByEd: '2026-05-31',
   },
 
   threshold: {
