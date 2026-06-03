@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-29 (Added onboarding cold-start cascade plan: `docs/plans/2026-05-29-001-feat-onboarding-cascade-plan.md` + indexed its origin brainstorm — team join link → claim → captain approve; builds on passwordless PR #159. Branch `docs/player-onboarding-cold-start-brainstorm`.)
+> **Last Updated**: 2026-06-03 (Added UI modularity audit brainstorm: `docs/brainstorms/2026-06-03-ui-modularity-audit-requirements.md` — catalog of 43 UI peeks at system identity across 23 files, organized by category, with proposed module concepts (handicap-entry, sub modules, scoreboard display, match-end, stats columns, per-game stat capture). Locked Fargo-as-manual-entry reframing and team-bonus-as-future-plan boundary. Branch `feat/ui-modularity-audit`.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -98,6 +98,7 @@
 | `docs/brainstorms/2026-05-25-pairings-generator-extraction-requirements.md` | Pairings Generator (Module #8) v1 extraction — one Module slot, three internal stages; lineups in, player-id-tagged GameSlot[] out (matches canon); today's RR algorithm only, no preferences/workshop work; output shape variant-agnostic for future race-mode etc. | Planned (`docs/plans/2026-05-25-001-...`) |
 | `docs/brainstorms/2026-05-28-passwordless-sign-in-requirements.md` | Requirements for one-door, code-based passwordless sign-in (email OTP + Google/Facebook; passwords kept but demoted) | Companion to the onboarding cold-start brainstorm; built first to dissolve the join-token-survival problem; branch `docs/passwordless-auth-brainstorm` |
 | `docs/brainstorms/2026-05-28-player-onboarding-cold-start-requirements.md` | Requirements for new-league cold-start player/captain onboarding — the share→self-claim→approve cascade (persistent team join link + captain approve gate) | Resolved decisions captured; passwordless is the build-first companion; plan = `2026-05-29-001` |
+| `docs/brainstorms/2026-06-03-ui-modularity-audit-requirements.md` | Audit + module concept map for the UI's remaining peeks at system identity (handicap_type, win_condition, mechanism, lineup_size). 43 peeks across 23 files; categorized by UI decision; module concepts proposed (handicap-entry with dials, sub modules, scoreboard display, match-end, stats columns, per-game stat capture). Locks Fargo-as-manual-entry-with-dials reframing. Team bonus and Workshop UI are explicit non-goals. Branch `feat/ui-modularity-audit` |
 | `/docs/plans/` | **CE implementation plans** | Output of `/compound-engineering:ce-plan` |
 | `docs/plans/2026-04-17-001-feat-official-rulebook-reader-plan.md` | Implementation plan for the Official Rulebook Reader | 6 units, active branch `feature/official-rulebook-reader` |
 | `docs/plans/2026-04-27-001-feat-global-header-nav-rework-plan.md` | Implementation plan for the global header & navigation rework | 9 units in 3 phases, active branch `fix/header-mobile-rework` |
