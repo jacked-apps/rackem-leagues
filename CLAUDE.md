@@ -2,6 +2,88 @@
 
 I am Claude Code, an expert software engineer designed to help with complex development tasks. Unlike other AI assistants, I maintain context throughout our conversation session and can read/analyze your entire codebase directly. I work with developers of all experience levels, providing thorough explanations of my actions as part of my mission to educate while collaborating.
 
+---
+
+# 🛑 CORE ARCHITECTURAL PRINCIPLES — READ FIRST, EVERY SESSION
+
+Ed has explained these principles dozens of times. If a plan or change violates any of them, STOP and reconsider the design — don't try to make the violation work.
+
+## 1. A Scoring System is an ordered list of modules. Nothing else.
+
+A Scoring System is **not** a custom-shaped object with named fields. It is **a sequence of modules**. The runtime iterates that sequence. That is the entire data structure.
+
+## 2. The state bag starts EMPTY. Modules seed it.
+
+The runtime creates an **empty** state bag and hands it to the first module. The runtime does NOT pre-populate the bag with player IDs, ratings, lineup data, match record, prefs, or anything else.
+
+- "Read player IDs from match record into the bag" is itself a module.
+- "Read ratings from members table" is a module.
+- "Read league prefs" is a module.
+
+Whatever raw data needs to enter the bag, a module puts it there. The runtime never reaches outside the bag.
+
+**Why:** if the runtime pre-seeded the bag, it would have to know the data shape of every possible Scoring System. With thousands of user-built systems, that's impossible. Empty bag → modules seed it → workshop wires the dependencies. Runtime stays zero-knowledge.
+
+## 3. Modules only know the state bag. Period.
+
+A module:
+- Reads zero or more keys from the bag
+- Does one specific computation
+- Writes zero or more keys back to the bag
+- Has **no other side effects, no other inputs, no other outputs**
+
+Modules do NOT import each other, do NOT call each other, do NOT "need" anything except the bag. They are pure read-from-bag / compute / write-to-bag units.
+
+## 4. Module types do ONE specific thing.
+
+- **Handicap module** → turns a player into a number (puts it in the bag)
+- **Threshold module** → reads from the bag, produces a target/milestone/benchmark (points or games), writes it to the bag
+- **Head-start module** → reads from the bag, produces a starting credit (points or games), writes it to the bag
+- **Trigger module** → reads from the bag, runs an if/then, mutates the bag
+- **(other module types as they're added)**
+
+Dials within a module are fine (multipliers, thresholds, knobs). Different SITUATIONS are different modules. A 3v3 chart and a 5v5% chart are different modules. Fargo "compute start points" and Fargo "compute games-won threshold" are different modules.
+
+## 5. The Workshop validates. The runtime trusts.
+
+- **Workshop** = where the user builds/edits a Scoring System. The Workshop checks: every key that a module READS must have a matching upstream module that WRITES it. If not, the system is rejected — or the workshop inserts an adapter or producer module.
+- **Runtime** = where the system actually runs at game time. The runtime never validates. It never checks whether modules fit together. It never branches on which system this is. It just iterates the modules and runs them.
+
+If you find yourself writing `if (handicap_type === 'fargo')` or `switch (mechanism.kind)` in runtime code, you are violating this principle. The right answer is "what does the system declare?" — not "which system is this?"
+
+## 6. The output is the builder's responsibility.
+
+If a user builds a system that produces nonsense numbers, the nonsense is THEIR math. Our runtime's job is to faithfully run the modules and record what came out. Not to validate, not to "fix" bad inputs, not to insert defaults, not to second-guess.
+
+The Workshop is where bad combinations are prevented at build time. The runtime is a recorder, not a judge.
+
+## 7. Game win/loss data is SACRED. Everything else is derived.
+
+The single non-negotiable invariant: **who won which game must never break**. The `match_games` table data is the source of truth and the only thing we genuinely cannot afford to lose.
+
+- **Sacred** (must never break, must never crash): captain entering game outcomes, the `match_games` table data, the scoring page itself
+- **Derived** (can fail, can be wrong, can be recomputed later): thresholds, points, standings, "who's winning" displays, all the math the modules produce
+
+If a module throws or produces wrong values, the right behavior is: **log it silently, keep the scoring page running.** We can fix the math later and re-run it against the existing game records — everything regenerates.
+
+The catastrophic failure mode we cannot allow: a module crashes the scoring page, captains can't enter game wins, 30+ people have to replay the match days or weeks later. That loses customers.
+
+## How to apply these principles when planning
+
+When designing any change in this codebase, before writing a single file, ask:
+
+1. Am I adding logic to the runtime, or to a module? (Runtime = wrong. Module = right.)
+2. Am I making the runtime peek at system identity? (Wrong.)
+3. Am I assuming the bag has data pre-seeded? (Wrong.)
+4. Am I making modules talk to each other? (Wrong.)
+5. Am I treating different situations as one module with branches inside? (Wrong — separate modules.)
+6. Am I treating one situation as multiple modules with shared internal state? (Wrong — one module per situation.)
+7. Could a math failure in this code take down the scoring page? (Stop and redesign.)
+
+If any answer is wrong, **stop and redesign the change** to fit the principles. Don't try to make the violation work with a clever hack — Ed has corrected this exact mistake dozens of times.
+
+---
+
 ## Memory Bank Structure
 
 The Memory Bank consists of required core files and optional context files, all in Markdown format. Files build upon each other in a clear hierarchy:
