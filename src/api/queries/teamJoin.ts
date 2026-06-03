@@ -126,3 +126,33 @@ export async function getTeamPlaceholdersForClaim(
   if (error) throw error;
   return (data as unknown as ClaimablePlaceholder[]) ?? [];
 }
+
+/** An approved-but-unacknowledged join the caller should be told about. */
+export interface ApprovedJoinRequest {
+  request_id: string;
+  team_id: string;
+  team_name: string;
+  league_name: string | null;
+}
+
+/**
+ * The caller's approved-but-unacknowledged join requests (the "you're in" feed).
+ * @throws on an unexpected RPC/network error.
+ */
+export async function getMyApprovedJoinRequests(): Promise<ApprovedJoinRequest[]> {
+  const { data, error } = await supabase.rpc('get_my_approved_join_requests');
+  if (error) throw error;
+  return (data as unknown as ApprovedJoinRequest[]) ?? [];
+}
+
+/**
+ * Mark an approved join request acknowledged so the "you're in" popup shows once.
+ * @param requestId - the caller's own approved request.
+ * @throws on an unexpected RPC/network error.
+ */
+export async function acknowledgeJoinRequest(requestId: string): Promise<void> {
+  const { error } = await supabase.rpc('acknowledge_join_request', {
+    p_request_id: requestId,
+  });
+  if (error) throw error;
+}

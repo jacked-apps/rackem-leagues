@@ -535,6 +535,7 @@ how to add a new test, demo recording, cleanup model).
 - `request-team-join.test.ts` - **Onboarding cascade / Unit 3** — exercises the `request_team_join` RPC guard matrix (not_authenticated / invalid_token / no_member / already_member / full / invalid_claim / spot_taken) + happy self-add, happy claim, idempotent already_pending. Each case runs under a tx-scoped JWT and rolls back. 11 tests.
 - `approve-join-request.test.ts` - **Onboarding cascade / Unit 4** — exercises `approve_join_request`: not_authenticated / invalid_action / not_found / already_handled / not_authorized + Decline, Add, Replace (real merge), no_placeholder, nullable-captain→staff path. Tx-scoped JWT, rolls back. 11 tests.
 - `join-requests-for-approver.test.ts` - **Onboarding cascade / Unit 5 (read)** — exercises `get_join_requests_for_approver`: anonymous/no-member → []; captain sees labeled pending request; excludes non-pending + expired; non-approver sees nothing; de-dup when captain is also staff. Tx-scoped JWT. 6 tests.
+- `my-approved-join-requests.test.ts` - **Onboarding cascade / Unit 3 (notify)** — exercises `get_my_approved_join_requests` + `acknowledge_join_request`: anonymous → []; owner sees approved-unacknowledged with labels; pending excluded; acknowledge removes it; can't ack someone else's. Tx-scoped JWT. 6 tests.
 
 #### Messaging UI Components (`/components/messages/`)
 - `ReadOnlyBanner.tsx` - **Messaging Phase 1 / Unit 6** — shadcn `Alert` that renders in place of the message composer when the current user can read but not post. Two reasons covered: `past-member` (left_at non-NULL) and `announcement-non-staff` (announcements channel viewed by a non-staff member). The composer is unmounted by `MessageView`, not just hidden by CSS.
@@ -970,6 +971,7 @@ Reusable section components composed by `PreferencesCard.tsx`. Same components d
 - `DeleteLeagueModal.tsx` - League deletion confirmation
 - `DeleteSeasonModal.tsx` - Season deletion confirmation
 - `PendingInvitesModal.tsx` - Modal showing pending placeholder player invites to users after login
+- `ApprovedJoinModal.tsx` - **Onboarding cascade (Unit 3 notify)** — "you're on the team!" popup mounted app-wide in MemberLayout; tells a joiner the moment they're approved (even if they closed the tab) and routes to their team, stamping acknowledged so it shows once.
 - `SecurityDisclaimerModal.tsx` - Security disclaimer
 - `SetupGuideModal.tsx` - Setup guide
 - `WeekOffReasonModal.tsx` - Week off reason
@@ -1238,6 +1240,7 @@ High-level business logic services
 - `useTeamJoinRequests.ts` - **Onboarding cascade (Unit 5)** — query hook for the approver's pending-request feed via `getJoinRequestsForApprover` (captain = his team, LO = all org teams).
 - `useTeamPlaceholders.ts` - **Onboarding cascade (Unit 5)** — lazily loads a team's claimable placeholders (+ record flag) for the Replace picker via `getTeamPlaceholdersForClaim`.
 - `usePendingJoinRequestCount.ts` - **Onboarding cascade (Unit 6, the doorbell)** — derives the pending-request count from the shared approver feed; drives the drawer/sidebar "Join requests (N)" link + the My Teams bottom-tab badge. 0 for non-approvers.
+- `useApprovedJoinRequests.ts` - **Onboarding cascade (Unit 3 notify)** — `useApprovedJoinRequests` polls the caller's approved-but-unacknowledged joins; `useAcknowledgeJoinRequest` stamps one so the "you're in" popup shows once.
 - `useUserProfile.ts` - **✅ User profile hook** (full member data + role utilities)
 - `useOperatorId.ts` - **✅ Operator ID hook** (operator lookup with caching)
 - `useMatchPhase.ts` - **✅ Match-phase status query** (minimal id/status/started_at slice; staleTime: 0; foreground 7s polling while status='scheduled' as Defense 7 backstop for dropped realtime). Distinct cache key from `useMatchById` — see file header for rationale.
@@ -1646,6 +1649,7 @@ Supabase local configuration and migrations
 | `supabase/migrations/20260529000003_request_team_join.sql` | **Onboarding cascade / Unit 3.** `request_team_join(token, claimed_member_id?)` SECURITY DEFINER RPC (authenticated only) — the only path that files a join request; derives requester from `auth.uid()` + team from the token (never client input), returns `{ok, reason, status}` covering the guard states. |
 | `supabase/migrations/20260529000005_join_requests_for_approver.sql` | **Onboarding cascade / Unit 5 (read).** `get_join_requests_for_approver()` — pending requests across every team the caller captains OR staffs, de-duplicated, with person/team/league labels + `has_open_placeholders` (drives Replace + the Add guard). Plus STABLE helpers `league_display_name(uuid)` + `member_display_name(uuid)`. |
 | `supabase/migrations/20260529000006_team_placeholders_for_claim.sql` | **Onboarding cascade / Unit 5.** `get_team_placeholders_for_claim(team_id)` — a team's unclaimed placeholders + `placeholder_has_stats` record flag for the Replace picker; captain/org-staff gated. |
+| `supabase/migrations/20260529000007_my_approved_join_requests.sql` | **Onboarding cascade / Unit 3 (notify).** `get_my_approved_join_requests()` (caller's approved-but-unacknowledged joins + labels) + `acknowledge_join_request(id)` (stamp so the "you're in" popup shows once, own-request scoped). |
 | `supabase/migrations/20260529000004_approve_join_request.sql` | **Onboarding cascade / Unit 4.** `approve_join_request(request_id, action, claimed_member_id?)` SECURITY DEFINER RPC — captain/org-staff one-tap Add/Replace/Decline; reads team_id from the row, resolves org via `teams.league_id`, `FOR UPDATE` race-guard, actor from `auth.uid()`. Also widens `'captain_approve'` in BOTH the merge RPC whitelist (recreated verbatim from `20260422000020`) AND the `archived_placeholders` actor_role CHECK. |
 | `supabase/seed.sql` | Full local dev DB dump — auto-applied on `supabase db reset`. **Local only, never runs against production.** |
 | `supabase/seed_test_users.sql` | 4 synthetic test auth users (player/operator/captain/owner, password `test-password-123`). **Dev-only — run manually via `docker exec ... psql`.** |

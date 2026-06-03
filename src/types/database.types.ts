@@ -2856,6 +2856,10 @@ export type Database = {
       }
     }
     Functions: {
+      acknowledge_join_request: {
+        Args: { p_request_id: string }
+        Returns: Json
+      }
       approve_join_request: {
         Args: {
           p_action: string
@@ -2972,6 +2976,7 @@ export type Database = {
           synopsis: Json
         }[]
       }
+      get_my_approved_join_requests: { Args: never; Returns: Json }
       get_my_pending_invites: {
         Args: never
         Returns: {

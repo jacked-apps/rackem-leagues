@@ -87,6 +87,9 @@ export const queryKeys = {
     /** A team's unclaimed placeholders for the Replace picker (Unit 5) */
     placeholders: (teamId: string) =>
       [...queryKeys.teamJoin.all, 'placeholders', teamId] as const,
+
+    /** The caller's approved-but-unacknowledged joins — the "you're in" feed (Unit 3) */
+    approved: () => [...queryKeys.teamJoin.all, 'approved'] as const,
   },
 
   /**
