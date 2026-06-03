@@ -73,6 +73,7 @@ async function approve(
 describe('Onboarding cascade Unit 4 — approve_join_request', () => {
   let teamId: string | null = null;
   let captainUser: string | null = null;
+  let orgId: string | null = null;
   let placeholderId: string | null = null;
   let joinerUser: string | null = null;
   let joinerMember: string | null = null;
@@ -80,6 +81,8 @@ describe('Onboarding cascade Unit 4 — approve_join_request', () => {
 
   beforeAll(async () => {
     // A team with a registered captain, resolvable org, and a placeholder on it.
+    // Deterministic fixture (ORDER BY id, not arbitrary LIMIT 1) whose captain
+    // is ALSO org staff — so the nullable-captain→staff case has a valid actor.
     const team = await executeSql(`
       SELECT t.id AS team_id, c.user_id AS captain_user, l.organization_id AS org
         FROM teams t
@@ -90,15 +93,22 @@ describe('Onboarding cascade Unit 4 — approve_join_request', () => {
            SELECT 1 FROM team_players tp JOIN members m ON m.id = tp.member_id
             WHERE tp.team_id = t.id AND m.user_id IS NULL
          )
+         AND EXISTS (
+           SELECT 1 FROM organization_staff os
+            WHERE os.organization_id = l.organization_id AND os.member_id = t.captain_id
+         )
+       ORDER BY t.id
        LIMIT 1`);
     teamId = team[0]?.team_id ?? null;
     captainUser = team[0]?.captain_user ?? null;
-    const org = team[0]?.org ?? null;
+    orgId = team[0]?.org ?? null;
+    const org = orgId;
 
     const ph = await executeSql(
       `SELECT tp.member_id FROM team_players tp
          JOIN members m ON m.id = tp.member_id
-        WHERE tp.team_id = $1 AND m.user_id IS NULL LIMIT 1`,
+        WHERE tp.team_id = $1 AND m.user_id IS NULL
+        ORDER BY tp.member_id LIMIT 1`,
       [teamId]
     );
     placeholderId = ph[0]?.member_id ?? null;
@@ -109,7 +119,7 @@ describe('Onboarding cascade Unit 4 — approve_join_request', () => {
         WHERE m.user_id IS NOT NULL
           AND NOT EXISTS (SELECT 1 FROM team_players tp
                            WHERE tp.team_id = $1 AND tp.member_id = m.id)
-        LIMIT 1`,
+        ORDER BY m.id LIMIT 1`,
       [teamId]
     );
     joinerMember = joiner[0]?.id ?? null;
@@ -122,7 +132,7 @@ describe('Onboarding cascade Unit 4 — approve_join_request', () => {
           AND m.user_id <> $2
           AND NOT EXISTS (SELECT 1 FROM organization_staff os
                            WHERE os.organization_id = $1 AND os.member_id = m.id)
-        LIMIT 1`,
+        ORDER BY m.id LIMIT 1`,
       [org, captainUser]
     );
     outsiderUser = outsider[0]?.user_id ?? null;
@@ -245,6 +255,23 @@ describe('Onboarding cascade Unit 4 — approve_join_request', () => {
       // Bye/edge team with no captain: staff (here = captainUser, also staff)
       // must still be able to act; the outsider still cannot.
       await c.query(`UPDATE teams SET captain_id = NULL WHERE id = $1`, [teamId]);
+
+      // Pin the staff state IN-TX (rolled back) so this case is immune to a
+      // sibling RLS test that mutates organization_staff non-transactionally:
+      // the actor IS staff, the outsider is NOT.
+      await c.query(
+        `INSERT INTO organization_staff (organization_id, member_id, position)
+         SELECT $1, m.id, 'admin' FROM members m WHERE m.user_id = $2
+         ON CONFLICT (organization_id, member_id) DO NOTHING`,
+        [orgId, captainUser]
+      );
+      await c.query(
+        `DELETE FROM organization_staff
+          WHERE organization_id = $1
+            AND member_id = (SELECT id FROM members WHERE user_id = $2)`,
+        [orgId, outsiderUser]
+      );
+
       const id = await insertRequest(c, teamId!, joinerUser!, joinerMember!);
 
       await setJwt(c, outsiderUser);

@@ -49,12 +49,19 @@ describe('Onboarding cascade Unit 5 — get_join_requests_for_approver', () => {
   let outsiderUser: string | null = null;
 
   beforeAll(async () => {
+    // Deterministic fixture whose captain is also org staff (the de-dup case
+    // relies on the caller being both captain and staff of this team's org).
     const team = await executeSql(`
       SELECT t.id AS team_id, c.user_id AS captain_user, l.organization_id AS org
         FROM teams t
         JOIN members c ON c.id = t.captain_id
         JOIN leagues l ON l.id = t.league_id
        WHERE t.captain_id IS NOT NULL AND c.user_id IS NOT NULL
+         AND EXISTS (
+           SELECT 1 FROM organization_staff os
+            WHERE os.organization_id = l.organization_id AND os.member_id = t.captain_id
+         )
+       ORDER BY t.id
        LIMIT 1`);
     teamId = team[0]?.team_id ?? null;
     captainUser = team[0]?.captain_user ?? null;

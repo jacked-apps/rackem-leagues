@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-06-03 (Onboarding cascade build: Units 1–2 (schema + `get_team_join_view`), Unit 3 burst 1 (`request_team_join` RPC) and burst 2 (the public `/join/:token` page in new `src/onboarding/` + flow-aware `redirectTo` on the shared short-profile form + the `join/:token` public route); Unit 4 (`approve_join_request` RPC + `captain_approve` actor_role widening + `useApproveJoinRequest`). Branch `feat/onboarding-cascade`, rebased onto current main after passwordless PR #159 merged.)
+> **Last Updated**: 2026-06-03 (Onboarding cascade build: Units 1–2 (schema + `get_team_join_view`), Unit 3 burst 1 (`request_team_join` RPC) and burst 2 (the public `/join/:token` page in new `src/onboarding/` + flow-aware `redirectTo` on the shared short-profile form + the `join/:token` public route); Unit 4 (`approve_join_request` RPC + `captain_approve` actor_role widening); Unit 5 (approver feed + approve surface JoinRequestList/PlaceholderPicker); Unit 6 (doorbell count); Unit 7 (share link + LO onboard-captains list); Unit 8 (land-on-match accordion default). All 8 units complete. Branch `feat/onboarding-cascade`, rebased onto current main after passwordless PR #159 merged.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -656,6 +656,7 @@ how to add a new test, demo recording, cleanup model).
 - `components/JoinRequestList.tsx` - **Unit 5.** The approve surface (one component, two scopes): rows of person·team·league with Add/Replace/Decline. Replace shows only when the team has placeholders; Add confirms "brand-new?" only when placeholders exist; Decline always confirms. Mounted in MyTeams (captain) + OperatorDashboard (LO); renders nothing when empty.
 - `components/JoinRequestList.test.tsx` - Approve-surface controls + guards (6 cases), hooks/picker mocked.
 - `components/PlaceholderPicker.tsx` - **Unit 5.** Replace-picker dialog: lists a team's unclaimed placeholders (record-flagged), two-step confirm before the irreversible merge.
+- `landingTeam.ts` + `landingTeam.test.ts` - **Unit 8.** `defaultOpenTeamId(teamIds)` — pure helper deciding which team accordion to auto-expand on MyTeams (single team → open it so its existing Quick Score card is front-and-center; several → leave collapsed). Reuse, not rebuild: no parallel match hook, no MyMatch.
 - `InviteMyTeamButton.tsx` - **Unit 7.** Captain's "Invite my team": shares the /join/:token link via ShareLinkSection (copy + QR), a "generate new link" rotate affordance, and a dismissible first-run tip (localStorage). Mounted per captained team in MyTeams.
 - `OnboardCaptainsList.tsx` - **Unit 7.** LO's "onboard my captains": one row per org team (team · league · captain · Copy link), pre-paired. Mounted in OperatorDashboard; renders nothing when empty.
 

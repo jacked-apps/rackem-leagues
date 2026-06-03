@@ -39,6 +39,7 @@ import { NineBallIcon } from '@/components/icons/NineBallIcon';
 import { EightBallIcon } from '@/components/icons/EightBallIcon';
 import { JoinRequestList } from '@/onboarding/components/JoinRequestList';
 import { InviteMyTeamButton } from '@/onboarding/InviteMyTeamButton';
+import { defaultOpenTeamId } from '@/onboarding/landingTeam';
 
 interface TeamData {
   team_id: string;
@@ -516,7 +517,15 @@ export function MyTeams() {
             </CardContent>
           </Card>
         ) : (
-          <Accordion type="single" collapsible className="space-y-4">
+          <Accordion
+            type="single"
+            collapsible
+            className="space-y-4"
+            // Land-on-tonight's-match (Unit 8): a player on exactly one team
+            // lands with it open, so an in-progress/today match's Quick Score
+            // card is front-and-center. With several teams we don't guess which.
+            defaultValue={defaultOpenTeamId(teams.map((t) => t.teams.id))}
+          >
             {teams.map((teamData) => (
               <TeamAccordionItem
                 key={teamData.teams.id}
