@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-06-03 (Threshold-math-modular branch: pinned 7 core architectural principles at top of CLAUDE.md; rewrote plan v4 around "scoring system = ordered list of modules, state bag starts empty, runtime is zero-knowledge"; landed Unit 1 — new `src/systems/chain-runtime/` folder with `runSystemChain` (~25 lines, never throws), `types.ts` (Module/StateBag/Context), and tests (8 passing). Branch `feat/threshold-math-modular`.)
+> **Last Updated**: 2026-06-03 (Threshold-math-modular branch: pinned 7 core architectural principles at top of CLAUDE.md; rewrote plan v4 around "scoring system = ordered list of modules, state bag starts empty, runtime is zero-knowledge"; landed Unit 1 (`src/systems/chain-runtime/` — runSystemChain + types + tests) and Unit 2 (`src/systems/modules/seed/` — 4 seed modules that populate the empty bag from context: match identity, lineup handicaps, match format, Fargo negotiated start points; 21 tests passing). Branch `feat/threshold-math-modular`.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
