@@ -60,3 +60,44 @@ export async function submitJoinRequest(
   if (error) throw error;
   return data as unknown as JoinRequestResult;
 }
+
+/** Approver decision on a pending request. */
+export type ApproveAction = 'add' | 'replace' | 'decline';
+
+/** Result of an approve decision. */
+export interface ApproveResult {
+  ok: boolean;
+  /** 'added' | 'replaced' | 'declined' on success; a guard code otherwise. */
+  reason: string;
+  /** Current status when the request was already settled. */
+  status?: string;
+  /** The merge engine's message when reason is 'merge_failed'. */
+  detail?: string;
+}
+
+/**
+ * Apply an approver decision to a pending join request.
+ *
+ * @param requestId - the `team_join_requests` row to act on.
+ * @param action - 'add' (roster, no merge) / 'replace' (merge a placeholder) /
+ *   'decline'.
+ * @param claimedMemberId - the placeholder to merge for 'replace' (falls back
+ *   to the request's own `claimed_member_id` when omitted).
+ * @returns the `{ ok, reason }` outcome.
+ * @throws only on an unexpected RPC/network error.
+ */
+export async function approveJoinRequest(
+  requestId: string,
+  action: ApproveAction,
+  claimedMemberId?: string | null
+): Promise<ApproveResult> {
+  const { data, error } = await supabase.rpc('approve_join_request', {
+    p_request_id: requestId,
+    p_action: action,
+    p_claimed_member_id: claimedMemberId ?? undefined,
+  });
+
+  if (error) throw error;
+  return data as unknown as ApproveResult;
+}
+

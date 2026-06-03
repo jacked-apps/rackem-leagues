@@ -2856,6 +2856,14 @@ export type Database = {
       }
     }
     Functions: {
+      approve_join_request: {
+        Args: {
+          p_action: string
+          p_claimed_member_id?: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
       archive_placeholder: {
         Args: {
           p_actor_member_id: string
