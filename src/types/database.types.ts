@@ -2956,6 +2956,7 @@ export type Database = {
           team_name: string
         }[]
       }
+      get_join_requests_for_approver: { Args: never; Returns: Json }
       get_merges_into_member: {
         Args: { p_org_id: string; p_target_member_id: string }
         Returns: {
@@ -3038,6 +3039,7 @@ export type Database = {
         Args: { conv_id: string; uid: string }
         Returns: boolean
       }
+      league_display_name: { Args: { p_league_id: string }; Returns: string }
       lookup_placeholder_by_system_number: {
         Args: { p_system_number: number }
         Returns: {
@@ -3059,6 +3061,7 @@ export type Database = {
           was_swapped: boolean
         }[]
       }
+      member_display_name: { Args: { p_member_id: string }; Returns: string }
       merge_placeholder_into_member: {
         Args: { p_placeholder_member_id: string; p_target_member_id: string }
         Returns: {

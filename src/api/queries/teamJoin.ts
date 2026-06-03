@@ -72,3 +72,30 @@ export async function getTeamJoinView(token: string): Promise<TeamJoinView> {
   // always well-defined for callers.
   return { ...NOT_FOUND, ...(data as unknown as TeamJoinView) };
 }
+
+/** One pending request in an approver's feed. */
+export interface ApproverJoinRequest {
+  request_id: string;
+  team_id: string;
+  team_name: string;
+  league_name: string | null;
+  requester_member_id: string | null;
+  requester_name: string;
+  /** The placeholder spot being claimed, if this was a claim request. */
+  claimed_member_id: string | null;
+  claimed_name: string | null;
+  created_at: string;
+}
+
+/**
+ * Load every pending join request across the teams the caller can approve
+ * (teams they captain OR teams in an org they staff), de-duplicated.
+ *
+ * @returns the pending requests, newest-last; empty for a non-approver.
+ * @throws on an unexpected RPC/network error.
+ */
+export async function getJoinRequestsForApprover(): Promise<ApproverJoinRequest[]> {
+  const { data, error } = await supabase.rpc('get_join_requests_for_approver');
+  if (error) throw error;
+  return (data as unknown as ApproverJoinRequest[]) ?? [];
+}

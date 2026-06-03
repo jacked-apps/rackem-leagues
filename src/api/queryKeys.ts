@@ -80,6 +80,9 @@ export const queryKeys = {
 
     /** The public join view for a given token (Unit 2) */
     view: (token: string) => [...queryKeys.teamJoin.all, 'view', token] as const,
+
+    /** The approver's pending-request feed across all approvable teams (Unit 5/6) */
+    requests: () => [...queryKeys.teamJoin.all, 'requests'] as const,
   },
 
   /**
