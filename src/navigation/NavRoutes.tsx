@@ -20,6 +20,7 @@ import { RulesErrorBoundary } from '../rules/RulesErrorBoundary';
 import { Login } from '../login/Login';
 import { Register } from '../login/Register';
 import { ClaimPlayer } from '../login/ClaimPlayer';
+import { TeamJoinPage } from '../onboarding/TeamJoinPage';
 import { ForgotPassword } from '../login/ForgotPassword';
 import { ResetPassword } from '../login/ResetPassword';
 import { EmailConfirmation } from '../login/EmailConfirmation';
@@ -157,6 +158,7 @@ export const router = createBrowserRouter([
       { path: 'login', element: <Login /> },
       { path: 'register', element: <Register /> },
       { path: 'claim-player', element: <ClaimPlayer /> },
+      { path: 'join/:token', element: <TeamJoinPage /> },
       { path: 'forgot-password', element: <ForgotPassword /> },
       { path: 'reset-password', element: <ResetPassword /> },
       { path: 'confirm', element: <EmailConfirmation /> },

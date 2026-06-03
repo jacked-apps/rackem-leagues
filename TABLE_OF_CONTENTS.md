@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-06-03 (Onboarding cascade build: indexed Unit 1 schema migration + test, and Unit 2 `get_team_join_view` RPC migration + `teamJoin.ts` query + `useTeamJoinView` hook + DB/hook tests. Branch `feat/onboarding-cascade`, rebased onto current main after passwordless PR #159 merged.)
+> **Last Updated**: 2026-06-03 (Onboarding cascade build: Units 1–2 (schema + `get_team_join_view`), Unit 3 burst 1 (`request_team_join` RPC) and burst 2 (the public `/join/:token` page in new `src/onboarding/` + flow-aware `redirectTo` on the shared short-profile form + the `join/:token` public route). Branch `feat/onboarding-cascade`, rebased onto current main after passwordless PR #159 merged.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -641,6 +641,14 @@ how to add a new test, demo recording, cleanup model).
 - `EmailConfirmation.tsx` - Email confirmation
 - `LoginCard.tsx` - Login card component
 - `LogoutButton.tsx` - Logout button
+
+#### Onboarding Cascade (`/onboarding/`)
+*Player/captain cold-start join-by-link flow. See `docs/plans/2026-05-29-001-feat-onboarding-cascade-plan.md`.*
+- `TeamJoinPage.tsx` - **Unit 3.** The public `/join/:token` page. Reads the join view and routes to the right step: invalid-link / already-approved / waiting / inline sign-in / short profile form / Join-or-claim. Sign-in is in-page (passwordless code) and the profile form returns here, so the join intent never leaves the page.
+- `TeamJoinPage.test.tsx` - Routing-state-machine test (7 cases) with hooks + steps mocked.
+- `components/JoinSignInStep.tsx` - **Unit 3.** Inline email-code sign-in (reuses `requestEmailCode` + `EmailCodeStep`); invalidates the join view on auth so the page advances. "More options" → `/login?redirect=/join/:token`.
+- `components/JoinSubmitStep.tsx` - **Unit 3.** Signed-in member's Join/claim step: open placeholder spots as claim buttons + a self-add; maps guard reasons (full / spot_taken / already_member) to inline copy.
+- `components/JoinStatusCard.tsx` - **Unit 3.** Presentational centered status card reused by every join state.
 
 #### Profile (`/profile/`)
 - `Profile.tsx` - Main profile page

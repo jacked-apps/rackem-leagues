@@ -10,6 +10,7 @@ import { capitalizeWords } from '../utils/formatters';
 import { generateNickname } from '../utils/nicknameGenerator';
 import { supabase } from '../supabaseClient';
 import { useUser } from '../context/useUser';
+import { getSafeRedirectPath } from '../login/redirect';
 import type { ShortProfileFormState } from './types';
 import { logger } from '@/utils/logger';
 
@@ -18,6 +19,13 @@ interface UseShortProfileSubmissionProps {
   onError: (errors: ShortProfileFormState['errors']) => void;
   onSuccess: () => void;
   onLoading: (loading: boolean) => void;
+  /**
+   * Where to land after the profile is created. Defaults to `/my-teams` (the
+   * standard registration destination). The onboarding-cascade join flow passes
+   * `/join/:token` so completion returns the new member to the join page, which
+   * then offers the one-tap Join. Validated as a same-origin relative path.
+   */
+  redirectTo?: string;
 }
 
 /**
@@ -42,6 +50,7 @@ export const useShortProfileSubmission = ({
   onError,
   onSuccess,
   onLoading,
+  redirectTo,
 }: UseShortProfileSubmissionProps) => {
   const { user } = useUser();
 
@@ -123,8 +132,10 @@ export const useShortProfileSubmission = ({
 
       onSuccess();
 
-      // Force full page reload to My Teams to ensure UserProvider refetches member data
-      window.location.href = '/my-teams';
+      // Force a full page reload so UserProvider refetches the new member row.
+      // Default destination is My Teams; a flow may redirect elsewhere (e.g. the
+      // join page) via a validated same-origin relative path.
+      window.location.href = getSafeRedirectPath(redirectTo) ?? '/my-teams';
     } catch (error) {
       logger.error('Unexpected error during profile creation', {
         error: error instanceof Error ? error.message : String(error),
