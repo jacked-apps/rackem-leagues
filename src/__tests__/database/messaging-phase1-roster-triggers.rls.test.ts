@@ -35,6 +35,11 @@ let teamConvId: string;
 let captainConvId: string;
 let initialCaptainId: string;
 let initialRoster: Array<{ member_id: string; season_id: string }>;
+// Snapshot of every season status in this org so afterAll can restore them —
+// this suite toggles its season active and deactivates siblings, and leaving
+// them changed pollutes other DB suites (e.g. createOrgAnnouncementsChat, which
+// needs an active season to exist).
+let originalSeasonStatuses: Array<{ id: string; status: string }> = [];
 
 /**
  * Pick a usable test team that has a captain + a multi-player roster,
@@ -65,6 +70,14 @@ async function bootstrap() {
     [teamId]
   );
   initialRoster = roster;
+
+  // Snapshot all org season statuses BEFORE we start toggling them, so afterAll
+  // can put them back exactly as they were.
+  originalSeasonStatuses = await executeSql(
+    `SELECT id, status FROM seasons
+      WHERE league_id IN (SELECT id FROM leagues WHERE organization_id = $1)`,
+    [organizationId]
+  );
 
   // Reset season to upcoming + clear any auto-managed chats, then re-activate
   // so we start from a known state with all four chat types present.
@@ -173,9 +186,11 @@ describe('Unit 5 — roster + captain lifecycle triggers', () => {
 
   afterAll(async () => {
     await restoreRosterAndCaptain();
-    await executeSql(`UPDATE seasons SET status = 'upcoming' WHERE id = $1`, [
-      seasonId,
-    ]);
+    // Restore every org season to its original status (undoes this suite's
+    // activate/deactivate so it doesn't pollute other DB suites).
+    for (const s of originalSeasonStatuses) {
+      await executeSql(`UPDATE seasons SET status = $1 WHERE id = $2`, [s.status, s.id]);
+    }
   });
 
   // ---------------------------------------------------------------------------
@@ -263,7 +278,10 @@ describe('Unit 5 — roster + captain lifecycle triggers', () => {
     expect(teamMap.get(newCaptainId)).toBe(true);
     expect(teamMap.get(initialCaptainId)).toBe(false);
 
-    // Captain chat: same flips (assuming old captain doesn't captain another team in this season)
+    // Captain chat: the new captain is now cannot_leave. The OLD captain stays
+    // cannot_leave only if they still captain another team in this season
+    // (the captains_chat spans the whole season) — so assert against reality
+    // rather than assuming they don't.
     const captainRows = await executeSql(
       `SELECT user_id, cannot_leave FROM conversation_participants
         WHERE conversation_id = $1 AND user_id IN ($2, $3)`,
@@ -272,8 +290,13 @@ describe('Unit 5 — roster + captain lifecycle triggers', () => {
     const captainMap = new Map(
       captainRows.map((r: { user_id: string; cannot_leave: boolean }) => [r.user_id, r.cannot_leave])
     );
+    const oldCaptainStillCaptainsElsewhere = await executeSql(
+      `SELECT 1 FROM teams
+        WHERE season_id = $1 AND captain_id = $2 AND id != $3 LIMIT 1`,
+      [seasonId, initialCaptainId, teamId]
+    );
     expect(captainMap.get(newCaptainId)).toBe(true);
-    expect(captainMap.get(initialCaptainId)).toBe(false);
+    expect(captainMap.get(initialCaptainId)).toBe(oldCaptainStillCaptainsElsewhere.length > 0);
 
     // System message in team chat
     expect(await countSystemMessages(teamConvId)).toBe(teamMsgBaseline + 1);
