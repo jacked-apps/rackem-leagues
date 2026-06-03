@@ -22,6 +22,7 @@
  */
 
 import type { PlayerHistoryContext, RatingValidationResult, RatingValue } from '../types';
+import type { HandicapEntryModule } from './handicapEntry';
 
 /**
  * Handicap encoding type — the discriminator that selects which variant a league uses.
@@ -84,4 +85,23 @@ export interface HandicapSystem {
    * validated RatingValue. UI uses the error message when ok is false.
    */
   validate: (value: unknown) => RatingValidationResult;
+
+  /**
+   * UI-side dials for the lineup-page handicap-entry surface. Replaces the
+   * lineup-side peeks at `handicap_type` per the UI modularity audit
+   * (`docs/brainstorms/2026-06-03-ui-modularity-audit-requirements.md`).
+   *
+   * Per Ed's reframing: Fargo today = manual-entry module with dials set to
+   * {min:100, max:1000, integer, source:'manual'}. When the FargoRate API
+   * access lands, source flips to 'api' and an adapter wires in — same
+   * module, different dials. The same shape is also the fallback for LOs
+   * with unrecognized systems (letter-grade scales, custom enums).
+   *
+   * @see ./handicapEntry.ts — the HandicapEntryModule interface
+   */
+  readonly handicapEntry: HandicapEntryModule;
 }
+
+// Re-export the entry module type for convenience so consumers can do
+// `import type { HandicapSystem, HandicapEntryModule } from '...'`.
+export type { HandicapEntryModule } from './handicapEntry';

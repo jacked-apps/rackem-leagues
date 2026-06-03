@@ -19,6 +19,19 @@ const FARGO_RATING_MIN = 100;
 const FARGO_RATING_MAX = 850;
 
 /**
+ * Lineup-entry dial maximum. Set above the highest real-world Fargo
+ * rating (~850 today; world record is in that range) so the UI input
+ * doesn't reject legitimate edge cases. The `validate` function above
+ * still enforces the strict 100–850 contract — this is just the
+ * widget's permissive ceiling per Ed: "call it 1000 for now."
+ */
+const FARGO_ENTRY_MAX = 1000;
+
+function formatFargo(value: number): string {
+  return String(Math.round(value));
+}
+
+/**
  * Validate a FargoRate rating value. Must be a finite integer in [100, 850].
  *
  * Extracted from `fargo5v5.ts`'s `validateRating` function to keep the Module
@@ -57,7 +70,23 @@ export const fargoRateHandicapSystem: HandicapSystem = {
 
   computeFromHistory: () => null,
 
-  displayFormat: (value) => String(Math.round(value)),
+  displayFormat: formatFargo,
 
   validate: validateRating,
+
+  // Lineup-page entry dials. Per Ed's reframing: Fargo today is the
+  // manual-entry module with Fargo dials. When the FargoRate API
+  // access lands, flip `source` to 'api' and wire an adapter. Range
+  // 100–1000 (above the 850 strict ceiling; the strict contract is
+  // enforced by `validate` above). See ./handicapEntry.ts.
+  handicapEntry: {
+    inputKind: 'number',
+    range: { min: FARGO_RATING_MIN, max: FARGO_ENTRY_MAX, integer: true },
+    enumValues: null,
+    placeholderText: '—',
+    columnHeader: 'Fargo',
+    columnWidth: 'wide',
+    displayFormat: (value) => (value === null ? '' : formatFargo(value)),
+    source: 'manual',
+  },
 };

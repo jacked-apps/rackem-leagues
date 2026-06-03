@@ -31,15 +31,17 @@ import type { HandicapSystem } from './types';
  *   to own that logic. A future Unit may lift it into this Module once the async/DB
  *   concerns are handled cleanly.
  */
+function formatPoints(value: number): string {
+  if (value > 0) return `+${value}`;
+  return String(value);
+}
+
 export const pointsHandicapSystem: HandicapSystem = {
   kind: 'points',
 
   requiresManualEntry: false,
 
-  displayFormat: (value) => {
-    if (value > 0) return `+${value}`;
-    return String(value);
-  },
+  displayFormat: formatPoints,
 
   validate: (value) => {
     if (typeof value !== 'number' || !Number.isFinite(value)) {
@@ -52,5 +54,25 @@ export const pointsHandicapSystem: HandicapSystem = {
       return { ok: false, message: 'Points handicap must be between -2 and +2' };
     }
     return { ok: true, value };
+  },
+
+  // Lineup-page entry dials. Points uses a select widget over the
+  // five legal values (-2..+2). Auto-derived from history; not a
+  // manual entry. See ./handicapEntry.ts for the dial shape.
+  handicapEntry: {
+    inputKind: 'select',
+    range: null,
+    enumValues: [
+      { value: 2, label: '+2' },
+      { value: 1, label: '+1' },
+      { value: 0, label: '0' },
+      { value: -1, label: '-1' },
+      { value: -2, label: '-2' },
+    ],
+    placeholderText: '',
+    columnHeader: 'H/C',
+    columnWidth: 'narrow',
+    displayFormat: (value) => (value === null ? '' : formatPoints(value)),
+    source: 'auto-from-history',
   },
 };

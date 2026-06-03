@@ -24,12 +24,16 @@ import type { HandicapSystem } from './types';
  * - `computeFromHistory`: intentionally omitted in Phase A — the existing async
  *   `calculatePlayerHandicap()` continues to own that logic.
  */
+function formatPercentage(value: number): string {
+  return `${Math.round(value)}%`;
+}
+
 export const percentageHandicapSystem: HandicapSystem = {
   kind: 'percentage',
 
   requiresManualEntry: false,
 
-  displayFormat: (value) => `${Math.round(value)}%`,
+  displayFormat: formatPercentage,
 
   validate: (value) => {
     if (typeof value !== 'number' || !Number.isFinite(value)) {
@@ -39,5 +43,20 @@ export const percentageHandicapSystem: HandicapSystem = {
       return { ok: false, message: 'Percentage handicap must be between 0 and 100' };
     }
     return { ok: true, value };
+  },
+
+  // Lineup-page entry dials. Percentage uses a number input bounded
+  // to [0, 100]. Auto-derived from history; not a manual entry. The
+  // '%' placeholder cues that the value is a percentage. See
+  // ./handicapEntry.ts for the dial shape.
+  handicapEntry: {
+    inputKind: 'number',
+    range: { min: 0, max: 100, integer: false },
+    enumValues: null,
+    placeholderText: '%',
+    columnHeader: 'H/C',
+    columnWidth: 'narrow',
+    displayFormat: (value) => (value === null ? '' : formatPercentage(value)),
+    source: 'auto-from-history',
   },
 };

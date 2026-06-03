@@ -20,6 +20,10 @@ import type { HandicapSystem } from './types';
 const SKILL_LEVEL_MIN = 1;
 const SKILL_LEVEL_MAX = 9;
 
+function formatSkillLevel(value: number): string {
+  return `SL${Math.round(value)}`;
+}
+
 /**
  * Skill Level handicap encoding (integer 1–9) — RESERVED, no shipping consumer.
  *
@@ -35,7 +39,7 @@ export const skillLevelHandicapSystem: HandicapSystem = {
 
   requiresManualEntry: true,
 
-  displayFormat: (value) => `SL${Math.round(value)}`,
+  displayFormat: formatSkillLevel,
 
   validate: (value) => {
     if (typeof value !== 'number' || !Number.isFinite(value)) {
@@ -51,5 +55,20 @@ export const skillLevelHandicapSystem: HandicapSystem = {
       };
     }
     return { ok: true, value };
+  },
+
+  // Lineup-page entry dials. Reserved; not in any shipping system
+  // today. Configured as a number widget bounded to 1–9 (APA's
+  // skill-level range) since the future expectation is operator
+  // entry (APA assigns the level externally).
+  handicapEntry: {
+    inputKind: 'number',
+    range: { min: SKILL_LEVEL_MIN, max: SKILL_LEVEL_MAX, integer: true },
+    enumValues: null,
+    placeholderText: 'SL',
+    columnHeader: 'Skill',
+    columnWidth: 'narrow',
+    displayFormat: (value) => (value === null ? '' : formatSkillLevel(value)),
+    source: 'manual',
   },
 };
