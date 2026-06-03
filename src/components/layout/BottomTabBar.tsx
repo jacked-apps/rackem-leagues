@@ -14,6 +14,7 @@ import { Users, Radio, MessageSquare, Settings, Building2 } from 'lucide-react';
 import { useIsOperator } from '@/api/hooks/useUserProfile';
 import { useOrganizations } from '@/api/hooks/useOrganizations';
 import { useUnreadMessageCount } from '@/api/hooks/useMessages';
+import { usePendingJoinRequestCount } from '@/api/hooks/usePendingJoinRequestCount';
 import { useUserProfile } from '@/api/hooks/useUserProfile';
 
 /** Routes where the tab bar is hidden because the page has its own fixed
@@ -69,6 +70,7 @@ export function BottomTabBar() {
   const { member } = useUserProfile();
   const { organizations } = useOrganizations(member?.id);
   const { data: unreadCount = 0 } = useUnreadMessageCount(member?.id);
+  const joinRequestCount = usePendingJoinRequestCount();
 
   // Hide on routes with fixed bottom action bars
   const shouldHide = HIDDEN_TAB_ROUTES.some((pattern) => pattern.test(location.pathname));
@@ -87,6 +89,9 @@ export function BottomTabBar() {
       icon: Users,
       to: '/my-teams',
       activePatterns: [/^\/my-teams/, /^\/team\//],
+      // Doorbell: pending join requests the user can approve (act-now nudge on
+      // the destination tab, cleared when the queue empties).
+      badge: joinRequestCount > 0 ? joinRequestCount : undefined,
     },
     {
       label: 'Live',

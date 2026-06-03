@@ -1237,6 +1237,7 @@ High-level business logic services
 - `useApproveJoinRequest.ts` - **Onboarding cascade (Unit 4)** — mutation hook for the approver's Add/Replace/Decline via `approveJoinRequest`; invalidates the join-cascade queries + team rosters on success.
 - `useTeamJoinRequests.ts` - **Onboarding cascade (Unit 5)** — query hook for the approver's pending-request feed via `getJoinRequestsForApprover` (captain = his team, LO = all org teams).
 - `useTeamPlaceholders.ts` - **Onboarding cascade (Unit 5)** — lazily loads a team's claimable placeholders (+ record flag) for the Replace picker via `getTeamPlaceholdersForClaim`.
+- `usePendingJoinRequestCount.ts` - **Onboarding cascade (Unit 6, the doorbell)** — derives the pending-request count from the shared approver feed; drives the drawer/sidebar "Join requests (N)" link + the My Teams bottom-tab badge. 0 for non-approvers.
 - `useUserProfile.ts` - **✅ User profile hook** (full member data + role utilities)
 - `useOperatorId.ts` - **✅ Operator ID hook** (operator lookup with caching)
 - `useMatchPhase.ts` - **✅ Match-phase status query** (minimal id/status/started_at slice; staleTime: 0; foreground 7s polling while status='scheduled' as Defense 7 backstop for dropped realtime). Distinct cache key from `useMatchById` — see file header for rationale.
