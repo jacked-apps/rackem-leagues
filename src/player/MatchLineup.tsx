@@ -51,25 +51,24 @@ import {
 import { usePreparationStatus } from '@/hooks/lineup/useMatchPreparation';
 import {
   calculateSubstituteHandicap,
-  isAnonSubSentinel,
   isDoubleDutySentinel,
   isAnySubSentinel,
-  getAnonSubId,
-  getDoubleDutySubId,
   lineupHasDoubleDuty,
   computePrepBlockedReason,
 } from '@/utils/lineup';
 import { useMatchRealtime } from '@/realtime/useMatchRealtime';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { shouldUseTeamBonus } from '@/utils/calculateHandicapThresholds';
+import { defaultEnabledSubs, type SubKind } from '@/systems/sub-modules';
 import { logger } from '@/utils/logger';
 import { supabase } from '@/supabaseClient';
 import { toast } from 'sonner';
 
-// Synthetic dropdown values — parsed in handlePlayerChange to pick the right
-// sentinel UUID. The sentinel itself encodes the sub type going forward.
-const ANON_SUB_VALUE = '__anonymous_sub__';
-const DOUBLE_DUTY_VALUE = '__double_duty__';
+// Synthetic dropdown values now live on the SubModule instances
+// (`__anonymous_sub__`, `__double_duty__`). See `src/systems/sub-modules/`.
+// The persisted sentinel UUIDs they decode to still live in
+// `src/utils/lineup/substituteHelpers.ts` — each SubModule's
+// `getSentinelId` / `isPersistedSentinel` wraps them.
 
 function MatchLineupBody() {
   const { matchId } = useParams<{ matchId: string }>();
@@ -135,15 +134,22 @@ function MatchLineupBody() {
   const playerCount = leaguePrefs?.lineup_size ?? 3;
   // teamFormat is no longer used in lineup — all branching uses handicapType and lineupSize
 
+  // Enabled SubModules for this league. Today: hardcoded both
+  // (`defaultEnabledSubs`) — matches current behavior. When the
+  // workshop / LO settings dashboard ships, this becomes
+  // `systemModule.enabledSubs` driven by per-league config.
+  const enabledSubs = defaultEnabledSubs;
+
   // Centralized lineup state management
   const lineup = useLineupState(playerCount);
 
   // Get update mutation for direct dropdown saves
   const updateLineupMutation = useUpdateMatchLineup();
 
-  // Track which type of substitute was chosen: anonymous or double duty.
-  // null = no sub in lineup. Once set, the other type is hidden from the dropdown.
-  const [substituteType, setSubstituteType] = useState<'anonymous' | 'double_duty' | null>(null);
+  // Track which type of substitute was chosen — keyed by SubModule.kind.
+  // null = no sub in lineup. Once set, the other kinds drop from the dropdown
+  // (each SubModule's maxPerLineup is 1 today).
+  const [substituteType, setSubstituteType] = useState<SubKind | null>(null);
 
   // Manual Fargo rating entry — LO types in each player's current rating.
   // Keyed by position (1-5). Only used when handicapType === 'fargo'.
@@ -805,15 +811,14 @@ function MatchLineupBody() {
   const handlePlayerChange = (position: number, rawPlayerId: string) => {
     if (!lineup.lineupId || !matchId) return;
 
-    // Map synthetic dropdown values to the right sentinel UUID — the sentinel
-    // itself encodes sub type, so both clients can discriminate from DB state.
+    // Map synthetic dropdown values to the right sentinel UUID by asking
+    // the matching SubModule. Both clients still discriminate from the
+    // persisted sentinel UUID, so DB state is identical to before.
     let playerId = rawPlayerId;
-    if (rawPlayerId === ANON_SUB_VALUE) {
-      playerId = getAnonSubId(isHomeTeam);
-      setSubstituteType('anonymous');
-    } else if (rawPlayerId === DOUBLE_DUTY_VALUE) {
-      playerId = getDoubleDutySubId(isHomeTeam);
-      setSubstituteType('double_duty');
+    const matchingSub = enabledSubs.find((s) => s.dropdownValue === rawPlayerId);
+    if (matchingSub) {
+      playerId = matchingSub.getSentinelId(isHomeTeam);
+      setSubstituteType(matchingSub.kind);
     }
 
     // If replacing a sub slot with a real player, reset the React-side type flag
@@ -926,12 +931,15 @@ function MatchLineupBody() {
     if (player) {
       return player.nickname || `${player.first_name} ${player.last_name}`;
     }
-    // Synthetic dropdown entries
-    if (playerId === ANON_SUB_VALUE) return 'Anonymous Sub';
-    if (playerId === DOUBLE_DUTY_VALUE) return 'Double Duty';
-    // Persisted sentinels self-describe via the UUID
-    if (isDoubleDutySentinel(playerId)) return 'Double Duty';
-    if (isAnonSubSentinel(playerId)) return 'Anonymous Sub';
+    // Synthetic dropdown entries — match by the SubModule's dropdownValue
+    const matchingDropdown = enabledSubs.find((s) => s.dropdownValue === playerId);
+    if (matchingDropdown) return matchingDropdown.displayLabel;
+    // Persisted sentinels — ask each enabled module if it owns this id.
+    // Note: ALL sub modules (not just enabledSubs) could be checked here
+    // in case a league has stored a sub kind it later disabled; for now
+    // every shipping system enables both so this matches current behavior.
+    const matchingSentinel = enabledSubs.find((s) => s.isPersistedSentinel(playerId));
+    if (matchingSentinel) return matchingSentinel.displayLabel;
     return 'Unknown';
   };
 
@@ -960,19 +968,21 @@ function MatchLineupBody() {
       }).filter(Boolean) as string[];
     }
 
-    // Normal mode: All roster players + sub options
-    // TODO: check substitute_method preference to show one/both/neither
+    // Normal mode: roster players + sub options the league has enabled.
+    // When the LO disables a sub kind (future workshop), the dropdownValue
+    // for that kind simply drops off the list.
     const playerIds = players.map((p) => p.id);
 
     if (substituteType === null) {
-      // No sub chosen yet — show both options
-      return [...playerIds, ANON_SUB_VALUE, DOUBLE_DUTY_VALUE];
+      // No sub chosen yet — offer every enabled sub kind
+      return [...playerIds, ...enabledSubs.map((s) => s.dropdownValue)];
     }
     // A sub is already in the lineup — include the current sub's sentinel so
     // the Select can display the current selection, but don't offer a new sub
-    const subId = substituteType === 'double_duty'
-      ? getDoubleDutySubId(isHomeTeam)
-      : getAnonSubId(isHomeTeam);
+    const activeSub = enabledSubs.find((s) => s.kind === substituteType);
+    const subId = activeSub
+      ? activeSub.getSentinelId(isHomeTeam)
+      : '';
     return [...playerIds, subId];
   };
 

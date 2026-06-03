@@ -38,8 +38,8 @@ export interface SubModule {
   /**
    * In-memory option value used by the React `<Select>` widget.
    * `handlePlayerChange` decodes this back to a sentinel UUID via
-   * the per-kind helpers in `src/utils/lineup/substituteHelpers.ts`.
-   * The value is stable so the existing decode logic keeps working.
+   * `getSentinelId` below. The value is stable so existing UI logic
+   * keeps working.
    */
   readonly dropdownValue: string;
 
@@ -49,4 +49,20 @@ export interface SubModule {
    * rule). Future workshop can dial higher.
    */
   readonly maxPerLineup: number;
+
+  /**
+   * Generate the persisted sentinel UUID for this sub kind on a given
+   * side. Thin wrapper over the existing per-kind helpers in
+   * `src/utils/lineup/substituteHelpers.ts` — exposed on the module
+   * so callers can dispatch generically without a switch on `kind`.
+   */
+  readonly getSentinelId: (isHomeTeam: boolean) => string;
+
+  /**
+   * Test whether a given player-id string is THIS kind's persisted
+   * sentinel (`isAnonSubSentinel` / `isDoubleDutySentinel` etc).
+   * Exposed on the module so display-name lookups can iterate the
+   * enabled subs and ask each one.
+   */
+  readonly isPersistedSentinel: (playerId: string) => boolean;
 }

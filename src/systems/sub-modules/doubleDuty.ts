@@ -8,6 +8,7 @@
  * `src/utils/lineup/substituteHelpers.ts`.
  */
 
+import { getDoubleDutySubId, isDoubleDutySentinel } from '@/utils/lineup';
 import type { SubModule } from './types';
 
 export const doubleDutySubModule: SubModule = {
@@ -15,4 +16,6 @@ export const doubleDutySubModule: SubModule = {
   displayLabel: 'Double Duty',
   dropdownValue: '__double_duty__',
   maxPerLineup: 1,
+  getSentinelId: getDoubleDutySubId,
+  isPersistedSentinel: isDoubleDutySentinel,
 };
