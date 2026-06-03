@@ -116,6 +116,28 @@ export interface HandicapEntryModule {
    * every system (manual + auto-from-history don't need it).
    */
   readonly apiAdapter?: HandicapApiAdapter;
+
+  /**
+   * Suffix appended to summary-display values (sums, team totals).
+   * Separate from `displayFormat` because totals may legitimately have
+   * decimal precision that per-player formatting rounds away. E.g.
+   * Percentage's per-player display is rounded to integer, but the
+   * team total `75.5%` should keep the decimal.
+   *
+   * `'%'` for Percentage; `''` for everyone else.
+   */
+  readonly unitSuffix: string;
+
+  /**
+   * Default handicap value used when a substitute slot is filled but
+   * the system doesn't require the captain to enter a sub-specific
+   * value. `null` means "captain must enter the sub handicap explicitly"
+   * (Points works this way today). `40` means "use 40 as the default
+   * percentage handicap for subs" (Percentage works this way today).
+   * Fargo / manual systems use null because each player's rating is
+   * already entered manually.
+   */
+  readonly subPlaceholderValue: number | null;
 }
 
 /**

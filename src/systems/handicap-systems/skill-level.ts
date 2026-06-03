@@ -70,5 +70,7 @@ export const skillLevelHandicapSystem: HandicapSystem = {
     columnWidth: 'narrow',
     displayFormat: (value) => (value === null ? '' : formatSkillLevel(value)),
     source: 'manual',
+    unitSuffix: '',
+    subPlaceholderValue: null,
   },
 };

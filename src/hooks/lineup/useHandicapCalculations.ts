@@ -25,6 +25,7 @@ import { useCallback, useMemo } from 'react';
 import type { Player } from '@/types/match';
 import { isSubstitute } from '@/utils/lineup';
 import { roundHandicap } from '@/utils/lineup';
+import { getHandicapSystem, type HandicapType } from '@/systems/handicap-systems';
 
 export interface HandicapCalculationsInput {
   player1Id: string;
@@ -90,9 +91,21 @@ export function useHandicapCalculations(
     manualFargoRatings,
   } = input;
 
-  // Fargo override: pull the typed rating for a position. Returns 0 when the
-  // LO hasn't entered a value yet (lineup validation blocks lock in that case).
-  const getPositionFargoRating = useCallback(
+  // Read the system's entry config once. Generalized from the legacy
+  // `handicapType === 'fargo'` check: any system whose entry source is
+  // 'manual' uses the manualFargoRatings record for per-position values.
+  const entry = useMemo(
+    () => getHandicapSystem(handicapType as HandicapType).handicapEntry,
+    [handicapType],
+  );
+  const isManualEntry = entry.source === 'manual';
+  const subPlaceholderValue = entry.subPlaceholderValue;
+
+  // Manual-entry override: pull the typed rating for a position. Returns 0
+  // when the captain hasn't entered a value yet (lineup validation blocks
+  // lock in that case). Used by any system with `source === 'manual'`;
+  // today that's only Fargo.
+  const getPositionManualRating = useCallback(
     (position: number): number => {
       const manual = manualFargoRatings?.[position];
       if (!manual || manual.trim() === '') return 0;
@@ -139,13 +152,15 @@ export function useHandicapCalculations(
 
       // Handle substitutes
       if (isSubstitute(playerId)) {
-        // Percentage system: SUB doesn't need a calculated handicap — opponent chooses double duty player
-        // Return 40 as placeholder (initial percentage handicap)
-        if (handicapType === 'percentage') {
-          return 40;
+        // Systems with a sub placeholder (Percentage today, 40) skip the
+        // dynamic calc — opponent picks the double-duty player and the
+        // placeholder serves as the value until that resolves.
+        if (subPlaceholderValue !== null) {
+          return subPlaceholderValue;
         }
 
-        // Points system: Calculate substitute handicap from highest unused player or manual entry
+        // Other systems (Points today): calculate substitute handicap from
+        // highest unused player or the captain's manual entry.
         const highestUnused = getHighestUnusedHandicap();
 
         // If sub handicap is manually entered, use the HIGHER of the two
@@ -162,36 +177,36 @@ export function useHandicapCalculations(
       const player = players.find((p) => p.id === playerId);
       return player?.handicap || 0;
     };
-  }, [players, testMode, testHandicaps, subHandicap, handicapType, getHighestUnusedHandicap]);
+  }, [players, testMode, testHandicaps, subHandicap, subPlaceholderValue, getHighestUnusedHandicap]);
 
   // Calculate individual player handicaps.
-  // For Fargo, the value is the manual rating the LO typed (player.handicap
-  // stores BCA, which is irrelevant here). For all other systems, the existing
-  // player-lookup / substitute logic applies.
+  // Manual-entry systems (Fargo today) read the captain's typed value from
+  // manualFargoRatings. All other systems use the existing player-lookup /
+  // substitute logic.
   const player1Handicap = useMemo(() => {
-    if (handicapType === 'fargo') return getPositionFargoRating(1);
+    if (isManualEntry) return getPositionManualRating(1);
     return player1Id ? getPlayerHandicap(player1Id) : 0;
-  }, [handicapType, getPositionFargoRating, player1Id, getPlayerHandicap]);
+  }, [isManualEntry, getPositionManualRating, player1Id, getPlayerHandicap]);
 
   const player2Handicap = useMemo(() => {
-    if (handicapType === 'fargo') return getPositionFargoRating(2);
+    if (isManualEntry) return getPositionManualRating(2);
     return player2Id ? getPlayerHandicap(player2Id) : 0;
-  }, [handicapType, getPositionFargoRating, player2Id, getPlayerHandicap]);
+  }, [isManualEntry, getPositionManualRating, player2Id, getPlayerHandicap]);
 
   const player3Handicap = useMemo(() => {
-    if (handicapType === 'fargo') return getPositionFargoRating(3);
+    if (isManualEntry) return getPositionManualRating(3);
     return player3Id ? getPlayerHandicap(player3Id) : 0;
-  }, [handicapType, getPositionFargoRating, player3Id, getPlayerHandicap]);
+  }, [isManualEntry, getPositionManualRating, player3Id, getPlayerHandicap]);
 
   const player4Handicap = useMemo(() => {
-    if (handicapType === 'fargo') return getPositionFargoRating(4);
+    if (isManualEntry) return getPositionManualRating(4);
     return player4Id ? getPlayerHandicap(player4Id) : 0;
-  }, [handicapType, getPositionFargoRating, player4Id, getPlayerHandicap]);
+  }, [isManualEntry, getPositionManualRating, player4Id, getPlayerHandicap]);
 
   const player5Handicap = useMemo(() => {
-    if (handicapType === 'fargo') return getPositionFargoRating(5);
+    if (isManualEntry) return getPositionManualRating(5);
     return player5Id ? getPlayerHandicap(player5Id) : 0;
-  }, [handicapType, getPositionFargoRating, player5Id, getPlayerHandicap]);
+  }, [isManualEntry, getPositionManualRating, player5Id, getPlayerHandicap]);
 
   // Calculate player total — sum handicaps for all active lineup positions
   const playerTotal = useMemo(() => {

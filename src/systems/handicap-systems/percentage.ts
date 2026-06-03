@@ -58,5 +58,10 @@ export const percentageHandicapSystem: HandicapSystem = {
     columnWidth: 'narrow',
     displayFormat: (value) => (value === null ? '' : formatPercentage(value)),
     source: 'auto-from-history',
+    unitSuffix: '%',
+    // Percentage subs get a default handicap of 40 (the opposing captain
+    // chooses the double-duty player anyway; this is just a placeholder
+    // for thresholds while the choice is pending).
+    subPlaceholderValue: 40,
   },
 };

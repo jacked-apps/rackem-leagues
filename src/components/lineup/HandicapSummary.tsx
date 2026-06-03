@@ -9,6 +9,7 @@
 
 import { InfoButton } from '@/components/InfoButton';
 import { formatHandicap } from '@/utils/lineup';
+import { getHandicapSystem, type HandicapType } from '@/systems/handicap-systems';
 
 interface HandicapSummaryProps {
   playerTotal: number;
@@ -26,7 +27,12 @@ export function HandicapSummary({
   isHomeTeam,
   handicapType,
 }: HandicapSummaryProps) {
-  const showPercentage = handicapType === 'percentage';
+  // Read the unit suffix ('%' for percentage, '' for others) from the
+  // system module. Preserves the decimal precision the team-total
+  // display has historically used (75.5%, 82.3%) while removing the
+  // literal `handicapType === 'percentage'` peek.
+  const entry = getHandicapSystem(handicapType as HandicapType).handicapEntry;
+  const showPercentage = entry.unitSuffix === '%';
 
   return (
     <div className="border-t pt-4 space-y-2">

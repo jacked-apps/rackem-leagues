@@ -18,15 +18,6 @@ import type { HandicapSystem } from './types';
 const FARGO_RATING_MIN = 100;
 const FARGO_RATING_MAX = 850;
 
-/**
- * Lineup-entry dial maximum. Set above the highest real-world Fargo
- * rating (~850 today; world record is in that range) so the UI input
- * doesn't reject legitimate edge cases. The `validate` function above
- * still enforces the strict 100–850 contract — this is just the
- * widget's permissive ceiling per Ed: "call it 1000 for now."
- */
-const FARGO_ENTRY_MAX = 1000;
-
 function formatFargo(value: number): string {
   return String(Math.round(value));
 }
@@ -81,12 +72,14 @@ export const fargoRateHandicapSystem: HandicapSystem = {
   // enforced by `validate` above). See ./handicapEntry.ts.
   handicapEntry: {
     inputKind: 'number',
-    range: { min: FARGO_RATING_MIN, max: FARGO_ENTRY_MAX, integer: true },
+    range: { min: FARGO_RATING_MIN, max: FARGO_RATING_MAX, integer: true },
     enumValues: null,
     placeholderText: '—',
     columnHeader: 'Fargo',
     columnWidth: 'wide',
     displayFormat: (value) => (value === null ? '' : formatFargo(value)),
     source: 'manual',
+    unitSuffix: '',
+    subPlaceholderValue: null,
   },
 };

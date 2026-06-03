@@ -22,6 +22,7 @@ import { useMemo } from 'react';
 import type { Player } from '@/types/match';
 // hasDuplicateNicknames removed — duplicate check now uses dynamic allPlayerIds array
 import { lineupHasSubstitute } from '@/utils/lineup';
+import { getHandicapSystem, type HandicapType } from '@/systems/handicap-systems';
 
 export interface LineupValidationInput {
   player1Id: string;
@@ -103,19 +104,33 @@ export function useLineupValidation(
     return lineupHasSubstitute(row, playerCount);
   }, [player1Id, player2Id, player3Id, player4Id, player5Id, playerCount]);
 
+  // Resolve the system's entry config once. Generalizes:
+  // - sub-handicap requirement: systems with `subPlaceholderValue: null`
+  //   need the captain to type a value when there's a sub
+  // - manual-entry rating validation: only fires for `source === 'manual'`
+  //   systems (Fargo today), using the system's own validate() for bounds
+  const system = useMemo(
+    () => getHandicapSystem(handicapType as HandicapType),
+    [handicapType],
+  );
+  const entry = system.handicapEntry;
+  const subRequiresExplicitValue = entry.subPlaceholderValue === null;
+  const isManualEntry = entry.source === 'manual';
+
   // Check if lineup is complete (all positions filled)
   const isComplete = useMemo(() => {
     // All positions must be filled
     const allFilled = allPlayerIds.slice(0, playerCount).every((id) => id !== '');
 
-    // If there's a sub and not in tiebreaker mode and not in 5v5, must have subHandicap
-    // 5v5 (8_man) doesn't need substitute handicap - opponent chooses double duty player
-    if (hasSub && !isTiebreakerMode && handicapType === 'points' && !subHandicap) {
+    // Systems without a sub placeholder (Points today) require the captain
+    // to type a sub-specific handicap when a sub is in the lineup.
+    // Systems with a placeholder (Percentage) auto-fill.
+    if (hasSub && !isTiebreakerMode && subRequiresExplicitValue && !subHandicap) {
       return false;
     }
 
     return allFilled;
-  }, [allPlayerIds, playerCount, hasSub, isTiebreakerMode, handicapType, subHandicap]);
+  }, [allPlayerIds, playerCount, hasSub, isTiebreakerMode, subRequiresExplicitValue, subHandicap]);
 
   // Check for duplicate nicknames across all lineup positions
   const hasDuplicates = useMemo(() => {
@@ -125,10 +140,13 @@ export function useLineupValidation(
     return nicknames.length !== new Set(nicknames).size;
   }, [allPlayerIds, players]);
 
-  // Fargo rating validation — each named slot must have a rating in [100, 850].
-  // TBD (double-duty) slots are allowed to be null; they inherit a rating when resolved.
+  // Manual-entry rating validation — each named slot must have a rating
+  // the system's own validate() accepts. Generalizes from the old
+  // Fargo-only check: any manual-entry system uses its own strict bounds.
+  // TBD (double-duty) slots are allowed to be null; they inherit a rating
+  // when resolved.
   const fargoRatingError = useMemo(() => {
-    if (handicapType !== 'fargo') return false;
+    if (!isManualEntry) return false;
     if (isTiebreakerMode) return false;
     for (let slot = 1; slot <= playerCount; slot++) {
       // Skip TBD slots — they're allowed to have no rating at lock time
@@ -138,12 +156,13 @@ export function useLineupValidation(
       if (!slotPlayerId) continue; // Empty slot caught by the `isComplete` check above
       const rating = fargoRatingsBySlot?.[slot];
       if (typeof rating !== 'number' || !Number.isFinite(rating)) return true;
-      if (rating < 100 || rating > 850) return true;
-      if (!Number.isInteger(rating)) return true;
+      const result = system.validate(rating);
+      if (!result.ok) return true;
     }
     return false;
   }, [
-    handicapType,
+    isManualEntry,
+    system,
     isTiebreakerMode,
     playerCount,
     doubleDutySlots,
@@ -157,8 +176,12 @@ export function useLineupValidation(
 
   const fargoRatingErrorMessage = useMemo(() => {
     if (!fargoRatingError) return null;
-    return 'Each named player in this Fargo lineup needs a rating between 100 and 850. (Double-duty slots are exempt — they inherit the player\'s rating when assigned.)';
-  }, [fargoRatingError]);
+    const range = entry.range;
+    const rangeText = range
+      ? `between ${range.min} and ${range.max}`
+      : 'within the allowed range';
+    return `Each named player in this ${entry.columnHeader} lineup needs a rating ${rangeText}. (Double-duty slots are exempt — they inherit the player's rating when assigned.)`;
+  }, [fargoRatingError, entry]);
 
   // Check if lineup can be locked
   const canLock = useMemo(
@@ -169,12 +192,13 @@ export function useLineupValidation(
   // Generate error messages
   const completenessError = useMemo(() => {
     if (isComplete) return null;
-    // Only show substitute handicap error in 3v3 (not tiebreaker and not 5v5)
-    if (hasSub && !isTiebreakerMode && handicapType === 'points' && !subHandicap) {
+    // Show sub-handicap error only for systems that require explicit sub
+    // values (no subPlaceholderValue), e.g. Points. Percentage auto-fills.
+    if (hasSub && !isTiebreakerMode && subRequiresExplicitValue && !subHandicap) {
       return 'Please select a handicap for the substitute player';
     }
     return `Please select all ${playerCount} players before locking your lineup`;
-  }, [isComplete, hasSub, isTiebreakerMode, handicapType, subHandicap, playerCount]);
+  }, [isComplete, hasSub, isTiebreakerMode, subRequiresExplicitValue, subHandicap, playerCount]);
 
   const duplicatesError = useMemo(() => {
     if (!hasDuplicates) return null;

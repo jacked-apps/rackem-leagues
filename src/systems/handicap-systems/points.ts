@@ -74,5 +74,7 @@ export const pointsHandicapSystem: HandicapSystem = {
     columnWidth: 'narrow',
     displayFormat: (value) => (value === null ? '' : formatPoints(value)),
     source: 'auto-from-history',
+    unitSuffix: '',
+    subPlaceholderValue: null,
   },
 };

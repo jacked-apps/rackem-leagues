@@ -76,9 +76,9 @@ describe('Percentage handicapEntry', () => {
 describe('FargoRate handicapEntry', () => {
   const entry = fargoRateHandicapSystem.handicapEntry;
 
-  it('uses a number widget bounded to 100..1000, integer-only', () => {
+  it('uses a number widget bounded to 100..850, integer-only', () => {
     expect(entry.inputKind).toBe('number');
-    expect(entry.range).toEqual({ min: 100, max: 1000, integer: true });
+    expect(entry.range).toEqual({ min: 100, max: 850, integer: true });
     expect(entry.enumValues).toBeNull();
   });
 

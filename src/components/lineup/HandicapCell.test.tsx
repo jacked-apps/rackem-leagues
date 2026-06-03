@@ -75,7 +75,7 @@ describe('HandicapCell — Percentage (BCA 5v5) system', () => {
 });
 
 describe('HandicapCell — FargoRate system (source manual today)', () => {
-  it('renders manual-entry number input for regular player bounded 100..1000', () => {
+  it('renders manual-entry number input for regular player bounded 100..850', () => {
     render(
       <HandicapCell
         {...baseProps}
@@ -87,7 +87,7 @@ describe('HandicapCell — FargoRate system (source manual today)', () => {
     const input = screen.getByPlaceholderText('—') as HTMLInputElement;
     expect(input.type).toBe('number');
     expect(input.min).toBe('100');
-    expect(input.max).toBe('1000');
+    expect(input.max).toBe('850');
     expect(input.value).toBe('575');
   });
 
@@ -103,7 +103,7 @@ describe('HandicapCell — FargoRate system (source manual today)', () => {
     const input = screen.getByPlaceholderText('—') as HTMLInputElement;
     expect(input.type).toBe('number');
     expect(input.min).toBe('100');
-    expect(input.max).toBe('1000');
+    expect(input.max).toBe('850');
   });
 
   it('renders raw integer for a Fargo display value (no decoration)', () => {

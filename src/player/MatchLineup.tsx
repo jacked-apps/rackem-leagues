@@ -62,6 +62,7 @@ import {
 import { useMatchRealtime } from '@/realtime/useMatchRealtime';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { shouldUseTeamBonus } from '@/utils/calculateHandicapThresholds';
+import { getHandicapSystem, type HandicapType } from '@/systems/handicap-systems';
 import { logger } from '@/utils/logger';
 import { supabase } from '@/supabaseClient';
 import { toast } from 'sonner';
@@ -133,6 +134,11 @@ function MatchLineupBody() {
   const { data: leaguePrefs } = useResolvedLeaguePrefs(leagueId);
   const handicapType = leaguePrefs?.handicap_type ?? 'points';
   const playerCount = leaguePrefs?.lineup_size ?? 3;
+  // Handicap-entry dials — every lineup-side branch on handicap_type now
+  // reads from this config (column header, manual-entry gating, validation
+  // bounds, etc). See docs/brainstorms/2026-06-03-ui-modularity-audit-...
+  const handicapEntry = getHandicapSystem(handicapType as HandicapType).handicapEntry;
+  const isManualEntry = handicapEntry.source === 'manual';
   // teamFormat is no longer used in lineup — all branching uses handicapType and lineupSize
 
   // Centralized lineup state management
@@ -324,12 +330,13 @@ function MatchLineupBody() {
     manualFargoRatings: manualHandicaps,
   });
 
-  // Build Fargo rating + double-duty slot inputs for validation.
-  // Only used when handicapType='fargo'; cheap no-op for other systems.
+  // Build manual-entry rating + double-duty slot inputs for validation.
+  // Only used when the system is manual-entry (Fargo today); cheap no-op
+  // for systems that derive handicaps from history.
   const { fargoRatingsBySlot, doubleDutySlots } = useMemo(() => {
     const ratings: Record<number, number | null | undefined> = {};
     const duty = new Set<number>();
-    if (handicapType !== 'fargo') return { fargoRatingsBySlot: ratings, doubleDutySlots: duty };
+    if (!isManualEntry) return { fargoRatingsBySlot: ratings, doubleDutySlots: duty };
 
     const slotPlayerIds = [
       lineup.player1Id,
@@ -366,7 +373,7 @@ function MatchLineupBody() {
     }
     return { fargoRatingsBySlot: ratings, doubleDutySlots: duty };
   }, [
-    handicapType,
+    isManualEntry,
     playerCount,
     lineup.player1Id,
     lineup.player2Id,
@@ -650,12 +657,13 @@ function MatchLineupBody() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lineupsQuery.data, userTeamData, isHomeTeam]);
 
-  // Fargo-only: hydrate manual rating entries from the persisted lineup so
-  // refreshes / tab-returns preserve what the LO typed. Without this, the
-  // HandicapCell inputs show empty after reload and the handicap hook would
-  // compute zeros for positions that already have real values in the DB.
+  // Manual-entry hydration: pull persisted ratings out of the lineup row so
+  // refreshes / tab-returns preserve what the captain typed. Without this,
+  // the HandicapCell inputs show empty after reload and the handicap hook
+  // would compute zeros for positions that already have real values in the
+  // DB. Generalizes from the Fargo-only check to any manual-entry system.
   useEffect(() => {
-    if (handicapType !== 'fargo' || !lineupsQuery.data) return;
+    if (!isManualEntry || !lineupsQuery.data) return;
     const myLineup = isHomeTeam
       ? lineupsQuery.data.homeLineup
       : lineupsQuery.data.awayLineup;
@@ -683,7 +691,7 @@ function MatchLineupBody() {
       }
       return changed ? next : prev;
     });
-  }, [handicapType, lineupsQuery.data, isHomeTeam, playerCount]);
+  }, [isManualEntry, lineupsQuery.data, isHomeTeam, playerCount]);
 
   // Unified real-time subscription for match, lineups, and games.
   // Watches all three tables throughout entire match flow (lineup + tiebreaker + scoring).
@@ -1049,10 +1057,13 @@ function MatchLineupBody() {
               captainId={teamDetailsQuery.data?.captain_id}
             />
 
-            {/* Fargo manual entry banner */}
-            {handicapType === 'fargo' && !isTiebreakerMode && (
+            {/* Manual-entry banner — shown when the league's handicap system
+                requires the captain to type each player's rating (Fargo
+                today; future API-backed systems flip source to 'api' and
+                this banner stops firing). */}
+            {isManualEntry && !isTiebreakerMode && (
               <div className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-foreground">
-                <strong className="text-warning">Automatic Fargo ratings coming soon</strong> — for now, enter each player&apos;s current rating manually.
+                <strong className="text-warning">Automatic {handicapEntry.columnHeader} ratings coming soon</strong> — for now, enter each player&apos;s current rating manually.
               </div>
             )}
 
@@ -1067,9 +1078,9 @@ function MatchLineupBody() {
                 </div>
                 {/* Hide handicap column in tiebreaker mode */}
                 {!isTiebreakerMode && (
-                  <div className={`${handicapType === 'fargo' ? 'w-16' : 'w-12'} text-center`}>
+                  <div className={`${handicapEntry.columnWidth === 'wide' ? 'w-16' : 'w-12'} text-center`}>
                     <div className="text-xs font-medium text-muted-foreground">
-                      {handicapType === 'fargo' ? 'Fargo' : 'H/C'}
+                      {handicapEntry.columnHeader}
                     </div>
                   </div>
                 )}
@@ -1161,7 +1172,7 @@ function MatchLineupBody() {
                       hideHandicap={isTiebreakerMode}
                       isDoubleDuty={isSubstitute && substituteType === 'double_duty'}
                       manualHandicapValue={manualHandicaps[position]}
-                      onManualHandicapChange={handicapType === 'fargo' ? handleManualHandicapChange : undefined}
+                      onManualHandicapChange={isManualEntry ? handleManualHandicapChange : undefined}
                     />
                   );
                 })}
