@@ -122,6 +122,9 @@ export function BottomTabBar() {
           icon: Building2,
           to: `/operator-dashboard/${manageOrgId}`,
           activePatterns: MANAGE_PATTERNS,
+          // Doorbell for the LO: join requests are handled on the operator
+          // dashboard, so surface the count on the tab that lands there too.
+          badge: joinRequestCount > 0 ? joinRequestCount : undefined,
         },
       ]
     : playerTabs;
