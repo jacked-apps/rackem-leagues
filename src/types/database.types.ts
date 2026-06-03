@@ -3094,6 +3094,10 @@ export type Database = {
         Args: { p_member_id: string; p_org_id: string; p_team_id: string }
         Returns: Json
       }
+      request_team_join: {
+        Args: { p_claimed_member_id?: string; p_token: string }
+        Returns: Json
+      }
       resolve_member_primary_org: {
         Args: { p_member_id: string }
         Returns: string

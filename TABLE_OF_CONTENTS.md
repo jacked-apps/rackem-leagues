@@ -532,6 +532,7 @@ how to add a new test, demo recording, cleanup model).
 - `messaging-phase1-unit7-polish.rls.test.ts` - **Messaging Phase 1 / Unit 7 (polish)** — verifies the polish migration (`20260513000001`): system-message INSERT keeps all participants' `unread_count` at 0, regular message INSERT still bumps non-senders, mixed system/regular sequence only counts the regular one, and the reworded `COMMENT ON COLUMN members.profanity_filter_enabled` mentions both minor enforcement (`minor` / `under 18` / `age`) AND the DOB fallback (`dob` / `date_of_birth`).
 - `team-join-cascade.test.ts` - **Onboarding cascade / Unit 1** — schema verification for `20260529000001`: `teams.join_token` (uuid, NOT NULL, unique, backfilled distinct) + `team_join_requests` lifecycle table, status CHECK, both partial-unique guards (per-user dedup, per-spot race). 9 tests.
 - `get-team-join-view.test.ts` - **Onboarding cascade / Unit 2** — exercises the `get_team_join_view` RPC: valid token → team/league/spots with open-vs-taken flags, unknown token → `{found:false}`, names-only projection (no contact-info leak), anon pre-auth callability, and `viewer_request_status` via a tx-scoped `request.jwt.claims`. 6 tests.
+- `request-team-join.test.ts` - **Onboarding cascade / Unit 3** — exercises the `request_team_join` RPC guard matrix (not_authenticated / invalid_token / no_member / already_member / full / invalid_claim / spot_taken) + happy self-add, happy claim, idempotent already_pending. Each case runs under a tx-scoped JWT and rolls back. 11 tests.
 
 #### Messaging UI Components (`/components/messages/`)
 - `ReadOnlyBanner.tsx` - **Messaging Phase 1 / Unit 6** — shadcn `Alert` that renders in place of the message composer when the current user can read but not post. Two reasons covered: `past-member` (left_at non-NULL) and `announcement-non-staff` (announcements channel viewed by a non-staff member). The composer is unmounted by `MessageView`, not just hidden by CSS.
@@ -1207,6 +1208,7 @@ High-level business logic services
 - `reports.ts` - User-report CRUD.
 - `schedules.ts` - Schedule CRUD (seasons-weeks + matches).
 - `seasons.ts` - Season CRUD.
+- `teamJoin.ts` - **Onboarding cascade (Unit 3)** — `submitJoinRequest(token, claimedMemberId?)` wrapping the `request_team_join` RPC; the only join-request write path.
 - `teams.ts` - Team CRUD.
 - `venues.ts` - Venue CRUD.
 - `__tests__/sendMessage.timeout.test.ts` - Timeout-wrapper test for the sendMessage mutation (Unit 16 bounded-send).
@@ -1218,6 +1220,7 @@ High-level business logic services
 - `usePendingInvites.ts` - **✅ Pending invites hook** (fetches placeholder player invites via get_my_pending_invites RPC)
 - `useInviteStatuses.ts` - **✅ Invite statuses hook** (batch fetch invite statuses for PP cards in TeamEditorModal)
 - `useTeamJoinView.ts` - **Onboarding cascade (Unit 2)** — TanStack hook backing `/join/:token`; loads the public join view (team + spots + caller's request state) via `getTeamJoinView`. Disabled until a token is present; 30s staleTime.
+- `useSubmitJoinRequest.ts` - **Onboarding cascade (Unit 3)** — mutation hook filing a join request via `submitJoinRequest`; invalidates the team's join view on success so the page flips to "waiting".
 - `useUserProfile.ts` - **✅ User profile hook** (full member data + role utilities)
 - `useOperatorId.ts` - **✅ Operator ID hook** (operator lookup with caching)
 - `useMatchPhase.ts` - **✅ Match-phase status query** (minimal id/status/started_at slice; staleTime: 0; foreground 7s polling while status='scheduled' as Defense 7 backstop for dropped realtime). Distinct cache key from `useMatchById` — see file header for rationale.
@@ -1623,6 +1626,7 @@ Supabase local configuration and migrations
 | `supabase/migrations/20260505000000_match_games_value_columns.sql` | Adds `match_games.winner_balls_pocketed` / `loser_balls_pocketed` / counter-value columns for the per-game-points calculator (`accumulated_per_game`). |
 | `supabase/migrations/20260529000001_team_join_cascade.sql` | **Onboarding cascade / Unit 1.** `teams.join_token` (persistent forwardable per-team link) + `team_join_requests` lifecycle table (status pending/approved/rejected/cancelled, expires_at 30d, acknowledged_at) with team/status index + two partial-unique guards (per-user dedup, per-spot race). Additive, no RLS. |
 | `supabase/migrations/20260529000002_get_team_join_view.sql` | **Onboarding cascade / Unit 2.** `get_team_join_view(token)` SECURITY DEFINER RPC (granted anon + authenticated) resolving a token to the public-safe join payload — names only; the authz boundary while RLS is off. |
+| `supabase/migrations/20260529000003_request_team_join.sql` | **Onboarding cascade / Unit 3.** `request_team_join(token, claimed_member_id?)` SECURITY DEFINER RPC (authenticated only) — the only path that files a join request; derives requester from `auth.uid()` + team from the token (never client input), returns `{ok, reason, status}` covering the guard states. |
 | `supabase/seed.sql` | Full local dev DB dump — auto-applied on `supabase db reset`. **Local only, never runs against production.** |
 | `supabase/seed_test_users.sql` | 4 synthetic test auth users (player/operator/captain/owner, password `test-password-123`). **Dev-only — run manually via `docker exec ... psql`.** |
 | `supabase/seed_members.sql` | 20 placeholder players (no `user_id`) spanning Fargo 300–580 ratings for wizard/team-management testing. **Dev-only — not wired into auto-seed; run manually when the local DB needs a bench of fake members.** |
