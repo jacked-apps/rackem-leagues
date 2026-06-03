@@ -72,6 +72,17 @@ export const queryKeys = {
   },
 
   /**
+   * Onboarding cascade query keys (join-by-link → request → approve).
+   */
+  teamJoin: {
+    /** Base key for all join-cascade queries */
+    all: ['teamJoin'] as const,
+
+    /** The public join view for a given token (Unit 2) */
+    view: (token: string) => [...queryKeys.teamJoin.all, 'view', token] as const,
+  },
+
+  /**
    * League-related query keys
    */
   leagues: {
