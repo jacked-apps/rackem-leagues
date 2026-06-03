@@ -153,22 +153,34 @@ these configurations, authored as if the LO had built it in the
 workshop. **Each spot's label is char-limited per spot size** (small
 spots ~8 chars, large spots ~12 chars).
 
-**BCA 3v3 (Points handicap, games win-condition)** — proposed 6 spots:
+**BCA 3v3 (Points handicap, games win-condition)** — LOCKED 2026-06-03:
 
 | Position | Label | Template |
 |---|---|---|
-| top_left | Need | `{wins_to_win}` |
-| top_center | Bonus | `{team_bonus}` |
-| top_right | Tie at | `{wins_to_tie}` |
+| top_left | Win at | `{wins_to_win}` |
+| top_center | Tie at | `{wins_to_tie}` |
+| top_right | Lose at | `{wins_to_lose}` |
 | middle_left | Wins | `{wins}/{wins_to_win}` |
-| middle_right | Points | `{points}` |
-| bottom_left | Win H/C | `{handicap_diff}` |
+| middle_right | — | *(empty)* |
+| 3 bottom | — | *(empty)* |
 
-(top_center could be hidden when team bonus = 0; bottom_center +
-bottom_right empty by default.)
+**UX note — intentional redundancy.** `{wins_to_win}` shows up twice:
+top-left ("Win at") and inside the paired middle template
+(`{wins}/{wins_to_win}`). Strict DRY would drop top-left. Ed kept it
+in his Google-Sheets scorekeeper after discovering players mis-read
+the number when only the paired version was shown — the standalone
+"Win at" label disambiguates. **Do not "clean up" the redundancy
+without UX retesting.**
 
-**BCA 5v5% (Percentage handicap, games win-condition)** — proposed 5
-spots: same as BCA 3v3 minus team bonus (Percentage has none).
+**Why no team bonus, no points:**
+- Team bonus lives on the lineup drawer with team-handicap totals,
+  not on the in-match scoreboard
+- Points don't matter until match end; surfaced in the
+  end-of-match confirmation box, not live
+
+**BCA 5v5% (Percentage handicap, games win-condition)** — proposed
+identical shape to BCA 3v3 (same 4 spots, same templates). State-bag
+values just differ in scale (25 games vs 18). Pending Ed confirmation.
 
 **Fargo points-mode** — proposed 4 spots:
 
