@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-06-03 (Threshold-math-modular branch: pinned 7 core architectural principles at top of CLAUDE.md; rewrote plan v4 around "scoring system = ordered list of modules, state bag starts empty, runtime is zero-knowledge"; landed Unit 1 (`src/systems/chain-runtime/` — runSystemChain + types + tests) and Unit 2 (`src/systems/modules/seed/` — 4 seed modules that populate the empty bag from context: match identity, lineup handicaps, match format, Fargo negotiated start points; 21 tests passing). Branch `feat/threshold-math-modular`.)
+> **Last Updated**: 2026-06-03 (Threshold-math-modular branch: pinned 7 core architectural principles at top of CLAUDE.md; rewrote plan v4 around the empty-state-bag model. Units 1-3 landed: chain-runtime engine, 5 seed modules, and 9 threshold modules across `src/systems/modules/threshold/{bca3v3,bca5v5,fargoPoints,fargoGames}/` — one module per coherent computation (team bonus, handicap diff, chart-lookup trios for BCA; passthrough for Fargo points-mode; one full Fargo-games-won compute). All modules never throw — they write nulls on failure. 65+ tests passing across all three units. Branch `feat/threshold-math-modular`.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
