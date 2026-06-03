@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageSquare, Users, Settings, BookOpen, Video, MessageCircle, Phone, Flag } from 'lucide-react';
 import { usePendingReportsCount } from '@/hooks/usePendingReportsCount';
 import { JoinRequestList } from '@/onboarding/components/JoinRequestList';
+import { OnboardCaptainsList } from '@/onboarding/OnboardCaptainsList';
 
 /**
  * OperatorDashboard Component
@@ -71,6 +72,11 @@ export const OperatorDashboard: React.FC = () => {
             org. Renders nothing when there are none. */}
         <div className="mb-6">
           <JoinRequestList title="Join requests" />
+        </div>
+
+        {/* Onboarding cascade (Unit 7): send each captain their team's join link. */}
+        <div className="mb-6">
+          <OnboardCaptainsList orgId={organization.id} />
         </div>
 
         {/* Main Grid - All content */}

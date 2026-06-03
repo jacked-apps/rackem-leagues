@@ -90,6 +90,13 @@ export const queryKeys = {
 
     /** The caller's approved-but-unacknowledged joins — the "you're in" feed (Unit 3) */
     approved: () => [...queryKeys.teamJoin.all, 'approved'] as const,
+
+    /** A team's current join token, for the share link (Unit 7) */
+    token: (teamId: string) => [...queryKeys.teamJoin.all, 'token', teamId] as const,
+
+    /** All org teams + captain + link, for the LO onboard list (Unit 7) */
+    orgTeams: (orgId: string) =>
+      [...queryKeys.teamJoin.all, 'orgTeams', orgId] as const,
   },
 
   /**

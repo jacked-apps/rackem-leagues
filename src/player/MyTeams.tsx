@@ -38,6 +38,7 @@ import { TenBallIcon } from '@/components/icons/TenBallIcon';
 import { NineBallIcon } from '@/components/icons/NineBallIcon';
 import { EightBallIcon } from '@/components/icons/EightBallIcon';
 import { JoinRequestList } from '@/onboarding/components/JoinRequestList';
+import { InviteMyTeamButton } from '@/onboarding/InviteMyTeamButton';
 
 interface TeamData {
   team_id: string;
@@ -320,6 +321,11 @@ function TeamAccordionItem({
               View Schedule
             </Button>
           </div>
+
+          {/* Invite players (Captains Only) — onboarding cascade Unit 7 */}
+          {isCaptain && (
+            <InviteMyTeamButton teamId={team.id} teamName={team.team_name} />
+          )}
 
           {/* Team Readiness Warning (Captains Only) */}
           {isCaptain && !isReady && (

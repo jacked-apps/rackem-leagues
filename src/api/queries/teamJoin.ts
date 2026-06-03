@@ -156,3 +156,44 @@ export async function acknowledgeJoinRequest(requestId: string): Promise<void> {
   });
   if (error) throw error;
 }
+
+/** Read a team's current join token (for building its /join/:token share link). */
+export async function getTeamJoinToken(teamId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('teams')
+    .select('join_token')
+    .eq('id', teamId)
+    .single();
+  if (error) throw error;
+  return data?.join_token ?? null;
+}
+
+/** Regenerate a team's join token (leak rotation); returns the new token. */
+export async function rotateTeamJoinToken(teamId: string): Promise<string | null> {
+  const { data, error } = await supabase.rpc('rotate_team_join_token', {
+    p_team_id: teamId,
+  });
+  if (error) throw error;
+  const result = data as unknown as { ok: boolean; join_token?: string };
+  return result?.ok ? result.join_token ?? null : null;
+}
+
+/** One team row in the LO's "onboard my captains" list. */
+export interface OrgOnboardingTeam {
+  team_id: string;
+  team_name: string;
+  league_name: string | null;
+  captain_name: string;
+  join_token: string;
+}
+
+/** All teams in an org with captain + join link, for the LO distribution list. */
+export async function getOrgTeamsForOnboarding(
+  orgId: string
+): Promise<OrgOnboardingTeam[]> {
+  const { data, error } = await supabase.rpc('get_org_teams_for_onboarding', {
+    p_org_id: orgId,
+  });
+  if (error) throw error;
+  return (data as unknown as OrgOnboardingTeam[]) ?? [];
+}

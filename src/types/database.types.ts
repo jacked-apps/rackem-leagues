@@ -3019,6 +3019,10 @@ export type Database = {
           teams: Json
         }[]
       }
+      get_org_teams_for_onboarding: {
+        Args: { p_org_id: string }
+        Returns: Json
+      }
       get_placeholder_remove_context: {
         Args: { p_member_id: string }
         Returns: {
@@ -3133,6 +3137,7 @@ export type Database = {
           success: boolean
         }[]
       }
+      rotate_team_join_token: { Args: { p_team_id: string }; Returns: Json }
       search_placeholder_matches: {
         Args: {
           p_city?: string
