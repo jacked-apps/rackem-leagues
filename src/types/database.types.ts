@@ -3028,6 +3028,10 @@ export type Database = {
         }[]
       }
       get_team_join_view: { Args: { p_token: string }; Returns: Json }
+      get_team_placeholders_for_claim: {
+        Args: { p_team_id: string }
+        Returns: Json
+      }
       get_team_verification_options: {
         Args: { p_decoy_count?: number; p_member_id: string }
         Returns: {

@@ -82,6 +82,11 @@ BEGIN
                'requester_name', member_display_name(jr.requested_member_id),
                'claimed_member_id', jr.claimed_member_id,
                'claimed_name', member_display_name(jr.claimed_member_id),
+               'has_open_placeholders', EXISTS (
+                 SELECT 1 FROM team_players tp2
+                   JOIN members m2 ON m2.id = tp2.member_id
+                  WHERE tp2.team_id = t.id AND m2.user_id IS NULL
+               ),
                'created_at', jr.created_at
              )
              ORDER BY jr.created_at

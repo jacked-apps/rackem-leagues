@@ -83,6 +83,10 @@ export const queryKeys = {
 
     /** The approver's pending-request feed across all approvable teams (Unit 5/6) */
     requests: () => [...queryKeys.teamJoin.all, 'requests'] as const,
+
+    /** A team's unclaimed placeholders for the Replace picker (Unit 5) */
+    placeholders: (teamId: string) =>
+      [...queryKeys.teamJoin.all, 'placeholders', teamId] as const,
   },
 
   /**

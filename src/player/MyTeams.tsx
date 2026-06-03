@@ -37,6 +37,7 @@ import { buildLeagueTitle, getTimeOfYear } from '@/utils/leagueUtils';
 import { TenBallIcon } from '@/components/icons/TenBallIcon';
 import { NineBallIcon } from '@/components/icons/NineBallIcon';
 import { EightBallIcon } from '@/components/icons/EightBallIcon';
+import { JoinRequestList } from '@/onboarding/components/JoinRequestList';
 
 interface TeamData {
   team_id: string;
@@ -496,7 +497,11 @@ export function MyTeams() {
       />
 
       {/* Main Content */}
-      <main className="px-4 py-6 max-w-2xl mx-auto">
+      <main className="px-4 py-6 max-w-2xl mx-auto space-y-6">
+        {/* Onboarding cascade: pending join requests for teams this captain
+            approves. Renders nothing when there are none. */}
+        <JoinRequestList title="Join requests" />
+
         {teams.length === 0 ? (
           <Card>
             <CardContent className="p-12 text-center">

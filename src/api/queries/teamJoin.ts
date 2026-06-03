@@ -84,6 +84,8 @@ export interface ApproverJoinRequest {
   /** The placeholder spot being claimed, if this was a claim request. */
   claimed_member_id: string | null;
   claimed_name: string | null;
+  /** Whether the team has any unclaimed placeholder (drives Replace + Add guard). */
+  has_open_placeholders: boolean;
   created_at: string;
 }
 
@@ -98,4 +100,29 @@ export async function getJoinRequestsForApprover(): Promise<ApproverJoinRequest[
   const { data, error } = await supabase.rpc('get_join_requests_for_approver');
   if (error) throw error;
   return (data as unknown as ApproverJoinRequest[]) ?? [];
+}
+
+/** An unclaimed placeholder spot offered in the Replace picker. */
+export interface ClaimablePlaceholder {
+  member_id: string;
+  display_name: string;
+  /** True when this placeholder carries a match record (merge is then weighty). */
+  has_stats: boolean;
+}
+
+/**
+ * Load a team's unclaimed placeholders (+ record flag) for the Replace picker.
+ * Captain/org-staff gated server-side; a non-approver gets an empty list.
+ *
+ * @param teamId - the team whose placeholders to offer.
+ * @throws on an unexpected RPC/network error.
+ */
+export async function getTeamPlaceholdersForClaim(
+  teamId: string
+): Promise<ClaimablePlaceholder[]> {
+  const { data, error } = await supabase.rpc('get_team_placeholders_for_claim', {
+    p_team_id: teamId,
+  });
+  if (error) throw error;
+  return (data as unknown as ClaimablePlaceholder[]) ?? [];
 }
