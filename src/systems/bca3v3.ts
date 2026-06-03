@@ -27,6 +27,26 @@ import { pointsHandicapSystem } from './handicap-systems';
 import { gamesNeeded3v3Chart } from './threshold-charts';
 import { createExtraGamesMechanism } from './handicap-mechanisms';
 import { buildPoints3ManComposition } from './points-system/compositions/points-3-man';
+import { commonSeeds } from './modules/chains/commonSeeds';
+import { teamBonus } from './modules/threshold/bca3v3/teamBonus';
+import { handicapDiff } from './modules/threshold/bca3v3/handicapDiff';
+import { homeThresholds } from './modules/threshold/bca3v3/homeThresholds';
+import { awayThresholds } from './modules/threshold/bca3v3/awayThresholds';
+
+/**
+ * BCA 3v3 prep-time chain — the ordered list of modules that produce
+ * the threshold payload at match prep.
+ *
+ * Common seeds → team bonus (DB-backed) → handicap diff → per-side
+ * chart-lookup trios.
+ */
+export const bca3v3Chain = [
+  ...commonSeeds,
+  teamBonus,
+  handicapDiff,
+  homeThresholds,
+  awayThresholds,
+];
 
 const NOT_YET_WIRED =
   'bca3v3 scoring module methods not yet wired through SystemModule (legacy paths still in use)';
@@ -75,4 +95,8 @@ export const bca3v3: SystemModule = {
   // `scoring` capability + calculator-registry dispatch; Phase C/D will swap
   // consumers and remove the legacy registry.
   pointsSystem: buildPoints3ManComposition({ multiplier: 1 }),
+
+  // Prep-time module chain — the ordered list `runSystemChain` iterates
+  // to produce the threshold payload. See CLAUDE.md principles.
+  chain: bca3v3Chain,
 };

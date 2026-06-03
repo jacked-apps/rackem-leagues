@@ -54,6 +54,35 @@ import { fargoRateHandicapSystem } from './handicap-systems';
 import { fargoFormulaChart } from './threshold-charts';
 import { createStartPointsMechanism } from './handicap-mechanisms';
 import { buildTenPointComposition } from './points-system/compositions/10-point';
+import { commonSeeds } from './modules/chains/commonSeeds';
+import { seedFargoNegotiatedStartPoints } from './modules/seed/seedFargoNegotiatedStartPoints';
+import { thresholds as fargoPointsThresholds } from './modules/threshold/fargoPoints/thresholds';
+import { thresholds as fargoGamesThresholds } from './modules/threshold/fargoGames/thresholds';
+
+/**
+ * Fargo points-mode prep-time chain — common seeds + the seed that
+ * pulls the captains' pre-negotiated start-points → passthrough
+ * threshold module that copies them onto `*_to_tie`.
+ *
+ * Used by the `fargo5v5` preset (which IS points-mode) and by ad-hoc
+ * Fargo-points leagues built via `buildSystemFromPreferences`.
+ */
+export const fargoPointsChain = [
+  ...commonSeeds,
+  seedFargoNegotiatedStartPoints,
+  fargoPointsThresholds,
+];
+
+/**
+ * Fargo games-won prep-time chain — common seeds → single
+ * compute-the-trio-for-both-sides module.
+ *
+ * Used by ad-hoc Fargo-games-won leagues only (no preset today).
+ */
+export const fargoGamesChain = [
+  ...commonSeeds,
+  fargoGamesThresholds,
+];
 
 // ============================================================================
 // Constants (module defaults — overridable via SystemOverrides)
@@ -217,4 +246,9 @@ export const fargo5v5: SystemModule = {
   // pre-computes via the Handicap Mechanism's start_points logic per the
   // D3 dual-identity resolution).
   pointsSystem: buildTenPointComposition({}),
+
+  // Prep-time module chain — fargo5v5 preset is points-mode so it
+  // uses the points chain. Ad-hoc Fargo-games-won leagues get
+  // `fargoGamesChain` via `buildSystemFromPreferences`.
+  chain: fargoPointsChain,
 };

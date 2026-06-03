@@ -25,6 +25,7 @@ import type { HandicapSystem } from './handicap-systems/types';
 import type { ThresholdChart } from './threshold-charts/types';
 import type { HandicapMechanism } from './handicap-mechanisms/types';
 import type { PointsSystem } from './points-system/types';
+import type { Module } from './chain-runtime/types';
 
 // ============================================================================
 // Ratings
@@ -377,4 +378,23 @@ export interface SystemModule {
    * @see docs/league-system/modules/points-system/README.md — the locked blueprint
    */
   pointsSystem: PointsSystem | null;
+
+  /**
+   * Prep-time module chain — the ordered list of modules the
+   * `runSystemChain` runtime iterates against an empty state bag to
+   * produce the threshold payload written into the matches row at
+   * match prep.
+   *
+   * Per the seven core architectural principles at the top of
+   * `CLAUDE.md`: a Scoring System is an ordered list of modules.
+   * Eventually this `chain` field will be the whole story and the
+   * legacy capability fields above (`scoring`, `handicapSystem`,
+   * `handicapMechanism`, etc.) will retire. For now we coexist —
+   * the chain handles prep-time threshold writes; the legacy fields
+   * still serve the per-game scoring runtime and other downstream
+   * consumers.
+   *
+   * @see src/systems/chain-runtime/runSystemChain.ts
+   */
+  chain: Module[];
 }

@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-06-03 (Threshold-math-modular branch: pinned 7 core architectural principles at top of CLAUDE.md; rewrote plan v4 around the empty-state-bag model. Units 1-3 landed: chain-runtime engine, 5 seed modules, and 9 threshold modules across `src/systems/modules/threshold/{bca3v3,bca5v5,fargoPoints,fargoGames}/` — one module per coherent computation (team bonus, handicap diff, chart-lookup trios for BCA; passthrough for Fargo points-mode; one full Fargo-games-won compute). All modules never throw — they write nulls on failure. 65+ tests passing across all three units. Branch `feat/threshold-math-modular`.)
+> **Last Updated**: 2026-06-03 (Threshold-math-modular branch: pinned 7 core architectural principles at top of CLAUDE.md; rewrote plan v4 around the empty-state-bag model. Units 1-4 landed: chain-runtime engine, 5 seed modules, 9 threshold modules, plus `chain: Module[]` field on every SystemModule (bca3v3, bca5v5, fargo5v5 + ad-hoc-resolved systems via `buildSystemFromPreferences`). Fargo exports both chains (points-mode and games-won); the picker for ad-hoc Fargo systems lives in one named place. Integration tests run each system's chain end-to-end against the runtime. 3234 systems tests passing. Branch `feat/threshold-math-modular`. Unit 5 (rewire `useMatchPreparation`) next.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
