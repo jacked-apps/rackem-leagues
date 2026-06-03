@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-06-03 (Added threshold-math-modular refactor plan: `docs/plans/2026-06-03-001-refactor-threshold-math-modular-plan.md` — moves the `useMatchPreparation` threshold switch into per-system HandicapSystem methods so new systems plug in without caller edits. Branch `feat/threshold-math-modular`.)
+> **Last Updated**: 2026-06-03 (Threshold-math-modular branch: pinned 7 core architectural principles at top of CLAUDE.md; rewrote plan v4 around "scoring system = ordered list of modules, state bag starts empty, runtime is zero-knowledge"; landed Unit 1 — new `src/systems/chain-runtime/` folder with `runSystemChain` (~25 lines, never throws), `types.ts` (Module/StateBag/Context), and tests (8 passing). Branch `feat/threshold-math-modular`.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
