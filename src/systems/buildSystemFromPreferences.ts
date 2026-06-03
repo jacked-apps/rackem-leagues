@@ -36,10 +36,10 @@
 import type { SystemOverrides } from '@/types/systemOverrides';
 import type { ResolvedSystemConfig } from '@/types/resolvedSystemConfig';
 import type { SystemModule } from './types';
-import { bca3v3, bca3v3Chain } from './bca3v3';
-import { bca5v5, bca5v5Chain } from './bca5v5';
-import { fargo5v5, fargoPointsChain, fargoGamesChain } from './fargo5v5';
-import type { Module } from './chain-runtime/types';
+import { bca3v3 } from './bca3v3';
+import { bca5v5 } from './bca5v5';
+import { fargo5v5 } from './fargo5v5';
+import { pickPrepChain } from './modules/chains/pickPrepChain';
 import { getTeamGeometry } from './team-geometry';
 import { getMatchFormat } from './match-format';
 import {
@@ -388,32 +388,6 @@ function pickScoring(pointsCalculator: string | null): SystemModule['scoring'] {
  * @param overrides - Per-league JSONB dial overrides (reserved for future use)
  * @returns SystemModule ready for runtime scoring
  */
-/**
- * Pick the prep-time module chain for an ad-hoc-resolved system.
- *
- * This is the one place the codebase chooses between Fargo points-mode
- * and Fargo games-won chains. Per CLAUDE.md principle 5 (Workshop
- * validates, runtime trusts), this decision will eventually move into
- * the Workshop UI; today it lives here as the single named decision
- * point.
- *
- * Returns an empty chain for systems we don't have prep-time threshold
- * modules for (skill_level reserved, handicap_type='none' for raw
- * leagues, etc.) — the runtime is happy to iterate an empty chain and
- * produce an empty bag. Downstream code handles missing threshold
- * keys.
- */
-function pickChain(prefs: ResolvedSystemConfig): Module[] {
-  if (prefs.handicap_type === 'points') return [...bca3v3Chain];
-  if (prefs.handicap_type === 'percentage') return [...bca5v5Chain];
-  if (prefs.handicap_type === 'fargo') {
-    return prefs.mechanism === 'start_points'
-      ? [...fargoPointsChain]
-      : [...fargoGamesChain];
-  }
-  return [];
-}
-
 export function buildSystemFromPreferences(
   prefs: ResolvedSystemConfig,
   overrides: SystemOverrides,
@@ -468,7 +442,7 @@ export function buildSystemFromPreferences(
     // dispatch until Phase D removes the legacy.
     pointsSystem: pickPointsSystem(prefs.points_calculator),
 
-    // Prep-time module chain — see pickChain() for the dispatch rule.
-    chain: pickChain(prefs),
+    // Prep-time module chain — single shared dispatch in pickPrepChain.
+    chain: pickPrepChain(prefs.handicap_type, prefs.mechanism),
   };
 }

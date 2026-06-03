@@ -61,7 +61,6 @@ import {
 } from '@/utils/lineup';
 import { useMatchRealtime } from '@/realtime/useMatchRealtime';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
-import { shouldUseTeamBonus } from '@/utils/calculateHandicapThresholds';
 import { logger } from '@/utils/logger';
 import { supabase } from '@/supabaseClient';
 import { toast } from 'sonner';
@@ -239,9 +238,11 @@ function MatchLineupBody() {
     handicap: opponentPlayerHandicaps.get(p.id)?.value ?? 0,
   }));
 
-  // Team handicap bonus (only for 3v3, only for home team)
-  // 5v5 does not use team bonus - it's disabled by default
-  const useTeamBonus = shouldUseTeamBonus(handicapType);
+  // Team handicap bonus — Points handicap only (BCA 3v3). 5v5 percentage
+  // and Fargo systems do not carry a standings-based team bonus.
+  // TODO: replace the literal string check with a per-system capability
+  // flag during the future UI-side modular cleanup branch.
+  const useTeamBonus = handicapType === 'points';
   const [teamHandicap, setTeamHandicap] = useState<number>(0);
 
   // Calculate team handicap bonus based on season standings
