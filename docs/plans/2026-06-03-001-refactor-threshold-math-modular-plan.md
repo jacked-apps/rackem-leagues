@@ -1,307 +1,342 @@
 ---
-title: refactor — Threshold math composes through HandicapMechanism
+title: refactor — Threshold math via per-system compositions of registered operations
 type: refactor
 status: active
 date: 2026-06-03
-revised: 2026-06-03 (document review pivot — see Decisions)
+revised: 2026-06-03 (second pivot — see Decisions)
 ---
 
-# Threshold Math Composes Through HandicapMechanism
+# Threshold Math via Per-System Compositions of Registered Operations
 
 ## Overview
 
-The match-prep threshold payload (the `*_to_win/tie/lose` JSONB written
-to the matches row) is built today by an inline switch in
+The match-prep threshold payload (`home_to_win/tie/lose` etc. written to
+the matches row) is built today by an inline switch in
 `src/hooks/lineup/useMatchPreparation.ts:219-309` keyed on
-`handicap_type × mechanism × winCondition`. That switch is the leak —
-operation-level code branching on system identity.
+`handicap_type × mechanism × winCondition`.
 
-The fix is a free-function orchestrator that **composes through the
-existing `systemModule.handicapMechanism` registry** to do the dispatch.
-The caller becomes a single function call with no inline branching on
-system identity.
+This refactor removes that switch by leveraging the **existing
+ThresholdOperation registry pattern** the codebase already uses for
+points-system scoring. Each system module declares a composition
+listing which operations produce its prep-time thresholds. The runtime
+resolves and runs them. Zero branching on system identity.
 
 ## Problem Frame
 
-The original draft of this plan put the dispatch as a new method on the
-`HandicapSystem` interface. Document review caught that as wrong:
+Two prior drafts of this plan got rejected by review:
 
-- `HandicapSystem` (per the locked doc at
-  `docs/league-system/modules/handicap-systems/README.md`) is
-  per-player strength encoding: validate, displayFormat,
-  computeFromHistory.
-- The new threshold-payload dispatch is per-match, per-mechanism — it
-  takes both lineups + match state + prefs. That's exactly what the
-  locked `HandicapMechanism` doc is for: "the in-match application of a
-  strength difference."
-- The precedent the original plan cited —
-  `src/utils/handicap/index.ts:31` `getGamesNeeded` — already composes
-  through `systemModule.handicapMechanism`. The pivoted plan follows
-  that pattern instead of inventing a new one.
+1. First draft placed dispatch on `HandicapSystem` — wrong module per
+   locked docs (HandicapSystem is per-player encoding).
+2. Second draft moved dispatch to a free-function orchestrator with a
+   switch on `mechanism.kind` — still over-complicated. The switch
+   approach also breaks down for Fargo (both Fargo modes have
+   `mechanism.kind === 'start_points'`).
+
+The principle Ed taught me through three corrections:
+
+> **Runtime is dumb and trusting.** Read the system's declared
+> composition (a list of operations to run), run them, log silently on
+> failure. The Workshop is the only place that validates "do these
+> modules fit together?" and inserts adapters. Runtime never peeks,
+> never switches on system identity, never validates module fit.
+
+The codebase already implements this for points-system scoring. Same
+pattern, applied to prep-time threshold writes.
 
 ## Key Decisions
 
-- **Decision:** Dispatch lives on `HandicapMechanism`, not
-  `HandicapSystem`. Rationale: matches the locked module-boundary
-  docs; respects the existing `getGamesNeeded` precedent;
-  start-points-vs-games-won is a mechanism distinction (not a
-  handicap-type one).
-- **Decision:** The caller-facing entry is a **free function**
-  `buildMatchThresholdPayload(systemModule, inputs)` in
-  `src/utils/match/`. Rationale: keeps the per-mechanism `compute`
-  signatures pure (each returns its native shape), with a single
-  orchestrator that translates each mechanism's output into the unified
-  match-row payload.
-- **Decision:** Inputs use explicit `homeLineup` / `awayLineup` keys,
-  not `myLineup` / `opponentLineup`. Rationale: document review found
-  the today-code accidentally relies on a caller-side `isHomeTeam`
-  gate at one of three branches; using home/away explicitly makes the
-  orchestrator usable by any caller (including the future swap path)
-  without re-inventing the convention.
-- **Decision:** `shouldUseTeamBonus` (currently exported from
-  `calculateHandicapThresholds.ts` and consumed by `MatchLineup.tsx`)
-  gets a new home before Unit 4 deletes its container. New home:
-  a small capability flag on the Points module (e.g., a
-  `usesTeamBonus: true` field on `pointsHandicapSystem`), which is a
-  legitimate per-system metadata addition (similar to the existing
-  `requiresManualEntry`).
-- **Decision:** "Byte-identical" is verified by **call-shape
-  equivalence** to the existing math primitives (
-  `getTeamHandicapBonus`, `computeFargoGamesWonThresholds`, chart
-  lookups) plus a handful of golden outputs per axis. Document review
-  flagged the original "byte-identical for every combo" framing as
-  rhetorical — the team-bonus DB read varies by season state and
-  can't be brute-force enumerated.
+- **Decision:** Each system module declares its prep-time threshold
+  composition as an array of `ThresholdRow` (operationKind +
+  operationArgs). Rationale: data-driven; the workshop will eventually
+  edit these declarations; runtime never branches.
+- **Decision:** The orchestrator is a tiny iterator that calls
+  `resolveThreshold(row, inputs)` (which already exists at
+  `src/systems/points-system/threshold-resolver.ts:67`) for each row in
+  the composition, then maps named outputs to the matches row column
+  shape. Total orchestrator size: ~30 lines, no conditionals.
+- **Decision:** **Never throws.** Each row's `resolveThreshold` call
+  is wrapped in a try/catch that logs the failure and sets that row's
+  value to null. A failed row produces a null in the matches row column
+  (which is the existing schema default) — scoring still works,
+  someone investigates later. Honors Ed's hard rule.
+- **Decision:** Missing operations get built as registered modules. The
+  registry already has `chart_lookup_3v3` and `fargo_start_points_for_side`.
+  We need to add: `chart_lookup_5v5_percentage` (BCA 5v5),
+  `fargo_games_won_per_side` (Fargo games-won), and a `team_bonus_adjustment`
+  operation (BCA Points 3v3 currently bakes team bonus into a separate
+  helper). Each new operation is its own file, self-registers, single
+  purpose.
+- **Decision:** Inputs the orchestrator passes to operations are the
+  existing `ThresholdInputs` shape — already defined at
+  `src/systems/points-system/types.ts`. No new types needed.
+- **Decision:** `shouldUseTeamBonus` and `getTeamHandicapBonus` get
+  absorbed into the new `team_bonus_adjustment` operation. The
+  Points 3v3 composition declares this operation in its row list;
+  other systems just don't include it. The `handicapType === 'points'`
+  check disappears — it's replaced by "is this operation in the
+  composition?" Workshop owns deciding whether a system uses team
+  bonuses.
+- **Decision:** `MatchLineup.tsx`'s use of `shouldUseTeamBonus` for UI
+  gating gets handled inline (`handicapType === 'points'` for now) and
+  flagged as future cleanup — UI branching is its own concern (Non-Goal).
 
 ## Goal
 
 A caller building a match's threshold payload does this:
 
 ```
-const payload = await buildMatchThresholdPayload(systemModule, {
-  homeLineup, awayLineup, matchData, prefs,
-});
+const payload = await composeMatchThresholds(systemModule, inputs);
 ```
 
-No `if (handicap_type === ...)` in the caller. Future systems plug in
-by implementing the appropriate `HandicapMechanism` variant (`compute`
-method, already defined). The orchestrator's switch on `mechanism.kind`
-stays — but that switch dispatches on a genuine shape difference (each
-mechanism's `compute` has a different signature), not on system
-identity. That's the legitimate place for the switch per the locked
-docs.
+The orchestrator iterates `systemModule.matchPrepThresholds` (the
+declared composition), resolves each row via the existing resolver,
+catches any failures, maps named values to column shape, returns.
+
+Zero `if (handicap_type === ...)` anywhere. Adding a new system: write
+its operations, register them, declare its composition. Workshop wires
+it up. Runtime trusts and runs.
 
 ## Non-Goals
 
-- **Swap-recalc cleanup** (`src/api/mutations/matchLineups.ts:424`).
-  Paused branch (`feat/lineup-swap-recalibration`). Will adopt the new
-  orchestrator when swap resumes.
+- **Workshop UI** for editing compositions. Future feature.
+- **Swap-recalc cleanup** (`feat/lineup-swap-recalibration` paused).
+  Will use the new orchestrator when it resumes.
 - **Per-player handicap calc** (`src/utils/calculatePlayerHandicap.ts`).
-  Different concern (history → rating). Own future branch.
+  Different concern; future branch.
 - **UI cell branching** (`HandicapCell.tsx`,
-  `useHandicapCalculations.ts`). UI input-shape per system. Lower
-  stakes; own future branch.
-
-### Open question — Fargo games-won as a new mechanism kind?
-
-Today's `computeFargoGamesWonThresholds` is not wrapped in any
-`HandicapMechanism`. It computes per-team thresholds from
-team-aggregate ratings + totalGames. Two options:
-
-- **Option A (in scope):** Add a new mechanism kind (e.g.,
-  `team_rating_threshold`) for Fargo games-won. The orchestrator's
-  switch then gains that case, but the formula moves into the
-  mechanism module. Fully modular.
-- **Option B (deferred):** Keep `computeFargoGamesWonThresholds` as a
-  freestanding utility called from the orchestrator's Fargo branch.
-  Honest intermediate state; flag for future extraction.
-
-This is a planning-time call. Default to **Option B** for branch size;
-flag in the plan summary so the reviewer (Ed) can flip it before
-implementation.
+  `useHandicapCalculations.ts`). Same per-system display gating that
+  also exists in `MatchLineup.tsx`; future "UI modularity" branch.
+- **Adapter modules.** The locked-doc concept of "adapter inserted by
+  workshop when modules don't fit" is forward-looking. No adapters get
+  built in this branch.
 
 ## Implementation Units
 
-- [ ] **Unit 1: Build the orchestrator + add `usesTeamBonus` capability**
+- [ ] **Unit 1: Build the missing operations**
 
-**Goal:** New free function
-`buildMatchThresholdPayload(systemModule, inputs)` that composes
-through `systemModule.handicapMechanism`. Add `usesTeamBonus` flag to
-HandicapSystem so the team-bonus path doesn't need to read a literal
-handicap_type string from anywhere.
+**Goal:** Three new ThresholdOperation modules, each self-registering,
+each does ONE thing.
 
 **Files:**
-- Create: `src/utils/match/buildMatchThresholdPayload.ts`
-- Create: `src/utils/match/__tests__/buildMatchThresholdPayload.test.ts`
-- Modify: `src/systems/handicap-systems/types.ts` — add
-  `usesTeamBonus: boolean` to the interface
-- Modify: `src/systems/handicap-systems/points.ts` — set
-  `usesTeamBonus: true`
-- Modify: `src/systems/handicap-systems/percentage.ts`,
-  `fargorate.ts`, `skill-level.ts` — set `usesTeamBonus: false`
+- Create: `src/systems/points-system/operations/chart-lookup-5v5-percentage.ts`
+- Create: `src/systems/points-system/operations/fargo-games-won-per-side.ts`
+- Create: `src/systems/points-system/operations/team-bonus-adjustment.ts`
+- Test: co-located characterization tests per operation that match the
+  current helpers' output (e.g., `team-bonus-adjustment.test.ts`
+  produces the same value `getTeamHandicapBonus` returns for the same
+  inputs)
 
 **Approach:**
-- The orchestrator switches on `mechanism.kind`:
-  - `extra_games` → if `systemModule.handicapSystem.usesTeamBonus`,
-    fetch team bonus via existing helper; sum lineup handicaps + bonus;
-    diff → `mechanism.compute(diff, overrides)` per side; combine.
-  - `start_points` → for Fargo points-mode: read
-    `matchData.home_to_tie`/`away_to_tie` (the negotiated values) and
-    build a payload of `{*_to_win: null, *_to_tie: <value>, *_to_lose:
-    null}`. For Option B (Fargo games-won), call
-    `computeFargoGamesWonThresholds` inline.
-  - `race_length_adjustment` → RESERVED stub; throws or returns nulls
-    matching today's "this mechanism not in any shipping league yet"
-    behavior.
-- Returns a `ThresholdPayload` (the six-field shape the matches row
-  expects).
-- The function is async because the team-bonus path issues a DB read.
-- DB-reading helper (`getTeamHandicapBonus`) imported directly inside
-  the orchestrator — same call shape as today, just relocated.
+- Each operation declares its `consumesHandicapType`, `consumesSize`,
+  `producesOutputType`, etc., per the existing `ThresholdOperation`
+  contract.
+- `team_bonus_adjustment` calls today's `getTeamHandicapBonus` helper
+  internally (same DB read; just relocated). On DB error: returns 0
+  (matches today's catch behavior).
+- `fargo_games_won_per_side` wraps today's
+  `computeFargoGamesWonThresholds` math.
+- `chart_lookup_5v5_percentage` mirrors `chart_lookup_3v3`'s shape but
+  with the 5v5 percentage chart.
 
 **Patterns to follow:**
-- `src/utils/handicap/index.ts:31` `getGamesNeeded` — the canonical
-  precedent: free function, switches on `handicapMechanism.kind`,
-  delegates to mechanism's `compute`.
+- `src/systems/points-system/operations/chart-lookup-3v3.ts` —
+  canonical example
+- `src/systems/points-system/operations/fargo-start-points-for-side.ts`
+  — for Fargo-shaped inputs
 
 **Test scenarios:**
-- Happy path × each mechanism kind:
-  - Points 3v3, even handicap totals → matches today's chart output
-  - Percentage 5v5, mixed totals → matches today's chart output
-  - Fargo points-mode with confirmed `*_to_tie` values → preserves
-    them; sets win/lose to null
-  - Fargo games-won (Option B) → matches
-    `computeFargoGamesWonThresholds` output for the same lineups
-- Call-shape equivalence: orchestrator calls
-  `getTeamHandicapBonus(homeTeamId, awayTeamId, seasonId,
-  handicapType)` for the Points path, verified via
-  `toHaveBeenCalledWith`
-- Edge: empty lineups → defined per-mechanism behavior:
-  - Points all-zero → Points chart at diff=0 (the even-match trio)
-  - Percentage all-zero → Percentage chart at diff=0
-  - Fargo points-mode with null `*_to_tie` → returns all nulls
-- Edge: SkillLevel league (handicap_type='skill_level') → today this
-  doesn't reach prep_match because it's reserved; the orchestrator
-  surfaces a clear error so a future contributor knows where to add it
-- Per-system flag check: `pointsHandicapSystem.usesTeamBonus === true`,
-  all others false
+- Each operation: happy path with realistic inputs → expected output
+- Each operation: edge case (empty/null inputs) → defined behavior
+- `team_bonus_adjustment`: DB error from `getTeamHandicapBonus` →
+  returns 0, logs warning (matches today)
+
+**Verification:**
+- Each new operation appears in the registry after import.
+- Per-operation tests pass.
+
+---
+
+- [ ] **Unit 2: Declare prep-time compositions on each system module**
+
+**Goal:** Each shipping system module (BCA 3v3, BCA 5v5, Fargo
+points-mode, Fargo games-won) declares its
+`matchPrepThresholds: ThresholdRow[]` — the list of named rows the
+runtime resolves to fill the matches row columns.
+
+**Files:**
+- Modify: `src/systems/bca3v3.ts` — add `matchPrepThresholds` field
+  with rows for `home_to_win`, `home_to_tie`, `home_to_lose`,
+  `away_to_win`, `away_to_tie`, `away_to_lose` using
+  `chart_lookup_3v3` (plus `team_bonus_adjustment` rows on the
+  appropriate sides)
+- Modify: `src/systems/bca5v5.ts` — same shape using
+  `chart_lookup_5v5_percentage`
+- Modify: `src/systems/fargo5v5.ts` — declare BOTH composition variants
+  (points-mode uses `fargo_start_points_for_side`; games-won uses
+  `fargo_games_won_per_side`). Per-system Fargo will need to decide at
+  composition-build time which variant applies based on
+  `winCondition` — that decision lives on the system module (a
+  workshop-config concern), NOT in the orchestrator
+- Modify: `src/systems/buildSystemFromPreferences.ts` —
+  ad-hoc-resolved systems build compositions the same way as the
+  shipping presets
+
+**Approach:**
+- Use the existing `buildThresholdRow` helper at
+  `src/systems/points-system/threshold-resolver.ts:91` — copies
+  operation metadata onto the row, validates at build time.
+- A composition for a 6-field payload has 6 rows (one per column).
+  Fargo points-mode: 2 rows (only `home_to_tie` and `away_to_tie`
+  populated; others omitted from composition → null in the payload).
+- The `handicap_type='none'` case: empty composition → all-null
+  payload, which matches today's behavior.
+
+**Patterns to follow:**
+- `src/systems/points-system/compositions/points-3-man.ts:91-127` —
+  the canonical composition shape
+
+**Test scenarios:**
+- Each system's composition validates at build time
+  (`validatePointsSystem` or equivalent — adapt the existing validator
+  if needed)
+- The declared rows reference operations that are actually registered
+
+**Verification:**
+- Each system module exports a `matchPrepThresholds` array
+- No system module imports `getTeamHandicapBonus` or any
+  threshold-math helper directly — only operation references
+
+---
+
+- [ ] **Unit 3: Tiny composeMatchThresholds orchestrator**
+
+**Goal:** A small function that takes a system module + runtime inputs,
+iterates the system's prep-time composition, resolves each row, maps
+named outputs to the matches row column shape. Never throws.
+
+**Files:**
+- Create: `src/utils/handicap/composeMatchThresholds.ts` (located
+  alongside `getGamesNeeded`, the existing modular-routing utility)
+- Test: `src/utils/handicap/__tests__/composeMatchThresholds.test.ts`
+
+**Approach:**
+- Inputs: `systemModule: SystemModule`, `inputs: ThresholdInputs`
+- For each row in `systemModule.matchPrepThresholds`:
+  - try { result[row.name] = await resolveThreshold(row, inputs) }
+  - catch (err) { log via console.warn with row name + error; set
+    result[row.name] = null }
+- Map `result.home_to_win` → `payload.home_to_win`, etc. Rows not in
+  the composition default to null (today's behavior for omitted
+  fields).
+- Return payload.
+- ~30 lines total. No conditionals on system identity.
+
+**Patterns to follow:**
+- `src/utils/handicap/index.ts:31` `getGamesNeeded` — the same
+  thin-routing-utility pattern, just slightly more iteration.
+
+**Test scenarios:**
+- Happy path × each shipping system: composition runs, payload matches
+  today's inline switch output for the same inputs
+- "Never throws" verification: an operation that throws produces a
+  null for that row in the payload + a console.warn, NOT a thrown
+  error from the orchestrator
+- Empty composition (`handicap_type='none'`) → all-null payload
+- One row throws, others succeed → that one is null, others have
+  their values
 
 **Verification:**
 - All tests pass.
-- The Points-path branch of the orchestrator reads only
-  `systemModule.handicapSystem.usesTeamBonus`, not any literal
-  `'points'` string.
+- Orchestrator file contains zero literal `'fargo'` / `'points'` /
+  `'percentage'` / `'skill_level'` strings (verified by file grep).
 
 ---
 
-- [ ] **Unit 2: Rewire `useMatchPreparation` to use the orchestrator**
+- [ ] **Unit 4: Rewire `useMatchPreparation` to call the orchestrator**
 
-**Goal:** Replace the inline switch in
-`useMatchPreparation.ts:219-309` with a single
-`buildMatchThresholdPayload(...)` call.
+**Goal:** Replace the 90-line switch with a single
+`await composeMatchThresholds(systemModule, inputs)` call.
 
 **Files:**
-- Modify: `src/hooks/lineup/useMatchPreparation.ts`
-- Test: characterization test asserting the prep flow's
-  `thresholdPayload` matches today's value for every supported
-  configuration
+- Modify: `src/hooks/lineup/useMatchPreparation.ts:219-309`
+- Test: characterization test (run real preset configs through the
+  prep flow; assert the `thresholdPayload` matches today's inline
+  output)
 
 **Approach:**
-- Build the `homeLineup`/`awayLineup` (caller does the
-  `isHomeTeam ? myLineup : opponentLineup` swap once, before the
-  orchestrator call).
-- Call `buildMatchThresholdPayload(systemModule, { homeLineup,
-  awayLineup, matchData, prefs })`.
-- Delete the three branches and the local `isFargoStartPoints` /
-  `isFargoGamesWon` booleans.
+- Build the `inputs` object once from the existing hook state (lineup
+  ratings, matchData, prefs).
+- Call the orchestrator. Use its returned payload directly.
+- Delete the three branches, the local discriminator booleans, the
+  helper-function imports.
 
 **Verification:**
-- Grep `useMatchPreparation.ts` for `'fargo'`, `'points'`,
-  `'percentage'`, `isFargoStartPoints`, `isFargoGamesWon` — zero hits
-  in code (comments still allowed per the locked-doc style).
-- Characterization test (golden output per axis combo) passes.
+- Grep `useMatchPreparation.ts` for literal handicap-type strings →
+  zero hits in code (comments allowed per existing style).
+- Characterization test confirms identical output for all shipping
+  preset configurations.
 
 ---
 
-- [ ] **Unit 3: Relocate `shouldUseTeamBonus` and prep MatchLineup.tsx**
+- [ ] **Unit 5: Delete dead helpers**
 
-**Goal:** Move the team-bonus-applies decision off of
-`calculateHandicapThresholds.ts` (which Unit 4 will delete) and onto
-the Points system module (`usesTeamBonus` flag from Unit 1).
-
-**Files:**
-- Modify: `src/player/MatchLineup.tsx` — replace
-  `shouldUseTeamBonus(handicapType)` call with
-  `systemModule.handicapSystem.usesTeamBonus`
-
-**Approach:** The call site already has `handicapType` in scope; it
-needs the resolved `systemModule` instead. If `systemModule` isn't
-already available there, plumb it from the parent (it's loaded by
-the same prefs hook the rest of the lineup page uses).
-
-**Verification:**
-- No remaining importer of `shouldUseTeamBonus` outside the file Unit 4
-  deletes.
-
----
-
-- [ ] **Unit 4: Delete dead helpers**
-
-**Goal:** Remove the now-unused legacy utilities.
+**Goal:** Remove the now-unused legacy code.
 
 **Files:**
 - Delete: `src/utils/calculateHandicapThresholds.ts`
-- Delete: `src/utils/getTeamHandicapBonus.ts` (its sole remaining
-  consumer is the orchestrator from Unit 1; move into the orchestrator
-  file or keep as a small utility — implementation pick)
-- Verify: nothing in `src/` outside `src/systems/` and the orchestrator
-  contains a switch keyed on `handicap_type` for threshold purposes
-  (stale comment in `engineRunningTotals.ts:126` referencing
-  `calculateHandicapThresholds` gets updated as part of this unit)
+- Delete: `src/utils/getTeamHandicapBonus.ts` (its sole caller is now
+  the `team_bonus_adjustment` operation, which can either inline the
+  body or keep the import — implementer pick)
+- Delete: `src/utils/handicap/fargoGamesWonThresholds.ts` (body moves
+  into the `fargo_games_won_per_side` operation, OR kept as a pure
+  helper imported by that operation — implementer pick)
+- Modify: `src/player/MatchLineup.tsx:64,244` — replace
+  `shouldUseTeamBonus(handicapType)` with inline
+  `handicapType === 'points'`. Flag in PR description that UI-side
+  branching cleanup is its own future branch.
 
 **Verification:**
-- TypeScript compiles with no remaining importers.
-- Grep against the audit's enumerated dirty files shows the threshold
-  family is now clean.
+- TypeScript compiles with no remaining importers of deleted files.
+- The UI gate in MatchLineup.tsx still renders the team-bonus chunk
+  for BCA 3v3 leagues, exactly as today.
 
 ## Risks & Dependencies
 
 | Risk | Mitigation |
 |------|------------|
-| The orchestrator's switch on `mechanism.kind` is just the inline switch relocated | True — and that's correct. Switching on mechanism is dispatching on real shape differences (different `compute` signatures), not on system identity. The locked-doc-correct location for the switch. |
-| Plumbing `systemModule` into `MatchLineup.tsx` causes unintended re-render churn | The component already consumes resolved league prefs; `systemModule` is built from the same source — same render dependency, no new subscriptions |
-| Fargo games-won deferred (Option B) means one branch of the orchestrator stays inline | Honest intermediate state; flagged in plan as future extraction. The orchestrator's Fargo branch still removes the `handicap_type === 'fargo'` check from the caller (useMatchPreparation); the inline `computeFargoGamesWonThresholds` call moves into the orchestrator's `start_points` case |
-| Characterization tests can't enumerate the full input space | Replaced "byte-identical for every combo" success criterion with "call-shape equivalence to underlying primitives + per-axis golden outputs." Provable and tractable. |
-| Swap-recalc path defers; when it resumes it needs to call the new orchestrator | Today's swap-recalc heuristic at `matchLineups.ts:424` was already going to be rewritten when swap resumes; this refactor's orchestrator is the rewrite target. No new dependency. |
+| A new operation produces different output than the legacy helper it replaces | Per-operation characterization tests in Unit 1 assert byte-equivalence against the existing helpers' outputs for the same inputs, before Unit 4 rewires anything |
+| An operation throws at runtime (DB error, bad math, missing input) | Orchestrator's per-row try/catch logs and sets that row to null; scoring continues with null thresholds (today's schema default). Honors the "never break scoring" hard rule. |
+| Fargo system needs two compositions (points-mode vs games-won) | The system module decides at composition-build time, NOT the orchestrator. The decision is encoded in `buildSystemFromPreferences` based on `winCondition`. Future workshop UI is where users would tweak this. |
+| `MatchLineup.tsx`'s inline `handicapType === 'points'` survives as a UI leak | Acknowledged; explicit Non-Goal and PR description note. UI-side modular cleanup is its own future branch. |
+| Adding the new operations + compositions is more code than the original "free function with switch" plan | Yes, but per Ed: simpler in the DURABLE way. Each module is small, single-purpose, registered. Adding a new system later is one file + one composition declaration. Zero edits to the orchestrator. |
 
 ## Success Criteria
 
-- Zero literal `'fargo'` / `'points'` / `'percentage'` / `'skill_level'`
-  strings in `useMatchPreparation.ts` outside comments — that's the
-  caller staying clean.
-- Adding a new handicap system requires only a new module file + one
-  registry edit + (if it needs a different mechanism) a new mechanism
-  variant. **Zero edits to the orchestrator** for systems that fit an
-  existing mechanism kind. For systems that need a new mechanism kind,
-  the orchestrator gains one switch case — that's the legitimate
-  extension point per the locked docs.
-- The orchestrator never reads a literal handicap-type string; it asks
-  `systemModule.handicapSystem.usesTeamBonus` and
-  `systemModule.handicapMechanism.kind`.
-- Existing characterization tests for `calculateHandicapThresholds`
-  pass against the new orchestrator path (run them through the new
-  call site).
+- The orchestrator file contains zero literal handicap-type strings.
+- `useMatchPreparation.ts` contains zero literal handicap-type strings
+  (in code).
+- Each shipping system has a working `matchPrepThresholds` composition.
+- The new operations are registered and discoverable via the registry.
+- Characterization tests pass: today's threshold output for every
+  preset config equals tomorrow's output.
+- The orchestrator never throws — verified by a test that feeds it a
+  composition with an intentionally-throwing operation and asserts the
+  failed row produces null without an uncaught exception.
 
 ## Sources & References
 
-- Audit findings (this session, 2026-06-03): module audit + consumer
-  audit.
-- Document review (this session, 2026-06-03): six findings, key pivot
-  was the wrong-module placement.
-- Locked architecture docs:
-  - `docs/league-system/modules/handicap-systems/README.md` — defines
-    HandicapSystem as encoding-only.
-  - `docs/league-system/modules/handicap-mechanisms/README.md` —
-    defines Mechanism as in-match application; the correct home.
-- Precedent: `src/utils/handicap/index.ts:31` `getGamesNeeded` — the
-  same orchestrator pattern, already shipped.
+- Existing pattern reference:
+  `src/systems/points-system/compositions/points-3-man.ts` —
+  data-driven composition of registered operations.
+- Existing resolver:
+  `src/systems/points-system/threshold-resolver.ts:67` —
+  `resolveThreshold(row, inputs)`.
+- Existing operations:
+  `src/systems/points-system/operations/chart-lookup-3v3.ts`,
+  `fargo-start-points-for-side.ts`.
+- Modular-routing precedent: `src/utils/handicap/index.ts:31`
+  `getGamesNeeded`.
+- Architectural principles in memory:
+  `feedback_runtime_trusts_workshop_validates.md`,
+  `feedback_respect_locked_docs.md`,
+  `feedback_match_ops_system_agnostic.md`.
