@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-05-29 (Added onboarding cold-start cascade plan: `docs/plans/2026-05-29-001-feat-onboarding-cascade-plan.md` + indexed its origin brainstorm — team join link → claim → captain approve; builds on passwordless PR #159. Branch `docs/player-onboarding-cold-start-brainstorm`.)
+> **Last Updated**: 2026-06-03 (Added threshold-math-modular refactor plan: `docs/plans/2026-06-03-001-refactor-threshold-math-modular-plan.md` — moves the `useMatchPreparation` threshold switch into per-system HandicapSystem methods so new systems plug in without caller edits. Branch `feat/threshold-math-modular`.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -124,6 +124,7 @@
 | `docs/plans/2026-05-29-002-feat-my-match-jump-in-plan.md` | Implementation plan for the "My Match" live-match jump-in shortcut | 5 units: team-scoped `getMyMatchMatches` query + `useMyMatchSurfaces` aggregate hook with lightweight realtime + BottomTabBar tab repurpose + AppDrawer "My Match" section (OperatorSection-mirrored) + AppSidebar parity; no DB schema changes; coordinates with future captain-doorbell on bottom-bar; branch `chore/safe-meantime-work` |
 | `docs/plans/2026-05-25-001-refactor-pairings-generator-extraction-plan.md` | Implementation plan for Pairings Generator (Module #8) v1 extraction | 8 units; lifts `gameOrder.ts` into `src/systems/pairings/` (three internal stages: pair-gen / ordering / break-rack); lineups in, player-id-tagged GameSlot[] out; deletes dead helpers; output shape variant-agnostic for future race-mode etc. Branch `feat/pairings-generator-extraction` |
 | `docs/plans/2026-05-29-001-feat-onboarding-cascade-plan.md` | Implementation plan for the player/captain onboarding cold-start cascade (team join link → claim → captain approve) | 8 units / 3 phases; new `teams.join_token` + `team_join_requests` table; `/join/:token` page; `approve-join-request` edge fn (match-or-create via merge); triage board on MyTeams; doorbell; thin captain wizard; land-on-tonight's-match; builds on passwordless PR #159; origin 2026-05-28 brainstorm |
+| `docs/plans/2026-06-03-001-refactor-threshold-math-modular-plan.md` | Refactor plan: move threshold math from `useMatchPreparation`'s inline switch into per-system HandicapSystem methods | 4 units; adds `buildMatchThresholds()` to the HandicapSystem interface; Points/Percentage/Fargo/SkillLevel implement; caller becomes `system.buildMatchThresholds(...)` with zero inline branching; characterization tests guarantee byte-identical output across all (handicap_type × mechanism × winCondition) combos; deletes `calculateHandicapThresholds`/`getTeamHandicapBonus` helpers; branch `feat/threshold-math-modular` |
 
 ### Future Work Folder
 
