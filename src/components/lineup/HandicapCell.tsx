@@ -1,6 +1,15 @@
 /**
  * @fileoverview HandicapCell — renders the correct handicap input/display
- * for a lineup position based on context (handicap type, sub type, etc.)
+ * for a lineup position based on the system's handicapEntry dials.
+ *
+ * Per the UI modularity audit at
+ * `docs/brainstorms/2026-06-03-ui-modularity-audit-requirements.md`:
+ * this component used to peek at `handicapType` six times to choose
+ * widget kind, min/max bounds, placeholder, and display format. It
+ * now reads all six from the system module's `handicapEntry` config.
+ *
+ * Adding a new handicap system means writing its `HandicapEntryModule`
+ * config — no edits to this file.
  */
 
 import { Input } from '@/components/ui/input';
@@ -11,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { formatHandicap } from '@/utils/lineup';
+import { getHandicapSystem, type HandicapType } from '@/systems/handicap-systems';
 
 interface HandicapCellProps {
   playerId: string;
@@ -40,7 +49,13 @@ export function HandicapCell({
   manualHandicapValue,
   onManualHandicapChange,
 }: HandicapCellProps) {
-  // Double duty — opponent picks, handicap unknown
+  // Resolve the system module from the handicapType string. The module
+  // exposes a `handicapEntry` field with all the dials this component
+  // needs: widget kind, range/enum, placeholder, display format, source.
+  const system = getHandicapSystem(handicapType as HandicapType);
+  const entry = system.handicapEntry;
+
+  // Double duty — opponent picks, handicap unknown. System-agnostic.
   if (isDoubleDuty) {
     return (
       <div className="w-16 text-center">
@@ -49,21 +64,22 @@ export function HandicapCell({
     );
   }
 
-  // Anonymous sub — type-appropriate input
+  // Anonymous sub — captain enters this slot's handicap. Widget kind
+  // and bounds come from the system's entry dials.
   if (isAnonSub && onSubHandicapChange) {
-    if (handicapType === 'points') {
+    if (entry.inputKind === 'select' && entry.enumValues) {
       return (
         <div className="w-16">
           <Select value={subHandicap} onValueChange={onSubHandicapChange} disabled={locked}>
             <SelectTrigger className="h-8 px-1 text-sm">
-              <SelectValue placeholder="H/C" />
+              <SelectValue placeholder={entry.placeholderText || entry.columnHeader} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="2">+2</SelectItem>
-              <SelectItem value="1">+1</SelectItem>
-              <SelectItem value="0">0</SelectItem>
-              <SelectItem value="-1">-1</SelectItem>
-              <SelectItem value="-2">-2</SelectItem>
+              {entry.enumValues.map((opt) => (
+                <SelectItem key={opt.value} value={String(opt.value)}>
+                  {opt.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -73,41 +89,45 @@ export function HandicapCell({
       <div className="w-16">
         <Input
           type="number"
-          min={handicapType === 'fargo' ? 100 : 0}
-          max={handicapType === 'fargo' ? 850 : 100}
+          min={entry.range?.min}
+          max={entry.range?.max}
+          step={entry.range?.integer ? 1 : undefined}
           value={subHandicap}
           onChange={(e) => onSubHandicapChange(e.target.value)}
           disabled={locked}
-          placeholder={handicapType === 'fargo' ? '—' : '%'}
+          placeholder={entry.placeholderText}
           className="text-center text-sm font-semibold h-8 px-1"
         />
       </div>
     );
   }
 
-  // Fargo regular player — manual rating entry
-  if (handicapType === 'fargo' && onManualHandicapChange) {
+  // Regular player with manual entry — captain types the rating. Today
+  // this fires for FargoRate (source 'manual'). Future API-backed Fargo
+  // (source 'api') would render a different branch, not this one.
+  if (entry.source === 'manual' && onManualHandicapChange) {
     return (
       <div className="w-16">
         <Input
           type="number"
-          min={100}
-          max={850}
+          min={entry.range?.min}
+          max={entry.range?.max}
+          step={entry.range?.integer ? 1 : undefined}
           value={manualHandicapValue ?? ''}
           onChange={(e) => onManualHandicapChange(position, e.target.value)}
           disabled={locked || !playerId}
-          placeholder="—"
+          placeholder={entry.placeholderText}
           className="text-center text-sm font-semibold h-8 px-1"
         />
       </div>
     );
   }
 
-  // Calculated handicap (points / percentage) — read-only
+  // Read-only display — derived handicap (points / percentage today).
   return (
     <div className="w-16 text-center">
       <div className="text-sm font-semibold text-blue-600">
-        {playerId ? formatHandicap(handicap, handicapType === 'percentage') : '-'}
+        {playerId ? entry.displayFormat(handicap) : '-'}
       </div>
     </div>
   );
