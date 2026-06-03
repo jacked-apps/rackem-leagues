@@ -39,6 +39,7 @@ import type { SystemModule } from './types';
 import { bca3v3 } from './bca3v3';
 import { bca5v5 } from './bca5v5';
 import { fargo5v5 } from './fargo5v5';
+import { defaultEnabledSubs } from './sub-modules';
 import { getTeamGeometry } from './team-geometry';
 import { getMatchFormat } from './match-format';
 import {
@@ -440,5 +441,9 @@ export function buildSystemFromPreferences(
     // Coexists with the legacy `scoring` capability + calculator-registry
     // dispatch until Phase D removes the legacy.
     pointsSystem: pickPointsSystem(prefs.points_calculator),
+
+    // Sub kinds offered on the lineup page. Default: both available.
+    // Workshop will eventually edit per league.
+    enabledSubs: defaultEnabledSubs,
   };
 }

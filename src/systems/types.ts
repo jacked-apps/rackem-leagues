@@ -25,6 +25,7 @@ import type { HandicapSystem } from './handicap-systems/types';
 import type { ThresholdChart } from './threshold-charts/types';
 import type { HandicapMechanism } from './handicap-mechanisms/types';
 import type { PointsSystem } from './points-system/types';
+import type { SubModule } from './sub-modules';
 
 // ============================================================================
 // Ratings
@@ -377,4 +378,21 @@ export interface SystemModule {
    * @see docs/league-system/modules/points-system/README.md — the locked blueprint
    */
   pointsSystem: PointsSystem | null;
+
+  /**
+   * Which sub kinds the lineup page offers in its player-selection
+   * dropdown. Per Ed: anonymous and double-duty are each their own
+   * plug-in module; LO toggles each independently. Workshop will
+   * eventually edit this per league; today every shipping preset
+   * declares both via `defaultEnabledSubs`.
+   *
+   * Empty array means the league disallows all substitutes (every
+   * slot must be filled by a real team member).
+   *
+   * @see src/systems/sub-modules/index.ts — the SubModule registry
+   */
+  enabledSubs: SubModule[];
 }
+
+// Re-export for convenience: `import type { SystemModule, SubModule } from '...'`.
+export type { SubModule, SubKind } from './sub-modules';

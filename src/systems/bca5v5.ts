@@ -16,6 +16,7 @@ import { percentageHandicapSystem } from './handicap-systems';
 import { gamesNeeded5v5Chart } from './threshold-charts';
 import { createExtraGamesMechanism } from './handicap-mechanisms';
 import { buildPercent5ManComposition } from './points-system/compositions/percent-5-man';
+import { defaultEnabledSubs } from './sub-modules';
 
 const NOT_YET_WIRED =
   'bca5v5 scoring module methods not yet wired through SystemModule (legacy paths still in use)';
@@ -57,4 +58,7 @@ export const bca5v5: SystemModule = {
   // (winner = 0.1, loser = 0) + 2 jump triggers (milestone at games_to_win × 0.7,
   // win threshold at games_to_win). Phase B of Points System extraction.
   pointsSystem: buildPercent5ManComposition({}),
+
+  // Sub kinds offered on the lineup page. Default: both available.
+  enabledSubs: defaultEnabledSubs,
 };

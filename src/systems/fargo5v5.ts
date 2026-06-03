@@ -54,6 +54,7 @@ import { fargoRateHandicapSystem } from './handicap-systems';
 import { fargoFormulaChart } from './threshold-charts';
 import { createStartPointsMechanism } from './handicap-mechanisms';
 import { buildTenPointComposition } from './points-system/compositions/10-point';
+import { defaultEnabledSubs } from './sub-modules';
 
 // ============================================================================
 // Constants (module defaults — overridable via SystemOverrides)
@@ -217,4 +218,7 @@ export const fargo5v5: SystemModule = {
   // pre-computes via the Handicap Mechanism's start_points logic per the
   // D3 dual-identity resolution).
   pointsSystem: buildTenPointComposition({}),
+
+  // Sub kinds offered on the lineup page. Default: both available.
+  enabledSubs: defaultEnabledSubs,
 };

@@ -27,6 +27,7 @@ import { pointsHandicapSystem } from './handicap-systems';
 import { gamesNeeded3v3Chart } from './threshold-charts';
 import { createExtraGamesMechanism } from './handicap-mechanisms';
 import { buildPoints3ManComposition } from './points-system/compositions/points-3-man';
+import { defaultEnabledSubs } from './sub-modules';
 
 const NOT_YET_WIRED =
   'bca3v3 scoring module methods not yet wired through SystemModule (legacy paths still in use)';
@@ -75,4 +76,8 @@ export const bca3v3: SystemModule = {
   // `scoring` capability + calculator-registry dispatch; Phase C/D will swap
   // consumers and remove the legacy registry.
   pointsSystem: buildPoints3ManComposition({ multiplier: 1 }),
+
+  // Sub kinds offered on the lineup page. Default: both anonymous and
+  // double-duty available; LO will toggle via the future workshop.
+  enabledSubs: defaultEnabledSubs,
 };
