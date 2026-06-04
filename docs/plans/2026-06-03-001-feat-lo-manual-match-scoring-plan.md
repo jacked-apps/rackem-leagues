@@ -202,9 +202,8 @@ results have no way into the system. (See origin: `docs/brainstorms/lo-manual-ma
 
 ### Deferred to Implementation
 
-- **Fargo+points start-credit calc:** confirm whether a reusable
-  start-credit-from-frozen-ratings calculator exists or must be written for the LO
-  helper (the live hook reads it from negotiation state the LO flow lacks).
+- ~~**Fargo+points start-credit calc**~~ RESOLVED in Unit 1: use
+  `fargo5v5.handicapMechanism.compute(...)` → map to weaker team's `*_to_tie`.
 - **`loSaveLineups` vs `updateMatchLineup`:** verify whether the existing gate-free
   `updateMatchLineup` (no `teamId`) suffices before adding a new function.
 - **`ScoringDialog` forfeit hide:** verify whether omitting `onWinByForfeitChange`
@@ -265,7 +264,7 @@ Manual-Scoring page
 
 ## Implementation Units
 
-- [ ] **Unit 1: LO prep-payload helper (standalone, does NOT touch the live hook)**
+- [x] **Unit 1: LO prep-payload helper (standalone, does NOT touch the live hook)** — DONE (`src/utils/match/computeMatchPrepPayload.ts` + 10 tests; typecheck/lint clean)
 
 **Goal:** Build a standalone helper that produces a `prep_match`-ready payload
 (thresholds + gameRows) for the LO driver. **Do not modify `useMatchPreparation`**
@@ -289,19 +288,21 @@ flagged touching the live hook as the wrong risk for v1).
   on these — so this branch is not purely synchronous; the helper is async).
 - Output: `{ thresholds: <prep_match p_thresholds shape>, gameRows: <p_game_rows shape> }`.
 - Threshold dispatch mirrors the live hook: Fargo+games → `computeFargoGamesWonThresholds`;
-  non-Fargo → `calculateHandicapThresholds`; `generatePairings` for gameRows;
-  `computeGameCount` for count.
-- **Fargo + points start-credit is a genuinely-new calc, not an extraction.** The
-  live hook reads `*_to_tie` from `matchData` (written earlier by the two-captain
-  start-points negotiation), which the LO flow does not run. The helper must
-  **compute start-credit from the frozen lineup ratings** per the locked
-  "start-credit is a pure calc from frozen ratings" direction (memory:
-  `project_start_credit_pure_calc`). Confirm in implementation whether a reusable
-  start-credit calculator already exists or must be written.
+  non-Fargo → `calculateHandicapThresholds`; game rows + count via
+  `generateGameOrder(lineupSize, doubleRoundRobin)` (from `@/utils/gameOrder` — the
+  actual function the live hook uses; NOT `generatePairings`/`computeGameCount`).
+- **Fargo + points start-credit, RESOLVED:** the live hook reads `*_to_tie` from
+  `matchData` (written by the two-captain negotiation the LO flow doesn't run), so
+  the helper instead computes the credit from the frozen ratings via
+  `fargo5v5.handicapMechanism.compute(homeRatings, awayRatings, overrides)` (the same
+  pure calc `useFargoStartPointsNegotiation`'s `computedDefault` uses) and maps it to
+  the weaker team's `*_to_tie` (even → 0/0); degrades to 0/0 on any guard miss
+  (scoring never breaks).
 
-**Patterns to follow:** `src/utils/handicap/fargoGamesWonThresholds.ts`,
-`src/utils/calculateHandicapThresholds.ts`, `@/systems/pairings`,
-`@/systems/team-geometry`.
+**Patterns to follow:** `src/hooks/lineup/useMatchPreparation.ts` (the dispatch),
+`src/hooks/lineup/useFargoStartPointsNegotiation.ts` (start-credit mapping),
+`src/utils/gameOrder.ts`, `src/utils/handicap/fargoGamesWonThresholds.ts`,
+`src/utils/calculateHandicapThresholds.ts`.
 
 **Test scenarios:**
 - Happy path: Fargo+points config → thresholds carry computed start-credit in
