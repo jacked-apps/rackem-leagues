@@ -481,7 +481,7 @@ hide user-facing entry until the feature is usable).
 clicks from the league dashboard; ineligible matches cannot be opened for scoring;
 no entry point is exposed before the scoring page is usable.
 
-- [ ] **Unit 5: Setup phase UI (dual lineup + handicap override + Setup Match)**
+- [x] **Unit 5: Setup phase UI (dual lineup + handicap override + Setup Match)** — DONE (`SetupPhase.tsx` + `lineupTransforms.ts` + `ManualScoringPage` host dispatching Setup/Entry on status; `HandicapCell`/`PlayerSelectionRow` get an additive `editableOverride` prop; 7 tests; typecheck/lint clean). Two columns of `PlayerSelectionRow` (stacked on mobile), handicaps pre-fill from `usePlayerHandicaps` and are editable for any type, Setup Match gated by `computeLineupCompleteness` on both sides → `loSaveLineups` → `loSetupMatch`. Deferred polish: the overridden-vs-default visual marker (the editable input is itself distinct from the read-only display); the "Match set up — N games created" banner lands with the Entry phase in Unit 6.
 
 **Goal:** The Setup half of the manual-scoring page: enter both lineups, override
 handicaps, click Setup Match.
