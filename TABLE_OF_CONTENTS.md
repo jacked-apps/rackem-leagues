@@ -113,6 +113,7 @@
 | `docs/plans/2026-04-28-001-feat-modular-league-system-plan-supplements/` | Supplements directory for the modular league system plan | Append-only addenda used during execution |
 | `docs/plans/2026-05-17-001-refactor-modular-framework-migration-plan.md` | Strangler-fig migration plan for the modular Scoring System refactor | Unit 1 (Win Calculator extraction) detailed; Units 2-9 sketched; each Unit extracts one Module piece-by-piece without breaking the shipping prepackaged Scoring Systems |
 | `docs/plans/2026-06-03-001-feat-lo-manual-match-scoring-plan.md` | Implementation plan for LO manual match scoring (v1 enter-from-blank) | 7 units; reuses prep_match/engine/scoreboard/modal + thin LO dual-slot write+finalize; dashboard card → week-accordion picker → two-phase page; based on many-eyes stack tip (PR #157); branch `feat/lo-manual-scoring` |
+| `docs/plans/2026-06-04-001-feat-lo-match-review-correction-plan.md` | Implementation plan for LO match review & correction (v2 take-over/adjust) | 8 units; reuses v1 Entry/picker/ScoringDialog + many-eyes game_confirmations; confirmer-audit read, solo vacate + loCorrectGame override (appends operator row + reason), crash-safe reopen (keeps completion fields) → re-finalize/restore; eligibility = completed/awaiting; stacks on v1; branch `feat/lo-match-review-correction` |
 
 ### Future Work Folder
 
