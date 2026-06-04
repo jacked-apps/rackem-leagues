@@ -22,6 +22,14 @@ This plan is written from the building framing in the origin doc. Two ground rul
 
 A variation's derived output (points, jumps, calcs) can be wrong if the variation is buggy — that's the author's mess to fix. The two ground rules above are the floor that never gives way.
 
+### The communication contract (same rule every room in the building follows)
+
+Every room in the workshop building talks through ONE shared medium — the **state bag**. Rooms do not import each other, do not know about each other, do not reference each other directly. They only read from and write to the bag, by name.
+
+The per-game allocator room follows this same contract: **anywhere the allocator takes a number, that number can be either a literal OR a reference to a state-bag value by name.** The allocator does not know what wrote that value — a threshold may have set it at match start, a trigger may have written it mid-match, or it may have come from somewhere else entirely. The allocator just reads what's at that name.
+
+This is the same `const | var` pattern triggers already use in their conditions and actions. Making it explicit for the allocator here sets the precedent every later room copies: the rooms are decoupled; the bag is the only connection.
+
 ## Problem Frame
 
 The per-game allocator's runtime engine already exists in code (`src/systems/points-system/runtime.ts`, `src/systems/points-system/allocator-evaluator.ts`). The engine was designed to accept a data-shaped variation object and execute it. What's missing is everything else: a place for variations to live (table), a way to author them (UI), a way to load them (loader), a way to pick one for a league (pointer + UI), a way to swap it into the LIVE scoring path (not the test-only path), and a safety net so a bad variation can't reach the floor (the two ground rules).
@@ -40,6 +48,7 @@ The existing prepackaged scoring systems (Percent 5-Man, 10-Point) stay as code 
 - **R8.** A variation that fails or throws at runtime cannot stop the lineup page rendering, the scoring page rendering, or a game's W/L being recorded. Failures stay trapped in the variation's slot.
 - **R9.** A match started while pointing at variation X continues to score with variation X's dials AS THEY WERE AT MATCH START, even if the variation row is edited later. History is frozen at match creation.
 - **R10.** The 17-point formula variant — winner = `10 + (7 − loser)`, loser is scorer-input 0-7 — works end-to-end through the LIVE scoring path. This is the room's acceptance test.
+- **R11.** Either side of an allocator variation can be configured to read its value from the state bag by name. The allocator does not know what wrote that value. A second acceptance scenario: a variation where the winner side reads `pointsPerGame` from the bag — paired with a (future or stub) threshold writing that name — scores correctly through the LIVE path.
 
 ## Scope Boundaries
 
@@ -99,6 +108,7 @@ The existing prepackaged scoring systems (Percent 5-Man, 10-Point) stay as code 
 - **Authorship: any authenticated user can write rows; the workshop UI route is gated to operator-context users only.** App-layer guard until RLS lands. The four official rows have `scope='official'` and `author_id IS NULL`; the editor never lets a user save with `scope='official'` and the load path never lets a user EDIT an official row (it forces a clone).
 - **Official-row tamper guard:** a DB trigger blocks UPDATE on rows where `scope='official'` (DELETE also blocked while RLS is off). Until RLS, this is the only thing preventing a logged-in user with the supabase client from rewriting the seeded officials.
 - **Seeded officials:** four rows — Percent-5-Man allocator, 10-Point allocator, 17-Point allocator, "Empty starter" template. Their dial values are byte-equivalent to the current `.ts` factory defaults.
+- **Side values follow the const-or-var rule.** Each side's value can be a literal number, a scorer-input range, a formula recipe, OR a direct state-bag reference by name. The state-bag-reference path is implemented as a tiny formula recipe (`read_state_var`) so the engine doesn't need a new code path — the room's UI exposes it as a peer-level side kind for usability, but under the hood it's the formula path. This honors the communication contract: the allocator reads the bag by name, never knowing what wrote there.
 
 ## Open Questions
 
@@ -137,10 +147,14 @@ flowchart TD
     H --> I[engineRunningTotals reads snapshot]
     I --> J[match-adapter.buildComposition with override]
     J --> K[runtime.evaluatePointsSystem]
+    K -.->|reads/writes by name| BAG[(shared state bag)]
+    BAG -.->|other rooms write here| BAG
     K -.->|allocator call wrapped in try/catch| L[never-throw safety net]
     L -->|throw: warn + 0/0, continue| K
     K -->|games recorded regardless| M[W/L history sacred]
 ```
+
+**Communication contract visualized:** the allocator reads from and writes to the same shared state bag any other room writes to. The bag is the only thing connecting the rooms. The allocator never imports another room, never knows what wrote to a name it reads. R11 surfaces this contract as a first-class side-kind choice in the editor.
 
 Variation row JSONB shape (mirrors `SideConfig`):
 
@@ -236,8 +250,10 @@ winner_side / loser_side:
 - Modify: `src/systems/points-system/types.ts` — extend `AllocatorFormulaOperation` with optional `argsShape: { [argName]: ArgKind }`.
 - Modify: `src/systems/points-system/allocator-formula-operations/add-complement-of-other-side.ts` — declare argsShape.
 - Modify: `src/systems/points-system/allocator-formula-operations/state-diff-times-constant.ts` — declare argsShape.
+- Create: `src/systems/points-system/allocator-formula-operations/read-state-var.ts` — new recipe: reads `state[args.var_name]` and returns its numeric value. Single required arg (`var_name`, kind `state_var_name`). Honors R11: this is the recipe that lets a side read directly from the state bag by name.
 - Modify: `src/systems/points-system/composition-validator.ts` — `validateAllocatorSide` checks `operationArgs` against the op's `argsShape`; extract a public `validatePerGameAllocator` for the loader.
 - Test: `src/systems/points-system/__tests__/composition-validator-args.test.ts`
+- Test: `src/systems/points-system/__tests__/read-state-var.test.ts`
 
 **Approach:**
 - `ArgKind` is a small enum: `'number' | 'state_var_name' | 'side_name'`. Add others later as recipes need them.
@@ -254,6 +270,8 @@ winner_side / loser_side:
 - Error path: Missing required arg (`max` omitted) → validator returns failure with arg name.
 - Error path: Type mismatch (`max: "seven"`) → validator returns failure with arg name and expected kind.
 - Error path: `other_side: 'banana'` (wrong side_name value) → validator returns failure.
+- Happy path (R11): `read_state_var` with `var_name: 'pointsPerGame'` → validator passes; runtime reads `pointsPerGame` from a stub state bag and returns the value.
+- Edge case (R11): `read_state_var` reading an unset state-bag name → recipe returns 0 (or the documented default) + warns. Never throws (honors R8 via the Unit 4 safety net even if the recipe were to throw).
 
 ---
 
@@ -347,7 +365,7 @@ winner_side / loser_side:
 
 **Approach:**
 - Two sections in list: "Templates" (officials, read-only, each with "Make a copy I can edit") and "Yours" (user's, with Edit / Duplicate / Delete).
-- Editor: `Input` for name, `Textarea` for description, two `SideEditor` blocks (winner + loser). `SideEditor` has a `Select` for kind (fixed / range / formula) and renders inputs per kind. Formula picker reads `registeredAllocatorFormulaOperationNames()`; selecting one renders inputs from the op's `argsShape` (Unit 3).
+- Editor: `Input` for name, `Textarea` for description, two `SideEditor` blocks (winner + loser). `SideEditor` has a `Select` for kind (**fixed number / state-bag value / scorer-input range / formula**) and renders inputs per kind. The "state-bag value" choice surfaces R11's contract rule as a first-class option: free-text input for the variable name (autocomplete from known bag names is future work). Under the hood it produces a `read_state_var` formula ref. Formula picker reads `registeredAllocatorFormulaOperationNames()` (minus `read_state_var`, which already has its own peer-level UI affordance); selecting one renders inputs from the op's `argsShape` (Unit 3).
 - Save flow: build the in-memory `PerGameAllocator`, run `validatePerGameAllocator`, run `saveTimeGuard` (synthetic 5-game dry-run via `evaluatePointsSystem` against a stub composition with only this allocator + a no-op thresholds/triggers slot), block save on failure with inline error.
 - Route is gated: a non-operator user navigating to the URL gets redirected (app-layer guard; RLS is the eventual real protection).
 
@@ -361,6 +379,7 @@ winner_side / loser_side:
 - Happy path: Save a fixed/fixed variation → row inserted with expected JSONB.
 - Happy path: Save a fixed/range variation → loser_side JSONB has `{base:{min,max,label}}`.
 - Happy path: Save a 17-point formula variation → winner_side JSONB has formula ref + args.
+- Happy path (R11): Save a variation with winner side "state-bag value, name=`pointsPerGame`" → winner_side JSONB has `{base:0, formula:{operationKind:'read_state_var', operationArgs:{var_name:'pointsPerGame'}}}`. Editor renders it back correctly on next open.
 - Edge case: Empty name → Save disabled.
 - Edge case: Range with min > max → Save disabled.
 - Edge case: Trying to Save while editing an official → Save hidden; only "Make a copy" surfaced.
