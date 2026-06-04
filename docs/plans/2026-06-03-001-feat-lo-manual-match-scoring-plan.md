@@ -432,7 +432,7 @@ completion `updates` object + the `auditMatchScoringConsistency` call in
 `home/away_games_won`, points, and `winner_team_id` to an equivalent live match;
 the consistency audit ran (snapshot present); a tied match is never stranded.
 
-- [ ] **Unit 4: Match-picker page + dashboard entry point + routing/guard**
+- [x] **Unit 4: Match-picker page + routing/guard** — DONE (`ManualScoringMatchPicker.tsx` + `ManualScoringPage.tsx` stub + `manualScoringEligibility.ts` pure util; routes registered in `NavRoutes.tsx` **dev-gated** via `isProduction`; 14 tests; typecheck clean). The visible **dashboard card on `LeagueDetail` is deferred to land with Unit 6** (per "entry lands last" — nothing user-facing exposed until the scoring page is real; reachable by URL in dev/staging for now). Eligibility predicate = `status==='scheduled'` + two real teams; accordion defaults all weeks expanded.
 
 **Goal:** Navigation: a "Score a Match" card on the league dashboard → a new
 weeks-accordion match picker → the manual-scoring page; enforce R11 eligibility.
