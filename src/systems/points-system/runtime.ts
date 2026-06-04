@@ -27,11 +27,23 @@
  *    triggers — there is no separate aggregate step.
  *
  * **NEVER-BREAK CONTRACT (load-bearing).** The runtime must NEVER throw on bad
- * math/data. When a trigger's condition or action can't evaluate (the
- * never-throw evaluators return `{ ok: false }`), we `console.warn` the reason
- * plus the trigger name and SKIP that trigger's action (no write) — then keep
- * going. The whole per-trigger body is wrapped so one bad trigger can't crash a
- * live match (games won/lost is the sacred metric and must keep recording).
+ * math/data. Three failure surfaces are wrapped:
+ *
+ *   - **Triggers.** When a trigger's condition or action can't evaluate (the
+ *     never-throw evaluators return `{ ok: false }`), we `console.warn` the
+ *     reason plus the trigger name and SKIP that trigger's action (no write).
+ *     The whole per-trigger body is also wrapped in try/catch as a backstop.
+ *   - **Per-game allocator.** When workshop-authored variations land in the
+ *     `perGameAllocator` slot (Per-Game Allocator Room, Unit 4), the
+ *     allocator call is wrapped in try/catch. Any throw — bad scorer input,
+ *     unregistered formula op, divide-by-zero inside a recipe — is logged
+ *     with the row name + game index, and the per-game points contribution
+ *     for that game is skipped. Subsequent games, after-allocator triggers,
+ *     and the match_end phase all keep running. The W/L tick already
+ *     happened BEFORE the allocator call, so it is preserved.
+ *
+ * Games won/lost is the sacred metric — it must keep recording no matter
+ * what a variation does inside its own slot.
  *
  * @see ./types.ts — PointsSystem composition shape
  * @see ./condition-evaluator.ts — never-throw condition check
@@ -227,24 +239,44 @@ export function evaluatePointsSystem(
     // Run per-game allocator if present; add contributions to per-side points.
     // The allocator reads the state bag directly (formulas may reference any
     // state var — home_wins, games_played, total_games, etc.).
+    //
+    // **NEVER-BREAK CONTRACT (Unit 4 of the Per-Game Allocator Room plan).**
+    // The whole allocator call is wrapped in try/catch, mirroring the
+    // `fireTrigger` discipline. A workshop-authored variation that throws
+    // mid-match must NOT escape into the scoring loop — the two ground
+    // rules (page renders, W/L recorded) are sacred. The W/L tick already
+    // happened above; an allocator throw skips this game's points
+    // contribution (no add), logs the reason, and the per-game loop
+    // continues. Subsequent games, after-allocator triggers, and the
+    // match_end phase all keep running.
     if (composition.perGameAllocator) {
-      const allocation = evaluateAllocator(
-        composition.perGameAllocator,
-        {
-          winnerSide: game.winnerSide,
-          winnerCounterInput: game.winnerCounterInput,
-          loserCounterInput: game.loserCounterInput,
-        },
-        state,
-      );
-      const loserSide: 'home' | 'away' =
-        game.winnerSide === 'home' ? 'away' : 'home';
-      const winnerPointsKey = `${game.winnerSide}_points`;
-      const loserPointsKey = `${loserSide}_points`;
-      state[winnerPointsKey] =
-        ((state[winnerPointsKey] as number) ?? 0) + allocation.winnerContribution;
-      state[loserPointsKey] =
-        ((state[loserPointsKey] as number) ?? 0) + allocation.loserContribution;
+      try {
+        const allocation = evaluateAllocator(
+          composition.perGameAllocator,
+          {
+            winnerSide: game.winnerSide,
+            winnerCounterInput: game.winnerCounterInput,
+            loserCounterInput: game.loserCounterInput,
+          },
+          state,
+        );
+        const loserSide: 'home' | 'away' =
+          game.winnerSide === 'home' ? 'away' : 'home';
+        const winnerPointsKey = `${game.winnerSide}_points`;
+        const loserPointsKey = `${loserSide}_points`;
+        state[winnerPointsKey] =
+          ((state[winnerPointsKey] as number) ?? 0) + allocation.winnerContribution;
+        state[loserPointsKey] =
+          ((state[loserPointsKey] as number) ?? 0) + allocation.loserContribution;
+      } catch (err) {
+        // Never let an allocator failure escape. Log the row, the game
+        // index, and the reason so the failure is diagnosable from app
+        // logs; skip this game's points add; press on.
+        const reason = err instanceof Error ? err.message : String(err);
+        console.warn(
+          `[runtime] allocator "${composition.perGameAllocator.name}" threw on game ${gameIndex} of composition "${composition.name}": ${reason} — skipping this game's points contribution and continuing.`,
+        );
+      }
     }
 
     // Increment games_played so per-game triggers + future formulas see
