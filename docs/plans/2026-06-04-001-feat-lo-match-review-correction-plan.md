@@ -392,7 +392,7 @@ and pre-many-eyes games.
 **Verification:** From the picker, a completed match opens the review surface; v1
 flow unchanged.
 
-- [ ] **Unit 6: Review/correct surface — confirmer line + view**
+- [x] **Unit 6: Review/correct surface — confirmer line + view** — DONE. `ReviewPhase` (read-first surface) loads games + `useGameConfirmations` + both rosters, builds the per-game audit (Unit 4), and renders each game's matchup + recorded winner + achievement chips (only when present) + `ConfirmerLine`. `ConfirmerLine` shows the official per side + a tap-to-peek "+N others" popover (name + team); no-log games show "+0" (no chip). Pure helpers (`achievementChips`, `confirmationsForGame`, `buildNameTeamMap`) extracted to `reviewHelpers.ts`. Host dispatches completed/awaiting_verification → ReviewPhase under a "Review Match" header. 11 tests pass (7 helpers + 4 ConfirmerLine).
 
 **Goal:** Extend the Entry surface with the per-game confirmer line + achievements,
 routed for non-scheduled matches.

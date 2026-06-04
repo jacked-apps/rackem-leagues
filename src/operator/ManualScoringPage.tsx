@@ -21,6 +21,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { SetupPhase } from '@/components/operator/manual-scoring/SetupPhase';
 import { EntryPhase } from '@/components/operator/manual-scoring/EntryPhase';
+import { ReviewPhase } from '@/components/operator/manual-scoring/ReviewPhase';
 import type { SystemOverrides } from '@/types/systemOverrides';
 
 /** The match fields this page reads (the hook's full type is broader). */
@@ -151,6 +152,29 @@ export default function ManualScoringPage() {
           gameType={match.league?.game_type ?? 'eight_ball'}
           goldenBreakCountsAsWin={!!match.league?.golden_break_counts_as_win}
           onFinalized={setFinalized}
+        />
+      </div>
+    );
+  }
+
+  // v2 review/correct: a finished match opens the read-first review surface.
+  // (The Unit 7 correction flow mounts its vacate/re-score affordances here.)
+  if (status === 'completed' || status === 'awaiting_verification') {
+    if (!loMemberId) return message('Loading…');
+    return (
+      <div>
+        <PageHeader
+          title="Review Match"
+          backTo={`/league/${leagueId}/manual-scoring`}
+          subtitle="View the recorded result and who confirmed each game"
+        />
+        <ReviewPhase
+          matchId={match.id}
+          homeTeamId={match.home_team_id}
+          awayTeamId={match.away_team_id}
+          homeTeamName={match.home_team?.team_name ?? 'Home'}
+          awayTeamName={match.away_team?.team_name ?? 'Away'}
+          loMemberId={loMemberId}
         />
       </div>
     );
