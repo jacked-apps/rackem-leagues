@@ -12,6 +12,7 @@ vi.mock('@/supabaseClient', () => ({
 vi.mock('@/api/queries/matches', () => ({
   populateMatchSnapshotIfNeeded: vi.fn(async () => {}),
   updateMatchRunningTotals: vi.fn(async () => {}),
+  auditMatchScoringConsistency: vi.fn(() => Promise.resolve()),
 }));
 vi.mock('@/utils/match/computeMatchPrepPayload', () => ({
   computeMatchPrepPayload: vi.fn(async () => ({
@@ -36,7 +37,13 @@ import {
   updateMatchRunningTotals,
 } from '@/api/queries/matches';
 import { computeMatchPrepPayload } from '@/utils/match/computeMatchPrepPayload';
-import { loSaveLineups, loSetupMatch } from '../loManualScoring';
+import { auditMatchScoringConsistency } from '@/api/queries/matches';
+import {
+  loSaveLineups,
+  loSetupMatch,
+  loScoreGame,
+  loFinalizeMatch,
+} from '../loManualScoring';
 
 const MATCH = 'match-1';
 const LEAGUE = 'league-1';
@@ -192,5 +199,186 @@ describe('loSetupMatch', () => {
 
     await expect(loSetupMatch(setupParams)).resolves.toBeUndefined();
     expect(updateMatchRunningTotals).toHaveBeenCalledWith(MATCH);
+  });
+});
+
+/** Configure supabase.from for loScoreGame: 'matches' status read + 'match_games' update. */
+function mockScoreGame(status: string, updateError: { message: string } | null = null) {
+  const gameUpdate = vi.fn(() => ({
+    eq: () => Promise.resolve({ error: updateError }),
+  }));
+  vi.mocked(supabase.from).mockImplementation((table: string) => {
+    if (table === 'matches') {
+      return {
+        select: () => ({
+          eq: () => ({ single: () => Promise.resolve({ data: { status }, error: null }) }),
+        }),
+      } as never;
+    }
+    return { update: gameUpdate } as never; // match_games
+  });
+  return gameUpdate;
+}
+
+/** Configure supabase.from for loFinalizeMatch: 'matches' read+update + 'match_games' read. */
+function mockFinalize(opts: {
+  matchRow: Record<string, unknown>;
+  games: Array<Record<string, unknown>>;
+  completeError?: { message: string } | null;
+}) {
+  const matchUpdate = vi.fn(() => ({
+    eq: () => Promise.resolve({ error: opts.completeError ?? null }),
+  }));
+  vi.mocked(supabase.from).mockImplementation((table: string) => {
+    if (table === 'matches') {
+      return {
+        select: () => ({
+          eq: () => ({ single: () => Promise.resolve({ data: opts.matchRow, error: null }) }),
+        }),
+        update: matchUpdate,
+      } as never;
+    }
+    // match_games read
+    return {
+      select: () => ({ eq: () => Promise.resolve({ data: opts.games, error: null }) }),
+    } as never;
+  });
+  return matchUpdate;
+}
+
+const SCORED_GAME = {
+  winner_player_id: 'p1',
+  confirmed_by_home: 'lo',
+  confirmed_by_away: 'lo',
+  is_tiebreaker: false,
+};
+
+describe('loScoreGame', () => {
+  const result = {
+    winnerTeamId: HOME,
+    winnerPlayerId: 'p1',
+    breakAndRun: true,
+    winnerValue: 7,
+  };
+
+  it('writes both confirmation slots + extras, then recomputes totals', async () => {
+    const gameUpdate = mockScoreGame('in_progress');
+
+    await loScoreGame({ matchId: MATCH, gameId: 'g1', loMemberId: 'lo', result });
+
+    const payload = gameUpdate.mock.calls[0][0] as Record<string, unknown>;
+    expect(payload).toMatchObject({
+      winner_team_id: HOME,
+      winner_player_id: 'p1',
+      break_and_run: true,
+      golden_break: false,
+      winner_value: 7,
+      confirmed_by_home: 'lo',
+      confirmed_by_away: 'lo',
+    });
+    const { updateMatchRunningTotals } = await import('@/api/queries/matches');
+    expect(updateMatchRunningTotals).toHaveBeenCalledWith(MATCH);
+  });
+
+  it('rejects scoring on a completed match (R9 post-finalize guard)', async () => {
+    const gameUpdate = mockScoreGame('completed');
+    await expect(
+      loScoreGame({ matchId: MATCH, gameId: 'g1', loMemberId: 'lo', result })
+    ).rejects.toThrow(/Cannot score a game/);
+    expect(gameUpdate).not.toHaveBeenCalled();
+  });
+
+  it('rejects scoring on a not-yet-set-up match', async () => {
+    mockScoreGame('scheduled');
+    await expect(
+      loScoreGame({ matchId: MATCH, gameId: 'g1', loMemberId: 'lo', result })
+    ).rejects.toThrow(/status 'scheduled'/);
+  });
+});
+
+describe('loFinalizeMatch', () => {
+  const pointsRow = {
+    status: 'in_progress',
+    home_team_id: HOME,
+    away_team_id: AWAY,
+    home_points_earned: 10,
+    away_points_earned: 5,
+    home_games_won: 3,
+    away_games_won: 2,
+    home_to_win: null,
+    away_to_win: null,
+    home_to_tie: null,
+    away_to_tie: null,
+  };
+
+  it('points-mode happy path: completes, fills both verify slots, fires audit', async () => {
+    const matchUpdate = mockFinalize({ matchRow: pointsRow, games: [SCORED_GAME] });
+
+    const out = await loFinalizeMatch({ matchId: MATCH, loMemberId: 'lo', winCondition: 'points' });
+
+    expect(out).toEqual({ winnerTeamId: HOME, result: 'home_win' });
+    const updates = matchUpdate.mock.calls[0][0] as Record<string, unknown>;
+    expect(updates).toMatchObject({
+      home_team_verified_by: 'lo',
+      away_team_verified_by: 'lo',
+      winner_team_id: HOME,
+      match_result: 'home_win',
+      status: 'completed',
+    });
+    expect(auditMatchScoringConsistency).toHaveBeenCalledWith(MATCH);
+  });
+
+  it('games-mode happy path: determineMatchResult drives the winner', async () => {
+    const gamesRow = {
+      ...pointsRow,
+      home_games_won: 5,
+      away_games_won: 3,
+      home_to_win: 5,
+      away_to_win: 5,
+      home_to_tie: 4,
+      away_to_tie: 4,
+    };
+    const matchUpdate = mockFinalize({ matchRow: gamesRow, games: [SCORED_GAME] });
+
+    const out = await loFinalizeMatch({ matchId: MATCH, loMemberId: 'lo', winCondition: 'games' });
+
+    expect(out.result).toBe('home_win');
+    expect((matchUpdate.mock.calls[0][0] as Record<string, unknown>).status).toBe('completed');
+  });
+
+  it('games-mode tie is BLOCKED — no completion write', async () => {
+    const tieRow = {
+      ...pointsRow,
+      home_games_won: 4,
+      away_games_won: 4,
+      home_to_win: 5,
+      away_to_win: 5,
+      home_to_tie: 4,
+      away_to_tie: 4,
+    };
+    const matchUpdate = mockFinalize({ matchRow: tieRow, games: [SCORED_GAME] });
+
+    await expect(
+      loFinalizeMatch({ matchId: MATCH, loMemberId: 'lo', winCondition: 'games' })
+    ).rejects.toThrow(/tie that would require a tiebreaker/);
+    expect(matchUpdate).not.toHaveBeenCalled();
+    expect(auditMatchScoringConsistency).not.toHaveBeenCalled();
+  });
+
+  it('blocks finalize when a game is unscored', async () => {
+    const unscored = { ...SCORED_GAME, confirmed_by_away: null };
+    const matchUpdate = mockFinalize({ matchRow: pointsRow, games: [SCORED_GAME, unscored] });
+
+    await expect(
+      loFinalizeMatch({ matchId: MATCH, loMemberId: 'lo', winCondition: 'points' })
+    ).rejects.toThrow(/not yet scored/);
+    expect(matchUpdate).not.toHaveBeenCalled();
+  });
+
+  it('refuses to finalize a match that is not in progress', async () => {
+    mockFinalize({ matchRow: { ...pointsRow, status: 'completed' }, games: [SCORED_GAME] });
+    await expect(
+      loFinalizeMatch({ matchId: MATCH, loMemberId: 'lo', winCondition: 'points' })
+    ).rejects.toThrow(/Cannot finalize/);
   });
 });

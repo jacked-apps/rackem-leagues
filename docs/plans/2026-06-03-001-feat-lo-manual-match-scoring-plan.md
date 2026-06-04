@@ -371,7 +371,7 @@ shape in `useMatchPreparation.ts`, the `populateMatchSnapshotIfNeeded` call in
 **Verification:** After `loSetupMatch`, `match_games` rows exist, thresholds set,
 `system_snapshot` frozen, `status='in_progress'`; running totals reflect start-credit.
 
-- [ ] **Unit 3: LO dual-slot game write + finalize**
+- [x] **Unit 3: LO dual-slot game write + finalize** — DONE (`loScoreGame` + `loFinalizeMatch` in `loManualScoring.ts`; 8 tests; typecheck/lint clean). Correction: the real winner judge is `determineMatchResult` (from `@/utils/determineMatchResult`) for games-mode + a points comparison — there is NO `decideWinner` in `@/systems/win-calculator`; the plan's `decideWinner` name was wrong throughout. Games-mode tie is BLOCKED (throws, match left unchanged); audit fired fire-and-forget.
 
 **Goal:** The per-game write that fills both confirmation slots, and the finalize
 that fills both verification slots and completes the match.
@@ -396,7 +396,8 @@ that fills both verification slots and completes the match.
   `updateMatchRunningTotals` (reused). Same function handles R9 overwrite (it's an
   UPDATE either way) — it does NOT go through the live `handlePlayerClick`, whose
   both-confirmed block would refuse a re-score.
-- `loFinalizeMatch`: run `decideWinner` over confirmed games **first**; **if it's a
+- `loFinalizeMatch`: compute the result via `determineMatchResult` (games) / points
+  comparison over the match-row totals **first**; **if it's a
   games-mode tie (no winner), BLOCK finalize with a clear message and leave the
   match at `status='scheduled'`/`in_progress` unchanged** — do NOT mirror the live
   path's auto-tiebreaker-create + lineup-unlock (the LO has no second device to play
