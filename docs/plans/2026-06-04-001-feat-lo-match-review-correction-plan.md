@@ -473,7 +473,7 @@ completed-match reopen + tie handling.
 **Verification:** The LO can correct a game on a completed match end-to-end and
 re-finalize, or restore on a tie.
 
-- [ ] **Unit 8: DB round-trip integration test**
+- [x] **Unit 8: DB round-trip integration test** — DONE. `loMatchReview.roundtrip.db.test.ts` builds a completed match (v1 path), seeds two pre-existing TEAM `game_confirmations` on game 1, then runs loReopenMatch → loVacateGame → loCorrectGame → loFinalizeMatch against real Postgres. Asserts: crash-safe reopen (in_progress + completed_at retained + prior winner on row); vacate marker + operator confirm rows appended WITH reason; the seeded team rows survive append-only through the whole flow; match_games reflects the corrected winner; re-completed 8–1 home win. Second test proves the restore escape (loRestoreCompletion re-stamps completed, prior winner intact). Standings eligibility asserted via the status transition (reopened=in_progress excluded → completed re-included). 2 tests pass.
 
 **Goal:** Prove the correction lifecycle against real Postgres.
 
