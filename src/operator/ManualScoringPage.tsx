@@ -28,6 +28,8 @@ import type { SystemOverrides } from '@/types/systemOverrides';
 interface MatchView {
   id: string;
   status: string;
+  /** Set once the match has ever been completed; reopen keeps it (recovery signal). */
+  completed_at?: string | null;
   home_team_id: string;
   away_team_id: string;
   home_team?: { team_name?: string } | null;
@@ -133,6 +135,40 @@ export default function ManualScoringPage() {
     );
   }
 
+  // v2 review/correct: a finished match — or a reopened-not-refinalized one
+  // (in_progress with completed_at still set, an abandoned correction) — opens
+  // the read-first review surface. Checked BEFORE the plain in_progress branch so
+  // a mid-correction match stays on the review surface, not the v1 entry grid.
+  const isReopenedAbandoned = status === 'in_progress' && !!match.completed_at;
+  if (status === 'completed' || status === 'awaiting_verification' || isReopenedAbandoned) {
+    if (!prefs || !loMemberId) return message('Loading…');
+    return (
+      <div>
+        <PageHeader
+          title="Review Match"
+          backTo={`/league/${leagueId}/manual-scoring`}
+          subtitle="View the recorded result and who confirmed each game"
+        />
+        <ReviewPhase
+          matchId={match.id}
+          homeTeamId={match.home_team_id}
+          awayTeamId={match.away_team_id}
+          homeTeamName={match.home_team?.team_name ?? 'Home'}
+          awayTeamName={match.away_team?.team_name ?? 'Away'}
+          loMemberId={loMemberId}
+          winCondition={prefs.win_condition ?? 'games'}
+          handicapType={prefs.handicap_type ?? 'points'}
+          pointsCalculator={prefs.points_calculator}
+          pointsCalculatorParams={prefs.points_calculator_params}
+          gameType={match.league?.game_type ?? 'eight_ball'}
+          goldenBreakCountsAsWin={!!match.league?.golden_break_counts_as_win}
+          onFinalized={setFinalized}
+          onRestored={() => navigate(`/league/${leagueId}/manual-scoring`)}
+        />
+      </div>
+    );
+  }
+
   if (status === 'in_progress') {
     if (!prefs || !loMemberId) return message('Loading…');
     return (
@@ -152,29 +188,6 @@ export default function ManualScoringPage() {
           gameType={match.league?.game_type ?? 'eight_ball'}
           goldenBreakCountsAsWin={!!match.league?.golden_break_counts_as_win}
           onFinalized={setFinalized}
-        />
-      </div>
-    );
-  }
-
-  // v2 review/correct: a finished match opens the read-first review surface.
-  // (The Unit 7 correction flow mounts its vacate/re-score affordances here.)
-  if (status === 'completed' || status === 'awaiting_verification') {
-    if (!loMemberId) return message('Loading…');
-    return (
-      <div>
-        <PageHeader
-          title="Review Match"
-          backTo={`/league/${leagueId}/manual-scoring`}
-          subtitle="View the recorded result and who confirmed each game"
-        />
-        <ReviewPhase
-          matchId={match.id}
-          homeTeamId={match.home_team_id}
-          awayTeamId={match.away_team_id}
-          homeTeamName={match.home_team?.team_name ?? 'Home'}
-          awayTeamName={match.away_team?.team_name ?? 'Away'}
-          loMemberId={loMemberId}
         />
       </div>
     );

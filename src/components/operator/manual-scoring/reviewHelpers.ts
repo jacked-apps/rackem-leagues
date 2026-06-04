@@ -12,6 +12,7 @@
 
 import type { EntryGame } from './entryHelpers';
 import type { ConfirmationForAudit } from '@/utils/match/confirmerAudit';
+import type { LoGameResult } from '@/api/mutations/loManualScoring';
 
 /**
  * A `match_games` row as the review surface reads it — the Entry fields plus the
@@ -35,6 +36,25 @@ export function achievementChips(game: EntryGame): string[] {
   if (game.runout) chips.push('Runout');
   if (game.win_by_forfeit) chips.push('Forfeit');
   return chips;
+}
+
+/**
+ * Snapshot a scored game's result into the shape `loRestoreGame` needs to undo a
+ * vacate. Captured BEFORE the vacate wipes the columns; held in memory so an Undo
+ * re-writes the exact pre-vacate result.
+ */
+export function gameToSnapshot(game: ReviewGame): LoGameResult {
+  return {
+    winnerTeamId: game.winner_team_id ?? '',
+    winnerPlayerId: game.winner_player_id ?? '',
+    breakAndRun: !!game.break_and_run,
+    goldenBreak: !!game.golden_break,
+    breakFouled: !!game.break_fouled,
+    runout: !!game.runout,
+    winByForfeit: !!game.win_by_forfeit,
+    winnerValue: game.winner_value ?? null,
+    loserValue: game.loser_value ?? null,
+  };
 }
 
 /** A `game_confirmations` row narrowed to what this surface threads around. */

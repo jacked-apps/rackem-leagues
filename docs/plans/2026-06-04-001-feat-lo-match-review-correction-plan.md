@@ -428,7 +428,7 @@ routed for non-scheduled matches.
 **Verification:** The LO can open a scored match and read winner + achievements +
 who confirmed, per game.
 
-- [ ] **Unit 7: Correction flow UI — vacate / undo / re-score / re-finalize**
+- [x] **Unit 7: Correction flow UI — vacate / undo / re-score / re-finalize** — DONE. `ReviewPhase` now orchestrates the full flow: first correction reopens once (`ensureReopened` guard); `VacateConfirmDialog` (optional ≤255 reason, client-capped) → `loVacateGame`; vacated row (`ReviewGameRow`) shows Undo (`loRestoreGame`, in-memory snapshot via `gameToSnapshot`) + re-score picks (reuse `ScoringDialog` → `loCorrectGame`); mid-correction banner while reopened; Re-finalize gated on no vacated-pending → `loFinalizeMatch`; games-mode tie → tie-block + "Restore original result" (`loRestoreCompletion`). Page dispatch routes completed/awaiting/reopened-abandoned (in_progress+completed_at) → ReviewPhase. 8 correction tests (reopen-once, disabled gate, undo, re-score, tie-restore, finalize-success). 145 LO/match tests green.
 
 **Goal:** Wire the operator correction flow into the surface, including the
 completed-match reopen + tie handling.
