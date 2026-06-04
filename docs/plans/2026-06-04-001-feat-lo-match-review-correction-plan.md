@@ -316,7 +316,7 @@ log with the optional reason.
 **Verification:** A correction leaves a documented chain (vacate → operator confirm
 + reason) and correct `match_games` state.
 
-- [ ] **Unit 4: Confirmer-audit read/derive**
+- [x] **Unit 4: Confirmer-audit read/derive** — DONE (pure `buildConfirmerAudit` in `src/utils/match/confirmerAudit.ts`; 6 tests). Official confirmer per side from the columns; "+N others" from `confirm` rows post-latest-vacate, excluding the operator + the official, deduped; no-log games → "+0"; raw-id name fallback. (The members name/team map is sourced in Unit 6 from the loaded rosters.)
 
 **Goal:** Per-game view model: official confirmers (names) + "+N others" (names +
 teams), with the no-log fallback.
