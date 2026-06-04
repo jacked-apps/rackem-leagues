@@ -226,7 +226,7 @@ unchanged.
 
 **Verification:** A `game_confirmations` row can carry a reason; types reflect it.
 
-- [ ] **Unit 2: Reopen + tie-safe re-finalize (lifecycle mutations)**
+- [x] **Unit 2: Reopen + tie-safe re-finalize (lifecycle mutations)** — DONE (`loReopenMatch` + `loRestoreCompletion` in `loManualScoring.ts`; 5 tests). Reopen flips `completed`/`awaiting_verification` → `in_progress` keeping ALL completion fields (crash-safe); restore re-stamps `completed`. Re-finalize reuses the existing `loFinalizeMatch` (its games-mode-tie throw is the tie-block the UI surfaces).
 
 **Goal:** `loReopenMatch` (completed→in_progress with prior-completion snapshot) and
 tie-safe re-finalize so a reopened match is never stranded.

@@ -43,6 +43,8 @@ import {
   loSetupMatch,
   loScoreGame,
   loFinalizeMatch,
+  loReopenMatch,
+  loRestoreCompletion,
 } from '../loManualScoring';
 
 const MATCH = 'match-1';
@@ -380,5 +382,56 @@ describe('loFinalizeMatch', () => {
     await expect(
       loFinalizeMatch({ matchId: MATCH, loMemberId: 'lo', winCondition: 'points' })
     ).rejects.toThrow(/Cannot finalize/);
+  });
+});
+
+/** Configure supabase.from('matches') for reopen: status read + update. */
+function mockReopen(status: string, updateError: { message: string } | null = null) {
+  const matchUpdate = vi.fn(() => ({ eq: () => Promise.resolve({ error: updateError }) }));
+  vi.mocked(supabase.from).mockImplementation((table: string) => {
+    if (table === 'matches') {
+      return {
+        select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: { status }, error: null }) }) }),
+        update: matchUpdate,
+      } as never;
+    }
+    return {} as never;
+  });
+  return matchUpdate;
+}
+
+describe('loReopenMatch', () => {
+  it('flips a completed match to in_progress WITHOUT clearing completion fields', async () => {
+    const matchUpdate = mockReopen('completed');
+    await loReopenMatch(MATCH);
+    const payload = matchUpdate.mock.calls[0][0] as Record<string, unknown>;
+    expect(payload).toEqual({ status: 'in_progress' }); // only status — winner etc. untouched
+  });
+
+  it('reopens an awaiting_verification match', async () => {
+    const matchUpdate = mockReopen('awaiting_verification');
+    await loReopenMatch(MATCH);
+    expect(matchUpdate).toHaveBeenCalled();
+  });
+
+  it('is a no-op on an already in_progress match', async () => {
+    const matchUpdate = mockReopen('in_progress');
+    await loReopenMatch(MATCH);
+    expect(matchUpdate).not.toHaveBeenCalled();
+  });
+
+  it('refuses to reopen a scheduled match', async () => {
+    const matchUpdate = mockReopen('scheduled');
+    await expect(loReopenMatch(MATCH)).rejects.toThrow(/Cannot reopen/);
+    expect(matchUpdate).not.toHaveBeenCalled();
+  });
+});
+
+describe('loRestoreCompletion', () => {
+  it('re-stamps status=completed (prior winner left intact)', async () => {
+    const matchUpdate = vi.fn(() => ({ eq: () => Promise.resolve({ error: null }) }));
+    vi.mocked(supabase.from).mockReturnValue({ update: matchUpdate } as never);
+    await loRestoreCompletion(MATCH);
+    expect(matchUpdate.mock.calls[0][0]).toEqual({ status: 'completed' });
   });
 });

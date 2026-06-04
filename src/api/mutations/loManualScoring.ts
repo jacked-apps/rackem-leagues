@@ -483,3 +483,63 @@ export async function loFinalizeMatch(
 
   return { winnerTeamId, result };
 }
+
+// ── LO match review & correction (v2) ──────────────────────────────────────
+// Reopen / restore the completed-match lifecycle. Reopen deliberately KEEPS the
+// completion fields (winner_team_id, match_result, completed_at, verified slots)
+// and only flips status — so the prior result lives on the row. That makes this
+// crash-safe: "restore" is just re-stamping 'completed', and an abandoned reopen
+// (status='in_progress' AND completed_at IS NOT NULL) is detectable + recoverable
+// from the picker. (See docs/plans/2026-06-04-001-feat-lo-match-review-correction-plan.md.)
+
+/**
+ * Reopen a finished match for correction: `completed`/`awaiting_verification` →
+ * `in_progress`. Does NOT clear winner/match_result/completed_at/verified — only
+ * the per-game vacate + re-finalize change those. Must run before any vacate
+ * (appendConfirmation no-ops while `completed`). Idempotent on an already-open match.
+ *
+ * @throws if the match can't be read, or its status isn't reopenable.
+ */
+export async function loReopenMatch(matchId: string): Promise<void> {
+  const { data: match, error } = await supabase
+    .from('matches')
+    .select('status')
+    .eq('id', matchId)
+    .single();
+  if (error || !match) {
+    throw new Error(`Failed to read match: ${error?.message ?? 'not found'}`);
+  }
+  const status = (match as unknown as { status: string }).status;
+  if (status === 'in_progress') return; // already open — no-op
+  if (status !== 'completed' && status !== 'awaiting_verification') {
+    throw new Error(
+      `Cannot reopen a match with status '${status}'. Only a completed or ` +
+        'awaiting-verification match can be reopened for correction.'
+    );
+  }
+  const { error: upErr } = await supabase
+    .from('matches')
+    .update({ status: 'in_progress' })
+    .eq('id', matchId);
+  if (upErr) {
+    throw new Error(`Failed to reopen match: ${upErr.message}`);
+  }
+}
+
+/**
+ * Restore a reopened match to its prior completed result without re-finalizing —
+ * just re-stamp `status='completed'`. The prior winner_team_id/match_result/
+ * completed_at are still on the row (reopen kept them), so nothing is recomputed.
+ * Used as the tie-block escape and to recover an abandoned reopen from the picker.
+ *
+ * @throws if the update fails.
+ */
+export async function loRestoreCompletion(matchId: string): Promise<void> {
+  const { error } = await supabase
+    .from('matches')
+    .update({ status: 'completed' })
+    .eq('id', matchId);
+  if (error) {
+    throw new Error(`Failed to restore match completion: ${error.message}`);
+  }
+}
