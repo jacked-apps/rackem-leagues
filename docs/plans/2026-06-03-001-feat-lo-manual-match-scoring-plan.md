@@ -594,7 +594,7 @@ realtime/confirmation queue and the `handlePlayerClick` both-confirmed block).
 **Verification:** LO scores every game and finalizes; standings/points/winner match
 a live-scored equivalent.
 
-- [ ] **Unit 7: DB integration round-trip test**
+- [x] **Unit 7: DB integration round-trip test** — DONE (`src/__tests__/database/loManualScoring.roundtrip.db.test.ts`). Builds an isolated dummy fixture, runs the REAL functions end-to-end against local Postgres (`loSaveLineups` → `loSetupMatch`/`prep_match` → `loScoreGame`×9 → `loFinalizeMatch`), and asserts the saved rows: 9 games created + scored + double-confirmed by the operator, `home_games_won=9`, `winner_team_id`=home, `status='completed'`, both `*_team_verified_by`=operator. Cleans up after. (anon can call `prep_match` — granted to PUBLIC — so no auth needed.) **All 7 units complete.**
 
 **Goal:** End-to-end DB test proving an LO-entered match equals a live-scored one.
 
