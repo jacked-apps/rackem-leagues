@@ -534,7 +534,7 @@ handicaps, click Setup Match.
 **Verification:** LO can enter both lineups with overrides and produce a prepared
 match ready to score; the live lineup page is unaffected by the `HandicapCell` change.
 
-- [ ] **Unit 6: Entry phase UI (scoreboard + grid + scoring + finalize)**
+- [x] **Unit 6: Entry phase UI (scoreboard + grid + scoring + finalize)** — DONE (`EntryPhase.tsx` + `entryHelpers.ts`; `ScoringDialog` gets an additive `hideForfeit` prop; host renders Entry on `in_progress` + a completion screen; deferred `LeagueDetail` "Score a Match" card landed, dev-gated; 6 tests; typecheck clean, no new lint). **Deviation from plan, with reason:** does NOT reuse `UnifiedScoreboard` — that component renders `MatchEndVerification` (its own two-party completion `useEffect`) when all games are done, which would fight `loFinalizeMatch`. So Entry uses a lean compact scoreboard (totals/thresholds from the match row) + a custom tap-to-score grid (dedicated LO handler, not the live `handlePlayerClick` both-confirmed block) + the reused `ScoringDialog` (forfeit hidden, `winnerWasScheduledBreaker` computed by the parent) + tap-to-edit re-score (R9, dialog pre-filled) + a self-owned "Finalize Match". Richer `UnifiedScoreboard` reuse is deferred polish.
 
 **Goal:** The Entry half: scoreboard, game grid, per-game scoring via reused modal,
 in-place correction, and Finalize Match.

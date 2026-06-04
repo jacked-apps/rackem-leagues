@@ -138,6 +138,11 @@ interface ScoringDialogProps {
   onBreakFouledChange?: (checked: boolean) => void;
   /** Handler for win-by-forfeit toggle */
   onWinByForfeitChange?: (checked: boolean) => void;
+  /**
+   * Hide the "Win by forfeit" toggle entirely. Used by LO manual scoring, which
+   * is played-only (no forfeit entry in v1). Defaults to false (toggle shown).
+   */
+  hideForfeit?: boolean;
   /** Handler for runout toggle */
   onRunoutChange?: (checked: boolean) => void;
   /** Handler for loser-side per-game value change */
@@ -168,6 +173,7 @@ export function ScoringDialog({
   pointsCalculatorParams = null,
   breakFouled = false,
   winByForfeit = false,
+  hideForfeit = false,
   runout = false,
   loserValue = null,
   winnerValue = null,
@@ -383,23 +389,25 @@ export function ScoringDialog({
             />
           </div>
 
-          <div className="space-y-1">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="winByForfeit" className="text-sm font-normal">
-                Win by forfeit
-              </Label>
-              <Switch
-                id="winByForfeit"
-                checked={winByForfeit}
-                onCheckedChange={handleWinByForfeitChange}
-              />
+          {!hideForfeit && (
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="winByForfeit" className="text-sm font-normal">
+                  Win by forfeit
+                </Label>
+                <Switch
+                  id="winByForfeit"
+                  checked={winByForfeit}
+                  onCheckedChange={handleWinByForfeitChange}
+                />
+              </div>
+              {winByForfeit && loserPlayerName && (
+                <p className="text-xs text-muted-foreground">
+                  Recorded as {loserPlayerName}
+                </p>
+              )}
             </div>
-            {winByForfeit && loserPlayerName && (
-              <p className="text-xs text-muted-foreground">
-                Recorded as {loserPlayerName}
-              </p>
-            )}
-          </div>
+          )}
 
           {/* Section 3: per-side scoring inputs at the bottom, just above
               the action buttons. The counter is the deliberate input —

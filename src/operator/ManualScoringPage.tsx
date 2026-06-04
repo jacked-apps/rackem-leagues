@@ -12,12 +12,15 @@
  * @see docs/plans/2026-06-03-001-feat-lo-manual-match-scoring-plan.md — Units 5–6
  */
 
-import { useParams } from 'react-router-dom';
-import { useMatchWithLeagueSettings } from '@/api/hooks';
+import { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useMatchWithLeagueSettings, useCurrentMember } from '@/api/hooks';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { SetupPhase } from '@/components/operator/manual-scoring/SetupPhase';
+import { EntryPhase } from '@/components/operator/manual-scoring/EntryPhase';
 import type { SystemOverrides } from '@/types/systemOverrides';
 
 /** The match fields this page reads (the hook's full type is broader). */
@@ -32,6 +35,7 @@ interface MatchView {
     id?: string;
     handicap_variant?: 'standard' | 'reduced' | 'none';
     game_type?: string;
+    golden_break_counts_as_win?: boolean;
   } | null;
 }
 
@@ -43,10 +47,16 @@ interface PrefsView {
   mechanism?: 'extra_games' | 'start_points' | 'race_length_adjustment' | 'none';
   game_generation?: string;
   system_overrides?: SystemOverrides;
+  points_calculator?: string | null;
+  points_calculator_params?: Record<string, unknown> | null;
 }
 
 export default function ManualScoringPage() {
   const { leagueId, matchId } = useParams<{ leagueId: string; matchId: string }>();
+  const navigate = useNavigate();
+  const { data: member } = useCurrentMember();
+  const loMemberId = member?.id;
+  const [finalized, setFinalized] = useState<{ winnerName: string } | null>(null);
   const matchQuery = useMatchWithLeagueSettings(matchId);
   const match = matchQuery.data as unknown as MatchView | undefined;
   const resolvedLeagueId = match?.league?.id ?? leagueId;
@@ -70,6 +80,23 @@ export default function ManualScoringPage() {
     </div>
   );
 
+  if (finalized) {
+    return (
+      <div>
+        {header}
+        <Card className="m-4">
+          <CardContent className="space-y-4 p-6 text-center">
+            <p className="text-lg font-semibold">Match recorded</p>
+            <p className="text-muted-foreground">{finalized.winnerName} wins.</p>
+            <Button onClick={() => navigate(`/league/${leagueId}/manual-scoring`)} loadingText="none">
+              Back to matches
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (matchQuery.isLoading || (match && prefsQuery.isLoading)) {
     return message('Loading…');
   }
@@ -77,7 +104,7 @@ export default function ManualScoringPage() {
     return message('Match not found.');
   }
 
-  const status = match.status as string;
+  const status = match.status;
 
   if (status === 'scheduled') {
     if (!prefs) return message('Loading league settings…');
@@ -106,8 +133,27 @@ export default function ManualScoringPage() {
   }
 
   if (status === 'in_progress') {
-    // Entry phase (scoreboard + per-game scoring + Finalize) lands in Unit 6.
-    return message('Match is set up. The scoring (Entry) phase is under construction (Unit 6).');
+    if (!prefs || !loMemberId) return message('Loading…');
+    return (
+      <div>
+        {header}
+        <EntryPhase
+          matchId={match.id}
+          homeTeamId={match.home_team_id}
+          awayTeamId={match.away_team_id}
+          homeTeamName={match.home_team?.team_name ?? 'Home'}
+          awayTeamName={match.away_team?.team_name ?? 'Away'}
+          loMemberId={loMemberId}
+          winCondition={prefs.win_condition ?? 'games'}
+          handicapType={prefs.handicap_type ?? 'points'}
+          pointsCalculator={prefs.points_calculator}
+          pointsCalculatorParams={prefs.points_calculator_params}
+          gameType={match.league?.game_type ?? 'eight_ball'}
+          goldenBreakCountsAsWin={!!match.league?.golden_break_counts_as_win}
+          onFinalized={setFinalized}
+        />
+      </div>
+    );
   }
 
   return message('This match is already scored or is not eligible for manual entry.');
