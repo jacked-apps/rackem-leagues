@@ -11,7 +11,7 @@ import { QuickStatsCard } from '@/components/operator/QuickStatsCard';
 import { OrganizationStaffCard } from '@/components/operator/OrganizationStaffCard';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { MessageSquare, Users, Settings, BookOpen, Video, MessageCircle, Phone, Flag } from 'lucide-react';
+import { MessageSquare, Users, Settings, BookOpen, Video, MessageCircle, Phone, Flag, Wrench } from 'lucide-react';
 import { usePendingReportsCount } from '@/hooks/usePendingReportsCount';
 
 /**
@@ -95,6 +95,15 @@ export const OperatorDashboard: React.FC = () => {
             buttonText="View Reports"
             linkTo={`/operator-reports/${orgId}`}
             badgeCount={pendingReportsCount}
+          />
+
+          <DashboardCard
+            icon={<Wrench className="h-6 w-6" />}
+            iconColor="text-primary"
+            title="Scoring Workshop"
+            description="Build per-game allocator variations (first room)"
+            buttonText="Open Workshop"
+            linkTo="/operator/scoring-workshop/per-game-allocator"
           />
 
           {/* Row 2 - Active Leagues (2 cols) and Sidebar (1 col) */}

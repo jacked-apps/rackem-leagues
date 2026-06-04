@@ -74,6 +74,9 @@ const LeagueWizardV2Page = lazy(() => import('../wizards/league-v2/LeagueWizardV
 const LeagueRules = lazy(() => import('../operator/LeagueRules'));
 const LeagueDetail = lazy(() => import('../operator/LeagueDetail'));
 const LeagueFinancesPage = lazy(() => import('../operator/LeagueFinancesPage'));
+const AllocatorRoomPage = lazy(
+  () => import('../operator/scoring-workshop/per-game-allocator/AllocatorRoomPage'),
+);
 const LeagueSettings = lazy(() => import('../operator/LeagueSettings'));
 const SeasonCreationWizard = lazy(() => import('../operator/SeasonCreationWizard'));
 const SeasonScheduleManager = lazy(() => import('../operator/SeasonScheduleManager'));
@@ -246,6 +249,7 @@ export const router = createBrowserRouter([
           { path: 'league-rules/:orgId', element: withOperator(LeagueRules) },
           { path: 'league/:leagueId', element: withOperator(LeagueDetail) },
           { path: 'league/:leagueId/finances', element: withOperator(LeagueFinancesPage) },
+          { path: 'operator/scoring-workshop/per-game-allocator', element: withOperator(AllocatorRoomPage) },
           { path: 'league/:leagueId/settings', element: withOperator(LeagueSettings) },
           { path: 'league/:leagueId/create-season', element: withOperator(SeasonCreationWizard) },
           { path: 'operator/start-next-season/:leagueId', element: withOperator(NewSeasonFromPreviousPage) },
