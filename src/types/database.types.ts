@@ -307,6 +307,7 @@ export type Database = {
           is_initiator: boolean
           loser_value: number | null
           match_id: string
+          reason: string | null
           runout: boolean
           side: string
           win_by_forfeit: boolean
@@ -328,6 +329,7 @@ export type Database = {
           is_initiator?: boolean
           loser_value?: number | null
           match_id: string
+          reason?: string | null
           runout?: boolean
           side: string
           win_by_forfeit?: boolean
@@ -349,6 +351,7 @@ export type Database = {
           is_initiator?: boolean
           loser_value?: number | null
           match_id?: string
+          reason?: string | null
           runout?: boolean
           side?: string
           win_by_forfeit?: boolean

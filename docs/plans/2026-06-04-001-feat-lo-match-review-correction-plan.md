@@ -202,7 +202,7 @@ Per-game confirmer line (read):
 
 ## Implementation Units
 
-- [ ] **Unit 1: Migration — `reason` column on `game_confirmations`**
+- [x] **Unit 1: Migration — `reason` column on `game_confirmations`** — DONE (migration `20260604000000_game_confirmations_reason.sql` with a ≤255 CHECK; `reason` hand-added to `database.types.ts` (not a full regen — local DB diverges); 3 db tests). NOTE: the many-eyes migrations were missing from local Postgres (branch drift) — applied them + the reason migration to local so the table exists for dev/test.
 
 **Goal:** Add a nullable free-text `reason` (≤255) to the append-only log for R5.
 
