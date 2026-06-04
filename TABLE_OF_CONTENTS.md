@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-06-04 (Per-Game Allocator Room **Unit 8 SHIPPED**: R10 acceptance test for 17-Point through the LIVE scoring path. `17-point-via-match-adapter.test.ts` (6 tests) — per-game boundaries (loser=0 → winner=17, loser=7 → winner=10, loser=4 → winner=13), the named acceptance sequence (loser=[0,3,5,7,2] → home=48, away=37), per-game-sums-to-17 invariant. `17-point-smoke.test.ts` (3 tests, DB-touching) — seeded 17-Point official exists, loader pulls a valid PerGameAllocator from the real seed, full pipeline (DB row → loader → match-adapter → engine) produces correct totals. R10 fully proven end-to-end. Build green. Branch `feat/per-game-allocator-workshop`.)
+> **Last Updated**: 2026-06-04 (Per-Game Allocator Room **Units 1-9 COMPLETE — branch `feat/per-game-allocator-workshop` ready for review**. First realized room of the Scoring System Workshop building. 21 new files across DB schema + tamper trigger + seeded officials (Unit 1), never-throw loader (Unit 2), validator hardening + read_state_var R11 recipe (Unit 3), runtime safety net around the allocator call (Unit 4), snapshot freeze + live-path swap in `match-adapter.ts` (Unit 5), workshop UI with save-time guard (Unit 6), league-settings picker + apply-time preview (Unit 7), R10 17-Point acceptance through the live path (Unit 8), and TOC + implementation-status sync (Unit 9). 2,600+ tests pass total; build green; four guard layers between a saved row and the runtime.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -535,6 +535,7 @@ how to add a new test, demo recording, cleanup model).
 - `messaging-phase1-createOrgAnnouncementsChat.test.ts` - **Messaging Phase 1 / Unit 3 helper 5/5** — DB-backed coverage of `createOrgAnnouncementsChat()`: every distinct player across currently-active seasons in the org, past-season players excluded, idempotent.
 - `messaging-phase1-unit7-polish.rls.test.ts` - **Messaging Phase 1 / Unit 7 (polish)** — verifies the polish migration (`20260513000001`): system-message INSERT keeps all participants' `unread_count` at 0, regular message INSERT still bumps non-senders, mixed system/regular sequence only counts the regular one, and the reworded `COMMENT ON COLUMN members.profanity_filter_enabled` mentions both minor enforcement (`minor` / `under 18` / `age`) AND the DOB fallback (`dob` / `date_of_birth`).
 - `per-game-allocator-schema.test.ts` - **Scoring System Workshop — Per-Game Allocator Room Unit 1** — schema verification for the `per_game_allocators` table + cascade. 14 tests: 4 seeded officials present with author_id IS NULL; 10-Point loser side is a labeled range; 17-Point winner side carries the add_complement_of_other_side formula ref; CHECK rejects scope outside ('official','user'); CHECK rejects scope=user with NULL author_id; CHECK rejects scope=official with non-NULL author_id; tamper trigger blocks UPDATE on officials; tamper trigger blocks DELETE on officials; `preferences.per_game_allocator_id` is a nullable UUID; FK is ON DELETE RESTRICT to `per_game_allocators(id)`; resolved view exposes the new column. 2 tests skipped pending seeded auth.users fixture (user-row insert + FK RESTRICT-while-in-use).
+- `17-point-smoke.test.ts` - **Scoring System Workshop — Per-Game Allocator Room Unit 8** — R10 acceptance through the LIVE path. 3 DB-touching tests: seeded 17-Point official exists; `loadPerGameAllocator(real_id)` produces a valid in-memory PerGameAllocator with the expected SideConfig shape; full pipeline DB row → loader → match-adapter → engine produces correct totals (home=48, away=37 for the [0,3,5,7,2] sequence). Uses `vi.mock('@/supabaseClient')` → `createTestClient()` to point the loader at the local supabase URL.
 
 #### Messaging UI Components (`/components/messages/`)
 - `ReadOnlyBanner.tsx` - **Messaging Phase 1 / Unit 6** — shadcn `Alert` that renders in place of the message composer when the current user can read but not post. Two reasons covered: `past-member` (left_at non-NULL) and `announcement-non-staff` (announcements channel viewed by a non-staff member). The composer is unmounted by `MessageView`, not just hidden by CSS.
@@ -585,8 +586,23 @@ how to add a new test, demo recording, cleanup model).
 **League Management**
 - `LeagueDetail.tsx` - League details page
 - `LeagueRules.tsx` - League rules management
-- `LeagueSettings.tsx` - General league settings page (linked from the League Settings card on `LeagueDetail`).
+- `LeagueSettings.tsx` - General league settings page (linked from the League Settings card on `LeagueDetail`). Mounts `AllocatorPicker` card from the scoring-workshop room (Unit 7).
 - `LeaguePlayoffSettings.tsx` - League-scoped playoff configuration page.
+
+**Scoring System Workshop (`/operator/scoring-workshop/`)**
+
+The workshop building. One sub-folder per module room. Each room owns a list page + editor + data hook + save-time guard, with optional league-side pickers. First room shipped 2026-06-04.
+
+- `per-game-allocator/AllocatorRoomPage.tsx` - **Per-Game Allocator Room** page container. Mounted at `/operator/scoring-workshop/per-game-allocator` (lazy-loaded, withOperator-gated). List ↔ editor mode switching.
+- `per-game-allocator/AllocatorList.tsx` - Two-section list: read-only "Templates" (officials) + editable "Yours" (user-scope rows). Clone / Edit / Delete actions.
+- `per-game-allocator/AllocatorEditor.tsx` - Editor: name + description + two `SideEditor` blocks + save-time guard.
+- `per-game-allocator/SideEditor.tsx` - Reusable side component. Four peer kinds: Fixed number / **State-bag value (R11 first-class)** / Scorer-input range / Formula recipe. Switching kinds resets irrelevant SideConfig fields.
+- `per-game-allocator/useAllocatorRoom.ts` - Data hook: list officials + user's own, clone, upsert, delete against `per_game_allocators`. App-layer visibility (RLS is the eventual real protection).
+- `per-game-allocator/saveTimeGuard.ts` - First of four guard layers between save and runtime. Runs `validatePerGameAllocator` + synthetic 5-game dry-run through `evaluatePointsSystem`. Refuses to save on validator rejection / dry-run throw / non-finite totals.
+- `per-game-allocator/AllocatorPicker.tsx` - League-side picker (Unit 7). Mounted on `LeagueSettings`. Lists officials + user's variations + "Use prepackaged default" (NULL). On select runs `applyTimePreview`; on Apply upserts `preferences.per_game_allocator_id` for the league.
+- `per-game-allocator/applyTimePreview.ts` - Pure helper. Validates the variation (Unit 3 args-shape), builds the league's prepackaged composition, swaps the slot, runs `evaluatePointsSystem` over a synthetic 5-game match with reasonable default prefs. Returns `{ok, warnings}` or `{ok:false, reason}`.
+- `per-game-allocator/__tests__/saveTimeGuard.test.ts` - 7 tests covering happy paths (fixed/fixed, fixed/range, 17-point formula, read_state_var) + Unit 3 rejection cases (unregistered op, missing required arg, type mismatch).
+- `per-game-allocator/__tests__/applyTimePreview.test.ts` - 7 tests covering clean preview for fixed/formula variations against 10-Point + Percent 5-Man compositions, unknown calculator rejection, structural-failure blocks Apply.
 
 **Playoffs**
 - `PlayoffSetup.tsx` - Playoff setup page (mounts the bracket + settings cards).
@@ -1077,6 +1093,21 @@ Lineup-page workhorse hooks. Extracted from the monolithic `useMatchLineup` so e
 - `__tests__/computeMatchRunningTotals.test.ts` - **Running-totals tests** (10 cases): confirmation filtering, tiebreaker exclusion, linear_above_threshold above/tie/below bands, LOCKED tie-band-with-tiebreaker invariant, accumulated_per_game (Fargo 10-7), null calculator, unknown calculator
 - `pendingConfirmations.ts` - **Data-derived live-scoring handoff** — pure helpers that compute "which games need MY action" from the `match_games` rows: `gameNeedsMyConfirmation` (opponent scored + confirmed, I haven't), `gameHasPendingVacateForMe` (opponent requested an undo, derived from `vacate_requested_by` so the requester never self-prompts), plus `buildConfirmationItem` / `buildVacateConfirmationItem`. Run on every load/refetch/poll so the confirm + vacate prompts survive a dropped realtime event (delayed, never lost). Realtime stays the fast path.
 - `__tests__/pendingConfirmations.test.ts` - **Pending-confirmation tests** (13 cases): confirm predicate (happy/edge), vacate predicate incl. requester-never-self-prompts, and the item builders.
+
+#### Per-Game Allocator Room — Points System support files (`src/systems/points-system/`)
+
+Files added 2026-06-04 for the first room of the Scoring System Workshop building. Run-time engine (existing) is unchanged; these add the data-to-object bridge, the contract-checking surface, and the registered formula recipes.
+
+- `per-game-allocator-loader.ts` - **Unit 2 — never-throw loader.** `loadPerGameAllocator(id)` reads a row from `per_game_allocators`, unmarshals winner_side/loser_side JSONB into `SideConfig`, runs `validatePerGameAllocator`, returns `PerGameAllocator | null`. Four failure paths each catch + warn + return null (supabase error, missing row, malformed JSONB, validator rejection).
+- `allocator-formula-operations/read-state-var.ts` - **Unit 3 (R11 first-class) — state-bag read recipe.** Single arg `var_name`. Reads `state[var_name]`; returns 0 + warn on missing/non-numeric. Honors the communication contract: anywhere the allocator takes a number, it can come from the state bag by name.
+- `__tests__/per-game-allocator-loader.test.ts` - **Loader tests** (13 cases): happy paths for the three shapes (fixed/fixed, fixed/range, formula/range), not-found, supabase error, supabase throw, malformed JSONB (missing base, string instead of number, range missing min, non-string operationKind), validator rejection, args-shape rejection (Unit 3).
+- `__tests__/composition-validator-args.test.ts` - **Validator args-shape tests** (9 cases): happy paths for all 3 ops, missing required arg, string-where-number, banana-where-side, non-string state_var_name, NaN rejected, forward-compat extra arg accepted.
+- `__tests__/read-state-var.test.ts` - **read_state_var tests** (6 cases): reads numeric value by name, reads different vars, returns 0 + warn on missing, returns 0 + warn on non-numeric, returns 0 + warn on non-string var_name, declares its argsShape.
+- `__tests__/runtime-allocator-safety.test.ts` - **Unit 4 safety-net tests** (4 cases): single-game throw preserves W/L for all games, every-game throw preserves W/L counts with points at 0, no exception escapes under any sequence, games_played still increments past a thrown allocator.
+- `__tests__/snapshot-and-swap.test.ts` - **Unit 5 swap + parity tests** (7 cases): override swaps the 10-Point allocator slot, no override = today's behavior unchanged, explicit null = omitted, 17-Point variation end-to-end through match-adapter, `pickPointsSystem` parity, R9 historical replay stability.
+- `__tests__/17-point-via-match-adapter.test.ts` - **Unit 8 17-Point acceptance** (6 cases): per-game boundaries (loser=0 → winner=17; loser=7 → winner=10; loser=4 → winner=13), named acceptance sequence (home=48, away=37), per-side sum = 17 invariant, no-override = pure 10-Point.
+
+Existing files modified — `composition-validator.ts` exposes `validatePerGameAllocator` (called by the loader + the workshop's guards); declares args-shape checking against `AllocatorFormulaOperation.argsShape`. `types.ts` adds `ArgKind` / `ArgSpec` and the optional `argsShape` field. `runtime.ts` wraps the `evaluateAllocator` call in try/catch (Unit 4 backstop). `match-adapter.ts` `buildComposition` accepts `perGameAllocatorOverride`; `computeMatchRunningTotalsViaEngine` threads it through.
 
 #### Lineup Utils (`/utils/lineup/`)
 
