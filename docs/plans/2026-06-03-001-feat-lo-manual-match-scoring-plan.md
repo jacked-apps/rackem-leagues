@@ -204,8 +204,9 @@ results have no way into the system. (See origin: `docs/brainstorms/lo-manual-ma
 
 - ~~**Fargo+points start-credit calc**~~ RESOLVED in Unit 1: use
   `fargo5v5.handicapMechanism.compute(...)` → map to weaker team's `*_to_tie`.
-- **`loSaveLineups` vs `updateMatchLineup`:** verify whether the existing gate-free
-  `updateMatchLineup` (no `teamId`) suffices before adding a new function.
+- ~~**`loSaveLineups` vs `updateMatchLineup`**~~ RESOLVED in Unit 2: `updateMatchLineup`
+  can't *create* a row on a fresh scheduled match, so `loSaveLineups` does a gate-free
+  upsert on the `(match_id, team_id)` constraint instead.
 - **`ScoringDialog` forfeit hide:** verify whether omitting `onWinByForfeitChange`
   already hides it before adding a `hideForfeit` prop.
 - **Per-game breaker vs paper order:** v1 accepts generated breaker (decision
@@ -320,7 +321,7 @@ flagged touching the live hook as the wrong risk for v1).
 **Verification:** Helper returns a `prep_match`-ready payload for all
 handicap/win-condition combinations; the live prep flow is untouched.
 
-- [ ] **Unit 2: LO-authoritative setup + lineup write**
+- [x] **Unit 2: LO-authoritative setup + lineup write** — DONE (`src/api/mutations/loManualScoring.ts`: `loSaveLineups` + `loSetupMatch`; 7 tests; typecheck/lint clean). `loSaveLineups` uses a gate-free **upsert** per side (not `updateMatchLineup`, which can't create a row on a fresh match); `loSetupMatch` guards `status='scheduled'`, reads the saved lineups, builds the payload (Unit 1), calls `prep_match`, freezes `system_snapshot`, seeds totals.
 
 **Goal:** A data-layer module that writes both lineups (bypassing team-membership
 gates) and drives `prep_match` directly to freeze/create the match.
