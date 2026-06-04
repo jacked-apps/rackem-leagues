@@ -29,6 +29,7 @@ import {
 import { parseLocalDate } from '@/utils/formatters';
 import {
   isMatchEligibleForManualScoring,
+  isMatchEligibleForReview,
   manualScoringStatusLabel,
 } from '@/utils/match/manualScoringEligibility';
 import type { MatchWithDetails } from '@/types/schedule';
@@ -42,12 +43,26 @@ function formatWeekDate(scheduledDate: string | undefined): string {
   });
 }
 
-/** One match row: matchup + status badge; clickable only when eligible. */
-function MatchRow({ match, onScore }: { match: MatchWithDetails; onScore: () => void }) {
+/**
+ * One match row: matchup + status badge.
+ *
+ * A `scheduled` match (with two real teams) is clickable and opens the v1
+ * enter-from-blank flow (`onScore`). A finished match (`completed` /
+ * `awaiting_verification`, or a reopened-not-refinalized one) is clickable and
+ * opens the v2 review/correct surface (`onReview`). Everything else is greyed.
+ */
+function MatchRow({
+  match,
+  onScore,
+  onReview,
+}: {
+  match: MatchWithDetails;
+  onScore: () => void;
+  onReview: () => void;
+}) {
   const label = `${match.home_team?.team_name ?? 'BYE'} vs ${match.away_team?.team_name ?? 'BYE'}`;
-  const eligible = isMatchEligibleForManualScoring(match);
 
-  if (eligible) {
+  if (isMatchEligibleForManualScoring(match)) {
     return (
       <Button
         variant="outline"
@@ -57,6 +72,20 @@ function MatchRow({ match, onScore }: { match: MatchWithDetails; onScore: () => 
       >
         <span>{label}</span>
         <Badge>{manualScoringStatusLabel(match.status)}</Badge>
+      </Button>
+    );
+  }
+
+  if (isMatchEligibleForReview(match)) {
+    return (
+      <Button
+        variant="outline"
+        className="w-full justify-between"
+        onClick={onReview}
+        data-testid="review-match"
+      >
+        <span>{label}</span>
+        <Badge variant="outline">Review · {manualScoringStatusLabel(match.status)}</Badge>
       </Button>
     );
   }
@@ -82,10 +111,15 @@ export default function ManualScoringMatchPicker() {
     () => schedule.filter((w) => w.matches.length > 0),
     [schedule]
   );
-  const totalEligible = useMemo(
+  // Actionable = scheduled (v1 enter-from-blank) OR finished (v2 review/correct).
+  const totalActionable = useMemo(
     () =>
       schedule.reduce(
-        (n, w) => n + w.matches.filter(isMatchEligibleForManualScoring).length,
+        (n, w) =>
+          n +
+          w.matches.filter(
+            (m) => isMatchEligibleForManualScoring(m) || isMatchEligibleForReview(m)
+          ).length,
         0
       ),
     [schedule]
@@ -125,11 +159,10 @@ export default function ManualScoringMatchPicker() {
     <div>
       {header}
       <div className="space-y-4 p-4">
-        {totalEligible === 0 && (
+        {totalActionable === 0 && (
           <Card>
             <CardContent className="p-4 text-center text-muted-foreground">
-              No matches are currently available for manual entry — all scheduled
-              matches have already been started or scored.
+              No matches are currently available to score or review.
             </CardContent>
           </Card>
         )}
@@ -157,6 +190,9 @@ export default function ManualScoringMatchPicker() {
                         match={match}
                         onScore={() =>
                           navigate(`/league/${leagueId}/manual-scoring/${match.id}`)
+                        }
+                        onReview={() =>
+                          navigate(`/league/${leagueId}/match-review/${match.id}`)
                         }
                       />
                     ))}

@@ -355,7 +355,7 @@ live integration consumes Unit 3's appended rows.
 **Verification:** The view model matches "official + +N others" for live, LO-entered,
 and pre-many-eyes games.
 
-- [ ] **Unit 5: Review eligibility + picker routing**
+- [x] **Unit 5: Review eligibility + picker routing** — DONE. `isMatchEligibleForReview` (completed/awaiting + two real teams; reopened-abandoned in_progress+completed_at also openable; plain in_progress/forfeited/postponed/bye greyed). Picker routes scheduled→v1, review-eligible→`match-review/:matchId` with a distinct "Review · <status>" badge + `review-match` testid. Route registered dev-gated → `ManualScoringPage`. 18 eligibility tests + 5 picker tests pass.
 
 **Goal:** Open non-scheduled matches into the review surface; route by status.
 

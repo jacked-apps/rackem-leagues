@@ -5,6 +5,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   isMatchEligibleForManualScoring,
+  isMatchEligibleForReview,
   manualScoringStatusLabel,
 } from '../manualScoringEligibility';
 import type { MatchWithDetails } from '@/types/schedule';
@@ -46,6 +47,40 @@ describe('isMatchEligibleForManualScoring', () => {
       isMatchEligibleForManualScoring(
         match({ home_team: { ...team('home'), status: 'bye' } })
       )
+    ).toBe(false);
+  });
+});
+
+describe('isMatchEligibleForReview', () => {
+  it.each(['completed', 'awaiting_verification'])(
+    'is true for a %s match with two real teams',
+    (status) => {
+      expect(isMatchEligibleForReview(match({ status: status as never }))).toBe(true);
+    }
+  );
+
+  it.each(['scheduled', 'forfeited', 'postponed'])(
+    'is false for a %s match',
+    (status) => {
+      expect(isMatchEligibleForReview(match({ status: status as never }))).toBe(false);
+    }
+  );
+
+  it('is false for an in_progress match with no completed_at (actively scoring)', () => {
+    expect(isMatchEligibleForReview(match({ status: 'in_progress' as never }))).toBe(false);
+  });
+
+  it('is true for a reopened-not-refinalized match (in_progress + completed_at set)', () => {
+    expect(
+      isMatchEligibleForReview(
+        match({ status: 'in_progress' as never, completed_at: '2026-06-01T00:00:00Z' } as never)
+      )
+    ).toBe(true);
+  });
+
+  it('is false when a side is a BYE even if completed', () => {
+    expect(
+      isMatchEligibleForReview(match({ status: 'completed' as never, away_team: null }))
     ).toBe(false);
   });
 });

@@ -20,8 +20,29 @@ import type { MatchWithDetails } from '@/types/schedule';
  * are real teams (not a BYE).
  */
 export function isMatchEligibleForManualScoring(match: MatchWithDetails): boolean {
+  return match.status === 'scheduled' && hasTwoRealTeams(match);
+}
+
+/**
+ * Can this match be opened in the v2 review/correct surface?
+ *
+ * True for finished matches (`completed` / `awaiting_verification`) with two real
+ * teams. Also true for a **reopened-not-refinalized** match (`in_progress` but with
+ * a `completed_at` still set — an abandoned correction), so it's recoverable.
+ * Plain `in_progress` (actively being scored), `scheduled`, `forfeited`, and
+ * `postponed` are NOT openable here.
+ */
+export function isMatchEligibleForReview(match: MatchWithDetails): boolean {
+  const finished = match.status === 'completed' || match.status === 'awaiting_verification';
+  const reopenedAbandoned =
+    match.status === 'in_progress' &&
+    !!(match as { completed_at?: unknown }).completed_at;
+  return (finished || reopenedAbandoned) && hasTwoRealTeams(match);
+}
+
+/** Both sides are real teams (not a BYE). */
+function hasTwoRealTeams(match: MatchWithDetails): boolean {
   return (
-    match.status === 'scheduled' &&
     !!match.home_team &&
     match.home_team.status !== 'bye' &&
     !!match.away_team &&
