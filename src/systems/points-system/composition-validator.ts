@@ -29,6 +29,7 @@ import { getAllocatorFormulaOperation } from './allocator-formula-registry';
 import type {
   Condition,
   Expression,
+  PerGameAllocator,
   PointsSystem,
   SideConfig,
   Trigger,
@@ -84,9 +85,13 @@ function triggerVarUsage(trigger: Trigger): TriggerVarUsage {
 /**
  * Validate that a per-game allocator side's formula (if present) references a
  * registered allocator-formula operation. Throws on unresolved reference.
+ *
+ * Takes a `compositionName` (string) rather than the full PointsSystem so the
+ * helper is reusable from both `validatePointsSystem` (full composition) and
+ * `validatePerGameAllocator` (allocator-only validation invoked by the loader).
  */
 function validateAllocatorSide(
-  composition: PointsSystem,
+  compositionName: string,
   side: SideConfig,
   sideName: 'winner' | 'loser',
 ): void {
@@ -94,9 +99,31 @@ function validateAllocatorSide(
   const operation = getAllocatorFormulaOperation(side.formula.operationKind);
   if (operation === undefined) {
     throw new Error(
-      `Composition "${composition.name}": allocator ${sideName} side references unknown formula operation "${side.formula.operationKind}". Ensure the operation file is imported (operations auto-register on import).`,
+      `Composition "${compositionName}": allocator ${sideName} side references unknown formula operation "${side.formula.operationKind}". Ensure the operation file is imported (operations auto-register on import).`,
     );
   }
+}
+
+/**
+ * Validate a stand-alone PerGameAllocator. Used by the loader
+ * (`per-game-allocator-loader.ts`) when reading a saved variation row
+ * from the database — the row's JSONB unmarshals into a PerGameAllocator
+ * object, and this helper runs the same shape checks the full composition
+ * validator would, without requiring the caller to wrap it in a fake
+ * PointsSystem skeleton.
+ *
+ * Throws on the first violation found. The loader catches and converts
+ * to a console.warn + null return per the never-throw contract.
+ *
+ * Unit 3 will extend this to ALSO validate `operationArgs` against each
+ * formula op's declared `argsShape`. Today it only checks the operation
+ * name resolves.
+ */
+export function validatePerGameAllocator(
+  allocator: PerGameAllocator,
+): void {
+  validateAllocatorSide(allocator.name, allocator.winner, 'winner');
+  validateAllocatorSide(allocator.name, allocator.loser, 'loser');
 }
 
 /**
@@ -107,8 +134,8 @@ export function validatePointsSystem(composition: PointsSystem): void {
   const seenTriggerNames = new Set<string>();
 
   if (composition.perGameAllocator) {
-    validateAllocatorSide(composition, composition.perGameAllocator.winner, 'winner');
-    validateAllocatorSide(composition, composition.perGameAllocator.loser, 'loser');
+    validateAllocatorSide(composition.name, composition.perGameAllocator.winner, 'winner');
+    validateAllocatorSide(composition.name, composition.perGameAllocator.loser, 'loser');
   }
 
   for (const trigger of composition.triggers) {

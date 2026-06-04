@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-06-04 (Per-Game Allocator Room **Unit 1 SHIPPED**: `supabase/migrations/20260604000000_per_game_allocator_room.sql` (table + tamper trigger + preferences FK + resolved view extension + 4 seeded officials) and `src/__tests__/database/per-game-allocator-schema.test.ts` (12 passing, 2 skipped pending seeded auth.users fixture). First storage layer of the Scoring System Workshop building is live. Branch `feat/per-game-allocator-workshop`.)
+> **Last Updated**: 2026-06-04 (Per-Game Allocator Room **Unit 2 SHIPPED**: `src/systems/points-system/per-game-allocator-loader.ts` (DB row → in-memory PerGameAllocator, never-throw, four failure paths each catch + warn + return null) and `src/systems/points-system/__tests__/per-game-allocator-loader.test.ts` (11 passing, 1 skipped TODO for Unit 3 args-shape). Refactored `composition-validator.ts` to expose `validatePerGameAllocator` for the loader. Branch `feat/per-game-allocator-workshop`.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
