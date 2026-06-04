@@ -22,7 +22,6 @@ import { StatsCard } from '@/components/operator/StatsCard';
 import { PlayoffsCard } from '@/components/operator/PlayoffsCard';
 import { Button } from '@/components/ui/button';
 import { DashboardCard } from '@/components/operator/DashboardCard';
-import { isProduction } from '@/config/environment';
 import { Settings } from 'lucide-react';
 import { useIsWizard2League, useFlowStageDetection } from '@/api/hooks';
 
@@ -218,21 +217,8 @@ export const LeagueDetail: React.FC = () => {
         {/* Teams Section */}
         <TeamsCard leagueId={league.id} />
 
-        {/* Schedule Section */}
+        {/* Schedule Section (the "Score a Match" entry lives in ScheduleCard) */}
         <ScheduleCard leagueId={league.id} />
-
-        {/* LO Manual Scoring (dev/staging only until launch) */}
-        {!isProduction && (
-          <div className="mb-6">
-            <Button
-              variant="outline"
-              loadingText="none"
-              onClick={() => navigate(`/league/${league.id}/manual-scoring`)}
-            >
-              Score a Match
-            </Button>
-          </div>
-        )}
 
         {/* Playoffs Section */}
         <PlayoffsCard leagueId={league.id} seasonId={activeSeason?.id || null} />
