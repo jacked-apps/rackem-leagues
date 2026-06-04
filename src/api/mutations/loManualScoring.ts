@@ -37,6 +37,7 @@ import {
   type MatchPrepLineup,
 } from '@/utils/match/computeMatchPrepPayload';
 import { determineMatchResult } from '@/utils/determineMatchResult';
+import { appendConfirmation, type ConfirmationResult } from '@/api/mutations/appendConfirmation';
 import type { LineupPlayer } from '@/api/mutations/matchLineups';
 import type { SystemOverrides } from '@/types/systemOverrides';
 import { logger } from '@/utils/logger';
@@ -542,4 +543,203 @@ export async function loRestoreCompletion(matchId: string): Promise<void> {
   if (error) {
     throw new Error(`Failed to restore match completion: ${error.message}`);
   }
+}
+
+/** Build a ConfirmationResult (camelCase, for the log) from an LoGameResult. */
+function toConfirmationResult(r: LoGameResult): ConfirmationResult {
+  return {
+    winnerTeamId: r.winnerTeamId,
+    winnerPlayerId: r.winnerPlayerId,
+    breakAndRun: r.breakAndRun ?? false,
+    goldenBreak: r.goldenBreak ?? false,
+    breakFouled: r.breakFouled ?? false,
+    runout: r.runout ?? false,
+    winByForfeit: r.winByForfeit ?? false,
+    winnerValue: r.winnerValue ?? null,
+    loserValue: r.loserValue ?? null,
+  };
+}
+
+/** Parameters for {@link loVacateGame}. */
+export interface LoVacateGameParams {
+  matchId: string;
+  gameId: string;
+  /** The operating LO's `members.id` — recorded on the vacate marker. */
+  loMemberId: string;
+  /** Optional operator note (≤255) explaining the correction. */
+  reason?: string | null;
+}
+
+/**
+ * Solo operator vacate (LO match review). Appends a vacate marker to the
+ * append-only `game_confirmations` log (carrying the pre-wipe snapshot + optional
+ * reason), then wipes the `match_games` result + both confirmation slots. The
+ * marker is load-bearing — it anchors the dissent window — so a failed append
+ * aborts the vacate rather than silently leaving the log without an anchor.
+ *
+ * The match must already be `in_progress` (the UI reopens a completed match first;
+ * `appendConfirmation` no-ops while `completed`).
+ *
+ * @throws if the game read, the marker append, or the wipe fails.
+ */
+export async function loVacateGame(params: LoVacateGameParams): Promise<void> {
+  const { matchId, gameId, loMemberId, reason = null } = params;
+
+  const { data: game, error: gameErr } = await supabase
+    .from('match_games')
+    .select(
+      'game_number, home_player_id, winner_team_id, winner_player_id, break_and_run, ' +
+        'golden_break, break_fouled, runout, win_by_forfeit, winner_value, loser_value'
+    )
+    .eq('id', gameId)
+    .single();
+  if (gameErr || !game) {
+    throw new Error(`Failed to read game: ${gameErr?.message ?? 'not found'}`);
+  }
+  const g = game as unknown as Record<string, unknown>;
+  const priorWinnerSide: 'home' | 'away' =
+    g.winner_player_id && g.winner_player_id === g.home_player_id ? 'home' : 'away';
+  const snapshot: ConfirmationResult = {
+    winnerTeamId: (g.winner_team_id as string | null) ?? null,
+    winnerPlayerId: (g.winner_player_id as string | null) ?? null,
+    breakAndRun: !!g.break_and_run,
+    goldenBreak: !!g.golden_break,
+    breakFouled: !!g.break_fouled,
+    runout: !!g.runout,
+    winByForfeit: !!g.win_by_forfeit,
+    winnerValue: (g.winner_value as number | null) ?? null,
+    loserValue: (g.loser_value as number | null) ?? null,
+  };
+
+  // Vacate marker first — must succeed (anchors the dissent window).
+  const marked = await appendConfirmation({
+    gameId,
+    matchId,
+    gameNumber: g.game_number as number,
+    confirmerId: loMemberId,
+    side: priorWinnerSide,
+    action: 'vacate',
+    isInitiator: false,
+    result: snapshot,
+    reason,
+  });
+  if (!marked) {
+    throw new Error(
+      'Could not record the vacate marker (is the match reopened?) — vacate aborted to keep the audit log consistent.'
+    );
+  }
+
+  const { error: wipeErr } = await supabase
+    .from('match_games')
+    .update({
+      winner_team_id: null,
+      winner_player_id: null,
+      break_and_run: false,
+      golden_break: false,
+      break_fouled: false,
+      runout: false,
+      win_by_forfeit: false,
+      winner_value: null,
+      loser_value: null,
+      confirmed_by_home: null,
+      confirmed_by_away: null,
+    })
+    .eq('id', gameId);
+  if (wipeErr) {
+    throw new Error(`Failed to vacate game: ${wipeErr.message}`);
+  }
+
+  await updateMatchRunningTotals(matchId);
+}
+
+/** Parameters for {@link loCorrectGame}. */
+export interface LoCorrectGameParams extends LoScoreGameParams {
+  /** Optional operator note (≤255) explaining the correction. */
+  reason?: string | null;
+}
+
+/**
+ * Re-score a game as an operator correction (LO match review). A sibling of
+ * {@link loScoreGame} (which stays log-free for v1 enter-from-blank): it does the
+ * same `match_games` column write + recompute, then **appends an operator confirm
+ * row** to `game_confirmations` (`is_initiator=true`, the new result, optional
+ * reason) so the override is recorded in the chain. The confirm-row append is
+ * best-effort — the official result is already written; a failed audit append
+ * logs rather than reverting the correction.
+ *
+ * @throws if the core score write fails (via `loScoreGame`).
+ */
+export async function loCorrectGame(params: LoCorrectGameParams): Promise<void> {
+  const { matchId, gameId, loMemberId, result, reason = null } = params;
+
+  // Core write + recompute + in_progress guard.
+  await loScoreGame({ matchId, gameId, loMemberId, result });
+
+  // Append the operator confirm row (audit + reason). Side = the new winner's side.
+  const { data: game } = await supabase
+    .from('match_games')
+    .select('game_number, home_player_id')
+    .eq('id', gameId)
+    .single();
+  const g = (game ?? {}) as unknown as Record<string, unknown>;
+  const side: 'home' | 'away' = result.winnerPlayerId === g.home_player_id ? 'home' : 'away';
+
+  const appended = await appendConfirmation({
+    gameId,
+    matchId,
+    gameNumber: (g.game_number as number) ?? 0,
+    confirmerId: loMemberId,
+    side,
+    action: 'confirm',
+    isInitiator: true,
+    result: toConfirmationResult(result),
+    reason,
+  });
+  if (!appended) {
+    logger.warn('loCorrectGame: operator override confirm row was not appended (audit gap)', {
+      matchId,
+      gameId,
+    });
+  }
+}
+
+/** Parameters for {@link loRestoreGame}. */
+export interface LoRestoreGameParams {
+  matchId: string;
+  gameId: string;
+  loMemberId: string;
+  /** The pre-vacate result the UI held, to put back. */
+  snapshot: LoGameResult;
+}
+
+/**
+ * Undo a vacate: re-write the pre-vacate result to `match_games` and restore
+ * officiality (both slots → the operator), then recompute. Does NOT re-complete
+ * the match (completion stays explicit) and appends no log row — the vacate
+ * marker stays in the chain; this just un-wipes the columns.
+ *
+ * @throws if the update fails.
+ */
+export async function loRestoreGame(params: LoRestoreGameParams): Promise<void> {
+  const { matchId, gameId, loMemberId, snapshot } = params;
+  const { error } = await supabase
+    .from('match_games')
+    .update({
+      winner_team_id: snapshot.winnerTeamId,
+      winner_player_id: snapshot.winnerPlayerId,
+      break_and_run: snapshot.breakAndRun ?? false,
+      golden_break: snapshot.goldenBreak ?? false,
+      break_fouled: snapshot.breakFouled ?? false,
+      runout: snapshot.runout ?? false,
+      win_by_forfeit: snapshot.winByForfeit ?? false,
+      winner_value: snapshot.winnerValue ?? null,
+      loser_value: snapshot.loserValue ?? null,
+      confirmed_by_home: loMemberId,
+      confirmed_by_away: loMemberId,
+    })
+    .eq('id', gameId);
+  if (error) {
+    throw new Error(`Failed to restore game: ${error.message}`);
+  }
+  await updateMatchRunningTotals(matchId);
 }

@@ -88,6 +88,13 @@ export interface AppendConfirmationParams {
    * officiality or counting.
    */
   autoConfirmed?: boolean;
+  /**
+   * Optional ~255-char operator note explaining a correction (LO match review).
+   * Null on normal vouch rows; set on an operator override row to document why a
+   * team-confirmed result was overturned. Surfaced only in the operator-facing
+   * confirmer-audit.
+   */
+  reason?: string | null;
 }
 
 /** Row shape we read back when checking the member's latest vouch. */
@@ -150,6 +157,7 @@ export async function appendConfirmation(
     action = 'confirm',
     isInitiator,
     autoConfirmed = false,
+    reason = null,
   } = params;
 
   try {
@@ -202,6 +210,7 @@ export async function appendConfirmation(
       action,
       is_initiator: isInitiator,
       auto_confirmed: autoConfirmed,
+      reason,
       winner_team_id: result.winnerTeamId,
       winner_player_id: result.winnerPlayerId,
       break_and_run: result.breakAndRun,

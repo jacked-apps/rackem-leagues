@@ -267,7 +267,7 @@ tie-safe re-finalize so a reopened match is never stranded.
 **Verification:** A completed match can reopen, re-finalize, or restore; an abandoned
 reopen is recoverable; a tie never strands the match.
 
-- [ ] **Unit 3: Solo operator vacate + override write**
+- [x] **Unit 3: Solo operator vacate + override write** — DONE (`appendConfirmation` gains a `reason?` param + insert; `loVacateGame` / `loCorrectGame` / `loRestoreGame` in `loManualScoring.ts`; 4 tests). Vacate appends the marker (asserts success — load-bearing) then wipes; `loCorrectGame` is a sibling of `loScoreGame` (keeps it log-free) that appends the operator confirm row + reason; restore re-writes the snapshot, no log row.
 
 **Goal:** `loVacateGame` (solo) + the operator override re-score that appends to the
 log with the optional reason.
