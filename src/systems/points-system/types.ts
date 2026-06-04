@@ -374,6 +374,24 @@ export interface AllocatorFormulaOperation {
   readonly name: string;
 
   /**
+   * Declarative shape of `operationArgs` this operation expects.
+   *
+   * Drives two things:
+   *   1. **Validator hardening (Unit 3).** `validatePerGameAllocator` runs
+   *      the row's `operationArgs` through this shape. Missing required args
+   *      and type mismatches are rejected at load time (the room's read-time
+   *      guard) instead of throwing at compute time during a real match.
+   *   2. **Workshop UI (Unit 6).** The editor renders an input per declared
+   *      arg, typed by `kind`. New operations get UI support for free as
+   *      long as their args use already-supported kinds.
+   *
+   * Optional for forward-compat: operations registered before Unit 3 may
+   * omit it; in that case the validator only checks that the operation
+   * name resolves (legacy behavior).
+   */
+  readonly argsShape?: Readonly<Record<string, ArgSpec>>;
+
+  /**
    * Pure compute function. Takes the operation's args, the mechanism-internal
    * ctx (winner/loser/thisSide for THIS game), and the cumulative state bag
    * (read-only — formulas don't mutate state). Returns a number.
@@ -383,6 +401,32 @@ export interface AllocatorFormulaOperation {
     ctx: FormulaContext,
     state: Readonly<MatchStateBag>,
   ) => number;
+}
+
+/**
+ * Argument kind — what shape of value the workshop accepts for this arg and
+ * the validator checks against the stored value.
+ *
+ * - `'number'`          — a finite numeric value (e.g. the 7 in `17 − loser`).
+ * - `'state_var_name'`  — a string naming a state-bag variable to read
+ *                          (e.g. `'pointsPerGame'`). The validator only
+ *                          checks the string type; whether the bag actually
+ *                          has that name is a runtime concern (open namespace
+ *                          per [[feedback_state_bag_starts_empty]]).
+ * - `'side_name'`       — exactly `'winner'` or `'loser'` (e.g. the
+ *                          `other_side` arg in `add_complement_of_other_side`).
+ *
+ * New kinds can be added as new operations need them. The validator's
+ * coverage extends automatically.
+ */
+export type ArgKind = 'number' | 'state_var_name' | 'side_name';
+
+/**
+ * One arg entry in an operation's `argsShape`.
+ */
+export interface ArgSpec {
+  readonly kind: ArgKind;
+  readonly required: boolean;
 }
 
 // ============================================================================

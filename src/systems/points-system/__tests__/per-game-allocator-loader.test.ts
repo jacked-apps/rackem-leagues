@@ -268,13 +268,58 @@ describe('loadPerGameAllocator — validator rejection', () => {
 });
 
 // ============================================================================
-// Args-shape validation (Unit 3) — enable once the tightened validator lands
+// Args-shape validation (Unit 3) — the validator now checks operationArgs
+// against each registered op's declared argsShape at load time.
 // ============================================================================
 
-describe.skip('loadPerGameAllocator — args-shape (TODO Unit 3)', () => {
+describe('loadPerGameAllocator — args-shape (Unit 3)', () => {
   it("rejects formula args with the wrong type (e.g. max: 'seven')", async () => {
-    // Pending Unit 3's argsShape declarations on each AllocatorFormulaOperation
-    // + the validator extension. Today the loader's validator only checks
-    // operationKind resolves; args content is unchecked until then.
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    mockMaybeSingle.mockResolvedValue({
+      data: {
+        id: ID,
+        name: 'Broken 17-Point',
+        winner_side: {
+          base: 10,
+          formula: {
+            operationKind: 'add_complement_of_other_side',
+            operationArgs: { max: 'seven', other_side: 'loser' },
+          },
+        },
+        loser_side: {
+          base: { min: 0, max: 7, label: 'Balls pocketed by loser' },
+          formula: null,
+        },
+      },
+      error: null,
+    });
+    const result = await loadPerGameAllocator(ID);
+    expect(result).toBeNull();
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('validation rejected'),
+    );
+    warnSpy.mockRestore();
+  });
+
+  it('rejects a missing required formula arg', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    mockMaybeSingle.mockResolvedValue({
+      data: {
+        id: ID,
+        name: 'Missing-Max',
+        winner_side: {
+          base: 10,
+          formula: {
+            operationKind: 'add_complement_of_other_side',
+            operationArgs: { other_side: 'loser' }, // max missing
+          },
+        },
+        loser_side: { base: 0, formula: null },
+      },
+      error: null,
+    });
+    const result = await loadPerGameAllocator(ID);
+    expect(result).toBeNull();
+    warnSpy.mockRestore();
   });
 });

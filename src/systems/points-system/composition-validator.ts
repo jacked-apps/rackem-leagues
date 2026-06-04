@@ -27,6 +27,7 @@
 
 import { getAllocatorFormulaOperation } from './allocator-formula-registry';
 import type {
+  ArgKind,
   Condition,
   Expression,
   PerGameAllocator,
@@ -84,7 +85,14 @@ function triggerVarUsage(trigger: Trigger): TriggerVarUsage {
 
 /**
  * Validate that a per-game allocator side's formula (if present) references a
- * registered allocator-formula operation. Throws on unresolved reference.
+ * registered allocator-formula operation AND its `operationArgs` satisfy the
+ * operation's declared `argsShape`. Throws on the first violation.
+ *
+ * Args-shape checking (Unit 3): when the operation declares an `argsShape`,
+ * each required arg must be present and have a value matching its `kind`.
+ * Operations registered before Unit 3 may omit `argsShape`; in that case
+ * the validator skips the args check (legacy behavior) so the registry is
+ * forward-compat.
  *
  * Takes a `compositionName` (string) rather than the full PointsSystem so the
  * helper is reusable from both `validatePointsSystem` (full composition) and
@@ -96,12 +104,63 @@ function validateAllocatorSide(
   sideName: 'winner' | 'loser',
 ): void {
   if (!side.formula) return;
-  const operation = getAllocatorFormulaOperation(side.formula.operationKind);
+  const { operationKind, operationArgs } = side.formula;
+  const operation = getAllocatorFormulaOperation(operationKind);
   if (operation === undefined) {
     throw new Error(
-      `Composition "${compositionName}": allocator ${sideName} side references unknown formula operation "${side.formula.operationKind}". Ensure the operation file is imported (operations auto-register on import).`,
+      `Composition "${compositionName}": allocator ${sideName} side references unknown formula operation "${operationKind}". Ensure the operation file is imported (operations auto-register on import).`,
     );
   }
+  if (operation.argsShape) {
+    for (const [argName, spec] of Object.entries(operation.argsShape)) {
+      const value = operationArgs[argName];
+      const present = argName in operationArgs && value !== undefined;
+      if (!present) {
+        if (spec.required) {
+          throw new Error(
+            `Composition "${compositionName}": allocator ${sideName} side formula "${operationKind}" is missing required arg "${argName}" (expected ${spec.kind}).`,
+          );
+        }
+        continue; // optional + absent — fine.
+      }
+      if (!matchesArgKind(value, spec.kind)) {
+        throw new Error(
+          `Composition "${compositionName}": allocator ${sideName} side formula "${operationKind}" arg "${argName}" has wrong type — expected ${spec.kind}, got ${describeRuntimeType(value)}.`,
+        );
+      }
+    }
+  }
+}
+
+/**
+ * Type-check a single arg value against its declared kind. The validator's
+ * coverage extends automatically as new kinds are added.
+ */
+function matchesArgKind(value: unknown, kind: ArgKind): boolean {
+  switch (kind) {
+    case 'number':
+      return typeof value === 'number' && Number.isFinite(value);
+    case 'state_var_name':
+      // The bag's namespace is open ([[feedback_state_bag_starts_empty]]) so
+      // we only check that the name is a non-empty string. Whether the bag
+      // actually has that name is a runtime concern.
+      return typeof value === 'string' && value.length > 0;
+    case 'side_name':
+      return value === 'winner' || value === 'loser';
+  }
+}
+
+/**
+ * Short, human-readable description of an unknown value's runtime shape.
+ * Used in validator error messages so the LO can see what they wrote.
+ */
+function describeRuntimeType(value: unknown): string {
+  if (value === null) return 'null';
+  if (Array.isArray(value)) return 'array';
+  const t = typeof value;
+  if (t === 'number') return Number.isFinite(value) ? 'number' : 'non-finite number';
+  if (t === 'string') return `string (${JSON.stringify(value)})`;
+  return t;
 }
 
 /**

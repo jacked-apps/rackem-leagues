@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-06-04 (Per-Game Allocator Room **Unit 2 SHIPPED**: `src/systems/points-system/per-game-allocator-loader.ts` (DB row → in-memory PerGameAllocator, never-throw, four failure paths each catch + warn + return null) and `src/systems/points-system/__tests__/per-game-allocator-loader.test.ts` (11 passing, 1 skipped TODO for Unit 3 args-shape). Refactored `composition-validator.ts` to expose `validatePerGameAllocator` for the loader. Branch `feat/per-game-allocator-workshop`.)
+> **Last Updated**: 2026-06-04 (Per-Game Allocator Room **Unit 3 SHIPPED**: `AllocatorFormulaOperation.argsShape` declarative shape contract added to types.ts; existing recipes (`add_complement_of_other_side`, `state_diff_times_constant`) declared their shapes; new R11 recipe `read_state_var` registered (reads any state-bag value by name; first-class state-bag affordance for the workshop's UI); `validatePerGameAllocator` now checks operationArgs against argsShape (missing required arg, type mismatch, side_name value) — this is the room's read-time contract enforcement. 28 new tests added across composition-validator-args, read-state-var, and the re-enabled loader args-shape test, 0 regressions across the 2,221-test points-system suite. Branch `feat/per-game-allocator-workshop`.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
