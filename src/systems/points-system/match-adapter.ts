@@ -61,7 +61,7 @@ import { evaluatePointsSystem, type RuntimeGameRecord } from './runtime';
 import { buildPoints3ManComposition } from './compositions/points-3-man';
 import { buildPercent5ManComposition } from './compositions/percent-5-man';
 import { buildTenPointComposition } from './compositions/10-point';
-import type { PointsSystem, ThresholdInputs } from './types';
+import type { PerGameAllocator, PointsSystem, ThresholdInputs } from './types';
 
 /**
  * Minimal `match_games` row shape this adapter consumes — identical to the
@@ -128,6 +128,19 @@ export interface ComputeMatchRunningTotalsViaEngineArgs {
   homeThresholds: HandicapThresholds;
   /** Away side's snapshotted thresholds — only `games_to_tie` is consumed. */
   awayThresholds: HandicapThresholds;
+  /**
+   * Per-Game Allocator Room override (Unit 5). When non-null, the prepackaged
+   * composition's `perGameAllocator` slot is REPLACED with this object after
+   * `buildComposition` builds the prepackaged shape. Triggers and thresholds
+   * stay untouched.
+   *
+   * Sourced from the match snapshot's `per_game_allocator` field, populated
+   * at snapshot-write time by the loader. Live scoring never re-fetches the
+   * row — the frozen object honors R9 (historical replay stability).
+   *
+   * `null` / `undefined` = no override, prepackaged composition unchanged.
+   */
+  perGameAllocatorOverride?: PerGameAllocator | null;
 }
 
 /** The four running totals — identical shape to the legacy result. */
@@ -169,6 +182,30 @@ function compositionAwardsStartCredit(pointsCalculator: string): boolean {
  *    `loser.{min,max,label}` → `loser_{min,max,label}` (counter kind).
  */
 function buildComposition(
+  pointsCalculator: string,
+  params: Record<string, unknown>,
+  perGameAllocatorOverride?: PerGameAllocator | null,
+): PointsSystem | null {
+  const prepackaged = buildPrepackagedComposition(pointsCalculator, params);
+  if (prepackaged === null) return null;
+  if (!perGameAllocatorOverride) return prepackaged;
+  // Per-Game Allocator Room (Unit 5): replace ONLY the allocator slot. Triggers
+  // and thresholds stay as the prepackaged composition declared them. Suffix
+  // the composition name so logs distinguish a swapped composition from its
+  // prepackaged peer.
+  return {
+    ...prepackaged,
+    name: `${prepackaged.name}__custom_${perGameAllocatorOverride.name}`,
+    perGameAllocator: perGameAllocatorOverride,
+  };
+}
+
+/**
+ * Build the prepackaged composition for a calculator name — the pre-Unit-5
+ * behavior, untouched. The room's swap (`buildComposition`) wraps this and
+ * replaces the allocator slot when an override is passed.
+ */
+function buildPrepackagedComposition(
   pointsCalculator: string,
   params: Record<string, unknown>,
 ): PointsSystem | null {
@@ -312,6 +349,7 @@ export function computeMatchRunningTotalsViaEngine(
     thresholdInputs,
     homeThresholds,
     awayThresholds,
+    perGameAllocatorOverride,
   } = args;
 
   // 1. Count games exactly the way legacy does.
@@ -335,7 +373,11 @@ export function computeMatchRunningTotalsViaEngine(
   const composition =
     pointsCalculator === null || pointsCalculator === 'none'
       ? null
-      : buildComposition(pointsCalculator, pointsCalculatorParams);
+      : buildComposition(
+          pointsCalculator,
+          pointsCalculatorParams,
+          perGameAllocatorOverride,
+        );
 
   if (composition === null) {
     return {

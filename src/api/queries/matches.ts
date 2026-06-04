@@ -782,7 +782,7 @@ export async function populateMatchSnapshotIfNeeded(
     supabase
       .from('resolved_league_preferences')
       .select(
-        'lineup_size, max_roster_size, game_generation, pairing_format, race_length, points_calculator, points_calculator_params, win_condition, handicap_type, mechanism, threshold_chart_id, standings_sort, tiebreaker_trigger, tiebreaker_format',
+        'lineup_size, max_roster_size, game_generation, pairing_format, race_length, points_calculator, points_calculator_params, win_condition, handicap_type, mechanism, threshold_chart_id, standings_sort, tiebreaker_trigger, tiebreaker_format, per_game_allocator_id',
       )
       .eq('league_id', leagueId)
       .single(),
@@ -799,6 +799,19 @@ export async function populateMatchSnapshotIfNeeded(
 
   const resolved = resolvedRes.data;
   const overrides = leagueRes.data?.system_overrides ?? {};
+
+  // Per-Game Allocator Room (Unit 5): if the league has picked a saved
+  // variation, load it NOW and embed the resolved object in the snapshot.
+  // Live scoring reads the embedded object directly — it never re-fetches
+  // by id — so editing the variation row after this snapshot is written
+  // cannot retroactively change this match's scoring (R9).
+  let perGameAllocator = null;
+  if (resolved.per_game_allocator_id) {
+    const { loadPerGameAllocator } = await import(
+      '@/systems/points-system/per-game-allocator-loader'
+    );
+    perGameAllocator = await loadPerGameAllocator(resolved.per_game_allocator_id);
+  }
 
   // Build full ResolvedSystemConfig shape. Field order matches the type
   // definition in src/types/resolvedSystemConfig.ts for easy comparison.
@@ -819,6 +832,8 @@ export async function populateMatchSnapshotIfNeeded(
     tiebreaker_format: resolved.tiebreaker_format,
     overrides,
     snapshot_at: new Date().toISOString(),
+    per_game_allocator_id: resolved.per_game_allocator_id ?? null,
+    per_game_allocator: perGameAllocator,
   };
 
   // Conditional write — only set if still null (guards against simultaneous first-score races)
@@ -900,12 +915,22 @@ export async function updateMatchRunningTotals(matchId: string): Promise<void> {
         points_calculator: string | null;
         points_calculator_params: Record<string, unknown>;
         win_condition?: 'games' | 'points';
+        per_game_allocator?: unknown;
       }
     | null;
 
   let pointsCalculator: string | null;
   let pointsCalculatorParams: Record<string, unknown>;
   let winCondition: 'games' | 'points' = 'games';
+  // Per-Game Allocator Room (Unit 5): the snapshot may embed a resolved
+  // variation. Read it as-is — the snapshot writer already validated it via
+  // the loader. Snapshots written before Unit 5 don't have the field and the
+  // override is left null (legacy behavior preserved).
+  const perGameAllocatorOverride =
+    (snapshot?.per_game_allocator as
+      | import('@/systems/points-system/types').PerGameAllocator
+      | null
+      | undefined) ?? null;
 
   if (snapshot && 'points_calculator' in snapshot) {
     pointsCalculator = snapshot.points_calculator ?? null;
@@ -1008,6 +1033,7 @@ export async function updateMatchRunningTotals(matchId: string): Promise<void> {
       pointsCalculator,
       pointsCalculatorParams,
       winCondition,
+      perGameAllocatorOverride,
     });
     if (engineTotals) {
       totals = engineTotals;

@@ -25,7 +25,7 @@
 
 import { supabase } from '@/supabaseClient';
 import { computeMatchRunningTotalsViaEngine } from '@/systems/points-system/match-adapter';
-import type { ThresholdInputs } from '@/systems/points-system/types';
+import type { PerGameAllocator, ThresholdInputs } from '@/systems/points-system/types';
 import type { HandicapThresholds } from '@/types/match';
 import type {
   MatchRunningTotals,
@@ -45,6 +45,13 @@ export interface EngineRunningTotalsArgs {
   pointsCalculator: string | null;
   pointsCalculatorParams: Record<string, unknown>;
   winCondition: 'games' | 'points';
+  /**
+   * Per-Game Allocator Room override (Unit 5). Sourced from the match
+   * snapshot's `per_game_allocator` field. When non-null, the prepackaged
+   * composition's allocator slot is replaced before evaluation. Null or
+   * undefined = today's behavior.
+   */
+  perGameAllocatorOverride?: PerGameAllocator | null;
 }
 
 /** A single locked-lineup row, narrowed to the handicap fields we read. */
@@ -150,6 +157,7 @@ export async function computeEngineRunningTotals(
       thresholdInputs,
       homeThresholds: args.homeThresholds,
       awayThresholds: args.awayThresholds,
+      perGameAllocatorOverride: args.perGameAllocatorOverride,
     });
   } catch (e) {
     // Never surface — caller falls back to legacy so the write still happens.
