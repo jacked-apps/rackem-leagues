@@ -19,10 +19,14 @@ function renderLine(a: ConfirmerAudit) {
 }
 
 describe('ConfirmerLine', () => {
-  it('shows the official confirmer for each side', () => {
+  it('shows a "Confirmed by" label and each side as Home/Away: Player (Team)', () => {
     renderLine(audit());
-    expect(screen.getByText('Ace')).toBeInTheDocument();
-    expect(screen.getByText('Dee')).toBeInTheDocument();
+    const line = screen.getByTestId('confirmer-line');
+    expect(line).toHaveTextContent('Confirmed by');
+    expect(line).toHaveTextContent('Home:');
+    expect(line).toHaveTextContent('Ace (Sharks)');
+    expect(line).toHaveTextContent('Away:');
+    expect(line).toHaveTextContent('Dee (Jets)');
   });
 
   it('shows no "+N others" chip when there are none (no-log / +0 game)', () => {
@@ -47,6 +51,6 @@ describe('ConfirmerLine', () => {
 
   it('shows "Unconfirmed" when a side has no official', () => {
     renderLine(audit({ home: { official: null, others: [] } }));
-    expect(screen.getByText('Unconfirmed')).toBeInTheDocument();
+    expect(screen.getByTestId('confirmer-line')).toHaveTextContent('Unconfirmed');
   });
 });

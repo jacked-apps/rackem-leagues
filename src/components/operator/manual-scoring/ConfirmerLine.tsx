@@ -22,13 +22,23 @@ export interface ConfirmerLineProps {
   awayTeamName: string;
 }
 
-/** One side's "Label — Official  [+N others]" row. */
-function SideRow({ label, side }: { label: string; side: SideAudit }) {
+/** One side's "Home: Player (Team)  [+N others]" row. */
+function SideRow({
+  sideLabel,
+  teamName,
+  side,
+}: {
+  sideLabel: string;
+  teamName: string;
+  side: SideAudit;
+}) {
   const officialName = side.official?.name ?? 'Unconfirmed';
   return (
     <div className="flex items-center gap-2 text-xs">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium">{officialName}</span>
+      <span className="w-12 shrink-0 text-muted-foreground">{sideLabel}:</span>
+      <span className="font-medium">
+        {officialName} <span className="font-normal text-muted-foreground">({teamName})</span>
+      </span>
       {side.others.length > 0 && (
         <Popover>
           <PopoverTrigger asChild>
@@ -58,12 +68,15 @@ function SideRow({ label, side }: { label: string; side: SideAudit }) {
   );
 }
 
-/** The per-game confirmer audit (home + away rows). */
+/** The per-game confirmer audit: a "Confirmed by" label + a home + away row. */
 export function ConfirmerLine({ audit, homeTeamName, awayTeamName }: ConfirmerLineProps) {
   return (
     <div className="space-y-0.5" data-testid="confirmer-line">
-      <SideRow label={homeTeamName} side={audit.home} />
-      <SideRow label={awayTeamName} side={audit.away} />
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        Confirmed by
+      </p>
+      <SideRow sideLabel="Home" teamName={homeTeamName} side={audit.home} />
+      <SideRow sideLabel="Away" teamName={awayTeamName} side={audit.away} />
     </div>
   );
 }
