@@ -239,14 +239,17 @@ VALUES (
   '{"base": {"min": 0, "max": 7, "label": "Balls pocketed by loser"}, "formula": null}'::jsonb
 );
 
--- 17-Point: winner 10 + (7 - loser) via the add_complement_of_other_side formula; loser scorer-input 0-7.
+-- 17-Point: winner = this_side_value + (7 - other_side_value), so winner=10 + (7 - loser_value),
+-- and per-game total is always 17. Stored as an evaluate_expression so the workshop's click-to-build
+-- editor can render and edit a clone faithfully (no more "copy comes back empty"). The expression
+-- tree below mirrors `(this_side_value + (7 - other_side_value))`.
 INSERT INTO "public"."per_game_allocators" ("name", "description", "scope", "author_id", "winner_side", "loser_side")
 VALUES (
   '17-Point — Official',
   'CSI 17-Point Scoring System per-game allocation. Winner gets 10 + (7 − loser), so per-game total is always 17. Loser still pockets balls; their effort feeds the winner''s formula.',
   'official',
   NULL,
-  '{"base": 10, "formula": {"operationKind": "add_complement_of_other_side", "operationArgs": {"max": 7, "other_side": "loser"}}}'::jsonb,
+  '{"base": 10, "formula": {"operationKind": "evaluate_expression", "operationArgs": {"expression": {"kind": "op", "op": "+", "left": {"kind": "var", "name": "this_side_value"}, "right": {"kind": "op", "op": "-", "left": {"kind": "const", "value": 7}, "right": {"kind": "var", "name": "other_side_value"}}}}}}'::jsonb,
   '{"base": {"min": 0, "max": 7, "label": "Balls pocketed by loser"}, "formula": null}'::jsonb
 );
 

@@ -20,7 +20,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { executeSql, closePostgresPool, createTestClient } from '@/test/dbTestUtils';
 // Side-effect: register the formula op the 17-Point seeded official references.
-import '@/systems/points-system/allocator-formula-operations/add-complement-of-other-side';
+import '@/systems/points-system/allocator-formula-operations/evaluate-expression';
 
 // The loader imports supabase from `@/supabaseClient`, which reads
 // `VITE_SUPABASE_URL` from import.meta.env — not populated in the test
@@ -84,11 +84,21 @@ describe('17-Point — full pipeline smoke', () => {
     const allocator = await loadPerGameAllocator(seventeenPointId);
     expect(allocator).not.toBeNull();
     expect(allocator?.winner.formula?.operationKind).toBe(
-      'add_complement_of_other_side',
+      'evaluate_expression',
     );
+    // The expression tree encodes `(this_side_value + (7 - other_side_value))`
     expect(allocator?.winner.formula?.operationArgs).toEqual({
-      max: 7,
-      other_side: 'loser',
+      expression: {
+        kind: 'op',
+        op: '+',
+        left: { kind: 'var', name: 'this_side_value' },
+        right: {
+          kind: 'op',
+          op: '-',
+          left: { kind: 'const', value: 7 },
+          right: { kind: 'var', name: 'other_side_value' },
+        },
+      },
     });
     expect(allocator?.loser.base).toEqual({
       min: 0,

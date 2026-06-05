@@ -40,6 +40,22 @@ export interface AvailableDatum {
  * actually won THIS game and which side this formula computes for.
  */
 export const AVAILABLE_DATA: readonly AvailableDatum[] = [
+  // Per-game role values — what the scorer entered or the side's base
+  // resolved to THIS game. The 17-Point case uses other_side_value to
+  // reach the loser's pocketed-balls count from the winner-side formula.
+  {
+    name: 'this_side_value',
+    label: "This Side's Value This Game",
+    description:
+      "The resolved base value (fixed or scorer-entered) for this side in THIS game, before the formula runs.",
+  },
+  {
+    name: 'other_side_value',
+    label: "Other Side's Value This Game",
+    description:
+      "The resolved base value for the OTHER side in this game. 17-Point uses this to reference the loser's pocketed balls from the winner side.",
+  },
+  // Running totals — side-agnostic via the same this/other resolution.
   {
     name: 'this_side_wins',
     label: "This Side's Wins So Far",
@@ -64,6 +80,7 @@ export const AVAILABLE_DATA: readonly AvailableDatum[] = [
     description:
       'Running points total for the opposite team in this match.',
   },
+  // Match-level (game-agnostic).
   {
     name: 'games_played',
     label: 'Games Played So Far',

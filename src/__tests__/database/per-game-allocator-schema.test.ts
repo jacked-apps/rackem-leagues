@@ -61,16 +61,26 @@ describe('per_game_allocators — schema (no seed required)', () => {
     expect(loser.formula).toBeNull();
   });
 
-  it("17-Point official's winner side carries the add_complement_of_other_side formula", async () => {
+  it("17-Point official's winner side carries the evaluate_expression formula", async () => {
     const rows = await executeSql(
       `SELECT winner_side FROM per_game_allocators WHERE name = '17-Point — Official'`,
     );
     expect(rows).toHaveLength(1);
     const winner = rows[0].winner_side;
     expect(winner.base).toBe(10);
-    expect(winner.formula).toEqual({
-      operationKind: 'add_complement_of_other_side',
-      operationArgs: { max: 7, other_side: 'loser' },
+    // The expression encodes `(this_side_value + (7 - other_side_value))`
+    // which the engine resolves to `winner_base + (7 - loser_value)`.
+    expect(winner.formula.operationKind).toBe('evaluate_expression');
+    expect(winner.formula.operationArgs.expression).toEqual({
+      kind: 'op',
+      op: '+',
+      left: { kind: 'var', name: 'this_side_value' },
+      right: {
+        kind: 'op',
+        op: '-',
+        left: { kind: 'const', value: 7 },
+        right: { kind: 'var', name: 'other_side_value' },
+      },
     });
   });
 
