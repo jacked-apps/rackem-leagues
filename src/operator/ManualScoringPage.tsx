@@ -169,7 +169,10 @@ export default function ManualScoringPage() {
     );
   }
 
-  if (status === 'in_progress') {
+  // A manual entry the operator set up (lineups locked) but hasn't finalized —
+  // status 'updating'. This is the score-the-games surface; it's also where a
+  // walked-away entry resumes from the picker.
+  if (status === 'updating') {
     if (!prefs || !loMemberId) return message('Loading…');
     return (
       <div>

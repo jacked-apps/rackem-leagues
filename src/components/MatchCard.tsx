@@ -51,6 +51,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
   // Status badge styling
   const statusColors = {
     scheduled: 'bg-muted text-foreground',
+    updating: 'bg-amber-100 text-amber-700',
     in_progress: 'bg-blue-100 text-blue-700',
     awaiting_verification: 'bg-purple-100 text-purple-700',
     completed: 'bg-green-100 text-green-700',

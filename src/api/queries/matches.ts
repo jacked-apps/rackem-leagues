@@ -46,6 +46,7 @@ export interface WeekSchedule {
  */
 export type MatchStatus =
   | 'scheduled'
+  | 'updating'
   | 'in_progress'
   | 'completed'
   | 'forfeited'

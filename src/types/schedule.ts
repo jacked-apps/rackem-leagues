@@ -12,6 +12,7 @@ import type { SeasonWeek } from './season';
  */
 export type MatchStatus =
   | 'scheduled'             // Not yet played
+  | 'updating'              // LO is hand-entering this match (manual scoring); off the players' live surfaces
   | 'in_progress'           // Currently being played
   | 'awaiting_verification' // Scored but needs both teams to verify
   | 'completed'             // Finished and verified

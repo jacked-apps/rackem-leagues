@@ -31,6 +31,10 @@ describe('isMatchEligibleForManualScoring', () => {
     expect(isMatchEligibleForManualScoring(match({}))).toBe(true);
   });
 
+  it('is true for an updating match (a manual entry to resume)', () => {
+    expect(isMatchEligibleForManualScoring(match({ status: 'updating' as never }))).toBe(true);
+  });
+
   it.each(['in_progress', 'awaiting_verification', 'completed', 'forfeited', 'postponed'])(
     'is false for a %s match',
     (status) => {
@@ -88,6 +92,7 @@ describe('isMatchEligibleForReview', () => {
 describe('manualScoringStatusLabel', () => {
   it('maps known statuses to readable labels', () => {
     expect(manualScoringStatusLabel('scheduled')).toBe('Scheduled');
+    expect(manualScoringStatusLabel('updating')).toBe('Updating');
     expect(manualScoringStatusLabel('in_progress')).toBe('In Progress');
     expect(manualScoringStatusLabel('completed')).toBe('Completed');
   });

@@ -86,6 +86,15 @@ describe('ManualScoringMatchPicker', () => {
     expect(screen.getByText('SCORING PAGE')).toBeInTheDocument();
   });
 
+  it('resumes an updating match (LO walked away mid-entry) into the scoring page', () => {
+    mockSchedule([mkMatch('m1', 'updating')]);
+    renderPicker();
+
+    expect(screen.getByText('Updating')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('eligible-match'));
+    expect(screen.getByText('SCORING PAGE')).toBeInTheDocument();
+  });
+
   it('navigates to the review page when a finished match is clicked', () => {
     mockSchedule([mkMatch('m1', 'completed')]);
     renderPicker();

@@ -256,6 +256,19 @@ export async function loSetupMatch(params: LoSetupMatchParams): Promise<void> {
       error: err instanceof Error ? err.message : String(err),
     });
   }
+
+  // 7. Move into the LO-entry state. prep_match (shared with the live flow) flips
+  // status to 'in_progress'; we re-stamp it to 'updating' so this match stays OFF
+  // the players' live-scoring surfaces and reads as "Updating" until the operator
+  // finalizes. (Guarded on the prep'd state so a stray double-call can't reorder.)
+  const { error: statusErr } = await supabase
+    .from('matches')
+    .update({ status: 'updating' })
+    .eq('id', matchId)
+    .eq('status', 'in_progress');
+  if (statusErr) {
+    throw new Error(`Failed to enter LO-updating state: ${statusErr.message}`);
+  }
 }
 
 /** The per-game result an operator enters (mirrors the live `gameData` extras). */
@@ -303,6 +316,13 @@ export interface LoFinalizeMatchParams {
  *
  * @throws if the match isn't in progress, or the game UPDATE fails.
  */
+/**
+ * Statuses in which the operator may write games / finalize: a fresh manual
+ * entry (`updating`) or a v2 correction on a reopened completed match
+ * (`in_progress`). Both mean "the operator is actively editing this match."
+ */
+const LO_EDITABLE_STATUSES = ['updating', 'in_progress'] as const;
+
 export async function loScoreGame(params: LoScoreGameParams): Promise<void> {
   const { matchId, gameId, loMemberId, result } = params;
 
@@ -316,7 +336,7 @@ export async function loScoreGame(params: LoScoreGameParams): Promise<void> {
     throw new Error(`Failed to read match: ${matchErr?.message ?? 'not found'}`);
   }
   const status = (match as unknown as { status: string }).status;
-  if (status !== 'in_progress') {
+  if (!LO_EDITABLE_STATUSES.includes(status as (typeof LO_EDITABLE_STATUSES)[number])) {
     throw new Error(
       `Cannot score a game on a match with status '${status}'. ` +
         'The match must be set up and not yet finalized.'
@@ -397,7 +417,7 @@ export async function loFinalizeMatch(
     home_to_tie: number | null;
     away_to_tie: number | null;
   };
-  if (m.status !== 'in_progress') {
+  if (!LO_EDITABLE_STATUSES.includes(m.status as (typeof LO_EDITABLE_STATUSES)[number])) {
     throw new Error(
       `Cannot finalize a match with status '${m.status}'. It must be set up and not already completed.`
     );

@@ -14,13 +14,19 @@
 import type { MatchWithDetails } from '@/types/schedule';
 
 /**
- * Can this match be manually scored in v1 (enter-from-blank)?
+ * Can this match be opened in the manual-scoring (enter/continue) surface?
  *
- * True only when the match is `scheduled` (nothing recorded yet) AND both sides
- * are real teams (not a BYE).
+ * True for a `scheduled` match (start fresh → Setup) OR an `updating` match (a
+ * manual entry the operator already set up but hasn't finalized → resume scoring),
+ * with two real teams (not a BYE). Both route to the same page, which dispatches
+ * on status. An `updating` match is what lets an operator walk away mid-entry and
+ * come back to it from the picker.
  */
 export function isMatchEligibleForManualScoring(match: MatchWithDetails): boolean {
-  return match.status === 'scheduled' && hasTwoRealTeams(match);
+  return (
+    (match.status === 'scheduled' || match.status === 'updating') &&
+    hasTwoRealTeams(match)
+  );
 }
 
 /**
@@ -52,6 +58,7 @@ function hasTwoRealTeams(match: MatchWithDetails): boolean {
 
 const STATUS_LABELS: Record<string, string> = {
   scheduled: 'Scheduled',
+  updating: 'Updating',
   in_progress: 'In Progress',
   awaiting_verification: 'Awaiting Verification',
   completed: 'Completed',
