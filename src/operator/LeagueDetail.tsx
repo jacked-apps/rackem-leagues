@@ -272,7 +272,7 @@ export const LeagueDetail: React.FC = () => {
         {/* Teams Section */}
         <TeamsCard leagueId={league.id} />
 
-        {/* Schedule Section */}
+        {/* Schedule Section (the "Score a Match" entry lives in ScheduleCard) */}
         <ScheduleCard leagueId={league.id} />
 
         {/* Playoffs Section */}

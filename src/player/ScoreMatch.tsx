@@ -24,8 +24,6 @@ import { supabase } from '@/supabaseClient';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
 import { ArrowLeft } from 'lucide-react';
 import { useCurrentMember } from '@/api/hooks';
 import { InfoButton } from '@/components/InfoButton';
@@ -48,14 +46,30 @@ import { EditGameDialog } from '@/components/scoring/EditGameDialog';
 import { UnifiedScoreboard } from '@/components/scoring/UnifiedScoreboard';
 import { TiebreakerScoreboard } from '@/components/scoring/TiebreakerScoreboard';
 import { GamesList } from '@/components/scoring/GamesList';
+import { DissentFlag } from '@/components/scoring/DissentFlag';
+import { DisputeBanner } from '@/components/scoring/DisputeBanner';
+import { DisputeDetailModal } from '@/components/scoring/DisputeDetailModal';
+import { PeekConfirmDialog } from '@/components/scoring/PeekConfirmDialog';
+import {
+  deriveDissents,
+  type GameForDissent,
+} from '@/utils/match/deriveDissents';
+import {
+  deriveDisputes,
+  type GameForDispute,
+} from '@/utils/match/deriveDisputes';
 import { TableNumberBar } from '@/components/scoring/TableNumberBar';
 import { ConnectionIndicator } from '@/components/match/ConnectionIndicator';
 import {
   decidePendingAction,
   buildConfirmationItem,
   buildVacateConfirmationItem,
+  buildPersonalConfirmContext,
 } from '@/utils/match/pendingConfirmations';
 import { queryKeys } from '@/api/queryKeys';
+import { useScoringParticipationModes } from '@/hooks/useScoringParticipationModes';
+import { useGameDisplayMode } from '@/hooks/useGameDisplayMode';
+import { ScoringSettingsMenu } from '@/components/scoring/ScoringSettingsMenu';
 import { getTeamStats, getPlayerStats as getPlayerStatsUtil } from '@/types';
 import { getCalculator } from '@/systems/calculators';
 import { logger } from '@/utils/logger';
@@ -69,11 +83,29 @@ function ScoreMatchBody() {
   const { data: member } = useCurrentMember();
   const memberId = member?.id;
 
-  // Auto-confirm setting (bypass confirmation modal)
-  const [autoConfirm, setAutoConfirm] = useState(false);
+  // Scoring participation modes (Auto-Confirm + I'm-Not-Scoring) with
+  // consequence-scaled persistence — see useScoringParticipationModes. Auto-
+  // Confirm survives a refresh but resets on leaving the page; I'm-Not-Scoring
+  // lasts the whole match. The two are mutually exclusive.
+  const { autoConfirm, setAutoConfirm, notScoring, setNotScoring } =
+    useScoringParticipationModes(matchId);
+
+  // Games-list column ordering (Break/Rack vs Home/Away), lifted here so both
+  // the list's header bar and the settings gear stay in sync. Global + forever
+  // (a pure display preference — see useGameDisplayMode).
+  const { displayMode, toggleDisplayMode } = useGameDisplayMode();
 
   // Verification state
   const [isVerifying, setIsVerifying] = useState(false);
+
+  // Many-eyes Amendment G: which disputed game (if any) is open in the
+  // detail modal. `null` = modal closed.
+  const [disputeDetailGameId, setDisputeDetailGameId] = useState<string | null>(null);
+
+  // Many-eyes Unit 6: which fully-confirmed game (if any) is open in the
+  // peek/confirm dialog. `null` = dialog closed. Triggered by tapping a
+  // confirmed-state player name in GamesList.
+  const [peekGameNumber, setPeekGameNumber] = useState<number | null>(null);
 
   // Ref to store mutations for use in real-time subscription
   // Holds the latest `mutations` object returned by useMatchScoringMutations
@@ -92,12 +124,34 @@ function ScoreMatchBody() {
   // once the data shows it no longer needs my confirmation (server caught up).
   const handledConfirmations = useRef<Set<number>>(new Set());
 
+  // Games this device has DISMISSED — tapped Cancel / the X / Escape on the
+  // confirm prompt without confirming or denying ("not sure / didn't witness").
+  // The scan below skips these so the prompt doesn't keep re-popping. Session-
+  // scoped on purpose (lowest-consequence setting — a dismiss is just "not now",
+  // not a vouch or a wipe): cleared per game once the data shows it no longer
+  // needs my action (so a later re-score re-arms a fresh prompt).
+  const dismissedConfirmations = useRef<Set<number>>(new Set());
+
+  // Scoring modal state — declared up here (rather than next to the other
+  // local UI state below) so Amendment H can pass it through useMatchScoring
+  // into useMatchRealtime's gameUpdateOptions. The realtime handler reads it
+  // to suppress the confirm-opponent prompt while the user's own initiator
+  // modal is open for the same game.
+  const [scoringGame, setScoringGame] = useState<{
+    gameNumber: number;
+    winnerTeamId: string;
+    winnerPlayerId: string;
+    winnerPlayerName: string;
+    winnerWasScheduledBreaker: boolean;
+  } | null>(null);
+
   // Use central scoring hook (replaces all manual data fetching)
   const {
     match,
     homeLineup,
     awayLineup,
     gameResults,
+    gameConfirmations,
     homeThresholds,
     awayThresholds,
     homeTeamRoster,
@@ -120,6 +174,16 @@ function ScoreMatchBody() {
     memberId,
     matchType: '3v3',
     autoConfirm,
+    // "I'm not scoring": forwarded so the realtime fast-path suppresses
+    // confirm/vacate modals too (the scan guard alone misses realtime-driven
+    // prompts).
+    notScoring,
+    // Amendment H: forward the open-initiator state so the realtime handler
+    // can suppress confirm-opponent queue entries for that game while the
+    // user is mid-fill (the user's submit will trigger Amendment D's
+    // race-handling — a stacked confirm modal would be redundant + UX-broken).
+    // Narrow to just the gameNumber the realtime handler reads.
+    scoringGame: scoringGame ? { gameNumber: scoringGame.gameNumber } : null,
   });
 
   // Get user's team roster from the hook (already fetched for both teams)
@@ -209,14 +273,8 @@ function ScoreMatchBody() {
     },
   });
 
-  // Scoring modal state
-  const [scoringGame, setScoringGame] = useState<{
-    gameNumber: number;
-    winnerTeamId: string;
-    winnerPlayerId: string;
-    winnerPlayerName: string;
-    winnerWasScheduledBreaker: boolean;
-  } | null>(null);
+  // (scoringGame state lives above useMatchScoring so Amendment H can thread
+  // it into the realtime handler — see declaration near the top of the body.)
   const [breakAndRun, setBreakAndRun] = useState(false);
   const [goldenBreak, setGoldenBreak] = useState(false);
   // Unit 11b: configurable scoring fields. All default false/null; Fargo
@@ -500,6 +558,66 @@ function ScoreMatchBody() {
   // Store mutations in ref for use in real-time subscription callback
   mutationsRef.current = mutations;
 
+  // Many-eyes Unit 4: pre-derive the per-person prompt context from
+  // gameConfirmations + my memberId. The scan reads it via a cheap Set/Map
+  // lookup per game (one pass over confirmations here, O(1) per game below).
+  // Staleness is in the SAFE direction: a stale confirmations cache only
+  // causes RE-prompts (the append's no-exact-dup guard absorbs them) — it
+  // can never LOSE a prompt, preserving Layer-1's "delay possible, loss
+  // impossible" guarantee on the data-derived handoff.
+  const personalCtx = useMemo(
+    () => buildPersonalConfirmContext(gameConfirmations, memberId ?? null),
+    [gameConfirmations, memberId]
+  );
+
+  // Many-eyes Unit 5: per-game dissents (a vouch differs from the official
+  // result). Pure derivation over the games + confirmations; the helper
+  // already scopes confirms to those newer than the latest 'vacate' marker
+  // so a vacate-and-rescore can't falsely flag pre-rescore agreers.
+  const dissents = useMemo(() => {
+    const gamesForDissent: GameForDissent[] = Array.from(gameResults.values()).map(
+      (g) => ({
+        game_id: g.id,
+        game_number: g.game_number,
+        hasWinner: !!g.winner_player_id,
+        winner_team_id: g.winner_team_id,
+        winner_player_id: g.winner_player_id,
+        break_and_run: g.break_and_run,
+        golden_break: g.golden_break,
+        break_fouled: g.break_fouled,
+        runout: g.runout,
+        win_by_forfeit: g.win_by_forfeit,
+        winner_value: g.winner_value,
+        loser_value: g.loser_value,
+      })
+    );
+    return deriveDissents(gamesForDissent, gameConfirmations);
+  }, [gameResults, gameConfirmations]);
+
+  // Show each flag only to the dissenter's TEAM (per brainstorm R8). My side is
+  // 'home' when my team id matches the match's home team. A dissent surfaces if
+  // any of its dissenters share my side.
+  const visibleDissents = useMemo(() => {
+    if (!match || !userTeamId) return [];
+    const mySide: 'home' | 'away' =
+      userTeamId === match.home_team_id ? 'home' : 'away';
+    return dissents.filter((d) => d.dissenters.some((diss) => diss.side === mySide));
+  }, [dissents, userTeamId, match]);
+
+  // Many-eyes Amendment F: cleared games where two initiators disagreed.
+  // Shown to EVERYONE (not filtered by side) — the integrity risk is high
+  // enough that all devices should see it, not just the dissenter's team.
+  const disputes = useMemo(() => {
+    const gamesForDispute: GameForDispute[] = Array.from(gameResults.values()).map(
+      (g) => ({
+        game_id: g.id,
+        game_number: g.game_number,
+        hasWinner: !!g.winner_player_id,
+      })
+    );
+    return deriveDisputes(gamesForDispute, gameConfirmations);
+  }, [gameResults, gameConfirmations]);
+
   // ── State-derived confirmation + vacate handoff ─────────────────────────
   // Neither prompt may depend on catching a live realtime message. On every
   // games change (initial load, realtime tick, catch-up refetch, or the
@@ -507,8 +625,10 @@ function ScoreMatchBody() {
   // the right prompt — so a dropped/missed event (StrictMode remount, socket
   // blip, refresh) can delay the prompt by a few seconds but can never lose it.
   // Two kinds of pending action, both derived from the row:
-  //   • the opponent scored a game I haven't confirmed  → confirm prompt
-  //   • the opponent asked to vacate (undo) a game        → vacate prompt
+  //   • the opponent scored a game I haven't (PERSONALLY) confirmed → confirm prompt
+  //     (Phase 2 per-person: each confirming-side member is prompted until
+  //     they personally vouch, so several can tap to confirm — many-eyes)
+  //   • the opponent asked to vacate (undo) a game                  → vacate prompt
   // Realtime stays the fast path; this is the self-healing backstop. Deduped
   // against the queue, the open modal, the game I'm editing, my own in-flight
   // vacate requests, and games I just acted on (handledConfirmations).
@@ -519,18 +639,32 @@ function ScoreMatchBody() {
         game,
         userTeamId,
         match.home_team_id,
-        autoConfirm
+        autoConfirm,
+        personalCtx
       );
       if (action === 'none') {
-        // Server caught up (confirmed/vacated/denied) — re-arm for next time.
+        // Server caught up (confirmed/vacated/denied) — re-arm for next time,
+        // including clearing any dismiss so a re-score brings a fresh prompt.
         handledConfirmations.current.delete(game.game_number);
+        dismissedConfirmations.current.delete(game.game_number);
         return;
       }
+      // "I'm Not Scoring": suppress every auto prompt (confirm, vacate, and
+      // auto-confirm). No modal, no auto-vouch, no auto-deny — just silence.
+      // Deliberate engagement still works: tapping a game to peek-and-confirm,
+      // or tapping a player to score, both go through their own handlers, not
+      // this scan. Placed after the 'none' re-arm so that bookkeeping still
+      // runs while the person is opted out.
+      if (notScoring) return;
       if (confirmationGame?.gameNumber === game.game_number) return; // showing
       if (confirmationQueue.some((c) => c.gameNumber === game.game_number)) return; // queued
       if (editingGame?.gameNumber === game.game_number) return; // I'm editing it
+      // Amendment H: my own initiator modal is open for this game — my submit
+      // will trigger Amendment D's race-handling, so don't stack a confirm prompt.
+      if (scoringGame?.gameNumber === game.game_number) return;
       if (myVacateRequests.current.has(game.game_number)) return; // my own action
       if (handledConfirmations.current.has(game.game_number)) return; // just acted
+      if (dismissedConfirmations.current.has(game.game_number)) return; // dismissed this session
 
       if (action === 'vacate') {
         // Vacating is destructive — always a human decision, never auto.
@@ -543,7 +677,9 @@ function ScoreMatchBody() {
         const gameNumber = game.game_number;
         handledConfirmations.current.add(gameNumber);
         void mutationsRef.current
-          ?.confirmOpponentScore(gameNumber)
+          // autoConfirmed=true: scan-fired, no modal — recorded as the
+          // integrity metric on the vouch row (never affects officiality).
+          ?.confirmOpponentScore(gameNumber, false, true)
           .then((ok) => {
             if (!ok) handledConfirmations.current.delete(gameNumber);
           });
@@ -559,8 +695,11 @@ function ScoreMatchBody() {
     confirmationGame,
     confirmationQueue,
     editingGame,
+    scoringGame,
     autoConfirm,
+    notScoring,
     players,
+    personalCtx,
     addToConfirmationQueueFromHook,
   ]);
 
@@ -584,7 +723,9 @@ function ScoreMatchBody() {
         setBreakAndRun(false);
         setGoldenBreak(false);
       },
-      (gameNumber) => mutations.confirmOpponentScore(gameNumber)
+      // This callback is only invoked from handlePlayerClick's auto-confirm
+      // branch, so the vouch is auto-confirmed (metric only).
+      (gameNumber) => mutations.confirmOpponentScore(gameNumber, false, true)
     );
   };
 
@@ -669,7 +810,7 @@ function ScoreMatchBody() {
         <Card className="max-w-md w-full">
           <CardContent className="pt-6">
             <div className="text-center">
-              <div className="text-lg font-semibold text-destructive mb-2">
+              <div className="text-lg font-semibold text-red-600 mb-2">
                 Error
               </div>
               <div className="text-foreground mb-4">{error}</div>
@@ -694,7 +835,7 @@ function ScoreMatchBody() {
     return (
       <div className="min-h-screen bg-muted flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" />
         </div>
       </div>
     );
@@ -790,24 +931,17 @@ function ScoreMatchBody() {
                 quiet "catching up" pill while degraded, one calm note on a
                 sustained outage. Active scorer only (this is the scoring page). */}
             <ConnectionIndicator health={connectionHealth} />
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="score-match-auto-confirm"
-                checked={autoConfirm}
-                onCheckedChange={(c) => setAutoConfirm(c === true)}
-              />
-              <Label
-                htmlFor="score-match-auto-confirm"
-                className="text-xs text-muted-foreground cursor-pointer"
-              >
-                Auto-Confirm
-              </Label>
-            </div>
-            <InfoButton title="Auto-Confirm Opponent Selections" className="relative">
-              <p className="text-sm">
-                By enabling this your opponents game result selections will automatically be confirmed for your team. Your team is still responsible for ensuring the scoring is accurate. This option simply removes the need to confirm each game individually.
-              </p>
-            </InfoButton>
+            {/* Settings gear — houses Auto-Confirm, I'm-Not-Scoring, and the
+                game-order toggle (the corner was too cramped for inline
+                controls). */}
+            <ScoringSettingsMenu
+              autoConfirm={autoConfirm}
+              onAutoConfirmChange={setAutoConfirm}
+              notScoring={notScoring}
+              onNotScoringChange={setNotScoring}
+              displayMode={displayMode}
+              onToggleDisplayMode={toggleDisplayMode}
+            />
           </div>
         </div>
       </div>
@@ -889,11 +1023,142 @@ function ScoreMatchBody() {
         />
       )}
 
+      {/* Many-eyes Layer-2 / Amendment F + G: persistent dispute banner +
+          tap-to-see-conflicts detail modal. Auto-cleared games (two initiators
+          disagreed via Amendment D) surface here — loud, visible to everyone,
+          ordered above dissent flags because the integrity risk is higher.
+          Tapping a row opens the side-by-side detail modal (Amendment G).
+          Re-scoring happens via the normal player-tap flow in the games list
+          (the modal is informational; no Re-score button by design). */}
+      <DisputeBanner
+        disputes={disputes}
+        onDisputeClick={setDisputeDetailGameId}
+      />
+      <DisputeDetailModal
+        dispute={
+          disputeDetailGameId
+            ? disputes.find((d) => d.game_id === disputeDetailGameId) ?? null
+            : null
+        }
+        onOpenChange={(open) => {
+          if (!open) setDisputeDetailGameId(null);
+        }}
+        getPlayerDisplayName={getPlayerDisplayName}
+      />
+
+      {/* Many-eyes Layer-2 / Unit 6: peek-and-confirm dialog. Opened when
+          the viewer taps a confirmed game row in GamesList. Shows the
+          recorded result + Confirm (add my vouch as an extra witness via
+          confirmOpponentScore — Amendment I's 3-step check makes this
+          safe and Phase 1's helper appends my row regardless). */}
+      {(() => {
+        const peekGame = peekGameNumber !== null ? gameResults.get(peekGameNumber) : null;
+        if (peekGameNumber === null || !peekGame || !peekGame.winner_player_id) {
+          // Render with null gameNumber so the dialog is closed; covers the
+          // case where the game was vacated between tap and render.
+          return (
+            <PeekConfirmDialog
+              gameNumber={null}
+              winnerPlayerName=""
+              recordedResult={{
+                winner_team_id: null,
+                winner_player_id: null,
+                break_and_run: false,
+                golden_break: false,
+                break_fouled: false,
+                runout: false,
+                win_by_forfeit: false,
+                winner_value: null,
+                loser_value: null,
+              }}
+              alreadyVouched={false}
+              onOpenChange={(open) => {
+                if (!open) setPeekGameNumber(null);
+              }}
+              onConfirm={() => {}}
+            />
+          );
+        }
+        return (
+          <PeekConfirmDialog
+            gameNumber={peekGameNumber}
+            winnerPlayerName={getPlayerDisplayName(peekGame.winner_player_id)}
+            recordedResult={{
+              winner_team_id: peekGame.winner_team_id,
+              winner_player_id: peekGame.winner_player_id,
+              break_and_run: peekGame.break_and_run,
+              golden_break: peekGame.golden_break,
+              break_fouled: peekGame.break_fouled,
+              runout: peekGame.runout,
+              win_by_forfeit: peekGame.win_by_forfeit,
+              winner_value: peekGame.winner_value,
+              loser_value: peekGame.loser_value,
+            }}
+            alreadyVouched={personalCtx.myVouchedGameIds.has(peekGame.id)}
+            onOpenChange={(open) => {
+              if (!open) setPeekGameNumber(null);
+            }}
+            onConfirm={() => {
+              // Fire the same confirm path the live prompt uses. Amendment I's
+              // 3-step check covers correctness; the append helper records my
+              // row as an extra witness even when the officiality column is
+              // already set (`.is(null)` no-op). Close the dialog on success.
+              void mutationsRef.current?.confirmOpponentScore(peekGameNumber);
+              setPeekGameNumber(null);
+            }}
+          />
+        );
+      })()}
+
+      {/* Many-eyes Layer-2 / Unit 5: team-visible dissent flag.
+          One flag per game with a differing vouch from my side; calm
+          conversation prompt — never blocks scoring, never auto-changes
+          a result. Correction path is the existing vacate-and-rescore. */}
+      {visibleDissents.length > 0 && (
+        <div className="mb-3 space-y-2">
+          {visibleDissents.map((d) => {
+            // The recorded (official) result the flag asks people to verify
+            // comes from the match_games row — same source the rest of the
+            // scoring UI shows.
+            const official = gameResults.get(d.game_number);
+            if (!official || !official.winner_player_id) return null;
+            return (
+              <DissentFlag
+                key={d.game_id}
+                gameNumber={d.game_number}
+                recordedResult={{
+                  winner_team_id: official.winner_team_id,
+                  winner_player_id: official.winner_player_id,
+                  break_and_run: official.break_and_run,
+                  golden_break: official.golden_break,
+                  break_fouled: official.break_fouled,
+                  runout: official.runout,
+                  win_by_forfeit: official.win_by_forfeit,
+                  winner_value: official.winner_value,
+                  loser_value: official.loser_value,
+                }}
+                winnerPlayerName={getPlayerDisplayName(official.winner_player_id)}
+                agreeingConfirmerNames={d.agreeingConfirmers.map((a) =>
+                  getPlayerDisplayName(a.confirmer_id)
+                )}
+                disagreeingConfirmerNames={d.dissenters.map((diss) =>
+                  getPlayerDisplayName(diss.confirmer_id)
+                )}
+              />
+            );
+          })}
+        </div>
+      )}
+
       {/* Game list section - ALL data from database */}
       <GamesList
         gameResults={filteredGameResults}
         getPlayerDisplayName={getPlayerDisplayName}
         onGameClick={handlePlayerClick}
+        // Many-eyes Unit 6: tapping a player name on a fully-confirmed
+        // row opens the peek dialog (review the recorded result + add
+        // my vouch as an extra witness).
+        onPeekClick={setPeekGameNumber}
         onVacateClick={(gameNumber, winnerName) => {
           setEditingGame({
             gameNumber,
@@ -923,6 +1188,8 @@ function ScoreMatchBody() {
         awayTeamId={match.away_team_id}
         totalGames={filteredGameResults.size}
         isHomeTeam={isHomeTeam}
+        displayMode={displayMode}
+        onToggleDisplayMode={toggleDisplayMode}
       />
 
       {/* Win Confirmation Modal */}
@@ -967,6 +1234,16 @@ function ScoreMatchBody() {
         }}
         onConfirm={() => {
           if (scoringGame) {
+            // Amendment J: mark this game as "I just acted on it" BEFORE the
+            // async submit. Closes the race window where (a) auto-clear runs
+            // and `scoringGame` becomes null on success, (b) Amendment H's
+            // guard no longer suppresses, (c) the realtime auto-clear update
+            // hasn't reached this device yet, so `gameResults` still shows
+            // the (pre-clear) winner — and the data-derived scan would queue
+            // a spurious confirm-opponent modal from that stale cache. The
+            // scan already skips games in `handledConfirmations`; it
+            // self-clears once realtime arrives and `action === 'none'` fires.
+            handledConfirmations.current.add(scoringGame.gameNumber);
             mutations.handleConfirmScore(
               scoringGame,
               breakAndRun,
@@ -1010,6 +1287,12 @@ function ScoreMatchBody() {
             .then((ok) => {
               if (!ok) handledConfirmations.current.delete(gameNumber);
             });
+        }}
+        onDismiss={(gameNumber) => {
+          // Neither vouch nor wipe — just stop re-prompting this game this
+          // session. onClose (below) closes the modal and lets the queue
+          // advance to the next pending confirmation, if any.
+          dismissedConfirmations.current.add(gameNumber);
         }}
         onClose={() => setConfirmationGame(null)}
       />

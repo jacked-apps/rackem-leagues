@@ -6,6 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/supabaseClient';
 import { Button } from '@/components/ui/button';
+import { isProduction } from '@/config/environment';
 import { logger } from '@/utils/logger';
 
 interface ScheduleCardProps {
@@ -227,11 +228,23 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({ leagueId }) => {
     <div className="lg:bg-card lg:rounded-xl lg:shadow-sm p-6 mb-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold text-foreground">Schedule</h2>
-        {scheduleExists && (
-          <Button size="sm" onClick={handleViewSchedule} disabled={isNavigating} isLoading={isNavigating} loadingText="Loading...">
-            View Schedule
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {!isProduction && (
+            <Button
+              size="sm"
+              variant="outline"
+              loadingText="none"
+              onClick={() => navigate(`/league/${leagueId}/manual-scoring`)}
+            >
+              Score a Match
+            </Button>
+          )}
+          {scheduleExists && (
+            <Button size="sm" onClick={handleViewSchedule} disabled={isNavigating} isLoading={isNavigating} loadingText="Loading...">
+              View Schedule
+            </Button>
+          )}
+        </div>
       </div>
 
       {loading ? (

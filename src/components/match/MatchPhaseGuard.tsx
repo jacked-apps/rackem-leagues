@@ -137,7 +137,14 @@ export function MatchPhaseGuard({ children }: MatchPhaseGuardProps) {
     if (!matchId || !phase.data) return;
     const onLineup = location.pathname.endsWith('/lineup');
     const onScore = location.pathname.endsWith('/score');
-    if (phase.data.status === 'scheduled' && onScore) {
+    // 'updating' = an operator is hand-entering this match (LO manual scoring).
+    // Players must never score it, so treat it like 'scheduled' here: bounce any
+    // player who lands on /score (e.g. via a stale link) back to the read-only
+    // lineup view. The operator's own entry happens on a separate operator route,
+    // not through this guard.
+    const operatorEditing =
+      phase.data.status === 'scheduled' || phase.data.status === 'updating';
+    if (operatorEditing && onScore) {
       navigate(`/match/${matchId}/lineup`, { replace: true });
     } else if (phase.data.status === 'in_progress' && onLineup) {
       navigate(`/match/${matchId}/score`, { replace: true });
