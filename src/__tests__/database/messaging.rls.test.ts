@@ -163,10 +163,15 @@ describe('Messages Table - RLS Tests', () => {
   beforeAll(async () => {
     client = createTestClient();
 
-    // Get a test message
+    // Get a test message — an editable USER message (not a system message:
+    // editing those is trigger-blocked, and other suites create system
+    // messages, so an unfiltered limit(1) flakes when it lands on one).
+    // Ordered for determinism.
     const { data: message } = await client
       .from('messages')
       .select('id, conversation_id')
+      .eq('is_system', false)
+      .order('created_at', { ascending: true })
       .limit(1)
       .single();
 

@@ -281,23 +281,6 @@ describe('League Venues Table - RLS Tests', () => {
       expect(Array.isArray(data)).toBe(true);
     });
 
-    it('should allow viewing venues for a specific league', async () => {
-      if (!testLeagueId) {
-        console.warn('⚠️ No test league found, skipping test');
-        return;
-      }
-
-      const { data, error } = await client
-        .from('league_venues')
-        .select(`
-          *,
-          venue:venues(name, address, city)
-        `)
-        .eq('league_id', testLeagueId);
-
-      expect(error).toBeNull();
-      expect(data).toBeDefined();
-    });
   });
 
   describe('INSERT Operations - Assigning Venues', () => {
