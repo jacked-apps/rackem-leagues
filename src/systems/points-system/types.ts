@@ -316,6 +316,16 @@ export interface FormulaContext {
   readonly winner: number;
   readonly loser: number;
   readonly thisSide: 'winner' | 'loser';
+  /**
+   * Which actual team (home/away) won THIS game. Combined with `thisSide`
+   * it tells a side-agnostic recipe whether "this side" maps to the home
+   * team or the away team for state-bag reads. Needed for the workshop's
+   * side-agnostic available data (e.g., "This Side's Wins So Far" must
+   * resolve to home_wins when computing the winner side of a home-won
+   * game, or away_wins when computing the winner side of an away-won
+   * game).
+   */
+  readonly winnerSide: 'home' | 'away';
 }
 
 /**

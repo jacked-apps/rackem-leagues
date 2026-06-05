@@ -126,11 +126,13 @@ export function evaluateAllocator(
     winner: winnerBase,
     loser: loserBase,
     thisSide: 'winner',
+    winnerSide: record.winnerSide,
   };
   const ctxForLoser: FormulaContext = {
     winner: winnerBase,
     loser: loserBase,
     thisSide: 'loser',
+    winnerSide: record.winnerSide,
   };
 
   // Step 3: Run formulas if present; otherwise use base values.

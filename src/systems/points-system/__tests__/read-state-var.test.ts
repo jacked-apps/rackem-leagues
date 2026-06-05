@@ -15,7 +15,12 @@ import { describe, it, expect, vi } from 'vitest';
 import { readStateVarOperation } from '../allocator-formula-operations/read-state-var';
 import type { FormulaContext, MatchStateBag } from '../types';
 
-const CTX: FormulaContext = { winner: 0, loser: 0, thisSide: 'winner' };
+const CTX: FormulaContext = {
+  winner: 0,
+  loser: 0,
+  thisSide: 'winner',
+  winnerSide: 'home',
+};
 
 describe('readStateVarOperation', () => {
   it('returns the numeric value of the named state-bag entry', () => {

@@ -27,26 +27,42 @@ export interface AvailableDatum {
   readonly description: string;
 }
 
+/**
+ * Side-agnostic available data. The allocator computes per-side
+ * contributions for the winner and loser of THIS game — it never
+ * thinks in home/away. Exposing `home_wins` / `away_wins` to the LO
+ * would invite unfair formulas (a formula that gives the winner
+ * `home_wins` points would short-change away winners every time).
+ *
+ * Instead, the workshop offers virtual names like `this_side_wins`
+ * that the `evaluate_expression` recipe resolves at compute time to
+ * the right home_xxx or away_xxx state-bag entry based on who
+ * actually won THIS game and which side this formula computes for.
+ */
 export const AVAILABLE_DATA: readonly AvailableDatum[] = [
   {
-    name: 'home_wins',
-    label: 'Home Team Wins So Far',
-    description: 'How many games the home team has won in this match up to now.',
+    name: 'this_side_wins',
+    label: "This Side's Wins So Far",
+    description:
+      "Games won so far by the team this side computes for. When the formula runs for the winner of THIS game, this is the winner team's running wins; for the loser side, the loser team's.",
   },
   {
-    name: 'away_wins',
-    label: 'Away Team Wins So Far',
-    description: 'How many games the away team has won in this match up to now.',
+    name: 'other_side_wins',
+    label: "Other Side's Wins So Far",
+    description:
+      "Games won so far by the team this side does NOT compute for. Mirror image of This Side's Wins.",
   },
   {
-    name: 'home_points',
-    label: 'Home Team Points So Far',
-    description: 'Running points total for the home team in this match.',
+    name: 'this_side_points',
+    label: "This Side's Points So Far",
+    description:
+      "Running points total for the team this side computes for in this match.",
   },
   {
-    name: 'away_points',
-    label: 'Away Team Points So Far',
-    description: 'Running points total for the away team in this match.',
+    name: 'other_side_points',
+    label: "Other Side's Points So Far",
+    description:
+      'Running points total for the opposite team in this match.',
   },
   {
     name: 'games_played',
