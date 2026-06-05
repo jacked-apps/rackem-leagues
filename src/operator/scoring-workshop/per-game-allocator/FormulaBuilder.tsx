@@ -45,6 +45,10 @@ export function FormulaBuilder({ tokens, onChange }: FormulaBuilderProps) {
   const append = (token: FormulaToken) => onChange([...tokens, token]);
   const undo = () => onChange(tokens.slice(0, -1));
   const clear = () => onChange([]);
+  const removeAt = (idx: number) => {
+    const next = [...tokens.slice(0, idx), ...tokens.slice(idx + 1)];
+    onChange(next);
+  };
 
   const addData = (name: string) => append({ kind: 'var', name });
   const addOp = (op: TokenOp) => append({ kind: 'op', op });
@@ -60,7 +64,7 @@ export function FormulaBuilder({ tokens, onChange }: FormulaBuilderProps) {
 
   return (
     <div className="space-y-3">
-      <TokenStrip tokens={tokens} />
+      <TokenStrip tokens={tokens} onRemove={removeAt} />
 
       <div className="space-y-2 rounded-md border p-3">
         <Label className="text-xs uppercase text-muted-foreground">
@@ -158,42 +162,78 @@ export function FormulaBuilder({ tokens, onChange }: FormulaBuilderProps) {
   );
 }
 
-function TokenStrip({ tokens }: { tokens: readonly FormulaToken[] }) {
+function TokenStrip({
+  tokens,
+  onRemove,
+}: {
+  tokens: readonly FormulaToken[];
+  onRemove: (idx: number) => void;
+}) {
   return (
     <div className="flex min-h-[3rem] flex-wrap items-center gap-1 rounded-md border bg-muted/40 p-2">
       {tokens.length === 0 ? (
         <span className="text-sm text-muted-foreground">
-          (empty — add some data, a number, or an operator)
+          (empty — pick some data, type a number, or add an operator)
         </span>
       ) : (
-        tokens.map((tok, i) => <TokenPill key={i} token={tok} />)
+        tokens.map((tok, i) => (
+          <TokenPill key={i} token={tok} onRemove={() => onRemove(i)} />
+        ))
       )}
     </div>
   );
 }
 
-function TokenPill({ token }: { token: FormulaToken }) {
+function TokenPill({
+  token,
+  onRemove,
+}: {
+  token: FormulaToken;
+  onRemove: () => void;
+}) {
+  const pillClass =
+    'group inline-flex items-center gap-1 rounded px-2 py-1 text-sm';
+  const removeBtn = (
+    <button
+      type="button"
+      onClick={onRemove}
+      aria-label="Remove this token"
+      title="Remove this token"
+      className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded text-muted-foreground hover:bg-destructive hover:text-destructive-foreground"
+    >
+      ×
+    </button>
+  );
   if (token.kind === 'var') {
     return (
-      <span className="rounded bg-primary/10 px-2 py-1 text-sm">
-        {labelForVar(token.name)}
+      <span className={`${pillClass} bg-primary/10`}>
+        <span>{labelForVar(token.name)}</span>
+        {removeBtn}
       </span>
     );
   }
   if (token.kind === 'const') {
     return (
-      <span className="rounded bg-success/10 px-2 py-1 text-sm font-mono">
-        {token.value}
+      <span className={`${pillClass} bg-success/10 font-mono`}>
+        <span>{token.value}</span>
+        {removeBtn}
       </span>
     );
   }
   if (token.kind === 'op') {
     return (
-      <span className="px-1 text-sm font-mono">{opSymbol(token.op)}</span>
+      <span className={`${pillClass} font-mono`}>
+        <span>{opSymbol(token.op)}</span>
+        {removeBtn}
+      </span>
     );
   }
-  if (token.kind === 'lparen') return <span className="px-1 text-sm font-mono">(</span>;
-  return <span className="px-1 text-sm font-mono">)</span>;
+  return (
+    <span className={`${pillClass} font-mono`}>
+      <span>{token.kind === 'lparen' ? '(' : ')'}</span>
+      {removeBtn}
+    </span>
+  );
 }
 
 function opSymbol(op: TokenOp): string {

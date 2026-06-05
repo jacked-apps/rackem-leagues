@@ -184,18 +184,26 @@ function FormulaSection({
   value: SideConfig;
   onChange: (next: SideConfig) => void;
 }) {
-  const formulaOn = value.formula !== null;
+  // `formulaOn` is local to the section so we can show the builder
+  // BEFORE there's a parseable expression — without that, "Add a
+  // formula" would have to seed SideConfig.formula with a placeholder
+  // value (like 0) which then strands a `0` pill the LO can't fully
+  // delete (additive build). With local state, the formula stays NULL
+  // on SideConfig until the LO builds something parseable; the builder
+  // is shown the whole time.
+  const [formulaOn, setFormulaOn] = useState<boolean>(value.formula !== null);
 
-  const turnOn = () => {
-    onChange({
-      ...value,
-      formula: {
-        operationKind: 'evaluate_expression',
-        operationArgs: { expression: { kind: 'const', value: 0 } satisfies Expression },
-      },
-    });
+  // Re-sync when the parent swaps the SideConfig wholesale (kind change
+  // upstream, clone load, etc.).
+  useEffect(() => {
+    setFormulaOn(value.formula !== null);
+  }, [value.formula?.operationKind]);
+
+  const turnOn = () => setFormulaOn(true);
+  const turnOff = () => {
+    setFormulaOn(false);
+    onChange({ ...value, formula: null });
   };
-  const turnOff = () => onChange({ ...value, formula: null });
 
   return (
     <div className="space-y-2 rounded-md border bg-muted/30 p-3">
@@ -233,23 +241,31 @@ function FormulaBody({
   value: SideConfig;
   onChange: (next: SideConfig) => void;
 }) {
-  // Local draft tokens — may be a partially-built, not-yet-parseable
-  // sequence. On every change we try to parse; if it succeeds the parsed
-  // expression is pushed to SideConfig; if not, the tokens stay on
-  // screen, the error is shown inline, and SideConfig keeps its last-good
-  // expression.
+  // Tokens are local draft state. When the user opens an existing
+  // formula, tokens hydrate from it. When "Add a formula" was just
+  // clicked (no formula on SideConfig yet), tokens start empty and the
+  // strip shows the empty hint.
+  //
+  // On every change we try to parse: success → push the parsed
+  // expression up to SideConfig (turning formula non-null for the first
+  // time when the LO has built something valid). Failure → keep tokens
+  // on screen, show the error inline; SideConfig.formula stays at its
+  // last-good value (or null if there hasn't been one yet).
   //
   // Back-compat: old rows that referenced the now-folded read_state_var
-  // recipe come back as a single-var Expression so the editor shows them
-  // unchanged.
-  const initialExpr = extractExpression(value.formula);
-  const [tokens, setTokens] = useState<FormulaToken[]>(() =>
-    expressionToTokens(initialExpr),
-  );
+  // recipe hydrate as a single-var Expression.
+  const initialTokens = value.formula
+    ? expressionToTokens(extractExpression(value.formula))
+    : [];
+  const [tokens, setTokens] = useState<FormulaToken[]>(() => initialTokens);
   const [parseError, setParseError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!value.formula) return;
+    if (!value.formula) {
+      setTokens([]);
+      setParseError(null);
+      return;
+    }
     const expr = extractExpression(value.formula);
     setTokens(expressionToTokens(expr));
     setParseError(null);
@@ -260,6 +276,9 @@ function FormulaBody({
     setTokens(next);
     if (next.length === 0) {
       setParseError(null);
+      // No tokens — leave formula off on SideConfig until the LO builds
+      // something. (Or remove it if it had been set.)
+      if (value.formula) onChange({ ...value, formula: null });
       return;
     }
     const parsed = tokensToExpression(next);
@@ -282,7 +301,7 @@ function FormulaBody({
       <p className="text-xs text-muted-foreground">
         Transforms the base into this side's final value. The formula can
         reference the base via "This Side's Value This Game" — or stand alone
-        if it doesn't need the base.
+        if it doesn't need the base. Click the × on any pill to remove it.
       </p>
       <FormulaBuilder tokens={tokens} onChange={handleTokensChange} />
       {parseError && (
