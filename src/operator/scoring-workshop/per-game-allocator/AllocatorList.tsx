@@ -29,39 +29,11 @@ export function AllocatorList({
   return (
     <div className="space-y-6">
       <section className="space-y-2">
-        <h2 className="text-lg font-semibold">Templates</h2>
-        <p className="text-sm text-muted-foreground">
-          Official starting points. Read-only. Clone one to start a variation
-          of your own.
-        </p>
-        <Card>
-          <CardContent className="divide-y p-0">
-            {officials.map((row) => (
-              <RowItem
-                key={row.id}
-                name={row.name}
-                description={row.description}
-                actions={
-                  <Button
-                    size="sm"
-                    loadingText="none"
-                    onClick={() => onCloneOfficial(row.id)}
-                  >
-                    Make a copy
-                  </Button>
-                }
-              />
-            ))}
-          </CardContent>
-        </Card>
-      </section>
-
-      <section className="space-y-2">
         <h2 className="text-lg font-semibold">Yours</h2>
         {mine.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            You haven't saved any variations yet. Clone a template above to
-            start one.
+            You don't have any yet. Create one from a template or start with
+            Empty Starter.
           </p>
         ) : (
           <Card>
@@ -95,6 +67,34 @@ export function AllocatorList({
             </CardContent>
           </Card>
         )}
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="text-lg font-semibold">Templates</h2>
+        <p className="text-sm text-muted-foreground">
+          Official starting points. Read-only. Clone one to start a variation
+          of your own.
+        </p>
+        <Card>
+          <CardContent className="divide-y p-0">
+            {officials.map((row) => (
+              <RowItem
+                key={row.id}
+                name={row.name}
+                description={row.description}
+                actions={
+                  <Button
+                    size="sm"
+                    loadingText="none"
+                    onClick={() => onCloneOfficial(row.id)}
+                  >
+                    Make a copy
+                  </Button>
+                }
+              />
+            ))}
+          </CardContent>
+        </Card>
       </section>
     </div>
   );
