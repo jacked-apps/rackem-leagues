@@ -506,16 +506,19 @@ export async function loFinalizeMatch(
 }
 
 // ── LO match review & correction (v2) ──────────────────────────────────────
-// Reopen / restore the completed-match lifecycle. Reopen deliberately KEEPS the
-// completion fields (winner_team_id, match_result, completed_at, verified slots)
-// and only flips status — so the prior result lives on the row. That makes this
+// Reopen / restore the completed-match lifecycle. Reopen flips status to
+// 'updating' (the same "operator is editing" state a fresh manual entry uses, so
+// players' live surfaces stay clear during a correction too) and deliberately
+// KEEPS the completion fields (winner_team_id, match_result, completed_at,
+// verified slots) — so the prior result lives on the row. That makes this
 // crash-safe: "restore" is just re-stamping 'completed', and an abandoned reopen
-// (status='in_progress' AND completed_at IS NOT NULL) is detectable + recoverable
-// from the picker. (See docs/plans/2026-06-04-001-feat-lo-match-review-correction-plan.md.)
+// (status='updating' AND completed_at IS NOT NULL — distinct from a fresh entry,
+// which has completed_at NULL) is detectable + recoverable from the picker.
+// (See docs/plans/2026-06-04-001-feat-lo-match-review-correction-plan.md.)
 
 /**
  * Reopen a finished match for correction: `completed`/`awaiting_verification` →
- * `in_progress`. Does NOT clear winner/match_result/completed_at/verified — only
+ * `updating`. Does NOT clear winner/match_result/completed_at/verified — only
  * the per-game vacate + re-finalize change those. Must run before any vacate
  * (appendConfirmation no-ops while `completed`). Idempotent on an already-open match.
  *
@@ -531,7 +534,7 @@ export async function loReopenMatch(matchId: string): Promise<void> {
     throw new Error(`Failed to read match: ${error?.message ?? 'not found'}`);
   }
   const status = (match as unknown as { status: string }).status;
-  if (status === 'in_progress') return; // already open — no-op
+  if (status === 'updating') return; // already open for editing — no-op
   if (status !== 'completed' && status !== 'awaiting_verification') {
     throw new Error(
       `Cannot reopen a match with status '${status}'. Only a completed or ` +
@@ -540,7 +543,7 @@ export async function loReopenMatch(matchId: string): Promise<void> {
   }
   const { error: upErr } = await supabase
     .from('matches')
-    .update({ status: 'in_progress' })
+    .update({ status: 'updating' })
     .eq('id', matchId);
   if (upErr) {
     throw new Error(`Failed to reopen match: ${upErr.message}`);
@@ -597,8 +600,8 @@ export interface LoVacateGameParams {
  * marker is load-bearing — it anchors the dissent window — so a failed append
  * aborts the vacate rather than silently leaving the log without an anchor.
  *
- * The match must already be `in_progress` (the UI reopens a completed match first;
- * `appendConfirmation` no-ops while `completed`).
+ * The match must already be reopened to `updating` (the UI reopens a completed
+ * match first; `appendConfirmation` no-ops while `completed`).
  *
  * @throws if the game read, the marker append, or the wipe fails.
  */

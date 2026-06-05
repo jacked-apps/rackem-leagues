@@ -10,15 +10,16 @@
  *
  *   loReopenMatch → loVacateGame → loCorrectGame → loFinalizeMatch
  *
- * and asserts: the match reopens crash-safe (status `in_progress` but
- * `completed_at` still set); the vacate marker + operator confirm rows are
- * appended WITH the operator reason; the original team confirm rows survive
- * (append-only); `match_games` reflects the corrected winner; the match
- * re-completes with the recomputed winner. A second case proves the restore
- * escape (the tie-block recovery) re-stamps the prior completed result.
+ * and asserts: the match reopens crash-safe (status `updating` but
+ * `completed_at` still set — distinct from a fresh entry, which has no
+ * completed_at); the vacate marker + operator confirm rows are appended WITH the
+ * operator reason; the original team confirm rows survive (append-only);
+ * `match_games` reflects the corrected winner; the match re-completes with the
+ * recomputed winner. A second case proves the restore escape (the tie-block
+ * recovery) re-stamps the prior completed result.
  *
  * Standings eligibility is asserted via the status transition itself — a
- * standings read filters `status = 'completed'`, so reopened (`in_progress`)
+ * standings read filters `status = 'completed'`, so reopened (`updating`)
  * excludes the match and re-finalized (`completed`) re-includes it. Forcing a
  * real threshold-tie is non-deterministic with this minimal fixture, so the
  * restore mechanic (identical to the tie-block's escape) is proven directly.
@@ -210,8 +211,8 @@ describe('LO match review & correction — DB round-trip', () => {
       `SELECT status, completed_at, winner_team_id FROM matches WHERE id=$1`,
       [ids.match]
     );
-    expect(reopened[0].status).toBe('in_progress'); // excluded from standings while reopened
-    expect(reopened[0].completed_at).not.toBeNull(); // abandoned-reopen detectable
+    expect(reopened[0].status).toBe('updating'); // off the players' live surfaces; excluded from standings
+    expect(reopened[0].completed_at).not.toBeNull(); // 'updating' + completed_at = correction in flight (recoverable)
     expect(reopened[0].winner_team_id).toBe(ids.homeTeam); // prior winner still on the row
 
     // 2. Vacate game 1 with an operator reason.
@@ -289,7 +290,7 @@ describe('LO match review & correction — DB round-trip', () => {
     await loReopenMatch(ids.match);
     expect(
       (await executeSql(`SELECT status FROM matches WHERE id=$1`, [ids.match]))[0].status
-    ).toBe('in_progress');
+    ).toBe('updating');
 
     await loRestoreCompletion(ids.match);
     const after = await executeSql(

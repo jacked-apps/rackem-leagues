@@ -16,34 +16,33 @@ import type { MatchWithDetails } from '@/types/schedule';
 /**
  * Can this match be opened in the manual-scoring (enter/continue) surface?
  *
- * True for a `scheduled` match (start fresh → Setup) OR an `updating` match (a
- * manual entry the operator already set up but hasn't finalized → resume scoring),
- * with two real teams (not a BYE). Both route to the same page, which dispatches
- * on status. An `updating` match is what lets an operator walk away mid-entry and
- * come back to it from the picker.
+ * True for a `scheduled` match (start fresh → Setup) OR a **fresh** `updating`
+ * match — a manual entry the operator set up but hasn't finalized (`updating`
+ * with NO `completed_at`) → resume scoring — with two real teams (not a BYE).
+ * Both route to the same page, which dispatches on status. The `updating` state
+ * is what lets an operator walk away mid-entry and come back from the picker.
+ *
+ * A `updating` match that DOES have `completed_at` is a finished match being
+ * corrected (v2) — that belongs to the review surface, not here.
  */
 export function isMatchEligibleForManualScoring(match: MatchWithDetails): boolean {
-  return (
-    (match.status === 'scheduled' || match.status === 'updating') &&
-    hasTwoRealTeams(match)
-  );
+  const freshEntry = match.status === 'updating' && !match.completed_at;
+  return (match.status === 'scheduled' || freshEntry) && hasTwoRealTeams(match);
 }
 
 /**
  * Can this match be opened in the v2 review/correct surface?
  *
  * True for finished matches (`completed` / `awaiting_verification`) with two real
- * teams. Also true for a **reopened-not-refinalized** match (`in_progress` but with
- * a `completed_at` still set — an abandoned correction), so it's recoverable.
- * Plain `in_progress` (actively being scored), `scheduled`, `forfeited`, and
- * `postponed` are NOT openable here.
+ * teams. Also true for a **reopened-not-refinalized** match (`updating` but with
+ * a `completed_at` still set — a correction in flight / abandoned), so it's
+ * recoverable. A fresh `updating` entry (no `completed_at`), `scheduled`,
+ * `in_progress` (a live match), `forfeited`, and `postponed` are NOT openable here.
  */
 export function isMatchEligibleForReview(match: MatchWithDetails): boolean {
   const finished = match.status === 'completed' || match.status === 'awaiting_verification';
-  const reopenedAbandoned =
-    match.status === 'in_progress' &&
-    !!(match as { completed_at?: unknown }).completed_at;
-  return (finished || reopenedAbandoned) && hasTwoRealTeams(match);
+  const reopenedForCorrection = match.status === 'updating' && !!match.completed_at;
+  return (finished || reopenedForCorrection) && hasTwoRealTeams(match);
 }
 
 /** Both sides are real teams (not a BYE). */

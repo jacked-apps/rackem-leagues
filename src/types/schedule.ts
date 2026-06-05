@@ -83,6 +83,12 @@ export interface Match {
   away_to_tie: number | null;
   away_to_lose: number | null;
 
+  // Set when the match is completed. Kept on a v2 LO reopen (the correction
+  // flow flips status to 'updating' but preserves completion fields), so
+  // `status === 'updating' && completed_at != null` means "a finished match is
+  // being corrected" vs a fresh manual entry (`updating`, completed_at null).
+  completed_at: string | null;
+
   created_at: string;
   updated_at: string;
 }
@@ -106,6 +112,7 @@ export type MatchInsertData = Omit<Match,
   | 'away_to_win'            // Set at match prep
   | 'away_to_tie'            // Set at match prep
   | 'away_to_lose'           // Set at match prep
+  | 'completed_at'           // Set when the match completes
   | 'created_at'             // Auto-generated timestamp
   | 'updated_at'             // Auto-generated timestamp
 >;

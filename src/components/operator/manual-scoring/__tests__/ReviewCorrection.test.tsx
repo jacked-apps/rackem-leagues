@@ -37,7 +37,7 @@ vi.mock('@/api/hooks/useGameConfirmations', () => ({
 }));
 
 const loReopenMatch = vi.fn(async () => {
-  matchStatus = 'in_progress';
+  matchStatus = 'updating';
 });
 const loVacateGame = vi.fn(async ({ gameId }: { gameId: string }) => {
   gamesData = gamesData.map((g) =>
@@ -171,7 +171,7 @@ describe('ReviewPhase correction flow', () => {
 
   it('a tie on re-finalize blocks and restore-original recovers the prior result', async () => {
     loFinalizeMatch.mockRejectedValueOnce(new Error('This match is a tie that would require a tiebreaker'));
-    matchStatus = 'in_progress'; // already reopened, all games scored
+    matchStatus = 'updating'; // already reopened, all games scored
     renderReview();
 
     fireEvent.click(screen.getByTestId('refinalize'));
@@ -184,7 +184,7 @@ describe('ReviewPhase correction flow', () => {
   });
 
   it('finalize success calls onFinalized with the winning team name', async () => {
-    matchStatus = 'in_progress';
+    matchStatus = 'updating';
     renderReview();
     fireEvent.click(screen.getByTestId('refinalize'));
     await waitFor(() => expect(onFinalized).toHaveBeenCalledWith({ winnerName: 'Sharks' }));

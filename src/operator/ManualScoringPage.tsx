@@ -135,12 +135,14 @@ export default function ManualScoringPage() {
     );
   }
 
-  // v2 review/correct: a finished match — or a reopened-not-refinalized one
-  // (in_progress with completed_at still set, an abandoned correction) — opens
-  // the read-first review surface. Checked BEFORE the plain in_progress branch so
-  // a mid-correction match stays on the review surface, not the v1 entry grid.
-  const isReopenedAbandoned = status === 'in_progress' && !!match.completed_at;
-  if (status === 'completed' || status === 'awaiting_verification' || isReopenedAbandoned) {
+  // v2 review/correct: a finished match — or a reopened-for-correction one
+  // (`updating` with completed_at still set) — opens the read-first review
+  // surface. Checked BEFORE the fresh-entry branch so a mid-correction match
+  // (also `updating`) stays on the review surface, not the v1 entry grid. The
+  // discriminator is completed_at: a corrected match was completed before; a
+  // fresh manual entry never was.
+  const isReopenedForCorrection = status === 'updating' && !!match.completed_at;
+  if (status === 'completed' || status === 'awaiting_verification' || isReopenedForCorrection) {
     if (!prefs || !loMemberId) return message('Loading…');
     return (
       <div>
@@ -169,10 +171,11 @@ export default function ManualScoringPage() {
     );
   }
 
-  // A manual entry the operator set up (lineups locked) but hasn't finalized —
-  // status 'updating'. This is the score-the-games surface; it's also where a
-  // walked-away entry resumes from the picker.
-  if (status === 'updating') {
+  // A FRESH manual entry the operator set up (lineups locked) but hasn't
+  // finalized — status 'updating' with no completed_at. This is the
+  // score-the-games surface; it's also where a walked-away entry resumes from
+  // the picker. (A reopened-for-correction `updating` match was handled above.)
+  if (status === 'updating' && !match.completed_at) {
     if (!prefs || !loMemberId) return message('Loading…');
     return (
       <div>

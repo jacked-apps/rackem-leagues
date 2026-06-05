@@ -116,7 +116,9 @@ export function ReviewPhase(props: ReviewPhaseProps) {
   const [tieBlocked, setTieBlocked] = useState(false);
 
   const liveStatus = (matchQuery.data as unknown as { status?: string } | undefined)?.status;
-  const isReopened = liveStatus === 'in_progress';
+  // Reopened-for-correction matches use the 'updating' state (same as a fresh LO
+  // entry; here it's an already-completed match being corrected).
+  const isReopened = liveStatus === 'updating';
 
   const nameTeamMap = useMemo(
     () =>
@@ -146,7 +148,7 @@ export function ReviewPhase(props: ReviewPhaseProps) {
 
   /** Reopen on the first correction only (idempotent server-side too). */
   const ensureReopened = async () => {
-    if (liveStatus !== 'in_progress') {
+    if (liveStatus !== 'updating') {
       await loReopenMatch(matchId);
       await matchQuery.refetch();
     }
