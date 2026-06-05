@@ -19,7 +19,12 @@ import { Outlet } from 'react-router-dom';
 import { BottomTabBar } from './BottomTabBar';
 import { AppSidebar } from './AppSidebar';
 import { PendingInvitesModal } from '@/components/modals/PendingInvitesModal';
+import { ApprovedJoinModal } from '@/components/modals/ApprovedJoinModal';
 import { usePendingInvites } from '@/api/hooks';
+import {
+  useApprovedJoinRequests,
+  useAcknowledgeJoinRequest,
+} from '@/api/hooks/useApprovedJoinRequests';
 
 /**
  * Shared layout wrapper for all authenticated (member + operator) routes.
@@ -32,12 +37,23 @@ export function MemberLayout() {
   const [invitesModalDismissed, setInvitesModalDismissed] = useState(false);
   const showInvitesModal = !invitesLoading && hasPendingInvites && !invitesModalDismissed;
 
+  // Onboarding cascade: tell a joiner the moment they're approved (even if they
+  // closed the tab) and route them to their team. One at a time.
+  const { data: approvedJoins } = useApprovedJoinRequests();
+  const acknowledge = useAcknowledgeJoinRequest();
+  const nextApproved = approvedJoins?.[0] ?? null;
+
   return (
     <>
       <PendingInvitesModal
         isOpen={showInvitesModal}
         onClose={() => setInvitesModalDismissed(true)}
         invites={pendingInvites}
+      />
+
+      <ApprovedJoinModal
+        request={nextApproved}
+        onAcknowledge={(id) => acknowledge.mutate(id)}
       />
 
       <AppSidebar />

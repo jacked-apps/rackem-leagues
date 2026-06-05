@@ -18,6 +18,7 @@ import { useUser } from '@/context/useUser';
 import { useUserProfile } from '@/api/hooks/useUserProfile';
 import { useOrganizations } from '@/api/hooks/useOrganizations';
 import { useUnreadMessageCount } from '@/api/hooks/useMessages';
+import { usePendingJoinRequestCount } from '@/api/hooks/usePendingJoinRequestCount';
 import { OperatorOrgRow } from './OperatorOrgRow';
 
 /** Cap on visible orgs — matches AppDrawer. */
@@ -112,12 +113,18 @@ export function AppSidebar() {
 
 function SidebarPlayerSection({ unreadCount }: { unreadCount: number }) {
   const messagesLabel = unreadCount > 0 ? `Messages (${unreadCount})` : 'Messages';
+  // Doorbell: pending join requests for teams this user can approve.
+  const joinRequestCount = usePendingJoinRequestCount();
   return (
     <ul className="space-y-1">
       <SidebarLink to="/my-match" label="My Match" />
       <SidebarLink to="/my-teams" label="My Teams" />
+      {joinRequestCount > 0 && (
+        <SidebarLink to="/my-teams" label={`Join requests (${joinRequestCount})`} />
+      )}
       <SidebarLink to="/stats" label="Stats" />
       <SidebarLink to="/rules" label="Rules" />
+      <SidebarLink to="/learn" label="Learn" />
       <SidebarLink to="/messages" label={messagesLabel} />
       <SidebarLink to="/profile" label="Profile" />
     </ul>
@@ -126,7 +133,6 @@ function SidebarPlayerSection({ unreadCount }: { unreadCount: number }) {
 
 function SidebarOperatorSection({ orgs }: { orgs: OperatorOrg[] }) {
   if (!orgs || orgs.length === 0) return null;
-
   const visible = pickVisibleOrgs(orgs, OPERATOR_ORG_CAP);
   const isSingleOrg = visible.length === 1;
 
@@ -135,25 +141,26 @@ function SidebarOperatorSection({ orgs }: { orgs: OperatorOrg[] }) {
       <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         Operator
       </h3>
-      {isSingleOrg ? (
-        <OperatorOrgRow
-          orgId={visible[0].id}
-          orgName={visible[0].organization_name ?? ''}
-          mode="flat"
-        />
-      ) : (
-        <ul className="space-y-1">
-          {visible.map((org) => (
-            <li key={org.id}>
-              <OperatorOrgRow
-                orgId={org.id}
-                orgName={org.organization_name ?? ''}
-                mode="collapsible"
-              />
-            </li>
-          ))}
-        </ul>
-      )}
+      {visible.length > 0 &&
+        (isSingleOrg ? (
+          <OperatorOrgRow
+            orgId={visible[0].id}
+            orgName={visible[0].organization_name ?? ''}
+            mode="flat"
+          />
+        ) : (
+          <ul className="space-y-1">
+            {visible.map((org) => (
+              <li key={org.id}>
+                <OperatorOrgRow
+                  orgId={org.id}
+                  orgName={org.organization_name ?? ''}
+                  mode="collapsible"
+                />
+              </li>
+            ))}
+          </ul>
+        ))}
     </div>
   );
 }

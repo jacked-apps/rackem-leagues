@@ -31,6 +31,13 @@
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import { executeSql } from '@/test/dbTestUtils';
 
+// Snapshot of every org season status as this suite first found it, so afterAll
+// can restore them. This suite forces its season to 'upcoming' and deactivates
+// sibling active seasons; leaving them changed deactivates the dev DB and
+// pollutes other suites (e.g. createOrgAnnouncementsChat needs an active
+// season). Captured once, before the first mutation.
+let originalSeasonStatuses: Array<{ id: string; status: string }> = [];
+
 /**
  * Resolve a usable test season (one that has at least one team with a
  * captain and a roster), reset it back to 'upcoming', and clear any
@@ -52,6 +59,16 @@ async function setupActivationFixture() {
   `);
   expect(rows.length).toBe(1);
   const { season_id, league_id, organization_id } = rows[0];
+
+  // Snapshot the org's season statuses BEFORE the first mutation, so afterAll
+  // can put them back exactly as found (keeps this suite status-neutral).
+  if (originalSeasonStatuses.length === 0) {
+    originalSeasonStatuses = await executeSql(
+      `SELECT id, status FROM seasons
+        WHERE league_id IN (SELECT id FROM leagues WHERE organization_id = $1)`,
+      [organization_id]
+    );
+  }
 
   // Force the season back to 'upcoming' so we can re-activate it.
   // We disable + re-enable the trigger around this reset so the
@@ -103,12 +120,8 @@ describe('season-activation trigger → auto_create_season_conversations()', () 
   });
 
   afterAll(async () => {
-    // Final cleanup so we leave the dev DB in a sensible state.
+    // Final cleanup so we leave the dev DB exactly as we found it.
     if (!seasonId) return;
-    await executeSql(
-      `UPDATE seasons SET status = 'upcoming' WHERE id = $1`,
-      [seasonId]
-    );
     await executeSql(
       `DELETE FROM conversations
         WHERE auto_managed = TRUE
@@ -119,6 +132,11 @@ describe('season-activation trigger → auto_create_season_conversations()', () 
           )`,
       [seasonId, organizationId]
     );
+    // Restore every org season to its original status (undoes the chosen
+    // season's reset + the sibling-active deactivation).
+    for (const s of originalSeasonStatuses) {
+      await executeSql(`UPDATE seasons SET status = $1 WHERE id = $2`, [s.status, s.id]);
+    }
   });
 
   it('creates one team chat per team on activation', async () => {

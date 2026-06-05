@@ -20,6 +20,7 @@ import { RulesErrorBoundary } from '../rules/RulesErrorBoundary';
 import { Login } from '../login/Login';
 import { Register } from '../login/Register';
 import { ClaimPlayer } from '../login/ClaimPlayer';
+import { TeamJoinPage } from '../onboarding/TeamJoinPage';
 import { ForgotPassword } from '../login/ForgotPassword';
 import { ResetPassword } from '../login/ResetPassword';
 import { EmailConfirmation } from '../login/EmailConfirmation';
@@ -91,6 +92,7 @@ const PlayoffSetup = lazy(() => import('../operator/PlayoffSetup'));
 const OrganizationPlayoffSettings = lazy(() => import('../operator/OrganizationPlayoffSettings'));
 const LeaguePlayoffSettings = lazy(() => import('../operator/LeaguePlayoffSettings'));
 const PlayoffsSetupWizard = lazy(() => import('../operator/PlayoffsSetupWizard'));
+const Learn = lazy(() => import('../pages/Learn'));
 
 /**
  * Helper to wrap element with ProtectedRoute for auth-only routes
@@ -163,6 +165,7 @@ export const router = createBrowserRouter([
       { path: 'login', element: <Login /> },
       { path: 'register', element: <Register /> },
       { path: 'claim-player', element: <ClaimPlayer /> },
+      { path: 'join/:token', element: <TeamJoinPage /> },
       { path: 'forgot-password', element: <ForgotPassword /> },
       { path: 'reset-password', element: <ResetPassword /> },
       { path: 'confirm', element: <EmailConfirmation /> },
@@ -240,6 +243,10 @@ export const router = createBrowserRouter([
           { path: 'league/:leagueId/season/:seasonId/team-stats', element: withMember(<TeamStats />) },
           { path: 'league/:leagueId/season/:seasonId/feats', element: withMember(<FeatsOfExcellence />) },
           { path: 'league/:leagueId/season/:seasonId/match-data', element: withMember(<MatchDataViewer />) },
+
+          // --- Learn hub — any signed-in user (operators AND players share
+          //     this destination; deep links from glossary popovers land here) ---
+          { path: 'learn', element: withAuth(<Suspense fallback={<LoadingSpinner />}><Learn /></Suspense>) },
 
           // --- Operator Routes (require league_operator role) ---
           { path: 'operator-welcome', element: withOperator(OperatorWelcome) },

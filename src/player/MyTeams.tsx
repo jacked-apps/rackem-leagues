@@ -37,6 +37,9 @@ import { buildLeagueTitle, getTimeOfYear } from '@/utils/leagueUtils';
 import { TenBallIcon } from '@/components/icons/TenBallIcon';
 import { NineBallIcon } from '@/components/icons/NineBallIcon';
 import { EightBallIcon } from '@/components/icons/EightBallIcon';
+import { JoinRequestList } from '@/onboarding/components/JoinRequestList';
+import { InviteMyTeamButton } from '@/onboarding/InviteMyTeamButton';
+import { defaultOpenTeamId } from '@/onboarding/landingTeam';
 
 interface TeamData {
   team_id: string;
@@ -320,6 +323,11 @@ function TeamAccordionItem({
             </Button>
           </div>
 
+          {/* Invite players (Captains Only) — onboarding cascade Unit 7 */}
+          {isCaptain && (
+            <InviteMyTeamButton teamId={team.id} teamName={team.team_name} />
+          )}
+
           {/* Team Readiness Warning (Captains Only) */}
           {isCaptain && !isReady && (
             <div className="p-3 bg-warning/10 border border-warning/40 rounded-lg">
@@ -496,7 +504,11 @@ export function MyTeams() {
       />
 
       {/* Main Content */}
-      <main className="px-4 py-6 max-w-2xl mx-auto">
+      <main className="px-4 py-6 max-w-2xl mx-auto space-y-6">
+        {/* Onboarding cascade: pending join requests for teams this captain
+            approves. Renders nothing when there are none. */}
+        <JoinRequestList title="Join requests" />
+
         {teams.length === 0 ? (
           <Card>
             <CardContent className="p-12 text-center">
@@ -505,7 +517,15 @@ export function MyTeams() {
             </CardContent>
           </Card>
         ) : (
-          <Accordion type="single" collapsible className="space-y-4">
+          <Accordion
+            type="single"
+            collapsible
+            className="space-y-4"
+            // Land-on-tonight's-match (Unit 8): a player on exactly one team
+            // lands with it open, so an in-progress/today match's Quick Score
+            // card is front-and-center. With several teams we don't guess which.
+            defaultValue={defaultOpenTeamId(teams.map((t) => t.teams.id))}
+          >
             {teams.map((teamData) => (
               <TeamAccordionItem
                 key={teamData.teams.id}

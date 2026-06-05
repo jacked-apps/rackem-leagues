@@ -11,7 +11,7 @@
  */
 
 import { Calendar } from '@/components/ui/calendar';
-import { InfoButton } from '@/components/InfoButton';
+import { GlossaryInfoButton } from '@/components/GlossaryInfoButton';
 import { formatLocalDate, getDayOfWeekName } from '@/utils/formatters';
 import type { WizardStepProps } from '@/components/wizard';
 import type { LeagueWizardFormData } from '../leagueWizardTypes';
@@ -26,13 +26,10 @@ export function StartDateStep({
     <div className="space-y-3">
       <div className="flex items-center gap-1">
         <p className="font-medium text-foreground">When does your season begin?</p>
-        <InfoButton title="Start Date" size="sm">
-          <p>
-            Choose the first match date. This determines the day of the
-            week your league plays on (matches repeat weekly on this day).
-            It also sets the season name and year used in the league name.
-          </p>
-        </InfoButton>
+        {/* Unit 2.5 smoke test — first live GlossaryInfoButton. The inline
+            help that used to live here now reads from the `start-date`
+            glossary entry. */}
+        <GlossaryInfoButton slug="start-date" size="sm" />
       </div>
 
       <Calendar

@@ -15,29 +15,20 @@ const HANDICAP_OPTIONS: SelectableCardOption<string>[] = [
   {
     value: 'points',
     title: 'Points',
-    description: 'BCA Classic (max +2 min -2)',
-    infoButton: {
-      title: 'Points Handicap Formula',
-      content: '(Wins - Losses) / Weeks Played. Produces a value from -2 to +2.',
-    },
+    description: 'Integer handicap, range −2 to +2',
+    infoButton: { slug: 'points-handicap' },
   },
   {
     value: 'percentage',
     title: 'Percentage',
-    description: 'Percentage-based handicap calculation',
-    infoButton: {
-      title: 'Percentage Handicap Formula',
-      content: 'Wins / Total Games Played. Produces a percentage (e.g., 55%).',
-    },
+    description: 'Win-percentage-based handicap',
+    infoButton: { slug: 'percentage-handicap' },
   },
   {
     value: 'fargo',
     title: 'Fargo Rating',
-    description: 'Uses Fargo ratings for handicap calculation',
-    infoButton: {
-      title: 'Fargo Rating System',
-      content: 'FargoRate is the official rating system of the BCA and CSI. It assigns players a numeric rating based on their performance history, allowing fair handicap matchups across different skill levels. Ratings are maintained internationally and updated regularly.',
-    },
+    description: 'Uses FargoRate ratings for handicap calculation',
+    infoButton: { slug: 'fargorate' },
   },
   {
     value: 'skill_level',
@@ -53,6 +44,7 @@ const HANDICAP_OPTIONS: SelectableCardOption<string>[] = [
     value: 'none',
     title: 'No Handicap',
     description: 'All players compete on equal terms',
+    infoButton: { slug: 'no-handicap' },
   },
   {
     value: 'custom_formula',
@@ -70,16 +62,7 @@ export function HandicapSystemStep({
   return (
     <CardSelector
       label="What handicap system should this league use?"
-      labelInfoButton={{
-        title: 'Handicap System',
-        content: (
-          <p>
-            The handicap system determines how player skill differences
-            are accounted for. It affects how start points or thresholds
-            are calculated each match night.
-          </p>
-        ),
-      }}
+      labelInfoButton={{ slug: 'handicap-system' }}
       options={HANDICAP_OPTIONS}
       value={value ?? ''}
       onChange={onChange}
