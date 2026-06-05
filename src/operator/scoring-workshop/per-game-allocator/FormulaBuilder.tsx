@@ -31,15 +31,25 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select';
-import { AVAILABLE_DATA, labelForVar } from './availableData';
+import {
+  AVAILABLE_DATA,
+  labelForVar,
+  type SidePerspective,
+} from './availableData';
 import type { FormulaToken, TokenOp } from './formulaTokens';
 
 export interface FormulaBuilderProps {
   readonly tokens: readonly FormulaToken[];
   readonly onChange: (next: FormulaToken[]) => void;
+  /**
+   * Which side is being edited. Drives the role-based labels in the
+   * data picker + token pills ("Winner base" vs "Loser base") without
+   * changing the underlying variable names the runtime reads.
+   */
+  readonly perspective: SidePerspective;
 }
 
-export function FormulaBuilder({ tokens, onChange }: FormulaBuilderProps) {
+export function FormulaBuilder({ tokens, onChange, perspective }: FormulaBuilderProps) {
   const [numberInput, setNumberInput] = useState('');
 
   const append = (token: FormulaToken) => onChange([...tokens, token]);
@@ -64,7 +74,7 @@ export function FormulaBuilder({ tokens, onChange }: FormulaBuilderProps) {
 
   return (
     <div className="space-y-3">
-      <TokenStrip tokens={tokens} onRemove={removeAt} />
+      <TokenStrip tokens={tokens} onRemove={removeAt} perspective={perspective} />
 
       <div className="space-y-2 rounded-md border p-3">
         <Label className="text-xs uppercase text-muted-foreground">
@@ -81,9 +91,9 @@ export function FormulaBuilder({ tokens, onChange }: FormulaBuilderProps) {
               {AVAILABLE_DATA.map((d) => (
                 <SelectItem key={d.name} value={d.name}>
                   <div className="flex flex-col">
-                    <span>{d.label}</span>
+                    <span>{d.label(perspective)}</span>
                     <span className="text-xs text-muted-foreground">
-                      {d.description}
+                      {d.description(perspective)}
                     </span>
                   </div>
                 </SelectItem>
@@ -165,9 +175,11 @@ export function FormulaBuilder({ tokens, onChange }: FormulaBuilderProps) {
 function TokenStrip({
   tokens,
   onRemove,
+  perspective,
 }: {
   tokens: readonly FormulaToken[];
   onRemove: (idx: number) => void;
+  perspective: SidePerspective;
 }) {
   return (
     <div className="flex min-h-[3rem] flex-wrap items-center gap-1 rounded-md border bg-muted/40 p-2">
@@ -177,7 +189,12 @@ function TokenStrip({
         </span>
       ) : (
         tokens.map((tok, i) => (
-          <TokenPill key={i} token={tok} onRemove={() => onRemove(i)} />
+          <TokenPill
+            key={i}
+            token={tok}
+            onRemove={() => onRemove(i)}
+            perspective={perspective}
+          />
         ))
       )}
     </div>
@@ -187,9 +204,11 @@ function TokenStrip({
 function TokenPill({
   token,
   onRemove,
+  perspective,
 }: {
   token: FormulaToken;
   onRemove: () => void;
+  perspective: SidePerspective;
 }) {
   // The whole pill is the delete target. Hover → red ring so it's
   // clear it's clickable; click → that token is gone.
@@ -204,7 +223,7 @@ function TokenPill({
         title={title}
         className={`${baseClass} bg-primary/10`}
       >
-        {labelForVar(token.name)}
+        {labelForVar(token.name, perspective)}
       </button>
     );
   }

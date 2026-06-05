@@ -71,11 +71,13 @@ export function AllocatorEditor({ initial, onSave, onCancel }: AllocatorEditorPr
           heading="Winner side"
           value={row.winner_side}
           onChange={(next) => setRow({ ...row, winner_side: next })}
+          perspective="winner"
         />
         <SideEditor
           heading="Loser side"
           value={row.loser_side}
           onChange={(next) => setRow({ ...row, loser_side: next })}
+          perspective="loser"
         />
         {error && (
           <div className="rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive">

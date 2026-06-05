@@ -27,6 +27,7 @@ import {
   SelectItem,
 } from '@/components/ui/select';
 import { FormulaBuilder } from './FormulaBuilder';
+import type { SidePerspective } from './availableData';
 import {
   expressionToTokens,
   tokensToExpression,
@@ -43,14 +44,25 @@ export interface SideEditorProps {
   readonly heading: string;
   readonly value: SideConfig;
   readonly onChange: (next: SideConfig) => void;
+  /**
+   * Which side this editor represents. Drives the role-based labels
+   * in the formula builder ("Winner base" vs "Loser base") without
+   * changing the runtime contract.
+   */
+  readonly perspective: SidePerspective;
 }
 
-export function SideEditor({ heading, value, onChange }: SideEditorProps) {
+export function SideEditor({
+  heading,
+  value,
+  onChange,
+  perspective,
+}: SideEditorProps) {
   return (
     <div className="space-y-4 rounded-md border p-3">
       <div className="font-medium">{heading}</div>
       <BaseSection value={value} onChange={onChange} />
-      <FormulaSection value={value} onChange={onChange} />
+      <FormulaSection value={value} onChange={onChange} perspective={perspective} />
     </div>
   );
 }
@@ -180,9 +192,11 @@ function RangeBaseInputs({
 function FormulaSection({
   value,
   onChange,
+  perspective,
 }: {
   value: SideConfig;
   onChange: (next: SideConfig) => void;
+  perspective: SidePerspective;
 }) {
   // `formulaOn` is local to the section so we can show the builder
   // BEFORE there's a parseable expression — without that, "Add a
@@ -228,7 +242,7 @@ function FormulaSection({
           side's value this game)."
         </p>
       ) : (
-        <FormulaBody value={value} onChange={onChange} />
+        <FormulaBody value={value} onChange={onChange} perspective={perspective} />
       )}
     </div>
   );
@@ -237,9 +251,11 @@ function FormulaSection({
 function FormulaBody({
   value,
   onChange,
+  perspective,
 }: {
   value: SideConfig;
   onChange: (next: SideConfig) => void;
+  perspective: SidePerspective;
 }) {
   // Tokens are local draft state. When the user opens an existing
   // formula, tokens hydrate from it. When "Add a formula" was just
@@ -300,11 +316,15 @@ function FormulaBody({
     <div className="space-y-2">
       <p className="text-xs text-muted-foreground">
         Transforms the base into this side's final value. The formula can
-        reference the base via "This Side's Value This Game" — or stand alone
-        if it doesn't need the base. Click any pill to remove it from the
-        formula.
+        reference the base via "{perspective === 'winner' ? 'Winner' : 'Loser'} base
+        (this game)" — or stand alone if it doesn't need the base. Click any
+        pill to remove it from the formula.
       </p>
-      <FormulaBuilder tokens={tokens} onChange={handleTokensChange} />
+      <FormulaBuilder
+        tokens={tokens}
+        onChange={handleTokensChange}
+        perspective={perspective}
+      />
       {parseError && (
         <p className="text-xs text-destructive">
           Formula isn't valid yet: {parseError}

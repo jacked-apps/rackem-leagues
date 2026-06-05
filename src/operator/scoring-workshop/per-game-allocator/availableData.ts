@@ -2,98 +2,93 @@
  * @fileoverview Curated registry of "Available Data" the workshop UI
  * surfaces to LOs when they build a formula.
  *
- * The state bag is an open namespace — anything a threshold or trigger
- * writes is readable by name. But exposing that as a free-text input
- * invites typos and broken formulas. Instead the workshop offers a
- * fixed, human-named list. Each entry maps the LO-facing label to the
- * actual state-var name the runtime reads.
- *
- * The set today covers the runtime-initialized vars in
- * `src/systems/points-system/runtime.ts` — the always-present ones.
- * As more compositions write to the bag (milestone counts, tiebreaker
- * markers, etc.) entries get added here so the LO can reference them.
+ * Labels resolve based on which side the LO is editing. When editing
+ * the WINNER side, `this_side_*` reads as "Winner …" and
+ * `other_side_*` reads as "Loser …". On the loser side the labels
+ * flip. The underlying variable names (the strings the runtime reads)
+ * stay constant; only the display labels change. This keeps the
+ * workshop guardrail intact (no free-text variable names) while
+ * showing concrete role-based names instead of jargon.
  *
  * NOT exposed: vars that exist only inside specific compositions
  * (`winTarget`, `milestoneTarget`, etc.) — those vary by Scoring System
  * and surfacing them per-league is future work.
  */
 
+export type SidePerspective = 'winner' | 'loser';
+
+function otherSide(p: SidePerspective): SidePerspective {
+  return p === 'winner' ? 'loser' : 'winner';
+}
+
+function cap(p: SidePerspective): string {
+  return p === 'winner' ? 'Winner' : 'Loser';
+}
+
 export interface AvailableDatum {
   /** State-bag variable name the runtime reads. */
   readonly name: string;
-  /** What the LO sees in the picker. */
-  readonly label: string;
+  /** Label rendered from the editor's perspective. */
+  readonly label: (p: SidePerspective) => string;
   /** Short hint shown beneath the label. */
-  readonly description: string;
+  readonly description: (p: SidePerspective) => string;
 }
 
-/**
- * Side-agnostic available data. The allocator computes per-side
- * contributions for the winner and loser of THIS game — it never
- * thinks in home/away. Exposing `home_wins` / `away_wins` to the LO
- * would invite unfair formulas (a formula that gives the winner
- * `home_wins` points would short-change away winners every time).
- *
- * Instead, the workshop offers virtual names like `this_side_wins`
- * that the `evaluate_expression` recipe resolves at compute time to
- * the right home_xxx or away_xxx state-bag entry based on who
- * actually won THIS game and which side this formula computes for.
- */
 export const AVAILABLE_DATA: readonly AvailableDatum[] = [
   // Per-game role values — what the scorer entered or the side's base
-  // resolved to THIS game. The 17-Point case uses other_side_value to
-  // reach the loser's pocketed-balls count from the winner-side formula.
+  // resolved to THIS game.
   {
     name: 'this_side_value',
-    label: "This Side's Value This Game",
-    description:
-      "The resolved base value (fixed or scorer-entered) for this side in THIS game, before the formula runs.",
+    label: (p) => `${cap(p)} base (this game)`,
+    description: (p) =>
+      `The base value this game for the ${p}'s side (the fixed number or the scorer-entered range value, before this formula runs).`,
   },
   {
     name: 'other_side_value',
-    label: "Other Side's Value This Game",
-    description:
-      "The resolved base value for the OTHER side in this game. 17-Point uses this to reference the loser's pocketed balls from the winner side.",
+    label: (p) => `${cap(otherSide(p))} base (this game)`,
+    description: (p) =>
+      `The base value this game for the ${otherSide(p)}'s side. 17-Point's winner formula reads the loser's base via this entry.`,
   },
-  // Running totals — side-agnostic via the same this/other resolution.
+  // Running totals.
   {
     name: 'this_side_wins',
-    label: "This Side's Wins So Far",
-    description:
-      "Games won so far by the team this side computes for. When the formula runs for the winner of THIS game, this is the winner team's running wins; for the loser side, the loser team's.",
+    label: (p) => `${cap(p)} wins so far`,
+    description: (p) =>
+      `Games won so far in this match by the team currently in the ${p} role.`,
   },
   {
     name: 'other_side_wins',
-    label: "Other Side's Wins So Far",
-    description:
-      "Games won so far by the team this side does NOT compute for. Mirror image of This Side's Wins.",
+    label: (p) => `${cap(otherSide(p))} wins so far`,
+    description: (p) =>
+      `Games won so far in this match by the team currently in the ${otherSide(p)} role.`,
   },
   {
     name: 'this_side_points',
-    label: "This Side's Points So Far",
-    description:
-      "Running points total for the team this side computes for in this match.",
+    label: (p) => `${cap(p)} points so far`,
+    description: (p) =>
+      `Running points total in this match for the team currently in the ${p} role.`,
   },
   {
     name: 'other_side_points',
-    label: "Other Side's Points So Far",
-    description:
-      'Running points total for the opposite team in this match.',
+    label: (p) => `${cap(otherSide(p))} points so far`,
+    description: (p) =>
+      `Running points total in this match for the team currently in the ${otherSide(p)} role.`,
   },
   // Match-level (game-agnostic).
   {
     name: 'games_played',
-    label: 'Games Played So Far',
-    description: 'How many games have been completed in this match.',
+    label: () => 'Games played so far',
+    description: () => 'How many games have been completed in this match.',
   },
   {
     name: 'total_games',
-    label: 'Total Games In Match',
-    description: 'The full game count for this match (set at match start).',
+    label: () => 'Total games in match',
+    description: () => 'The full game count for this match (set at match start).',
   },
 ];
 
-/** Look up the LO-facing label for a state-bag var name. */
-export function labelForVar(name: string): string {
-  return AVAILABLE_DATA.find((d) => d.name === name)?.label ?? name;
+/** Look up the LO-facing label for a state-bag var name from a side perspective. */
+export function labelForVar(name: string, perspective: SidePerspective): string {
+  const datum = AVAILABLE_DATA.find((d) => d.name === name);
+  return datum ? datum.label(perspective) : name;
 }
