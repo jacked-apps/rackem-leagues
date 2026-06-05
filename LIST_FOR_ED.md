@@ -177,7 +177,25 @@ blocks any meaningful Fargo league use.
 
 ---
 
-## 🚨 CRITICAL BUG: Team Deletion Destroys Matches
+## ~~🚨 CRITICAL BUG: Team Deletion Destroys Matches~~ ✅ CLOSED 2026-05-29
+
+> **Closed 2026-05-29** — verified fully fixed at BOTH layers, so the
+> "mitigation only — NOT a real fix" note below is now stale:
+> - **DB layer:** migration `20260501000001_team_fks_cascade_to_restrict.sql`
+>   (2026-05-01) changed `matches.home_team_id` and `matches.away_team_id`
+>   from `ON DELETE CASCADE` → `ON DELETE RESTRICT`. The baseline had them as
+>   CASCADE (the original bug). A raw team DELETE that still has matches now
+>   ERRORS instead of silently destroying them.
+> - **App layer:** `handleDeleteTeam` in `src/operator/TeamManagement.tsx`
+>   pre-flight counts the team's matches (home or away); when any exist it
+>   blocks with a clear toast pointing to the Drop Team workflow, and only
+>   deletes when the count is zero.
+>
+> The "Drop Team" workflow (mark withdrawn + reassign matches to a bye row)
+> is a separate enhancement — not the data-loss bug. Original entry preserved
+> below for reference.
+
+### Original entry
 
 **Discovered:** 2026-04-09 during wizard 2.0 planning
 **Severity:** HIGH — could destroy season data with one click
@@ -2233,6 +2251,93 @@ drift now means they'll start *actually testing* what they claim to
 as soon as the RLS-enablement project (LIST_FOR_ED #29) gets picked
 up. This work and the RLS enablement are independent — either can
 ship first.
+
+---
+
+## 2026-05-26 — Relax `match_games` position CHECK constraint for 6v6+
+
+**Branch needed:** small migration PR — e.g. `chore/relax-match-games-position-check`
+
+**Discovered:** 2026-05-26 during the Pairings Generator (Module #8)
+v1 extraction. The new Module itself is lineupSize-agnostic — it
+accepts any positive integer + either round-robin mode and produces
+the correct slot list. Cross-combo tests confirm 6v6 SRR (36 games)
+and 6v6 DRR (72 games) generate cleanly.
+
+**The problem:** the DATABASE blocks 6v6+ even though the Module
+allows it. `match_games.home_position` and `match_games.away_position`
+have CHECK constraints capping the value at 5:
+
+```
+CONSTRAINT match_games_home_position_check
+  CHECK ((home_position >= 1) AND (home_position <= 5))
+CONSTRAINT match_games_away_position_check
+  CHECK ((away_position >= 1) AND (away_position <= 5))
+```
+
+So if a league ever configures `lineup_size = 6` (or larger), the
+prep_match RPC would fail at insert time with a constraint violation
+the moment it tries to write the first row with `home_position = 6`.
+
+**Fix direction:** one tiny migration that drops the two CHECK
+constraints and replaces them with looser ones (e.g. `>= 1 AND <=
+20`, matching the `preferences_max_roster_size_check` ceiling that
+already exists). No data backfill needed; this only widens what's
+acceptable for future writes.
+
+**Status:** no plan exists yet. Not blocking anything today since no
+shipping system uses 6v6+. Just sitting on the bottleneck so the
+Module's lineupSize-agnosticism is realized end-to-end when an LO
+eventually wants a larger lineup.
+
+**See also:**
+- `docs/plans/2026-05-25-001-refactor-pairings-generator-extraction-plan.md`
+  Scope Boundaries section ("No `match_games` schema change") — this
+  ticket is the explicit follow-on noted there.
+- `src/systems/pairings/__tests__/pairings.test.ts` — the Module
+  tests that prove 6v6 already works at the Module level.
+
+---
+
+## 2026-05-26 — Substitution system broken at lineup-lock (duplicate-players error)
+
+**Branch needed:** investigation branch — e.g. `fix/lineup-sub-duplicate-players`
+
+**Discovered:** 2026-05-26 during the Pairings Generator (Module #8)
+smoke test. Trying to enter an **anonymous sub** in a lineup and lock
+it now throws an error referencing "duplicate players not allowed."
+
+**Likely NOT caused by the Pairings Generator extraction** — that
+change only affected the per-row mapping at prep_match time. The
+lineup-assembly path (`myLineup` build-up) and sentinel handling for
+anonymous subs were left untouched. More likely fallout from an
+earlier modular change (suspect: a recent DB constraint addition or
+prep_match RPC change). Verification needed: try anonymous sub on an
+older commit (before this branch) to confirm the bug pre-exists.
+
+**Reproduction:**
+- Open a match (any league)
+- Try to lock a lineup that includes an anonymous sub placeholder
+- Error appears mentioning duplicate players
+
+**Untested as of this note:**
+- The **double-duty** sub path — needs to be re-checked separately;
+  unknown if it's broken too or if only the anonymous-sub path is
+  affected. Recommend retesting both before opening a fix branch so
+  the scope is clear.
+
+**Severity:** HIGH if confirmed — sub workflows are core to match-night
+operations. Captains MUST be able to use anonymous subs (and
+double-duty) without errors.
+
+**Fix direction (once root cause is identified):**
+- Find the source of the "duplicate players not allowed" check —
+  could be a UNIQUE constraint added in a recent migration, an
+  app-level guard, or a CHECK constraint on `match_games`.
+- Decide whether sentinel values should bypass the duplicate check,
+  or whether the sentinel scheme itself needs to change to produce
+  unique per-row sentinels.
+- Verify the fix on both anonymous-sub and double-duty paths.
 
 
 

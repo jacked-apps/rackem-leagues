@@ -34,6 +34,12 @@ export default function LeagueWizardV2Page() {
     );
   }
 
+  // Inject organizationId into the flow context so step components
+  // can read it from formData._flowContext.organizationId instead of
+  // pulling it from useParams (which only works on this route — the
+  // next-season wizard's route doesn't have :orgId).
+  const contextWithOrg = { ...context, organizationId: orgId ?? undefined };
+
   return (
     <>
       <PageHeader
@@ -47,7 +53,7 @@ export default function LeagueWizardV2Page() {
         <WizardFlowShell
           flow={createNewLeagueFlow}
           stageHandlers={stageHandlers}
-          initialContext={context}
+          initialContext={contextWithOrg}
           startAtStage={firstIncompleteStage}
           onComplete={() => navigate(`/operator-dashboard/${orgId}`)}
           onCancel={() => navigate(`/operator-dashboard/${orgId}`)}

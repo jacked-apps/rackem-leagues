@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS seasons (
   season_length INTEGER NOT NULL CHECK (season_length >= 10 AND season_length <= 52),
 
   -- Status
-  status VARCHAR(20) NOT NULL DEFAULT 'upcoming' CHECK (status IN ('upcoming', 'active', 'completed', 'cancelled')),
+  status VARCHAR(20) NOT NULL DEFAULT 'upcoming' CHECK (status IN ('upcoming', 'scheduled', 'active', 'completed', 'cancelled')),
 
   -- Season completion tracking
   season_completed BOOLEAN DEFAULT false,

@@ -13,7 +13,8 @@ import { supabase } from '@/supabaseClient';
 import { queryKeys } from '@/api/queryKeys';
 import { calculateHandicapThresholds } from '@/utils/calculateHandicapThresholds';
 import { computeFargoGamesWonThresholds } from '@/utils/handicap/fargoGamesWonThresholds';
-import { generateGameOrder } from '@/utils/gameOrder';
+import { generatePairings, type GameGeneration } from '@/systems/pairings';
+import { computeGameCount } from '@/systems/team-geometry';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
 import type { MatchPhase } from '@/api/queries/matches';
@@ -147,8 +148,10 @@ export function useMatchPreparation(params: MatchPreparationParams) {
 
     // Compute expectedGameCount from prefs — deterministic from lineupSize
     // + gameGeneration. No hardcoded 18/25.
-    const useDoubleRoundRobin = (gameGeneration ?? 'double_round_robin') === 'double_round_robin';
-    const expectedGameCount = generateGameOrder(lineupSize, useDoubleRoundRobin).length;
+    const expectedGameCount = computeGameCount(
+      lineupSize,
+      gameGeneration ?? 'double_round_robin',
+    );
 
     // Synchronous idempotency / ready short-circuit. Fires for both home and
     // away whenever games exist for this match.
@@ -268,7 +271,10 @@ export function useMatchPreparation(params: MatchPreparationParams) {
             .map((n) => (awayLineupForFargo as any)[`player${n}_handicap`])
             .filter((h): h is number => typeof h === 'number');
 
-          const totalGames = generateGameOrder(lineupSize, useDoubleRoundRobin).length;
+          const totalGames = computeGameCount(
+            lineupSize,
+            gameGeneration ?? 'double_round_robin',
+          );
           const fargoThresholds = computeFargoGamesWonThresholds({
             homeRatings,
             awayRatings,
@@ -303,18 +309,44 @@ export function useMatchPreparation(params: MatchPreparationParams) {
         }
 
         // Build game rows from fresh lineup data. Do NOT use stale component props.
-        const allGames = generateGameOrder(lineupSize, useDoubleRoundRobin);
-        const homeLineup = isHomeTeam ? myLineup : opponentLineup;
-        const awayLineup = isHomeTeam ? opponentLineup : myLineup;
-        const gameRows = allGames.map((game) => ({
-          game_number: game.gameNumber,
+        //
+        // Normalize gameGeneration to the strict enum the Module expects.
+        // Today's prefs field is typed loosely (string); the Module's
+        // precondition rejects anything outside the two enum values, so
+        // we mirror today's silent "anything-not-DRR is SRR" fallback at
+        // this seam to keep behavior identical.
+        const safeGameGen: GameGeneration =
+          gameGeneration === 'double_round_robin'
+            ? 'double_round_robin'
+            : 'single_round_robin';
+
+        const homeLineupSource = isHomeTeam ? myLineup : opponentLineup;
+        const awayLineupSource = isHomeTeam ? opponentLineup : myLineup;
+        const homeLineupArr = Array.from(
+          { length: lineupSize },
+          (_, i) => (homeLineupSource as any)[`player${i + 1}_id`] as string,
+        );
+        const awayLineupArr = Array.from(
+          { length: lineupSize },
+          (_, i) => (awayLineupSource as any)[`player${i + 1}_id`] as string,
+        );
+
+        const allSlots = generatePairings({
+          lineupSize,
+          gameGeneration: safeGameGen,
+          homeLineup: homeLineupArr,
+          awayLineup: awayLineupArr,
+        });
+
+        const gameRows = allSlots.map((slot) => ({
+          game_number: slot.gameNumber,
           game_type: matchData?.league?.game_type || 'eight_ball',
-          home_player_id: (homeLineup as any)[`player${game.homePlayerPosition}_id`],
-          away_player_id: (awayLineup as any)[`player${game.awayPlayerPosition}_id`],
-          home_position: game.homePlayerPosition,
-          away_position: game.awayPlayerPosition,
-          home_action: game.homeAction,
-          away_action: game.awayAction,
+          home_player_id: slot.homePlayerId,
+          away_player_id: slot.awayPlayerId,
+          home_position: slot.homePosition,
+          away_position: slot.awayPosition,
+          home_action: slot.homeAction,
+          away_action: slot.awayAction,
         }));
 
         // Pre-insert guard: ONLY double-duty placeholders should be impossible

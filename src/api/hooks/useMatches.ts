@@ -223,6 +223,14 @@ export function useMatchWithLeagueSettings(matchId: string | null | undefined) {
     // refetch became a no-op. See LIST_FOR_ED #21/#22 root-cause analysis
     // in docs/brainstorms/lineup-to-scoring-transition-requirements.md.
     staleTime: STALE_TIME.MATCH_LIVE,
+    // Live scoring: always pull fresh server state on (re)mount and on network
+    // reconnect. The global defaults (refetchOnMount:false / refetchOnReconnect:
+    // false) would serve STALE cache on a remount — e.g. a StrictMode/churn
+    // remount — which defeats the data-derived confirmation handoff. staleTime:0
+    // alone is NOT enough: it makes invalidations refetch but does not force a
+    // mount refetch.
+    refetchOnMount: 'always',
+    refetchOnReconnect: true,
     retry: 1,
   });
 }
@@ -261,6 +269,10 @@ export function useMatchLineups(
     queryFn: () => getMatchLineups(matchId!, homeTeamId!, awayTeamId!, requireLocked),
     enabled: !!matchId && !!homeTeamId && !!awayTeamId,
     staleTime: STALE_TIME.MATCH_LIVE, // 0ms - always fresh
+    // See useMatchWithLeagueSettings: force fresh on (re)mount + reconnect so a
+    // churn remount can't serve stale lineup data during live scoring.
+    refetchOnMount: 'always',
+    refetchOnReconnect: true,
     retry: 1,
   });
 }
@@ -286,6 +298,11 @@ export function useMatchGames(matchId: string | null | undefined) {
     queryFn: () => getMatchGames(matchId!),
     enabled: !!matchId,
     staleTime: STALE_TIME.MATCH_LIVE, // 0ms - always fresh for scoring
+    // The games query feeds the data-derived confirmation handoff, so it MUST
+    // never serve stale cache on a remount. Force fresh on (re)mount + reconnect
+    // (global defaults are refetchOnMount:false / refetchOnReconnect:false).
+    refetchOnMount: 'always',
+    refetchOnReconnect: true,
     retry: 1,
   });
 }

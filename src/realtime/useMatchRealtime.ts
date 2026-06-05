@@ -39,10 +39,122 @@
  * });
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { REALTIME_SUBSCRIBE_STATES } from '@supabase/supabase-js';
 import { supabase } from '@/supabaseClient';
 import { getPlayerNicknameById } from '@/types/member';
-import type { MatchBasic, Player, MatchGame } from '@/types';
+import { logger } from '@/utils/logger';
+import type { MatchBasic, Player, MatchGame, ConfirmationQueueItem } from '@/types';
+
+/**
+ * Coarse realtime connection status surfaced to the scoring UI.
+ *
+ * - `live`        — channel is SUBSCRIBED and current.
+ * - `reconnecting`— a transient drop (CLOSED / TIMED_OUT / non-fatal
+ *                   CHANNEL_ERROR); the Supabase client is auto-rejoining.
+ * - `error`       — a terminal/non-transient channel error (a server/client
+ *                   binding mismatch — a config or publication bug, not a blip);
+ *                   retrying would just spin.
+ */
+export type RealtimeConnectionStatus = 'live' | 'reconnecting' | 'error';
+
+/**
+ * Per-subscription bookkeeping the classifier threads between callbacks.
+ * `hasSubscribed` distinguishes the very first SUBSCRIBED from a re-SUBSCRIBED
+ * after a drop; `reconnecting` records that we dropped since the last live
+ * state, which is precisely the condition under which a catch-up refetch is
+ * owed.
+ */
+interface SubscribeFlags {
+  hasSubscribed: boolean;
+  reconnecting: boolean;
+}
+
+/** Result of classifying one `.subscribe` status callback. */
+export interface SubscribeClassification {
+  /** Coarse status to surface to the UI. */
+  status: RealtimeConnectionStatus;
+  /**
+   * Whether a catch-up refetch is owed. True ONLY on a re-SUBSCRIBED after a
+   * drop — realtime does not replay rows missed while the socket was down, so
+   * the app must refetch to close the gap. Inherently fires at most once per
+   * drop cycle (the `reconnecting` flag is cleared on the SUBSCRIBED that
+   * consumes it), so no extra debounce timer is needed.
+   */
+  catchUp: boolean;
+  /** Flags to carry into the next callback. */
+  next: SubscribeFlags;
+}
+
+/**
+ * Is this CHANNEL_ERROR the terminal "bindings mismatch" error rather than a
+ * transient drop? realtime-js raises this exact message when the server and
+ * client disagree on the postgres_changes bindings — a config/publication bug
+ * that will never self-heal, so we must not treat it as a reconnecting blip.
+ *
+ * @param err - The error passed alongside a CHANNEL_ERROR status, if any.
+ */
+export function isBindingMismatch(err?: Error): boolean {
+  return !!err && /mismatch between server and client/i.test(err.message);
+}
+
+/**
+ * Pure state machine for the realtime `.subscribe` status callback.
+ *
+ * Extracted as a pure function (mirrors `computePhaseRefetchInterval`) so the
+ * status-derivation and catch-up-refetch decision are verifiable without
+ * mounting the hook or a real socket.
+ *
+ * @param state - The `REALTIME_SUBSCRIBE_STATES` value from the callback.
+ * @param err - The optional error (only present on CHANNEL_ERROR).
+ * @param prev - Flags carried from the previous callback.
+ * @returns The status to surface, whether a catch-up refetch is owed, and the
+ *   flags to carry forward.
+ */
+export function classifySubscribeEvent(
+  state: REALTIME_SUBSCRIBE_STATES,
+  err: Error | undefined,
+  prev: SubscribeFlags
+): SubscribeClassification {
+  switch (state) {
+    case REALTIME_SUBSCRIBE_STATES.SUBSCRIBED:
+      return {
+        status: 'live',
+        // A re-SUBSCRIBED (we'd subscribed before AND dropped since) owes a
+        // catch-up; the very first SUBSCRIBED does not.
+        catchUp: prev.hasSubscribed && prev.reconnecting,
+        next: { hasSubscribed: true, reconnecting: false },
+      };
+
+    case REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR:
+      if (isBindingMismatch(err)) {
+        // Terminal config bug — surface as error, do not arm a catch-up/retry.
+        return {
+          status: 'error',
+          catchUp: false,
+          next: { hasSubscribed: prev.hasSubscribed, reconnecting: false },
+        };
+      }
+      // Transient channel error — treat like a drop; the client auto-rejoins.
+      return {
+        status: 'reconnecting',
+        catchUp: false,
+        next: { hasSubscribed: prev.hasSubscribed, reconnecting: true },
+      };
+
+    case REALTIME_SUBSCRIBE_STATES.CLOSED:
+    case REALTIME_SUBSCRIBE_STATES.TIMED_OUT:
+    default:
+      // A drop. Mark reconnecting so the next SUBSCRIBED fires the catch-up.
+      // Idempotent across rapid duplicate CLOSED/TIMED_OUT callbacks (the flag
+      // is already true), so no extra refetch is scheduled by the repeats.
+      return {
+        status: 'reconnecting',
+        catchUp: false,
+        next: { hasSubscribed: prev.hasSubscribed, reconnecting: true },
+      };
+  }
+}
 
 interface GameUpdateOptions {
   /** Match data with team IDs */
@@ -55,24 +167,13 @@ interface GameUpdateOptions {
   myVacateRequests: React.MutableRefObject<Set<number>>;
   /** Function to add confirmation to queue. Accepts the full confirmation
    *  payload so the dialog can render every field the scorer entered. */
-  addToConfirmationQueue: (confirmation: {
-    gameNumber: number;
-    winnerPlayerName: string;
-    breakAndRun: boolean;
-    goldenBreak: boolean;
-    breakFouled: boolean;
-    runout: boolean;
-    winByForfeit: boolean;
-    winnerValue: number | null;
-    loserValue: number | null;
-    isResetRequest?: boolean;
-  }) => void;
+  addToConfirmationQueue: (confirmation: ConfirmationQueueItem) => void;
   /** Current editing game (to suppress own vacate requests) */
   editingGame?: { gameNumber: number; currentWinnerName: string } | null;
-  /** Auto-confirm setting (bypass confirmation modal) */
+  /** Auto-confirm setting. When on, this fast-path skips the modal and lets
+   *  the state-derived scan in ScoreMatch perform the auto-confirm — keeping
+   *  auto-confirm a single decision site (no duplicate write). */
   autoConfirm?: boolean;
-  /** Function to auto-confirm opponent score */
-  confirmOpponentScore?: (gameNumber: number) => void;
 }
 
 interface UseMatchRealtimeOptions {
@@ -99,6 +200,9 @@ interface UseMatchRealtimeOptions {
  *
  * @param matchId - Match ID to subscribe to
  * @param options - Configuration with refetch callbacks
+ * @returns `{ connectionStatus }` — the coarse realtime connection status
+ *   (`live` | `reconnecting` | `error`) for surfacing a calm indicator and
+ *   driving a polling fallback while degraded.
  */
 export function useMatchRealtime(
   matchId: string | null | undefined,
@@ -123,6 +227,19 @@ export function useMatchRealtime(
   const onGamesUpdateRef = useRef(onGamesUpdate);
   const gameUpdateOptionsRef = useRef(gameUpdateOptions);
 
+  // Coarse connection status surfaced to the scoring UI. Starts optimistic
+  // (`live`) so a fast, healthy connect shows no transient flash; flips to
+  // `reconnecting`/`error` only when a real drop/error callback fires.
+  const [connectionStatus, setConnectionStatus] =
+    useState<RealtimeConnectionStatus>('live');
+
+  // Per-subscription flags for the catch-up classifier. A ref (not state) so
+  // updating it never re-renders or re-runs the subscription effect.
+  const subscribeFlagsRef = useRef<SubscribeFlags>({
+    hasSubscribed: false,
+    reconnecting: false,
+  });
+
   useEffect(() => {
     onMatchUpdateRef.current = onMatchUpdate;
     onLineupUpdateRef.current = onLineupUpdate;
@@ -133,7 +250,17 @@ export function useMatchRealtime(
   useEffect(() => {
     if (!matchId) return;
 
-    console.log(`[useMatchRealtime] Setting up subscription for match ${matchId}`);
+    // Reset per-subscription flags so a React remount (StrictMode double-mount
+    // in dev, or a matchId change) starts a fresh handshake and is NOT mistaken
+    // for a socket re-subscribe — which would otherwise fire a spurious
+    // catch-up refetch. A real socket DROP does not re-run this effect (the
+    // same channel auto-rejoins under the hood), so the flags persist across
+    // CLOSED→SUBSCRIBED and the catch-up still fires there. This is the line
+    // that separates "component remounted" (re-establish, no catch-up) from
+    // "socket dropped" (catch up).
+    subscribeFlagsRef.current = { hasSubscribed: false, reconnecting: false };
+
+    logger.debug('[useMatchRealtime] Setting up subscription', { matchId });
 
     const channel = supabase
       .channel(`match_${matchId}`)
@@ -148,7 +275,7 @@ export function useMatchRealtime(
           filter: `id=eq.${matchId}`,
         },
         (payload) => {
-          console.log('[useMatchRealtime] Match update received:', payload.eventType);
+          logger.debug('[useMatchRealtime] Match update received', { eventType: payload.eventType });
           onMatchUpdateRef.current?.();
         }
       )
@@ -163,7 +290,7 @@ export function useMatchRealtime(
           filter: `match_id=eq.${matchId}`,
         },
         (payload) => {
-          console.log('[useMatchRealtime] Lineup update received:', payload.eventType);
+          logger.debug('[useMatchRealtime] Lineup update received', { eventType: payload.eventType });
           onLineupUpdateRef.current?.();
         }
       )
@@ -178,7 +305,7 @@ export function useMatchRealtime(
           filter: `match_id=eq.${matchId}`,
         },
         async (payload) => {
-          console.log('[useMatchRealtime] Game update received:', payload.eventType);
+          logger.debug('[useMatchRealtime] Game update received', { eventType: payload.eventType });
           // Always refetch games
           onGamesUpdateRef.current?.();
 
@@ -196,7 +323,6 @@ export function useMatchRealtime(
               addToConfirmationQueue,
               editingGame = null,
               autoConfirm = false,
-              confirmOpponentScore,
             } = currentGameUpdateOptions;
 
             if (!match || !userTeamId) return;
@@ -204,7 +330,7 @@ export function useMatchRealtime(
             const updatedGame = payload.new as MatchGame;
 
             // Detect if this is a vacate request
-            const isVacateRequest = !!(updatedGame as any).vacate_requested_by;
+            const isVacateRequest = !!updatedGame.vacate_requested_by;
 
             // Handle vacate requests (check this FIRST, before normal confirmation logic)
             if (isVacateRequest) {
@@ -233,7 +359,7 @@ export function useMatchRealtime(
                   winByForfeit: updatedGame.win_by_forfeit,
                   loserValue: updatedGame.loser_value,
                   winnerValue: updatedGame.winner_value,
-                  isResetRequest: true,
+                  isVacateRequest: true,
                 });
               }
               return;
@@ -248,11 +374,11 @@ export function useMatchRealtime(
               const needMyConfirmation = (isHomeTeamScorer && !iAmHome) || (isAwayTeamScorer && iAmHome);
 
               if (needMyConfirmation) {
-                // If auto-confirm is enabled, automatically confirm without showing modal
-                if (autoConfirm && confirmOpponentScore) {
-                  confirmOpponentScore(updatedGame.game_number);
-                  return;
-                }
+                // Auto-confirm on: skip the modal here and let the state-derived
+                // scan in ScoreMatch perform the auto-confirm. Keeping auto-confirm
+                // a single decision site avoids this fast-path and the scan both
+                // writing the same confirmation (the dup the review flagged).
+                if (autoConfirm) return;
 
                 const winnerName = getPlayerNicknameById(updatedGame.winner_player_id, players);
                 // Forward every scored field — dumb dialog renders whatever is truthy.
@@ -266,7 +392,7 @@ export function useMatchRealtime(
                   winByForfeit: updatedGame.win_by_forfeit,
                   loserValue: updatedGame.loser_value,
                   winnerValue: updatedGame.winner_value,
-                  isResetRequest: false,
+                  isVacateRequest: false,
                 });
               }
             }
@@ -274,11 +400,32 @@ export function useMatchRealtime(
         }
       )
       .subscribe((status, err) => {
-        console.log(`[useMatchRealtime] Subscription status: ${status}`, err ? `Error: ${err.message}` : '');
+        logger.debug('[useMatchRealtime] Subscription status', { status, error: err?.message });
+
+        // Classify the status into a coarse UI state + a catch-up decision.
+        // The pure classifier carries the per-subscription flags forward.
+        const result = classifySubscribeEvent(
+          status,
+          err,
+          subscribeFlagsRef.current
+        );
+        subscribeFlagsRef.current = result.next;
+        setConnectionStatus(result.status);
+
+        // On a true re-SUBSCRIBED (after a drop), refetch everything: realtime
+        // does NOT replay rows missed while the socket was down, so this is the
+        // only thing that closes the gap and brings the board back in sync —
+        // no manual refresh needed. Fires at most once per drop (see classifier).
+        if (result.catchUp) {
+          logger.debug('[useMatchRealtime] Re-subscribed after drop — catch-up refetch');
+          onMatchUpdateRef.current?.();
+          onLineupUpdateRef.current?.();
+          onGamesUpdateRef.current?.();
+        }
       });
 
     return () => {
-      console.log(`[useMatchRealtime] Cleaning up subscription for match ${matchId}`);
+      logger.debug('[useMatchRealtime] Cleaning up subscription', { matchId });
       supabase.removeChannel(channel);
     };
     // gameUpdateOptions is intentionally NOT in this dep array — the
@@ -286,4 +433,6 @@ export function useMatchRealtime(
     // causing the subscription to tear down on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matchId]);
+
+  return { connectionStatus };
 }

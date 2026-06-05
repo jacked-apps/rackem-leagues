@@ -41,6 +41,7 @@ export type {
   WizardConfig,
   FlowStage,
   FlowContext,
+  ReupResponseContextEntry,
   WizardFlowConfig,
 } from './flowTypes';
 

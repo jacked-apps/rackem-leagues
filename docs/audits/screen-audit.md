@@ -1,7 +1,7 @@
 <!-- markdownlint-disable MD024 -->
 # Screen consistency & ease-of-use audit
 
-> **Status:** active. Started 2026-05-24.
+> **Status:** ✅ **all in-scope screens complete** — closed out 2026-05-25 (sweep ran 2026-05-24 → 2026-05-25).
 > **Plan:** [`docs/plans/2026-05-24-001-refactor-screen-consistency-audit-plan.md`](../plans/2026-05-24-001-refactor-screen-consistency-audit-plan.md)
 > **Origin requirements:** [`docs/brainstorms/2026-05-24-screen-consistency-audit-requirements.md`](../brainstorms/2026-05-24-screen-consistency-audit-requirements.md)
 > **Auto-scan findings (regenerated):** [`docs/audits/scan-findings.md`](scan-findings.md) — run `pnpm audit:scan` to refresh.
@@ -619,25 +619,33 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/5-man-format-details`
 - **Component:** `src/info/FiveManFormatDetails.tsx`
-- **Status:** ⏳ pending — flagged as bypassing `<PageHeader>`; lots of color findings (20+)
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-final-batch) — biggest screen in the entire audit
+- **Rubric:** All 8 pass. Fixed **71 findings** — heaviest file by far. Multi-pass token migration via global replaces:
+  - `bg-blue-50 + border-blue-200` callouts (`p-4` and `p-3` variants) → `bg-info/10 + border-info/40`
+  - `bg-green-50 + border-green-200` callouts → `bg-success/10 + border-success/40`
+  - `bg-yellow-50 + border-yellow-200` callouts → `bg-warning/10 + border-warning/40`
+  - `text-blue-900` (headings) → `text-info`, `text-blue-800` (body) → `text-foreground`, `text-blue-700` (italic captions) → `text-info`
+  - `text-green-900/800/700` → `text-success` (headings + captions) / `text-foreground` (body)
+  - `text-yellow-900/800/700` → `text-warning` / `text-foreground`
+  - `text-green-600 font-bold mr-2` checkmarks → `text-success`
+  - Win/Tie/Loss table headers (`bg-green-100/yellow-100/red-100`) → `bg-success/15 / warning/15 / destructive/15`
+  - Standalone `bg-blue-50` data rows → `bg-info/10`
+  - `border-blue-300` divider → `border-info/40`
+- PageHeader bypass — info pages render their own back button + title at the top. Could be migrated in a follow-up; deferred.
 
 #### `EightManFormatDetails`
 
 - **Routes:** `/8-man-format-details`
 - **Component:** `src/info/EightManFormatDetails.tsx`
-- **Status:** ⏳ pending — flagged as bypassing `<PageHeader>`; ~8 color findings
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-final-batch)
+- **Rubric:** All 8 pass. Fixed 12 findings using the same global-replace pattern as `FiveManFormatDetails` (blue → info, yellow → warning, with foreground body for long text). PageHeader bypass deferred (matches sibling info pages).
 
 #### `FormatComparison`
 
 - **Routes:** `/format-comparison`
 - **Component:** `src/info/FormatComparison.tsx`
-- **Status:** ⏳ pending — flagged as bypassing `<PageHeader>`; ~13 color findings (table-heavy)
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-final-batch)
+- **Rubric:** All 8 pass. Fixed 15 findings — table-heavy with the "5-man" column tinted green-50 (now `bg-success/10`) and the right-column summary Card border-200 → `border-success/40`, heading `text-green-900` → `text-success`, body `text-green-800` → `text-foreground`. The 8-man side uses `bg-muted` (neutral) — categorical distinction preserved.
 
 ### Wave 9 — Stats detail (5)
 
@@ -645,41 +653,36 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/league/:leagueId/season/:seasonId/standings`
 - **Component:** `src/pages/Standings.tsx`
-- **Status:** 🟠 cascade-fixed (StatsNavBar), awaiting verify
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-final-batch)
+- **Rubric:** All 8 pass. Fixed 2: error heading + error text body → destructive.
 
 #### `TopShooters`
 
 - **Routes:** `/league/:leagueId/season/:seasonId/top-shooters`
 - **Component:** `src/pages/TopShooters.tsx`
-- **Status:** 🟠 cascade-fixed (StatsNavBar), awaiting verify
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-final-batch)
+- **Rubric:** All 8 pass. Fixed 2 — same pattern as Standings.
 
 #### `TeamStats`
 
 - **Routes:** `/league/:leagueId/season/:seasonId/team-stats`
 - **Component:** `src/pages/TeamStats.tsx`
-- **Status:** 🟠 cascade-fixed (StatsNavBar), awaiting verify
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-final-batch)
+- **Rubric:** All 8 pass. Fixed 1 (error → destructive).
 
 #### `FeatsOfExcellence`
 
 - **Routes:** `/league/:leagueId/season/:seasonId/feats`
 - **Component:** `src/pages/FeatsOfExcellence.tsx`
-- **Status:** 🟠 cascade-fixed (InfoButton + StatsNavBar), awaiting verify
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-final-batch)
+- **Rubric:** All 8 pass. Fixed 1 (error → destructive). Cascade-clean from InfoButton + StatsNavBar.
 
 #### `MatchDataViewer`
 
 - **Routes:** `/league/:leagueId/season/:seasonId/match-data`
 - **Component:** `src/pages/MatchDataViewer.tsx`
-- **Status:** ⏳ pending — flagged as bypassing `<PageHeader>`
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-final-batch)
+- **Rubric:** All 8 pass. Fixed 2: error text → destructive; Debug Info dev-only callout (`bg-yellow-50 border-yellow-200`) → `bg-warning/10 border-warning/40`. PageHeader bypass — this is a dev-leaning data-viewer page, deferred.
 
 ### Wave 10 — Player detail (1)
 
@@ -687,9 +690,8 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/player/:playerId`
 - **Component:** `src/pages/PlayerProfile.tsx`
-- **Status:** ⏳ pending — flagged as bypassing `<PageHeader>`
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-final-batch)
+- **Rubric:** All 8 pass. Fixed 4: error text → destructive; email link (text-blue-600) → `text-primary`; Captain badge (bg-blue-100 + text-blue-800) → `bg-info/15 + text-info`; BCA Active badge (bg-green-100 + text-green-800) → `bg-success/15 + text-success`. PageHeader bypass — uses a simple back Button + page title pattern; deferred.
 
 ### Wave 11 — Rules (1 entry, 3 routes)
 
@@ -700,9 +702,8 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
   - `src/rules/RulesPage.tsx`
   - `src/rules/RuleDetailPage.tsx`
   - `src/rules/HouseRuleDetailPage.tsx`
-- **Status:** ⏳ pending — recent IA work expanded container to `max-w-4xl` and merged chip rows
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-final-batch)
+- **Rubric:** All 8 pass. RuleDetailPage + HouseRuleDetailPage had **zero** findings. RulesPage had one: the "Show only house-rule differences" checkbox used native `<label>` + `<input type="checkbox">` → swapped to shadcn `Checkbox` + `Label` with `htmlFor` wiring (proper focus rings + keyboard + ARIA). This drops the project's native-form-element count from 23 → 22.
 
 ### Wave 12 — Wizards (1)
 
@@ -710,9 +711,8 @@ Ordered highest-impact first. ~58 routes collapse to ~54 entries (some routes sh
 
 - **Routes:** `/create-league/:orgId`
 - **Component:** `src/wizards/league-v2/LeagueWizardV2Page.tsx`
-- **Status:** 🟠 cascade-fixed (PageHeader org badge), awaiting verify — single audit entry for the page chrome + `WizardFlowShell`. Composes 27 sub-steps via `createNewLeagueFlow` (league/schedule/teams/matchups). Per-step audit is deferred to a follow-up.
-- **Rubric:** _(8-item template)_
-- **Notes:**
+- **Status:** ✅ done (PR — chore/audit-final-batch) — single audit entry for the page chrome + `WizardFlowShell`. Composes 27 sub-steps via `createNewLeagueFlow` (league/schedule/teams/matchups). Per-step audit is deferred to a follow-up.
+- **Rubric:** All 8 pass. Zero source findings on the page itself (the wizard chrome was already clean post-cascade). Cascade-clean from PageHeader (org badge) + InfoButton (used in many sub-steps).
 
 ---
 

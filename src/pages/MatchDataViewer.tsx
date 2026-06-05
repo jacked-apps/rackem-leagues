@@ -72,7 +72,7 @@ export function MatchDataViewer() {
       <div className="container mx-auto px-4 py-8">
         <Card>
           <CardContent className="py-8">
-            <p className="text-center text-red-600">Error loading matches: {(error as Error).message}</p>
+            <p className="text-center text-destructive">Error loading matches: {(error as Error).message}</p>
           </CardContent>
         </Card>
       </div>
@@ -89,7 +89,7 @@ export function MatchDataViewer() {
           </p>
 
           {/* Debug Info */}
-          <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs">
+          <div className="mb-3 p-3 bg-warning/10 border border-warning/40 rounded text-xs">
             <div className="font-semibold mb-1">🐛 Debug Info:</div>
             <div>Total Matches Loaded: {allMatches.length}</div>
             <div>Statuses Found: {allMatches.map(m => `${m.id.substring(0, 8)}... = "${m.status}"`).join(', ')}</div>
