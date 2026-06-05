@@ -301,7 +301,8 @@ function FormulaBody({
       <p className="text-xs text-muted-foreground">
         Transforms the base into this side's final value. The formula can
         reference the base via "This Side's Value This Game" — or stand alone
-        if it doesn't need the base. Click the × on any pill to remove it.
+        if it doesn't need the base. Click any pill to remove it from the
+        formula.
       </p>
       <FormulaBuilder tokens={tokens} onChange={handleTokensChange} />
       {parseError && (

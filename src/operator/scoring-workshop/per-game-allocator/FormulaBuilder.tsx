@@ -191,48 +191,56 @@ function TokenPill({
   token: FormulaToken;
   onRemove: () => void;
 }) {
-  const pillClass =
-    'group inline-flex items-center gap-1 rounded px-2 py-1 text-sm';
-  const removeBtn = (
-    <button
-      type="button"
-      onClick={onRemove}
-      aria-label="Remove this token"
-      title="Remove this token"
-      className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded text-muted-foreground hover:bg-destructive hover:text-destructive-foreground"
-    >
-      ×
-    </button>
-  );
+  // The whole pill is the delete target. Hover → red ring so it's
+  // clear it's clickable; click → that token is gone.
+  const baseClass =
+    'inline-flex cursor-pointer items-center rounded px-2 py-1 text-sm transition-colors hover:bg-destructive hover:text-destructive-foreground hover:line-through';
+  const title = 'Click to remove this from the formula';
   if (token.kind === 'var') {
     return (
-      <span className={`${pillClass} bg-primary/10`}>
-        <span>{labelForVar(token.name)}</span>
-        {removeBtn}
-      </span>
+      <button
+        type="button"
+        onClick={onRemove}
+        title={title}
+        className={`${baseClass} bg-primary/10`}
+      >
+        {labelForVar(token.name)}
+      </button>
     );
   }
   if (token.kind === 'const') {
     return (
-      <span className={`${pillClass} bg-success/10 font-mono`}>
-        <span>{token.value}</span>
-        {removeBtn}
-      </span>
+      <button
+        type="button"
+        onClick={onRemove}
+        title={title}
+        className={`${baseClass} bg-success/10 font-mono`}
+      >
+        {token.value}
+      </button>
     );
   }
   if (token.kind === 'op') {
     return (
-      <span className={`${pillClass} font-mono`}>
-        <span>{opSymbol(token.op)}</span>
-        {removeBtn}
-      </span>
+      <button
+        type="button"
+        onClick={onRemove}
+        title={title}
+        className={`${baseClass} font-mono`}
+      >
+        {opSymbol(token.op)}
+      </button>
     );
   }
   return (
-    <span className={`${pillClass} font-mono`}>
-      <span>{token.kind === 'lparen' ? '(' : ')'}</span>
-      {removeBtn}
-    </span>
+    <button
+      type="button"
+      onClick={onRemove}
+      title={title}
+      className={`${baseClass} font-mono`}
+    >
+      {token.kind === 'lparen' ? '(' : ')'}
+    </button>
   );
 }
 
