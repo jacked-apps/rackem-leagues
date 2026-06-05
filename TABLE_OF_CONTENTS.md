@@ -94,6 +94,7 @@
 | `docs/brainstorms/2026-05-17-tie-resolution-ownership-requirements.md` | Captured architectural direction for Win Calc metric stack + Tiebreak System | Drove the locked-doc edits + new Tiebreak System Module (#9 in catalog, replacing dissolved Standings & Tiebreakers) |
 | `docs/brainstorms/2026-05-21-lo-primitive-naming-layer-requirements.md` | Naming/identity layer for LO-built primitives — locks the internal-name / display-name / description / label glossary; mirror is workshop-authoring-only | Design (future workshop); NOT locked canon |
 | `docs/brainstorms/2026-05-21-scoreboard-module-design-requirements.md` | ROUGH: scoreboard = slots per side filled by modules that read the state bag + render labeled values; LO-customizable; stress-tests the naming layer | Rough draft — Ed's idea, to flesh out |
+| `docs/brainstorms/2026-05-28-operator-help-system-requirements.md` | Phased operator-facing help: glossary data source + GlossaryInfoButton wrapper + InfoButton coverage on operator wizards (Phase 1); persistent Help button + Walkthroughs/Concepts (Phase 2, evidence-gated) | L3 of the four-layer doc model; adds alias/synonym layer for operator vocabulary collisions |
 | `docs/brainstorms/2026-05-29-live-match-jumpin-requirements.md` | Requirements for the "My Match" live-match jump-in shortcut (bottom-nav tab + drawer section) | One-tap into live match; bottom-nav state machine (live → scoring / no-live → `/live` scoreboards); drawer section mirrors AppDrawer OperatorSection (flat-when-1 / list-when-2+ / hidden-when-empty); `/my-match` page deferred to future Upcoming Matches brainstorm; multi-live swap delegated to scoring gear (PR #157); branch `chore/safe-meantime-work` |
 | `docs/brainstorms/2026-05-25-pairings-generator-extraction-requirements.md` | Pairings Generator (Module #8) v1 extraction — one Module slot, three internal stages; lineups in, player-id-tagged GameSlot[] out (matches canon); today's RR algorithm only, no preferences/workshop work; output shape variant-agnostic for future race-mode etc. | Planned (`docs/plans/2026-05-25-001-...`) |
 | `docs/brainstorms/2026-05-28-passwordless-sign-in-requirements.md` | Requirements for one-door, code-based passwordless sign-in (email OTP + Google/Facebook; passwords kept but demoted) | Companion to the onboarding cold-start brainstorm; built first to dissolve the join-token-survival problem; branch `docs/passwordless-auth-brainstorm` |
@@ -105,6 +106,7 @@
 | `docs/plans/2026-05-04-001-fix-lineup-to-scoring-transition-stability-plan.md` | Implementation plan for the lineup → scoring transition stability fix | 7 implementation units across 3 phases; new MatchPhaseGuard + MatchTransitionRecovery + useMatchPhase; hardened prep_match RPC; foreground polling backstop; deletes 6-month-old retry loop |
 | `docs/plans/2026-05-03-001-feat-unified-scoreboard-plan.md` | Implementation plan for the unified scoreboard refactor | 8 units across 3 phases; replaces 3 legacy scoreboards with 1 + tiebreaker fix; schema-derived display hints; TeamStatsCard generalized for points-mode; depends on PR #98 merge |
 | `docs/plans/2026-05-24-001-feat-live-scoring-resilience-plan.md` | Implementation plan for robust multi-device live scoring (resilience + concurrency) | 11 units / 5 phases; rely-on-client reconnect + catch-up refetch + polling fallback; guarded scoring RPCs (deny-flags-not-wipes, race-safe totals, N-device completion) on prep_match model; hold-and-send taps; sticky participation modes; branch `docs/live-scoring-resilience-brainstorm`; origin 2026-05-24 brainstorm |
+| `docs/plans/2026-05-28-001-feat-operator-help-system-phase-1-plan.md` | Phase 1 implementation plan for the operator help system | 8 units: glossary data source (TS module registry, per-domain split) + GlossaryInfoButton wrapper + slug-aware wizard wrapper props + infoContent migration + coverage on league-v2/season-v2/operator-area screens + Learn hub at `/operator-learn` (Glossary section only) + `pnpm glossary:verify` drift audit + outside-LO walk acceptance gate; origin 2026-05-28 brainstorm |
 | `docs/plans/2026-05-28-001-feat-passwordless-sign-in-plan.md` | Implementation plan for passwordless one-door sign-in (email OTP code + Google/Facebook; passwords kept-but-demoted) | 6 units; signInWithOtp `type:'email'` typed code, `shouldCreateUser` one-door, `?redirect` repair across all auth paths, Facebook can-lag on App Review, prod email-confirmations+SMTP gate; branch `docs/passwordless-auth-brainstorm`; origin 2026-05-28 brainstorm |
 | `docs/ops/passwordless-auth-setup.md` | Production setup checklist for passwordless sign-in (OTP template, custom SMTP, email-confirmations, redirect allow-list, captcha, Facebook) | Companion to PRE_LAUNCH_CHECKLIST; local dev needs none of it |
 | `docs/plans/2026-04-18-001-refactor-modular-handicap-scoring-systems-plan.md` | Implementation plan for the modular handicap/scoring foundation | Predecessor to the April 28 modular league system plan |
@@ -574,8 +576,14 @@ how to add a new test, demo recording, cleanup model).
 #### Operator Pages (`/operator/`)
 
 **Dashboards & Overview**
-- `OperatorDashboard.tsx` - Main operator dashboard
+- `OperatorDashboard.tsx` - Main operator dashboard. "Need Help?" card's "Operator Handbook" link points at `/learn`.
 - `OperatorWelcome.tsx` - Welcome screen
+
+**Learn hub** (moved to `src/pages/` in 2026-05-29 rename — visible to all signed-in users, not just operators):
+- `src/pages/Learn.tsx` — Phase 1 Learn hub at `/learn`. Page shell + Glossary section. Was `src/operator/OperatorLearn.tsx` at `/operator-learn`.
+- `src/pages/learn/GlossaryView.tsx` — search input + 3-state UI (single-entry on deep-link, browse on direct nav, search filtered when typing).
+- `src/pages/learn/GlossaryEntry.tsx` — single entry render: canonical heading + aliases ("also called: …") + shortDef + longDef + related links.
+- `src/pages/learn/__tests__/GlossaryView.test.tsx` — 6 tests covering the 3-state UI and the alias-match subtitle.
 
 **League Management**
 - `LeagueDetail.tsx` - League details page
@@ -1438,6 +1446,21 @@ Calculator-as-type-with-params registry. Each shipped points formula implements 
 - `resolveParams.ts` - Parameter resolution helper — merges calculator params from preferences with overrides/defaults so callers get a fully-shaped params object regardless of which fields the LO actually configured.
 - `__tests__/types.contract.test.ts` - **Contract tests** locking the `PointsCalculator<P>` discriminated-union shape — every shipped calculator must conform to either `kind: 'aggregate'` or `kind: 'per_game'` with the matching input signature.
 - `__tests__/displayHints.test.ts` - Tests for calculator-driven display hints (scoring popup field shapes) used by the per-game UI to render the right inputs for the active calculator.
+
+---
+
+### 📖 Glossary (`/glossary/`) **NEW — Operator-facing term registry**
+
+Single source of truth for operator help terminology. Slug-keyed TS module registry; entries carry canonical name + aliases + short def + long def (rich content) + L1 anchor + related slugs. Consumed by `GlossaryInfoButton`, the Learn-hub Glossary page, and the `pnpm glossary:verify` drift audit. See `docs/plans/2026-05-28-001-feat-operator-help-system-phase-1-plan.md` Unit 1.
+
+- `types.ts` — `GlossaryEntry` and `L1Anchor` schema. **R4 contract**: every entry has slug, canonicalName, aliases, shortDef (string, ≤2 sentences), longDef (`React.ReactNode`), `l1_anchor`, related.
+- `index.tsx` — registry merge across per-domain entry files. Exports `GlossarySlug` union (compile-time enforced), `getGlossaryEntry(slug)`, `getAllGlossaryEntries()`, `searchGlossary(query)` (substring on canonical + aliases), `useGlossarySearch` hook, `glossaryToInfoButtonProps(slug)` helper.
+- `entries/handicap.tsx` — handicap-related entries (15 terms): fargorate, handicap, handicap-system, handicap-mechanism, points/percentage/no-handicap, extra-games, start-points, race-length-adjustment, threshold + chart, calibrated, manual-entry, rating.
+- `entries/general.tsx` — cross-cutting entries (27 terms): keystone containers (league, season, matchup, match, game, pairing), game types (8/9/10-ball), teams/roster (lineup, lineup-size, roster, roster-size, substitute, anonymous-sub, double-duty, captain, scorekeeper, lineup-lock, racker, breaker), tiebreakers (tiebreaker, extra-round, single-short-race, accept-tie, manual-tiebreaker), start-date, qualifier (with descriptor + division-descriptor aliases).
+- `entries/scoring.tsx` — scoring entries (8 terms): win-condition, points-calculator, linear-above-threshold, accumulate-with-milestone-jumps, accumulated-per-game, win-threshold, tie-threshold, multiplier.
+- `entries/match-format.tsx` — match-format entries (9 terms): match-format, round-robin, single-round-robin, double-round-robin, individual-races, pairing-format, single-rack, race-to-n, race.
+- `entries/standings.tsx` — standings entries (5 terms): standings, standings-sort, match-wins, total-points, total-games-won.
+- `__tests__/glossary.test.ts` — schema completeness, slug uniqueness, alias collisions, related-dial integrity, search behavior.
 
 ---
 

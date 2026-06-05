@@ -175,6 +175,7 @@ function PlayerSection({ unreadCount }: { unreadCount: number }) {
       {reupTeams.length > 0 && <DrawerLink to="/reup" label={reupLabel} />}
       <DrawerLink to="/stats" label="Stats" />
       <DrawerLink to="/rules" label="Rules" />
+      <DrawerLink to="/learn" label="Learn" />
       <DrawerLink to="/messages" label={messagesLabel} />
       <DrawerLink to="/profile" label="Profile" />
     </ul>
@@ -184,7 +185,6 @@ function PlayerSection({ unreadCount }: { unreadCount: number }) {
 /** Mirrors SidebarOperatorSection. */
 function OperatorSection({ orgs }: { orgs: OperatorOrg[] }) {
   if (!orgs || orgs.length === 0) return null;
-
   const visible = pickVisibleOrgs(orgs, OPERATOR_ORG_CAP);
   const isSingleOrg = visible.length === 1;
 
@@ -193,25 +193,26 @@ function OperatorSection({ orgs }: { orgs: OperatorOrg[] }) {
       <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         Operator
       </h3>
-      {isSingleOrg ? (
-        <OperatorOrgRow
-          orgId={visible[0].id}
-          orgName={visible[0].organization_name ?? ''}
-          mode="flat"
-        />
-      ) : (
-        <ul className="space-y-1">
-          {visible.map((org) => (
-            <li key={org.id}>
-              <OperatorOrgRow
-                orgId={org.id}
-                orgName={org.organization_name ?? ''}
-                mode="collapsible"
-              />
-            </li>
-          ))}
-        </ul>
-      )}
+      {visible.length > 0 &&
+        (isSingleOrg ? (
+          <OperatorOrgRow
+            orgId={visible[0].id}
+            orgName={visible[0].organization_name ?? ''}
+            mode="flat"
+          />
+        ) : (
+          <ul className="space-y-1">
+            {visible.map((org) => (
+              <li key={org.id}>
+                <OperatorOrgRow
+                  orgId={org.id}
+                  orgName={org.organization_name ?? ''}
+                  mode="collapsible"
+                />
+              </li>
+            ))}
+          </ul>
+        ))}
     </div>
   );
 }

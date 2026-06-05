@@ -1,0 +1,2403 @@
+/**
+ * @fileoverview Cross-cutting glossary entries — the keystone container
+ * concepts (league, season, match, matchup, game), team/player/roster terms,
+ * tiebreakers, game types, and the qualifier descriptor.
+ *
+ * Definitions follow the NO DRIFT principle: describe what each thing IS,
+ * not which preset uses it. Preset names can change; underlying concepts
+ * shouldn't be tied to a specific package.
+ *
+ * "Night" is not used. Match is canonical.
+ */
+
+import type { GlossaryEntry } from '../types';
+
+export const entries = {
+  // ---- Container concepts (keystones) ----------------------------------
+
+  league: {
+    slug: 'league',
+    canonicalName: 'League',
+    aliases: ['division'],
+    shortDef:
+      'An ongoing team competition for one game on one recurring day each week — run by an operator, with its own rules, scoring, and handicap setup.',
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          A league operator starts an ongoing team competition for a specific
+          game on a specific day, with its own rules, scoring, and{' '}
+          <a href="#handicap-system" className="text-info hover:underline">handicap</a>{' '}
+          setup. The competition is divided up into{' '}
+          <a href="#season" className="text-info hover:underline">seasons</a> —
+          each can vary in length and may or may not end with playoffs.
+        </p>
+        <p>
+          <strong>What makes one league distinct from another:</strong>
+        </p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>Same game on a different day → <strong>different league</strong>.</li>
+          <li>Different game on the same day → <strong>still a different league</strong>.</li>
+        </ul>
+        <p>
+          Each league runs mostly the same metrics across its seasons. Small
+          changes can be made while a season is in progress; larger changes
+          are best made between seasons. Some changes are big enough that
+          creating a new league is cleaner than reconfiguring an existing one.
+        </p>
+        <p>
+          <strong>The{' '}
+          <a href="#league-name" className="text-info hover:underline">name</a>{' '}
+          is composed automatically from the operator's setup.</strong>{' '}
+          The shape is:{' '}
+          <em>
+            [<a href="#game-type" className="text-info hover:underline">Game</a>]{' '}
+            [Day-of-Week]{' '}
+            [<a href="#qualifier" className="text-info hover:underline">Qualifier</a>?]{' '}
+            [<a href="#season" className="text-info hover:underline">Season</a>]{' '}
+            [Year]
+          </em>
+          . Most of these come from the league's{' '}
+          <a href="#start-date" className="text-info hover:underline">start-date</a>{' '}
+          and{' '}
+          <a href="#qualifier" className="text-info hover:underline">qualifier</a>.
+        </p>
+        <p>
+          <strong>Examples.</strong> A 9-Ball league starting Tuesday March
+          4, 2026, no qualifier → <strong>&ldquo;9 Ball Tuesday Spring
+          2026&rdquo;</strong>. Add a qualifier like &ldquo;East Side&rdquo;
+          and it becomes <strong>&ldquo;9 Ball Tuesday East Side Spring
+          2026&rdquo;</strong>.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          <strong>A note on the word.</strong> Other pool league systems
+          call this concept a <em>division</em>. We chose
+          &ldquo;league&rdquo; because that's what people actually say in
+          everyday speech (&ldquo;I play my 8-Ball Tuesday league,&rdquo;
+          not &ldquo;I play my 8-Ball Tuesday division&rdquo;). Matching
+          natural language reduces friction when operators talk about the
+          app with players.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#handicap-system" className="text-info hover:underline">handicap system</a>,{' '}
+          <a href="#season" className="text-info hover:underline">season</a>,{' '}
+          <a href="#league-name" className="text-info hover:underline">league name</a>,{' '}
+          <a href="#game-type" className="text-info hover:underline">game type</a>,{' '}
+          <a href="#qualifier" className="text-info hover:underline">qualifier</a>,{' '}
+          <a href="#start-date" className="text-info hover:underline">start-date</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['matchup', 'match', 'team'],
+    reviewedByEd: '2026-05-30',
+  },
+
+  season: {
+    slug: 'season',
+    canonicalName: 'Season',
+    aliases: [],
+    shortDef:
+      'One run of league play inside a league — its own teams, schedule, length, standings, and (optionally) playoffs.',
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          A season is the current chapter of league play. Each season is its
+          own self-contained competitive period inside a{' '}
+          <a href="#league" className="text-info hover:underline">league</a>{' '}
+          — when one season ends, the next starts under the same league
+          shape, one after another.
+        </p>
+        <p>What a season holds:</p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>
+            A{' '}
+            <a href="#season-length" className="text-info hover:underline">length</a>{' '}
+            (number of weeks).
+          </li>
+          <li>
+            An optional{' '}
+            <a href="#playoffs" className="text-info hover:underline">playoffs</a>{' '}
+            at the end.
+          </li>
+          <li>
+            A generated{' '}
+            <a href="#schedule" className="text-info hover:underline">schedule</a>{' '}
+            of every match.
+          </li>
+          <li>
+            The specific{' '}
+            <a href="#team" className="text-info hover:underline">teams</a>{' '}
+            registered for this season.
+          </li>
+          <li>
+            The{' '}
+            <a href="#match" className="text-info hover:underline">matches</a>{' '}
+            and{' '}
+            <a href="#matchup" className="text-info hover:underline">matchups</a>{' '}
+            for every team across the schedule.
+          </li>
+          <li>
+            Its own{' '}
+            <a href="#standings" className="text-info hover:underline">standings</a>{' '}
+            and stats — independent from past or future seasons.
+          </li>
+          <li>
+            A name (so players can identify "this season" vs "last season"
+            vs "next season").
+          </li>
+        </ul>
+        <p>
+          Practically: when someone in the app says "the standings" or "the{' '}
+          <a href="#schedule" className="text-info hover:underline">schedule</a>,"
+          they mean <em>this</em> season's. Past seasons stay archived under
+          the same{' '}
+          <a href="#league" className="text-info hover:underline">league</a>;
+          future seasons are scheduled but not yet active.
+        </p>
+        <p>
+          The season name is auto-generated, similar to the{' '}
+          <a href="#league-name" className="text-info hover:underline">league name</a>{' '}
+          but anchored to this season's{' '}
+          <a href="#start-date" className="text-info hover:underline">start-date</a>{' '}
+          — so a single league hosts a series of distinctly-named seasons
+          over time.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#league" className="text-info hover:underline">league</a>,{' '}
+          <a href="#league-name" className="text-info hover:underline">league name</a>,{' '}
+          <a href="#season-length" className="text-info hover:underline">season length</a>,{' '}
+          <a href="#playoffs" className="text-info hover:underline">playoffs</a>,{' '}
+          <a href="#schedule" className="text-info hover:underline">schedule</a>,{' '}
+          <a href="#team" className="text-info hover:underline">team</a>,{' '}
+          <a href="#match" className="text-info hover:underline">match</a>,{' '}
+          <a href="#matchup" className="text-info hover:underline">matchup</a>,{' '}
+          <a href="#standings" className="text-info hover:underline">standings</a>,{' '}
+          <a href="#start-date" className="text-info hover:underline">start-date</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['roster', 'captain'],
+    reviewedByEd: '2026-05-30',
+  },
+
+  'season-length': {
+    slug: 'season-length',
+    canonicalName: 'Season Length',
+    aliases: [],
+    shortDef:
+      'How many weeks of regular play a season runs — set per-season, not at the league level.',
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          Each{' '}
+          <a href="#season" className="text-info hover:underline">season</a>{' '}
+          has its own length, expressed in weeks. The length drives how many
+          matches the{' '}
+          <a href="#schedule" className="text-info hover:underline">schedule</a>{' '}
+          spans before regular play ends.
+        </p>
+        <p>
+          Length is configured per-season, not at the{' '}
+          <a href="#league" className="text-info hover:underline">league</a>{' '}
+          level — so different seasons under the same league can run for
+          different durations (e.g., a 10-week summer season and a 16-week
+          fall season).
+        </p>
+        <p>
+          Season length only counts regular play.{' '}
+          <a href="#playoffs" className="text-info hover:underline">Playoffs</a>{' '}
+          (when configured) run AFTER the season-length weeks complete and
+          are counted separately.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#season" className="text-info hover:underline">season</a>,{' '}
+          <a href="#schedule" className="text-info hover:underline">schedule</a>,{' '}
+          <a href="#league" className="text-info hover:underline">league</a>,{' '}
+          <a href="#playoffs" className="text-info hover:underline">playoffs</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: [],
+    reviewedByEd: '2026-05-30',
+  },
+
+  playoffs: {
+    slug: 'playoffs',
+    canonicalName: 'Playoffs',
+    aliases: ['playoff', 'post-season', 'postseason', 'money round'],
+    shortDef:
+      "Extra weeks of play past the regular season, used to decide awards. Comes in different flavors depending on what the LO wants.",
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          Playoffs are any extra weeks of play a{' '}
+          <a href="#league" className="text-info hover:underline">league</a>{' '}
+          tacks on after the regular{' '}
+          <a href="#season" className="text-info hover:underline">season</a>{' '}
+          ends, used to decide some kind of award. They're optional —
+          many leagues just let the regular-season{' '}
+          <a href="#standings" className="text-info hover:underline">standings</a>{' '}
+          decide the champion and skip playoffs entirely.
+        </p>
+        <p><strong>Common flavors:</strong></p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>
+            <strong>Money round.</strong> All teams play one extra
+            match paired by standings position — 1st vs last, 2nd vs
+            2nd-to-last, and so on. Each pairing has its own cash
+            prize, and whoever wins the match takes the money. Usually
+            one week.
+          </li>
+          <li>
+            <strong>Bracket.</strong> The top N teams (top 4, top 8,
+            etc.) play an elimination bracket for the main prize.
+            Usually two or more weeks.
+          </li>
+          <li>
+            <strong>Custom.</strong> Whatever else the LO designs.
+          </li>
+        </ul>
+        <p>
+          Playoffs are configured per-season, so the LO can run them
+          one way one season and a different way the next — or skip
+          them.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#season" className="text-info hover:underline">season</a>,{' '}
+          <a href="#season-length" className="text-info hover:underline">season length</a>,{' '}
+          <a href="#standings" className="text-info hover:underline">standings</a>,{' '}
+          <a href="#team" className="text-info hover:underline">team</a>,{' '}
+          <a href="#league" className="text-info hover:underline">league</a>,{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['tiebreaker'],
+    reviewedByEd: '2026-05-30',
+  },
+
+  schedule: {
+    slug: 'schedule',
+    canonicalName: 'Schedule',
+    aliases: ['season schedule'],
+    shortDef:
+      "The full week-by-week calendar a league runs on. Includes match weeks, blackout dates (holidays, championship travel), playoffs, and weeks off between seasons.",
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          Once a{' '}
+          <a href="#season" className="text-info hover:underline">season</a>{' '}
+          begins, the app generates the schedule — the week-by-week
+          calendar the league runs on. It covers every{' '}
+          <a href="#match" className="text-info hover:underline">match</a>{' '}
+          (which teams meet, at which venue) plus the weeks where no
+          matches happen.
+        </p>
+        <p><strong>Scheduled gaps include:</strong></p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><a href="#blackout-dates" className="text-info hover:underline">Blackout dates</a></li>
+          <li><a href="#playoffs" className="text-info hover:underline">Playoffs</a></li>
+          <li><a href="#blackout-dates" className="text-info hover:underline">Weeks off between seasons</a></li>
+        </ul>
+        <p><strong>What drives match-week generation:</strong></p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>
+            The number of{' '}
+            <a href="#team" className="text-info hover:underline">teams</a>{' '}
+            registered for the season.
+          </li>
+          <li>
+            The{' '}
+            <a href="#season-length" className="text-info hover:underline">season length</a>{' '}
+            (how many weeks of regular play).
+          </li>
+          <li>
+            The{' '}
+            <a href="#match-format" className="text-info hover:underline">match format</a>{' '}
+            (single or double round robin, or individual races).
+          </li>
+          <li>
+            The day-of-week and{' '}
+            <a href="#start-date" className="text-info hover:underline">start-date</a>{' '}
+            inherited from the{' '}
+            <a href="#league" className="text-info hover:underline">league</a>.
+          </li>
+        </ul>
+        <p>
+          Operators can adjust the schedule mid-season — cancel a{' '}
+          <a href="#match" className="text-info hover:underline">match</a>,
+          reschedule, swap venues — without affecting the overall structure.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#season" className="text-info hover:underline">season</a>,{' '}
+          <a href="#team" className="text-info hover:underline">team</a>,{' '}
+          <a href="#season-length" className="text-info hover:underline">season length</a>,{' '}
+          <a href="#match-format" className="text-info hover:underline">match format</a>,{' '}
+          <a href="#start-date" className="text-info hover:underline">start-date</a>,{' '}
+          <a href="#league" className="text-info hover:underline">league</a>,{' '}
+          <a href="#match" className="text-info hover:underline">match</a>,{' '}
+          <a href="#blackout-dates" className="text-info hover:underline">blackout dates</a>,{' '}
+          <a href="#playoffs" className="text-info hover:underline">playoffs</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['matchup'],
+    reviewedByEd: '2026-05-31',
+  },
+
+  'blackout-dates': {
+    slug: 'blackout-dates',
+    canonicalName: 'Blackout Dates',
+    aliases: ['blackout', 'blackout date', 'weeks off', 'weeks off between seasons'],
+    shortDef:
+      "Weeks the LO marks off in the schedule when no matches will be played — for holidays, championship travel, weeks off between seasons, or anything else the league needs to skip.",
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          Blackout dates are weeks the{' '}
+          <a href="#league-operator" className="text-info hover:underline">LO</a>{' '}
+          deliberately removes from play. The{' '}
+          <a href="#schedule" className="text-info hover:underline">schedule</a>{' '}
+          still tracks them — they're known gaps, not accidents — but
+          no matches are generated for those weeks.
+        </p>
+        <p>Common reasons to blackout a week:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Holidays (Thanksgiving week, Christmas / New Year's, etc.).</li>
+          <li>National championship travel — when players are away competing.</li>
+          <li>Venue conflicts — the bar is hosting another event.</li>
+          <li>Local events — a parade, festival, or other community happening that could interfere with play or with players getting to the venue.</li>
+          <li>Weeks off between seasons — the gap before the next{' '}
+            <a href="#season" className="text-info hover:underline">season</a>{' '}
+            starts.
+          </li>
+        </ul>
+        <p>
+          The gap between one season and the next is essentially a
+          blackout — known weeks with no play — so "weeks off between
+          seasons" and "blackout dates" describe the same thing in
+          different contexts.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>,{' '}
+          <a href="#schedule" className="text-info hover:underline">schedule</a>,{' '}
+          <a href="#season" className="text-info hover:underline">season</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: [],
+    reviewedByEd: '2026-05-31',
+  },
+
+  team: {
+    slug: 'team',
+    canonicalName: 'Team',
+    aliases: ['teams'],
+    shortDef:
+      'A group of players competing together against other teams in a season.',
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          A team is the unit of competition in a{' '}
+          <a href="#season" className="text-info hover:underline">season</a>.
+          A team is made up of:
+        </p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>A name (chosen by the captain or operator).</li>
+          <li>
+            A{' '}
+            <a href="#captain" className="text-info hover:underline">captain</a>{' '}
+            who manages the team day-to-day.
+          </li>
+          <li>
+            A{' '}
+            <a href="#roster" className="text-info hover:underline">roster</a>{' '}
+            of registered players or{' '}
+            <a href="#placeholder-player" className="text-info hover:underline">placeholder players</a>.
+          </li>
+        </ul>
+        <p>
+          Placeholder players are roster slots a captain can add by name
+          for players who haven't registered an app account yet. This lets
+          the team be roster-complete from day one — so lineups, match
+          math, and handicaps all work right away, without waiting on
+          everyone to register.
+        </p>
+        <p>
+          Each season, teams play{' '}
+          <a href="#match" className="text-info hover:underline">matches</a>{' '}
+          against other teams across the season's{' '}
+          <a href="#schedule" className="text-info hover:underline">schedule</a>.
+          Match results accumulate into the team's record in the season{' '}
+          <a href="#standings" className="text-info hover:underline">standings</a>.
+        </p>
+        <p>
+          Teams are registered per-season. A team might exist across multiple
+          seasons (same name, same captain, same core roster) — but each
+          season the team is registered fresh: rosters can change, names
+          can shift, and the team's record starts over.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#season" className="text-info hover:underline">season</a>,{' '}
+          <a href="#captain" className="text-info hover:underline">captain</a>,{' '}
+          <a href="#roster" className="text-info hover:underline">roster</a>,{' '}
+          <a href="#placeholder-player" className="text-info hover:underline">placeholder player</a>,{' '}
+          <a href="#match" className="text-info hover:underline">match</a>,{' '}
+          <a href="#schedule" className="text-info hover:underline">schedule</a>,{' '}
+          <a href="#standings" className="text-info hover:underline">standings</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['lineup'],
+    reviewedByEd: '2026-05-30',
+  },
+
+  matchup: {
+    slug: 'matchup',
+    canonicalName: 'Matchup',
+    aliases: ['matchups'],
+    shortDef:
+      'The list of who plays whom in a given week — that week\'s slate of team-vs-team matches.',
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          A matchup is the list of who plays whom in a given week. For a
+          week where 12 teams are scheduled to play, the matchup is the
+          full set of 6 team-vs-team meetings happening that week (e.g.,
+          Kings vs Knights, Eagles vs Ravens, Wolves vs Bears, …). Each
+          team-vs-team meeting inside the list is a{' '}
+          <a href="#match" className="text-info hover:underline">match</a>.
+        </p>
+        <p>
+          <strong>Matchups</strong> (plural) is the list of all the weekly
+          matchups across a{' '}
+          <a href="#season" className="text-info hover:underline">season</a>{' '}
+          — i.e., the team-pairing part of the season's{' '}
+          <a href="#schedule" className="text-info hover:underline">schedule</a>,
+          week by week.
+        </p>
+        <p>The hierarchy:</p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>
+            A matchup (one week) is a group of{' '}
+            <a href="#match" className="text-info hover:underline">matches</a>.
+          </li>
+          <li>
+            A{' '}
+            <a href="#match" className="text-info hover:underline">match</a>{' '}
+            (one team-vs-team event) is a group of{' '}
+            <a href="#game" className="text-info hover:underline">games</a>.
+          </li>
+          <li>
+            A{' '}
+            <a href="#game" className="text-info hover:underline">game</a>{' '}
+            is a single rack between two players.
+          </li>
+        </ul>
+        <p>
+          <strong>Don't confuse matchup with pairing.</strong> A matchup is
+          team-level (which teams play whom this week). A{' '}
+          <a href="#pairing" className="text-info hover:underline">pairing</a>{' '}
+          is player-level — a single player vs a single player, inside a
+          specific{' '}
+          <a href="#match" className="text-info hover:underline">match</a>{' '}
+          (race-to-N formats). Different layers of the hierarchy.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#match" className="text-info hover:underline">match</a>,{' '}
+          <a href="#game" className="text-info hover:underline">game</a>,{' '}
+          <a href="#pairing" className="text-info hover:underline">pairing</a>,{' '}
+          <a href="#season" className="text-info hover:underline">season</a>,{' '}
+          <a href="#schedule" className="text-info hover:underline">schedule</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['team', 'match-format'],
+    reviewedByEd: '2026-05-29',
+  },
+
+  match: {
+    slug: 'match',
+    canonicalName: 'Match',
+    aliases: [],
+    shortDef:
+      'One team vs one team played in a single session — holds the scores, lineups, and games played.',
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          A match is one team vs one team played in a single session.
+          It's the played event — where the actual{' '}
+          <a href="#game" className="text-info hover:underline">games</a>{' '}
+          happen — and the record of what occurred.
+        </p>
+        <p>What a match record holds:</p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>
+            The two{' '}
+            <a href="#team" className="text-info hover:underline">teams</a>{' '}
+            that played (home and away), and the date.
+          </li>
+          <li>
+            Each team's{' '}
+            <a href="#lineup" className="text-info hover:underline">lineup</a>{' '}
+            — which players from the{' '}
+            <a href="#roster" className="text-info hover:underline">roster</a>{' '}
+            (drawn within the{' '}
+            <a href="#roster-size" className="text-info hover:underline">roster size</a>{' '}
+            cap) filled the{' '}
+            <a href="#lineup-size" className="text-info hover:underline">lineup size</a>{' '}
+            slots.
+          </li>
+          <li>The result of every individual game played (winner + score).</li>
+          <li>Total games won by each team.</li>
+          <li>Total points earned by each team (when the league tracks points).</li>
+          <li>The match winner.</li>
+          <li>Status — scheduled, in progress, completed, forfeit, makeup, preplayed.</li>
+          <li>Any operator or captain notes attached to the match.</li>
+        </ul>
+        <p>The hierarchy:</p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>
+            A{' '}
+            <a href="#matchup" className="text-info hover:underline">matchup</a>{' '}
+            (one week) is a group of matches.
+          </li>
+          <li>
+            A match (one team vs one team) is a group of{' '}
+            <a href="#game" className="text-info hover:underline">games</a>.
+          </li>
+          <li>
+            A{' '}
+            <a href="#game" className="text-info hover:underline">game</a>{' '}
+            is a single rack between two players.
+          </li>
+        </ul>
+        <p>
+          Matches are booked weekly in this app — each team plays one
+          match per week of the{' '}
+          <a href="#season-length" className="text-info hover:underline">season length</a>.
+          The number of games inside a match depends on the{' '}
+          <a href="#lineup-size" className="text-info hover:underline">lineup size</a>{' '}
+          and the{' '}
+          <a href="#match-format" className="text-info hover:underline">match format</a>:
+          a 3v3 double round robin produces 18 games per match; a 5v5
+          single round robin produces 25.
+        </p>
+        <p>
+          <strong>Scheduling exceptions.</strong> Matches can be played
+          early (<a href="#makeup-match" className="text-info hover:underline">preplayed match</a>){' '}
+          or late (<a href="#makeup-match" className="text-info hover:underline">makeup match</a>){' '}
+          when scheduling issues come up.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          <strong>A note on the word.</strong> &ldquo;Match&rdquo;
+          sometimes gets used informally to mean a single game or round.
+          In this app, match always means the team-vs-team event.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#matchup" className="text-info hover:underline">matchup</a>,{' '}
+          <a href="#game" className="text-info hover:underline">game</a>,{' '}
+          <a href="#team" className="text-info hover:underline">team</a>,{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>,{' '}
+          <a href="#lineup-size" className="text-info hover:underline">lineup size</a>,{' '}
+          <a href="#roster" className="text-info hover:underline">roster</a>,{' '}
+          <a href="#roster-size" className="text-info hover:underline">roster size</a>,{' '}
+          <a href="#match-format" className="text-info hover:underline">match format</a>,{' '}
+          <a href="#season-length" className="text-info hover:underline">season length</a>,{' '}
+          <a href="#standings" className="text-info hover:underline">standings</a>,{' '}
+          <a href="#makeup-match" className="text-info hover:underline">makeup or preplayed match</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['pairing', 'scorekeeper', 'captain'],
+    reviewedByEd: '2026-05-30',
+  },
+
+  'makeup-match': {
+    slug: 'makeup-match',
+    canonicalName: 'Makeup or Preplayed Match',
+    aliases: [
+      'makeup match',
+      'makeup matches',
+      'preplayed match',
+      'preplayed matches',
+      'pre-played match',
+    ],
+    shortDef:
+      "A match played on a different day than its scheduled one — either before (preplayed match) or after (makeup match). The LO sets the rules for when this is allowed.",
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          <a href="#match" className="text-info hover:underline">Matches</a>{' '}
+          are scheduled for a specific date, usually at a specific time.
+          But things happen — someone can't make it, a venue closes,
+          schedules conflict. The app lets a team play their match
+          outside the scheduled date.
+        </p>
+        <p>
+          A match played <strong>before</strong> its scheduled day is a{' '}
+          <strong>preplayed match</strong>. A match played{' '}
+          <strong>after</strong> is a <strong>makeup match</strong>.
+          Either way, the match record is flagged so it's traceable,
+          but it still counts toward the{' '}
+          <a href="#season" className="text-info hover:underline">season</a>{' '}
+          <a href="#standings" className="text-info hover:underline">standings</a>{' '}
+          exactly like a normal-week match.
+        </p>
+        <p>
+          The{' '}
+          <a href="#league-operator" className="text-info hover:underline">LO</a>{' '}
+          sets the rules for when this is allowed. Abuse of the ability
+          — too often, too far off-schedule, repeatedly with the same
+          team — can result in the LO restricting it.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#match" className="text-info hover:underline">match</a>,{' '}
+          <a href="#season" className="text-info hover:underline">season</a>,{' '}
+          <a href="#standings" className="text-info hover:underline">standings</a>,{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['schedule'],
+    reviewedByEd: '2026-05-31',
+  },
+
+  game: {
+    slug: 'game',
+    canonicalName: 'Game',
+    aliases: [],
+    shortDef:
+      'A single rack between two players — the smallest unit of play. Also used as shorthand for the game-type a league plays (8-Ball, 9-Ball, 10-Ball).',
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          A game is the smallest unit of play. One rack: balls racked,
+          the{' '}
+          <a href="#breaker" className="text-info hover:underline">breaker</a>{' '}
+          breaks, players exchange shots until the rack is won. A{' '}
+          <a href="#match" className="text-info hover:underline">match</a>{' '}
+          contains many games — how many depends on the league's format.
+        </p>
+        <p>Game results feed several places:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>
+            <a href="#win-condition" className="text-info hover:underline">Win condition</a>{' '}
+            — games are one of the metrics that can decide a match's
+            outcome (points are the other).
+          </li>
+          <li>
+            <a href="#points-calculator" className="text-info hover:underline">Points calculator</a>{' '}
+            — games can drive how points accumulate.
+          </li>
+          <li>
+            <a href="#achievements" className="text-info hover:underline">Achievements</a>{' '}
+            — per-game feats the app keeps track of.
+          </li>
+        </ul>
+        <p className="text-sm text-muted-foreground">
+          <strong>A note on the word.</strong> "Game" is also used as
+          shorthand for the{' '}
+          <a href="#game-type" className="text-info hover:underline">game-type</a>{' '}
+          the league plays (8-Ball, 9-Ball, 10-Ball). Context tells you
+          which sense.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#match" className="text-info hover:underline">match</a>,{' '}
+          <a href="#breaker" className="text-info hover:underline">breaker</a>,{' '}
+          <a href="#game-type" className="text-info hover:underline">game type</a>,{' '}
+          <a href="#win-condition" className="text-info hover:underline">win condition</a>,{' '}
+          <a href="#points-calculator" className="text-info hover:underline">points calculator</a>,{' '}
+          <a href="#achievements" className="text-info hover:underline">achievements</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['racker'],
+    reviewedByEd: '2026-05-30',
+  },
+
+  pairing: {
+    slug: 'pairing',
+    canonicalName: 'Pairing',
+    aliases: [],
+    shortDef:
+      "Any single-player-vs-single-player encounter inside a match — the player-level unit. Different from matchup, which is team-level.",
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          Pairing is the player-level unit: any single-player-vs-single-
+          player encounter inside a{' '}
+          <a href="#match" className="text-info hover:underline">match</a>.
+          It applies across formats — a single rack in a round-robin is
+          a pairing; a race in an individual-race format is also a
+          pairing. The unit is "two players, one encounter," regardless
+          of the format's shape.
+        </p>
+        <p>
+          <strong>Don't confuse pairing with matchup.</strong> A{' '}
+          <a href="#matchup" className="text-info hover:underline">matchup</a>{' '}
+          is team-level — which teams play whom in a given week. A
+          pairing is player-level — which player plays which other
+          player, inside a specific match.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#matchup" className="text-info hover:underline">matchup</a>,{' '}
+          <a href="#match" className="text-info hover:underline">match</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/modules/match-format.md' },
+    related: ['race-length-adjustment'],
+    reviewedByEd: '2026-05-30',
+  },
+
+  // ---- Game types ------------------------------------------------------
+
+  'game-type': {
+    slug: 'game-type',
+    canonicalName: 'Game Type',
+    aliases: [],
+    shortDef:
+      'The specific pool game a league plays — 8-Ball, 9-Ball, or 10-Ball. Set once at league creation.',
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          Each league plays one game type. The options are{' '}
+          <a href="#eight-ball" className="text-info hover:underline">8-Ball</a>,{' '}
+          <a href="#nine-ball" className="text-info hover:underline">9-Ball</a>,
+          or{' '}
+          <a href="#ten-ball" className="text-info hover:underline">10-Ball</a>.
+          The choice also affects how the app tracks stats and achievements —
+          8-Ball break-and-runs and 9-Ball break-and-runs are tracked
+          separately, for example.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#eight-ball" className="text-info hover:underline">8-Ball</a>,{' '}
+          <a href="#nine-ball" className="text-info hover:underline">9-Ball</a>,{' '}
+          <a href="#ten-ball" className="text-info hover:underline">10-Ball</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['league'],
+    reviewedByEd: '2026-05-31',
+  },
+
+  'eight-ball': {
+    slug: 'eight-ball',
+    canonicalName: '8-Ball',
+    aliases: ['8 ball', '8ball', 'eight ball', 'eight-ball'],
+    shortDef:
+      "The classic stripes-and-solids pool game — the most popular league game in the US.",
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          Each player tries to sink all the balls in their group before
+          the other player, then sinks the 8-ball to win. This game is{' '}
+          <a href="#call-pocket" className="text-info hover:underline">call pocket</a>.
+        </p>
+        <p>
+          See the{' '}
+          <a href="/rules" className="text-info hover:underline">full official rules</a>{' '}
+          in the app rulebook. Your league may have{' '}
+          <a href="#house-rules" className="text-info hover:underline">house rules</a>{' '}
+          that differ from the official ones — check with your{' '}
+          <a href="#league-operator" className="text-info hover:underline">LO</a>.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Fun fact: 8-Ball is so widely played that many people use
+          "pool" and "8-Ball" interchangeably — not realizing there
+          are a multitude of different pool games, each with their
+          own official rules.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#house-rules" className="text-info hover:underline">house rules</a>,{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['game', 'nine-ball', 'ten-ball'],
+    reviewedByEd: '2026-06-02',
+  },
+
+  'nine-ball': {
+    slug: 'nine-ball',
+    canonicalName: '9-Ball',
+    aliases: ['9 ball', '9ball', 'nine ball', 'nine-ball'],
+    shortDef:
+      "A rotation pool game played with balls 1–9 — fast-paced and the staple of tournament play.",
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          9-Ball players race to legally pocket the 9-ball. A legal shot
+          must hit the lowest-numbered ball on the table first.
+        </p>
+        <p>
+          See the{' '}
+          <a href="/rules" className="text-info hover:underline">full official rules</a>{' '}
+          in the app rulebook. Your league may have{' '}
+          <a href="#house-rules" className="text-info hover:underline">house rules</a>{' '}
+          that differ from the official ones — check with your{' '}
+          <a href="#league-operator" className="text-info hover:underline">LO</a>.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#house-rules" className="text-info hover:underline">house rules</a>,{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['game', 'eight-ball', 'ten-ball'],
+    reviewedByEd: '2026-06-02',
+  },
+
+  'ten-ball': {
+    slug: 'ten-ball',
+    canonicalName: '10-Ball',
+    aliases: ['10 ball', '10ball', 'ten ball', 'ten-ball'],
+    shortDef:
+      "A call-pocket rotation pool game played with balls 1–10 — widely considered the most skill-rewarding rotation game.",
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          A rotation game using the balls 1–10. Players race to legally
+          pocket the 10-ball. A legal shot must hit the lowest-numbered
+          ball on the table first. This game is{' '}
+          <a href="#call-pocket" className="text-info hover:underline">call pocket</a>.
+        </p>
+        <p>
+          See the{' '}
+          <a href="/rules" className="text-info hover:underline">full official rules</a>{' '}
+          in the app rulebook. Your league may have{' '}
+          <a href="#house-rules" className="text-info hover:underline">house rules</a>{' '}
+          that differ from the official ones — check with your{' '}
+          <a href="#league-operator" className="text-info hover:underline">LO</a>.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#house-rules" className="text-info hover:underline">house rules</a>,{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['game', 'eight-ball', 'nine-ball'],
+    reviewedByEd: '2026-06-02',
+  },
+
+  'call-pocket': {
+    slug: 'call-pocket',
+    canonicalName: 'Call Pocket',
+    aliases: ['called pocket', 'called shot', 'call shot'],
+    shortDef:
+      "A shot where the player declares the ball and pocket before shooting. The shot only counts if the called ball drops in the called pocket.",
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          In call-pocket play, the player predicts the result of their
+          shot: which ball will drop into which pocket. Both the ball
+          and the pocket must be indicated before the shot begins.
+        </p>
+        <p>
+          For the shot to count — and for the player to continue
+          shooting — the called ball must fall into the called pocket.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['eight-ball', 'ten-ball'],
+    reviewedByEd: '2026-06-02',
+  },
+
+  // ---- Teams / players / roster ----------------------------------------
+
+  lineup: {
+    slug: 'lineup',
+    canonicalName: 'Lineup',
+    aliases: [],
+    shortDef:
+      'The set of players from a team who actually play in a given match — chosen from the larger roster.',
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          Before a{' '}
+          <a href="#match" className="text-info hover:underline">match</a>{' '}
+          begins, a{' '}
+          <a href="#team" className="text-info hover:underline">team</a>{' '}
+          picks which of their{' '}
+          <a href="#roster" className="text-info hover:underline">roster</a>{' '}
+          players will play. That's the lineup. The{' '}
+          <a href="#lineup-size" className="text-info hover:underline">lineup size</a>{' '}
+          is set at the league level. Anyone on the roster not in the
+          lineup sits the match out — but they can still participate by{' '}
+          <a href="#scorekeeper" className="text-info hover:underline">scorekeeping</a>{' '}
+          the match or watching the live scoreboards.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#match" className="text-info hover:underline">match</a>,{' '}
+          <a href="#team" className="text-info hover:underline">team</a>,{' '}
+          <a href="#roster" className="text-info hover:underline">roster</a>,{' '}
+          <a href="#lineup-size" className="text-info hover:underline">lineup size</a>,{' '}
+          <a href="#scorekeeper" className="text-info hover:underline">scorekeeper</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
+    related: ['captain', 'lineup-lock', 'substitute'],
+    reviewedByEd: '2026-05-30',
+  },
+
+  'lineup-size': {
+    slug: 'lineup-size',
+    canonicalName: 'Lineup Size',
+    aliases: [],
+    shortDef:
+      'Solely how many players from a team actually play in any given match.',
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          How many players from a{' '}
+          <a href="#team" className="text-info hover:underline">team</a>{' '}
+          actually play in any given{' '}
+          <a href="#match" className="text-info hover:underline">match</a>.
+        </p>
+        <p>
+          The app uses lineup size as one of the inputs to figure out how
+          many{' '}
+          <a href="#game" className="text-info hover:underline">games</a>{' '}
+          each match contains, and it's one of the values that defines
+          the league's{' '}
+          <a href="#match-format" className="text-info hover:underline">match format</a>.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#team" className="text-info hover:underline">team</a>,{' '}
+          <a href="#match" className="text-info hover:underline">match</a>,{' '}
+          <a href="#game" className="text-info hover:underline">game</a>,{' '}
+          <a href="#match-format" className="text-info hover:underline">match format</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
+    related: ['lineup', 'roster-size'],
+    reviewedByEd: '2026-05-30',
+  },
+
+  roster: {
+    slug: 'roster',
+    canonicalName: 'Roster',
+    aliases: [],
+    shortDef:
+      "The list of every player on a given team.",
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          The roster is the list of every player on a given{' '}
+          <a href="#team" className="text-info hover:underline">team</a>.
+          It has a minimum size (the{' '}
+          <a href="#lineup-size" className="text-info hover:underline">lineup size</a>)
+          and a maximum (the{' '}
+          <a href="#roster-size" className="text-info hover:underline">roster size</a>),
+          both set by the{' '}
+          <a href="#league-operator" className="text-info hover:underline">LO</a>.
+        </p>
+        <p>
+          Players on the roster can be changed by the{' '}
+          <a href="#captain" className="text-info hover:underline">captain</a>{' '}
+          or the LO.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#team" className="text-info hover:underline">team</a>,{' '}
+          <a href="#lineup-size" className="text-info hover:underline">lineup size</a>,{' '}
+          <a href="#roster-size" className="text-info hover:underline">roster size</a>,{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>,{' '}
+          <a href="#captain" className="text-info hover:underline">captain</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
+    related: ['placeholder-player', 'substitute'],
+    reviewedByEd: '2026-05-30',
+  },
+
+  'roster-size': {
+    slug: 'roster-size',
+    canonicalName: 'Roster Size',
+    aliases: [],
+    shortDef:
+      'Solely the maximum number of players a team is allowed to have on its roster.',
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          Roster size is the maximum number of players that can join a single{' '}
+          <a href="#team" className="text-info hover:underline">team</a>.
+          Think of it as how deep the bench is — the list of players a{' '}
+          <a href="#captain" className="text-info hover:underline">captain</a>{' '}
+          can choose from when setting the{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>{' '}
+          for each{' '}
+          <a href="#match" className="text-info hover:underline">match</a>.
+        </p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>
+            <strong>Larger roster:</strong> a bigger pool to draw from. Someone
+            missing a match becomes much less of a problem — somebody else on
+            the{' '}
+            <a href="#roster" className="text-info hover:underline">roster</a>{' '}
+            steps in.
+          </li>
+          <li>
+            <strong>Smaller roster:</strong> each player gets more playing
+            time, but everyone has to show up more reliably.
+          </li>
+        </ul>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#team" className="text-info hover:underline">team</a>,{' '}
+          <a href="#roster" className="text-info hover:underline">roster</a>,{' '}
+          <a href="#captain" className="text-info hover:underline">captain</a>,{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>,{' '}
+          <a href="#match" className="text-info hover:underline">match</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
+    related: ['lineup-size'],
+    reviewedByEd: '2026-05-30',
+    loSetting: 'live',
+  },
+
+  substitute: {
+    slug: 'substitute',
+    canonicalName: 'Substitute',
+    aliases: ['sub'],
+    shortDef:
+      "A player who takes the place of a missing player when a team doesn't have enough players present.",
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          When one player can't make a{' '}
+          <a href="#match" className="text-info hover:underline">match</a>,
+          a substitute steps in to fill that spot in the team's{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>.
+          The app allows one sub per{' '}
+          <a href="#match" className="text-info hover:underline">match</a>.
+        </p>
+        <p>The app supports two sub patterns:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>
+            <a href="#anonymous-sub" className="text-info hover:underline">Anonymous Sub</a>
+          </li>
+          <li>
+            <a href="#double-duty" className="text-info hover:underline">Double Duty</a>
+          </li>
+        </ul>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#match" className="text-info hover:underline">match</a>,{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>,{' '}
+          <a href="#anonymous-sub" className="text-info hover:underline">anonymous sub</a>,{' '}
+          <a href="#double-duty" className="text-info hover:underline">double duty</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
+    related: ['roster'],
+    reviewedByEd: '2026-05-31',
+  },
+
+  'anonymous-sub': {
+    slug: 'anonymous-sub',
+    canonicalName: 'Anonymous Sub',
+    aliases: ['anon sub', 'anonymous substitute'],
+    shortDef:
+      "A substitute who is a known player with an established ranking, but anonymous to our system. Their gameplay doesn't affect their own ranking or records.",
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          Anonymous subs solve a real problem. If a regular player fills in
+          on another team and his games count toward his own rating, he has
+          an incentive to lose on purpose (tank) to keep his handicap lower
+          for when he plays for his own team.
+        </p>
+        <p>
+          Going anonymous removes that incentive. The team gets a known-skill
+          fill-in. The sub gets to play their best without it counting against
+          (or for) their rating.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          <strong>Note:</strong> anonymous-sub removes the rating-tank
+          incentive, but not all of them. A sub from a rival team in your
+          league has their own reason to lose — helping their actual team —
+          and that's on the captain to factor in when picking.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
+    related: ['substitute', 'double-duty'],
+    reviewedByEd: '2026-05-30',
+  },
+
+  'double-duty': {
+    slug: 'double-duty',
+    canonicalName: 'Double Duty',
+    aliases: ['double-duty player'],
+    shortDef:
+      'One player in the lineup plays in two positions in the same match — the opposing team picks which roster player does it.',
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          When a team is short a player, they enter the present players
+          into the{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>{' '}
+          in the positions they want them to play. The "missing"
+          position is filled with double duty — a message goes to the
+          opposing team to pick any of the present players to play in
+          two separate positions. That player is essentially two
+          identical players with the same handicap calculations.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          <strong>Note:</strong> strategy varies on who to choose for
+          double duty. Do you pick the lowest-skill player to try for
+          more wins for your team, or do you pick their best player to
+          force that team to win more games?
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
+    related: ['substitute', 'anonymous-sub'],
+    reviewedByEd: '2026-05-31',
+  },
+
+  captain: {
+    slug: 'captain',
+    canonicalName: 'Captain',
+    aliases: ['team captain'],
+    shortDef:
+      "The team's representative to the league operator — handles team basics and speaks for the team on league matters.",
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          A captain is the representative for a{' '}
+          <a href="#team" className="text-info hover:underline">team</a>{' '}
+          to the{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>.
+          The app gives captains real control so they can run their team
+          independently — and a couple of communication channels to make
+          their league-side responsibilities easier.
+        </p>
+        <p><strong>What a captain can do:</strong></p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>
+            Change the team's name (the{' '}
+            <a href="#league-operator" className="text-info hover:underline">LO</a>{' '}
+            can restrict this if needed).
+          </li>
+          <li>
+            Add and remove{' '}
+            <a href="#roster" className="text-info hover:underline">roster</a>{' '}
+            players (the{' '}
+            <a href="#league-operator" className="text-info hover:underline">LO</a>{' '}
+            can restrict this too).
+          </li>
+        </ul>
+        <p className="text-sm">
+          Note: setting the{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>{' '}
+          for a{' '}
+          <a href="#match" className="text-info hover:underline">match</a>{' '}
+          isn't captain-only — anyone on the team can do it.
+        </p>
+        <p><strong>App-provided support for the role:</strong></p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>
+            <strong>Team chat</strong> — every current member of the team,
+            in one place for general communication. Day-to-day team issues
+            are handled by the captain.
+          </li>
+          <li>
+            <strong>Captains chat</strong> — every current captain in the
+            league plus the{' '}
+            <a href="#league-operator" className="text-info hover:underline">league operator</a>.
+            A space for captains to coordinate scheduling and settle issues
+            across teams without regular players piping in. The{' '}
+            <a href="#league-operator" className="text-info hover:underline">LO</a>{' '}
+            is in the room because most issues that surface here are ones
+            they may need to weigh in on.
+          </li>
+        </ul>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#team" className="text-info hover:underline">team</a>,{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>,{' '}
+          <a href="#roster" className="text-info hover:underline">roster</a>,{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>,{' '}
+          <a href="#match" className="text-info hover:underline">match</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['scorekeeper'],
+    reviewedByEd: '2026-05-30',
+  },
+
+  'league-operator': {
+    slug: 'league-operator',
+    canonicalName: 'League Operator',
+    aliases: ['LO', 'league op', 'operator'],
+    shortDef:
+      'Basically the CEO of an organization — runs the leagues, sets the format and house rules, collects the money, hands out prizes, settles disputes, everything.',
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          The LO sets up an{' '}
+          <a href="#organization" className="text-info hover:underline">organization</a>{' '}
+          in this app that can hold as many{' '}
+          <a href="#league" className="text-info hover:underline">leagues</a>{' '}
+          as they want. They can appoint{' '}
+          <a href="#staff" className="text-info hover:underline">staff</a>{' '}
+          to help with the organization.
+        </p>
+        <p>
+          Inside their organization the LO controls all of it: the{' '}
+          <a href="#match-format" className="text-info hover:underline">format</a>{' '}
+          each league uses, the team format, how much freedom{' '}
+          <a href="#captain" className="text-info hover:underline">captains</a>{' '}
+          get, the{' '}
+          <a href="#house-rules" className="text-info hover:underline">house rules</a>,
+          and the money coming in and going out.
+          Complete control.
+        </p>
+        <p>
+          The LO is also the final say on every dispute that escalates
+          to their level — between captains, between players who get
+          reported, between teams. The app gives them tools to make
+          this easier, but the decisions are theirs.
+        </p>
+        <p><strong>Tools the app provides:</strong></p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><a href="#captains-chat" className="text-info hover:underline">Captains chat</a></li>
+          <li><a href="#player-reports" className="text-info hover:underline">Player reports</a></li>
+          <li><a href="#prize-calculator" className="text-info hover:underline">Prize calculator</a></li>
+        </ul>
+        <p className="text-sm">
+          The LO's role as operator is separate from their participation.
+          They might be a <a href="#captain" className="text-info hover:underline">captain</a>{' '}
+          of one of their teams, a regular player on one, or not playing
+          at all — the operator authority is the same either way.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#organization" className="text-info hover:underline">organization</a>,{' '}
+          <a href="#league" className="text-info hover:underline">league</a>,{' '}
+          <a href="#staff" className="text-info hover:underline">staff</a>,{' '}
+          <a href="#match-format" className="text-info hover:underline">match format</a>,{' '}
+          <a href="#captain" className="text-info hover:underline">captain</a>,{' '}
+          <a href="#house-rules" className="text-info hover:underline">house rules</a>,{' '}
+          <a href="#captains-chat" className="text-info hover:underline">captains chat</a>,{' '}
+          <a href="#player-reports" className="text-info hover:underline">player reports</a>,{' '}
+          <a href="#prize-calculator" className="text-info hover:underline">prize calculator</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['scorekeeper'],
+    reviewedByEd: '2026-05-31',
+  },
+
+  organization: {
+    slug: 'organization',
+    canonicalName: 'Organization',
+    aliases: ['org'],
+    shortDef:
+      'The top-level container an LO operates under — the business, club, or group that holds the leagues together. One organization can run any number of leagues.',
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          An organization is the umbrella the{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>{' '}
+          runs leagues under — the business, club, or group that holds
+          everything together. One organization can run any number of{' '}
+          <a href="#league" className="text-info hover:underline">leagues</a>,
+          each with its own seasons, teams, and rules.
+        </p>
+        <p>
+          The organization is also the scope for{' '}
+          <a href="#staff" className="text-info hover:underline">staff</a>{' '}
+          — anyone appointed by the LO works at the org level and has
+          visibility across the org's leagues.
+        </p>
+        <p>
+          Think of the{' '}
+          <a href="#league-operator" className="text-info hover:underline">LO</a>'s
+          section of the app as the organization's office — its command
+          center.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>,{' '}
+          <a href="#league" className="text-info hover:underline">league</a>,{' '}
+          <a href="#staff" className="text-info hover:underline">staff</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: [],
+    reviewedByEd: '2026-05-30',
+  },
+
+  staff: {
+    slug: 'staff',
+    canonicalName: 'Staff',
+    aliases: ['org staff', 'league staff'],
+    shortDef:
+      "People the LO appoints to help run the organization. A staff member currently has almost LO-level authority, with a few specific limitations.",
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          Staff are the{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator's</a>{' '}
+          appointed helpers — anyone given access to the{' '}
+          <a href="#organization" className="text-info hover:underline">organization</a>{' '}
+          beyond a regular player. Right now a staff member has almost
+          the same authority as the LO, with a few specific exceptions.
+        </p>
+        <p><strong>Staff can be temporary.</strong></p>
+        <p>
+          Common use case: an LO needs help figuring out a setup or a
+          setting. They appoint a temporary helper — either the
+          rackem-leagues team or an experienced LO friend — who steps
+          in to make the adjustments and then "leaves the organization"
+          when done. No long-term commitment.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>,{' '}
+          <a href="#organization" className="text-info hover:underline">organization</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: [],
+    reviewedByEd: '2026-05-30',
+  },
+
+  'house-rules': {
+    slug: 'house-rules',
+    canonicalName: 'House Rules',
+    aliases: ['house rule'],
+    shortDef:
+      "The local rules an LO sets for their league. Pool's governing bodies (BCA, CSI) publish game rules; league-level rules are entirely the LO's call.",
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          House rules are the local rules an{' '}
+          <a href="#league-operator" className="text-info hover:underline">LO</a>{' '}
+          puts on their{' '}
+          <a href="#league" className="text-info hover:underline">league</a>.
+          Organizations like BCA and CSI publish general pool rules and
+          the rules of each{' '}
+          <a href="#game-type" className="text-info hover:underline">game</a>{' '}
+          (8-Ball, 9-Ball, 10-Ball) — but how a league actually runs is
+          entirely the LO's call. They don't specify "league" rules.
+        </p>
+        <p>
+          House rules cover decisions like the "Golden Break Counts as
+          Win" toggle, tie handling, payout structure, attendance
+          policies, and anything else the LO wants spelled out for their
+          players. Many of the LO-controllable settings on these glossary
+          pages (marked with the <em>League Operator setting</em> chip)
+          are house-rule-style decisions.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>,{' '}
+          <a href="#league" className="text-info hover:underline">league</a>,{' '}
+          <a href="#game-type" className="text-info hover:underline">game type</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['golden-break'],
+    reviewedByEd: '2026-05-31',
+  },
+
+  'captains-chat': {
+    slug: 'captains-chat',
+    canonicalName: 'Captains Chat',
+    aliases: ['captain chat'],
+    shortDef:
+      "An in-app group chat created each season for every team's captain in the league plus the league staff.",
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          The captains chat is an in-app group chat where every team's{' '}
+          <a href="#captain" className="text-info hover:underline">captain</a>{' '}
+          in a{' '}
+          <a href="#league" className="text-info hover:underline">league</a>{' '}
+          can coordinate scheduling, resolve disputes, and communicate
+          with each other and with the league{' '}
+          <a href="#staff" className="text-info hover:underline">staff</a>{' '}
+          (including the{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>)
+          — without player interference.
+        </p>
+        <p>
+          It's created automatically when the LO activates a new{' '}
+          <a href="#season" className="text-info hover:underline">season</a>,
+          and the membership keeps itself up to date — if the LO changes
+          who a team's captain is during the season, the chat updates
+          automatically too.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#captain" className="text-info hover:underline">captain</a>,{' '}
+          <a href="#league" className="text-info hover:underline">league</a>,{' '}
+          <a href="#staff" className="text-info hover:underline">staff</a>,{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>,{' '}
+          <a href="#season" className="text-info hover:underline">season</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['team-chat'],
+    reviewedByEd: '2026-05-30',
+  },
+
+  achievements: {
+    slug: 'achievements',
+    canonicalName: 'Achievements',
+    aliases: ['feats', 'feats of excellence'],
+    shortDef:
+      'Per-game feats the app tracks over time — break-and-runs, golden breaks, and other notable events.',
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          Achievements are noteworthy events the app records as they
+          happen during{' '}
+          <a href="#game" className="text-info hover:underline">games</a>.
+          They show up on player profiles and team stats over time.
+        </p>
+        <p>
+          Each achievement gets its own entry because pool has many
+          different names for the same feat. Centralizing the def keeps
+          everyone on the same page no matter which term they came in
+          with.
+        </p>
+        <p><strong>Tracked achievements:</strong></p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><a href="#break-and-run" className="text-info hover:underline">Break and run</a></li>
+          <li><a href="#table-run" className="text-info hover:underline">Table run</a></li>
+          <li><a href="#golden-break" className="text-info hover:underline">Golden break</a></li>
+        </ul>
+        <p><strong>Also tracked per-game (not achievements):</strong></p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><a href="#break-foul" className="text-info hover:underline">Break foul</a></li>
+          <li><a href="#win-by-forfeit" className="text-info hover:underline">Win by forfeit</a></li>
+        </ul>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#game" className="text-info hover:underline">game</a>,{' '}
+          <a href="#break-and-run" className="text-info hover:underline">break and run</a>,{' '}
+          <a href="#table-run" className="text-info hover:underline">table run</a>,{' '}
+          <a href="#golden-break" className="text-info hover:underline">golden break</a>,{' '}
+          <a href="#break-foul" className="text-info hover:underline">break foul</a>,{' '}
+          <a href="#win-by-forfeit" className="text-info hover:underline">win by forfeit</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['game-type'],
+    reviewedByEd: '2026-05-30',
+  },
+
+  'break-and-run': {
+    slug: 'break-and-run',
+    canonicalName: 'Break and Run',
+    aliases: [],
+    shortDef:
+      "The breaker breaks, makes a ball, and then runs out the rest of the rack to win the game — the opponent never gets to shoot.",
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          A break and run is when the{' '}
+          <a href="#breaker" className="text-info hover:underline">breaker</a>{' '}
+          sinks at least one ball on the break (so they continue shooting)
+          and then pockets every remaining ball to win the game. Their
+          opponent never gets to the table.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#breaker" className="text-info hover:underline">breaker</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['table-run', 'game', 'achievements'],
+    reviewedByEd: '2026-05-31',
+  },
+
+  'table-run': {
+    slug: 'table-run',
+    canonicalName: 'Table Run',
+    aliases: ['runout', 'run-out'],
+    shortDef:
+      "The breaker breaks and immediately turns over the table; the incoming player runs out the rest of the rack to win without the breaker shooting again.",
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          A table run is when the{' '}
+          <a href="#breaker" className="text-info hover:underline">breaker</a>{' '}
+          breaks but doesn't get to continue. It's either a dry break
+          (no ball pocketed) or a scratch (cue-ball foul, even if balls
+          dropped). Either way, the breaker's turn ends at the break.
+          The incoming player — the{' '}
+          <a href="#racker" className="text-info hover:underline">racker</a>{' '}
+          — takes over and pockets every remaining ball to win the
+          game without the breaker getting back to the table.
+        </p>
+        <p>
+          <strong>Important:</strong> the breaker must ONLY break. If
+          they take even one extra shot and miss, it doesn't count. The
+          breaker doing nothing beyond the break is what defines the
+          achievement.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#breaker" className="text-info hover:underline">breaker</a>,{' '}
+          <a href="#racker" className="text-info hover:underline">racker</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['break-and-run', 'game', 'achievements'],
+    reviewedByEd: '2026-05-31',
+  },
+
+  'golden-break': {
+    slug: 'golden-break',
+    canonicalName: 'Golden Break',
+    aliases: [
+      '9 on the break',
+      '9 on the snap',
+      'snap-9',
+      '10 on the break',
+      '10 on the snap',
+      'snap-10',
+      '8 on the break',
+      '8 on the snap',
+      '8-ball break',
+      'snap-8',
+    ],
+    shortDef:
+      "Sinking the winning ball on the break. CSI rules count it in 9-Ball and 10-Ball but not 8-Ball — the LO can flip any of these via house rule.",
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          A golden break is when the winning ball drops on the break shot.
+          The app tracks it as a per-game event — the{' '}
+          <a href="#game" className="text-info hover:underline">game</a>{' '}
+          already knows which{' '}
+          <a href="#game-type" className="text-info hover:underline">game-type</a>{' '}
+          is being played, so the record is just "golden break: true."
+        </p>
+        <p><strong>CSI official defaults:</strong></p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>
+            <a href="#nine-ball" className="text-info hover:underline">9-Ball</a>{' '}
+            — counts as a win.
+          </li>
+          <li>
+            <a href="#ten-ball" className="text-info hover:underline">10-Ball</a>{' '}
+            — counts as a win.
+          </li>
+          <li>
+            <a href="#eight-ball" className="text-info hover:underline">8-Ball</a>{' '}
+            — officially does NOT count.
+          </li>
+        </ul>
+        <p>
+          The{' '}
+          <a href="#league-operator" className="text-info hover:underline">LO</a>{' '}
+          can flip ANY of these as a{' '}
+          <a href="#house-rules" className="text-info hover:underline">house rule</a>.
+          A 9-Ball league can
+          decide not to count them; an 8-Ball league can decide they DO
+          count. The setting is per-league.
+        </p>
+        <p>
+          All the colloquial names — "8 on the break," "9 on the snap,"
+          "snap-8," "10 on the break," etc. — land here so searches
+          resolve to one consistent def.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#nine-ball" className="text-info hover:underline">9-Ball</a>,{' '}
+          <a href="#ten-ball" className="text-info hover:underline">10-Ball</a>,{' '}
+          <a href="#eight-ball" className="text-info hover:underline">8-Ball</a>,{' '}
+          <a href="#game" className="text-info hover:underline">game</a>,{' '}
+          <a href="#game-type" className="text-info hover:underline">game type</a>,{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>,{' '}
+          <a href="#achievements" className="text-info hover:underline">achievements</a>,{' '}
+          <a href="#house-rules" className="text-info hover:underline">house rules</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: [],
+    reviewedByEd: '2026-05-30',
+  },
+
+  'break-foul': {
+    slug: 'break-foul',
+    canonicalName: 'Break Foul',
+    aliases: ['breakfoul', 'illegal break'],
+    shortDef:
+      "A break-shot violation that costs the breaker their break — the opponent gets to take the break instead (or can make the offender break again).",
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          A break foul is any break-shot violation that costs the{' '}
+          <a href="#breaker" className="text-info hover:underline">breaker</a>{' '}
+          their break. The opponent gets a choice: take the break
+          themselves (re-rack and break), or make the offending player
+          re-rack and break again.
+        </p>
+        <p>
+          Per BCA rules, the most common cause is failing to legally
+          pocket a ball AND failing to drive at least four object balls
+          to one or more cushions. Specifics vary by game-type — the
+          rulebook covers each.
+        </p>
+        <p>
+          Note: a regular scratch on a legal break is "just a foul" —
+          the opponent gets ball-in-hand and play continues. That's
+          different from a break foul, which is about losing the right
+          to break in the first place.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#breaker" className="text-info hover:underline">breaker</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['game'],
+    reviewedByEd: '2026-05-31',
+  },
+
+  'win-by-forfeit': {
+    slug: 'win-by-forfeit',
+    canonicalName: 'Win by Forfeit',
+    aliases: ['forfeit win', 'forfeited game'],
+    shortDef:
+      "A game credited to the winning side because the opposing player couldn't or didn't play it — no game actually contested.",
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          A win by forfeit is recorded when an opposing player doesn't
+          show up, can't continue, or otherwise can't play their game.
+          The winning side gets credit, but no actual{' '}
+          <a href="#game" className="text-info hover:underline">game</a>{' '}
+          was contested. The flag is tracked separately so stats and
+          achievements can be filtered accordingly — a feat during a
+          forfeit win isn't the same as one in a contested game.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#game" className="text-info hover:underline">game</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: [],
+    reviewedByEd: '2026-05-31',
+  },
+
+  'placeholder-player': {
+    slug: 'placeholder-player',
+    canonicalName: 'Placeholder Player',
+    aliases: ['placeholder', 'placeholder players'],
+    shortDef:
+      "A stand-in for a real player who hasn't registered for the app yet. Plays and accumulates stats normally, then hands them off when the real person registers.",
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          A placeholder player is a representation of an actual person
+          who's on the{' '}
+          <a href="#team" className="text-info hover:underline">team</a>{' '}
+          but hasn't registered an account on the app yet. The{' '}
+          <a href="#captain" className="text-info hover:underline">captain</a>{' '}
+          creates the placeholder by name, and from there it behaves
+          like any other{' '}
+          <a href="#roster" className="text-info hover:underline">roster</a>{' '}
+          player.
+        </p>
+        <p>
+          The placeholder can be played in{' '}
+          <a href="#match" className="text-info hover:underline">matches</a>,
+          gets their full play history recorded, and their results count
+          exactly like a registered player's would — handicap, standings,
+          stats, everything.
+        </p>
+        <p>
+          When the real person finally registers on the app, the
+          placeholder's accumulated history can (and should) be transferred
+          onto their new registered account. Basically: the app creates a
+          fake "Bob" until the real Bob shows up and takes over.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#captain" className="text-info hover:underline">captain</a>,{' '}
+          <a href="#team" className="text-info hover:underline">team</a>,{' '}
+          <a href="#roster" className="text-info hover:underline">roster</a>,{' '}
+          <a href="#match" className="text-info hover:underline">match</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: [],
+    reviewedByEd: '2026-05-30',
+  },
+
+  'team-chat': {
+    slug: 'team-chat',
+    canonicalName: 'Team Chat',
+    aliases: [],
+    shortDef:
+      'An in-app group chat for every current member of a single team — created when their season activates.',
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          The team chat is an in-app group chat that includes every current
+          member of one{' '}
+          <a href="#team" className="text-info hover:underline">team</a>.
+          It's where the team coordinates: scheduling,{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>{' '}
+          talk, strategy, updates for players not in attendance, and
+          anything else that comes up.
+        </p>
+        <p>
+          It's created automatically when the LO activates a{' '}
+          <a href="#season" className="text-info hover:underline">season</a>,
+          and the membership auto-updates as the team's{' '}
+          <a href="#roster" className="text-info hover:underline">roster</a>{' '}
+          changes or the{' '}
+          <a href="#captain" className="text-info hover:underline">captain</a>{' '}
+          changes.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#team" className="text-info hover:underline">team</a>,{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>,{' '}
+          <a href="#season" className="text-info hover:underline">season</a>,{' '}
+          <a href="#roster" className="text-info hover:underline">roster</a>,{' '}
+          <a href="#captain" className="text-info hover:underline">captain</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['captains-chat'],
+    reviewedByEd: '2026-05-30',
+  },
+
+  'player-reports': {
+    slug: 'player-reports',
+    canonicalName: 'Player Reports',
+    aliases: ['report', 'reports', 'reporting'],
+    shortDef:
+      "A way for any player to flag a problem about another player to the league operator for review — wired into messages, lineup, and player profiles. In progress.",
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          Player reports let any player flag a problem — about another
+          player, a message, or an incident — for the{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>{' '}
+          to review. The report-creation surfaces are wired in across
+          the app:
+        </p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Inside a chat — report a specific message.</li>
+          <li>Player profile links — report a player directly.</li>
+          <li>Lineup actions — report from match-time context.</li>
+        </ul>
+        <p>
+          Categories cover harassment, cheating, inappropriate message,
+          spam, fake account, poor sportsmanship, impersonation, and
+          other. When a report is filed, the app captures the evidence
+          (e.g., the message text) and context (which conversation,
+          which match) automatically — the reporter doesn't have to
+          assemble proof manually.
+        </p>
+        <p>
+          The LO sees the reports for their{' '}
+          <a href="#organization" className="text-info hover:underline">organization</a>,
+          can move them through statuses (pending → investigating →
+          resolved or dismissed), add review notes, and escalate to
+          the rackem-leagues team if it's beyond what they can handle.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          <strong>Status:</strong> the report-creation and LO review
+          surfaces are in place. The fuller end-to-end workflow
+          (notifications, follow-ups, appeals) isn't completely
+          finished yet.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>,{' '}
+          <a href="#organization" className="text-info hover:underline">organization</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: [],
+    reviewedByEd: '2026-05-30',
+  },
+
+  // TODO: Ed to revisit prize-calculator entry when the feature ships.
+  'prize-calculator': {
+    slug: 'prize-calculator',
+    canonicalName: 'Prize Calculator',
+    aliases: ['prize calc'],
+    shortDef:
+      'A tool that helps the league operator work out money in (from teams) and prize splits at season end. Currently in progress.',
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          The prize calculator helps the{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>{' '}
+          handle the money side of running a league — total fees
+          collected, prize pool breakdown, payout splits. The calculator
+          is partially built; basics are in place.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          <strong>Status:</strong> this page is intentionally light
+          because the feature is still being built. Will fill in once
+          the calculator is finished and Ed can verify what it does.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#league-operator" className="text-info hover:underline">league operator</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: [],
+    reviewedByEd: '2026-05-31',
+  },
+
+  scorekeeper: {
+    slug: 'scorekeeper',
+    canonicalName: 'Scorekeeper',
+    aliases: ['score keeper', 'scorekeeping', 'scoring'],
+    shortDef:
+      "Anyone on either team can record what happened in a game or confirm what was recorded. Each game and the final match score need at least one confirmation from each team to be finalized.",
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          A{' '}
+          <a href="#game" className="text-info hover:underline">game</a>{' '}
+          is recorded only when its submissions agree. If multiple
+          team members enter the result and they don't match — winner,
+          score, achievements, anything — the app FLAGS the game
+          instead of recording it. Players can investigate, re-score,
+          and resolve the discrepancy.
+        </p>
+        <p>
+          Opposing-team scorekeepers can also confirm or deny a record.
+          A "deny" flags the game the same way disagreements do — a
+          second consensus layer to keep results honest.
+        </p>
+        <p>
+          Every game needs at least one confirmation from each team to
+          be recorded. The final{' '}
+          <a href="#match" className="text-info hover:underline">match</a>{' '}
+          score follows the same rule.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#game" className="text-info hover:underline">game</a>,{' '}
+          <a href="#match" className="text-info hover:underline">match</a>,{' '}
+          <a href="#team" className="text-info hover:underline">team</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['captain', 'manual-entry', 'manual-tiebreaker'],
+    reviewedByEd: '2026-05-30',
+  },
+
+  'lineup-lock': {
+    slug: 'lineup-lock',
+    canonicalName: 'Lineup Lock',
+    aliases: [],
+    shortDef:
+      "The moment a team commits their lineup for a match — when both teams have locked, the match specifics are generated and play can begin.",
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          Lineup lock is when a team commits their{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>{' '}
+          for the match. Before lock, players can be swapped in and out
+          freely. Once locked, the lineup is set.
+        </p>
+        <p>
+          When BOTH teams have locked their lineups, the app generates
+          the specifics of the match: the number of{' '}
+          <a href="#game" className="text-info hover:underline">games</a>{' '}
+          to be played, the{' '}
+          <a href="#pairing" className="text-info hover:underline">pairings</a>,
+          handicap{' '}
+          <a href="#threshold" className="text-info hover:underline">thresholds</a>,{' '}
+          <a href="#start-points" className="text-info hover:underline">starting bonuses</a>,
+          and so on.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>,{' '}
+          <a href="#game" className="text-info hover:underline">game</a>,{' '}
+          <a href="#pairing" className="text-info hover:underline">pairing</a>,{' '}
+          <a href="#threshold" className="text-info hover:underline">threshold</a>,{' '}
+          <a href="#start-points" className="text-info hover:underline">start points</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/modules/team-geometry.md' },
+    related: ['manual-entry'],
+    reviewedByEd: '2026-05-31',
+  },
+
+  bye: {
+    slug: 'bye',
+    canonicalName: 'Bye',
+    aliases: ['bye week'],
+    shortDef:
+      "A placeholder \"team\" the app adds when a league has an odd number of teams — essentially a team with no players that forfeits every week. Its opponent gets the match off and a \"win.\"",
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          When a{' '}
+          <a href="#league" className="text-info hover:underline">league</a>{' '}
+          has an odd number of{' '}
+          <a href="#team" className="text-info hover:underline">teams</a>,
+          one team would be left without an opponent each week. The app
+          handles this by creating a bye — a real team row in the
+          database, just with no captain and no roster. The bye is
+          included in the{' '}
+          <a href="#schedule" className="text-info hover:underline">schedule</a>{' '}
+          like any other team but always forfeits — so whoever is paired
+          against it gets the week off and receives a "win" for the
+          match.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#league" className="text-info hover:underline">league</a>,{' '}
+          <a href="#team" className="text-info hover:underline">team</a>,{' '}
+          <a href="#schedule" className="text-info hover:underline">schedule</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['matchup'],
+    reviewedByEd: '2026-05-31',
+  },
+
+  rack: {
+    slug: 'rack',
+    canonicalName: 'Rack',
+    aliases: [],
+    shortDef:
+      'In pool, "rack" can mean the triangle of balls at the start of a game, the act of racking them, or the racker (the player whose role it is to rack). In this app it most often refers to the racker.',
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          "Rack" has several common pool meanings: the physical triangle
+          or diamond of balls at the start of a{' '}
+          <a href="#game" className="text-info hover:underline">game</a>,
+          the verb "to rack" (setting up those balls), or sometimes a
+          synonym for the game itself. In this app, when you see "rack"
+          in a match context it most often refers to the{' '}
+          <a href="#racker" className="text-info hover:underline">racker</a>{' '}
+          — the player whose role it is to rack the balls (the opposite
+          of the{' '}
+          <a href="#breaker" className="text-info hover:underline">breaker</a>).
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#game" className="text-info hover:underline">game</a>,{' '}
+          <a href="#racker" className="text-info hover:underline">racker</a>,{' '}
+          <a href="#breaker" className="text-info hover:underline">breaker</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: [],
+    reviewedByEd: '2026-05-31',
+  },
+
+  racker: {
+    slug: 'racker',
+    canonicalName: 'Racker',
+    aliases: [],
+    shortDef:
+      "In a given game, the player who is NOT breaking — regardless of who physically racks the balls.",
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          Pool has two roles each rack: the{' '}
+          <a href="#breaker" className="text-info hover:underline">breaker</a>{' '}
+          and the racker. They alternate game to game in most formats.
+          The role matters because breaking usually holds a distinct
+          advantage statistically. Balancing who breaks is part of the
+          format design.
+        </p>
+        <p>
+          <strong>Caveat:</strong> some leagues are "rack your own" —
+          the breaker racks and breaks. Or an independent party, like a
+          referee, may do the actual racking. In our app, the racker is
+          still strictly the player NOT breaking that game, regardless
+          of who physically handles the balls.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#breaker" className="text-info hover:underline">breaker</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['game'],
+    reviewedByEd: '2026-05-31',
+  },
+
+  breaker: {
+    slug: 'breaker',
+    canonicalName: 'Breaker',
+    aliases: [],
+    shortDef:
+      "The player who gets to shoot first in a game — they shoot the cue ball into the racked cluster of balls and break them apart.",
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          Breaking usually holds a distinct advantage statistically, so
+          most leagues use a{' '}
+          <a href="#match-format" className="text-info hover:underline">match format</a>{' '}
+          that ensures an equal number of breaks for each side. The
+          opposite role is the{' '}
+          <a href="#racker" className="text-info hover:underline">racker</a>.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#match-format" className="text-info hover:underline">match format</a>,{' '}
+          <a href="#racker" className="text-info hover:underline">racker</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['game'],
+    reviewedByEd: '2026-05-31',
+  },
+
+  // ---- Tiebreaker concepts (features partly speculative) ---------------
+
+  tiebreaker: {
+    slug: 'tiebreaker',
+    canonicalName: 'Tiebreaker',
+    aliases: ['tie breaker'],
+    shortDef:
+      'The method used to decide who wins when regular play ends in a tie.',
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          When a{' '}
+          <a href="#match" className="text-info hover:underline">match</a>{' '}
+          ends in a tie, every league has a way of dealing with it:
+          either let the tie stand as a tie, or run some sort of extra
+          competition to give the final win to a single team. These
+          methods are numerous. We try to handle as many as we can.
+        </p>
+        <p>
+          If the way a particular league handles a tie isn't yet
+          supported, the fallback is{' '}
+          <a href="#manual-tiebreaker" className="text-info hover:underline">manual tiebreaker</a>.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#match" className="text-info hover:underline">match</a>,{' '}
+          <a href="#manual-tiebreaker" className="text-info hover:underline">manual tiebreaker</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/modules/tiebreak-system/README.md' },
+    related: ['accept-tie', 'extra-round', 'single-short-race'],
+    reviewedByEd: '2026-05-31',
+  },
+
+  'extra-round': {
+    slug: 'extra-round',
+    canonicalName: 'Extra Round',
+    aliases: ['best of 3', 'best of 5'],
+    shortDef:
+      'When a match ends tied, the teams play an extra round to decide the winner — typically best of 3 or best of 5.',
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          An extra round is a short additional{' '}
+          <a href="#race" className="text-info hover:underline">race</a>{' '}
+          between the two tied teams to decide the winner. The teams
+          use the same{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>{' '}
+          they played in the regular match (some leagues allow
+          reordering the positions, but the players are the same). The{' '}
+          <a href="#lineup-size" className="text-info hover:underline">lineup size</a>{' '}
+          determines the maximum number of games possible.
+        </p>
+        <p>
+          Whichever team wins the race takes the match — under the
+          league's existing win condition (games or points).
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#race" className="text-info hover:underline">race</a>,{' '}
+          <a href="#lineup" className="text-info hover:underline">lineup</a>,{' '}
+          <a href="#lineup-size" className="text-info hover:underline">lineup size</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/modules/tiebreak-system/README.md' },
+    related: ['tiebreaker'],
+    reviewedByEd: '2026-05-31',
+  },
+
+  'single-short-race': {
+    slug: 'single-short-race',
+    canonicalName: 'Single Short Race',
+    aliases: [],
+    shortDef:
+      'When a match ends tied, the teams play one short race to decide the winner.',
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          The teams play a single short{' '}
+          <a href="#race" className="text-info hover:underline">race</a>{' '}
+          — often a single rack — to decide the winner. The win is
+          decided under the league's existing win condition (games or
+          points). Faster than an{' '}
+          <a href="#extra-round" className="text-info hover:underline">extra round</a>.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#race" className="text-info hover:underline">race</a>,{' '}
+          <a href="#extra-round" className="text-info hover:underline">extra round</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/modules/tiebreak-system/README.md' },
+    related: ['tiebreaker'],
+    reviewedByEd: '2026-05-31',
+  },
+
+  'accept-tie': {
+    slug: 'accept-tie',
+    canonicalName: 'Accept Tie',
+    aliases: [],
+    shortDef:
+      'The operator\'s choice to allow tied matches to stand as ties; no tiebreaker is played.',
+    longDef: (
+      <p>
+        Some leagues are fine with ties. The match record shows a tie and
+        the standings reflect it. This avoids extra time and the complexity
+        of running additional games, and works well for casual league play.
+      </p>
+    ),
+    l1_anchor: { path: 'docs/league-system/modules/tiebreak-system/README.md' },
+    related: ['tiebreaker'],
+    reviewedByEd: '2026-05-31',
+  },
+
+  'manual-tiebreaker': {
+    slug: 'manual-tiebreaker',
+    canonicalName: 'Manual Tiebreaker',
+    aliases: [],
+    shortDef:
+      'A catch-all way for a league to decide a tied match — scorekeepers enter the agreed result manually.',
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          When a league has its own tiebreaker rule that this app doesn't
+          yet support, they may use manual tiebreaker. The league plays
+          whatever they normally play to break the tie, and{' '}
+          <a href="#scorekeeper" className="text-info hover:underline">scorekeepers</a>{' '}
+          from each team confirm the winner the same way they would for
+          a regular game. The original game scores stay on the
+          scoreboard; the manual entry decides who took the match.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#scorekeeper" className="text-info hover:underline">scorekeeper</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/modules/tiebreak-system/README.md' },
+    related: ['tiebreaker', 'manual-entry'],
+    reviewedByEd: '2026-05-31',
+  },
+
+  // ---- Schedule / setup ------------------------------------------------
+
+  'start-date': {
+    slug: 'start-date',
+    canonicalName: 'Start Date',
+    aliases: [],
+    shortDef:
+      'The date your league starts. This choice locks in your league\'s day of the week (and more) — choose carefully.',
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          Start date is more than just the first day of{' '}
+          <a href="#league" className="text-info hover:underline">league</a>{' '}
+          play. It helps us{' '}
+          <a href="#league-name" className="text-info hover:underline">name</a>{' '}
+          the{' '}
+          <a href="#league" className="text-info hover:underline">league</a>{' '}
+          and{' '}
+          <a href="#season" className="text-info hover:underline">seasons</a>{' '}
+          so players can tell which{' '}
+          <a href="#league" className="text-info hover:underline">league</a>{' '}
+          they're looking for.
+        </p>
+        <p>From the start date we get:</p>
+        <div className="space-y-1 pl-4">
+          <p>A. The day of the week</p>
+          <p>B. The time of year (Spring, Summer, Fall, Winter)</p>
+          <p>C. The year</p>
+        </div>
+        <p>
+          The day of the week is especially important because it gets{' '}
+          <strong>locked in</strong>. For example: this{' '}
+          <a href="#league" className="text-info hover:underline">league</a>{' '}
+          plays 8-Ball on Tuesdays — every{' '}
+          <a href="#match" className="text-info hover:underline">match</a>{' '}
+          falls on a Tuesday. If you want a different day, you create a
+          new{' '}
+          <a href="#league" className="text-info hover:underline">league</a>.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#league" className="text-info hover:underline">league</a>,{' '}
+          <a href="#league-name" className="text-info hover:underline">league name</a>,{' '}
+          <a href="#season" className="text-info hover:underline">season</a>,{' '}
+          <a href="#match" className="text-info hover:underline">match</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['qualifier'],
+    reviewedByEd: '2026-05-30',
+  },
+
+  // ---- Qualifier / descriptor ------------------------------------------
+
+  'league-name': {
+    slug: 'league-name',
+    canonicalName: 'League Name',
+    aliases: ['league title'],
+    shortDef:
+      'The auto-generated name of a league — composed from the game, day-of-week, optional qualifier, season, and year.',
+    longDef: (
+      <div className="space-y-3">
+        <p>
+          Each{' '}
+          <a href="#league" className="text-info hover:underline">league</a>{' '}
+          gets a name automatically. The shape is:
+        </p>
+        <p className="pl-4">
+          <em>
+            [<a href="#game-type" className="text-info hover:underline">Game</a>]{' '}
+            [Day-of-Week]{' '}
+            [<a href="#qualifier" className="text-info hover:underline">Qualifier</a>?]{' '}
+            [<a href="#season" className="text-info hover:underline">Season</a>]{' '}
+            [Year]
+          </em>
+        </p>
+        <p>
+          Most of these come from the league's{' '}
+          <a href="#start-date" className="text-info hover:underline">start-date</a>{' '}
+          and{' '}
+          <a href="#qualifier" className="text-info hover:underline">qualifier</a>.
+          The day-of-week, season name (Spring/Summer/Fall/Winter), and year
+          are all derived from the start-date the operator picked.
+        </p>
+        <p>
+          <strong>Examples.</strong> A 9-Ball league starting Tuesday March
+          4, 2026, no qualifier → <strong>&ldquo;9 Ball Tuesday Spring
+          2026&rdquo;</strong>. With a qualifier &ldquo;East Side&rdquo; it
+          becomes <strong>&ldquo;9 Ball Tuesday East Side Spring
+          2026&rdquo;</strong>.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Relevant topics:{' '}
+          <a href="#league" className="text-info hover:underline">league</a>,{' '}
+          <a href="#game-type" className="text-info hover:underline">game type</a>,{' '}
+          <a href="#qualifier" className="text-info hover:underline">qualifier</a>,{' '}
+          <a href="#season" className="text-info hover:underline">season</a>,{' '}
+          <a href="#start-date" className="text-info hover:underline">start-date</a>.
+        </p>
+      </div>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: [],
+    reviewedByEd: '2026-05-31',
+  },
+
+  qualifier: {
+    slug: 'qualifier',
+    canonicalName: 'Qualifier',
+    aliases: ['descriptor', 'division descriptor', 'league qualifier'],
+    shortDef:
+      'An optional name tag added to the league name for when you run multiple leagues of the same game on the same day (e.g., "East Side", "Beginner").',
+    longDef: (
+      <p>
+        Two 8-Ball Monday leagues at the same venue need names that tell
+        them apart. The qualifier is that distinguishing label. Some other
+        league systems call this a "division descriptor" — same concept,
+        different word. Leave it blank if you only run one league of the
+        game/day combination.
+      </p>
+    ),
+    l1_anchor: { path: 'docs/league-system/README.md' },
+    related: ['league'],
+    reviewedByEd: '2026-06-02',
+  },
+} as const satisfies Record<string, GlossaryEntry>;

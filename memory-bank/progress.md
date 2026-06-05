@@ -2,6 +2,13 @@
 
 ## What Works
 
+### ✅ **Operator Help — In-App Glossary (Phase 1 content pass)** 🎉 (2026-06-02)
+- **Glossary data layer** (`src/glossary/`): typed entries + registry + search; Learn page (`/learn`) + `GlossaryInfoButton` contextual help.
+- **Full dictionary review complete**: every entry across `general / standings / match-format / scoring / handicap` reviewed & stamped (`reviewedByEd`). Two-machine split (PC owned `general.tsx`, Mac owned the other 4) consolidated cleanly onto `feat/operator-help-phase-1`.
+- **Shipped as PR #163** → `main`.
+- **Deferred (intentional stubs)**: module/system explainers (`scoring-system`, `win-calculator`, `accumulate-with-milestone-jumps`, `stats`) — future instruction-manual material, not dictionary entries.
+- **Still pending (operator-help Phase 2)**: `/operator-learn` page + Help button surfaces (per `docs/brainstorms/2026-05-28-operator-help-system-requirements.md`).
+
 ### ✅ **Complete Authentication System**
 - User registration with email confirmation
 - Login/logout with session persistence

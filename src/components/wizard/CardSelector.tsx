@@ -12,14 +12,22 @@
  */
 
 import { InfoButton } from '@/components/InfoButton';
+import { GlossaryInfoButton } from '@/components/GlossaryInfoButton';
+import type { GlossarySlug } from '@/glossary';
 import { SelectableCard, type SelectableCardOption } from './SelectableCard';
+
+/** Same union as SelectableCard's `infoButton`: glossary slug for vocabulary
+ *  terms, or inline `{ title, content }` for one-off guidance. */
+type LabelInfoButtonProp =
+  | { slug: GlossarySlug }
+  | { title: string; content: React.ReactNode };
 
 interface CardSelectorProps<T> {
   /** Optional question label displayed above the cards */
   label?: string;
 
   /** Optional info button next to the question label */
-  labelInfoButton?: { title: string; content: React.ReactNode };
+  labelInfoButton?: LabelInfoButtonProp;
 
   /** The options to render as cards */
   options: SelectableCardOption<T>[];
@@ -48,9 +56,13 @@ export function CardSelector<T>({
         <div className="flex items-center gap-1">
           {label && <p className="font-medium text-foreground">{label}</p>}
           {labelInfoButton && (
-            <InfoButton title={labelInfoButton.title} size="sm">
-              {labelInfoButton.content}
-            </InfoButton>
+            'slug' in labelInfoButton ? (
+              <GlossaryInfoButton slug={labelInfoButton.slug} size="sm" />
+            ) : (
+              <InfoButton title={labelInfoButton.title} size="sm">
+                {labelInfoButton.content}
+              </InfoButton>
+            )
           )}
         </div>
       )}

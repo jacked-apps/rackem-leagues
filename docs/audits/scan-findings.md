@@ -1,6 +1,6 @@
 # Screen-audit scan findings
 
-_Generated 2026-05-25 by `scripts/audit-scan.sh`. Regenerate with `pnpm audit:scan`._
+_Generated 2026-05-29 by `scripts/audit-scan.sh`. Regenerate with `pnpm audit:scan`._
 
 **Do not hand-edit this file.** It is regenerated each run from the source tree.
 Use it as input to `docs/audits/screen-audit.md` (the per-screen audit checklist).
@@ -19,7 +19,7 @@ fix for free. Only components with ≥3 importers are listed._
 | Component | Imports |
 |---|---|
 | `PageHeader` | 39 |
-| `InfoButton` | 22 |
+| `InfoButton` | 21 |
 | `PlayerNameLink` | 5 |
 | `StatsNavBar` | 4 |
 | `playoff/PlayoffTemplateSelector` | 4 |
@@ -880,12 +880,12 @@ etc.) chosen by semantic meaning, not literal color match._
 
 ### `src/components/scoring/GamesList.tsx`
 
-- L176: `const winnerClass = isConfirmed ? 'bg-green-200 font-semibold' : 'bg-yellow-100 font-semibold';`
-- L191: `className={\`w-full ${leftWon ? 'bg-red-100 font-semibold' : 'bg-card text-muted-foreground'}\`}`
-- L200: `className={\`text-xs px-1 ${iRequestedVacate ? 'bg-orange-50 border-orange-300 text-orange-700' : 'bg-red-50 border-red-300 text-red-700 hove`
-- L213: `className={\`w-full ${rightWon ? 'bg-red-100 font-semibold' : 'bg-card text-muted-foreground'}\`}`
-- L283: `className={\`w-full ${leftIsHome ? 'bg-blue-100 hover:bg-blue-200' : 'bg-orange-100 hover:bg-orange-200'}\`}`
-- L294: `className={\`w-full ${rightIsHome ? 'bg-blue-100 hover:bg-blue-200' : 'bg-orange-100 hover:bg-orange-200'}\`}`
+- L200: `const winnerClass = isConfirmed ? 'bg-green-200 font-semibold' : 'bg-yellow-100 font-semibold';`
+- L215: `className={\`w-full ${leftWon ? 'bg-red-100 font-semibold' : 'bg-card text-muted-foreground'}\`}`
+- L224: `className={\`text-xs px-1 ${iRequestedVacate ? 'bg-orange-50 border-orange-300 text-orange-700' : 'bg-red-50 border-red-300 text-red-700 hove`
+- L237: `className={\`w-full ${rightWon ? 'bg-red-100 font-semibold' : 'bg-card text-muted-foreground'}\`}`
+- L307: `className={\`w-full ${leftIsHome ? 'bg-blue-100 hover:bg-blue-200' : 'bg-orange-100 hover:bg-orange-200'}\`}`
+- L318: `className={\`w-full ${rightIsHome ? 'bg-blue-100 hover:bg-blue-200' : 'bg-orange-100 hover:bg-orange-200'}\`}`
 
 ### `src/components/scoring/LineupChangeModal.tsx`
 
