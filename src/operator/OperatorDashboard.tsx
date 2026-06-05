@@ -101,9 +101,9 @@ export const OperatorDashboard: React.FC = () => {
             icon={<Wrench className="h-6 w-6" />}
             iconColor="text-primary"
             title="Scoring Workshop"
-            description="Build per-game allocator variations (first room)"
+            description="Build pieces of a Scoring System — one room per module"
             buttonText="Open Workshop"
-            linkTo="/operator/scoring-workshop/per-game-allocator"
+            linkTo="/operator/scoring-workshop"
           />
 
           {/* Row 2 - Active Leagues (2 cols) and Sidebar (1 col) */}

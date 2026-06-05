@@ -1,13 +1,14 @@
 /**
  * @fileoverview List view for the per-game allocator room.
  *
- * Two sections: "Templates" (officials, read-only) and "Yours" (user's
- * own, editable). Each official offers a "Make a copy I can edit"
- * action; each user row offers Edit and Delete.
+ * Two sections rendered as scannable lists (not grids): "Templates"
+ * (officials, read-only, clone-to-edit) and "Yours" (user's own,
+ * editable). List style scales as the count grows — a user with 50
+ * saved variations is the right design target, not 6.
  */
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import type { AllocatorRow } from './useAllocatorRoom';
 
 export interface AllocatorListProps {
@@ -33,27 +34,26 @@ export function AllocatorList({
           Official starting points. Read-only. Clone one to start a variation
           of your own.
         </p>
-        <div className="grid gap-3 md:grid-cols-2">
-          {officials.map((row) => (
-            <Card key={row.id}>
-              <CardHeader>
-                <CardTitle className="text-base">{row.name}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {row.description && (
-                  <p className="text-sm text-muted-foreground">{row.description}</p>
-                )}
-                <Button
-                  size="sm"
-                  loadingText="none"
-                  onClick={() => onCloneOfficial(row.id)}
-                >
-                  Make a copy I can edit
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <Card>
+          <CardContent className="divide-y p-0">
+            {officials.map((row) => (
+              <RowItem
+                key={row.id}
+                name={row.name}
+                description={row.description}
+                actions={
+                  <Button
+                    size="sm"
+                    loadingText="none"
+                    onClick={() => onCloneOfficial(row.id)}
+                  >
+                    Make a copy
+                  </Button>
+                }
+              />
+            ))}
+          </CardContent>
+        </Card>
       </section>
 
       <section className="space-y-2">
@@ -64,41 +64,62 @@ export function AllocatorList({
             start one.
           </p>
         ) : (
-          <div className="grid gap-3 md:grid-cols-2">
-            {mine.map((row) => (
-              <Card key={row.id}>
-                <CardHeader>
-                  <CardTitle className="text-base">{row.name}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {row.description && (
-                    <p className="text-sm text-muted-foreground">
-                      {row.description}
-                    </p>
-                  )}
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      loadingText="none"
-                      onClick={() => onEditMine(row.id)}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      loadingText="none"
-                      onClick={() => onDeleteMine(row.id)}
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <Card>
+            <CardContent className="divide-y p-0">
+              {mine.map((row) => (
+                <RowItem
+                  key={row.id}
+                  name={row.name}
+                  description={row.description}
+                  actions={
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        loadingText="none"
+                        onClick={() => onEditMine(row.id)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        loadingText="none"
+                        onClick={() => onDeleteMine(row.id)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  }
+                />
+              ))}
+            </CardContent>
+          </Card>
         )}
       </section>
+    </div>
+  );
+}
+
+function RowItem({
+  name,
+  description,
+  actions,
+}: {
+  readonly name: string;
+  readonly description: string | null;
+  readonly actions: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 px-4 py-3">
+      <div className="min-w-0 flex-1">
+        <div className="font-medium">{name}</div>
+        {description && (
+          <div className="truncate text-sm text-muted-foreground">
+            {description}
+          </div>
+        )}
+      </div>
+      <div className="flex-none">{actions}</div>
     </div>
   );
 }
