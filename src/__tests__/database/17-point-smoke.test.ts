@@ -90,17 +90,67 @@ describe('17-Point — full pipeline smoke', () => {
     expect(allocator?.winner.formula?.operationArgs).toEqual({
       expression: {
         kind: 'op',
-        op: '-',
-        left: { kind: 'const', value: 17 },
-        right: { kind: 'var', name: 'other_side_value' },
+        op: '+',
+        left: { kind: 'var', name: 'this_side_value' },
+        right: {
+          kind: 'op',
+          op: '-',
+          left: { kind: 'const', value: 7 },
+          right: { kind: 'var', name: 'other_side_value' },
+        },
       },
     });
-    expect(allocator?.winner.base).toBe(0);
+    expect(allocator?.winner.base).toBe(10);
     expect(allocator?.loser.base).toEqual({
       min: 0,
       max: 7,
       label: 'Balls pocketed by loser',
     });
+  });
+
+  it('both 17-Point officials produce identical totals — proves the two templates are equivalent ways to express the same scoring', async () => {
+    if (!seventeenPointId) throw new Error('no seed');
+    const altRows = await executeSql(
+      `SELECT id FROM per_game_allocators WHERE name = '17-Point (Single Formula) — Official'`,
+    );
+    const altId = altRows[0]?.id as string | undefined;
+    expect(altId).toBeDefined();
+
+    const games = [
+      game('home', 0),
+      game('home', 3),
+      game('away', 5),
+      game('home', 7),
+      game('away', 2),
+    ];
+    const sharedArgs = {
+      homeTeamId: HOME,
+      awayTeamId: AWAY,
+      games,
+      pointsCalculator: 'accumulated_per_game',
+      pointsCalculatorParams: {},
+      winCondition: 'points' as const,
+      thresholdInputs: INPUTS,
+      homeThresholds: NO_THRESHOLDS,
+      awayThresholds: NO_THRESHOLDS,
+    };
+
+    const canonical = await loadPerGameAllocator(seventeenPointId);
+    const alternative = await loadPerGameAllocator(altId!);
+    expect(canonical).not.toBeNull();
+    expect(alternative).not.toBeNull();
+
+    const aTotals = computeMatchRunningTotalsViaEngine({
+      ...sharedArgs,
+      perGameAllocatorOverride: canonical!,
+    });
+    const bTotals = computeMatchRunningTotalsViaEngine({
+      ...sharedArgs,
+      perGameAllocatorOverride: alternative!,
+    });
+    expect(aTotals).toEqual(bTotals);
+    expect(aTotals.home_points_earned).toBe(48);
+    expect(aTotals.away_points_earned).toBe(37);
   });
 
   it('loaded allocator → match-adapter → correct 17-Point totals over the named acceptance sequence', async () => {

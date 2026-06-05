@@ -26,6 +26,7 @@ const OFFICIAL_NAMES = [
   'Percent 5-Man — Official',
   '10-Point — Official',
   '17-Point — Official',
+  '17-Point (Single Formula) — Official',
   'Empty Starter',
 ] as const;
 
@@ -34,7 +35,7 @@ describe('per_game_allocators — schema (no seed required)', () => {
     await closePostgresPool();
   });
 
-  it('seeds exactly four official rows', async () => {
+  it('seeds exactly five official rows', async () => {
     const rows = await executeSql(
       `SELECT name FROM per_game_allocators WHERE scope = 'official' ORDER BY name`,
     );
@@ -61,15 +62,38 @@ describe('per_game_allocators — schema (no seed required)', () => {
     expect(loser.formula).toBeNull();
   });
 
-  it("17-Point official's winner side carries the evaluate_expression formula", async () => {
+  it("17-Point official's winner side uses base=10 + (this_side_value + (7 - other_side_value))", async () => {
     const rows = await executeSql(
       `SELECT winner_side FROM per_game_allocators WHERE name = '17-Point — Official'`,
     );
     expect(rows).toHaveLength(1);
     const winner = rows[0].winner_side;
+    // Canonical form: base = 10, formula adds (7 - other_side_value) to it.
+    // Demonstrates the full base + formula architecture.
+    expect(winner.base).toBe(10);
+    expect(winner.formula.operationKind).toBe('evaluate_expression');
+    expect(winner.formula.operationArgs.expression).toEqual({
+      kind: 'op',
+      op: '+',
+      left: { kind: 'var', name: 'this_side_value' },
+      right: {
+        kind: 'op',
+        op: '-',
+        left: { kind: 'const', value: 7 },
+        right: { kind: 'var', name: 'other_side_value' },
+      },
+    });
+  });
+
+  it("17-Point (Single Formula) official uses base=0 + (17 - other_side_value)", async () => {
+    const rows = await executeSql(
+      `SELECT winner_side FROM per_game_allocators WHERE name = '17-Point (Single Formula) — Official'`,
+    );
+    expect(rows).toHaveLength(1);
+    const winner = rows[0].winner_side;
+    // Same math as the canonical 17-Point, expressed as a single
+    // self-contained formula without referencing the base.
     expect(winner.base).toBe(0);
-    // Self-contained expression: 17 - other_side_value. No reference to
-    // the base; per-game total still always = 17.
     expect(winner.formula.operationKind).toBe('evaluate_expression');
     expect(winner.formula.operationArgs.expression).toEqual({
       kind: 'op',

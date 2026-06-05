@@ -239,16 +239,32 @@ VALUES (
   '{"base": {"min": 0, "max": 7, "label": "Balls pocketed by loser"}, "formula": null}'::jsonb
 );
 
--- 17-Point: winner = (17 - other_side_value), so winner gets 17 minus
--- the balls the loser pocketed. Per-game total is always 17. The formula
--- is self-contained — it doesn't reference the base — so the editor
--- shows a clean expression without hidden state. Stored as
--- evaluate_expression so the click-to-build editor renders and edits
--- a clone faithfully.
+-- 17-Point — Official: the CANONICAL form. base=10 (the winner's
+-- starting value) + formula that adds the loser's complement to it.
+-- Reads as: "winner starts with 10, then gets bonus points equal to
+-- (7 minus what the loser pocketed)." Demonstrates the FULL base +
+-- formula architecture — the formula references the base via
+-- this_side_value. Per-game total always = 17.
 INSERT INTO "public"."per_game_allocators" ("name", "description", "scope", "author_id", "winner_side", "loser_side")
 VALUES (
   '17-Point — Official',
-  'CSI 17-Point Scoring System per-game allocation. Winner gets 17 minus the balls the loser pocketed, so per-game total is always 17.',
+  'CSI 17-Point Scoring System (base + formula form). Winner starts with 10 (base), then adds (7 − loser_balls) via the formula. Demonstrates how the base and formula work together. Per-game total always 17.',
+  'official',
+  NULL,
+  '{"base": 10, "formula": {"operationKind": "evaluate_expression", "operationArgs": {"expression": {"kind": "op", "op": "+", "left": {"kind": "var", "name": "this_side_value"}, "right": {"kind": "op", "op": "-", "left": {"kind": "const", "value": 7}, "right": {"kind": "var", "name": "other_side_value"}}}}}}'::jsonb,
+  '{"base": {"min": 0, "max": 7, "label": "Balls pocketed by loser"}, "formula": null}'::jsonb
+);
+
+-- 17-Point (Single Formula) — Official: SAME MATH, different shape.
+-- base=0 + a self-contained formula `(17 - other_side_value)`. Shows
+-- that when the formula doesn't need to reference the base, you can
+-- set base to 0 and put everything in the formula. Both this row and
+-- the row above produce identical per-game results — they exist as
+-- two templates so LOs can see two ways to express the same idea.
+INSERT INTO "public"."per_game_allocators" ("name", "description", "scope", "author_id", "winner_side", "loser_side")
+VALUES (
+  '17-Point (Single Formula) — Official',
+  'Same math as 17-Point, written as a single self-contained formula instead of base + formula. base=0, formula = (17 − loser_balls). Demonstrates that the formula doesn''t HAVE to reference the base — you can do it all in one expression.',
   'official',
   NULL,
   '{"base": 0, "formula": {"operationKind": "evaluate_expression", "operationArgs": {"expression": {"kind": "op", "op": "-", "left": {"kind": "const", "value": 17}, "right": {"kind": "var", "name": "other_side_value"}}}}}'::jsonb,
