@@ -30,6 +30,9 @@ vi.mock('@/utils/match/computeMatchPrepPayload', () => ({
 vi.mock('@/utils/logger', () => ({
   logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
 }));
+vi.mock('@/api/mutations/appendConfirmation', () => ({
+  appendConfirmation: vi.fn(async () => true),
+}));
 
 import { supabase } from '@/supabaseClient';
 import {
@@ -38,11 +41,17 @@ import {
 } from '@/api/queries/matches';
 import { computeMatchPrepPayload } from '@/utils/match/computeMatchPrepPayload';
 import { auditMatchScoringConsistency } from '@/api/queries/matches';
+import { appendConfirmation } from '@/api/mutations/appendConfirmation';
 import {
   loSaveLineups,
   loSetupMatch,
   loScoreGame,
   loFinalizeMatch,
+  loReopenMatch,
+  loRestoreCompletion,
+  loVacateGame,
+  loCorrectGame,
+  loRestoreGame,
 } from '../loManualScoring';
 
 const MATCH = 'match-1';
@@ -380,5 +389,180 @@ describe('loFinalizeMatch', () => {
     await expect(
       loFinalizeMatch({ matchId: MATCH, loMemberId: 'lo', winCondition: 'points' })
     ).rejects.toThrow(/Cannot finalize/);
+  });
+});
+
+/** Configure supabase.from('matches') for reopen: status read + update. */
+function mockReopen(status: string, updateError: { message: string } | null = null) {
+  const matchUpdate = vi.fn(() => ({ eq: () => Promise.resolve({ error: updateError }) }));
+  vi.mocked(supabase.from).mockImplementation((table: string) => {
+    if (table === 'matches') {
+      return {
+        select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: { status }, error: null }) }) }),
+        update: matchUpdate,
+      } as never;
+    }
+    return {} as never;
+  });
+  return matchUpdate;
+}
+
+describe('loReopenMatch', () => {
+  it('flips a completed match to in_progress WITHOUT clearing completion fields', async () => {
+    const matchUpdate = mockReopen('completed');
+    await loReopenMatch(MATCH);
+    const payload = matchUpdate.mock.calls[0][0] as Record<string, unknown>;
+    expect(payload).toEqual({ status: 'in_progress' }); // only status — winner etc. untouched
+  });
+
+  it('reopens an awaiting_verification match', async () => {
+    const matchUpdate = mockReopen('awaiting_verification');
+    await loReopenMatch(MATCH);
+    expect(matchUpdate).toHaveBeenCalled();
+  });
+
+  it('is a no-op on an already in_progress match', async () => {
+    const matchUpdate = mockReopen('in_progress');
+    await loReopenMatch(MATCH);
+    expect(matchUpdate).not.toHaveBeenCalled();
+  });
+
+  it('refuses to reopen a scheduled match', async () => {
+    const matchUpdate = mockReopen('scheduled');
+    await expect(loReopenMatch(MATCH)).rejects.toThrow(/Cannot reopen/);
+    expect(matchUpdate).not.toHaveBeenCalled();
+  });
+});
+
+describe('loRestoreCompletion', () => {
+  it('re-stamps status=completed (prior winner left intact)', async () => {
+    const matchUpdate = vi.fn(() => ({ eq: () => Promise.resolve({ error: null }) }));
+    vi.mocked(supabase.from).mockReturnValue({ update: matchUpdate } as never);
+    await loRestoreCompletion(MATCH);
+    expect(matchUpdate.mock.calls[0][0]).toEqual({ status: 'completed' });
+  });
+});
+
+const GAME_ROW = {
+  game_number: 6,
+  home_player_id: 'hp',
+  away_player_id: 'ap',
+  winner_team_id: HOME,
+  winner_player_id: 'hp',
+  break_and_run: true,
+  golden_break: false,
+  break_fouled: false,
+  runout: false,
+  win_by_forfeit: false,
+  winner_value: null,
+  loser_value: null,
+};
+
+/** from('match_games') chain supporting BOTH select→eq→single and update→eq. */
+function matchGamesChain(gameRow: Record<string, unknown>, updateError: { message: string } | null = null) {
+  const update = vi.fn(() => ({ eq: () => Promise.resolve({ error: updateError }) }));
+  return {
+    obj: {
+      select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: gameRow, error: null }) }) }),
+      update,
+    },
+    update,
+  };
+}
+
+describe('loVacateGame', () => {
+  it('appends a vacate marker (pre-wipe snapshot + reason), then wipes the game', async () => {
+    const mg = matchGamesChain(GAME_ROW);
+    vi.mocked(supabase.from).mockReturnValue(mg.obj as never);
+    vi.mocked(appendConfirmation).mockResolvedValue(true);
+
+    await loVacateGame({ matchId: MATCH, gameId: 'g6', loMemberId: 'lo', reason: 'unmarked BR' });
+
+    expect(appendConfirmation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'vacate',
+        isInitiator: false,
+        confirmerId: 'lo',
+        side: 'home', // winner_player_id === home_player_id
+        reason: 'unmarked BR',
+        result: expect.objectContaining({ winnerPlayerId: 'hp', breakAndRun: true }),
+      })
+    );
+    const wipe = mg.update.mock.calls[0][0] as Record<string, unknown>;
+    expect(wipe).toMatchObject({ winner_team_id: null, confirmed_by_home: null, confirmed_by_away: null });
+  });
+
+  it('aborts (no wipe) if the vacate marker append fails', async () => {
+    const mg = matchGamesChain(GAME_ROW);
+    vi.mocked(supabase.from).mockReturnValue(mg.obj as never);
+    vi.mocked(appendConfirmation).mockResolvedValue(false);
+
+    await expect(
+      loVacateGame({ matchId: MATCH, gameId: 'g6', loMemberId: 'lo' })
+    ).rejects.toThrow(/vacate marker/);
+    expect(mg.update).not.toHaveBeenCalled();
+  });
+});
+
+describe('loCorrectGame', () => {
+  it('writes the result (via loScoreGame) + appends an operator confirm row with reason', async () => {
+    // loScoreGame reads matches.status (in_progress) + updates match_games; then
+    // loCorrectGame reads match_games (game_number, home_player_id) for the side.
+    const update = vi.fn(() => ({ eq: () => Promise.resolve({ error: null }) }));
+    vi.mocked(supabase.from).mockImplementation((table: string) => {
+      if (table === 'matches') {
+        return { select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: { status: 'in_progress' }, error: null }) }) }) } as never;
+      }
+      return {
+        update,
+        select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: { game_number: 6, home_player_id: 'hp' }, error: null }) }) }),
+      } as never;
+    });
+    vi.mocked(appendConfirmation).mockResolvedValue(true);
+
+    await loCorrectGame({
+      matchId: MATCH,
+      gameId: 'g6',
+      loMemberId: 'lo',
+      result: { winnerTeamId: HOME, winnerPlayerId: 'hp', goldenBreak: true },
+      reason: 'corrected to golden break',
+    });
+
+    expect(update).toHaveBeenCalled(); // loScoreGame wrote the columns
+    expect(appendConfirmation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'confirm',
+        isInitiator: true,
+        confirmerId: 'lo',
+        side: 'home',
+        reason: 'corrected to golden break',
+        result: expect.objectContaining({ winnerPlayerId: 'hp', goldenBreak: true }),
+      })
+    );
+  });
+});
+
+describe('loRestoreGame', () => {
+  it('re-writes the snapshot + restores officiality to the operator, then recomputes', async () => {
+    const update = vi.fn(() => ({ eq: () => Promise.resolve({ error: null }) }));
+    vi.mocked(supabase.from).mockReturnValue({ update } as never);
+
+    await loRestoreGame({
+      matchId: MATCH,
+      gameId: 'g6',
+      loMemberId: 'lo',
+      snapshot: { winnerTeamId: HOME, winnerPlayerId: 'hp', breakAndRun: true },
+    });
+
+    const payload = update.mock.calls[0][0] as Record<string, unknown>;
+    expect(payload).toMatchObject({
+      winner_team_id: HOME,
+      winner_player_id: 'hp',
+      break_and_run: true,
+      confirmed_by_home: 'lo',
+      confirmed_by_away: 'lo',
+    });
+    const { updateMatchRunningTotals } = await import('@/api/queries/matches');
+    expect(updateMatchRunningTotals).toHaveBeenCalledWith(MATCH);
   });
 });

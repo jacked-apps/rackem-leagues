@@ -148,7 +148,8 @@ describe('LO manual scoring — DB round-trip', () => {
       gameType: 'eight_ball',
     });
 
-    // prep_match created the games and flipped status to in_progress.
+    // prep_match created the games; loSetupMatch then re-stamped the match to the
+    // LO-entry state 'updating' (kept off the players' live-scoring surfaces).
     const created = await executeSql(
       `SELECT id, game_number, home_player_id FROM match_games WHERE match_id=$1 ORDER BY game_number`,
       [ids.match]
@@ -156,7 +157,7 @@ describe('LO manual scoring — DB round-trip', () => {
     expect(created.length).toBe(9); // 3v3 single round-robin
 
     const statusAfterSetup = await executeSql(`SELECT status FROM matches WHERE id=$1`, [ids.match]);
-    expect(statusAfterSetup[0].status).toBe('in_progress');
+    expect(statusAfterSetup[0].status).toBe('updating');
 
     // 3. Score every game as a home win (winner = that game's home player).
     for (const g of created) {

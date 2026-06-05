@@ -53,6 +53,10 @@ function renderPicker() {
           path="/league/:leagueId/manual-scoring/:matchId"
           element={<div>SCORING PAGE</div>}
         />
+        <Route
+          path="/league/:leagueId/match-review/:matchId"
+          element={<div>REVIEW PAGE</div>}
+        />
       </Routes>
     </MemoryRouter>
   );
@@ -61,16 +65,20 @@ function renderPicker() {
 beforeEach(() => vi.clearAllMocks());
 
 describe('ManualScoringMatchPicker', () => {
-  it('renders scheduled matches as clickable and others as inert', () => {
-    mockSchedule([mkMatch('m1', 'scheduled'), mkMatch('m2', 'completed')]);
+  it('renders scheduled as scorable, finished as reviewable, and others as inert', () => {
+    mockSchedule([
+      mkMatch('m1', 'scheduled'),
+      mkMatch('m2', 'completed'),
+      mkMatch('m3', 'forfeited'),
+    ]);
     renderPicker();
 
     expect(screen.getAllByTestId('eligible-match')).toHaveLength(1);
+    expect(screen.getAllByTestId('review-match')).toHaveLength(1);
     expect(screen.getAllByTestId('ineligible-match')).toHaveLength(1);
-    expect(screen.getByText('Completed')).toBeInTheDocument();
   });
 
-  it('navigates to the scoring page when an eligible match is clicked', () => {
+  it('navigates to the scoring page when a scheduled match is clicked', () => {
     mockSchedule([mkMatch('m1', 'scheduled')]);
     renderPicker();
 
@@ -78,12 +86,30 @@ describe('ManualScoringMatchPicker', () => {
     expect(screen.getByText('SCORING PAGE')).toBeInTheDocument();
   });
 
-  it('shows the empty-eligibility note when no match is scheduled', () => {
-    mockSchedule([mkMatch('m1', 'completed'), mkMatch('m2', 'in_progress')]);
+  it('resumes an updating match (LO walked away mid-entry) into the scoring page', () => {
+    mockSchedule([mkMatch('m1', 'updating')]);
+    renderPicker();
+
+    expect(screen.getByText('Updating')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('eligible-match'));
+    expect(screen.getByText('SCORING PAGE')).toBeInTheDocument();
+  });
+
+  it('navigates to the review page when a finished match is clicked', () => {
+    mockSchedule([mkMatch('m1', 'completed')]);
+    renderPicker();
+
+    fireEvent.click(screen.getByTestId('review-match'));
+    expect(screen.getByText('REVIEW PAGE')).toBeInTheDocument();
+  });
+
+  it('shows the empty note when no match is scorable or reviewable', () => {
+    mockSchedule([mkMatch('m1', 'forfeited'), mkMatch('m2', 'in_progress')]);
     renderPicker();
 
     expect(screen.queryByTestId('eligible-match')).not.toBeInTheDocument();
-    expect(screen.getByText(/No matches are currently available for manual entry/)).toBeInTheDocument();
+    expect(screen.queryByTestId('review-match')).not.toBeInTheDocument();
+    expect(screen.getByText(/No matches are currently available to score or review/)).toBeInTheDocument();
   });
 
   it('shows the no-active-season state', () => {

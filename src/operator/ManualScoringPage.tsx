@@ -21,12 +21,15 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { SetupPhase } from '@/components/operator/manual-scoring/SetupPhase';
 import { EntryPhase } from '@/components/operator/manual-scoring/EntryPhase';
+import { ReviewPhase } from '@/components/operator/manual-scoring/ReviewPhase';
 import type { SystemOverrides } from '@/types/systemOverrides';
 
 /** The match fields this page reads (the hook's full type is broader). */
 interface MatchView {
   id: string;
   status: string;
+  /** Set once the match has ever been completed; reopen keeps it (recovery signal). */
+  completed_at?: string | null;
   home_team_id: string;
   away_team_id: string;
   home_team?: { team_name?: string } | null;
@@ -132,7 +135,47 @@ export default function ManualScoringPage() {
     );
   }
 
-  if (status === 'in_progress') {
+  // v2 review/correct: a finished match — or a reopened-for-correction one
+  // (`updating` with completed_at still set) — opens the read-first review
+  // surface. Checked BEFORE the fresh-entry branch so a mid-correction match
+  // (also `updating`) stays on the review surface, not the v1 entry grid. The
+  // discriminator is completed_at: a corrected match was completed before; a
+  // fresh manual entry never was.
+  const isReopenedForCorrection = status === 'updating' && !!match.completed_at;
+  if (status === 'completed' || status === 'awaiting_verification' || isReopenedForCorrection) {
+    if (!prefs || !loMemberId) return message('Loading…');
+    return (
+      <div>
+        <PageHeader
+          title="Review Match"
+          backTo={`/league/${leagueId}/manual-scoring`}
+          subtitle="View the recorded result and who confirmed each game"
+        />
+        <ReviewPhase
+          matchId={match.id}
+          homeTeamId={match.home_team_id}
+          awayTeamId={match.away_team_id}
+          homeTeamName={match.home_team?.team_name ?? 'Home'}
+          awayTeamName={match.away_team?.team_name ?? 'Away'}
+          loMemberId={loMemberId}
+          winCondition={prefs.win_condition ?? 'games'}
+          handicapType={prefs.handicap_type ?? 'points'}
+          pointsCalculator={prefs.points_calculator}
+          pointsCalculatorParams={prefs.points_calculator_params}
+          gameType={match.league?.game_type ?? 'eight_ball'}
+          goldenBreakCountsAsWin={!!match.league?.golden_break_counts_as_win}
+          onFinalized={setFinalized}
+          onRestored={() => navigate(`/league/${leagueId}/manual-scoring`)}
+        />
+      </div>
+    );
+  }
+
+  // A FRESH manual entry the operator set up (lineups locked) but hasn't
+  // finalized — status 'updating' with no completed_at. This is the
+  // score-the-games surface; it's also where a walked-away entry resumes from
+  // the picker. (A reopened-for-correction `updating` match was handled above.)
+  if (status === 'updating' && !match.completed_at) {
     if (!prefs || !loMemberId) return message('Loading…');
     return (
       <div>

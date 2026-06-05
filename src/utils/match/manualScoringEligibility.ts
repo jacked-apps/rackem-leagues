@@ -14,14 +14,40 @@
 import type { MatchWithDetails } from '@/types/schedule';
 
 /**
- * Can this match be manually scored in v1 (enter-from-blank)?
+ * Can this match be opened in the manual-scoring (enter/continue) surface?
  *
- * True only when the match is `scheduled` (nothing recorded yet) AND both sides
- * are real teams (not a BYE).
+ * True for a `scheduled` match (start fresh → Setup) OR a **fresh** `updating`
+ * match — a manual entry the operator set up but hasn't finalized (`updating`
+ * with NO `completed_at`) → resume scoring — with two real teams (not a BYE).
+ * Both route to the same page, which dispatches on status. The `updating` state
+ * is what lets an operator walk away mid-entry and come back from the picker.
+ *
+ * A `updating` match that DOES have `completed_at` is a finished match being
+ * corrected (v2) — that belongs to the review surface, not here.
  */
 export function isMatchEligibleForManualScoring(match: MatchWithDetails): boolean {
+  const freshEntry = match.status === 'updating' && !match.completed_at;
+  return (match.status === 'scheduled' || freshEntry) && hasTwoRealTeams(match);
+}
+
+/**
+ * Can this match be opened in the v2 review/correct surface?
+ *
+ * True for finished matches (`completed` / `awaiting_verification`) with two real
+ * teams. Also true for a **reopened-not-refinalized** match (`updating` but with
+ * a `completed_at` still set — a correction in flight / abandoned), so it's
+ * recoverable. A fresh `updating` entry (no `completed_at`), `scheduled`,
+ * `in_progress` (a live match), `forfeited`, and `postponed` are NOT openable here.
+ */
+export function isMatchEligibleForReview(match: MatchWithDetails): boolean {
+  const finished = match.status === 'completed' || match.status === 'awaiting_verification';
+  const reopenedForCorrection = match.status === 'updating' && !!match.completed_at;
+  return (finished || reopenedForCorrection) && hasTwoRealTeams(match);
+}
+
+/** Both sides are real teams (not a BYE). */
+function hasTwoRealTeams(match: MatchWithDetails): boolean {
   return (
-    match.status === 'scheduled' &&
     !!match.home_team &&
     match.home_team.status !== 'bye' &&
     !!match.away_team &&
@@ -31,6 +57,7 @@ export function isMatchEligibleForManualScoring(match: MatchWithDetails): boolea
 
 const STATUS_LABELS: Record<string, string> = {
   scheduled: 'Scheduled',
+  updating: 'Updating',
   in_progress: 'In Progress',
   awaiting_verification: 'Awaiting Verification',
   completed: 'Completed',

@@ -256,6 +256,8 @@ export const router = createBrowserRouter([
             ? [
                 { path: 'league/:leagueId/manual-scoring', element: withOperator(ManualScoringMatchPicker) },
                 { path: 'league/:leagueId/manual-scoring/:matchId', element: withOperator(ManualScoringPage) },
+                // v2 review/correct: same host page, dispatches on match status.
+                { path: 'league/:leagueId/match-review/:matchId', element: withOperator(ManualScoringPage) },
               ]
             : []),
 

@@ -5,6 +5,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   isMatchEligibleForManualScoring,
+  isMatchEligibleForReview,
   manualScoringStatusLabel,
 } from '../manualScoringEligibility';
 import type { MatchWithDetails } from '@/types/schedule';
@@ -30,6 +31,18 @@ describe('isMatchEligibleForManualScoring', () => {
     expect(isMatchEligibleForManualScoring(match({}))).toBe(true);
   });
 
+  it('is true for a fresh updating match (a manual entry to resume, no completed_at)', () => {
+    expect(isMatchEligibleForManualScoring(match({ status: 'updating' as never }))).toBe(true);
+  });
+
+  it('is false for an updating match WITH completed_at (a correction → review surface)', () => {
+    expect(
+      isMatchEligibleForManualScoring(
+        match({ status: 'updating' as never, completed_at: '2026-06-01T00:00:00Z' } as never)
+      )
+    ).toBe(false);
+  });
+
   it.each(['in_progress', 'awaiting_verification', 'completed', 'forfeited', 'postponed'])(
     'is false for a %s match',
     (status) => {
@@ -50,9 +63,48 @@ describe('isMatchEligibleForManualScoring', () => {
   });
 });
 
+describe('isMatchEligibleForReview', () => {
+  it.each(['completed', 'awaiting_verification'])(
+    'is true for a %s match with two real teams',
+    (status) => {
+      expect(isMatchEligibleForReview(match({ status: status as never }))).toBe(true);
+    }
+  );
+
+  it.each(['scheduled', 'forfeited', 'postponed'])(
+    'is false for a %s match',
+    (status) => {
+      expect(isMatchEligibleForReview(match({ status: status as never }))).toBe(false);
+    }
+  );
+
+  it('is false for an in_progress match (a live match — never the LO review surface)', () => {
+    expect(isMatchEligibleForReview(match({ status: 'in_progress' as never }))).toBe(false);
+  });
+
+  it('is false for a fresh updating entry (no completed_at — that is the entry surface)', () => {
+    expect(isMatchEligibleForReview(match({ status: 'updating' as never }))).toBe(false);
+  });
+
+  it('is true for a reopened-for-correction match (updating + completed_at set)', () => {
+    expect(
+      isMatchEligibleForReview(
+        match({ status: 'updating' as never, completed_at: '2026-06-01T00:00:00Z' } as never)
+      )
+    ).toBe(true);
+  });
+
+  it('is false when a side is a BYE even if completed', () => {
+    expect(
+      isMatchEligibleForReview(match({ status: 'completed' as never, away_team: null }))
+    ).toBe(false);
+  });
+});
+
 describe('manualScoringStatusLabel', () => {
   it('maps known statuses to readable labels', () => {
     expect(manualScoringStatusLabel('scheduled')).toBe('Scheduled');
+    expect(manualScoringStatusLabel('updating')).toBe('Updating');
     expect(manualScoringStatusLabel('in_progress')).toBe('In Progress');
     expect(manualScoringStatusLabel('completed')).toBe('Completed');
   });

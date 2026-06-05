@@ -37,6 +37,7 @@ import {
   type MatchPrepLineup,
 } from '@/utils/match/computeMatchPrepPayload';
 import { determineMatchResult } from '@/utils/determineMatchResult';
+import { appendConfirmation, type ConfirmationResult } from '@/api/mutations/appendConfirmation';
 import type { LineupPlayer } from '@/api/mutations/matchLineups';
 import type { SystemOverrides } from '@/types/systemOverrides';
 import { logger } from '@/utils/logger';
@@ -255,6 +256,19 @@ export async function loSetupMatch(params: LoSetupMatchParams): Promise<void> {
       error: err instanceof Error ? err.message : String(err),
     });
   }
+
+  // 7. Move into the LO-entry state. prep_match (shared with the live flow) flips
+  // status to 'in_progress'; we re-stamp it to 'updating' so this match stays OFF
+  // the players' live-scoring surfaces and reads as "Updating" until the operator
+  // finalizes. (Guarded on the prep'd state so a stray double-call can't reorder.)
+  const { error: statusErr } = await supabase
+    .from('matches')
+    .update({ status: 'updating' })
+    .eq('id', matchId)
+    .eq('status', 'in_progress');
+  if (statusErr) {
+    throw new Error(`Failed to enter LO-updating state: ${statusErr.message}`);
+  }
 }
 
 /** The per-game result an operator enters (mirrors the live `gameData` extras). */
@@ -302,6 +316,13 @@ export interface LoFinalizeMatchParams {
  *
  * @throws if the match isn't in progress, or the game UPDATE fails.
  */
+/**
+ * Statuses in which the operator may write games / finalize: a fresh manual
+ * entry (`updating`) or a v2 correction on a reopened completed match
+ * (`in_progress`). Both mean "the operator is actively editing this match."
+ */
+const LO_EDITABLE_STATUSES = ['updating', 'in_progress'] as const;
+
 export async function loScoreGame(params: LoScoreGameParams): Promise<void> {
   const { matchId, gameId, loMemberId, result } = params;
 
@@ -315,7 +336,7 @@ export async function loScoreGame(params: LoScoreGameParams): Promise<void> {
     throw new Error(`Failed to read match: ${matchErr?.message ?? 'not found'}`);
   }
   const status = (match as unknown as { status: string }).status;
-  if (status !== 'in_progress') {
+  if (!LO_EDITABLE_STATUSES.includes(status as (typeof LO_EDITABLE_STATUSES)[number])) {
     throw new Error(
       `Cannot score a game on a match with status '${status}'. ` +
         'The match must be set up and not yet finalized.'
@@ -396,7 +417,7 @@ export async function loFinalizeMatch(
     home_to_tie: number | null;
     away_to_tie: number | null;
   };
-  if (m.status !== 'in_progress') {
+  if (!LO_EDITABLE_STATUSES.includes(m.status as (typeof LO_EDITABLE_STATUSES)[number])) {
     throw new Error(
       `Cannot finalize a match with status '${m.status}'. It must be set up and not already completed.`
     );
@@ -482,4 +503,266 @@ export async function loFinalizeMatch(
   void auditMatchScoringConsistency(matchId);
 
   return { winnerTeamId, result };
+}
+
+// ── LO match review & correction (v2) ──────────────────────────────────────
+// Reopen / restore the completed-match lifecycle. Reopen flips status to
+// 'updating' (the same "operator is editing" state a fresh manual entry uses, so
+// players' live surfaces stay clear during a correction too) and deliberately
+// KEEPS the completion fields (winner_team_id, match_result, completed_at,
+// verified slots) — so the prior result lives on the row. That makes this
+// crash-safe: "restore" is just re-stamping 'completed', and an abandoned reopen
+// (status='updating' AND completed_at IS NOT NULL — distinct from a fresh entry,
+// which has completed_at NULL) is detectable + recoverable from the picker.
+// (See docs/plans/2026-06-04-001-feat-lo-match-review-correction-plan.md.)
+
+/**
+ * Reopen a finished match for correction: `completed`/`awaiting_verification` →
+ * `updating`. Does NOT clear winner/match_result/completed_at/verified — only
+ * the per-game vacate + re-finalize change those. Must run before any vacate
+ * (appendConfirmation no-ops while `completed`). Idempotent on an already-open match.
+ *
+ * @throws if the match can't be read, or its status isn't reopenable.
+ */
+export async function loReopenMatch(matchId: string): Promise<void> {
+  const { data: match, error } = await supabase
+    .from('matches')
+    .select('status')
+    .eq('id', matchId)
+    .single();
+  if (error || !match) {
+    throw new Error(`Failed to read match: ${error?.message ?? 'not found'}`);
+  }
+  const status = (match as unknown as { status: string }).status;
+  if (status === 'updating') return; // already open for editing — no-op
+  if (status !== 'completed' && status !== 'awaiting_verification') {
+    throw new Error(
+      `Cannot reopen a match with status '${status}'. Only a completed or ` +
+        'awaiting-verification match can be reopened for correction.'
+    );
+  }
+  const { error: upErr } = await supabase
+    .from('matches')
+    .update({ status: 'updating' })
+    .eq('id', matchId);
+  if (upErr) {
+    throw new Error(`Failed to reopen match: ${upErr.message}`);
+  }
+}
+
+/**
+ * Restore a reopened match to its prior completed result without re-finalizing —
+ * just re-stamp `status='completed'`. The prior winner_team_id/match_result/
+ * completed_at are still on the row (reopen kept them), so nothing is recomputed.
+ * Used as the tie-block escape and to recover an abandoned reopen from the picker.
+ *
+ * @throws if the update fails.
+ */
+export async function loRestoreCompletion(matchId: string): Promise<void> {
+  const { error } = await supabase
+    .from('matches')
+    .update({ status: 'completed' })
+    .eq('id', matchId);
+  if (error) {
+    throw new Error(`Failed to restore match completion: ${error.message}`);
+  }
+}
+
+/** Build a ConfirmationResult (camelCase, for the log) from an LoGameResult. */
+function toConfirmationResult(r: LoGameResult): ConfirmationResult {
+  return {
+    winnerTeamId: r.winnerTeamId,
+    winnerPlayerId: r.winnerPlayerId,
+    breakAndRun: r.breakAndRun ?? false,
+    goldenBreak: r.goldenBreak ?? false,
+    breakFouled: r.breakFouled ?? false,
+    runout: r.runout ?? false,
+    winByForfeit: r.winByForfeit ?? false,
+    winnerValue: r.winnerValue ?? null,
+    loserValue: r.loserValue ?? null,
+  };
+}
+
+/** Parameters for {@link loVacateGame}. */
+export interface LoVacateGameParams {
+  matchId: string;
+  gameId: string;
+  /** The operating LO's `members.id` — recorded on the vacate marker. */
+  loMemberId: string;
+  /** Optional operator note (≤255) explaining the correction. */
+  reason?: string | null;
+}
+
+/**
+ * Solo operator vacate (LO match review). Appends a vacate marker to the
+ * append-only `game_confirmations` log (carrying the pre-wipe snapshot + optional
+ * reason), then wipes the `match_games` result + both confirmation slots. The
+ * marker is load-bearing — it anchors the dissent window — so a failed append
+ * aborts the vacate rather than silently leaving the log without an anchor.
+ *
+ * The match must already be reopened to `updating` (the UI reopens a completed
+ * match first; `appendConfirmation` no-ops while `completed`).
+ *
+ * @throws if the game read, the marker append, or the wipe fails.
+ */
+export async function loVacateGame(params: LoVacateGameParams): Promise<void> {
+  const { matchId, gameId, loMemberId, reason = null } = params;
+
+  const { data: game, error: gameErr } = await supabase
+    .from('match_games')
+    .select(
+      'game_number, home_player_id, winner_team_id, winner_player_id, break_and_run, ' +
+        'golden_break, break_fouled, runout, win_by_forfeit, winner_value, loser_value'
+    )
+    .eq('id', gameId)
+    .single();
+  if (gameErr || !game) {
+    throw new Error(`Failed to read game: ${gameErr?.message ?? 'not found'}`);
+  }
+  const g = game as unknown as Record<string, unknown>;
+  const priorWinnerSide: 'home' | 'away' =
+    g.winner_player_id && g.winner_player_id === g.home_player_id ? 'home' : 'away';
+  const snapshot: ConfirmationResult = {
+    winnerTeamId: (g.winner_team_id as string | null) ?? null,
+    winnerPlayerId: (g.winner_player_id as string | null) ?? null,
+    breakAndRun: !!g.break_and_run,
+    goldenBreak: !!g.golden_break,
+    breakFouled: !!g.break_fouled,
+    runout: !!g.runout,
+    winByForfeit: !!g.win_by_forfeit,
+    winnerValue: (g.winner_value as number | null) ?? null,
+    loserValue: (g.loser_value as number | null) ?? null,
+  };
+
+  // Vacate marker first — must succeed (anchors the dissent window).
+  const marked = await appendConfirmation({
+    gameId,
+    matchId,
+    gameNumber: g.game_number as number,
+    confirmerId: loMemberId,
+    side: priorWinnerSide,
+    action: 'vacate',
+    isInitiator: false,
+    result: snapshot,
+    reason,
+  });
+  if (!marked) {
+    throw new Error(
+      'Could not record the vacate marker (is the match reopened?) — vacate aborted to keep the audit log consistent.'
+    );
+  }
+
+  const { error: wipeErr } = await supabase
+    .from('match_games')
+    .update({
+      winner_team_id: null,
+      winner_player_id: null,
+      break_and_run: false,
+      golden_break: false,
+      break_fouled: false,
+      runout: false,
+      win_by_forfeit: false,
+      winner_value: null,
+      loser_value: null,
+      confirmed_by_home: null,
+      confirmed_by_away: null,
+    })
+    .eq('id', gameId);
+  if (wipeErr) {
+    throw new Error(`Failed to vacate game: ${wipeErr.message}`);
+  }
+
+  await updateMatchRunningTotals(matchId);
+}
+
+/** Parameters for {@link loCorrectGame}. */
+export interface LoCorrectGameParams extends LoScoreGameParams {
+  /** Optional operator note (≤255) explaining the correction. */
+  reason?: string | null;
+}
+
+/**
+ * Re-score a game as an operator correction (LO match review). A sibling of
+ * {@link loScoreGame} (which stays log-free for v1 enter-from-blank): it does the
+ * same `match_games` column write + recompute, then **appends an operator confirm
+ * row** to `game_confirmations` (`is_initiator=true`, the new result, optional
+ * reason) so the override is recorded in the chain. The confirm-row append is
+ * best-effort — the official result is already written; a failed audit append
+ * logs rather than reverting the correction.
+ *
+ * @throws if the core score write fails (via `loScoreGame`).
+ */
+export async function loCorrectGame(params: LoCorrectGameParams): Promise<void> {
+  const { matchId, gameId, loMemberId, result, reason = null } = params;
+
+  // Core write + recompute + in_progress guard.
+  await loScoreGame({ matchId, gameId, loMemberId, result });
+
+  // Append the operator confirm row (audit + reason). Side = the new winner's side.
+  const { data: game } = await supabase
+    .from('match_games')
+    .select('game_number, home_player_id')
+    .eq('id', gameId)
+    .single();
+  const g = (game ?? {}) as unknown as Record<string, unknown>;
+  const side: 'home' | 'away' = result.winnerPlayerId === g.home_player_id ? 'home' : 'away';
+
+  const appended = await appendConfirmation({
+    gameId,
+    matchId,
+    gameNumber: (g.game_number as number) ?? 0,
+    confirmerId: loMemberId,
+    side,
+    action: 'confirm',
+    isInitiator: true,
+    result: toConfirmationResult(result),
+    reason,
+  });
+  if (!appended) {
+    logger.warn('loCorrectGame: operator override confirm row was not appended (audit gap)', {
+      matchId,
+      gameId,
+    });
+  }
+}
+
+/** Parameters for {@link loRestoreGame}. */
+export interface LoRestoreGameParams {
+  matchId: string;
+  gameId: string;
+  loMemberId: string;
+  /** The pre-vacate result the UI held, to put back. */
+  snapshot: LoGameResult;
+}
+
+/**
+ * Undo a vacate: re-write the pre-vacate result to `match_games` and restore
+ * officiality (both slots → the operator), then recompute. Does NOT re-complete
+ * the match (completion stays explicit) and appends no log row — the vacate
+ * marker stays in the chain; this just un-wipes the columns.
+ *
+ * @throws if the update fails.
+ */
+export async function loRestoreGame(params: LoRestoreGameParams): Promise<void> {
+  const { matchId, gameId, loMemberId, snapshot } = params;
+  const { error } = await supabase
+    .from('match_games')
+    .update({
+      winner_team_id: snapshot.winnerTeamId,
+      winner_player_id: snapshot.winnerPlayerId,
+      break_and_run: snapshot.breakAndRun ?? false,
+      golden_break: snapshot.goldenBreak ?? false,
+      break_fouled: snapshot.breakFouled ?? false,
+      runout: snapshot.runout ?? false,
+      win_by_forfeit: snapshot.winByForfeit ?? false,
+      winner_value: snapshot.winnerValue ?? null,
+      loser_value: snapshot.loserValue ?? null,
+      confirmed_by_home: loMemberId,
+      confirmed_by_away: loMemberId,
+    })
+    .eq('id', gameId);
+  if (error) {
+    throw new Error(`Failed to restore game: ${error.message}`);
+  }
+  await updateMatchRunningTotals(matchId);
 }
