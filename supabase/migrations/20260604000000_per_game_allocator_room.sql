@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS "public"."per_game_allocators" (
   --              never updated or deleted (tamper trigger below blocks).
   -- 'user'     = author-owned, editable by its author, requires author_id.
   "scope"          text NOT NULL,
-  "author_id"      uuid REFERENCES auth.users("id") ON DELETE SET NULL,
+  "author_id"      uuid REFERENCES "public"."members"("id") ON DELETE SET NULL,
   -- SideConfig shape per `src/systems/points-system/types.ts`:
   --   { "base": <number> | { "min": N, "max": N, "label": "..." },
   --     "formula": null | { "operationKind": "...", "operationArgs": {...} } }
