@@ -1,23 +1,24 @@
 /**
  * @fileoverview Reusable side editor — used for both winner and loser sides.
  *
- * Three peer side-kinds (state-bag read folded into Formula per Ed's
- * feedback after first browser test):
- *   - Fixed number       — `{ base: <number>, formula: null }`
- *   - Scorer-input range — `{ base: { min, max, label }, formula: null }`
- *   - Formula            — `{ base: 0, formula: { operationKind: 'evaluate_expression',
- *                            operationArgs: { expression: <tree> } } }`
+ * Mirrors the SideConfig architecture EXACTLY:
+ *   - **Base** — either a fixed number OR a scorer-input range. Always
+ *     present on a side.
+ *   - **Formula** — optional. When ON, transforms the resolved base into
+ *     the side's final value. When OFF, the final value IS the base.
  *
- * The Formula kind now powers BOTH "this side equals one piece of
- * available data" (single-var expression) AND multi-token expressions
- * like `(home_wins + 2)`. Click-to-build inside `FormulaBuilder`
- * eliminates the free-text-var-name footgun.
+ * Renders both as independent sections (not one dropdown choosing one of
+ * three kinds). The user picks base shape AND independently picks
+ * whether to attach a formula. This is the room's true architectural
+ * shape — exposing it in the UI prevents the LO from being surprised
+ * by hidden state.
  */
 
 import type { ChangeEvent } from 'react';
 import { useEffect, useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectTrigger,
@@ -36,7 +37,7 @@ import {
 import '@/systems/points-system/allocator-formula-operations/evaluate-expression';
 import type { Expression, SideConfig } from '@/systems/points-system/types';
 
-export type SideKind = 'fixed' | 'range' | 'formula';
+type BaseKind = 'fixed' | 'range';
 
 export interface SideEditorProps {
   readonly heading: string;
@@ -45,140 +46,201 @@ export interface SideEditorProps {
 }
 
 export function SideEditor({ heading, value, onChange }: SideEditorProps) {
-  const kind = detectKind(value);
   return (
-    <div className="space-y-3 rounded-md border p-3">
+    <div className="space-y-4 rounded-md border p-3">
       <div className="font-medium">{heading}</div>
+      <BaseSection value={value} onChange={onChange} />
+      <FormulaSection value={value} onChange={onChange} />
+    </div>
+  );
+}
+
+// ============================================================================
+// Base section — single number OR scorer-input range
+// ============================================================================
+
+function BaseSection({
+  value,
+  onChange,
+}: {
+  value: SideConfig;
+  onChange: (next: SideConfig) => void;
+}) {
+  const baseKind: BaseKind = typeof value.base === 'object' ? 'range' : 'fixed';
+
+  const setBaseKind = (next: BaseKind) => {
+    if (next === 'fixed') {
+      onChange({ ...value, base: typeof value.base === 'number' ? value.base : 0 });
+    } else {
+      onChange({
+        ...value,
+        base:
+          typeof value.base === 'object'
+            ? value.base
+            : { min: 0, max: 7, label: 'Balls pocketed by loser' },
+      });
+    }
+  };
+
+  return (
+    <div className="space-y-2 rounded-md border bg-muted/30 p-3">
+      <Label className="text-xs uppercase text-muted-foreground">Base</Label>
       <div className="space-y-1">
-        <Label>How does this side get its number?</Label>
-        <Select value={kind} onValueChange={(k) => onChange(forKind(k as SideKind))}>
+        <Label className="text-sm">Shape</Label>
+        <Select value={baseKind} onValueChange={(k) => setBaseKind(k as BaseKind)}>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="fixed">Fixed number</SelectItem>
             <SelectItem value="range">Scorer types a number (range)</SelectItem>
-            <SelectItem value="formula">Formula (build from available data)</SelectItem>
           </SelectContent>
         </Select>
       </div>
-      <KindFields kind={kind} value={value} onChange={onChange} />
+      {baseKind === 'fixed' ? (
+        <FixedBaseInput value={value} onChange={onChange} />
+      ) : (
+        <RangeBaseInputs value={value} onChange={onChange} />
+      )}
     </div>
   );
 }
 
-function detectKind(side: SideConfig): SideKind {
-  if (side.formula) return 'formula';
-  if (typeof side.base === 'object') return 'range';
-  return 'fixed';
-}
-
-function forKind(kind: SideKind): SideConfig {
-  if (kind === 'fixed') return { base: 0, formula: null };
-  if (kind === 'range') {
-    return {
-      base: { min: 0, max: 7, label: 'Balls pocketed by loser' },
-      formula: null,
-    };
-  }
-  // formula — start empty; user clicks tokens to build it.
-  return {
-    base: 0,
-    formula: {
-      operationKind: 'evaluate_expression',
-      operationArgs: { expression: { kind: 'const', value: 0 } satisfies Expression },
-    },
-  };
-}
-
-function KindFields({
-  kind,
+function FixedBaseInput({
   value,
   onChange,
 }: {
-  kind: SideKind;
   value: SideConfig;
   onChange: (next: SideConfig) => void;
 }) {
-  if (kind === 'fixed') {
-    const n = typeof value.base === 'number' ? value.base : 0;
-    return (
+  const n = typeof value.base === 'number' ? value.base : 0;
+  return (
+    <div className="space-y-1">
+      <Label className="text-sm">Value</Label>
+      <Input
+        type="number"
+        step="any"
+        value={n}
+        onChange={(e: ChangeEvent<HTMLInputElement>) =>
+          onChange({ ...value, base: Number(e.target.value) })
+        }
+      />
+    </div>
+  );
+}
+
+function RangeBaseInputs({
+  value,
+  onChange,
+}: {
+  value: SideConfig;
+  onChange: (next: SideConfig) => void;
+}) {
+  const r =
+    typeof value.base === 'object' ? value.base : { min: 0, max: 7, label: '' };
+  return (
+    <div className="grid grid-cols-3 gap-2">
       <div className="space-y-1">
-        <Label>Value</Label>
+        <Label className="text-sm">Min</Label>
         <Input
           type="number"
-          step="any"
-          value={n}
-          onChange={(e: ChangeEvent<HTMLInputElement>) =>
-            onChange({ base: Number(e.target.value), formula: null })
+          value={r.min}
+          onChange={(e) =>
+            onChange({ ...value, base: { ...r, min: Number(e.target.value) } })
           }
         />
       </div>
-    );
-  }
-  if (kind === 'range') {
-    const r = typeof value.base === 'object' ? value.base : { min: 0, max: 7, label: '' };
-    return (
-      <div className="grid grid-cols-3 gap-2">
-        <div className="space-y-1">
-          <Label>Min</Label>
-          <Input
-            type="number"
-            value={r.min}
-            onChange={(e) =>
-              onChange({ base: { ...r, min: Number(e.target.value) }, formula: null })
-            }
-          />
-        </div>
-        <div className="space-y-1">
-          <Label>Max</Label>
-          <Input
-            type="number"
-            value={r.max}
-            onChange={(e) =>
-              onChange({ base: { ...r, max: Number(e.target.value) }, formula: null })
-            }
-          />
-        </div>
-        <div className="space-y-1">
-          <Label>Scorer prompt</Label>
-          <Input
-            value={r.label}
-            onChange={(e) =>
-              onChange({ base: { ...r, label: e.target.value }, formula: null })
-            }
-          />
-        </div>
+      <div className="space-y-1">
+        <Label className="text-sm">Max</Label>
+        <Input
+          type="number"
+          value={r.max}
+          onChange={(e) =>
+            onChange({ ...value, base: { ...r, max: Number(e.target.value) } })
+          }
+        />
       </div>
-    );
-  }
-  // Formula — click-to-build.
-  return <FormulaKindFields value={value} onChange={onChange} />;
+      <div className="space-y-1">
+        <Label className="text-sm">Scorer prompt</Label>
+        <Input
+          value={r.label}
+          onChange={(e) =>
+            onChange({ ...value, base: { ...r, label: e.target.value } })
+          }
+        />
+      </div>
+    </div>
+  );
 }
 
-function FormulaKindFields({
+// ============================================================================
+// Formula section — optional transformation of the resolved base
+// ============================================================================
+
+function FormulaSection({
   value,
   onChange,
 }: {
   value: SideConfig;
   onChange: (next: SideConfig) => void;
 }) {
-  // SideConfig keeps the `base + formula` architecture even when the
-  // user is in formula kind. Base here is a fixed number that the
-  // formula CAN reference via `this_side_value`. If the LO writes a
-  // formula that doesn't reference it, base is ignored at runtime.
-  const baseNumber = typeof value.base === 'number' ? value.base : 0;
+  const formulaOn = value.formula !== null;
 
-  // Draft tokens are local UI state — they may be a partially-built,
-  // not-yet-parseable sequence. On every change we try to parse: if it
-  // succeeds, the parsed expression is pushed to SideConfig (which the
-  // save-time guard + runtime ultimately consume). If parsing fails the
-  // tokens are kept on screen and the error is shown inline; SideConfig
-  // keeps its last-good expression.
+  const turnOn = () => {
+    onChange({
+      ...value,
+      formula: {
+        operationKind: 'evaluate_expression',
+        operationArgs: { expression: { kind: 'const', value: 0 } satisfies Expression },
+      },
+    });
+  };
+  const turnOff = () => onChange({ ...value, formula: null });
+
+  return (
+    <div className="space-y-2 rounded-md border bg-muted/30 p-3">
+      <div className="flex items-center justify-between">
+        <Label className="text-xs uppercase text-muted-foreground">
+          Formula (optional)
+        </Label>
+        {formulaOn ? (
+          <Button size="sm" variant="outline" loadingText="none" onClick={turnOff}>
+            Remove formula
+          </Button>
+        ) : (
+          <Button size="sm" loadingText="none" onClick={turnOn}>
+            Add a formula
+          </Button>
+        )}
+      </div>
+      {!formulaOn ? (
+        <p className="text-xs text-muted-foreground">
+          No formula. This side's final value is just the base above. Add a
+          formula to transform the base — for example, "base + (7 − the other
+          side's value this game)."
+        </p>
+      ) : (
+        <FormulaBody value={value} onChange={onChange} />
+      )}
+    </div>
+  );
+}
+
+function FormulaBody({
+  value,
+  onChange,
+}: {
+  value: SideConfig;
+  onChange: (next: SideConfig) => void;
+}) {
+  // Local draft tokens — may be a partially-built, not-yet-parseable
+  // sequence. On every change we try to parse; if it succeeds the parsed
+  // expression is pushed to SideConfig; if not, the tokens stay on
+  // screen, the error is shown inline, and SideConfig keeps its last-good
+  // expression.
   //
-  // Back-compat: variations saved before the formula-folding refactor
-  // may reference `read_state_var` (single-state-bag read). Translate
-  // to the equivalent single-var Expression so the editor shows it
+  // Back-compat: old rows that referenced the now-folded read_state_var
+  // recipe come back as a single-var Expression so the editor shows them
   // unchanged.
   const initialExpr = extractExpression(value.formula);
   const [tokens, setTokens] = useState<FormulaToken[]>(() =>
@@ -186,18 +248,11 @@ function FormulaKindFields({
   );
   const [parseError, setParseError] = useState<string | null>(null);
 
-  const setBase = (n: number) => {
-    onChange({ ...value, base: n });
-  };
-
-  // Re-seed local tokens when the parent swaps the whole SideConfig
-  // (e.g., kind change) — recognize that by a formula-ref identity flip.
   useEffect(() => {
     if (!value.formula) return;
     const expr = extractExpression(value.formula);
     setTokens(expressionToTokens(expr));
     setParseError(null);
-    // Intentionally key only on operationKind so token edits don't loop.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value.formula?.operationKind]);
 
@@ -223,26 +278,18 @@ function FormulaKindFields({
   };
 
   return (
-    <div className="space-y-3">
-      <div className="space-y-1">
-        <Label>This side's base value</Label>
-        <Input
-          type="number"
-          step="any"
-          value={baseNumber}
-          onChange={(e) => setBase(Number(e.target.value))}
-        />
-        <p className="text-xs text-muted-foreground">
-          A fixed number. The formula can reference it via "This Side's Value This Game" — or skip it entirely if the formula is self-contained.
+    <div className="space-y-2">
+      <p className="text-xs text-muted-foreground">
+        Transforms the base into this side's final value. The formula can
+        reference the base via "This Side's Value This Game" — or stand alone
+        if it doesn't need the base.
+      </p>
+      <FormulaBuilder tokens={tokens} onChange={handleTokensChange} />
+      {parseError && (
+        <p className="text-xs text-destructive">
+          Formula isn't valid yet: {parseError}
         </p>
-      </div>
-      <div className="space-y-1">
-        <Label>Formula</Label>
-        <FormulaBuilder tokens={tokens} onChange={handleTokensChange} />
-        {parseError && (
-          <p className="text-xs text-destructive">Formula isn't valid yet: {parseError}</p>
-        )}
-      </div>
+      )}
     </div>
   );
 }
