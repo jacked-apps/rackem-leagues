@@ -88,6 +88,22 @@ function lineupRatings(row: LineupRow): number[] {
 }
 
 /**
+ * Per-position handicaps for a lineup row, in position order (index 0 =
+ * position 1, …). Preserves nulls so the adapter's lookup can detect
+ * "no player at this position" and fall back to 0 in the formula
+ * context.
+ */
+function lineupPositionHandicaps(row: LineupRow): (number | null)[] {
+  return [
+    row.player1_handicap,
+    row.player2_handicap,
+    row.player3_handicap,
+    row.player4_handicap,
+    row.player5_handicap,
+  ];
+}
+
+/**
  * Whether two running-totals results differ. Game counts are integers and must
  * match exactly; points tolerate IEEE-754 last-bit noise (the percentage engine
  * accumulates `0.1`-style increments per game, vs legacy's closed form).
@@ -158,6 +174,11 @@ export async function computeEngineRunningTotals(
       homeThresholds: args.homeThresholds,
       awayThresholds: args.awayThresholds,
       perGameAllocatorOverride: args.perGameAllocatorOverride,
+      // Locked per-position handicaps so allocator formulas can resolve
+      // `this_side_handicap` / `other_side_handicap` against the actual
+      // player who played each game.
+      homePositionHandicaps: lineupPositionHandicaps(home),
+      awayPositionHandicaps: lineupPositionHandicaps(away),
     });
   } catch (e) {
     // Never surface — caller falls back to legacy so the write still happens.

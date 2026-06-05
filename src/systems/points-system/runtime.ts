@@ -72,6 +72,10 @@ export interface RuntimeGameRecord {
   winnerSide: 'home' | 'away';
   winnerCounterInput: number | null;
   loserCounterInput: number | null;
+  /** Optional locked handicap of the player who won this game. */
+  winnerPlayerHandicap?: number | null;
+  /** Optional locked handicap of the player who lost this game. */
+  loserPlayerHandicap?: number | null;
 }
 
 /**
@@ -257,6 +261,8 @@ export function evaluatePointsSystem(
             winnerSide: game.winnerSide,
             winnerCounterInput: game.winnerCounterInput,
             loserCounterInput: game.loserCounterInput,
+            winnerPlayerHandicap: game.winnerPlayerHandicap,
+            loserPlayerHandicap: game.loserPlayerHandicap,
           },
           state,
         );

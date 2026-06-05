@@ -82,6 +82,10 @@ export interface MinimalMatchGame {
   confirmed_by_home: string | null;
   /** Member ID of the away-team confirmer. `null` until away confirms. */
   confirmed_by_away: string | null;
+  /** Lineup position (1-5) of the home player who played this game. Used to look up locked handicaps. */
+  home_position?: number | null;
+  /** Lineup position (1-5) of the away player who played this game. */
+  away_position?: number | null;
 }
 
 /**
@@ -141,6 +145,18 @@ export interface ComputeMatchRunningTotalsViaEngineArgs {
    * `null` / `undefined` = no override, prepackaged composition unchanged.
    */
   perGameAllocatorOverride?: PerGameAllocator | null;
+  /**
+   * Locked per-position handicaps for the home + away lineups (indexed
+   * 1..5). When provided, the adapter looks up each game's player
+   * handicap via `home_position` / `away_position` on the game row and
+   * forwards them into the runtime so allocator formulas can reference
+   * `this_side_handicap` / `other_side_handicap` per game.
+   *
+   * Optional — when omitted, the handicap virtuals fall back to 0 (the
+   * runtime keeps working; formulas that depend on handicaps just see 0).
+   */
+  homePositionHandicaps?: ReadonlyArray<number | null>;
+  awayPositionHandicaps?: ReadonlyArray<number | null>;
 }
 
 /** The four running totals — identical shape to the legacy result. */
@@ -310,11 +326,26 @@ function buildThresholdInputsForCalculator(
 function toRuntimeGameRecord(
   game: MinimalMatchGame,
   homeTeamId: string,
+  homePositionHandicaps?: ReadonlyArray<number | null>,
+  awayPositionHandicaps?: ReadonlyArray<number | null>,
 ): RuntimeGameRecord {
+  const winnerSide = game.winner_team_id === homeTeamId ? 'home' : 'away';
+  const lookupAt = (
+    arr: ReadonlyArray<number | null> | undefined,
+    pos: number | null | undefined,
+  ): number | null => {
+    if (!arr || typeof pos !== 'number') return null;
+    const v = arr[pos - 1];
+    return typeof v === 'number' ? v : null;
+  };
+  const homePlayerHc = lookupAt(homePositionHandicaps, game.home_position);
+  const awayPlayerHc = lookupAt(awayPositionHandicaps, game.away_position);
   return {
-    winnerSide: game.winner_team_id === homeTeamId ? 'home' : 'away',
+    winnerSide,
     winnerCounterInput: game.winner_value,
     loserCounterInput: game.loser_value,
+    winnerPlayerHandicap: winnerSide === 'home' ? homePlayerHc : awayPlayerHc,
+    loserPlayerHandicap: winnerSide === 'home' ? awayPlayerHc : homePlayerHc,
   };
 }
 
@@ -350,6 +381,8 @@ export function computeMatchRunningTotalsViaEngine(
     homeThresholds,
     awayThresholds,
     perGameAllocatorOverride,
+    homePositionHandicaps,
+    awayPositionHandicaps,
   } = args;
 
   // 1. Count games exactly the way legacy does.
@@ -400,7 +433,7 @@ export function computeMatchRunningTotalsViaEngine(
   //    Aggregate calculators ignore per-game order; per-game ones honor it —
   //    preserving the input order keeps both correct.
   const gameRecords = confirmedRegular.map((g) =>
-    toRuntimeGameRecord(g, homeTeamId),
+    toRuntimeGameRecord(g, homeTeamId, homePositionHandicaps, awayPositionHandicaps),
   );
   const state = evaluatePointsSystem(composition, engineInputs, gameRecords);
 

@@ -326,6 +326,17 @@ export interface FormulaContext {
    * game).
    */
   readonly winnerSide: 'home' | 'away';
+  /**
+   * Locked handicap of the player who won THIS game (frozen at match
+   * start via `match_lineups`). Optional because some callers (synthetic
+   * inputs in the save-time guard / apply-time preview, older
+   * snapshots) don't carry per-player position info. When absent, the
+   * `this_side_handicap` / `other_side_handicap` virtual names fall back
+   * to 0 with a console.warn.
+   */
+  readonly winnerHandicap?: number | null;
+  /** Locked handicap of the player who lost THIS game. See `winnerHandicap`. */
+  readonly loserHandicap?: number | null;
 }
 
 /**

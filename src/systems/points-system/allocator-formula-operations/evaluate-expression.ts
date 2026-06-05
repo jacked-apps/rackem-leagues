@@ -66,9 +66,20 @@ function virtualStateAliases(ctx: FormulaContext): Record<string, string> {
 function virtualCtxValues(ctx: FormulaContext): Record<string, number> {
   const thisValue = ctx.thisSide === 'winner' ? ctx.winner : ctx.loser;
   const otherValue = ctx.thisSide === 'winner' ? ctx.loser : ctx.winner;
+  // Handicaps are optional on FormulaContext — callers (tests, synthetic
+  // dry-runs) may omit them. Fall back to 0 with the wider name available
+  // so formulas referencing them don't crash; the runtime backstop (Unit
+  // 4) would catch any throw anyway. A `??` here makes "absent" behave
+  // the same as 0.
+  const winnerHc = typeof ctx.winnerHandicap === 'number' ? ctx.winnerHandicap : 0;
+  const loserHc = typeof ctx.loserHandicap === 'number' ? ctx.loserHandicap : 0;
+  const thisHc = ctx.thisSide === 'winner' ? winnerHc : loserHc;
+  const otherHc = ctx.thisSide === 'winner' ? loserHc : winnerHc;
   return {
     this_side_value: thisValue,
     other_side_value: otherValue,
+    this_side_handicap: thisHc,
+    other_side_handicap: otherHc,
   };
 }
 

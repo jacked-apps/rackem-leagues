@@ -49,6 +49,19 @@ export const AVAILABLE_DATA: readonly AvailableDatum[] = [
     description: (p) =>
       `The base value this game for the ${otherSide(p)}'s side. 17-Point's winner formula reads the loser's base via this entry.`,
   },
+  // Per-game player handicaps (locked from match_lineups at match start).
+  {
+    name: 'this_side_handicap',
+    label: (p) => `${cap(p)} handicap`,
+    description: (p) =>
+      `Locked handicap of the player currently in the ${p} role for this game (frozen at match start). Falls back to 0 if no handicap is on file.`,
+  },
+  {
+    name: 'other_side_handicap',
+    label: (p) => `${cap(otherSide(p))} handicap`,
+    description: (p) =>
+      `Locked handicap of the player currently in the ${otherSide(p)} role for this game. Falls back to 0 if no handicap is on file.`,
+  },
   // Running totals.
   {
     name: 'this_side_wins',
