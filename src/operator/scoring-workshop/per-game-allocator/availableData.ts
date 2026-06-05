@@ -65,33 +65,33 @@ export const AVAILABLE_DATA: readonly AvailableDatum[] = [
   // Running totals.
   {
     name: 'this_side_wins',
-    label: (p) => `${cap(p)} wins so far`,
+    label: (p) => `${cap(p)} team games`,
     description: (p) =>
       `Games won so far in this match by the team currently in the ${p} role.`,
   },
   {
     name: 'other_side_wins',
-    label: (p) => `${cap(otherSide(p))} wins so far`,
+    label: (p) => `${cap(otherSide(p))} team games`,
     description: (p) =>
       `Games won so far in this match by the team currently in the ${otherSide(p)} role.`,
   },
   {
     name: 'this_side_points',
-    label: (p) => `${cap(p)} points so far`,
+    label: (p) => `${cap(p)} team points`,
     description: (p) =>
-      `Running points total in this match for the team currently in the ${p} role.`,
+      `Running points total so far in this match for the team currently in the ${p} role.`,
   },
   {
     name: 'other_side_points',
-    label: (p) => `${cap(otherSide(p))} points so far`,
+    label: (p) => `${cap(otherSide(p))} team points`,
     description: (p) =>
-      `Running points total in this match for the team currently in the ${otherSide(p)} role.`,
+      `Running points total so far in this match for the team currently in the ${otherSide(p)} role.`,
   },
   // Match-level (game-agnostic).
   {
     name: 'games_played',
-    label: () => 'Games played so far',
-    description: () => 'How many games have been completed in this match.',
+    label: () => 'Games played',
+    description: () => 'How many games have been completed in this match so far.',
   },
   {
     name: 'total_games',
