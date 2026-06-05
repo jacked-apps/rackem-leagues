@@ -67,20 +67,15 @@ describe('per_game_allocators — schema (no seed required)', () => {
     );
     expect(rows).toHaveLength(1);
     const winner = rows[0].winner_side;
-    expect(winner.base).toBe(10);
-    // The expression encodes `(this_side_value + (7 - other_side_value))`
-    // which the engine resolves to `winner_base + (7 - loser_value)`.
+    expect(winner.base).toBe(0);
+    // Self-contained expression: 17 - other_side_value. No reference to
+    // the base; per-game total still always = 17.
     expect(winner.formula.operationKind).toBe('evaluate_expression');
     expect(winner.formula.operationArgs.expression).toEqual({
       kind: 'op',
-      op: '+',
-      left: { kind: 'var', name: 'this_side_value' },
-      right: {
-        kind: 'op',
-        op: '-',
-        left: { kind: 'const', value: 7 },
-        right: { kind: 'var', name: 'other_side_value' },
-      },
+      op: '-',
+      left: { kind: 'const', value: 17 },
+      right: { kind: 'var', name: 'other_side_value' },
     });
   });
 

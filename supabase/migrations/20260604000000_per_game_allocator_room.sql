@@ -239,17 +239,19 @@ VALUES (
   '{"base": {"min": 0, "max": 7, "label": "Balls pocketed by loser"}, "formula": null}'::jsonb
 );
 
--- 17-Point: winner = this_side_value + (7 - other_side_value), so winner=10 + (7 - loser_value),
--- and per-game total is always 17. Stored as an evaluate_expression so the workshop's click-to-build
--- editor can render and edit a clone faithfully (no more "copy comes back empty"). The expression
--- tree below mirrors `(this_side_value + (7 - other_side_value))`.
+-- 17-Point: winner = (17 - other_side_value), so winner gets 17 minus
+-- the balls the loser pocketed. Per-game total is always 17. The formula
+-- is self-contained — it doesn't reference the base — so the editor
+-- shows a clean expression without hidden state. Stored as
+-- evaluate_expression so the click-to-build editor renders and edits
+-- a clone faithfully.
 INSERT INTO "public"."per_game_allocators" ("name", "description", "scope", "author_id", "winner_side", "loser_side")
 VALUES (
   '17-Point — Official',
-  'CSI 17-Point Scoring System per-game allocation. Winner gets 10 + (7 − loser), so per-game total is always 17. Loser still pockets balls; their effort feeds the winner''s formula.',
+  'CSI 17-Point Scoring System per-game allocation. Winner gets 17 minus the balls the loser pocketed, so per-game total is always 17.',
   'official',
   NULL,
-  '{"base": 10, "formula": {"operationKind": "evaluate_expression", "operationArgs": {"expression": {"kind": "op", "op": "+", "left": {"kind": "var", "name": "this_side_value"}, "right": {"kind": "op", "op": "-", "left": {"kind": "const", "value": 7}, "right": {"kind": "var", "name": "other_side_value"}}}}}}'::jsonb,
+  '{"base": 0, "formula": {"operationKind": "evaluate_expression", "operationArgs": {"expression": {"kind": "op", "op": "-", "left": {"kind": "const", "value": 17}, "right": {"kind": "var", "name": "other_side_value"}}}}}'::jsonb,
   '{"base": {"min": 0, "max": 7, "label": "Balls pocketed by loser"}, "formula": null}'::jsonb
 );
 

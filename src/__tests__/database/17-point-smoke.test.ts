@@ -90,16 +90,12 @@ describe('17-Point — full pipeline smoke', () => {
     expect(allocator?.winner.formula?.operationArgs).toEqual({
       expression: {
         kind: 'op',
-        op: '+',
-        left: { kind: 'var', name: 'this_side_value' },
-        right: {
-          kind: 'op',
-          op: '-',
-          left: { kind: 'const', value: 7 },
-          right: { kind: 'var', name: 'other_side_value' },
-        },
+        op: '-',
+        left: { kind: 'const', value: 17 },
+        right: { kind: 'var', name: 'other_side_value' },
       },
     });
+    expect(allocator?.winner.base).toBe(0);
     expect(allocator?.loser.base).toEqual({
       min: 0,
       max: 7,

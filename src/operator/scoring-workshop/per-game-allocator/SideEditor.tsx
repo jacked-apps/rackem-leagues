@@ -163,6 +163,12 @@ function FormulaKindFields({
   value: SideConfig;
   onChange: (next: SideConfig) => void;
 }) {
+  // SideConfig keeps the `base + formula` architecture even when the
+  // user is in formula kind. Base here is a fixed number that the
+  // formula CAN reference via `this_side_value`. If the LO writes a
+  // formula that doesn't reference it, base is ignored at runtime.
+  const baseNumber = typeof value.base === 'number' ? value.base : 0;
+
   // Draft tokens are local UI state — they may be a partially-built,
   // not-yet-parseable sequence. On every change we try to parse: if it
   // succeeds, the parsed expression is pushed to SideConfig (which the
@@ -179,6 +185,10 @@ function FormulaKindFields({
     expressionToTokens(initialExpr),
   );
   const [parseError, setParseError] = useState<string | null>(null);
+
+  const setBase = (n: number) => {
+    onChange({ ...value, base: n });
+  };
 
   // Re-seed local tokens when the parent swaps the whole SideConfig
   // (e.g., kind change) — recognize that by a formula-ref identity flip.
@@ -201,7 +211,7 @@ function FormulaKindFields({
     if (parsed.ok) {
       setParseError(null);
       onChange({
-        base: 0,
+        ...value,
         formula: {
           operationKind: 'evaluate_expression',
           operationArgs: { expression: parsed.expression },
@@ -213,11 +223,26 @@ function FormulaKindFields({
   };
 
   return (
-    <div className="space-y-2">
-      <FormulaBuilder tokens={tokens} onChange={handleTokensChange} />
-      {parseError && (
-        <p className="text-xs text-destructive">Formula isn't valid yet: {parseError}</p>
-      )}
+    <div className="space-y-3">
+      <div className="space-y-1">
+        <Label>This side's base value</Label>
+        <Input
+          type="number"
+          step="any"
+          value={baseNumber}
+          onChange={(e) => setBase(Number(e.target.value))}
+        />
+        <p className="text-xs text-muted-foreground">
+          A fixed number. The formula can reference it via "This Side's Value This Game" — or skip it entirely if the formula is self-contained.
+        </p>
+      </div>
+      <div className="space-y-1">
+        <Label>Formula</Label>
+        <FormulaBuilder tokens={tokens} onChange={handleTokensChange} />
+        {parseError && (
+          <p className="text-xs text-destructive">Formula isn't valid yet: {parseError}</p>
+        )}
+      </div>
     </div>
   );
 }
