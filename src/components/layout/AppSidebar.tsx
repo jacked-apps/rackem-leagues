@@ -18,6 +18,7 @@ import { useUser } from '@/context/useUser';
 import { useUserProfile } from '@/api/hooks/useUserProfile';
 import { useOrganizations } from '@/api/hooks/useOrganizations';
 import { useUnreadMessageCount } from '@/api/hooks/useMessages';
+import { usePendingJoinRequestCount } from '@/api/hooks/usePendingJoinRequestCount';
 import { OperatorOrgRow } from './OperatorOrgRow';
 
 /** Cap on visible orgs — matches AppDrawer. */
@@ -112,10 +113,15 @@ export function AppSidebar() {
 
 function SidebarPlayerSection({ unreadCount }: { unreadCount: number }) {
   const messagesLabel = unreadCount > 0 ? `Messages (${unreadCount})` : 'Messages';
+  // Doorbell: pending join requests for teams this user can approve.
+  const joinRequestCount = usePendingJoinRequestCount();
   return (
     <ul className="space-y-1">
       <SidebarLink to="/my-match" label="My Match" />
       <SidebarLink to="/my-teams" label="My Teams" />
+      {joinRequestCount > 0 && (
+        <SidebarLink to="/my-teams" label={`Join requests (${joinRequestCount})`} />
+      )}
       <SidebarLink to="/stats" label="Stats" />
       <SidebarLink to="/rules" label="Rules" />
       <SidebarLink to="/learn" label="Learn" />

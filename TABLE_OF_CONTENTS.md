@@ -532,6 +532,13 @@ how to add a new test, demo recording, cleanup model).
 - `messaging-phase1-createSeasonAnnouncementsChat.test.ts` - **Messaging Phase 1 / Unit 3 helper 4/5** — DB-backed coverage of `createSeasonAnnouncementsChat()`: every distinct rostered player as `cannot_leave=true` participant, idempotent.
 - `messaging-phase1-createOrgAnnouncementsChat.test.ts` - **Messaging Phase 1 / Unit 3 helper 5/5** — DB-backed coverage of `createOrgAnnouncementsChat()`: every distinct player across currently-active seasons in the org, past-season players excluded, idempotent.
 - `messaging-phase1-unit7-polish.rls.test.ts` - **Messaging Phase 1 / Unit 7 (polish)** — verifies the polish migration (`20260513000001`): system-message INSERT keeps all participants' `unread_count` at 0, regular message INSERT still bumps non-senders, mixed system/regular sequence only counts the regular one, and the reworded `COMMENT ON COLUMN members.profanity_filter_enabled` mentions both minor enforcement (`minor` / `under 18` / `age`) AND the DOB fallback (`dob` / `date_of_birth`).
+- `team-join-cascade.test.ts` - **Onboarding cascade / Unit 1** — schema verification for `20260529000001`: `teams.join_token` (uuid, NOT NULL, unique, backfilled distinct) + `team_join_requests` lifecycle table, status CHECK, both partial-unique guards (per-user dedup, per-spot race). 9 tests.
+- `get-team-join-view.test.ts` - **Onboarding cascade / Unit 2** — exercises the `get_team_join_view` RPC: valid token → team/league/spots with open-vs-taken flags, unknown token → `{found:false}`, names-only projection (no contact-info leak), anon pre-auth callability, and `viewer_request_status` via a tx-scoped `request.jwt.claims`. 6 tests.
+- `request-team-join.test.ts` - **Onboarding cascade / Unit 3** — exercises the `request_team_join` RPC guard matrix (not_authenticated / invalid_token / no_member / already_member / full / invalid_claim / spot_taken) + happy self-add, happy claim, idempotent already_pending. Each case runs under a tx-scoped JWT and rolls back. 11 tests.
+- `approve-join-request.test.ts` - **Onboarding cascade / Unit 4** — exercises `approve_join_request`: not_authenticated / invalid_action / not_found / already_handled / not_authorized + Decline, Add, Replace (real merge), no_placeholder, nullable-captain→staff path. Tx-scoped JWT, rolls back. 11 tests.
+- `join-requests-for-approver.test.ts` - **Onboarding cascade / Unit 5 (read)** — exercises `get_join_requests_for_approver`: anonymous/no-member → []; captain sees labeled pending request; excludes non-pending + expired; non-approver sees nothing; de-dup when captain is also staff. Tx-scoped JWT. 6 tests.
+- `my-approved-join-requests.test.ts` - **Onboarding cascade / Unit 3 (notify)** — exercises `get_my_approved_join_requests` + `acknowledge_join_request`: anonymous → []; owner sees approved-unacknowledged with labels; pending excluded; acknowledge removes it; can't ack someone else's. Tx-scoped JWT. 6 tests.
+- `join-link-distribution.test.ts` - **Onboarding cascade / Unit 7** — exercises `rotate_team_join_token` (captain/staff rotates; non-approver can't) + `get_org_teams_for_onboarding` (staff sees team+captain+token; non-staff → []). Tx-scoped JWT. 5 tests.
 
 #### Messaging UI Components (`/components/messages/`)
 - `ReadOnlyBanner.tsx` - **Messaging Phase 1 / Unit 6** — shadcn `Alert` that renders in place of the message composer when the current user can read but not post. Two reasons covered: `past-member` (left_at non-NULL) and `announcement-non-staff` (announcements channel viewed by a non-staff member). The composer is unmounted by `MessageView`, not just hidden by CSS.
@@ -646,6 +653,20 @@ how to add a new test, demo recording, cleanup model).
 - `EmailConfirmation.tsx` - Email confirmation
 - `LoginCard.tsx` - Login card component
 - `LogoutButton.tsx` - Logout button
+
+#### Onboarding Cascade (`/onboarding/`)
+*Player/captain cold-start join-by-link flow. See `docs/plans/2026-05-29-001-feat-onboarding-cascade-plan.md`.*
+- `TeamJoinPage.tsx` - **Unit 3.** The public `/join/:token` page. Reads the join view and routes to the right step: invalid-link / already-approved / waiting / inline sign-in / short profile form / Join-or-claim. Sign-in is in-page (passwordless code) and the profile form returns here, so the join intent never leaves the page.
+- `TeamJoinPage.test.tsx` - Routing-state-machine test (7 cases) with hooks + steps mocked.
+- `components/JoinSignInStep.tsx` - **Unit 3.** Inline email-code sign-in (reuses `requestEmailCode` + `EmailCodeStep`); invalidates the join view on auth so the page advances. "More options" → `/login?redirect=/join/:token`.
+- `components/JoinSubmitStep.tsx` - **Unit 3.** Signed-in member's Join/claim step: open placeholder spots as claim buttons + a self-add; maps guard reasons (full / spot_taken / already_member) to inline copy.
+- `components/JoinStatusCard.tsx` - **Unit 3.** Presentational centered status card reused by every join state.
+- `components/JoinRequestList.tsx` - **Unit 5.** The approve surface (one component, two scopes): rows of person·team·league with Add/Replace/Decline. Replace shows only when the team has placeholders; Add confirms "brand-new?" only when placeholders exist; Decline always confirms. Mounted in MyTeams (captain) + OperatorDashboard (LO); renders nothing when empty.
+- `components/JoinRequestList.test.tsx` - Approve-surface controls + guards (6 cases), hooks/picker mocked.
+- `components/PlaceholderPicker.tsx` - **Unit 5.** Replace-picker dialog: lists a team's unclaimed placeholders (record-flagged), two-step confirm before the irreversible merge.
+- `landingTeam.ts` + `landingTeam.test.ts` - **Unit 8.** `defaultOpenTeamId(teamIds)` — pure helper deciding which team accordion to auto-expand on MyTeams (single team → open it so its existing Quick Score card is front-and-center; several → leave collapsed). Reuse, not rebuild: no parallel match hook, no MyMatch.
+- `InviteMyTeamButton.tsx` - **Unit 7.** Captain's "Invite my team": shares the /join/:token link via ShareLinkSection (copy + QR), a "generate new link" rotate affordance, and a dismissible first-run tip (localStorage). Mounted per captained team in MyTeams.
+- `OnboardCaptainsList.tsx` - **Unit 7.** LO's "onboard my captains": one row per org team (team · league · captain · Copy link), pre-paired. Mounted in OperatorDashboard; renders nothing when empty.
 
 #### Profile (`/profile/`)
 - `Profile.tsx` - Main profile page
@@ -962,6 +983,7 @@ Reusable section components composed by `PreferencesCard.tsx`. Same components d
 - `DeleteLeagueModal.tsx` - League deletion confirmation
 - `DeleteSeasonModal.tsx` - Season deletion confirmation
 - `PendingInvitesModal.tsx` - Modal showing pending placeholder player invites to users after login
+- `ApprovedJoinModal.tsx` - **Onboarding cascade (Unit 3 notify)** — "you're on the team!" popup mounted app-wide in MemberLayout; tells a joiner the moment they're approved (even if they closed the tab) and routes to their team, stamping acknowledged so it shows once.
 - `SecurityDisclaimerModal.tsx` - Security disclaimer
 - `SetupGuideModal.tsx` - Setup guide
 - `WeekOffReasonModal.tsx` - Week off reason
@@ -1181,6 +1203,7 @@ High-level business logic services
 - `reports.ts` - User-report queries.
 - `seasons.ts` - Season list/detail reads.
 - `standings.ts` - Standings aggregation query.
+- `teamJoin.ts` - **Onboarding cascade (Unit 2)** — wraps the `get_team_join_view` RPC: resolves a team `join_token` to `{found, team_id, team_name, league_name, roster_size, spots[], viewer_request_status}`. Names only; the authz boundary while RLS is off.
 - `teams.ts` - Team list/detail reads.
 - `teamStats.ts` - Per-team stats aggregations.
 - `thresholdLookup.ts` - Modular threshold-chart lookup query (used by the system resolver).
@@ -1212,6 +1235,7 @@ High-level business logic services
 - `reports.ts` - User-report CRUD.
 - `schedules.ts` - Schedule CRUD (seasons-weeks + matches).
 - `seasons.ts` - Season CRUD.
+- `teamJoin.ts` - **Onboarding cascade (Unit 3)** — `submitJoinRequest(token, claimedMemberId?)` wrapping the `request_team_join` RPC; the only join-request write path.
 - `teams.ts` - Team CRUD.
 - `venues.ts` - Venue CRUD.
 - `__tests__/sendMessage.timeout.test.ts` - Timeout-wrapper test for the sendMessage mutation (Unit 16 bounded-send).
@@ -1222,6 +1246,14 @@ High-level business logic services
 - `useCurrentMember.ts` - **✅ Current member hook** (replaces old version, 30min cache)
 - `usePendingInvites.ts` - **✅ Pending invites hook** (fetches placeholder player invites via get_my_pending_invites RPC)
 - `useInviteStatuses.ts` - **✅ Invite statuses hook** (batch fetch invite statuses for PP cards in TeamEditorModal)
+- `useTeamJoinView.ts` - **Onboarding cascade (Unit 2)** — TanStack hook backing `/join/:token`; loads the public join view (team + spots + caller's request state) via `getTeamJoinView`. Disabled until a token is present; 30s staleTime.
+- `useSubmitJoinRequest.ts` - **Onboarding cascade (Unit 3)** — mutation hook filing a join request via `submitJoinRequest`; invalidates the team's join view on success so the page flips to "waiting".
+- `useApproveJoinRequest.ts` - **Onboarding cascade (Unit 4)** — mutation hook for the approver's Add/Replace/Decline via `approveJoinRequest`; invalidates the join-cascade queries + team rosters on success.
+- `useTeamJoinRequests.ts` - **Onboarding cascade (Unit 5)** — query hook for the approver's pending-request feed via `getJoinRequestsForApprover` (captain = his team, LO = all org teams).
+- `useTeamPlaceholders.ts` - **Onboarding cascade (Unit 5)** — lazily loads a team's claimable placeholders (+ record flag) for the Replace picker via `getTeamPlaceholdersForClaim`.
+- `usePendingJoinRequestCount.ts` - **Onboarding cascade (Unit 6, the doorbell)** — derives the pending-request count from the shared approver feed; drives the drawer/sidebar "Join requests (N)" link + the My Teams bottom-tab badge. 0 for non-approvers.
+- `useApprovedJoinRequests.ts` - **Onboarding cascade (Unit 3 notify)** — `useApprovedJoinRequests` polls the caller's approved-but-unacknowledged joins; `useAcknowledgeJoinRequest` stamps one so the "you're in" popup shows once.
+- `useTeamJoinDistribution.ts` - **Onboarding cascade (Unit 7)** — `useTeamJoinToken` (read share token), `useRotateTeamJoinToken` (leak rotation), `useOrgTeamsForOnboarding` (LO per-team captain+link list).
 - `useUserProfile.ts` - **✅ User profile hook** (full member data + role utilities)
 - `useOperatorId.ts` - **✅ Operator ID hook** (operator lookup with caching)
 - `useMatchPhase.ts` - **✅ Match-phase status query** (minimal id/status/started_at slice; staleTime: 0; foreground 7s polling while status='scheduled' as Defense 7 backstop for dropped realtime). Distinct cache key from `useMatchById` — see file header for rationale.
@@ -1640,6 +1672,14 @@ Supabase local configuration and migrations
 | `supabase/migrations/20260502000001_set_member_starting_handicap_rpc.sql` | `set_member_starting_handicap` RPC for the wizard's per-player handicap seeding step. |
 | `supabase/migrations/20260502000002_prep_match_rpc_renamed_columns.sql` | Renames a handful of columns referenced by `prep_match` to align with the modular-axis naming. |
 | `supabase/migrations/20260505000000_match_games_value_columns.sql` | Adds `match_games.winner_balls_pocketed` / `loser_balls_pocketed` / counter-value columns for the per-game-points calculator (`accumulated_per_game`). |
+| `supabase/migrations/20260529000001_team_join_cascade.sql` | **Onboarding cascade / Unit 1.** `teams.join_token` (persistent forwardable per-team link) + `team_join_requests` lifecycle table (status pending/approved/rejected/cancelled, expires_at 30d, acknowledged_at) with team/status index + two partial-unique guards (per-user dedup, per-spot race). Additive, no RLS. |
+| `supabase/migrations/20260529000002_get_team_join_view.sql` | **Onboarding cascade / Unit 2.** `get_team_join_view(token)` SECURITY DEFINER RPC (granted anon + authenticated) resolving a token to the public-safe join payload — names only; the authz boundary while RLS is off. |
+| `supabase/migrations/20260529000003_request_team_join.sql` | **Onboarding cascade / Unit 3.** `request_team_join(token, claimed_member_id?)` SECURITY DEFINER RPC (authenticated only) — the only path that files a join request; derives requester from `auth.uid()` + team from the token (never client input), returns `{ok, reason, status}` covering the guard states. |
+| `supabase/migrations/20260529000005_join_requests_for_approver.sql` | **Onboarding cascade / Unit 5 (read).** `get_join_requests_for_approver()` — pending requests across every team the caller captains OR staffs, de-duplicated, with person/team/league labels + `has_open_placeholders` (drives Replace + the Add guard). Plus STABLE helpers `league_display_name(uuid)` + `member_display_name(uuid)`. |
+| `supabase/migrations/20260529000006_team_placeholders_for_claim.sql` | **Onboarding cascade / Unit 5.** `get_team_placeholders_for_claim(team_id)` — a team's unclaimed placeholders + `placeholder_has_stats` record flag for the Replace picker; captain/org-staff gated. |
+| `supabase/migrations/20260529000008_join_link_distribution.sql` | **Onboarding cascade / Unit 7.** `rotate_team_join_token(team_id)` (leak rotation, captain/staff gated; submitted requests unaffected) + `get_org_teams_for_onboarding(org_id)` (one row per org team — team + captain + join link — for the LO's onboard-captains list, org-staff gated). |
+| `supabase/migrations/20260529000007_my_approved_join_requests.sql` | **Onboarding cascade / Unit 3 (notify).** `get_my_approved_join_requests()` (caller's approved-but-unacknowledged joins + labels) + `acknowledge_join_request(id)` (stamp so the "you're in" popup shows once, own-request scoped). |
+| `supabase/migrations/20260529000004_approve_join_request.sql` | **Onboarding cascade / Unit 4.** `approve_join_request(request_id, action, claimed_member_id?)` SECURITY DEFINER RPC — captain/org-staff one-tap Add/Replace/Decline; reads team_id from the row, resolves org via `teams.league_id`, `FOR UPDATE` race-guard, actor from `auth.uid()`. Also widens `'captain_approve'` in BOTH the merge RPC whitelist (recreated verbatim from `20260422000020`) AND the `archived_placeholders` actor_role CHECK. |
 | `supabase/seed.sql` | Full local dev DB dump — auto-applied on `supabase db reset`. **Local only, never runs against production.** |
 | `supabase/seed_test_users.sql` | 4 synthetic test auth users (player/operator/captain/owner, password `test-password-123`). **Dev-only — run manually via `docker exec ... psql`.** |
 | `supabase/seed_members.sql` | 20 placeholder players (no `user_id`) spanning Fargo 300–580 ratings for wizard/team-management testing. **Dev-only — not wired into auto-seed; run manually when the local DB needs a bench of fake members.** |

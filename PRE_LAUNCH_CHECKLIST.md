@@ -16,6 +16,17 @@
   deliberately so coding goes smoother (no real users yet, avoids RLS rabbit holes).
   Before any real users: do a dedicated RLS pass scoped to what's been built —
   enable policies and test them. RLS-off must **not** reach production.
+  - **Onboarding cascade (`feat/onboarding-cascade`):** the new `team_join_requests`
+    table needs policies, and direct-table access to `teams.join_token` should be
+    locked to the join flow. The cascade's authorization already lives in
+    `SECURITY DEFINER` RPCs (they derive the actor from `auth.uid()`, resolve
+    team/org server-side, and gate on captain-or-org-staff), so those are a
+    ready-made **spec for the policies to write**: `get_team_join_view` (names-only
+    public read), `request_team_join` (own JWT only), `approve_join_request` +
+    `get_join_requests_for_approver` + `get_team_placeholders_for_claim` +
+    `rotate_team_join_token` + `get_org_teams_for_onboarding` (captain-or-staff),
+    `get_my_approved_join_requests` + `acknowledge_join_request` (own row only).
+    Verify direct table reads/writes match what these RPCs enforce.
 
 - [ ] **Auth: email confirmations ON.** Verify the **production** Supabase project
   has *Authentication → Providers → Email → "Confirm email"* **enabled**. This is

@@ -30,6 +30,7 @@ import { useUser } from '@/context/useUser';
 import { useUserProfile } from '@/api/hooks/useUserProfile';
 import { useOrganizations } from '@/api/hooks/useOrganizations';
 import { useUnreadMessageCount } from '@/api/hooks/useMessages';
+import { usePendingJoinRequestCount } from '@/api/hooks/usePendingJoinRequestCount';
 import { useCaptainReupPrompt } from '@/hooks/useCaptainReupPrompt';
 import { OperatorOrgRow } from './OperatorOrgRow';
 
@@ -159,6 +160,9 @@ function PublicSection() {
 /** Mirrors SidebarPlayerSection. */
 function PlayerSection({ unreadCount }: { unreadCount: number }) {
   const messagesLabel = unreadCount > 0 ? `Messages (${unreadCount})` : 'Messages';
+  // Doorbell: pending join requests for teams this user can approve. The link
+  // appears only while requests are waiting and clears when handled.
+  const joinRequestCount = usePendingJoinRequestCount();
   // Captain re-up entry — shown only when the current user has open
   // re-up forms (last-3-weeks window + no submitted answer yet). Same
   // hook the syncer-modal uses, so the link appears the moment a
@@ -172,6 +176,9 @@ function PlayerSection({ unreadCount }: { unreadCount: number }) {
     <ul className="space-y-1">
       <DrawerLink to="/my-match" label="My Match" />
       <DrawerLink to="/my-teams" label="My Teams" />
+      {joinRequestCount > 0 && (
+        <DrawerLink to="/my-teams" label={`Join requests (${joinRequestCount})`} />
+      )}
       {reupTeams.length > 0 && <DrawerLink to="/reup" label={reupLabel} />}
       <DrawerLink to="/stats" label="Stats" />
       <DrawerLink to="/rules" label="Rules" />
