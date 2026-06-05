@@ -4,6 +4,48 @@ Tasks and refactoring items for Ed to work on.
 
 ---
 
+## 📘 2026-05-30 GLOSSARY — `scoring-system` entry is a DRAFT STUB (important)
+
+**Branch:** `feat/operator-help-phase-1-mac` (glossary definition pass)
+
+`src/glossary/entries/scoring.tsx` now has a `scoring-system` entry, but it's
+a **placeholder stub**. "Scoring System" is the umbrella term for the entire
+modular structure (the top-level Module composing all 9 components, per
+`docs/league-system/README.md`) — Ed flagged it as an important entry that
+needs an **extensive, educational explanation**. It's intentionally left
+without `reviewedByEd`, so `pnpm glossary:progress` lists it as unreviewed.
+
+Other entries (e.g. `total-points`) already link to `#scoring-system`, so the
+stub keeps those links alive until the full write-up lands.
+
+**Same treatment for `win-calculator`** (added 2026-05-31, also a stub in
+`scoring.tsx`) — and the broader decision below.
+
+---
+
+## 📗 2026-05-31 GLOSSARY — Modules/Systems are an instruction manual, not glossary entries
+
+**Branch:** `feat/operator-help-phase-1-mac`
+
+Decision (Ed): the **Module/System explainers** (win-calculator, scoring-system,
+threshold-charts, points-system, team-geometry, handicap-systems,
+handicap-mechanisms, match-format, pairings-generator, tiebreak-system) read
+like an **instruction manual** (what each is, what it does, what it contains,
+every dial) — a *different animal* from the glossary (a dictionary of quick
+"what is this term" defs).
+
+So:
+- Module/system **glossary** entries stay **short** ("what it is" + link out).
+  `scoring-system` and `win-calculator` are intentionally short stubs for this
+  reason; Ed authors the full manual content later.
+- The deep manual is its own artifact. The glossary is a flat A-Z list today
+  (no sections) — a **"Modules" section/tab** (or a separate manual surface)
+  is a **future feature**: needs a `category` field on entries + grouped
+  rendering, or a dedicated Modules page on the Learn hub. Naming lean:
+  **"Modules"** over "Module Systems."
+
+---
+
 ## 🚨 2026-04-21 STAGING TEST — Multiple Critical Failures
 
 **Discovered:** 2026-04-21 during first real-player staging test at the league event

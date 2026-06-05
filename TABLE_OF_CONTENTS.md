@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-06-03 (Onboarding cascade build: Units 1–2 (schema + `get_team_join_view`), Unit 3 burst 1 (`request_team_join` RPC) and burst 2 (the public `/join/:token` page in new `src/onboarding/` + flow-aware `redirectTo` on the shared short-profile form + the `join/:token` public route); Unit 4 (`approve_join_request` RPC + `captain_approve` actor_role widening); Unit 5 (approver feed + approve surface JoinRequestList/PlaceholderPicker); Unit 6 (doorbell count); Unit 7 (share link + LO onboard-captains list); Unit 8 (land-on-match accordion default). All 8 units complete. Branch `feat/onboarding-cascade`, rebased onto current main after passwordless PR #159 merged.)
+> **Last Updated**: 2026-06-02 (Archived ~63 completed/superseded brainstorm, plan & memory-bank docs to `docs/archive/` + `memory-bank/archive/` after a code+PR triage; active/back-burner/reference docs left in place.) Prior 2026-05-29: (Added onboarding cold-start cascade plan: `docs/plans/2026-05-29-001-feat-onboarding-cascade-plan.md` + indexed its origin brainstorm — team join link → claim → captain approve; builds on passwordless PR #159. Branch `docs/player-onboarding-cold-start-brainstorm`.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -49,7 +49,7 @@
 | `/docs/` | **Domain knowledge & business rules** | Reference material about pool league systems |
 | `docs/BCA_HANDICAP_SYSTEM.md` | BCA handicap system documentation | Official BCA handicap rules and calculations |
 | `docs/CUSTOM_5MAN_HANDICAP_SYSTEM.md` | Custom 5-man handicap system | Proprietary handicap system for 5-man format |
-| `docs/LEAGUE_MANAGEMENT_PLAN.md` | League management system architecture | System hierarchy and database schema |
+| `docs/archive/LEAGUE_MANAGEMENT_PLAN.md` | League management system architecture | System hierarchy and database schema |
 | `/docs/league-system/` | **Modular Scoring System framework — LOCKED canonical docs** | 9-Module architecture (Handicap Systems, Handicap Mechanisms, Points System, Win Calculator, Threshold Charts, Team Geometry, Match Format, Pairings Generator, Tiebreak System); LOCKED per Principle 7 gate procedure |
 | `docs/league-system/PRINCIPLES.md` | 10 architectural principles + 4 Module kinds + composition patterns | **LOCKED** — edits require explicit Principle 7 unlock invocation |
 | `docs/league-system/README.md` | 9-Module catalog + classification walkthrough + cheat-sheet | **LOCKED** |
@@ -69,60 +69,62 @@
 | `docs/league-system/modules/pairings-generator.md` | Pairings Generator Module — chain pattern (pair generation + game ordering + break/rack assignment) | LOCKED |
 | `docs/league-system/modules/tiebreak-system/` | Tiebreak System Module (README + 4 Mechanism stubs: coin-flip, roshambo, human-pick, mini-match) | LOCKED |
 | `/docs/brainstorms/` | **CE brainstorm requirements docs** | Output of `/compound-engineering:ce-brainstorm` |
-| `docs/brainstorms/official-rulebook-reader-requirements.md` | Requirements for the Official Rulebook Reader feature | Branch 1 of the rules-feature family |
-| `docs/brainstorms/e2e-test-infrastructure-requirements.md` | Requirements for the Playwright E2E scaffolding (foundation seed + factories + multi-user auth + demo mode) | Active branch `feat/e2e-test-infrastructure` |
+| `docs/archive/brainstorms/official-rulebook-reader-requirements.md` | Requirements for the Official Rulebook Reader feature | Branch 1 of the rules-feature family |
+| `docs/archive/brainstorms/e2e-test-infrastructure-requirements.md` | Requirements for the Playwright E2E scaffolding (foundation seed + factories + multi-user auth + demo mode) | Active branch `feat/e2e-test-infrastructure` |
 | `/docs/plans/` | **CE implementation plans** | Output of `/compound-engineering:ce-plan` |
-| `docs/plans/2026-04-17-001-feat-official-rulebook-reader-plan.md` | Implementation plan for the Official Rulebook Reader | 6 units, active branch `feature/official-rulebook-reader` |
-| `docs/plans/2026-04-27-001-feat-e2e-test-infrastructure-plan.md` | Implementation plan for the E2E scaffolding | 10 units (8 in v1 scope), active branch `feat/e2e-test-infrastructure` |
-| `docs/brainstorms/header-mobile-rework-requirements.md` | Requirements for the global header & navigation rework | Slim sticky header, hamburger drawer with per-org operator shortcuts, drawer-internal badges |
+| `docs/archive/plans/2026-04-17-001-feat-official-rulebook-reader-plan.md` | Implementation plan for the Official Rulebook Reader | 6 units, active branch `feature/official-rulebook-reader` |
+| `docs/archive/plans/2026-04-27-001-feat-e2e-test-infrastructure-plan.md` | Implementation plan for the E2E scaffolding | 10 units (8 in v1 scope), active branch `feat/e2e-test-infrastructure` |
+| `docs/archive/brainstorms/header-mobile-rework-requirements.md` | Requirements for the global header & navigation rework | Slim sticky header, hamburger drawer with per-org operator shortcuts, drawer-internal badges |
 | `docs/brainstorms/modular-league-system-requirements.md` | Requirements for fully modular league configuration | Deprecates `5_man`/`8_man`; any-combo support; 3-layer threshold strategy; supersedes April 18 modular-handicap-scoring doc |
-| `docs/brainstorms/lineup-to-scoring-transition-requirements.md` | Requirements for the lineup → scoring transition stability fix | 7-defense architecture; supersedes cache/recovery aspects of the prior race-condition brainstorm; closes LIST_FOR_ED #21/#22 |
-| `docs/brainstorms/unified-scoreboard-requirements.md` | Requirements for collapsing 4 scoreboards to 1 + tiebreaker | Schema-derived display hints (escape hatch), mobile-first compact mode, "stadium not sportsbook" focus; depends on PR #98 merge |
+| `docs/archive/brainstorms/lineup-to-scoring-transition-requirements.md` | Requirements for the lineup → scoring transition stability fix | 7-defense architecture; supersedes cache/recovery aspects of the prior race-condition brainstorm; closes LIST_FOR_ED #21/#22 |
+| `docs/archive/brainstorms/unified-scoreboard-requirements.md` | Requirements for collapsing 4 scoreboards to 1 + tiebreaker | Schema-derived display hints (escape hatch), mobile-first compact mode, "stadium not sportsbook" focus; depends on PR #98 merge |
 | `docs/brainstorms/2026-05-24-live-scoring-resilience-requirements.md` | Requirements for robust multi-device live scoring (connection resilience + concurrency correctness) | Invisible-robustness north star; hold-and-send taps; many-eyes confirm/deny with captain backstop; smoke-detector-not-judge; branch `docs/live-scoring-resilience-brainstorm` |
-| `docs/brainstorms/modular-handicap-scoring-requirements.md` | Original requirements for the modular handicap/scoring system | Superseded by `modular-league-system-requirements.md` |
+| `docs/archive/brainstorms/modular-handicap-scoring-requirements.md` | Original requirements for the modular handicap/scoring system | Superseded by `modular-league-system-requirements.md` |
 | `docs/brainstorms/placeholder-player-improvements-requirements.md` | Requirements for the placeholder-player lifecycle (merge / archive / undo-merge) | Drove the 23-migration `20260422` PR series |
-| `docs/brainstorms/league-house-rules-requirements.md` | Requirements for org-level house rules with per-league opt-out | Foundation of the `house_rules` table + `ignore_org_house_rules` flag |
-| `docs/brainstorms/lineup-race-condition-fix-requirements.md` | Requirements for fixing the lineup → scoring race condition | Predecessor to `lineup-to-scoring-transition-requirements.md` |
-| `docs/brainstorms/team-deletion-cascade-fix-requirements.md` | Requirements for fixing the team-deletion cascade behavior | Drove the cascade→restrict migration |
-| `docs/brainstorms/2026-04-21-messaging-system-overhaul-findings.md` | Findings phase of the messaging overhaul investigation | Inputs to the Phase 1 plan |
+| `docs/archive/brainstorms/league-house-rules-requirements.md` | Requirements for org-level house rules with per-league opt-out | Foundation of the `house_rules` table + `ignore_org_house_rules` flag |
+| `docs/archive/brainstorms/lineup-race-condition-fix-requirements.md` | Requirements for fixing the lineup → scoring race condition | Predecessor to `lineup-to-scoring-transition-requirements.md` |
+| `docs/archive/brainstorms/team-deletion-cascade-fix-requirements.md` | Requirements for fixing the team-deletion cascade behavior | Drove the cascade→restrict migration |
+| `docs/archive/brainstorms/2026-04-21-messaging-system-overhaul-findings.md` | Findings phase of the messaging overhaul investigation | Inputs to the Phase 1 plan |
 | `docs/brainstorms/2026-04-21-messaging-system-overhaul-requirements.md` | Requirements for the messaging system overhaul | Backbone of the Phase 1 plan |
-| `docs/brainstorms/2026-04-29-dark-mode-requirements.md` | Requirements for dark-mode toggle support | Drove the dark-mode plan |
-| `docs/brainstorms/2026-04-30-navigation-ia-overhaul-requirements.md` | Requirements for the navigation IA overhaul | Drove PR #124 (MemberLayout / AppSidebar / BottomTabBar / AppDrawer) |
+| `docs/archive/brainstorms/2026-04-29-dark-mode-requirements.md` | Requirements for dark-mode toggle support | Drove the dark-mode plan |
+| `docs/archive/brainstorms/2026-04-30-navigation-ia-overhaul-requirements.md` | Requirements for the navigation IA overhaul | Drove PR #124 (MemberLayout / AppSidebar / BottomTabBar / AppDrawer) |
 | `docs/brainstorms/2026-05-05-scoring-modal-rework-requirements.md` | Requirements for the scoring-modal plumbing rework | Drove the scoring modal refactor |
-| `docs/brainstorms/2026-05-16-modular-scoring-system-viability-requirements.md` | Viability-stage brainstorm for the modular Scoring System framework | "Works, not perfect" v1 standard established |
-| `docs/brainstorms/2026-05-17-modular-scoring-system-comparison-requirements.md` | Compare-stage brainstorm — verdict to ship modular framework | Drove the locked-docs framework adoption |
+| `docs/archive/brainstorms/2026-05-16-modular-scoring-system-viability-requirements.md` | Viability-stage brainstorm for the modular Scoring System framework | "Works, not perfect" v1 standard established |
+| `docs/archive/brainstorms/2026-05-17-modular-scoring-system-comparison-requirements.md` | Compare-stage brainstorm — verdict to ship modular framework | Drove the locked-docs framework adoption |
 | `docs/brainstorms/2026-05-17-tie-resolution-ownership-requirements.md` | Captured architectural direction for Win Calc metric stack + Tiebreak System | Drove the locked-doc edits + new Tiebreak System Module (#9 in catalog, replacing dissolved Standings & Tiebreakers) |
 | `docs/brainstorms/2026-05-21-lo-primitive-naming-layer-requirements.md` | Naming/identity layer for LO-built primitives — locks the internal-name / display-name / description / label glossary; mirror is workshop-authoring-only | Design (future workshop); NOT locked canon |
 | `docs/brainstorms/2026-05-21-scoreboard-module-design-requirements.md` | ROUGH: scoreboard = slots per side filled by modules that read the state bag + render labeled values; LO-customizable; stress-tests the naming layer | Rough draft — Ed's idea, to flesh out |
+| `docs/brainstorms/2026-05-28-operator-help-system-requirements.md` | Phased operator-facing help: glossary data source + GlossaryInfoButton wrapper + InfoButton coverage on operator wizards (Phase 1); persistent Help button + Walkthroughs/Concepts (Phase 2, evidence-gated) | L3 of the four-layer doc model; adds alias/synonym layer for operator vocabulary collisions |
 | `docs/brainstorms/2026-05-29-live-match-jumpin-requirements.md` | Requirements for the "My Match" live-match jump-in shortcut (bottom-nav tab + drawer section) | One-tap into live match; bottom-nav state machine (live → scoring / no-live → `/live` scoreboards); drawer section mirrors AppDrawer OperatorSection (flat-when-1 / list-when-2+ / hidden-when-empty); `/my-match` page deferred to future Upcoming Matches brainstorm; multi-live swap delegated to scoring gear (PR #157); branch `chore/safe-meantime-work` |
-| `docs/brainstorms/2026-05-25-pairings-generator-extraction-requirements.md` | Pairings Generator (Module #8) v1 extraction — one Module slot, three internal stages; lineups in, player-id-tagged GameSlot[] out (matches canon); today's RR algorithm only, no preferences/workshop work; output shape variant-agnostic for future race-mode etc. | Planned (`docs/plans/2026-05-25-001-...`) |
+| `docs/archive/brainstorms/2026-05-25-pairings-generator-extraction-requirements.md` | Pairings Generator (Module #8) v1 extraction — one Module slot, three internal stages; lineups in, player-id-tagged GameSlot[] out (matches canon); today's RR algorithm only, no preferences/workshop work; output shape variant-agnostic for future race-mode etc. | Planned (`docs/plans/2026-05-25-001-...`) |
 | `docs/brainstorms/2026-05-28-passwordless-sign-in-requirements.md` | Requirements for one-door, code-based passwordless sign-in (email OTP + Google/Facebook; passwords kept but demoted) | Companion to the onboarding cold-start brainstorm; built first to dissolve the join-token-survival problem; branch `docs/passwordless-auth-brainstorm` |
 | `docs/brainstorms/2026-05-28-player-onboarding-cold-start-requirements.md` | Requirements for new-league cold-start player/captain onboarding — the share→self-claim→approve cascade (persistent team join link + captain approve gate) | Resolved decisions captured; passwordless is the build-first companion; plan = `2026-05-29-001` |
 | `/docs/plans/` | **CE implementation plans** | Output of `/compound-engineering:ce-plan` |
-| `docs/plans/2026-04-17-001-feat-official-rulebook-reader-plan.md` | Implementation plan for the Official Rulebook Reader | 6 units, active branch `feature/official-rulebook-reader` |
-| `docs/plans/2026-04-27-001-feat-global-header-nav-rework-plan.md` | Implementation plan for the global header & navigation rework | 9 units in 3 phases, active branch `fix/header-mobile-rework` |
-| `docs/plans/2026-04-28-001-feat-modular-league-system-plan.md` | Implementation plan for the fully modular league system | 21 units across 8 phases (Phase 0 research + 7 implementation phases); supersedes April 18 plan; covers BCAPL SL handicap, audit log R21, threshold-charts wiring, team_format drop |
-| `docs/plans/2026-05-04-001-fix-lineup-to-scoring-transition-stability-plan.md` | Implementation plan for the lineup → scoring transition stability fix | 7 implementation units across 3 phases; new MatchPhaseGuard + MatchTransitionRecovery + useMatchPhase; hardened prep_match RPC; foreground polling backstop; deletes 6-month-old retry loop |
-| `docs/plans/2026-05-03-001-feat-unified-scoreboard-plan.md` | Implementation plan for the unified scoreboard refactor | 8 units across 3 phases; replaces 3 legacy scoreboards with 1 + tiebreaker fix; schema-derived display hints; TeamStatsCard generalized for points-mode; depends on PR #98 merge |
+| `docs/archive/plans/2026-04-17-001-feat-official-rulebook-reader-plan.md` | Implementation plan for the Official Rulebook Reader | 6 units, active branch `feature/official-rulebook-reader` |
+| `docs/archive/plans/2026-04-27-001-feat-global-header-nav-rework-plan.md` | Implementation plan for the global header & navigation rework | 9 units in 3 phases, active branch `fix/header-mobile-rework` |
+| `docs/archive/plans/2026-04-28-001-feat-modular-league-system-plan.md` | Implementation plan for the fully modular league system | 21 units across 8 phases (Phase 0 research + 7 implementation phases); supersedes April 18 plan; covers BCAPL SL handicap, audit log R21, threshold-charts wiring, team_format drop |
+| `docs/archive/plans/2026-05-04-001-fix-lineup-to-scoring-transition-stability-plan.md` | Implementation plan for the lineup → scoring transition stability fix | 7 implementation units across 3 phases; new MatchPhaseGuard + MatchTransitionRecovery + useMatchPhase; hardened prep_match RPC; foreground polling backstop; deletes 6-month-old retry loop |
+| `docs/archive/plans/2026-05-03-001-feat-unified-scoreboard-plan.md` | Implementation plan for the unified scoreboard refactor | 8 units across 3 phases; replaces 3 legacy scoreboards with 1 + tiebreaker fix; schema-derived display hints; TeamStatsCard generalized for points-mode; depends on PR #98 merge |
 | `docs/plans/2026-05-24-001-feat-live-scoring-resilience-plan.md` | Implementation plan for robust multi-device live scoring (resilience + concurrency) | 11 units / 5 phases; rely-on-client reconnect + catch-up refetch + polling fallback; guarded scoring RPCs (deny-flags-not-wipes, race-safe totals, N-device completion) on prep_match model; hold-and-send taps; sticky participation modes; branch `docs/live-scoring-resilience-brainstorm`; origin 2026-05-24 brainstorm |
+| `docs/plans/2026-05-28-001-feat-operator-help-system-phase-1-plan.md` | Phase 1 implementation plan for the operator help system | 8 units: glossary data source (TS module registry, per-domain split) + GlossaryInfoButton wrapper + slug-aware wizard wrapper props + infoContent migration + coverage on league-v2/season-v2/operator-area screens + Learn hub at `/operator-learn` (Glossary section only) + `pnpm glossary:verify` drift audit + outside-LO walk acceptance gate; origin 2026-05-28 brainstorm |
 | `docs/plans/2026-05-28-001-feat-passwordless-sign-in-plan.md` | Implementation plan for passwordless one-door sign-in (email OTP code + Google/Facebook; passwords kept-but-demoted) | 6 units; signInWithOtp `type:'email'` typed code, `shouldCreateUser` one-door, `?redirect` repair across all auth paths, Facebook can-lag on App Review, prod email-confirmations+SMTP gate; branch `docs/passwordless-auth-brainstorm`; origin 2026-05-28 brainstorm |
 | `docs/ops/passwordless-auth-setup.md` | Production setup checklist for passwordless sign-in (OTP template, custom SMTP, email-confirmations, redirect allow-list, captcha, Facebook) | Companion to PRE_LAUNCH_CHECKLIST; local dev needs none of it |
-| `docs/plans/2026-04-18-001-refactor-modular-handicap-scoring-systems-plan.md` | Implementation plan for the modular handicap/scoring foundation | Predecessor to the April 28 modular league system plan |
-| `docs/plans/2026-04-19-001-feat-league-house-rules-plan.md` | Implementation plan for org-level house rules | `house_rules` table + `ignore_org_house_rules` per-league flag |
+| `docs/archive/plans/2026-04-18-001-refactor-modular-handicap-scoring-systems-plan.md` | Implementation plan for the modular handicap/scoring foundation | Predecessor to the April 28 modular league system plan |
+| `docs/archive/plans/2026-04-19-001-feat-league-house-rules-plan.md` | Implementation plan for org-level house rules | `house_rules` table + `ignore_org_house_rules` per-league flag |
 | `docs/plans/2026-04-22-001-feat-placeholder-player-lifecycle-plan.md` | Implementation plan for the placeholder-player lifecycle | 23 migrations + RPCs + UI; merge / archive / undo-merge / org-scope |
-| `docs/plans/2026-04-24-001-fix-lineup-race-condition-plan.md` | Implementation plan for the lineup race-condition fix | Predecessor to the May 4 lineup→scoring transition stability plan |
-| `docs/plans/2026-04-29-001-feat-dark-mode-toggle-plan.md` | Implementation plan for the dark-mode toggle | Theme provider + ThemeToggle component |
-| `docs/plans/2026-04-29-001-fix-team-cascade-deletion-plan.md` | Implementation plan for the team-cascade-deletion fix | Migration `20260501000001` flips FKs from CASCADE to RESTRICT |
-| `docs/plans/2026-04-30-001-feat-navigation-ia-overhaul-plan.md` | Implementation plan for the navigation IA overhaul | Drove PR #124 (MemberLayout + AppSidebar + BottomTabBar + AppDrawer + OperatorOrgRow) |
+| `docs/archive/plans/2026-04-24-001-fix-lineup-race-condition-plan.md` | Implementation plan for the lineup race-condition fix | Predecessor to the May 4 lineup→scoring transition stability plan |
+| `docs/archive/plans/2026-04-29-001-feat-dark-mode-toggle-plan.md` | Implementation plan for the dark-mode toggle | Theme provider + ThemeToggle component |
+| `docs/archive/plans/2026-04-29-001-fix-team-cascade-deletion-plan.md` | Implementation plan for the team-cascade-deletion fix | Migration `20260501000001` flips FKs from CASCADE to RESTRICT |
+| `docs/archive/plans/2026-04-30-001-feat-navigation-ia-overhaul-plan.md` | Implementation plan for the navigation IA overhaul | Drove PR #124 (MemberLayout + AppSidebar + BottomTabBar + AppDrawer + OperatorOrgRow) |
 | `docs/plans/2026-05-01-001-feat-modular-league-system-v2-plan.md` | Implementation plan for the modular league system v2 (League Wizard V2 + axis cleanup) | Builds on the April 28 modular league plan |
-| `docs/plans/2026-05-05-001-feat-scoring-modal-plumbing-plan.md` | Implementation plan for the scoring modal plumbing rework | Drove the scoring modal refactor |
+| `docs/archive/plans/2026-05-05-001-feat-scoring-modal-plumbing-plan.md` | Implementation plan for the scoring modal plumbing rework | Drove the scoring modal refactor |
 | `docs/plans/2026-05-09-001-feat-messaging-overhaul-phase-1-plan.md` | Implementation plan for the messaging overhaul Phase 1 | Units 1–14: schema, triggers, auto-chats, past-member, profanity, failed-send, value-prop empty state, etc. |
-| `docs/plans/2026-05-17-001-feat-new-season-from-previous-plan.md` | Implementation plan for the next-season-from-previous wizard | Draft PR #120 |
-| `docs/plans/2026-05-17-002-feat-captain-reup-sheet-plan.md` | Implementation plan for the captain re-up sheet | Draft PR #121 |
+| `docs/archive/plans/2026-05-17-001-feat-new-season-from-previous-plan.md` | Implementation plan for the next-season-from-previous wizard | Draft PR #120 |
+| `docs/archive/plans/2026-05-17-002-feat-captain-reup-sheet-plan.md` | Implementation plan for the captain re-up sheet | Draft PR #121 |
 | `docs/plans/2026-04-28-001-feat-modular-league-system-plan-supplements/` | Supplements directory for the modular league system plan | Append-only addenda used during execution |
 | `docs/plans/2026-05-17-001-refactor-modular-framework-migration-plan.md` | Strangler-fig migration plan for the modular Scoring System refactor | Unit 1 (Win Calculator extraction) detailed; Units 2-9 sketched; each Unit extracts one Module piece-by-piece without breaking the shipping prepackaged Scoring Systems |
 | `docs/plans/2026-05-29-002-feat-my-match-jump-in-plan.md` | Implementation plan for the "My Match" live-match jump-in shortcut | 5 units: team-scoped `getMyMatchMatches` query + `useMyMatchSurfaces` aggregate hook with lightweight realtime + BottomTabBar tab repurpose + AppDrawer "My Match" section (OperatorSection-mirrored) + AppSidebar parity; no DB schema changes; coordinates with future captain-doorbell on bottom-bar; branch `chore/safe-meantime-work` |
-| `docs/plans/2026-05-25-001-refactor-pairings-generator-extraction-plan.md` | Implementation plan for Pairings Generator (Module #8) v1 extraction | 8 units; lifts `gameOrder.ts` into `src/systems/pairings/` (three internal stages: pair-gen / ordering / break-rack); lineups in, player-id-tagged GameSlot[] out; deletes dead helpers; output shape variant-agnostic for future race-mode etc. Branch `feat/pairings-generator-extraction` |
+| `docs/archive/plans/2026-05-25-001-refactor-pairings-generator-extraction-plan.md` | Implementation plan for Pairings Generator (Module #8) v1 extraction | 8 units; lifts `gameOrder.ts` into `src/systems/pairings/` (three internal stages: pair-gen / ordering / break-rack); lineups in, player-id-tagged GameSlot[] out; deletes dead helpers; output shape variant-agnostic for future race-mode etc. Branch `feat/pairings-generator-extraction` |
 | `docs/plans/2026-05-29-001-feat-onboarding-cascade-plan.md` | Implementation plan for the player/captain onboarding cold-start cascade (team join link → claim → captain approve) | 8 units / 3 phases; new `teams.join_token` + `team_join_requests` table; `/join/:token` page; `approve-join-request` edge fn (match-or-create via merge); triage board on MyTeams; doorbell; thin captain wizard; land-on-tonight's-match; builds on passwordless PR #159; origin 2026-05-28 brainstorm |
 
 ### Future Work Folder
@@ -131,8 +133,8 @@
 |----------|---------|-------|
 | `/future/` | **Post-MVP features and optimizations** | Work to resume after MVP complete |
 | `future/DATABASE-USAGE-MAP.md` | Phase 3 messaging TanStack migration inventory | Post-MVP optimization |
-| `future/LEAGUE-SEASON-WIZARD-REFACTOR-TODO.md` | League/season wizard improvements | Future UX enhancements |
-| `future/phase3-migration-approach.md` | Phase 3 TanStack Query migration planning | Post-MVP optimization |
+| `docs/archive/future/LEAGUE-SEASON-WIZARD-REFACTOR-TODO.md` | League/season wizard improvements | Future UX enhancements |
+| `docs/archive/future/phase3-migration-approach.md` | Phase 3 TanStack Query migration planning | Post-MVP optimization |
 
 ### Archive Folder
 
@@ -581,8 +583,14 @@ how to add a new test, demo recording, cleanup model).
 #### Operator Pages (`/operator/`)
 
 **Dashboards & Overview**
-- `OperatorDashboard.tsx` - Main operator dashboard
+- `OperatorDashboard.tsx` - Main operator dashboard. "Need Help?" card's "Operator Handbook" link points at `/learn`.
 - `OperatorWelcome.tsx` - Welcome screen
+
+**Learn hub** (moved to `src/pages/` in 2026-05-29 rename — visible to all signed-in users, not just operators):
+- `src/pages/Learn.tsx` — Phase 1 Learn hub at `/learn`. Page shell + Glossary section. Was `src/operator/OperatorLearn.tsx` at `/operator-learn`.
+- `src/pages/learn/GlossaryView.tsx` — search input + 3-state UI (single-entry on deep-link, browse on direct nav, search filtered when typing).
+- `src/pages/learn/GlossaryEntry.tsx` — single entry render: canonical heading + aliases ("also called: …") + shortDef + longDef + related links.
+- `src/pages/learn/__tests__/GlossaryView.test.tsx` — 6 tests covering the 3-state UI and the alias-match subtitle.
 
 **League Management**
 - `LeagueDetail.tsx` - League details page
@@ -1440,7 +1448,7 @@ TypeScript type definitions - **Single source of truth for all types**
 
 ### 🎯 Systems (`/systems/`) **NEW — Modular handicap/scoring substrate**
 
-Preset modules implementing the `SystemModule` interface. Each shipped preset owns its rating, scoring, and threshold behavior. The resolver maps `handicap_type` string → module. See `docs/plans/2026-04-18-001-refactor-modular-handicap-scoring-systems-plan.md`.
+Preset modules implementing the `SystemModule` interface. Each shipped preset owns its rating, scoring, and threshold behavior. The resolver maps `handicap_type` string → module. See `docs/archive/plans/2026-04-18-001-refactor-modular-handicap-scoring-systems-plan.md`.
 
 - `types.ts` - **SystemModule interface** + mechanism-discriminated threshold union (ExtraGamesThreshold | StartPointsThreshold | RaceLengthThreshold) + supporting types (Phase 1 Unit 1.3)
 - `resolver.ts` - **Module resolver** — `pickModule(handicap_type)` routes to bca3v3 / bca5v5 / fargo5v5; `resolveSystem(prefs, overrides)` delegates to buildSystemFromPreferences for full-preference resolution (Phase 5 Unit 5.1)
@@ -1470,6 +1478,21 @@ Calculator-as-type-with-params registry. Each shipped points formula implements 
 - `resolveParams.ts` - Parameter resolution helper — merges calculator params from preferences with overrides/defaults so callers get a fully-shaped params object regardless of which fields the LO actually configured.
 - `__tests__/types.contract.test.ts` - **Contract tests** locking the `PointsCalculator<P>` discriminated-union shape — every shipped calculator must conform to either `kind: 'aggregate'` or `kind: 'per_game'` with the matching input signature.
 - `__tests__/displayHints.test.ts` - Tests for calculator-driven display hints (scoring popup field shapes) used by the per-game UI to render the right inputs for the active calculator.
+
+---
+
+### 📖 Glossary (`/glossary/`) **NEW — Operator-facing term registry**
+
+Single source of truth for operator help terminology. Slug-keyed TS module registry; entries carry canonical name + aliases + short def + long def (rich content) + L1 anchor + related slugs. Consumed by `GlossaryInfoButton`, the Learn-hub Glossary page, and the `pnpm glossary:verify` drift audit. See `docs/plans/2026-05-28-001-feat-operator-help-system-phase-1-plan.md` Unit 1.
+
+- `types.ts` — `GlossaryEntry` and `L1Anchor` schema. **R4 contract**: every entry has slug, canonicalName, aliases, shortDef (string, ≤2 sentences), longDef (`React.ReactNode`), `l1_anchor`, related.
+- `index.tsx` — registry merge across per-domain entry files. Exports `GlossarySlug` union (compile-time enforced), `getGlossaryEntry(slug)`, `getAllGlossaryEntries()`, `searchGlossary(query)` (substring on canonical + aliases), `useGlossarySearch` hook, `glossaryToInfoButtonProps(slug)` helper.
+- `entries/handicap.tsx` — handicap-related entries (15 terms): fargorate, handicap, handicap-system, handicap-mechanism, points/percentage/no-handicap, extra-games, start-points, race-length-adjustment, threshold + chart, calibrated, manual-entry, rating.
+- `entries/general.tsx` — cross-cutting entries (27 terms): keystone containers (league, season, matchup, match, game, pairing), game types (8/9/10-ball), teams/roster (lineup, lineup-size, roster, roster-size, substitute, anonymous-sub, double-duty, captain, scorekeeper, lineup-lock, racker, breaker), tiebreakers (tiebreaker, extra-round, single-short-race, accept-tie, manual-tiebreaker), start-date, qualifier (with descriptor + division-descriptor aliases).
+- `entries/scoring.tsx` — scoring entries (8 terms): win-condition, points-calculator, linear-above-threshold, accumulate-with-milestone-jumps, accumulated-per-game, win-threshold, tie-threshold, multiplier.
+- `entries/match-format.tsx` — match-format entries (9 terms): match-format, round-robin, single-round-robin, double-round-robin, individual-races, pairing-format, single-rack, race-to-n, race.
+- `entries/standings.tsx` — standings entries (5 terms): standings, standings-sort, match-wins, total-points, total-games-won.
+- `__tests__/glossary.test.ts` — schema completeness, slug uniqueness, alias collisions, related-dial integrity, search behavior.
 
 ---
 
@@ -1576,8 +1599,8 @@ Supabase local configuration and migrations
 | `supabase/migrations/20260501000002_teams_status_add_bye.sql` | **PR 1 bye-as-real-team** — adds `'bye'` to `teams_status_check` so byes can be represented as real teams rows. |
 | `supabase/migrations/20260501000003_teams_captain_id_nullable.sql` | **PR 1 bye-as-real-team** — drops NOT NULL on `teams.captain_id` so bye rows (no captain) can be inserted. |
 | `supabase/migrations/20260501000004_backfill_null_bye_matches.sql` | **PR 1 bye-as-real-team** — one-time backfill: replaces NULL `home_team_id`/`away_team_id` on legacy matches with real per-season bye-team rows. Includes pre-flight DO block enumerating abort conditions. |
-| `supabase/migrations/20260501000001_team_fks_cascade_to_restrict.sql` | **PR 0 cascade safety net** — flips `matches.home_team_id`, `matches.away_team_id`, and `match_lineups.team_id` from `ON DELETE CASCADE` to `ON DELETE RESTRICT` so deleting a team can no longer silently destroy match/lineup history. See `docs/plans/2026-04-29-001-fix-team-cascade-deletion-plan.md`. |
-| `supabase/migrations/20260504000000_harden_prep_match_write_guards.sql` | **Lineup→scoring transition stability fix** — replaces `prep_match` body so ALL writes (thresholds, status, started_at) are guarded by `WHERE status = 'scheduled'`; drops `IF NOT FOUND` exception and wraps INSERT in `IF FOUND` so race-loser calls are true no-ops. See `docs/plans/2026-05-04-001-fix-lineup-to-scoring-transition-stability-plan.md`. |
+| `supabase/migrations/20260501000001_team_fks_cascade_to_restrict.sql` | **PR 0 cascade safety net** — flips `matches.home_team_id`, `matches.away_team_id`, and `match_lineups.team_id` from `ON DELETE CASCADE` to `ON DELETE RESTRICT` so deleting a team can no longer silently destroy match/lineup history. See `docs/archive/plans/2026-04-29-001-fix-team-cascade-deletion-plan.md`. |
+| `supabase/migrations/20260504000000_harden_prep_match_write_guards.sql` | **Lineup→scoring transition stability fix** — replaces `prep_match` body so ALL writes (thresholds, status, started_at) are guarded by `WHERE status = 'scheduled'`; drops `IF NOT FOUND` exception and wraps INSERT in `IF FOUND` so race-loser calls are true no-ops. See `docs/archive/plans/2026-05-04-001-fix-lineup-to-scoring-transition-stability-plan.md`. |
 | `supabase/migrations/20260509000001_messaging_phase1_conversations_participants.sql` | **Messaging Phase 1 / Unit 1** — schema foundations: `conversations.archived_at` (Phase 6 read-only gate prep), `conversation_participants.notification_mode` (tri-state replacement for legacy `is_muted` + `notifications_enabled`, with backfill), `conversation_participants.cannot_leave` (captain-force-membership flag, used by Unit 5 + Unit 6). Plus three CHECK-constraint widenings: `conversation_type` gains `'match_chat'`, `scope_type` gains `'match'`, participant `role` gains `'observer'`. All additive; legacy columns stay during deprecation window. |
 | `supabase/migrations/20260509000002_messaging_phase1_messages_members.sql` | **Messaging Phase 1 / Unit 2** — `messages.is_system` flag + nullable `sender_id` + paired `messages_is_system_shape` CHECK (every row is either system-with-NULL-sender or user-with-sender, no other shape). `members.profanity_onboarding_completed_at` (Unit 9 modal). `members.deleted_at` (soft-delete, read by Unit 5 trigger). Intentionally ships **no RLS policies** — those tables have `rowsecurity=false` in dev (RLS-enablement is a separate planned effort). |
 | `supabase/migrations/20260509000003_messaging_phase1_season_activation_trigger.sql` | **Messaging Phase 1 / Unit 4** — adds SECURITY DEFINER `auto_create_season_conversations(uuid)` plus trigger wrapper; trigger fires `AFTER UPDATE OF status ON seasons WHEN status flips to 'active'` and creates one team chat per team, one captain chat, one season-announcements chat, and an org-announcements chat (idempotent). Each chat creation is wrapped in `BEGIN/EXCEPTION` so a single failure doesn't strand others. Also adds `conversations` to the `supabase_realtime` publication. See `docs/plans/2026-05-09-001-feat-messaging-overhaul-phase-1-plan.md`. |

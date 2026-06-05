@@ -142,7 +142,7 @@ export const OperatorDashboard: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3 text-sm">
-                  <Link to="#" className="flex items-center gap-2 text-info hover:text-info/80 transition-colors">
+                  <Link to="/learn" className="flex items-center gap-2 text-info hover:text-info/80 transition-colors">
                     <BookOpen className="h-4 w-4" />
                     Operator Handbook
                   </Link>
