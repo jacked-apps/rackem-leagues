@@ -25,6 +25,13 @@ interface HandicapCellProps {
   onSubHandicapChange?: (value: string) => void;
   manualHandicapValue?: string;
   onManualHandicapChange?: (position: number, value: string) => void;
+  /**
+   * LO manual-scoring override: when true, the handicap is directly editable for
+   * ANY handicap type (the operator is authoritative). Off by default, so every
+   * existing caller keeps its current behavior. Fargo leagues keep their bounded
+   * input via the Fargo branch; other types get a free number input here.
+   */
+  editableOverride?: boolean;
 }
 
 export function HandicapCell({
@@ -39,6 +46,7 @@ export function HandicapCell({
   onSubHandicapChange,
   manualHandicapValue,
   onManualHandicapChange,
+  editableOverride,
 }: HandicapCellProps) {
   // Double duty — opponent picks, handicap unknown
   if (isDoubleDuty) {
@@ -93,6 +101,22 @@ export function HandicapCell({
           type="number"
           min={100}
           max={850}
+          value={manualHandicapValue ?? ''}
+          onChange={(e) => onManualHandicapChange(position, e.target.value)}
+          disabled={locked || !playerId}
+          placeholder="—"
+          className="text-center text-sm font-semibold h-8 px-1"
+        />
+      </div>
+    );
+  }
+
+  // LO manual-scoring override — operator edits any handicap type directly.
+  if (editableOverride && onManualHandicapChange) {
+    return (
+      <div className="w-16">
+        <Input
+          type="number"
           value={manualHandicapValue ?? ''}
           onChange={(e) => onManualHandicapChange(position, e.target.value)}
           disabled={locked || !playerId}

@@ -13,6 +13,7 @@
 
 import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
+import { isProduction } from '@/config/environment';
 import { MemberLayout } from '../components/layout/MemberLayout';
 import { Home } from '../home/Home';
 import { RulesSkeleton } from '../rules/RulesSkeleton';
@@ -80,6 +81,8 @@ const PlayoffSetup = lazy(() => import('../operator/PlayoffSetup'));
 const OrganizationPlayoffSettings = lazy(() => import('../operator/OrganizationPlayoffSettings'));
 const LeaguePlayoffSettings = lazy(() => import('../operator/LeaguePlayoffSettings'));
 const PlayoffsSetupWizard = lazy(() => import('../operator/PlayoffsSetupWizard'));
+const ManualScoringMatchPicker = lazy(() => import('../operator/ManualScoringMatchPicker'));
+const ManualScoringPage = lazy(() => import('../operator/ManualScoringPage'));
 
 /**
  * Helper to wrap element with ProtectedRoute for auth-only routes
@@ -247,6 +250,14 @@ export const router = createBrowserRouter([
           { path: 'league/:leagueId/season/:seasonId/playoffs', element: withOperator(PlayoffSetup) },
           { path: 'operator/league/:leagueId/playoffs/:orgId', element: withOperator(LeaguePlayoffSettings) },
           { path: 'venues/:orgId', element: withOperator(VenueManagement) },
+
+          // --- LO Manual Scoring (dev/staging only until Units 5–6 land) ---
+          ...(!isProduction
+            ? [
+                { path: 'league/:leagueId/manual-scoring', element: withOperator(ManualScoringMatchPicker) },
+                { path: 'league/:leagueId/manual-scoring/:matchId', element: withOperator(ManualScoringPage) },
+              ]
+            : []),
 
           // --- Developer Routes (require developer role) ---
           { path: 'admin-reports', element: withDeveloper(<AdminReports />) },
