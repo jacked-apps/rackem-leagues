@@ -84,6 +84,7 @@ const VenueManagement = lazy(() => import('../operator/VenueManagement'));
 const TeamManagement = lazy(() => import('../operator/TeamManagement'));
 const ScheduleSetupPage = lazy(() => import('../operator/ScheduleSetupPage'));
 const SeasonSchedulePage = lazy(() => import('../operator/SeasonSchedulePage'));
+const LmsResultsSheet = lazy(() => import('../operator/LmsResultsSheet'));
 const PlayoffSetup = lazy(() => import('../operator/PlayoffSetup'));
 const OrganizationPlayoffSettings = lazy(() => import('../operator/OrganizationPlayoffSettings'));
 const LeaguePlayoffSettings = lazy(() => import('../operator/LeaguePlayoffSettings'));
@@ -277,6 +278,8 @@ export const router = createBrowserRouter([
                 { path: 'league/:leagueId/manual-scoring/:matchId', element: withOperator(ManualScoringPage) },
                 // v2 review/correct: same host page, dispatches on match status.
                 { path: 'league/:leagueId/match-review/:matchId', element: withOperator(ManualScoringPage) },
+                // Printable LMS results sheet (CSI / FargoRate hand-entry helper).
+                { path: 'league/:leagueId/match/:matchId/lms-sheet', element: withOperator(LmsResultsSheet) },
               ]
             : []),
 
