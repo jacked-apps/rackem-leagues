@@ -62,6 +62,10 @@ jobs:
         env:
           NODE_ENV: production
           VITE_APP_ENV: production
+          # Passwordless one-door sign-in (email OTP + Google) is ON in production.
+          # The prod Supabase project must have email/SMTP + Google OAuth configured
+          # for the flow to work end to end (see config/featureFlags.ts).
+          VITE_PASSWORDLESS_SIGN_IN: 'true'
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
