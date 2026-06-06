@@ -316,9 +316,9 @@ function FormulaBody({
     <div className="space-y-2">
       <p className="text-xs text-muted-foreground">
         Transforms the base into this side's final value. The formula can
-        reference the base via "{perspective === 'winner' ? 'Winner' : 'Loser'} base
-        (this game)" — or stand alone if it doesn't need the base. Click any
-        pill to remove it from the formula.
+        reference the base via "{perspective === 'winner' ? 'Winner' : 'Loser'} base"
+        — or stand alone if it doesn't need the base. Click any pill to remove
+        it from the formula.
       </p>
       <FormulaBuilder
         tokens={tokens}

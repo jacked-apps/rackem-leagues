@@ -39,15 +39,15 @@ export const AVAILABLE_DATA: readonly AvailableDatum[] = [
   // resolved to THIS game.
   {
     name: 'this_side_value',
-    label: (p) => `${cap(p)} base (this game)`,
+    label: (p) => `${cap(p)} base`,
     description: (p) =>
-      `The base value this game for the ${p}'s side (the fixed number or the scorer-entered range value, before this formula runs).`,
+      `The base value for the ${p}'s side this game (the fixed number or the scorer-entered range value, before this formula runs).`,
   },
   {
     name: 'other_side_value',
-    label: (p) => `${cap(otherSide(p))} base (this game)`,
+    label: (p) => `${cap(otherSide(p))} base`,
     description: (p) =>
-      `The base value this game for the ${otherSide(p)}'s side. 17-Point's winner formula reads the loser's base via this entry.`,
+      `The base value for the ${otherSide(p)}'s side this game. 17-Point's winner formula reads the loser's base via this entry.`,
   },
   // Per-game player handicaps (locked from match_lineups at match start).
   {
