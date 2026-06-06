@@ -15,8 +15,10 @@
  */
 
 import { useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useMatchWithLeagueSettings, useMatchGames, useTeamDetails } from '@/api/hooks';
+import { useSeasonSchedule } from '@/hooks/useSeasonSchedule';
+import { isMatchEligibleForReview } from '@/utils/match/manualScoringEligibility';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import {
@@ -27,7 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Printer } from 'lucide-react';
+import { Printer, ChevronLeft, ChevronRight } from 'lucide-react';
 
 /** A match_games row, narrowed to what the sheet reads. */
 interface SheetGame {
@@ -65,7 +67,8 @@ function useFullNameMap(homeData: unknown, awayData: unknown): Map<string, strin
 }
 
 export default function LmsResultsSheet() {
-  const { matchId } = useParams<{ matchId: string }>();
+  const { leagueId, matchId } = useParams<{ leagueId: string; matchId: string }>();
+  const navigate = useNavigate();
   const matchQuery = useMatchWithLeagueSettings(matchId);
   const gamesQuery = useMatchGames(matchId);
 
@@ -77,7 +80,27 @@ export default function LmsResultsSheet() {
     home_games_won?: number | null;
     away_games_won?: number | null;
     scheduled_date?: string | null;
+    season_id?: string | null;
+    season_week_id?: string | null;
   } | undefined;
+
+  // Sibling matches in the same WEEK (with results) — so the LO can blow through
+  // a whole night's entry: finish one → arrow to the next without leaving.
+  const { schedule } = useSeasonSchedule(match?.season_id ?? undefined, leagueId);
+  const weekMatches = useMemo(() => {
+    const week = schedule.find((w) => w.week.id === match?.season_week_id);
+    if (!week) return [];
+    return week.matches
+      .filter(isMatchEligibleForReview)
+      .sort((a, b) => (a.match_number ?? 0) - (b.match_number ?? 0));
+  }, [schedule, match?.season_week_id]);
+  const currentIndex = weekMatches.findIndex((m) => m.id === matchId);
+  const prevMatch = currentIndex > 0 ? weekMatches[currentIndex - 1] : null;
+  const nextMatch =
+    currentIndex >= 0 && currentIndex < weekMatches.length - 1
+      ? weekMatches[currentIndex + 1]
+      : null;
+  const goTo = (id: string) => navigate(`/league/${leagueId}/match/${id}/lms-sheet`);
 
   const homeTeam = useTeamDetails(match?.home_team_id ?? '');
   const awayTeam = useTeamDetails(match?.away_team_id ?? '');
@@ -126,12 +149,38 @@ export default function LmsResultsSheet() {
     <div>
       {header}
 
-      {/* Print action — hidden on the printed page. */}
-      <div className="flex justify-end p-4 print:hidden">
-        <Button onClick={() => window.print()} loadingText="none">
-          <Printer className="mr-2 h-4 w-4" />
-          Print
+      {/* Match navigation + print — hidden on the printed page. Arrow between the
+          week's matches so the LO can enter a whole night without leaving. */}
+      <div className="flex items-center justify-between gap-2 p-4 print:hidden">
+        <Button
+          variant="outline"
+          onClick={() => prevMatch && goTo(prevMatch.id)}
+          disabled={!prevMatch}
+          loadingText="none"
+        >
+          <ChevronLeft className="mr-1 h-4 w-4" />
+          Prev
         </Button>
+        <span className="text-sm text-muted-foreground">
+          {currentIndex >= 0 && weekMatches.length > 0
+            ? `Match ${currentIndex + 1} of ${weekMatches.length}`
+            : ''}
+        </span>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => nextMatch && goTo(nextMatch.id)}
+            disabled={!nextMatch}
+            loadingText="none"
+          >
+            Next
+            <ChevronRight className="ml-1 h-4 w-4" />
+          </Button>
+          <Button onClick={() => window.print()} loadingText="none">
+            <Printer className="mr-2 h-4 w-4" />
+            Print
+          </Button>
+        </div>
       </div>
 
       {/* The sheet itself — what prints. */}
