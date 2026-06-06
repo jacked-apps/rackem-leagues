@@ -10,7 +10,8 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { generateGameOrder } from '@/utils/gameOrder';
+import { generatePairings } from '@/systems/pairings';
+import { computeGameCount } from '@/systems/team-geometry';
 import { computeFargoGamesWonThresholds } from '@/utils/handicap/fargoGamesWonThresholds';
 import { fargo5v5 } from '@/systems/fargo5v5';
 import {
@@ -119,7 +120,7 @@ describe('computeMatchPrepPayload', () => {
     it('matches computeFargoGamesWonThresholds for the same ratings/total', async () => {
       const homeR = [500, 520, 480];
       const awayR = [450, 460, 440];
-      const totalGames = generateGameOrder(3, true).length;
+      const totalGames = computeGameCount(3, 'double_round_robin');
       const expected = computeFargoGamesWonThresholds({
         homeRatings: homeR,
         awayRatings: awayR,
@@ -177,26 +178,36 @@ describe('computeMatchPrepPayload', () => {
 
   describe('game rows', () => {
     it('produces one row per generateGameOrder entry, with matching positions/actions', async () => {
-      const order = generateGameOrder(3, true);
+      const order = generatePairings({
+        lineupSize: 3,
+        gameGeneration: 'double_round_robin',
+        homeLineup: ['h1', 'h2', 'h3'],
+        awayLineup: ['a1', 'a2', 'a3'],
+      });
       const { gameRows } = await computeMatchPrepPayload(baseArgs({}));
 
       expect(gameRows).toHaveLength(order.length);
       gameRows.forEach((row, i) => {
         expect(row.game_number).toBe(order[i].gameNumber);
-        expect(row.home_position).toBe(order[i].homePlayerPosition);
-        expect(row.away_position).toBe(order[i].awayPlayerPosition);
+        expect(row.home_position).toBe(order[i].homePosition);
+        expect(row.away_position).toBe(order[i].awayPosition);
         expect(row.home_action).toBe(order[i].homeAction);
         expect(row.away_action).toBe(order[i].awayAction);
       });
     });
 
     it('maps player ids from the correct lineup positions', async () => {
-      const order = generateGameOrder(3, true);
+      const order = generatePairings({
+        lineupSize: 3,
+        gameGeneration: 'double_round_robin',
+        homeLineup: ['h1', 'h2', 'h3'],
+        awayLineup: ['a1', 'a2', 'a3'],
+      });
       const { gameRows } = await computeMatchPrepPayload(baseArgs({}));
 
       gameRows.forEach((row, i) => {
-        expect(row.home_player_id).toBe(`h${order[i].homePlayerPosition}`);
-        expect(row.away_player_id).toBe(`a${order[i].awayPlayerPosition}`);
+        expect(row.home_player_id).toBe(order[i].homePlayerId);
+        expect(row.away_player_id).toBe(order[i].awayPlayerId);
       });
     });
 

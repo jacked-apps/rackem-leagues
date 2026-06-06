@@ -78,6 +78,8 @@ function mockSetupReads(match: Record<string, unknown>, lineups: Array<Record<st
             single: () => Promise.resolve({ data: match, error: null }),
           }),
         }),
+        // loSetupMatch re-stamps status in_progress → 'updating' after prep.
+        update: () => ({ eq: () => ({ eq: () => Promise.resolve({ error: null }) }) }),
       } as never;
     }
     // match_lineups read: .select().eq() resolves to the array.
@@ -408,11 +410,11 @@ function mockReopen(status: string, updateError: { message: string } | null = nu
 }
 
 describe('loReopenMatch', () => {
-  it('flips a completed match to in_progress WITHOUT clearing completion fields', async () => {
+  it('flips a completed match to updating WITHOUT clearing completion fields', async () => {
     const matchUpdate = mockReopen('completed');
     await loReopenMatch(MATCH);
     const payload = matchUpdate.mock.calls[0][0] as Record<string, unknown>;
-    expect(payload).toEqual({ status: 'in_progress' }); // only status — winner etc. untouched
+    expect(payload).toEqual({ status: 'updating' }); // only status — winner etc. untouched
   });
 
   it('reopens an awaiting_verification match', async () => {
@@ -421,8 +423,8 @@ describe('loReopenMatch', () => {
     expect(matchUpdate).toHaveBeenCalled();
   });
 
-  it('is a no-op on an already in_progress match', async () => {
-    const matchUpdate = mockReopen('in_progress');
+  it('is a no-op on an already updating match', async () => {
+    const matchUpdate = mockReopen('updating');
     await loReopenMatch(MATCH);
     expect(matchUpdate).not.toHaveBeenCalled();
   });

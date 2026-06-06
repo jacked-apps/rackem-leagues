@@ -27,7 +27,8 @@
  * @see docs/plans/2026-06-03-001-feat-lo-manual-match-scoring-plan.md — Unit 1
  */
 
-import { generateGameOrder } from '@/utils/gameOrder';
+import { generatePairings, type GameGeneration } from '@/systems/pairings';
+import { computeGameCount } from '@/systems/team-geometry';
 import { calculateHandicapThresholds } from '@/utils/calculateHandicapThresholds';
 import { computeFargoGamesWonThresholds } from '@/utils/handicap/fargoGamesWonThresholds';
 import { fargo5v5 } from '@/systems/fargo5v5';
@@ -219,6 +220,9 @@ export async function computeMatchPrepPayload(
   } = args;
 
   const useDoubleRoundRobin = (gameGeneration ?? 'double_round_robin') === 'double_round_robin';
+  const resolvedGameGeneration: GameGeneration = useDoubleRoundRobin
+    ? 'double_round_robin'
+    : 'single_round_robin';
 
   // Threshold dispatch on (handicapType + winCondition + mechanism), exactly as
   // the live hook: a Fargo league with a games-won win condition gets games-won
@@ -234,7 +238,7 @@ export async function computeMatchPrepPayload(
   } else if (isFargoGamesWon) {
     const homeRatings = ratingsForLineup(homeLineup, lineupSize);
     const awayRatings = ratingsForLineup(awayLineup, lineupSize);
-    const totalGames = generateGameOrder(lineupSize, useDoubleRoundRobin).length;
+    const totalGames = computeGameCount(lineupSize, resolvedGameGeneration);
     const fargoThresholds = computeFargoGamesWonThresholds({
       homeRatings,
       awayRatings,
@@ -268,17 +272,25 @@ export async function computeMatchPrepPayload(
     };
   }
 
-  // Game rows from the canonical game order — same fields the live hook inserts.
-  const allGames = generateGameOrder(lineupSize, useDoubleRoundRobin);
+  // Game rows from the canonical pairings generator (Module #8) — the SAME
+  // generator the live prep uses, so LO-entered games match live exactly.
   const homeRecord = homeLineup as unknown as Record<string, unknown>;
   const awayRecord = awayLineup as unknown as Record<string, unknown>;
+  const lineupIds = (rec: Record<string, unknown>): string[] =>
+    Array.from({ length: lineupSize }, (_, i) => (rec[`player${i + 1}_id`] as string | null) ?? '');
+  const allGames = generatePairings({
+    lineupSize,
+    gameGeneration: resolvedGameGeneration,
+    homeLineup: lineupIds(homeRecord),
+    awayLineup: lineupIds(awayRecord),
+  });
   const gameRows: MatchPrepGameRow[] = allGames.map((game) => ({
     game_number: game.gameNumber,
     game_type: gameType || 'eight_ball',
-    home_player_id: (homeRecord[`player${game.homePlayerPosition}_id`] as string | null) ?? null,
-    away_player_id: (awayRecord[`player${game.awayPlayerPosition}_id`] as string | null) ?? null,
-    home_position: game.homePlayerPosition,
-    away_position: game.awayPlayerPosition,
+    home_player_id: game.homePlayerId || null,
+    away_player_id: game.awayPlayerId || null,
+    home_position: game.homePosition,
+    away_position: game.awayPosition,
     home_action: game.homeAction,
     away_action: game.awayAction,
   }));
