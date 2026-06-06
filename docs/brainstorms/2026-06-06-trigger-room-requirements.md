@@ -9,148 +9,165 @@ predecessor_room: docs/plans/2026-06-04-002-feat-per-game-allocator-room-plan.md
 
 # Trigger Room — Requirements
 
-The Workshop building's second room. Authors **Triggers** — the if/then primitive that drives milestone jumps, edge markers, end-of-match scoring formulas, start-points credit awards, etc. Today these are baked into the prepackaged TypeScript compositions; the trigger room makes them LO-authorable data, like the per-game allocator before it.
+> **Rewritten 2026-06-06.** First draft tried to define the trigger room in terms of how it integrated with the per-game allocator workshop. That was wrong-framed. Modules talk only via the state bag — the trigger room is its own concern with its own architecture. This rewrite treats the trigger room as a standalone module the same way the allocator room was a standalone module.
 
-The first room (Per-Game Allocator) shipped via [PR #179](https://github.com/jacked-apps/rackem-leagues/pull/179). The trigger room reuses every pattern that room set; the only genuinely new architectural question is **slot vs list** — see "What's different" below.
+The Workshop building's second room. Authors **Triggers** — the if/then primitive that does jumps, edge markers, end-of-match scoring formulas, and start-points award patterns inside today's prepackaged compositions. Same pattern as the per-game allocator room: turn what's TS code today into LO-authorable data.
 
-## What this brainstorm is for
+The first room (Per-Game Allocator) shipped via [PR #179](https://github.com/jacked-apps/rackem-leagues/pull/179). This room reuses every guard-layer pattern that room established; what's new is the trigger primitive's own shape.
 
-Lock the v1 scope of the trigger room and answer the slot-vs-list question before planning. Three buckets:
+## Why this room is the right next step
 
-1. **What carries over from the per-game allocator room** — almost everything. List it briefly so reviewers see the precedent isn't being re-invented.
-2. **What's genuinely new** — triggers compose differently (a composition has a LIST of triggers, in order, not a single slot). This shapes the picker UX, the league preferences shape, and the live-scoring wiring.
-3. **What's deferred** — keep v1 small. The full "compose anything from scratch" surface comes later when the assembly room exists.
+- It's the next module that needs LO authoring. Compositions today bundle 5-8 triggers each; the LO can't customize any of them without code changes.
+- It only reads/writes through the state bag — same independence the allocator has. No new cross-module coupling to design.
+- The patterns from the allocator room (storage, loader, save-time guard, snapshot freeze, four guards) carry over directly. The genuinely new design surface is small.
 
 ## Foundation (locked, carries from the building brainstorm)
 
-The Scoring System is the main component. Inside it are smaller, single-responsibility modules. The workshop building has one room per module type. The runtime is code; module variations are data; the workshop is the guardrail. The four guard layers (save-time, read-time, snapshot, runtime backstop) and the two non-negotiables (lineup/scoring pages always render; W/L always recorded) apply unchanged.
+- The Scoring System is the main component. Inside it are smaller modules; one room per module type.
+- Modules talk ONLY through the state bag. A trigger reads names; a trigger writes one name. Nothing else couples it to other modules.
+- Two non-negotiables: lineup/scoring pages always render; per-game W/L always recorded.
+- Four guard layers between a saved row and the runtime: save-time guard (editor), read-time validator (loader), snapshot freeze (at match start), runtime backstop (try/catch in the runtime).
 
-## Locked spec we're building from
+## Locked spec — `trigger.md`
 
-`docs/league-system/modules/points-system/trigger.md` is the canonical Trigger model. A Trigger has six parts:
+The canonical Trigger model is locked. A Trigger is six parts:
 
-- **TYPE** — `match_start` / `match_end` / `anytime` — when it fires.
-- **CONDITION** — single flat comparison (or `always`) between state-bag operands.
-- **ACTION** — writes one state variable; value is either a literal `set` or an `Expression` tree (the same one the allocator's `evaluate_expression` recipe consumes).
-- **RE-ARM** — `single_shot` (default), `periodic`, or `manual`.
-- **ORDER** — fire-order number + `beforeAllocator` bool (for `anytime` triggers).
-- **DISPLAY** (minor) — label + target value, mostly unused today.
+- **TYPE** — `match_start` / `match_end` / `anytime`. When it fires.
+- **CONDITION** — a single flat comparison (`==`, `>`, `<`, `>=`, `<=`) between two operands, or `always`. Operands are state-bag vars or literals.
+- **ACTION** — writes ONE state-bag var. Value is either a literal `set` or an `Expression` tree.
+- **RE-ARM** — `single_shot` (default), `periodic`, `manual`.
+- **ORDER** — fire-order number + `beforeAllocator` bool (only meaningful for `anytime` type).
+- **DISPLAY** — minor; flagged in the locked doc as likely to relocate. Ignore for v1.
 
-The runtime already executes triggers (and has been doing so since the Points System extraction). The trigger room makes them AUTHORABLE through the UI; the engine is unchanged.
+The runtime already executes triggers (see `runtime.ts` `fireTrigger`). This room makes them AUTHORABLE; the engine stays unchanged.
 
-## What carries over from the Per-Game Allocator Room
+## Universal-only data — same principle the allocator room follows
 
-Everything except the live-scoring composition shape question. To keep the reviewer's mental load down, here's the list (none of these need re-debating):
+Per the architectural correction during the allocator room's audit: the picker exposes ONLY data that's universally in the state bag regardless of which other modules are wired into the league's scoring system. Composition-specific names (thresholds, start-points credits, edge/endmatch signals) belong to OTHER modules' contracts and surface here only once those modules formalize how to expose them.
 
-- **Storage shape.** New table `triggers`. Same backbone columns as `per_game_allocators` (id, name, description, scope, author_id, timestamps) + room-specific columns. Trigger-specific data stored as JSONB columns mirroring the in-memory `Trigger` type 1:1.
-- **Library + officials model.** User-scope authoring + read-only seeded officials. Tamper trigger blocks UPDATE/DELETE on `scope='official'` rows.
+### Read targets (CONDITION operands + ACTION expression vars)
+
+Universal state-bag names every match has, regardless of composition:
+
+- `home_wins`, `away_wins` — running team wins
+- `home_points`, `away_points` — running team points
+- `home_team_handicap`, `away_team_handicap` — locked totals from `match_lineups`
+- `games_played`, `total_games` — match progress
+- Per-player counters the runtime maintains: `home_player_N_wins`, `home_player_N_points` (N = 1–5), same for away
+
+Triggers are not side-agnostic the way the allocator is — a trigger fires at a fixed phase of the match, not "per side." So the role-based virtuals (`this_side_*`) don't apply here. The trigger picker uses team-named entries directly.
+
+### Write targets (ACTION target picker)
+
+Triggers WRITE one state-bag name per fire. The write-target picker is the trickiest piece — most useful targets are composition-specific (the `edge` signal that declares a winner, the `endmatch` flag that terminates early, custom milestone bonus names compositions invent). Exposing them here means coupling to those compositions.
+
+v1 candidates for the universal-only write list:
+
+- `home_points`, `away_points` — running team points. Always present; always meaningful.
+
+That's basically it. Other useful write targets exist (custom state vars, control signals) but aren't universal.
+
+**Open Question 1 (write-target picker):**
+
+- **1a.** v1 only allows writing to `home_points` / `away_points`. LO can build "give the home team 5 extra points when X happens" triggers, but nothing more elaborate. Smallest, safest.
+- **1b.** v1 also allows the LO to **introduce a custom state-var name** (free-text but namespaced — e.g., the LO's variation declares `clutch_bonus` as a new var). Other triggers in the same variation set can read/write it. Lets the LO build more interesting interlocking trigger sets at the cost of one free-text input (mitigated by namespacing rules — say, "must start with `custom_`").
+
+Recommendation: **1a for v1**. Custom var names are powerful but introduce a footgun footprint; defer to when the composition-assembly room exists.
+
+## What carries over from the per-game allocator room
+
+Same precedent, no re-debate. Lists them briefly so reviewers don't burn cycles re-deciding:
+
+- **Storage shape.** New table `triggers` — same backbone columns (id, name, description, scope, author_id, timestamps) plus trigger-specific JSONB columns mirroring the in-memory `Trigger` type 1:1.
+- **Library + officials.** User-scope authoring + read-only seeded officials. Tamper trigger blocks UPDATE/DELETE on official rows.
 - **Loader.** `loadTrigger(id)` mirrors `loadPerGameAllocator(id)` — fetch, validate, return `Trigger | null`, never throws.
-- **Workshop room UI shape.** List view (Yours + Templates) + editor + save-time guard. Lives under `src/operator/scoring-workshop/trigger/`.
-- **Click-to-build sub-editors.** TYPE picker (3 choices), CONDITION builder (reuses the same Expression / comparison tokens the allocator room uses for the condition's left/right + operator picker), ACTION builder (state-var-name picker for target + Expression tree for the value, or a literal for `set`-kind), RE-ARM dropdown (3 choices), ORDER inputs (number + before/after-allocator checkbox).
-- **Available data registry.** Same side-agnostic + match-locked + match-cumulative split. Trigger conditions and actions can reference all the same names the allocator's formulas already can.
-- **Save-time guard.** Validator + synthetic match dry-run via `evaluatePointsSystem`. Refuses bad rows inline.
-- **Apply-time preview.** Same as allocator — run the league's composition with the trigger included, surface NaN / scale-mismatch / engine-throw warnings.
-- **Snapshot freeze.** Trigger variations applied to a league are embedded as resolved Trigger objects in `match.system_snapshot` at match start; editing the source row later cannot retroactively change historical scoring (R9).
-- **Runtime backstop.** Already exists. `fireTrigger` has had the never-throw discipline since the original runtime — the workshop's user-authored triggers ride this without any new code.
+- **Workshop UI shape.** List view (Yours + Templates) + editor + save-time guard. Lives under `src/operator/scoring-workshop/trigger/`.
+- **Save-time guard.** Validator + synthetic-match dry-run via `evaluatePointsSystem`. Refuses bad rows inline.
+- **Snapshot freeze.** Trigger variations applied to a league are embedded as resolved Trigger objects in `match.system_snapshot` at match start. Editing a row later cannot retroactively change historical scoring (R9).
+- **Runtime backstop.** Already exists. `fireTrigger` has had the never-throw discipline since the original runtime — LO-authored triggers ride this without any new code.
 - **Four-guard contract** unchanged.
 
-## What's genuinely new (the slot-vs-list question)
+## What's new (trigger-specific)
 
-The per-game allocator is a **single slot** on the composition (`composition.perGameAllocator`). Replacing it is a 1:1 swap.
+### Editor sub-components
 
-Triggers are a **list** on the composition (`composition.triggers: readonly Trigger[]`). A prepackaged composition like Percent 5-Man ships with ~6 triggers (per-side milestone jumps, per-side win jumps, edge markers). The LO can't just "swap the trigger" — they're adding to, removing from, or reordering a list.
+Triggers compose differently from allocators. The editor needs:
 
-Three v1 application models, in increasing ambition:
+- **TYPE picker** — 3 choices.
+- **CONDITION builder** — a small two-operand-plus-comparator picker. Each operand is either a state-bag var (from the read-targets list above) or a typed-in number. New component; smaller than the allocator's `FormulaBuilder`.
+- **ACTION builder** — target picker (Open Question 1) + value: either a literal `set` (typed-in number) OR an `Expression` tree (built from the same click-to-build UI the allocator uses for its formula).
+- **RE-ARM** dropdown — 3 choices.
+- **ORDER** inputs — number input + a `beforeAllocator` checkbox (only meaningful for `anytime` triggers; greyed out for the other types).
 
-### Model A — Library only (smallest)
+### Reusable ExpressionBuilder (refactor)
 
-The room lets LOs author Trigger variations and save them to their library. No league-side application path in v1. The trigger doesn't run until a later room (the composition assembly room, future) lets the LO pick a full set.
+The allocator's `FormulaBuilder` builds expressions for one specific side; labels flip with perspective. The trigger's ACTION expression has NO side perspective — it's just an arithmetic expression over state-bag names.
 
-- **Pro:** smallest scope; locks in the authoring pattern without committing to a league integration shape.
-- **Con:** the LO can build but can't use. Less satisfying. Hard to test end-to-end through live scoring.
+**Open Question 2:** extract a sharable `ExpressionBuilder` from `FormulaBuilder`?
 
-### Model B — Additive "extra triggers" slot (middle)
+- **2a.** Yes — `ExpressionBuilder` takes optional `perspective`. The allocator's `FormulaBuilder` becomes a thin wrapper that always passes a perspective. The trigger's ACTION expression uses the bare `ExpressionBuilder` with no perspective.
+- **2b.** No — duplicate the relevant pieces. Smaller PR diff but two copies to maintain.
 
-A new league preference `extra_triggers` (UUID array) lists trigger variations to APPEND to the prepackaged composition's `triggers` array. The runtime sees the union: prepackaged triggers + LO-added triggers.
+Recommendation: **2a (extract)**. Small refactor; pays dividends as more rooms use the click-to-build pattern.
 
-- **Pro:** end-to-end usable; LO can layer in their own behavior (e.g., "give 5 extra points to the home team at game 13") on top of any prepackaged composition. The picker UX is just a multi-select.
-- **Con:** can't disable a prepackaged trigger (so the LO can't, say, remove the milestone jump from Percent 5-Man). Order interleaving with prepackaged triggers needs a rule (probably: LO triggers append at the end of their phase, with default order numbers).
+## League integration — how a trigger gets onto a league's scoring system
 
-### Model C — Full list replacement (biggest)
+This IS the trigger room's own concern (not borrowed from anywhere else's pattern). Two v1 options:
 
-A new league preference `triggers_override` (UUID array). When non-null, the runtime IGNORES the prepackaged composition's triggers and uses ONLY the LO's list.
+### Model A — Library only
 
-- **Pro:** maximum LO power.
-- **Con:** the LO has to author every trigger they want (no piggy-backing on prepackaged behavior). High footgun risk (forgetting the win-edge trigger means the match never decides a winner). The save-time guard's synthetic dry-run helps but won't catch every interaction.
+The room ships authoring + saving. League-side integration deferred to a future "composition assembly" room (or whichever room ends up owning the "how do I customize my league's full trigger list" UI).
 
-### Recommended v1 — Model B
+- Pro: smallest scope. Decouples authoring from integration. Ships a clean library.
+- Con: LO can build but can't USE on a real league. Less satisfying. Hard to test end-to-end through live scoring without a synthetic integration.
 
-Additive only. The "remove a prepackaged trigger" and "wholesale replace" needs are real but rare; full composition authoring is the assembly room's job (future). Model B is the natural next step on the build-the-building-room-by-room path: it's bigger than just authoring, smaller than full composition replacement, ships a complete usable feature.
+### Model B — Additive "extra triggers" slot
 
-If Ed prefers Model A (defer all league wiring to the assembly room), the trigger room becomes ~60% the size and the assembly room's plan does the integration work. That's also reasonable.
+Add a new league preference `extra_triggers UUID[]`. When non-null, the runtime APPENDS the resolved triggers to whatever the prepackaged composition declares. Same fire-order rules apply (the runtime sorts everything by `order.number` within each phase, so LO triggers interleave by their declared order).
 
-If Ed prefers Model C (full replacement), the trigger room becomes maybe 30% larger than Model B, mostly in the league-settings UX (the LO needs a "build my trigger list in order" UI, which is a real piece of work).
+- Pro: end-to-end usable. LO can layer custom behavior on top of any prepackaged composition.
+- Con: LO can't REMOVE a prepackaged trigger (so no way to, say, drop Percent 5-Man's milestone jumps). Order interleaving with prepackaged triggers means the LO has to know what `order.number` values the prepackaged composition uses (or we document the convention — see Open Question 4).
 
-**Open Question 1:** Pick A, B, or C. (Recommendation: B.)
+**Open Question 3:** Model A or Model B for v1?
 
-## Other open questions
+Recommendation: **Model B**. Same shape decision as the allocator room's slot-swap — additive is the smallest end-to-end usable scope.
 
-### Open Question 2: ACTION's target-name picker
+**Open Question 4 (only if Model B):** How do LO-added triggers interleave with prepackaged ones by ORDER?
 
-A trigger's ACTION writes one state-var. The current `evaluate_expression` recipe surfaces 18+ readable virtuals to the LO; writes are different. The LO needs to pick a state-var NAME to write into. Three sub-options:
+- **4a.** Strict by `order.number`. LO has to know prepackaged numbers to fire at the right time. Hard for an LO to reason about.
+- **4b.** LO triggers always run AFTER prepackaged triggers in the same phase, regardless of `order.number`. Predictable; LO sees post-prepackaged state.
+- **4c.** Document a convention (e.g., "prepackaged compositions use order.number 1-100; LO triggers should use 101+"). The LO picks an order.number knowing where they sit.
 
-- **2a.** Free-text input. Same footgun the allocator room avoided.
-- **2b.** Picker showing canonical writeable names (e.g., `home_points`, `away_points`, `home_edge_chip`, `endmatch`). Curated list per the existing prepackaged compositions.
-- **2c.** Picker that also accepts a new custom name the LO defines. This lets the LO introduce a private state-var (e.g., `home_clutch_bonus`) that other triggers in their library can read.
+Recommendation: **4b**. Most predictable; LO doesn't need to reverse-engineer prepackaged numbering.
 
-Recommendation: **2b for v1, leave 2c as a clearly-marked future extension.** The "introduce a custom var" pattern is what the assembly room or a future "composition" room will lean on; not needed for individual trigger authoring.
-
-### Open Question 3: How does ORDER interleave with prepackaged triggers?
-
-In Model B (recommended), LO-added triggers append to the same phase's list as the prepackaged ones. Two sub-options:
-
-- **3a.** LO triggers always run AFTER prepackaged triggers in the same phase, regardless of their `order.number`. Predictable; LO triggers can read everything prepackaged just wrote.
-- **3b.** LO and prepackaged triggers interleave by `order.number` ascending. More flexible but invites unexpected ordering.
-
-Recommendation: **3a for v1.** Simpler to reason about; LO doesn't need to know what `order.number` values the prepackaged composition uses. (`beforeAllocator` is still respected — LO triggers can choose to fire before or after the allocator within their phase.)
-
-### Open Question 4: Which Expression-tree builder is used?
-
-The allocator room ships `FormulaBuilder` (click-to-build, cursor, side-agnostic available data, role-based labels). The trigger's CONDITION needs a two-operand+comparison picker; the trigger's ACTION needs either an Expression tree (just like the allocator) or a literal value.
-
-For the CONDITION picker, the existing FormulaBuilder isn't a fit (it builds expressions, not comparisons). Need a new `ConditionBuilder` component — much simpler than the FormulaBuilder (two operand pickers + an operator dropdown).
-
-For the ACTION's expression value, the existing FormulaBuilder MIGHT be reusable as-is. The labels would flip from "Winner base / Loser base" (per-game role) to neutral (triggers don't compute per-side). This means the `perspective` prop on the FormulaBuilder either becomes optional or we add a third value (`'no_side'`).
-
-Recommendation: extract a sharable `ExpressionBuilder` from the allocator's `FormulaBuilder` that takes optional `perspective`. The allocator's `FormulaBuilder` becomes a thin wrapper that always passes a perspective. The trigger's ACTION expression uses the bare `ExpressionBuilder` with no perspective. (Estimated effort: small refactor.)
-
-## Tentative v1 scope (assuming Model B + the recommended sub-options)
+## Tentative v1 scope (assuming the recommended answers)
 
 In scope:
-- DB table `triggers` + tamper trigger + ~6 seeded officials (one example of each TYPE × interesting pattern).
-- Loader + validator + save-time guard.
-- Workshop room UI: list + editor with TYPE picker + ConditionBuilder + ACTION builder + RE-ARM dropdown + ORDER inputs.
-- Refactor: extract `ExpressionBuilder` from `FormulaBuilder`.
-- League-side: new preference `extra_triggers UUID[]`. AllocatorPicker-style picker (multi-select) on LeagueSettings. Apply-time preview runs the composition with the trigger list appended.
+
+- DB table `triggers` + tamper trigger + ~5–6 seeded officials (one example per TYPE × interesting pattern: a match_start initial-credit trigger, an anytime "give 5 points at game 13" trigger, a match_end "double points if you swept" trigger, etc.).
+- Loader + tightened validator + save-time guard.
+- Workshop room UI: list + editor (TYPE picker + CONDITION builder + ACTION builder + RE-ARM dropdown + ORDER inputs).
+- Refactor: extract `ExpressionBuilder` from `FormulaBuilder` (Open Question 2 = 2a).
+- League-side: `extra_triggers UUID[]` preference + multi-select picker in League Settings. Apply-time preview runs the composition with the appended triggers.
 - Snapshot extension: `system_snapshot.extra_triggers` stores resolved `Trigger[]` at match start.
-- Live-scoring: `match-adapter.ts` `buildComposition` accepts `extraTriggers: Trigger[]`; appends to composition's triggers list (with the Open Question 3 rule for ordering).
-- Tests: schema + loader + condition/expression args validation + runtime backstop (existing `fireTrigger` covers it) + apply-time + snapshot R9.
-- Architectural doc update (`docs/league-system/modules/points-system/workshop.md`) mentioning the second room.
+- Live-scoring: `match-adapter.ts` `buildComposition` accepts `extraTriggers: Trigger[]`; appends to composition's `triggers` array (with Open Question 4's rule for ordering).
+- Tests: schema + loader + validator + runtime backstop already covers + apply-time + snapshot R9.
+- Architectural doc update (`docs/league-system/modules/points-system/workshop.md`) noting the second room and the universal-only principle applied to triggers.
 
 Out of scope:
-- Model A's "library only" deferred-application — the brainstorm proposes Model B.
-- Model C's full list replacement.
-- Removing or disabling prepackaged triggers.
-- Custom state-var name introduction (Open Question 2c).
-- Workshop home page updates beyond adding the trigger room card.
-- Inline LO-help (lives in the doc-inventory file from the allocator room work).
 
-## Open questions summary (for the reply)
+- Removing or disabling prepackaged triggers (would need wholesale list replacement — a separate decision).
+- Custom state-var name introduction (Open Question 1 = 1b).
+- Threshold-derived names in the picker (composition-specific; future).
+- Composition-control signals like `edge` / `endmatch` as write targets (composition-specific; future).
+- The composition-assembly surface.
+- Inline LO-help on the trigger room UI (lives in the doc-inventory file; rolls out via Phase 3-5 of the docs work).
 
-1. **Application model: A, B, or C?** (Recommendation: B.)
-2. **ACTION target-name picker: 2a, 2b, or 2c?** (Recommendation: 2b.)
-3. **LO triggers' ORDER vs prepackaged: 3a (after) or 3b (interleave)?** (Recommendation: 3a.)
-4. **Sharable ExpressionBuilder refactor: extract from FormulaBuilder?** (Recommendation: yes.)
+## Open questions summary (what I need from you)
 
-Greenlight all four recommendations → I move to planning.
-Push back on any → we iterate here first.
+1. **Write-target picker scope: 1a (home_points/away_points only) or 1b (allow custom namespaced names)?** Recommendation: 1a.
+2. **Refactor: extract `ExpressionBuilder` from `FormulaBuilder` (2a) or duplicate (2b)?** Recommendation: 2a.
+3. **League integration: Model A (library only) or Model B (additive extra_triggers slot)?** Recommendation: B.
+4. **(Only if B) Order interleave: 4a strict by number / 4b LO after prepackaged / 4c documented convention?** Recommendation: 4b.
+
+Greenlight the four → I move to planning. Push back on any → we iterate here.
