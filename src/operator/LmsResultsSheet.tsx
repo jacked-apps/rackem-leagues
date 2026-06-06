@@ -138,6 +138,42 @@ export default function LmsResultsSheet() {
     </div>
   );
 
+  // Prev / Next + position + Print. Rendered both above and below the sheet —
+  // find a match from the top, jump to the next from where you finished entering.
+  const matchNav = (
+    <div className="flex items-center justify-between gap-2 p-4 print:hidden">
+      <Button
+        variant="outline"
+        onClick={() => prevMatch && goTo(prevMatch.id)}
+        disabled={!prevMatch}
+        loadingText="none"
+      >
+        <ChevronLeft className="mr-1 h-4 w-4" />
+        Prev
+      </Button>
+      <span className="text-sm text-muted-foreground">
+        {currentIndex >= 0 && weekMatches.length > 0
+          ? `Match ${currentIndex + 1} of ${weekMatches.length}`
+          : ''}
+      </span>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          onClick={() => nextMatch && goTo(nextMatch.id)}
+          disabled={!nextMatch}
+          loadingText="none"
+        >
+          Next
+          <ChevronRight className="ml-1 h-4 w-4" />
+        </Button>
+        <Button onClick={() => window.print()} loadingText="none">
+          <Printer className="mr-2 h-4 w-4" />
+          Print
+        </Button>
+      </div>
+    </div>
+  );
+
   if (matchQuery.isLoading || gamesQuery.isLoading) {
     return <div>{header}<p className="p-4 text-muted-foreground">Loading…</p></div>;
   }
@@ -149,39 +185,7 @@ export default function LmsResultsSheet() {
     <div>
       {header}
 
-      {/* Match navigation + print — hidden on the printed page. Arrow between the
-          week's matches so the LO can enter a whole night without leaving. */}
-      <div className="flex items-center justify-between gap-2 p-4 print:hidden">
-        <Button
-          variant="outline"
-          onClick={() => prevMatch && goTo(prevMatch.id)}
-          disabled={!prevMatch}
-          loadingText="none"
-        >
-          <ChevronLeft className="mr-1 h-4 w-4" />
-          Prev
-        </Button>
-        <span className="text-sm text-muted-foreground">
-          {currentIndex >= 0 && weekMatches.length > 0
-            ? `Match ${currentIndex + 1} of ${weekMatches.length}`
-            : ''}
-        </span>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => nextMatch && goTo(nextMatch.id)}
-            disabled={!nextMatch}
-            loadingText="none"
-          >
-            Next
-            <ChevronRight className="ml-1 h-4 w-4" />
-          </Button>
-          <Button onClick={() => window.print()} loadingText="none">
-            <Printer className="mr-2 h-4 w-4" />
-            Print
-          </Button>
-        </div>
-      </div>
+      {matchNav}
 
       {/* The sheet itself — what prints. */}
       <div className="mx-auto max-w-2xl p-6">
@@ -241,6 +245,8 @@ export default function LmsResultsSheet() {
           </div>
         ))}
       </div>
+
+      {matchNav}
     </div>
   );
 }
