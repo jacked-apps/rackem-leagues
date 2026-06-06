@@ -61,7 +61,7 @@ import { evaluatePointsSystem, type RuntimeGameRecord } from './runtime';
 import { buildPoints3ManComposition } from './compositions/points-3-man';
 import { buildPercent5ManComposition } from './compositions/percent-5-man';
 import { buildTenPointComposition } from './compositions/10-point';
-import type { PointsSystem, ThresholdInputs } from './types';
+import type { PerGameAllocator, PointsSystem, ThresholdInputs } from './types';
 
 /**
  * Minimal `match_games` row shape this adapter consumes — identical to the
@@ -82,6 +82,10 @@ export interface MinimalMatchGame {
   confirmed_by_home: string | null;
   /** Member ID of the away-team confirmer. `null` until away confirms. */
   confirmed_by_away: string | null;
+  /** Lineup position (1-5) of the home player who played this game. Used to look up locked handicaps. */
+  home_position?: number | null;
+  /** Lineup position (1-5) of the away player who played this game. */
+  away_position?: number | null;
 }
 
 /**
@@ -128,6 +132,31 @@ export interface ComputeMatchRunningTotalsViaEngineArgs {
   homeThresholds: HandicapThresholds;
   /** Away side's snapshotted thresholds — only `games_to_tie` is consumed. */
   awayThresholds: HandicapThresholds;
+  /**
+   * Per-Game Allocator Room override (Unit 5). When non-null, the prepackaged
+   * composition's `perGameAllocator` slot is REPLACED with this object after
+   * `buildComposition` builds the prepackaged shape. Triggers and thresholds
+   * stay untouched.
+   *
+   * Sourced from the match snapshot's `per_game_allocator` field, populated
+   * at snapshot-write time by the loader. Live scoring never re-fetches the
+   * row — the frozen object honors R9 (historical replay stability).
+   *
+   * `null` / `undefined` = no override, prepackaged composition unchanged.
+   */
+  perGameAllocatorOverride?: PerGameAllocator | null;
+  /**
+   * Locked per-position handicaps for the home + away lineups (indexed
+   * 1..5). When provided, the adapter looks up each game's player
+   * handicap via `home_position` / `away_position` on the game row and
+   * forwards them into the runtime so allocator formulas can reference
+   * `this_side_handicap` / `other_side_handicap` per game.
+   *
+   * Optional — when omitted, the handicap virtuals fall back to 0 (the
+   * runtime keeps working; formulas that depend on handicaps just see 0).
+   */
+  homePositionHandicaps?: ReadonlyArray<number | null>;
+  awayPositionHandicaps?: ReadonlyArray<number | null>;
 }
 
 /** The four running totals — identical shape to the legacy result. */
@@ -169,6 +198,30 @@ function compositionAwardsStartCredit(pointsCalculator: string): boolean {
  *    `loser.{min,max,label}` → `loser_{min,max,label}` (counter kind).
  */
 function buildComposition(
+  pointsCalculator: string,
+  params: Record<string, unknown>,
+  perGameAllocatorOverride?: PerGameAllocator | null,
+): PointsSystem | null {
+  const prepackaged = buildPrepackagedComposition(pointsCalculator, params);
+  if (prepackaged === null) return null;
+  if (!perGameAllocatorOverride) return prepackaged;
+  // Per-Game Allocator Room (Unit 5): replace ONLY the allocator slot. Triggers
+  // and thresholds stay as the prepackaged composition declared them. Suffix
+  // the composition name so logs distinguish a swapped composition from its
+  // prepackaged peer.
+  return {
+    ...prepackaged,
+    name: `${prepackaged.name}__custom_${perGameAllocatorOverride.name}`,
+    perGameAllocator: perGameAllocatorOverride,
+  };
+}
+
+/**
+ * Build the prepackaged composition for a calculator name — the pre-Unit-5
+ * behavior, untouched. The room's swap (`buildComposition`) wraps this and
+ * replaces the allocator slot when an override is passed.
+ */
+function buildPrepackagedComposition(
   pointsCalculator: string,
   params: Record<string, unknown>,
 ): PointsSystem | null {
@@ -273,11 +326,28 @@ function buildThresholdInputsForCalculator(
 function toRuntimeGameRecord(
   game: MinimalMatchGame,
   homeTeamId: string,
+  homePositionHandicaps?: ReadonlyArray<number | null>,
+  awayPositionHandicaps?: ReadonlyArray<number | null>,
 ): RuntimeGameRecord {
+  const winnerSide = game.winner_team_id === homeTeamId ? 'home' : 'away';
+  const lookupAt = (
+    arr: ReadonlyArray<number | null> | undefined,
+    pos: number | null | undefined,
+  ): number | null => {
+    if (!arr || typeof pos !== 'number') return null;
+    const v = arr[pos - 1];
+    return typeof v === 'number' ? v : null;
+  };
+  const homePlayerHc = lookupAt(homePositionHandicaps, game.home_position);
+  const awayPlayerHc = lookupAt(awayPositionHandicaps, game.away_position);
   return {
-    winnerSide: game.winner_team_id === homeTeamId ? 'home' : 'away',
+    winnerSide,
     winnerCounterInput: game.winner_value,
     loserCounterInput: game.loser_value,
+    winnerPlayerHandicap: winnerSide === 'home' ? homePlayerHc : awayPlayerHc,
+    loserPlayerHandicap: winnerSide === 'home' ? awayPlayerHc : homePlayerHc,
+    homePosition: game.home_position ?? null,
+    awayPosition: game.away_position ?? null,
   };
 }
 
@@ -312,6 +382,9 @@ export function computeMatchRunningTotalsViaEngine(
     thresholdInputs,
     homeThresholds,
     awayThresholds,
+    perGameAllocatorOverride,
+    homePositionHandicaps,
+    awayPositionHandicaps,
   } = args;
 
   // 1. Count games exactly the way legacy does.
@@ -335,7 +408,11 @@ export function computeMatchRunningTotalsViaEngine(
   const composition =
     pointsCalculator === null || pointsCalculator === 'none'
       ? null
-      : buildComposition(pointsCalculator, pointsCalculatorParams);
+      : buildComposition(
+          pointsCalculator,
+          pointsCalculatorParams,
+          perGameAllocatorOverride,
+        );
 
   if (composition === null) {
     return {
@@ -358,7 +435,7 @@ export function computeMatchRunningTotalsViaEngine(
   //    Aggregate calculators ignore per-game order; per-game ones honor it —
   //    preserving the input order keeps both correct.
   const gameRecords = confirmedRegular.map((g) =>
-    toRuntimeGameRecord(g, homeTeamId),
+    toRuntimeGameRecord(g, homeTeamId, homePositionHandicaps, awayPositionHandicaps),
   );
   const state = evaluatePointsSystem(composition, engineInputs, gameRecords);
 

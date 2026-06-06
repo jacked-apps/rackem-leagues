@@ -32,6 +32,11 @@ import type { AllocatorFormulaOperation } from '../types';
 
 export const stateDiffTimesConstantOperation: AllocatorFormulaOperation = {
   name: 'state_diff_times_constant',
+  argsShape: {
+    minuend_var: { kind: 'state_var_name', required: true },
+    subtrahend_var: { kind: 'state_var_name', required: true },
+    multiplier: { kind: 'number', required: true },
+  },
   compute: (args, _ctx, state) => {
     const minuendVar = args.minuend_var;
     const subtrahendVar = args.subtrahend_var;
