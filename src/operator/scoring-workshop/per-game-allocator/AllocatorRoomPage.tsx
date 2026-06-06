@@ -71,6 +71,9 @@ export default function AllocatorRoomPage() {
       <PageHeader
         title="Per-Game Allocator — Workshop"
         subtitle="The first room of the Scoring System Workshop. Build per-game point variations and apply them to your leagues."
+        backTo={mode === 'list' ? '/operator/scoring-workshop' : undefined}
+        backLabel={mode === 'list' ? 'Workshop' : 'Back to list'}
+        onBackClick={mode === 'edit' ? handleCancel : undefined}
       />
       {room.loading && <p>Loading…</p>}
       {room.error && (

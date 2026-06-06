@@ -67,6 +67,9 @@ export default function TriggerRoomPage() {
       <PageHeader
         title="Trigger — Workshop"
         subtitle="The second room of the Scoring System Workshop. Build standalone trigger variations — match start credits, mid-match bonuses, end-of-match awards."
+        backTo={mode === 'list' ? '/operator/scoring-workshop' : undefined}
+        backLabel={mode === 'list' ? 'Workshop' : 'Back to list'}
+        onBackClick={mode === 'edit' ? handleCancel : undefined}
       />
       {room.loading && <p>Loading…</p>}
       {room.error && (
