@@ -10,9 +10,15 @@
  * workshop guardrail intact (no free-text variable names) while
  * showing concrete role-based names instead of jargon.
  *
- * NOT exposed: vars that exist only inside specific compositions
- * (`winTarget`, `milestoneTarget`, etc.) — those vary by Scoring System
- * and surfacing them per-league is future work.
+ * The picker is intentionally limited to data that is UNIVERSAL — vars
+ * the runtime maintains in every state bag regardless of which other
+ * modules (thresholds, head-starts, etc.) are wired into the league's
+ * scoring system. Composition-specific names like `winTarget` or
+ * start-points credits live in OTHER modules' contracts; surfacing
+ * them here would lie to the LO about what's actually going to be in
+ * the bag at runtime. Those names become available only once a future
+ * threshold-room or head-start-room exposes them in a way the
+ * allocator workshop can safely consume.
  */
 
 export type SidePerspective = 'winner' | 'loser';
@@ -102,29 +108,6 @@ export const AVAILABLE_DATA: readonly AvailableDatum[] = [
     label: (p) => `${cap(otherSide(p))} player points`,
     description: (p) =>
       `Points earned so far in this match by the player currently in the ${otherSide(p)} role.`,
-  },
-  // Thresholds — set by the league's composition at match start. Available
-  // to read by name; not every composition writes every entry. If the
-  // league's composition doesn't write a name the LO references, the
-  // formula sees 0 with a console.warn (the apply-time preview surfaces
-  // this when the LO picks the variation for a league).
-  {
-    name: 'winTarget',
-    label: () => 'Win target',
-    description: () =>
-      'Games-to-win threshold for the match (set at match start by the league\'s scoring system). Percent 5-Man, 10-Point and Points 3-Man all set this.',
-  },
-  {
-    name: 'tieTarget',
-    label: () => 'Tie target',
-    description: () =>
-      'Games-to-tie threshold (Points 3-Man uses this). Other compositions may leave it unset (reads as 0).',
-  },
-  {
-    name: 'milestoneTarget',
-    label: () => 'Milestone target',
-    description: () =>
-      'Mid-match milestone games threshold (Percent 5-Man uses this for its 1.5 / 3.0 jumps). Other compositions may leave it unset (reads as 0).',
   },
   // Running totals.
   {
