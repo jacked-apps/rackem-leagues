@@ -27,7 +27,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Printer, Trophy } from 'lucide-react';
+import { Printer } from 'lucide-react';
 
 /** A match_games row, narrowed to what the sheet reads. */
 interface SheetGame {
@@ -35,10 +35,18 @@ interface SheetGame {
   game_number: number;
   home_player_id: string | null;
   away_player_id: string | null;
+  home_position: number | null;
+  away_position: number | null;
   winner_player_id: string | null;
   winner_value: number | null;
   loser_value: number | null;
   is_tiebreaker: boolean | null;
+}
+
+/** A round of games (one per home position), as LMS lays them out. */
+interface RoundGroup {
+  round: number;
+  games: SheetGame[];
 }
 
 /** Build an id → "First Last" map from both teams' rosters (LMS wants full names). */
@@ -76,9 +84,26 @@ export default function LmsResultsSheet() {
   const nameOf = useFullNameMap(homeTeam.data, awayTeam.data);
   const name = (id: string | null) => (id ? nameOf.get(id) ?? '—' : '—');
 
-  const games = useMemo(() => {
-    const rows = (gamesQuery.data as unknown as SheetGame[]) ?? [];
-    return rows.filter((g) => !g.is_tiebreaker).sort((a, b) => a.game_number - b.game_number);
+  // Group games into rounds the way LMS lays them out: lineupSize games per
+  // round (one per home position), ordered by position. game_number is generated
+  // round-by-round, so round = ceil(game_number / lineupSize).
+  const rounds = useMemo<RoundGroup[]>(() => {
+    const regular = ((gamesQuery.data as unknown as SheetGame[]) ?? []).filter(
+      (g) => !g.is_tiebreaker
+    );
+    if (regular.length === 0) return [];
+    const lineupSize = Math.max(1, ...regular.map((g) => g.home_position ?? 1));
+    const byRound = new Map<number, SheetGame[]>();
+    for (const g of regular) {
+      const round = Math.ceil(g.game_number / lineupSize);
+      (byRound.get(round) ?? byRound.set(round, []).get(round)!).push(g);
+    }
+    return [...byRound.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([round, gs]) => ({
+        round,
+        games: gs.sort((a, b) => (a.home_position ?? 0) - (b.home_position ?? 0)),
+      }));
   }, [gamesQuery.data]);
 
   const homeName = match?.home_team?.team_name ?? 'Home';
@@ -120,39 +145,52 @@ export default function LmsResultsSheet() {
           </p>
         </div>
 
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-10">#</TableHead>
-              <TableHead>Home — {homeName}</TableHead>
-              <TableHead>Away — {awayName}</TableHead>
-              <TableHead>Winner</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {games.map((g) => {
-              const homeWon = !!g.winner_player_id && g.winner_player_id === g.home_player_id;
-              const winnerName = g.winner_player_id ? name(g.winner_player_id) : '—';
-              return (
-                <TableRow key={g.id}>
-                  <TableCell className="font-medium">{g.game_number}</TableCell>
-                  <TableCell className={homeWon ? 'font-semibold' : undefined}>
-                    {name(g.home_player_id)}
-                  </TableCell>
-                  <TableCell className={g.winner_player_id && !homeWon ? 'font-semibold' : undefined}>
-                    {name(g.away_player_id)}
-                  </TableCell>
-                  <TableCell className="font-semibold">
-                    <span className="inline-flex items-center gap-1">
-                      <Trophy className="h-3.5 w-3.5 text-amber-500 print:hidden" />
-                      {winnerName}
-                    </span>
-                  </TableCell>
+        {rounds.map(({ round, games }) => (
+          <div key={round} className="mb-5">
+            <h2 className="mb-1 text-sm font-bold uppercase tracking-wide text-muted-foreground">
+              Round {round}
+            </h2>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{homeName}</TableHead>
+                  <TableHead className="w-14 text-center">Score</TableHead>
+                  <TableHead className="w-14 text-center">Score</TableHead>
+                  <TableHead className="text-right">{awayName}</TableHead>
                 </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+              </TableHeader>
+              <TableBody>
+                {games.map((g) => {
+                  const homeWon =
+                    !!g.winner_player_id && g.winner_player_id === g.home_player_id;
+                  const decided = !!g.winner_player_id;
+                  const homeScore = homeWon ? g.winner_value ?? 1 : g.loser_value ?? 0;
+                  const awayScore = homeWon ? g.loser_value ?? 0 : g.winner_value ?? 1;
+                  return (
+                    <TableRow key={g.id}>
+                      <TableCell className={homeWon ? 'font-semibold' : undefined}>
+                        {name(g.home_player_id)}
+                      </TableCell>
+                      <TableCell className={`text-center ${homeWon ? 'font-bold' : ''}`}>
+                        {decided ? homeScore : '—'}
+                      </TableCell>
+                      <TableCell
+                        className={`text-center ${decided && !homeWon ? 'font-bold' : ''}`}
+                      >
+                        {decided ? awayScore : '—'}
+                      </TableCell>
+                      <TableCell
+                        className={`text-right ${decided && !homeWon ? 'font-semibold' : ''}`}
+                      >
+                        {name(g.away_player_id)}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        ))}
       </div>
     </div>
   );
