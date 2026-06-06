@@ -27,6 +27,7 @@ import { ResetPassword } from '../login/ResetPassword';
 import { EmailConfirmation } from '../login/EmailConfirmation';
 import { About } from '../about/About';
 import { Pricing } from '../about/Pricing';
+import { PrivacyPolicy } from '../about/PrivacyPolicy';
 import { NewPlayerForm } from '../newPlayer/NewPlayerForm';
 import { CompleteProfileForm } from '../completeProfile';
 import { Profile } from '../profile/Profile';
@@ -159,6 +160,7 @@ export const router = createBrowserRouter([
       { index: true, element: <Home /> },
       { path: 'about', element: <About /> },
       { path: 'pricing', element: <Pricing /> },
+      { path: 'privacy', element: <PrivacyPolicy /> },
       { path: 'login', element: <Login /> },
       { path: 'register', element: <Register /> },
       { path: 'claim-player', element: <ClaimPlayer /> },
