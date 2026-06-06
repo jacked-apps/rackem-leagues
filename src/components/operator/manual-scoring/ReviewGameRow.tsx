@@ -18,6 +18,7 @@ import { Trophy } from 'lucide-react';
 import { AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { PlayerNameLink } from '@/components/PlayerNameLink';
 import { ConfirmerLine } from './ConfirmerLine';
 import type { ConfirmerAudit } from '@/utils/match/confirmerAudit';
 
@@ -27,7 +28,12 @@ export interface ReviewGameRowProps {
   gameNumber: number;
   homeName: string;
   awayName: string;
+  /** Member ids for the clickable player names (null for a bye/missing slot). */
+  homePlayerId: string | null;
+  awayPlayerId: string | null;
   winnerName: string | null;
+  /** Which side won — drives the trophy on the expanded matchup row. */
+  winnerSide: 'home' | 'away' | null;
   chips: string[];
   audit: ConfirmerAudit;
   homeTeamName: string;
@@ -39,13 +45,26 @@ export interface ReviewGameRowProps {
   onPickAway: () => void;
 }
 
+/** One player in the expanded matchup row: trophy if winner + clickable name. */
+function PlayerCell({ id, name, isWinner }: { id: string | null; name: string; isWinner: boolean }) {
+  return (
+    <span className="inline-flex items-center gap-1">
+      {isWinner && <Trophy className="h-3.5 w-3.5 shrink-0 text-amber-500" />}
+      {id ? <PlayerNameLink playerId={id} playerName={name} /> : <span>{name}</span>}
+    </span>
+  );
+}
+
 export function ReviewGameRow(props: ReviewGameRowProps) {
   const {
     value,
     gameNumber,
     homeName,
     awayName,
+    homePlayerId,
+    awayPlayerId,
     winnerName,
+    winnerSide,
     chips,
     audit,
     homeTeamName,
@@ -107,15 +126,18 @@ export function ReviewGameRow(props: ReviewGameRowProps) {
           </div>
         ) : (
           <>
-            <div className="flex items-center justify-between">
-              <span className="font-semibold">
-                {winnerName ? `🏆 ${winnerName} wins` : 'No result recorded'}
-              </span>
-              {winnerName && (
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium">
+                <PlayerCell id={homePlayerId} name={homeName} isWinner={winnerSide === 'home'} />
+                <span className="text-xs text-muted-foreground">vs</span>
+                <PlayerCell id={awayPlayerId} name={awayName} isWinner={winnerSide === 'away'} />
+                {!winnerSide && <span className="text-xs text-muted-foreground">(no result)</span>}
+              </div>
+              {winnerSide && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-destructive"
+                  className="shrink-0 text-destructive"
                   onClick={onVacate}
                   data-testid="vacate"
                 >

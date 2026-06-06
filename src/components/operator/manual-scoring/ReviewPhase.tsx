@@ -299,7 +299,16 @@ export function ReviewPhase(props: ReviewPhaseProps) {
               gameNumber={game.game_number}
               homeName={nameOf(game.home_player_id)}
               awayName={nameOf(game.away_player_id)}
+              homePlayerId={game.home_player_id}
+              awayPlayerId={game.away_player_id}
               winnerName={game.winner_player_id ? nameOf(game.winner_player_id) : null}
+              winnerSide={
+                game.winner_player_id
+                  ? game.winner_player_id === game.home_player_id
+                    ? 'home'
+                    : 'away'
+                  : null
+              }
               chips={achievementChips(game)}
               audit={audit}
               homeTeamName={homeTeamName}
