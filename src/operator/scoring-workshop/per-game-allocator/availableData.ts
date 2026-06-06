@@ -62,6 +62,29 @@ export const AVAILABLE_DATA: readonly AvailableDatum[] = [
     description: (p) =>
       `Locked handicap of the player currently in the ${otherSide(p)} role for this game. Falls back to 0 if no handicap is on file.`,
   },
+  // Thresholds — set by the league's composition at match start. Available
+  // to read by name; not every composition writes every entry. If the
+  // league's composition doesn't write a name the LO references, the
+  // formula sees 0 with a console.warn (the apply-time preview surfaces
+  // this when the LO picks the variation for a league).
+  {
+    name: 'winTarget',
+    label: () => 'Win target',
+    description: () =>
+      'Games-to-win threshold for the match (set at match start by the league\'s scoring system). Percent 5-Man, 10-Point and Points 3-Man all set this.',
+  },
+  {
+    name: 'tieTarget',
+    label: () => 'Tie target',
+    description: () =>
+      'Games-to-tie threshold (Points 3-Man uses this). Other compositions may leave it unset (reads as 0).',
+  },
+  {
+    name: 'milestoneTarget',
+    label: () => 'Milestone target',
+    description: () =>
+      'Mid-match milestone games threshold (Percent 5-Man uses this for its 1.5 / 3.0 jumps). Other compositions may leave it unset (reads as 0).',
+  },
   // Running totals.
   {
     name: 'this_side_wins',
