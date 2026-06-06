@@ -143,6 +143,9 @@ export function ReviewPhase(props: ReviewPhaseProps) {
   );
 
   const nameOf = (id: string | null) => (id ? nameTeamMap.get(id)?.name ?? 'Player' : 'Player');
+  // Matchup uses FULL names (clearer for the LO); the winner stays nickname.
+  const fullNameOf = (id: string | null) =>
+    id ? nameTeamMap.get(id)?.fullName ?? 'Player' : 'Player';
   const hasVacatedPending = useMemo(() => games.some((g) => !g.winner_player_id), [games]);
 
   const refresh = () => {
@@ -297,8 +300,8 @@ export function ReviewPhase(props: ReviewPhaseProps) {
               key={game.id}
               value={game.id}
               gameNumber={game.game_number}
-              homeName={nameOf(game.home_player_id)}
-              awayName={nameOf(game.away_player_id)}
+              homeName={fullNameOf(game.home_player_id)}
+              awayName={fullNameOf(game.away_player_id)}
               homePlayerId={game.home_player_id}
               awayPlayerId={game.away_player_id}
               winnerName={game.winner_player_id ? nameOf(game.winner_player_id) : null}
