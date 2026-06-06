@@ -7,20 +7,22 @@
  * misspelling and broken-formula failure modes the room is meant to
  * guardrail against.
  *
- * Tokens supported:
- *   - "Add Data"     → opens a list of curated `AVAILABLE_DATA` entries.
- *                       Clicking one appends a `var` token with the
- *                       canonical name.
- *   - "Add Number"   → a quick-input that appends a `const` token.
- *   - "+ − × ÷"      → operator buttons append `op` tokens.
- *   - "( )"          → paren buttons append grouping tokens.
- *   - "Undo last"    → pops the last token.
- *
- * The current token sequence renders as a horizontal row of pills above
- * the controls so the LO sees what they've built.
+ * Cursor model (text-editor style):
+ *   - A cursor sits BETWEEN tokens (positions 0..N) and indicates where
+ *     the next inserted token will go.
+ *   - Click any gap between pills to move the cursor there. Click before
+ *     the first pill or after the last pill to land at those ends.
+ *   - "Add data", "Add number", "+ − × ÷ ( )" insert AT the cursor
+ *     position and advance the cursor by one.
+ *   - Clicking a pill removes that token. If the removal is to the LEFT
+ *     of the cursor, the cursor shifts left so the surrounding tokens
+ *     stay where they look.
+ *   - "Undo last" removes the token immediately to the LEFT of the
+ *     cursor (text-editor backspace).
+ *   - "Clear" empties and resets cursor to the start.
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -51,30 +53,62 @@ export interface FormulaBuilderProps {
 
 export function FormulaBuilder({ tokens, onChange, perspective }: FormulaBuilderProps) {
   const [numberInput, setNumberInput] = useState('');
+  // Cursor position: 0..tokens.length. Defaults to the end (append-style)
+  // when the formula first loads.
+  const [cursorPos, setCursorPos] = useState<number>(tokens.length);
 
-  const append = (token: FormulaToken) => onChange([...tokens, token]);
-  const undo = () => onChange(tokens.slice(0, -1));
-  const clear = () => onChange([]);
+  // Clamp cursor if the parent ever shortens `tokens` from underneath us
+  // (e.g., remote replace, or undo/clear via a different code path).
+  useEffect(() => {
+    if (cursorPos > tokens.length) setCursorPos(tokens.length);
+  }, [tokens.length, cursorPos]);
+
+  const insertAt = (idx: number, token: FormulaToken) => {
+    const next = [...tokens.slice(0, idx), token, ...tokens.slice(idx)];
+    onChange(next);
+    setCursorPos(idx + 1);
+  };
+
   const removeAt = (idx: number) => {
     const next = [...tokens.slice(0, idx), ...tokens.slice(idx + 1)];
     onChange(next);
+    // If the removal is to the left of cursor, the cursor shifts left so
+    // the visual position relative to surrounding tokens stays the same.
+    if (idx < cursorPos) setCursorPos(Math.max(0, cursorPos - 1));
+    else if (idx === cursorPos && cursorPos > next.length) setCursorPos(next.length);
   };
 
-  const addData = (name: string) => append({ kind: 'var', name });
-  const addOp = (op: TokenOp) => append({ kind: 'op', op });
-  const addLparen = () => append({ kind: 'lparen' });
-  const addRparen = () => append({ kind: 'rparen' });
+  const backspace = () => {
+    if (cursorPos === 0) return;
+    removeAt(cursorPos - 1);
+  };
+
+  const clear = () => {
+    onChange([]);
+    setCursorPos(0);
+  };
+
+  const addData = (name: string) => insertAt(cursorPos, { kind: 'var', name });
+  const addOp = (op: TokenOp) => insertAt(cursorPos, { kind: 'op', op });
+  const addLparen = () => insertAt(cursorPos, { kind: 'lparen' });
+  const addRparen = () => insertAt(cursorPos, { kind: 'rparen' });
 
   const addNumber = () => {
     const n = Number(numberInput);
     if (!Number.isFinite(n)) return;
-    append({ kind: 'const', value: n });
+    insertAt(cursorPos, { kind: 'const', value: n });
     setNumberInput('');
   };
 
   return (
     <div className="space-y-3">
-      <TokenStrip tokens={tokens} onRemove={removeAt} perspective={perspective} />
+      <TokenStrip
+        tokens={tokens}
+        onRemove={removeAt}
+        perspective={perspective}
+        cursorPos={cursorPos}
+        onMoveCursor={setCursorPos}
+      />
 
       <div className="space-y-2 rounded-md border p-3">
         <Label className="text-xs uppercase text-muted-foreground">
@@ -152,10 +186,11 @@ export function FormulaBuilder({ tokens, onChange, perspective }: FormulaBuilder
             size="sm"
             variant="outline"
             loadingText="none"
-            onClick={undo}
-            disabled={tokens.length === 0}
+            onClick={backspace}
+            disabled={cursorPos === 0}
+            title="Remove the token to the left of the cursor"
           >
-            Undo last
+            Backspace
           </Button>
           <Button
             size="sm"
@@ -176,28 +211,73 @@ function TokenStrip({
   tokens,
   onRemove,
   perspective,
+  cursorPos,
+  onMoveCursor,
 }: {
   tokens: readonly FormulaToken[];
   onRemove: (idx: number) => void;
   perspective: SidePerspective;
+  cursorPos: number;
+  onMoveCursor: (idx: number) => void;
 }) {
+  const gapCount = tokens.length + 1;
   return (
-    <div className="flex min-h-[3rem] flex-wrap items-center gap-1 rounded-md border bg-muted/40 p-2">
-      {tokens.length === 0 ? (
+    <div className="flex min-h-[3rem] flex-wrap items-center gap-0.5 rounded-md border bg-muted/40 p-2">
+      {tokens.length === 0 && cursorPos !== 0 && (
         <span className="text-sm text-muted-foreground">
           (empty — pick some data, type a number, or add an operator)
         </span>
-      ) : (
-        tokens.map((tok, i) => (
-          <TokenPill
-            key={i}
-            token={tok}
-            onRemove={() => onRemove(i)}
-            perspective={perspective}
+      )}
+      {Array.from({ length: gapCount }).map((_, gapIdx) => (
+        <span key={`gap-${gapIdx}`} className="inline-flex items-center">
+          <CursorGap
+            active={cursorPos === gapIdx}
+            onClick={() => onMoveCursor(gapIdx)}
           />
-        ))
+          {gapIdx < tokens.length && (
+            <TokenPill
+              token={tokens[gapIdx]!}
+              onRemove={() => onRemove(gapIdx)}
+              perspective={perspective}
+            />
+          )}
+        </span>
+      ))}
+      {tokens.length === 0 && cursorPos === 0 && (
+        <span className="ml-2 text-sm text-muted-foreground">
+          (cursor is here — pick some data, type a number, or add an operator)
+        </span>
       )}
     </div>
+  );
+}
+
+/**
+ * The thin "gap" between (or before/after) tokens. Renders the blinking
+ * cursor when this position is active; renders a thin clickable
+ * separator otherwise so the LO can click into the gap to move the
+ * cursor there.
+ */
+function CursorGap({ active, onClick }: { active: boolean; onClick: () => void }) {
+  if (active) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label="Cursor position"
+        title="Cursor — the next token will be inserted here"
+        className="mx-0.5 inline-block h-6 w-2 animate-pulse bg-primary"
+      />
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Move cursor here"
+      title="Click to move the cursor here"
+      className="mx-0.5 inline-block h-6 w-1 bg-transparent hover:bg-primary/30"
+    />
   );
 }
 
