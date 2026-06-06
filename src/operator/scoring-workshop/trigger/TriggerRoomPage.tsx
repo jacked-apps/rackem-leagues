@@ -1,10 +1,11 @@
 /**
- * @fileoverview Trigger Room — page container.
+ * @fileoverview Trigger Workshop — page container.
  *
- * Second standalone work room of the Scoring System Workshop. Mounts
- * at `/operator/scoring-workshop/trigger`. Mirrors the per-game
- * allocator's `AllocatorRoomPage` 1:1 in shape — the two rooms are
- * independent at runtime and share only the `ExpressionBuilder` widget.
+ * Second standalone module workshop in the workshops building. Mounts
+ * at `/operator/scoring-workshop/trigger` (URL keeps the legacy path
+ * pending the eventual rename). Mirrors the per-game allocator's
+ * `AllocatorRoomPage` 1:1 in shape — the two workshops are independent
+ * at runtime and share only the `ExpressionBuilder` widget.
  */
 
 import { useState } from 'react';
@@ -65,10 +66,10 @@ export default function TriggerRoomPage() {
   return (
     <div className="container mx-auto space-y-6 p-4">
       <PageHeader
-        title="Trigger — Workshop"
-        subtitle="The second room of the Scoring System Workshop. Build standalone trigger variations — match start credits, mid-match bonuses, end-of-match awards."
+        title="Trigger Workshop"
+        subtitle="Build standalone trigger variations — match-start credits, mid-match bonuses, end-of-match awards."
         backTo={mode === 'list' ? '/operator/scoring-workshop' : undefined}
-        backLabel={mode === 'list' ? 'Workshop' : 'Back to list'}
+        backLabel={mode === 'list' ? 'Workshops' : 'Back to list'}
         onBackClick={mode === 'edit' ? handleCancel : undefined}
       />
       {room.loading && <p>Loading…</p>}

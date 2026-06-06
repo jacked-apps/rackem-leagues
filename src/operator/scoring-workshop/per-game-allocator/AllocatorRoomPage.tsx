@@ -1,10 +1,11 @@
 /**
- * @fileoverview Per-Game Allocator Room — page container.
+ * @fileoverview Per-Game Allocator Workshop — page container.
  *
- * First room of the Scoring System Workshop building. Mounts at
- * `/operator/scoring-workshop/per-game-allocator`. Shows the user's
- * variations + read-only templates; opens the editor for clone / edit;
- * persists via `useAllocatorRoom`.
+ * First module workshop in the workshops building. Mounts at
+ * `/operator/scoring-workshop/per-game-allocator` (URL keeps the legacy
+ * path pending the eventual rename). Shows the user's variations +
+ * read-only templates; opens the editor for clone / edit; persists via
+ * `useAllocatorRoom`.
  */
 
 import { useState } from 'react';
@@ -69,10 +70,10 @@ export default function AllocatorRoomPage() {
   return (
     <div className="container mx-auto space-y-6 p-4">
       <PageHeader
-        title="Per-Game Allocator — Workshop"
-        subtitle="The first room of the Scoring System Workshop. Build per-game point variations and apply them to your leagues."
+        title="Per-Game Allocator Workshop"
+        subtitle="Build per-game point variations and apply them to your leagues."
         backTo={mode === 'list' ? '/operator/scoring-workshop' : undefined}
-        backLabel={mode === 'list' ? 'Workshop' : 'Back to list'}
+        backLabel={mode === 'list' ? 'Workshops' : 'Back to list'}
         onBackClick={mode === 'edit' ? handleCancel : undefined}
       />
       {room.loading && <p>Loading…</p>}

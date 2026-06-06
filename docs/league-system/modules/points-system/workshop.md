@@ -1,17 +1,17 @@
 ---
-title: Scoring System Workshop — architecture
+title: Workshops — architecture (Points System modules)
 status: living
 audience: developer + AI sessions
 locked: false
 ---
 
-# Scoring System Workshop — architecture
+# Workshops — architecture (Points System modules)
 
-> **Unlocked, living doc.** Updates as the rooms and their surrounding infrastructure evolve. Not the locked Points System spec — that lives in `README.md` next to this file. This doc captures the *workshop side* (LO authoring + persistence + live-scoring wiring), with enough mental model that a future maintainer (or future you) can read code changes without reconstructing the design from git history. Two work rooms are open today: the Per-Game Allocator Room and the Trigger Room.
+> **Unlocked, living doc.** Updates as the workshops and their surrounding infrastructure evolve. Not the locked Points System spec — that lives in `README.md` next to this file. This doc captures the *workshop side* (LO authoring + persistence + live-scoring wiring), with enough mental model that a future maintainer (or future you) can read code changes without reconstructing the design from git history. Two module workshops are open today: the Per-Game Allocator workshop and the Trigger workshop.
 
-## Foundation — what the workshop is
+## Foundation — what the workshops building is
 
-The Scoring System is the main component of the app. Inside it are smaller, single-responsibility components. The workshop is a building where each module type has its own work room. The Per-Game Allocator Room — the only room built today — is the first concrete application of the modules-as-data principle: the per-game allocator becomes a DB-row variation the LO authors and a league picks, instead of a hardcoded TS factory function.
+The Scoring System is the main component of the app. Inside it are smaller, single-responsibility components. The Workshops building houses one module workshop per component type — somewhere an LO can build variations of that single piece. The Per-Game Allocator workshop was the first one open; the Trigger workshop is the second. A future "Scoring System workshop" will be itself a workshop in this building — the one where an LO grabs a whole scoring system and edits all its module slots in one place; until that workshop exists there's no *system-level* assembly surface, only the *module-level* workshops listed below.
 
 The framing in three sentences:
 
@@ -35,7 +35,7 @@ SideConfig {
 - **Base** — the side's starting value for the game. Either a fixed number (e.g., winner = 10) or a scorer-input range (e.g., loser = 0–7 balls pocketed, clamped on entry).
 - **Formula** — optional transformation. When present, the formula's return value IS the side's final value (the base flows through `this_side_value` if the formula references it). When absent, the resolved base IS the final value.
 
-Both fields are independent — base shape (fixed/range) and formula presence (on/off) compose freely. The room's UI mirrors this with two visible sections per side.
+Both fields are independent — base shape (fixed/range) and formula presence (on/off) compose freely. The workshop's UI mirrors this with two visible sections per side.
 
 **Runtime resolution order** (in `allocator-evaluator.ts`):
 1. Resolve `base` to a number (the scorer input for ranges; the literal otherwise).
@@ -99,7 +99,7 @@ Between a saved variation row and the runtime there are four guards. Each catche
 
 3. **Snapshot freeze** (`populateMatchSnapshotIfNeeded` in `matches.ts`).
    - At match start, the snapshot writer calls `loadPerGameAllocator(id)` and **embeds the resolved object** in `match.system_snapshot.per_game_allocator`.
-   - Live scoring reads the embedded object directly. Editing the source row after match start cannot retroactively change scoring (R9 of the room plan).
+   - Live scoring reads the embedded object directly. Editing the source row after match start cannot retroactively change scoring (R9 of the workshop's plan).
 
 4. **Runtime backstop** (`runtime.ts`, wrapping `evaluateAllocator`).
    - Mirrors the existing `fireTrigger` never-throw discipline.
@@ -148,7 +148,7 @@ The JSONB stored in `winner_side` / `loser_side` mirrors `SideConfig` byte-for-b
 
 What WOULD break old variations: removing an `operationKind` they reference, or changing the `evaluate_expression` recipe's expression-arg shape. Both are explicit choices the maintainer can avoid.
 
-## What lives in this room (file map)
+## What lives in this workshop (file map)
 
 ```text
 src/operator/scoring-workshop/per-game-allocator/
@@ -179,9 +179,9 @@ supabase/migrations/
   20260604000000_per_game_allocator_room.sql        # table + officials + trigger
 ```
 
-# Trigger Room
+# Trigger workshop
 
-Second standalone work room. Authors `Trigger` modules — the if/then primitive that fires at match start, mid-match, or match end. Brainstorm: `docs/brainstorms/2026-06-06-trigger-room-requirements.md`. Plan: `docs/plans/2026-06-06-001-feat-trigger-room-plan.md`.
+Second standalone module workshop. Authors `Trigger` modules — the if/then primitive that fires at match start, mid-match, or match end. Brainstorm: `docs/brainstorms/2026-06-06-trigger-room-requirements.md`. Plan: `docs/plans/2026-06-06-001-feat-trigger-room-plan.md`.
 
 ## What a Trigger is
 
@@ -192,34 +192,34 @@ A trigger has four LO-visible parts (the spec lives in `docs/league-system/modul
 - **ACTION** — writes ONE named state-bag variable. The value is either a literal (`{ kind: 'set', value }`) or an `Expression` tree (`{ kind: 'expr', expr }`).
 - **RE-ARM** — `single_shot | periodic | manual`. Controls re-firing within a match.
 
-Order is intentionally NOT a row column. The trigger room never controls fire order — that's a *scoring system room* concern (future). The loader synthesizes `order: { number: 0, beforeAllocator: false }` on every read; assembly later overrides.
+Order is intentionally NOT a row column. The trigger workshop never controls fire order — that's a *Scoring System workshop* concern (future). The loader synthesizes `order: { number: 0, beforeAllocator: false }` on every read; assembly later overrides.
 
 ## Universal-only available data
 
-The trigger room's CONDITION and ACTION pickers expose **only** state-bag entries the runtime maintains in every match regardless of which other modules are wired in. `trigger/availableData.ts` enumerates the read universe:
+The trigger workshop's CONDITION and ACTION pickers expose **only** state-bag entries the runtime maintains in every match regardless of which other modules are wired in. `trigger/availableData.ts` enumerates the read universe:
 
 - Team totals: `home_wins`, `away_wins`, `home_points`, `away_points`.
 - Team handicap totals: `home_team_handicap`, `away_team_handicap` (set at match start).
 - Match-level counters: `games_played`, `total_games`.
 - Per-position counters: `home_player_N_wins` / `home_player_N_points` / `away_player_N_wins` / `away_player_N_points` for `N` ∈ 1..5 (20 entries).
 
-Composition-specific names (threshold outputs like `winTarget`, allocator-and-trigger semantics like `edge` / `endmatch`) are deliberately excluded. They depend on other modules being plugged in. Once a future threshold room exposes those names, that room — not this one — surfaces them in its own pickers. Locking the universal-only contract here keeps the trigger module honest about what's actually going to be in the state bag at runtime.
+Composition-specific names (threshold outputs like `winTarget`, allocator-and-trigger semantics like `edge` / `endmatch`) are deliberately excluded. They depend on other modules being plugged in. Once a future Threshold workshop exposes those names, that workshop — not this one — surfaces them in its own pickers. Locking the universal-only contract here keeps the trigger module honest about what's actually going to be in the state bag at runtime.
 
 ## Write-target whitelist (v1)
 
-The ACTION's target field is restricted to a small set: `home_points` and `away_points`. `trigger/availableData.ts` exports `TRIGGER_WRITE_TARGETS`; the save-time guard passes that list to `validateTrigger`'s `allowedTargets` option; the loader passes the same list at read time. This is intentionally narrow for v1 — it covers the universal scoring outcome a trigger can write without depending on other modules. Future scoring system rooms can widen the write universe (e.g., allow writing to threshold-introduced markers like `edge`) once those modules are formalized.
+The ACTION's target field is restricted to a small set: `home_points` and `away_points`. `trigger/availableData.ts` exports `TRIGGER_WRITE_TARGETS`; the save-time guard passes that list to `validateTrigger`'s `allowedTargets` option; the loader passes the same list at read time. This is intentionally narrow for v1 — it covers the universal scoring outcome a trigger can write without depending on other modules. The future Scoring System workshop can widen the write universe (e.g., allow writing to threshold-introduced markers like `edge`) once those modules are formalized.
 
-`validateTrigger` defaults to allowing any target when no whitelist is provided. Prepackaged compositions (which legitimately write to `edge` / `endmatch` / custom milestone names) get the default behavior; only the trigger room passes the whitelist.
+`validateTrigger` defaults to allowing any target when no whitelist is provided. Prepackaged compositions (which legitimately write to `edge` / `endmatch` / custom milestone names) get the default behavior; only the trigger workshop passes the whitelist.
 
 ## ExpressionBuilder reuse
 
-The trigger room's ACTION expression UI imports `src/operator/scoring-workshop/_shared/ExpressionBuilder.tsx` directly. The widget is perspective-free — it takes a flat list of available data (already-resolved label strings) plus a `labelForVar` callback. The per-game allocator's `FormulaBuilder.tsx` is now a thin wrapper that adds Winner/Loser perspective on top before forwarding to the same widget.
+The trigger workshop's ACTION expression UI imports `src/operator/scoring-workshop/_shared/ExpressionBuilder.tsx` directly. The widget is perspective-free — it takes a flat list of available data (already-resolved label strings) plus a `labelForVar` callback. The per-game allocator's `FormulaBuilder.tsx` is now a thin wrapper that adds Winner/Loser perspective on top before forwarding to the same widget.
 
-This is the only piece of code the two rooms share. State, types, persistence, and runtime paths stay completely independent.
+This is the only piece of code the two workshops share. State, types, persistence, and runtime paths stay completely independent.
 
 ## The four guard layers (same shape)
 
-The trigger room follows the same four-layer guard discipline as the allocator room:
+The trigger workshop follows the same four-layer guard discipline as the per-game allocator workshop:
 
 1. **Save-time guard** (`trigger/saveTimeGuard.ts`).
    - Runs `validateTrigger(trigger, { allowedTargets })`.
@@ -230,11 +230,11 @@ The trigger room follows the same four-layer guard discipline as the allocator r
    - Loader runs `validateTrigger` on every read.
    - Failure → console.warn + return `null`. Loader is never-throw.
 
-3. **Snapshot freeze** — deferred. There's no apply-to-league surface yet; that lands when the scoring system room exists. Until then, R9 historical replay isn't load-bearing for triggers because they aren't yet attached to leagues.
+3. **Snapshot freeze** — deferred. There's no apply-to-league surface yet; that lands when the Scoring System workshop exists. Until then, R9 historical replay isn't load-bearing for triggers because they aren't yet attached to leagues.
 
 4. **Runtime backstop** (`src/systems/points-system/runtime.ts`, inside `fireTrigger`). Pre-existing — wraps every trigger evaluation in try/catch. A trigger that throws gets logged + skipped; the match continues.
 
-## What lives in this room (file map)
+## What lives in this workshop (file map)
 
 ```text
 src/operator/scoring-workshop/trigger/
@@ -258,15 +258,15 @@ supabase/migrations/
   20260606000000_trigger_room.sql   # table + 4 officials + tamper trigger
 ```
 
-## Why the rooms are independent
+## Why the workshops are independent
 
-The trigger room and the per-game allocator room each own their own table, loader, validator path, and UI components. The decision is structural: a module talks to the rest of the system only via the state bag ([[feedback_state_bag_starts_empty]] / [[feedback_modules_are_data_not_code]]). Coupling two rooms at the workshop layer would smuggle that violation back in.
+The trigger workshop and the per-game allocator workshop each own their own table, loader, validator path, and UI components. The decision is structural: a module talks to the rest of the system only via the state bag ([[feedback_state_bag_starts_empty]] / [[feedback_modules_are_data_not_code]]). Coupling two workshops at the UI layer would smuggle that violation back in.
 
-The only shared code is `_shared/ExpressionBuilder.tsx`. It's pure UI — no state, no validation, no persistence. Sharing it doesn't couple the rooms; it just avoids duplicating cursor + token logic.
+The only shared code is `_shared/ExpressionBuilder.tsx`. It's pure UI — no state, no validation, no persistence. Sharing it doesn't couple the workshops; it just avoids duplicating cursor + token logic.
 
 ## What's NOT in this workshop (out of scope today)
 
-- The threshold room, win-calculator room, handicap-mechanism room — separate future plans.
-- The assembly surface (a UI where the LO composes a full Scoring System from picks across rooms) — comes after enough rooms exist for the joints to be obvious. The trigger room intentionally has NO apply-to-league surface today; that's an assembly concern.
+- The Threshold workshop, Win Calculator workshop, Handicap Mechanism workshop, and the Scoring System workshop itself — separate future plans.
+- The assembly surface (a UI where the LO composes a full Scoring System from picks across module workshops) — IS the future Scoring System workshop. Comes after enough module workshops exist for the joints to be obvious. The trigger workshop intentionally has NO apply-to-league surface today; that's an assembly concern.
 - Authoring new formula recipes — only LO-fillable existing recipes. Recipe development is a dev task.
 - Org-shared libraries — variations are user-scoped; cross-staff sharing is future work.

@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-06-06 (Trigger room complete on `feat/trigger-room` — second standalone work room of the Scoring System Workshop building. All 7 units shipped: DB schema + 4 seeded officials + tamper trigger; never-throw loader; standalone `validateTrigger` with optional write-target whitelist; `ExpressionBuilder` widget extracted from `FormulaBuilder` to `_shared/`; universal-only available-data registry (write target restricted to home_points/away_points); full workshop room UI (list + editor + save-time guard + ConditionBuilder + ActionBuilder); routes registered; workshop home page card live.) Prior 2026-06-05: Allocator workshop merged main → workshop branch (brings in glossary, doc archive, onboarding, DB suite cleanup, scoring-end fix). 2026-06-02: Archived ~63 completed/superseded brainstorm, plan & memory-bank docs to `docs/archive/` + `memory-bank/archive/`.
+> **Last Updated**: 2026-06-06 (Trigger workshop complete on `feat/trigger-room` — second standalone module workshop in the Workshops building. The "Scoring System Workshop" framing is retired; the building is just "Workshops" — one per module type — pending the future Scoring System workshop that will assemble modules. All 7 units shipped: DB schema + 4 seeded officials + tamper trigger; never-throw loader; standalone `validateTrigger` with optional write-target whitelist; `ExpressionBuilder` widget extracted from `FormulaBuilder` to `_shared/`; universal-only available-data registry (write target restricted to home_points/away_points); full workshop UI (list + editor + save-time guard + ConditionBuilder + ActionBuilder); routes registered; workshop home page card live.) Prior 2026-06-05: Allocator workshop merged main → workshop branch (brings in glossary, doc archive, onboarding, DB suite cleanup, scoring-end fix). 2026-06-02: Archived ~63 completed/superseded brainstorm, plan & memory-bank docs to `docs/archive/` + `memory-bank/archive/`.
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -613,11 +613,11 @@ how to add a new test, demo recording, cleanup model).
 - `LeagueSettings.tsx` - General league settings page (linked from the League Settings card on `LeagueDetail`). Mounts `AllocatorPicker` card from the scoring-workshop room (Unit 7).
 - `LeaguePlayoffSettings.tsx` - League-scoped playoff configuration page.
 
-**Scoring System Workshop (`/operator/scoring-workshop/`)**
+**Workshops (`/operator/scoring-workshop/`)**
 
-The workshop building. One sub-folder per module room. Each room owns a list page + editor + data hook + save-time guard, with optional league-side pickers. First room shipped 2026-06-04.
+The Workshops building — one sub-folder per module workshop. Each workshop owns a list page + editor + data hook + save-time guard, with optional league-side pickers. First workshop shipped 2026-06-04 (per-game allocator); second shipped 2026-06-06 (trigger). The future Scoring System workshop — itself a sibling workshop in this building — is where assembly will live (no module workshop has an apply-to-league surface that bypasses it). URL/file paths still use the legacy `scoring-workshop` prefix and will rename when the Scoring System workshop lands.
 
-- `per-game-allocator/AllocatorRoomPage.tsx` - **Per-Game Allocator Room** page container. Mounted at `/operator/scoring-workshop/per-game-allocator` (lazy-loaded, withOperator-gated). List ↔ editor mode switching.
+- `per-game-allocator/AllocatorRoomPage.tsx` - **Per-Game Allocator workshop** page container. Mounted at `/operator/scoring-workshop/per-game-allocator` (lazy-loaded, withOperator-gated). List ↔ editor mode switching.
 - `per-game-allocator/AllocatorList.tsx` - Two-section list: read-only "Templates" (officials) + editable "Yours" (user-scope rows). Clone / Edit / Delete actions.
 - `per-game-allocator/AllocatorEditor.tsx` - Editor: name + description + two `SideEditor` blocks + save-time guard.
 - `per-game-allocator/SideEditor.tsx` - Reusable side component. Four peer kinds: Fixed number / **State-bag value (R11 first-class)** / Scorer-input range / Formula recipe. Switching kinds resets irrelevant SideConfig fields.
@@ -629,7 +629,7 @@ The workshop building. One sub-folder per module room. Each room owns a list pag
 - `per-game-allocator/__tests__/applyTimePreview.test.ts` - 7 tests covering clean preview for fixed/formula variations against 10-Point + Percent 5-Man compositions, unknown calculator rejection, structural-failure blocks Apply.
 - `per-game-allocator/FormulaBuilder.tsx` - **Thin perspective-aware wrapper** around the shared `_shared/ExpressionBuilder`. Resolves Winner/Loser perspective into concrete labels + a `labelForVar` callback. The shared widget owns the cursor model, token strip, keyboard nav, build panel.
 - `_shared/ExpressionBuilder.tsx` - **Perspective-free expression builder widget** shared by both work rooms. Used by the allocator's `FormulaBuilder` (with perspective wrapper) and by the trigger room's `ActionBuilder` (directly, no perspective). Owns cursor + token model.
-- `trigger/TriggerRoomPage.tsx` - **Trigger Room** page container. Mounted at `/operator/scoring-workshop/trigger` (lazy-loaded, withOperator-gated). Second standalone work room. List ↔ editor mode switching.
+- `trigger/TriggerRoomPage.tsx` - **Trigger workshop** page container. Mounted at `/operator/scoring-workshop/trigger` (lazy-loaded, withOperator-gated). Second standalone module workshop. List ↔ editor mode switching.
 - `trigger/TriggerList.tsx` - Two-section list: read-only "Templates" (officials) + editable "Yours" (user-scope rows). Clone / Edit / Delete actions.
 - `trigger/TriggerEditor.tsx` - Editor: name + description + TYPE (match_start | anytime | match_end) + `ConditionBuilder` + `ActionBuilder` + RE-ARM + save-time guard.
 - `trigger/ConditionBuilder.tsx` - Two-mode condition editor: Always | Compare. Compare picks left/right operands (state var or const) and a comparator (`==`, `>`, `<`, `>=`, `<=`).
@@ -1158,9 +1158,9 @@ Lineup-page workhorse hooks. Extracted from the monolithic `useMatchLineup` so e
 - `deriveDisputes.ts` - **Many-eyes Layer-2 / Amendment F.** Pure derivation: detects games currently in the auto-cleared "two initiators disagreed" state (Amendment D). Window-scoped to the CURRENT dispute (between the latest two vacate markers) so old resolved disputes don't resurface. Distinguished from a normal vacate-pending-rescore (no disagreement among initiators).
 - `__tests__/deriveDisputes.test.ts` - **Dispute-derivation tests** (9 cases): empty cases (game still has winner, no vacate marker, normal vacate, all initiators agree); real disputes (fresh auto-clear, same-side disagreement); window scoping (resolved old dispute doesn't resurface on a new auto-clear); robustness (malformed rows skipped, multiple games independent).
 
-#### Per-Game Allocator Room — Points System support files (`src/systems/points-system/`)
+#### Per-Game Allocator workshop — Points System support files (`src/systems/points-system/`)
 
-Files added 2026-06-04 for the first room of the Scoring System Workshop building. Run-time engine (existing) is unchanged; these add the data-to-object bridge, the contract-checking surface, and the registered formula recipes.
+Files added 2026-06-04 for the first module workshop in the Workshops building. Run-time engine (existing) is unchanged; these add the data-to-object bridge, the contract-checking surface, and the registered formula recipes.
 
 - `per-game-allocator-loader.ts` - **Unit 2 — never-throw loader.** `loadPerGameAllocator(id)` reads a row from `per_game_allocators`, unmarshals winner_side/loser_side JSONB into `SideConfig`, runs `validatePerGameAllocator`, returns `PerGameAllocator | null`. Four failure paths each catch + warn + return null (supabase error, missing row, malformed JSONB, validator rejection).
 - `allocator-formula-operations/read-state-var.ts` - **Unit 3 (R11 first-class) — state-bag read recipe.** Single arg `var_name`. Reads `state[var_name]`; returns 0 + warn on missing/non-numeric. Honors the communication contract: anywhere the allocator takes a number, it can come from the state bag by name.
@@ -1173,9 +1173,9 @@ Files added 2026-06-04 for the first room of the Scoring System Workshop buildin
 
 Existing files modified — `composition-validator.ts` exposes `validatePerGameAllocator` (called by the loader + the workshop's guards); declares args-shape checking against `AllocatorFormulaOperation.argsShape`. `types.ts` adds `ArgKind` / `ArgSpec` and the optional `argsShape` field. `runtime.ts` wraps the `evaluateAllocator` call in try/catch (Unit 4 backstop). `match-adapter.ts` `buildComposition` accepts `perGameAllocatorOverride`; `computeMatchRunningTotalsViaEngine` threads it through.
 
-#### Trigger Room — Points System support files (`src/systems/points-system/`)
+#### Trigger workshop — Points System support files (`src/systems/points-system/`)
 
-Files added 2026-06-06 for the second standalone work room of the Scoring System Workshop building. Independent of the allocator room — separate table, separate loader, separate UI. Only the `ExpressionBuilder` widget is shared.
+Files added 2026-06-06 for the second module workshop in the Workshops building. Independent of the per-game allocator workshop — separate table, separate loader, separate UI. Only the `ExpressionBuilder` widget is shared.
 
 - `trigger-loader.ts` - **Unit 2 — never-throw loader.** `loadTrigger(id)` reads a row from `triggers`, unmarshals condition/action JSONB, runs `validateTrigger` with the v1 write-target whitelist, returns `Trigger | null`. Synthesizes the default `order: { number: 0, beforeAllocator: false }` on every load. Four failure paths each catch + warn + return null (supabase error, missing row, malformed JSONB, validator rejection).
 - `__tests__/trigger-loader.test.ts` - **Loader tests** (9 cases): happy paths for Initial-credit/Game-13/sweep shapes, not-found, supabase error, supabase throw, malformed condition (missing kind), malformed action.value.kind, unknown expression op, write-target outside whitelist.

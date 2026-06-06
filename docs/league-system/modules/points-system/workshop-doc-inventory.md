@@ -23,8 +23,8 @@ locked: false
 
 | Concept | Depth | Status | Notes |
 |---|---|---|---|
-| Scoring System Workshop (the building) | glossary | not-started | The umbrella concept. Brief intro to "rooms" + modules-as-data. |
-| Per-Game Allocator (the module) | glossary + example | not-started | What this room builds. Links to the canonical CSI taxonomy. |
+| Workshops (the building) | glossary | not-started | The umbrella concept. Brief intro to "module workshops" + modules-as-data. The future Scoring System workshop is itself one of the workshops in this building (the assembly one). |
+| Per-Game Allocator (the module) | glossary + example | not-started | What the Per-Game Allocator workshop builds. Links to the canonical CSI taxonomy. |
 | Variation (saved row) | glossary | not-started | "Your saved version of a per-game allocator." |
 | Template / Official | glossary | not-started | Read-only seeded variations; clone-to-edit pattern. |
 | Library (Yours) | tooltip | not-started | Inline help on the "Yours" header. |
