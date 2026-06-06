@@ -243,7 +243,7 @@ export function TeamSchedule() {
                           <span>Complete</span>
                         </div>
                       )}
-                      {isMakeup && match.status !== 'completed' && (
+                      {isMakeup && match.status !== 'completed' && match.status !== 'updating' && (
                         <div className="flex items-center gap-1 text-xs font-medium text-warning">
                           <AlertCircle className="h-3 w-3" />
                           <span>Makeup</span>
@@ -255,7 +255,15 @@ export function TeamSchedule() {
                           <span>In Progress</span>
                         </div>
                       )}
-                      {match.id === upcomingMatchId && match.status !== 'in_progress' && !isMakeup && match.status !== 'completed' && (
+                      {/* LO is hand-entering this match — players can't score it.
+                          Shown so it's obvious why there are no scores yet. */}
+                      {match.status === 'updating' && (
+                        <div className="flex items-center gap-1 text-xs font-medium text-warning">
+                          <AlertCircle className="h-3 w-3" />
+                          <span>Updating</span>
+                        </div>
+                      )}
+                      {match.id === upcomingMatchId && match.status !== 'in_progress' && match.status !== 'updating' && !isMakeup && match.status !== 'completed' && (
                         <div className="flex items-center gap-1 text-xs font-medium text-info">
                           <Calendar className="h-3 w-3" />
                           <span>Upcoming</span>

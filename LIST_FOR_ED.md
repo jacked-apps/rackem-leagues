@@ -2170,7 +2170,7 @@ this entry from `LIST_FOR_ED.md` when the plan doc is written and
 committed. The plan doc + its branch will then be the working record.
 
 
-## 32. Pre-existing DB-Test Drift — 4 RLS Test Files Reference Dead Columns / Stale Embeds
+## 32. Pre-existing DB-Test Drift — 5 RLS Test Files Reference Dead Columns / Stale Embeds
 
 **Discovered:** 2026-05-15 during Phase 1 end-to-end test pass
 **Severity:** MEDIUM — tests are silently broken on main; nothing in
@@ -2233,6 +2233,28 @@ branch per scope.
    Fix: read the current `venues` columns and update the test's
    embed/select.
 
+5. `src/__tests__/database/matchGames.rls.test.ts` (**4 failures**)
+   *(Added 2026-05-25 during many-eyes Phase 1 — a 5th drifted file
+   beyond the original 4.)* Two drifts: (a) it `update({confirmed_by_home:
+   true, confirmed_by_away: true})`, but those columns are `uuid` (the
+   confirmer's member id) in the baseline — Postgres rejects `"true"` as
+   a uuid; (b) the break_and_run / golden_break tests share one
+   `testGameId` and don't reset it, so setting `golden_break=true` after
+   `break_and_run=true` trips the `NOT(break_and_run AND golden_break)`
+   CHECK. Fix: set `confirmed_by_*` to a real member uuid (or drop those
+   asserts), and reset the game row between the B&R / golden-break cases.
+   **Proven pre-existing** (fails identically at base commit `073c7d2`,
+   before any many-eyes work).
+
+**Why these were invisible until now (2026-05-25):** the `db` vitest
+project couldn't even boot locally — `jsdom` was declared in
+`package.json` + the lockfile but never materialized into `node_modules`,
+so `pnpm test:run` errored the whole `db` project ("Cannot find package
+'jsdom'") instead of running it. A plain `pnpm install` materialized it,
+which unmasked all of these pre-existing failures (and let the new
+many-eyes db-tests run). If `pnpm test:run` was "green" before, it was
+because the db project was silently not executing.
+
 **How to verify a fix:**
 
 ```
@@ -2241,7 +2263,7 @@ pnpm db:reset
 pnpm test:run > test-output.log 2>&1
 ```
 
-Expected after fix: zero failures across all 4 files.
+Expected after fix: zero failures across all 5 files.
 
 **Note on RLS posture:** Per project memory
 `project_rls_disabled_in_dev`, RLS is currently DISABLED on most
@@ -2340,4 +2362,101 @@ double-duty) without errors.
 - Verify the fix on both anonymous-sub and double-duty paths.
 
 
+## 33. LO Team-Edit Nav — Don't Force Matchups Page After
+
+**Discovered:** 2026-05-26 while setting up multi-confirmer test logins
+for many-eyes Phase 2 manual testing.
+
+**The issue:** When an LO edits a team (adding/removing players, swapping
+roster), the app navigates them into the season's matchups page after
+the save. That's an unnecessary forced detour — LOs editing rosters
+don't need to land on matchups; they may want to return to the team
+list, the org dashboard, or just stay on the team page they were on.
+
+**Fix:** Either (a) stay on the team-edit page (or the team-list page) on
+save, or (b) navigate back to wherever the user came FROM (the previous
+route in history) — the latter is the more general "respect where the
+user was" fix.
+
+**Where to look:** the team-edit save handler / mutation. Likely in
+`src/operator/TeamManagement.tsx` or similar — wherever the post-save
+`navigate(...)` call lives that ends up at the matchups route.
+
+**Severity:** LOW — UX papercut, no data risk. Just annoying when doing
+roster work that doesn't need matchups context.
+
+---
+
+## 34. Tappable PlayerName Component — Reveal Full Name on Tap
+
+**Discovered:** 2026-05-27 while polishing the many-eyes Phase 2 dispute
+modal copy.
+
+**The issue:** Across the app, we display player names as plain text via
+`getPlayerDisplayName` / `getPlayerNicknameById`. Per
+`feedback_nickname_is_mobile_primary`, nickname IS the mobile primary
+display — but users sometimes need to see the full name to disambiguate
+(two "Jack"s on different teams, a nickname they don't recognize, etc.).
+Today there's no way to surface the full name without leaving the screen.
+
+**The behavior we want:** any place a nickname is shown should be
+tappable; tapping reveals the player's full name (first + last) in a
+tooltip / popover / expanded inline element. Consistent everywhere — not
+piecemeal.
+
+**Surfaces affected (incomplete list):**
+- Dispute UI (`DissentFlag.tsx`, `DisputeDetailModal.tsx`) — Phase 2.
+- `GamesList.tsx` — player buttons + completed-game labels.
+- `UnifiedScoreboard.tsx` — score rows.
+- `ConfirmationDialog.tsx` — winner name in the prompt modal.
+- The lineup chain, MyTeams cards, anywhere `getPlayerDisplayName` is
+  the visible output.
+
+**Approach (suggested):**
+1. Build a shared `<PlayerName />` component (props: full Player object
+   with `first_name`, `last_name`, `nickname`). Renders nickname; on
+   tap/hover, shows a popover with the full name + maybe BCA# if known.
+   Reuses shadcn `Popover` or `Tooltip`.
+2. Adopt incrementally — start with one surface (e.g. dispute UI), then
+   roll through the others one PR at a time. Each adoption is mechanical
+   (replace `{getPlayerDisplayName(id)}` with
+   `<PlayerName player={players.get(id)} />`).
+
+**Severity:** MEDIUM — real UX gap (especially in larger leagues with
+nickname collisions), but no data integrity risk. Best done as its own
+focused branch so the component lands properly + gets adopted
+consistently.
+
+**Family:** related to `project_placeholder_badge_remaining_surfaces` —
+both are "consistent player-info display across the app" cleanups.
+
+## 35. InfoButton Popup Renders Half-Off-Screen — Global Fix (Portal)
+
+**Problem:** `InfoButton`'s `?` help popup sometimes lands half off the
+edge of the screen. It's been a recurring annoyance for a while, and it
+shows up worst inside the new scoring **settings gear** popover
+(`ScoringSettingsMenu.tsx`).
+
+**Root cause (the class of bug):** `InfoButton` positions its popup with
+`position: fixed` + viewport-coordinate math (measure the trigger button,
+clamp to the screen edges — see `src/components/InfoButton.tsx`, the
+`useLayoutEffect`). That math assumes `position: fixed` means
+"relative to the viewport." But **any ancestor with a CSS `transform`
+(or `filter` / `perspective`) becomes the containing block for
+`position: fixed` descendants** — so the popup is positioned relative to
+that transformed ancestor instead of the viewport, and the clamp-to-edge
+math is computing against the wrong box. Radix's `Popover`/`Tooltip`
+content uses a `transform` to position itself, which is exactly why it's
+worst inside the gear menu. It'll misbehave anywhere an InfoButton sits
+inside a transformed container (animated panels, Radix popovers/tooltips,
+some modals).
+
+**Suggested fix (one place, fixes every instance):** render the popup
+through a **React portal to `document.body`** (`createPortal`) so it
+escapes any transformed ancestor — then the existing viewport-coordinate
+math works again everywhere. Likely a ~5-line change in
+`InfoButton.tsx`; no API change for the ~dozens of call sites.
+
+**Severity:** LOW-MEDIUM — cosmetic/usability, no data risk, but it's
+everywhere and the fix is cheap + global. Own small branch.
 
