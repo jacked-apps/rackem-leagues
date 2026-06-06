@@ -317,8 +317,9 @@ function FormulaBody({
       <p className="text-xs text-muted-foreground">
         Transforms the base into this side's final value. The formula can
         reference the base via "{perspective === 'winner' ? 'Winner' : 'Loser'} base"
-        — or stand alone if it doesn't need the base. Click any pill to remove
-        it from the formula.
+        — or stand alone if it doesn't need the base. Click a pill to remove
+        it. Click a gap to move the cursor. ← → arrows also move the cursor;
+        Backspace removes to the left.
       </p>
       <FormulaBuilder
         tokens={tokens}

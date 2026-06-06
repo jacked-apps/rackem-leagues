@@ -63,6 +63,37 @@ export function FormulaBuilder({ tokens, onChange, perspective }: FormulaBuilder
     if (cursorPos > tokens.length) setCursorPos(tokens.length);
   }, [tokens.length, cursorPos]);
 
+  // Keyboard navigation: arrows move the cursor; Home/End jump to ends;
+  // Backspace removes to the left. Ignored when the focus is inside a
+  // text input (so typing in the "Add a number" field still works).
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    const target = e.target as HTMLElement;
+    if (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement
+    ) {
+      return;
+    }
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      setCursorPos((p) => Math.max(0, p - 1));
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      setCursorPos((p) => Math.min(tokens.length, p + 1));
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      setCursorPos(0);
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      setCursorPos(tokens.length);
+    } else if (e.key === 'Backspace') {
+      e.preventDefault();
+      if (cursorPos > 0) {
+        removeAt(cursorPos - 1);
+      }
+    }
+  };
+
   const insertAt = (idx: number, token: FormulaToken) => {
     const next = [...tokens.slice(0, idx), token, ...tokens.slice(idx)];
     onChange(next);
@@ -101,7 +132,7 @@ export function FormulaBuilder({ tokens, onChange, perspective }: FormulaBuilder
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" onKeyDown={handleKeyDown}>
       <TokenStrip
         tokens={tokens}
         onRemove={removeAt}
@@ -222,12 +253,10 @@ function TokenStrip({
 }) {
   const gapCount = tokens.length + 1;
   return (
-    <div className="flex min-h-[3rem] flex-wrap items-center gap-0.5 rounded-md border bg-muted/40 p-2">
-      {tokens.length === 0 && cursorPos !== 0 && (
-        <span className="text-sm text-muted-foreground">
-          (empty — pick some data, type a number, or add an operator)
-        </span>
-      )}
+    <div
+      tabIndex={0}
+      className="flex min-h-[3rem] flex-wrap items-center gap-1 rounded-md border bg-muted/40 p-2 focus:outline-none focus:ring-2 focus:ring-primary/30"
+    >
       {Array.from({ length: gapCount }).map((_, gapIdx) => (
         <span key={`gap-${gapIdx}`} className="inline-flex items-center">
           <CursorGap
@@ -243,9 +272,9 @@ function TokenStrip({
           )}
         </span>
       ))}
-      {tokens.length === 0 && cursorPos === 0 && (
+      {tokens.length === 0 && (
         <span className="ml-2 text-sm text-muted-foreground">
-          (cursor is here — pick some data, type a number, or add an operator)
+          (empty — pick some data, type a number, or add an operator)
         </span>
       )}
     </div>
@@ -266,7 +295,7 @@ function CursorGap({ active, onClick }: { active: boolean; onClick: () => void }
         onClick={onClick}
         aria-label="Cursor position"
         title="Cursor — the next token will be inserted here"
-        className="mx-0.5 inline-block h-6 w-2 animate-pulse bg-primary"
+        className="mx-1 inline-block h-7 w-2 animate-pulse rounded-sm bg-primary"
       />
     );
   }
@@ -276,7 +305,7 @@ function CursorGap({ active, onClick }: { active: boolean; onClick: () => void }
       onClick={onClick}
       aria-label="Move cursor here"
       title="Click to move the cursor here"
-      className="mx-0.5 inline-block h-6 w-1 bg-transparent hover:bg-primary/30"
+      className="mx-1 inline-block h-7 w-2 rounded-sm bg-transparent transition-colors hover:bg-primary/15"
     />
   );
 }
@@ -291,9 +320,11 @@ function TokenPill({
   perspective: SidePerspective;
 }) {
   // The whole pill is the delete target. Hover → red ring so it's
-  // clear it's clickable; click → that token is gone.
+  // clear it's clickable; click → that token is gone. Tighter
+  // horizontal padding so the cursor gaps stand out more between
+  // adjacent pills.
   const baseClass =
-    'inline-flex cursor-pointer items-center rounded px-2 py-1 text-sm transition-colors hover:bg-destructive hover:text-destructive-foreground hover:line-through';
+    'inline-flex cursor-pointer items-center rounded px-1.5 py-1 text-sm transition-colors hover:bg-destructive hover:text-destructive-foreground hover:line-through';
   const title = 'Click to remove this from the formula';
   if (token.kind === 'var') {
     return (
@@ -301,7 +332,7 @@ function TokenPill({
         type="button"
         onClick={onRemove}
         title={title}
-        className={`${baseClass} bg-primary/10`}
+        className={`${baseClass} bg-primary/25`}
       >
         {labelForVar(token.name, perspective)}
       </button>
@@ -313,7 +344,7 @@ function TokenPill({
         type="button"
         onClick={onRemove}
         title={title}
-        className={`${baseClass} bg-success/10 font-mono`}
+        className={`${baseClass} bg-success/25 font-mono`}
       >
         {token.value}
       </button>
@@ -325,7 +356,7 @@ function TokenPill({
         type="button"
         onClick={onRemove}
         title={title}
-        className={`${baseClass} font-mono`}
+        className={`${baseClass} bg-secondary font-mono`}
       >
         {opSymbol(token.op)}
       </button>
@@ -336,7 +367,7 @@ function TokenPill({
       type="button"
       onClick={onRemove}
       title={title}
-      className={`${baseClass} font-mono`}
+      className={`${baseClass} bg-muted-foreground/20 font-mono`}
     >
       {token.kind === 'lparen' ? '(' : ')'}
     </button>
