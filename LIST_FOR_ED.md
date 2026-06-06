@@ -4,6 +4,21 @@ Tasks and refactoring items for Ed to work on.
 
 ---
 
+## 🚪 Gated — awaiting staging review + un-gate
+
+Features merged to `main` but NOT yet live for users (see **Feature Gating
+Workflow** in `CLAUDE.md`). Each gets reviewed on staging, then un-gated — and
+removed from this list when un-gated.
+
+- **LO Manual Scoring + Match Review/Correction** — gated by `!isProduction` in
+  `src/navigation/NavRoutes.tsx` (the `manual-scoring` / `match-review` routes).
+  Two flows: enter a played-on-paper match from blank, and review/correct an
+  already-scored match (vacate-and-rescore). Reached via the **"Score a Match"**
+  button on a league's Schedule card. **Verify on staging:** score a match from
+  scratch, then open a completed match and correct a game → re-finalize.
+
+---
+
 ## 📘 2026-05-30 GLOSSARY — `scoring-system` entry is a DRAFT STUB (important)
 
 **Branch:** `feat/operator-help-phase-1-mac` (glossary definition pass)
