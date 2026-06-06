@@ -346,6 +346,8 @@ function toRuntimeGameRecord(
     loserCounterInput: game.loser_value,
     winnerPlayerHandicap: winnerSide === 'home' ? homePlayerHc : awayPlayerHc,
     loserPlayerHandicap: winnerSide === 'home' ? awayPlayerHc : homePlayerHc,
+    homePosition: game.home_position ?? null,
+    awayPosition: game.away_position ?? null,
   };
 }
 

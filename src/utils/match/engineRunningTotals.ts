@@ -161,6 +161,12 @@ export async function computeEngineRunningTotals(
       awayHandicapDiff: awayTotal - homeTotal,
       gameCount: args.games.filter((g) => !g.is_tiebreaker).length,
       prefs: {},
+      // Team handicap totals — home includes the locked team bonus,
+      // away is just the sum of the lineup. Runtime writes these into
+      // the state bag at match start so allocator formulas can reference
+      // them via `this_side_team_handicap` / `other_side_team_handicap`.
+      homeTeamHandicap: homeTotal,
+      awayTeamHandicap: awayTotal,
     };
 
     return computeMatchRunningTotalsViaEngine({

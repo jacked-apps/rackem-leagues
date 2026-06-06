@@ -62,6 +62,47 @@ export const AVAILABLE_DATA: readonly AvailableDatum[] = [
     description: (p) =>
       `Locked handicap of the player currently in the ${otherSide(p)} role for this game. Falls back to 0 if no handicap is on file.`,
   },
+  // Team handicap totals — sum of the lineup's locked handicaps at match
+  // start (home includes the team bonus when applicable).
+  {
+    name: 'this_side_team_handicap',
+    label: (p) => `${cap(p)} team handicap`,
+    description: (p) =>
+      `Total locked handicap for the ${p}'s team — sum of all five lineup handicaps (home includes any team bonus). Set at match start; unchanged across games.`,
+  },
+  {
+    name: 'other_side_team_handicap',
+    label: (p) => `${cap(otherSide(p))} team handicap`,
+    description: (p) =>
+      `Total locked handicap for the ${otherSide(p)}'s team. Set at match start; unchanged across games.`,
+  },
+  // Per-player running stats — tracked by the runtime as games are
+  // processed, indexed by lineup position. Resolved at compute time
+  // based on which player played this game for the role.
+  {
+    name: 'this_side_player_wins',
+    label: (p) => `${cap(p)} player games`,
+    description: (p) =>
+      `Games won so far in this match by the player currently in the ${p} role (the player at the ${p}-team lineup position who played this game).`,
+  },
+  {
+    name: 'other_side_player_wins',
+    label: (p) => `${cap(otherSide(p))} player games`,
+    description: (p) =>
+      `Games won so far in this match by the player currently in the ${otherSide(p)} role.`,
+  },
+  {
+    name: 'this_side_player_points',
+    label: (p) => `${cap(p)} player points`,
+    description: (p) =>
+      `Points earned so far in this match by the player currently in the ${p} role.`,
+  },
+  {
+    name: 'other_side_player_points',
+    label: (p) => `${cap(otherSide(p))} player points`,
+    description: (p) =>
+      `Points earned so far in this match by the player currently in the ${otherSide(p)} role.`,
+  },
   // Thresholds — set by the league's composition at match start. Available
   // to read by name; not every composition writes every entry. If the
   // league's composition doesn't write a name the LO references, the

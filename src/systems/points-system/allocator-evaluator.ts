@@ -55,6 +55,9 @@ export interface AllocatorGameRecord {
   winnerPlayerHandicap?: number | null;
   /** Locked handicap of the player who lost THIS game. See above. */
   loserPlayerHandicap?: number | null;
+  /** Lineup positions (1-5) of the home + away players who played THIS game. */
+  homePosition?: number | null;
+  awayPosition?: number | null;
 }
 
 /**
@@ -138,6 +141,8 @@ export function evaluateAllocator(
     winnerSide: record.winnerSide,
     winnerHandicap: record.winnerPlayerHandicap,
     loserHandicap: record.loserPlayerHandicap,
+    homePosition: record.homePosition,
+    awayPosition: record.awayPosition,
   };
   const ctxForLoser: FormulaContext = {
     winner: winnerBase,
@@ -146,6 +151,8 @@ export function evaluateAllocator(
     winnerSide: record.winnerSide,
     winnerHandicap: record.winnerPlayerHandicap,
     loserHandicap: record.loserPlayerHandicap,
+    homePosition: record.homePosition,
+    awayPosition: record.awayPosition,
   };
 
   // Step 3: Run formulas if present; otherwise use base values.

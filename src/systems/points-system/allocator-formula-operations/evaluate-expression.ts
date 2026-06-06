@@ -55,12 +55,33 @@ function virtualStateAliases(ctx: FormulaContext): Record<string, string> {
   const loserTeam: 'home' | 'away' = winnerTeam === 'home' ? 'away' : 'home';
   const thisTeam = ctx.thisSide === 'winner' ? winnerTeam : loserTeam;
   const otherTeam: 'home' | 'away' = thisTeam === 'home' ? 'away' : 'home';
-  return {
+
+  // Per-position player counters are state-bag entries indexed by team +
+  // position (e.g., `home_player_3_wins`). The runtime maintains them as
+  // games are processed. Map "this/other side player" virtuals to the
+  // appropriate per-position name based on who played for each team this
+  // game.
+  const thisPosition =
+    thisTeam === 'home' ? ctx.homePosition : ctx.awayPosition;
+  const otherPosition =
+    otherTeam === 'home' ? ctx.homePosition : ctx.awayPosition;
+  const aliases: Record<string, string> = {
     this_side_wins: `${thisTeam}_wins`,
     other_side_wins: `${otherTeam}_wins`,
     this_side_points: `${thisTeam}_points`,
     other_side_points: `${otherTeam}_points`,
+    this_side_team_handicap: `${thisTeam}_team_handicap`,
+    other_side_team_handicap: `${otherTeam}_team_handicap`,
   };
+  if (typeof thisPosition === 'number') {
+    aliases.this_side_player_wins = `${thisTeam}_player_${thisPosition}_wins`;
+    aliases.this_side_player_points = `${thisTeam}_player_${thisPosition}_points`;
+  }
+  if (typeof otherPosition === 'number') {
+    aliases.other_side_player_wins = `${otherTeam}_player_${otherPosition}_wins`;
+    aliases.other_side_player_points = `${otherTeam}_player_${otherPosition}_points`;
+  }
+  return aliases;
 }
 
 function virtualCtxValues(ctx: FormulaContext): Record<string, number> {

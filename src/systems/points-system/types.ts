@@ -94,6 +94,15 @@ export interface ThresholdInputs {
   awayHandicapDiff: number;
   gameCount: number;
   prefs: Record<string, unknown>;
+  /**
+   * Sum of the home lineup's handicaps (including any team bonus the
+   * caller folded in). Written into the state bag at match start as
+   * `home_team_handicap` so allocator formulas can reference the team
+   * total. Optional — when absent the var defaults to 0.
+   */
+  homeTeamHandicap?: number;
+  /** Sum of the away lineup's handicaps. See `homeTeamHandicap`. */
+  awayTeamHandicap?: number;
 }
 
 // ============================================================================
@@ -337,6 +346,15 @@ export interface FormulaContext {
   readonly winnerHandicap?: number | null;
   /** Locked handicap of the player who lost THIS game. See `winnerHandicap`. */
   readonly loserHandicap?: number | null;
+  /**
+   * Lineup positions (1-5) of the home + away players who played THIS
+   * game. Used by `evaluate_expression` to resolve `this_side_player_wins`
+   * and `this_side_player_points` to the correct per-position state-bag
+   * entry. Optional — when absent the player-counter virtuals fall back
+   * to 0.
+   */
+  readonly homePosition?: number | null;
+  readonly awayPosition?: number | null;
 }
 
 /**

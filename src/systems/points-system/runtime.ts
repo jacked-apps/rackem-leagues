@@ -76,6 +76,9 @@ export interface RuntimeGameRecord {
   winnerPlayerHandicap?: number | null;
   /** Optional locked handicap of the player who lost this game. */
   loserPlayerHandicap?: number | null;
+  /** Lineup positions (1-5) of the home + away players who played this game. */
+  homePosition?: number | null;
+  awayPosition?: number | null;
 }
 
 /**
@@ -189,6 +192,10 @@ export function evaluatePointsSystem(
     // match start from Team Geometry's gameCount.
     games_played: 0,
     total_games: thresholdInputs.gameCount,
+    // Team handicap totals (sum of locked lineup handicaps + team bonus
+    // for home). Optional inputs — default to 0 when not provided.
+    home_team_handicap: thresholdInputs.homeTeamHandicap ?? 0,
+    away_team_handicap: thresholdInputs.awayTeamHandicap ?? 0,
   };
 
   // Re-arm bookkeeping: names of triggers that have already fired (drives the
@@ -237,6 +244,16 @@ export function evaluatePointsSystem(
     const winnerKey = `${game.winnerSide}_wins`;
     state[winnerKey] = ((state[winnerKey] as number) ?? 0) + 1;
 
+    // Per-position player wins: the winning team's player gets a win.
+    // Positions are optional on the record; skip silently when absent
+    // (older snapshots, synthetic test inputs).
+    const winnerPos =
+      game.winnerSide === 'home' ? game.homePosition : game.awayPosition;
+    if (typeof winnerPos === 'number') {
+      const playerWinsKey = `${game.winnerSide}_player_${winnerPos}_wins`;
+      state[playerWinsKey] = ((state[playerWinsKey] as number) ?? 0) + 1;
+    }
+
     // anytime triggers that must fire BEFORE the per-game allocator.
     fireAll(anytimeBefore, state, firedNames);
 
@@ -263,6 +280,8 @@ export function evaluatePointsSystem(
             loserCounterInput: game.loserCounterInput,
             winnerPlayerHandicap: game.winnerPlayerHandicap,
             loserPlayerHandicap: game.loserPlayerHandicap,
+            homePosition: game.homePosition,
+            awayPosition: game.awayPosition,
           },
           state,
         );
@@ -274,6 +293,19 @@ export function evaluatePointsSystem(
           ((state[winnerPointsKey] as number) ?? 0) + allocation.winnerContribution;
         state[loserPointsKey] =
           ((state[loserPointsKey] as number) ?? 0) + allocation.loserContribution;
+
+        // Per-position player points: each player gets credited the
+        // contribution their side received this game.
+        const loserPos =
+          game.winnerSide === 'home' ? game.awayPosition : game.homePosition;
+        if (typeof winnerPos === 'number') {
+          const key = `${game.winnerSide}_player_${winnerPos}_points`;
+          state[key] = ((state[key] as number) ?? 0) + allocation.winnerContribution;
+        }
+        if (typeof loserPos === 'number') {
+          const key = `${loserSide}_player_${loserPos}_points`;
+          state[key] = ((state[key] as number) ?? 0) + allocation.loserContribution;
+        }
       } catch (err) {
         // Never let an allocator failure escape. Log the row, the game
         // index, and the reason so the failure is diagnosable from app
