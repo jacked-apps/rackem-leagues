@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-06-02 (Archived ~63 completed/superseded brainstorm, plan & memory-bank docs to `docs/archive/` + `memory-bank/archive/` after a code+PR triage; active/back-burner/reference docs left in place.) Prior 2026-05-29: (Added onboarding cold-start cascade plan: `docs/plans/2026-05-29-001-feat-onboarding-cascade-plan.md` + indexed its origin brainstorm — team join link → claim → captain approve; builds on passwordless PR #159. Branch `docs/player-onboarding-cold-start-brainstorm`.)
+> **Last Updated**: 2026-06-05 (Added Facebook OAuth login alongside Google in `Login.tsx`/`Register.tsx` and shipped a public Privacy Policy at `/privacy` — `about/PrivacyPolicy.tsx` — required for Facebook app review. Branch `feat/fb-login`.) Prior 2026-06-02: (Archived ~63 completed/superseded brainstorm, plan & memory-bank docs to `docs/archive/` + `memory-bank/archive/` after a code+PR triage; active/back-burner/reference docs left in place.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -566,6 +566,8 @@ how to add a new test, demo recording, cleanup model).
 
 #### Static Pages
 - `about/About.tsx` - About page
+- `about/Pricing.tsx` - Pricing breakdown page
+- `about/PrivacyPolicy.tsx` - Public privacy policy at `/privacy` (required by Google/Facebook OAuth review)
 - `home/Home.tsx` - Landing/home page
 - `dashboard/Dashboard.tsx` - Main dashboard
 

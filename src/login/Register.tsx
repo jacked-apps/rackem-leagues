@@ -50,7 +50,9 @@ export const Register: React.FC = () => {
   const [message, setMessage] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [oauthLoading, setOauthLoading] = useState(false);
+  // Tracks which OAuth provider's button was clicked so only that button shows
+  // "Connecting..." while both stay disabled during the redirect handoff.
+  const [oauthLoading, setOauthLoading] = useState<null | 'google' | 'facebook'>(null);
 
   /**
    * Fetch placeholder data when claim param is present
@@ -113,7 +115,7 @@ export const Register: React.FC = () => {
   }, [claimId]);
 
   const handleGoogleSignup = async () => {
-    setOauthLoading(true);
+    setOauthLoading('google');
     setMessage('');
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -123,9 +125,25 @@ export const Register: React.FC = () => {
     });
     if (error) {
       setMessage(`Error: ${error.message}`);
-      setOauthLoading(false);
+      setOauthLoading(null);
     }
     // Note: On success, user is redirected to Google, so no need to handle success here
+  };
+
+  const handleFacebookSignup = async () => {
+    setOauthLoading('facebook');
+    setMessage('');
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'facebook',
+      options: {
+        redirectTo: `${window.location.origin}/`,
+      },
+    });
+    if (error) {
+      setMessage(`Error: ${error.message}`);
+      setOauthLoading(null);
+    }
+    // Note: On success, user is redirected to Facebook, so no need to handle success here
   };
 
   const handleRegister = async (e?: React.FormEvent) => {
@@ -463,7 +481,7 @@ export const Register: React.FC = () => {
             variant="outline"
             className="w-full"
             onClick={handleGoogleSignup}
-            disabled={oauthLoading}
+            disabled={!!oauthLoading}
           >
             <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
               <path
@@ -483,12 +501,30 @@ export const Register: React.FC = () => {
                 fill="#EA4335"
               />
             </svg>
-            {oauthLoading ? 'Connecting...' : 'Sign up with Google'}
+            {oauthLoading === 'google' ? 'Connecting...' : 'Sign up with Google'}
+          </Button>
+
+          <Button
+            variant="outline"
+            className="w-full mt-2"
+            onClick={handleFacebookSignup}
+            disabled={!!oauthLoading}
+          >
+            <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M24 12c0-6.627-5.373-12-12-12S0 5.373 0 12c0 5.99 4.388 10.954 10.125 11.854V15.47H7.078V12h3.047V9.356c0-3.007 1.792-4.668 4.533-4.668 1.312 0 2.686.234 2.686.234v2.953H15.83c-1.491 0-1.956.925-1.956 1.874V12h3.328l-.532 3.47h-2.796v8.385C19.612 22.954 24 17.99 24 12z"
+                fill="#1877F2"
+              />
+            </svg>
+            {oauthLoading === 'facebook' ? 'Connecting...' : 'Sign up with Facebook'}
           </Button>
 
           <CardFooter className="mt-4 text-sm flex justify-around w-full">
             <Link to="/login">Already have an account? Login</Link>
           </CardFooter>
+          <p className="mt-3 text-center text-xs text-muted-foreground">
+            By registering you agree to our <Link to="/privacy" className="underline">Privacy Policy</Link>.
+          </p>
         </>
       )}
     </LoginCard>
