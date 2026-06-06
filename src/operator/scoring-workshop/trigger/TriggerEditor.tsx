@@ -49,10 +49,13 @@ const TRIGGER_TYPES: readonly { value: TriggerType; label: string; hint: string 
   },
 ];
 
+// `manual` is a valid ReArm in the locked spec
+// (`docs/league-system/modules/points-system/trigger.md`) but the reset
+// mechanism that makes it different from `single_shot` doesn't exist
+// yet — re-add to the dropdown when that surface ships.
 const REARMS: readonly { value: ReArm; label: string; hint: string }[] = [
   { value: 'single_shot', label: 'Once per match', hint: 'Fires at most once.' },
   { value: 'periodic', label: 'Every time it holds', hint: 'May fire repeatedly while the condition holds.' },
-  { value: 'manual', label: 'Manual reset', hint: 'Treated like single-shot for now.' },
 ];
 
 export interface TriggerEditorProps {
