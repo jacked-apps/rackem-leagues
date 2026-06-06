@@ -5,6 +5,7 @@
  * - matches: Match status, lineup IDs, results
  * - match_lineups: Lineup selections, lock status
  * - match_games: Game results, confirmations, tiebreaker assignments
+ * - game_confirmations: Many-eyes witness records (every vouch + vacate markers)
  *
  * Used throughout the entire match lifecycle:
  * - Normal lineup selection
@@ -170,10 +171,24 @@ interface GameUpdateOptions {
   addToConfirmationQueue: (confirmation: ConfirmationQueueItem) => void;
   /** Current editing game (to suppress own vacate requests) */
   editingGame?: { gameNumber: number; currentWinnerName: string } | null;
+  /**
+   * Game number the viewer currently has the initiator (scoring) modal open
+   * for. When set, the realtime handler suppresses confirm-opponent queue
+   * entries for that game — the user's high-effort initiator submission will
+   * trigger Amendment D's race-handling (agree → strong confirmation; differ
+   * → auto-clear), so a stacked confirm modal would be both redundant and
+   * UX-broken. Phase 2 Amendment H.
+   */
+  scoringGame?: { gameNumber: number } | null;
   /** Auto-confirm setting. When on, this fast-path skips the modal and lets
    *  the state-derived scan in ScoreMatch perform the auto-confirm — keeping
    *  auto-confirm a single decision site (no duplicate write). */
   autoConfirm?: boolean;
+  /** "I'm not scoring" mode. When on, this fast-path suppresses every
+   *  confirm/vacate prompt (no modal, no auto-action) — the viewer opted out.
+   *  Mirrors the state-derived scan's guard so neither path surfaces a modal.
+   *  Peek-and-confirm still works (that's a deliberate tap, not this path). */
+  notScoring?: boolean;
 }
 
 interface UseMatchRealtimeOptions {
@@ -183,6 +198,8 @@ interface UseMatchRealtimeOptions {
   onLineupUpdate?: () => void;
   /** Callback to refetch games data */
   onGamesUpdate?: () => void;
+  /** Callback to refetch game_confirmations data (many-eyes Layer-2) */
+  onConfirmationsUpdate?: () => void;
   /** Additional options for game update handling (scoring page) */
   gameUpdateOptions?: GameUpdateOptions;
 }
@@ -190,10 +207,11 @@ interface UseMatchRealtimeOptions {
 /**
  * Subscribe to real-time updates for entire match
  *
- * Listens for INSERT/UPDATE/DELETE events on three tables:
+ * Listens for INSERT/UPDATE/DELETE events on four tables:
  * - matches: Match-level changes (status, results, lineup IDs)
  * - match_lineups: Lineup changes (player selections, lock status)
  * - match_games: Game changes (scores, confirmations, tiebreaker assignments)
+ * - game_confirmations: Many-eyes witness records (refetch trigger only)
  *
  * When updates occur, triggers appropriate TanStack Query refetch callbacks.
  * Optionally handles game confirmation logic for scoring page.
@@ -212,6 +230,7 @@ export function useMatchRealtime(
     onMatchUpdate,
     onLineupUpdate,
     onGamesUpdate,
+    onConfirmationsUpdate,
     gameUpdateOptions,
   } = options;
 
@@ -225,6 +244,7 @@ export function useMatchRealtime(
   const onMatchUpdateRef = useRef(onMatchUpdate);
   const onLineupUpdateRef = useRef(onLineupUpdate);
   const onGamesUpdateRef = useRef(onGamesUpdate);
+  const onConfirmationsUpdateRef = useRef(onConfirmationsUpdate);
   const gameUpdateOptionsRef = useRef(gameUpdateOptions);
 
   // Coarse connection status surfaced to the scoring UI. Starts optimistic
@@ -244,8 +264,9 @@ export function useMatchRealtime(
     onMatchUpdateRef.current = onMatchUpdate;
     onLineupUpdateRef.current = onLineupUpdate;
     onGamesUpdateRef.current = onGamesUpdate;
+    onConfirmationsUpdateRef.current = onConfirmationsUpdate;
     gameUpdateOptionsRef.current = gameUpdateOptions;
-  }, [onMatchUpdate, onLineupUpdate, onGamesUpdate, gameUpdateOptions]);
+  }, [onMatchUpdate, onLineupUpdate, onGamesUpdate, onConfirmationsUpdate, gameUpdateOptions]);
 
   useEffect(() => {
     if (!matchId) return;
@@ -322,10 +343,18 @@ export function useMatchRealtime(
               myVacateRequests,
               addToConfirmationQueue,
               editingGame = null,
+              scoringGame = null,
               autoConfirm = false,
+              notScoring = false,
             } = currentGameUpdateOptions;
 
             if (!match || !userTeamId) return;
+
+            // "I'm not scoring": suppress this fast-path entirely (both vacate
+            // and confirm prompts). Mirrors the scan's guard so an opted-out
+            // viewer never sees a modal from either source. The refetch above
+            // (onGamesUpdate) still ran, so the data stays current.
+            if (notScoring) return;
 
             const updatedGame = payload.new as MatchGame;
 
@@ -374,6 +403,18 @@ export function useMatchRealtime(
               const needMyConfirmation = (isHomeTeamScorer && !iAmHome) || (isAwayTeamScorer && iAmHome);
 
               if (needMyConfirmation) {
+                // Amendment H: suppress the confirm queue entry when the user
+                // has their initiator (scoring) modal open for this same game.
+                // Their submit will trigger Amendment D's race-detection
+                // (agree → silent strong confirmation; differ → auto-clear).
+                // Stacking a confirm-opponent modal on top of their open
+                // initiator would be both redundant and UX-broken.
+                if (
+                  scoringGame &&
+                  scoringGame.gameNumber === updatedGame.game_number
+                ) {
+                  return;
+                }
                 // Auto-confirm on: skip the modal here and let the state-derived
                 // scan in ScoreMatch perform the auto-confirm. Keeping auto-confirm
                 // a single decision site avoids this fast-path and the scan both
@@ -399,6 +440,23 @@ export function useMatchRealtime(
           }
         }
       )
+
+      // Watch game_confirmations table (many-eyes Layer-2 witness records).
+      // A simple refetch trigger — no confirmation-queue logic here; the
+      // per-person prompt + dissent flag derive from the refetched rows.
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'game_confirmations',
+          filter: `match_id=eq.${matchId}`,
+        },
+        (payload) => {
+          logger.debug('[useMatchRealtime] Confirmation update received', { eventType: payload.eventType });
+          onConfirmationsUpdateRef.current?.();
+        }
+      )
       .subscribe((status, err) => {
         logger.debug('[useMatchRealtime] Subscription status', { status, error: err?.message });
 
@@ -421,6 +479,7 @@ export function useMatchRealtime(
           onMatchUpdateRef.current?.();
           onLineupUpdateRef.current?.();
           onGamesUpdateRef.current?.();
+          onConfirmationsUpdateRef.current?.();
         }
       });
 
