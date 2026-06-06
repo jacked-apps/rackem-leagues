@@ -12,6 +12,7 @@
  * @see docs/plans/2026-06-04-001-feat-lo-match-review-correction-plan.md — Unit 6
  */
 
+import { PlayerNameLink } from '@/components/PlayerNameLink';
 import type { ConfirmerAudit, ConfirmerName, SideAudit } from '@/utils/match/confirmerAudit';
 
 export interface ConfirmerLineProps {
@@ -41,7 +42,11 @@ function SideColumn({ label, teamName, side }: { label: string; teamName: string
       {names.length > 0 ? (
         <ul className="mt-1 space-y-0.5">
           {names.map((c) => (
-            <li key={c.id}>{c.name}</li>
+            <li key={c.id}>
+              {/* Clickable for dispute adjudication: tap a confirmer to view their
+                  profile, message them, etc. (PlayerNameLink popover). */}
+              <PlayerNameLink playerId={c.id} playerName={c.name} />
+            </li>
           ))}
         </ul>
       ) : (

@@ -3,8 +3,15 @@
  * (Home/Away) with the team name and the full list of confirmer names per side.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+
+// PlayerNameLink pulls in member/auth/messaging hooks — stub it to plain text
+// so this panel test stays isolated to layout.
+vi.mock('@/components/PlayerNameLink', () => ({
+  PlayerNameLink: ({ playerName }: { playerName: string }) => <span>{playerName}</span>,
+}));
+
 import { ConfirmerLine } from '../ConfirmerLine';
 import type { ConfirmerAudit } from '@/utils/match/confirmerAudit';
 

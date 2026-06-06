@@ -62,6 +62,12 @@ vi.mock('@/api/mutations/loManualScoring', () => ({
   loFinalizeMatch: (...a: unknown[]) => loFinalizeMatch(...(a as [])),
 }));
 
+// Stub PlayerNameLink (used in the confirmer panel) — it pulls in member/auth
+// hooks this test doesn't mock; we only care about the correction flow here.
+vi.mock('@/components/PlayerNameLink', () => ({
+  PlayerNameLink: ({ playerName }: { playerName: string }) => <span>{playerName}</span>,
+}));
+
 // Stub the heavy ScoringDialog to a minimal confirm affordance.
 vi.mock('@/components/scoring/ScoringDialog', () => ({
   ScoringDialog: ({ open, onConfirm }: { open: boolean; onConfirm: () => void }) =>
