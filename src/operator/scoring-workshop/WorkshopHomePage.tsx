@@ -39,8 +39,15 @@ const ROOMS: readonly Room[] = [
     route: '/operator/scoring-workshop/per-game-allocator',
     status: 'live',
   },
+  {
+    key: 'trigger',
+    name: 'Trigger',
+    description:
+      'Build standalone trigger variations — match-start credits, mid-match bonuses, end-of-match awards.',
+    route: '/operator/scoring-workshop/trigger',
+    status: 'live',
+  },
   // Future rooms land here:
-  // { key: 'trigger', name: 'Trigger', ..., status: 'planned' },
   // { key: 'threshold', name: 'Threshold', ..., status: 'planned' },
   // { key: 'win-calculator', name: 'Win Calculator', ..., status: 'planned' },
   // { key: 'handicap-mechanism', name: 'Handicap Mechanism', ..., status: 'planned' },

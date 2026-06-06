@@ -108,7 +108,7 @@ Out of scope (each item belongs to a future room or future work):
 
 ## Implementation Units
 
-- [ ] **Unit 1: DB schema — table + seeded officials + tamper trigger**
+- [x] **Unit 1: DB schema — table + seeded officials + tamper trigger**
 
 **Goal:** Land the storage layer in one atomic migration. Table created, four officials seeded, tamper trigger installed.
 
@@ -136,7 +136,7 @@ Out of scope (each item belongs to a future room or future work):
 
 **Verification:** Migration applies cleanly; officials present.
 
-- [ ] **Unit 2: Loader — `loadTrigger(id)`**
+- [x] **Unit 2: Loader — `loadTrigger(id)`**
 
 **Goal:** Pure function `id → Trigger | null`, never throws. Validates via Unit 3's standalone `validateTrigger`.
 
@@ -158,7 +158,7 @@ Out of scope (each item belongs to a future room or future work):
 - Error path: Trigger references an unregistered `operationKind` in its action expression → null + console.warn.
 - Error path: Supabase throws → null + console.warn.
 
-- [ ] **Unit 3: Standalone `validateTrigger` extracted from `validatePointsSystem`**
+- [x] **Unit 3: Standalone `validateTrigger` extracted from `validatePointsSystem`**
 
 **Goal:** Public `validateTrigger(trigger)` validates a single trigger's shape without needing the full composition context. Used by the loader and by the save-time guard.
 
@@ -181,7 +181,7 @@ Out of scope (each item belongs to a future room or future work):
 - Error path: action.target outside `home_points`/`away_points` → throws ("v1 restriction").
 - Error path: action.value's expression references unregistered formula op → throws.
 
-- [ ] **Unit 4: Extract `ExpressionBuilder` from `FormulaBuilder`**
+- [x] **Unit 4: Extract `ExpressionBuilder` from `FormulaBuilder`**
 
 **Goal:** Pull the click-to-build expression UI out of the allocator's `FormulaBuilder` into a generic widget. Allocator's `FormulaBuilder` becomes a thin wrapper.
 
@@ -207,7 +207,7 @@ Out of scope (each item belongs to a future room or future work):
 - The existing `saveTimeGuard.test.ts` + the `applyTimePreview.test.ts` for the allocator continue to pass without modification — proving the refactor is behavior-preserving.
 - New small test confirming `ExpressionBuilder` renders + accepts tokens + emits onChange.
 
-- [ ] **Unit 5: Available data registry for triggers**
+- [x] **Unit 5: Available data registry for triggers**
 
 **Goal:** A new `availableData.ts` for the trigger room. Universal state-bag names with plain (non-perspective) labels.
 
@@ -226,7 +226,7 @@ Out of scope (each item belongs to a future room or future work):
 **Test scenarios:**
 - Snapshot-style: confirm the list has the expected entries and no composition-specific names.
 
-- [ ] **Unit 6: Workshop room UI — list + editor + save-time guard**
+- [x] **Unit 6: Workshop room UI — list + editor + save-time guard**
 
 **Goal:** The trigger room's user-facing surface. List page with Yours + Templates sections. Editor with all the sub-fields. Save runs the guard.
 
@@ -262,7 +262,7 @@ Out of scope (each item belongs to a future room or future work):
 - Save-time guard: rejects an action with target outside the allowed set.
 - Save-time guard: rejects an expression action that throws under the dry-run.
 
-- [ ] **Unit 7: TOC + implementation-status update**
+- [x] **Unit 7: TOC + implementation-status update**
 
 **Goal:** Update the project index. Note the second standalone work room.
 

@@ -80,6 +80,9 @@ const LeagueFinancesPage = lazy(() => import('../operator/LeagueFinancesPage'));
 const AllocatorRoomPage = lazy(
   () => import('../operator/scoring-workshop/per-game-allocator/AllocatorRoomPage'),
 );
+const TriggerRoomPage = lazy(
+  () => import('../operator/scoring-workshop/trigger/TriggerRoomPage'),
+);
 const WorkshopHomePage = lazy(
   () => import('../operator/scoring-workshop/WorkshopHomePage'),
 );
@@ -266,6 +269,7 @@ export const router = createBrowserRouter([
           { path: 'league/:leagueId/finances', element: withOperator(LeagueFinancesPage) },
           { path: 'operator/scoring-workshop', element: withOperator(WorkshopHomePage) },
           { path: 'operator/scoring-workshop/per-game-allocator', element: withOperator(AllocatorRoomPage) },
+          { path: 'operator/scoring-workshop/trigger', element: withOperator(TriggerRoomPage) },
           { path: 'league/:leagueId/settings', element: withOperator(LeagueSettings) },
           { path: 'league/:leagueId/create-season', element: withOperator(SeasonCreationWizard) },
           { path: 'operator/start-next-season/:leagueId', element: withOperator(NewSeasonFromPreviousPage) },
