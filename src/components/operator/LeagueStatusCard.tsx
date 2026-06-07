@@ -296,19 +296,14 @@ export const LeagueStatusCard: React.FC<LeagueStatusCardProps> = ({
         nextAction={nextAction}
       />
 
-      {/* Next Steps / Season Management */}
-      <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="font-semibold text-blue-900 mb-2">
-          {activeSeason ? 'Season Management' : 'Next Steps'}
-        </h3>
-        {activeSeason ? (
-          <ul className="list-disc list-inside text-blue-800 space-y-1">
-            <li>Enter scores after each week's matches</li>
-            <li>View standings and player statistics</li>
-            <li>Manage schedule changes and makeup matches</li>
-            <li>Prepare for playoffs when season ends</li>
-          </ul>
-        ) : (
+      {/* Next Steps — setup only. Once a season is in session there's nothing
+          the operator must do from here (scoring runs through the captains,
+          standings live on the player side, schedule/makeups happen in the
+          captains chat, playoffs are already configured), so no "season
+          management" to-do list is shown — just the status + progress above. */}
+      {!activeSeason && (
+        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h3 className="font-semibold text-blue-900 mb-2">Next Steps</h3>
           <ol className="list-decimal list-inside text-blue-800 space-y-1">
             {SETUP_STEP_LABELS.map((label, i) => {
               const done = setup.stepsDone[i];
@@ -330,8 +325,8 @@ export const LeagueStatusCard: React.FC<LeagueStatusCardProps> = ({
               );
             })}
           </ol>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
