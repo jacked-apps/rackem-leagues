@@ -236,6 +236,25 @@ export interface ThresholdRow {
 }
 
 /**
+ * How a workshop-authored threshold fans out into state-bag values at resolve
+ * time. Mirroring is not a home/away special case — it is one "author once,
+ * resolve under each (this_side, other_side) binding, write one key per
+ * instance" machine; the expansion set is the only thing that varies.
+ *
+ * - `single`      — one binding (no perspective) → one value. A side-less
+ *   milestone (e.g. `round(game_count * 0.75)`).
+ * - `home_away`   — bindings `{home, away}` → two values. The classic mirror.
+ * - `per_pairing` — one binding per locked-lineup pairing → one value per game
+ *   slot. The `(this_side, other_side)` pair supplies the two comps a 2D
+ *   per-pairing chart consumes; pairings are known at match start.
+ *
+ * Stored on the saved threshold row. Resolution fan-out + the per-pairing
+ * pairing feed are a future scoring-system-room concern; this room records the
+ * mode and validates the authored definition resolves for it.
+ */
+export type ThresholdExpansionMode = 'single' | 'home_away' | 'per_pairing';
+
+/**
  * Code-side registry entry describing a named Threshold operation. The
  * registry is the source of truth for what each `operationKind` consumes
  * and produces; threshold rows reference operations by name and the
