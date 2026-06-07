@@ -26,14 +26,7 @@ import * as React from 'react';
 import { useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardAction,
-  CardContent,
-} from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 
 export interface SectionCardProps {
   /** Section heading (left of the header row). */
@@ -69,31 +62,44 @@ export function SectionCard({
   const showBody = !collapsible || open;
 
   return (
-    <Card className={cn('mb-4 gap-2 py-3', className)}>
-      <CardHeader
-        className={cn('px-4', collapsible && 'cursor-pointer select-none')}
+    <Card className={cn('mb-4 gap-2 py-2', className)}>
+      {/* Slim flex header: chevron + (title over subtitle) on the left,
+          actions on the right vertically centered against the two-line block.
+          A plain flex (not shadcn's CardHeader grid) keeps it to two tight
+          lines instead of padding the row out. */}
+      <div
+        className={cn(
+          'flex items-center justify-between gap-2 px-4',
+          collapsible && 'cursor-pointer select-none',
+        )}
         onClick={collapsible ? () => setOpen((v) => !v) : undefined}
       >
-        <CardTitle className="flex items-center gap-2 text-lg">
+        <div className="flex min-w-0 items-center gap-2">
           {collapsible &&
             (open ? (
-              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
             ) : (
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
             ))}
-          {title}
-        </CardTitle>
-        {subtitle && <CardDescription>{subtitle}</CardDescription>}
+          <div className="min-w-0 leading-tight">
+            <div className="truncate text-base font-semibold text-foreground">
+              {title}
+            </div>
+            {subtitle && (
+              <div className="truncate text-xs text-muted-foreground">{subtitle}</div>
+            )}
+          </div>
+        </div>
         {actions && (
           // Stop clicks on the actions from toggling the collapse.
-          <CardAction
-            className="flex items-center gap-2"
+          <div
+            className="flex shrink-0 items-center gap-2"
             onClick={(e) => e.stopPropagation()}
           >
             {actions}
-          </CardAction>
+          </div>
         )}
-      </CardHeader>
+      </div>
       {showBody && <CardContent className="px-4">{children}</CardContent>}
     </Card>
   );
