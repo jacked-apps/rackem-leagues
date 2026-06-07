@@ -52,6 +52,36 @@ describe('ThresholdEditor', () => {
     expect(onSave).not.toHaveBeenCalled();
   });
 
+  it('edits an embedded chart cell and saves the tweaked rows (chart view)', async () => {
+    const onSave = vi.fn().mockResolvedValue(true);
+    const chartRow = makeRow({
+      expansion_mode: 'home_away',
+      definition: {
+        operationKind: 'chart_lookup',
+        operationArgs: {
+          output_field: 'result_1',
+          chart: {
+            chartType: 'team_points',
+            lookupMode: 'exact',
+            rows: [{ comp_1: 0, comp_2: null, result_1: 10, result_2: 9, result_3: 8 }],
+          },
+        },
+      },
+    });
+    render(<ThresholdEditor initial={chartRow} onSave={onSave} onCancel={() => {}} />);
+
+    // Team chart, one row → 4 numeric cells: comp_1, win(result_1), tie, lose.
+    const cells = screen.getAllByRole('spinbutton');
+    fireEvent.change(cells[1], { target: { value: '12' } }); // win column
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(onSave).toHaveBeenCalled());
+    const saved = onSave.mock.calls[0][0] as ThresholdRoomRow;
+    const chart = saved.definition.operationArgs.chart as { rows: Array<{ result_1: number }> };
+    expect(chart.rows[0].result_1).toBe(12);
+  });
+
   it('preserves the generic key while editing the display label', async () => {
     const onSave = vi.fn().mockResolvedValue(true);
     render(<ThresholdEditor initial={makeRow()} onSave={onSave} onCancel={() => {}} />);

@@ -46,18 +46,24 @@ export async function thresholdSaveGuard(
 ): Promise<GuardResult> {
   let baseArgs: Record<string, unknown> = definition.operationArgs;
 
-  // Chart-view: load the referenced chart so the dry-run resolves it the way
-  // the loader will at match time.
+  // Chart-view: resolve the same way the loader will at match time. A user-
+  // owned threshold embeds its chart's rows inline; an unembedded one references
+  // a chart by id and we load it.
   if (definition.operationKind === 'chart_lookup') {
-    const chartId = baseArgs.chart_id;
-    if (typeof chartId !== 'string' || chartId.length === 0) {
-      return { ok: false, reason: 'Pick a chart for this threshold.' };
+    const embedded = baseArgs.chart;
+    const hasEmbedded =
+      embedded && typeof embedded === 'object' && Array.isArray((embedded as { rows?: unknown }).rows);
+    if (!hasEmbedded) {
+      const chartId = baseArgs.chart_id;
+      if (typeof chartId !== 'string' || chartId.length === 0) {
+        return { ok: false, reason: 'Pick a chart for this threshold.' };
+      }
+      const chart = await fetchResolvedChart(chartId);
+      if (!chart) {
+        return { ok: false, reason: 'That chart could not be loaded.' };
+      }
+      baseArgs = { ...baseArgs, chart };
     }
-    const chart = await fetchResolvedChart(chartId);
-    if (!chart) {
-      return { ok: false, reason: 'That chart could not be loaded.' };
-    }
-    baseArgs = { ...baseArgs, chart };
   }
 
   const sides: Array<'home' | 'away' | undefined> =

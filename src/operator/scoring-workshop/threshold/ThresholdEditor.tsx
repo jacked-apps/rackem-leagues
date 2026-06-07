@@ -24,6 +24,7 @@ import { FormulaView } from './FormulaView';
 import { ChartView } from './ChartView';
 import { thresholdSaveGuard } from './saveTimeGuard';
 import type { ThresholdExpansionMode, Expression } from '@/systems/points-system/types';
+import type { ResolvedChart } from '@/systems/threshold-charts/lookupChartRows';
 import type { ThresholdDefinition, ThresholdRoomRow } from './useThresholdRoom';
 
 type LookupView = 'formula' | 'chart';
@@ -44,20 +45,25 @@ function initialFormula(row: ThresholdRoomRow): Expression {
   return { kind: 'const', value: 0 };
 }
 
-function initialChart(row: ThresholdRoomRow): { chartId: string | null; outputField: OutputField } {
+function initialChart(row: ThresholdRoomRow): {
+  chart: ResolvedChart | null;
+  outputField: OutputField;
+} {
   const def = row.definition;
   if (def.operationKind === 'chart_lookup') {
-    const chartId = def.operationArgs.chart_id;
+    const embedded = def.operationArgs.chart;
     const field = def.operationArgs.output_field;
+    const chart =
+      embedded && typeof embedded === 'object' && Array.isArray((embedded as { rows?: unknown }).rows)
+        ? (embedded as ResolvedChart)
+        : null;
     return {
-      chartId: typeof chartId === 'string' ? chartId : null,
+      chart,
       outputField:
-        field === 'result_1' || field === 'result_2' || field === 'result_3'
-          ? field
-          : 'result_1',
+        field === 'result_1' || field === 'result_2' || field === 'result_3' ? field : 'result_1',
     };
   }
-  return { chartId: null, outputField: 'result_1' };
+  return { chart: null, outputField: 'result_1' };
 }
 
 export interface ThresholdEditorProps {

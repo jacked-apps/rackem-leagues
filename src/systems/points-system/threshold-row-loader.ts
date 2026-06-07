@@ -174,9 +174,16 @@ async function enrichChartArgs(
   rowId: string,
 ): Promise<Record<string, unknown>> {
   if (operationKind !== 'chart_lookup') return operationArgs;
+  // User-owned thresholds embed their chart's rows inline (clone-to-own, like
+  // the allocator embeds its config) — pass them straight through.
+  const embedded = operationArgs.chart;
+  if (embedded && typeof embedded === 'object' && Array.isArray((embedded as { rows?: unknown }).rows)) {
+    return operationArgs;
+  }
+  // Otherwise the threshold references a shared chart by id — fetch + embed.
   const chartId = operationArgs.chart_id;
   if (typeof chartId !== 'string' || chartId.length === 0) {
-    throw new Error(`chart_lookup threshold on row ${rowId} is missing a string chart_id`);
+    throw new Error(`chart_lookup threshold on row ${rowId} has neither an embedded chart nor a chart_id`);
   }
   const chart = await fetchResolvedChart(chartId);
   if (!chart) {
