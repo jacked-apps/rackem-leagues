@@ -32,6 +32,9 @@ export const TeamsCard: React.FC<TeamsCardProps> = ({ leagueId }) => {
   const [loading, setLoading] = useState(true);
   const [isNavigating, setIsNavigating] = useState(false);
   const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null);
+  // Collapsed by default — the card stays a compact "Teams · N listed" header
+  // until the operator opens it, instead of dumping the whole roster inline.
+  const [collapsed, setCollapsed] = useState(true);
 
   const { context } = useFlowStageDetection(leagueId);
   const hasSeason = Boolean(context.seasonId);
@@ -76,10 +79,33 @@ export const TeamsCard: React.FC<TeamsCardProps> = ({ leagueId }) => {
     return phone;
   };
 
+  // The header doubles as the collapse toggle once teams exist. When there are
+  // none (or still loading), there's nothing to collapse, so the header is inert
+  // and the body always shows (loading hint / "add your first team" CTA).
+  const hasTeams = !loading && teams.length > 0;
+
   return (
     <div className="bg-card lg:rounded-xl shadow-sm p-6 mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-foreground">Teams</h2>
+        <button
+          type="button"
+          onClick={() => hasTeams && setCollapsed((c) => !c)}
+          className={`flex items-center gap-2 text-left ${hasTeams ? 'cursor-pointer' : 'cursor-default'}`}
+          aria-expanded={hasTeams ? !collapsed : undefined}
+        >
+          {hasTeams &&
+            (collapsed ? (
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            ) : (
+              <ChevronDown className="h-5 w-5 text-muted-foreground" />
+            ))}
+          <h2 className="text-xl font-semibold text-foreground">Teams</h2>
+          {hasTeams && (
+            <span className="text-sm font-normal text-muted-foreground">
+              · {teams.length} listed
+            </span>
+          )}
+        </button>
         <div className="flex items-center gap-2">
           <Button
             onClick={(e) => {
@@ -129,7 +155,7 @@ export const TeamsCard: React.FC<TeamsCardProps> = ({ leagueId }) => {
             )}
           </div>
         </div>
-      ) : (
+      ) : !collapsed ? (
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -214,7 +240,7 @@ export const TeamsCard: React.FC<TeamsCardProps> = ({ leagueId }) => {
             </tbody>
           </table>
         </div>
-      )}
+      ) : null}
     </div>
   );
 };
