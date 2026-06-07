@@ -1,20 +1,19 @@
 /**
- * @fileoverview Per-game confirmer line for the LO review surface.
+ * @fileoverview Per-game confirmer panel for the LO review surface.
  *
- * Renders the OFFICIAL confirmer for each side (from the `match_games`
- * `confirmed_by_*` columns) plus a tappable "+N others" peek that lists the extra
- * witnesses (name + team) from the many-eyes log. Pure presentation — it takes a
- * pre-built `ConfirmerAudit` (see `buildConfirmerAudit`) and the two team names.
+ * Two columns — Home and Away — each headed by the side + team name, listing the
+ * FULL names of everyone who confirmed that side's result (the official confirmer
+ * from the `match_games` columns plus any extra witnesses from the many-eyes log).
+ * Built for dispute adjudication, so it shows every name rather than a "+N" peek.
  *
- * A game with no log rows (a v1 LO-entered or pre-many-eyes game) simply shows
- * the official with no "+N others" chip.
+ * Pure presentation — it takes a pre-built `ConfirmerAudit` (full names already
+ * resolved via `fullNameTeamMap`) and the two team names.
  *
  * @see docs/plans/2026-06-04-001-feat-lo-match-review-correction-plan.md — Unit 6
  */
 
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
-import type { ConfirmerAudit, SideAudit } from '@/utils/match/confirmerAudit';
+import { PlayerNameLink } from '@/components/PlayerNameLink';
+import type { ConfirmerAudit, ConfirmerName, SideAudit } from '@/utils/match/confirmerAudit';
 
 export interface ConfirmerLineProps {
   audit: ConfirmerAudit;
@@ -22,61 +21,52 @@ export interface ConfirmerLineProps {
   awayTeamName: string;
 }
 
-/** One side's "Home: Player (Team)  [+N others]" row. */
-function SideRow({
-  sideLabel,
-  teamName,
-  side,
-}: {
-  sideLabel: string;
-  teamName: string;
-  side: SideAudit;
-}) {
-  const officialName = side.official?.name ?? 'Unconfirmed';
+/** Official confirmer first, then the extra witnesses — deduped, all names. */
+function confirmerList(side: SideAudit): ConfirmerName[] {
+  const list: ConfirmerName[] = [];
+  if (side.official) list.push(side.official);
+  for (const o of side.others) {
+    if (!list.some((c) => c.id === o.id)) list.push(o);
+  }
+  return list;
+}
+
+/** One side's column: "Home: Team" header + the full confirmer-name list. */
+function SideColumn({ label, teamName, side }: { label: string; teamName: string; side: SideAudit }) {
+  const names = confirmerList(side);
   return (
-    <div className="flex items-center gap-2 text-xs">
-      <span className="w-12 shrink-0 text-muted-foreground">{sideLabel}:</span>
-      <span className="font-medium">
-        {officialName} <span className="font-normal text-muted-foreground">({teamName})</span>
-      </span>
-      {side.others.length > 0 && (
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-5 px-1.5 text-xs text-muted-foreground"
-              data-testid="others-peek"
-            >
-              +{side.others.length} other{side.others.length === 1 ? '' : 's'}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-56 p-2" align="start">
-            <p className="mb-1 text-xs font-semibold text-muted-foreground">Also confirmed</p>
-            <ul className="space-y-1">
-              {side.others.map((o) => (
-                <li key={o.id} className="flex items-center justify-between text-xs">
-                  <span className="font-medium">{o.name}</span>
-                  {o.team && <span className="text-muted-foreground">{o.team}</span>}
-                </li>
-              ))}
-            </ul>
-          </PopoverContent>
-        </Popover>
+    <div className="text-xs">
+      <p className="font-semibold text-muted-foreground">
+        {label}: <span className="text-foreground">{teamName}</span>
+      </p>
+      {names.length > 0 ? (
+        <ul className="mt-1 space-y-0.5">
+          {names.map((c) => (
+            <li key={c.id}>
+              {/* Clickable for dispute adjudication: tap a confirmer to view their
+                  profile, message them, etc. (PlayerNameLink popover). */}
+              <PlayerNameLink playerId={c.id} playerName={c.name} />
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-1 italic text-muted-foreground">Unconfirmed</p>
       )}
     </div>
   );
 }
 
-/** The per-game confirmer audit: a "Confirmed by" label + a home + away row. */
+/** Confirmer panel: a "Confirmed by" label + the home/away two-column lists. */
 export function ConfirmerLine({ audit, homeTeamName, awayTeamName }: ConfirmerLineProps) {
   return (
-    <div className="space-y-0.5" data-testid="confirmer-line">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+    <div data-testid="confirmer-line">
+      <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
         Confirmed by
       </p>
-      <SideRow sideLabel="Home" teamName={homeTeamName} side={audit.home} />
-      <SideRow sideLabel="Away" teamName={awayTeamName} side={audit.away} />
+      <div className="grid grid-cols-2 gap-4">
+        <SideColumn label="Home" teamName={homeTeamName} side={audit.home} />
+        <SideColumn label="Away" teamName={awayTeamName} side={audit.away} />
+      </div>
     </div>
   );
 }
