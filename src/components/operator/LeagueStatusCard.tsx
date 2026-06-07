@@ -278,14 +278,21 @@ export const LeagueStatusCard: React.FC<LeagueStatusCardProps> = ({
     );
   }
 
-  // Section variant (for detail page)
+  // Section variant (for detail page). In session the card carries only the
+  // status + week progress, so it's slimmed down — less vertical padding, a
+  // smaller badge, a tighter header — while the setup view (with its Next
+  // Steps box) keeps the roomier spacing.
   return (
-    <div className="lg:col-span-2 bg-card lg:rounded-xl shadow-sm p-6">
-      <div className="flex items-center justify-between mb-4">
+    <div className={`bg-card lg:rounded-xl shadow-sm px-6 ${activeSeason ? 'py-3' : 'py-6'}`}>
+      <div className={`flex items-center justify-between ${activeSeason ? 'mb-2' : 'mb-4'}`}>
         <h2 className="text-xl font-semibold text-foreground">
           {activeSeason ? 'Season Status' : 'League Status'}
         </h2>
-        <span className={`px-4 py-2 ${statusBadge.classes} text-sm font-medium rounded-full`}>
+        <span
+          className={`${statusBadge.classes} font-medium rounded-full ${
+            activeSeason ? 'px-3 py-0.5 text-xs' : 'px-4 py-2 text-sm'
+          }`}
+        >
           {statusBadge.label}
         </span>
       </div>
