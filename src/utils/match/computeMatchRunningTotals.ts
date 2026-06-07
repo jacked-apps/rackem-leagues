@@ -56,6 +56,10 @@ export interface MinimalMatchGame {
   confirmed_by_home: string | null;
   /** Member ID of the away-team confirmer. `null` until away confirms. */
   confirmed_by_away: string | null;
+  /** Lineup position (1-5) of the home player who played this game. Used to look up locked handicaps. */
+  home_position?: number | null;
+  /** Lineup position (1-5) of the away player who played this game. */
+  away_position?: number | null;
 }
 
 export interface ComputeMatchRunningTotalsArgs {

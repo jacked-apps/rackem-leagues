@@ -21,6 +21,7 @@
  */
 
 import type { SystemOverrides } from './systemOverrides';
+import type { PerGameAllocator } from '@/systems/points-system/types';
 
 /**
  * Standings sort priority — subset of these keys, in priority order.
@@ -92,6 +93,31 @@ export interface ResolvedSystemConfig {
 
   /** League-level dials merged from leagues.system_overrides. */
   overrides: SystemOverrides;
+
+  /**
+   * FK pointer to a saved per-game allocator variation (Per-Game Allocator
+   * Room, Unit 5). Cascades through `resolved_league_preferences` from
+   * `preferences.per_game_allocator_id`. NULL means "no variation picked;
+   * use the prepackaged composition's allocator slot unchanged."
+   */
+  per_game_allocator_id: string | null;
+
+  /**
+   * Resolved per-game allocator variation, frozen at match-start.
+   *
+   * Populated by the snapshot writer (`populateMatchSnapshotIfNeeded`) when
+   * `per_game_allocator_id` is non-null: the writer calls the loader and
+   * embeds the returned object here. Live scoring reads this field directly
+   * — it does NOT re-fetch the row at per-game time, so editing the saved
+   * variation after a match starts cannot retroactively change that match's
+   * scoring (R9 of the room plan).
+   *
+   * `undefined` on resolved-from-live-prefs reads (the snapshot-write code
+   * path is the only place this gets populated). `null` when the FK was
+   * set but the loader failed (logged warn) — readers fall back to the
+   * prepackaged allocator, identical to the no-FK behavior.
+   */
+  per_game_allocator?: PerGameAllocator | null;
 
   /** ISO-8601 timestamp when this snapshot was written. */
   snapshot_at: string;

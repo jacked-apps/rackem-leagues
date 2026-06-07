@@ -62,6 +62,12 @@ vi.mock('@/api/mutations/loManualScoring', () => ({
   loFinalizeMatch: (...a: unknown[]) => loFinalizeMatch(...(a as [])),
 }));
 
+// Stub PlayerNameLink (used in the confirmer panel) — it pulls in member/auth
+// hooks this test doesn't mock; we only care about the correction flow here.
+vi.mock('@/components/PlayerNameLink', () => ({
+  PlayerNameLink: ({ playerName }: { playerName: string }) => <span>{playerName}</span>,
+}));
+
 // Stub the heavy ScoringDialog to a minimal confirm affordance.
 vi.mock('@/components/scoring/ScoringDialog', () => ({
   ScoringDialog: ({ open, onConfirm }: { open: boolean; onConfirm: () => void }) =>
@@ -112,6 +118,7 @@ describe('ReviewPhase correction flow', () => {
 
   it('vacate → reopen once → vacated row + banner appear', async () => {
     renderReview();
+    fireEvent.click(screen.getAllByTestId('game-trigger')[0]); // expand game 1
     fireEvent.click(screen.getAllByTestId('vacate')[0]);
     fireEvent.click(screen.getByTestId('vacate-confirm'));
 
@@ -123,6 +130,7 @@ describe('ReviewPhase correction flow', () => {
 
   it('re-finalize is disabled while a game is vacated-pending', async () => {
     renderReview();
+    fireEvent.click(screen.getAllByTestId('game-trigger')[0]); // expand game 1
     fireEvent.click(screen.getAllByTestId('vacate')[0]);
     fireEvent.click(screen.getByTestId('vacate-confirm'));
 
@@ -132,10 +140,12 @@ describe('ReviewPhase correction flow', () => {
 
   it('vacating two games reopens exactly once', async () => {
     renderReview();
+    fireEvent.click(screen.getAllByTestId('game-trigger')[0]); // expand game 1
     fireEvent.click(screen.getAllByTestId('vacate')[0]);
     fireEvent.click(screen.getByTestId('vacate-confirm'));
     await waitFor(() => expect(screen.getByTestId('vacated-row')).toBeInTheDocument());
 
+    fireEvent.click(screen.getAllByTestId('game-trigger')[1]); // expand game 2
     fireEvent.click(screen.getByTestId('vacate'));
     fireEvent.click(screen.getByTestId('vacate-confirm'));
     await waitFor(() => expect(screen.getAllByTestId('vacated-row')).toHaveLength(2));
@@ -146,6 +156,7 @@ describe('ReviewPhase correction flow', () => {
 
   it('undo restores the game and leaves the match reopened', async () => {
     renderReview();
+    fireEvent.click(screen.getAllByTestId('game-trigger')[0]); // expand game 1
     fireEvent.click(screen.getAllByTestId('vacate')[0]);
     fireEvent.click(screen.getByTestId('vacate-confirm'));
     await waitFor(() => expect(screen.getByTestId('vacated-row')).toBeInTheDocument());
@@ -159,6 +170,7 @@ describe('ReviewPhase correction flow', () => {
 
   it('re-score a vacated game calls loCorrectGame and clears the vacated state', async () => {
     renderReview();
+    fireEvent.click(screen.getAllByTestId('game-trigger')[0]); // expand game 1
     fireEvent.click(screen.getAllByTestId('vacate')[0]);
     fireEvent.click(screen.getByTestId('vacate-confirm'));
     await waitFor(() => expect(screen.getByTestId('vacated-row')).toBeInTheDocument());

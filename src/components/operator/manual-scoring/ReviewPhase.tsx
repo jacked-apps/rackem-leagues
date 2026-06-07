@@ -19,6 +19,7 @@ import { useMatchGames, useTeamDetails, useMatchWithLeagueSettings } from '@/api
 import { useGameConfirmations } from '@/api/hooks/useGameConfirmations';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Accordion } from '@/components/ui/accordion';
 import { ScoringDialog } from '@/components/scoring/ScoringDialog';
 import {
   loReopenMatch,
@@ -34,6 +35,7 @@ import { regularGames, winnerWasScheduledBreaker, type EntryGame } from './entry
 import {
   achievementChips,
   buildNameTeamMap,
+  fullNameTeamMap,
   confirmationsForGame,
   gameToSnapshot,
   type ConfirmationRow,
@@ -128,6 +130,9 @@ export function ReviewPhase(props: ReviewPhaseProps) {
       ),
     [homeTeam.data, awayTeam.data, homeTeamName, awayTeamName]
   );
+  // Confirmer audit shows FULL names (dispute adjudication wants real identities,
+  // not nicknames), so it reads a full-name projection of the roster map.
+  const confirmerNameMap = useMemo(() => fullNameTeamMap(nameTeamMap), [nameTeamMap]);
   const games = useMemo(
     () => regularGames((gamesQuery.data as unknown as ReviewGame[]) ?? []) as ReviewGame[],
     [gamesQuery.data]
@@ -138,6 +143,9 @@ export function ReviewPhase(props: ReviewPhaseProps) {
   );
 
   const nameOf = (id: string | null) => (id ? nameTeamMap.get(id)?.name ?? 'Player' : 'Player');
+  // Matchup uses FULL names (clearer for the LO); the winner stays nickname.
+  const fullNameOf = (id: string | null) =>
+    id ? nameTeamMap.get(id)?.fullName ?? 'Player' : 'Player';
   const hasVacatedPending = useMemo(() => games.some((g) => !g.winner_player_id), [games]);
 
   const refresh = () => {
@@ -278,33 +286,45 @@ export function ReviewPhase(props: ReviewPhaseProps) {
         </Card>
       )}
 
-      {games.map((game) => {
-        const vacated = game.id in vacatedSnapshots;
-        const audit = buildConfirmerAudit(
-          game,
-          confirmationsForGame(confirmations, game.id),
-          nameTeamMap,
-          loMemberId
-        );
-        return (
-          <ReviewGameRow
-            key={game.id}
-            gameNumber={game.game_number}
-            homeName={nameOf(game.home_player_id)}
-            awayName={nameOf(game.away_player_id)}
-            winnerName={game.winner_player_id ? nameOf(game.winner_player_id) : null}
-            chips={achievementChips(game)}
-            audit={audit}
-            homeTeamName={homeTeamName}
-            awayTeamName={awayTeamName}
-            vacated={vacated}
-            onVacate={() => setVacateTarget({ gameId: game.id, gameNumber: game.game_number })}
-            onUndo={() => handleUndo(game.id)}
-            onPickHome={() => openRescore(game, true)}
-            onPickAway={() => openRescore(game, false)}
-          />
-        );
-      })}
+      <Accordion type="single" collapsible className="space-y-2">
+        {games.map((game) => {
+          const vacated = game.id in vacatedSnapshots;
+          const audit = buildConfirmerAudit(
+            game,
+            confirmationsForGame(confirmations, game.id),
+            confirmerNameMap,
+            loMemberId
+          );
+          return (
+            <ReviewGameRow
+              key={game.id}
+              value={game.id}
+              gameNumber={game.game_number}
+              homeName={fullNameOf(game.home_player_id)}
+              awayName={fullNameOf(game.away_player_id)}
+              homePlayerId={game.home_player_id}
+              awayPlayerId={game.away_player_id}
+              winnerName={game.winner_player_id ? nameOf(game.winner_player_id) : null}
+              winnerSide={
+                game.winner_player_id
+                  ? game.winner_player_id === game.home_player_id
+                    ? 'home'
+                    : 'away'
+                  : null
+              }
+              chips={achievementChips(game)}
+              audit={audit}
+              homeTeamName={homeTeamName}
+              awayTeamName={awayTeamName}
+              vacated={vacated}
+              onVacate={() => setVacateTarget({ gameId: game.id, gameNumber: game.game_number })}
+              onUndo={() => handleUndo(game.id)}
+              onPickHome={() => openRescore(game, true)}
+              onPickAway={() => openRescore(game, false)}
+            />
+          );
+        })}
+      </Accordion>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 

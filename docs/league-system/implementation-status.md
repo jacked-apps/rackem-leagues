@@ -359,6 +359,29 @@ The Step-2 refactor lifts Pairings Generator out as a first-class Module with it
 
 _Extracted 2026-05-24 from the locked design doc [modules/points-system/README.md](modules/points-system/README.md)._
 
+### Per-Game Allocator Workshop room — BUILT + LIVE (2026-06-04)
+
+_First realized room of the Scoring System Workshop building (foundational framing in [docs/brainstorms/2026-06-04-scoring-system-workshop-building-requirements.md](../../brainstorms/2026-06-04-scoring-system-workshop-building-requirements.md); 9-unit plan in [docs/plans/2026-06-04-002-feat-per-game-allocator-room-plan.md](../../plans/2026-06-04-002-feat-per-game-allocator-room-plan.md))._
+
+The per-game allocator is now authorable through a UI. A user picks one of their saved variations (or a read-only official) for a league; on the next match, the live scoring path swaps the variation into the prepackaged composition's allocator slot. The historical replay is stable (snapshot embeds the resolved object, not the FK). The two ground rules (lineup/scoring pages render; W/L always recorded) are guarded by four layers between a saved row and the runtime:
+
+1. **Save-time guard** — `src/operator/scoring-workshop/per-game-allocator/saveTimeGuard.ts` runs `validatePerGameAllocator` + a synthetic 5-game dry-run through `evaluatePointsSystem` inside the editor.
+2. **Read-time validator** — `src/systems/points-system/per-game-allocator-loader.ts` re-runs the validator on every load from DB; returns `null` + warn on rejection.
+3. **Snapshot freeze** — `src/api/queries/matches.ts` `populateMatchSnapshotIfNeeded` calls the loader at match-start and embeds the resolved object in `system_snapshot.per_game_allocator`.
+4. **Runtime backstop** — `src/systems/points-system/runtime.ts` wraps the `evaluateAllocator` call in try/catch mirroring `fireTrigger`; W/L tick already happened above the catch.
+
+R11 (state-bag-read from the allocator) is honored by the new `read_state_var` recipe and surfaced as a first-class side-kind choice in the editor (peer of fixed / range / formula).
+
+#### Source of truth (new files added 2026-06-04)
+
+- DB: `supabase/migrations/20260604000000_per_game_allocator_room.sql` — `per_game_allocators` table + tamper trigger + `preferences.per_game_allocator_id` FK + resolved view extension + 4 seeded officials.
+- Loader: `src/systems/points-system/per-game-allocator-loader.ts`.
+- New recipe: `src/systems/points-system/allocator-formula-operations/read-state-var.ts`.
+- Workshop UI: `src/operator/scoring-workshop/per-game-allocator/` — `AllocatorRoomPage.tsx`, `AllocatorList.tsx`, `AllocatorEditor.tsx`, `SideEditor.tsx`, `useAllocatorRoom.ts`, `saveTimeGuard.ts`.
+- League pick: `AllocatorPicker.tsx` + `applyTimePreview.ts` (mounted on `LeagueSettings.tsx`).
+- Live-path swap point: `src/systems/points-system/match-adapter.ts` `buildComposition`'s `perGameAllocatorOverride` parameter, threaded from `src/utils/match/engineRunningTotals.ts` ← `src/api/queries/matches.ts` `updateMatchRunningTotals`.
+- Parity swap: `src/systems/buildSystemFromPreferences.ts` `pickPointsSystem` (preset fast path skipped when override is present).
+
 ### Our coined calculator implementations (current code)
 
 | Calculator (in code) | What it actually contains | Used by Scoring System |
@@ -386,10 +409,10 @@ The DB has a `points_system` column (`differential | bca_tiered | per_game | man
 
 ### Inline status & code refs (borderline pass)
 
-- Per-game allocator `formula` value-shape: not yet supported in code (the calculator interface would need a `formula` kind). 17-Point depends on it; no shipping Scoring System uses it.
-- Trigger sub-mechanism: currently bundled inside the `accumulate_with_milestone_jumps` calculator.
+- ~~Per-game allocator `formula` value-shape: not yet supported in code~~. **Updated 2026-06-04**: shipped in code via the new Points System engine (`evaluateAllocator` + `allocator-formula-registry`) and exposed via the Per-Game Allocator Workshop room. Three registered formula recipes (`add_complement_of_other_side`, `state_diff_times_constant`, `read_state_var`) cover the 17-Point case, behind-boost handicap, and R11 direct state-bag reads. 17-Point is selectable today via a custom variation pointed at by `preferences.per_game_allocator_id`.
+- Trigger sub-mechanism: currently bundled inside the `accumulate_with_milestone_jumps` calculator. **Future "trigger room"** of the workshop will expose this independently.
 - Tie-band rule: enforced in `src/systems/calculators/linear_above_threshold.ts`, fixed in code (not configurable).
-- Calculator registry `src/systems/calculators/index.ts` supports `registerCalculator`; the gap for LO-customizable allocations is the LO-facing UI.
+- ~~Calculator registry … the gap for LO-customizable allocations is the LO-facing UI~~. **Updated 2026-06-04**: gap closed for the per-game allocator slot specifically. Other slots (triggers, thresholds, win calc) follow the same pattern in future rooms.
 
 ## modules/points-system/one-point-scoring.md
 
