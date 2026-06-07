@@ -81,10 +81,35 @@ describe('threshold officials — real seeded templates', () => {
     }
   });
 
-  it('the 3v3 finish line resolves to 10 at handicap gap 0 (faithful to the chart)', async () => {
+  it('the 3v3 finish line resolves correctly across many handicap gaps (not just one)', async () => {
     const rows = await officials();
     const threeV3 = rows.find((r) => r.name === 'threshold_official_3v3_finish')!;
-    expect(resolve(threeV3)).toBe(10);
+    const built = buildThresholdRow({
+      name: threeV3.name,
+      operationKind: threeV3.definition.operationKind,
+      operationArgs: threeV3.definition.operationArgs,
+    });
+    const atGap = (diff: number) =>
+      resolveThreshold(built, { ...inputs, homeHandicapDiff: diff });
+    // Faithful to the seeded chart across its range.
+    expect(atGap(-6)).toBe(7);
+    expect(atGap(-3)).toBe(8);
+    expect(atGap(0)).toBe(10);
+    expect(atGap(3)).toBe(11);
+    expect(atGap(6)).toBe(13);
+    expect(atGap(12)).toBe(16);
+  });
+
+  it('the home_away mirror reads the away side at the away gap', async () => {
+    const rows = await officials();
+    const threeV3 = rows.find((r) => r.name === 'threshold_official_3v3_finish')!;
+    // The fan-out binds side=away; the away binding reads awayHandicapDiff.
+    const awayRow = buildThresholdRow({
+      name: threeV3.name,
+      operationKind: threeV3.definition.operationKind,
+      operationArgs: { ...threeV3.definition.operationArgs, side: 'away' },
+    });
+    expect(resolveThreshold(awayRow, { ...inputs, awayHandicapDiff: 6 })).toBe(13);
   });
 
   it('the empty starter resolves to 0', async () => {
