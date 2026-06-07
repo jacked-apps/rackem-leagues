@@ -15,6 +15,7 @@
 
 import { supabase } from '@/supabaseClient';
 import { getMatchupTable } from './matchupTables';
+import { createByeTeam } from '@/api/mutations/teams';
 import { logger } from '@/utils/logger';
 import type {
   MatchInsertData,
@@ -164,9 +165,10 @@ function generateWeekMatches(
       continue;
     }
 
-    // Bye teams are now real `teams` rows (status='bye') created upstream
-    // by ScheduleSetup.tsx via createByeTeam(). Both home_team_id and
-    // away_team_id are always real UUIDs — no NULLs in the matches table.
+    // Bye teams are real `teams` rows (status='bye') — the 'BYE' position
+    // sentinel is materialized into one in generateSchedule (Step 1.5) before
+    // we get here, so home_team_id / away_team_id are always real UUIDs (no
+    // NULLs, no 'BYE' literal in the matches table).
     matches.push({
       season_id: seasonId,
       season_week_id: seasonWeekId,
@@ -384,6 +386,55 @@ export async function generateSchedule({
       };
     }
 
+    // Step 1.5: Materialize the bye placeholder into a real teams row.
+    //
+    // Odd team counts carry a sentinel position with id 'BYE' (appended by the
+    // matchups wizard / ScheduleSetup). The matches table's home_team_id /
+    // away_team_id columns are UUIDs, so the sentinel MUST become a real
+    // status='bye' team row before we build matches — otherwise the insert
+    // fails with `invalid input syntax for uuid: "BYE"`.
+    //
+    // This lives inside the generator (not the UI) on purpose: previously each
+    // UI did the swap itself and the v2 matchups wizard omitted it, which broke
+    // schedule generation for every odd-numbered league. Doing it here means no
+    // caller can forget it. (Callers that already swapped — old ScheduleSetup —
+    // pass no 'BYE' sentinel, so this is a no-op for them.)
+    let teamsForGeneration = teams;
+    const byePlaceholder = teams.find((t) => t.id === 'BYE');
+    if (byePlaceholder) {
+      // Bye rows need a league_id + roster_size. All real teams in a season
+      // share both, so read them from any existing non-bye team for this season.
+      const { data: realTeam, error: realTeamError } = await supabase
+        .from('teams')
+        .select('league_id, roster_size')
+        .eq('season_id', seasonId)
+        .neq('status', 'bye')
+        .limit(1)
+        .maybeSingle();
+
+      if (realTeamError || !realTeam) {
+        return {
+          success: false,
+          matchesCreated: 0,
+          error:
+            realTeamError?.message ??
+            'Cannot create bye team: no real teams found for this season',
+        };
+      }
+
+      const byeTeam = await createByeTeam({
+        seasonId,
+        leagueId: realTeam.league_id,
+        rosterSize: realTeam.roster_size,
+      });
+
+      // Swap the placeholder's id for the real bye team's UUID; keep
+      // schedule_position so the matchup table still places it correctly.
+      teamsForGeneration = teams.map((t) =>
+        t.id === 'BYE' ? { ...t, id: byeTeam.id } : t,
+      );
+    }
+
     // Step 2: Fetch regular season weeks
     const { weeks: seasonWeeks, error: weeksError } = await fetchSeasonWeeks(seasonId);
     if (weeksError || !seasonWeeks) {
@@ -404,8 +455,8 @@ export async function generateSchedule({
       };
     }
 
-    // Step 4: Build team position lookup map
-    const teamsByPosition = buildTeamPositionMap(teams);
+    // Step 4: Build team position lookup map (bye sentinel now a real UUID)
+    const teamsByPosition = buildTeamPositionMap(teamsForGeneration);
 
     // Step 5: Generate all regular season match records
     const regularMatches = generateAllMatches(
