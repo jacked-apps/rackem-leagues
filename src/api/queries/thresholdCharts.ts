@@ -29,6 +29,35 @@ import type {
   ResolvedChart,
 } from '@/systems/threshold-charts/lookupChartRows';
 
+/** A chart the threshold chart-view can point at (id + display + type). */
+export interface SelectableChart {
+  readonly id: string;
+  readonly name: string;
+  readonly chartType: ChartType;
+}
+
+/**
+ * List the charts a threshold can reference. v1 surfaces the global template
+ * charts (read-only); customizing a chart's numbers is coupled to chart
+ * ownership/league-binding and lands with that work.
+ */
+export async function listSelectableCharts(): Promise<SelectableChart[]> {
+  const { data, error } = await supabase
+    .from('threshold_charts')
+    .select('id, name, chart_type')
+    .eq('entity_type', 'global')
+    .order('name');
+  if (error || !data) {
+    if (error) console.warn(`[listSelectableCharts] supabase error: ${error.message}`);
+    return [];
+  }
+  return (data as Array<{ id: string; name: string; chart_type: string }>).map((r) => ({
+    id: r.id,
+    name: r.name,
+    chartType: r.chart_type as ChartType,
+  }));
+}
+
 const CHART_TYPES: readonly ChartType[] = [
   'team_points',
   'team_percentage',

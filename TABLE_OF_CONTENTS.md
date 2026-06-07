@@ -643,7 +643,10 @@ The workshop building. One sub-folder per module room. Each room owns a list pag
 - `trigger/__tests__/saveTimeGuard.test.ts` - 9 tests: accepts the four seeded official patterns; rejects empty name / out-of-whitelist target.
 - `threshold/ThresholdRoomPage.tsx` - **Threshold workshop** page container (`/operator/scoring-workshop/threshold`). Third standalone module workshop. List ↔ editor.
 - `threshold/ThresholdList.tsx` - Yours + Templates sections (clone / edit / delete); shows the display `label`.
-- `threshold/ThresholdEditor.tsx` - name (label) + description + expansion-mode selector (single / home & away) + formula view via the shared `ExpressionBuilder`; emits an `evaluate_expression` definition. (Chart view + save-time guard land with the chart editor.)
+- `threshold/ThresholdEditor.tsx` - editor shell: name (label) + description + expansion-mode selector (single / home & away / per_pairing for race) + a Formula|Chart view toggle; runs `thresholdSaveGuard` (dry-run) before persisting.
+- `threshold/FormulaView.tsx` - formula sub-view: builds the number via the shared `ExpressionBuilder` over threshold virtuals; emits an `evaluate_expression` definition.
+- `threshold/ChartView.tsx` - chart sub-view: point the threshold at an existing chart + output column (win/tie/lose, or player-1/player-2 for race); emits a `chart_lookup` definition. (Editing chart numbers awaits the chart-ownership/league-binding decision.)
+- `threshold/saveTimeGuard.ts` - `thresholdSaveGuard(def, expansion)`: validates + dry-runs the definition through the real resolver (loads the chart for chart_lookup; runs both bindings for home_away). Test: `__tests__/saveTimeGuard.test.ts` (6 cases).
 - `threshold/availableData.ts` - Threshold formula virtuals for `ExpressionBuilder` (`this_side`/`other_side` handicap_diff / team_handicap / rating_sum, game_count) + `thresholdLabelForVar`.
 - `threshold/useThresholdRoom.ts` - Data hook (list officials + own, clone, upsert, remove) against `thresholds`; `generateThresholdKey()` mints the generic resolvable key.
 - `threshold/__tests__/ThresholdEditor.test.tsx` - 3 tests: emits evaluate_expression definition on save; blocks empty name; preserves the generic key while relabeling.

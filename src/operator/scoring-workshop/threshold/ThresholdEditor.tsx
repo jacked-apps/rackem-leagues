@@ -1,22 +1,15 @@
 /**
- * @fileoverview Editor for a Threshold module (formula view).
+ * @fileoverview Editor shell for a Threshold module.
  *
- * A threshold is ONE resolver: `home + away → one number`, written to the
- * state bag. The LO sets:
- *   - a display **label** + description (the generic resolvable key stays
- *     fixed underneath — see `useThresholdRoom.generateThresholdKey`);
- *   - an **expansion mode** — how the value fans out (a single side-less
- *     value, or a home/away mirror authored once from the neutral
- *     `this_side`/`other_side` perspective);
- *   - the **formula** (this view) that computes the number, built with the
- *     shared `ExpressionBuilder` over the threshold virtuals.
- *
- * The chart view (a lookup table instead of a formula) is the other half of
- * the lookup-side fork and lands with the chart editor; this editor handles
- * formula-defined thresholds.
+ * A threshold is ONE resolver: `home + away → one number`. The LO sets a
+ * display label + description (the generic resolvable key stays fixed
+ * underneath), an expansion mode (how the value fans out), and the lookup —
+ * a **formula** or a **chart** (the two interchangeable authoring views). On
+ * save the active view's definition is dry-run through the real resolver
+ * (`saveTimeGuard`) before it persists.
  */
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,37 +20,44 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select';
-import {
-  ExpressionBuilder,
-} from '../_shared/ExpressionBuilder';
-import {
-  expressionToTokens,
-  tokensToExpression,
-  type FormulaToken,
-} from '../per-game-allocator/formulaTokens';
-import { THRESHOLD_AVAILABLE_DATA, thresholdLabelForVar } from './availableData';
+import { FormulaView } from './FormulaView';
+import { ChartView } from './ChartView';
+import { thresholdSaveGuard } from './saveTimeGuard';
 import type { ThresholdExpansionMode, Expression } from '@/systems/points-system/types';
-import type { ThresholdRoomRow } from './useThresholdRoom';
+import type { ThresholdDefinition, ThresholdRoomRow } from './useThresholdRoom';
 
-/** Expansion modes the FORMULA view supports (per_pairing is chart-only). */
-const FORMULA_EXPANSION_MODES: ReadonlyArray<{
-  readonly value: ThresholdExpansionMode;
-  readonly label: string;
-}> = [
-  { value: 'single', label: 'One value (side-less)' },
-  { value: 'home_away', label: 'Home & away (mirrored)' },
-];
+type LookupView = 'formula' | 'chart';
+type OutputField = 'result_1' | 'result_2' | 'result_3';
 
-/** Pull the editable formula expression out of a row's definition. */
-function initialExpression(row: ThresholdRoomRow): Expression {
+const EXPANSION_LABELS: Record<ThresholdExpansionMode, string> = {
+  single: 'One value (side-less)',
+  home_away: 'Home & away (mirrored)',
+  per_pairing: 'Per pairing (race charts)',
+};
+
+function initialFormula(row: ThresholdRoomRow): Expression {
   const def = row.definition;
   if (def.operationKind === 'evaluate_expression') {
     const expr = def.operationArgs.expression;
-    if (expr && typeof expr === 'object' && 'kind' in (expr as object)) {
-      return expr as Expression;
-    }
+    if (expr && typeof expr === 'object' && 'kind' in (expr as object)) return expr as Expression;
   }
   return { kind: 'const', value: 0 };
+}
+
+function initialChart(row: ThresholdRoomRow): { chartId: string | null; outputField: OutputField } {
+  const def = row.definition;
+  if (def.operationKind === 'chart_lookup') {
+    const chartId = def.operationArgs.chart_id;
+    const field = def.operationArgs.output_field;
+    return {
+      chartId: typeof chartId === 'string' ? chartId : null,
+      outputField:
+        field === 'result_1' || field === 'result_2' || field === 'result_3'
+          ? field
+          : 'result_1',
+    };
+  }
+  return { chartId: null, outputField: 'result_1' };
 }
 
 export interface ThresholdEditorProps {
@@ -69,59 +69,64 @@ export interface ThresholdEditorProps {
 export function ThresholdEditor({ initial, onSave, onCancel }: ThresholdEditorProps) {
   const [label, setLabel] = useState(initial.label);
   const [description, setDescription] = useState(initial.description ?? '');
-  const [expansionMode, setExpansionMode] = useState<ThresholdExpansionMode>(
-    initial.expansion_mode === 'per_pairing' ? 'home_away' : initial.expansion_mode,
+  const [view, setView] = useState<LookupView>(
+    initial.definition.operationKind === 'chart_lookup' ? 'chart' : 'formula',
   );
-  const [tokens, setTokens] = useState<FormulaToken[]>(() =>
-    expressionToTokens(initialExpression(initial)),
-  );
-  const [parseError, setParseError] = useState<string | null>(null);
+  const [expansionMode, setExpansionMode] = useState<ThresholdExpansionMode>(initial.expansion_mode);
+  const [activeDef, setActiveDef] = useState<ThresholdDefinition | null>(initial.definition);
+  const [chartIsRace, setChartIsRace] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // Re-sync when the parent swaps the row wholesale.
-  useEffect(() => {
-    setLabel(initial.label);
-    setDescription(initial.description ?? '');
-    setExpansionMode(
-      initial.expansion_mode === 'per_pairing' ? 'home_away' : initial.expansion_mode,
-    );
-    setTokens(expressionToTokens(initialExpression(initial)));
-    setParseError(null);
-  }, [initial]);
+  const expansionOptions = useMemo<ThresholdExpansionMode[]>(
+    () => (view === 'chart' && chartIsRace ? ['single', 'home_away', 'per_pairing'] : ['single', 'home_away']),
+    [view, chartIsRace],
+  );
 
-  const handleTokensChange = (next: FormulaToken[]) => {
-    setTokens(next);
-    if (next.length === 0) {
-      setParseError('The formula is empty.');
-      return;
-    }
-    const parsed = tokensToExpression(next);
-    setParseError(parsed.ok ? null : parsed.reason);
+  // Keep the expansion mode valid for the current options.
+  useEffect(() => {
+    if (!expansionOptions.includes(expansionMode)) setExpansionMode('home_away');
+  }, [expansionOptions, expansionMode]);
+
+  const handleFormulaChange = useCallback((def: ThresholdDefinition | null) => {
+    setActiveDef(def);
+  }, []);
+  const handleChartChange = useCallback((def: ThresholdDefinition | null, isRace: boolean) => {
+    setActiveDef(def);
+    setChartIsRace(isRace);
+  }, []);
+
+  const switchView = (next: LookupView) => {
+    setView(next);
+    setActiveDef(null); // the newly-mounted view re-emits its own definition
+    setError(null);
   };
 
   const handleSave = async () => {
-    const parsed = tokensToExpression(tokens);
-    if (!parsed.ok) {
-      setParseError(parsed.reason);
+    if (label.trim().length === 0) {
+      setError('Give your threshold a name.');
       return;
     }
-    if (label.trim().length === 0) {
-      setParseError('Give your threshold a name.');
+    if (!activeDef) {
+      setError(view === 'formula' ? 'Finish building the formula.' : 'Pick a chart.');
       return;
     }
     setSaving(true);
+    const guard = await thresholdSaveGuard(activeDef, expansionMode);
+    if (!guard.ok) {
+      setSaving(false);
+      setError(guard.reason);
+      return;
+    }
     const ok = await onSave({
       ...initial,
       label: label.trim(),
       description: description.trim() === '' ? null : description.trim(),
       expansion_mode: expansionMode,
-      definition: {
-        operationKind: 'evaluate_expression',
-        operationArgs: { expression: parsed.expression },
-      },
+      definition: activeDef,
     });
     setSaving(false);
-    if (!ok) setParseError('Save failed — check the values and try again.');
+    if (!ok) setError('Save failed — check the values and try again.');
   };
 
   return (
@@ -141,43 +146,40 @@ export function ThresholdEditor({ initial, onSave, onCancel }: ThresholdEditorPr
 
       <div className="space-y-1">
         <Label className="text-sm">Is this for home and away?</Label>
-        <Select
-          value={expansionMode}
-          onValueChange={(v) => setExpansionMode(v as ThresholdExpansionMode)}
-        >
+        <Select value={expansionMode} onValueChange={(v) => setExpansionMode(v as ThresholdExpansionMode)}>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {FORMULA_EXPANSION_MODES.map((m) => (
-              <SelectItem key={m.value} value={m.value}>
-                {m.label}
+            {expansionOptions.map((m) => (
+              <SelectItem key={m} value={m}>
+                {EXPANSION_LABELS[m]}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <p className="text-xs text-muted-foreground">
-          {expansionMode === 'home_away'
-            ? 'Build it once from "my side" — we make the away mirror for you.'
-            : 'One value, the same for everybody.'}
-        </p>
       </div>
 
-      <div className="space-y-2 rounded-md border p-3">
-        <Label className="text-xs uppercase text-muted-foreground">Formula</Label>
-        <p className="text-xs text-muted-foreground">
-          Build the number. Click a pill to remove it; click a gap to move the cursor.
-        </p>
-        <ExpressionBuilder
-          tokens={tokens}
-          onChange={handleTokensChange}
-          availableData={THRESHOLD_AVAILABLE_DATA}
-          labelForVar={thresholdLabelForVar}
-        />
-        {parseError && (
-          <p className="text-xs text-destructive">{parseError}</p>
-        )}
+      <div className="space-y-1">
+        <Label className="text-sm">How is the number figured out?</Label>
+        <Select value={view} onValueChange={(v) => switchView(v as LookupView)}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="formula">A formula</SelectItem>
+            <SelectItem value="chart">A chart (lookup table)</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
+
+      {view === 'formula' ? (
+        <FormulaView initial={initialFormula(initial)} onChange={handleFormulaChange} />
+      ) : (
+        <ChartView initial={initialChart(initial)} onChange={handleChartChange} />
+      )}
+
+      {error && <p className="text-sm text-destructive">{error}</p>}
 
       <div className="flex gap-2">
         <Button onClick={handleSave} disabled={saving} loadingText="Saving…" isLoading={saving}>
