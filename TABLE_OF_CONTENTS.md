@@ -638,7 +638,10 @@ The workshop building. One sub-folder per module room. Each room owns a list pag
 
 **Components (`/operator/components/`)**
 - `AttachPlaceholderDialog.tsx` - Dialog to attach an existing placeholder to a team.
-- `OrgPlaceholdersCard.tsx` - Card listing org-owned placeholder players (merge / archive / remove).
+- `OrgPlaceholdersCard.tsx` - Card listing org-owned placeholder players (merge / archive / remove); orchestration only.
+- `orgPlaceholders.ts` - Shared `OrgPlaceholderRow` type + `fetchOrgPlaceholders` RPC helper for the placeholders surface.
+- `PlaceholderRow.tsx` - One active placeholder row (compact header + expand to detail + Attach/Remove). Extracted from OrgPlaceholdersCard.
+- `ArchivedRow.tsx` - One archived placeholder row (compact + Restore). Extracted from OrgPlaceholdersCard.
 - `RemovePlaceholderDialog.tsx` - Confirmation dialog before removing a placeholder.
 - `UnmergePlayerDialog.tsx` - Undo-merge dialog (restores a placeholder from the merge snapshot).
 
