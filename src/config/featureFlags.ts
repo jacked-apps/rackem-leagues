@@ -17,3 +17,24 @@
  */
 export const PASSWORDLESS_SIGN_IN_ENABLED =
   import.meta.env.VITE_PASSWORDLESS_SIGN_IN === 'true' || import.meta.env.DEV;
+
+/**
+ * Email invites — the `send-invite` edge-function path that emails a player a
+ * claim/register link.
+ *
+ * DISABLED EVERYWHERE (including dev). The edge function still sends `from:
+ * onboarding@resend.dev` (Resend's sandbox), which only delivers to the Resend
+ * account owner — so a real player's invite email never arrives, and the UI
+ * doesn't surface the failure (it ignores `email_sent`). Rather than ship a
+ * silently-broken "Email" button, the email-send triggers are hidden behind this
+ * flag. The scaffolding (the function, the handlers, the templates) is preserved
+ * for revival once a real verified sender is wired into the edge function (the
+ * app's email provider, or a verified Resend domain + updated `from`).
+ *
+ * No `|| import.meta.env.DEV` — the sandbox sender is broken in dev too. Force-
+ * enable for testing with `VITE_EMAIL_INVITES === 'true'`.
+ *
+ * NOTE: this does NOT gate the new join-link cascade or "Invite Only" (token +
+ * manual share-link) — those don't send email and work fine.
+ */
+export const EMAIL_INVITES_ENABLED = import.meta.env.VITE_EMAIL_INVITES === 'true';
