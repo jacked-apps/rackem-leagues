@@ -28,6 +28,18 @@ import {
 
 const TIP_KEY = 'onboarding-invite-tip-dismissed';
 
+/**
+ * Build the player-facing invite message a captain pastes into a text/email.
+ * Mirrors the real cascade steps (passwordless email sign-in → short profile →
+ * "Add me" → captain approves) so the player knows exactly what to expect and
+ * isn't staring at a naked URL. Kept plain/brand-light intentionally.
+ */
+const buildJoinShareMessage = (teamName: string, joinUrl: string): string =>
+  `You're invited to join ${teamName}!\n\n` +
+  `Tap this link to get on the roster: ${joinUrl}\n\n` +
+  `You'll sign in with your email, fill out a quick profile, and tap "Add me." ` +
+  `Then I approve it and you're on the team.`;
+
 interface InviteMyTeamButtonProps {
   teamId: string;
   teamName: string;
@@ -78,7 +90,10 @@ export const InviteMyTeamButton: React.FC<InviteMyTeamButtonProps> = ({
           </DialogHeader>
 
           {joinUrl ? (
-            <ShareLinkSection registrationLink={joinUrl} />
+            <ShareLinkSection
+              registrationLink={joinUrl}
+              shareMessage={buildJoinShareMessage(teamName, joinUrl)}
+            />
           ) : (
             <p className="text-sm text-muted-foreground">Preparing your link…</p>
           )}
