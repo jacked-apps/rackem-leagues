@@ -83,6 +83,9 @@ const AllocatorRoomPage = lazy(
 const TriggerRoomPage = lazy(
   () => import('../operator/scoring-workshop/trigger/TriggerRoomPage'),
 );
+const ThresholdRoomPage = lazy(
+  () => import('../operator/scoring-workshop/threshold/ThresholdRoomPage'),
+);
 const WorkshopHomePage = lazy(
   () => import('../operator/scoring-workshop/WorkshopHomePage'),
 );
@@ -271,6 +274,7 @@ export const router = createBrowserRouter([
           { path: 'operator/scoring-workshop', element: withOperator(WorkshopHomePage) },
           { path: 'operator/scoring-workshop/per-game-allocator', element: withOperator(AllocatorRoomPage) },
           { path: 'operator/scoring-workshop/trigger', element: withOperator(TriggerRoomPage) },
+          { path: 'operator/scoring-workshop/threshold', element: withOperator(ThresholdRoomPage) },
           { path: 'league/:leagueId/settings', element: withOperator(LeagueSettings) },
           { path: 'league/:leagueId/create-season', element: withOperator(SeasonCreationWizard) },
           { path: 'operator/start-next-season/:leagueId', element: withOperator(NewSeasonFromPreviousPage) },

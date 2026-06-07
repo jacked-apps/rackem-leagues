@@ -52,8 +52,15 @@ const WORKSHOPS: readonly Workshop[] = [
     route: '/operator/scoring-workshop/trigger',
     status: 'live',
   },
+  {
+    key: 'threshold',
+    name: 'Threshold',
+    description:
+      'Build threshold variations — finish lines, head starts, milestones. A threshold figures out one number from the handicaps.',
+    route: '/operator/scoring-workshop/threshold',
+    status: 'live',
+  },
   // Future workshops land here:
-  // { key: 'threshold', name: 'Threshold', ..., status: 'planned' },
   // { key: 'win-calculator', name: 'Win Calculator', ..., status: 'planned' },
   // { key: 'handicap-mechanism', name: 'Handicap Mechanism', ..., status: 'planned' },
   // { key: 'scoring-system', name: 'Scoring System', ..., status: 'planned' }, // the assembly workshop
