@@ -99,8 +99,20 @@ export const TeamsCard: React.FC<TeamsCardProps> = ({ leagueId }) => {
     </>
   );
 
+  const subtitle = loading
+    ? undefined
+    : teams.length === 0
+      ? 'No teams yet'
+      : `${teams.length} ${teams.length === 1 ? 'team' : 'teams'}`;
+
   return (
-    <SectionCard title="Teams" actions={manageTeamsAction}>
+    <SectionCard
+      title="Teams"
+      subtitle={subtitle}
+      actions={manageTeamsAction}
+      collapsible
+      defaultOpen={false}
+    >
       {loading ? (
         <SectionCardLoading message="Loading teams..." />
       ) : teams.length === 0 ? (
