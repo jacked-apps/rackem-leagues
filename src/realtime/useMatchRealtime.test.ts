@@ -219,13 +219,19 @@ describe('useMatchRealtime (hook integration)', () => {
     expect(onGamesUpdate).not.toHaveBeenCalled();
   });
 
-  it('drop then re-SUBSCRIBED fires a catch-up refetch on all three callbacks exactly once', () => {
+  it('drop then re-SUBSCRIBED fires a catch-up refetch on all four callbacks exactly once', () => {
     const onMatchUpdate = vi.fn();
     const onLineupUpdate = vi.fn();
     const onGamesUpdate = vi.fn();
+    const onConfirmationsUpdate = vi.fn();
 
     const { result } = renderHook(() =>
-      useMatchRealtime('match-1', { onMatchUpdate, onLineupUpdate, onGamesUpdate })
+      useMatchRealtime('match-1', {
+        onMatchUpdate,
+        onLineupUpdate,
+        onGamesUpdate,
+        onConfirmationsUpdate,
+      })
     );
 
     fire(REALTIME_SUBSCRIBE_STATES.SUBSCRIBED); // first connect
@@ -239,6 +245,28 @@ describe('useMatchRealtime (hook integration)', () => {
     expect(onMatchUpdate).toHaveBeenCalledTimes(1);
     expect(onLineupUpdate).toHaveBeenCalledTimes(1);
     expect(onGamesUpdate).toHaveBeenCalledTimes(1);
+    // Confirmations MUST catch up too — else witness data goes stale after a
+    // drop, the exact gap this layer exists to close.
+    expect(onConfirmationsUpdate).toHaveBeenCalledTimes(1);
+  });
+
+  it('a game_confirmations event triggers onConfirmationsUpdate', () => {
+    const onConfirmationsUpdate = vi.fn();
+    renderHook(() =>
+      useMatchRealtime('match-1', { onConfirmationsUpdate })
+    );
+
+    // Find the postgres_changes binding the hook registered for the new table
+    // and invoke its handler with a fake INSERT payload.
+    const call = mocks.channelMock.on.mock.calls.find(
+      (c: unknown[]) =>
+        (c[1] as { table?: string } | undefined)?.table === 'game_confirmations'
+    );
+    expect(call).toBeTruthy();
+    const handler = call![2] as (payload: unknown) => void;
+    act(() => handler({ eventType: 'INSERT', new: {} }));
+
+    expect(onConfirmationsUpdate).toHaveBeenCalledTimes(1);
   });
 
   it('binding-mismatch CHANNEL_ERROR surfaces error status and no refetch storm', () => {

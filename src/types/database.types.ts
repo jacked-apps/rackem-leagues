@@ -292,6 +292,97 @@ export type Database = {
         }
         Relationships: []
       }
+      game_confirmations: {
+        Row: {
+          action: string
+          auto_confirmed: boolean
+          break_and_run: boolean
+          break_fouled: boolean
+          confirmer_id: string
+          created_at: string
+          game_id: string
+          game_number: number
+          golden_break: boolean
+          id: string
+          is_initiator: boolean
+          loser_value: number | null
+          match_id: string
+          reason: string | null
+          runout: boolean
+          side: string
+          win_by_forfeit: boolean
+          winner_player_id: string | null
+          winner_team_id: string | null
+          winner_value: number | null
+        }
+        Insert: {
+          action?: string
+          auto_confirmed?: boolean
+          break_and_run?: boolean
+          break_fouled?: boolean
+          confirmer_id: string
+          created_at?: string
+          game_id: string
+          game_number: number
+          golden_break?: boolean
+          id?: string
+          is_initiator?: boolean
+          loser_value?: number | null
+          match_id: string
+          reason?: string | null
+          runout?: boolean
+          side: string
+          win_by_forfeit?: boolean
+          winner_player_id?: string | null
+          winner_team_id?: string | null
+          winner_value?: number | null
+        }
+        Update: {
+          action?: string
+          auto_confirmed?: boolean
+          break_and_run?: boolean
+          break_fouled?: boolean
+          confirmer_id?: string
+          created_at?: string
+          game_id?: string
+          game_number?: number
+          golden_break?: boolean
+          id?: string
+          is_initiator?: boolean
+          loser_value?: number | null
+          match_id?: string
+          reason?: string | null
+          runout?: boolean
+          side?: string
+          win_by_forfeit?: boolean
+          winner_player_id?: string | null
+          winner_team_id?: string | null
+          winner_value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_confirmations_confirmer_id_fkey"
+            columns: ["confirmer_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_confirmations_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "match_games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_confirmations_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       handicap_chart_3vs3: {
         Row: {
           games_to_lose: number

@@ -41,7 +41,16 @@ interface ConfirmationDialogProps {
   onConfirm: (gameNumber: number, isVacateRequest?: boolean) => void;
   /** Handler for deny button */
   onDeny: (gameNumber: number, isVacateRequest?: boolean) => void;
-  /** Handler when dialog closes */
+  /**
+   * Handler when the person dismisses WITHOUT confirming or denying — they tap
+   * Cancel, the X, or press Escape. This is the "I didn't witness this / not
+   * sure" escape hatch: it neither vouches (confirm) nor wipes (deny). The
+   * caller suppresses re-prompting for this game for the rest of the session.
+   * Distinct from `onClose`, which fires for every close (including after
+   * confirm/deny). A dismiss always calls `onDismiss` then `onClose`.
+   */
+  onDismiss: (gameNumber: number) => void;
+  /** Handler when dialog closes (after any of confirm / deny / dismiss). */
   onClose: () => void;
 }
 
@@ -58,6 +67,7 @@ export function ConfirmationDialog({
   gameType,
   onConfirm,
   onDeny,
+  onDismiss,
   onClose,
 }: ConfirmationDialogProps) {
   if (!game) return null;
@@ -82,13 +92,21 @@ export function ConfirmationDialog({
     onClose();
   };
 
+  // Dismiss without acting (Cancel button, the X, or Escape). Neither vouches
+  // nor wipes — just closes and tells the caller to stop re-prompting this game
+  // this session.
+  const handleDismiss = () => {
+    onDismiss(game.gameNumber);
+    onClose();
+  };
+
   return (
-    <Dialog open={open}>
-      <DialogContent
-        showCloseButton={false}
-        onInteractOutside={(e) => e.preventDefault()}
-        onEscapeKeyDown={(e) => e.preventDefault()}
-      >
+    // onOpenChange only fires for Radix-initiated closes (the X, Escape) — the
+    // controlled `open` prop changing after confirm/deny does NOT trigger it,
+    // so those paths don't double-dismiss. Outside-click stays prevented below
+    // so a stray backdrop tap can't dismiss a consequential prompt.
+    <Dialog open={open} onOpenChange={(next) => { if (!next) handleDismiss(); }}>
+      <DialogContent onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           {isVacateRequest ? (
             <>
@@ -184,12 +202,24 @@ export function ConfirmationDialog({
           )}
         </div>
 
-        <DialogFooter className="flex flex-row justify-around gap-4">
-          <Button className="flex-1" onClick={handleConfirm} loadingText="Confirming...">
-            {isVacateRequest ? 'Agree - Vacate Winner' : 'Confirm'}
-          </Button>
-          <Button variant="outline" className="flex-1" onClick={handleDeny} loadingText="none">
-            {isVacateRequest ? 'Deny - Keep Winner' : 'Deny'}
+        <DialogFooter className="flex flex-col gap-2">
+          <div className="flex flex-row justify-around gap-4">
+            <Button className="flex-1" onClick={handleConfirm} loadingText="Confirming...">
+              {isVacateRequest ? 'Agree - Vacate Winner' : 'Confirm'}
+            </Button>
+            <Button variant="outline" className="flex-1" onClick={handleDeny} loadingText="none">
+              {isVacateRequest ? 'Deny - Keep Winner' : 'Deny'}
+            </Button>
+          </div>
+          {/* The neutral escape hatch — quieter than confirm/deny on purpose.
+              For someone who isn't sure or didn't witness the game. */}
+          <Button
+            variant="ghost"
+            className="w-full text-muted-foreground"
+            onClick={handleDismiss}
+            loadingText="none"
+          >
+            Cancel
           </Button>
         </DialogFooter>
       </DialogContent>

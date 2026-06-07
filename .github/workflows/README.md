@@ -28,7 +28,7 @@ This repository uses GitHub Actions to automatically deploy the application to s
 You need to configure the following secrets for both `staging` and `production` environments in your GitHub repository settings:
 
 ### Supabase Secrets
-- `SUPABASE_API_KEY` - Your Supabase access token (get from Supabase dashboard → Settings → Access Tokens)
+- `SUPABASE_ACCESS_TOKEN` - Your Supabase access token (get from Supabase dashboard → Account → Access Tokens). Repo-level secret, shared by both envs.
 - `SUPABASE_DB_PASSWORD` - Your Supabase database password
 - `SUPABASE_PROJECT_ID` - Your Supabase project reference ID (e.g., `abcdefghijklmnop`)
 - `VITE_SUPABASE_URL` - Your Supabase project URL (e.g., `https://abcdefghijklmnop.supabase.co`)
@@ -89,8 +89,11 @@ The AWS IAM user needs the following permissions:
    git tag v1.0.0
    git push origin v1.0.0
    ```
-3. The production deployment will automatically trigger
-4. A GitHub Release will be created automatically
+3. The production workflow triggers and **pauses** at the Required Reviewers gate on the `production` environment
+4. Approve the run in the Actions UI; migrations apply, frontend deploys, GitHub Release is created
+
+### Manually triggering a production deploy (no tag)
+The `deploy-production.yml` workflow also supports `workflow_dispatch` for emergency redeploys or pre-launch smoke tests. From Actions → "Deploy to Production" → "Run workflow", select a ref and type `deploy` in the confirm input. The run still requires Required Reviewers approval and does not create a GitHub Release (only tag-triggered runs do).
 
 ## Deployment Features
 
