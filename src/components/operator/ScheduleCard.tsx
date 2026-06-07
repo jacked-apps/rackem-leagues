@@ -28,7 +28,6 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({ leagueId }) => {
   const [scheduleExists, setScheduleExists] = useState(false);
   const [activeSeason, setActiveSeason] = useState<{ id: string } | null>(null);
   const [upcomingWeeks, setUpcomingWeeks] = useState<Array<{ name: string; date: string; type: string }>>([]);
-  const [nextBlackout, setNextBlackout] = useState<{ name: string; date: string } | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
   const [weeksCompleted, setWeeksCompleted] = useState(0);
   const [totalWeeks, setTotalWeeks] = useState(0);
@@ -121,7 +120,6 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({ leagueId }) => {
           });
 
           // Get next 3 incomplete REGULAR weeks (matches only, not blackouts)
-          const today = new Date().toISOString().split('T')[0];
           const incompleteRegularWeeks = allWeeks
             .filter(week =>
               week.week_type === 'regular' &&
@@ -134,22 +132,6 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({ leagueId }) => {
             date: week.scheduled_date,
             type: week.week_type
           })));
-
-          // Get the next blackout week (holiday/break) based on date only
-          const upcomingBlackouts = allWeeks
-            .filter(week =>
-              week.week_type === 'blackout' &&
-              week.scheduled_date >= today
-            );
-
-          if (upcomingBlackouts.length > 0) {
-            setNextBlackout({
-              name: upcomingBlackouts[0].week_name,
-              date: upcomingBlackouts[0].scheduled_date
-            });
-          } else {
-            setNextBlackout(null);
-          }
         }
 
         // Calculate week counts using match completion data
@@ -227,45 +209,23 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({ leagueId }) => {
       ) : upcomingWeeks.length === 0 ? (
         <SectionCardEmpty icon="🏁" message="All weeks completed" />
       ) : (
-        <div className="grid md:grid-cols-2 gap-4">
-          {/* Upcoming Weeks */}
-          <div className="bg-muted rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-foreground mb-3">Upcoming Weeks</h3>
-            <div className="space-y-2">
-              {upcomingWeeks.map((week, index) => (
-                <div key={index} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                  <span className="text-sm font-medium text-foreground">{week.name}</span>
-                  <span className="text-sm text-muted-foreground">
-                    {new Date(week.date).toLocaleDateString('en-US', {
-                      weekday: 'short',
-                      month: 'short',
-                      day: 'numeric'
-                    })}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Next Holiday */}
-          <div className="bg-muted rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-foreground mb-3">Next Holiday</h3>
-            {nextBlackout ? (
-              <div className="py-2">
-                <p className="text-lg font-semibold text-foreground mb-1">{nextBlackout.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {new Date(nextBlackout.date).toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    month: 'long',
+        // Upcoming Weeks. (Holidays moved to the Season card — they're a season
+        // concept, set as blackout weeks during setup.)
+        <div className="bg-muted rounded-lg p-4">
+          <h3 className="text-sm font-semibold text-foreground mb-3">Upcoming Weeks</h3>
+          <div className="space-y-2">
+            {upcomingWeeks.map((week, index) => (
+              <div key={index} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                <span className="text-sm font-medium text-foreground">{week.name}</span>
+                <span className="text-sm text-muted-foreground">
+                  {new Date(week.date).toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
                     day: 'numeric'
                   })}
-                </p>
+                </span>
               </div>
-            ) : (
-              <div className="py-2">
-                <p className="text-sm text-muted-foreground italic">No holidays scheduled</p>
-              </div>
-            )}
+            ))}
           </div>
         </div>
       )}

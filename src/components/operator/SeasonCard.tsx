@@ -21,6 +21,7 @@ import { SectionCard, SectionCardLoading, SectionCardEmpty } from './SectionCard
 import { DeleteSeasonModal } from '@/components/modals/DeleteSeasonModal';
 import type { League } from '@/types/league';
 import { logger } from '@/utils/logger';
+import { formatLocalDate } from '@/utils/formatters';
 import { toast } from 'sonner';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 
@@ -50,6 +51,7 @@ export const SeasonCard: React.FC<SeasonCardProps> = ({ league }) => {
   const [hasSchedule, setHasSchedule] = useState(false);
   const [hasMatchups, setHasMatchups] = useState(false);
   const [currentPlayWeek, setCurrentPlayWeek] = useState(0);
+  const [nextHoliday, setNextHoliday] = useState<{ name: string; date: string } | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
@@ -88,6 +90,22 @@ export const SeasonCard: React.FC<SeasonCardProps> = ({ league }) => {
           setHasSchedule((weekCount ?? 0) > 0);
           setHasMatchups((matchCount ?? 0) > 0);
           setCurrentPlayWeek(completedWeeks ?? 0);
+
+          // Next holiday / blackout week from today onward (holidays are a
+          // season concept — set during schedule setup as blackout weeks).
+          const today = formatLocalDate(new Date());
+          const { data: blackout } = await supabase
+            .from('season_weeks')
+            .select('week_name, scheduled_date')
+            .eq('season_id', data.id)
+            .eq('week_type', 'blackout')
+            .gte('scheduled_date', today)
+            .order('scheduled_date', { ascending: true })
+            .limit(1)
+            .maybeSingle();
+          setNextHoliday(
+            blackout ? { name: blackout.week_name, date: blackout.scheduled_date } : null,
+          );
         }
       } catch (err) {
         logger.error('Error fetching current season', { error: err instanceof Error ? err.message : String(err) });
@@ -224,6 +242,20 @@ export const SeasonCard: React.FC<SeasonCardProps> = ({ league }) => {
                 <span className="font-medium text-foreground">{currentSeason.week_count}</span>
               </div>
             )}
+            <div>
+              <span className="text-muted-foreground">Next holiday:</span>{' '}
+              {nextHoliday ? (
+                <span className="font-medium text-foreground">
+                  {nextHoliday.name} ·{' '}
+                  {new Date(nextHoliday.date).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </span>
+              ) : (
+                <span className="italic text-muted-foreground">None scheduled</span>
+              )}
+            </div>
           </div>
 
           {editOptions.showDelete && (

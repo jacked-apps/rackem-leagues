@@ -210,9 +210,6 @@ export const LeagueDetail: React.FC = () => {
           <LeagueStatusCard league={league} variant="section" />
         </div>
 
-        {/* Season — second card (the "Season" part of the league) */}
-        <SeasonCard league={league} />
-
         {/* Setup / next-season CTA. Self-hides (null) when the league is fully
             set up and a season is in session with no next-season prompt. */}
         <div className="mb-6">
@@ -274,10 +271,9 @@ export const LeagueDetail: React.FC = () => {
           />
         </div>
 
-        {/* Teams Section */}
+        {/* The four league parts, grouped in setup order. */}
+        <SeasonCard league={league} />
         <TeamsCard leagueId={league.id} />
-
-        {/* Schedule Section (the "Score a Match" entry lives in ScheduleCard) */}
         <ScheduleCard leagueId={league.id} />
 
         {/* Playoffs Section */}
