@@ -67,7 +67,8 @@ export const TeamsCard: React.FC<TeamsCardProps> = ({ leagueId }) => {
   /**
    * Format captain phone number for display
    */
-  const formatPhoneNumber = (phone: string): string => {
+  const formatPhoneNumber = (phone: string | null | undefined): string => {
+    if (!phone) return '';
     const cleaned = phone.replace(/\D/g, '');
     if (cleaned.length === 10) {
       return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
@@ -163,11 +164,13 @@ export const TeamsCard: React.FC<TeamsCardProps> = ({ leagueId }) => {
                         <div>{`${team.captain.first_name} ${team.captain.last_name}`}</div>
                         {expandedTeamId === team.id && (
                           <div className="mt-1 text-xs text-muted-foreground space-y-0.5">
-                            <div>
-                              <a href={`tel:${team.captain.phone}`} className="hover:text-blue-600">
-                                {formatPhoneNumber(team.captain.phone)}
-                              </a>
-                            </div>
+                            {team.captain.phone && (
+                              <div>
+                                <a href={`tel:${team.captain.phone}`} className="hover:text-blue-600">
+                                  {formatPhoneNumber(team.captain.phone)}
+                                </a>
+                              </div>
+                            )}
                             {team.captain.email && (
                               <div>
                                 <a href={`mailto:${team.captain.email}`} className="hover:text-blue-600">
