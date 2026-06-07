@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-06-05 (Added Facebook OAuth login alongside Google in `Login.tsx`/`Register.tsx` and shipped a public Privacy Policy at `/privacy` — `about/PrivacyPolicy.tsx` — required for Facebook app review. Branch `feat/fb-login`.) Prior 2026-06-02: (Archived ~63 completed/superseded brainstorm, plan & memory-bank docs to `docs/archive/` + `memory-bank/archive/` after a code+PR triage; active/back-burner/reference docs left in place.)
+> **Last Updated**: 2026-06-06 (Split `OrgPlaceholdersCard.tsx` → extracted `orgPlaceholders.ts` (type+fetch), `PlaceholderRow.tsx`, `ArchivedRow.tsx`; behavior-preserving. Branch `refactor/split-org-placeholders-card`.) Prior 2026-06-05: (Added Facebook OAuth login alongside Google in `Login.tsx`/`Register.tsx` and shipped a public Privacy Policy at `/privacy` — `about/PrivacyPolicy.tsx` — required for Facebook app review. Branch `feat/fb-login`.) Prior 2026-06-02: (Archived ~63 completed/superseded brainstorm, plan & memory-bank docs to `docs/archive/` + `memory-bank/archive/` after a code+PR triage; active/back-burner/reference docs left in place.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -616,7 +616,10 @@ how to add a new test, demo recording, cleanup model).
 
 **Components (`/operator/components/`)**
 - `AttachPlaceholderDialog.tsx` - Dialog to attach an existing placeholder to a team.
-- `OrgPlaceholdersCard.tsx` - Card listing org-owned placeholder players (merge / archive / remove).
+- `OrgPlaceholdersCard.tsx` - Card listing org-owned placeholder players (merge / archive / remove); orchestration only.
+- `orgPlaceholders.ts` - Shared `OrgPlaceholderRow` type + `fetchOrgPlaceholders` RPC helper for the placeholders surface.
+- `PlaceholderRow.tsx` - One active placeholder row (compact header + expand to detail + Attach/Remove). Extracted from OrgPlaceholdersCard.
+- `ArchivedRow.tsx` - One archived placeholder row (compact + Restore). Extracted from OrgPlaceholdersCard.
 - `RemovePlaceholderDialog.tsx` - Confirmation dialog before removing a placeholder.
 - `UnmergePlayerDialog.tsx` - Undo-merge dialog (restores a placeholder from the merge snapshot).
 
