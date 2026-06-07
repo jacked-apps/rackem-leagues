@@ -158,9 +158,12 @@ These resolve the five Deferred-to-Planning questions from the origin doc:
   `threshold_charts` tables.** The `thresholds` row carries the trigger-room backbone (id, name,
   description, scope, author_id, timestamps) plus the authored definition as JSONB mirroring
   `ThresholdRow` (operationKind + operationArgs + expectedSize/output metadata), plus `label`,
-  and a `mirror` flag. The **chart view** stores `operationKind: 'chart_lookup'` with
-  `operationArgs: { chart_id, comp_source, output_field, side }` → points at a `threshold_charts`
-  row. The **formula view** stores `operationKind: 'evaluate_expression'` with
+  and an `expansion_mode` (`single` / `home_away` / `per_pairing`). The **chart view** stores
+  `operationKind: 'chart_lookup'` with `operationArgs: { chart_id, output_field }` → points at a
+  `threshold_charts` row; the lookup key(s) come from the **perspective pair** supplied by the
+  expansion (`comp_1 = this_side`, `comp_2 = other_side` for a 2D chart; the diff of the pair for
+  a 1D chart), not a separate `comp_source`. The **formula view** stores
+  `operationKind: 'evaluate_expression'` with
   `operationArgs: { expression: <Expression tree> }`. Rationale: thresholds-as-data is the whole
   point of the room, and the operation-registry indirection already exists; we only add two
   generalized operations + a table.
@@ -174,12 +177,21 @@ These resolve the five Deferred-to-Planning questions from the origin doc:
   (`comp_1/comp_2 → result_1/2/3` + `lookup_mode`); a single editor driven by `chart_type` +
   `exact|range` renders the right columns. Rationale: the four-page split on the dead branch was
   pre-unification; one editor is fewer files and consistent.
-- **(Q3) The mirror is one stored row + a `mirror` flag; resolution expands to two bag keys.**
-  The LO authors once from a neutral `this_side / other_side` perspective; at resolve time the
-  resolver runs twice (side = home, then away) producing two values. This matches both the
-  allocator's `this_side/other_side` virtuals and today's per-side `side` operation arg. A
-  side-less threshold (`mirror = false`) resolves once. Rationale: authoring once is the
-  requirement; the existing side-arg + virtual machinery already supports the flip.
+- **(Q3) The mirror generalizes to an `expansion_mode`: one stored row fans out over a set of
+  side-bindings.** Mirroring is not a home/away special case — it's an "author once, resolve
+  under each `(this_side, other_side)` binding, write one key per instance" machine. The
+  expansion set is the only thing that varies:
+  - `single` → one binding (no perspective) → one key. The side-less milestone.
+  - `home_away` → bindings `{home, away}` → two keys. The classic mirror.
+  - `per_pairing` → one binding per locked-lineup pairing → one key per game slot.
+
+  The LO authors once from the neutral `this_side / other_side` perspective; the resolver runs
+  once per binding. This **also dissolves the 2D race-chart seam**: `comp_1 = this_side` and
+  `comp_2 = other_side` *are* the perspective pair, and pairings are fixed at match start (locked
+  lineups), so a per-pairing race chart resolves at match start like any other threshold — no
+  per-game runtime, no special `comp_source`. Rationale: one mechanism covers single,
+  home/away, and per-pairing; the existing `this_side/other_side` virtuals already supply the
+  two comps a 2D chart needs.
 - **(Q4) `expectedSize` is declared on the row and enforced by the save-time guard.** The editor
   surfaces array-vs-scalar as part of the input-side choice; the guard checks the declared
   `expectedSize` is consistent with the chosen operation's `consumesSize` (reusing the resolver's
@@ -194,13 +206,21 @@ These resolve the five Deferred-to-Planning questions from the origin doc:
   `lookup_threshold()`, the cascade columns, and 7 chart implementations are on the current
   branch. The plan builds the **authoring** layer, not the data layer.
 - *Does the room change the runtime?* — No. Library-authoring only; deferred apply-to-league.
+- *Do 2D / per-pairing race charts fit?* — Yes. Mirroring generalizes to an `expansion_mode`
+  (single / home_away / per_pairing): the `this_side / other_side` perspective pair supplies the
+  two comps a 2D chart needs, and locked-lineup pairings are known at match start, so a
+  per-pairing chart resolves at match start like any other threshold. No separate `comp_source`
+  design; `chart_lookup` serves 1D and 2D charts with no branching.
 
 ### Deferred to Implementation
 
 - **Generic key generation** (e.g. `threshold_<shortid>`): a provisional key is fine for the
   save-time dry-run; the *final* assigned key is an assembly-room concern. Exact scheme deferred.
-- **Whether `chart_lookup` fully generalizes or wraps `chart_lookup_3v3`**: confirm against the
-  `lookup_threshold()` SQL signature and the existing `thresholdLookup.ts` once touching code.
+- **Whether `chart_lookup` reuses the `lookup_threshold()` RPC or the pure TS chart
+  implementations** for resolution: both already take two comps; confirm the cleaner wiring once
+  touching code. (Generalization itself is settled — see Resolved.)
+- **The `per_pairing` pairing source at runtime**: `ThresholdInputs` doesn't carry pairings today.
+  In-room the dry-run synthesizes them; the real feed is an assembly-room/runtime task, deferred.
 - **Exact `availableData` virtual names** for the threshold formula view — finalize against
   `ThresholdInputs` fields when wiring the registry.
 - **Whether the chart editor reads via the existing pure TS chart implementations or via the DB
@@ -216,17 +236,20 @@ A saved threshold row, two views compiling to one resolver:
 
 ```
 thresholds row (data)
-├─ id, label, description, scope, author_id, mirror, expectedSize, output metadata
+├─ id, label, description, scope, author_id, expansion_mode, expectedSize, output metadata
 └─ definition (JSONB, mirrors ThresholdRow.operation*)
    ├─ FORMULA view  → operationKind: 'evaluate_expression'
-   │                  operationArgs: { expression: <Expression tree> }
+   │                  operationArgs: { expression: <Expression tree over this_side/other_side> }
    └─ CHART view    → operationKind: 'chart_lookup'
-                      operationArgs: { chart_id → threshold_charts, comp_source, output_field, side }
+                      operationArgs: { chart_id → threshold_charts, output_field }
+                      (comp_1 = this_side, comp_2 = other_side — supplied by the expansion)
 
 resolve(row, ThresholdInputs):
-   getThresholdOperation(operationKind).compute(operationArgs, inputs) → number | null
-   if mirror:  run with side=home → key_home ;  run with side=away → key_away
-   else:       run once → single key
+   bindings = expand(expansion_mode, inputs)   # single → [Ø]; home_away → [home, away]; per_pairing → [pairing…]
+   for each binding b:
+      inputsForB = bind this_side/other_side (→ comp_1/comp_2) from b onto inputs
+      getThresholdOperation(operationKind).compute(operationArgs, inputsForB) → number | null
+      write one bag key per binding   # existing compute(args, inputs) signature unchanged
 ```
 
 Authoring flow in the editor (one guided builder):
@@ -261,8 +284,8 @@ Name + description ─▶ "Home & away?" toggle ─▶ Input side (preset shapin
 - Mirror the `triggers`/`per_game_allocators` backbone: `id, name (generic key), label,
   description, scope CHECK('official'|'user'), author_id, definition JSONB (operationKind +
   operationArgs + expectedHandicapType + expectedSize + outputType + outputSide + outputRange),
-  mirror boolean, created_at, updated_at`; scope/author constraint; tamper trigger on `official`
-  rows.
+  `expansion_mode text CHECK('single'|'home_away'|'per_pairing')`, created_at, updated_at`;
+  scope/author constraint; tamper trigger on `official` rows.
 - Loader fetches, unmarshals the JSONB into a `ThresholdRow`-shaped object, validates shape,
   returns `ThresholdRow | null`, never throws (warn + null), exactly like
   `per-game-allocator-loader.ts`.
@@ -296,7 +319,7 @@ never-throw on a corrupt row.
 - Implement a `ThresholdOperation` named `evaluate_expression` whose `compute(args, inputs)`
   evaluates `args.expression` against a resolver that maps threshold virtuals
   (`this_side_handicap`, `other_side_handicap`, `handicap_diff`, `this_side_rating_sum`,
-  `game_count`, pref reads) to `ThresholdInputs` fields, driven by a `side` arg for the mirror.
+  `game_count`, pref reads) to `ThresholdInputs` fields, driven by the active binding's `side`.
 - Never-throw: bad expression → warn + return `null` (so the resolver/bag records `null`).
 - Reuse the evaluation core from
   `src/systems/points-system/allocator-formula-operations/evaluate-expression.ts` where shared;
@@ -332,24 +355,35 @@ replace charts.
 - Test: `src/__tests__/database/thresholdChartsCrud.db.test.ts`
 
 **Approach:**
-- `chart_lookup` operation: `operationArgs { chart_id, comp_source, output_field, side }`;
-  derives the comp value from `ThresholdInputs` per `comp_source` (e.g. `handicap_diff`,
-  `this_side_handicap`), looks the chart up (via the existing pure TS implementations or the
-  `lookup_threshold` RPC — decide in-unit), returns the requested `output_field`. Generalizes the
-  hardcoded `chart_lookup_3v3`; leave `chart_lookup_3v3` in place for the existing compositions.
+- `chart_lookup` operation: `operationArgs { chart_id, output_field }`. It does **not** carry a
+  `comp_source` or `side` — the comps come from the **perspective pair** the expansion already
+  binds: `comp_1 = this_side`, `comp_2 = other_side`. A 1D team chart reads the diff of the pair;
+  a 2D race chart reads both comps directly. The same operation therefore serves team charts and
+  race charts with no branching — the only difference is the chart's own dimensionality and the
+  threshold's `expansion_mode` (`home_away` vs `per_pairing`). Reuse the existing
+  `lookup_threshold(chart_id, comp_1, comp_2)` SQL (it already takes two comps and normalizes the
+  race upper-triangle swap), or the pure TS implementations — decide in-unit. Leave
+  `chart_lookup_3v3` in place for the existing compositions.
 - Cherry-pick the chart **write** layer (create chart, copy global → user, replace rows) from the
   dead branch; the **read** path (`thresholdLookup.ts`) already exists — wrap, don't duplicate.
+- The `per_pairing` expansion needs the pairing set; in this room the save-time dry-run synthesizes
+  it, and feeding *real* locked-lineup pairings is an assembly-room/runtime concern (deferred).
 
-**Patterns to follow:** existing `operations/chart-lookup-3v3.ts`; `src/api/queries/thresholdLookup.ts`.
+**Patterns to follow:** existing `operations/chart-lookup-3v3.ts`;
+`src/api/queries/thresholdLookup.ts`; the `lookup_threshold` SQL fn in
+`supabase/migrations/20260410000002_threshold_charts.sql`.
 
 **Test scenarios:**
-- Happy path: `chart_lookup` against a seeded chart returns the expected `output_field` for a
-  given diff, for home and away.
+- Happy path: `chart_lookup` against a seeded **1D** team chart returns the expected
+  `output_field` for a given diff, for both `home_away` bindings.
+- Happy path: `chart_lookup` against a seeded **2D** race chart returns the expected value for a
+  `this_side`/`other_side` handicap pair, and gives the same value when the pair is swapped
+  (upper-triangle normalization).
 - Edge case: range-mode chart returns the correct band; out-of-domain input → `null` + warn.
 - Integration (db): create a user chart, copy a global chart, replace its rows, read them back.
 
-**Verification:** Operation test passes against a seeded chart; db CRUD test round-trips a
-user-owned chart.
+**Verification:** Operation test passes against both a 1D and a 2D seeded chart; db CRUD test
+round-trips a user-owned chart.
 
 ### Phase B — Workshop UI
 
@@ -385,7 +419,7 @@ user-owned chart.
 
 **Verification:** Room reachable from the workshop home; list renders both sections.
 
-- [ ] **Unit 5: Threshold editor — identity, mirror toggle, input side, formula view**
+- [ ] **Unit 5: Threshold editor — identity, expansion mode, input side, formula view**
 
 **Goal:** The guided builder up through the formula view.
 
@@ -400,26 +434,31 @@ user-owned chart.
 - Test: `src/operator/scoring-workshop/threshold/__tests__/ThresholdEditor.test.tsx`
 
 **Approach:**
-- Editor sections in order: name + description (label is display-only); **"Home & away?"** toggle
-  (R6); **input side** — preset shaping menu (difference / single side / sum / pref) + an
-  "invent your own" path; **lookup side** fork with the **formula view** using the shared
-  `ExpressionBuilder` fed by the threshold `availableData` registry (the `this_side_*` virtuals
-  Unit 2 resolves). Expose array-vs-scalar (`expectedSize`) as part of the input-side choice (R3).
-- Mirror toggle drives whether the editor authors from a neutral perspective (on) or a single
-  side-less value (off).
+- Editor sections in order: name + description (label is display-only); **expansion mode**
+  selector (R6) — `single` (side-less value) / `home & away` (the mirror) / `per pairing`
+  (one value per locked-lineup matchup); **input side** — preset shaping menu (difference /
+  single side / sum / pref) + an "invent your own" path; **lookup side** fork with the **formula
+  view** using the shared `ExpressionBuilder` fed by the threshold `availableData` registry (the
+  `this_side_*` virtuals Unit 2 resolves). Expose array-vs-scalar (`expectedSize`) as part of the
+  input-side choice (R3).
+- The expansion-mode selector replaces a bare home/away toggle: `single` authors from no
+  perspective; `home & away` and `per pairing` both author once from the neutral
+  `this_side / other_side` perspective and fan out at resolve time. (Surface `per pairing` only
+  when the chosen chart/formula is per-pairing-shaped; otherwise offer `single` + `home & away`.)
 
 **Patterns to follow:** `src/operator/scoring-workshop/trigger/TriggerEditor.tsx` and its
 `ActionBuilder` use of `ExpressionBuilder`; `per-game-allocator/availableData.ts` for the
 perspective-aware data registry; **all UI uses shadcn components** per project rules.
 
 **Test scenarios:**
-- Happy path: build a formula threshold from scratch with the mirror on; editor state holds a
-  valid `Expression` + `mirror=true` + chosen `expectedSize`.
-- Edge case: mirror off hides the perspective framing and produces a single side-less definition.
+- Happy path: build a formula threshold from scratch with `home & away` expansion; editor state
+  holds a valid `Expression` + `expansion_mode='home_away'` + chosen `expectedSize`.
+- Edge case: `single` expansion hides the perspective framing and produces a side-less definition.
+- Edge case: `per pairing` is offered only for a per-pairing-shaped lookup; otherwise hidden.
 - Edge case: switching input-shaping preset updates the formula's available vars accordingly.
 
 **Verification:** Editor produces a well-formed in-memory threshold definition for the formula
-view, both mirror states.
+view across all applicable expansion modes.
 
 - [ ] **Unit 6: Chart view — unified chart-table editor + use/template/create**
 
@@ -473,8 +512,9 @@ on extreme edits.
 **Approach:**
 - Validate the authored definition's declared `expectedSize`/output metadata is consistent with
   the chosen operation's declared `consumes*` (reuse the resolver's drift-check), then run a
-  **synthetic dry-run**: build fake `ThresholdInputs` and call `resolveThreshold` (both sides when
-  `mirror`), confirming a finite number (or an intentional `null`) comes back. Return `{ok}` or
+  **synthetic dry-run**: build fake `ThresholdInputs` (synthesizing a pairing set for
+  `per_pairing`) and call `resolveThreshold` once per binding in the `expansion_mode`, confirming
+  every instance returns a finite number (or an intentional `null`). Return `{ok}` or
   `{ok:false, reason}` inline; refuse to persist on failure — mirrors the allocator/trigger guards.
 
 **Patterns to follow:** `src/operator/scoring-workshop/trigger/saveTimeGuard.ts`;
@@ -484,7 +524,8 @@ on extreme edits.
 - Happy path: a valid formula threshold and a valid chart threshold both pass and persist.
 - Error path: a formula referencing an array input while `expectedSize` says `single` → guard
   fails with a clear reason; nothing persists.
-- Edge case: a mirror threshold dry-runs both sides; failure on the away side blocks save.
+- Edge case: a `home_away` threshold dry-runs both bindings; failure on the away side blocks save.
+- Edge case: a `per_pairing` threshold dry-runs every synthesized pairing; one failing pairing blocks save.
 
 **Verification:** Guard blocks the mismatched cases and admits the valid ones; upsert is gated on
 it.
@@ -506,7 +547,8 @@ it.
 **Approach:**
 - Seed 3–4 read-only officials, each teaching one pattern: a **BCA finish-line** (chart view,
   mirrored), a **Fargo head-start** (formula view over rating arrays, mirrored), a **side-less
-  milestone** (formula, `mirror=false`, e.g. `round(game_count * 0.75)`), and an **empty starter**
+  milestone** (formula, `expansion_mode='single'`, e.g. `round(game_count * 0.75)`), and an
+  **empty starter**
   for cloning. Exact values finalized in-unit.
 - TOC entry for every new file; if gated, add the `LIST_FOR_ED.md` gated-section entry and tell
   Ed in chat.
@@ -544,7 +586,8 @@ it.
 | Cherry-picked chart editor is large (~900 lines on the dead branch) and pre-unification | Collapse to one editor in Unit 6; pull UX patterns, not the four-file structure; keep it under the project's file-size guidance by splitting sub-components |
 | `chart_lookup` generalization could subtly diverge from `chart_lookup_3v3` math | Keep `chart_lookup_3v3` untouched for existing compositions; cover the new op with tests against the same seeded charts; cross-check the `lookup_threshold` SQL |
 | Stacked on `feat/trigger-room` (unmerged) | This is the established stacked-PR cadence; branch per the workflow and keep stacking; don't block on merge order |
-| Mirror semantics (one row → two keys) could confuse the eventual assembly room | Document the `mirror` expansion in the row's definition; final key assignment is explicitly deferred to the assembly room |
+| Expansion semantics (one row → N keys) could confuse the eventual assembly room | Document `expansion_mode` (single / home_away / per_pairing) in the row's definition; final key assignment is explicitly deferred to the assembly room |
+| `per_pairing` expansion needs a pairing set that `ThresholdInputs` doesn't carry today | In-room is unaffected — the save-time dry-run synthesizes pairings; feeding real locked-lineup pairings is an assembly-room/runtime task, called out as deferred (Unit 3 approach + Deferred to Implementation) |
 
 ## Documentation / Operational Notes
 
