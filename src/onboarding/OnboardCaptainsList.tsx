@@ -1,25 +1,31 @@
 /**
- * @fileoverview LO "onboard my captains" list (Unit 7).
+ * @fileoverview LO "onboard my captains" list — league-scoped.
  *
- * One row per team in the org — Team · League · assigned captain · Copy link —
- * pre-paired (a team is created with its captain), so the LO hands each captain
- * the RIGHT /join/:token link with no manual matching. The first link in the
- * cascade: the LO seeds captains, each captain self-serves their players.
+ * One row per team in the LEAGUE whose captain has not yet registered —
+ * Team · Captain · Copy link. Pre-paired (a team is created with its captain),
+ * so the LO hands each captain the RIGHT /join/:token link with no manual
+ * matching. The first link in the cascade: the LO seeds captains, each captain
+ * self-serves their players.
  *
- * See docs/plans/2026-05-29-001-feat-onboarding-cascade-plan.md (Unit 7).
+ * This is a TEMPORARY, self-clearing surface. The underlying RPC returns only
+ * teams whose captain is still a placeholder, so a captain drops off the list
+ * the moment they register; next season's copied teams already carry registered
+ * captains and never appear. When no captains remain, the card renders nothing.
+ *
+ * See docs/plans/2026-06-06-002-fix-onboard-captains-league-scope-plan.md.
  */
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useOrgTeamsForOnboarding } from '@/api/hooks/useTeamJoinDistribution';
+import { useLeagueTeamsForOnboarding } from '@/api/hooks/useTeamJoinDistribution';
 
 interface OnboardCaptainsListProps {
-  orgId: string;
+  leagueId: string;
 }
 
-export const OnboardCaptainsList: React.FC<OnboardCaptainsListProps> = ({ orgId }) => {
-  const { data: teams, isLoading } = useOrgTeamsForOnboarding(orgId);
+export const OnboardCaptainsList: React.FC<OnboardCaptainsListProps> = ({ leagueId }) => {
+  const { data: teams, isLoading } = useLeagueTeamsForOnboarding(leagueId);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   if (isLoading || !teams || teams.length === 0) return null;
@@ -34,7 +40,8 @@ export const OnboardCaptainsList: React.FC<OnboardCaptainsListProps> = ({ orgId 
       <CardHeader>
         <CardTitle>Onboard my captains</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Send each captain their team's join link. They'll invite their own players.
+          Send each captain their team's join link. They'll invite their own
+          players. Captains drop off this list once they register.
         </p>
       </CardHeader>
       <CardContent className="space-y-2">
@@ -46,7 +53,7 @@ export const OnboardCaptainsList: React.FC<OnboardCaptainsListProps> = ({ orgId 
             <div className="min-w-0">
               <p className="font-medium truncate">{t.team_name}</p>
               <p className="text-xs text-muted-foreground truncate">
-                {t.league_name ? `${t.league_name} · ` : ''}Captain: {t.captain_name}
+                Captain: {t.captain_name}
               </p>
             </div>
             <Button

@@ -178,22 +178,26 @@ export async function rotateTeamJoinToken(teamId: string): Promise<string | null
   return result?.ok ? result.join_token ?? null : null;
 }
 
-/** One team row in the LO's "onboard my captains" list. */
-export interface OrgOnboardingTeam {
+/** One team row in the LO's "onboard my captains" list (league-scoped). */
+export interface LeagueOnboardingTeam {
   team_id: string;
   team_name: string;
-  league_name: string | null;
   captain_name: string;
   join_token: string;
 }
 
-/** All teams in an org with captain + join link, for the LO distribution list. */
-export async function getOrgTeamsForOnboarding(
-  orgId: string
-): Promise<OrgOnboardingTeam[]> {
-  const { data, error } = await supabase.rpc('get_org_teams_for_onboarding', {
-    p_org_id: orgId,
+/**
+ * Teams in a league whose captain is not yet registered, with captain name +
+ * join link, for the LO's temporary "onboard my captains" list. Self-clears as
+ * captains register (the RPC filters on a placeholder captain) and excludes bye
+ * teams. Org-staff gated server-side.
+ */
+export async function getLeagueTeamsForOnboarding(
+  leagueId: string
+): Promise<LeagueOnboardingTeam[]> {
+  const { data, error } = await supabase.rpc('get_league_teams_for_onboarding', {
+    p_league_id: leagueId,
   });
   if (error) throw error;
-  return (data as unknown as OrgOnboardingTeam[]) ?? [];
+  return (data as unknown as LeagueOnboardingTeam[]) ?? [];
 }
