@@ -24,6 +24,10 @@ import type { AllocatorFormulaOperation } from '../types';
 
 export const addComplementOfOtherSideOperation: AllocatorFormulaOperation = {
   name: 'add_complement_of_other_side',
+  argsShape: {
+    max: { kind: 'number', required: true },
+    other_side: { kind: 'side_name', required: true },
+  },
   compute: (args, ctx) => {
     const max = args.max;
     const otherSide = args.other_side;
