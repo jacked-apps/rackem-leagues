@@ -82,25 +82,48 @@ interface RosterData {
   }> | null;
 }
 
+/** A resolved roster member: nickname-preferred `name` + always-full `fullName`. */
+export interface NameTeamEntry {
+  /** Nickname-preferred (mobile-primary) — used for the compact matchup line. */
+  name: string;
+  /** Always "First Last" — used for the confirmer list (dispute adjudication). */
+  fullName: string;
+  team: string;
+}
+
 /**
- * Build an id → {name, team} map from both rosters. `name` prefers the nickname
- * (the mobile-primary display), falling back to "First Last"; `team` is the
- * member's team display name. Feeds `buildConfirmerAudit`.
+ * Build an id → {name, fullName, team} map from both rosters. `name` prefers the
+ * nickname (the mobile-primary matchup display); `fullName` is always "First
+ * Last" (the confirmer audit wants real identities, not nicknames); `team` is the
+ * member's team display name.
  */
 export function buildNameTeamMap(
   home: { data: unknown; teamName: string },
   away: { data: unknown; teamName: string }
-): Map<string, { name: string; team: string }> {
-  const map = new Map<string, { name: string; team: string }>();
+): Map<string, NameTeamEntry> {
+  const map = new Map<string, NameTeamEntry>();
   for (const side of [home, away]) {
     const players = (side.data as RosterData | undefined)?.team_players;
     players?.forEach((tp) => {
       const m = tp.members;
       if (m) {
-        const name = m.nickname || `${m.first_name} ${m.last_name}`.trim();
-        map.set(m.id, { name, team: side.teamName });
+        const fullName = `${m.first_name} ${m.last_name}`.trim();
+        map.set(m.id, { name: m.nickname || fullName, fullName, team: side.teamName });
       }
     });
   }
   return map;
+}
+
+/**
+ * Project a {@link NameTeamEntry} map down to the `{name, team}` shape
+ * `buildConfirmerAudit` expects, with **full names** as `name` — so the confirmer
+ * list shows real identities rather than nicknames.
+ */
+export function fullNameTeamMap(
+  map: ReadonlyMap<string, NameTeamEntry>
+): Map<string, { name: string; team: string }> {
+  const out = new Map<string, { name: string; team: string }>();
+  for (const [id, e] of map) out.set(id, { name: e.fullName, team: e.team });
+  return out;
 }

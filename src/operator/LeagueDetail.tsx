@@ -21,6 +21,7 @@ import { TeamsCard } from '@/components/operator/TeamsCard';
 import { ScheduleCard } from '@/components/operator/ScheduleCard';
 import { StatsCard } from '@/components/operator/StatsCard';
 import { PlayoffsCard } from '@/components/operator/PlayoffsCard';
+import { OnboardCaptainsList } from '@/onboarding/OnboardCaptainsList';
 import { Button } from '@/components/ui/button';
 import { DashboardCard } from '@/components/operator/DashboardCard';
 import { Calendar, DollarSign, Settings, Users } from 'lucide-react';
@@ -267,6 +268,12 @@ export const LeagueDetail: React.FC = () => {
             buttonText="Open Finances"
             linkTo={`/league/${league.id}/finances`}
           />
+        </div>
+
+        {/* Onboard captains: send each not-yet-registered captain their team's
+            join link. Renders nothing once every captain has registered. */}
+        <div className="mb-6">
+          <OnboardCaptainsList leagueId={league.id} />
         </div>
 
         {/* Teams Section */}

@@ -11,10 +11,9 @@ import { QuickStatsCard } from '@/components/operator/QuickStatsCard';
 import { OrganizationStaffCard } from '@/components/operator/OrganizationStaffCard';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { MessageSquare, Users, Settings, BookOpen, Video, MessageCircle, Phone, Flag } from 'lucide-react';
+import { MessageSquare, Users, Settings, BookOpen, Video, MessageCircle, Phone, Flag, Wrench } from 'lucide-react';
 import { usePendingReportsCount } from '@/hooks/usePendingReportsCount';
 import { JoinRequestList } from '@/onboarding/components/JoinRequestList';
-import { OnboardCaptainsList } from '@/onboarding/OnboardCaptainsList';
 
 /**
  * OperatorDashboard Component
@@ -74,11 +73,6 @@ export const OperatorDashboard: React.FC = () => {
           <JoinRequestList title="Join requests" />
         </div>
 
-        {/* Onboarding cascade (Unit 7): send each captain their team's join link. */}
-        <div className="mb-6">
-          <OnboardCaptainsList orgId={organization.id} />
-        </div>
-
         {/* Main Grid - All content */}
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Row 1 - Quick Actions */}
@@ -108,6 +102,15 @@ export const OperatorDashboard: React.FC = () => {
             buttonText="View Reports"
             linkTo={`/operator-reports/${orgId}`}
             badgeCount={pendingReportsCount}
+          />
+
+          <DashboardCard
+            icon={<Wrench className="h-6 w-6" />}
+            iconColor="text-primary"
+            title="Scoring Workshop"
+            description="Build pieces of a Scoring System — one room per module"
+            buttonText="Open Workshop"
+            linkTo="/operator/scoring-workshop"
           />
 
           {/* Row 2 - Active Leagues (2 cols) and Sidebar (1 col) */}

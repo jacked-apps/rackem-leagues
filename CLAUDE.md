@@ -231,6 +231,27 @@ The table of contents is a critical navigation tool for both you and the user. K
 - I verify solutions with tests when available
 - I never commit changes unless explicitly asked
 
+### Feature Gating Workflow
+Some features ship **gated** — merged to `main` but NOT yet live for users
+(e.g. a `!isProduction` route guard, or a feature flag that's off in
+production). This lets finished code integrate into main without exposing an
+unverified flow to real users; Ed reviews it on **staging** (where non-prod
+gates are open) and then says when to un-gate. This is the standard, expected
+path — not a workaround.
+
+When I gate a feature (or a newly-merged gated feature lands):
+1. **Add it to `LIST_FOR_ED.md`** under the "🚪 Gated — awaiting staging review
+   + un-gate" section: feature name, where the gate lives (file + the
+   flag/conditional), and one line on what Ed should verify on staging.
+2. **Tell Ed in chat** that it's gated, so he knows to review it on staging.
+3. Ed reviews on staging → tells me to un-gate.
+4. **On un-gate:** flip the conditional/flag to expose it in production, AND
+   **remove its entry from `LIST_FOR_ED.md`**.
+
+So the gated section of `LIST_FOR_ED.md` is always the live list of "built +
+merged but not yet turned on for users." (Per the notes-files rule, these edits
+ride with the related working commit.)
+
 ### Pre-approved Commands
 The following commands can be run without explicit user permission:
 - `pnpm run build` (includes TypeScript compilation/typecheck)
