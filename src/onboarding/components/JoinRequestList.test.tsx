@@ -1,10 +1,10 @@
 /**
- * @fileoverview Tests for the approve surface (JoinRequestList).
+ * @fileoverview Tests for the approve surface (JoinRequestList + JoinRequestCard).
  *
- * Verifies the row controls and the two guards: Replace only appears when the
- * team has open placeholders; Add is one tap when none, but asks to confirm
- * "brand-new player" when placeholders still exist (the strand-a-record guard);
- * Decline always confirms. The data + approve hooks and the picker are mocked.
+ * Verifies the guided card flow: who's asking, the "is this one of your players?"
+ * inline placeholder list (tap a name → confirm → merge/replace), the
+ * "just add them" fallback, the no-placeholder single-Add path, and the decline
+ * confirm. The requests feed, approve mutation, and placeholder feed are mocked.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -13,6 +13,7 @@ import type { ApproverJoinRequest } from '@/api/queries/teamJoin';
 
 const mockUseRequests = vi.fn();
 const mockMutate = vi.fn();
+const mockUsePlaceholders = vi.fn();
 
 vi.mock('@/api/hooks/useTeamJoinRequests', () => ({
   useTeamJoinRequests: () => mockUseRequests(),
@@ -20,8 +21,8 @@ vi.mock('@/api/hooks/useTeamJoinRequests', () => ({
 vi.mock('@/api/hooks/useApproveJoinRequest', () => ({
   useApproveJoinRequest: () => ({ mutate: mockMutate, isPending: false }),
 }));
-vi.mock('./PlaceholderPicker', () => ({
-  PlaceholderPicker: () => <div>placeholder-picker</div>,
+vi.mock('@/api/hooks/useTeamPlaceholders', () => ({
+  useTeamPlaceholders: (teamId: string | undefined) => mockUsePlaceholders(teamId),
 }));
 
 import { JoinRequestList } from './JoinRequestList';
@@ -42,6 +43,8 @@ const baseReq: ApproverJoinRequest = {
 beforeEach(() => {
   vi.clearAllMocks();
   mockUseRequests.mockReturnValue({ data: [baseReq], isLoading: false });
+  // Default: no placeholders loaded (hook disabled / empty).
+  mockUsePlaceholders.mockReturnValue({ data: [], isLoading: false });
 });
 
 describe('JoinRequestList', () => {
@@ -51,44 +54,100 @@ describe('JoinRequestList', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('shows the person, team, and league with Add + Decline', () => {
+  it('leads with who accepted the invite, plus team and league', () => {
     render(<JoinRequestList />);
-    expect(screen.getByText('Jordan Quick')).toBeInTheDocument();
+    expect(screen.getByText(/Jordan Quick accepted the invite/)).toBeInTheDocument();
     expect(screen.getByText(/The Break Room · Tuesday Eight-ball/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Add' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Decline' })).toBeInTheDocument();
   });
 
-  it('hides Replace when the team has no open placeholders', () => {
+  it('no placeholders → single "Add to the team", one tap → add', () => {
     render(<JoinRequestList />);
-    expect(screen.queryByRole('button', { name: 'Replace' })).not.toBeInTheDocument();
-  });
-
-  it('Add is one tap when there are no placeholders', () => {
-    render(<JoinRequestList />);
-    fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+    // No "is this one of your players?" prompt when there's nothing to match.
+    expect(screen.queryByText(/one of your players/i)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Add to the team' }));
     expect(mockMutate).toHaveBeenCalledWith(
       expect.objectContaining({ requestId: 'r1', action: 'add' }),
-      expect.anything()
+      expect.anything(),
     );
   });
 
-  it('Add asks to confirm when placeholders still exist', () => {
+  it('with placeholders → shows the name list + "just add" fallback', () => {
     mockUseRequests.mockReturnValue({
       data: [{ ...baseReq, has_open_placeholders: true }],
       isLoading: false,
     });
+    mockUsePlaceholders.mockReturnValue({
+      data: [{ member_id: 'p1', display_name: 'J. Quick (PP)', has_stats: true }],
+      isLoading: false,
+    });
     render(<JoinRequestList />);
-    // Replace is now offered…
-    expect(screen.getByRole('button', { name: 'Replace' })).toBeInTheDocument();
-    // …and Add opens the confirm rather than mutating immediately.
-    fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+    expect(screen.getByText(/one of your players/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /J\. Quick \(PP\)/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /just add them to the team/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('tapping a placeholder name confirms, then merges (replace + member id)', () => {
+    mockUseRequests.mockReturnValue({
+      data: [{ ...baseReq, has_open_placeholders: true }],
+      isLoading: false,
+    });
+    mockUsePlaceholders.mockReturnValue({
+      data: [{ member_id: 'p1', display_name: 'J. Quick (PP)', has_stats: true }],
+      isLoading: false,
+    });
+    render(<JoinRequestList />);
+
+    // Tap the name → "same person?" confirm, not an immediate merge.
+    fireEvent.click(screen.getByRole('button', { name: /J\. Quick \(PP\)/ }));
     expect(mockMutate).not.toHaveBeenCalled();
-    expect(screen.getByText(/brand-new player/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Add as new' }));
+    expect(screen.getByText(/Are these the same person/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Yes, same person/i }));
+    expect(mockMutate).toHaveBeenCalledWith(
+      expect.objectContaining({ requestId: 'r1', action: 'replace', claimedMemberId: 'p1' }),
+      expect.anything(),
+    );
+  });
+
+  it('tapping a no-record placeholder confirms with plain "add" copy (no merge talk)', () => {
+    mockUseRequests.mockReturnValue({
+      data: [{ ...baseReq, has_open_placeholders: true }],
+      isLoading: false,
+    });
+    mockUsePlaceholders.mockReturnValue({
+      data: [{ member_id: 'p1', display_name: 'J. Quick (PP)', has_stats: false }],
+      isLoading: false,
+    });
+    render(<JoinRequestList />);
+
+    fireEvent.click(screen.getByRole('button', { name: /J\. Quick \(PP\)/ }));
+    // Plain add language — no "same person" / merge framing for a recordless PP.
+    expect(screen.getByText(/^Add them to the team\?$/i)).toBeInTheDocument();
+    expect(screen.queryByText(/same person/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /^Add to team$/i }));
+    expect(mockMutate).toHaveBeenCalledWith(
+      expect.objectContaining({ requestId: 'r1', action: 'replace', claimedMemberId: 'p1' }),
+      expect.anything(),
+    );
+  });
+
+  it('"just add them" with placeholders present → add (no merge)', () => {
+    mockUseRequests.mockReturnValue({
+      data: [{ ...baseReq, has_open_placeholders: true }],
+      isLoading: false,
+    });
+    mockUsePlaceholders.mockReturnValue({
+      data: [{ member_id: 'p1', display_name: 'J. Quick (PP)', has_stats: false }],
+      isLoading: false,
+    });
+    render(<JoinRequestList />);
+    fireEvent.click(screen.getByRole('button', { name: /just add them to the team/i }));
     expect(mockMutate).toHaveBeenCalledWith(
       expect.objectContaining({ requestId: 'r1', action: 'add' }),
-      expect.anything()
+      expect.anything(),
     );
   });
 
@@ -96,12 +155,11 @@ describe('JoinRequestList', () => {
     render(<JoinRequestList />);
     fireEvent.click(screen.getByRole('button', { name: 'Decline' }));
     expect(mockMutate).not.toHaveBeenCalled();
-    // The confirm dialog's action button.
     const declineButtons = screen.getAllByRole('button', { name: 'Decline' });
     fireEvent.click(declineButtons[declineButtons.length - 1]);
     expect(mockMutate).toHaveBeenCalledWith(
       expect.objectContaining({ requestId: 'r1', action: 'decline' }),
-      expect.anything()
+      expect.anything(),
     );
   });
 });

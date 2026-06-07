@@ -21,6 +21,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { ShareLinkSection } from '@/components/invite/ShareLinkSection';
+import { InfoButton } from '@/components/InfoButton';
+import { InviteHelpContent } from './InviteHelpContent';
 import {
   useTeamJoinToken,
   useRotateTeamJoinToken,
@@ -92,11 +94,17 @@ export const InviteMyTeamButton: React.FC<InviteMyTeamButtonProps> = ({
       )}
 
       <Dialog>
-        <DialogTrigger asChild>
-          <Button variant="outline" loadingText="none">
-            Invite my team
-          </Button>
-        </DialogTrigger>
+        <div className="flex items-center gap-1">
+          <DialogTrigger asChild>
+            <Button variant="outline" loadingText="none">
+              Invite my team
+            </Button>
+          </DialogTrigger>
+          {/* In-place help: how to share the link + approve players. */}
+          <InfoButton title="How to invite your team">
+            <InviteHelpContent />
+          </InfoButton>
+        </div>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Invite players to {teamName}</DialogTitle>
