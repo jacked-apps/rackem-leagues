@@ -80,33 +80,34 @@ in — either is fine.
 When a player has asked to join, you'll see their request on your **dashboard**
 or **My Teams** (there's a little notification when one is waiting for you).
 
-Each request shows the player's **name** and gives you two buttons:
+Each request leads with the player's **name**, then asks you to place them:
 
-- **Add** — this puts them on your roster. **This is the one you'll tap almost
-  every time.**
+- **If you pre-made placeholder names** for your team, you'll see them listed —
+  *"Is this one of your players?"* Tap the matching name to **connect** them
+  (that keeps their stats and history). If they're new, tap **"Not one of these
+  — just add them to the team."**
+- **If you didn't pre-make names**, it's a single **"Add to the team"** button.
 - **Decline** — only if it's someone who should *not* be on your team.
 
-Tap **Add**. That's it — they're on the team, and they get a "You're on the
-team!" message on their phone. Do this for each player as their request comes in.
+That's it — once you add or connect them, they're on the team and get a "You're
+on the team!" message on their phone. Do this for each player as requests come in.
 
 When everyone's been added, you're done. Your roster is full.
 
 ---
 
-## If you pre-made placeholder spots (optional)
+## About placeholder names (if you pre-made them)
 
-Some captains like to type in their roster names ahead of time (these are called
-**placeholders** — a name with no account yet). If you did that:
+Some captains type in their roster names ahead of time (these are called
+**placeholders** — a name with no account yet). Players **don't** pick their own
+placeholder when they join — the share link is the same for everyone and doesn't
+know who's who. They just **ask to join**, and **you** connect them to the right
+name at approval. That keeps it in your hands and means two people can't
+accidentally grab the same name.
 
-- When a player signs up through the link, the app shows them your placeholder
-  names and asks **"Are you one of these players?"** They tap their own name to
-  claim it.
-- On your approval, you'll see a **Replace** button. Tapping Replace links the
-  real player to the placeholder you made — so their stats and history carry
-  over instead of starting a second copy of them.
-
-**Rule of thumb:** if you made a placeholder for someone, use **Replace** for
-them (not Add), so you don't end up with two of the same person on your roster.
+**Rule of thumb:** if you made a placeholder for someone, tap their name to
+**connect** them (rather than "just add"), so their stats carry over and you
+don't end up with two of the same person on your roster.
 
 ---
 
