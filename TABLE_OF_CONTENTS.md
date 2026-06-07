@@ -952,7 +952,7 @@ Subtree behind the **message settings modal** — per-user messaging preferences
 - `ScheduleCard.tsx` - The **Schedule** part of a league (on `SectionCard`, collapsed). Subtitle "N/M weeks played"; expand for Upcoming Weeks. Actions: Create Schedule / View Schedule. (Score a Match moved to the Stats card; Started/Playoffs summary + Next Holiday dropped — Next Holiday lives on the Season card now.)
 - `SeasonStatusCard.tsx` - Season status
 - `SeasonsCard.tsx` - Seasons list card
-- `StatsCard.tsx` - Stats & Standings entry-point card on the league page (on `SectionCard`). Two entries: **Standings** (team + player stats) and **Score a Match** (the manual score / verify / edit workflow, now production-visible). Replaced the old read-only "Match Data" debug viewer link (the `MatchDataViewer` page/route still exist for dev, just unlinked here).
+- `StatsCard.tsx` - **Scoring** card on the league page (on `SectionCard`; title "Scoring"). Two slim icon-left buttons: **Standings** (team + player stats) and **Score a Match** (the manual score / verify / edit workflow, production-visible). Replaced the old read-only "Match Data" debug viewer link (the `MatchDataViewer` page/route still exist for dev, just unlinked here).
 - `TableBadgePopover.tsx` - Popover badge showing per-venue table configuration summary (count, table numbers).
 - `TableConfigureModal.tsx` - Modal for editing a venue's table configuration (count, numbers, types).
 - `TeamsCard.tsx` - The **Teams** part of a league (on `SectionCard`, collapsed). Subtitle "N teams"; expand for the roster table (captain + venue, click a row for contact details). Action: Manage Teams.

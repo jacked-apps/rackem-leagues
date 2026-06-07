@@ -39,32 +39,26 @@ export function StatsCard({ leagueId, seasonId }: StatsCardProps) {
   }
 
   return (
-    <SectionCard title="Stats & Standings">
-      <div className="flex flex-wrap gap-4">
+    <SectionCard title="Scoring">
+      <div className="flex flex-wrap gap-2">
         {/* Standings */}
         <Button
           variant="outline"
-          className="h-auto flex-col items-start p-4 hover:bg-blue-50 hover:border-blue-300"
+          size="sm"
           onClick={() => navigate(`/league/${leagueId}/season/${seasonId}/standings`)}
         >
-          <Trophy className="h-5 w-5 mb-2 text-blue-600" />
-          <div className="text-left">
-            <div className="font-semibold text-foreground">Standings</div>
-            <div className="text-sm text-muted-foreground">Team + player stats</div>
-          </div>
+          <Trophy className="h-4 w-4 text-blue-600" />
+          Standings
         </Button>
 
         {/* Score a Match — manual score / verify / edit */}
         <Button
           variant="outline"
-          className="h-auto flex-col items-start p-4 hover:bg-orange-50 hover:border-orange-300"
+          size="sm"
           onClick={() => navigate(`/league/${leagueId}/manual-scoring`)}
         >
-          <SquarePen className="h-5 w-5 mb-2 text-orange-600" />
-          <div className="text-left">
-            <div className="font-semibold text-foreground">Score a Match</div>
-            <div className="text-sm text-muted-foreground">Enter, verify, or edit scores</div>
-          </div>
+          <SquarePen className="h-4 w-4 text-orange-600" />
+          Score a Match
         </Button>
       </div>
     </SectionCard>
