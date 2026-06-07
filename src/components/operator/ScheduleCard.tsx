@@ -7,7 +7,6 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/supabaseClient';
 import { Button } from '@/components/ui/button';
 import { SectionCard, SectionCardLoading, SectionCardEmpty } from './SectionCard';
-import { isProduction } from '@/config/environment';
 import { logger } from '@/utils/logger';
 
 interface ScheduleCardProps {
@@ -201,16 +200,6 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({ leagueId }) => {
   // Schedule once it does (+ Score a Match in non-prod).
   const actions = (
     <>
-      {!isProduction && (
-        <Button
-          size="sm"
-          variant="outline"
-          loadingText="none"
-          onClick={() => navigate(`/league/${leagueId}/manual-scoring`)}
-        >
-          Score a Match
-        </Button>
-      )}
       {activeSeason && scheduleExists && (
         <Button size="sm" onClick={handleViewSchedule} disabled={isNavigating} isLoading={isNavigating} loadingText="Loading...">
           View Schedule
