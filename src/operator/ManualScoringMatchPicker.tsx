@@ -20,6 +20,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Printer } from 'lucide-react';
 import {
   Accordion,
   AccordionItem,
@@ -55,10 +56,12 @@ function MatchRow({
   match,
   onScore,
   onReview,
+  onLmsSheet,
 }: {
   match: MatchWithDetails;
   onScore: () => void;
   onReview: () => void;
+  onLmsSheet: () => void;
 }) {
   const label = `${match.home_team?.team_name ?? 'BYE'} vs ${match.away_team?.team_name ?? 'BYE'}`;
 
@@ -78,15 +81,27 @@ function MatchRow({
 
   if (isMatchEligibleForReview(match)) {
     return (
-      <Button
-        variant="outline"
-        className="w-full justify-between"
-        onClick={onReview}
-        data-testid="review-match"
-      >
-        <span>{label}</span>
-        <Badge variant="outline">Review · {manualScoringStatusLabel(match.status)}</Badge>
-      </Button>
+      <div className="flex w-full items-center gap-2">
+        <Button
+          variant="outline"
+          className="flex-1 justify-between"
+          onClick={onReview}
+          data-testid="review-match"
+        >
+          <span>{label}</span>
+          <Badge variant="outline">Review · {manualScoringStatusLabel(match.status)}</Badge>
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="shrink-0"
+          onClick={onLmsSheet}
+          title="Print results for CSI / FargoRate LMS"
+          data-testid="lms-sheet"
+        >
+          <Printer className="h-4 w-4" />
+        </Button>
+      </div>
     );
   }
 
@@ -193,6 +208,9 @@ export default function ManualScoringMatchPicker() {
                         }
                         onReview={() =>
                           navigate(`/league/${leagueId}/match-review/${match.id}`)
+                        }
+                        onLmsSheet={() =>
+                          navigate(`/league/${leagueId}/match/${match.id}/lms-sheet`)
                         }
                       />
                     ))}

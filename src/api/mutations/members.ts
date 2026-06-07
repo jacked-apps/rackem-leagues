@@ -88,15 +88,8 @@ export interface UpdateMemberProfileParams {
     city: string;
     state: string;
     zip_code: string;
+    role: 'player' | 'league_operator' | 'admin';
   }>;
-}
-
-/**
- * Parameters for updating member nickname
- */
-export interface UpdateMemberNicknameParams {
-  memberId: string;
-  nickname: string;
 }
 
 /**
@@ -130,36 +123,6 @@ export async function updateMemberProfile(
 
   if (error) {
     throw new Error(`Failed to update member profile: ${error.message}`);
-  }
-}
-
-/**
- * Update member's nickname
- *
- * Used when auto-generating nicknames for players who don't have one.
- * Updates the members table with the new nickname.
- *
- * @param params - Update parameters (memberId, nickname)
- * @throws Error if database update fails
- *
- * @example
- * await updateMemberNickname({
- *   memberId: 'member-123',
- *   nickname: 'John D'
- * });
- */
-export async function updateMemberNickname(
-  params: UpdateMemberNicknameParams
-): Promise<void> {
-  const { memberId, nickname } = params;
-
-  const { error } = await supabase
-    .from('members')
-    .update({ nickname })
-    .eq('id', memberId);
-
-  if (error) {
-    throw new Error(`Failed to update nickname: ${error.message}`);
   }
 }
 
@@ -357,36 +320,6 @@ export async function deleteMember(params: DeleteMemberParams): Promise<void> {
 
   if (error) {
     throw new Error(`Failed to delete member: ${error.message} (${error.code})`);
-  }
-}
-
-/**
- * Update member's role
- *
- * Changes a member's role (e.g., from 'player' to 'league_operator').
- * Used during league operator application approval.
- *
- * @param params - Update parameters (memberId, role)
- * @throws Error if database update fails
- *
- * @example
- * await updateMemberRole({
- *   memberId: 'member-123',
- *   role: 'league_operator'
- * });
- */
-export async function updateMemberRole(
-  params: UpdateMemberRoleParams
-): Promise<void> {
-  const { memberId, role } = params;
-
-  const { error } = await supabase
-    .from('members')
-    .update({ role })
-    .eq('id', memberId);
-
-  if (error) {
-    throw new Error(`Failed to update member role: ${error.message}`);
   }
 }
 

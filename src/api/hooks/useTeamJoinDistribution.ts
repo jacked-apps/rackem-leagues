@@ -1,19 +1,20 @@
 /**
- * @fileoverview Hooks for the join-link distribution surfaces (Unit 7).
+ * @fileoverview Hooks for the join-link distribution surfaces.
  *
  * - useTeamJoinToken: a team's current join token (captain "Invite my team").
  * - useRotateTeamJoinToken: regenerate it on a leak; refreshes the token query.
- * - useOrgTeamsForOnboarding: the LO's per-team captain + link list.
+ * - useLeagueTeamsForOnboarding: the LO's per-team captain + link list, scoped
+ *   to one league and limited to captains not yet registered.
  *
- * See docs/plans/2026-05-29-001-feat-onboarding-cascade-plan.md (Unit 7).
+ * See docs/plans/2026-06-06-002-fix-onboard-captains-league-scope-plan.md.
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getTeamJoinToken,
   rotateTeamJoinToken,
-  getOrgTeamsForOnboarding,
-  type OrgOnboardingTeam,
+  getLeagueTeamsForOnboarding,
+  type LeagueOnboardingTeam,
 } from '../queries/teamJoin';
 import { queryKeys } from '../queryKeys';
 
@@ -36,11 +37,11 @@ export function useRotateTeamJoinToken(teamId: string) {
   });
 }
 
-export function useOrgTeamsForOnboarding(orgId: string | undefined) {
-  return useQuery<OrgOnboardingTeam[]>({
-    queryKey: queryKeys.teamJoin.orgTeams(orgId ?? ''),
-    queryFn: () => getOrgTeamsForOnboarding(orgId!),
-    enabled: !!orgId,
+export function useLeagueTeamsForOnboarding(leagueId: string | undefined) {
+  return useQuery<LeagueOnboardingTeam[]>({
+    queryKey: queryKeys.teamJoin.leagueTeams(leagueId ?? ''),
+    queryFn: () => getLeagueTeamsForOnboarding(leagueId!),
+    enabled: !!leagueId,
     staleTime: 60 * 1000,
   });
 }

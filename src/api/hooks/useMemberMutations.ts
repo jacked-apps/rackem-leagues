@@ -18,11 +18,10 @@ import { queryKeys } from '../queryKeys';
 import {
   updateProfanityFilter,
   markProfanityOnboardingComplete,
-  updateMemberNickname,
   updateMemberProfile,
   createMember,
   deleteMember,
-  updateMemberRole
+  type UpdateMemberRoleParams,
 } from '../mutations/members';
 
 /**
@@ -51,35 +50,6 @@ export function useUpdateMemberProfile() {
     mutationFn: updateMemberProfile,
     onSuccess: () => {
       // Invalidate all member queries to refresh profile everywhere
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.members.all,
-      });
-    },
-  });
-}
-
-/**
- * Hook to update member's nickname
- *
- * Automatically invalidates member cache after successful update.
- *
- * @returns TanStack Mutation object with mutate/mutateAsync functions
- *
- * @example
- * const updateNickname = useUpdateMemberNickname();
- *
- * await updateNickname.mutateAsync({
- *   memberId: 'member-123',
- *   nickname: 'John D'
- * });
- */
-export function useUpdateMemberNickname() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: updateMemberNickname,
-    onSuccess: () => {
-      // Invalidate all member queries to refresh nickname everywhere
       queryClient.invalidateQueries({
         queryKey: queryKeys.members.all,
       });
@@ -223,7 +193,10 @@ export function useDeleteMember() {
  * Hook to update member's role
  *
  * Changes a member's role (e.g., from 'player' to 'league_operator').
- * Automatically invalidates member cache after successful update.
+ * Delegates to the canonical `updateMemberProfile` patch mutation (role is a
+ * member-row column) while keeping this named hook for its bespoke invalidation
+ * and so role changes stay greppable. Automatically invalidates member cache
+ * after successful update.
  *
  * @returns TanStack Mutation object with mutate/mutateAsync functions
  *
@@ -239,7 +212,8 @@ export function useUpdateMemberRole() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: updateMemberRole,
+    mutationFn: ({ memberId, role }: UpdateMemberRoleParams) =>
+      updateMemberProfile({ memberId, updates: { role } }),
     onSuccess: async () => {
       // Refresh role everywhere AND wait for refetch — paired with
       // the same treatment in useCreateOrganization (closes LIST_FOR_ED

@@ -3110,8 +3110,8 @@ export type Database = {
           teams: Json
         }[]
       }
-      get_org_teams_for_onboarding: {
-        Args: { p_org_id: string }
+      get_league_teams_for_onboarding: {
+        Args: { p_league_id: string }
         Returns: Json
       }
       get_placeholder_remove_context: {

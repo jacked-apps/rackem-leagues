@@ -53,7 +53,12 @@ interface CustomAction {
 
 interface PlayerNameLinkProps {
   playerId: string;
-  playerName: string;
+  /**
+   * Optional instant-display name (avoids a load flash before the internal
+   * `useMemberById` fetch resolves). When omitted, the component renders the
+   * fetched nickname / full name once the member query resolves.
+   */
+  playerName?: string;
   className?: string;
   /** Team ID for invite context (required for email invites) */
   teamId?: string;
@@ -63,9 +68,6 @@ interface PlayerNameLinkProps {
   captainName?: string;
   /** Captain's member ID for tracking who sent the invite */
   captainMemberId?: string;
-  onSendMessage?: (playerId: string) => void;
-  onReportUser?: (playerId: string) => void;
-  onBlockUser?: (playerId: string) => void;
   customActions?: CustomAction[];
   /**
    * Hide the inline `PlaceholderBadge` next to the trigger name. The badge
@@ -85,9 +87,6 @@ export function PlayerNameLink({
   teamName,
   captainName,
   captainMemberId,
-  onSendMessage,
-  onReportUser,
-  onBlockUser,
   customActions = [],
   hidePlaceholderBadge = false,
 }: PlayerNameLinkProps) {
@@ -120,19 +119,19 @@ export function PlayerNameLink({
   const isPlaceholder = memberData?.user_id === null;
   const playerEmail = memberData?.email;
 
-  // Defensive display fallback: if the parent passed "Unknown" (or an
-  // empty string) — which happens when their player Map missed this ID
-  // — fall back to memberData.nickname (or full name) from our own
-  // useMemberById fetch. The "real" fix lives upstream in the Map
-  // builders (useMatchScoring / useSpectateMatch now query members
-  // directly by ID). This is a belt-and-suspenders so any future
-  // caller that doesn't pre-resolve the name still renders correctly.
+  // Defensive display fallback: when `playerName` is omitted or the parent
+  // passed "Unknown" (their player Map missed this ID), fall back to
+  // memberData.nickname (or full name) from our own useMemberById fetch. The
+  // "real" fix lives upstream in the Map builders (useMatchScoring /
+  // useSpectateMatch now query members directly by ID). This is a
+  // belt-and-suspenders so any caller that passes only a `playerId` still
+  // renders correctly. Always resolves to a string (never undefined).
   const displayName =
     (playerName && playerName !== 'Unknown')
       ? playerName
       : memberData
         ? memberData.nickname || `${memberData.first_name} ${memberData.last_name}`
-        : playerName;
+        : (playerName ?? '');
 
   // Check if user is blocked (only fetch when popover is open)
   // Note: We can't conditionally enable this hook based on `open` state because hooks can't be conditional.
@@ -148,13 +147,7 @@ export function PlayerNameLink({
   };
 
   const handleSendMessage = async () => {
-    if (onSendMessage) {
-      onSendMessage(playerId);
-      setOpen(false);
-      return;
-    }
-
-    // Default: Create/open DM with this player
+    // Create/open DM with this player
     if (!memberId) {
       logger.error('Current user member ID not found');
       setOpen(false);
@@ -186,23 +179,12 @@ export function PlayerNameLink({
   };
 
   const handleReportUser = () => {
-    if (onReportUser) {
-      onReportUser(playerId);
-      setOpen(false);
-    } else {
-      // Open report modal
-      setOpen(false);
-      setShowReportModal(true);
-    }
+    // Open report modal
+    setOpen(false);
+    setShowReportModal(true);
   };
 
   const handleBlockToggle = () => {
-    if (onBlockUser) {
-      onBlockUser(playerId);
-      setOpen(false);
-      return;
-    }
-
     if (!memberId) {
       logger.error('Current user member ID not found');
       setOpen(false);
@@ -572,7 +554,7 @@ export function PlayerNameLink({
         open={showRegisterModal}
         onOpenChange={setShowRegisterModal}
         playerId={playerId}
-        playerName={playerFullName || playerName}
+        playerName={playerFullName || displayName}
         playerEmail={playerEmail}
         playerUserId={memberData?.user_id}
         teamId={teamId}

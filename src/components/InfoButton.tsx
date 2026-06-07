@@ -7,8 +7,20 @@
  * isn't enough room below. Survives close-to-edge placement on phones,
  * inside collapsed accordions, and dense card layouts where the older
  * "always below + manual align" version was clipping off-screen.
+ *
+ * The popup is rendered through a portal to `document.body`. Its position
+ * is computed with `position: fixed` + viewport-coordinate math, which
+ * assumes "fixed" means "relative to the viewport." That only holds when
+ * no ancestor establishes a containing block — but ANY ancestor with a
+ * CSS `transform` / `filter` / `perspective` becomes the containing block
+ * for fixed descendants, so the clamp math would compute against the wrong
+ * box (this bit hardest inside Radix `Popover`/`Tooltip` content, which
+ * positions itself with a transform — e.g. the scoring settings gear).
+ * Portaling to `<body>` lifts the popup out of any transformed ancestor so
+ * the viewport math is correct everywhere.
  */
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 interface InfoButtonProps {
   title: string;
@@ -145,25 +157,27 @@ export const InfoButton: React.FC<InfoButtonProps> = ({
         </button>
       </div>
 
-      {showInfo && (
-        <div
-          ref={popupRef}
-          className="fixed z-50 w-80 max-h-[80vh] overflow-y-auto p-4 bg-card border border-border rounded-lg shadow-lg"
-          style={style}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold text-foreground">{title}</h3>
-            <button
-              onClick={togglePopup}
-              className="w-5 h-5 text-muted-foreground transition-colors hover:text-foreground"
-              aria-label="Close"
-            >
-              ×
-            </button>
-          </div>
-          <div className="text-foreground text-sm">{children}</div>
-        </div>
-      )}
+      {showInfo &&
+        createPortal(
+          <div
+            ref={popupRef}
+            className="fixed z-50 w-80 max-h-[80vh] overflow-y-auto p-4 bg-card border border-border rounded-lg shadow-lg"
+            style={style}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold text-foreground">{title}</h3>
+              <button
+                onClick={togglePopup}
+                className="w-5 h-5 text-muted-foreground transition-colors hover:text-foreground"
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+            <div className="text-foreground text-sm">{children}</div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 };

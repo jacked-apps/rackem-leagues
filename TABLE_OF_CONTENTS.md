@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-06-06 (Trigger workshop complete on `feat/trigger-room` — second standalone module workshop in the Workshops building. The "Scoring System Workshop" framing is retired; the building is just "Workshops" — one per module type — pending the future Scoring System workshop that will assemble modules. All 7 units shipped: DB schema + 4 seeded officials + tamper trigger; never-throw loader; standalone `validateTrigger` with optional write-target whitelist; `ExpressionBuilder` widget extracted from `FormulaBuilder` to `_shared/`; universal-only available-data registry (write target restricted to home_points/away_points); full workshop UI (list + editor + save-time guard + ConditionBuilder + ActionBuilder); routes registered; workshop home page card live.) Prior 2026-06-05: Allocator workshop merged main → workshop branch (brings in glossary, doc archive, onboarding, DB suite cleanup, scoring-end fix). 2026-06-02: Archived ~63 completed/superseded brainstorm, plan & memory-bank docs to `docs/archive/` + `memory-bank/archive/`.
+> **Last Updated**: 2026-06-07 (Trigger workshop landed — second standalone module workshop in the Workshops building: `triggers` table + 4 officials, never-throw `loadTrigger`, standalone `validateTrigger`, shared `_shared/ExpressionBuilder` extracted from the allocator's FormulaBuilder, full trigger workshop UI + route. Merged current main in to reconcile the stacked branch. Branch `feat/trigger-room`.) Prior 2026-06-06: (Added `docs/file-split-backlog.md` — ranked refactor backlog of files worth splitting, from a codebase sweep. Branch `docs/file-split-backlog`.) Prior 2026-06-05: (Added Facebook OAuth login alongside Google in `Login.tsx`/`Register.tsx` and shipped a public Privacy Policy at `/privacy` — `about/PrivacyPolicy.tsx` — required for Facebook app review. Branch `feat/fb-login`.) Prior 2026-06-02: (Archived ~63 completed/superseded brainstorm, plan & memory-bank docs to `docs/archive/` + `memory-bank/archive/` after a code+PR triage; active/back-burner/reference docs left in place.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -49,6 +49,7 @@
 | `/docs/` | **Domain knowledge & business rules** | Reference material about pool league systems |
 | `docs/BCA_HANDICAP_SYSTEM.md` | BCA handicap system documentation | Official BCA handicap rules and calculations |
 | `docs/CUSTOM_5MAN_HANDICAP_SYSTEM.md` | Custom 5-man handicap system | Proprietary handicap system for 5-man format |
+| `docs/file-split-backlog.md` | Ranked do-one-at-a-time list of files worth splitting (single-responsibility, not line count) | Refactor backlog from the 2026-06-06 sweep; each is a behavior-preserving PR |
 | `docs/archive/LEAGUE_MANAGEMENT_PLAN.md` | League management system architecture | System hierarchy and database schema |
 | `/docs/league-system/` | **Modular Scoring System framework — LOCKED canonical docs** | 9-Module architecture (Handicap Systems, Handicap Mechanisms, Points System, Win Calculator, Threshold Charts, Team Geometry, Match Format, Pairings Generator, Tiebreak System); LOCKED per Principle 7 gate procedure |
 | `docs/league-system/PRINCIPLES.md` | 10 architectural principles + 4 Module kinds + composition patterns | **LOCKED** — edits require explicit Principle 7 unlock invocation |
@@ -99,11 +100,10 @@
 | `docs/archive/brainstorms/2026-05-25-pairings-generator-extraction-requirements.md` | Pairings Generator (Module #8) v1 extraction — one Module slot, three internal stages; lineups in, player-id-tagged GameSlot[] out (matches canon); today's RR algorithm only, no preferences/workshop work; output shape variant-agnostic for future race-mode etc. | Planned (`docs/plans/2026-05-25-001-...`) |
 | `docs/brainstorms/2026-05-28-passwordless-sign-in-requirements.md` | Requirements for one-door, code-based passwordless sign-in (email OTP + Google/Facebook; passwords kept but demoted) | Companion to the onboarding cold-start brainstorm; built first to dissolve the join-token-survival problem; branch `docs/passwordless-auth-brainstorm` |
 | `docs/brainstorms/2026-05-28-player-onboarding-cold-start-requirements.md` | Requirements for new-league cold-start player/captain onboarding — the share→self-claim→approve cascade (persistent team join link + captain approve gate) | Resolved decisions captured; passwordless is the build-first companion; plan = `2026-05-29-001` |
-| `docs/brainstorms/lo-manual-match-scoring-requirements.md` | Requirements for LO manual match scoring (enter a played-on-paper match from blank) | Two-phase Setup→Entry page; reuses engine/recompute/scoreboard/modal + thin LO dual-slot write+finalize; v1 enter-from-blank only; based on many-eyes stack (PR #157) |
-| `docs/brainstorms/lo-match-review-and-correction-requirements.md` | Requirements for LO view/edit of an ALREADY-scored match (take-over/adjust; dispute adjudication) | Operator-authoritative; per-game confirmer-audit (official + "+N others"); solo vacate-and-rescore appends operator override row + optional reason; explicit completed→reopen→re-finalize lifecycle; roster-identity fixes → v3; stacks on v1 (PR #167) |
 | `docs/brainstorms/2026-06-04-per-game-allocator-workshop-requirements.md` | Workshop for LO-authored per-game allocator variations (modules-as-data first application) — DB-row variations + per-league pointer + swap point in `pickPointsSystem`; engine already supports fixed/range/formula, only the workshop pipeline is missing | SUPERSEDED 2026-06-04 by the building-framing brainstorm below; this one jumped to feature design before locking the foundational picture. Kept for history |
 | `docs/brainstorms/2026-06-04-scoring-system-workshop-building-requirements.md` | Foundational framing: Scoring System Workshop is a BUILDING with one work room per module type; build room-by-room starting with the per-game point allocator; two non-negotiables (lineup/scoring page renders + per-game W/L recording survives any variation failure) | Foundation for all subsequent Scoring System workshop plans; branch `feat/per-game-allocator-workshop` |
-| `docs/brainstorms/2026-06-06-trigger-room-requirements.md` | Trigger Room — standalone work room (second). Authors Trigger modules (TYPE/CONDITION/ACTION/RE-ARM). Universal-only data audit; write-target restricted to home_points/away_points. No apply-to-league (scoring system room concern). Allocator room as blueprint, independent codepath. ExpressionBuilder widget extracted from FormulaBuilder | Ready for planning; branch `feat/trigger-room` |
+| `docs/brainstorms/lo-manual-match-scoring-requirements.md` | Requirements for LO manual match scoring (enter a played-on-paper match from blank) | Two-phase Setup→Entry page; reuses engine/recompute/scoreboard/modal + thin LO dual-slot write+finalize; v1 enter-from-blank only; based on many-eyes stack (PR #157) |
+| `docs/brainstorms/lo-match-review-and-correction-requirements.md` | Requirements for LO view/edit of an ALREADY-scored match (take-over/adjust; dispute adjudication) | Operator-authoritative; per-game confirmer-audit (official + "+N others"); solo vacate-and-rescore appends operator override row + optional reason; explicit completed→reopen→re-finalize lifecycle; roster-identity fixes → v3; stacks on v1 (PR #167) |
 | `/docs/plans/` | **CE implementation plans** | Output of `/compound-engineering:ce-plan` |
 | `docs/archive/plans/2026-04-17-001-feat-official-rulebook-reader-plan.md` | Implementation plan for the Official Rulebook Reader | 6 units, active branch `feature/official-rulebook-reader` |
 | `docs/archive/plans/2026-04-27-001-feat-global-header-nav-rework-plan.md` | Implementation plan for the global header & navigation rework | 9 units in 3 phases, active branch `fix/header-mobile-rework` |
@@ -613,11 +613,11 @@ how to add a new test, demo recording, cleanup model).
 - `LeagueSettings.tsx` - General league settings page (linked from the League Settings card on `LeagueDetail`). Mounts `AllocatorPicker` card from the scoring-workshop room (Unit 7).
 - `LeaguePlayoffSettings.tsx` - League-scoped playoff configuration page.
 
-**Workshops (`/operator/scoring-workshop/`)**
+**Scoring System Workshop (`/operator/scoring-workshop/`)**
 
-The Workshops building — one sub-folder per module workshop. Each workshop owns a list page + editor + data hook + save-time guard, with optional league-side pickers. First workshop shipped 2026-06-04 (per-game allocator); second shipped 2026-06-06 (trigger). The future Scoring System workshop — itself a sibling workshop in this building — is where assembly will live (no module workshop has an apply-to-league surface that bypasses it). URL/file paths still use the legacy `scoring-workshop` prefix and will rename when the Scoring System workshop lands.
+The workshop building. One sub-folder per module room. Each room owns a list page + editor + data hook + save-time guard, with optional league-side pickers. First room shipped 2026-06-04.
 
-- `per-game-allocator/AllocatorRoomPage.tsx` - **Per-Game Allocator workshop** page container. Mounted at `/operator/scoring-workshop/per-game-allocator` (lazy-loaded, withOperator-gated). List ↔ editor mode switching.
+- `per-game-allocator/AllocatorRoomPage.tsx` - **Per-Game Allocator Room** page container. Mounted at `/operator/scoring-workshop/per-game-allocator` (lazy-loaded, withOperator-gated). List ↔ editor mode switching.
 - `per-game-allocator/AllocatorList.tsx` - Two-section list: read-only "Templates" (officials) + editable "Yours" (user-scope rows). Clone / Edit / Delete actions.
 - `per-game-allocator/AllocatorEditor.tsx` - Editor: name + description + two `SideEditor` blocks + save-time guard.
 - `per-game-allocator/SideEditor.tsx` - Reusable side component. Four peer kinds: Fixed number / **State-bag value (R11 first-class)** / Scorer-input range / Formula recipe. Switching kinds resets irrelevant SideConfig fields.
@@ -627,18 +627,18 @@ The Workshops building — one sub-folder per module workshop. Each workshop own
 - `per-game-allocator/applyTimePreview.ts` - Pure helper. Validates the variation (Unit 3 args-shape), builds the league's prepackaged composition, swaps the slot, runs `evaluatePointsSystem` over a synthetic 5-game match with reasonable default prefs. Returns `{ok, warnings}` or `{ok:false, reason}`.
 - `per-game-allocator/__tests__/saveTimeGuard.test.ts` - 7 tests covering happy paths (fixed/fixed, fixed/range, 17-point formula, read_state_var) + Unit 3 rejection cases (unregistered op, missing required arg, type mismatch).
 - `per-game-allocator/__tests__/applyTimePreview.test.ts` - 7 tests covering clean preview for fixed/formula variations against 10-Point + Percent 5-Man compositions, unknown calculator rejection, structural-failure blocks Apply.
-- `per-game-allocator/FormulaBuilder.tsx` - **Thin perspective-aware wrapper** around the shared `_shared/ExpressionBuilder`. Resolves Winner/Loser perspective into concrete labels + a `labelForVar` callback. The shared widget owns the cursor model, token strip, keyboard nav, build panel.
-- `_shared/ExpressionBuilder.tsx` - **Perspective-free expression builder widget** shared by both work rooms. Used by the allocator's `FormulaBuilder` (with perspective wrapper) and by the trigger room's `ActionBuilder` (directly, no perspective). Owns cursor + token model.
-- `trigger/TriggerRoomPage.tsx` - **Trigger workshop** page container. Mounted at `/operator/scoring-workshop/trigger` (lazy-loaded, withOperator-gated). Second standalone module workshop. List ↔ editor mode switching.
-- `trigger/TriggerList.tsx` - Two-section list: read-only "Templates" (officials) + editable "Yours" (user-scope rows). Clone / Edit / Delete actions.
-- `trigger/TriggerEditor.tsx` - Editor: name + description + TYPE (match_start | anytime | match_end) + `ConditionBuilder` + `ActionBuilder` + RE-ARM + save-time guard.
-- `trigger/ConditionBuilder.tsx` - Two-mode condition editor: Always | Compare. Compare picks left/right operands (state var or const) and a comparator (`==`, `>`, `<`, `>=`, `<=`).
-- `trigger/ActionBuilder.tsx` - Target picker (home_points | away_points — v1 write whitelist) + value mode (fixed number OR expression). Expression mode uses the bare `ExpressionBuilder` widget directly.
-- `trigger/availableData.ts` - **Universal-only** state-bag registry surfaced to the trigger pickers: 4 team totals + 2 team handicaps + 2 match counters + 20 per-position counters. Plain string labels (no perspective). Also exports `TRIGGER_WRITE_TARGETS` (the v1 home_points/away_points whitelist) and `triggerLabelForVar`.
-- `trigger/useTriggerRoom.ts` - Data hook: list officials + user's own, clone, upsert, delete against the `triggers` table. Synthesizes the default fire-order on load (not stored on the row).
-- `trigger/saveTimeGuard.ts` - First of four guard layers between save and runtime. Runs `validateTrigger` (with v1 write-target whitelist) + synthetic 5-game dry-run through `evaluatePointsSystem`. Refuses to save on validator rejection / dry-run throw.
-- `trigger/__tests__/availableData.test.ts` - 11 tests: locks the registry to universal state-bag names (excludes winTarget/edge/endmatch); checks per-position expansion (5×2×2 = 20); checks write-target whitelist; checks read-universe contains the write targets.
-- `trigger/__tests__/saveTimeGuard.test.ts` - 9 tests: accepts the four seeded official patterns (match_start/anytime/match_end × always/compare × set/expr); rejects empty + whitespace-only names; rejects writes outside the v1 whitelist; accepts away_points; accepts a safe divide expression.
+- `per-game-allocator/FormulaBuilder.tsx` - Thin perspective-aware wrapper around the shared `_shared/ExpressionBuilder` (resolves Winner/Loser labels).
+- `_shared/ExpressionBuilder.tsx` - **Perspective-free expression builder widget** shared by the allocator's `FormulaBuilder` and the trigger workshop's `ActionBuilder`. Owns the cursor + token model.
+- `trigger/TriggerRoomPage.tsx` - **Trigger workshop** page container (`/operator/scoring-workshop/trigger`). Second standalone module workshop. List ↔ editor.
+- `trigger/TriggerList.tsx` - Yours + Templates sections (clone / edit / delete).
+- `trigger/TriggerEditor.tsx` - name + description + TYPE + `ConditionBuilder` + `ActionBuilder` + RE-ARM + save-time guard.
+- `trigger/ConditionBuilder.tsx` - Always | Compare condition editor (plain-English comparators, state-bag operands).
+- `trigger/ActionBuilder.tsx` - Target picker (home_points / away_points) + value (fixed number OR expression via the bare `ExpressionBuilder`).
+- `trigger/availableData.ts` - Universal-only state-bag registry for triggers + `TRIGGER_WRITE_TARGETS` whitelist + `triggerLabelForVar`.
+- `trigger/useTriggerRoom.ts` - Data hook (list officials + own, clone, upsert, remove) against `triggers`; synthesizes default fire-order on load.
+- `trigger/saveTimeGuard.ts` - `validateTrigger` (with write-target whitelist) + synthetic dry-run through `evaluatePointsSystem` before save.
+- `trigger/__tests__/availableData.test.ts` - 11 tests: universal-only registry + write whitelist.
+- `trigger/__tests__/saveTimeGuard.test.ts` - 9 tests: accepts the four seeded official patterns; rejects empty name / out-of-whitelist target.
 
 **Playoffs**
 - `PlayoffSetup.tsx` - Playoff setup page (mounts the bracket + settings cards).
@@ -650,7 +650,10 @@ The Workshops building — one sub-folder per module workshop. Each workshop own
 
 **Components (`/operator/components/`)**
 - `AttachPlaceholderDialog.tsx` - Dialog to attach an existing placeholder to a team.
-- `OrgPlaceholdersCard.tsx` - Card listing org-owned placeholder players (merge / archive / remove).
+- `OrgPlaceholdersCard.tsx` - Card listing org-owned placeholder players (merge / archive / remove); orchestration only.
+- `orgPlaceholders.ts` - Shared `OrgPlaceholderRow` type + `fetchOrgPlaceholders` RPC helper for the placeholders surface.
+- `PlaceholderRow.tsx` - One active placeholder row (compact header + expand to detail + Attach/Remove). Extracted from OrgPlaceholdersCard.
+- `ArchivedRow.tsx` - One archived placeholder row (compact + Restore). Extracted from OrgPlaceholdersCard.
 - `RemovePlaceholderDialog.tsx` - Confirmation dialog before removing a placeholder.
 - `UnmergePlayerDialog.tsx` - Undo-merge dialog (restores a placeholder from the merge snapshot).
 
@@ -666,7 +669,8 @@ The Workshops building — one sub-folder per module workshop. Each workshop own
 - `TeamManagement.tsx` - Team management interface
 - `TeamEditorModal.tsx` - Team editor modal
 - `VenueManagement.tsx` - Venue management
-- `VenueLimitModal.tsx` - Venue limit warning
+- `VenueLimitModal.tsx` - Venue table-limits modal (chrome only; logic in useVenueTableLimits)
+- `useVenueTableLimits.ts` - Hook holding the venue table-limits state machine (enabled sizes, blocked tables, fill order, capacity, save). Extracted from VenueLimitModal.
 
 **Administration**
 - `OrganizationSettings.tsx` - Organization settings
@@ -689,7 +693,9 @@ The Workshops building — one sub-folder per module workshop. Each workshop own
 #### Auth Pages (`/login/`)
 - `Login.tsx` - Login page
 - `Register.tsx` - Registration page
-- `ClaimPlayer.tsx` - Claim placeholder player for existing authenticated users
+- `ClaimPlayer.tsx` - Claim placeholder player for existing authenticated users (orchestration + the interactive screen)
+- `ClaimStatusScreen.tsx` - The terminal status screens of the claim flow (loading/invalid/expired/claimed/success/rejected/error). Extracted from ClaimPlayer.
+- `claimPlayerTypes.ts` - Shared types for the claim flow (ClaimState, InviteDetails, TeamInfo, PlaceholderExtras, MergeStats).
 - `ForgotPassword.tsx` - Password recovery
 - `ResetPassword.tsx` - Password reset
 - `EmailConfirmation.tsx` - Email confirmation
@@ -708,7 +714,8 @@ The Workshops building — one sub-folder per module workshop. Each workshop own
 - `components/PlaceholderPicker.tsx` - **Unit 5.** Replace-picker dialog: lists a team's unclaimed placeholders (record-flagged), two-step confirm before the irreversible merge.
 - `landingTeam.ts` + `landingTeam.test.ts` - **Unit 8.** `defaultOpenTeamId(teamIds)` — pure helper deciding which team accordion to auto-expand on MyTeams (single team → open it so its existing Quick Score card is front-and-center; several → leave collapsed). Reuse, not rebuild: no parallel match hook, no MyMatch.
 - `InviteMyTeamButton.tsx` - **Unit 7.** Captain's "Invite my team": shares the /join/:token link via ShareLinkSection (copy + QR), a "generate new link" rotate affordance, and a dismissible first-run tip (localStorage). Mounted per captained team in MyTeams.
-- `OnboardCaptainsList.tsx` - **Unit 7.** LO's "onboard my captains": one row per org team (team · league · captain · Copy link), pre-paired. Mounted in OperatorDashboard; renders nothing when empty.
+- `OnboardCaptainsList.tsx` - LO's "onboard my captains" — **league-scoped, temporary, self-clearing.** One row per team in the league whose captain is **not yet registered** (team · captain · Copy link), pre-paired. Mounted on `LeagueDetail` (next to TeamsCard); renders nothing once every captain has registered. Re-scoped from org→league + placeholder-only filter on 2026-06-06 (was on OperatorDashboard).
+- `OnboardCaptainsList.test.tsx` - 4 tests: renders nothing while loading + when self-cleared (empty); one row per captain with team + captain name; Copy link writes `/join/:token` and flips that row to "Copied!".
 
 #### Profile (`/profile/`)
 - `Profile.tsx` - Main profile page
@@ -967,25 +974,29 @@ Subtree behind the **message settings modal** — per-user messaging preferences
 - `ContactInfoCard.tsx` - Organization contact info editor (email/phone with visibility)
 - `ContentModerationCard.tsx` - Org-level content-moderation settings card (wraps `ContentModerationSection` in preferences/).
 - `DashboardCard.tsx` - Dashboard card wrapper
-- `LeagueOverviewCard.tsx` - League overview
+- `MatchupsCard.tsx` - The **Matchups** part of a league (header-only `SectionCard`). Subtitle "Set" / "Not set yet" / "Create a season first"; button launches the create-league wizard's matchups stage (the only place matchups are set/edited today). Follow-up in LIST_FOR_ED #36: give matchups its own edit surface for unfinished matches.
+- `SectionCard.tsx` - **Shared league-detail section shell** (built on shadcn Card). `SectionCard` (title + subtitle + right-aligned actions, optional `collapsible`/`defaultOpen`, trimmed padding) + `SectionCardLoading` / `SectionCardEmpty`. Teams / Schedule / Season / Stats all use it so the cards look + behave identically.
+- `SeasonCard.tsx` - The **Season** part of a league (was `LeagueOverviewCard`). Collapsed: "Season · *name* · *status*"; expand for dates/format/team+week counts + **Next holiday** (blackout weeks are a season concept; moved here from the Schedule card). Actions: Manage Season + Delete Season (incomplete only), or Create Season when none exists. Setup-flow buttons (Create Schedule / Add Teams / Set Matchups) + the old inline-styled wizard button were dropped — setup is driven by the Status card's Next Steps + the ActionCard. Grouped with Teams + Schedule on the league page.
 - `LeagueProgressBar.tsx` - League progress bar component (used by LeagueStatusCard)
-- `LeagueStatusCard.tsx` - **UNIFIED league status component** - Single source of truth for league/season status, progress, and next actions (used on both Dashboard and League Detail pages)
+- `LeagueStatusCard.tsx` - **UNIFIED league status component** - Single source of truth for league/season status, progress, and next actions (used on both Dashboard and League Detail pages). Setup progress + Next Steps render only during setup; activation counted as the 5th stage so the bar and checklist agree (no "100% while a step is open"); current step highlighted "← do this next".
+- `leagueSetupProgress.ts` - Pure five-stage setup-progress derivation (season/schedule/teams/matchups/activate) extracted from LeagueStatusCard for unit testing — `deriveSetupProgress(state)` → `{ stepsDone, firstIncompleteIndex, percent, allComplete }`.
+- `leagueSetupProgress.test.ts` - 5 tests: 0% / 20% / 80%-not-activated / 100%-activated, and first-gap-is-current for out-of-order data.
 - `OrganizationBasicInfoCard.tsx` - Organization name and mailing address editor
 - `OrganizationPreferencesCard.tsx` - Organization-level preferences editor (handicap, format, rules defaults)
 - `OrganizationStaffCard.tsx` - Staff roster editor — invite/remove additional league operators within the org.
 - `PaymentMethodCard.tsx` - Payment method card (Stripe integration placeholder)
 - `PendingInvitesList.tsx` - Pending placeholder-player invites list (operator view of invites waiting on acceptance).
-- `PlayoffsCard.tsx` - Playoffs entry-point card on the league page (links to playoff setup/preview/standings).
+- `PlayoffsCard.tsx` - Playoffs entry-point card on the league page (on `SectionCard`, collapsed). Subtitle = status (Bracket created / Ready to set up / No playoff week scheduled / Create a season first); expand for template + playoff-week + regular-season/match status. Action: Setup Playoffs (solid) / View Bracket (outline) → playoff config page.
 - `PreferencesCard.tsx` - **Unified preferences card** — composes the five section components from `preferences/`. Used for both org-level and league-level preferences editing.
 - `QuickStats.tsx` - Quick statistics (legacy; see also `QuickStatsCard.tsx`).
 - `QuickStatsCard.tsx` - Dashboard quick-stats card (active leagues, active seasons, member count).
-- `ScheduleCard.tsx` - Schedule card
+- `ScheduleCard.tsx` - The **Schedule** part of a league (on `SectionCard`, collapsed). Subtitle "N/M weeks played"; expand for Upcoming Weeks. Actions: Create Schedule / View Schedule. (Score a Match moved to the Stats card; Started/Playoffs summary + Next Holiday dropped — Next Holiday lives on the Season card now.)
 - `SeasonStatusCard.tsx` - Season status
 - `SeasonsCard.tsx` - Seasons list card
-- `StatsCard.tsx` - Stats & Standings entry-point card on the league page (links to standings, top shooters, team stats, feats).
+- `StatsCard.tsx` - **Scoring** card on the league page (on `SectionCard`; title "Scoring"). Two slim icon-left buttons: **Standings** (team + player stats) and **Score a Match** (the manual score / verify / edit workflow, production-visible). Replaced the old read-only "Match Data" debug viewer link (the `MatchDataViewer` page/route still exist for dev, just unlinked here).
 - `TableBadgePopover.tsx` - Popover badge showing per-venue table configuration summary (count, table numbers).
 - `TableConfigureModal.tsx` - Modal for editing a venue's table configuration (count, numbers, types).
-- `TeamsCard.tsx` - Teams card
+- `TeamsCard.tsx` - The **Teams** part of a league (on `SectionCard`, collapsed). Subtitle "N teams"; expand for the roster table (captain + venue, click a row for contact details). Action: Manage Teams.
 - `VenueCard.tsx` - Venue card
 - `VenueCreationModal.tsx` - Venue creation modal
 - `VenueTableInputs.tsx` - Reusable table-config inputs (used by venue creation/edit flows).
@@ -1158,9 +1169,9 @@ Lineup-page workhorse hooks. Extracted from the monolithic `useMatchLineup` so e
 - `deriveDisputes.ts` - **Many-eyes Layer-2 / Amendment F.** Pure derivation: detects games currently in the auto-cleared "two initiators disagreed" state (Amendment D). Window-scoped to the CURRENT dispute (between the latest two vacate markers) so old resolved disputes don't resurface. Distinguished from a normal vacate-pending-rescore (no disagreement among initiators).
 - `__tests__/deriveDisputes.test.ts` - **Dispute-derivation tests** (9 cases): empty cases (game still has winner, no vacate marker, normal vacate, all initiators agree); real disputes (fresh auto-clear, same-side disagreement); window scoping (resolved old dispute doesn't resurface on a new auto-clear); robustness (malformed rows skipped, multiple games independent).
 
-#### Per-Game Allocator workshop — Points System support files (`src/systems/points-system/`)
+#### Per-Game Allocator Room — Points System support files (`src/systems/points-system/`)
 
-Files added 2026-06-04 for the first module workshop in the Workshops building. Run-time engine (existing) is unchanged; these add the data-to-object bridge, the contract-checking surface, and the registered formula recipes.
+Files added 2026-06-04 for the first room of the Scoring System Workshop building. Run-time engine (existing) is unchanged; these add the data-to-object bridge, the contract-checking surface, and the registered formula recipes.
 
 - `per-game-allocator-loader.ts` - **Unit 2 — never-throw loader.** `loadPerGameAllocator(id)` reads a row from `per_game_allocators`, unmarshals winner_side/loser_side JSONB into `SideConfig`, runs `validatePerGameAllocator`, returns `PerGameAllocator | null`. Four failure paths each catch + warn + return null (supabase error, missing row, malformed JSONB, validator rejection).
 - `allocator-formula-operations/read-state-var.ts` - **Unit 3 (R11 first-class) — state-bag read recipe.** Single arg `var_name`. Reads `state[var_name]`; returns 0 + warn on missing/non-numeric. Honors the communication contract: anywhere the allocator takes a number, it can come from the state bag by name.
@@ -1170,18 +1181,12 @@ Files added 2026-06-04 for the first module workshop in the Workshops building. 
 - `__tests__/runtime-allocator-safety.test.ts` - **Unit 4 safety-net tests** (4 cases): single-game throw preserves W/L for all games, every-game throw preserves W/L counts with points at 0, no exception escapes under any sequence, games_played still increments past a thrown allocator.
 - `__tests__/snapshot-and-swap.test.ts` - **Unit 5 swap + parity tests** (7 cases): override swaps the 10-Point allocator slot, no override = today's behavior unchanged, explicit null = omitted, 17-Point variation end-to-end through match-adapter, `pickPointsSystem` parity, R9 historical replay stability.
 - `__tests__/17-point-via-match-adapter.test.ts` - **Unit 8 17-Point acceptance** (6 cases): per-game boundaries (loser=0 → winner=17; loser=7 → winner=10; loser=4 → winner=13), named acceptance sequence (home=48, away=37), per-side sum = 17 invariant, no-override = pure 10-Point.
+- `trigger-loader.ts` - **Trigger workshop — never-throw loader.** `loadTrigger(id)` reads a `triggers` row, unmarshals condition/action JSONB, runs `validateTrigger` (write-target whitelist), synthesizes default order; returns `Trigger | null`.
+- `__tests__/trigger-loader.test.ts` - 9 cases: happy paths + not-found / supabase error / malformed JSONB / unknown op / out-of-whitelist target.
+- `__tests__/composition-validator-trigger.test.ts` - 13 cases: standalone `validateTrigger` structural checks + `allowedTargets` whitelist.
+- `composition-validator.ts` now also exports `validateTrigger` (used by the trigger loader + the trigger workshop's save-time guard).
 
 Existing files modified — `composition-validator.ts` exposes `validatePerGameAllocator` (called by the loader + the workshop's guards); declares args-shape checking against `AllocatorFormulaOperation.argsShape`. `types.ts` adds `ArgKind` / `ArgSpec` and the optional `argsShape` field. `runtime.ts` wraps the `evaluateAllocator` call in try/catch (Unit 4 backstop). `match-adapter.ts` `buildComposition` accepts `perGameAllocatorOverride`; `computeMatchRunningTotalsViaEngine` threads it through.
-
-#### Trigger workshop — Points System support files (`src/systems/points-system/`)
-
-Files added 2026-06-06 for the second module workshop in the Workshops building. Independent of the per-game allocator workshop — separate table, separate loader, separate UI. Only the `ExpressionBuilder` widget is shared.
-
-- `trigger-loader.ts` - **Unit 2 — never-throw loader.** `loadTrigger(id)` reads a row from `triggers`, unmarshals condition/action JSONB, runs `validateTrigger` with the v1 write-target whitelist, returns `Trigger | null`. Synthesizes the default `order: { number: 0, beforeAllocator: false }` on every load. Four failure paths each catch + warn + return null (supabase error, missing row, malformed JSONB, validator rejection).
-- `__tests__/trigger-loader.test.ts` - **Loader tests** (9 cases): happy paths for Initial-credit/Game-13/sweep shapes, not-found, supabase error, supabase throw, malformed condition (missing kind), malformed action.value.kind, unknown expression op, write-target outside whitelist.
-- `__tests__/composition-validator-trigger.test.ts` - **Standalone `validateTrigger` tests** (13 cases): structural happy paths + rejections (empty name, whitespace name, bad type, bad condition shape, empty target, bad action.value shape, bad rearm); `allowedTargets` whitelist (rejects out-of-set, accepts home/away_points, no whitelist allows any target).
-
-Existing files modified — `composition-validator.ts` now exports a standalone `validateTrigger(trigger, options?)` (called by `validatePointsSystem` for every trigger; called by `trigger-loader.ts` at read time; called by `trigger/saveTimeGuard.ts` at write time with the v1 whitelist).
 
 #### Lineup Utils (`/utils/lineup/`)
 
@@ -1333,7 +1338,7 @@ High-level business logic services
 - `useTeamPlaceholders.ts` - **Onboarding cascade (Unit 5)** — lazily loads a team's claimable placeholders (+ record flag) for the Replace picker via `getTeamPlaceholdersForClaim`.
 - `usePendingJoinRequestCount.ts` - **Onboarding cascade (Unit 6, the doorbell)** — derives the pending-request count from the shared approver feed; drives the drawer/sidebar "Join requests (N)" link + the My Teams bottom-tab badge. 0 for non-approvers.
 - `useApprovedJoinRequests.ts` - **Onboarding cascade (Unit 3 notify)** — `useApprovedJoinRequests` polls the caller's approved-but-unacknowledged joins; `useAcknowledgeJoinRequest` stamps one so the "you're in" popup shows once.
-- `useTeamJoinDistribution.ts` - **Onboarding cascade (Unit 7)** — `useTeamJoinToken` (read share token), `useRotateTeamJoinToken` (leak rotation), `useOrgTeamsForOnboarding` (LO per-team captain+link list).
+- `useTeamJoinDistribution.ts` - **Onboarding cascade** — `useTeamJoinToken` (read share token), `useRotateTeamJoinToken` (leak rotation), `useLeagueTeamsForOnboarding` (LO per-league not-yet-registered captains + link list; was `useOrgTeamsForOnboarding`, re-scoped org→league 2026-06-06).
 - `useUserProfile.ts` - **✅ User profile hook** (full member data + role utilities)
 - `useOperatorId.ts` - **✅ Operator ID hook** (operator lookup with caching)
 - `useMatchPhase.ts` - **✅ Match-phase status query** (minimal id/status/started_at slice; staleTime: 0; foreground 7s polling while status='scheduled' as Defense 7 backstop for dropped realtime). Distinct cache key from `useMatchById` — see file header for rationale.
@@ -1682,8 +1687,8 @@ Supabase local configuration and migrations
 | `supabase/migrations/20260501000004_backfill_null_bye_matches.sql` | **PR 1 bye-as-real-team** — one-time backfill: replaces NULL `home_team_id`/`away_team_id` on legacy matches with real per-season bye-team rows. Includes pre-flight DO block enumerating abort conditions. |
 | `supabase/migrations/20260501000001_team_fks_cascade_to_restrict.sql` | **PR 0 cascade safety net** — flips `matches.home_team_id`, `matches.away_team_id`, and `match_lineups.team_id` from `ON DELETE CASCADE` to `ON DELETE RESTRICT` so deleting a team can no longer silently destroy match/lineup history. See `docs/archive/plans/2026-04-29-001-fix-team-cascade-deletion-plan.md`. |
 | `supabase/migrations/20260504000000_harden_prep_match_write_guards.sql` | **Lineup→scoring transition stability fix** — replaces `prep_match` body so ALL writes (thresholds, status, started_at) are guarded by `WHERE status = 'scheduled'`; drops `IF NOT FOUND` exception and wraps INSERT in `IF FOUND` so race-loser calls are true no-ops. See `docs/archive/plans/2026-05-04-001-fix-lineup-to-scoring-transition-stability-plan.md`. |
+| `supabase/migrations/20260606000000_trigger_room.sql` | **Trigger workshop Unit 1** — `triggers` table (id, name, description, scope, `author_id` FK → `members(id)`, trigger_type, condition JSONB, action JSONB, rearm, timestamps) + CHECK constraints + BEFORE UPDATE/DELETE tamper trigger on `scope='official'`; seeds 4 official rows (Initial credit, Game-13 bonus, Sweep bonus, Empty Starter). Order is NOT stored (scoring-system-room concern). See `docs/plans/2026-06-06-001-feat-trigger-room-plan.md`. |
 | `supabase/migrations/20260604000000_per_game_allocator_room.sql` | **Scoring System Workshop — Per-Game Allocator Room Unit 1** — `per_game_allocators` table (id, name, description, scope, `author_id` FK → `members(id)`, winner_side JSONB, loser_side JSONB, timestamps), CHECK constraints for scope + author_id pairing, BEFORE UPDATE/DELETE tamper trigger blocking modification of `scope='official'` rows, `preferences.per_game_allocator_id` UUID FK (ON DELETE RESTRICT), extended `resolved_league_preferences` view with the new COALESCE'd column, seeded 5 official rows (Percent 5-Man, 10-Point, 17-Point [base+formula form], 17-Point (Single Formula) [single self-contained formula], Empty Starter). See `docs/plans/2026-06-04-002-feat-per-game-allocator-room-plan.md`. |
-| `supabase/migrations/20260606000000_trigger_room.sql` | **Scoring System Workshop — Trigger Room Unit 1** — `triggers` table (id, name, description, scope, `author_id` FK → `members(id)`, trigger_type, condition JSONB, action JSONB, rearm, timestamps). CHECK constraints for scope/type/rearm + author/scope pairing. BEFORE UPDATE/DELETE tamper trigger blocking modification of `scope='official'` rows. Seeded 4 official rows (Initial credit — match_start + always + set; Game-13 bonus — anytime + compare + expr; Sweep bonus — match_end + compare + expr; Empty Starter — no-op). Order is NOT stored — it's a future scoring system room concern. See `docs/plans/2026-06-06-001-feat-trigger-room-plan.md`. |
 | `supabase/migrations/20260509000001_messaging_phase1_conversations_participants.sql` | **Messaging Phase 1 / Unit 1** — schema foundations: `conversations.archived_at` (Phase 6 read-only gate prep), `conversation_participants.notification_mode` (tri-state replacement for legacy `is_muted` + `notifications_enabled`, with backfill), `conversation_participants.cannot_leave` (captain-force-membership flag, used by Unit 5 + Unit 6). Plus three CHECK-constraint widenings: `conversation_type` gains `'match_chat'`, `scope_type` gains `'match'`, participant `role` gains `'observer'`. All additive; legacy columns stay during deprecation window. |
 | `supabase/migrations/20260509000002_messaging_phase1_messages_members.sql` | **Messaging Phase 1 / Unit 2** — `messages.is_system` flag + nullable `sender_id` + paired `messages_is_system_shape` CHECK (every row is either system-with-NULL-sender or user-with-sender, no other shape). `members.profanity_onboarding_completed_at` (Unit 9 modal). `members.deleted_at` (soft-delete, read by Unit 5 trigger). Intentionally ships **no RLS policies** — those tables have `rowsecurity=false` in dev (RLS-enablement is a separate planned effort). |
 | `supabase/migrations/20260509000003_messaging_phase1_season_activation_trigger.sql` | **Messaging Phase 1 / Unit 4** — adds SECURITY DEFINER `auto_create_season_conversations(uuid)` plus trigger wrapper; trigger fires `AFTER UPDATE OF status ON seasons WHEN status flips to 'active'` and creates one team chat per team, one captain chat, one season-announcements chat, and an org-announcements chat (idempotent). Each chat creation is wrapped in `BEGIN/EXCEPTION` so a single failure doesn't strand others. Also adds `conversations` to the `supabase_realtime` publication. See `docs/plans/2026-05-09-001-feat-messaging-overhaul-phase-1-plan.md`. |
@@ -1760,7 +1765,8 @@ Supabase local configuration and migrations
 | `supabase/migrations/20260529000003_request_team_join.sql` | **Onboarding cascade / Unit 3.** `request_team_join(token, claimed_member_id?)` SECURITY DEFINER RPC (authenticated only) — the only path that files a join request; derives requester from `auth.uid()` + team from the token (never client input), returns `{ok, reason, status}` covering the guard states. |
 | `supabase/migrations/20260529000005_join_requests_for_approver.sql` | **Onboarding cascade / Unit 5 (read).** `get_join_requests_for_approver()` — pending requests across every team the caller captains OR staffs, de-duplicated, with person/team/league labels + `has_open_placeholders` (drives Replace + the Add guard). Plus STABLE helpers `league_display_name(uuid)` + `member_display_name(uuid)`. |
 | `supabase/migrations/20260529000006_team_placeholders_for_claim.sql` | **Onboarding cascade / Unit 5.** `get_team_placeholders_for_claim(team_id)` — a team's unclaimed placeholders + `placeholder_has_stats` record flag for the Replace picker; captain/org-staff gated. |
-| `supabase/migrations/20260529000008_join_link_distribution.sql` | **Onboarding cascade / Unit 7.** `rotate_team_join_token(team_id)` (leak rotation, captain/staff gated; submitted requests unaffected) + `get_org_teams_for_onboarding(org_id)` (one row per org team — team + captain + join link — for the LO's onboard-captains list, org-staff gated). |
+| `supabase/migrations/20260529000008_join_link_distribution.sql` | **Onboarding cascade / Unit 7.** `rotate_team_join_token(team_id)` (leak rotation, captain/staff gated; submitted requests unaffected) + `get_org_teams_for_onboarding(org_id)` (**superseded + dropped 2026-06-06** by the league-scoped RPC below). |
+| `supabase/migrations/20260606010000_onboard_captains_league_scope.sql` | **Onboard captains re-scope.** Adds `get_league_teams_for_onboarding(league_id)` — one row per **non-bye** team in the league whose captain is **still a placeholder** (`members.user_id IS NULL`); team + captain name + join link; org-staff gated against the league's org; self-clears as captains register (no season filter needed). Drops the org-scoped `get_org_teams_for_onboarding`. See `docs/plans/2026-06-06-002-fix-onboard-captains-league-scope-plan.md`. |
 | `supabase/migrations/20260529000007_my_approved_join_requests.sql` | **Onboarding cascade / Unit 3 (notify).** `get_my_approved_join_requests()` (caller's approved-but-unacknowledged joins + labels) + `acknowledge_join_request(id)` (stamp so the "you're in" popup shows once, own-request scoped). |
 | `supabase/migrations/20260529000004_approve_join_request.sql` | **Onboarding cascade / Unit 4.** `approve_join_request(request_id, action, claimed_member_id?)` SECURITY DEFINER RPC — captain/org-staff one-tap Add/Replace/Decline; reads team_id from the row, resolves org via `teams.league_id`, `FOR UPDATE` race-guard, actor from `auth.uid()`. Also widens `'captain_approve'` in BOTH the merge RPC whitelist (recreated verbatim from `20260422000020`) AND the `archived_placeholders` actor_role CHECK. |
 | `supabase/migrations/20260525000000_game_confirmations.sql` | **Many-eyes Layer-2 / Unit 1** — append-only `game_confirmations` table (every vouch + full result snapshot + `action` confirm/vacate marker); FKs on match_id/game_id/confirmer_id, snapshot columns FK-free; on the `supabase_realtime` publication + `REPLICA IDENTITY FULL`. Officiality stays on `match_games.confirmed_by_*` (additive only). |

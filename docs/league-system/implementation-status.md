@@ -359,9 +359,9 @@ The Step-2 refactor lifts Pairings Generator out as a first-class Module with it
 
 _Extracted 2026-05-24 from the locked design doc [modules/points-system/README.md](modules/points-system/README.md)._
 
-### Per-Game Allocator workshop — BUILT + LIVE (2026-06-04)
+### Per-Game Allocator Workshop room — BUILT + LIVE (2026-06-04)
 
-_First module workshop in the Workshops building (foundational framing in [docs/brainstorms/2026-06-04-scoring-system-workshop-building-requirements.md](../../brainstorms/2026-06-04-scoring-system-workshop-building-requirements.md); 9-unit plan in [docs/plans/2026-06-04-002-feat-per-game-allocator-room-plan.md](../../plans/2026-06-04-002-feat-per-game-allocator-room-plan.md))._
+_First realized room of the Scoring System Workshop building (foundational framing in [docs/brainstorms/2026-06-04-scoring-system-workshop-building-requirements.md](../../brainstorms/2026-06-04-scoring-system-workshop-building-requirements.md); 9-unit plan in [docs/plans/2026-06-04-002-feat-per-game-allocator-room-plan.md](../../plans/2026-06-04-002-feat-per-game-allocator-room-plan.md))._
 
 The per-game allocator is now authorable through a UI. A user picks one of their saved variations (or a read-only official) for a league; on the next match, the live scoring path swaps the variation into the prepackaged composition's allocator slot. The historical replay is stable (snapshot embeds the resolved object, not the FK). The two ground rules (lineup/scoring pages render; W/L always recorded) are guarded by four layers between a saved row and the runtime:
 

@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/supabaseClient';
 import type { League } from '@/types/league';
+import type { Season } from '@/types/season';
 import { parseLocalDate } from '@/utils/formatters';
 import { buildLeagueTitle, getTimeOfYear } from '@/utils/leagueUtils';
 import { PageHeader } from '@/components/PageHeader';
@@ -15,12 +16,14 @@ import { InfoButton } from '@/components/InfoButton';
 import { LeagueStatusCard } from '@/components/operator/LeagueStatusCard';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { logger } from '@/utils/logger';
-import { LeagueOverviewCard } from '@/components/operator/LeagueOverviewCard';
+import { SeasonCard } from '@/components/operator/SeasonCard';
+import { MatchupsCard } from '@/components/operator/MatchupsCard';
 import { LeagueReupStatusCard } from '@/components/operator/LeagueReupStatusCard';
 import { TeamsCard } from '@/components/operator/TeamsCard';
 import { ScheduleCard } from '@/components/operator/ScheduleCard';
 import { StatsCard } from '@/components/operator/StatsCard';
 import { PlayoffsCard } from '@/components/operator/PlayoffsCard';
+import { OnboardCaptainsList } from '@/onboarding/OnboardCaptainsList';
 import { Button } from '@/components/ui/button';
 import { DashboardCard } from '@/components/operator/DashboardCard';
 import { Calendar, DollarSign, Settings, Users } from 'lucide-react';
@@ -50,11 +53,11 @@ export const LeagueDetail: React.FC = () => {
   const { data: leaguePrefs } = useResolvedLeaguePrefs(league?.id);
   const lineupSize = leaguePrefs?.lineup_size;
   const [seasonCount, setSeasonCount] = useState(0);
-  const [activeSeason, setActiveSeason] = useState<any | null>(null);
+  const [activeSeason, setActiveSeason] = useState<Season | null>(null);
   // `scheduledSeason` is a season the operator already set up that hasn't
   // started yet (status='scheduled'). Rendered as a second "Next season"
   // panel alongside the current one so the operator knows it's queued.
-  const [scheduledSeason, setScheduledSeason] = useState<any | null>(null);
+  const [scheduledSeason, setScheduledSeason] = useState<Season | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   // Track navigation loading state for lazy-loaded pages
@@ -98,7 +101,7 @@ export const LeagueDetail: React.FC = () => {
           .eq('league_id', leagueId)
           .eq('status', 'active')
           .maybeSingle();
-        if (activeSeasonData) setActiveSeason(activeSeasonData);
+        if (activeSeasonData) setActiveSeason(activeSeasonData as unknown as Season);
 
         // Fetch the queued (next) season if one exists. Earliest
         // start_date wins if there are multiples (shouldn't happen
@@ -111,7 +114,7 @@ export const LeagueDetail: React.FC = () => {
           .order('start_date', { ascending: true })
           .limit(1)
           .maybeSingle();
-        if (scheduledSeasonData) setScheduledSeason(scheduledSeasonData);
+        if (scheduledSeasonData) setScheduledSeason(scheduledSeasonData as unknown as Season);
       } catch (err) {
         logger.error('Error fetching league', { error: err instanceof Error ? err.message : String(err) });
         setError('Failed to load league details');
@@ -202,12 +205,16 @@ export const LeagueDetail: React.FC = () => {
       </PageHeader>
 
       <div className="container mx-auto lg:px-4 w-full lg:max-w-7xl py-8">
-        {/* Status and Progress */}
-        <div className="grid lg:grid-cols-3 gap-6 mb-6">
-          {/* Use unified LeagueStatusCard component */}
+        {/* Top of page: League Status + League Overview are the first two
+            cards. ActionCard renders below them only when there's something to
+            do (it returns null once the league is set up and in session). */}
+        <div className="mb-6">
           <LeagueStatusCard league={league} variant="section" />
+        </div>
 
-          {/* Action Button - 1 column */}
+        {/* Setup / next-season CTA. Self-hides (null) when the league is fully
+            set up and a season is in session with no next-season prompt. */}
+        <div className="mb-6">
           <ActionCard
             league={league}
             seasonCount={seasonCount}
@@ -239,10 +246,19 @@ export const LeagueDetail: React.FC = () => {
         {/* Stats & Standings (only shown if active season exists) */}
         <StatsCard leagueId={league.id} seasonId={activeSeason?.id || null} />
 
-        {/* League Overview */}
-        <LeagueOverviewCard league={league} />
+        {/* The four league parts, grouped in setup order. */}
+        <SeasonCard league={league} />
+        {/* Captain-onboarding list — sits with Teams; self-clears as captains
+            register. Restored after a merge (#192's restructure) dropped it. */}
+        <OnboardCaptainsList leagueId={league.id} />
+        <TeamsCard leagueId={league.id} />
+        <ScheduleCard leagueId={league.id} />
+        <MatchupsCard league={league} />
 
-        {/* League Settings */}
+        {/* Playoffs Section */}
+        <PlayoffsCard leagueId={league.id} seasonId={activeSeason?.id || null} />
+
+        {/* Admin links live at the bottom — League Settings, then Finances. */}
         <div className="mb-6">
           <DashboardCard
             icon={<Settings className="h-6 w-6" />}
@@ -268,15 +284,6 @@ export const LeagueDetail: React.FC = () => {
             linkTo={`/league/${league.id}/finances`}
           />
         </div>
-
-        {/* Teams Section */}
-        <TeamsCard leagueId={league.id} />
-
-        {/* Schedule Section (the "Score a Match" entry lives in ScheduleCard) */}
-        <ScheduleCard leagueId={league.id} />
-
-        {/* Playoffs Section */}
-        <PlayoffsCard leagueId={league.id} seasonId={activeSeason?.id || null} />
       </div>
     </div>
   );
@@ -348,6 +355,14 @@ function ActionCard({
         </Button>
       </div>
     );
+  }
+
+  // Nothing to do: the league is fully set up and a season is in session, with
+  // no next-season prompt due. Don't render the 🚀 "Ready to Begin?" CTA — it's
+  // setup-phase noise once the league is just running. (Continue-Setup and
+  // Create-Next-Season above still render in their states.)
+  if (!showContinueSetup && flowComplete && activeSeason) {
+    return null;
   }
 
   return (
