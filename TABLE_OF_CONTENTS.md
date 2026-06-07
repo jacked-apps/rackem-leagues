@@ -657,7 +657,8 @@ The workshop building. One sub-folder per module room. Each room owns a list pag
 - `TeamManagement.tsx` - Team management interface
 - `TeamEditorModal.tsx` - Team editor modal
 - `VenueManagement.tsx` - Venue management
-- `VenueLimitModal.tsx` - Venue limit warning
+- `VenueLimitModal.tsx` - Venue table-limits modal (chrome only; logic in useVenueTableLimits)
+- `useVenueTableLimits.ts` - Hook holding the venue table-limits state machine (enabled sizes, blocked tables, fill order, capacity, save). Extracted from VenueLimitModal.
 
 **Administration**
 - `OrganizationSettings.tsx` - Organization settings
