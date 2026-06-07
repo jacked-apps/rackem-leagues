@@ -7,6 +7,16 @@ Tasks and refactoring items for Ed to work on.
 ## 🚪 Gated — awaiting staging review + un-gate
 
 Features merged to `main` but NOT yet live for users (see **Feature Gating
+Workflow** in `CLAUDE.md`). Reviewed on staging, then un-gated — and removed
+from this list when un-gated.
+
+- **LMS Results Sheet** — printable per-match results sheet for hand-entry into
+  CSI / FargoRate LMS (no LMS import/API exists). Gated by `!isProduction` in
+  `src/navigation/NavRoutes.tsx` (route `league/:leagueId/match/:matchId/lms-sheet`);
+  reached via the **printer icon** on a completed match in the "Score a Match"
+  picker. MVP layout (games in order, full names + winner) — **format will be
+  refined after the first LO (Ben) says what's easiest for LMS entry**, so treat
+  the current layout as a draft.
 Workflow** in `CLAUDE.md`). Each gets reviewed on staging, then un-gated — and
 removed from this list when un-gated.
 
