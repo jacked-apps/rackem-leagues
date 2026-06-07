@@ -77,6 +77,12 @@ const LeagueWizardV2Page = lazy(() => import('../wizards/league-v2/LeagueWizardV
 const LeagueRules = lazy(() => import('../operator/LeagueRules'));
 const LeagueDetail = lazy(() => import('../operator/LeagueDetail'));
 const LeagueFinancesPage = lazy(() => import('../operator/LeagueFinancesPage'));
+const AllocatorRoomPage = lazy(
+  () => import('../operator/scoring-workshop/per-game-allocator/AllocatorRoomPage'),
+);
+const WorkshopHomePage = lazy(
+  () => import('../operator/scoring-workshop/WorkshopHomePage'),
+);
 const LeagueSettings = lazy(() => import('../operator/LeagueSettings'));
 const SeasonCreationWizard = lazy(() => import('../operator/SeasonCreationWizard'));
 const SeasonScheduleManager = lazy(() => import('../operator/SeasonScheduleManager'));
@@ -84,6 +90,7 @@ const VenueManagement = lazy(() => import('../operator/VenueManagement'));
 const TeamManagement = lazy(() => import('../operator/TeamManagement'));
 const ScheduleSetupPage = lazy(() => import('../operator/ScheduleSetupPage'));
 const SeasonSchedulePage = lazy(() => import('../operator/SeasonSchedulePage'));
+const LmsResultsSheet = lazy(() => import('../operator/LmsResultsSheet'));
 const PlayoffSetup = lazy(() => import('../operator/PlayoffSetup'));
 const OrganizationPlayoffSettings = lazy(() => import('../operator/OrganizationPlayoffSettings'));
 const LeaguePlayoffSettings = lazy(() => import('../operator/LeaguePlayoffSettings'));
@@ -258,6 +265,8 @@ export const router = createBrowserRouter([
           { path: 'league-rules/:orgId', element: withOperator(LeagueRules) },
           { path: 'league/:leagueId', element: withOperator(LeagueDetail) },
           { path: 'league/:leagueId/finances', element: withOperator(LeagueFinancesPage) },
+          { path: 'operator/scoring-workshop', element: withOperator(WorkshopHomePage) },
+          { path: 'operator/scoring-workshop/per-game-allocator', element: withOperator(AllocatorRoomPage) },
           { path: 'league/:leagueId/settings', element: withOperator(LeagueSettings) },
           { path: 'league/:leagueId/create-season', element: withOperator(SeasonCreationWizard) },
           { path: 'operator/start-next-season/:leagueId', element: withOperator(NewSeasonFromPreviousPage) },
@@ -277,6 +286,8 @@ export const router = createBrowserRouter([
                 { path: 'league/:leagueId/manual-scoring/:matchId', element: withOperator(ManualScoringPage) },
                 // v2 review/correct: same host page, dispatches on match status.
                 { path: 'league/:leagueId/match-review/:matchId', element: withOperator(ManualScoringPage) },
+                // Printable LMS results sheet (CSI / FargoRate hand-entry helper).
+                { path: 'league/:leagueId/match/:matchId/lms-sheet', element: withOperator(LmsResultsSheet) },
               ]
             : []),
 

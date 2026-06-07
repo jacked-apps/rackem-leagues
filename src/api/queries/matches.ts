@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @fileoverview Match Query Functions
  *
  * Pure data fetching functions for match-related queries.
@@ -33,12 +33,12 @@ export interface WeekSchedule {
 }
 
 /**
- * Minimal match-phase slice — id, status, started_at only.
+ * Minimal match-phase slice â€” id, status, started_at only.
  *
- * Used by the route guard (`useMatchPhase` → `MatchPhaseGuard`) to dispatch
+ * Used by the route guard (`useMatchPhase` â†’ `MatchPhaseGuard`) to dispatch
  * lineup vs scoring vs recovery rendering on every match-scoped page. The
  * route guard runs on every mount and re-runs on a refetchInterval, so this
- * function is intentionally narrow — no joins, no nested teams/venues/weeks.
+ * function is intentionally narrow â€” no joins, no nested teams/venues/weeks.
  *
  * Separate from `getMatchById` because the route guard needs `staleTime: 0`
  * (always-fresh server reads) while dashboard cards consuming `getMatchById`
@@ -194,7 +194,7 @@ export async function getMatchesByTeam(teamId: string): Promise<MatchWithDetails
  * "Live" means both lineups have locked (started_at is set by the
  * lineup-persistence flow when both sides lock) and the match has not yet
  * been marked completed. This codebase doesn't actually transition matches
- * to status='in_progress' — they sit at 'scheduled' until completeMatch()
+ * to status='in_progress' â€” they sit at 'scheduled' until completeMatch()
  * flips them to 'completed', so we key off started_at instead of status.
  *
  * @param leagueId - League's primary key ID
@@ -203,7 +203,7 @@ export async function getMatchesByTeam(teamId: string): Promise<MatchWithDetails
  * @throws Error if database query fails
  */
 export async function getLiveMatchesForLeague(leagueId: string): Promise<MatchWithDetails[]> {
-  // matches has no league_id column — it's joined via seasons.league_id.
+  // matches has no league_id column â€” it's joined via seasons.league_id.
   // `!inner` turns the join into an INNER JOIN so the league filter works.
   const { data, error } = await supabase
     .from('matches')
@@ -238,7 +238,7 @@ export async function getLiveMatchesForLeague(leagueId: string): Promise<MatchWi
  *
  * "On a team" = has a row in team_players for a team in that league's season.
  * This scoping enforces the product rule that players can only spectate
- * matches in leagues they participate in — no peeking into other leagues
+ * matches in leagues they participate in â€” no peeking into other leagues
  * just because they exist.
  *
  * LOs who aren't on any team will see nothing here. That's intentional; an
@@ -249,7 +249,7 @@ export async function getLiveMatchesForLeague(leagueId: string): Promise<MatchWi
  */
 export async function getLiveMatchesForMember(memberId: string): Promise<MatchWithDetails[]> {
   // Step 1: find the league IDs the member is participating in (via
-  // team_players → teams → seasons → leagues). We do this as a separate
+  // team_players â†’ teams â†’ seasons â†’ leagues). We do this as a separate
   // query because PostgREST doesn't let us filter on a sub-select inside the
   // matches query directly.
   const { data: teamRows, error: teamErr } = await supabase
@@ -729,7 +729,7 @@ export async function completeMatch(
 }
 
 /**
- * Populate `matches.system_snapshot` if it's currently null — tier 3 mutability.
+ * Populate `matches.system_snapshot` if it's currently null â€” tier 3 mutability.
  *
  * Called at the first scoring event for a match. Reads the league's current
  * resolved preferences (full 13-axis modular cascade) plus
@@ -772,18 +772,18 @@ export async function populateMatchSnapshotIfNeeded(
     return;
   }
   if (existing?.system_snapshot != null) {
-    return; // Already populated — never overwrite
+    return; // Already populated â€” never overwrite
   }
 
   // Read full resolved preferences (all 13 modular axes) + per-league
-  // override dials in parallel. The resolved view applies the league →
-  // org → system-default cascade so we capture exactly what the league
+  // override dials in parallel. The resolved view applies the league â†’
+  // org â†’ system-default cascade so we capture exactly what the league
   // looks like to the scoring runtime at this moment.
   const [resolvedRes, leagueRes] = await Promise.all([
     supabase
       .from('resolved_league_preferences')
       .select(
-        'lineup_size, max_roster_size, game_generation, pairing_format, race_length, points_calculator, points_calculator_params, win_condition, handicap_type, mechanism, threshold_chart_id, standings_sort, tiebreaker_trigger, tiebreaker_format',
+        'lineup_size, max_roster_size, game_generation, pairing_format, race_length, points_calculator, points_calculator_params, win_condition, handicap_type, mechanism, threshold_chart_id, standings_sort, tiebreaker_trigger, tiebreaker_format, per_game_allocator_id',
       )
       .eq('league_id', leagueId)
       .single(),
@@ -800,6 +800,19 @@ export async function populateMatchSnapshotIfNeeded(
 
   const resolved = resolvedRes.data;
   const overrides = leagueRes.data?.system_overrides ?? {};
+
+  // Per-Game Allocator Room (Unit 5): if the league has picked a saved
+  // variation, load it NOW and embed the resolved object in the snapshot.
+  // Live scoring reads the embedded object directly â€” it never re-fetches
+  // by id â€” so editing the variation row after this snapshot is written
+  // cannot retroactively change this match's scoring (R9).
+  let perGameAllocator = null;
+  if (resolved.per_game_allocator_id) {
+    const { loadPerGameAllocator } = await import(
+      '@/systems/points-system/per-game-allocator-loader'
+    );
+    perGameAllocator = await loadPerGameAllocator(resolved.per_game_allocator_id);
+  }
 
   // Build full ResolvedSystemConfig shape. Field order matches the type
   // definition in src/types/resolvedSystemConfig.ts for easy comparison.
@@ -820,9 +833,11 @@ export async function populateMatchSnapshotIfNeeded(
     tiebreaker_format: resolved.tiebreaker_format,
     overrides,
     snapshot_at: new Date().toISOString(),
+    per_game_allocator_id: resolved.per_game_allocator_id ?? null,
+    per_game_allocator: perGameAllocator,
   };
 
-  // Conditional write — only set if still null (guards against simultaneous first-score races)
+  // Conditional write â€” only set if still null (guards against simultaneous first-score races)
   const { error: writeErr } = await supabase
     .from('matches')
     .update({ system_snapshot: snapshot })
@@ -842,7 +857,7 @@ export async function populateMatchSnapshotIfNeeded(
  * Phase 5 Unit 5.5 of the modular-league-system v2 plan: callers are the
  * per-game scoring mutations (insert / update / confirm / deny / vacate).
  * Eager recomputation on every mutation keeps the match row consistent
- * with the live scoreboard at all times — there is no match-end recompute
+ * with the live scoreboard at all times â€” there is no match-end recompute
  * layer that could drift from what players witnessed during play.
  *
  * Behavior:
@@ -858,7 +873,7 @@ export async function populateMatchSnapshotIfNeeded(
  *  - Non-blocking: any error is logged and swallowed so a calculator hiccup
  *    or transient DB error doesn't fail the underlying scoring write.
  *
- * Race-safety: not strictly atomic with the per-game write — Supabase does
+ * Race-safety: not strictly atomic with the per-game write â€” Supabase does
  * not give us a per-row transactional update from the client. Concurrent
  * scoring writes between two devices could produce a brief stale-totals
  * window. Real-time subscriptions trigger another mutation cycle and the
@@ -872,7 +887,7 @@ export async function updateMatchRunningTotals(matchId: string): Promise<void> {
     '@/utils/match/computeMatchRunningTotals'
   );
 
-  // matches has no `league_id` column — league_id lives on seasons,
+  // matches has no `league_id` column â€” league_id lives on seasons,
   // joined via match.season_id. Pull season_id here and resolve
   // league_id only when the snapshot fallback path needs it.
   const { data: matchRow, error: matchErr } = await supabase
@@ -893,7 +908,7 @@ export async function updateMatchRunningTotals(matchId: string): Promise<void> {
 
   // Points-mode matches with no match-level point threshold legitimately
   // have *_to_win = null (the match plays all games and totals decide).
-  // Skip the early-out for those — running totals still need to update so
+  // Skip the early-out for those â€” running totals still need to update so
   // the start-credit fold-in (per Ed's 2026-05-04 spec) lands on the
   // points columns.
   const snapshot = (matchRow.system_snapshot ?? null) as
@@ -901,12 +916,22 @@ export async function updateMatchRunningTotals(matchId: string): Promise<void> {
         points_calculator: string | null;
         points_calculator_params: Record<string, unknown>;
         win_condition?: 'games' | 'points';
+        per_game_allocator?: unknown;
       }
     | null;
 
   let pointsCalculator: string | null;
   let pointsCalculatorParams: Record<string, unknown>;
   let winCondition: 'games' | 'points' = 'games';
+  // Per-Game Allocator Room (Unit 5): the snapshot may embed a resolved
+  // variation. Read it as-is â€” the snapshot writer already validated it via
+  // the loader. Snapshots written before Unit 5 don't have the field and the
+  // override is left null (legacy behavior preserved).
+  const perGameAllocatorOverride =
+    (snapshot?.per_game_allocator as
+      | import('@/systems/points-system/types').PerGameAllocator
+      | null
+      | undefined) ?? null;
 
   if (snapshot && 'points_calculator' in snapshot) {
     pointsCalculator = snapshot.points_calculator ?? null;
@@ -952,7 +977,7 @@ export async function updateMatchRunningTotals(matchId: string): Promise<void> {
   const { data: games, error: gamesErr } = await supabase
     .from('match_games')
     .select(
-      'winner_team_id, winner_value, loser_value, is_tiebreaker, confirmed_by_home, confirmed_by_away',
+      'winner_team_id, winner_value, loser_value, is_tiebreaker, confirmed_by_home, confirmed_by_away, home_position, away_position',
     )
     .eq('match_id', matchId);
 
@@ -991,7 +1016,7 @@ export async function updateMatchRunningTotals(matchId: string): Promise<void> {
   });
 
   // Strand-B flip: the NEW modular engine computes the totals the match row is
-  // written with. It never throws — on any failure it returns null and we fall
+  // written with. It never throws â€” on any failure it returns null and we fall
   // back to legacy, so the columns are always populated and live scoring is
   // never interrupted. Games-won is recorded on the sacred path regardless.
   let totals = legacyTotals;
@@ -1009,6 +1034,7 @@ export async function updateMatchRunningTotals(matchId: string): Promise<void> {
       pointsCalculator,
       pointsCalculatorParams,
       winCondition,
+      perGameAllocatorOverride,
     });
     if (engineTotals) {
       totals = engineTotals;
@@ -1027,7 +1053,7 @@ export async function updateMatchRunningTotals(matchId: string): Promise<void> {
       }
     }
   } catch (e) {
-    // Engine path unavailable → `totals` is already the legacy fallback. Never break.
+    // Engine path unavailable â†’ `totals` is already the legacy fallback. Never break.
     console.warn(
       '[matches.updateMatchRunningTotals] engine path failed, using legacy',
       e instanceof Error ? e.message : String(e),
@@ -1053,7 +1079,7 @@ export async function updateMatchRunningTotals(matchId: string): Promise<void> {
  * After a match is marked complete, recompute the running totals from
  * `match_games` rows and compare against the stored totals on the match
  * row. If they diverge, log a structured warning to `app_logs` for the
- * dev to investigate. **The match record is NEVER modified** — players'
+ * dev to investigate. **The match record is NEVER modified** â€” players'
  * witnessed scoreboard is the source of truth.
  *
  * Non-blocking: any read error short-circuits with a debug log; the
@@ -1090,7 +1116,7 @@ export async function auditMatchScoringConsistency(
       .single();
 
     if (matchErr || !matchRow) {
-      logger.warn('[match-audit] match read error — audit skipped', {
+      logger.warn('[match-audit] match read error â€” audit skipped', {
         matchId,
         tag: 'match_scoring_audit_skipped',
         reason: 'audit_read_error',
@@ -1108,7 +1134,7 @@ export async function auditMatchScoringConsistency(
       | null;
 
     if (!snapshot || !('points_calculator' in snapshot)) {
-      logger.warn('[match-audit] no snapshot — audit skipped (legacy match)', {
+      logger.warn('[match-audit] no snapshot â€” audit skipped (legacy match)', {
         matchId,
         tag: 'match_scoring_audit_skipped',
         reason: 'audit_disabled_no_snapshot',
@@ -1127,12 +1153,12 @@ export async function auditMatchScoringConsistency(
     const { data: games, error: gamesErr } = await supabase
       .from('match_games')
       .select(
-        'winner_team_id, winner_value, loser_value, is_tiebreaker, confirmed_by_home, confirmed_by_away',
+        'winner_team_id, winner_value, loser_value, is_tiebreaker, confirmed_by_home, confirmed_by_away, home_position, away_position',
       )
       .eq('match_id', matchId);
 
     if (gamesErr || !games) {
-      logger.warn('[match-audit] games read error — audit skipped', {
+      logger.warn('[match-audit] games read error â€” audit skipped', {
         matchId,
         tag: 'match_scoring_audit_skipped',
         reason: 'audit_read_error',
@@ -1186,7 +1212,7 @@ export async function auditMatchScoringConsistency(
 
     return result;
   } catch (err) {
-    logger.warn('[match-audit] audit threw — match completion unaffected', {
+    logger.warn('[match-audit] audit threw â€” match completion unaffected', {
       matchId,
       tag: 'match_scoring_audit_threw',
       reason: 'audit_threw',

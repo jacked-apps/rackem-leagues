@@ -22,7 +22,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useUser } from '@/context/useUser';
 import { queryKeys } from '../queryKeys';
-import { getCurrentMember, getIsCaptain, getAllMembers, getMembersByIds, getMemberProfanitySettings, getMemberById } from '../queries/members';
+import { getMemberProfile, getIsCaptain, getAllMembers, getMembersByIds, getMemberProfanitySettings, getMemberById } from '../queries/members';
 import { STALE_TIME } from '../client';
 
 /**
@@ -49,8 +49,8 @@ export function useCurrentMember() {
     // Query key for caching - uses user ID
     queryKey: queryKeys.members.byUser(user?.id || ''),
 
-    // Query function - fetches member data
-    queryFn: () => getCurrentMember(user!.id),
+    // Query function - fetches member data (canonical member-by-user fetch)
+    queryFn: () => getMemberProfile(user!.id),
 
     // Only run query if user is authenticated
     enabled: !!user?.id,
