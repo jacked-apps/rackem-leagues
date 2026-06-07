@@ -2460,3 +2460,38 @@ math works again everywhere. Likely a ~5-line change in
 **Severity:** LOW-MEDIUM — cosmetic/usability, no data risk, but it's
 everywhere and the fix is cheap + global. Own small branch.
 
+---
+
+## 36. Split Matchups Editing Out of the Creation Wizard
+
+**Discovered:** 2026-06-06 while standardizing the league-detail cards
+into the four parts (Season / Teams / Schedule / Matchups). Built a
+`MatchupsCard` whose "Set / Edit Matchups" button launches the
+create-league wizard (`/create-league/:orgId?leagueId=:id`) — because
+that's the *only* place matchups (team positions + round-robin) can be
+set or edited today. There is no standalone matchups page or route.
+
+**The need:** Once matchups are set, an operator should be able to go
+straight to **editing unfinished matches** (fix a pairing, adjust an
+un-played match) without re-running the whole creation wizard. Today
+editing matchups means re-entering the full wizard flow, which is heavy
+and confusing for a small edit on a live season.
+
+**Suggested direction:** Pull the matchups stage
+(`src/wizards/matchups-v2/`) into its own surface — a real
+`/league/:leagueId/season/:seasonId/matchups` route — that (a) shows the
+positions + round-robin grid and (b) lets the LO edit *unfinished*
+matches in place (played/confirmed matches stay locked). Then point
+`MatchupsCard`'s button at that route instead of the creation wizard.
+Relates to #33 (don't force the matchups page after team edits) — both
+are about matchups deserving a focused, non-wizard home.
+
+**Where to look:** `src/wizards/matchups-v2/` (the stage config + steps),
+`src/flows/createNewLeagueFlow.ts` (where it's the final stage),
+`src/components/operator/MatchupsCard.tsx` (the launch button to
+re-point).
+
+**Severity:** MEDIUM — real workflow gap once a season is live; not a
+data risk, but "edit one matchup = redo the wizard" is rough. Its own
+branch + a small plan.
+

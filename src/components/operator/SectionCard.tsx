@@ -35,8 +35,9 @@ export interface SectionCardProps {
   readonly subtitle?: React.ReactNode;
   /** Optional right-aligned header actions (shadcn Buttons, InfoButton, etc.). */
   readonly actions?: React.ReactNode;
-  /** Card body — content, or one of the state helpers below. */
-  readonly children: React.ReactNode;
+  /** Card body — content, or one of the state helpers below. Omit for a
+   *  header-only card (title + subtitle + actions, no expandable body). */
+  readonly children?: React.ReactNode;
   /** When true, the header toggles the body open/closed. */
   readonly collapsible?: boolean;
   /** Initial open state for a collapsible card (default open). */
@@ -100,7 +101,7 @@ export function SectionCard({
           </div>
         )}
       </div>
-      {showBody && <CardContent className="px-4">{children}</CardContent>}
+      {showBody && children != null && <CardContent className="px-4">{children}</CardContent>}
     </Card>
   );
 }

@@ -17,6 +17,7 @@ import { LeagueStatusCard } from '@/components/operator/LeagueStatusCard';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { logger } from '@/utils/logger';
 import { SeasonCard } from '@/components/operator/SeasonCard';
+import { MatchupsCard } from '@/components/operator/MatchupsCard';
 import { LeagueReupStatusCard } from '@/components/operator/LeagueReupStatusCard';
 import { TeamsCard } from '@/components/operator/TeamsCard';
 import { ScheduleCard } from '@/components/operator/ScheduleCard';
@@ -275,6 +276,7 @@ export const LeagueDetail: React.FC = () => {
         <SeasonCard league={league} />
         <TeamsCard leagueId={league.id} />
         <ScheduleCard leagueId={league.id} />
+        <MatchupsCard league={league} />
 
         {/* Playoffs Section */}
         <PlayoffsCard leagueId={league.id} seasonId={activeSeason?.id || null} />
