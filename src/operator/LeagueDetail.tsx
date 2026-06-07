@@ -16,7 +16,7 @@ import { InfoButton } from '@/components/InfoButton';
 import { LeagueStatusCard } from '@/components/operator/LeagueStatusCard';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { logger } from '@/utils/logger';
-import { LeagueOverviewCard } from '@/components/operator/LeagueOverviewCard';
+import { SeasonCard } from '@/components/operator/SeasonCard';
 import { LeagueReupStatusCard } from '@/components/operator/LeagueReupStatusCard';
 import { TeamsCard } from '@/components/operator/TeamsCard';
 import { ScheduleCard } from '@/components/operator/ScheduleCard';
@@ -210,10 +210,8 @@ export const LeagueDetail: React.FC = () => {
           <LeagueStatusCard league={league} variant="section" />
         </div>
 
-        {/* League Overview — second card */}
-        <div className="mb-6">
-          <LeagueOverviewCard league={league} />
-        </div>
+        {/* Season — second card (the "Season" part of the league) */}
+        <SeasonCard league={league} />
 
         {/* Setup / next-season CTA. Self-hides (null) when the league is fully
             set up and a season is in session with no next-season prompt. */}

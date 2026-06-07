@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-06-06 (League detail page: fixed the League Status setup UI — setup progress + Next Steps now show only during setup, activation counted as the real 5th stage so the bar and checklist agree, current step highlighted; the 🚀 ActionCard hides once the league is set up and in session; League Status + League Overview moved to the top two cards. New `leagueSetupProgress` pure helper + tests. Branch `fix/league-status-setup-ui`.) Prior 2026-06-05: (Added Facebook OAuth login alongside Google in `Login.tsx`/`Register.tsx` and shipped a public Privacy Policy at `/privacy` — `about/PrivacyPolicy.tsx` — required for Facebook app review. Branch `feat/fb-login`.) Prior 2026-06-02: (Archived ~63 completed/superseded brainstorm, plan & memory-bank docs to `docs/archive/` + `memory-bank/archive/` after a code+PR triage; active/back-burner/reference docs left in place.)
+> **Last Updated**: 2026-06-06 (League detail cards standardized onto a shared `SectionCard` shell — Teams, Schedule, Season (renamed from LeagueOverviewCard), and Stats now look + behave the same: slim collapsible cards with title/subtitle/actions. Score a Match moved into the Stats card and promoted to production; old "Match Data" debug link dropped. Same day: fixed the League Status setup UI — setup progress + Next Steps now show only during setup, activation counted as the real 5th stage so the bar and checklist agree, current step highlighted; the 🚀 ActionCard hides once the league is set up and in session; League Status + League Overview moved to the top two cards. New `leagueSetupProgress` pure helper + tests. Branch `fix/league-status-setup-ui`.) Prior 2026-06-05: (Added Facebook OAuth login alongside Google in `Login.tsx`/`Register.tsx` and shipped a public Privacy Policy at `/privacy` — `about/PrivacyPolicy.tsx` — required for Facebook app review. Branch `feat/fb-login`.) Prior 2026-06-02: (Archived ~63 completed/superseded brainstorm, plan & memory-bank docs to `docs/archive/` + `memory-bank/archive/` after a code+PR triage; active/back-burner/reference docs left in place.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -933,7 +933,8 @@ Subtree behind the **message settings modal** — per-user messaging preferences
 - `ContactInfoCard.tsx` - Organization contact info editor (email/phone with visibility)
 - `ContentModerationCard.tsx` - Org-level content-moderation settings card (wraps `ContentModerationSection` in preferences/).
 - `DashboardCard.tsx` - Dashboard card wrapper
-- `LeagueOverviewCard.tsx` - League overview
+- `SectionCard.tsx` - **Shared league-detail section shell** (built on shadcn Card). `SectionCard` (title + subtitle + right-aligned actions, optional `collapsible`/`defaultOpen`, trimmed padding) + `SectionCardLoading` / `SectionCardEmpty`. Teams / Schedule / Season / Stats all use it so the cards look + behave identically.
+- `SeasonCard.tsx` - The **Season** part of a league (was `LeagueOverviewCard`). Collapsed: "Season · *name* · *status*"; expand for dates/format/team+week counts. Actions: Manage Season + Delete Season (incomplete only), or Create Season when none exists. Setup-flow buttons (Create Schedule / Add Teams / Set Matchups) + the old inline-styled wizard button were dropped — setup is driven by the Status card's Next Steps + the ActionCard.
 - `LeagueProgressBar.tsx` - League progress bar component (used by LeagueStatusCard)
 - `LeagueStatusCard.tsx` - **UNIFIED league status component** - Single source of truth for league/season status, progress, and next actions (used on both Dashboard and League Detail pages). Setup progress + Next Steps render only during setup; activation counted as the 5th stage so the bar and checklist agree (no "100% while a step is open"); current step highlighted "← do this next".
 - `leagueSetupProgress.ts` - Pure five-stage setup-progress derivation (season/schedule/teams/matchups/activate) extracted from LeagueStatusCard for unit testing — `deriveSetupProgress(state)` → `{ stepsDone, firstIncompleteIndex, percent, allComplete }`.
@@ -947,13 +948,13 @@ Subtree behind the **message settings modal** — per-user messaging preferences
 - `PreferencesCard.tsx` - **Unified preferences card** — composes the five section components from `preferences/`. Used for both org-level and league-level preferences editing.
 - `QuickStats.tsx` - Quick statistics (legacy; see also `QuickStatsCard.tsx`).
 - `QuickStatsCard.tsx` - Dashboard quick-stats card (active leagues, active seasons, member count).
-- `ScheduleCard.tsx` - Schedule card
+- `ScheduleCard.tsx` - The **Schedule** part of a league (on `SectionCard`, collapsed). Subtitle "N/M weeks played"; expand for Upcoming Weeks + Next Holiday. Actions: Create Schedule / View Schedule. (Score a Match moved to the Stats card; Started/Playoffs summary dropped — it lives inside the schedule view.)
 - `SeasonStatusCard.tsx` - Season status
 - `SeasonsCard.tsx` - Seasons list card
-- `StatsCard.tsx` - Stats & Standings entry-point card on the league page (links to standings, top shooters, team stats, feats).
+- `StatsCard.tsx` - Stats & Standings entry-point card on the league page (on `SectionCard`). Two entries: **Standings** (team + player stats) and **Score a Match** (the manual score / verify / edit workflow, now production-visible). Replaced the old read-only "Match Data" debug viewer link (the `MatchDataViewer` page/route still exist for dev, just unlinked here).
 - `TableBadgePopover.tsx` - Popover badge showing per-venue table configuration summary (count, table numbers).
 - `TableConfigureModal.tsx` - Modal for editing a venue's table configuration (count, numbers, types).
-- `TeamsCard.tsx` - Teams card
+- `TeamsCard.tsx` - The **Teams** part of a league (on `SectionCard`, collapsed). Subtitle "N teams"; expand for the roster table (captain + venue, click a row for contact details). Action: Manage Teams.
 - `VenueCard.tsx` - Venue card
 - `VenueCreationModal.tsx` - Venue creation modal
 - `VenueTableInputs.tsx` - Reusable table-config inputs (used by venue creation/edit flows).
