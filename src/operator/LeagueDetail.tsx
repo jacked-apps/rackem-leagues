@@ -245,7 +245,16 @@ export const LeagueDetail: React.FC = () => {
         {/* Stats & Standings (only shown if active season exists) */}
         <StatsCard leagueId={league.id} seasonId={activeSeason?.id || null} />
 
-        {/* League Settings */}
+        {/* The four league parts, grouped in setup order. */}
+        <SeasonCard league={league} />
+        <TeamsCard leagueId={league.id} />
+        <ScheduleCard leagueId={league.id} />
+        <MatchupsCard league={league} />
+
+        {/* Playoffs Section */}
+        <PlayoffsCard leagueId={league.id} seasonId={activeSeason?.id || null} />
+
+        {/* Admin links live at the bottom — League Settings, then Finances. */}
         <div className="mb-6">
           <DashboardCard
             icon={<Settings className="h-6 w-6" />}
@@ -271,15 +280,6 @@ export const LeagueDetail: React.FC = () => {
             linkTo={`/league/${league.id}/finances`}
           />
         </div>
-
-        {/* The four league parts, grouped in setup order. */}
-        <SeasonCard league={league} />
-        <TeamsCard leagueId={league.id} />
-        <ScheduleCard leagueId={league.id} />
-        <MatchupsCard league={league} />
-
-        {/* Playoffs Section */}
-        <PlayoffsCard leagueId={league.id} seasonId={activeSeason?.id || null} />
       </div>
     </div>
   );
