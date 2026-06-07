@@ -13,7 +13,6 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Popover,
   PopoverContent,
@@ -22,7 +21,6 @@ import {
 import { User, MessageSquare, Flag, Ban, DollarSign, UserCog } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMemberId, useMemberById, useCreateOrOpenConversation, useBlockUser, useUnblockUser, useIsUserBlocked, useUserProfile } from '@/api/hooks';
-import { queryKeys } from '@/api/queryKeys';
 import { ReportUserModal } from '@/components/ReportUserModal';
 import { InvitePlayerModal } from '@/components/InvitePlayerModal';
 import { PlaceholderBadge } from '@/components/PlaceholderBadge';
@@ -30,19 +28,7 @@ import { RecordDuesModal } from '@/components/RecordDuesModal';
 import { ConfirmDialog } from '@/components/shared';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
-import { updatePlayerStartingHandicaps } from '@/api/queries/players';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { SetStartingHandicapsModal } from './SetStartingHandicapsModal';
 
 interface CustomAction {
   label: string;
@@ -91,7 +77,6 @@ export function PlayerNameLink({
   hidePlaceholderBadge = false,
 }: PlayerNameLinkProps) {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const memberId = useMemberId();
   const { canAccessLeagueOperatorFeatures } = useUserProfile();
   const isOperator = canAccessLeagueOperatorFeatures();
@@ -103,8 +88,6 @@ export function PlayerNameLink({
   const [showUnblockConfirm, setShowUnblockConfirm] = useState(false);
   const [showDuesModal, setShowDuesModal] = useState(false);
   const [showHandicapModal, setShowHandicapModal] = useState(false);
-  const [handicap3v3, setHandicap3v3] = useState<string>('0');
-  const [handicap5v5, setHandicap5v5] = useState<string>('40');
 
   // TanStack Query hooks
   const createOrOpenConversationMutation = useCreateOrOpenConversation();
@@ -245,55 +228,12 @@ export function PlayerNameLink({
     setShowDuesModal(true);
   };
 
-  // Update starting handicaps mutation
-  const updateHandicapsMutation = useMutation({
-    mutationFn: ({ h3v3, h5v5 }: { h3v3: number; h5v5: number }) =>
-      updatePlayerStartingHandicaps(playerId, h3v3, h5v5),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.members.detail(playerId) });
-      queryClient.invalidateQueries({ queryKey: ['unauthorizedPlayers'] });
-      queryClient.invalidateQueries({ queryKey: ['playerDetails'] });
-      toast.success(`Starting handicaps set for ${displayName}!`);
-      setShowHandicapModal(false);
-    },
-    onError: (error) => {
-      logger.error('Error updating starting handicaps', {
-        error: error instanceof Error ? error.message : String(error),
-      });
-      toast.error('Failed to set starting handicaps. Please try again.');
-    },
-  });
-
-  // Handle handicap action click (operators only)
+  // Open the starting-handicaps modal (operators only). The modal owns the
+  // form + write; it seeds itself from the player's current values on open.
   const handleHandicapAction = () => {
     if (!isOperator) return;
-
-    // Pre-fill with current values or defaults
-    const current3v3 = memberData?.starting_handicap_3v3;
-    const current5v5 = memberData?.starting_handicap_5v5;
-    setHandicap3v3(current3v3 !== null && current3v3 !== undefined ? String(current3v3) : '0');
-    setHandicap5v5(current5v5 !== null && current5v5 !== undefined ? String(current5v5) : '40');
     setOpen(false);
     setShowHandicapModal(true);
-  };
-
-  // Handle saving handicaps from modal
-  const handleHandicapSave = () => {
-    const h3v3 = parseFloat(handicap3v3);
-    const h5v5 = parseFloat(handicap5v5);
-
-    // Validate ranges
-    if (isNaN(h3v3) || h3v3 < -2 || h3v3 > 2) {
-      toast.error('Starting Handicap (3v3) must be between -2 and 2');
-      return;
-    }
-
-    if (isNaN(h5v5) || h5v5 < 0 || h5v5 > 100) {
-      toast.error('Starting Handicap (5v5) must be between 0 and 100');
-      return;
-    }
-
-    updateHandicapsMutation.mutate({ h3v3, h5v5 });
   };
 
   // Determine if membership action should be shown and what label to use
@@ -486,68 +426,15 @@ export function PlayerNameLink({
         hasPaid={hasMembershipPaid}
       />
 
-      {/* Set Starting Handicaps Modal */}
-      <Dialog open={showHandicapModal} onOpenChange={setShowHandicapModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Set Starting Handicaps</DialogTitle>
-            <DialogDescription>
-              Set starting handicaps for {displayName}.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            {/* Current values display */}
-            <div className="text-sm text-muted-foreground">
-              Current: 3v3 = {memberData?.starting_handicap_3v3 ?? 'Not set'}, 5v5 = {memberData?.starting_handicap_5v5 ?? 'Not set'}
-            </div>
-
-            {/* 3v3 Handicap */}
-            <div>
-              <Label htmlFor="handicap3v3">Starting Handicap (3v3)</Label>
-              <Select value={handicap3v3} onValueChange={setHandicap3v3}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Select handicap" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="-2">-2</SelectItem>
-                  <SelectItem value="-1">-1</SelectItem>
-                  <SelectItem value="0">0</SelectItem>
-                  <SelectItem value="1">+1</SelectItem>
-                  <SelectItem value="2">+2</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* 5v5 Handicap */}
-            <div>
-              <Label htmlFor="handicap5v5">
-                Starting Handicap (5v5)
-                <span className="text-xs text-muted-foreground ml-2">(0 to 100)</span>
-              </Label>
-              <Input
-                id="handicap5v5"
-                type="number"
-                step="1"
-                min="0"
-                max="100"
-                value={handicap5v5}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setHandicap5v5(e.target.value)}
-                className="mt-1"
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowHandicapModal(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleHandicapSave} disabled={updateHandicapsMutation.isPending} loadingText="Saving..." isLoading={updateHandicapsMutation.isPending}>
-              Save Handicaps
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Set Starting Handicaps Modal — owns its own form + write. */}
+      <SetStartingHandicapsModal
+        open={showHandicapModal}
+        onOpenChange={setShowHandicapModal}
+        playerId={playerId}
+        playerName={displayName}
+        current3v3={memberData?.starting_handicap_3v3}
+        current5v5={memberData?.starting_handicap_5v5}
+      />
 
       {/* Invite Player Modal - For placeholder players */}
       <InvitePlayerModal

@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-06-05 (Added Facebook OAuth login alongside Google in `Login.tsx`/`Register.tsx` and shipped a public Privacy Policy at `/privacy` — `about/PrivacyPolicy.tsx` — required for Facebook app review. Branch `feat/fb-login`.) Prior 2026-06-02: (Archived ~63 completed/superseded brainstorm, plan & memory-bank docs to `docs/archive/` + `memory-bank/archive/` after a code+PR triage; active/back-burner/reference docs left in place.)
+> **Last Updated**: 2026-06-06 (Split `PlayerNameLink.tsx` → extracted the inline operator handicap modal into `SetStartingHandicapsModal.tsx`; behavior-preserving. Branch `refactor/split-playernamelink-handicap-modal`, stacked on the members data-access PR.) Prior 2026-06-05: (Added Facebook OAuth login alongside Google in `Login.tsx`/`Register.tsx` and shipped a public Privacy Policy at `/privacy` — `about/PrivacyPolicy.tsx` — required for Facebook app review. Branch `feat/fb-login`.) Prior 2026-06-02: (Archived ~63 completed/superseded brainstorm, plan & memory-bank docs to `docs/archive/` + `memory-bank/archive/` after a code+PR triage; active/back-burner/reference docs left in place.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -1022,6 +1022,7 @@ Reusable section components composed by `PreferencesCard.tsx`. Same components d
 - `MemberCombobox.tsx` - Member selection combobox
 - `PaymentCardForm.tsx` - Payment card form
 - `PlayerNameLink.tsx` - Player name link (opens InvitePlayerModal for PPs)
+- `SetStartingHandicapsModal.tsx` - Operator dialog to set a player's 3v3/5v5 starting handicaps. Extracted from PlayerNameLink.
 - `ProtectedRoute.tsx` - Route protection HOC
 - `ReportUserModal.tsx` - User reporting modal
 - `SponsorLogos.tsx` - Sponsor logo display
