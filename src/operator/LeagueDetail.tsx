@@ -23,6 +23,7 @@ import { TeamsCard } from '@/components/operator/TeamsCard';
 import { ScheduleCard } from '@/components/operator/ScheduleCard';
 import { StatsCard } from '@/components/operator/StatsCard';
 import { PlayoffsCard } from '@/components/operator/PlayoffsCard';
+import { OnboardCaptainsList } from '@/onboarding/OnboardCaptainsList';
 import { Button } from '@/components/ui/button';
 import { DashboardCard } from '@/components/operator/DashboardCard';
 import { Calendar, DollarSign, Settings, Users } from 'lucide-react';

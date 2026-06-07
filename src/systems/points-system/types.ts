@@ -94,6 +94,15 @@ export interface ThresholdInputs {
   awayHandicapDiff: number;
   gameCount: number;
   prefs: Record<string, unknown>;
+  /**
+   * Sum of the home lineup's handicaps (including any team bonus the
+   * caller folded in). Written into the state bag at match start as
+   * `home_team_handicap` so allocator formulas can reference the team
+   * total. Optional — when absent the var defaults to 0.
+   */
+  homeTeamHandicap?: number;
+  /** Sum of the away lineup's handicaps. See `homeTeamHandicap`. */
+  awayTeamHandicap?: number;
 }
 
 // ============================================================================
@@ -316,6 +325,36 @@ export interface FormulaContext {
   readonly winner: number;
   readonly loser: number;
   readonly thisSide: 'winner' | 'loser';
+  /**
+   * Which actual team (home/away) won THIS game. Combined with `thisSide`
+   * it tells a side-agnostic recipe whether "this side" maps to the home
+   * team or the away team for state-bag reads. Needed for the workshop's
+   * side-agnostic available data (e.g., "This Side's Wins So Far" must
+   * resolve to home_wins when computing the winner side of a home-won
+   * game, or away_wins when computing the winner side of an away-won
+   * game).
+   */
+  readonly winnerSide: 'home' | 'away';
+  /**
+   * Locked handicap of the player who won THIS game (frozen at match
+   * start via `match_lineups`). Optional because some callers (synthetic
+   * inputs in the save-time guard / apply-time preview, older
+   * snapshots) don't carry per-player position info. When absent, the
+   * `this_side_handicap` / `other_side_handicap` virtual names fall back
+   * to 0 with a console.warn.
+   */
+  readonly winnerHandicap?: number | null;
+  /** Locked handicap of the player who lost THIS game. See `winnerHandicap`. */
+  readonly loserHandicap?: number | null;
+  /**
+   * Lineup positions (1-5) of the home + away players who played THIS
+   * game. Used by `evaluate_expression` to resolve `this_side_player_wins`
+   * and `this_side_player_points` to the correct per-position state-bag
+   * entry. Optional — when absent the player-counter virtuals fall back
+   * to 0.
+   */
+  readonly homePosition?: number | null;
+  readonly awayPosition?: number | null;
 }
 
 /**
@@ -374,6 +413,24 @@ export interface AllocatorFormulaOperation {
   readonly name: string;
 
   /**
+   * Declarative shape of `operationArgs` this operation expects.
+   *
+   * Drives two things:
+   *   1. **Validator hardening (Unit 3).** `validatePerGameAllocator` runs
+   *      the row's `operationArgs` through this shape. Missing required args
+   *      and type mismatches are rejected at load time (the room's read-time
+   *      guard) instead of throwing at compute time during a real match.
+   *   2. **Workshop UI (Unit 6).** The editor renders an input per declared
+   *      arg, typed by `kind`. New operations get UI support for free as
+   *      long as their args use already-supported kinds.
+   *
+   * Optional for forward-compat: operations registered before Unit 3 may
+   * omit it; in that case the validator only checks that the operation
+   * name resolves (legacy behavior).
+   */
+  readonly argsShape?: Readonly<Record<string, ArgSpec>>;
+
+  /**
    * Pure compute function. Takes the operation's args, the mechanism-internal
    * ctx (winner/loser/thisSide for THIS game), and the cumulative state bag
    * (read-only — formulas don't mutate state). Returns a number.
@@ -383,6 +440,32 @@ export interface AllocatorFormulaOperation {
     ctx: FormulaContext,
     state: Readonly<MatchStateBag>,
   ) => number;
+}
+
+/**
+ * Argument kind — what shape of value the workshop accepts for this arg and
+ * the validator checks against the stored value.
+ *
+ * - `'number'`          — a finite numeric value (e.g. the 7 in `17 − loser`).
+ * - `'state_var_name'`  — a string naming a state-bag variable to read
+ *                          (e.g. `'pointsPerGame'`). The validator only
+ *                          checks the string type; whether the bag actually
+ *                          has that name is a runtime concern (open namespace
+ *                          per [[feedback_state_bag_starts_empty]]).
+ * - `'side_name'`       — exactly `'winner'` or `'loser'` (e.g. the
+ *                          `other_side` arg in `add_complement_of_other_side`).
+ *
+ * New kinds can be added as new operations need them. The validator's
+ * coverage extends automatically.
+ */
+export type ArgKind = 'number' | 'state_var_name' | 'side_name';
+
+/**
+ * One arg entry in an operation's `argsShape`.
+ */
+export interface ArgSpec {
+  readonly kind: ArgKind;
+  readonly required: boolean;
 }
 
 // ============================================================================

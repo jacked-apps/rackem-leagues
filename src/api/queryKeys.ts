@@ -94,9 +94,9 @@ export const queryKeys = {
     /** A team's current join token, for the share link (Unit 7) */
     token: (teamId: string) => [...queryKeys.teamJoin.all, 'token', teamId] as const,
 
-    /** All org teams + captain + link, for the LO onboard list (Unit 7) */
-    orgTeams: (orgId: string) =>
-      [...queryKeys.teamJoin.all, 'orgTeams', orgId] as const,
+    /** A league's not-yet-onboarded captains + link, for the LO onboard list */
+    leagueTeams: (leagueId: string) =>
+      [...queryKeys.teamJoin.all, 'leagueTeams', leagueId] as const,
   },
 
   /**
