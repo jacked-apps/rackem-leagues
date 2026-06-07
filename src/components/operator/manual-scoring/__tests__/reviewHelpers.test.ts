@@ -62,15 +62,15 @@ describe('buildNameTeamMap', () => {
     teamName: 'Jets',
   };
 
-  it('maps ids to nickname-preferred name + team', () => {
+  it('maps ids to nickname-preferred name + full name + team', () => {
     const map = buildNameTeamMap(home, away);
-    expect(map.get('h1')).toEqual({ name: 'Ace', team: 'Sharks' });
-    expect(map.get('a1')).toEqual({ name: 'Dee', team: 'Jets' });
+    expect(map.get('h1')).toEqual({ name: 'Ace', fullName: 'Al Pha', team: 'Sharks' });
+    expect(map.get('a1')).toEqual({ name: 'Dee', fullName: 'D X', team: 'Jets' });
   });
 
-  it('falls back to "First Last" when no nickname', () => {
+  it('falls back to "First Last" for both name and fullName when no nickname', () => {
     const map = buildNameTeamMap(home, away);
-    expect(map.get('h2')).toEqual({ name: 'Bea Ta', team: 'Sharks' });
+    expect(map.get('h2')).toEqual({ name: 'Bea Ta', fullName: 'Bea Ta', team: 'Sharks' });
   });
 
   it('tolerates missing roster data', () => {

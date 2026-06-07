@@ -1,16 +1,23 @@
 /**
- * @fileoverview Component tests for the per-game ConfirmerLine: official names
- * per side, the "+N others" peek, and the no-log "+0" case.
+ * @fileoverview Component tests for the ConfirmerLine panel: two columns
+ * (Home/Away) with the team name and the full list of confirmer names per side.
  */
 
-import { describe, it, expect } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
+
+// PlayerNameLink pulls in member/auth/messaging hooks — stub it to plain text
+// so this panel test stays isolated to layout.
+vi.mock('@/components/PlayerNameLink', () => ({
+  PlayerNameLink: ({ playerName }: { playerName: string }) => <span>{playerName}</span>,
+}));
+
 import { ConfirmerLine } from '../ConfirmerLine';
 import type { ConfirmerAudit } from '@/utils/match/confirmerAudit';
 
 const audit = (over: Partial<ConfirmerAudit> = {}): ConfirmerAudit => ({
-  home: { official: { id: 'h1', name: 'Ace', team: 'Sharks' }, others: [] },
-  away: { official: { id: 'a1', name: 'Dee', team: 'Jets' }, others: [] },
+  home: { official: { id: 'h1', name: 'John Smith', team: 'Sharks' }, others: [] },
+  away: { official: { id: 'a1', name: 'Jane Doe', team: 'Jets' }, others: [] },
   ...over,
 });
 
@@ -19,37 +26,36 @@ function renderLine(a: ConfirmerAudit) {
 }
 
 describe('ConfirmerLine', () => {
-  it('shows a "Confirmed by" label and each side as Home/Away: Player (Team)', () => {
+  it('shows "Confirmed by" + Home/Away team headers and the official names', () => {
     renderLine(audit());
     const line = screen.getByTestId('confirmer-line');
     expect(line).toHaveTextContent('Confirmed by');
-    expect(line).toHaveTextContent('Home:');
-    expect(line).toHaveTextContent('Ace (Sharks)');
-    expect(line).toHaveTextContent('Away:');
-    expect(line).toHaveTextContent('Dee (Jets)');
+    expect(line).toHaveTextContent('Home: Sharks');
+    expect(line).toHaveTextContent('Away: Jets');
+    expect(screen.getByText('John Smith')).toBeInTheDocument();
+    expect(screen.getByText('Jane Doe')).toBeInTheDocument();
   });
 
-  it('shows no "+N others" chip when there are none (no-log / +0 game)', () => {
-    renderLine(audit());
-    expect(screen.queryByTestId('others-peek')).not.toBeInTheDocument();
-  });
-
-  it('reveals the extra witnesses (name + team) when the peek is tapped', () => {
+  it('lists EVERY confirmer per side — official + extras, no peek/popover', () => {
     renderLine(
       audit({
         home: {
-          official: { id: 'h1', name: 'Ace', team: 'Sharks' },
-          others: [{ id: 'h2', name: 'Bo', team: 'Sharks' }],
+          official: { id: 'h1', name: 'John Smith', team: 'Sharks' },
+          others: [
+            { id: 'h2', name: 'Bob Jones', team: 'Sharks' },
+            { id: 'h3', name: 'Cy Young', team: 'Sharks' },
+          ],
         },
       })
     );
-    const peek = screen.getByTestId('others-peek');
-    expect(peek).toHaveTextContent('+1 other');
-    fireEvent.click(peek);
-    expect(screen.getByText('Bo')).toBeInTheDocument();
+    // All three home confirmers are visible at once (no "+N others" button).
+    expect(screen.getByText('John Smith')).toBeInTheDocument();
+    expect(screen.getByText('Bob Jones')).toBeInTheDocument();
+    expect(screen.getByText('Cy Young')).toBeInTheDocument();
+    expect(screen.queryByTestId('others-peek')).not.toBeInTheDocument();
   });
 
-  it('shows "Unconfirmed" when a side has no official', () => {
+  it('shows "Unconfirmed" when a side has no confirmers', () => {
     renderLine(audit({ home: { official: null, others: [] } }));
     expect(screen.getByTestId('confirmer-line')).toHaveTextContent('Unconfirmed');
   });

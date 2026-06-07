@@ -25,7 +25,7 @@
 
 import { supabase } from '@/supabaseClient';
 import { computeMatchRunningTotalsViaEngine } from '@/systems/points-system/match-adapter';
-import type { ThresholdInputs } from '@/systems/points-system/types';
+import type { PerGameAllocator, ThresholdInputs } from '@/systems/points-system/types';
 import type { HandicapThresholds } from '@/types/match';
 import type {
   MatchRunningTotals,
@@ -45,6 +45,13 @@ export interface EngineRunningTotalsArgs {
   pointsCalculator: string | null;
   pointsCalculatorParams: Record<string, unknown>;
   winCondition: 'games' | 'points';
+  /**
+   * Per-Game Allocator Room override (Unit 5). Sourced from the match
+   * snapshot's `per_game_allocator` field. When non-null, the prepackaged
+   * composition's allocator slot is replaced before evaluation. Null or
+   * undefined = today's behavior.
+   */
+  perGameAllocatorOverride?: PerGameAllocator | null;
 }
 
 /** A single locked-lineup row, narrowed to the handicap fields we read. */
@@ -78,6 +85,22 @@ function lineupRatings(row: LineupRow): number[] {
     row.player4_handicap,
     row.player5_handicap,
   ].filter((h): h is number => typeof h === 'number');
+}
+
+/**
+ * Per-position handicaps for a lineup row, in position order (index 0 =
+ * position 1, …). Preserves nulls so the adapter's lookup can detect
+ * "no player at this position" and fall back to 0 in the formula
+ * context.
+ */
+function lineupPositionHandicaps(row: LineupRow): (number | null)[] {
+  return [
+    row.player1_handicap,
+    row.player2_handicap,
+    row.player3_handicap,
+    row.player4_handicap,
+    row.player5_handicap,
+  ];
 }
 
 /**
@@ -138,6 +161,12 @@ export async function computeEngineRunningTotals(
       awayHandicapDiff: awayTotal - homeTotal,
       gameCount: args.games.filter((g) => !g.is_tiebreaker).length,
       prefs: {},
+      // Team handicap totals — home includes the locked team bonus,
+      // away is just the sum of the lineup. Runtime writes these into
+      // the state bag at match start so allocator formulas can reference
+      // them via `this_side_team_handicap` / `other_side_team_handicap`.
+      homeTeamHandicap: homeTotal,
+      awayTeamHandicap: awayTotal,
     };
 
     return computeMatchRunningTotalsViaEngine({
@@ -150,6 +179,12 @@ export async function computeEngineRunningTotals(
       thresholdInputs,
       homeThresholds: args.homeThresholds,
       awayThresholds: args.awayThresholds,
+      perGameAllocatorOverride: args.perGameAllocatorOverride,
+      // Locked per-position handicaps so allocator formulas can resolve
+      // `this_side_handicap` / `other_side_handicap` against the actual
+      // player who played each game.
+      homePositionHandicaps: lineupPositionHandicaps(home),
+      awayPositionHandicaps: lineupPositionHandicaps(away),
     });
   } catch (e) {
     // Never surface — caller falls back to legacy so the write still happens.

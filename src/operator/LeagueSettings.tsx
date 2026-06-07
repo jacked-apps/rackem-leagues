@@ -16,6 +16,7 @@ import { PreferencesCard } from '@/components/operator/PreferencesCard';
 import { DashboardCard } from '@/components/operator/DashboardCard';
 import { Building2 } from 'lucide-react';
 import { LeagueHouseRulesSection } from '@/rules/LeagueHouseRulesSection';
+import { AllocatorPicker } from '@/operator/scoring-workshop/per-game-allocator/AllocatorPicker';
 import { logger } from '@/utils/logger';
 
 /**
@@ -129,6 +130,8 @@ export const LeagueSettings: React.FC = () => {
           />
 
           <LeagueHouseRulesSection leagueId={league.id} />
+
+          <AllocatorPicker leagueId={league.id} />
         </div>
       </div>
     </div>
