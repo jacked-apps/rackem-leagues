@@ -945,7 +945,7 @@ Subtree behind the **message settings modal** — per-user messaging preferences
 - `OrganizationStaffCard.tsx` - Staff roster editor — invite/remove additional league operators within the org.
 - `PaymentMethodCard.tsx` - Payment method card (Stripe integration placeholder)
 - `PendingInvitesList.tsx` - Pending placeholder-player invites list (operator view of invites waiting on acceptance).
-- `PlayoffsCard.tsx` - Playoffs entry-point card on the league page (links to playoff setup/preview/standings).
+- `PlayoffsCard.tsx` - Playoffs entry-point card on the league page (on `SectionCard`, collapsed). Subtitle = status (Bracket created / Ready to set up / No playoff week scheduled / Create a season first); expand for template + playoff-week + regular-season/match status. Action: Setup Playoffs (solid) / View Bracket (outline) → playoff config page.
 - `PreferencesCard.tsx` - **Unified preferences card** — composes the five section components from `preferences/`. Used for both org-level and league-level preferences editing.
 - `QuickStats.tsx` - Quick statistics (legacy; see also `QuickStatsCard.tsx`).
 - `QuickStatsCard.tsx` - Dashboard quick-stats card (active leagues, active seasons, member count).

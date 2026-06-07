@@ -12,6 +12,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { SectionCard, SectionCardLoading, SectionCardEmpty } from './SectionCard';
 import { supabase } from '@/supabaseClient';
 import { useResolvedPlayoffConfig } from '@/api/hooks/usePlayoffConfigurations';
 import { checkRegularSeasonComplete, getPlayoffWeek } from '@/utils/playoffGenerator';
@@ -110,137 +111,116 @@ export const PlayoffsCard: React.FC<PlayoffsCardProps> = ({ leagueId, seasonId }
     }
   };
 
-  // No active season
-  if (!seasonId) {
-    return (
-      <div className="bg-card lg:rounded-xl shadow-sm p-6 mb-6 opacity-60">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-foreground">Playoffs</h2>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          Create a season to configure playoffs.
-        </p>
-      </div>
-    );
-  }
+  const isLoading = loading || isLoadingConfig;
 
-  // Loading
-  if (loading || isLoadingConfig) {
-    return (
-      <div className="bg-card lg:rounded-xl shadow-sm p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-foreground">Playoffs</h2>
-        </div>
-        <p className="text-sm text-muted-foreground">Loading playoff status...</p>
-      </div>
-    );
-  }
+  // One-line status for the collapsed header.
+  const subtitle = !seasonId
+    ? 'Create a season first'
+    : isLoading
+      ? undefined
+      : !playoffWeek
+        ? 'No playoff week scheduled'
+        : playoffMatchesExist
+          ? 'Bracket created'
+          : 'Ready to set up';
 
-  // No playoff week configured
-  if (!playoffWeek) {
-    return (
-      <div className="bg-card lg:rounded-xl shadow-sm p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-foreground">Playoffs</h2>
-        </div>
-        <div className="flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
-          <div>
-            <p className="text-sm text-foreground">
-              No playoff week found in the season schedule.
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Add a playoff week when creating or editing the season.
-            </p>
+  // Header action: Setup (solid) when not yet created, View Bracket (outline)
+  // once it is. Only when there's a season + a scheduled playoff week.
+  const actions =
+    seasonId && !isLoading && playoffWeek ? (
+      <Button
+        onClick={handleNavigate}
+        disabled={isNavigating}
+        size="sm"
+        variant={playoffMatchesExist ? 'outline' : 'default'}
+        loadingText="none"
+      >
+        {isNavigating ? 'Loading...' : playoffMatchesExist ? 'View Bracket' : 'Setup Playoffs'}
+      </Button>
+    ) : undefined;
+
+  // Body (shown on expand). Header-only when there's no season.
+  let body: React.ReactNode = null;
+  if (seasonId) {
+    if (isLoading) {
+      body = <SectionCardLoading message="Loading playoff status..." />;
+    } else if (!playoffWeek) {
+      body = (
+        <SectionCardEmpty
+          icon="🏆"
+          message="No playoff week in the schedule — add one when editing the season."
+        />
+      );
+    } else {
+      body = (
+        <div className="space-y-3">
+          {resolvedConfig && (
+            <div className="rounded-lg bg-purple-50 p-3">
+              <div className="text-sm font-medium text-purple-800">{resolvedConfig.name}</div>
+              <div className="text-xs text-purple-600">{getConfigSourceLabel()} Default</div>
+            </div>
+          )}
+
+          <div className="rounded-lg bg-muted p-3">
+            <div className="text-sm font-medium text-foreground">{playoffWeek.week_name}</div>
+            <div className="text-xs text-muted-foreground">
+              {parseLocalDate(playoffWeek.scheduled_date).toLocaleDateString('en-US', {
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
+              })}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            {seasonStatus && (
+              <div className="flex items-center gap-2 text-sm">
+                {seasonStatus.isComplete ? (
+                  <>
+                    <Check className="h-4 w-4 text-green-600" />
+                    <span className="text-green-700">Regular season complete</span>
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle className="h-4 w-4 text-yellow-600" />
+                    <span className="text-yellow-700">
+                      {seasonStatus.completedMatches}/{seasonStatus.totalMatches} matches completed
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
+
+            <div className="flex items-center gap-2 text-sm">
+              {playoffMatchesExist ? (
+                <>
+                  <Check className="h-4 w-4 text-green-600" />
+                  <span className="text-green-700">Playoff matches created</span>
+                </>
+              ) : (
+                <>
+                  <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">Playoff matches not yet created</span>
+                </>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    );
+      );
+    }
   }
 
   return (
-    <div className="bg-card lg:rounded-xl shadow-sm p-6 mb-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-foreground">Playoffs</h2>
-        <Button
-          onClick={handleNavigate}
-          disabled={isNavigating}
-          size="sm"
-          loadingText="Loading..."
-        >
-          {isNavigating
-            ? 'Loading...'
-            : playoffMatchesExist
-              ? 'View Bracket'
-              : 'Setup Playoffs'
-          }
-        </Button>
-      </div>
-
-      {/* Current Template */}
-      {resolvedConfig && (
-        <div className="bg-purple-50 rounded-lg p-3 mb-4">
-          <div className="text-sm font-medium text-purple-800">
-            {resolvedConfig.name}
-          </div>
-          <div className="text-xs text-purple-600">
-            {getConfigSourceLabel()} Default
-          </div>
-        </div>
-      )}
-
-      {/* Playoff Week Info */}
-      <div className="bg-muted rounded-lg p-3 mb-4">
-        <div className="text-sm font-medium text-foreground">
-          {playoffWeek.week_name}
-        </div>
-        <div className="text-xs text-muted-foreground">
-          {parseLocalDate(playoffWeek.scheduled_date).toLocaleDateString('en-US', {
-            weekday: 'long',
-            month: 'long',
-            day: 'numeric',
-            year: 'numeric',
-          })}
-        </div>
-      </div>
-
-      {/* Status */}
-      <div className="space-y-2">
-        {/* Regular season status */}
-        {seasonStatus && (
-          <div className="flex items-center gap-2 text-sm">
-            {seasonStatus.isComplete ? (
-              <>
-                <Check className="h-4 w-4 text-green-600" />
-                <span className="text-green-700">Regular season complete</span>
-              </>
-            ) : (
-              <>
-                <AlertCircle className="h-4 w-4 text-yellow-600" />
-                <span className="text-yellow-700">
-                  {seasonStatus.completedMatches}/{seasonStatus.totalMatches} matches completed
-                </span>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Playoff matches status */}
-        <div className="flex items-center gap-2 text-sm">
-          {playoffMatchesExist ? (
-            <>
-              <Check className="h-4 w-4 text-green-600" />
-              <span className="text-green-700">Playoff matches created</span>
-            </>
-          ) : (
-            <>
-              <AlertCircle className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground">Playoff matches not yet created</span>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
+    <SectionCard
+      title="Playoffs"
+      subtitle={subtitle}
+      actions={actions}
+      collapsible={!!seasonId}
+      defaultOpen={false}
+    >
+      {body}
+    </SectionCard>
   );
 };
 
