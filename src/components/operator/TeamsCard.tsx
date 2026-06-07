@@ -33,9 +33,6 @@ export const TeamsCard: React.FC<TeamsCardProps> = ({ leagueId }) => {
   const [loading, setLoading] = useState(true);
   const [isNavigating, setIsNavigating] = useState(false);
   const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null);
-  // Collapsed by default — the card stays a compact "Teams · N listed" header
-  // until the operator opens it, instead of dumping the whole roster inline.
-  const [collapsed, setCollapsed] = useState(true);
 
   const { context } = useFlowStageDetection(leagueId);
   const hasSeason = Boolean(context.seasonId);

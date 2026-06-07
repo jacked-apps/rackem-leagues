@@ -248,6 +248,9 @@ export const LeagueDetail: React.FC = () => {
 
         {/* The four league parts, grouped in setup order. */}
         <SeasonCard league={league} />
+        {/* Captain-onboarding list — sits with Teams; self-clears as captains
+            register. Restored after a merge (#192's restructure) dropped it. */}
+        <OnboardCaptainsList leagueId={league.id} />
         <TeamsCard leagueId={league.id} />
         <ScheduleCard leagueId={league.id} />
         <MatchupsCard league={league} />
