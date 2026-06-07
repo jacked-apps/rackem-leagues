@@ -8,7 +8,9 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/supabaseClient';
 import { LeagueProgressBar } from './LeagueProgressBar';
+import { deriveSetupProgress } from './leagueSetupProgress';
 import type { League } from '@/types/league';
+import type { Season } from '@/types/season';
 import { logger } from '@/utils/logger';
 
 interface LeagueStatusCardProps {
@@ -19,6 +21,18 @@ interface LeagueStatusCardProps {
 }
 
 type LeagueStatus = 'setup' | 'ready' | 'in_session';
+
+/**
+ * The five ordered setup stages, aligned 1:1 with `deriveSetupProgress`'s
+ * `stepsDone` vector (index 0..4). Activation is the explicit final step.
+ */
+const SETUP_STEP_LABELS = [
+  'Create the season (dates, length, playoff format)',
+  'Set up the weekly schedule (blackout weeks, championships)',
+  'Add teams and captains',
+  'Generate the matchups (team positions + round-robin)',
+  'Accept the schedule to activate the season',
+] as const;
 
 /**
  * LeagueStatusCard Component
@@ -44,7 +58,7 @@ export const LeagueStatusCard: React.FC<LeagueStatusCardProps> = ({
   const [teamCount, setTeamCount] = useState(0);
   const [scheduleExists, setScheduleExists] = useState(false);
   const [matchupsExist, setMatchupsExist] = useState(false);
-  const [activeSeason, setActiveSeason] = useState<any | null>(null);
+  const [activeSeason, setActiveSeason] = useState<Season | null>(null);
   const [completedWeeksCount, setCompletedWeeksCount] = useState(0);
   const [totalWeeksCount, setTotalWeeksCount] = useState(0);
 
@@ -75,7 +89,11 @@ export const LeagueStatusCard: React.FC<LeagueStatusCardProps> = ({
 
         if (mostRecentSeason) {
           // Only flag as "active" if the LO has finished Matchups (status=active).
-          setActiveSeason(mostRecentSeason.status === 'active' ? mostRecentSeason : null);
+          setActiveSeason(
+            mostRecentSeason.status === 'active'
+              ? (mostRecentSeason as unknown as Season)
+              : null,
+          );
 
           // These counts apply to ANY season (upcoming, active, completed) so
           // the progress bar and next-steps list reflect real state during setup.
@@ -159,23 +177,28 @@ export const LeagueStatusCard: React.FC<LeagueStatusCardProps> = ({
     return 'setup';
   };
 
+  // Five-stage setup progress (season / schedule / teams / matchups / activate).
+  // Activation is counted as a real stage so the bar and the Next-Steps list
+  // agree — four-of-five reads 80% with "activate" as the current step, never
+  // 100% with an open activate step.
+  const setup = deriveSetupProgress({
+    seasonCount,
+    scheduleExists,
+    teamCount,
+    matchupsExist,
+    isActive: !!activeSeason,
+  });
+
   /**
    * Calculate progress percentage.
-   * - If in session: season progress (weeks completed / total weeks)
-   * - Otherwise: 4 setup stages (Season / Schedule / Teams / Matchups), 25% each.
-   *   Activation (status=active) is implicit — it lands you on the in-session path.
+   * - In session with weeks: season progress (weeks completed / total weeks).
+   * - Otherwise: the five-stage setup percent.
    */
   const calculateProgress = (): number => {
     if (activeSeason && totalWeeksCount > 0) {
       return Math.round((completedWeeksCount / totalWeeksCount) * 100);
     }
-
-    let progress = 0;
-    if (seasonCount > 0) progress += 25;
-    if (scheduleExists) progress += 25;
-    if (teamCount > 0) progress += 25;
-    if (matchupsExist) progress += 25;
-    return progress;
+    return setup.percent;
   };
 
   /**
@@ -287,21 +310,25 @@ export const LeagueStatusCard: React.FC<LeagueStatusCardProps> = ({
           </ul>
         ) : (
           <ol className="list-decimal list-inside text-blue-800 space-y-1">
-            <li className={seasonCount > 0 ? 'line-through opacity-50' : ''}>
-              Create the season (dates, length, playoff format)
-            </li>
-            <li className={scheduleExists ? 'line-through opacity-50' : ''}>
-              Set up the weekly schedule (blackout weeks, championships)
-            </li>
-            <li className={teamCount > 0 ? 'line-through opacity-50' : ''}>
-              Add teams and captains
-            </li>
-            <li className={matchupsExist ? 'line-through opacity-50' : ''}>
-              Generate the matchups (team positions + round-robin)
-            </li>
-            <li className={activeSeason ? 'line-through opacity-50' : ''}>
-              Accept the schedule to activate the season
-            </li>
+            {SETUP_STEP_LABELS.map((label, i) => {
+              const done = setup.stepsDone[i];
+              const current = i === setup.firstIncompleteIndex;
+              const className = done
+                ? 'line-through opacity-50'
+                : current
+                  ? 'font-semibold'
+                  : '';
+              return (
+                <li key={label} className={className}>
+                  {label}
+                  {current && (
+                    <span className="ml-2 text-xs font-normal text-blue-700">
+                      ← do this next
+                    </span>
+                  )}
+                </li>
+              );
+            })}
           </ol>
         )}
       </div>

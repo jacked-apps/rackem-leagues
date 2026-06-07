@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-06-05 (Added Facebook OAuth login alongside Google in `Login.tsx`/`Register.tsx` and shipped a public Privacy Policy at `/privacy` — `about/PrivacyPolicy.tsx` — required for Facebook app review. Branch `feat/fb-login`.) Prior 2026-06-02: (Archived ~63 completed/superseded brainstorm, plan & memory-bank docs to `docs/archive/` + `memory-bank/archive/` after a code+PR triage; active/back-burner/reference docs left in place.)
+> **Last Updated**: 2026-06-06 (League detail page: fixed the League Status setup UI — setup progress + Next Steps now show only during setup, activation counted as the real 5th stage so the bar and checklist agree, current step highlighted; the 🚀 ActionCard hides once the league is set up and in session; League Status + League Overview moved to the top two cards. New `leagueSetupProgress` pure helper + tests. Branch `fix/league-status-setup-ui`.) Prior 2026-06-05: (Added Facebook OAuth login alongside Google in `Login.tsx`/`Register.tsx` and shipped a public Privacy Policy at `/privacy` — `about/PrivacyPolicy.tsx` — required for Facebook app review. Branch `feat/fb-login`.) Prior 2026-06-02: (Archived ~63 completed/superseded brainstorm, plan & memory-bank docs to `docs/archive/` + `memory-bank/archive/` after a code+PR triage; active/back-burner/reference docs left in place.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -935,7 +935,9 @@ Subtree behind the **message settings modal** — per-user messaging preferences
 - `DashboardCard.tsx` - Dashboard card wrapper
 - `LeagueOverviewCard.tsx` - League overview
 - `LeagueProgressBar.tsx` - League progress bar component (used by LeagueStatusCard)
-- `LeagueStatusCard.tsx` - **UNIFIED league status component** - Single source of truth for league/season status, progress, and next actions (used on both Dashboard and League Detail pages)
+- `LeagueStatusCard.tsx` - **UNIFIED league status component** - Single source of truth for league/season status, progress, and next actions (used on both Dashboard and League Detail pages). Setup progress + Next Steps render only during setup; activation counted as the 5th stage so the bar and checklist agree (no "100% while a step is open"); current step highlighted "← do this next".
+- `leagueSetupProgress.ts` - Pure five-stage setup-progress derivation (season/schedule/teams/matchups/activate) extracted from LeagueStatusCard for unit testing — `deriveSetupProgress(state)` → `{ stepsDone, firstIncompleteIndex, percent, allComplete }`.
+- `leagueSetupProgress.test.ts` - 5 tests: 0% / 20% / 80%-not-activated / 100%-activated, and first-gap-is-current for out-of-order data.
 - `OrganizationBasicInfoCard.tsx` - Organization name and mailing address editor
 - `OrganizationPreferencesCard.tsx` - Organization-level preferences editor (handicap, format, rules defaults)
 - `OrganizationStaffCard.tsx` - Staff roster editor — invite/remove additional league operators within the org.
