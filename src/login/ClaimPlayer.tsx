@@ -19,62 +19,23 @@
  * - Token must be valid and not expired/claimed/cancelled
  */
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate, Link } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../supabaseClient';
 import { Button } from '@/components/ui/button';
-import { CardFooter } from '@/components/ui/card';
 import { LoginCard } from './LoginCard';
-import {
-  AlertTriangle,
-  UserCheck,
-  Users,
-  Clock,
-  Loader2,
-  CheckCircle,
-  XCircle,
-} from 'lucide-react';
+import { AlertTriangle, UserCheck, Users } from 'lucide-react';
 import { logger } from '@/utils/logger';
 import { useUser } from '@/context/useUser';
 import { queryKeys } from '@/api/queryKeys';
-
-/** Data returned from get_invite_details() */
-interface InviteDetails {
-  member_id: string;
-  placeholder_first_name: string;
-  placeholder_last_name: string;
-  team_name: string;
-  captain_name: string | null;
-  expires_at: string;
-  status: string;
-}
-
-/** Team info for displaying all teams the PP belongs to */
-interface TeamInfo {
-  team_id: string;
-  team_name: string;
-}
-
-/** Extended placeholder context shown on the confirmation screen — lets the
- * invited user recognize (or reject) the record before any merge fires. */
-interface PlaceholderExtras {
-  nickname: string | null;
-  hasPlayed: boolean;
-  handicap3v3: number | null;
-  handicap5v5: number | null;
-}
-
-/** State for the claim process */
-type ClaimState =
-  | 'loading'
-  | 'not_authenticated'
-  | 'valid'
-  | 'expired'
-  | 'invalid'
-  | 'already_claimed'
-  | 'success'
-  | 'rejected'
-  | 'error';
+import { ClaimStatusScreen } from './ClaimStatusScreen';
+import type {
+  ClaimState,
+  InviteDetails,
+  TeamInfo,
+  PlaceholderExtras,
+  MergeStats,
+} from './claimPlayerTypes';
 
 /**
  * Separate button component to handle the claiming action with proper loading state
@@ -109,11 +70,7 @@ export const ClaimPlayer: React.FC = () => {
   const [isClaiming, setIsClaiming] = useState(false);
   const [inviteDetails, setInviteDetails] = useState<InviteDetails | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
-  const [mergeStats, setMergeStats] = useState<{
-    teamsJoined: number;
-    gamesTransferred: number;
-    lineupsTransferred: number;
-  } | null>(null);
+  const [mergeStats, setMergeStats] = useState<MergeStats | null>(null);
   /** All teams the placeholder player belongs to */
   const [allTeams, setAllTeams] = useState<TeamInfo[]>([]);
   /** Placeholder context (nickname, has-played flag, handicaps) shown on the
@@ -202,9 +159,12 @@ export const ClaimPlayer: React.FC = () => {
           .eq('member_id', details.member_id);
 
         if (!teamsError && teamData) {
-          const teams: TeamInfo[] = teamData
-            .filter((tp: any) => tp.teams && !Array.isArray(tp.teams))
-            .map((tp: any) => ({
+          // The nested `teams` relation comes back as a single object (or, in
+          // some shapes, an array); a type guard narrows it to the object case.
+          type TeamRow = { id: string; team_name: string };
+          const teams: TeamInfo[] = (teamData as { teams: TeamRow | TeamRow[] | null }[])
+            .filter((tp): tp is { teams: TeamRow } => !!tp.teams && !Array.isArray(tp.teams))
+            .map((tp) => ({
               team_id: tp.teams.id,
               team_name: tp.teams.team_name,
             }));
@@ -378,206 +338,6 @@ export const ClaimPlayer: React.FC = () => {
     }
   };
 
-  // Loading state
-  if (claimState === 'loading' || userLoading) {
-    return (
-      <LoginCard title="Loading..." description="Verifying your invite">
-        <div className="flex justify-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </LoginCard>
-    );
-  }
-
-  // Not authenticated - redirect to login
-  if (claimState === 'not_authenticated') {
-    // Build the return URL so they come back here after login
-    const returnUrl = `/claim-player?claim=${claimId}&token=${token}`;
-
-    return (
-      <LoginCard
-        title="Login Required"
-        description="Please log in to claim your player history"
-      >
-        <div className="text-center space-y-4">
-          <div className="flex justify-center">
-            <Users className="h-16 w-16 text-primary" />
-          </div>
-          <p className="text-foreground">
-            You need to be logged in to claim your player history.
-          </p>
-          <Button
-            className="w-full"
-            loadingText="none"
-            onClick={() => navigate(`/login?redirect=${encodeURIComponent(returnUrl)}`)}
-          >
-            Log In to Continue
-          </Button>
-        </div>
-        <CardFooter className="mt-4 text-sm flex justify-around w-full">
-          <Link to="/register">Don't have an account? Register</Link>
-        </CardFooter>
-      </LoginCard>
-    );
-  }
-
-  // Invalid token
-  if (claimState === 'invalid') {
-    return (
-      <LoginCard title="Invalid Invite" description="There was a problem with your invite link">
-        <div className="text-center space-y-4">
-          <div className="flex justify-center">
-            <AlertTriangle className="h-16 w-16 text-warning" />
-          </div>
-          <p className="text-foreground">{errorMessage}</p>
-          <p className="text-muted-foreground text-sm">
-            Please contact your team captain for a new invite link.
-          </p>
-        </div>
-        <CardFooter className="mt-4 text-sm flex justify-around w-full">
-          <Link to="/my-teams">Go to My Teams</Link>
-        </CardFooter>
-      </LoginCard>
-    );
-  }
-
-  // Expired invite
-  if (claimState === 'expired' && inviteDetails) {
-    return (
-      <LoginCard title="Invite Expired" description="This invite link has expired">
-        <div className="text-center space-y-4">
-          <div className="flex justify-center">
-            <Clock className="h-16 w-16 text-warning" />
-          </div>
-          <p className="text-foreground">
-            The invite to join <strong>{inviteDetails.team_name}</strong> has expired.
-          </p>
-          <p className="text-muted-foreground text-sm">
-            Please ask{' '}
-            {inviteDetails.captain_name ? (
-              <strong>{inviteDetails.captain_name}</strong>
-            ) : (
-              'your team captain'
-            )}{' '}
-            to send you a new invite.
-          </p>
-        </div>
-        <CardFooter className="mt-4 text-sm flex justify-around w-full">
-          <Link to="/my-teams">Go to My Teams</Link>
-        </CardFooter>
-      </LoginCard>
-    );
-  }
-
-  // Already claimed
-  if (claimState === 'already_claimed' && inviteDetails) {
-    return (
-      <LoginCard title="Already Claimed" description="This invite has already been used">
-        <div className="text-center space-y-4">
-          <div className="flex justify-center">
-            <UserCheck className="h-16 w-16 text-success" />
-          </div>
-          <p className="text-foreground">
-            The player profile for{' '}
-            <strong>
-              {inviteDetails.placeholder_first_name} {inviteDetails.placeholder_last_name}
-            </strong>{' '}
-            has already been claimed.
-          </p>
-          <p className="text-muted-foreground text-sm">
-            If this was you, your history should already be in your account.
-          </p>
-        </div>
-        <CardFooter className="mt-4 text-sm flex justify-around w-full">
-          <Link to="/my-teams">Go to My Teams</Link>
-        </CardFooter>
-      </LoginCard>
-    );
-  }
-
-  // Success state
-  if (claimState === 'success' && inviteDetails) {
-    return (
-      <LoginCard title="Success!" description="Your player history has been merged">
-        <div className="text-center space-y-4">
-          <div className="flex justify-center">
-            <CheckCircle className="h-16 w-16 text-success" />
-          </div>
-          <p className="text-foreground">
-            You've successfully joined <strong>{inviteDetails.team_name}</strong>!
-          </p>
-          {mergeStats && (
-            <div className="bg-success/10 border border-success/40 rounded-lg p-4 text-left">
-              <p className="text-sm font-medium text-success mb-2">
-                Merged into your account:
-              </p>
-              <ul className="text-sm text-foreground space-y-1">
-                {mergeStats.teamsJoined > 0 && (
-                  <li>• {mergeStats.teamsJoined} team membership(s)</li>
-                )}
-                {mergeStats.gamesTransferred > 0 && (
-                  <li>• {mergeStats.gamesTransferred} game(s)</li>
-                )}
-                {mergeStats.lineupsTransferred > 0 && (
-                  <li>• {mergeStats.lineupsTransferred} lineup assignment(s)</li>
-                )}
-              </ul>
-            </div>
-          )}
-          <Button className="w-full" loadingText="none" onClick={() => navigate('/my-teams')}>
-            Go to My Teams
-          </Button>
-        </div>
-      </LoginCard>
-    );
-  }
-
-  // Rejected state — user clicked "This isn't me"
-  if (claimState === 'rejected') {
-    return (
-      <LoginCard
-        title="Thanks for letting us know"
-        description="The invite has been marked as not-a-match"
-      >
-        <div className="text-center space-y-4">
-          <div className="flex justify-center">
-            <XCircle className="h-16 w-16 text-muted-foreground" />
-          </div>
-          <p className="text-foreground">
-            We've flagged that this invite wasn't meant for you. No account
-            history has been moved.
-          </p>
-          <p className="text-muted-foreground text-sm">
-            Your league operator will see the placeholder still needs a match
-            and can reach out if needed.
-          </p>
-          <Button className="w-full" loadingText="none" onClick={() => navigate('/my-teams')}>
-            Go to My Teams
-          </Button>
-        </div>
-      </LoginCard>
-    );
-  }
-
-  // Error state
-  if (claimState === 'error') {
-    return (
-      <LoginCard title="Error" description="Something went wrong">
-        <div className="text-center space-y-4">
-          <div className="flex justify-center">
-            <AlertTriangle className="h-16 w-16 text-destructive" />
-          </div>
-          <p className="text-foreground">{errorMessage}</p>
-          <Button variant="outline" onClick={() => setClaimState('valid')}>
-            Try Again
-          </Button>
-        </div>
-        <CardFooter className="mt-4 text-sm flex justify-around w-full">
-          <Link to="/my-teams">Go to My Teams</Link>
-        </CardFooter>
-      </LoginCard>
-    );
-  }
 
   // Valid invite - show claim UI
   if (claimState === 'valid' && inviteDetails) {
@@ -699,6 +459,22 @@ export const ClaimPlayer: React.FC = () => {
     );
   }
 
-  // Fallback
-  return null;
+  // Every non-interactive state (loading, not-authenticated, invalid, expired,
+  // already-claimed, success, rejected, error) renders through the shared
+  // status screen. `valid` is handled above; the screen renders null for it.
+  return (
+    <ClaimStatusScreen
+      state={userLoading ? 'loading' : claimState}
+      inviteDetails={inviteDetails}
+      errorMessage={errorMessage}
+      mergeStats={mergeStats}
+      onLogin={() =>
+        navigate(
+          `/login?redirect=${encodeURIComponent(`/claim-player?claim=${claimId}&token=${token}`)}`,
+        )
+      }
+      onDone={() => navigate('/my-teams')}
+      onTryAgain={() => setClaimState('valid')}
+    />
+  );
 };

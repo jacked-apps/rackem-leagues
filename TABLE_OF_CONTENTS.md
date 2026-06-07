@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-06-05 (Added Facebook OAuth login alongside Google in `Login.tsx`/`Register.tsx` and shipped a public Privacy Policy at `/privacy` — `about/PrivacyPolicy.tsx` — required for Facebook app review. Branch `feat/fb-login`.) Prior 2026-06-02: (Archived ~63 completed/superseded brainstorm, plan & memory-bank docs to `docs/archive/` + `memory-bank/archive/` after a code+PR triage; active/back-burner/reference docs left in place.)
+> **Last Updated**: 2026-06-06 (Split `ClaimPlayer.tsx` → extracted the terminal status screens into `ClaimStatusScreen.tsx` + shared `claimPlayerTypes.ts`; behavior-preserving. Branch `refactor/split-claim-player-screens`.) Prior 2026-06-05: (Added Facebook OAuth login alongside Google in `Login.tsx`/`Register.tsx` and shipped a public Privacy Policy at `/privacy` — `about/PrivacyPolicy.tsx` — required for Facebook app review. Branch `feat/fb-login`.) Prior 2026-06-02: (Archived ~63 completed/superseded brainstorm, plan & memory-bank docs to `docs/archive/` + `memory-bank/archive/` after a code+PR triage; active/back-burner/reference docs left in place.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -655,7 +655,9 @@ how to add a new test, demo recording, cleanup model).
 #### Auth Pages (`/login/`)
 - `Login.tsx` - Login page
 - `Register.tsx` - Registration page
-- `ClaimPlayer.tsx` - Claim placeholder player for existing authenticated users
+- `ClaimPlayer.tsx` - Claim placeholder player for existing authenticated users (orchestration + the interactive screen)
+- `ClaimStatusScreen.tsx` - The terminal status screens of the claim flow (loading/invalid/expired/claimed/success/rejected/error). Extracted from ClaimPlayer.
+- `claimPlayerTypes.ts` - Shared types for the claim flow (ClaimState, InviteDetails, TeamInfo, PlaceholderExtras, MergeStats).
 - `ForgotPassword.tsx` - Password recovery
 - `ResetPassword.tsx` - Password reset
 - `EmailConfirmation.tsx` - Email confirmation
