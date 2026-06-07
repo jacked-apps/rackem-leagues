@@ -25,6 +25,7 @@ import {
   useTeamJoinToken,
   useRotateTeamJoinToken,
 } from '@/api/hooks/useTeamJoinDistribution';
+import { useMemberFirstName } from '@/api/hooks/useCurrentMember';
 
 const TIP_KEY = 'onboarding-invite-tip-dismissed';
 
@@ -32,13 +33,23 @@ const TIP_KEY = 'onboarding-invite-tip-dismissed';
  * Build the player-facing invite message a captain pastes into a text/email.
  * Mirrors the real cascade steps (passwordless email sign-in → short profile →
  * "Add me" → captain approves) so the player knows exactly what to expect and
- * isn't staring at a naked URL. Kept plain/brand-light intentionally.
+ * isn't staring at a naked URL. Names the captain so the player recognizes who
+ * invited them. Kept plain/brand-light intentionally.
  */
-const buildJoinShareMessage = (teamName: string, joinUrl: string): string =>
-  `You're invited to join ${teamName}!\n\n` +
-  `Tap this link to get on the roster: ${joinUrl}\n\n` +
-  `You'll sign in with your email, fill out a quick profile, and tap "Add me." ` +
-  `Then I approve it and you're on the team.`;
+const buildJoinShareMessage = (
+  captainName: string,
+  teamName: string,
+  joinUrl: string,
+): string => {
+  // Fall back to a generic noun when the captain's name hasn't loaded yet.
+  const inviter = captainName.trim() || 'Your captain';
+  return (
+    `${inviter} has invited you to join ${teamName}!\n\n` +
+    `Tap this link to get on the roster: ${joinUrl}\n\n` +
+    `You'll sign in with your email, fill out a quick profile, and tap "Add me." ` +
+    `Then ${inviter} can approve and you're on the team.`
+  );
+};
 
 interface InviteMyTeamButtonProps {
   teamId: string;
@@ -51,6 +62,8 @@ export const InviteMyTeamButton: React.FC<InviteMyTeamButtonProps> = ({
 }) => {
   const { data: token } = useTeamJoinToken(teamId);
   const rotate = useRotateTeamJoinToken(teamId);
+  // The captain sharing the link is the current user — name them in the message.
+  const captainName = useMemberFirstName();
   const [tipDismissed, setTipDismissed] = useState(
     () => localStorage.getItem(TIP_KEY) === '1'
   );
@@ -92,7 +105,7 @@ export const InviteMyTeamButton: React.FC<InviteMyTeamButtonProps> = ({
           {joinUrl ? (
             <ShareLinkSection
               registrationLink={joinUrl}
-              shareMessage={buildJoinShareMessage(teamName, joinUrl)}
+              shareMessage={buildJoinShareMessage(captainName, teamName, joinUrl)}
             />
           ) : (
             <p className="text-sm text-muted-foreground">Preparing your link…</p>
