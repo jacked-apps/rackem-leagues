@@ -12,6 +12,7 @@ import {
 import type { ThresholdOperation } from '../types';
 
 const mockMaybeSingle = vi.fn();
+const mockFetchResolvedChart = vi.fn();
 
 vi.mock('@/supabaseClient', () => ({
   supabase: {
@@ -25,7 +26,12 @@ vi.mock('@/supabaseClient', () => ({
   },
 }));
 
+vi.mock('@/api/queries/thresholdCharts', () => ({
+  fetchResolvedChart: (...args: unknown[]) => mockFetchResolvedChart(...args),
+}));
+
 import { loadThreshold } from '../threshold-row-loader';
+import { chartLookupOperation } from '../operations/chart-lookup';
 
 const ID = '22222222-2222-2222-2222-222222222222';
 
@@ -54,6 +60,7 @@ function rowData(overrides: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   mockMaybeSingle.mockReset();
+  mockFetchResolvedChart.mockReset();
   clearThresholdRegistry();
   registerThresholdOperation(STUB_OP);
 });
@@ -163,6 +170,42 @@ describe('loadThreshold — malformed definition / registry', () => {
     });
     const result = await loadThreshold(ID);
     expect(result).toBeNull();
+    warnSpy.mockRestore();
+  });
+});
+
+describe('loadThreshold — chart_lookup enrichment (the chart rides in the load)', () => {
+  beforeEach(() => {
+    registerThresholdOperation(chartLookupOperation);
+  });
+
+  const chartDef = {
+    operationKind: 'chart_lookup',
+    operationArgs: { chart_id: 'chart-1', output_field: 'result_1', side: 'home' },
+  };
+
+  it('embeds the fetched chart into the row operationArgs', async () => {
+    const chart = { chartType: 'team_points', lookupMode: 'exact', rows: [] };
+    mockFetchResolvedChart.mockResolvedValue(chart);
+    mockMaybeSingle.mockResolvedValue({
+      data: rowData({ definition: chartDef }),
+      error: null,
+    });
+    const result = await loadThreshold(ID);
+    expect(result).not.toBeNull();
+    expect(mockFetchResolvedChart).toHaveBeenCalledWith('chart-1');
+    expect(result?.row.operationArgs.chart).toEqual(chart);
+  });
+
+  it('returns null + warn when the referenced chart cannot be loaded', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    mockFetchResolvedChart.mockResolvedValue(null);
+    mockMaybeSingle.mockResolvedValue({
+      data: rowData({ definition: chartDef }),
+      error: null,
+    });
+    expect(await loadThreshold(ID)).toBeNull();
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('rejected'));
     warnSpy.mockRestore();
   });
 });

@@ -25,6 +25,7 @@
  */
 
 import { supabase } from '@/supabaseClient';
+import { fetchResolvedChart } from '@/api/queries/thresholdCharts';
 import { buildThresholdRow } from './threshold-resolver';
 import type { ThresholdExpansionMode, ThresholdRow } from './types';
 
@@ -95,13 +96,17 @@ export async function loadThreshold(id: string): Promise<LoadedThreshold | null>
   try {
     const { operationKind, operationArgs } = parseDefinition(row.definition, row.id);
     expansionMode = parseExpansionMode(row.expansion_mode, row.id);
+    // Chart-view thresholds reference a chart by id; pull its rows in the same
+    // load and embed them so the synchronous chart_lookup compute can read them
+    // (the chart rides INSIDE the loaded threshold — one DB load).
+    const enrichedArgs = await enrichChartArgs(operationKind, operationArgs, row.id);
     // buildThresholdRow re-derives consumes/produces metadata from the
     // registry and throws if the operation is unregistered — a row naming an
     // unknown operation surfaces here as `null`.
     thresholdRow = buildThresholdRow({
       name: row.name,
       operationKind,
-      operationArgs,
+      operationArgs: enrichedArgs,
     });
   } catch (err) {
     console.warn(
@@ -155,6 +160,29 @@ function parseDefinition(
     throw new Error(`definition.operationArgs on row ${rowId} must be a JSON object`);
   }
   return { operationKind, operationArgs: operationArgs as Record<string, unknown> };
+}
+
+/**
+ * For chart-view thresholds (`operationKind === 'chart_lookup'`), fetch the
+ * referenced chart and embed its resolved rows into the args so the sync
+ * compute can read them. Other operations pass through untouched. Throws if a
+ * referenced chart can't be loaded — caller converts that to a `null` return.
+ */
+async function enrichChartArgs(
+  operationKind: string,
+  operationArgs: Record<string, unknown>,
+  rowId: string,
+): Promise<Record<string, unknown>> {
+  if (operationKind !== 'chart_lookup') return operationArgs;
+  const chartId = operationArgs.chart_id;
+  if (typeof chartId !== 'string' || chartId.length === 0) {
+    throw new Error(`chart_lookup threshold on row ${rowId} is missing a string chart_id`);
+  }
+  const chart = await fetchResolvedChart(chartId);
+  if (!chart) {
+    throw new Error(`chart_lookup threshold on row ${rowId} references unloadable chart ${chartId}`);
+  }
+  return { ...operationArgs, chart };
 }
 
 function parseExpansionMode(raw: unknown, rowId: string): ThresholdExpansionMode {

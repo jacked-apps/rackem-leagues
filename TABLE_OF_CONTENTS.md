@@ -1192,6 +1192,9 @@ Files added 2026-06-04 for the first room of the Scoring System Workshop buildin
 - `types.ts` adds `ThresholdExpansionMode` (`single` | `home_away` | `per_pairing`) — how a workshop threshold fans out into state-bag values.
 - `operations/evaluate-threshold-expression.ts` - **Threshold workshop — formula view backend (Unit 2).** `evaluate_expression` threshold operation: evaluates an `Expression` tree over `ThresholdInputs` via side-agnostic `this_side`/`other_side` virtuals (handicap_diff, team_handicap, rating_sum, game_count); `args.side` binds the perspective (the mirror). Encoding-agnostic (`consumesHandicapType: 'none'`, size `'any'`); never-throws (null + warn). Reuses the shared `expression-evaluator`.
 - `operations/__tests__/evaluate-threshold-expression.test.ts` - 10 cases: mirrored formula (home vs away), neutral virtual, rating-sum by side, constant-only, unknown-var/divide-by-zero/non-tree → null+warn, producesOutputSide follows binding, registration.
+- `operations/chart-lookup.ts` - **Threshold workshop — chart view backend (Unit 3).** Generalized `chart_lookup` op: resolves against a chart embedded in `operationArgs.chart` by the loader (sync, no DB at compute). `comp_1 = this_side` diff for 1D team charts; 2D race charts deferred (null+warn, pending the per-pairing feed). Never-throws. Leaves `chart_lookup_3v3` untouched.
+- `operations/__tests__/chart-lookup.test.ts` - 9 cases: 1D team resolution (home/away/output fields), null tie, missing-chart/bad-field/no-match/2D-race → null+warn, producesOutputSide, registration.
+- `threshold-row-loader.ts` (Unit 3 enrichment) - for `chart_lookup` thresholds, pulls the referenced chart via `fetchResolvedChart` and embeds it into the args during load (the chart rides INSIDE the load), so compute stays synchronous.
 
 Existing files modified — `composition-validator.ts` exposes `validatePerGameAllocator` (called by the loader + the workshop's guards); declares args-shape checking against `AllocatorFormulaOperation.argsShape`. `types.ts` adds `ArgKind` / `ArgSpec` and the optional `argsShape` field. `runtime.ts` wraps the `evaluateAllocator` call in try/catch (Unit 4 backstop). `match-adapter.ts` `buildComposition` accepts `perGameAllocatorOverride`; `computeMatchRunningTotalsViaEngine` threads it through.
 
@@ -1299,6 +1302,8 @@ High-level business logic services
 - `teams.ts` - Team list/detail reads.
 - `teamStats.ts` - Per-team stats aggregations.
 - `thresholdLookup.ts` - Modular threshold-chart lookup query (used by the system resolver).
+- `thresholdCharts.ts` - **Threshold workshop Unit 3** — `fetchResolvedChart(id)`: pulls a chart + rows into the in-memory `ResolvedChart` shape the sync `chart_lookup` op reads (called by the threshold loader so the chart rides inside the load). Read-only; chart write-CRUD ships with the Phase B editor. Never-throws. Test: `__tests__/thresholdCharts.test.ts` (4 cases).
+- `systems/threshold-charts/lookupChartRows.ts` - **Threshold workshop Unit 3** — synchronous in-memory chart lookup (pure TS port of the `lookup_threshold` SQL): exact/range modes + 2D race upper-triangle swap. Returns `ResolvedChart`/`ChartRow`/`ChartLookupResult`. Test: `__tests__/lookupChartRows.test.ts` (8 cases). DB-real validation: `src/__tests__/database/threshold-chart-resolve.db.test.ts` (4 cases, against the seeded 3v3 Points chart).
 - `venueDuplicates.ts` - Detects duplicate venues during creation flows.
 - `venues.ts` - Venue list/detail reads.
 - `__tests__/thresholdLookup.test.ts` - Tests for the threshold-chart lookup.
