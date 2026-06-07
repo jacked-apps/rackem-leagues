@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-06-05 (Added Facebook OAuth login alongside Google in `Login.tsx`/`Register.tsx` and shipped a public Privacy Policy at `/privacy` — `about/PrivacyPolicy.tsx` — required for Facebook app review. Branch `feat/fb-login`.) Prior 2026-06-02: (Archived ~63 completed/superseded brainstorm, plan & memory-bank docs to `docs/archive/` + `memory-bank/archive/` after a code+PR triage; active/back-burner/reference docs left in place.)
+> **Last Updated**: 2026-06-06 (Split `VenueLimitModal.tsx` → extracted its table-limits state machine into `useVenueTableLimits.ts`; behavior-preserving. Branch `refactor/split-venue-limit-modal`.) Prior 2026-06-05: (Added Facebook OAuth login alongside Google in `Login.tsx`/`Register.tsx` and shipped a public Privacy Policy at `/privacy` — `about/PrivacyPolicy.tsx` — required for Facebook app review. Branch `feat/fb-login`.) Prior 2026-06-02: (Archived ~63 completed/superseded brainstorm, plan & memory-bank docs to `docs/archive/` + `memory-bank/archive/` after a code+PR triage; active/back-burner/reference docs left in place.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -632,7 +632,8 @@ how to add a new test, demo recording, cleanup model).
 - `TeamManagement.tsx` - Team management interface
 - `TeamEditorModal.tsx` - Team editor modal
 - `VenueManagement.tsx` - Venue management
-- `VenueLimitModal.tsx` - Venue limit warning
+- `VenueLimitModal.tsx` - Venue table-limits modal (chrome only; logic in useVenueTableLimits)
+- `useVenueTableLimits.ts` - Hook holding the venue table-limits state machine (enabled sizes, blocked tables, fill order, capacity, save). Extracted from VenueLimitModal.
 
 **Administration**
 - `OrganizationSettings.tsx` - Organization settings
