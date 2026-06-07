@@ -962,25 +962,29 @@ Subtree behind the **message settings modal** — per-user messaging preferences
 - `ContactInfoCard.tsx` - Organization contact info editor (email/phone with visibility)
 - `ContentModerationCard.tsx` - Org-level content-moderation settings card (wraps `ContentModerationSection` in preferences/).
 - `DashboardCard.tsx` - Dashboard card wrapper
-- `LeagueOverviewCard.tsx` - League overview
+- `MatchupsCard.tsx` - The **Matchups** part of a league (header-only `SectionCard`). Subtitle "Set" / "Not set yet" / "Create a season first"; button launches the create-league wizard's matchups stage (the only place matchups are set/edited today). Follow-up in LIST_FOR_ED #36: give matchups its own edit surface for unfinished matches.
+- `SectionCard.tsx` - **Shared league-detail section shell** (built on shadcn Card). `SectionCard` (title + subtitle + right-aligned actions, optional `collapsible`/`defaultOpen`, trimmed padding) + `SectionCardLoading` / `SectionCardEmpty`. Teams / Schedule / Season / Stats all use it so the cards look + behave identically.
+- `SeasonCard.tsx` - The **Season** part of a league (was `LeagueOverviewCard`). Collapsed: "Season · *name* · *status*"; expand for dates/format/team+week counts + **Next holiday** (blackout weeks are a season concept; moved here from the Schedule card). Actions: Manage Season + Delete Season (incomplete only), or Create Season when none exists. Setup-flow buttons (Create Schedule / Add Teams / Set Matchups) + the old inline-styled wizard button were dropped — setup is driven by the Status card's Next Steps + the ActionCard. Grouped with Teams + Schedule on the league page.
 - `LeagueProgressBar.tsx` - League progress bar component (used by LeagueStatusCard)
-- `LeagueStatusCard.tsx` - **UNIFIED league status component** - Single source of truth for league/season status, progress, and next actions (used on both Dashboard and League Detail pages)
+- `LeagueStatusCard.tsx` - **UNIFIED league status component** - Single source of truth for league/season status, progress, and next actions (used on both Dashboard and League Detail pages). Setup progress + Next Steps render only during setup; activation counted as the 5th stage so the bar and checklist agree (no "100% while a step is open"); current step highlighted "← do this next".
+- `leagueSetupProgress.ts` - Pure five-stage setup-progress derivation (season/schedule/teams/matchups/activate) extracted from LeagueStatusCard for unit testing — `deriveSetupProgress(state)` → `{ stepsDone, firstIncompleteIndex, percent, allComplete }`.
+- `leagueSetupProgress.test.ts` - 5 tests: 0% / 20% / 80%-not-activated / 100%-activated, and first-gap-is-current for out-of-order data.
 - `OrganizationBasicInfoCard.tsx` - Organization name and mailing address editor
 - `OrganizationPreferencesCard.tsx` - Organization-level preferences editor (handicap, format, rules defaults)
 - `OrganizationStaffCard.tsx` - Staff roster editor — invite/remove additional league operators within the org.
 - `PaymentMethodCard.tsx` - Payment method card (Stripe integration placeholder)
 - `PendingInvitesList.tsx` - Pending placeholder-player invites list (operator view of invites waiting on acceptance).
-- `PlayoffsCard.tsx` - Playoffs entry-point card on the league page (links to playoff setup/preview/standings).
+- `PlayoffsCard.tsx` - Playoffs entry-point card on the league page (on `SectionCard`, collapsed). Subtitle = status (Bracket created / Ready to set up / No playoff week scheduled / Create a season first); expand for template + playoff-week + regular-season/match status. Action: Setup Playoffs (solid) / View Bracket (outline) → playoff config page.
 - `PreferencesCard.tsx` - **Unified preferences card** — composes the five section components from `preferences/`. Used for both org-level and league-level preferences editing.
 - `QuickStats.tsx` - Quick statistics (legacy; see also `QuickStatsCard.tsx`).
 - `QuickStatsCard.tsx` - Dashboard quick-stats card (active leagues, active seasons, member count).
-- `ScheduleCard.tsx` - Schedule card
+- `ScheduleCard.tsx` - The **Schedule** part of a league (on `SectionCard`, collapsed). Subtitle "N/M weeks played"; expand for Upcoming Weeks. Actions: Create Schedule / View Schedule. (Score a Match moved to the Stats card; Started/Playoffs summary + Next Holiday dropped — Next Holiday lives on the Season card now.)
 - `SeasonStatusCard.tsx` - Season status
 - `SeasonsCard.tsx` - Seasons list card
-- `StatsCard.tsx` - Stats & Standings entry-point card on the league page (links to standings, top shooters, team stats, feats).
+- `StatsCard.tsx` - **Scoring** card on the league page (on `SectionCard`; title "Scoring"). Two slim icon-left buttons: **Standings** (team + player stats) and **Score a Match** (the manual score / verify / edit workflow, production-visible). Replaced the old read-only "Match Data" debug viewer link (the `MatchDataViewer` page/route still exist for dev, just unlinked here).
 - `TableBadgePopover.tsx` - Popover badge showing per-venue table configuration summary (count, table numbers).
 - `TableConfigureModal.tsx` - Modal for editing a venue's table configuration (count, numbers, types).
-- `TeamsCard.tsx` - Teams card
+- `TeamsCard.tsx` - The **Teams** part of a league (on `SectionCard`, collapsed). Subtitle "N teams"; expand for the roster table (captain + venue, click a row for contact details). Action: Manage Teams.
 - `VenueCard.tsx` - Venue card
 - `VenueCreationModal.tsx` - Venue creation modal
 - `VenueTableInputs.tsx` - Reusable table-config inputs (used by venue creation/edit flows).

@@ -1461,55 +1461,38 @@ both are "consistent player-info display across the app" cleanups.
 
 ---
 
-## 2026-06-06 — Weekly Tip Toast ("Did You Know?" feature discovery)
+---
 
-**Discovered:** 2026-06-06 conversation
-**Severity:** Enhancement — feature-discovery nudge, no data risk
-**Branch needed:** own small branch, e.g. `feat/weekly-tip-toast`
+## 36. Split Matchups Editing Out of the Creation Wizard
 
-**The idea:** a little toast on app entry that surfaces one bite-sized
-"did you know?" tip about a feature people would otherwise never stumble
-onto (auto-confirm a game when you trust the opponent to score; the team
-group chat we auto-create and auto-add new members to; placeholder
-players; vacate-and-rescore; the LMS results sheet). It hangs ~a minute,
-then auto-dismisses. Classic tip-of-the-day pattern.
+**Discovered:** 2026-06-06 while standardizing the league-detail cards
+into the four parts (Season / Teams / Schedule / Matchups). Built a
+`MatchupsCard` whose "Set / Edit Matchups" button launches the
+create-league wizard (`/create-league/:orgId?leagueId=:id`) — because
+that's the *only* place matchups (team positions + round-robin) can be
+set or edited today. There is no standalone matchups page or route.
 
-**The design Ed settled on (this is what makes it cheap):**
+**The need:** Once matchups are set, an operator should be able to go
+straight to **editing unfinished matches** (fix a pairing, adjust an
+un-played match) without re-running the whole creation wizard. Today
+editing matchups means re-entering the full wizard flow, which is heavy
+and confusing for a small edit on a live season.
 
-- **Everyone sees the SAME tip in a given week** — the current tip is a
-  pure function of *what week it is* (week number → index into a fixed
-  list), NOT a per-user random rotation. This is the key call: it means
-  there is NOTHING to track per user except "have I already seen *this*
-  week's tip?" — a single throwaway flag. No per-user seen-set in the DB.
-- **Fixed hand-written list of ~50–100 tips.** At weekly cadence that's a
-  ~1–2 year loop before any repeat, by which point it reads as fresh. The
-  tip list IS the real work; the plumbing is tiny.
-- **Shows once/week**, the first time the user opens the app / lands on a
-  page that week, then it's done until the week rolls over.
-- **Seen-flag = browser localStorage** (per-device). Tradeoff: open on
-  phone then laptop and you might see that week's tip twice — harmless for
-  a once-a-week nudge, so don't pay for cross-device sync here.
-- **Missed a week?** Nothing to catch up — you just never saw that week's
-  tip; it swings back around in ~a year. No backfill queue.
+**Suggested direction:** Pull the matchups stage
+(`src/wizards/matchups-v2/`) into its own surface — a real
+`/league/:leagueId/season/:seasonId/matchups` route — that (a) shows the
+positions + round-robin grid and (b) lets the LO edit *unfinished*
+matches in place (played/confirmed matches stay locked). Then point
+`MatchupsCard`'s button at that route instead of the creation wizard.
+Relates to #33 (don't force the matchups page after team edits) — both
+are about matchups deserving a focused, non-wizard home.
 
-**The off-switch (comes last, but DOES need the DB):** "I don't want tips
-at all" is a preference *about the user*, so it must follow them across
-devices — that means a real account-level setting (a column on the user/
-member preferences), NOT localStorage. Otherwise turning tips off on the
-phone still shows them on the laptop, which makes the toggle feel broken.
-This is the one piece that needs schema; everything else is schema-free.
-Buried in settings is fine — it's a release valve, not a discovery surface.
+**Where to look:** `src/wizards/matchups-v2/` (the stage config + steps),
+`src/flows/createNewLeagueFlow.ts` (where it's the final stage),
+`src/components/operator/MatchupsCard.tsx` (the launch button to
+re-point).
 
-**LO tips:** same trick, keyed to the *month* instead of the week, with
-its own tip list and its own flag, shown when an LO lands on the LO
-dashboard. Monthly cadence so it's not naggy for frequent operators.
+**Severity:** MEDIUM — real workflow gap once a season is live; not a
+data risk, but "edit one matchup = redo the wizard" is rough. Its own
+branch + a small plan.
 
-**Effort:** small. A hand-written tip list + a one-line "what week is it →
-which tip" rule + a per-device seen-flag + (last) one account preference
-for on/off. We already have a toast system to render it. No migration
-except that single on/off preference column.
-
-**Nice-to-haves deferred:** role-aware tips (tag each tip player/captain/
-LO so a plain player doesn't get a captain-only tip — we already know each
-user's role); upgrade the seen-flag from localStorage to a per-user DB
-record only if cross-device double-show ever actually bugs anyone.

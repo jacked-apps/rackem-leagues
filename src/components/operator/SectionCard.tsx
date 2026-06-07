@@ -1,0 +1,131 @@
+/**
+ * @fileoverview SectionCard — the shared shell for league-detail section cards.
+ *
+ * Teams, Schedule, League Overview, Stats (and future sections) all share the
+ * same anatomy: a titled card with optional right-aligned header actions and a
+ * body that's either loading, empty, or content. Before this component each
+ * card hand-rolled that shell with slightly different wrappers, header markup,
+ * and loading/empty states. SectionCard makes them look and behave identically
+ * by building on the shadcn `Card` primitives (the project's card standard).
+ *
+ * Two ergonomics on top of the chrome:
+ *   - **Tight padding.** The shadcn defaults (py-6 / gap-6 / px-6) bloat a
+ *     stack of cards; SectionCard trims them so the page reads denser.
+ *   - **Collapsible.** Opt in with `collapsible` to let a card show just its
+ *     header (title + subtitle + actions) and expand on click. Keeps a long
+ *     page scannable — e.g. Teams collapses to "Teams · 6 teams" until opened.
+ *
+ * Usage:
+ *   <SectionCard title="Teams" subtitle="6 teams" collapsible defaultOpen={false}
+ *     actions={<Button>Manage Teams</Button>}>
+ *     {loading ? <SectionCardLoading /> : <table>…</table>}
+ *   </SectionCard>
+ */
+
+import * as React from 'react';
+import { useState } from 'react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Card, CardContent } from '@/components/ui/card';
+
+export interface SectionCardProps {
+  /** Section heading (left of the header row). */
+  readonly title: React.ReactNode;
+  /** Optional sub-line under the title (e.g. a count summary). */
+  readonly subtitle?: React.ReactNode;
+  /** Optional right-aligned header actions (shadcn Buttons, InfoButton, etc.). */
+  readonly actions?: React.ReactNode;
+  /** Card body — content, or one of the state helpers below. Omit for a
+   *  header-only card (title + subtitle + actions, no expandable body). */
+  readonly children?: React.ReactNode;
+  /** When true, the header toggles the body open/closed. */
+  readonly collapsible?: boolean;
+  /** Initial open state for a collapsible card (default open). */
+  readonly defaultOpen?: boolean;
+  /** Extra classes merged onto the Card wrapper. */
+  readonly className?: string;
+}
+
+/**
+ * Titled section card with an optional actions slot and optional collapse.
+ * Padding is trimmed from the shadcn defaults to keep a card stack compact.
+ */
+export function SectionCard({
+  title,
+  subtitle,
+  actions,
+  children,
+  collapsible = false,
+  defaultOpen = true,
+  className,
+}: SectionCardProps) {
+  const [open, setOpen] = useState(defaultOpen);
+  const showBody = !collapsible || open;
+
+  return (
+    <Card className={cn('mb-4 gap-2 py-2', className)}>
+      {/* Slim flex header: chevron + (title over subtitle) on the left,
+          actions on the right vertically centered against the two-line block.
+          A plain flex (not shadcn's CardHeader grid) keeps it to two tight
+          lines instead of padding the row out. */}
+      <div
+        className={cn(
+          'flex items-center justify-between gap-2 px-4',
+          collapsible && 'cursor-pointer select-none',
+        )}
+        onClick={collapsible ? () => setOpen((v) => !v) : undefined}
+      >
+        <div className="flex min-w-0 items-center gap-2">
+          {collapsible &&
+            (open ? (
+              <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+            ))}
+          <div className="min-w-0 leading-tight">
+            <div className="truncate text-base font-semibold text-foreground">
+              {title}
+            </div>
+            {subtitle && (
+              <div className="truncate text-xs text-muted-foreground">{subtitle}</div>
+            )}
+          </div>
+        </div>
+        {actions && (
+          // Stop clicks on the actions from toggling the collapse.
+          <div
+            className="flex shrink-0 items-center gap-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {actions}
+          </div>
+        )}
+      </div>
+      {showBody && children != null && <CardContent className="px-4">{children}</CardContent>}
+    </Card>
+  );
+}
+
+/** Uniform loading body for a SectionCard. */
+export function SectionCardLoading({ message = 'Loading…' }: { readonly message?: string }) {
+  return <div className="py-6 text-center text-muted-foreground">{message}</div>;
+}
+
+/** Uniform empty-state body: an icon/emoji, a message, and an optional action. */
+export function SectionCardEmpty({
+  icon,
+  message,
+  action,
+}: {
+  readonly icon?: React.ReactNode;
+  readonly message: string;
+  readonly action?: React.ReactNode;
+}) {
+  return (
+    <div className="py-6 text-center">
+      {icon && <div className="mb-2 text-3xl">{icon}</div>}
+      <p className="mb-3 text-muted-foreground">{message}</p>
+      {action && <div className="inline-flex items-center gap-2">{action}</div>}
+    </div>
+  );
+}
