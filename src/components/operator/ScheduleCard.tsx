@@ -6,6 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/supabaseClient';
 import { Button } from '@/components/ui/button';
+import { SectionCard, SectionCardLoading, SectionCardEmpty } from './SectionCard';
 import { isProduction } from '@/config/environment';
 import { logger } from '@/utils/logger';
 
@@ -26,14 +27,12 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({ leagueId }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [scheduleExists, setScheduleExists] = useState(false);
-  const [activeSeason, setActiveSeason] = useState<any | null>(null);
+  const [activeSeason, setActiveSeason] = useState<{ id: string } | null>(null);
   const [upcomingWeeks, setUpcomingWeeks] = useState<Array<{ name: string; date: string; type: string }>>([]);
   const [nextBlackout, setNextBlackout] = useState<{ name: string; date: string } | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
   const [weeksCompleted, setWeeksCompleted] = useState(0);
   const [totalWeeks, setTotalWeeks] = useState(0);
-  const [seasonStartDate, setSeasonStartDate] = useState<string | null>(null);
-  const [playoffsDate, setPlayoffsDate] = useState<string | null>(null);
 
   /**
    * Check if schedule exists and find the next upcoming week
@@ -89,7 +88,7 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({ leagueId }) => {
           .order('scheduled_date', { ascending: true });
 
         // Initialize completion map
-        let weekCompletionMap = new Map<string, boolean>();
+        const weekCompletionMap = new Map<string, boolean>();
 
         if (allWeeks && allWeeks.length > 0) {
           const weekIds = allWeeks.map(w => w.id);
@@ -166,33 +165,6 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({ leagueId }) => {
           }
         }
 
-        // Get Week 1 start date (first regular week)
-        const { data: week1Data } = await supabase
-          .from('season_weeks')
-          .select('scheduled_date')
-          .eq('season_id', seasonData.id)
-          .eq('week_type', 'regular')
-          .order('scheduled_date', { ascending: true })
-          .limit(1)
-          .maybeSingle();
-
-        if (week1Data) {
-          setSeasonStartDate(week1Data.scheduled_date);
-        }
-
-        // Get playoffs date (first playoffs week)
-        const { data: playoffsData } = await supabase
-          .from('season_weeks')
-          .select('scheduled_date')
-          .eq('season_id', seasonData.id)
-          .eq('week_type', 'playoffs')
-          .order('scheduled_date', { ascending: true })
-          .limit(1)
-          .maybeSingle();
-
-        if (playoffsData) {
-          setPlayoffsDate(playoffsData.scheduled_date);
-        }
         }
       } catch (err) {
         logger.error('Error checking schedule status', { error: err instanceof Error ? err.message : String(err) });
@@ -224,135 +196,90 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({ leagueId }) => {
     }
   };
 
+  // Header actions adapt to state so the primary action stays visible even
+  // while the card is collapsed: Create Schedule when none exists, View
+  // Schedule once it does (+ Score a Match in non-prod).
+  const actions = (
+    <>
+      {!isProduction && (
+        <Button
+          size="sm"
+          variant="outline"
+          loadingText="none"
+          onClick={() => navigate(`/league/${leagueId}/manual-scoring`)}
+        >
+          Score a Match
+        </Button>
+      )}
+      {activeSeason && scheduleExists && (
+        <Button size="sm" onClick={handleViewSchedule} disabled={isNavigating} isLoading={isNavigating} loadingText="Loading...">
+          View Schedule
+        </Button>
+      )}
+      {activeSeason && !scheduleExists && (
+        <Button size="sm" onClick={handleCreateSchedule} disabled={isNavigating} isLoading={isNavigating} loadingText="Loading...">
+          Create Schedule
+        </Button>
+      )}
+    </>
+  );
+
+  const subtitle =
+    activeSeason && scheduleExists ? `${weeksCompleted}/${totalWeeks} weeks played` : undefined;
+
   return (
-    <div className="lg:bg-card lg:rounded-xl lg:shadow-sm p-6 mb-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-foreground">Schedule</h2>
-        <div className="flex items-center gap-2">
-          {!isProduction && (
-            <Button
-              size="sm"
-              variant="outline"
-              loadingText="none"
-              onClick={() => navigate(`/league/${leagueId}/manual-scoring`)}
-            >
-              Score a Match
-            </Button>
-          )}
-          {scheduleExists && (
-            <Button size="sm" onClick={handleViewSchedule} disabled={isNavigating} isLoading={isNavigating} loadingText="Loading...">
-              View Schedule
-            </Button>
-          )}
-        </div>
-      </div>
-
+    <SectionCard title="Schedule" subtitle={subtitle} actions={actions} collapsible defaultOpen={false}>
       {loading ? (
-        <div className="text-center py-8">
-          <p className="text-muted-foreground">Loading schedule status...</p>
-        </div>
+        <SectionCardLoading message="Loading schedule status..." />
       ) : !activeSeason ? (
-        <div className="text-center py-8">
-          <div className="text-4xl mb-3">🗓️</div>
-          <p className="text-muted-foreground">Create a season first to generate a schedule</p>
-        </div>
-      ) : scheduleExists ? (
-        <div>
-          {upcomingWeeks.length > 0 ? (
-            <>
-              {/* Summary Info Row */}
-              <div className="flex items-center justify-between mb-4 pb-4 border-b border-border">
-                <div className="text-sm text-foreground">
-                  <span className="font-medium">Weeks:</span>{' '}
-                  <span>{weeksCompleted}/{totalWeeks} played</span>
-                </div>
-                <div className="text-sm text-foreground">
-                  <span className="font-medium">Started:</span>{' '}
-                  {seasonStartDate && (
-                    <span>
-                      {new Date(seasonStartDate).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric'
-                      })}
-                    </span>
-                  )}
-                </div>
-                <div className="text-sm text-foreground">
-                  <span className="font-medium">Playoffs:</span>{' '}
-                  {playoffsDate ? (
-                    <span>
-                      {new Date(playoffsDate).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric'
-                      })}
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground italic">Not scheduled</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Upcoming Weeks and Holiday Cards */}
-              <div className="grid md:grid-cols-2 gap-4">
-                {/* Upcoming Weeks Card */}
-                <div className="bg-muted rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-foreground mb-3">Upcoming Weeks</h3>
-                <div className="space-y-2">
-                  {upcomingWeeks.map((week, index) => (
-                    <div key={index} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                      <span className="text-sm font-medium text-foreground">{week.name}</span>
-                      <span className="text-sm text-muted-foreground">
-                        {new Date(week.date).toLocaleDateString('en-US', {
-                          weekday: 'short',
-                          month: 'short',
-                          day: 'numeric'
-                        })}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Next Holiday Card */}
-              <div className="bg-muted rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-foreground mb-3">Next Holiday</h3>
-                {nextBlackout ? (
-                  <div className="py-2">
-                    <p className="text-lg font-semibold text-foreground mb-1">{nextBlackout.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(nextBlackout.date).toLocaleDateString('en-US', {
-                        weekday: 'long',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="py-2">
-                    <p className="text-sm text-muted-foreground italic">No holidays scheduled</p>
-                  </div>
-                )}
-              </div>
-              </div>
-            </>
-          ) : (
-            <div className="text-center py-8">
-              <div className="text-4xl mb-3">🏁</div>
-              <p className="text-muted-foreground">All weeks completed</p>
-            </div>
-          )}
-        </div>
+        <SectionCardEmpty icon="🗓️" message="Create a season first to generate a schedule" />
+      ) : !scheduleExists ? (
+        <SectionCardEmpty icon="🗓️" message="Ready to create your schedule" />
+      ) : upcomingWeeks.length === 0 ? (
+        <SectionCardEmpty icon="🏁" message="All weeks completed" />
       ) : (
-        <div className="text-center py-8">
-          <div className="text-4xl mb-3">🗓️</div>
-          <p className="text-muted-foreground mb-4">Ready to create your schedule</p>
-          <Button onClick={handleCreateSchedule} disabled={isNavigating} isLoading={isNavigating} loadingText="Loading...">
-            Create Schedule
-          </Button>
+        <div className="grid md:grid-cols-2 gap-4">
+          {/* Upcoming Weeks */}
+          <div className="bg-muted rounded-lg p-4">
+            <h3 className="text-sm font-semibold text-foreground mb-3">Upcoming Weeks</h3>
+            <div className="space-y-2">
+              {upcomingWeeks.map((week, index) => (
+                <div key={index} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                  <span className="text-sm font-medium text-foreground">{week.name}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {new Date(week.date).toLocaleDateString('en-US', {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric'
+                    })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Next Holiday */}
+          <div className="bg-muted rounded-lg p-4">
+            <h3 className="text-sm font-semibold text-foreground mb-3">Next Holiday</h3>
+            {nextBlackout ? (
+              <div className="py-2">
+                <p className="text-lg font-semibold text-foreground mb-1">{nextBlackout.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {new Date(nextBlackout.date).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </p>
+              </div>
+            ) : (
+              <div className="py-2">
+                <p className="text-sm text-muted-foreground italic">No holidays scheduled</p>
+              </div>
+            )}
+          </div>
         </div>
       )}
-    </div>
+    </SectionCard>
   );
 };
