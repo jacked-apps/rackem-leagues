@@ -183,7 +183,7 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({ leagueId }) => {
   const actions = (
     <>
       {activeSeason && scheduleExists && (
-        <Button size="sm" onClick={handleViewSchedule} disabled={isNavigating} isLoading={isNavigating} loadingText="Loading...">
+        <Button size="sm" variant="outline" onClick={handleViewSchedule} disabled={isNavigating} isLoading={isNavigating} loadingText="Loading...">
           View Schedule
         </Button>
       )}

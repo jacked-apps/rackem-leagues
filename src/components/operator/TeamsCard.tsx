@@ -85,6 +85,7 @@ export const TeamsCard: React.FC<TeamsCardProps> = ({ leagueId }) => {
           navigate(`/league/${leagueId}/manage-teams`);
         }}
         size="sm"
+        variant="outline"
         disabled={isNavigating || !hasSeason}
         loadingText="Loading..."
       >
@@ -126,7 +127,7 @@ export const TeamsCard: React.FC<TeamsCardProps> = ({ leagueId }) => {
                   setIsNavigating(true);
                   navigate(`/league/${leagueId}/manage-teams`);
                 }}
-                variant="outline"
+                loadingText="none"
                 disabled={isNavigating || !hasSeason}
               >
                 {isNavigating ? 'Loading...' : 'Add Your First Team'}
