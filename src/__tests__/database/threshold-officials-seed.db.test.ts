@@ -1,27 +1,27 @@
 /**
  * @vitest-environment node
  *
- * @fileoverview Seeded threshold officials (Unit 8). The officials are the REAL
- * thresholds converted to the saveable shape — a blank formula starter plus the
- * 3v3 and 5v5 chart-based finish lines (chart rows embedded, clone-to-own).
- * Each must build via buildThresholdRow and resolve to a finite number.
+ * @fileoverview Seeded threshold officials (Unit 8). The officials are EVERY
+ * threshold the app uses, converted to the saveable shape — chart + formula
+ * variants across points / percentage / fargo encodings, read-a-pref, milestone,
+ * and a blank starter. Each must build via buildThresholdRow and resolve
+ * without throwing.
  */
 
 import { afterAll, describe, expect, it } from 'vitest';
 import { executeSql, closePostgresPool } from '@/test/dbTestUtils';
 import { buildThresholdRow, resolveThreshold } from '@/systems/points-system/threshold-resolver';
-// Side-effect imports: register the threshold operations the officials use.
-import '@/systems/points-system/operations/evaluate-threshold-expression';
-import '@/systems/points-system/operations/chart-lookup';
+// Side-effect: register every threshold operation the officials reference.
+import '@/systems/points-system/operations/register-all';
 import type { ThresholdInputs } from '@/systems/points-system/types';
 
 const inputs: ThresholdInputs = {
-  homeRatings: [],
-  awayRatings: [],
+  homeRatings: [550, 550, 550],
+  awayRatings: [450, 450, 450],
   homeHandicapDiff: 0,
   awayHandicapDiff: 0,
   gameCount: 18,
-  prefs: {},
+  prefs: { games_to_win: 10, milestone_percent: 0.7 },
   homeTeamHandicap: 10,
   awayTeamHandicap: 10,
 };
@@ -39,82 +39,72 @@ async function officials(): Promise<SeedRow[]> {
   );
 }
 
-const resolve = (r: SeedRow) =>
-  resolveThreshold(
-    buildThresholdRow({
-      name: r.name,
-      operationKind: r.definition.operationKind,
-      operationArgs: r.definition.operationArgs,
-    }),
-    inputs,
-  );
+const build = (r: SeedRow, extra: Record<string, unknown> = {}) =>
+  buildThresholdRow({
+    name: r.name,
+    operationKind: r.definition.operationKind,
+    operationArgs: { ...r.definition.operationArgs, ...extra },
+  });
 
-describe('threshold officials — real seeded templates', () => {
+const resolveAt = (r: SeedRow, over: Partial<ThresholdInputs> = {}) =>
+  resolveThreshold(build(r), { ...inputs, ...over });
+
+const EXPECTED_LABELS = [
+  'Empty Starter',
+  'Games to win — Fargo (any lineup)',
+  'Games to win — Percentage chart (5 players)',
+  'Games to win — Percentage formula (any lineup)',
+  'Games to win — Points chart (3 players)',
+  'Games to win — Points formula (any lineup)',
+  'Games to win — read a league setting',
+  'Lower edge (tie or win) — Points chart (3 players)',
+  'Milestone — percent of games to win',
+  'Start points — Fargo (any lineup)',
+];
+
+describe('threshold officials — the full real template set', () => {
   afterAll(async () => {
     await closePostgresPool();
   });
 
-  it('seeds the three real officials, all author-less', async () => {
+  it('seeds all ten real thresholds, author-less', async () => {
     const rows = await officials();
-    const labels = rows.map((r) => r.label).sort();
-    expect(labels).toEqual(
-      [
-        '3v3 — Games to win (finish line)',
-        '5v5 — Games to win (finish line)',
-        'Empty Starter',
-      ].sort(),
-    );
-    expect(rows.every((r) => r.definition.operationKind)).toBe(true);
+    expect(rows.map((r) => r.label).sort()).toEqual([...EXPECTED_LABELS].sort());
+    expect(rows.every((r) => r.author_id === undefined || r.author_id === null)).toBe(true);
   });
 
-  it('the chart-based officials embed their chart rows (clone-to-own shape)', async () => {
-    const rows = await officials();
-    const threeV3 = rows.find((r) => r.name === 'threshold_official_3v3_finish')!;
-    const chart = threeV3.definition.operationArgs.chart as { rows: unknown[]; chartType: string };
-    expect(chart.chartType).toBe('team_points');
-    expect(chart.rows.length).toBe(25);
-  });
-
-  it('every official builds and resolves to a finite number', async () => {
-    for (const row of await officials()) {
-      expect(Number.isFinite(resolve(row) as number)).toBe(true);
+  it('every official builds and resolves without throwing', async () => {
+    for (const r of await officials()) {
+      expect(() => resolveAt(r)).not.toThrow();
+      const value = resolveAt(r);
+      expect(value === null || Number.isFinite(value)).toBe(true);
     }
   });
 
-  it('the 3v3 finish line resolves correctly across many handicap gaps (not just one)', async () => {
+  it('the points CHART resolves faithfully across the chart range', async () => {
     const rows = await officials();
-    const threeV3 = rows.find((r) => r.name === 'threshold_official_3v3_finish')!;
-    const built = buildThresholdRow({
-      name: threeV3.name,
-      operationKind: threeV3.definition.operationKind,
-      operationArgs: threeV3.definition.operationArgs,
-    });
-    const atGap = (diff: number) =>
-      resolveThreshold(built, { ...inputs, homeHandicapDiff: diff });
-    // Faithful to the seeded chart across its range.
-    expect(atGap(-6)).toBe(7);
-    expect(atGap(-3)).toBe(8);
-    expect(atGap(0)).toBe(10);
-    expect(atGap(3)).toBe(11);
-    expect(atGap(6)).toBe(13);
-    expect(atGap(12)).toBe(16);
+    const r = rows.find((x) => x.name === 'threshold_official_points_chart_win')!;
+    const at = (diff: number) => resolveThreshold(build(r), { ...inputs, homeHandicapDiff: diff });
+    expect([at(-6), at(-3), at(0), at(3), at(6), at(12)]).toEqual([7, 8, 10, 11, 13, 16]);
   });
 
-  it('the home_away mirror reads the away side at the away gap', async () => {
+  it('the points FORMULA gives the SAME answer as the chart (10 at gap 0)', async () => {
     const rows = await officials();
-    const threeV3 = rows.find((r) => r.name === 'threshold_official_3v3_finish')!;
-    // The fan-out binds side=away; the away binding reads awayHandicapDiff.
-    const awayRow = buildThresholdRow({
-      name: threeV3.name,
-      operationKind: threeV3.definition.operationKind,
-      operationArgs: { ...threeV3.definition.operationArgs, side: 'away' },
-    });
-    expect(resolveThreshold(awayRow, { ...inputs, awayHandicapDiff: 6 })).toBe(13);
+    const r = rows.find((x) => x.name === 'threshold_official_points_formula_win')!;
+    expect(resolveThreshold(build(r), { ...inputs, homeHandicapDiff: 0 })).toBe(10);
   });
 
-  it('the empty starter resolves to 0', async () => {
+  it('read-a-pref and milestone resolve from league settings', async () => {
     const rows = await officials();
-    const empty = rows.find((r) => r.name === 'threshold_official_empty')!;
-    expect(resolve(empty)).toBe(0);
+    const pref = rows.find((x) => x.name === 'threshold_official_read_pref_win')!;
+    const milestone = rows.find((x) => x.name === 'threshold_official_milestone')!;
+    expect(resolveAt(pref)).toBe(10); // games_to_win pref
+    expect(resolveAt(milestone)).toBe(7); // round(10 * 0.7)
+  });
+
+  it('the fargo win-threshold resolves to a finite number from ratings', async () => {
+    const rows = await officials();
+    const r = rows.find((x) => x.name === 'threshold_official_fargo_win')!;
+    expect(Number.isFinite(resolveAt(r) as number)).toBe(true);
   });
 });

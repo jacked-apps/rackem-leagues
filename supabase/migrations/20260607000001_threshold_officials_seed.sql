@@ -2,96 +2,118 @@
 -- THRESHOLD ROOM — seed official (read-only) templates
 -- ============================================================================
 --
--- The officials are the REAL thresholds the app already uses, converted into
--- the saveable/editable workshop shape (just like the allocator room seeds the
--- real 10-Point / 17-Point allocators). An LO clones one to get an editable
--- copy and tweak it.
+-- The officials are EVERY threshold the app uses anywhere, converted into the
+-- saveable workshop shape (like the allocator room seeds the real allocators).
+-- They double as a learning tool: the same answer as a chart AND as a formula,
+-- a percent-of-another, Fargo giving start points AND a win threshold, etc.
 --
--- The chart-based officials EMBED the chart's rows directly in the definition
--- (operationArgs.chart), exactly like the allocator embeds winner_side /
--- loser_side — so a cloned copy is self-contained and editable inline, owned by
--- the cloner. The embedded rows are built from the seeded global charts so they
--- stay faithful to today's hard-coded behavior.
+-- Naming is ENCODING-FIRST: a threshold is calibrated for a specific handicap
+-- encoding (points / percentage / fargo) and the input must match it. Charts
+-- are locked to the lineup size they were built for; formulas scale to any size.
 --
---   - 3v3 — Games to win   : the BCA 3v3 finish line (points-3-man's
---                            homeWinTarget/awayWinTarget), chart_lookup over the
---                            3v3 Points chart, result_1, mirrored home_away.
---   - 5v5 — Games to win   : the same idea on the 5v5 Percentage chart.
---   - Empty Starter        : a blank formula (const 0) to build from scratch.
+-- Chart officials EMBED their rows (clone-to-own, editable inline). Built-in
+-- calculations (formulas, fargo, read-a-pref, milestone) are clone-and-use —
+-- their math isn't editable in the arithmetic builder.
 --
 -- See docs/plans/2026-06-07-001-feat-threshold-workshop-plan.md (Unit 8).
 -- ============================================================================
 
--- Blank build-from-scratch starter (formula view).
-INSERT INTO "public"."thresholds" ("name", "label", "description", "scope", "author_id", "definition", "expansion_mode")
+-- ---- POINTS encoding -------------------------------------------------------
+
+-- Games to win — Points CHART (3 players). The real points-3-man finish line.
+INSERT INTO "public"."thresholds" ("name","label","description","scope","author_id","definition","expansion_mode")
+SELECT 'threshold_official_points_chart_win','Games to win — Points chart (3 players)',
+  'How many games each team needs to win, by the points handicap gap, on the 3-player chart. Input must be a POINTS-based handicap. The chart is locked to 3 players / 18 games — clone it and tweak the numbers.',
+  'official', NULL,
+  jsonb_build_object('operationKind','chart_lookup','operationArgs',jsonb_build_object('output_field','result_1','chart',jsonb_build_object('chartType',tc.chart_type,'lookupMode',tc.lookup_mode,'rows',(SELECT jsonb_agg(jsonb_build_object('comp_1',r.comp_1,'comp_2',r.comp_2,'result_1',r.result_1,'result_2',r.result_2,'result_3',r.result_3) ORDER BY r.sort_order) FROM threshold_chart_rows r WHERE r.chart_id=tc.id)))),
+  'home_away'
+FROM threshold_charts tc WHERE tc.entity_type='global' AND tc.name='Rackem League 3v3 Points Chart';
+
+-- Games to win — Points FORMULA (any lineup). Same answer, size-agnostic.
+INSERT INTO "public"."thresholds" ("name","label","description","scope","author_id","definition","expansion_mode")
 VALUES (
-  'threshold_official_empty',
-  'Empty Starter',
-  'A blank threshold that always resolves to 0. Clone this and build your own formula from scratch.',
-  'official',
-  NULL,
-  '{"operationKind": "evaluate_expression", "operationArgs": {"expression": {"kind": "const", "value": 0}}}'::jsonb,
-  'single'
+  'threshold_official_points_formula_win','Games to win — Points formula (any lineup)',
+  'The same games-to-win answer as the points chart, but computed by formula so it works for ANY lineup size (it scales with the game count). Input must be a points-based handicap. Built-in calculation.',
+  'official', NULL,
+  '{"operationKind":"games_needed_3v3_formula","operationArgs":{"output_field":"games_to_win"}}'::jsonb,'home_away'
 );
 
--- Real chart-based finish lines, with the chart rows embedded from the seeded
--- global charts (chart_lookup, result_1 = games to win, mirrored home/away).
-INSERT INTO "public"."thresholds" ("name", "label", "description", "scope", "author_id", "definition", "expansion_mode")
-SELECT
-  'threshold_official_3v3_finish',
-  '3v3 — Games to win (finish line)',
-  'How many games each team needs to win the match, by the handicap gap, on the BCA 3v3 points chart. This is the real 3v3 finish line — clone it and tweak the numbers.',
-  'official',
-  NULL,
-  jsonb_build_object(
-    'operationKind', 'chart_lookup',
-    'operationArgs', jsonb_build_object(
-      'output_field', 'result_1',
-      'chart', jsonb_build_object(
-        'chartType', tc.chart_type,
-        'lookupMode', tc.lookup_mode,
-        'rows', (
-          SELECT jsonb_agg(
-            jsonb_build_object(
-              'comp_1', r.comp_1, 'comp_2', r.comp_2,
-              'result_1', r.result_1, 'result_2', r.result_2, 'result_3', r.result_3
-            ) ORDER BY r.sort_order
-          )
-          FROM threshold_chart_rows r WHERE r.chart_id = tc.id
-        )
-      )
-    )
-  ),
-  'home_away'
-FROM threshold_charts tc
-WHERE tc.entity_type = 'global' AND tc.name = 'Rackem League 3v3 Points Chart';
+-- Lower edge (tie or win) — Points chart (3 players). The real lower band.
+INSERT INTO "public"."thresholds" ("name","label","description","scope","author_id","definition","expansion_mode")
+VALUES (
+  'threshold_official_points_chart_edge','Lower edge (tie or win) — Points chart (3 players)',
+  'The lower scoring band on the 3-player points chart: the tie target when a tie is possible, otherwise the win target. Points handicap. Built-in calculation.',
+  'official', NULL,
+  '{"operationKind":"chart_lookup_3v3","operationArgs":{"side":"home","output_field":"games_to_tie_or_win"}}'::jsonb,'home_away'
+);
 
-INSERT INTO "public"."thresholds" ("name", "label", "description", "scope", "author_id", "definition", "expansion_mode")
-SELECT
-  'threshold_official_5v5_finish',
-  '5v5 — Games to win (finish line)',
-  'How many games each team needs to win the match, by the handicap gap, on the 5v5 percentage chart. Clone it and tweak the numbers.',
-  'official',
-  NULL,
-  jsonb_build_object(
-    'operationKind', 'chart_lookup',
-    'operationArgs', jsonb_build_object(
-      'output_field', 'result_1',
-      'chart', jsonb_build_object(
-        'chartType', tc.chart_type,
-        'lookupMode', tc.lookup_mode,
-        'rows', (
-          SELECT jsonb_agg(
-            jsonb_build_object(
-              'comp_1', r.comp_1, 'comp_2', r.comp_2,
-              'result_1', r.result_1, 'result_2', r.result_2, 'result_3', r.result_3
-            ) ORDER BY r.sort_order
-          )
-          FROM threshold_chart_rows r WHERE r.chart_id = tc.id
-        )
-      )
-    )
-  ),
+-- ---- PERCENTAGE encoding ---------------------------------------------------
+
+-- Games to win — Percentage CHART (5 players).
+INSERT INTO "public"."thresholds" ("name","label","description","scope","author_id","definition","expansion_mode")
+SELECT 'threshold_official_pct_chart_win','Games to win — Percentage chart (5 players)',
+  'How many games each team needs to win, by the percentage handicap gap, on the 5-player chart. Input must be a PERCENTAGE-based handicap. Locked to its size — clone it and tweak the numbers.',
+  'official', NULL,
+  jsonb_build_object('operationKind','chart_lookup','operationArgs',jsonb_build_object('output_field','result_1','chart',jsonb_build_object('chartType',tc.chart_type,'lookupMode',tc.lookup_mode,'rows',(SELECT jsonb_agg(jsonb_build_object('comp_1',r.comp_1,'comp_2',r.comp_2,'result_1',r.result_1,'result_2',r.result_2,'result_3',r.result_3) ORDER BY r.sort_order) FROM threshold_chart_rows r WHERE r.chart_id=tc.id)))),
   'home_away'
-FROM threshold_charts tc
-WHERE tc.entity_type = 'global' AND tc.name = 'Rackem League 5v5 Percentage Chart';
+FROM threshold_charts tc WHERE tc.entity_type='global' AND tc.name='Rackem League 5v5 Percentage Chart';
+
+-- Games to win — Percentage FORMULA (any lineup).
+INSERT INTO "public"."thresholds" ("name","label","description","scope","author_id","definition","expansion_mode")
+VALUES (
+  'threshold_official_pct_formula_win','Games to win — Percentage formula (any lineup)',
+  'The same games-to-win answer as the percentage chart, computed by formula so it works for any lineup size. Input must be a percentage-based handicap. Built-in calculation.',
+  'official', NULL,
+  '{"operationKind":"games_needed_5v5_formula","operationArgs":{"output_field":"games_to_win"}}'::jsonb,'home_away'
+);
+
+-- ---- FARGO encoding --------------------------------------------------------
+
+-- Start points — Fargo (any lineup). The real 10/17-point head start.
+INSERT INTO "public"."thresholds" ("name","label","description","scope","author_id","definition","expansion_mode")
+VALUES (
+  'threshold_official_fargo_start','Start points — Fargo (any lineup)',
+  'Gives the weaker team a head start in points, computed from the lineup Fargo ratings. Input must be FARGO ratings. Any lineup size. Built-in calculation.',
+  'official', NULL,
+  '{"operationKind":"fargo_start_points_for_side","operationArgs":{"side":"home"}}'::jsonb,'home_away'
+);
+
+-- Games to win — Fargo (any lineup). The Fargo win-threshold.
+INSERT INTO "public"."thresholds" ("name","label","description","scope","author_id","definition","expansion_mode")
+VALUES (
+  'threshold_official_fargo_win','Games to win — Fargo (any lineup)',
+  'How many games each team needs to win, derived from the lineup Fargo ratings (FargoRate win expectancy). Input must be Fargo ratings. Any lineup size. Built-in calculation.',
+  'official', NULL,
+  '{"operationKind":"fargo_games_won","operationArgs":{"output_field":"games_to_win"}}'::jsonb,'home_away'
+);
+
+-- ---- LEAGUE SETTINGS (no handicap) -----------------------------------------
+
+-- Games to win — read a league setting. The real percent-5-man winTarget.
+INSERT INTO "public"."thresholds" ("name","label","description","scope","author_id","definition","expansion_mode")
+VALUES (
+  'threshold_official_read_pref_win','Games to win — read a league setting',
+  'Reads a fixed games-to-win number you configure in league settings. No handicap input; the same for both sides. Built-in calculation.',
+  'official', NULL,
+  '{"operationKind":"read_pref","operationArgs":{"pref_key":"games_to_win"}}'::jsonb,'single'
+);
+
+-- Milestone — percent of games to win. The real percent-5-man milestoneTarget.
+INSERT INTO "public"."thresholds" ("name","label","description","scope","author_id","definition","expansion_mode")
+VALUES (
+  'threshold_official_milestone','Milestone — percent of games to win',
+  'A mid-match milestone at a percent of the games-to-win target (e.g. 70%), rounded. Reads two league settings; the same for both sides. Built-in calculation.',
+  'official', NULL,
+  '{"operationKind":"arithmetic_round_product","operationArgs":{"factor_pref_keys":["games_to_win","milestone_percent"]}}'::jsonb,'single'
+);
+
+-- ---- BLANK -----------------------------------------------------------------
+
+-- Empty Starter — build your own formula from scratch.
+INSERT INTO "public"."thresholds" ("name","label","description","scope","author_id","definition","expansion_mode")
+VALUES (
+  'threshold_official_empty','Empty Starter',
+  'A blank threshold that resolves to 0. Clone it and build your own formula from scratch.',
+  'official', NULL,
+  '{"operationKind":"evaluate_expression","operationArgs":{"expression":{"kind":"const","value":0}}}'::jsonb,'single'
+);

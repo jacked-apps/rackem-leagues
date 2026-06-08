@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select';
 import { FormulaView } from './FormulaView';
 import { ChartView } from './ChartView';
+import { BuiltInView } from './BuiltInView';
 import { thresholdSaveGuard } from './saveTimeGuard';
 import type { ThresholdExpansionMode, Expression } from '@/systems/points-system/types';
 import type { ResolvedChart } from '@/systems/threshold-charts/lookupChartRows';
@@ -29,6 +30,11 @@ import type { ThresholdDefinition, ThresholdRoomRow } from './useThresholdRoom';
 
 type LookupView = 'formula' | 'chart';
 type OutputField = 'result_1' | 'result_2' | 'result_3';
+
+/** Charts and arithmetic formulas are editable here; everything else is built-in. */
+function isBuiltInOp(operationKind: string): boolean {
+  return operationKind !== 'chart_lookup' && operationKind !== 'evaluate_expression';
+}
 
 const EXPANSION_LABELS: Record<ThresholdExpansionMode, string> = {
   single: 'One value (side-less)',
@@ -73,6 +79,7 @@ export interface ThresholdEditorProps {
 }
 
 export function ThresholdEditor({ initial, onSave, onCancel }: ThresholdEditorProps) {
+  const builtin = isBuiltInOp(initial.definition.operationKind);
   const [label, setLabel] = useState(initial.label);
   const [description, setDescription] = useState(initial.description ?? '');
   const [view, setView] = useState<LookupView>(
@@ -166,23 +173,29 @@ export function ThresholdEditor({ initial, onSave, onCancel }: ThresholdEditorPr
         </Select>
       </div>
 
-      <div className="space-y-1">
-        <Label className="text-sm">How is the number figured out?</Label>
-        <Select value={view} onValueChange={(v) => switchView(v as LookupView)}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="formula">A formula</SelectItem>
-            <SelectItem value="chart">A chart (lookup table)</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {view === 'formula' ? (
-        <FormulaView initial={initialFormula(initial)} onChange={handleFormulaChange} />
+      {builtin ? (
+        <BuiltInView definition={initial.definition} />
       ) : (
-        <ChartView initial={initialChart(initial)} onChange={handleChartChange} />
+        <>
+          <div className="space-y-1">
+            <Label className="text-sm">How is the number figured out?</Label>
+            <Select value={view} onValueChange={(v) => switchView(v as LookupView)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="formula">A formula</SelectItem>
+                <SelectItem value="chart">A chart (lookup table)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {view === 'formula' ? (
+            <FormulaView initial={initialFormula(initial)} onChange={handleFormulaChange} />
+          ) : (
+            <ChartView initial={initialChart(initial)} onChange={handleChartChange} />
+          )}
+        </>
       )}
 
       {error && <p className="text-sm text-destructive">{error}</p>}

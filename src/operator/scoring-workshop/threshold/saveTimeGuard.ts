@@ -16,10 +16,9 @@ import {
   resolveThreshold,
 } from '@/systems/points-system/threshold-resolver';
 import { fetchResolvedChart } from '@/api/queries/thresholdCharts';
-// Side-effect imports: ensure the threshold operations are registered so
-// buildThresholdRow can resolve them during the dry-run.
-import '@/systems/points-system/operations/evaluate-threshold-expression';
-import '@/systems/points-system/operations/chart-lookup';
+// Side-effect: ensure every threshold operation is registered so the dry-run's
+// buildThresholdRow can resolve whichever operation the threshold references.
+import '@/systems/points-system/operations/register-all';
 import type {
   ThresholdExpansionMode,
   ThresholdInputs,
@@ -28,14 +27,15 @@ import type { ThresholdDefinition } from './useThresholdRoom';
 
 export type GuardResult = { ok: true } | { ok: false; reason: string };
 
-/** Representative inputs the dry-run resolves against. */
+/** Representative inputs the dry-run resolves against (covers every op type). */
 const SYNTHETIC_INPUTS: ThresholdInputs = {
-  homeRatings: [400, 450, 500],
-  awayRatings: [400, 450, 500],
+  homeRatings: [500, 500, 500],
+  awayRatings: [450, 450, 450],
   homeHandicapDiff: 0,
   awayHandicapDiff: 0,
   gameCount: 18,
-  prefs: {},
+  // Prefs the built-in read-a-setting / milestone thresholds reference.
+  prefs: { games_to_win: 10, milestone_percent: 0.7 },
   homeTeamHandicap: 10,
   awayTeamHandicap: 10,
 };

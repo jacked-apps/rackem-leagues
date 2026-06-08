@@ -27,6 +27,9 @@
 import { supabase } from '@/supabaseClient';
 import { fetchResolvedChart } from '@/api/queries/thresholdCharts';
 import { buildThresholdRow } from './threshold-resolver';
+// Side-effect: ensure every threshold operation is registered, so a row that
+// references any operation rebuilds rather than failing as "unknown operation".
+import './operations/register-all';
 import type { ThresholdExpansionMode, ThresholdRow } from './types';
 
 // ============================================================================

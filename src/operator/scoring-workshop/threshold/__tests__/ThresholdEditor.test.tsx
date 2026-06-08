@@ -82,6 +82,25 @@ describe('ThresholdEditor', () => {
     expect(chart.rows[0].result_1).toBe(12);
   });
 
+  it('shows a read-only built-in view for a dedicated-math threshold and preserves its definition', async () => {
+    const onSave = vi.fn().mockResolvedValue(true);
+    const builtinRow = makeRow({
+      expansion_mode: 'single',
+      definition: { operationKind: 'read_pref', operationArgs: { pref_key: 'games_to_win' } },
+    });
+    render(<ThresholdEditor initial={builtinRow} onSave={onSave} onCancel={() => {}} />);
+
+    // Built-in panel shown; no formula/chart toggle.
+    expect(screen.getByText('Built-in calculation')).toBeTruthy();
+    expect(screen.queryByText('How is the number figured out?')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(onSave).toHaveBeenCalled());
+    const saved = onSave.mock.calls[0][0] as ThresholdRoomRow;
+    expect(saved.definition.operationKind).toBe('read_pref');
+    expect(saved.definition.operationArgs).toEqual({ pref_key: 'games_to_win' });
+  });
+
   it('preserves the generic key while editing the display label', async () => {
     const onSave = vi.fn().mockResolvedValue(true);
     render(<ThresholdEditor initial={makeRow()} onSave={onSave} onCancel={() => {}} />);
