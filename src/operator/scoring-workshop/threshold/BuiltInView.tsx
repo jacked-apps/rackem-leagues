@@ -10,6 +10,8 @@
  */
 
 import { Label } from '@/components/ui/label';
+import { ReadOnlyFormula } from './ReadOnlyFormula';
+import { builtinFormulaLines } from './builtinFormula';
 import type { ThresholdDefinition } from './useThresholdRoom';
 
 /** Plain-English description of each built-in operation. */
@@ -57,15 +59,31 @@ export function BuiltInView({ definition }: BuiltInViewProps) {
     title: 'Built-in calculation',
     blurb: 'A built-in threshold calculation.',
   };
+  const formula = builtinFormulaLines(definition.operationKind);
   return (
-    <div className="space-y-2 rounded-md border bg-muted/30 p-3">
-      <Label className="text-xs uppercase text-muted-foreground">Built-in calculation</Label>
-      <div className="font-medium">{info.title}</div>
-      <p className="text-sm text-muted-foreground">{info.blurb}</p>
-      <p className="text-xs text-muted-foreground">
-        This calculation is built in — you can clone it, rename it, and use it, but its math isn't
-        editable here. (Charts are the editable kind.)
-      </p>
+    <div className="space-y-3 rounded-md border bg-muted/30 p-3">
+      <div>
+        <Label className="text-xs uppercase text-muted-foreground">Built-in calculation</Label>
+        <div className="font-medium">{info.title}</div>
+        <p className="text-sm text-muted-foreground">{info.blurb}</p>
+      </div>
+
+      {formula ? (
+        <div className="space-y-2">
+          <Label className="text-xs uppercase text-muted-foreground">The formula it uses</Label>
+          <ReadOnlyFormula lines={formula} />
+          <p className="text-xs text-muted-foreground">
+            Shown so you can see how it works. The dashed symbols (like <span className="font-mono">^</span>,{' '}
+            <span className="font-mono">floor</span>) aren't editable yet — we'll open them up later. For now
+            you can clone it, rename it, and use it.
+          </p>
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          You can clone it, rename it, and use it, but its math isn't editable here. (Charts are the editable
+          kind.)
+        </p>
+      )}
     </div>
   );
 }
