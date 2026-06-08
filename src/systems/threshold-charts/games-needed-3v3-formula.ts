@@ -42,7 +42,7 @@ const DIFF_CAP_3V3 = 12;
  * handicap features even where rounding makes alternate forms equivalent
  * at the current parameters.
  */
-function computeThresholds(diff: number, gameCount: number): HandicapThresholds {
+export function computeThresholds(diff: number, gameCount: number): HandicapThresholds {
   // The TIE amount is the midpoint: m = (game_count + diff) / 2, with the
   // (signed) diff clamped to ±12. Then:
   //   - m a whole number → a tie is possible: tie = m, win = m + 1, lose = m − 1

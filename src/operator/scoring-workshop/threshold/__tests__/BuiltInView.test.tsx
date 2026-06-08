@@ -1,47 +1,37 @@
 /**
- * @fileoverview Tests for the built-in threshold view — shows the real formula
- * (with locked symbols) so an LO can see the calculation.
+ * @fileoverview Tests for the built-in threshold view — shows the actual source
+ * code of the calculation, read-only.
  */
 
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { BuiltInView } from '../BuiltInView';
-import { builtinFormulaLines } from '../builtinFormula';
+import { builtinCode } from '../builtinCode';
 
-describe('builtinFormulaLines', () => {
-  it('returns the Fargo formula including a locked ^ (power) symbol', () => {
-    const lines = builtinFormulaLines('fargo_start_points_for_side');
-    expect(lines).not.toBeNull();
-    const allTokens = lines!.flatMap((l) => l.tokens);
-    expect(allTokens.some((t) => t.kind === 'locked' && t.text === '^')).toBe(true);
+describe('builtinCode', () => {
+  it('returns the real tiny-program source for the 3v3 points formula (its if/then math)', () => {
+    const code = builtinCode('games_needed_3v3_formula');
+    expect(code).not.toBeNull();
+    // The actual midpoint program — contains its real variable + branch.
+    expect(code).toContain('midpoint');
+    expect(code).toContain('Number.isInteger');
   });
 
-  it('has a representation for every wired built-in formula op', () => {
-    for (const op of [
-      'fargo_start_points_for_side',
-      'fargo_games_won',
-      'games_needed_3v3_formula',
-      'games_needed_5v5_formula',
-      'arithmetic_round_product',
-      'read_pref',
-    ]) {
-      expect(builtinFormulaLines(op)).not.toBeNull();
-    }
-  });
-
-  it('returns null for a chart-style built-in (falls back to a blurb)', () => {
-    expect(builtinFormulaLines('chart_lookup_3v3')).toBeNull();
+  it('returns the operation compute source for the simpler built-ins', () => {
+    expect(builtinCode('read_pref')).toContain('=>');
+    expect(builtinCode('arithmetic_round_product')).toContain('=>');
   });
 });
 
 describe('BuiltInView', () => {
-  it('renders the formula and the power symbol for a Fargo threshold', () => {
+  it('renders the real code, read-only, for a Fargo threshold', () => {
     render(
       <BuiltInView
-        definition={{ operationKind: 'fargo_start_points_for_side', operationArgs: { side: 'home' } }}
+        definition={{ operationKind: 'fargo_games_won', operationArgs: { output_field: 'games_to_win' } }}
       />,
     );
-    expect(screen.getByText('The formula it uses')).toBeTruthy();
-    expect(screen.getAllByText('^').length).toBeGreaterThan(0);
+    expect(screen.getByText('The code it runs')).toBeTruthy();
+    // The Fargo tiny program references the rating arrays.
+    expect(screen.getByText(/homeRatings/)).toBeTruthy();
   });
 });
