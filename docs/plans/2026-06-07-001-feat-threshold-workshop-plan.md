@@ -24,6 +24,37 @@ runtime never knows which view produced the value.
 Like the trigger room, **this room only builds and saves threshold modules to a library.** It
 does **not** wire them onto leagues or into compositions — that's the future assembly room.
 
+## ⏸ Pause Point — 2026-06-10 (back-burnered)
+
+Branch `feat/threshold-workshop` is at a clean stopping point: **build green, all 2706 tests
+passing, pushed to origin, no PR opened.** Room is `status:'live'` in the Workshops building;
+in-room authoring works; nothing is wired to live scoring (deferred to the assembly room by
+design). Safe to leave and return to cold.
+
+**Done (Units 1–8, all committed):** `thresholds` table + tamper trigger; never-throw loader;
+`evaluate_expression` op; generalized `chart_lookup` + sync chart resolution; room shell
+(list / clone / upsert / delete); formula view; chart view (inline editable grid); save-time
+guard; 8 handicap-derived officials seeded. Plus three design corrections that landed after the
+units: the built-in view shows the **real code, read-only**; the 3v3 points formula was replaced
+with the correct midpoint form `m = (games + diff)/2` (byte-identical — cross-audit stayed green);
+and the **input-declaration dial** was added (`expected_handicap_type` column + a "which handicap
+system?" Select: points / percentage / fargo).
+
+**Resume here — the design thread (Socratic, Ed-driven), in order:**
+1. **Guard generation from the handicap-type dial.** The slot should auto-apply the right input
+   guard (one shared if/then per handicap system) from the declared `expected_handicap_type` — the
+   author turns the dial, never writes a guard. (Ed: "that question tells you which guard rails to
+   use.") This is the immediate next increment.
+2. **Lineup-size declaration dial** (specific / list / range / any) — discussed, not built.
+3. **Separate the universal guards OUT of the calculation** so the displayed program is
+   self-contained / math-first — the "show/edit the code" problem (a `Function.toString()` fragment
+   that calls an outside helper isn't a real module).
+4. **Code editor for tiny-program formulas**, gated to technical users; make formulas
+   self-contained.
+
+**Deferred real work (flagged, not built):** the real percent-5-man — chart/formula → win, then a
+70%-of-win milestone, which needs threshold-reads-threshold.
+
 ## Problem Frame
 
 Compositions today declare their threshold rows **in code** (e.g.
