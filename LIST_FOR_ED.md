@@ -25,6 +25,9 @@ Tasks and refactoring items for Ed to work on.
 **Verified clean tonight (NO action):**
 6. Schedule vs matchups separation is correct in code — `matchupTables.ts` owns week pairings (by position, no dates), `season_weeks` owns the dates, `generateSchedule` marries them.
 
+**VERIFY in the morning (Ed's tired-eyes flag — may be fine):**
+8. **Does a blackout on an existing schedule auto-shift the week?** e.g. week 7 plays 6/16; mark 6/16 a blackout → week 7 should move to **6/23** and everything after shifts one week. Preliminary read: blackouts **do** shift the schedule during **setup/review** (`ScheduleReview.tsx` regenerates whenever blackout weeks change). Open question is the **already-active** schedule — does editing/adding a blackout after the season's accepted re-date the weeks, or does it need a regen? Confirm the post-activation case.
+
 **Paused (lower priority):**
 7. Player-picker consolidation brainstorm — parked at Site 2 of 8. Mid-walkthrough; no doc written yet.
 
