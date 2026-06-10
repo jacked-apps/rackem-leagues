@@ -56,9 +56,7 @@ const EXPECTED_LABELS = [
   'Games to win — Percentage formula (any lineup)',
   'Games to win — Points chart (3 players)',
   'Games to win — Points formula (any lineup)',
-  'Games to win — read a league setting',
   'Lower edge (tie or win) — Points chart (3 players)',
-  'Milestone — percent of games to win',
   'Start points — Fargo (any lineup)',
 ];
 
@@ -92,14 +90,6 @@ describe('threshold officials — the full real template set', () => {
     const rows = await officials();
     const r = rows.find((x) => x.name === 'threshold_official_points_formula_win')!;
     expect(resolveThreshold(build(r), { ...inputs, homeHandicapDiff: 0 })).toBe(10);
-  });
-
-  it('read-a-pref and milestone resolve from league settings', async () => {
-    const rows = await officials();
-    const pref = rows.find((x) => x.name === 'threshold_official_read_pref_win')!;
-    const milestone = rows.find((x) => x.name === 'threshold_official_milestone')!;
-    expect(resolveAt(pref)).toBe(10); // games_to_win pref
-    expect(resolveAt(milestone)).toBe(7); // round(10 * 0.7)
   });
 
   it('the fargo win-threshold resolves to a finite number from ratings', async () => {

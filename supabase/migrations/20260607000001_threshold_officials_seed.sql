@@ -87,25 +87,13 @@ VALUES (
   '{"operationKind":"fargo_games_won","operationArgs":{"output_field":"games_to_win"}}'::jsonb,'home_away'
 );
 
--- ---- LEAGUE SETTINGS (no handicap) -----------------------------------------
-
--- Games to win — read a league setting. The real percent-5-man winTarget.
-INSERT INTO "public"."thresholds" ("name","label","description","scope","author_id","definition","expansion_mode")
-VALUES (
-  'threshold_official_read_pref_win','Games to win — read a league setting',
-  'Reads a fixed games-to-win number you configure in league settings. No handicap input; the same for both sides. Built-in calculation.',
-  'official', NULL,
-  '{"operationKind":"read_pref","operationArgs":{"pref_key":"games_to_win"}}'::jsonb,'single'
-);
-
--- Milestone — percent of games to win. The real percent-5-man milestoneTarget.
-INSERT INTO "public"."thresholds" ("name","label","description","scope","author_id","definition","expansion_mode")
-VALUES (
-  'threshold_official_milestone','Milestone — percent of games to win',
-  'A mid-match milestone at a percent of the games-to-win target (e.g. 70%), rounded. Reads two league settings; the same for both sides. Built-in calculation.',
-  'official', NULL,
-  '{"operationKind":"arithmetic_round_product","operationArgs":{"factor_pref_keys":["games_to_win","milestone_percent"]}}'::jsonb,'single'
-);
+-- NOTE: there is NO "read a league setting" win threshold and NO prefs-based
+-- milestone in our real packages — every package threshold is handicap-derived.
+-- The implemented percent-5-man uses read_pref/arithmetic-on-prefs as a STUB;
+-- the real 5-man % derives the win from the percentage handicap diff (the
+-- percentage chart/formula above), and the milestone is 70% of THAT win (which
+-- needs a threshold-reads-threshold mechanism we don't have yet). So neither is
+-- seeded as a real template.
 
 -- ---- BLANK -----------------------------------------------------------------
 
