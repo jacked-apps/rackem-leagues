@@ -811,6 +811,7 @@ export const TeamManagement: React.FC = () => {
               captain_id: editingTeam.captain_id,
               home_venue_id: editingTeam.home_venue_id,
               roster_size: editingTeam.roster_size,
+              status: editingTeam.status,
             } : null}
             onSuccess={handleTeamCreateSuccess}
             onCancel={() => {

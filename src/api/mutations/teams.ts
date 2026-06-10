@@ -14,7 +14,7 @@
  */
 
 import { supabase } from '@/supabaseClient';
-import type { Team, TeamInsertData, TeamPlayerInsertData } from '@/types/team';
+import type { Team, TeamInsertData, TeamPlayerInsertData, TeamStatus } from '@/types/team';
 
 /**
  * Parameters for creating a new team
@@ -40,6 +40,12 @@ export interface UpdateTeamParams {
   homeVenueId?: string | null;
   rosterPlayerIds: string[]; // Complete roster to sync
   isCaptainVariant?: boolean; // If true, preserves captain row during roster sync
+  /**
+   * Optional status change. Used to FILL a bye: when a `status='bye'` team is
+   * edited with a captain + name (via the team editor), pass `'active'` to
+   * promote it into a real team. Omit to leave status untouched (normal edits).
+   */
+  status?: TeamStatus;
 }
 
 /**
@@ -160,6 +166,9 @@ export async function updateTeam(params: UpdateTeamParams): Promise<Team> {
       captain_id: params.captainId,
       home_venue_id: params.homeVenueId || null,
       team_name: params.teamName.trim(),
+      // Only set status when the caller asks (filling a bye → 'active'); a
+      // normal edit omits it so an active team stays active.
+      ...(params.status ? { status: params.status } : {}),
     })
     .eq('id', params.teamId)
     .select()
