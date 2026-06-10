@@ -23,6 +23,7 @@ import type { League } from '@/types/league';
 import { formatLocalDate, parseLocalDate } from '@/utils/formatters';
 import { fetchHolidaysForSeason } from '@/utils/holidayUtils';
 import { detectScheduleConflicts } from '@/utils/conflictDetectionUtils';
+import { fetchChampionshipDateOptions, type ChampionshipDateOption } from '@/utils/tournamentUtils';
 
 interface SeasonData {
   id: string;
@@ -127,32 +128,31 @@ export const SeasonScheduleManager: React.FC = () => {
         const seasonLength = seasonData.season_length || 16;
         const holidays = fetchHolidaysForSeason(startDate, seasonLength);
 
-        // Extract championship events from blackout weeks
-        const bcaWeeks = transformedSchedule.filter(w =>
-          w.type === 'week-off' &&
-          (w.weekName.toLowerCase().includes('bca') || w.weekName.toLowerCase().includes('championship'))
-        );
-        const apaWeeks = transformedSchedule.filter(w =>
-          w.type === 'week-off' && w.weekName.toLowerCase().includes('apa')
-        );
-
-        const bcaChampionship: ChampionshipEvent | undefined =
-          bcaWeeks.length > 0
+        // Championship conflict dates come from the SOURCE-OF-TRUTH date table
+        // (`championship_date_options`), NOT from the schedule's own "week-off"
+        // weeks. Deriving from the off-weeks meant that if the dates were ever
+        // corrected after the schedule was built (or any edit re-ran this), the
+        // flags echoed the stale off-weeks — e.g. APA flagged on 6/28–8/2 when
+        // the real dates are 8/04–8/15. `[0]` is the dev-verified / top-voted
+        // option for the relevant year (see fetchChampionshipDateOptions).
+        const [bcaOptions, apaOptions] = await Promise.all([
+          fetchChampionshipDateOptions('BCA'),
+          fetchChampionshipDateOptions('APA'),
+        ]);
+        // Dates are stored as full ISO timestamps (`...T04:00:00Z`); strip the
+        // time so downstream `parseLocalDate` (which expects YYYY-MM-DD) is happy.
+        const toChampionship = (
+          opt: ChampionshipDateOption | undefined,
+        ): ChampionshipEvent | undefined =>
+          opt
             ? {
-                start: bcaWeeks[0].date,
-                end: bcaWeeks[bcaWeeks.length - 1].date,
+                start: opt.start_date.split('T')[0],
+                end: opt.end_date.split('T')[0],
                 ignored: false,
               }
             : undefined;
-
-        const apaChampionship: ChampionshipEvent | undefined =
-          apaWeeks.length > 0
-            ? {
-                start: apaWeeks[0].date,
-                end: apaWeeks[apaWeeks.length - 1].date,
-                ignored: false,
-              }
-            : undefined;
+        const bcaChampionship = toChampionship(bcaOptions[0]);
+        const apaChampionship = toChampionship(apaOptions[0]);
 
         const leagueDayOfWeek = leagueData?.day_of_week || 'tuesday';
 
