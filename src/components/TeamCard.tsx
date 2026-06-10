@@ -55,6 +55,10 @@ export const TeamCard: React.FC<TeamCardProps> = ({
     ? `${captain.first_name} ${captain.last_name}`
     : 'Unknown';
   const displayNumber = captain ? formatPartialMemberNumber(captain) : '';
+  // A bye is a real team row (status 'bye') that holds a schedule slot but has
+  // no captain/roster. Render it distinctly so the operator can SEE it instead
+  // of being misled into adding a redundant team.
+  const isBye = team.status === 'bye';
 
   return (
     <div className="border border-border rounded-lg overflow-hidden">
@@ -73,20 +77,43 @@ export const TeamCard: React.FC<TeamCardProps> = ({
           )}
         </Button>
         <div className="flex-1">
-          <h3 className="font-semibold text-foreground">{team.team_name}</h3>
-          <p className="text-sm text-muted-foreground">
-            Captain: {captainName} {displayNumber} • Roster: {rosterCount}/
-            {team.roster_size}
-          </p>
+          {isBye ? (
+            <>
+              <h3 className="font-semibold text-foreground flex items-center gap-2">
+                BYE
+                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                  open slot
+                </span>
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Not a real team — whoever is scheduled against the BYE sits out
+                that week. Fill it with a team, or remove it if you don't need it.
+              </p>
+            </>
+          ) : (
+            <>
+              <h3 className="font-semibold text-foreground">{team.team_name}</h3>
+              <p className="text-sm text-muted-foreground">
+                Captain: {captainName} {displayNumber} • Roster: {rosterCount}/
+                {team.roster_size}
+              </p>
+            </>
+          )}
         </div>
-        <div className="flex gap-2 shrink-0">
-          <Button loadingText="none" size="sm" onClick={onEdit}>
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button loadingText="Deleting..." size="sm" variant="destructive" onClick={onDelete}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
+        {/* A bye has no captain/roster to edit, and it can't be raw-deleted
+            while it holds schedule slots. The proper Fill / Remove actions
+            (which touch the schedule) are a separate step — hide the generic
+            buttons here so the bye can't be edited into a broken half-state. */}
+        {!isBye && (
+          <div className="flex gap-2 shrink-0">
+            <Button loadingText="none" size="sm" onClick={onEdit}>
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button loadingText="Deleting..." size="sm" variant="destructive" onClick={onDelete}>
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Expanded Details */}

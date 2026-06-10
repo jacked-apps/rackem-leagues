@@ -4,6 +4,38 @@ Tasks and refactoring items for Ed to work on.
 
 ---
 
+## 🌅 PICK UP HERE — night of 2026-06-09 (bye-team firefight + the day's fixes)
+
+**Shipped tonight — open PRs awaiting Jack's merge (verify on staging when merged):**
+- #198 hide broken email-invite button · #199 captain invite UX (copy message + `?` help + guided approve card) · #200 CI Node-24 action bumps · #201 player number on profile · #202 iPhone bottom-nav padding · #203 matchup-redo **400 crash** fix (dropped a bad trigger) · #204 **bye now visible** in Manage Teams
+
+**FIX FIRST — the bye / add-team mess:**
+1. **Recover the wedged league** (10 real + 1 bye = 11 rows): once **#203** is in your test env → **redo the matchups** → you get a clean **10-team** schedule, **no 2nd bye** (verified: the setup screen counts only the 10 active teams, 10 is even, so it adds none). Then **SQL-delete the orphan bye row** (after the redo it has no matches → deletes clean). Ask Claude for the one-liner.
+2. **Build the "can't happen again" rule** (Ed's spec):
+   - **A)** Gate **"Add Team"** when a bye exists → message *"fill the BYE slot instead."* (small — detect `teams.some(t => t.status==='bye')`, #204 already loads it)
+   - **B)** **"Populate the bye"** = fill action: convert the bye row into a real team (name + captain + roster, flip `status` bye→active). Its "vs BYE" matches become real games — **no reschedule**. The meat. Pre-season clean; mid-season needs un-awarding banked bye wins (deferred).
+
+**Finish the half-done bye-as-real-team migration:**
+3. Show the bye **everywhere a team shows EXCEPT standings/stats**; replace leftover `team_id === null` bye-detection with `status === 'bye'` (`SeasonSchedulePage.tsx`, `wizards/matchups-v2/steps/ReviewStep.tsx`).
+4. **Remove-the-bye** action (delete → regenerate at even count).
+
+**NEEDS A REAL PLAN (not a quick fix):**
+5. **Auto-forfeit sweep** — once-daily `pg_cron`, all past-due + unfinished matches, captainless side forfeits (bye weeks fall out of it automatically). Full design + decisions in `docs/brainstorms/2026-06-09-bye-team-and-auto-forfeit-requirements.md`. Deferred sub-items: forfeit scoring (points for the win), exact timing ("6am" was a placeholder), neither-captained edge, and the **8 captainless `active` teams / 0 `bye` rows** data anomaly to understand.
+
+**Verified clean tonight (NO action):**
+6. Schedule vs matchups separation is correct in code — `matchupTables.ts` owns week pairings (by position, no dates), `season_weeks` owns the dates, `generateSchedule` marries them.
+
+**VERIFY in the morning (Ed's tired-eyes flag — may be fine):**
+8. **Does a blackout on an existing schedule auto-shift the week?** e.g. week 7 plays 6/16; mark 6/16 a blackout → week 7 should move to **6/23** and everything after shifts one week. Preliminary read: blackouts **do** shift the schedule during **setup/review** (`ScheduleReview.tsx` regenerates whenever blackout weeks change). Open question is the **already-active** schedule — does editing/adding a blackout after the season's accepted re-date the weeks, or does it need a regen? Confirm the post-activation case.
+
+**BUG — ROOT CAUSE FOUND, ship the one-liner (production):**
+9. **APA championship conflict flags on the wrong dates.** Edit-schedule page (production) flags weeks 6/28, 7/12, 7/19 … 8/2 as "APA National Tournament Week N" — but APA 2026 is **8/04–8/15**. **Data is correct** (verified: one `championship_date_options` row, start 8/04 / end 8/15). **Root cause:** `parseLocalDate` (`src/utils/formatters.ts:221`) only handles `'YYYY-MM-DD'` (`isoDate.split('-').map(Number)`), but championship dates are stored as **full ISO timestamps** (`2026-08-04T04:00:00.000Z`). The day parses as `Number('04T04:00:00.000Z')` → **NaN** → invalid/garbage date, so `extractLeagueNights` (`src/utils/holidayUtils.ts:98`) walks the wrong range and stamps bogus APA "league nights." **Fix (safe one-liner):** strip the time first — `isoDate.split('T')[0]` inside `parseLocalDate` (hardens every date parse; plain `YYYY-MM-DD` unaffected). Repro locally (local DB has the `...T04:00:00Z` row), confirm, ship.
+
+**Paused (lower priority):**
+7. Player-picker consolidation brainstorm — parked at Site 2 of 8. Mid-walkthrough; no doc written yet.
+
+---
+
 ## 🚪 Gated — awaiting staging review + un-gate
 
 Features merged to `main` but NOT yet live for users (see **Feature Gating

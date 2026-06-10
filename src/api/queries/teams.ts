@@ -165,6 +165,14 @@ export async function getPlayerTeams(memberId: string) {
 export interface TeamFetchOptions {
   /** Include rows with status != 'active'. Defaults to false for list helpers. */
   includeInactive?: boolean;
+  /**
+   * Additionally surface BYE rows (status 'bye') alongside active teams. A bye
+   * is a real participating team that holds schedule slots, so operator team
+   * views must show it — a hidden bye is how LOs end up adding a redundant team
+   * to an odd league. Ignored when `includeInactive` is true (that already
+   * returns everything). Does NOT include 'withdrawn'.
+   */
+  includeBye?: boolean;
 }
 
 /**
@@ -252,7 +260,7 @@ export async function getTeamDetails(teamId: string, options: TeamFetchOptions =
  * @throws Error if query fails
  */
 export async function getTeamsByLeague(leagueId: string, options: TeamFetchOptions = {}) {
-  const { includeInactive = false } = options;
+  const { includeInactive = false, includeBye = false } = options;
   let query = supabase
     .from('teams')
     .select(`
@@ -284,7 +292,9 @@ export async function getTeamsByLeague(leagueId: string, options: TeamFetchOptio
     .order('created_at', { ascending: false });
 
   if (!includeInactive) {
-    query = query.eq('status', 'active');
+    query = includeBye
+      ? query.in('status', ['active', 'bye'])
+      : query.eq('status', 'active');
   }
 
   const { data, error } = await query;
