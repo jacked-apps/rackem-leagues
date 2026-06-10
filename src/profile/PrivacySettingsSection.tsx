@@ -30,12 +30,10 @@ export const PrivacySettingsSection: React.FC = () => {
     try {
       await updateMutation.mutateAsync({ userId: user.id, enabled: !shouldFilter });
       setSuccess(true);
-
-      // Reload page to update filter state (cache will automatically update)
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-    } catch (err) {
+      // No reload needed: useUpdateProfanityFilter invalidates the exact
+      // profanity-settings query that useProfanityFilter reads, so the toggle
+      // re-reads the new value live.
+    } catch {
       setError('Failed to update profanity filter setting. Please try again.');
     }
   };

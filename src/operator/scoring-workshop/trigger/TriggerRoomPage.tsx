@@ -1,32 +1,29 @@
 /**
- * @fileoverview Per-Game Allocator Workshop — page container.
+ * @fileoverview Trigger Workshop — page container.
  *
- * First module workshop in the workshops building. Mounts at
- * `/operator/scoring-workshop/per-game-allocator` (URL keeps the legacy
- * path pending the eventual rename). Shows the user's variations +
- * read-only templates; opens the editor for clone / edit; persists via
- * `useAllocatorRoom`.
+ * Second standalone module workshop in the workshops building. Mounts
+ * at `/operator/scoring-workshop/trigger` (URL keeps the legacy path
+ * pending the eventual rename). Mirrors the per-game allocator's
+ * `AllocatorRoomPage` 1:1 in shape — the two workshops are independent
+ * at runtime and share only the `ExpressionBuilder` widget.
  */
 
 import { useState } from 'react';
 import { PageHeader } from '@/components/PageHeader';
 import { useUserProfile } from '@/api/hooks';
 import { Card, CardContent } from '@/components/ui/card';
-import { AllocatorList } from './AllocatorList';
-import { AllocatorEditor } from './AllocatorEditor';
-import {
-  useAllocatorRoom,
-  type AllocatorRow,
-} from './useAllocatorRoom';
+import { TriggerList } from './TriggerList';
+import { TriggerEditor } from './TriggerEditor';
+import { useTriggerRoom, type TriggerRow } from './useTriggerRoom';
 
 type Mode = 'list' | 'edit';
 
-export default function AllocatorRoomPage() {
+export default function TriggerRoomPage() {
   const { member } = useUserProfile();
   const memberId = member?.id ?? null;
-  const room = useAllocatorRoom(memberId);
+  const room = useTriggerRoom(memberId);
   const [mode, setMode] = useState<Mode>('list');
-  const [editing, setEditing] = useState<AllocatorRow | null>(null);
+  const [editing, setEditing] = useState<TriggerRow | null>(null);
 
   const handleCloneOfficial = async (sourceId: string) => {
     const source = room.officials.find((r) => r.id === sourceId);
@@ -34,7 +31,6 @@ export default function AllocatorRoomPage() {
     const newName = `Copy of ${source.name}`;
     const newId = await room.cloneOfficial(sourceId, newName);
     if (!newId) return;
-    // Find the just-cloned row in the refreshed list and open it for edit.
     const cloned = room.mine.find((r) => r.id === newId);
     if (cloned) {
       setEditing(cloned);
@@ -53,7 +49,7 @@ export default function AllocatorRoomPage() {
     await room.remove(id);
   };
 
-  const handleSave = async (row: AllocatorRow): Promise<boolean> => {
+  const handleSave = async (row: TriggerRow): Promise<boolean> => {
     const ok = await room.upsert(row);
     if (ok) {
       setMode('list');
@@ -70,8 +66,8 @@ export default function AllocatorRoomPage() {
   return (
     <div className="container mx-auto space-y-6 p-4">
       <PageHeader
-        title="Per-Game Allocator Workshop"
-        subtitle="Build per-game point variations and apply them to your leagues."
+        title="Trigger Workshop"
+        subtitle="Build standalone trigger variations — match-start credits, mid-match bonuses, end-of-match awards."
         backTo={mode === 'list' ? '/operator/scoring-workshop' : undefined}
         backLabel={mode === 'list' ? 'Workshops' : 'Back to list'}
         onBackClick={mode === 'edit' ? handleCancel : undefined}
@@ -85,7 +81,7 @@ export default function AllocatorRoomPage() {
         </Card>
       )}
       {!room.loading && !room.error && mode === 'list' && (
-        <AllocatorList
+        <TriggerList
           officials={room.officials}
           mine={room.mine}
           onCloneOfficial={handleCloneOfficial}
@@ -94,11 +90,7 @@ export default function AllocatorRoomPage() {
         />
       )}
       {mode === 'edit' && editing && (
-        <AllocatorEditor
-          initial={editing}
-          onSave={handleSave}
-          onCancel={handleCancel}
-        />
+        <TriggerEditor initial={editing} onSave={handleSave} onCancel={handleCancel} />
       )}
     </div>
   );

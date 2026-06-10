@@ -32,8 +32,10 @@ import type {
   Expression,
   PerGameAllocator,
   PointsSystem,
+  ReArm,
   SideConfig,
   Trigger,
+  TriggerType,
 } from './types';
 
 /**
@@ -186,6 +188,71 @@ export function validatePerGameAllocator(
 }
 
 /**
+ * Validate a standalone Trigger's shape — the structural checks that are
+ * meaningful even outside a composition. Used by:
+ *   - The trigger room's loader (re-validating every row at load time).
+ *   - The trigger room's save-time guard (refusing bad rows before INSERT).
+ *   - `validatePointsSystem` below, in its per-trigger loop.
+ *
+ * Throws on the first violation found. Caller wraps in try/catch.
+ *
+ * The optional `allowedTargets` whitelist restricts which state-var names
+ * the trigger's ACTION can write to. The trigger room passes
+ * `['home_points', 'away_points']` (its v1 write-target restriction);
+ * prepackaged compositions pass nothing (they legitimately write to
+ * `edge`, `endmatch`, custom milestone names, etc.).
+ */
+export function validateTrigger(
+  trigger: Trigger,
+  options?: { readonly allowedTargets?: readonly string[] },
+): void {
+  if (!trigger.name || trigger.name.trim().length === 0) {
+    throw new Error('Trigger name is empty.');
+  }
+
+  const validTypes: readonly TriggerType[] = ['match_start', 'match_end', 'anytime'];
+  if (!validTypes.includes(trigger.type)) {
+    throw new Error(
+      `Trigger "${trigger.name}": invalid type "${trigger.type}". Expected one of: ${validTypes.join(', ')}.`,
+    );
+  }
+
+  if (
+    !trigger.condition ||
+    (trigger.condition.kind !== 'always' && trigger.condition.kind !== 'compare')
+  ) {
+    throw new Error(
+      `Trigger "${trigger.name}": invalid condition shape (kind must be 'always' or 'compare').`,
+    );
+  }
+
+  if (!trigger.action || typeof trigger.action.target !== 'string' || trigger.action.target.length === 0) {
+    throw new Error(`Trigger "${trigger.name}": action.target must be a non-empty string.`);
+  }
+  if (options?.allowedTargets && !options.allowedTargets.includes(trigger.action.target)) {
+    throw new Error(
+      `Trigger "${trigger.name}": action target "${trigger.action.target}" is not in the allowed set [${options.allowedTargets.join(', ')}].`,
+    );
+  }
+
+  if (
+    !trigger.action.value ||
+    (trigger.action.value.kind !== 'set' && trigger.action.value.kind !== 'expr')
+  ) {
+    throw new Error(
+      `Trigger "${trigger.name}": invalid action value shape (kind must be 'set' or 'expr').`,
+    );
+  }
+
+  const validRearm: readonly ReArm[] = ['single_shot', 'periodic', 'manual'];
+  if (!validRearm.includes(trigger.rearm)) {
+    throw new Error(
+      `Trigger "${trigger.name}": invalid rearm "${trigger.rearm}". Expected one of: ${validRearm.join(', ')}.`,
+    );
+  }
+}
+
+/**
  * Validate a PointsSystem composition against the trigger-model invariants.
  * Throws on the first violation found.
  */
@@ -204,6 +271,11 @@ export function validatePointsSystem(composition: PointsSystem): void {
       );
     }
     seenTriggerNames.add(trigger.name);
+
+    // Validate the trigger's own shape (no target whitelist — prepackaged
+    // compositions legitimately write to many names beyond home_points/
+    // away_points).
+    validateTrigger(trigger);
 
     // Collect read/write var usage. Not enforced yet (open namespace), but
     // computing it keeps the shape available for future checks + surfaces

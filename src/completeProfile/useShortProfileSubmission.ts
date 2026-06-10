@@ -5,12 +5,15 @@
  * for the minimal registration form. Creates a member record with
  * only essential fields.
  */
+import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { shortProfileSchema } from '../schemas/shortProfileSchema';
 import { capitalizeWords } from '../utils/formatters';
 import { generateNickname } from '../utils/nicknameGenerator';
 import { supabase } from '../supabaseClient';
 import { useUser } from '../context/useUser';
 import { getSafeRedirectPath } from '../login/redirect';
+import { queryKeys } from '@/api/queryKeys';
 import type { ShortProfileFormState } from './types';
 import { logger } from '@/utils/logger';
 
@@ -53,6 +56,8 @@ export const useShortProfileSubmission = ({
   redirectTo,
 }: UseShortProfileSubmissionProps) => {
   const { user } = useUser();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   /**
    * Handles form submission.
@@ -132,10 +137,17 @@ export const useShortProfileSubmission = ({
 
       onSuccess();
 
-      // Force a full page reload so UserProvider refetches the new member row.
-      // Default destination is My Teams; a flow may redirect elsewhere (e.g. the
-      // join page) via a validated same-origin relative path.
-      window.location.href = getSafeRedirectPath(redirectTo) ?? '/my-teams';
+      // Refresh the member cache so the app recognizes the new profile — no full
+      // page reload. Awaiting refetchType:'all' guarantees the member is in cache
+      // before we move on, so the join flow advances IN-PLACE (TeamJoinPage
+      // re-reads `member` and shows the Join step) and any other destination
+      // renders the new member. Default destination is My Teams; a flow may
+      // redirect elsewhere via a validated same-origin relative path.
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.members.all,
+        refetchType: 'all',
+      });
+      navigate(getSafeRedirectPath(redirectTo) ?? '/my-teams');
     } catch (error) {
       logger.error('Unexpected error during profile creation', {
         error: error instanceof Error ? error.message : String(error),
