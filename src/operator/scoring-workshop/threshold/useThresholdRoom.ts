@@ -19,6 +19,9 @@ export interface ThresholdDefinition {
   readonly operationArgs: Record<string, unknown>;
 }
 
+/** The handicap systems a threshold can declare it expects on its input. */
+export type ExpectedHandicapType = 'points' | 'percentage' | 'fargo';
+
 export interface ThresholdRoomRow {
   readonly id: string;
   /** Generic resolvable key (state-bag name). Stable; never edited by the LO. */
@@ -30,6 +33,8 @@ export interface ThresholdRoomRow {
   readonly author_id: string | null;
   readonly definition: ThresholdDefinition;
   readonly expansion_mode: ThresholdExpansionMode;
+  /** Declared input handicap system (null until the author picks one). */
+  readonly expected_handicap_type: ExpectedHandicapType | null;
 }
 
 export interface UseThresholdRoom {
@@ -43,7 +48,8 @@ export interface UseThresholdRoom {
   readonly remove: (id: string) => Promise<boolean>;
 }
 
-const COLUMNS = 'id, name, label, description, scope, author_id, definition, expansion_mode';
+const COLUMNS =
+  'id, name, label, description, scope, author_id, definition, expansion_mode, expected_handicap_type';
 
 /** Mint a fresh generic resolvable key. The LO's label is separate decoration. */
 export function generateThresholdKey(): string {
@@ -103,6 +109,7 @@ export function useThresholdRoom(currentMemberId: string | null): UseThresholdRo
           author_id: currentMemberId,
           definition: source.definition as unknown,
           expansion_mode: source.expansion_mode,
+          expected_handicap_type: source.expected_handicap_type,
         })
         .select('id')
         .single();
@@ -125,6 +132,7 @@ export function useThresholdRoom(currentMemberId: string | null): UseThresholdRo
         author_id: currentMemberId,
         definition: row.definition as unknown,
         expansion_mode: row.expansion_mode,
+        expected_handicap_type: row.expected_handicap_type,
       });
       if (upsertErr) return false;
       await refresh();

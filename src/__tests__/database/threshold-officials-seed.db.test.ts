@@ -30,12 +30,14 @@ interface SeedRow {
   name: string;
   label: string;
   expansion_mode: string;
+  expected_handicap_type: string | null;
   definition: { operationKind: string; operationArgs: Record<string, unknown> };
 }
 
 async function officials(): Promise<SeedRow[]> {
   return executeSql(
-    `SELECT name, label, expansion_mode, definition FROM thresholds WHERE scope = 'official' ORDER BY name`,
+    `SELECT name, label, expansion_mode, expected_handicap_type, definition
+     FROM thresholds WHERE scope = 'official' ORDER BY name`,
   );
 }
 
@@ -90,6 +92,16 @@ describe('threshold officials — the full real template set', () => {
     const rows = await officials();
     const r = rows.find((x) => x.name === 'threshold_official_points_formula_win')!;
     expect(resolveThreshold(build(r), { ...inputs, homeHandicapDiff: 0 })).toBe(10);
+  });
+
+  it('every handicap-derived official declares its expected handicap system', async () => {
+    const byName = Object.fromEntries((await officials()).map((r) => [r.name, r]));
+    expect(byName.threshold_official_points_chart_win.expected_handicap_type).toBe('points');
+    expect(byName.threshold_official_pct_formula_win.expected_handicap_type).toBe('percentage');
+    expect(byName.threshold_official_fargo_start.expected_handicap_type).toBe('fargo');
+    expect(byName.threshold_official_fargo_win.expected_handicap_type).toBe('fargo');
+    // The blank starter has no declared type until the author picks one.
+    expect(byName.threshold_official_empty.expected_handicap_type).toBeNull();
   });
 
   it('the fargo win-threshold resolves to a finite number from ratings', async () => {

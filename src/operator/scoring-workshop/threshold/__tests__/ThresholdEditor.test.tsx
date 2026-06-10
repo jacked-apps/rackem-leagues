@@ -21,6 +21,7 @@ function makeRow(overrides: Partial<ThresholdRoomRow> = {}): ThresholdRoomRow {
       operationArgs: { expression: { kind: 'const', value: 5 } },
     },
     expansion_mode: 'single',
+    expected_handicap_type: 'points',
     ...overrides,
   };
 }
@@ -36,6 +37,7 @@ describe('ThresholdEditor', () => {
     const saved = onSave.mock.calls[0][0] as ThresholdRoomRow;
     expect(saved.label).toBe('My threshold');
     expect(saved.expansion_mode).toBe('single');
+    expect(saved.expected_handicap_type).toBe('points'); // declared input
     expect(saved.definition.operationKind).toBe('evaluate_expression');
     expect(saved.definition.operationArgs.expression).toEqual({ kind: 'const', value: 5 });
   });

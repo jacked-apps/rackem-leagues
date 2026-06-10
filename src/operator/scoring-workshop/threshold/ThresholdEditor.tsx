@@ -26,7 +26,17 @@ import { BuiltInView } from './BuiltInView';
 import { thresholdSaveGuard } from './saveTimeGuard';
 import type { ThresholdExpansionMode, Expression } from '@/systems/points-system/types';
 import type { ResolvedChart } from '@/systems/threshold-charts/lookupChartRows';
-import type { ThresholdDefinition, ThresholdRoomRow } from './useThresholdRoom';
+import type {
+  ExpectedHandicapType,
+  ThresholdDefinition,
+  ThresholdRoomRow,
+} from './useThresholdRoom';
+
+const HANDICAP_SYSTEMS: ReadonlyArray<{ value: ExpectedHandicapType; label: string }> = [
+  { value: 'points', label: 'Points handicap' },
+  { value: 'percentage', label: 'Percentage handicap' },
+  { value: 'fargo', label: 'Fargo ratings' },
+];
 
 type LookupView = 'formula' | 'chart';
 type OutputField = 'result_1' | 'result_2' | 'result_3';
@@ -82,6 +92,9 @@ export function ThresholdEditor({ initial, onSave, onCancel }: ThresholdEditorPr
   const builtin = isBuiltInOp(initial.definition.operationKind);
   const [label, setLabel] = useState(initial.label);
   const [description, setDescription] = useState(initial.description ?? '');
+  const [handicapType, setHandicapType] = useState<ExpectedHandicapType>(
+    initial.expected_handicap_type ?? 'points',
+  );
   const [view, setView] = useState<LookupView>(
     initial.definition.operationKind === 'chart_lookup' ? 'chart' : 'formula',
   );
@@ -136,6 +149,7 @@ export function ThresholdEditor({ initial, onSave, onCancel }: ThresholdEditorPr
       label: label.trim(),
       description: description.trim() === '' ? null : description.trim(),
       expansion_mode: expansionMode,
+      expected_handicap_type: handicapType,
       definition: activeDef,
     });
     setSaving(false);
@@ -155,6 +169,26 @@ export function ThresholdEditor({ initial, onSave, onCancel }: ThresholdEditorPr
           onChange={(e) => setDescription(e.target.value)}
           placeholder="What this threshold figures out."
         />
+      </div>
+
+      <div className="space-y-1">
+        <Label className="text-sm">What comes in — which handicap system?</Label>
+        <Select value={handicapType} onValueChange={(v) => setHandicapType(v as ExpectedHandicapType)}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {HANDICAP_SYSTEMS.map((h) => (
+              <SelectItem key={h.value} value={h.value}>
+                {h.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-muted-foreground">
+          The handicap each side's input is in. The math only works on the type it was built for —
+          this is what we check the incoming handicaps against.
+        </p>
       </div>
 
       <div className="space-y-1">
