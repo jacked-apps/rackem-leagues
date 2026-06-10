@@ -17,7 +17,6 @@ import {
   usePreviousCompletedSeason,
 } from '@/api/hooks';
 import { logger } from '@/utils/logger';
-import type { LeagueVenue as _LeagueVenue } from '@/types/venue';
 import type { UseTeamManagementReturn } from '@/types';
 import type { TeamWithQueryDetails } from '@/types/team';
 
@@ -147,8 +146,10 @@ export function useTeamManagement(
       try {
         setTeamsLoading(true);
 
-        // Fetch teams with captain info, roster details, and venue
-        const { data: teamsData, error: teamsError } = await fetchTeamsWithDetails(leagueId);
+        // Fetch teams with captain info, roster details, and venue. Include the
+        // BYE row so the operator can SEE it (a hidden bye is how LOs end up
+        // adding a redundant team to an odd league).
+        const { data: teamsData, error: teamsError } = await fetchTeamsWithDetails(leagueId, { includeBye: true });
         if (teamsError) throw teamsError;
         setTeams(teamsData || []);
 
@@ -172,7 +173,7 @@ export function useTeamManagement(
     if (!leagueId) return;
 
     try {
-      const { data: teamsData, error: teamsError } = await fetchTeamsWithDetails(leagueId);
+      const { data: teamsData, error: teamsError } = await fetchTeamsWithDetails(leagueId, { includeBye: true });
 
       if (teamsError) throw teamsError;
       setTeams(teamsData || []);

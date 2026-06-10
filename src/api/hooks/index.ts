@@ -49,11 +49,14 @@ export {
 
 // Team query functions (for backward compatibility with non-hook usage)
 // Wraps the new query functions to match old {data, error} pattern
-import { getTeamsByLeague } from '../queries/teams';
+import { getTeamsByLeague, type TeamFetchOptions } from '../queries/teams';
 
-export async function fetchTeamsWithDetails(leagueId: string) {
+export async function fetchTeamsWithDetails(
+  leagueId: string,
+  options: TeamFetchOptions = {},
+) {
   try {
-    const data = await getTeamsByLeague(leagueId);
+    const data = await getTeamsByLeague(leagueId, options);
     return { data, error: null };
   } catch (error) {
     return { data: null, error };
