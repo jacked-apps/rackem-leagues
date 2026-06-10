@@ -35,12 +35,16 @@ right, but the display layer was never fully switched over.
 ## Already shipped (this session)
 - **PR #203** — dropped the redundant `BEFORE DELETE` trigger
   `trigger_auto_delete_match_lineups` that broke bulk match deletes (regenerate
-  matchups) with Postgres error 27000 → surfaced as a bare HTTP 400.
+  matchups) with Postgres error 27000 → surfaced as a bare HTTP 400. **MERGED.**
 - **PR #204** — surfaces the bye in **Manage Teams** (`includeBye` option on the
-  team query; `TeamCard` labels it "BYE — open slot"). Visibility half only;
-  the bye's Edit/Delete are hidden for now.
+  team query; `TeamCard` labels it "BYE — open slot"). **MERGED.**
+- **PR #206** — gates **"Add Team"** when a bye exists (steer the LO to fill the
+  bye instead of stacking a redundant team). The "can't-happen-again" guard.
+- **PR #207** — **fill the bye**: a "Fill" button opens the normal team editor;
+  saving a bye with a captain flips `status` bye→active (no reschedule — it keeps
+  its slot). Turned out to be ~4 tiny touches (a bye IS a regular team).
 
-## To build
+## To build (later — coherent feature set, needs its own ce:plan)
 
 ### 1. Finish the visibility migration
 - Show `status='bye'` as a real team **everywhere a team shows** (schedule,
@@ -50,30 +54,33 @@ right, but the display layer was never fully switched over.
 - Confirm standings/stats explicitly exclude `status='bye'` (today they rely on
   active-only list helpers — verify that holds on every surface).
 
-### 2. Fill the bye (convert bye → real team)
-The intended "add a team to an odd league" path. Take the existing bye row and:
-name it, assign a captain + roster, flip `status` `'bye'`→`'active'`. Because the
-bye already owns its rotation slot, its "Team X vs BYE" matches just become real
-games — **no reschedule**.
-- **Pre-season (no bye results awarded yet):** genuinely instant, zero cleanup.
-- **Mid-season:** bye weeks already banked as auto-wins must be **un-awarded** so
-  the now-real games can be played. (Deferred detail.)
+### 2. Fill the bye — ✅ SHIPPED (PR #207, pre-season case)
+Done: name it, assign a captain + roster → `status` bye→active, no reschedule.
+Remaining (deferred): the **mid-season** fill, where bye weeks already banked as
+auto-wins must be **un-awarded** so the now-real games can be played.
 
-### 3. Remove the bye
-Drop the bye to go to an even count, then regenerate (no phantom needed).
+### 3. ~~Remove the bye~~ — DROPPED (YAGNI, 2026-06-10)
+A bye exists **iff** the league is odd; you get rid of it by **filling** it
+(making the league even), not by deleting it. The only way to get a *redundant*
+bye was the now-prevented wedged-league bug (#206 gate). A bad-data case is a
+one-time SQL repair, not a recurring feature. No "remove bye" UI needed.
 
 ### 4. Auto-forfeit sweep (NEW — first pg_cron job)
 A **once-daily** scheduled SQL job (Supabase `pg_cron`) over **all leagues at
 once** (one set-based query, not per-league):
 
 > For every match that is `scheduled`, unfinished, and **past-due**:
-> - both teams have a captain → **ignore** (real game to be played)
-> - exactly one team has a captain → that team is the **winner** (forfeit); mark
->   the match completed (`scheduled → completed`, skip `in_progress`)
-> - neither has a captain → **deferred edge** (double-forfeit / manual)
+> - both teams `status='active'` → **ignore** (real game to be played)
+> - exactly one team is non-active (`'bye'` or `'withdrawn'`) → the **active**
+>   team is the **winner** (forfeit); mark the match completed
+>   (`scheduled → completed`, skip `in_progress`)
+> - both teams non-active → **deferred edge** (double-forfeit / manual)
 
-This single rule produces **bye weeks automatically**: the bye is permanently
-captainless, so it's always the forfeiting side and its opponent always wins.
+This single status-based rule produces **bye weeks automatically** (a bye is
+`status='bye'`, so it always forfeits) AND handles **mid-season departures** (a
+withdrawn team is `status='withdrawn'`, so its remaining opponents get bye-week
+wins). See §"forfeit keys on STATUS" for why this replaced the earlier
+"no-captain" trigger.
 
 **Why this shape:**
 - A **forfeit = declaring a winner** (`winner_team_id`). Points-for-the-win ride
@@ -87,15 +94,57 @@ captainless, so it's always the forfeiting side and its opponent always wins.
   *missed matches*, not league count. Daily is correct; less-frequent only delays
   forfeits (stale standings) for no real compute saving.
 
-## Key design distinction
-- **Forfeit logic keys on the CAPTAIN** ("no captain → can't field a lineup →
-  forfeits"). This unifies the bye (permanently captainless) with a real team
-  that loses its captain.
-- **Bye IDENTITY stays EXPLICIT (`status='bye'`).** "No captain" does NOT mean
-  "bye": the live DB has **8 active teams with no captain** (and 0 byes). A
-  captainless *real* team should show as "Sharks — needs a captain" (go chase the
-  captain), not be relabeled "BYE" or dropped from standings. Same forfeit
-  behavior, different identity/handling.
+### 5. Mid-season team departure (a team quits)
+When a team quits **after the season has started** (games already played):
+- Set `status = 'withdrawn'`. **Keep the captain + roster untouched** — do NOT
+  rename to "BYE": that would corrupt the labels of the team's already-played
+  matches, which must stay as "X vs [the real team]". (Demote the captain's
+  `is_captain` flag only for tidiness if desired; the status change is the point.)
+- **Past matches:** keep the real team name → history intact.
+- **Future matches:** team is now `status='withdrawn'` → the §4 sweep
+  auto-forfeits them, so each opponent gets a bye-week win.
+- **Standings:** exclude non-active teams (standings already run active-only).
+
+Same forfeit rule as the bye — a bye and a quit team both forfeit by their
+**status**, not by captain.
+
+NOTE: the originally-planned `drop_team` RPC (withdraw + reassign future matches
+to a fresh bye row) was **never built** — only a stale migration comment
+references it. Today's `deleteTeam` just flips `status='withdrawn'` and does
+nothing else. This §5 flow supersedes that intent.
+
+### 6. Captain-abandonment accountability counter
+A captain whose **team quit mid-season** is an offense LOs want to track, and the
+reputation should follow the player **cross-org**.
+- **Stored integer column on `members`** (e.g. `mid_season_captain_withdrawals`)
+  — read **for free** with the member record (no extra query on the common
+  captain-assign path; that's why a stored column beats deriving on every assign).
+- **Incremented at the rare withdrawal event**, only when the team had already
+  played matches (a *pre-season* reshuffle is NOT an offense — must not tag).
+- Tags **whoever was captain when the team quit** (`captain_id` at withdrawal) —
+  a captain who stepped down and was *replaced* before the quit is NOT tagged;
+  only the one who rode it into the ground. (A captain *swap* ≠ a team *quit*.)
+- **Reconstructable** from the teams table (count of withdrawn teams the member
+  captained — possible because §5 keeps the captain) → the query is the
+  **audit/rebuild** backstop if the counter drifts, not the read path.
+- **Soft warning** when an LO assigns this member captain (count > 0):
+  *"This player has captained N teams that quit mid-season — are you sure?"*
+  **Informational, not a hard block** (sometimes it's not the captain's fault).
+
+## Key design distinction — forfeit keys on STATUS (not captain)
+- **Forfeit logic keys on `status != 'active'`** (`'bye'` or `'withdrawn'`), NOT
+  on "no captain." This:
+  - **Preserves captain history** — withdrawing never strips the captain, which
+    §6's abandonment counter depends on.
+  - **Won't misfire** on a real `active` team that's temporarily between captains
+    (that's the LO's to fix, not an auto-forfeit).
+  - Unifies the **bye** (`status='bye'`) and **mid-season quit**
+    (`status='withdrawn'`) under one rule.
+- **Bye IDENTITY stays EXPLICIT (`status='bye'`).** A captainless *active* team is
+  NOT a bye — show "Sharks — needs a captain" (chase the captain), never relabel
+  "BYE" or drop from standings.
+- (The live DB had 8 captainless `active` teams / 0 byes — exactly why "no
+  captain" is the wrong forfeit signal; an earlier draft of this doc keyed on it.)
 
 ## Open / deferred questions
 - **Forfeit scoring** — points awarded for a bye/forfeit win (league-configurable:
