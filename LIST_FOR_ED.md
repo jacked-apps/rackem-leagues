@@ -4,6 +4,32 @@ Tasks and refactoring items for Ed to work on.
 
 ---
 
+## 🌅 PICK UP HERE — night of 2026-06-09 (bye-team firefight + the day's fixes)
+
+**Shipped tonight — open PRs awaiting Jack's merge (verify on staging when merged):**
+- #198 hide broken email-invite button · #199 captain invite UX (copy message + `?` help + guided approve card) · #200 CI Node-24 action bumps · #201 player number on profile · #202 iPhone bottom-nav padding · #203 matchup-redo **400 crash** fix (dropped a bad trigger) · #204 **bye now visible** in Manage Teams
+
+**FIX FIRST — the bye / add-team mess:**
+1. **Recover the wedged league** (10 real + 1 bye = 11 rows): once **#203** is in your test env → **redo the matchups** → you get a clean **10-team** schedule, **no 2nd bye** (verified: the setup screen counts only the 10 active teams, 10 is even, so it adds none). Then **SQL-delete the orphan bye row** (after the redo it has no matches → deletes clean). Ask Claude for the one-liner.
+2. **Build the "can't happen again" rule** (Ed's spec):
+   - **A)** Gate **"Add Team"** when a bye exists → message *"fill the BYE slot instead."* (small — detect `teams.some(t => t.status==='bye')`, #204 already loads it)
+   - **B)** **"Populate the bye"** = fill action: convert the bye row into a real team (name + captain + roster, flip `status` bye→active). Its "vs BYE" matches become real games — **no reschedule**. The meat. Pre-season clean; mid-season needs un-awarding banked bye wins (deferred).
+
+**Finish the half-done bye-as-real-team migration:**
+3. Show the bye **everywhere a team shows EXCEPT standings/stats**; replace leftover `team_id === null` bye-detection with `status === 'bye'` (`SeasonSchedulePage.tsx`, `wizards/matchups-v2/steps/ReviewStep.tsx`).
+4. **Remove-the-bye** action (delete → regenerate at even count).
+
+**NEEDS A REAL PLAN (not a quick fix):**
+5. **Auto-forfeit sweep** — once-daily `pg_cron`, all past-due + unfinished matches, captainless side forfeits (bye weeks fall out of it automatically). Full design + decisions in `docs/brainstorms/2026-06-09-bye-team-and-auto-forfeit-requirements.md`. Deferred sub-items: forfeit scoring (points for the win), exact timing ("6am" was a placeholder), neither-captained edge, and the **8 captainless `active` teams / 0 `bye` rows** data anomaly to understand.
+
+**Verified clean tonight (NO action):**
+6. Schedule vs matchups separation is correct in code — `matchupTables.ts` owns week pairings (by position, no dates), `season_weeks` owns the dates, `generateSchedule` marries them.
+
+**Paused (lower priority):**
+7. Player-picker consolidation brainstorm — parked at Site 2 of 8. Mid-walkthrough; no doc written yet.
+
+---
+
 ## 🚪 Gated — awaiting staging review + un-gate
 
 Features merged to `main` but NOT yet live for users (see **Feature Gating
