@@ -1,8 +1,11 @@
+import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { playerFormSchema } from '../schemas/playerSchema';
 import { capitalizeWords, formatFinalPhoneNumber } from '../utils/formatters';
 import { generateNickname } from '../utils/nicknameGenerator';
 import { supabase } from '../supabaseClient';
 import { useUser } from '../context/useUser';
+import { queryKeys } from '@/api/queryKeys';
 import type { FormState } from './types';
 import { logger } from '@/utils/logger';
 
@@ -15,6 +18,8 @@ interface UsePlayerFormSubmissionProps {
 
 export const usePlayerFormSubmission = ({ state, onError, onSuccess, onLoading }: UsePlayerFormSubmissionProps) => {
   const { user } = useUser();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,10 +98,14 @@ export const usePlayerFormSubmission = ({ state, onError, onSuccess, onLoading }
       // Success! Clear errors
       onSuccess();
 
-      // Force a full page reload to My Teams
-      // This ensures UserProvider refetches the session and the new member record is loaded
-      // Using window.location instead of navigate() ensures the entire app state refreshes
-      window.location.href = '/my-teams';
+      // Refresh the member cache so the app recognizes the new profile, then
+      // navigate in-app — no full page reload. Awaiting refetchType:'all'
+      // guarantees the member is in cache before /my-teams renders.
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.members.all,
+        refetchType: 'all',
+      });
+      navigate('/my-teams');
 
     } catch (error) {
       // Handle unexpected errors
