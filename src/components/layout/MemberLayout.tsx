@@ -57,7 +57,12 @@ export function MemberLayout() {
       />
 
       <AppSidebar />
-      <div className="pb-16 lg:pb-0 lg:ml-[var(--sidebar-width)]">
+      {/* Mobile bottom padding must CLEAR the fixed bottom tab bar (4rem,
+          `--tab-bar-height`) with breathing room — `pb-16` (exactly 4rem) left
+          zero gap, so page action buttons (Save / Continue / etc.) at the
+          bottom of a page sat flush against or under the bar. `pb-24` (6rem)
+          gives ~2rem clearance app-wide. Desktop uses the sidebar, no bar. */}
+      <div className="pb-24 lg:pb-0 lg:ml-[var(--sidebar-width)]">
         <Outlet />
       </div>
       <BottomTabBar />
