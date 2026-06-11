@@ -798,6 +798,56 @@ describe('UnifiedScoreboard — per-player points column (calculator-driven)', (
 });
 
 // ----------------------------------------------------------------------------
+// Swap Player eligibility gate — keyed on hasPlayerPlayed, matching the server
+// guard ("assigned to a game with a winner"), NOT the derived W/L heuristic.
+// ----------------------------------------------------------------------------
+
+describe('UnifiedScoreboard — Swap Player eligibility gate', () => {
+  function renderForGate(played: Set<string>) {
+    return renderWithProviders(
+      <UnifiedScoreboard
+        match={buildMatch()}
+        homeLineup={buildLineup()}
+        awayLineup={buildLineup({
+          team_id: 'team-away',
+          player1_id: 'a1',
+          player2_id: 'a2',
+          player3_id: 'a3',
+        })}
+        homeThresholds={bcaThresholds()}
+        awayThresholds={bcaThresholds()}
+        homeLosses={0}
+        awayLosses={0}
+        allGamesComplete={false}
+        isHomeTeam={true}
+        gameType="8-ball"
+        winCondition="games"
+        lineupSize={3}
+        {...noopHandlers}
+        onSwapPlayer={vi.fn()}
+        hasPlayerPlayed={(id) => played.has(id)}
+      />,
+    );
+  }
+
+  it('offers Swap Player for a player who has not played a game', async () => {
+    const user = userEvent.setup();
+    renderForGate(new Set()); // nobody has played
+    await user.click(screen.getByText('Home Team')); // open the drawer
+    await user.click(screen.getByText('Player p1')); // open the player popover
+    expect(await screen.findByText('Swap Player')).toBeInTheDocument();
+  });
+
+  it('hides Swap Player for a player who has already played a game', async () => {
+    const user = userEvent.setup();
+    renderForGate(new Set(['p1'])); // p1 has played
+    await user.click(screen.getByText('Home Team'));
+    await user.click(screen.getByText('Player p1'));
+    expect(screen.queryByText('Swap Player')).not.toBeInTheDocument();
+  });
+});
+
+// ----------------------------------------------------------------------------
 // R10 — threshold trio shows alongside the player drawer (drawer-bound)
 // ----------------------------------------------------------------------------
 

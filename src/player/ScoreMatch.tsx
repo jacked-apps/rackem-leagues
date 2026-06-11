@@ -29,6 +29,7 @@ import { useCurrentMember } from '@/api/hooks';
 import { InfoButton } from '@/components/InfoButton';
 import { LineupChangeModal } from '@/components/scoring/LineupChangeModal';
 import { LineupChangeRequestModal } from '@/components/scoring/LineupChangeRequestModal';
+import { LineupSwapWaitingBanner } from '@/components/scoring/LineupSwapWaitingBanner';
 import {
   requestLineupChange,
   approveLineupChange,
@@ -515,6 +516,46 @@ function ScoreMatchBody() {
   };
 
   /**
+   * Set of player IDs who have already played a completed game (assigned to a
+   * game with a winner). Mirrors the server's swap guard exactly, so the
+   * scoreboard's Swap Player gate and the RPC agree on who is swappable.
+   */
+  const playersWithCompletedGames = useMemo(() => {
+    const played = new Set<string>();
+    gameResults.forEach((game) => {
+      if (!game.winner_player_id) return;
+      if (game.home_player_id) played.add(game.home_player_id);
+      if (game.away_player_id) played.add(game.away_player_id);
+    });
+    return played;
+  }, [gameResults]);
+
+  /**
+   * Resolution toast for the swap INITIATOR. When my own lineup's pending
+   * request clears (swap_position goes from set -> null), read the outcome
+   * from swap_last_resolution and surface it. Fires only on the initiator's
+   * client — the approver's own lineup never held a pending swap. Driven by
+   * the userLineup snapshot changing (realtime tick or refetch), so it works
+   * without a dedicated realtime callback.
+   */
+  const prevUserSwapPosition = useRef<number | null>(userLineup?.swap_position ?? null);
+  useEffect(() => {
+    const prev = prevUserSwapPosition.current;
+    const curr = userLineup?.swap_position ?? null;
+    if (prev != null && curr == null) {
+      const resolution = (
+        userLineup as unknown as { swap_last_resolution?: { kind?: string } | null }
+      )?.swap_last_resolution;
+      if (resolution?.kind === 'approved') {
+        toast.success('Lineup change approved — lineup recalibrated');
+      } else if (resolution?.kind === 'denied') {
+        toast.error('Lineup change declined');
+      }
+    }
+    prevUserSwapPosition.current = curr;
+  }, [userLineup]);
+
+  /**
    * Add to confirmation queue (from useMatchScoring hook)
    */
   const addToConfirmationQueue = addToConfirmationQueueFromHook;
@@ -975,6 +1016,27 @@ function ScoreMatchBody() {
         }
       />
 
+      {/* Initiator-side waiting banner — visible to the scorekeeper who opened
+          a swap while it awaits the opponent's approval. Auto-clears when the
+          request resolves (swap_position returns to null) and a resolution
+          toast fires. */}
+      {userLineup?.swap_position ? (
+        <LineupSwapWaitingBanner
+          show
+          position={userLineup.swap_position}
+          newPlayerName={
+            userLineup.swap_new_player_id
+              ? getPlayerDisplayName(userLineup.swap_new_player_id)
+              : 'a substitute'
+          }
+          opponentLabel={
+            isHomeTeam
+              ? match.away_team?.team_name || 'the opponent'
+              : match.home_team?.team_name || 'the opponent'
+          }
+        />
+      ) : null}
+
       {/* Scoreboard — Fixed at top.
           Unit 5 of the unified-scoreboard plan collapsed the prior 4-branch
           ternary (3v3 / 5v5 / 10-7 / tiebreaker) into a single dispatch:
@@ -1018,6 +1080,7 @@ function ScoreMatchBody() {
           getPlayerDisplayName={getPlayerDisplayName}
           getPlayerStats={getPlayerStats}
           onSwapPlayer={handleSwapPlayer}
+          hasPlayerPlayed={(playerId) => playersWithCompletedGames.has(playerId)}
           // Per-player points only for per-game calculators (e.g.
           // accumulated_per_game for Fargo 10-7). Aggregate calculators
           // (linear_above_threshold, accumulate_with_milestone_jumps)

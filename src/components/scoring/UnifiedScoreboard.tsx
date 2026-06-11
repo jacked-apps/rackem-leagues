@@ -99,6 +99,13 @@ export interface UnifiedScoreboardProps {
   /** Optional swap-player handler (only used when isUserTeam). */
   onSwapPlayer?: (playerId: string, position: number) => void;
   /**
+   * Optional "has this player already played a game?" predicate. When
+   * provided, it gates the Swap Player action against the SAME condition the
+   * server enforces (the player is assigned to a game with a winner), instead
+   * of the looser derived-W/L heuristic. Omit to keep the W/L fallback.
+   */
+  hasPlayerPlayed?: (playerId: string) => boolean;
+  /**
    * Optional per-player points getter. Provided when the active calculator
    * awards per-player points (e.g. `accumulated_per_game`) — caller derives
    * each player's running points total from the games array. When absent,
@@ -222,6 +229,9 @@ interface TeamCardProps {
     isHomeTeam: boolean,
   ) => { wins: number; losses: number };
   onSwapPlayer?: (playerId: string, position: number) => void;
+  /** See UnifiedScoreboardProps.hasPlayerPlayed — gates Swap against the
+   *  server's "already played a game" condition. */
+  hasPlayerPlayed?: (playerId: string) => boolean;
   /**
    * Drawer-open state — lifted to UnifiedScoreboard so both team cards
    * share one toggle (per Ed's 2026-05-04 framing: "either both teams
@@ -255,6 +265,7 @@ function TeamCard({
   getPlayerDisplayName,
   getPlayerStats,
   onSwapPlayer,
+  hasPlayerPlayed,
   drawerOpen,
   onToggleDrawer,
   getPlayerPoints,
@@ -468,8 +479,14 @@ function TeamCard({
                 const playerPoints = getPlayerPoints
                   ? getPlayerPoints(player.id, player.position, isHome)
                   : null;
-                const canSwap =
-                  isUserTeam && stats.wins === 0 && stats.losses === 0 && !!onSwapPlayer;
+                // A player can be swapped only if they have not played a game
+                // yet. Prefer the accurate match_games-derived predicate (matches
+                // the server guard exactly); fall back to the derived W/L when no
+                // predicate is supplied.
+                const playerHasPlayed = hasPlayerPlayed
+                  ? hasPlayerPlayed(player.id)
+                  : stats.wins > 0 || stats.losses > 0;
+                const canSwap = isUserTeam && !playerHasPlayed && !!onSwapPlayer;
                 const swapAction = canSwap
                   ? [
                       {
@@ -575,6 +592,7 @@ export function UnifiedScoreboard({
   getPlayerDisplayName,
   getPlayerStats,
   onSwapPlayer,
+  hasPlayerPlayed,
   getPlayerPoints,
 }: UnifiedScoreboardProps) {
   // Shared drawer state — both team cards open and close together. Per Ed
@@ -660,6 +678,7 @@ export function UnifiedScoreboard({
             getPlayerDisplayName={getPlayerDisplayName}
             getPlayerStats={getPlayerStats}
             onSwapPlayer={onSwapPlayer}
+            hasPlayerPlayed={hasPlayerPlayed}
             drawerOpen={drawerOpen}
             onToggleDrawer={toggleDrawer}
             getPlayerPoints={getPlayerPoints}
@@ -681,6 +700,7 @@ export function UnifiedScoreboard({
             getPlayerDisplayName={getPlayerDisplayName}
             getPlayerStats={getPlayerStats}
             onSwapPlayer={onSwapPlayer}
+            hasPlayerPlayed={hasPlayerPlayed}
             drawerOpen={drawerOpen}
             onToggleDrawer={toggleDrawer}
             getPlayerPoints={getPlayerPoints}
