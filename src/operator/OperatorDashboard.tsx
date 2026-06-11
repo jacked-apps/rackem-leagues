@@ -68,9 +68,13 @@ export const OperatorDashboard: React.FC = () => {
       />
       <div className="container mx-auto px-4 max-w-7xl py-8">
         {/* Onboarding cascade: pending join requests across every team in this
-            org. Renders nothing when there are none. */}
+            org. Stays visible (with an empty state) so the operator can always
+            see the surface, even when nothing is pending. */}
         <div className="mb-6">
-          <JoinRequestList title="Join requests" />
+          <JoinRequestList
+            title="Join requests"
+            emptyHint="No pending join requests right now. When someone taps a team invite link and asks to join, they'll appear here for you to approve."
+          />
         </div>
 
         {/* Main Grid - All content */}
