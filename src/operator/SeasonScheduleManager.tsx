@@ -62,6 +62,9 @@ export const SeasonScheduleManager: React.FC = () => {
   // Pre-edit snapshot, captured on the first change. Non-null === the operator has
   // unsaved changes they can revert. Save just clears it; Revert restores it.
   const [snapshot, setSnapshot] = useState<ScheduleSnapshot | null>(null);
+  // One-time heads-up shown before the first edit, explaining that changes save as
+  // you go and leaving the page drops the ability to revert.
+  const [infoShown, setInfoShown] = useState(false);
 
   /**
    * Load league, season, and existing schedule from the database.
@@ -294,6 +297,21 @@ export const SeasonScheduleManager: React.FC = () => {
     if (processing) return;
     const week = schedule[index];
     if (!week?.dbId) return;
+
+    // One-time heads-up before the very first edit of this session.
+    if (!infoShown) {
+      const ok = await confirm({
+        title: 'Changes save automatically',
+        message:
+          'Each adjustment you make to the schedule saves automatically. If you ' +
+          'navigate away from this page for any reason, you\'ll lose the ability to ' +
+          'revert back to the schedule you started with. (You can always re-edit the ' +
+          'schedule back to where it was.)',
+        confirmText: 'Got it',
+      });
+      if (!ok) return;
+      setInfoShown(true);
+    }
 
     const toggleWeek = {
       date: week.date,
