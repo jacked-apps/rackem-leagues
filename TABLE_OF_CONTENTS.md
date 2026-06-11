@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-06-02 (Added lineup-swap-recalibration brainstorm: `docs/brainstorms/2026-06-02-lineup-swap-recalibration-requirements.md` — mid-match player swap with universal opponent approval and full SystemModule-dispatched recalibration; reworks the Dec 2025 partial implementation. Branch `feat/lineup-swap-recalibration`.)
+> **Last Updated**: 2026-06-11 (Added lineup-swap-recalibration plan: `docs/plans/2026-06-02-001-feat-lineup-swap-recalibration-plan.md` — 5-unit plan finishing the Dec 2025 partial swap; system-agnostic threshold composer + atomic RPC + recalibration rewire + UI. Branch `feat/lineup-swap-recalibration`.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -125,6 +125,7 @@
 | `docs/plans/2026-05-29-002-feat-my-match-jump-in-plan.md` | Implementation plan for the "My Match" live-match jump-in shortcut | 5 units: team-scoped `getMyMatchMatches` query + `useMyMatchSurfaces` aggregate hook with lightweight realtime + BottomTabBar tab repurpose + AppDrawer "My Match" section (OperatorSection-mirrored) + AppSidebar parity; no DB schema changes; coordinates with future captain-doorbell on bottom-bar; branch `chore/safe-meantime-work` |
 | `docs/plans/2026-05-25-001-refactor-pairings-generator-extraction-plan.md` | Implementation plan for Pairings Generator (Module #8) v1 extraction | 8 units; lifts `gameOrder.ts` into `src/systems/pairings/` (three internal stages: pair-gen / ordering / break-rack); lineups in, player-id-tagged GameSlot[] out; deletes dead helpers; output shape variant-agnostic for future race-mode etc. Branch `feat/pairings-generator-extraction` |
 | `docs/plans/2026-05-29-001-feat-onboarding-cascade-plan.md` | Implementation plan for the player/captain onboarding cold-start cascade (team join link → claim → captain approve) | 8 units / 3 phases; new `teams.join_token` + `team_join_requests` table; `/join/:token` page; `approve-join-request` edge fn (match-or-create via merge); triage board on MyTeams; doorbell; thin captain wizard; land-on-tonight's-match; builds on passwordless PR #159; origin 2026-05-28 brainstorm |
+| `docs/plans/2026-06-02-001-feat-lineup-swap-recalibration-plan.md` | Implementation plan for mid-match lineup swap with full match recalibration | 5 units; finishes the Dec 2025 partial swap — system-agnostic `composeMatchThresholds` (deletes the `recalculateMatchThresholds` handicap-type leak), atomic `swap_player_in_lineup` RPC (cascade unplayed games + thresholds + audit), rewires `approveLineupChange` to call it + the missing `updateMatchRunningTotals`, popover-gate fix + waiting banner + resolution toast; branch `feat/lineup-swap-recalibration`; origin 2026-06-02 brainstorm |
 
 ### Future Work Folder
 
