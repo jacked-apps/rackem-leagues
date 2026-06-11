@@ -170,7 +170,7 @@ async function persistSchedulePositions(
  * @param seasonId - Season ID
  * @returns Array of match insert data
  */
-function generateWeekMatches(
+export function generateWeekMatches(
   seasonWeekId: string,
   weeklyMatchups: [number, number][],
   teamsByPosition: Map<number, TeamWithPosition>,
