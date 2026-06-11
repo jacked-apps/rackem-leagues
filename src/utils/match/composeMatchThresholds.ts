@@ -73,7 +73,7 @@ function neutralPayload(): ThresholdPayload {
 
 /** Non-null per-position player handicaps in lineup order (Fargo ratings, etc.). */
 function extractRatings(lineup: Lineup): number[] {
-  const row = lineup as Record<string, unknown>;
+  const row = lineup as unknown as Record<string, unknown>;
   return [1, 2, 3, 4, 5]
     .map((n) => row[`player${n}_handicap`])
     .filter((h): h is number => typeof h === 'number');

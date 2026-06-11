@@ -451,10 +451,7 @@ export async function approveLineupChange(
   // 1. Fresh-read the pending request + the swapping player at its position.
   const { data: lineup, error: fetchError } = await supabase
     .from('match_lineups')
-    .select(
-      'match_id, swap_position, swap_new_player_id, swap_new_player_handicap, ' +
-        'player1_id, player2_id, player3_id, player4_id, player5_id',
-    )
+    .select('match_id, swap_position, swap_new_player_id, swap_new_player_handicap, player1_id, player2_id, player3_id, player4_id, player5_id')
     .eq('id', lineupId)
     .single();
 
@@ -474,10 +471,7 @@ export async function approveLineupChange(
   // 2. Match context + recompute inputs.
   const { data: match, error: matchError } = await supabase
     .from('matches')
-    .select(
-      'home_team_id, away_team_id, season_id, system_snapshot, ' +
-        'home_to_win, home_to_tie, home_to_lose, away_to_win, away_to_tie, away_to_lose',
-    )
+    .select('home_team_id, away_team_id, season_id, system_snapshot, home_to_win, home_to_tie, home_to_lose, away_to_win, away_to_tie, away_to_lose')
     .eq('id', matchId)
     .single();
 
@@ -584,10 +578,7 @@ async function composeThresholdsForApproval(args: {
   // the swapping lineup; leave the opponent untouched.
   const { data: lineups, error } = await supabase
     .from('match_lineups')
-    .select(
-      'id, team_id, player1_id, player1_handicap, player2_id, player2_handicap, ' +
-        'player3_id, player3_handicap, player4_id, player4_handicap, player5_id, player5_handicap',
-    )
+    .select('id, team_id, player1_id, player1_handicap, player2_id, player2_handicap, player3_id, player3_handicap, player4_id, player4_handicap, player5_id, player5_handicap')
     .eq('match_id', matchId);
   if (error || !lineups) {
     throw new Error(`Failed to read lineups for recompute: ${error?.message ?? 'none'}`);
@@ -636,9 +627,7 @@ export async function denyLineupChange(
 
   const { data: lineup, error: fetchError } = await supabase
     .from('match_lineups')
-    .select(
-      'swap_position, swap_new_player_id, player1_id, player2_id, player3_id, player4_id, player5_id',
-    )
+    .select('swap_position, swap_new_player_id, player1_id, player2_id, player3_id, player4_id, player5_id')
     .eq('id', lineupId)
     .single();
 
