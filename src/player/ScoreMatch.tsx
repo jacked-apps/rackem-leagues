@@ -748,7 +748,7 @@ function ScoreMatchBody() {
    * Sends request to opponent for approval
    */
   const handleLineupChangeRequest = async (newPlayerId: string) => {
-    if (!userLineup || !lineupChangeData) return;
+    if (!userLineup || !lineupChangeData || !memberId) return;
 
     // Get the new player's handicap from the cached handicaps (calculated via usePlayerHandicaps)
     // This uses TanStack Query caching - likely already calculated from lineup page
@@ -759,23 +759,26 @@ function ScoreMatchBody() {
       position: lineupChangeData.position,
       newPlayerId,
       newPlayerHandicap,
+      memberId,
     });
   };
 
   /**
-   * Handle approving opponent's lineup change request
+   * Handle approving the opponent's lineup change request.
+   * Any scorekeeper on the match may approve; memberId is recorded for audit.
    */
   const handleApproveLineupChange = () => {
-    if (!opponentLineup) return;
-    approveLineupChangeMutation.mutate(opponentLineup.id);
+    if (!opponentLineup || !memberId) return;
+    approveLineupChangeMutation.mutate({ lineupId: opponentLineup.id, memberId });
   };
 
   /**
-   * Handle denying opponent's lineup change request
+   * Handle denying the opponent's lineup change request.
+   * Any scorekeeper on the match may deny; memberId is recorded for audit.
    */
   const handleDenyLineupChange = () => {
-    if (!opponentLineup) return;
-    denyLineupChangeMutation.mutate(opponentLineup.id);
+    if (!opponentLineup || !memberId) return;
+    denyLineupChangeMutation.mutate({ lineupId: opponentLineup.id, memberId });
   };
 
   // Early returns for loading/error states.

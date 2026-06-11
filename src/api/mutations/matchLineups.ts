@@ -15,6 +15,9 @@
  */
 
 import { supabase } from '@/supabaseClient';
+import { composeMatchThresholds, type ThresholdPayload } from '@/utils/match/composeMatchThresholds';
+import type { ResolvedSystemConfig } from '@/types/resolvedSystemConfig';
+import type { Lineup } from '@/types/match';
 
 /**
  * Player in a lineup with position and handicap
@@ -359,6 +362,18 @@ export interface RequestLineupChangeParams {
   position: number;
   newPlayerId: string;
   newPlayerHandicap: number;
+  /** Scorekeeper who opened the request (audit only — never authorization). */
+  memberId: string;
+}
+
+/**
+ * Parameters for resolving (approving / denying) a pending swap request.
+ * memberId is recorded in the resolution audit; it does NOT authorize the
+ * action (any scorekeeper on the match may resolve — gating lives in the UI).
+ */
+export interface ResolveLineupChangeParams {
+  lineupId: string;
+  memberId: string;
 }
 
 /**
@@ -397,6 +412,7 @@ export async function requestLineupChange(params: RequestLineupChangeParams): Pr
       swap_new_player_id: params.newPlayerId,
       swap_new_player_handicap: params.newPlayerHandicap,
       swap_requested_at: new Date().toISOString(),
+      swap_requested_by_member_id: params.memberId,
     })
     .eq('id', params.lineupId)
     .select()
@@ -410,155 +426,241 @@ export async function requestLineupChange(params: RequestLineupChangeParams): Pr
 }
 
 /**
- * Approve a lineup change request
+ * Approve a pending lineup swap request — the full recalibration path.
  *
- * Updates the lineup with the new player and clears the swap request fields.
- * Also updates all match_games where the old player was assigned to use the new player.
+ * Resolves the swap atomically and re-derives the match numbers so already
+ * scored games are re-tallied against the new handicap bands:
+ *   1. Fresh-read the lineup (never trust stale cache for atomic work).
+ *   2. Resolve the match's system config + build the POST-swap lineups.
+ *   3. composeMatchThresholds — system-agnostic threshold recompute.
+ *   4. swap_player_in_lineup RPC — atomic apply + cascade + thresholds + audit.
+ *   5. updateMatchRunningTotals — the re-derivation the old code skipped.
  *
- * NOTE: Threshold recalibration + match-totals re-derivation are wired in Unit 4
- * (refetch -> composeMatchThresholds -> swap RPC -> updateMatchRunningTotals).
- * This interim version applies the swap but does not yet recompute thresholds.
+ * Any scorekeeper on the match may approve (gating lives in the UI, not here);
+ * the RPC re-checks the data-integrity guards regardless of who calls.
  *
- * IMPORTANT: Players can only be swapped if they have NOT played any games yet.
- * If the old player has any games with a winner_player_id, the swap is rejected.
- *
- * Should only be called by the opposing team.
- *
- * @param lineupId - The lineup with the pending swap request
+ * @param params - { lineupId, memberId } — memberId is audit-only
  * @returns The updated lineup with the swap applied
- * @throws Error if player has played games, no pending request, or database operation fails
+ * @throws Error if no pending request, the RPC's guards reject, or a read fails
  */
-export async function approveLineupChange(lineupId: string): Promise<MatchLineup> {
-  // Fetch the pending swap request AND the old player ID at that position, plus match_id and team_id
+export async function approveLineupChange(
+  params: ResolveLineupChangeParams,
+): Promise<MatchLineup> {
+  const { lineupId, memberId } = params;
+
+  // 1. Fresh-read the pending request + the swapping player at its position.
   const { data: lineup, error: fetchError } = await supabase
     .from('match_lineups')
-    .select('match_id, team_id, swap_position, swap_new_player_id, swap_new_player_handicap, player1_id, player2_id, player3_id, player4_id, player5_id')
+    .select(
+      'match_id, swap_position, swap_new_player_id, swap_new_player_handicap, ' +
+        'player1_id, player2_id, player3_id, player4_id, player5_id',
+    )
     .eq('id', lineupId)
     .single();
 
   if (fetchError) {
     throw new Error(`Failed to fetch lineup: ${fetchError.message}`);
   }
-
   if (!lineup?.swap_position) {
     throw new Error('No pending lineup change request to approve.');
   }
 
-  // Get the old player ID from the lineup at the swap position
-  const oldPlayerId = lineup[`player${lineup.swap_position}_id` as keyof typeof lineup] as string | null;
+  const matchId = lineup.match_id as string;
+  const position = lineup.swap_position as number;
+  const newPlayerId = lineup.swap_new_player_id as string | null;
+  const newHandicap = lineup.swap_new_player_handicap as number | null;
+  const oldPlayerId = lineup[`player${position}_id` as keyof typeof lineup] as string | null;
 
-  // Check if the old player has played any games (has winner_player_id set)
-  // Players can only be swapped if they haven't played yet
-  if (oldPlayerId) {
-    const { data: match, error: matchError } = await supabase
-      .from('matches')
-      .select('home_team_id, away_team_id')
-      .eq('id', lineup.match_id)
-      .single();
-
-    if (matchError) {
-      throw new Error(`Failed to fetch match: ${matchError.message}`);
-    }
-
-    const isHomeTeam = match.home_team_id === lineup.team_id;
-    const playerField = isHomeTeam ? 'home_player_id' : 'away_player_id';
-
-    // Check if the old player has any completed games (winner_player_id is set)
-    const { data: completedGames, error: gamesCheckError } = await supabase
-      .from('match_games')
-      .select('id, game_number')
-      .eq('match_id', lineup.match_id)
-      .eq(playerField, oldPlayerId)
-      .not('winner_player_id', 'is', null);
-
-    if (gamesCheckError) {
-      throw new Error(`Failed to check player games: ${gamesCheckError.message}`);
-    }
-
-    if (completedGames && completedGames.length > 0) {
-      throw new Error('Cannot swap this player - they have already played games in this match.');
-    }
-  }
-
-  // Build the update to apply the swap and clear request fields
-  const positionField = `player${lineup.swap_position}_id`;
-  const handicapField = `player${lineup.swap_position}_handicap`;
-
-  const { data, error } = await supabase
-    .from('match_lineups')
-    .update({
-      [positionField]: lineup.swap_new_player_id,
-      [handicapField]: lineup.swap_new_player_handicap,
-      // Clear swap request fields
-      swap_position: null,
-      swap_new_player_id: null,
-      swap_new_player_handicap: null,
-      swap_requested_at: null,
-    })
-    .eq('id', lineupId)
-    .select()
+  // 2. Match context + recompute inputs.
+  const { data: match, error: matchError } = await supabase
+    .from('matches')
+    .select(
+      'home_team_id, away_team_id, season_id, system_snapshot, ' +
+        'home_to_win, home_to_tie, home_to_lose, away_to_win, away_to_tie, away_to_lose',
+    )
+    .eq('id', matchId)
     .single();
 
-  if (error) {
-    throw new Error(`Failed to approve lineup change: ${error.message}`);
+  if (matchError || !match) {
+    throw new Error(`Failed to fetch match: ${matchError?.message ?? 'not found'}`);
   }
 
-  // Update all match_games where the old player was assigned (only unplayed games)
-  // Since we verified above that the player has no completed games, all their games are unplayed
-  if (oldPlayerId && lineup.swap_new_player_id) {
-    const { data: match } = await supabase
-      .from('matches')
-      .select('home_team_id')
-      .eq('id', lineup.match_id)
-      .single();
+  // 3. System-agnostic threshold recompute for the POST-swap lineup state.
+  const thresholds = await composeThresholdsForApproval({
+    matchId,
+    match,
+    lineupId,
+    position,
+    newPlayerId,
+    newHandicap,
+  });
 
-    if (match) {
-      const isHomeTeam = match.home_team_id === lineup.team_id;
-      const playerField = isHomeTeam ? 'home_player_id' : 'away_player_id';
-
-      // Update all games in this match where the old player was assigned
-      const { error: gamesError } = await supabase
-        .from('match_games')
-        .update({ [playerField]: lineup.swap_new_player_id })
-        .eq('match_id', lineup.match_id)
-        .eq(playerField, oldPlayerId);
-
-      if (gamesError) {
-        console.error('Failed to update match games with new player:', gamesError.message);
-      }
-    }
+  // 4. Atomic apply + cascade + thresholds + audit (one transaction).
+  const resolution = {
+    kind: 'approved' as const,
+    by_member_id: memberId,
+    resolved_at: new Date().toISOString(),
+    position,
+    old_player_id: oldPlayerId,
+    new_player_id: newPlayerId,
+  };
+  const { error: rpcError } = await supabase.rpc('swap_player_in_lineup', {
+    p_lineup_id: lineupId,
+    p_thresholds: thresholds,
+    p_resolution: resolution,
+  });
+  if (rpcError) {
+    throw new Error(rpcError.message);
   }
 
-  return data;
+  // 5. Re-derive running totals so confirmed games are re-scored against the
+  //    new bands — the step the previous implementation was missing.
+  const { updateMatchRunningTotals } = await import('@/api/queries/matches');
+  await updateMatchRunningTotals(matchId);
+
+  const { data: updated, error: rereadError } = await supabase
+    .from('match_lineups')
+    .select('*')
+    .eq('id', lineupId)
+    .single();
+  if (rereadError || !updated) {
+    throw new Error(`Swap applied but re-read failed: ${rereadError?.message ?? 'no row'}`);
+  }
+  return updated;
 }
 
 /**
- * Deny a lineup change request
- *
- * Clears the swap request fields without making any player changes.
- * Should only be called by the opposing team.
- *
- * @param lineupId - The lineup with the pending swap request
- * @returns The updated lineup with swap request cleared
- * @throws Error if no pending request or database operation fails
+ * Resolve the post-swap threshold payload for an approval. Reads the match's
+ * resolved system config (frozen snapshot, or live prefs as a legacy
+ * fallback), builds the POST-swap home/away lineups, and runs the
+ * system-agnostic composer. If the config can't be resolved (rare legacy
+ * match) the current thresholds are kept unchanged so the swap still applies.
  */
-export async function denyLineupChange(lineupId: string): Promise<MatchLineup> {
-  // Verify there's a pending request (swap_position being non-null)
+async function composeThresholdsForApproval(args: {
+  matchId: string;
+  match: Record<string, unknown>;
+  lineupId: string;
+  position: number;
+  newPlayerId: string | null;
+  newHandicap: number | null;
+}): Promise<ThresholdPayload> {
+  const { matchId, match, lineupId, position, newPlayerId, newHandicap } = args;
+
+  // Prefer the frozen snapshot; populate from live prefs if a legacy match
+  // never got one.
+  let prefs = (match.system_snapshot ?? null) as ResolvedSystemConfig | null;
+  if (!prefs) {
+    const { data: season } = await supabase
+      .from('seasons')
+      .select('league_id')
+      .eq('id', match.season_id as string)
+      .single();
+    if (season?.league_id) {
+      const { populateMatchSnapshotIfNeeded } = await import('@/api/queries/matches');
+      await populateMatchSnapshotIfNeeded(matchId, season.league_id);
+      const { data: reread } = await supabase
+        .from('matches')
+        .select('system_snapshot')
+        .eq('id', matchId)
+        .single();
+      prefs = (reread?.system_snapshot ?? null) as ResolvedSystemConfig | null;
+    }
+  }
+
+  // No resolved config — can't recompute safely; keep current thresholds.
+  if (!prefs) {
+    console.warn('[approveLineupChange] no resolved system config — thresholds unchanged');
+    return {
+      home_to_win: (match.home_to_win ?? null) as number | null,
+      home_to_tie: (match.home_to_tie ?? null) as number | null,
+      home_to_lose: (match.home_to_lose ?? null) as number | null,
+      away_to_win: (match.away_to_win ?? null) as number | null,
+      away_to_tie: (match.away_to_tie ?? null) as number | null,
+      away_to_lose: (match.away_to_lose ?? null) as number | null,
+    };
+  }
+
+  // Build POST-swap lineups: apply the new player's handicap at its position on
+  // the swapping lineup; leave the opponent untouched.
+  const { data: lineups, error } = await supabase
+    .from('match_lineups')
+    .select(
+      'id, team_id, player1_id, player1_handicap, player2_id, player2_handicap, ' +
+        'player3_id, player3_handicap, player4_id, player4_handicap, player5_id, player5_handicap',
+    )
+    .eq('match_id', matchId);
+  if (error || !lineups) {
+    throw new Error(`Failed to read lineups for recompute: ${error?.message ?? 'none'}`);
+  }
+
+  const applyPostSwap = (l: Record<string, unknown>): Lineup => {
+    const next: Record<string, unknown> = { ...l };
+    if (l.id === lineupId) {
+      next[`player${position}_id`] = newPlayerId;
+      next[`player${position}_handicap`] = newHandicap;
+    }
+    return next as unknown as Lineup;
+  };
+
+  const homeRow = lineups.find((l) => l.team_id === match.home_team_id);
+  const awayRow = lineups.find((l) => l.team_id === match.away_team_id);
+  if (!homeRow || !awayRow) {
+    throw new Error('Could not identify home/away lineups for recompute');
+  }
+
+  return composeMatchThresholds({
+    prefs,
+    homeLineup: applyPostSwap(homeRow),
+    awayLineup: applyPostSwap(awayRow),
+    homeTeamId: match.home_team_id as string,
+    awayTeamId: match.away_team_id as string,
+    seasonId: match.season_id as string,
+  });
+}
+
+/**
+ * Deny a pending lineup swap request.
+ *
+ * Clears the swap_* request columns without touching the lineup, and stamps
+ * swap_last_resolution with the denial so the initiator's client can show a
+ * resolution toast / audit. Any scorekeeper on the match may deny.
+ *
+ * @param params - { lineupId, memberId } — memberId is audit-only
+ * @returns The updated lineup with the swap request cleared
+ * @throws Error if no pending request or the database operation fails
+ */
+export async function denyLineupChange(
+  params: ResolveLineupChangeParams,
+): Promise<MatchLineup> {
+  const { lineupId, memberId } = params;
+
   const { data: lineup, error: fetchError } = await supabase
     .from('match_lineups')
-    .select('swap_position')
+    .select(
+      'swap_position, swap_new_player_id, player1_id, player2_id, player3_id, player4_id, player5_id',
+    )
     .eq('id', lineupId)
     .single();
 
   if (fetchError) {
     throw new Error(`Failed to fetch lineup: ${fetchError.message}`);
   }
-
   if (!lineup?.swap_position) {
     throw new Error('No pending lineup change request to deny.');
   }
 
-  // Clear all swap request fields
+  const position = lineup.swap_position as number;
+  const oldPlayerId = lineup[`player${position}_id` as keyof typeof lineup] as string | null;
+
+  const resolution = {
+    kind: 'denied' as const,
+    by_member_id: memberId,
+    resolved_at: new Date().toISOString(),
+    position,
+    old_player_id: oldPlayerId,
+    new_player_id: lineup.swap_new_player_id,
+  };
+
   const { data, error } = await supabase
     .from('match_lineups')
     .update({
@@ -566,6 +668,8 @@ export async function denyLineupChange(lineupId: string): Promise<MatchLineup> {
       swap_new_player_id: null,
       swap_new_player_handicap: null,
       swap_requested_at: null,
+      swap_requested_by_member_id: null,
+      swap_last_resolution: resolution,
     })
     .eq('id', lineupId)
     .select()
@@ -574,6 +678,5 @@ export async function denyLineupChange(lineupId: string): Promise<MatchLineup> {
   if (error) {
     throw new Error(`Failed to deny lineup change: ${error.message}`);
   }
-
   return data;
 }
