@@ -30,6 +30,7 @@ import { InfoButton } from '@/components/InfoButton';
 import { LineupChangeModal } from '@/components/scoring/LineupChangeModal';
 import { LineupChangeRequestModal } from '@/components/scoring/LineupChangeRequestModal';
 import { LineupSwapWaitingBanner } from '@/components/scoring/LineupSwapWaitingBanner';
+import { getPlayerFullNameById } from '@/types/member';
 import {
   requestLineupChange,
   approveLineupChange,
@@ -779,8 +780,8 @@ function ScoreMatchBody() {
    * @param position - The lineup position (1-5) of the player
    */
   const handleSwapPlayer = (playerId: string, position: number) => {
-    // Get the player name for display
-    const playerName = getPlayerDisplayName(playerId);
+    // Full name (not nickname) so the swap modal clearly identifies who's leaving.
+    const playerName = getPlayerFullNameById(playerId, players);
     setLineupChangeData({ playerId, playerName, position });
   };
 
@@ -1413,6 +1414,7 @@ function ScoreMatchBody() {
           } : { id: '', name: '', position: 0 }}
           lineup={userLineup}
           teamRoster={teamRoster}
+          getPlayerHandicap={(id) => rosterHandicaps.get(id)?.value ?? null}
           onSubmit={handleLineupChangeRequest}
           onCancel={() => setLineupChangeData(null)}
           isSubmitting={requestLineupChangeMutation.isPending}
@@ -1425,11 +1427,15 @@ function ScoreMatchBody() {
         requestingTeamName={isHomeTeam ? (match.away_team?.team_name || 'Opponent') : (match.home_team?.team_name || 'Opponent')}
         position={opponentLineup?.swap_position || 0}
         oldPlayerName={opponentLineup?.swap_position
-          ? getPlayerDisplayName((opponentLineup as any)[`player${opponentLineup.swap_position}_id`])
+          ? getPlayerFullNameById((opponentLineup as any)[`player${opponentLineup.swap_position}_id`], players)
           : ''}
+        oldPlayerHandicap={opponentLineup?.swap_position
+          ? ((opponentLineup as any)[`player${opponentLineup.swap_position}_handicap`] ?? null)
+          : null}
         newPlayerName={opponentLineup?.swap_new_player_id
-          ? getPlayerDisplayName(opponentLineup.swap_new_player_id)
+          ? getPlayerFullNameById(opponentLineup.swap_new_player_id, players)
           : ''}
+        newPlayerHandicap={opponentLineup?.swap_new_player_handicap ?? null}
         onApprove={handleApproveLineupChange}
         onDeny={handleDenyLineupChange}
         isProcessing={approveLineupChangeMutation.isPending || denyLineupChangeMutation.isPending}

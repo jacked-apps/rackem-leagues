@@ -163,3 +163,20 @@ export function getPlayerNicknameById(
   const player = playersMap.get(playerId);
   return getPlayerNickname(player);
 }
+
+/**
+ * Get a player's FULL name (first + last) by ID from a player Map.
+ *
+ * Unlike getPlayerNicknameById, this ignores the nickname — used where the
+ * full roster name matters for identification (e.g. the lineup-swap request /
+ * approval modals, so both captains see exactly who is coming and going).
+ */
+export function getPlayerFullNameById(
+  playerId: string | null | undefined,
+  playersMap: Map<string, PlayerForDisplay>
+): string {
+  if (!playerId) return 'Unknown';
+  const player = playersMap.get(playerId);
+  if (!player) return 'Unknown';
+  return `${player.first_name} ${player.last_name}`;
+}
