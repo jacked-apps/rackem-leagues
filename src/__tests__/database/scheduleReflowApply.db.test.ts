@@ -21,7 +21,11 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { randomUUID } from 'crypto';
 import { executeSql } from '@/test/dbTestUtils';
-import { applyBlackoutReflow } from '@/utils/scheduleReflowApply';
+import {
+  applyBlackoutReflow,
+  restoreScheduleSnapshot,
+  type ScheduleSnapshot,
+} from '@/utils/scheduleReflowApply';
 
 const ids = {
   member: randomUUID(),
@@ -56,6 +60,24 @@ async function readBindings(): Promise<Record<string, string>> {
     [ids.season],
   )) as Array<{ id: string; season_week_id: string }>;
   return Object.fromEntries(rows.map((r) => [r.id, r.season_week_id]));
+}
+
+/** Capture the current schedule as a snapshot (mirrors what the edit page stores). */
+async function readSnapshot(): Promise<ScheduleSnapshot> {
+  const rows = (await executeSql(
+    `SELECT id, to_char(scheduled_date,'YYYY-MM-DD') AS date, week_type, week_name
+       FROM season_weeks WHERE season_id=$1 ORDER BY scheduled_date`,
+    [ids.season],
+  )) as Array<{ id: string; date: string; week_type: string; week_name: string }>;
+  return {
+    weeks: rows.map((r) => ({
+      id: r.id,
+      date: r.date,
+      weekType: r.week_type as ScheduleSnapshot['weeks'][number]['weekType'],
+      weekName: r.week_name,
+    })),
+    endDate: await seasonEndDate(),
+  };
 }
 
 async function seasonEndDate(): Promise<string> {
@@ -188,6 +210,35 @@ describe('applyBlackoutReflow — DB round-trip', () => {
     // Bindings unchanged across the whole round-trip.
     expect(await readBindings()).toEqual(originalBindings);
     expect(await seasonEndDate()).toBe('2026-07-29');
+  });
+
+  it('restoreScheduleSnapshot reverts edits back to the captured starting point', async () => {
+    // Capture the (original) schedule, then make a couple of edits.
+    const snapshot = await readSnapshot();
+    const originalWeeks = await readWeeks();
+
+    await applyBlackoutReflow(ids.season, {
+      kind: 'add',
+      date: '2026-07-08',
+      reason: 'Holiday',
+      skipType: 'blackout',
+    });
+    await applyBlackoutReflow(ids.season, {
+      kind: 'add',
+      date: '2026-07-01',
+      reason: 'Holiday 2',
+      skipType: 'blackout',
+    });
+    // Sanity: the schedule actually changed.
+    expect(await readWeeks()).not.toEqual(originalWeeks);
+
+    const result = await restoreScheduleSnapshot(ids.season, snapshot);
+    expect(result.success).toBe(true);
+
+    // Schedule is back exactly, bindings intact, end date reset.
+    expect(await readWeeks()).toEqual(originalWeeks);
+    expect(await readBindings()).toEqual(originalBindings);
+    expect(await seasonEndDate()).toBe(snapshot.endDate);
   });
 
   it('rejects an invalid action without mutating the schedule', async () => {

@@ -20,9 +20,11 @@
  */
 import { supabase } from '@/supabaseClient';
 import { logger } from '@/utils/logger';
+import { parseLocalDate, formatLocalDate } from '@/utils/formatters';
 import {
   computeBlackoutReflow,
   type ReflowWeek,
+  type ReflowWeekType,
   type ReflowAction,
 } from '@/utils/scheduleReflow';
 
@@ -126,4 +128,103 @@ export async function applyBlackoutReflow(
   }
 
   return { success: true, newSeasonEndDate: plan.newSeasonEndDate };
+}
+
+/** One week row in a pre-edit snapshot. */
+export interface SnapshotWeek {
+  id: string;
+  date: string;
+  weekType: ReflowWeekType;
+  weekName: string;
+}
+
+/** A captured pre-edit schedule the operator can revert to. */
+export interface ScheduleSnapshot {
+  weeks: SnapshotWeek[];
+  endDate: string;
+}
+
+const isSnapshotPlay = (w: SnapshotWeek): boolean =>
+  w.weekType === 'regular' || w.weekType === 'playoffs';
+
+/** A far-future, unique parking date so re-dates never collide mid-restore. */
+const tempParkingDate = (index: number): string => {
+  const d = parseLocalDate('2999-01-01');
+  d.setDate(d.getDate() + index);
+  return formatLocalDate(d);
+};
+
+/**
+ * Restore a season's schedule to a captured snapshot (the Revert action).
+ *
+ * Play rows are never deleted (matches bind to them), so they are re-dated back in
+ * place; skip rows are delete-and-reinserted (nothing references them). To dodge the
+ * UNIQUE(season_id, scheduled_date) constraint regardless of how the schedule was
+ * edited, play rows first park on far-future unique dates, then move to their snapshot
+ * dates once every real date is free.
+ *
+ * @param seasonId - The season to restore.
+ * @param snapshot - The pre-edit schedule captured on the first change.
+ * @returns Success or a failure reason. Never throws.
+ */
+export async function restoreScheduleSnapshot(
+  seasonId: string,
+  snapshot: ScheduleSnapshot,
+): Promise<ApplyReflowResult> {
+  const playRows = snapshot.weeks.filter(isSnapshotPlay);
+  const skipRows = snapshot.weeks.filter((w) => !isSnapshotPlay(w));
+
+  const fail = (where: string, message: string, error?: string): ApplyReflowResult => {
+    logger.error(`Revert: ${where}`, { seasonId, error });
+    return { success: false, error: message };
+  };
+
+  // 1. Park every play row on a unique far-future date (frees all real dates).
+  for (let i = 0; i < playRows.length; i++) {
+    const { error } = await supabase
+      .from('season_weeks')
+      .update({ scheduled_date: tempParkingDate(i) })
+      .eq('id', playRows[i].id);
+    if (error) return fail('park play rows', 'Could not revert the schedule. Please try again.', error.message);
+  }
+
+  // 2. Delete all current skip rows (blackout + season-end break carry no matches).
+  const { error: delError } = await supabase
+    .from('season_weeks')
+    .delete()
+    .eq('season_id', seasonId)
+    .in('week_type', ['blackout', 'season_end_break']);
+  if (delError) return fail('delete skips', 'Could not revert the schedule. Please try again.', delError.message);
+
+  // 3. Move play rows back to their snapshot dates / names / types.
+  for (const row of playRows) {
+    const { error } = await supabase
+      .from('season_weeks')
+      .update({ scheduled_date: row.date, week_name: row.weekName, week_type: row.weekType })
+      .eq('id', row.id);
+    if (error) return fail('restore play rows', 'Could not revert the schedule. Please try again.', error.message);
+  }
+
+  // 4. Re-insert the snapshot's skip rows (new ids — nothing references them).
+  if (skipRows.length > 0) {
+    const rows = skipRows.map((s) => ({
+      season_id: seasonId,
+      scheduled_date: s.date,
+      week_name: s.weekName,
+      week_type: s.weekType,
+      week_completed: false,
+      notes: null,
+    }));
+    const { error } = await supabase.from('season_weeks').insert(rows);
+    if (error) return fail('reinsert skips', 'Could not revert the schedule. Please try again.', error.message);
+  }
+
+  // 5. Restore the season end date.
+  const { error: seasonError } = await supabase
+    .from('seasons')
+    .update({ end_date: snapshot.endDate })
+    .eq('id', seasonId);
+  if (seasonError) return fail('restore end_date', 'Schedule reverted, but the season end date did not reset.', seasonError.message);
+
+  return { success: true, newSeasonEndDate: snapshot.endDate };
 }

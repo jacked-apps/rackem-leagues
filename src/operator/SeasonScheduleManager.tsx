@@ -15,7 +15,7 @@ import { InfoButton } from '@/components/InfoButton';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
-import { applyBlackoutReflow } from '@/utils/scheduleReflowApply';
+import { applyBlackoutReflow, restoreScheduleSnapshot, type ScheduleSnapshot } from '@/utils/scheduleReflowApply';
 import type { ReflowAction } from '@/utils/scheduleReflow';
 import { isPastOrPlayed, decideToggle } from '@/utils/scheduleToggle';
 
@@ -59,6 +59,9 @@ export const SeasonScheduleManager: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showWeekOffModal, setShowWeekOffModal] = useState(false);
   const [selectedWeekIndex, setSelectedWeekIndex] = useState<number | null>(null);
+  // Pre-edit snapshot, captured on the first change. Non-null === the operator has
+  // unsaved changes they can revert. Save just clears it; Revert restores it.
+  const [snapshot, setSnapshot] = useState<ScheduleSnapshot | null>(null);
 
   /**
    * Load league, season, and existing schedule from the database.
@@ -212,19 +215,71 @@ export const SeasonScheduleManager: React.FC = () => {
    * fresh schedule. Each toggle commits immediately — there is no staged "Save".
    * Matches are never touched; only week dates shift (see scheduleReflowApply.ts).
    */
+  /**
+   * Capture the current schedule as a revertable snapshot (play rows by id, plus
+   * skip rows and the season end date). Taken from in-memory state BEFORE the first
+   * change applies.
+   */
+  const buildSnapshot = (): ScheduleSnapshot | null => {
+    if (!season) return null;
+    return {
+      weeks: schedule
+        .filter((w) => w.dbId && w.dbWeekType)
+        .map((w) => ({
+          id: w.dbId as string,
+          date: w.date,
+          weekType: w.dbWeekType as ScheduleSnapshot['weeks'][number]['weekType'],
+          weekName: w.weekName,
+        })),
+      endDate: season.end_date,
+    };
+  };
+
   const applyReflow = async (action: ReflowAction) => {
     if (!seasonId || processing) return;
+    // Capture the starting point once, before the very first change applies.
+    const pending = snapshot ?? buildSnapshot();
     setProcessing(true);
     setError(null);
 
     const result = await applyBlackoutReflow(seasonId, action);
     if (result.success) {
+      if (!snapshot && pending) setSnapshot(pending);
       toast.success('Schedule updated');
       await loadSchedule();
     } else {
       toast.error(result.error ?? 'Could not update the schedule. Please try again.');
     }
     setProcessing(false);
+  };
+
+  /**
+   * Revert every change back to the snapshot captured on the first edit.
+   */
+  const handleRevert = async () => {
+    if (!seasonId || !snapshot || processing) return;
+    setProcessing(true);
+    setError(null);
+
+    const result = await restoreScheduleSnapshot(seasonId, snapshot);
+    if (result.success) {
+      setSnapshot(null);
+      toast.success('Reverted to the starting schedule');
+      await loadSchedule();
+    } else {
+      toast.error(result.error ?? 'Could not revert. Please try again.');
+    }
+    setProcessing(false);
+  };
+
+  /**
+   * Finalize: changes are already saved, so this just clears the snapshot (drops the
+   * ability to revert) and returns to the league.
+   */
+  const handleDone = () => {
+    setSnapshot(null);
+    toast.success('Schedule saved');
+    navigate(`/league/${leagueId}`);
   };
 
   /**
@@ -319,13 +374,38 @@ export const SeasonScheduleManager: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-muted pb-8">
+    <div className={`min-h-screen bg-muted ${snapshot ? 'pb-24' : 'pb-8'}`}>
       <PageHeader
         backTo={`/league/${leagueId}`}
         backLabel="Back To League"
         title="Manage Schedule"
         subtitle={`${season?.season_name} • ${league?.division || 'League'}`}
       />
+      {/*
+        Revert / Save pair appears in a fixed bottom bar only once the operator has
+        made a change (snapshot captured). Save just clears the snapshot; Revert
+        restores the starting schedule. Leaving without either keeps the changes
+        (they apply as you go) but drops the ability to revert.
+      */}
+      {snapshot && (
+        <div className="fixed bottom-0 inset-x-0 z-30 border-t bg-card p-3 shadow-lg">
+          <div className="mx-auto grid max-w-6xl grid-cols-2 gap-2">
+            <Button
+              variant="outline"
+              onClick={handleRevert}
+              disabled={processing}
+              isLoading={processing}
+              loadingText="Reverting..."
+              className="w-full"
+            >
+              Revert Changes
+            </Button>
+            <Button onClick={handleDone} disabled={processing} loadingText="none" className="w-full">
+              Save
+            </Button>
+          </div>
+        </div>
+      )}
       <div className="container mx-auto px-4 max-w-6xl">
         {/* Instructions Info Button */}
         <div className="my-4">
@@ -334,6 +414,8 @@ export const SeasonScheduleManager: React.FC = () => {
               <li>Click "Insert Week Off" to skip a week (holiday, break, etc.) — every change saves right away.</li>
               <li>Click "Remove Week Off" to turn a skipped week back into a play week.</li>
               <li>The rest of the season shifts automatically; the matchups stay with their weeks (only the dates move).</li>
+              <li>Holiday/championship flags stay on their real calendar date — they don't follow a week as it shifts.</li>
+              <li>Changed your mind? Hit "Revert Changes" to snap back to how the schedule started. "Save" keeps your changes.</li>
               <li>Past or already-played weeks can still be edited — you'll just get a heads-up first.</li>
             </ul>
           </InfoButton>
