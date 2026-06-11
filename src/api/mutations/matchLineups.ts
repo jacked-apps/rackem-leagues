@@ -15,7 +15,6 @@
  */
 
 import { supabase } from '@/supabaseClient';
-import { getHandicapThresholds } from '@/api/queries/handicaps';
 
 /**
  * Player in a lineup with position and handicap
@@ -411,98 +410,14 @@ export async function requestLineupChange(params: RequestLineupChangeParams): Pr
 }
 
 /**
- * Recalculate and update handicap thresholds for a match
- *
- * Called after a lineup change to update games_to_win, games_to_tie, games_to_lose
- * for both teams based on the new handicap totals.
- *
- * Simple approach: Sum lineup handicaps, compare to chart, update match.
- * Team bonus is already included in lineup handicaps from initial calculation.
- *
- * @param matchId - The match to recalculate thresholds for
- */
-async function recalculateMatchThresholds(matchId: string): Promise<void> {
-  // Fetch match with team IDs
-  const { data: match, error: matchError } = await supabase
-    .from('matches')
-    .select('id, home_team_id, away_team_id')
-    .eq('id', matchId)
-    .single();
-
-  if (matchError || !match) {
-    console.error('Failed to fetch match for threshold recalculation:', matchError?.message);
-    return;
-  }
-
-  // Fetch both lineups with their current handicaps
-  const { data: lineups, error: lineupsError } = await supabase
-    .from('match_lineups')
-    .select('team_id, player1_handicap, player2_handicap, player3_handicap, player4_handicap, player5_handicap')
-    .eq('match_id', matchId);
-
-  if (lineupsError || !lineups || lineups.length !== 2) {
-    console.error('Failed to fetch lineups for threshold recalculation:', lineupsError?.message);
-    return;
-  }
-
-  const homeLineup = lineups.find(l => l.team_id === match.home_team_id);
-  const awayLineup = lineups.find(l => l.team_id === match.away_team_id);
-
-  if (!homeLineup || !awayLineup) {
-    console.error('Could not identify home/away lineups');
-    return;
-  }
-
-  // Derive handicapType from lineup data — if player4/5 are populated, it's percentage.
-  // This is a fallback for mid-match recalculations. New matches get handicapType from prefs.
-  const usesExtendedLineup = (homeLineup.player4_handicap !== null && homeLineup.player4_handicap !== 0) ||
-                              (homeLineup.player5_handicap !== null && homeLineup.player5_handicap !== 0);
-  const handicapType = usesExtendedLineup ? 'percentage' : 'points';
-
-  // Calculate player handicap totals (sum all player handicaps)
-  // Team bonus is already baked into the lineup handicaps from initial match preparation
-  const homeHandicapTotal =
-    (homeLineup.player1_handicap || 0) +
-    (homeLineup.player2_handicap || 0) +
-    (homeLineup.player3_handicap || 0) +
-    (homeLineup.player4_handicap || 0) +
-    (homeLineup.player5_handicap || 0);
-
-  const awayHandicapTotal =
-    (awayLineup.player1_handicap || 0) +
-    (awayLineup.player2_handicap || 0) +
-    (awayLineup.player3_handicap || 0) +
-    (awayLineup.player4_handicap || 0) +
-    (awayLineup.player5_handicap || 0);
-
-  // Look up thresholds based on handicap difference
-  const homeThresholds = getHandicapThresholds(homeHandicapTotal - awayHandicapTotal, handicapType);
-  const awayThresholds = getHandicapThresholds(awayHandicapTotal - homeHandicapTotal, handicapType);
-
-  // Update match with new thresholds
-  const { error: updateError } = await supabase
-    .from('matches')
-    .update({
-      home_to_win: homeThresholds.games_to_win,
-      home_to_tie: homeThresholds.games_to_tie,
-      home_to_lose: homeThresholds.games_to_lose,
-      away_to_win: awayThresholds.games_to_win,
-      away_to_tie: awayThresholds.games_to_tie,
-      away_to_lose: awayThresholds.games_to_lose,
-    })
-    .eq('id', matchId);
-
-  if (updateError) {
-    console.error('Failed to update match thresholds:', updateError.message);
-  }
-}
-
-/**
  * Approve a lineup change request
  *
  * Updates the lineup with the new player and clears the swap request fields.
  * Also updates all match_games where the old player was assigned to use the new player.
- * Recalculates handicap thresholds for both teams.
+ *
+ * NOTE: Threshold recalibration + match-totals re-derivation are wired in Unit 4
+ * (refetch -> composeMatchThresholds -> swap RPC -> updateMatchRunningTotals).
+ * This interim version applies the swap but does not yet recompute thresholds.
  *
  * IMPORTANT: Players can only be swapped if they have NOT played any games yet.
  * If the old player has any games with a winner_player_id, the swap is rejected.
@@ -613,10 +528,6 @@ export async function approveLineupChange(lineupId: string): Promise<MatchLineup
       }
     }
   }
-
-  // Recalculate handicap thresholds since a player's handicap has changed
-  // This affects games_to_win, games_to_tie, games_to_lose for both teams
-  await recalculateMatchThresholds(lineup.match_id);
 
   return data;
 }
