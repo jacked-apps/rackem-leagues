@@ -220,7 +220,7 @@ SHORTEN (16 -> 12):
 
 ## Implementation Units
 
-- [ ] **Unit 1: Length-change eligibility + bounds (pure)**
+- [x] **Unit 1: Length-change eligibility + bounds (pure)**
 
 **Goal:** Pure helpers: is a season's length currently editable (week-5 lock), and
 validate/classify a requested length against [10, 52].
@@ -254,7 +254,7 @@ validate/classify a requested length against [10, 52].
 
 ---
 
-- [ ] **Unit 2: Persist `schedule_position` on teams**
+- [x] **Unit 2: Persist `schedule_position` on teams**
 
 **Goal:** Add a `schedule_position` column to `teams` and write each team's position
 (including the bye) at the `generateSchedule` chokepoint, so it's available for later
@@ -297,7 +297,7 @@ stale type gone.
 
 ---
 
-- [ ] **Unit 3: Apply length change (DB)**
+- [x] **Unit 3: Apply length change (DB)**
 
 **Goal:** Apply a lengthen or shorten: mutate `season_weeks` + `matches`, re-place
 break/playoff dates via the length-aware routine, sync `season_length` + `end_date`.
@@ -359,7 +359,7 @@ correctly, the guard blocks a played tail, and history is intact.
 
 ---
 
-- [ ] **Unit 4: Change Season Length wizard + entry point**
+- [x] **Unit 4: Change Season Length wizard + entry point**
 
 **Goal:** A wizard to drive the change, launched from a "Change Season Length" button
 on the Manage Schedule page that's disabled once locked.
