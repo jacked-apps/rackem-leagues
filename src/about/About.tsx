@@ -33,7 +33,7 @@ export const About: React.FC = () => {
             </li>
             <li className="flex items-start">
               <span className="mr-2">•</span>
-              <span><strong>Flexible Formats:</strong> 5-man and 8-man team formats with comprehensive, adjustable handicap systems tailored to your league</span>
+              <span><strong>Flexible Formats:</strong> Build your league your way—choose your team size and the number of players per team, then pair it with the handicap system and scoring system that fit how your league actually plays</span>
             </li>
             <li className="flex items-start">
               <span className="mr-2">•</span>
@@ -65,11 +65,35 @@ export const About: React.FC = () => {
             </li>
             <li className="flex items-start">
               <span className="mr-2">•</span>
-              <span><strong>In-App Messaging:</strong> Private direct messaging, group messaging with announcements, and optional profanity filtering—enforce league-wide or let players choose</span>
+              <span><strong>In-App Messaging:</strong> Team chats and a captains' chat are created automatically and stay in sync with your rosters—plus private direct messaging, league and season announcements, and an optional profanity filter each player turns on or off for themselves</span>
             </li>
             <li className="flex items-start">
               <span className="mr-2">•</span>
-              <span><strong>Educational Resources:</strong> Detailed guides explaining handicap systems and format differences—official BCA rulebook integration coming soon</span>
+              <span><strong>Educational Resources:</strong> Detailed guides explaining handicap systems and format differences, plus the official BCA / CSI rulebook built right in—search any rule to settle a dispute</span>
+            </li>
+            <li className="flex items-start">
+              <span className="mr-2">•</span>
+              <span><strong>Player Onboarding:</strong> A simple, streamlined join flow—share one link and new players sign up and land on their team in minutes, with captain approval keeping rosters accurate</span>
+            </li>
+            <li className="flex items-start">
+              <span className="mr-2">•</span>
+              <span><strong>Scorecard Dispute Resolution:</strong> Player-verified scoring with full accountability—track who scored and verified each game for easy dispute resolution</span>
+            </li>
+            <li className="flex items-start">
+              <span className="mr-2">•</span>
+              <span><strong>Playoffs:</strong> Configure and run your postseason—playoff settings at the organization or league level, bracket setup, and management through to a champion</span>
+            </li>
+            <li className="flex items-start">
+              <span className="mr-2">•</span>
+              <span><strong>Live Spectating:</strong> Players and fans follow matches in real time, with scoreboards that update as each game is scored</span>
+            </li>
+            <li className="flex items-start">
+              <span className="mr-2">•</span>
+              <span><strong>Leaderboards &amp; Achievements:</strong> Season standings, top shooters, and team stats, plus a Feats of Excellence board celebrating break-and-runs, golden breaks, and other standout shots</span>
+            </li>
+            <li className="flex items-start">
+              <span className="mr-2">•</span>
+              <span><strong>Season Roll-Forward &amp; Captain Re-Up:</strong> Launch a new season from a previous one in a few clicks—rosters and settings carry forward, and captains can re-up their own teams</span>
             </li>
           </ul>
         </section>
@@ -83,15 +107,11 @@ export const About: React.FC = () => {
             </li>
             <li className="flex items-start">
               <span className="mr-2">•</span>
-              <span><strong>Team Invite System:</strong> Streamlined player recruitment and team formation</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
               <span><strong>Payout Calculator:</strong> Assists in determining prize pool income and distribution—you control payouts, fees, expenses, and all financial settings</span>
             </li>
             <li className="flex items-start">
               <span className="mr-2">•</span>
-              <span><strong>Scorecard Dispute Resolution:</strong> Player-verified scoring with full accountability—track who scored and verified each game for easy dispute resolution</span>
+              <span><strong>Fully Customizable Systems:</strong> Tailor handicaps, scoring, and point distribution down to the detail—choose from time-tested systems or build your own to your exact specifications</span>
             </li>
           </ul>
         </section>

@@ -55,7 +55,9 @@ export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
-  const [oauthLoading, setOauthLoading] = useState(false);
+  // Tracks which OAuth provider's button was clicked so only that button shows
+  // "Connecting..." while both stay disabled during the redirect handoff.
+  const [oauthLoading, setOauthLoading] = useState<null | 'google' | 'facebook'>(null);
 
   // Passwordless flow state (only used when the flag is on).
   const [step, setStep] = useState<'choose' | 'code'>('choose');
@@ -70,7 +72,7 @@ export const Login: React.FC = () => {
   if (isLoggedIn) return null;
 
   const handleGoogleLogin = async () => {
-    setOauthLoading(true);
+    setOauthLoading('google');
     setMessage('');
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -78,9 +80,23 @@ export const Login: React.FC = () => {
     });
     if (error) {
       setMessage(`Error: ${error.message}`);
-      setOauthLoading(false);
+      setOauthLoading(null);
     }
     // On success the browser redirects to Google, so there's nothing to do here.
+  };
+
+  const handleFacebookLogin = async () => {
+    setOauthLoading('facebook');
+    setMessage('');
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'facebook',
+      options: { redirectTo: `${window.location.origin}${redirectTarget}` },
+    });
+    if (error) {
+      setMessage(`Error: ${error.message}`);
+      setOauthLoading(null);
+    }
+    // On success the browser redirects to Facebook, so there's nothing to do here.
   };
 
   const handlePasswordLogin = async (e?: React.FormEvent) => {
@@ -131,12 +147,14 @@ export const Login: React.FC = () => {
     );
   }
 
+  const oauthDisabled = !!oauthLoading || codeLoading || passwordLoading;
+
   const googleButton = (
     <Button
       variant="outline"
       className="w-full"
       onClick={handleGoogleLogin}
-      disabled={oauthLoading || codeLoading || passwordLoading}
+      disabled={oauthDisabled}
     >
       <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
         <path
@@ -156,7 +174,24 @@ export const Login: React.FC = () => {
           fill="#EA4335"
         />
       </svg>
-      {oauthLoading ? 'Connecting...' : 'Continue with Google'}
+      {oauthLoading === 'google' ? 'Connecting...' : 'Continue with Google'}
+    </Button>
+  );
+
+  const facebookButton = (
+    <Button
+      variant="outline"
+      className="w-full mt-2"
+      onClick={handleFacebookLogin}
+      disabled={oauthDisabled}
+    >
+      <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          d="M24 12c0-6.627-5.373-12-12-12S0 5.373 0 12c0 5.99 4.388 10.954 10.125 11.854V15.47H7.078V12h3.047V9.356c0-3.007 1.792-4.668 4.533-4.668 1.312 0 2.686.234 2.686.234v2.953H15.83c-1.491 0-1.956.925-1.956 1.874V12h3.328l-.532 3.47h-2.796v8.385C19.612 22.954 24 17.99 24 12z"
+          fill="#1877F2"
+        />
+      </svg>
+      {oauthLoading === 'facebook' ? 'Connecting...' : 'Continue with Facebook'}
     </Button>
   );
 
@@ -230,6 +265,7 @@ export const Login: React.FC = () => {
   return (
     <LoginCard title="Sign in to Rack'em" description="No password needed — we'll email you a code">
       {googleButton}
+      {facebookButton}
 
       {PASSWORDLESS_SIGN_IN_ENABLED ? (
         showPassword ? (
@@ -274,6 +310,9 @@ export const Login: React.FC = () => {
         <Link to="/register">Register</Link>
         <Link to="/forgot-password">Forgot Password?</Link>
       </CardFooter>
+      <p className="mt-3 text-center text-xs text-muted-foreground">
+        By continuing you agree to our <Link to="/privacy" className="underline">Privacy Policy</Link>.
+      </p>
     </LoginCard>
   );
 };

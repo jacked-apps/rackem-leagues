@@ -34,7 +34,18 @@ import { nicknameInfo } from '../constants/infoContent/profileInfoContent';
  * - City/State for PP detection
  * - Field-level validation with Zod schema
  */
-export const CompleteProfileForm: React.FC = () => {
+interface CompleteProfileFormProps {
+  /**
+   * Where to land after the profile is created. Defaults to `/my-teams`. The
+   * onboarding-cascade join flow passes `/join/:token` so the new member
+   * returns to the join page for the one-tap Join.
+   */
+  redirectTo?: string;
+}
+
+export const CompleteProfileForm: React.FC<CompleteProfileFormProps> = ({
+  redirectTo,
+}) => {
   const { state, dispatch } = useShortProfileForm();
 
   const { handleSubmit } = useShortProfileSubmission({
@@ -42,6 +53,7 @@ export const CompleteProfileForm: React.FC = () => {
     onError: (errors) => dispatch({ type: 'SET_ERRORS', errors }),
     onSuccess: () => dispatch({ type: 'CLEAR_ERRORS' }),
     onLoading: (loading) => dispatch({ type: 'SET_LOADING', loading }),
+    redirectTo,
   });
 
   return (

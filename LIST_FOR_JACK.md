@@ -151,57 +151,26 @@
 - **Integration**: When user claims, badge count decrements
 - **Related**: Pairs with login modal notification (implemented separately)
 
-## 18. Dark Mode Breaks Date Picker
+## 18. Dark Mode — Hardcoded-Color Readability Audit (ONE pass, multiple surfaces)
 
-**Moved from LIST_FOR_ED.md #20 on 2026-05-17** (was always tagged "For Jack")
+**Surfaced piecemeal 2026-05-04 → 2026-06-07 (Ed, across smoke tests). Consolidated 2026-06-07** — these are all the SAME root cause, so fix them in one sweep rather than one-off items.
 
-**Discovered:** 2026-05-04 during unified-scoreboard smoke-testing
-**Severity:** Medium (functionally usable but visually broken)
+**Severity:** Low/Medium — each is functional but visually broken / unreadable in dark mode.
 
-**Symptom:** In dark mode, the date picker is essentially unusable — the day numbers in the calendar grid are invisible against the background. Only a single date (presumably the currently-selected or hovered one) is visible at a time. User can't see which dates are available, weekends, today's marker, etc.
+**Shared root cause:** components use hardcoded light values (e.g. `text-gray-900`, a light bg) or inherit a light color with no dark variant, so text/background contrast collapses in dark mode. **Fix = switch to theme-aware tokens** (`text-foreground` / `text-muted-foreground` / `bg-card` / `bg-muted`) and verify contrast in BOTH modes. Many of these likely share a couple of primitives (Calendar, Input, Dialog, Badge) — fixing the primitive may knock out several at once.
 
-**Suspected cause:** the calendar component's text color likely hardcoded to a light value (or inherits a light theme color) without a dark-mode variant defined. Background-text contrast collapses in dark mode.
+**Surfaces to audit + fix (open each in light + dark side-by-side):**
+- **Calendar / date picker** — day numbers invisible in dark; only the selected date shows. `src/components/ui/calendar.tsx` (shadcn Calendar) + any wrapper.
+- **Unified scoreboard player drawer** — away-team names invisible in dark, home-team invisible in light (Ed 2026-05-04). Hardcoded per-side name color that doesn't flip per theme.
+- **Messaging composer input** — typed text muddy / low-contrast in dark. `src/components/messages/MessageInput.tsx` `<Input>` + sibling inputs (conversation search, announcement composer).
+- **Scoring confirm/vacate modal** — text/contrast collapses in dark. `src/components/scoring/ConfirmationDialog.tsx` + the dialog primitives it uses.
+- **Manage Players placeholder dropdown** — placeholder entries unreadable in dark. `src/components/PlayerCombobox.tsx` + `src/components/PlaceholderBadge.tsx`. (Player pickers are being consolidated on `fix/player-picker-smarter` — coordinate; may get swept up there.)
 
-**Likely fix surface:** `src/components/ui/calendar.tsx` (the shadcn Calendar primitive) and/or any wrapper component that uses it. Audit the day-cell text color tokens — should use `text-foreground` / `text-muted-foreground` (theme-aware) rather than a hardcoded `text-gray-900` or similar.
-
-**Adjacent dark-mode issue (worth folding into the same pass):** unified scoreboard's player-drawer name colors. Per Ed 2026-05-04 smoke-test: "in dark mode the away team player names in the drawer are invisible. and in light mode the home team is invisible." Same root cause likely — a hardcoded color that doesn't flip per theme.
-
----
-
-*Last Updated: 2026-05-17*
-## 16. Dark Mode — Messaging Composer Input Font Hard to Read
-
-**Discovered:** 2026-05-16 during the Phase 1 messaging end-to-end test pass
-**Severity:** Low-Medium — usable but the chat composer's text input
-is visually muddy in dark mode (low contrast between the typed text
-and the input background). Slows down composing messages.
-
-**Where:** `src/components/messages/MessageInput.tsx` — the `<Input>`
-inside the composer (and likely sibling components in the messaging
-UI that use the shadcn `Input` with the same class set).
-
-**Likely root cause:** the composer's `Input` uses `bg-card` for the
-background but inherits the default text color. In dark mode that
-combination yields a near-tone-on-tone result. Either an explicit
-`text-foreground` is missing, OR `bg-card` resolves to a value too
-close to the foreground in dark mode and the theme token needs a
-tweak.
-
-**Fix direction:**
-1. Open the Messages page in light mode AND dark mode side-by-side
-   to confirm the contrast gap.
-2. In `src/components/messages/MessageInput.tsx`, give the `<Input>`
-   an explicit foreground color that's high-contrast in both modes
-   (shadcn standard is `text-foreground`; verify the theme tokens
-   actually produce sufficient contrast).
-3. Check other messaging text-input surfaces (the conversation
-   search bar, the announcement modal composer, etc.) for the same
-   pattern and fix consistently.
-
-**Not blocking** the messaging-system-overhaul branch from merging
-— styling polish only.
+**Going forward:** add any new dark-mode readability bug to THIS list, not a new item.
 
 ---
+
+*Last Updated: 2026-06-07*
 
 ## 17. PageHeader — Profile-Avatar Position Inconsistent Across Pages
 
@@ -262,39 +231,19 @@ follow-on polish.
 
 ---
 
-## 19. Scoring App — Confirmation/Vacate Modal Unreadable in Dark Mode + No Theme Toggle on Scoring Screen
+## 19. Scoring Screen — No Theme Toggle (dark-mode escape hatch)
 
 **Discovered:** 2026-05-25 during live-scoring resilience testing (Ed)
-**Severity:** Medium — the modal is functionally reachable but visually
-unreadable in dark mode, and the user can't switch to light to work
-around it from the scoring screen. Two compounding issues:
+**Severity:** Low — mainly a workaround gap until the dark-mode color audit
+(#18) lands; the modal-color half of this item folded into #18.
 
-**(a) The confirm/vacate modal is unreadable in dark mode.**
-- **Where:** `src/components/scoring/ConfirmationDialog.tsx` — the
-  opponent-confirm + vacate ("Agree – Vacate Winner / Deny – Keep
-  Winner") modal used during live scoring.
-- **Symptom:** in dark mode the modal's text/contrast collapses
-  (same class of bug as the date picker #18 and the messaging input
-  #16 — almost certainly hardcoded light-theme colors instead of
-  theme-aware `text-foreground` / `bg-card` tokens).
-- **Fix direction:** open the modal in light + dark side-by-side,
-  audit the color classes in `ConfirmationDialog.tsx` (and the dialog
-  primitives it uses) for hardcoded values; switch to theme-aware
-  tokens. Worth doing in the same pass as #16/#18 — likely one shared
-  root cause across these scoring/messaging surfaces.
-
-**(b) Can't change theme (light/dark) from the scoring screen.**
-- **Where:** `src/player/ScoreMatch.tsx` renders a custom full-screen
-  scoring layout with its own header (back button / team name /
-  auto-confirm) and does NOT surface the app's theme toggle. So a
-  scorer who happens to be in dark mode is stuck — they can't flip to
-  light to dodge issue (a) without leaving the match.
-- **Fix direction:** either expose the theme toggle on the scoring
-  screen, or (cleaner once (a) is fixed) ensure the scoring surfaces
-  are fully theme-aware so the toggle isn't needed as a workaround.
-- **Note:** fixing (a) is the real fix; (b) is why (a) is more painful
-  than it looks (no escape hatch mid-match).
+`src/player/ScoreMatch.tsx` renders a custom full-screen scoring layout with
+its own header (back / team name / auto-confirm) and does NOT surface the app's
+theme toggle. A scorer stuck in dark mode can't flip to light to dodge
+readability issues without leaving the match. **Once #18 makes the scoring
+surfaces fully theme-aware this is moot;** until then, consider exposing the
+toggle on the scoring screen.
 
 ---
 
-*Last Updated: 2026-05-25*
+*Last Updated: 2026-06-07*

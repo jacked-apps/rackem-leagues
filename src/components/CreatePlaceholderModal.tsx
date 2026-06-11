@@ -42,6 +42,7 @@ import { generateNickname } from '@/utils/nicknameGenerator';
 import { createPlaceholderMember } from '@/api/mutations/members';
 import { queryKeys } from '@/api/queryKeys';
 import { supabase } from '@/supabaseClient';
+import { EMAIL_INVITES_ENABLED } from '@/config/featureFlags';
 import { toast } from 'sonner';
 import { logger } from '@/utils/logger';
 
@@ -100,6 +101,10 @@ export function CreatePlaceholderModal({
    * surfaced as a soft toast so the create-success path keeps moving.
    */
   const fireSendInvite = async (memberId: string, recipient: string) => {
+    // Email invites are gated off — the edge function's sandbox sender can't
+    // reach real players (see EMAIL_INVITES_ENABLED). Skip the (silently
+    // failing) send entirely; the placeholder + token are still created.
+    if (!EMAIL_INVITES_ENABLED) return;
     if (!teamId) return;
     try {
       const { data: sessionData } = await supabase.auth.getSession();

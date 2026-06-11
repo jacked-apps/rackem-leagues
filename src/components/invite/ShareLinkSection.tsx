@@ -28,7 +28,35 @@ interface ShareLinkSectionProps {
   registrationLink: string;
   /** Whether this is a staging environment */
   isStaging?: boolean;
+  /**
+   * Optional ready-to-send invite message (already including the link). When
+   * provided, a primary "Copy invite message" button is shown so the sharer can
+   * paste a friendly, self-explanatory text — not a naked URL — straight into a
+   * text/email. The bare-link copy + QR (which key on `registrationLink`) stay
+   * as a secondary "just the link" affordance. When omitted, this component
+   * behaves exactly as before (link-only).
+   */
+  shareMessage?: string;
 }
+
+/**
+ * Copy a string to the clipboard with a document.execCommand fallback for
+ * browsers without the async clipboard API. Returns nothing — callers manage
+ * their own "copied" UI state.
+ */
+const copyToClipboard = async (text: string) => {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    // Fallback for browsers that don't support the clipboard API
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+  }
+};
 
 /**
  * ShareLinkSection Component
@@ -38,36 +66,73 @@ interface ShareLinkSectionProps {
 export const ShareLinkSection: React.FC<ShareLinkSectionProps> = ({
   registrationLink,
   isStaging = false,
+  shareMessage,
 }) => {
   const [copied, setCopied] = useState(false);
+  const [copiedMessage, setCopiedMessage] = useState(false);
   const [showQrCode, setShowQrCode] = useState(false);
 
   /**
-   * Copy registration link to clipboard
+   * Copy the bare registration link to clipboard.
    */
   const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(registrationLink);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Fallback for browsers that don't support clipboard API
-      const textArea = document.createElement('textarea');
-      textArea.value = registrationLink;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
+    await copyToClipboard(registrationLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  /**
+   * Copy the full ready-to-send invite message (blurb + link) to clipboard.
+   */
+  const handleCopyMessage = async () => {
+    if (!shareMessage) return;
+    await copyToClipboard(shareMessage);
+    setCopiedMessage(true);
+    setTimeout(() => setCopiedMessage(false), 2000);
   };
 
   return (
     <div className="space-y-4">
+      {/* Ready-to-send invite message — only when a shareMessage is supplied.
+          This is the primary action for the captain flow: one tap copies a
+          friendly, self-explanatory text the player can act on. */}
+      {shareMessage && (
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Invite message</Label>
+          <p className="text-xs text-muted-foreground">
+            Copy a ready-to-send message (with the link) and paste it into a text
+            or email to your players.
+          </p>
+          <div className="rounded-md border bg-muted p-3 text-xs whitespace-pre-wrap text-muted-foreground">
+            {shareMessage}
+          </div>
+          <Button
+            type="button"
+            variant="default"
+            loadingText="none"
+            onClick={handleCopyMessage}
+            className="w-full gap-2"
+          >
+            {copiedMessage ? (
+              <>
+                <Check className="h-4 w-4" />
+                Copied!
+              </>
+            ) : (
+              <>
+                <Copy className="h-4 w-4" />
+                Copy invite message
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+
       {/* Share Link */}
       <div className="space-y-3">
-        <Label className="text-sm font-medium">Share Registration Link</Label>
+        <Label className="text-sm font-medium">
+          {shareMessage ? 'Or just the link' : 'Share Registration Link'}
+        </Label>
         <p className="text-xs text-muted-foreground">
           Copy the link to share via text, social media, or other messaging apps.
         </p>

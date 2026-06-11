@@ -55,6 +55,19 @@ export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
         )}
       </div>
 
+      {/* Player number — read-only identity, always shown (not editable). This
+          is the number an organizer uses to look you up by player number, so
+          it needs to be easy to find here and read off. */}
+      <div className="mb-4">
+        <span className="text-sm font-medium text-muted-foreground">Player Number</span>
+        <p className="text-foreground font-mono text-lg font-semibold">
+          {`#P-${String(member.system_player_number).padStart(5, '0')}`}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Your unique number — share it with an organizer who needs to add or find you.
+        </p>
+      </div>
+
       {form.isEditing ? (
         // Edit Mode
         <div className="space-y-4">

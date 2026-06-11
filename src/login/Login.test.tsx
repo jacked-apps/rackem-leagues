@@ -83,6 +83,7 @@ describe('Login (one-door, passwordless)', () => {
     renderSignedOut();
 
     expect(screen.getByText('Continue with Google')).toBeInTheDocument();
+    expect(screen.getByText('Continue with Facebook')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /email me a code/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /prefer a password/i })).toBeInTheDocument();
   });

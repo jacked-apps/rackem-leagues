@@ -11,8 +11,9 @@ import { QuickStatsCard } from '@/components/operator/QuickStatsCard';
 import { OrganizationStaffCard } from '@/components/operator/OrganizationStaffCard';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { MessageSquare, Users, Settings, BookOpen, Video, MessageCircle, Phone, Flag } from 'lucide-react';
+import { MessageSquare, Users, Settings, BookOpen, Video, MessageCircle, Phone, Flag, Wrench } from 'lucide-react';
 import { usePendingReportsCount } from '@/hooks/usePendingReportsCount';
+import { JoinRequestList } from '@/onboarding/components/JoinRequestList';
 
 /**
  * OperatorDashboard Component
@@ -66,6 +67,12 @@ export const OperatorDashboard: React.FC = () => {
         subtitle={`Welcome back, ${member?.first_name}! Manage your leagues and grow the pool community.`}
       />
       <div className="container mx-auto px-4 max-w-7xl py-8">
+        {/* Onboarding cascade: pending join requests across every team in this
+            org. Renders nothing when there are none. */}
+        <div className="mb-6">
+          <JoinRequestList title="Join requests" />
+        </div>
+
         {/* Main Grid - All content */}
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Row 1 - Quick Actions */}
@@ -95,6 +102,15 @@ export const OperatorDashboard: React.FC = () => {
             buttonText="View Reports"
             linkTo={`/operator-reports/${orgId}`}
             badgeCount={pendingReportsCount}
+          />
+
+          <DashboardCard
+            icon={<Wrench className="h-6 w-6" />}
+            iconColor="text-primary"
+            title="Scoring Workshop"
+            description="Build pieces of a Scoring System — one room per module"
+            buttonText="Open Workshop"
+            linkTo="/operator/scoring-workshop"
           />
 
           {/* Row 2 - Active Leagues (2 cols) and Sidebar (1 col) */}
@@ -129,7 +145,7 @@ export const OperatorDashboard: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3 text-sm">
-                  <Link to="#" className="flex items-center gap-2 text-info hover:text-info/80 transition-colors">
+                  <Link to="/learn" className="flex items-center gap-2 text-info hover:text-info/80 transition-colors">
                     <BookOpen className="h-4 w-4" />
                     Operator Handbook
                   </Link>

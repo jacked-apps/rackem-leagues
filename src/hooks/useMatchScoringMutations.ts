@@ -17,8 +17,40 @@ import { supabase } from '@/supabaseClient';
 import type { Lineup, MatchGame } from '@/types/match';
 import { queryKeys } from '@/api/queryKeys';
 import { populateMatchSnapshotIfNeeded, updateMatchRunningTotals } from '@/api/queries/matches';
+import { appendConfirmation, type ConfirmationResult } from '@/api/mutations/appendConfirmation';
+import { resultsDiffer } from '@/utils/match/deriveDissents';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
+
+/**
+ * Map a scored game row (or the snapshot being confirmed/vacated) to the
+ * `ConfirmationResult` shape the many-eyes append helper records. Both the live
+ * `match_games` row and the in-flight `gameData` object share these field
+ * names, so this works for the confirm path and the vacate-marker path alike.
+ */
+function resultFromGame(g: {
+  winner_team_id: string | null;
+  winner_player_id: string | null;
+  break_and_run: boolean;
+  golden_break: boolean;
+  break_fouled: boolean;
+  runout: boolean;
+  win_by_forfeit: boolean;
+  winner_value: number | null;
+  loser_value: number | null;
+}): ConfirmationResult {
+  return {
+    winnerTeamId: g.winner_team_id,
+    winnerPlayerId: g.winner_player_id,
+    breakAndRun: g.break_and_run,
+    goldenBreak: g.golden_break,
+    breakFouled: g.break_fouled,
+    runout: g.runout,
+    winByForfeit: g.win_by_forfeit,
+    winnerValue: g.winner_value,
+    loserValue: g.loser_value,
+  };
+}
 
 interface UseMatchScoringMutationsParams {
   /** Current match data */
@@ -199,9 +231,16 @@ export function useMatchScoringMutations({
    *
    * @param gameNumber - Game number to confirm
    * @param isVacateRequest - True if confirming a vacate request
+   * @param autoConfirmed - True when fired by the confirmer's Auto-Confirm mode
+   *   (no modal). Recorded on the vouch row as an integrity metric only; never
+   *   affects officiality. Defaults false (a manually-tapped confirm).
    */
   const confirmOpponentScore = useCallback(
-    async (gameNumber: number, isVacateRequest?: boolean): Promise<boolean> => {
+    async (
+      gameNumber: number,
+      isVacateRequest?: boolean,
+      autoConfirmed = false
+    ): Promise<boolean> => {
       if (!match) return false;
 
       const existingGame = gameResults.get(gameNumber);
@@ -209,6 +248,25 @@ export function useMatchScoringMutations({
 
       try {
         const isHomeTeam = userTeamId === match.home_team_id;
+
+        // Unit 7: finalization safety. The primary freeze is MatchEndVerification's
+        // nav-off — when both teams verify, every device gets navigated away from
+        // the scoring page. But a sub-second race between finalization and that
+        // navigation could fire this mutation, and unguarded writes here would
+        // mutate match_games AFTER finalization (set/clear confirmed_by_<side>
+        // on a completed match). One small read of matches.status as
+        // belt-and-suspenders — bail before touching match_games when completed.
+        const { data: matchStatusRow } = await supabase
+          .from('matches')
+          .select('status')
+          .eq('id', match.id)
+          .maybeSingle();
+        if (matchStatusRow?.status === 'completed') {
+          toast.info(
+            `Game ${gameNumber}: the match has ended — your action was not recorded.`
+          );
+          return false;
+        }
 
         if (isVacateRequest) {
           // For vacate requests, clear the game entirely (accept the vacate)
@@ -232,18 +290,97 @@ export function useMatchScoringMutations({
             .eq('id', existingGame.id);
 
           if (error) throw error;
+
+          // Many-eyes: record the vacate as an append-only marker. The pre-wipe
+          // snapshot is `existingGame` (still the in-memory pre-update state).
+          // Best-effort — never blocks the vacate. is_initiator=false: a vacate
+          // is not an initiation of new score details.
+          await appendConfirmation({
+            gameId: existingGame.id,
+            matchId: match.id,
+            gameNumber,
+            confirmerId: memberId,
+            side: isHomeTeam ? 'home' : 'away',
+            action: 'vacate',
+            isInitiator: false,
+            result: resultFromGame(existingGame),
+          });
         } else {
-          // Normal score confirmation - only update OUR confirmation, don't touch opponent's
-          const updateData = isHomeTeam
-            ? { confirmed_by_home: memberId }
-            : { confirmed_by_away: memberId };
+          // Normal score confirmation — Amendment I: three-step check before
+          // locking officiality. The user's vouch is ALWAYS appended (records
+          // their intent for the audit log), but the `confirmed_by_<my-side>`
+          // column only gets written when ALL three are true at write time:
+          //   (1) The opponent's column is set (there's something official to
+          //       confirm — not a winnerless / auto-cleared state).
+          //   (2) My side's column is null (we haven't locked officiality on
+          //       this side yet — handled by the .is(null) filter below).
+          //   (3) My modal's snapshot still matches the current official
+          //       result (no re-score or edit happened underneath me).
+          //
+          // When the checks block the column write, the user sees a toast
+          // explaining their vouch was recorded but the game state changed.
+          // The dissent flag (Unit 5) surfaces any divergence to the team.
+          const officialityColumn = isHomeTeam ? 'confirmed_by_home' : 'confirmed_by_away';
 
-          const { error } = await supabase
+          // Read fresh state. Pulling all the comparison fields in one shot.
+          const { data: freshRow } = await supabase
             .from('match_games')
-            .update(updateData)
-            .eq('id', existingGame.id);
+            .select(
+              'confirmed_by_home, confirmed_by_away, winner_team_id, winner_player_id, break_and_run, golden_break, break_fouled, runout, win_by_forfeit, winner_value, loser_value'
+            )
+            .eq('id', existingGame.id)
+            .maybeSingle();
 
-          if (error) throw error;
+          const opponentConfirmed = freshRow
+            ? !!(isHomeTeam ? freshRow.confirmed_by_away : freshRow.confirmed_by_home)
+            : false;
+          const dataMatches = freshRow ? !resultsDiffer(freshRow, existingGame) : false;
+          const stateChanged = !freshRow || !opponentConfirmed || !dataMatches;
+
+          if (!stateChanged) {
+            // All checks pass — attempt to lock officiality. The `.is(null)`
+            // filter is the final atomic safety against same-side races
+            // (extras: 0 rows affected, no error — Unit 4's behavior).
+            const updateData = isHomeTeam
+              ? { confirmed_by_home: memberId }
+              : { confirmed_by_away: memberId };
+            const { error } = await supabase
+              .from('match_games')
+              .update(updateData)
+              .eq('id', existingGame.id)
+              .is(officialityColumn, null);
+            if (error) throw error;
+          } else if (freshRow) {
+            // Surface to the user — their tap landed but the official state
+            // is different from their modal. Tone is informational, not error;
+            // their vouch is still recorded below.
+            if (!opponentConfirmed) {
+              toast.info(
+                `Game ${gameNumber}: was cleared since you opened this — your vouch was logged.`
+              );
+            } else {
+              toast.info(
+                `Game ${gameNumber}: score changed since you opened this — your vouch was logged, please review.`
+              );
+            }
+          }
+
+          // Many-eyes: ALWAYS record my vouch attempt — even when the column
+          // write was blocked above, the row preserves what I tried to vouch
+          // for, with my snapshot. The dissent flag surfaces any divergence.
+          // is_initiator=false: tapping Confirm on someone else's already-entered
+          // details, not filling out details from scratch.
+          await appendConfirmation({
+            gameId: existingGame.id,
+            matchId: match.id,
+            gameNumber,
+            confirmerId: memberId,
+            side: isHomeTeam ? 'home' : 'away',
+            action: 'confirm',
+            isInitiator: false,
+            autoConfirmed,
+            result: resultFromGame(existingGame),
+          });
         }
 
         // Phase 5 Unit 5.5: eagerly recompute the match row's running totals
@@ -274,7 +411,7 @@ export function useMatchScoringMutations({
         return false;
       }
     },
-    [match, userTeamId, gameResults, queryClient]
+    [match, userTeamId, gameResults, queryClient, memberId]
   );
 
   /**
@@ -291,6 +428,20 @@ export function useMatchScoringMutations({
       if (!existingGame) return false;
 
       try {
+        // Unit 7: finalization safety (same reasoning as the other mutations).
+        // Belt-and-suspenders behind MatchEndVerification's nav-off.
+        const { data: matchStatusRow } = await supabase
+          .from('matches')
+          .select('status')
+          .eq('id', match.id)
+          .maybeSingle();
+        if (matchStatusRow?.status === 'completed') {
+          toast.info(
+            `Game ${gameNumber}: the match has ended — your action was not recorded.`
+          );
+          return false;
+        }
+
         if (isVacateRequest) {
           // Deny vacate request: Just clear the vacate_requested_by flag
           // Original confirmations are preserved, so just remove the vacate flag
@@ -303,26 +454,92 @@ export function useMatchScoringMutations({
 
           if (error) throw error;
         } else {
-          // Deny normal score: reset the game back to unscored state
-          const { error } = await supabase
-            .from('match_games')
-            .update({
-              winner_team_id: null,
-              winner_player_id: null,
-              break_and_run: false,
-              golden_break: false,
-              break_fouled: false,
-              runout: false,
-              win_by_forfeit: false,
-              winner_value: null,
-              loser_value: null,
-              confirmed_by_home: null,
-              confirmed_by_away: null,
-              confirmed_at: null,
-            })
-            .eq('id', existingGame.id);
+          // Deny normal score. Amendment E: count distinct endorsers first —
+          // if extras have endorsed this result, one denier shouldn't be able
+          // to wipe a game multiple people stood behind. The deny is still
+          // recorded (as a vacate marker), and the existing dissent flag
+          // surfaces it to the denier's team; the OFFICIAL result stays put,
+          // and proper correction is the deliberate vacate-and-rescore path.
+          //
+          // Pair-only (≤2 distinct endorsers post-latest-vacate) = the standard
+          // initiator + first-per-side-confirmer; deny wipes (current behavior).
+          // Extras (>2 distinct endorsers) = deny becomes a dissent contribution
+          // without a wipe.
+          const { data: latestVacate } = await supabase
+            .from('game_confirmations')
+            .select('created_at')
+            .eq('game_id', existingGame.id)
+            .eq('action', 'vacate')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
 
-          if (error) throw error;
+          let confirmsQuery = supabase
+            .from('game_confirmations')
+            .select('confirmer_id')
+            .eq('game_id', existingGame.id)
+            .eq('action', 'confirm');
+          if (latestVacate?.created_at) {
+            confirmsQuery = confirmsQuery.gt('created_at', latestVacate.created_at);
+          }
+          const { data: confirmRows } = await confirmsQuery;
+          const endorsers = new Set(
+            (confirmRows ?? [])
+              .map((r) => r.confirmer_id)
+              .filter((id): id is string => !!id)
+          );
+
+          if (endorsers.size > 2) {
+            // Extras present — record the deny but DON'T wipe. The dissent
+            // flag (Unit 5) reads this as a differing view; vacate-and-rescore
+            // remains the deliberate correction path.
+            await appendConfirmation({
+              gameId: existingGame.id,
+              matchId: match.id,
+              gameNumber,
+              confirmerId: memberId,
+              side: userTeamId === match.home_team_id ? 'home' : 'away',
+              action: 'vacate',
+              isInitiator: false,
+              result: resultFromGame(existingGame),
+            });
+            toast.info(
+              `Game ${gameNumber}: ${endorsers.size} people endorsed this — your dissent is recorded but the game stays scored. Talk it over; vacate-and-rescore if needed.`
+            );
+          } else {
+            // Standard wipe — only the officiality pair has vouched.
+            const { error } = await supabase
+              .from('match_games')
+              .update({
+                winner_team_id: null,
+                winner_player_id: null,
+                break_and_run: false,
+                golden_break: false,
+                break_fouled: false,
+                runout: false,
+                win_by_forfeit: false,
+                winner_value: null,
+                loser_value: null,
+                confirmed_by_home: null,
+                confirmed_by_away: null,
+                confirmed_at: null,
+              })
+              .eq('id', existingGame.id);
+            if (error) throw error;
+
+            // Many-eyes: record the vacate marker (pre-wipe snapshot is
+            // `existingGame`). Best-effort — never blocks the deny.
+            await appendConfirmation({
+              gameId: existingGame.id,
+              matchId: match.id,
+              gameNumber,
+              confirmerId: memberId,
+              side: userTeamId === match.home_team_id ? 'home' : 'away',
+              action: 'vacate',
+              isInitiator: false,
+              result: resultFromGame(existingGame),
+            });
+          }
         }
 
         // Phase 5 Unit 5.5: denial / vacate-deny clears confirmations or
@@ -340,7 +557,7 @@ export function useMatchScoringMutations({
         return false;
       }
     },
-    [match, gameResults]
+    [match, gameResults, memberId, userTeamId]
   );
 
   /**
@@ -382,6 +599,23 @@ export function useMatchScoringMutations({
       const loserValue = extras.loserValue ?? null;
 
       try {
+        // Unit 7: finalization safety (same reasoning as in confirmOpponentScore).
+        // Belt-and-suspenders behind MatchEndVerification's nav-off — a sub-second
+        // race could fire this mutation between bothVerified flipping and the
+        // page navigating away. Bail before any writes (including Amendment D's
+        // auto-clear, which would otherwise clear a finalized game's winner).
+        const { data: matchStatusRow } = await supabase
+          .from('matches')
+          .select('status')
+          .eq('id', match.id)
+          .maybeSingle();
+        if (matchStatusRow?.status === 'completed') {
+          toast.info(
+            `Game ${scoringGame.gameNumber}: the match has ended — score not recorded.`
+          );
+          return;
+        }
+
         // Tier 3 mutability: populate system_snapshot at the first scoring event.
         // No-op if already populated. Runs before the score write so the snapshot
         // reflects league state as of the moment the first game was scored.
@@ -434,6 +668,106 @@ export function useMatchScoringMutations({
           confirmed_by_away: !isHomeTeamScoring ? memberId : null,
         };
 
+        // ── Amendment D: initiator-race detection ─────────────────────────────
+        // Before writing to match_games, re-read the row fresh from the DB.
+        // The window between when the modal opened and now is a real race
+        // window — another scorer (same side OR opposite side) may have
+        // submitted their own initiation. Two outcomes:
+        //
+        //   AGREEMENT  — their result matches mine → just append my initiator
+        //                row alongside theirs (strongest confirmation; both
+        //                people independently filled the details and got the
+        //                same answer). No overwrite of match_games.
+        //
+        //   DISAGREEMENT — their result differs from mine → AUTO-CLEAR.
+        //                Append my initiator row (records what I tried), append
+        //                a vacate marker (scopes future dissent comparisons to
+        //                post-clear), clear match_games winner fields, surface
+        //                to the user. Both initiator rows stay in the log; the
+        //                persistent dispute banner (Amendment F) reads them.
+        //
+        // No existing winner = fresh game, take the standard write path below.
+        const myResult = resultFromGame(gameData);
+        const { data: freshRow } = await supabase
+          .from('match_games')
+          .select(
+            'winner_team_id, winner_player_id, break_and_run, golden_break, break_fouled, runout, win_by_forfeit, winner_value, loser_value'
+          )
+          .eq('id', existingGame.id)
+          .maybeSingle();
+
+        if (freshRow?.winner_player_id) {
+          // resultsDiffer works on the snake_case DB shape — `freshRow` (from
+          // supabase) and `gameData` (the about-to-write payload) both match
+          // structurally. `myResult` (camelCase) is used for the appendConfirmation
+          // calls below.
+          if (resultsDiffer(freshRow, gameData)) {
+            // DISAGREEMENT — auto-clear the game's winner fields and record
+            // both my initiator attempt + a vacate marker. Officiality columns
+            // also cleared so the next initiator can take the slot cleanly.
+            await appendConfirmation({
+              gameId: existingGame.id,
+              matchId: match.id,
+              gameNumber: scoringGame.gameNumber,
+              confirmerId: memberId,
+              side: isHomeTeamScoring ? 'home' : 'away',
+              action: 'confirm',
+              isInitiator: true,
+              result: myResult,
+            });
+            await appendConfirmation({
+              gameId: existingGame.id,
+              matchId: match.id,
+              gameNumber: scoringGame.gameNumber,
+              confirmerId: memberId,
+              side: isHomeTeamScoring ? 'home' : 'away',
+              action: 'vacate',
+              isInitiator: false,
+              result: myResult,
+            });
+            const { error: clearError } = await supabase
+              .from('match_games')
+              .update({
+                winner_team_id: null,
+                winner_player_id: null,
+                break_and_run: false,
+                golden_break: false,
+                break_fouled: false,
+                runout: false,
+                win_by_forfeit: false,
+                winner_value: null,
+                loser_value: null,
+                confirmed_by_home: null,
+                confirmed_by_away: null,
+                confirmed_at: null,
+              })
+              .eq('id', existingGame.id);
+            if (clearError) throw clearError;
+
+            if (match?.id) await updateMatchRunningTotals(match.id);
+            toast.error(
+              `Game ${scoringGame.gameNumber}: scores didn't match. Cleared — please re-enter together.`
+            );
+            onSuccess();
+            return;
+          }
+
+          // AGREEMENT — append my initiator row alongside theirs. No overwrite.
+          await appendConfirmation({
+            gameId: existingGame.id,
+            matchId: match.id,
+            gameNumber: scoringGame.gameNumber,
+            confirmerId: memberId,
+            side: isHomeTeamScoring ? 'home' : 'away',
+            action: 'confirm',
+            isInitiator: true,
+            result: myResult,
+          });
+          if (match?.id) await updateMatchRunningTotals(match.id);
+          onSuccess();
+          return;
+        }
+
         // Check if game already exists (using same game we fetched earlier)
         if (existingGame) {
           // Update existing game
@@ -480,6 +814,22 @@ export function useMatchScoringMutations({
           if (error) throw error;
         }
 
+        // Many-eyes: record the scorer's vouch for the result just entered.
+        // The officiality write above (confirmed_by_<side>) already succeeded;
+        // this is additive + best-effort and never blocks scoring.
+        // is_initiator=true: this is the high-effort act of filling out the
+        // details from scratch (winner + extras + points).
+        await appendConfirmation({
+          gameId: existingGame.id,
+          matchId: match.id,
+          gameNumber: scoringGame.gameNumber,
+          confirmerId: memberId,
+          side: isHomeTeamScoring ? 'home' : 'away',
+          action: 'confirm',
+          isInitiator: true,
+          result: resultFromGame(gameData),
+        });
+
         // Phase 5 Unit 5.5: eagerly recompute the match row's running totals
         // from the current set of confirmed match_games. The new game write
         // may flip a previously-confirmed game (re-score after auto-confirm
@@ -498,7 +848,7 @@ export function useMatchScoringMutations({
         toast.error(`Failed to save game score: ${err.message}`);
       }
     },
-    [match, homeLineup, awayLineup, userTeamId, gameResults]
+    [match, homeLineup, awayLineup, userTeamId, gameResults, memberId]
   );
 
   return {

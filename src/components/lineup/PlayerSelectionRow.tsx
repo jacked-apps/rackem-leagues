@@ -36,6 +36,8 @@ interface PlayerSelectionRowProps {
   manualHandicapValue?: string;
   onManualHandicapChange?: (position: number, value: string) => void;
   isDoubleDuty?: boolean;
+  /** LO manual-scoring: make the handicap editable for any type (forwarded to HandicapCell). */
+  editableOverride?: boolean;
 }
 
 export function PlayerSelectionRow({
@@ -56,6 +58,7 @@ export function PlayerSelectionRow({
   manualHandicapValue,
   onManualHandicapChange,
   isDoubleDuty = false,
+  editableOverride,
 }: PlayerSelectionRowProps) {
   const isAnonSub = isSubstitute && !isDoubleDuty;
 
@@ -78,6 +81,7 @@ export function PlayerSelectionRow({
           onSubHandicapChange={onSubHandicapChange}
           manualHandicapValue={manualHandicapValue}
           onManualHandicapChange={onManualHandicapChange}
+          editableOverride={editableOverride}
         />
       )}
 

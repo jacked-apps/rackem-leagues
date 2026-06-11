@@ -14,35 +14,12 @@ import { supabase } from '@/supabaseClient';
 import type { Member, PartialMember } from '@/types/member';
 
 /**
- * Fetch current member by auth user ID
- *
- * Connects authenticated user to their member record.
- * Used across the app to get member ID and complete profile info.
- *
- * @param userId - Supabase auth user ID
- * @returns Complete member record with all fields including role
- * @throws Error if member not found or database error
- *
- * @example
- * const member = await getCurrentMember(user.id);
- * console.log(member.id, member.first_name, member.role);
- */
-export async function getCurrentMember(userId: string): Promise<Member> {
-  const { data, error } = await supabase
-    .from('members')
-    .select('*')
-    .eq('user_id', userId)
-    .single();
-
-  if (error) throw error;
-  return data;
-}
-
-/**
  * Fetch complete member profile by auth user ID
  *
  * Gets full member record including all profile fields, role, and metadata.
- * Used for profile pages and role-based access control.
+ * The single canonical "member by auth user id" fetch — used both for profile
+ * pages / role-based access control AND as the current-user lookup (the former
+ * `getCurrentMember` was a byte-identical duplicate, now removed).
  *
  * @param userId - Supabase auth user ID
  * @returns Complete member record
@@ -131,7 +108,7 @@ export async function getOperatorId(memberId: string): Promise<{ id: string }> {
  */
 export async function getOperatorIdByUserId(userId: string): Promise<{ id: string }> {
   // First get member ID
-  const member = await getCurrentMember(userId);
+  const member = await getMemberProfile(userId);
 
   // Then get organization ID
   return getOperatorId(member.id);

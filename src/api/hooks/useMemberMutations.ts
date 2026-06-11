@@ -13,17 +13,65 @@
  * @see api/mutations/members.ts - Pure mutation functions
  */
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQueryClient,
+  type QueryClient,
+  type QueryKey,
+} from '@tanstack/react-query';
 import { queryKeys } from '../queryKeys';
 import {
   updateProfanityFilter,
   markProfanityOnboardingComplete,
-  updateMemberNickname,
   updateMemberProfile,
   createMember,
   deleteMember,
-  updateMemberRole
+  type UpdateMemberRoleParams,
 } from '../mutations/members';
+
+/**
+ * Invalidate every cache that EMBEDS member data, so a member identity change
+ * (name / nickname / role / create / delete) refreshes everywhere it's shown —
+ * not just the `members` cache.
+ *
+ * Member data is denormalized into many other queries: rosters & captains
+ * (`teams`), operator/staff lists (`operators`, `organizationStaff`), message
+ * participant names (`messages`), stats (`stats`), member search (`memberSearch`),
+ * and re-up status (`leagueReupStatus`). Invalidating only `members.*` leaves
+ * those embedded copies stale — the "name updates in the profile but not the
+ * roster" bug. This refreshes all of them.
+ *
+ * This is the pragmatic band-aid for the denormalization (it over-invalidates a
+ * little); the durable fix is reading member data by id (the PlayerNameLink
+ * pattern). See docs/research/2026-06-07-stale-cache-mutation-discipline.md.
+ *
+ * @param queryClient - the active TanStack Query client.
+ * @param refetchAll - when true, also refetch INACTIVE queries (used by the role
+ *   change, whose LO-application flow navigates to a page gated on fresh data —
+ *   closes LIST_FOR_ED #7). Returns the invalidation promise so callers can await.
+ */
+function invalidateMemberEmbedders(
+  queryClient: QueryClient,
+  refetchAll = false,
+): Promise<unknown> {
+  const keys: QueryKey[] = [
+    queryKeys.members.all,
+    queryKeys.teams.all,
+    queryKeys.operators.all,
+    queryKeys.messages.all,
+    queryKeys.stats.all,
+    ['memberSearch'],
+    ['organizationStaff'],
+    ['leagueReupStatus'],
+  ];
+  return Promise.all(
+    keys.map((queryKey) =>
+      queryClient.invalidateQueries(
+        refetchAll ? { queryKey, refetchType: 'all' } : { queryKey },
+      ),
+    ),
+  );
+}
 
 /**
  * Hook to update member's profile information
@@ -50,39 +98,9 @@ export function useUpdateMemberProfile() {
   return useMutation({
     mutationFn: updateMemberProfile,
     onSuccess: () => {
-      // Invalidate all member queries to refresh profile everywhere
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.members.all,
-      });
-    },
-  });
-}
-
-/**
- * Hook to update member's nickname
- *
- * Automatically invalidates member cache after successful update.
- *
- * @returns TanStack Mutation object with mutate/mutateAsync functions
- *
- * @example
- * const updateNickname = useUpdateMemberNickname();
- *
- * await updateNickname.mutateAsync({
- *   memberId: 'member-123',
- *   nickname: 'John D'
- * });
- */
-export function useUpdateMemberNickname() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: updateMemberNickname,
-    onSuccess: () => {
-      // Invalidate all member queries to refresh nickname everywhere
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.members.all,
-      });
+      // Refresh the member everywhere it's shown — incl. embedded copies in
+      // rosters, operator lists, message names, etc. (not just members.*).
+      invalidateMemberEmbedders(queryClient);
     },
   });
 }
@@ -184,10 +202,8 @@ export function useCreateMember() {
   return useMutation({
     mutationFn: createMember,
     onSuccess: () => {
-      // Invalidate all member queries
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.members.all,
-      });
+      // New member shows up in member lists, search, pickers, etc.
+      invalidateMemberEmbedders(queryClient);
     },
   });
 }
@@ -211,10 +227,8 @@ export function useDeleteMember() {
   return useMutation({
     mutationFn: deleteMember,
     onSuccess: () => {
-      // Invalidate all member queries
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.members.all,
-      });
+      // Removed member must drop out of lists, rosters, search, etc.
+      invalidateMemberEmbedders(queryClient);
     },
   });
 }
@@ -223,7 +237,10 @@ export function useDeleteMember() {
  * Hook to update member's role
  *
  * Changes a member's role (e.g., from 'player' to 'league_operator').
- * Automatically invalidates member cache after successful update.
+ * Delegates to the canonical `updateMemberProfile` patch mutation (role is a
+ * member-row column) while keeping this named hook for its bespoke invalidation
+ * and so role changes stay greppable. Automatically invalidates member cache
+ * after successful update.
  *
  * @returns TanStack Mutation object with mutate/mutateAsync functions
  *
@@ -239,23 +256,19 @@ export function useUpdateMemberRole() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: updateMemberRole,
+    mutationFn: ({ memberId, role }: UpdateMemberRoleParams) =>
+      updateMemberProfile({ memberId, updates: { role } }),
     onSuccess: async () => {
-      // Refresh role everywhere AND wait for refetch — paired with
-      // the same treatment in useCreateOrganization (closes LIST_FOR_ED
-      // #7). The LO-application flow runs both mutations back-to-back
-      // and then navigates to /dashboard, which gates the org-list on
-      // BOTH the new role AND the new org. If either query is stale
-      // when the dashboard mounts, the user sees the empty/wrong
-      // state and has to refresh.
+      // Refresh role everywhere it's embedded (members, operator/staff lists…)
+      // AND wait for the refetch — paired with the same treatment in
+      // useCreateOrganization (closes LIST_FOR_ED #7). The LO-application flow
+      // runs both mutations back-to-back then navigates to /dashboard, which
+      // gates the org-list on BOTH the new role AND the new org. If either is
+      // stale when the dashboard mounts, the user sees the empty/wrong state.
       //
-      // `refetchType: 'all'` forces inactive-query refetches; awaiting
-      // it inside the async onSuccess holds the mutation open until
-      // the cache is fresh.
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.members.all,
-        refetchType: 'all',
-      });
+      // `refetchAll` forces inactive-query refetches; awaiting it holds the
+      // mutation open until the cache is fresh.
+      await invalidateMemberEmbedders(queryClient, true);
     },
   });
 }

@@ -14,21 +14,31 @@
  * No calculated or "on the fly" data is displayed.
  */
 
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import type { MatchGame } from '@/types';
-
-/** Display mode for game list columns */
-type DisplayMode = 'break-rack' | 'home-away';
-
-/** localStorage key for persisting display mode preference */
-const DISPLAY_MODE_KEY = 'rackem-games-display-mode';
+import type { DisplayMode } from '@/hooks/useGameDisplayMode';
 
 interface GamesListProps {
   gameResults: Map<number, MatchGame>;
   getPlayerDisplayName: (playerId: string | null) => string;
   onGameClick: (gameNumber: number, playerId: string, playerName: string, teamId: string) => void;
   onVacateClick: (gameNumber: number, currentWinnerName: string) => void;
+  /**
+   * Column ordering, lifted to the parent (ScoreMatch) so both this list's
+   * header bar AND the scoring settings gear can drive it in sync. See
+   * useGameDisplayMode.
+   */
+  displayMode: DisplayMode;
+  /** Flip the column ordering (header bar click → same action as the gear). */
+  onToggleDisplayMode: () => void;
+  /**
+   * Optional peek-on-confirmed-game handler (many-eyes Unit 6). When provided,
+   * the player-name areas in a fully-confirmed game row become tappable —
+   * tapping opens the peek/confirm dialog. NOT overloading `onGameClick`
+   * (which is the scoring-shaped contract for the pending state) so the
+   * pending-state tests + behavior stay untouched.
+   */
+  onPeekClick?: (gameNumber: number) => void;
   onVacateRequestClick?: (gameNumber: number, currentWinnerName: string) => void;
   homeTeamId: string;
   awayTeamId: string;
@@ -52,35 +62,15 @@ export function GamesList({
   getPlayerDisplayName,
   onGameClick,
   onVacateClick,
+  onPeekClick,
   onVacateRequestClick,
   homeTeamId,
   awayTeamId,
   totalGames,
   isHomeTeam,
+  displayMode,
+  onToggleDisplayMode,
 }: GamesListProps) {
-  /**
-   * Display mode state - persisted to localStorage
-   * - 'break-rack': Breaker on left, Racker on right (default)
-   * - 'home-away': Home team on left, Away team on right
-   */
-  const [displayMode, setDisplayMode] = useState<DisplayMode>(() => {
-    // Initialize from localStorage or default to 'break-rack'
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem(DISPLAY_MODE_KEY);
-      if (saved === 'home-away') return 'home-away';
-    }
-    return 'break-rack';
-  });
-
-  /**
-   * Toggle display mode and persist to localStorage
-   */
-  const toggleDisplayMode = () => {
-    const newMode = displayMode === 'break-rack' ? 'home-away' : 'break-rack';
-    setDisplayMode(newMode);
-    localStorage.setItem(DISPLAY_MODE_KEY, newMode);
-  };
-
   /**
    * Get completed games count
    */
@@ -103,7 +93,7 @@ export function GamesList({
         </div>
         {/* Column headers - clickable to toggle display mode */}
         <button
-          onClick={toggleDisplayMode}
+          onClick={onToggleDisplayMode}
           className="w-full grid grid-cols-[auto_1fr_auto_1fr] gap-2 items-center text-xs text-muted-foreground pb-2 hover:text-foreground transition-colors cursor-pointer"
           title={`Click to switch to ${displayMode === 'break-rack' ? 'Home/Away' : 'Break/Rack'} view`}
         >
@@ -270,14 +260,25 @@ export function GamesList({
                 );
               }
 
-              // If confirmed, show divs with trophy on winner and Vacate button in middle
+              // If confirmed, show divs with trophy on winner and Vacate button in middle.
+              // Unit 6: when onPeekClick is provided, the player-name areas become
+              // tappable buttons that open the peek/confirm dialog. The Vacate
+              // button stays as the deliberate destructive action — separate concern.
+              const handlePeek = onPeekClick
+                ? () => onPeekClick(gameResult.game_number)
+                : undefined;
               return (
                 <div key={gameResult.game_number} className="grid grid-cols-[auto_1fr_auto_1fr] gap-2 items-center text-sm py-2 border-b">
                   <div className="font-semibold">{gameResult.game_number}.</div>
-                  <div className={`text-center p-2 rounded ${leftWon ? winnerClass : loserClass}`}>
+                  <button
+                    type="button"
+                    disabled={!handlePeek}
+                    onClick={handlePeek}
+                    className={`text-center p-2 rounded ${leftWon ? winnerClass : loserClass} ${handlePeek ? 'transition hover:opacity-80 cursor-pointer' : 'cursor-default'}`}
+                  >
                     {leftWon && <span className="mr-1">🏆</span>}
                     {leftDisplayName}
-                  </div>
+                  </button>
                   <Button
                     variant="outline"
                     size="sm"
@@ -288,10 +289,15 @@ export function GamesList({
                   >
                     Vacate
                   </Button>
-                  <div className={`text-center p-2 rounded ${rightWon ? winnerClass : loserClass}`}>
+                  <button
+                    type="button"
+                    disabled={!handlePeek}
+                    onClick={handlePeek}
+                    className={`text-center p-2 rounded ${rightWon ? winnerClass : loserClass} ${handlePeek ? 'transition hover:opacity-80 cursor-pointer' : 'cursor-default'}`}
+                  >
                     {rightWon && <span className="mr-1">🏆</span>}
                     {rightDisplayName}
-                  </div>
+                  </button>
                 </div>
               );
             }

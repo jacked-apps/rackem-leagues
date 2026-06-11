@@ -273,23 +273,39 @@ function pickHandicapMechanism(
  * Returns null when `points_calculator` is null (the league doesn't track
  * points at all — no Points System applies).
  */
-function pickPointsSystem(pointsCalculator: string | null): PointsSystem | null {
+function pickPointsSystem(
+  pointsCalculator: string | null,
+  perGameAllocatorOverride?: import('./points-system/types').PerGameAllocator | null,
+): PointsSystem | null {
+  let composition: PointsSystem | null = null;
   if (pointsCalculator === null) {
     return null;
   }
   if (pointsCalculator === 'linear_above_threshold') {
-    return buildPoints3ManComposition({ multiplier: 1 });
+    composition = buildPoints3ManComposition({ multiplier: 1 });
+  } else if (pointsCalculator === 'accumulate_with_milestone_jumps') {
+    composition = buildPercent5ManComposition({});
+  } else if (pointsCalculator === 'accumulated_per_game') {
+    composition = buildTenPointComposition({});
+  } else {
+    console.warn(
+      `[buildSystemFromPreferences] Unknown points_calculator ${JSON.stringify(pointsCalculator)} — pointsSystem field set to null`,
+    );
+    return null;
   }
-  if (pointsCalculator === 'accumulate_with_milestone_jumps') {
-    return buildPercent5ManComposition({});
+
+  // Per-Game Allocator Room (Unit 5) parity swap. The live-scoring path
+  // through `match-adapter.ts` is the primary swap site; this branch keeps
+  // `buildSystemFromPreferences` consumers (and its tests) consistent for
+  // any future code that routes through here with an override.
+  if (perGameAllocatorOverride && composition) {
+    return {
+      ...composition,
+      name: `${composition.name}__custom_${perGameAllocatorOverride.name}`,
+      perGameAllocator: perGameAllocatorOverride,
+    };
   }
-  if (pointsCalculator === 'accumulated_per_game') {
-    return buildTenPointComposition({});
-  }
-  console.warn(
-    `[buildSystemFromPreferences] Unknown points_calculator ${JSON.stringify(pointsCalculator)} — pointsSystem field set to null`,
-  );
-  return null;
+  return composition;
 }
 
 // ============================================================================
@@ -393,9 +409,18 @@ export function buildSystemFromPreferences(
 ): SystemModule {
   void overrides;
 
-  const preset = matchPreset(prefs);
-  if (preset) {
-    return preset;
+  // Per-Game Allocator Room (Unit 5): when a saved variation is embedded in
+  // prefs (snapshot path), skip the preset fast path — the preset's hardcoded
+  // pointsSystem would NOT carry the override, and falling through to the
+  // ad-hoc builder lets `pickPointsSystem` apply it.
+  const hasAllocatorOverride = Boolean(
+    (prefs as { per_game_allocator?: unknown }).per_game_allocator,
+  );
+  if (!hasAllocatorOverride) {
+    const preset = matchPreset(prefs);
+    if (preset) {
+      return preset;
+    }
   }
 
   // Normalize game_generation to the strict enum the Team Geometry Module expects.
@@ -439,6 +464,12 @@ export function buildSystemFromPreferences(
     // Composes the per-match point allocation rule set from primitives.
     // Coexists with the legacy `scoring` capability + calculator-registry
     // dispatch until Phase D removes the legacy.
-    pointsSystem: pickPointsSystem(prefs.points_calculator),
+    pointsSystem: pickPointsSystem(
+      prefs.points_calculator,
+      // Per-Game Allocator Room (Unit 5) — snapshot may carry a resolved
+      // override; non-snapshot callers leave it undefined and get the
+      // prepackaged composition unchanged.
+      (prefs as { per_game_allocator?: import('./points-system/types').PerGameAllocator | null }).per_game_allocator ?? null,
+    ),
   };
 }

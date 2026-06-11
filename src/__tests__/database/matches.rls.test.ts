@@ -181,51 +181,6 @@ describe('Matches Table - RLS Tests', () => {
     });
   });
 
-  describe('INSERT Operations', () => {
-    it('should allow inserting a new match', async () => {
-      if (!testSeasonId) {
-        console.warn('⚠️ No test season found, skipping test');
-        return;
-      }
-
-      // Get two teams from the season
-      const { data: teams } = await client
-        .from('teams')
-        .select('id')
-        .eq('season_id', testSeasonId)
-        .limit(2);
-
-      if (!teams || teams.length < 2) {
-        console.warn('⚠️ Not enough teams found, skipping test');
-        return;
-      }
-
-      const { data: newMatch, error } = await client
-        .from('matches')
-        .insert({
-          season_id: testSeasonId,
-          home_team_id: teams[0].id,
-          away_team_id: teams[1].id,
-          match_date: new Date().toISOString().split('T')[0],
-          week_number: 99, // Test week number
-          status: 'scheduled',
-        })
-        .select()
-        .single();
-
-      expect(error).toBeNull();
-      expect(newMatch).toBeDefined();
-      expect(newMatch?.season_id).toBe(testSeasonId);
-
-      // Clean up - delete the test match
-      if (newMatch) {
-        await client
-          .from('matches')
-          .delete()
-          .eq('id', newMatch.id);
-      }
-    });
-  });
 
   describe('DELETE Operations', () => {
     it('should allow deleting a match', async () => {

@@ -19,7 +19,12 @@ import { Outlet } from 'react-router-dom';
 import { BottomTabBar } from './BottomTabBar';
 import { AppSidebar } from './AppSidebar';
 import { PendingInvitesModal } from '@/components/modals/PendingInvitesModal';
+import { ApprovedJoinModal } from '@/components/modals/ApprovedJoinModal';
 import { usePendingInvites } from '@/api/hooks';
+import {
+  useApprovedJoinRequests,
+  useAcknowledgeJoinRequest,
+} from '@/api/hooks/useApprovedJoinRequests';
 
 /**
  * Shared layout wrapper for all authenticated (member + operator) routes.
@@ -32,6 +37,12 @@ export function MemberLayout() {
   const [invitesModalDismissed, setInvitesModalDismissed] = useState(false);
   const showInvitesModal = !invitesLoading && hasPendingInvites && !invitesModalDismissed;
 
+  // Onboarding cascade: tell a joiner the moment they're approved (even if they
+  // closed the tab) and route them to their team. One at a time.
+  const { data: approvedJoins } = useApprovedJoinRequests();
+  const acknowledge = useAcknowledgeJoinRequest();
+  const nextApproved = approvedJoins?.[0] ?? null;
+
   return (
     <>
       <PendingInvitesModal
@@ -40,8 +51,18 @@ export function MemberLayout() {
         invites={pendingInvites}
       />
 
+      <ApprovedJoinModal
+        request={nextApproved}
+        onAcknowledge={(id) => acknowledge.mutate(id)}
+      />
+
       <AppSidebar />
-      <div className="pb-16 lg:pb-0 lg:ml-[var(--sidebar-width)]">
+      {/* Mobile bottom padding must CLEAR the fixed bottom tab bar (4rem,
+          `--tab-bar-height`) with breathing room — `pb-16` (exactly 4rem) left
+          zero gap, so page action buttons (Save / Continue / etc.) at the
+          bottom of a page sat flush against or under the bar. `pb-24` (6rem)
+          gives ~2rem clearance app-wide. Desktop uses the sidebar, no bar. */}
+      <div className="pb-24 lg:pb-0 lg:ml-[var(--sidebar-width)]">
         <Outlet />
       </div>
       <BottomTabBar />

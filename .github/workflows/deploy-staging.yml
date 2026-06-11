@@ -1,3 +1,19 @@
+# =====================================================================
+# Staging deploy targets — pinned in YAML, NOT secrets.
+# These values are public information (they appear in OAuth callback URLs,
+# the staging JS bundle, and the dashboard URL bar). Keeping them in code
+# instead of GitHub Environment secrets means:
+#   - a project_ref change is a reviewable PR, not a silent UI click
+#   - prod vs staging cross-wiring is impossible to do by accident
+#
+# True credentials (DB password, anon key, AWS creds, Supabase access
+# token) still live in the `staging` GitHub Environment secrets.
+#
+#   Supabase project : eahlgydddmjebcfiskmz
+#   S3 bucket        : staging.rackemleagues.com
+#   CloudFront ID    : E1LHONENY2QXLN
+#   AWS region       : us-east-1
+# =====================================================================
 name: Deploy to Staging
 
 on:
@@ -12,15 +28,15 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 10
 
@@ -31,7 +47,7 @@ jobs:
           echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
 
       - name: Setup pnpm cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -46,37 +62,37 @@ jobs:
         env:
           NODE_ENV: production
           VITE_APP_ENV: staging
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_URL: https://eahlgydddmjebcfiskmz.supabase.co
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
       - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
+        uses: supabase/setup-cli@v2
         with:
           version: latest
 
       - name: Run Supabase migrations
         run: |
-          supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
+          supabase link --project-ref eahlgydddmjebcfiskmz
           supabase db push --include-all
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: us-east-1
 
       - name: Deploy to S3
         run: |
-          aws s3 sync dist/ s3://${{ secrets.S3_BUCKET }} --delete --cache-control "public, max-age=31536000, immutable"
-          aws s3 sync dist/ s3://${{ secrets.S3_BUCKET }} --delete --cache-control "public, max-age=0, must-revalidate"
+          aws s3 sync dist/ s3://staging.rackemleagues.com --delete --cache-control "public, max-age=31536000, immutable"
+          aws s3 sync dist/ s3://staging.rackemleagues.com --delete --cache-control "public, max-age=0, must-revalidate"
 
       - name: Invalidate CloudFront cache
         run: |
-          aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+          aws cloudfront create-invalidation --distribution-id E1LHONENY2QXLN --paths "/*"
 
       - name: Deployment summary
         run: |
@@ -85,6 +101,6 @@ jobs:
           echo "- **Environment**: Staging" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **S3 Bucket**: ${{ secrets.S3_BUCKET }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **CloudFront Distribution**: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **S3 Bucket**: staging.rackemleagues.com" >> $GITHUB_STEP_SUMMARY
+          echo "- **CloudFront Distribution**: E1LHONENY2QXLN" >> $GITHUB_STEP_SUMMARY
 

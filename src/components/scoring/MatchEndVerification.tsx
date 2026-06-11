@@ -279,7 +279,19 @@ export function MatchEndVerification({
     // create tiebreaker games, hitting a 409 on the games unique key
     // and logging "Failed to complete match" to app_logs. The DB
     // uniqueness caught it but the noise muddied real diagnostics.
-    if (match?.status === 'completed') return;
+    //
+    // BUT: don't just bail — that strands a client on the end screen. In the
+    // two-party completion race the loser sees the match flip to 'completed'
+    // (via realtime) BEFORE its own completeTheMatch runs, so it would hit this
+    // guard and never navigate, sitting forever on "✓ Both teams verified —
+    // returning…". Skip the re-completion WRITE (idempotency) but still LEAVE the
+    // page, exactly like the normal winner path does. A 'completed' status is
+    // always a decisive winner (ties keep status 'in_progress'), so My Teams is
+    // the correct destination.
+    if (match?.status === 'completed') {
+      navigate('/my-teams');
+      return;
+    }
 
     const completeTheMatch = async () => {
       completionStartedRef.current = true;
@@ -725,7 +737,7 @@ export function MatchEndVerification({
               ? result === 'tie'
                 ? '✓ Both teams verified - Setting up tiebreaker...'
                 : '✓ Both teams verified - Completing match...'
-              : '✓ Both teams verified - Returning to dashboard...'
+              : '✓ Both teams verified - Returning to My Teams...'
             }
           </div>
         )}

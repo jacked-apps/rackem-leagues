@@ -4,6 +4,105 @@ Tasks and refactoring items for Ed to work on.
 
 ---
 
+## 🌅 PICK UP HERE — night of 2026-06-09 (bye-team firefight + the day's fixes)
+
+**Shipped tonight — open PRs awaiting Jack's merge (verify on staging when merged):**
+- #198 hide broken email-invite button · #199 captain invite UX (copy message + `?` help + guided approve card) · #200 CI Node-24 action bumps · #201 player number on profile · #202 iPhone bottom-nav padding · #203 matchup-redo **400 crash** fix (dropped a bad trigger) · #204 **bye now visible** in Manage Teams
+
+**FIX FIRST — the bye / add-team mess:**
+1. **Recover the wedged league** (10 real + 1 bye = 11 rows): once **#203** is in your test env → **redo the matchups** → you get a clean **10-team** schedule, **no 2nd bye** (verified: the setup screen counts only the 10 active teams, 10 is even, so it adds none). Then **SQL-delete the orphan bye row** (after the redo it has no matches → deletes clean). Ask Claude for the one-liner.
+2. **Build the "can't happen again" rule** (Ed's spec):
+   - **A)** Gate **"Add Team"** when a bye exists → message *"fill the BYE slot instead."* (small — detect `teams.some(t => t.status==='bye')`, #204 already loads it)
+   - **B)** **"Populate the bye"** = fill action: convert the bye row into a real team (name + captain + roster, flip `status` bye→active). Its "vs BYE" matches become real games — **no reschedule**. The meat. Pre-season clean; mid-season needs un-awarding banked bye wins (deferred).
+
+**Finish the half-done bye-as-real-team migration:**
+3. Show the bye **everywhere a team shows EXCEPT standings/stats**; replace leftover `team_id === null` bye-detection with `status === 'bye'` (`SeasonSchedulePage.tsx`, `wizards/matchups-v2/steps/ReviewStep.tsx`).
+4. **Remove-the-bye** action (delete → regenerate at even count).
+
+**NEEDS A REAL PLAN (not a quick fix):**
+5. **Auto-forfeit sweep** — once-daily `pg_cron`, all past-due + unfinished matches, captainless side forfeits (bye weeks fall out of it automatically). Full design + decisions in `docs/brainstorms/2026-06-09-bye-team-and-auto-forfeit-requirements.md`. Deferred sub-items: forfeit scoring (points for the win), exact timing ("6am" was a placeholder), neither-captained edge, and the **8 captainless `active` teams / 0 `bye` rows** data anomaly to understand.
+
+**Verified clean tonight (NO action):**
+6. Schedule vs matchups separation is correct in code — `matchupTables.ts` owns week pairings (by position, no dates), `season_weeks` owns the dates, `generateSchedule` marries them.
+
+**VERIFY in the morning (Ed's tired-eyes flag — may be fine):**
+8. **Does a blackout on an existing schedule auto-shift the week?** e.g. week 7 plays 6/16; mark 6/16 a blackout → week 7 should move to **6/23** and everything after shifts one week. Preliminary read: blackouts **do** shift the schedule during **setup/review** (`ScheduleReview.tsx` regenerates whenever blackout weeks change). Open question is the **already-active** schedule — does editing/adding a blackout after the season's accepted re-date the weeks, or does it need a regen? Confirm the post-activation case.
+
+**BUG — ROOT CAUSE FOUND, ship the one-liner (production):**
+9. **APA championship conflict flags on the wrong dates.** Edit-schedule page (production) flags weeks 6/28, 7/12, 7/19 … 8/2 as "APA National Tournament Week N" — but APA 2026 is **8/04–8/15**. **Data is correct** (verified: one `championship_date_options` row, start 8/04 / end 8/15). **Root cause:** `parseLocalDate` (`src/utils/formatters.ts:221`) only handles `'YYYY-MM-DD'` (`isoDate.split('-').map(Number)`), but championship dates are stored as **full ISO timestamps** (`2026-08-04T04:00:00.000Z`). The day parses as `Number('04T04:00:00.000Z')` → **NaN** → invalid/garbage date, so `extractLeagueNights` (`src/utils/holidayUtils.ts:98`) walks the wrong range and stamps bogus APA "league nights." **Fix (safe one-liner):** strip the time first — `isoDate.split('T')[0]` inside `parseLocalDate` (hardens every date parse; plain `YYYY-MM-DD` unaffected). Repro locally (local DB has the `...T04:00:00Z` row), confirm, ship.
+
+**Paused (lower priority):**
+7. Player-picker consolidation brainstorm — parked at Site 2 of 8. Mid-walkthrough; no doc written yet.
+
+---
+
+## 🚪 Gated — awaiting staging review + un-gate
+
+Features merged to `main` but NOT yet live for users (see **Feature Gating
+Workflow** in `CLAUDE.md`). Reviewed on staging, then un-gated — and removed
+from this list when un-gated.
+
+- **LMS Results Sheet** — printable per-match results sheet for hand-entry into
+  CSI / FargoRate LMS (no LMS import/API exists). Gated by `!isProduction` in
+  `src/navigation/NavRoutes.tsx` (route `league/:leagueId/match/:matchId/lms-sheet`);
+  reached via the **printer icon** on a completed match in the "Score a Match"
+  picker. MVP layout (games in order, full names + winner) — **format will be
+  refined after the first LO (Ben) says what's easiest for LMS entry**, so treat
+  the current layout as a draft.
+Workflow** in `CLAUDE.md`). Each gets reviewed on staging, then un-gated — and
+removed from this list when un-gated.
+
+- **LO Manual Scoring + Match Review/Correction** — gated by `!isProduction` in
+  `src/navigation/NavRoutes.tsx` (the `manual-scoring` / `match-review` routes).
+  Two flows: enter a played-on-paper match from blank, and review/correct an
+  already-scored match (vacate-and-rescore). Reached via the **"Score a Match"**
+  button on a league's Schedule card. **Verify on staging:** score a match from
+  scratch, then open a completed match and correct a game → re-finalize.
+
+---
+
+## 📘 2026-05-30 GLOSSARY — `scoring-system` entry is a DRAFT STUB (important)
+
+**Branch:** `feat/operator-help-phase-1-mac` (glossary definition pass)
+
+`src/glossary/entries/scoring.tsx` now has a `scoring-system` entry, but it's
+a **placeholder stub**. "Scoring System" is the umbrella term for the entire
+modular structure (the top-level Module composing all 9 components, per
+`docs/league-system/README.md`) — Ed flagged it as an important entry that
+needs an **extensive, educational explanation**. It's intentionally left
+without `reviewedByEd`, so `pnpm glossary:progress` lists it as unreviewed.
+
+Other entries (e.g. `total-points`) already link to `#scoring-system`, so the
+stub keeps those links alive until the full write-up lands.
+
+**Same treatment for `win-calculator`** (added 2026-05-31, also a stub in
+`scoring.tsx`) — and the broader decision below.
+
+---
+
+## 📗 2026-05-31 GLOSSARY — Modules/Systems are an instruction manual, not glossary entries
+
+**Branch:** `feat/operator-help-phase-1-mac`
+
+Decision (Ed): the **Module/System explainers** (win-calculator, scoring-system,
+threshold-charts, points-system, team-geometry, handicap-systems,
+handicap-mechanisms, match-format, pairings-generator, tiebreak-system) read
+like an **instruction manual** (what each is, what it does, what it contains,
+every dial) — a *different animal* from the glossary (a dictionary of quick
+"what is this term" defs).
+
+So:
+- Module/system **glossary** entries stay **short** ("what it is" + link out).
+  `scoring-system` and `win-calculator` are intentionally short stubs for this
+  reason; Ed authors the full manual content later.
+- The deep manual is its own artifact. The glossary is a flat A-Z list today
+  (no sections) — a **"Modules" section/tab** (or a separate manual surface)
+  is a **future feature**: needs a `category` field on entries + grouped
+  rendering, or a dedicated Modules page on the Learn hub. Naming lean:
+  **"Modules"** over "Module Systems."
+
+---
+
 ## 🚨 2026-04-21 STAGING TEST — Multiple Critical Failures
 
 **Discovered:** 2026-04-21 during first real-player staging test at the league event
@@ -132,78 +231,6 @@ blocks any meaningful Fargo league use.
 - Staging needs real observability for nights like this — logs are
   easier to read after the fact than to debug in real time while
   players are waiting.
-
----
-
-## ~~🚨 CRITICAL BUG: Team Deletion Destroys Matches~~ ✅ CLOSED 2026-05-29
-
-> **Closed 2026-05-29** — verified fully fixed at BOTH layers, so the
-> "mitigation only — NOT a real fix" note below is now stale:
-> - **DB layer:** migration `20260501000001_team_fks_cascade_to_restrict.sql`
->   (2026-05-01) changed `matches.home_team_id` and `matches.away_team_id`
->   from `ON DELETE CASCADE` → `ON DELETE RESTRICT`. The baseline had them as
->   CASCADE (the original bug). A raw team DELETE that still has matches now
->   ERRORS instead of silently destroying them.
-> - **App layer:** `handleDeleteTeam` in `src/operator/TeamManagement.tsx`
->   pre-flight counts the team's matches (home or away); when any exist it
->   blocks with a clear toast pointing to the Drop Team workflow, and only
->   deletes when the count is zero.
->
-> The "Drop Team" workflow (mark withdrawn + reassign matches to a bye row)
-> is a separate enhancement — not the data-loss bug. Original entry preserved
-> below for reference.
-
-### Original entry
-
-**Discovered:** 2026-04-09 during wizard 2.0 planning
-**Severity:** HIGH — could destroy season data with one click
-**Branch needed:** `fix-team-cascade-deletion`
-
-**The problem:**
-The `matches` table has `ON DELETE CASCADE` on both `home_team_id` and
-`away_team_id` foreign keys. When a team is deleted via
-`src/operator/TeamManagement.tsx` → `handleDeleteTeam`, the database
-silently destroys ALL of that team's scheduled matches for the season.
-This breaks other teams' weekly schedules and orphans season standings
-that reference the destroyed matches.
-
-**Current state (mitigation only — NOT a real fix):**
-- Confirmation dialog message has been updated to honestly warn about
-  match destruction (was previously misleading — only mentioned losing
-  the team and roster)
-- Inline TODO comments added to `src/operator/TeamManagement.tsx` →
-  `handleDeleteTeam` function
-- Cascade warning added to `memory-bank/databaseSchema.md`
-- Critical entry added to `memory-bank/edsPlan.md`
-- Warning callout added to `memory-bank/activeContext.md`
-
-**Possible real fixes (Ed to choose approach):**
-1. **Block deletion entirely** if the team has any matches in the season.
-   Force operator to use a different workflow (replacement, regenerate
-   schedule, etc.). Safest, simplest.
-2. **Soft delete pattern** — add `deleted_at` column to `teams`. Mark as
-   deleted instead of removing the row. Matches stay intact but team is
-   hidden from active views.
-3. **Team replacement workflow** — UI that swaps a deleted team with a
-   replacement team in all match records before deletion happens.
-4. **Combination:** soft delete + replacement workflow + hard delete only
-   when there are no matches.
-
-**Files involved when fixing:**
-- `src/operator/TeamManagement.tsx` (delete handler — has TODO comments)
-- Database schema: `matches` table foreign keys (cascade behavior)
-- Possibly add a `deleted_at` column to `teams` if going soft-delete route
-- Any queries that filter teams may need to add `WHERE deleted_at IS NULL`
-
-**When this matters:**
-- Mid-season team drops (real scenario this needs to handle)
-- Operator mistakes (clicking delete on wrong team)
-- Cleanup of stale/test teams that have associated matches
-
-**Until this is fixed:**
-The honest warning message prevents accidental destruction, but the
-underlying cascade is still dangerous. Treat team deletion as
-destructive and avoid it on real seasons until a proper fix lands.
 
 ---
 
@@ -388,6 +415,45 @@ const mutation = useMutation({
 
 ---
 
+## 37. PWA "Install this app" Button / Instructions (small-device menu)
+
+**Branch needed:** `feat/pwa-install-prompt`
+**Discovered:** 2026-06-07 (while discussing captain onboarding + notifications)
+
+**Goal:** Help players get the app onto their home screen (an *installed PWA*),
+so it feels like a real app — and, down the line, so it can receive push
+notifications (which on iPhone **only** work for installed PWAs; see note
+below).
+
+**Where:** the small-device menu (we already branch UI on small vs large
+device). Add an **"Install this app"** entry that only appears when the app is
+**not** already running installed.
+
+**Detection (reliable):**
+- Running as installed PWA right now → `window.matchMedia('(display-mode:
+  standalone)').matches` is `true` (iOS legacy: `navigator.standalone`). If
+  true, **hide** the install entry.
+
+**The catch — one button, two behaviors by platform:**
+- **Android / desktop Chrome/Edge:** capture the `beforeinstallprompt` event,
+  stash it, and fire it from our button → real **one-tap install**.
+- **iPhone (Safari):** Apple blocks programmatic install — **instructions only**
+  ("tap Share → *Add to Home Screen*", with a little graphic). Must be Safari;
+  iOS Chrome/Firefox can't add to home screen → tell them to open in Safari.
+
+**Scope note:** small, but it's really two mini-features sharing a slot (Android
+prompt vs. iOS instructions) + a couple of edge cases. Don't nag on load — menu
+entry only.
+
+**Related (NOT committed — Ed deciding):** push notifications to captains when a
+join request lands. Hesitant until users ask; Ed will poll his LO buddies. PWA
+web-push is solid on Android/desktop, **install-gated on iPhone** (hence this
+install button matters first). SMS (Twilio) is the more reliable "buzz them
+outside the app" channel but costs per-text. Decide push only after the install
+question is answered.
+
+---
+
 ## 3. Automated Championship Date Reminders
 
 **Branch needed:** `championship-date-reminders`
@@ -421,27 +487,6 @@ for full details.
 
 ---
 
-## ~~4. Better Dashboard Button on Home Page~~ ✅ CLOSED 2026-05-17
-
-> **Closed 2026-05-17** — added a full-width "Go to My Dashboard"
-> primary button at the top of `src/home/Home.tsx`, visible only when
-> the user is signed in (uses `useUser().isLoggedIn`). Signed-out
-> users still see the Explore cards alone. Dashboard is now one tap
-> from the home page; no need to dig into the hamburger menu.
-> Original entry preserved below for reference.
-
-### Original entry
-
-**Discovered:** 2026-04-17
-
-**Problem:** The home page needs a more prominent / better-designed button
-to navigate to the operator dashboard. Current one is easy to miss.
-
-**Fix:** Redesign the dashboard navigation on the home page to be more
-visible and obvious.
-
----
-
 ## 5. Refactor TeamManagement.tsx (too big)
 
 **Branch needed:** `refactor-team-management`
@@ -466,54 +511,6 @@ bulk actions, table number assignments.
 
 ---
 
-## ~~6. Wizard: Placeholder Captain Not Auto-Assigned + Dropdown Stale~~ ✅ CLOSED 2026-05-17 (PR #79)
-
-> **Closed 2026-05-17** — already fixed by PR #79 (`d4d110d`,
-> 2026-04-25, six days after this item was filed). The commit
-> description literally says: "Mirror the pattern from
-> TeamEditorModal: keep locally-created placeholders" — fixes both
-> parts of the bug.
->
-> - **Part 1 (PP not assigned as captain)** — `MemberCombobox.tsx`
->   line ~268 now calls `onValueChange(newMember.id)` on PP creation,
->   auto-selecting the new placeholder. The wizard flow then treats
->   it as the selected captain on the next submit.
-> - **Part 2 (stale dropdown)** — `CreatePlaceholderModal.tsx` calls
->   `queryClient.invalidateQueries({ queryKey: queryKeys.members.all })`
->   on PP-create success, plus the `onPlaceholderCreated` callback
->   lets the parent inject the new player into its local list
->   immediately. So the new PP is visible without a page refresh.
->
-> No code change in this PR — just closing the entry. Triage from
-> the agent triage pass missed this one because it didn't search
-> git history for the specific fix commit.
-> Original entry preserved below for reference.
-
-### Original entry
-
-**Discovered:** 2026-04-19
-**Severity:** Low — has a workaround (refresh the page)
-
-**Problem:** In the league/season creation wizard, when creating a placeholder
-player on the fly to set as team captain:
-1. The PP is created successfully, but it is NOT assigned as the team captain
-   like it should be.
-2. The newly created PP does not appear in the captain dropdown until the
-   page is refreshed (cache isn't invalidated after the create mutation).
-
-**Workaround:** Refresh the page after creating the PP, then manually select
-them from the dropdown as captain.
-
-**Likely fix:**
-- After `createPlaceholderMember()` mutation succeeds, invalidate the relevant
-  members/captains query keys so the dropdown refetches.
-- Wire the auto-captain-assignment: on PP create success inside the captain
-  flow, also call the "set captain" mutation with the new PP's id.
-
-**Files likely involved:** _(truncated in restoration — you filled these in originally; add them back when you revisit this item)_
-
----
-
 ## 🛠️ Tool: League Intake Agent (use when onboarding new LOs)
 
 When you sit with a league operator (like Ozzy) and they describe a league that may or may not fit your existing modular Scoring System: use the **League Intake Agent**. It's a Claude session loaded with the modular framework docs that intakes the LO's description and maps it to the 9 Modules.
@@ -523,91 +520,6 @@ When you sit with a league operator (like Ozzy) and they describe a league that 
 **TL;DR:** `cd ~/Programming/rackem-leagues` → `claude` → paste the prompt from `docs/league-system/intake-agent-prompt.md` → hand keyboard to the LO or describe their league yourself. Output is a structured table flagging each Module as ✓ existing variant / ⚠ new variant needed / 🔴 new Module needed.
 
 **The prompt itself:** [`docs/league-system/intake-agent-prompt.md`](docs/league-system/intake-agent-prompt.md)
-
----
-
-## ~~7. New Org Not Visible on Dashboard After LO Application~~ ✅ CLOSED 2026-05-17
-
-> **Closed 2026-05-17** — root cause was subtler than first guessed.
-> The two mutations (`useCreateOrganization`, `useUpdateMemberRole`)
-> WERE calling `invalidateQueries`, but `invalidateQueries`'s default
-> behavior only refetches *active* queries. The dashboard's org-list
-> query is NOT mounted during the LO application flow, so the cache
-> was marked stale but never actually refetched. The user navigates
-> to /dashboard, the component mounts, and there's a brief window
-> where the stale cache renders before the refetch completes —
-> hence "doesn't appear until refresh."
->
-> Fixed by switching both mutations to `invalidateQueries({...,
-> refetchType: 'all' })` inside async `onSuccess` handlers that
-> await the refetch. Forces inactive-query refetches AND holds the
-> mutation open until the cache is genuinely fresh. The previous
-> 500ms `setTimeout` hack in the LO application's `handleSubmit`
-> was removed — there's no race left to paper over.
->
-> Files touched: `useOrganizationMutations.ts`,
-> `useMemberMutations.ts`, `LeagueOperatorApplication.tsx`.
-> Original entry preserved below for reference.
-
-### Original entry
-
-**Discovered:** 2026-05-02 during modular-league-system test pass
-**Severity:** Low — has a workaround (refresh the page)
-**Branch:** future bugfix branch
-
-**Problem:** After completing the League Operator application form, the
-flow redirects to the dashboard. The just-created org doesn't appear in
-the org list until the page is manually refreshed.
-
-**Likely cause:** Cache isn't invalidated after the create-org mutation
-finishes — TanStack Query's stale data wins until next refetch.
-
-**Likely fix:** In whichever mutation handles "complete LO application
-+ create org" (probably `createOrganization` or `becomeOperator`),
-add `queryClient.invalidateQueries({ queryKey: ['organizations'] })`
-(or whatever key the dashboard's org-list query uses) on success.
-
-**Files likely involved:** the LO application submit handler + the
-dashboard's org-list query.
-
----
-
-## ~~8. Org Dashboard Loads Scrolled Below the Top~~ ✅ CLOSED 2026-05-17
-
-> **Closed 2026-05-17** — root cause: React Router doesn't reset
-> `window.scrollTo(0, 0)` on navigation by default, so coming from a
-> scrolled-down page (e.g. a long player-management list) would
-> land the user partway down the OperatorDashboard. Fixed with a
-> targeted `useEffect(() => window.scrollTo(0, 0), [orgId])` on the
-> `OperatorDashboard` component. Per-page fix instead of a global
-> `<ScrollToTop>` handler — some pages (wizards, scroll-anchor
-> navigation) intentionally manage their own scroll state and
-> shouldn't be force-reset.
->
-> Files touched: `src/operator/OperatorDashboard.tsx`.
-> Original entry preserved below for reference.
-
-### Original entry
-
-**Discovered:** 2026-05-02 during modular-league-system test pass
-**Severity:** Low (cosmetic)
-**Branch:** future bugfix branch
-
-**Problem:** When navigating to an org's operator dashboard, the page
-loads scrolled partway down — the user has to scroll up to see the
-header / top of the screen.
-
-**Likely cause:** Some on-mount effect (focus, scrollIntoView, default
-section anchor) is jumping past the top, OR a previous page's scroll
-position is being restored without resetting.
-
-**Likely fix:** Add `window.scrollTo(0, 0)` on the operator dashboard
-component mount, OR audit any `useEffect` that calls `scrollIntoView`
-or sets `element.scrollTop`.
-
-**Files likely involved:** `src/operator/OperatorDashboard.tsx` (or
-wherever the org dashboard lives) — check for scroll-related effects
-on mount.
 
 ---
 
@@ -675,109 +587,6 @@ of home/away role. The team locking SECOND finds the lineup state
 fully populated and prep_match runs cleanly. The first locker may be
 racing the realtime visibility of their own commit OR the auth-context
 visibility of the second team's lineup row.
-
----
-
-## ~~10. Scoreboard Number Layout Confusing — Threshold Duplicated~~ ✅ CLOSED 2026-05-17 (PR #99)
-
-> **Closed 2026-05-17** — verified resolved by PR #99 (unified scoreboard
-> ships `UnifiedScoreboard.tsx`, reads `home_games_won` / `away_games_won`
-> directly from the match row; the redundant threshold display is gone).
-> Original entry preserved below for reference.
-
-### Original entry
-
-**Discovered:** 2026-05-02 during modular-league-system test pass
-**Severity:** Low (cosmetic / UX)
-**Branch:** future bugfix branch — UI tweak only
-
-**Problem:** The scoreboard currently displays threshold info as
-`{threshold}/{games left needed to win}` — e.g. `11/8` for a team
-needing 11 wins that has 8 to go. The threshold (`11`) is also shown
-on its own ABOVE this number. Reading the slash-separated pair as
-"out of" is the natural user instinct ("11 out of 8"?), which makes
-the display read backwards from the LO's expectation.
-
-**Proposed fix:** Switch to `{games won}/{threshold}` — e.g. `3/11`
-for a team that's won 3 games and needs 11 to win the match. Drops
-the redundant threshold-above + reads naturally as "3 out of 11."
-
-Alternative: drop the slash format entirely and just show the
-single most-relevant number ("8 to go") with the threshold as a
-subtitle.
-
-**Files likely involved:**
-- `src/components/scoring/ThreeVThreeScoreboard.tsx`
-- `src/components/scoring/FiveVFiveScoreboard.tsx`
-- `src/components/scoring/TenSevenScoreboard.tsx`
-- Any shared score-display component they pull from
-
----
-
-## ~~11. Architectural Decision — Where Should the Live Scoreboard Read From?~~ ✅ CLOSED 2026-05-17 (PR #99)
-
-> **Closed 2026-05-17** — decision made + implemented in PR #98/#99.
-> `home_games_won` / `away_games_won` on the `match` row are the
-> running totals; both `MatchEndVerification` and the live scoreboard
-> read from there. Architectural debate resolved.
-> Original entry preserved below for reference.
-
-### Original entry
-
-**Discovered:** 2026-05-02 during modular-league-system test pass
-**Severity:** Architectural — discuss with Jack before deciding
-**Branch:** discussion first; decision could be a follow-up branch
-
-**Context:**
-Phase 5 Unit 5.5 of the modular-league-system v2 plan introduced
-"match record is the source of truth" — `home_games_won` /
-`away_games_won` / `home_points_earned` / `away_points_earned`
-columns get updated per-game by `updateMatchRunningTotals` after
-every confirmed scoring mutation.
-
-The plan spec only refactored TWO consumers to read from the match
-row:
-  - `MatchEndVerification` (final-screen scoreboard)
-  - `useSpectateMatch` (third-party spectator view)
-
-The LIVE player-scoring view (`useMatchScoring` → `ScoreMatch.tsx`)
-was NOT switched. It still does an in-memory recompute from
-`match_games` rows via `getTeamStats` / `calculatePoints`. The two
-should agree (the writer keeps the match row in sync), but only
-because they're computed from the same underlying data — not because
-the live view actually reads the match row.
-
-**Tension:**
-- Pro current setup: live scoreboard is correct by construction
-  (counting rows you can see). If the writer is silent, the match
-  row is wrong but the player-witnessed scoreboard is right.
-- Con current setup: if the writer breaks, the live ticker LOOKS
-  fine but the match row is wrong — only surfaces at the
-  post-completion audit. Bit me 2026-05-02 when the calculator
-  registry was empty at runtime: live scoreboard kept ticking,
-  match row stayed at 0/0/0/0, audit flagged the divergence at
-  match-end.
-
-**What's done about the writer reliability:**
-- Calculator registry now self-registers at module load (commit
-  `042978c`). The empty-registry bug is fixed.
-- prep_match RPC also flips status to 'in_progress' so the matches
-  row reflects the right state during play (commit `80c53f6`).
-
-**Question to discuss with Jack:**
-- Keep live scoring on the in-memory recompute (option 2 — current
-  state)? "Match row is finalization truth, live ticker is derived
-  in real-time and the writer keeps them aligned."
-- OR finish the architectural refactor — switch `useMatchScoring`
-  to read from the match row too (option 1)? "One source of truth
-  end-to-end."
-
-Option 2 is what's shipped now. Option 1 is meaningful work
-(~1 hour, touches the live-scoring hot path) and adds latency
-between scoring write → DB round-trip → re-render. Audit divergence
-in dev caught the writer bug; same audit will catch any future
-writer bugs in prod, so option 2 + monitor `app_logs` may be
-enough.
 
 ---
 
@@ -901,169 +710,6 @@ games are excluded by design — Phase 5 Unit 5.5 locked invariant).
 
 ---
 
-## ~~14. Live-Scoring Page Doesn't Clear Completed Matches~~ ✅ CLOSED 2026-05-17 (PR #99)
-
-> **Closed 2026-05-17** — verified resolved. `getLiveMatchesForLeague`
-> and `getLiveMatchesForMember` in `src/api/queries/matches.ts` both
-> filter with `.neq('status', 'completed')`, so completed matches no
-> longer linger on the live-scoring index.
-> Original entry preserved below for reference.
-
-### Original entry
-
-**Discovered:** 2026-05-02 during modular-league-system test pass
-**Severity:** Medium — visible UX bug (stale data showing)
-**Branch:** future bugfix branch — likely query invalidation gap
-
-**Problem:** After a tied match was fully resolved (regular games + 3
-tiebreaker games + final completion), the LIVE scoring page kept
-showing the completed match — including the "TIEBREAKER REQUIRED"
-banner and the tied scoreboard — even though the match had been
-moved to status='completed' in the DB.
-
-The stale view cleared when the user finished a SECOND match (a
-non-tied one), suggesting some invalidation path fires on completion
-of the OTHER match but not on the originally-completed tied match.
-
-**Hypothesis:** Query-invalidation gap. The "live matches" list (or
-its underlying TanStack Query cache) isn't being invalidated when a
-match transitions to status='completed'. The fact that another
-completion later cleared it suggests there IS an invalidation that
-fires somewhere — but it might be coupled to the user's act of
-completing the new match (e.g. fired from MatchEndVerification's
-mutation onSuccess) rather than from the tie's tiebreaker resolution
-flow specifically.
-
-**Investigation hints:**
-- Check the query key the live-scoring list uses
-  (`getLiveMatchesForLeague` / `getLiveMatchesForMember` —
-  `src/api/queries/matches.ts`)
-- Trace the post-completion invalidation in MatchEndVerification —
-  does it fire for tiebreaker-resolved completions vs regular
-  completions equivalently?
-- Check whether the tiebreaker's auto-completion path (when winner
-  emerges from 3 short-race games) goes through the same code that
-  invalidates queries on a normal completion
-
-**Pre-existing or new?** Likely pre-existing — our modular-league
-work touched MatchEndVerification's completion update + per-game
-running totals, but didn't touch the "what live matches do I have"
-query layer.
-
-**Files likely involved:**
-- `src/api/queries/matches.ts` (the live-matches queries)
-- `src/components/scoring/MatchEndVerification.tsx` (where
-  completion mutates run; check whether tiebreaker-resolution path
-  invalidates the same queries as regular completion)
-- Whatever component renders the live-scoring landing page
-
----
-
-## ~~15. MatchEndVerification Re-fires Completion on Already-Completed Match~~ ✅ CLOSED 2026-05-17 (PR #100)
-
-> **Closed 2026-05-17** — verified resolved by PR #100. The exact guard
-> suggested in the original entry (`if (match?.status === 'completed') return;`)
-> was added near the top of the completion `useEffect` in
-> `src/components/scoring/MatchEndVerification.tsx`. Re-fires on already-
-> completed matches no longer happen.
-> Original entry preserved below for reference.
-
-### Original entry
-
-**Discovered:** 2026-05-02 during modular-league-system test pass
-**Severity:** Low — DB uniqueness constraint catches the duplicate, but
-console noise + potential side effects
-**Branch:** future bugfix branch — small guard fix
-
-**Problem:** When MatchEndVerification re-mounts (re-render, navigation,
-focus change) on a match where `status='completed'` already, the
-completion useEffect re-runs because `bothVerified=true` is still
-true (verification flags persist on the match row).
-
-The mutation chain re-fires:
-1. updateMatchMutation (idempotent, just rewrites the same values)
-2. createGamesMutation (NOT idempotent — fails with 409 because
-   tiebreaker games 19/20/21 already exist):
-
-```
-POST /rest/v1/match_games... 409 (Conflict)
-[ERROR] Failed to complete match
-{"error":"Failed to create match games: duplicate key value violates
-  unique constraint \"match_games_match_id_game_number_key\""}
-```
-
-**Pre-existing:** the completion useEffect has always lacked a guard
-against re-firing on completed matches. This bug isn't caused by the
-modular-league-system work, but the realtime subscription cycling
-(item 12 + WebSocket health issues) causes more re-mounts than
-normal, which surfaces this latent bug more often.
-
-**Likely fix:** add `if (match?.status === 'completed') return;` near
-the top of the completeTheMatch useEffect, before the `bothVerified`
-check. Or: keep `completionStartedRef.current` from being reset when
-the match is already completed (don't run the
-`!bothVerified && completionStartedRef.current = false` reset block
-if status is 'completed').
-
-**Files likely involved:**
-- `src/components/scoring/MatchEndVerification.tsx` (the auto-complete
-  useEffect at line ~221)
-
----
-
-## ~~16. Team-Builder UX — Lineup-Size Slots + "Add Player" for Substitutes~~ ✅ CLOSED 2026-05-17
-
-> **Closed 2026-05-17** — `TeamEditorModal` now renders exactly the
-> slots needed: the lineup baseline (`lineupSize - 1`, since captain
-> takes one of the active lineup spots), PLUS every already-filled
-> slot, PLUS one extra empty dropdown at the bottom. As the user
-> fills that trailing dropdown, a new empty one appears below it.
-> Once the roster reaches `rosterSize - 1` (the hard cap), the
-> trailing empty disappears too.
->
-> No "+ Add Player" button — the empty dropdown itself is the
-> affordance, killing one click per substitute add. Pure derived
-> render from `playerIds.filter(Boolean).length` — no state, no
-> useEffect, no opportunity for stale visible-count drift.
->
-> Wiring: new `lineupSize` prop on `TeamEditorModal`; `TeamManagement`
-> passes `leaguePrefs.lineup_size`; `MyTeams` (captain side) gets
-> `editData.lineupSize` (the `getCaptainTeamEditData` query was
-> extended to also fetch `lineup_size` from `resolved_league_preferences`).
->
-> Files touched: `src/operator/TeamEditorModal.tsx`,
-> `src/operator/TeamManagement.tsx`, `src/player/MyTeams.tsx`,
-> `src/api/queries/teams.ts`.
-> Original entry preserved below for reference.
-
-### Original entry
-
-**Discovered:** 2026-05-03 during modular-league-system test pass
-**Severity:** Enhancement — current behavior renders all max_roster_size
-slots up front
-**Branch:** future UX branch
-
-**Idea:** Instead of rendering all `max_roster_size` slots at team
-creation time (now up to 20 after the cap bump), show only the
-`lineup_size` required slots initially with a "+ Add Player" button
-to add substitutes. Cleaner empty state for teams that haven't yet
-filled their substitute bench.
-
-Affects the team-creation + team-edit forms. Most BCA-style leagues
-have 5-8 active players + a few subs; a 20-slot grid up front is
-visually heavy for the typical case.
-
-**Note:** roster cap was bumped from 12 → 20 in this branch since
-the user mentioned their leagues sometimes have larger rosters. DB
-schema already allows up to 30.
-
-**Files likely involved:**
-- Team creation wizard / team editor
-- `src/operator/TeamManagement.tsx` and the modal that opens for
-  add/edit team
-
----
-
 ## 17. Comprehensive Warning System + LO Feedback Loop on Presets
 
 **Discovered:** 2026-05-03 conversation
@@ -1140,264 +786,6 @@ collection once there's enough volume.
 - `src/wizards/league-v2/steps/ThresholdSourceStep.tsx` already has
   the "calibrated vs manual" classification; feedback could refine
   the classifier's confidence over time
-
----
-
-## ~~18. Unified Scoreboard — One Component for All Configs~~ ✅ CLOSED 2026-05-17 (PR #99)
-
-> **Closed 2026-05-17** — verified resolved by PR #99. New
-> `UnifiedScoreboard.tsx` is the single component for all configs;
-> the routing no longer reaches the legacy `ThreeVThreeScoreboard` /
-> `FiveVFiveScoreboard` / `TenSevenScoreboard` trio (the old files
-> still exist on disk but are dead code — separate cleanup task).
-> Original entry preserved below for reference.
-
-### Original entry
-
-**Discovered:** 2026-05-03 during 5v5 Fargo + games-won test pass
-**Severity:** Architectural / next-branch brainstorm
-**Branch:** dedicated brainstorm + plan branch (Ed flagged this as
-his next focus after the modular-league-system branch lands)
-
-**Problem:** We currently have multiple scoreboard components —
-`ThreeVThreeScoreboard`, `FiveVFiveScoreboard`, `TenSevenScoreboard`,
-`TiebreakerScoreboard` — and `ScoreMatch.tsx` routes between them
-based on `(handicap_type, lineup_size, isTiebreakerMode)`. Every
-new combo (e.g. Fargo + games-won) potentially needs either a new
-scoreboard variant or a router exception. This is the n×m matrix
-problem: it doesn't scale, and surface-area bugs (wrong numbers,
-mis-routed display, missing thresholds) compound with each new
-preset.
-
-The Fargo + games-won issue today was a symptom: the router
-checked `handicap_type === 'fargo'` first and dispatched to the
-points-mode scoreboard, even though the league uses games as the
-win condition. A small guard (`&& winCondition === 'points'`) was
-applied as a quick fix in `src/player/ScoreMatch.tsx` so testing
-can continue. The structural fix is the unified scoreboard
-described below.
-
-**Proposed approach (Ed's framing 2026-05-03):**
-
-Build ONE live scoreboard component that:
-
-1. **Always tracks both games and points** — we already have both
-   on the matches row (`home_games_won` / `home_points_earned` etc.
-   from Phase 5 Unit 5.5 running totals). No conditional data
-   gathering — every match feeds both axes.
-2. **Reads the three thresholds (to-win / to-tie / to-lose) per
-   side** from the matches row (`home_to_win`, `home_to_tie`,
-   `home_to_lose`, and the matching `away_*` set). These are
-   already populated regardless of mode — for games-mode they're
-   game counts, for points-mode they're point totals. The
-   thresholds are mode-neutral; the SCOREBOARD picks which axis
-   they apply to.
-3. **Reads `win_condition` from the resolved league preferences**
-   to decide which axis (games or points) gets the "primary"
-   display position — slightly larger / featured. The other axis
-   stays visible but smaller.
-4. **Shows both equally OR scaled by win_condition.** Either is
-   acceptable; "scaled" is Ed's preference because it matches how
-   players actually think about the match ("we need 11 to win" is
-   a single number, the points are secondary trivia).
-
-**Net effect:** one scoreboard handles BCA 3v3 (games), BCA 5v5
-(games + points), Fargo 5v5 points-mode (points + games), Fargo
-5v5 games-mode (games + points), AND every off-preset combo —
-because all of them have both axes and a `win_condition` flag.
-
-**What this kills:**
-- Per-format scoreboards (consolidate to one)
-- Routing exceptions in `ScoreMatch.tsx` (probably collapses to
-  `isTiebreakerMode ? Tiebreaker : Unified`)
-- Future "we need a new scoreboard for this combo" tickets
-
-**What this preserves / extends:**
-- Tiebreaker scoreboard stays separate (different game-set, not a
-  threshold display)
-- Mid-match "you've clinched" detection (currently unbuilt — see
-  memory `project_mid_match_clinch_detection.md`) — a unified
-  scoreboard is the natural place to surface this when built
-- Player rows / lineup interactions (swap player, vacate, etc.)
-  stay shared between unified scoreboard and tiebreaker
-
-**Adjacent calculator-feature idea (Ed 2026-05-03):**
-Add a configurable "benchmark" param to
-`accumulate_with_milestone_jumps`. Today the milestone (where the
-1.5x jump kicks in) is implicitly the tie-threshold — they're
-coupled. A benchmark param would let an LO set the jump game
-independently ("jump kicks in at game 10 regardless of where the
-tie threshold lands"). Surfaces in the wizard's calculator-params
-editor and on the unified scoreboard as the milestone-progress
-cue. Sized as "small extension" once the unified-scoreboard
-shape is settled — don't add this before the scoreboard work
-or we'll have two display paths to update.
-
-**Sibling concern — Scoring Modal (`ScoringDialog`) needs the same
-treatment (Ed 2026-05-03):**
-
-The win-confirmation modal has the same dispatch problem the
-scoreboard had: today it gates the loser-balls-pocketed input on
-`handicap_type === 'fargo'`, which over-collected for any Fargo
-league whose calculator doesn't actually consume per-game ball
-counts (e.g. Fargo + games-won + `accumulate_with_milestone_jumps`).
-A tactical guard was applied 2026-05-03: ScoringDialog now takes
-a `pointsCalculator` prop and only renders/requires the ball-count
-input when `pointsCalculator === 'accumulated_per_game'`. ScoreMatch
-reads the value from `match.system_snapshot.points_calculator`.
-
-The structural fix in this branch should generalize the modal the
-same way as the scoreboard: ONE dialog driven by the active
-calculator's declared per-game inputs, not by `handicap_type`.
-
-Ed's richer modal vision (2026-05-03):
-- Each side (winner / loser) has its own configurable point range
-  per game — e.g. winner can earn 5–20 points, loser can earn 2–12,
-  driven by inputs the LO turns on/off per league.
-- Two independent point-award systems running side-by-side, either
-  feeding one or both teams. Examples:
-    - System A: winner gets a flat point per game won.
-    - System B: bonus points for break-and-run, golden break, etc.
-    - Total awarded = A + B per side.
-- Each tracked field is on/off at the league level. Today's flags
-  (`break_and_run`, `golden_break`, `runout`, `loser_balls_pocketed`,
-  `break_fouled`, `win_by_forfeit`) become a configurable set
-  rather than a fixed list. New fields (innings, time, fouls per
-  rack, etc.) plug in via the same mechanism.
-- Modal renders only the inputs the active league/calculator
-  actually consumes — no over-collection, no submit-disabled
-  mystery for inputs that don't matter.
-
-**Plumbing implications:**
-- Calculator interface gains a `requiredPerGameInputs` declaration
-  (or similar — exact shape is the brainstorm's job). Could be a
-  static array on the calculator module, or a method that takes
-  the params and returns the input list.
-- `match_games` schema may need new generic columns or a JSONB
-  field for "calculator-specific per-game data" so the modular
-  inputs aren't pinned to today's column list.
-- League-preferences gain per-flag on/off toggles for the always-
-  visible / role-conditional fields (so an LO can turn off
-  break-and-run tracking for a league that doesn't reward it).
-
-**Why fold into the unified-scoreboard branch:**
-- Scoreboard and modal are tightly coupled (modal collects, board
-  displays). Both dispatch on `handicap_type` today; both should
-  dispatch on the active calculator + win_condition.
-- Doing them together means one schema migration, one set of
-  calculator-interface changes, and one consistent display story
-  for the BCA-pitch demo.
-- Today's `accumulated_per_game` ball-count input is the only
-  example of a calculator-driven per-game input — the brainstorm
-  is the moment to generalize before more accumulate.
-
-**Pattern: "handicap_type as proxy for scoring system" conflation
-(Ed 2026-05-03):**
-
-The same root issue surfaced three times in one testing session.
-Each time, code that should have dispatched on the active points
-calculator dispatched on `handicap_type === 'fargo'` instead —
-silently activating a Fargo-flavored legacy path even when the
-league's actual calculator was something else.
-
-Instances found:
-
-1. **Scoreboard component routing** (`src/player/ScoreMatch.tsx`
-   ~line 785) — `handicap_type === 'fargo' && fargoTotals` chose
-   TenSevenScoreboard for any Fargo league, even Fargo + games-won.
-   Fixed 2026-05-03 by adding `&& winCondition === 'points'`.
-2. **Scoring modal ball-count input** (`src/components/scoring/
-   ScoringDialog.tsx`) — `handicap_type === 'fargo'` rendered the
-   loser-balls-pocketed input (and gated Submit on it) regardless
-   of whether the active calculator actually consumed it. Fixed
-   2026-05-03 by adding a `pointsCalculator` prop and gating on
-   `pointsCalculator === 'accumulated_per_game'`.
-3. **Scoreboard points display** (`src/player/ScoreMatch.tsx`
-   ~line 682 and ~line 827) — `handicap_type === 'fargo'` ran
-   `calculateFargoMatchTotals` (the legacy 10-7 formula) regardless
-   of which calculator was active. The match row's
-   `home_points_earned` was correct (calculator-correct via
-   `computeMatchRunningTotals`), but the scoreboard prefer-read
-   the legacy `fargoTotals.homePoints`, so it displayed "10 per
-   win" for an `accumulate_with_milestone_jumps` league. Fixed
-   2026-05-03 by reading `match.home_points_earned` /
-   `match.away_points_earned` directly in the FiveVFiveScoreboard
-   branch. ThreeVThreeScoreboard branch still uses legacy
-   `calculatePoints` — same fix needed when 3v3 path is
-   exercised in the unified-scoreboard work.
-
-**Structural fix in this branch:** every display-layer dispatch
-(modal, scoreboard, end-of-match-recap) should read from the
-match row's calculator-correct fields (`home_points_earned`,
-`away_points_earned`, `home_games_won`, `away_games_won`) — those
-ARE the source of truth post-Phase 5 Unit 5.5. Legacy parallel
-computation paths (`calculateFargoMatchTotals`,
-`calculateBCAPoints`, `calculatePoints`) should be deleted, not
-kept "for compatibility." Compatibility through abstraction is
-fine; compatibility through parallel paths that drift is the bug.
-
-The mental shorthand to break: `handicap_type === 'fargo'` does
-NOT mean "this league uses 10-7 scoring." It means "this league
-applies handicap via Fargo ratings." The scoring system is the
-calculator. They're orthogonal — by design — and any code that
-treats them as synonyms is wrong.
-
-**Open questions for the brainstorm:**
-- For Fargo points-mode, do we still need to show start_points
-  prominently (the "this team starts at +X" cue at lineup lock)?
-  Yes probably — but as part of the unified scoreboard's points
-  row, not its own component.
-- Calculator-specific cues that leak onto today's scoreboards
-  should be gated behind the active `points_calculator`. Examples
-  found during 2026-05-03 testing:
-    - The `1.5` floating on the scoreboard is the
-      `multiplier_at_tie` param from `accumulate_with_milestone_jumps`
-      — only meaningful for that calculator; should be hidden for
-      `linear_above_threshold`, `accumulated_per_game`, and `null`.
-    - The "11 in the points column" for Fargo + games-won was
-      `fargoTotals.homePoints` accumulating via points-mode logic
-      even though the league decides by games. Unified scoreboard
-      should derive points from `match.home_points_earned`
-      (already maintained by the per-game running-totals pipeline)
-      and skip start-points negotiation entirely when win_condition
-      is 'games'.
-- Tied-match display: the threshold trio (to-win / to-tie / to-
-  lose) on the unified scoreboard naturally surfaces tie territory.
-  Item 13 (tied-match scoreboard should show more info) might
-  fold into this work.
-- What does the "primary axis" look like visually? Bigger font?
-  Different background? A "TO WIN" label above just the primary
-  axis? Wireframes in the brainstorm.
-- Layout footprint: 3v3 has 3 player rows, 5v5 has 5. Does the
-  unified scoreboard auto-flex or do we have layout variants per
-  lineup_size? (Probably auto-flex — the scoreboard chrome is the
-  same shape, only the player-row count differs.)
-
-**Files likely involved (when the brainstorm becomes a plan):**
-- New: `src/components/scoring/UnifiedScoreboard.tsx` (replaces
-  three of the four current scoreboards)
-- `src/player/ScoreMatch.tsx` routing collapses
-- `src/components/scoring/ThreeVThreeScoreboard.tsx`,
-  `FiveVFiveScoreboard.tsx`, `TenSevenScoreboard.tsx` — likely
-  deleted
-- `src/types/match.ts` — already has the threshold fields with
-  mode-neutral names (`home_to_win` etc.); good foundation
-- Resolved-prefs reader (`src/api/queries/leaguePreferences.ts` or
-  `useResolvedLeaguePrefs`) already exposes `win_condition` and
-  `lineup_size` — no schema work needed
-
-**Why this is the right next branch:**
-- The modular-league-system branch made the DATA layer mode-neutral
-  (mode-neutral threshold column names, both axes always tracked).
-  The DISPLAY layer is now the last place where "BCA vs Fargo vs
-  10-7" is hardcoded as separate components. Aligning the display
-  with the data is the natural finish line.
-- Item 10 (slash format confusion), Item 13 (tied-match info), and
-  the Fargo-games-won routing fix all fold into this single piece
-  of work.
-- BCA-pitch demo: a single unified scoreboard is a stronger demo
-  than "we have four scoreboards, let me show you which one fires
-  for this league."
 
 ---
 
@@ -1495,46 +883,6 @@ dashboard. Match data is already correct on the server.
 
 ---
 
-## ~~20. Dark Mode Breaks Date Picker — For Jack~~ ↗ MOVED to LIST_FOR_JACK.md #18 (2026-05-17)
-
-> **Moved 2026-05-17** — owner was always Jack ("design / styling pass"),
-> so it belongs on his list rather than mine. Same entry copied to
-> LIST_FOR_JACK.md #18 with the adjacent dark-mode bullet (scoreboard
-> player-drawer names invisible) preserved. Original entry preserved
-> below for reference.
-
-### Original entry
-
-**Discovered:** 2026-05-04 during unified-scoreboard smoke-testing
-**Severity:** Medium (functionally usable but visually broken)
-**Owner:** Jack (design / styling pass)
-
-**Symptom:** In dark mode, the date picker is essentially unusable —
-the day numbers in the calendar grid are invisible against the
-background. Only a single date (presumably the currently-selected or
-hovered one) is visible at a time. User can't see which dates are
-available, weekends, today's marker, etc.
-
-**Suspected cause:** the calendar component's text color likely
-hardcoded to a light value (or inherits a light theme color) without
-a dark-mode variant defined. Background-text contrast collapses in
-dark mode.
-
-**Likely fix surface:** `src/components/ui/calendar.tsx` (the shadcn
-Calendar primitive) and/or any wrapper component that uses it. Audit
-the day-cell text color tokens — should use `text-foreground` /
-`text-muted-foreground` (theme-aware) rather than a hardcoded
-`text-gray-900` or similar.
-
-**Adjacent dark-mode issue (also for Jack):** unified scoreboard's
-player-drawer name colors. Per Ed 2026-05-04 smoke-test: "in dark
-mode the away team player names in the drawer are invisible. and in
-light mode the home team is invisible." Same root cause likely — a
-hardcoded color that doesn't flip per theme. Worth folding into the
-same dark-mode pass.
-
----
-
 ## 21. Match-Prep Failure Routes to "Back to Schedule" Instead of Try-Again
 
 **Discovered:** 2026-05-04 during unified-scoreboard smoke-testing,
@@ -1564,172 +912,6 @@ normally on their device.
 classifications route to "back to schedule" vs "try again", and
 whether a successful opponent-side prep can leave the loser side in
 an unrecoverable state.
-
----
-
-## ~~22. Re-asks for Fargo Initial-Points Confirmation After Going Back to Lineup~~ ✅ CLOSED 2026-05-17 (obsolete — negotiation hidden)
-
-> **Closed 2026-05-17** — obsolete. The Fargo start-points negotiation
-> flow that this bug was filed against is now hidden by default
-> (`AUTO_AGREE_START_POINTS = true` in
-> `src/hooks/lineup/useFargoStartPointsNegotiation.ts`). The home
-> client's initial write stamps BOTH `_to_lose` columns, so
-> `bothConfirmed=true` on first render → the `FargoStartPointsCard`
-> self-hides → there's no UI to re-ask. The math still applies; only
-> the human-in-the-loop step is gone.
->
-> Reason for hiding: the negotiation was added so captains could
-> reconcile our Fargo math against BCAPL's official FargoRate app in
-> live matches. No league actually adopted the flow, so the
-> verification never happened. Trust the math; keep the negotiation
-> code as a bandaid (flip the flag to `false` to bring it back if
-> the math turns out to be off).
-> Original entry preserved below for reference.
-
-### Original entry
-
-**Discovered:** 2026-05-04 during unified-scoreboard smoke-testing,
-multi-device captain scenario.
-**Severity:** Medium (annoying but not data-corrupting)
-**Owner:** unassigned
-
-**Symptom:** After hitting the issue-21 prep failure and routing
-back to schedule → back to lineup, the lineup page asked the user
-to re-confirm the Fargo initial points credit, even though the
-opposing captain had already confirmed it (and was already in the
-scoring page on their device).
-
-**Why this is wrong:** captain-confirmation is a *negotiation* on
-the start-points credit between the two teams. Once both sides have
-agreed and prep_match has run, the credit is locked into the match
-row's `*_to_tie` columns. Re-prompting after a return-to-lineup
-suggests the confirmation flag isn't being read from the match row
-on lineup-page mount, or it's being cleared somewhere it shouldn't
-be.
-
-**Possible angles:**
-- Lineup page reads confirmation state from local component state
-  rather than from the match row.
-- The match-prep cleanup that nulls `to_lose` on prep success
-  (Phase 4-of-unified-scoreboard branch) accidentally cleared a
-  confirmation marker it shouldn't have.
-- The captain-confirmation hook isn't reading "match already
-  prepped" as a cue to skip the prompt.
-
-**Investigation start point:** the captain-confirmation flow in
-`src/hooks/lineup/` — verify the initial-state derivation reads
-from the match row, not just component state, and that "match
-already started" short-circuits the confirmation prompt.
-
----
-
-## ~~23. First Winner-Selection Modal Missing Loser-Points Selector (Fargo)~~ ✅ CLOSED 2026-05-17 (PR #104)
-
-> **Closed 2026-05-17** — PR #104 explicitly closes this. `ScoringDialog`
-> now falls back to the live `leaguePrefs.points_calculator` when the
-> snapshot is null, so the game-1 modal renders the loser-points selector
-> correctly for Fargo matches.
-> Original entry preserved below for reference.
-
-### Original entry
-
-**Discovered:** 2026-05-04 during unified-scoreboard smoke-testing.
-**Severity:** Medium-High (silent loss of loser points on game 1 of
-every Fargo points-mode match unless user manually edits afterward)
-**Owner:** unassigned
-
-**Symptom:** On the very first game of a Fargo 10-7 match, the
-winner-selection modal opened without the loser-balls-pocketed
-selector. The second game's modal had it. No way to award the loser
-their balls-pocketed points on game 1.
-
-**Likely root cause:** `system_snapshot` is captured *lazily at the
-first scoring event*, so on game 1 the snapshot is null. Any UI
-element that reads the calculator from the snapshot will see "no
-calculator known" on game 1 only.
-
-The unified scoreboard got a live-prefs fallback for this in commit
-`289e338` (this branch) — when the snapshot is null, it falls back
-to `leaguePrefs.points_calculator`. The score-entry modal probably
-needs the same fallback applied.
-
-**Suspected fix surface:**
-- The score-entry / winner-selection modal component (likely under
-  `src/components/scoring/` — find the one that renders the loser-
-  balls-pocketed input).
-- Trace where it reads calculator info from. If it reads from
-  `match.system_snapshot.points_calculator` directly, add the same
-  null-fallback to live `leaguePrefs.points_calculator` that
-  UnifiedScoreboard uses.
-
-**Workaround until fixed:** vacate-and-rescore game 1 after a
-second game has run (which populates the snapshot). Annoying but
-recoverable.
-
----
-
-## ~~24. Fargo Initial-Points Confirmation Only Requires One Side (Consider Removing Entirely)~~ ✅ CLOSED 2026-05-17 (obsolete — negotiation hidden, math trusted)
-
-> **Closed 2026-05-17** — the "Consider Removing Entirely" hint in
-> the title was the right call. The Fargo start-points negotiation
-> flow is now hidden by default via `AUTO_AGREE_START_POINTS = true`
-> in `src/hooks/lineup/useFargoStartPointsNegotiation.ts`. The math
-> still runs, the points still go to the correct team, but there's
-> no per-captain confirmation step to be "one-sided" or otherwise.
->
-> See #22's closure note for the full reasoning. Same fix; both
-> items closed in the same PR.
->
-> Code is still in place — flip `AUTO_AGREE_START_POINTS` to `false`
-> to bring back the manual two-captain negotiation if the math is
-> ever shown to be off.
-> Original entry preserved below for reference.
-
-### Original entry
-
-**Discovered:** 2026-05-09
-**Severity:** Low-Medium (working "well enough" but the design isn't
-doing what it claims to do)
-**Owner:** unassigned
-
-**Symptom:** The Fargo initial start-points credit is supposed to be
-a *two-team negotiation* — both captains need to confirm before the
-match proceeds. In practice, only one side's confirmation is being
-required (or only one side's confirmation is being read), and the
-match proceeds anyway. The gating mechanism isn't actually gating.
-
-**Proposed direction (Ed's call, 2026-05-09):** rather than chase the
-bug to make confirmation work as designed, remove the confirmation
-requirement entirely. Compute the start-points credit from the lineup
-ratings, apply it, let the match proceed. If we ever find out the
-auto-computed value is wrong, fix it as a per-match adjustment after
-the fact (vacate-and-rescore-style intervention) rather than gating
-every match on a confirmation prompt.
-
-**Rationale:**
-- The two-side confirmation only matters when teams actually disagree
-  on the right credit. In practice, captains aren't second-guessing
-  the math; they're confirming what the system already computed. The
-  confirmation step is theater, not a real safety net.
-- The current half-broken confirmation creates UX friction (re-prompts
-  after return-to-lineup, see #22) without actually achieving the
-  negotiation it's named for.
-- Trusting the computed value and adjusting after-the-fact is a
-  smaller surface area: one path, no race conditions between two
-  devices, no captain-confirmation hook to maintain.
-
-**What removing it would touch:**
-- The captain-confirmation prompt on the lineup page.
-- The `*_to_lose` scratch-state columns currently used to flag captain
-  confirmations (per the `useMatchPreparation.ts` comment block, those
-  columns are repurposed as scratch state for "this captain confirmed
-  with player number X").
-- `prep_match`'s logic that gates on confirmation flags.
-- Possibly relates to and supersedes issues #21 and #22.
-
-**When to revisit:** if a real-world case surfaces where the
-auto-computed start-points value was wrong AND the captain-
-confirmation step would've caught it. So far that hasn't happened.
 
 ---
 
@@ -1898,42 +1080,6 @@ the EXCEPTION blocks; this is purely a test-coverage gap.
 
 ---
 
-## 28. DB-Backed Messaging Tests Cannot Run in Parallel — FIXED 2026-05-12
-
-**Discovered + resolved:** 2026-05-12 while wrapping up Unit 5
-
-**The issue (kept for institutional memory):** The three messaging
-DB-backed test files (`messaging-phase1-createTeamChat.test.ts`,
-`messaging-phase1-season-activation.rls.test.ts`,
-`messaging-phase1-roster-triggers.rls.test.ts`) all share one local
-Postgres and pick fixtures off the same seeded teams/seasons. Vitest's
-default file-level parallelism raced them — one test deleted a team
-chat while another expected it to exist, etc.
-
-**The fix:** `vitest.config.ts` now uses two `test.projects`:
-- `unit`: every other test file. Parallel, happy-dom.
-- `db`: `src/__tests__/database/**`. **Sequential**
-  (`fileParallelism: false`), jsdom.
-
-Vitest picks the right project per file automatically based on the path.
-No flag needed. `pnpm test:run` runs both projects with the right
-parallelism rules out of the box. Future CI workflows that invoke
-`pnpm test:run` inherit the behavior with zero config.
-
-**If you ever add another set of DB-backed tests** (outside
-`src/__tests__/database/`), add their path to the `db` project's
-`include` array in `vitest.config.ts` — or move them under that
-directory so they're auto-picked-up.
-
-**Future enhancement (not urgent):** the per-test fixture-overlap
-problem could be solved more cleanly by having each file pick a
-disjoint test team, or by transaction-wrapping each test with rollback.
-Either would let DB tests run in parallel again. Until the test suite
-gets big enough to make sequential DB tests painful, the project-pin
-fix is sufficient.
-
----
-
 ## 29. Messaging Unit 6 — Past-Member + Announcement-Read-Only RLS (deferred)
 
 **Discovered:** 2026-05-12 while implementing Unit 6
@@ -2046,7 +1192,6 @@ later in one dedicated pass." This entry exists so when that pass
 happens, none of the design work above has to be re-derived from the
 plan.
 
-
 ---
 
 ## 30. Optional LO-Created Org-Wide Group Chat
@@ -2077,7 +1222,6 @@ handles arbitrary group chats. All this feature needs is:
    org.
 
 **Out of scope for Phase 1.** No schema change required when this lands.
-
 
 ## 31. Messaging Phase 2 — Plan Doc Needs Writing
 
@@ -2127,8 +1271,7 @@ pass + merge).
 this entry from `LIST_FOR_ED.md` when the plan doc is written and
 committed. The plan doc + its branch will then be the working record.
 
-
-## 32. Pre-existing DB-Test Drift — 4 RLS Test Files Reference Dead Columns / Stale Embeds
+## 32. Pre-existing DB-Test Drift — 5 RLS Test Files Reference Dead Columns / Stale Embeds
 
 **Discovered:** 2026-05-15 during Phase 1 end-to-end test pass
 **Severity:** MEDIUM — tests are silently broken on main; nothing in
@@ -2191,6 +1334,28 @@ branch per scope.
    Fix: read the current `venues` columns and update the test's
    embed/select.
 
+5. `src/__tests__/database/matchGames.rls.test.ts` (**4 failures**)
+   *(Added 2026-05-25 during many-eyes Phase 1 — a 5th drifted file
+   beyond the original 4.)* Two drifts: (a) it `update({confirmed_by_home:
+   true, confirmed_by_away: true})`, but those columns are `uuid` (the
+   confirmer's member id) in the baseline — Postgres rejects `"true"` as
+   a uuid; (b) the break_and_run / golden_break tests share one
+   `testGameId` and don't reset it, so setting `golden_break=true` after
+   `break_and_run=true` trips the `NOT(break_and_run AND golden_break)`
+   CHECK. Fix: set `confirmed_by_*` to a real member uuid (or drop those
+   asserts), and reset the game row between the B&R / golden-break cases.
+   **Proven pre-existing** (fails identically at base commit `073c7d2`,
+   before any many-eyes work).
+
+**Why these were invisible until now (2026-05-25):** the `db` vitest
+project couldn't even boot locally — `jsdom` was declared in
+`package.json` + the lockfile but never materialized into `node_modules`,
+so `pnpm test:run` errored the whole `db` project ("Cannot find package
+'jsdom'") instead of running it. A plain `pnpm install` materialized it,
+which unmasked all of these pre-existing failures (and let the new
+many-eyes db-tests run). If `pnpm test:run` was "green" before, it was
+because the db project was silently not executing.
+
 **How to verify a fix:**
 
 ```
@@ -2199,7 +1364,7 @@ pnpm db:reset
 pnpm test:run > test-output.log 2>&1
 ```
 
-Expected after fix: zero failures across all 4 files.
+Expected after fix: zero failures across all 5 files.
 
 **Note on RLS posture:** Per project memory
 `project_rls_disabled_in_dev`, RLS is currently DISABLED on most
@@ -2297,5 +1462,108 @@ double-duty) without errors.
   unique per-row sentinels.
 - Verify the fix on both anonymous-sub and double-duty paths.
 
+## 33. LO Team-Edit Nav — Don't Force Matchups Page After
 
+**Discovered:** 2026-05-26 while setting up multi-confirmer test logins
+for many-eyes Phase 2 manual testing.
+
+**The issue:** When an LO edits a team (adding/removing players, swapping
+roster), the app navigates them into the season's matchups page after
+the save. That's an unnecessary forced detour — LOs editing rosters
+don't need to land on matchups; they may want to return to the team
+list, the org dashboard, or just stay on the team page they were on.
+
+**Fix:** Either (a) stay on the team-edit page (or the team-list page) on
+save, or (b) navigate back to wherever the user came FROM (the previous
+route in history) — the latter is the more general "respect where the
+user was" fix.
+
+**Where to look:** the team-edit save handler / mutation. Likely in
+`src/operator/TeamManagement.tsx` or similar — wherever the post-save
+`navigate(...)` call lives that ends up at the matchups route.
+
+**Severity:** LOW — UX papercut, no data risk. Just annoying when doing
+roster work that doesn't need matchups context.
+
+---
+
+## 34. Tappable PlayerName Component — Reveal Full Name on Tap
+
+**Discovered:** 2026-05-27 while polishing the many-eyes Phase 2 dispute
+modal copy.
+
+**The issue:** Across the app, we display player names as plain text via
+`getPlayerDisplayName` / `getPlayerNicknameById`. Per
+`feedback_nickname_is_mobile_primary`, nickname IS the mobile primary
+display — but users sometimes need to see the full name to disambiguate
+(two "Jack"s on different teams, a nickname they don't recognize, etc.).
+Today there's no way to surface the full name without leaving the screen.
+
+**The behavior we want:** any place a nickname is shown should be
+tappable; tapping reveals the player's full name (first + last) in a
+tooltip / popover / expanded inline element. Consistent everywhere — not
+piecemeal.
+
+**Surfaces affected (incomplete list):**
+- Dispute UI (`DissentFlag.tsx`, `DisputeDetailModal.tsx`) — Phase 2.
+- `GamesList.tsx` — player buttons + completed-game labels.
+- `UnifiedScoreboard.tsx` — score rows.
+- `ConfirmationDialog.tsx` — winner name in the prompt modal.
+- The lineup chain, MyTeams cards, anywhere `getPlayerDisplayName` is
+  the visible output.
+
+**Approach (suggested):**
+1. Build a shared `<PlayerName />` component (props: full Player object
+   with `first_name`, `last_name`, `nickname`). Renders nickname; on
+   tap/hover, shows a popover with the full name + maybe BCA# if known.
+   Reuses shadcn `Popover` or `Tooltip`.
+2. Adopt incrementally — start with one surface (e.g. dispute UI), then
+   roll through the others one PR at a time. Each adoption is mechanical
+   (replace `{getPlayerDisplayName(id)}` with
+   `<PlayerName player={players.get(id)} />`).
+
+**Severity:** MEDIUM — real UX gap (especially in larger leagues with
+nickname collisions), but no data integrity risk. Best done as its own
+focused branch so the component lands properly + gets adopted
+consistently.
+
+**Family:** related to `project_placeholder_badge_remaining_surfaces` —
+both are "consistent player-info display across the app" cleanups.
+
+---
+
+---
+
+## 36. Split Matchups Editing Out of the Creation Wizard
+
+**Discovered:** 2026-06-06 while standardizing the league-detail cards
+into the four parts (Season / Teams / Schedule / Matchups). Built a
+`MatchupsCard` whose "Set / Edit Matchups" button launches the
+create-league wizard (`/create-league/:orgId?leagueId=:id`) — because
+that's the *only* place matchups (team positions + round-robin) can be
+set or edited today. There is no standalone matchups page or route.
+
+**The need:** Once matchups are set, an operator should be able to go
+straight to **editing unfinished matches** (fix a pairing, adjust an
+un-played match) without re-running the whole creation wizard. Today
+editing matchups means re-entering the full wizard flow, which is heavy
+and confusing for a small edit on a live season.
+
+**Suggested direction:** Pull the matchups stage
+(`src/wizards/matchups-v2/`) into its own surface — a real
+`/league/:leagueId/season/:seasonId/matchups` route — that (a) shows the
+positions + round-robin grid and (b) lets the LO edit *unfinished*
+matches in place (played/confirmed matches stay locked). Then point
+`MatchupsCard`'s button at that route instead of the creation wizard.
+Relates to #33 (don't force the matchups page after team edits) — both
+are about matchups deserving a focused, non-wizard home.
+
+**Where to look:** `src/wizards/matchups-v2/` (the stage config + steps),
+`src/flows/createNewLeagueFlow.ts` (where it's the final stage),
+`src/components/operator/MatchupsCard.tsx` (the launch button to
+re-point).
+
+**Severity:** MEDIUM — real workflow gap once a season is live; not a
+data risk, but "edit one matchup = redo the wizard" is rough. Its own
+branch + a small plan.
 

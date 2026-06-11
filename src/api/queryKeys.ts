@@ -72,6 +72,34 @@ export const queryKeys = {
   },
 
   /**
+   * Onboarding cascade query keys (join-by-link → request → approve).
+   */
+  teamJoin: {
+    /** Base key for all join-cascade queries */
+    all: ['teamJoin'] as const,
+
+    /** The public join view for a given token (Unit 2) */
+    view: (token: string) => [...queryKeys.teamJoin.all, 'view', token] as const,
+
+    /** The approver's pending-request feed across all approvable teams (Unit 5/6) */
+    requests: () => [...queryKeys.teamJoin.all, 'requests'] as const,
+
+    /** A team's unclaimed placeholders for the Replace picker (Unit 5) */
+    placeholders: (teamId: string) =>
+      [...queryKeys.teamJoin.all, 'placeholders', teamId] as const,
+
+    /** The caller's approved-but-unacknowledged joins — the "you're in" feed (Unit 3) */
+    approved: () => [...queryKeys.teamJoin.all, 'approved'] as const,
+
+    /** A team's current join token, for the share link (Unit 7) */
+    token: (teamId: string) => [...queryKeys.teamJoin.all, 'token', teamId] as const,
+
+    /** A league's not-yet-onboarded captains + link, for the LO onboard list */
+    leagueTeams: (leagueId: string) =>
+      [...queryKeys.teamJoin.all, 'leagueTeams', leagueId] as const,
+  },
+
+  /**
    * League-related query keys
    */
   leagues: {
@@ -138,6 +166,10 @@ export const queryKeys = {
 
     /** Match games/scoring */
     games: (matchId: string) => [...queryKeys.matches.detail(matchId), 'games'] as const,
+
+    /** Match game confirmations (many-eyes Layer-2 witness records) */
+    confirmations: (matchId: string) =>
+      [...queryKeys.matches.detail(matchId), 'confirmations'] as const,
   },
 
   /**

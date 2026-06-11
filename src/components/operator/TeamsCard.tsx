@@ -8,6 +8,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import { fetchTeamsWithDetails } from '@/api/hooks';
 import { Button } from '@/components/ui/button';
 import { InfoButton } from '@/components/InfoButton';
+import { SectionCard, SectionCardLoading, SectionCardEmpty } from './SectionCard';
 import type { TeamWithQueryDetails } from '@/types/team';
 import { logger } from '@/utils/logger';
 import { useFlowStageDetection } from '@/wizards/league-v2/useFlowStageDetection';
@@ -67,7 +68,8 @@ export const TeamsCard: React.FC<TeamsCardProps> = ({ leagueId }) => {
   /**
    * Format captain phone number for display
    */
-  const formatPhoneNumber = (phone: string): string => {
+  const formatPhoneNumber = (phone: string | null | undefined): string => {
+    if (!phone) return '';
     const cleaned = phone.replace(/\D/g, '');
     if (cleaned.length === 10) {
       return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
@@ -75,59 +77,71 @@ export const TeamsCard: React.FC<TeamsCardProps> = ({ leagueId }) => {
     return phone;
   };
 
-  return (
-    <div className="bg-card lg:rounded-xl shadow-sm p-6 mb-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-foreground">Teams</h2>
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsNavigating(true);
-              navigate(`/league/${leagueId}/manage-teams`);
-            }}
-            size="sm"
-            disabled={isNavigating || !hasSeason}
-            loadingText="Loading..."
-          >
-            {isNavigating ? 'Loading...' : 'Manage Teams'}
-          </Button>
-          {!hasSeason && (
-            <InfoButton title="Manage Teams unavailable" size="sm">
-              Create a season for this league before adding teams. Teams are
-              attached to a season, so we need one in place first.
-            </InfoButton>
-          )}
-        </div>
-      </div>
+  const manageTeamsAction = (
+    <>
+      <Button
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsNavigating(true);
+          navigate(`/league/${leagueId}/manage-teams`);
+        }}
+        size="sm"
+        variant="outline"
+        disabled={isNavigating || !hasSeason}
+        loadingText="Loading..."
+      >
+        {isNavigating ? 'Loading...' : 'Manage Teams'}
+      </Button>
+      {!hasSeason && (
+        <InfoButton title="Manage Teams unavailable" size="sm">
+          Create a season for this league before adding teams. Teams are
+          attached to a season, so we need one in place first.
+        </InfoButton>
+      )}
+    </>
+  );
 
+  const subtitle = loading
+    ? undefined
+    : teams.length === 0
+      ? 'No teams yet'
+      : `${teams.length} ${teams.length === 1 ? 'team' : 'teams'}`;
+
+  return (
+    <SectionCard
+      title="Teams"
+      subtitle={subtitle}
+      actions={manageTeamsAction}
+      collapsible
+      defaultOpen={false}
+    >
       {loading ? (
-        <div className="text-center py-8">
-          <p className="text-muted-foreground">Loading teams...</p>
-        </div>
+        <SectionCardLoading message="Loading teams..." />
       ) : teams.length === 0 ? (
-        <div className="text-center py-8">
-          <div className="text-4xl mb-3">👥</div>
-          <p className="text-muted-foreground mb-4">No teams yet</p>
-          <div className="inline-flex items-center gap-2">
-            <Button
-              onClick={() => {
-                setIsNavigating(true);
-                navigate(`/league/${leagueId}/manage-teams`);
-              }}
-              variant="outline"
-              disabled={isNavigating || !hasSeason}
-            >
-              {isNavigating ? 'Loading...' : 'Add Your First Team'}
-            </Button>
-            {!hasSeason && (
-              <InfoButton title="Teams require a season" size="sm">
-                Create a season for this league before adding teams. Teams are
-                attached to a season, so we need one in place first.
-              </InfoButton>
-            )}
-          </div>
-        </div>
+        <SectionCardEmpty
+          icon="👥"
+          message="No teams yet"
+          action={
+            <>
+              <Button
+                onClick={() => {
+                  setIsNavigating(true);
+                  navigate(`/league/${leagueId}/manage-teams`);
+                }}
+                loadingText="none"
+                disabled={isNavigating || !hasSeason}
+              >
+                {isNavigating ? 'Loading...' : 'Add Your First Team'}
+              </Button>
+              {!hasSeason && (
+                <InfoButton title="Teams require a season" size="sm">
+                  Create a season for this league before adding teams. Teams are
+                  attached to a season, so we need one in place first.
+                </InfoButton>
+              )}
+            </>
+          }
+        />
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -163,11 +177,13 @@ export const TeamsCard: React.FC<TeamsCardProps> = ({ leagueId }) => {
                         <div>{`${team.captain.first_name} ${team.captain.last_name}`}</div>
                         {expandedTeamId === team.id && (
                           <div className="mt-1 text-xs text-muted-foreground space-y-0.5">
-                            <div>
-                              <a href={`tel:${team.captain.phone}`} className="hover:text-blue-600">
-                                {formatPhoneNumber(team.captain.phone)}
-                              </a>
-                            </div>
+                            {team.captain.phone && (
+                              <div>
+                                <a href={`tel:${team.captain.phone}`} className="hover:text-blue-600">
+                                  {formatPhoneNumber(team.captain.phone)}
+                                </a>
+                              </div>
+                            )}
                             {team.captain.email && (
                               <div>
                                 <a href={`mailto:${team.captain.email}`} className="hover:text-blue-600">
@@ -212,6 +228,6 @@ export const TeamsCard: React.FC<TeamsCardProps> = ({ leagueId }) => {
           </table>
         </div>
       )}
-    </div>
+    </SectionCard>
   );
 };

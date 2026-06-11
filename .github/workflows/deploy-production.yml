@@ -1,9 +1,31 @@
+# =====================================================================
+# Production deploy targets — pinned in YAML, NOT secrets.
+# These values are public information (they appear in OAuth callback URLs,
+# the prod JS bundle, and the dashboard URL bar). Keeping them in code
+# instead of GitHub Environment secrets means:
+#   - a project_ref change is a reviewable PR, not a silent UI click
+#   - prod vs staging cross-wiring is impossible to do by accident
+#
+# True credentials (DB password, anon key, AWS creds, Supabase access
+# token) still live in the `production` GitHub Environment secrets.
+#
+#   Supabase project : cibboozjixxyypzchtvr
+#   S3 bucket        : rackemleagues.com (apex; www.* 301-redirects here)
+#   CloudFront ID    : E195ZS0FXWXKOT
+#   AWS region       : us-east-1
+# =====================================================================
 name: Deploy to Production
 
 on:
   push:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "deploy" to confirm manual production deploy'
+        required: true
+        default: ''
 
 jobs:
   deploy:
@@ -13,16 +35,24 @@ jobs:
       contents: write
 
     steps:
+      - name: Validate manual dispatch confirmation
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "deploy" ]; then
+            echo "::error::Manual production deploy requires typing 'deploy' in the confirm input. Got: '${{ github.event.inputs.confirm }}'"
+            exit 1
+          fi
+
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 10
 
@@ -33,7 +63,7 @@ jobs:
           echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
 
       - name: Setup pnpm cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -48,48 +78,56 @@ jobs:
         env:
           NODE_ENV: production
           VITE_APP_ENV: production
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          # Passwordless one-door sign-in (email OTP + Google) is ON in production.
+          # The prod Supabase project must have email/SMTP + Google OAuth configured
+          # for the flow to work end to end (see config/featureFlags.ts).
+          VITE_PASSWORDLESS_SIGN_IN: 'true'
+          VITE_SUPABASE_URL: https://cibboozjixxyypzchtvr.supabase.co
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
       - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
+        uses: supabase/setup-cli@v2
         with:
           version: latest
 
       - name: Run Supabase migrations
         run: |
-          supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
+          supabase link --project-ref cibboozjixxyypzchtvr
           supabase db push --include-all
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: us-east-1
 
       - name: Deploy to S3
         run: |
-          aws s3 sync dist/ s3://${{ secrets.S3_BUCKET }} --delete --cache-control "public, max-age=31536000, immutable" --exclude "index.html" --exclude "*.html"
-          aws s3 sync dist/ s3://${{ secrets.S3_BUCKET }} --delete --cache-control "public, max-age=0, must-revalidate" --exclude "*" --include "*.html"
+          aws s3 sync dist/ s3://rackemleagues.com --delete --cache-control "public, max-age=31536000, immutable" --exclude "index.html" --exclude "*.html"
+          aws s3 sync dist/ s3://rackemleagues.com --delete --cache-control "public, max-age=0, must-revalidate" --exclude "*" --include "*.html"
 
       - name: Invalidate CloudFront cache
         run: |
-          aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+          aws cloudfront create-invalidation --distribution-id E195ZS0FXWXKOT --paths "/*"
 
+      # actions/create-release@v1 was archived/unmaintained (and Node-20). Swapped
+      # for softprops/action-gh-release, the maintained drop-in. `release_name` →
+      # `name`; token is read from the GITHUB_TOKEN env automatically.
       - name: Create GitHub Release
-        uses: actions/create-release@v1
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref_name }}
-          release_name: Release ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
           body: |
             Production deployment for version ${{ github.ref_name }}
-            
+
             **Changes in this release:**
             See commit history for details.
           draft: false
@@ -102,6 +140,6 @@ jobs:
           echo "- **Environment**: Production" >> $GITHUB_STEP_SUMMARY
           echo "- **Version**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **S3 Bucket**: ${{ secrets.S3_BUCKET }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **CloudFront Distribution**: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **S3 Bucket**: rackemleagues.com" >> $GITHUB_STEP_SUMMARY
+          echo "- **CloudFront Distribution**: E195ZS0FXWXKOT" >> $GITHUB_STEP_SUMMARY
 

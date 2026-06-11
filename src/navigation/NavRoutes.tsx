@@ -13,6 +13,7 @@
 
 import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
+import { isProduction } from '@/config/environment';
 import { MemberLayout } from '../components/layout/MemberLayout';
 import { Home } from '../home/Home';
 import { RulesSkeleton } from '../rules/RulesSkeleton';
@@ -20,11 +21,13 @@ import { RulesErrorBoundary } from '../rules/RulesErrorBoundary';
 import { Login } from '../login/Login';
 import { Register } from '../login/Register';
 import { ClaimPlayer } from '../login/ClaimPlayer';
+import { TeamJoinPage } from '../onboarding/TeamJoinPage';
 import { ForgotPassword } from '../login/ForgotPassword';
 import { ResetPassword } from '../login/ResetPassword';
 import { EmailConfirmation } from '../login/EmailConfirmation';
 import { About } from '../about/About';
 import { Pricing } from '../about/Pricing';
+import { PrivacyPolicy } from '../about/PrivacyPolicy';
 import { NewPlayerForm } from '../newPlayer/NewPlayerForm';
 import { CompleteProfileForm } from '../completeProfile';
 import { Profile } from '../profile/Profile';
@@ -74,6 +77,15 @@ const LeagueWizardV2Page = lazy(() => import('../wizards/league-v2/LeagueWizardV
 const LeagueRules = lazy(() => import('../operator/LeagueRules'));
 const LeagueDetail = lazy(() => import('../operator/LeagueDetail'));
 const LeagueFinancesPage = lazy(() => import('../operator/LeagueFinancesPage'));
+const AllocatorRoomPage = lazy(
+  () => import('../operator/scoring-workshop/per-game-allocator/AllocatorRoomPage'),
+);
+const TriggerRoomPage = lazy(
+  () => import('../operator/scoring-workshop/trigger/TriggerRoomPage'),
+);
+const WorkshopHomePage = lazy(
+  () => import('../operator/scoring-workshop/WorkshopHomePage'),
+);
 const LeagueSettings = lazy(() => import('../operator/LeagueSettings'));
 const SeasonCreationWizard = lazy(() => import('../operator/SeasonCreationWizard'));
 const SeasonScheduleManager = lazy(() => import('../operator/SeasonScheduleManager'));
@@ -81,10 +93,14 @@ const VenueManagement = lazy(() => import('../operator/VenueManagement'));
 const TeamManagement = lazy(() => import('../operator/TeamManagement'));
 const ScheduleSetupPage = lazy(() => import('../operator/ScheduleSetupPage'));
 const SeasonSchedulePage = lazy(() => import('../operator/SeasonSchedulePage'));
+const LmsResultsSheet = lazy(() => import('../operator/LmsResultsSheet'));
 const PlayoffSetup = lazy(() => import('../operator/PlayoffSetup'));
 const OrganizationPlayoffSettings = lazy(() => import('../operator/OrganizationPlayoffSettings'));
 const LeaguePlayoffSettings = lazy(() => import('../operator/LeaguePlayoffSettings'));
 const PlayoffsSetupWizard = lazy(() => import('../operator/PlayoffsSetupWizard'));
+const Learn = lazy(() => import('../pages/Learn'));
+const ManualScoringMatchPicker = lazy(() => import('../operator/ManualScoringMatchPicker'));
+const ManualScoringPage = lazy(() => import('../operator/ManualScoringPage'));
 
 /**
  * Helper to wrap element with ProtectedRoute for auth-only routes
@@ -154,9 +170,11 @@ export const router = createBrowserRouter([
       { index: true, element: <Home /> },
       { path: 'about', element: <About /> },
       { path: 'pricing', element: <Pricing /> },
+      { path: 'privacy', element: <PrivacyPolicy /> },
       { path: 'login', element: <Login /> },
       { path: 'register', element: <Register /> },
       { path: 'claim-player', element: <ClaimPlayer /> },
+      { path: 'join/:token', element: <TeamJoinPage /> },
       { path: 'forgot-password', element: <ForgotPassword /> },
       { path: 'reset-password', element: <ResetPassword /> },
       { path: 'confirm', element: <EmailConfirmation /> },
@@ -235,6 +253,10 @@ export const router = createBrowserRouter([
           { path: 'league/:leagueId/season/:seasonId/feats', element: withMember(<FeatsOfExcellence />) },
           { path: 'league/:leagueId/season/:seasonId/match-data', element: withMember(<MatchDataViewer />) },
 
+          // --- Learn hub — any signed-in user (operators AND players share
+          //     this destination; deep links from glossary popovers land here) ---
+          { path: 'learn', element: withAuth(<Suspense fallback={<LoadingSpinner />}><Learn /></Suspense>) },
+
           // --- Operator Routes (require league_operator role) ---
           { path: 'operator-welcome', element: withOperator(OperatorWelcome) },
           { path: 'operator-dashboard/:orgId', element: withOperator(OperatorDashboard) },
@@ -246,6 +268,9 @@ export const router = createBrowserRouter([
           { path: 'league-rules/:orgId', element: withOperator(LeagueRules) },
           { path: 'league/:leagueId', element: withOperator(LeagueDetail) },
           { path: 'league/:leagueId/finances', element: withOperator(LeagueFinancesPage) },
+          { path: 'operator/scoring-workshop', element: withOperator(WorkshopHomePage) },
+          { path: 'operator/scoring-workshop/per-game-allocator', element: withOperator(AllocatorRoomPage) },
+          { path: 'operator/scoring-workshop/trigger', element: withOperator(TriggerRoomPage) },
           { path: 'league/:leagueId/settings', element: withOperator(LeagueSettings) },
           { path: 'league/:leagueId/create-season', element: withOperator(SeasonCreationWizard) },
           { path: 'operator/start-next-season/:leagueId', element: withOperator(NewSeasonFromPreviousPage) },
@@ -257,6 +282,18 @@ export const router = createBrowserRouter([
           { path: 'league/:leagueId/season/:seasonId/playoffs', element: withOperator(PlayoffSetup) },
           { path: 'operator/league/:leagueId/playoffs/:orgId', element: withOperator(LeaguePlayoffSettings) },
           { path: 'venues/:orgId', element: withOperator(VenueManagement) },
+
+          // --- LO Manual Scoring (dev/staging only until Units 5–6 land) ---
+          ...(!isProduction
+            ? [
+                { path: 'league/:leagueId/manual-scoring', element: withOperator(ManualScoringMatchPicker) },
+                { path: 'league/:leagueId/manual-scoring/:matchId', element: withOperator(ManualScoringPage) },
+                // v2 review/correct: same host page, dispatches on match status.
+                { path: 'league/:leagueId/match-review/:matchId', element: withOperator(ManualScoringPage) },
+                // Printable LMS results sheet (CSI / FargoRate hand-entry helper).
+                { path: 'league/:leagueId/match/:matchId/lms-sheet', element: withOperator(LmsResultsSheet) },
+              ]
+            : []),
 
           // --- Developer Routes (require developer role) ---
           { path: 'admin-reports', element: withDeveloper(<AdminReports />) },

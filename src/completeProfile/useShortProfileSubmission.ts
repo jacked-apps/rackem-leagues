@@ -5,11 +5,15 @@
  * for the minimal registration form. Creates a member record with
  * only essential fields.
  */
+import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { shortProfileSchema } from '../schemas/shortProfileSchema';
 import { capitalizeWords } from '../utils/formatters';
 import { generateNickname } from '../utils/nicknameGenerator';
 import { supabase } from '../supabaseClient';
 import { useUser } from '../context/useUser';
+import { getSafeRedirectPath } from '../login/redirect';
+import { queryKeys } from '@/api/queryKeys';
 import type { ShortProfileFormState } from './types';
 import { logger } from '@/utils/logger';
 
@@ -18,6 +22,13 @@ interface UseShortProfileSubmissionProps {
   onError: (errors: ShortProfileFormState['errors']) => void;
   onSuccess: () => void;
   onLoading: (loading: boolean) => void;
+  /**
+   * Where to land after the profile is created. Defaults to `/my-teams` (the
+   * standard registration destination). The onboarding-cascade join flow passes
+   * `/join/:token` so completion returns the new member to the join page, which
+   * then offers the one-tap Join. Validated as a same-origin relative path.
+   */
+  redirectTo?: string;
 }
 
 /**
@@ -42,8 +53,11 @@ export const useShortProfileSubmission = ({
   onError,
   onSuccess,
   onLoading,
+  redirectTo,
 }: UseShortProfileSubmissionProps) => {
   const { user } = useUser();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   /**
    * Handles form submission.
@@ -123,8 +137,17 @@ export const useShortProfileSubmission = ({
 
       onSuccess();
 
-      // Force full page reload to My Teams to ensure UserProvider refetches member data
-      window.location.href = '/my-teams';
+      // Refresh the member cache so the app recognizes the new profile — no full
+      // page reload. Awaiting refetchType:'all' guarantees the member is in cache
+      // before we move on, so the join flow advances IN-PLACE (TeamJoinPage
+      // re-reads `member` and shows the Join step) and any other destination
+      // renders the new member. Default destination is My Teams; a flow may
+      // redirect elsewhere via a validated same-origin relative path.
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.members.all,
+        refetchType: 'all',
+      });
+      navigate(getSafeRedirectPath(redirectTo) ?? '/my-teams');
     } catch (error) {
       logger.error('Unexpected error during profile creation', {
         error: error instanceof Error ? error.message : String(error),

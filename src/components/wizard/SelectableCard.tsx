@@ -10,6 +10,15 @@
 
 import { toast } from 'sonner';
 import { InfoButton } from '@/components/InfoButton';
+import { GlossaryInfoButton } from '@/components/GlossaryInfoButton';
+import type { GlossarySlug } from '@/glossary';
+
+/** `infoButton` accepts two shapes: a glossary slug (preferred for any term
+ *  that has a glossary entry) or inline `{ title, content }` for one-off
+ *  page-specific guidance. Same "?" pill renders either way. */
+type InfoButtonProp =
+  | { slug: GlossarySlug }
+  | { title: string; content: React.ReactNode };
 
 export interface SelectableCardOption<T> {
   value: T;
@@ -17,7 +26,7 @@ export interface SelectableCardOption<T> {
   description?: string;
   disabled?: boolean;
   disabledMessage?: string;
-  infoButton?: { title: string; content: React.ReactNode };
+  infoButton?: InfoButtonProp;
 }
 
 interface SelectableCardProps<T> {
@@ -64,9 +73,21 @@ export function SelectableCard<T>({
           )}
         </div>
         {option.infoButton && (
-          <InfoButton title={option.infoButton.title} size="sm" align="right">
-            {option.infoButton.content}
-          </InfoButton>
+          'slug' in option.infoButton ? (
+            <GlossaryInfoButton
+              slug={option.infoButton.slug}
+              size="sm"
+              align="right"
+            />
+          ) : (
+            <InfoButton
+              title={option.infoButton.title}
+              size="sm"
+              align="right"
+            >
+              {option.infoButton.content}
+            </InfoButton>
+          )
         )}
       </div>
     </button>

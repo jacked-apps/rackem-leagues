@@ -35,6 +35,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/supabaseClient';
 import { logger } from '@/utils/logger';
+import { EMAIL_INVITES_ENABLED } from '@/config/featureFlags';
 import { toast } from 'sonner';
 import { useInviteStatuses, usePlayerTeamCount } from '@/api/hooks';
 import { queryKeys } from '@/api/queryKeys';
@@ -519,27 +520,33 @@ export function InvitePlayerModal({
                 )}
 
                 <div className="flex justify-between gap-2">
-                  <Button
-                    type="button"
-                    variant="default"
-                    className="gap-1 px-3"
-                    onClick={handleSendEmailInvite}
-                    disabled={!email.trim() || isSendingInvite || !hasTeamContext}
-                    isLoading={isSendingInvite}
-                    loadingText="..."
-                  >
-                    {hasExistingInvite || hasExpiredInvite ? (
-                      <>
-                        <RefreshCw className="h-4 w-4" />
-                        <span className="hidden sm:inline">Resend</span> Email
-                      </>
-                    ) : (
-                      <>
-                        <Mail className="h-4 w-4" />
-                        Email
-                      </>
-                    )}
-                  </Button>
+                  {/* Email send is gated off — the edge function's sandbox
+                      sender can't reach real players (see EMAIL_INVITES_ENABLED).
+                      Hidden, not removed; "Invite Only" (token + manual link)
+                      and the share link below still work. */}
+                  {EMAIL_INVITES_ENABLED && (
+                    <Button
+                      type="button"
+                      variant="default"
+                      className="gap-1 px-3"
+                      onClick={handleSendEmailInvite}
+                      disabled={!email.trim() || isSendingInvite || !hasTeamContext}
+                      isLoading={isSendingInvite}
+                      loadingText="..."
+                    >
+                      {hasExistingInvite || hasExpiredInvite ? (
+                        <>
+                          <RefreshCw className="h-4 w-4" />
+                          <span className="hidden sm:inline">Resend</span> Email
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="h-4 w-4" />
+                          Email
+                        </>
+                      )}
+                    </Button>
+                  )}
                   <Button
                     type="button"
                     variant="outline"
