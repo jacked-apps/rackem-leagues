@@ -870,10 +870,12 @@ export type Database = {
           player4_id: string | null
           player5_handicap: number | null
           player5_id: string | null
+          swap_last_resolution: Json | null
           swap_new_player_handicap: number | null
           swap_new_player_id: string | null
           swap_position: number | null
           swap_requested_at: string | null
+          swap_requested_by_member_id: string | null
           team_id: string | null
           updated_at: string
         }
@@ -894,10 +896,12 @@ export type Database = {
           player4_id?: string | null
           player5_handicap?: number | null
           player5_id?: string | null
+          swap_last_resolution?: Json | null
           swap_new_player_handicap?: number | null
           swap_new_player_id?: string | null
           swap_position?: number | null
           swap_requested_at?: string | null
+          swap_requested_by_member_id?: string | null
           team_id?: string | null
           updated_at?: string
         }
@@ -918,10 +922,12 @@ export type Database = {
           player4_id?: string | null
           player5_handicap?: number | null
           player5_id?: string | null
+          swap_last_resolution?: Json | null
           swap_new_player_handicap?: number | null
           swap_new_player_id?: string | null
           swap_position?: number | null
           swap_requested_at?: string | null
+          swap_requested_by_member_id?: string | null
           team_id?: string | null
           updated_at?: string
         }
@@ -971,6 +977,13 @@ export type Database = {
           {
             foreignKeyName: "match_lineups_swap_new_player_id_fkey"
             columns: ["swap_new_player_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_lineups_swap_requested_by_member_id_fkey"
+            columns: ["swap_requested_by_member_id"]
             isOneToOne: false
             referencedRelation: "members"
             referencedColumns: ["id"]
