@@ -18,6 +18,8 @@ import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { applyBlackoutReflow, restoreScheduleSnapshot, type ScheduleSnapshot } from '@/utils/scheduleReflowApply';
 import type { ReflowAction } from '@/utils/scheduleReflow';
 import { isPastOrPlayed, decideToggle } from '@/utils/scheduleToggle';
+import { isLengthEditable } from '@/utils/seasonLengthEdit';
+import { ChangeSeasonLengthDialog } from '@/operator/components/ChangeSeasonLengthDialog';
 
 const WeekOffReasonModal = lazy(() => import('@/components/modals/WeekOffReasonModal').then(m => ({ default: m.WeekOffReasonModal })));
 import type { WeekEntry, ChampionshipEvent } from '@/types/season';
@@ -69,6 +71,8 @@ export const SeasonScheduleManager: React.FC = () => {
   // One-time heads-up shown before the first edit, explaining that changes save as
   // you go and leaving the page drops the ability to revert.
   const [infoShown, setInfoShown] = useState(false);
+  // Whether the "Change Season Length" dialog is open.
+  const [showLengthDialog, setShowLengthDialog] = useState(false);
 
   /**
    * Load league, season, and existing schedule from the database.
@@ -465,6 +469,33 @@ export const SeasonScheduleManager: React.FC = () => {
                 <span className="ml-2 text-foreground">
                   {season?.season_length ? `${season.season_length} weeks` : 'N/A'}
                 </span>
+                {/* Change Season Length — early-season correction, gated by the
+                    week-5 lock. Shows a dated "locked" hint once it's past week 4. */}
+                {season && (() => {
+                  const lengthWeeks = schedule.map((w) => ({ date: w.date, weekType: w.dbWeekType ?? '' }));
+                  const editable = schedule.length > 0 && isLengthEditable(lengthWeeks, formatLocalDate(new Date()));
+                  const fifthRegular = schedule
+                    .filter((w) => w.dbWeekType === 'regular')
+                    .sort((a, b) => a.date.localeCompare(b.date))[4]?.date;
+                  return (
+                    <div className="mt-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={!editable}
+                        onClick={() => setShowLengthDialog(true)}
+                        loadingText="none"
+                      >
+                        Change Season Length
+                      </Button>
+                      {!editable && fifthRegular && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Locked after week 4 ({new Date(fifthRegular + 'T00:00:00').toLocaleDateString()}).
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 
@@ -538,6 +569,22 @@ export const SeasonScheduleManager: React.FC = () => {
             onConfirm={handleAddBlackout}
           />
         </Suspense>
+
+        {/* Change Season Length dialog (early-season correction) */}
+        {season && seasonId && (
+          <ChangeSeasonLengthDialog
+            open={showLengthDialog}
+            onOpenChange={setShowLengthDialog}
+            seasonId={seasonId}
+            currentLength={season.season_length}
+            weeks={schedule.map((w) => ({
+              weekName: w.weekName,
+              date: w.date,
+              weekType: w.dbWeekType ?? '',
+            }))}
+            onApplied={loadSchedule}
+          />
+        )}
         {ConfirmDialogComponent}
       </div>
     </div>
