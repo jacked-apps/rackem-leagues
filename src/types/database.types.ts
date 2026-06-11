@@ -1607,6 +1607,50 @@ export type Database = {
           },
         ]
       }
+      per_game_allocators: {
+        Row: {
+          author_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          loser_side: Json
+          name: string
+          scope: string
+          updated_at: string
+          winner_side: Json
+        }
+        Insert: {
+          author_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          loser_side: Json
+          name: string
+          scope: string
+          updated_at?: string
+          winner_side: Json
+        }
+        Update: {
+          author_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          loser_side?: Json
+          name?: string
+          scope?: string
+          updated_at?: string
+          winner_side?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "per_game_allocators_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       placeholder_audit_log: {
         Row: {
           action: string
@@ -1744,6 +1788,7 @@ export type Database = {
           max_roster_size: number | null
           mechanism: string | null
           pairing_format: string | null
+          per_game_allocator_id: string | null
           points_calculator: string
           points_calculator_params: Json
           points_system: string | null
@@ -1772,6 +1817,7 @@ export type Database = {
           max_roster_size?: number | null
           mechanism?: string | null
           pairing_format?: string | null
+          per_game_allocator_id?: string | null
           points_calculator?: string
           points_calculator_params?: Json
           points_system?: string | null
@@ -1800,6 +1846,7 @@ export type Database = {
           max_roster_size?: number | null
           mechanism?: string | null
           pairing_format?: string | null
+          per_game_allocator_id?: string | null
           points_calculator?: string
           points_calculator_params?: Json
           points_system?: string | null
@@ -1814,6 +1861,13 @@ export type Database = {
           win_condition?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "preferences_per_game_allocator_id_fkey"
+            columns: ["per_game_allocator_id"]
+            isOneToOne: false
+            referencedRelation: "per_game_allocators"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "preferences_threshold_chart_id_fkey"
             columns: ["threshold_chart_id"]
@@ -2634,6 +2688,56 @@ export type Database = {
         }
         Relationships: []
       }
+      triggers: {
+        Row: {
+          action: Json
+          author_id: string | null
+          condition: Json
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          rearm: string
+          scope: string
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          action: Json
+          author_id?: string | null
+          condition: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          rearm?: string
+          scope: string
+          trigger_type: string
+          updated_at?: string
+        }
+        Update: {
+          action?: Json
+          author_id?: string | null
+          condition?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          rearm?: string
+          scope?: string
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "triggers_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_reports: {
         Row: {
           assigned_organization_id: string | null
@@ -2937,6 +3041,7 @@ export type Database = {
           mechanism: string | null
           organization_id: string | null
           pairing_format: string | null
+          per_game_allocator_id: string | null
           points_calculator: string | null
           points_calculator_params: Json | null
           points_system: string | null
@@ -3036,7 +3141,10 @@ export type Database = {
         }
         Returns: string
       }
-      daitch_mokotoff: { Args: { "": string }; Returns: string[] }
+      daitch_mokotoff: {
+        Args: { "": string }
+        Returns: string[]
+      }
       delete_unused_placeholder: {
         Args: {
           p_actor_member_id: string
@@ -3048,9 +3156,18 @@ export type Database = {
           success: boolean
         }[]
       }
-      dmetaphone: { Args: { "": string }; Returns: string }
-      dmetaphone_alt: { Args: { "": string }; Returns: string }
-      get_current_member_id: { Args: never; Returns: string }
+      dmetaphone: {
+        Args: { "": string }
+        Returns: string
+      }
+      dmetaphone_alt: {
+        Args: { "": string }
+        Returns: string
+      }
+      get_current_member_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_invite_details: {
         Args: { p_token: string }
         Returns: {
@@ -3064,7 +3181,14 @@ export type Database = {
           team_name: string
         }[]
       }
-      get_join_requests_for_approver: { Args: never; Returns: Json }
+      get_join_requests_for_approver: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      get_league_teams_for_onboarding: {
+        Args: { p_league_id: string }
+        Returns: Json
+      }
       get_merges_into_member: {
         Args: { p_org_id: string; p_target_member_id: string }
         Returns: {
@@ -3080,9 +3204,12 @@ export type Database = {
           synopsis: Json
         }[]
       }
-      get_my_approved_join_requests: { Args: never; Returns: Json }
+      get_my_approved_join_requests: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       get_my_pending_invites: {
-        Args: never
+        Args: Record<PropertyKey, never>
         Returns: {
           captain_name: string
           creator_name: string
@@ -3101,9 +3228,18 @@ export type Database = {
           token: string
         }[]
       }
-      get_operator_placeholders: { Args: { p_org_id: string }; Returns: Json }
-      get_operator_player_stats: { Args: { p_org_id: string }; Returns: Json }
-      get_operator_stats: { Args: { operator_id_param: string }; Returns: Json }
+      get_operator_placeholders: {
+        Args: { p_org_id: string }
+        Returns: Json
+      }
+      get_operator_player_stats: {
+        Args: { p_org_id: string }
+        Returns: Json
+      }
+      get_operator_stats: {
+        Args: { operator_id_param: string }
+        Returns: Json
+      }
       get_org_placeholders_for_merge: {
         Args: { p_include_archived?: boolean; p_org_id: string }
         Returns: {
@@ -3123,10 +3259,6 @@ export type Database = {
           teams: Json
         }[]
       }
-      get_league_teams_for_onboarding: {
-        Args: { p_league_id: string }
-        Returns: Json
-      }
       get_placeholder_remove_context: {
         Args: { p_member_id: string }
         Returns: {
@@ -3140,7 +3272,10 @@ export type Database = {
           team_count: number
         }[]
       }
-      get_team_join_view: { Args: { p_token: string }; Returns: Json }
+      get_team_join_view: {
+        Args: { p_token: string }
+        Returns: Json
+      }
       get_team_placeholders_for_claim: {
         Args: { p_team_id: string }
         Returns: Json
@@ -3152,11 +3287,34 @@ export type Database = {
           team_name: string
         }[]
       }
+      gtrgm_compress: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_decompress: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_in: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_options: {
+        Args: { "": unknown }
+        Returns: undefined
+      }
+      gtrgm_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
       is_conversation_participant: {
         Args: { conv_id: string; uid: string }
         Returns: boolean
       }
-      league_display_name: { Args: { p_league_id: string }; Returns: string }
+      league_display_name: {
+        Args: { p_league_id: string }
+        Returns: string
+      }
       lookup_placeholder_by_system_number: {
         Args: { p_system_number: number }
         Returns: {
@@ -3178,7 +3336,10 @@ export type Database = {
           was_swapped: boolean
         }[]
       }
-      member_display_name: { Args: { p_member_id: string }; Returns: string }
+      member_display_name: {
+        Args: { p_member_id: string }
+        Returns: string
+      }
       merge_placeholder_into_member: {
         Args: { p_placeholder_member_id: string; p_target_member_id: string }
         Returns: {
@@ -3204,7 +3365,10 @@ export type Database = {
           total_rows_updated: number
         }[]
       }
-      placeholder_has_stats: { Args: { p_member_id: string }; Returns: boolean }
+      placeholder_has_stats: {
+        Args: { p_member_id: string }
+        Returns: boolean
+      }
       prep_match: {
         Args: { p_game_rows: Json; p_match_id: string; p_thresholds: Json }
         Returns: undefined
@@ -3241,7 +3405,10 @@ export type Database = {
           success: boolean
         }[]
       }
-      rotate_team_join_token: { Args: { p_team_id: string }; Returns: Json }
+      rotate_team_join_token: {
+        Args: { p_team_id: string }
+        Returns: Json
+      }
       search_placeholder_matches: {
         Args: {
           p_city?: string
@@ -3303,6 +3470,10 @@ export type Database = {
           total_score: number
         }[]
       }
+      set_limit: {
+        Args: { "": number }
+        Returns: number
+      }
       set_match_lineup_rating: {
         Args: {
           p_match_lineup_id: string
@@ -3321,10 +3492,26 @@ export type Database = {
         }
         Returns: string
       }
-      show_limit: { Args: never; Returns: number }
-      show_trgm: { Args: { "": string }; Returns: string[] }
-      soundex: { Args: { "": string }; Returns: string }
-      text_soundex: { Args: { "": string }; Returns: string }
+      show_limit: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      show_trgm: {
+        Args: { "": string }
+        Returns: string[]
+      }
+      soundex: {
+        Args: { "": string }
+        Returns: string
+      }
+      swap_player_in_lineup: {
+        Args: { p_lineup_id: string; p_resolution: Json; p_thresholds: Json }
+        Returns: undefined
+      }
+      text_soundex: {
+        Args: { "": string }
+        Returns: string
+      }
       undo_merge_placeholder: {
         Args: {
           p_actor_member_id: string
