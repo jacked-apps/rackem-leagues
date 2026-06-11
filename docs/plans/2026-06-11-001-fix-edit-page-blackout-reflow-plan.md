@@ -226,7 +226,7 @@ Reconciliation plan the pure function returns (directional shape):
 
 ## Implementation Units
 
-- [ ] **Unit 1: Pure re-flow reconciliation function**
+- [x] **Unit 1: Pure re-flow reconciliation function**
 
 **Goal:** Given the current `season_weeks` (id, date, type, weekNumber,
 weekCompleted) and an action (`add` | `remove` a blackout at date `D`), compute
@@ -285,7 +285,7 @@ supabase import) and reused by Unit 2.
 
 ---
 
-- [ ] **Unit 2: Apply the reconciliation plan (persistence)**
+- [x] **Unit 2: Apply the reconciliation plan (persistence)**
 
 **Goal:** Apply a reconciliation plan from Unit 1 to the database: insert the
 blackout row (or delete it on remove), update play-row dates in collision-safe
@@ -340,7 +340,7 @@ re-flow on a seeded season shows preserved play-week count and intact matchups.
 
 ---
 
-- [ ] **Unit 3: Wire the edit page + warn-but-allow**
+- [x] **Unit 3: Wire the edit page + warn-but-allow**
 
 **Goal:** Make `SeasonScheduleManager` call the Unit 1/2 re-flow on blackout
 add/remove (applying immediately and refetching), and replace the past/completed
