@@ -140,6 +140,7 @@ describe('applyBlackoutReflow — DB round-trip', () => {
       kind: 'add',
       date: '2026-07-08',
       reason: 'Holiday',
+      skipType: 'blackout',
     });
     expect(result.success).toBe(true);
     expect(result.newSeasonEndDate).toBe('2026-08-05');
@@ -196,6 +197,7 @@ describe('applyBlackoutReflow — DB round-trip', () => {
       kind: 'add',
       date: '2026-07-22',
       reason: 'nope',
+      skipType: 'blackout',
     });
     expect(result.success).toBe(false);
     expect(result.error).toMatch(/not a play week/i);

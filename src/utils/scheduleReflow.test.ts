@@ -68,6 +68,7 @@ describe('computeBlackoutReflow — add', () => {
       kind: 'add',
       date: '2026-07-08',
       reason: 'Holiday',
+      skipType: 'blackout',
     });
 
     // New blackout inserted on the targeted night.
@@ -95,6 +96,7 @@ describe('computeBlackoutReflow — add', () => {
       kind: 'add',
       date: '2026-07-01',
       reason: 'New Year',
+      skipType: 'blackout',
     });
     // All four play weeks move.
     expect(plan.dateUpdates).toHaveLength(4);
@@ -107,6 +109,7 @@ describe('computeBlackoutReflow — add', () => {
       kind: 'add',
       date: '2026-07-08',
       reason: 'Holiday',
+      skipType: 'blackout',
     });
     const playoffRow = weeks.find((w) => w.weekType === 'playoffs')!;
     const playoffUpdate = plan.dateUpdates.find((u) => u.id === playoffRow.id);
@@ -119,6 +122,7 @@ describe('computeBlackoutReflow — add', () => {
       kind: 'add',
       date: '2026-07-08',
       reason: 'Holiday',
+      skipType: 'blackout',
     });
     // No play week is dated onto the 7/22 break; Week 3 lands on 7/29.
     const wk3 = weeks.find((w) => w.weekName === 'Week 3')!;
@@ -136,6 +140,7 @@ describe('computeBlackoutReflow — add', () => {
       kind: 'add',
       date: '2026-07-08',
       reason: 'Holiday',
+      skipType: 'blackout',
     });
     const updates = Object.fromEntries(
       plan.dateUpdates.map((u) => [weeks.find((w) => w.id === u.id)!.weekName, u.date]),
@@ -150,6 +155,7 @@ describe('computeBlackoutReflow — add', () => {
       kind: 'add',
       date: '2026-07-08',
       reason: 'Holiday',
+      skipType: 'blackout',
     });
     const dates = plan.dateUpdates.map((u) => u.date);
     expect(dates).toEqual([...dates].sort((a, b) => b.localeCompare(a)));
@@ -198,31 +204,36 @@ describe('computeBlackoutReflow — remove', () => {
 
 describe('computeBlackoutReflow — guards', () => {
   it('throws on an empty schedule', () => {
-    expect(() => computeBlackoutReflow([], { kind: 'add', date: '2026-07-01', reason: 'x' }))
-      .toThrow(/empty schedule/i);
+    expect(() =>
+      computeBlackoutReflow([], { kind: 'add', date: '2026-07-01', reason: 'x', skipType: 'blackout' }),
+    ).toThrow(/empty schedule/i);
   });
 
   it('add throws when the target date is not a play week', () => {
     const weeks = seasonWithBreakAndPlayoff();
     // 7/22 is the season-end break (a skip), not a play week.
     expect(() =>
-      computeBlackoutReflow(weeks, { kind: 'add', date: '2026-07-22', reason: 'x' }),
+      computeBlackoutReflow(weeks, { kind: 'add', date: '2026-07-22', reason: 'x', skipType: 'blackout' }),
     ).toThrow(/not a play week/i);
   });
 
-  it('remove throws when no blackout sits on the target date', () => {
+  it('remove throws when the target date is a play week (not a skip)', () => {
     const weeks = seasonWithBreakAndPlayoff();
-    // 7/01 is a regular play week, not a blackout.
+    // 7/01 is a regular play week, not a skip.
     expect(() =>
       computeBlackoutReflow(weeks, { kind: 'remove', date: '2026-07-01' }),
-    ).toThrow(/no blackout/i);
+    ).toThrow(/no skip week/i);
   });
 
-  it('remove refuses to delete a season_end_break (only blackouts are removable)', () => {
+  it('remove deletes a season_end_break too (it is a skip, just a different label)', () => {
     const weeks = seasonWithBreakAndPlayoff();
-    expect(() =>
-      computeBlackoutReflow(weeks, { kind: 'remove', date: '2026-07-22' }),
-    ).toThrow(/no blackout/i);
+    const breakRow = weeks.find((w) => w.weekType === 'season_end_break')!;
+    const plan = computeBlackoutReflow(weeks, { kind: 'remove', date: '2026-07-22' });
+    // The break row is deleted and the playoff pulls in from 7/29 -> 7/22.
+    expect(plan.deleteWeekIds).toEqual([breakRow.id]);
+    const playoff = weeks.find((w) => w.weekType === 'playoffs')!;
+    expect(plan.dateUpdates.find((u) => u.id === playoff.id)?.date).toBe('2026-07-22');
+    expect(plan.newSeasonEndDate).toBe('2026-07-22');
   });
 });
 
@@ -236,6 +247,7 @@ describe('computeBlackoutReflow — invariants', () => {
       kind: 'add',
       date: '2026-07-15',
       reason: 'Holiday',
+      skipType: 'blackout',
     });
     const after = applyPlan(weeks, plan);
 
@@ -267,6 +279,7 @@ describe('computeBlackoutReflow — invariants', () => {
       kind: 'add',
       date: '2026-07-08',
       reason: 'Holiday',
+      skipType: 'blackout',
     });
     const skipIds = new Set(weeks.filter((w) => !isPlay(w)).map((w) => w.id));
     expect(plan.dateUpdates.every((u) => !skipIds.has(u.id))).toBe(true);

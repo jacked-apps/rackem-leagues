@@ -44,14 +44,20 @@ export interface ReflowWeek {
   weekCompleted: boolean;
 }
 
+/** Skip kinds the re-flow can insert. Both are "a skip night with a label" — a
+ *  blackout (holiday) and a season-end break behave identically to the walk. */
+export type SkipType = 'blackout' | 'season_end_break';
+
 /**
  * The edit-page action driving the re-flow.
- * - `add`: black out `date` (which is currently a PLAY week's night). That play week
- *   re-dates to the next open night; a new blackout row is born on `date`.
- * - `remove`: drop the blackout currently sitting on `date`; later play weeks pull in.
+ * - `add`: turn `date` (currently a PLAY week's night) into a skip. That play week
+ *   re-dates to the next open night; a new skip row (`skipType`, labeled `reason`) is
+ *   born on `date`.
+ * - `remove`: drop the skip currently sitting on `date` (blackout or season-end
+ *   break); later play weeks pull in.
  */
 export type ReflowAction =
-  | { kind: 'add'; date: string; reason: string }
+  | { kind: 'add'; date: string; reason: string; skipType: SkipType }
   | { kind: 'remove'; date: string };
 
 /** A single row's date change, pre-ordered for collision-safe application. */
@@ -60,10 +66,10 @@ export interface ReflowDateUpdate {
   date: string;
 }
 
-/** A new skip row to create (only blackouts are inserted by this flow). */
+/** A new skip row to create (blackout or season-end break). */
 export interface ReflowInsert {
   date: string;
-  weekType: 'blackout';
+  weekType: SkipType;
   weekName: string;
 }
 
@@ -130,9 +136,10 @@ export function computeBlackoutReflow(
       );
     }
   } else {
-    if (!targetRow || targetRow.weekType !== 'blackout') {
+    // Remove targets any skip row (blackout or season-end break) — both are skips.
+    if (!targetRow || isPlay(targetRow)) {
       throw new Error(
-        `Cannot remove a blackout on ${action.date}: no blackout week is scheduled there.`,
+        `Cannot remove a week off on ${action.date}: no skip week is scheduled there.`,
       );
     }
   }
@@ -145,13 +152,13 @@ export function computeBlackoutReflow(
   let insertSkips: ReflowInsert[] = [];
 
   if (action.kind === 'add') {
-    // The blacked-out night becomes a skip; its play week re-dates below.
+    // The chosen night becomes a skip; its play week re-dates below.
     skipDates.add(action.date);
     insertSkips = [
-      { date: action.date, weekType: 'blackout', weekName: action.reason },
+      { date: action.date, weekType: action.skipType, weekName: action.reason },
     ];
   } else {
-    // The removed blackout stops being a skip; its row is deleted.
+    // The removed skip stops being a skip; its row is deleted.
     skipDates.delete(action.date);
     deleteWeekIds = [targetRow!.id];
   }
