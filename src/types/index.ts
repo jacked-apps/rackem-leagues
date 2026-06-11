@@ -74,9 +74,7 @@ export type {
   MatchStatus,
   Match,
   MatchWithDetails,
-  MatchInsertData,
-  TeamSchedulePosition,
-  TeamSchedulePositionInsertData
+  MatchInsertData
 } from './schedule';
 
 // Playoff types
