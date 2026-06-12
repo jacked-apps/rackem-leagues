@@ -854,7 +854,8 @@ LO-authored rules layered on top of the CSI rulebook. Org-wide rules cascade int
 Shared chrome that wraps all authenticated routes. `MemberLayout` is mounted by `NavRoutes.tsx` as a parent route; child routes render into its `<Outlet/>`.
 
 - `MemberLayout.tsx` - Persistent layout shell. Desktop: left sidebar (`<AppSidebar>`). Mobile: bottom tab bar (`<BottomTabBar>`). Also hosts global features previously on the Dashboard (e.g., pending-invites modal). Pages still own their own `<PageHeader>`.
-- `AppSidebar.tsx` - Desktop persistent sidebar — brand, primary nav, theme toggle, drawer trigger. Auth-aware: minimal chrome for public visitors, full nav for logged-in users.
+- `AppSidebar.tsx` - Desktop persistent sidebar — brand, primary nav, theme toggle, drawer trigger. Auth-aware: minimal chrome for public visitors, full nav for logged-in users. Its **My Match entry (Unit 5)** is state-driven (mirrors the bottom-nav tab: links to the player's current match with a live dot, or dims + toasts as a button when there's nothing), replacing the old static `/my-match` link.
+- `AppSidebar.test.tsx` - Tests for the sidebar's My Match entry postures (live/today link, Tier-4 toast button, hydrating no-op, error toast).
 - `BottomTabBar.tsx` - Mobile fixed bottom tab bar (My Teams / My Match / Messages / Profile, + Manage for operators). Auth-aware like the sidebar. Generic tabs render via a local `TabLink`; the My Match slot renders `<MyMatchTab>`.
 - `MyMatchTab.tsx` - **✅ My Match tab (Unit 3)** — state-driven bottom-nav tab consuming `useMyMatchSurfaces`. Links to the player's current match (Tiers 1–3, accent live dot on Tier 1); dims + toasts as a non-navigating button on Tier 4 / error; neutral silent no-op while hydrating.
 - `MyMatchTab.test.tsx` - Tests for the My Match tab's five postures (live/today/makeup Link, Tier-4 toast, hydrating no-op, error toast).

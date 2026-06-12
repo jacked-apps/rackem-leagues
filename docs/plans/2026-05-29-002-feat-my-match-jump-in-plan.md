@@ -374,7 +374,7 @@ OperatorSection (operators only — unchanged)
 
 ---
 
-- [ ] **Unit 5: AppSidebar parity (desktop) — replaces existing static link**
+- [x] **Unit 5: AppSidebar parity (desktop) — replaces existing static link**
 
 **Goal:** Replace the existing static `<SidebarLink to="/my-match" label="My Match" />` in `SidebarPlayerSection` (~line 120 as of 2026-06-12 — locate by symbol) with a state-driven entry that follows the same four-tier ladder + hydrating posture as the bottom-nav (not the drawer's listing behavior — the sidebar is the desktop-shaped version of the tab, not of the section).
 
