@@ -31,7 +31,7 @@ describe('GlossaryInfoButton', () => {
 
     expect(screen.getByText('FargoRate')).toBeInTheDocument();
     expect(
-      screen.getByText(/national pool skill rating maintained by FargoRate/i),
+      screen.getByText(/skill rating maintained by FargoRate/i),
     ).toBeInTheDocument();
   });
 
