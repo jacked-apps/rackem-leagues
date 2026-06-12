@@ -862,7 +862,7 @@ Shared chrome that wraps all authenticated routes. `MemberLayout` is mounted by 
 - `MyMatchTab.test.tsx` - Tests for the My Match tab's five postures (live/today/makeup Link, Tier-4 toast, hydrating no-op, error toast).
 - `AppDrawer.tsx` - Slide-in drawer with secondary nav (profile, settings, operator-org switcher, sign-out) + the shared **`MyMatchPanel`** pinned at the TOP (`inSheet`). Drawer is the home for nav items that don't fit on the sidebar/tab bar.
 - `AppDrawer.test.tsx` - Tests for the drawer's per-org operator shortcuts and auth-gated content.
-- `OperatorOrgRow.tsx` - Per-org entry in the Operator nav section (shared by `<AppDrawer>` + `<AppSidebar>`). Exposes a single action for now — the org's **Dashboard** (Create League + Reports removed from nav; pages still routable). Flat mode = lone "Dashboard" link (single-org); collapsible mode = org name links straight to its dashboard (multi-org).
+- `OperatorOrgRow.tsx` - Per-org entry in the Operator nav section (shared by `<AppDrawer>` + `<AppSidebar>`). Exposes **Dashboard** + **Reports** per org (Reports carries the pending-reports doorbell badge); **Create League removed** from nav (page still routable). Owns `usePendingReportsCount(orgId)`. Flat mode = inline links (single-org); collapsible `<details>` group (multi-org).
 
 #### Form Components (`/components/forms/`)
 
