@@ -278,7 +278,7 @@ OperatorSection (operators only — unchanged)
 
 ---
 
-- [ ] **Unit 3: Repurpose BottomTabBar Live tab → My Match**
+- [x] **Unit 3: Repurpose BottomTabBar Live tab → My Match**
 
 **Goal:** Rename the existing Live tab to "My Match," point its destination at the resolved match's lineup route, add the accent-dot live indicator (Tier 1 only), wire the hydrating posture, and dim + toast on Tier 4.
 

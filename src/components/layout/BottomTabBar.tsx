@@ -1,21 +1,24 @@
 /**
  * @fileoverview Fixed bottom tab bar for mobile navigation.
  *
- * Renders 4 tabs for all authenticated users (My Teams, Live, Messages,
- * Profile) and a 5th "Manage" tab for operators. Hidden on desktop (`lg+`)
- * where the persistent sidebar takes over.
+ * Renders My Teams, My Match, Messages, and Profile for all authenticated
+ * users, plus a 5th "Manage" tab for operators. Hidden on desktop (`lg+`) where
+ * the persistent sidebar takes over, and on pages that have their own fixed
+ * bottom action bars (to avoid overlap).
  *
- * The tab bar is hidden on pages that have their own fixed bottom action
- * bars (TeamManagement, SeasonScheduleManager) to avoid overlap.
+ * The "My Match" tab is state-driven (see `MyMatchTab`) rather than a plain
+ * link — it routes to the player's current match, or dims + toasts when there's
+ * nothing to go to. Every other tab is a plain `TabLink`.
  */
 
 import { Link, useLocation, useParams } from 'react-router-dom';
-import { Users, Radio, MessageSquare, Settings, Building2 } from 'lucide-react';
+import { Users, MessageSquare, Settings, Building2 } from 'lucide-react';
 import { useIsOperator } from '@/api/hooks/useUserProfile';
 import { useOrganizations } from '@/api/hooks/useOrganizations';
 import { useUnreadMessageCount } from '@/api/hooks/useMessages';
 import { usePendingJoinRequestCount } from '@/api/hooks/usePendingJoinRequestCount';
 import { useUserProfile } from '@/api/hooks/useUserProfile';
+import { MyMatchTab } from './MyMatchTab';
 
 /** Routes where the tab bar is hidden because the page has its own fixed
  *  bottom action bar (Save/Cancel). */
@@ -63,6 +66,34 @@ const MANAGE_PATTERNS = [
   /^\/league-rules\//,
 ];
 
+/** A plain navigation tab (every tab except the state-driven My Match tab). */
+function TabLink({ tab }: { tab: TabItem }) {
+  const location = useLocation();
+  const isActive = tab.activePatterns.some((p) => p.test(location.pathname));
+  const Icon = tab.icon;
+
+  return (
+    <Link
+      to={tab.to}
+      aria-label={tab.label}
+      aria-current={isActive ? 'page' : undefined}
+      className={`flex flex-1 flex-col items-center justify-center gap-0.5 text-xs text-primary transition-colors ${
+        isActive ? 'font-semibold' : 'opacity-60'
+      }`}
+    >
+      <span className="relative">
+        <Icon className="h-5 w-5" />
+        {tab.badge ? (
+          <span className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
+            {tab.badge > 99 ? '99+' : tab.badge}
+          </span>
+        ) : null}
+      </span>
+      <span>{tab.label}</span>
+    </Link>
+  );
+}
+
 export function BottomTabBar() {
   const location = useLocation();
   const params = useParams();
@@ -76,29 +107,24 @@ export function BottomTabBar() {
   const shouldHide = HIDDEN_TAB_ROUTES.some((pattern) => pattern.test(location.pathname));
   if (shouldHide) return null;
 
-  // Determine the org to navigate to for the Manage tab.
-  // Prefer the current route's orgId if we're already on an operator page,
-  // otherwise fall back to the user's primary org.
+  // Determine the org to navigate to for the Manage tab. Prefer the current
+  // route's orgId if we're already on an operator page, else the primary org.
   const currentOrgId = params.orgId ?? null;
   const primaryOrgId = getPrimaryOrgId(organizations);
   const manageOrgId = currentOrgId ?? primaryOrgId;
 
-  const playerTabs: TabItem[] = [
-    {
-      label: 'My Teams',
-      icon: Users,
-      to: '/my-teams',
-      activePatterns: [/^\/my-teams/, /^\/team\//],
-      // Doorbell: pending join requests the user can approve (act-now nudge on
-      // the destination tab, cleared when the queue empties).
-      badge: joinRequestCount > 0 ? joinRequestCount : undefined,
-    },
-    {
-      label: 'Live',
-      icon: Radio,
-      to: '/live',
-      activePatterns: [/^\/live/, /^\/league\/[^/]+\/live/],
-    },
+  // Leading tab. Doorbell: pending join requests the user can approve (act-now
+  // nudge on the destination tab, cleared when the queue empties).
+  const myTeamsTab: TabItem = {
+    label: 'My Teams',
+    icon: Users,
+    to: '/my-teams',
+    activePatterns: [/^\/my-teams/, /^\/team\//],
+    badge: joinRequestCount > 0 ? joinRequestCount : undefined,
+  };
+
+  // Tabs after My Match. Manage is appended only for operators.
+  const trailingTabs: TabItem[] = [
     {
       label: 'Messages',
       icon: MessageSquare,
@@ -112,22 +138,20 @@ export function BottomTabBar() {
       to: '/profile',
       activePatterns: [/^\/profile/],
     },
+    ...(isOperator && manageOrgId
+      ? [
+          {
+            label: 'Manage',
+            icon: Building2,
+            to: `/operator-dashboard/${manageOrgId}`,
+            activePatterns: MANAGE_PATTERNS,
+            // Doorbell for the LO: join requests are handled on the operator
+            // dashboard, so surface the count on the tab that lands there too.
+            badge: joinRequestCount > 0 ? joinRequestCount : undefined,
+          } as TabItem,
+        ]
+      : []),
   ];
-
-  const tabs: TabItem[] = isOperator && manageOrgId
-    ? [
-        ...playerTabs,
-        {
-          label: 'Manage',
-          icon: Building2,
-          to: `/operator-dashboard/${manageOrgId}`,
-          activePatterns: MANAGE_PATTERNS,
-          // Doorbell for the LO: join requests are handled on the operator
-          // dashboard, so surface the count on the tab that lands there too.
-          badge: joinRequestCount > 0 ? joinRequestCount : undefined,
-        },
-      ]
-    : playerTabs;
 
   return (
     <nav
@@ -136,32 +160,11 @@ export function BottomTabBar() {
       style={{ height: 'var(--tab-bar-height, 4rem)' }}
     >
       <div className="flex h-full items-stretch">
-        {tabs.map((tab) => {
-          const isActive = tab.activePatterns.some((p) => p.test(location.pathname));
-          const Icon = tab.icon;
-
-          return (
-            <Link
-              key={tab.label}
-              to={tab.to}
-              aria-label={tab.label}
-              aria-current={isActive ? 'page' : undefined}
-              className={`flex flex-1 flex-col items-center justify-center gap-0.5 text-xs text-primary transition-colors ${
-                isActive ? 'font-semibold' : 'opacity-60'
-              }`}
-            >
-              <span className="relative">
-                <Icon className="h-5 w-5" />
-                {tab.badge ? (
-                  <span className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
-                    {tab.badge > 99 ? '99+' : tab.badge}
-                  </span>
-                ) : null}
-              </span>
-              <span>{tab.label}</span>
-            </Link>
-          );
-        })}
+        <TabLink tab={myTeamsTab} />
+        <MyMatchTab memberId={member?.id} />
+        {trailingTabs.map((tab) => (
+          <TabLink key={tab.label} tab={tab} />
+        ))}
       </div>
     </nav>
   );
