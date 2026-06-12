@@ -100,11 +100,16 @@ export const TeamCard: React.FC<TeamCardProps> = ({
             </>
           )}
         </div>
-        {/* A bye has no captain/roster to edit, and it can't be raw-deleted
-            while it holds schedule slots. The proper Fill / Remove actions
-            (which touch the schedule) are a separate step — hide the generic
-            buttons here so the bye can't be edited into a broken half-state. */}
-        {!isBye && (
+        {isBye ? (
+          /* Fill the bye: opens the normal team editor. Giving it a captain +
+             name on save promotes it (status bye→active) into a real team —
+             no reschedule, since it already holds its slot. (No Delete here —
+             removing a bye that holds matches is a separate action.) */
+          <Button loadingText="none" size="sm" onClick={onEdit} className="shrink-0 gap-1">
+            <Pencil className="h-4 w-4" />
+            Fill
+          </Button>
+        ) : (
           <div className="flex gap-2 shrink-0">
             <Button loadingText="none" size="sm" onClick={onEdit}>
               <Pencil className="h-4 w-4" />

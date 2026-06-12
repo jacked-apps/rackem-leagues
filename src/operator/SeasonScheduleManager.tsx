@@ -5,17 +5,19 @@
  * Operators can add or remove blackout weeks for future dates only.
  * Past weeks (already played) cannot be modified.
  */
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { PageHeader } from '@/components/PageHeader';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/supabaseClient';
 import { Button } from '@/components/ui/button';
-import { Save } from 'lucide-react';
 import { ScheduleReviewTable } from '@/components/season/ScheduleReviewTable';
 import { InfoButton } from '@/components/InfoButton';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { applyBlackoutReflow, restoreScheduleSnapshot, type ScheduleSnapshot } from '@/utils/scheduleReflowApply';
+import type { ReflowAction } from '@/utils/scheduleReflow';
+import { isPastOrPlayed, decideToggle } from '@/utils/scheduleToggle';
 
 const WeekOffReasonModal = lazy(() => import('@/components/modals/WeekOffReasonModal').then(m => ({ default: m.WeekOffReasonModal })));
 import type { WeekEntry, ChampionshipEvent } from '@/types/season';
@@ -23,6 +25,7 @@ import type { League } from '@/types/league';
 import { formatLocalDate, parseLocalDate } from '@/utils/formatters';
 import { fetchHolidaysForSeason } from '@/utils/holidayUtils';
 import { detectScheduleConflicts } from '@/utils/conflictDetectionUtils';
+import { fetchChampionshipDateOptions, type ChampionshipDateOption } from '@/utils/tournamentUtils';
 
 interface SeasonData {
   id: string;
@@ -52,18 +55,26 @@ export const SeasonScheduleManager: React.FC = () => {
   const [league, setLeague] = useState<League | null>(null);
   const [season, setSeason] = useState<SeasonData | null>(null);
   const [schedule, setSchedule] = useState<WeekEntry[]>([]);
-  const [originalSchedule, setOriginalSchedule] = useState<WeekEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showWeekOffModal, setShowWeekOffModal] = useState(false);
   const [selectedWeekIndex, setSelectedWeekIndex] = useState<number | null>(null);
+  // Pre-edit snapshot, captured on the first change. Non-null === the operator has
+  // unsaved changes they can revert. Save just clears it; Revert restores it.
+  const [snapshot, setSnapshot] = useState<ScheduleSnapshot | null>(null);
+  // One-time heads-up shown before the first edit, explaining that changes save as
+  // you go and leaving the page drops the ability to revert.
+  const [infoShown, setInfoShown] = useState(false);
 
   /**
-   * Load league, season, and existing schedule from database
+   * Load league, season, and existing schedule from the database.
+   *
+   * Extracted into a callback so it can be re-run after each re-flow apply — every
+   * blackout add/remove commits immediately and then reloads the fresh schedule
+   * (no staged "Save" model).
    */
-  useEffect(() => {
-    const fetchData = async () => {
+  const loadSchedule = useCallback(async () => {
       if (!leagueId || !seasonId) {
         setError('Missing league or season ID');
         setLoading(false);
@@ -127,32 +138,31 @@ export const SeasonScheduleManager: React.FC = () => {
         const seasonLength = seasonData.season_length || 16;
         const holidays = fetchHolidaysForSeason(startDate, seasonLength);
 
-        // Extract championship events from blackout weeks
-        const bcaWeeks = transformedSchedule.filter(w =>
-          w.type === 'week-off' &&
-          (w.weekName.toLowerCase().includes('bca') || w.weekName.toLowerCase().includes('championship'))
-        );
-        const apaWeeks = transformedSchedule.filter(w =>
-          w.type === 'week-off' && w.weekName.toLowerCase().includes('apa')
-        );
-
-        const bcaChampionship: ChampionshipEvent | undefined =
-          bcaWeeks.length > 0
+        // Championship conflict dates come from the SOURCE-OF-TRUTH date table
+        // (`championship_date_options`), NOT from the schedule's own "week-off"
+        // weeks. Deriving from the off-weeks meant that if the dates were ever
+        // corrected after the schedule was built (or any edit re-ran this), the
+        // flags echoed the stale off-weeks — e.g. APA flagged on 6/28–8/2 when
+        // the real dates are 8/04–8/15. `[0]` is the dev-verified / top-voted
+        // option for the relevant year (see fetchChampionshipDateOptions).
+        const [bcaOptions, apaOptions] = await Promise.all([
+          fetchChampionshipDateOptions('BCA'),
+          fetchChampionshipDateOptions('APA'),
+        ]);
+        // Dates are stored as full ISO timestamps (`...T04:00:00Z`); strip the
+        // time so downstream `parseLocalDate` (which expects YYYY-MM-DD) is happy.
+        const toChampionship = (
+          opt: ChampionshipDateOption | undefined,
+        ): ChampionshipEvent | undefined =>
+          opt
             ? {
-                start: bcaWeeks[0].date,
-                end: bcaWeeks[bcaWeeks.length - 1].date,
+                start: opt.start_date.split('T')[0],
+                end: opt.end_date.split('T')[0],
                 ignored: false,
               }
             : undefined;
-
-        const apaChampionship: ChampionshipEvent | undefined =
-          apaWeeks.length > 0
-            ? {
-                start: apaWeeks[0].date,
-                end: apaWeeks[apaWeeks.length - 1].date,
-                ignored: false,
-              }
-            : undefined;
+        const bcaChampionship = toChampionship(bcaOptions[0]);
+        const apaChampionship = toChampionship(apaOptions[0]);
 
         const leagueDayOfWeek = leagueData?.day_of_week || 'tuesday';
 
@@ -166,17 +176,17 @@ export const SeasonScheduleManager: React.FC = () => {
         );
 
         setSchedule(scheduleWithConflicts);
-        setOriginalSchedule(JSON.parse(JSON.stringify(scheduleWithConflicts))); // Deep clone for comparison
       } catch (err) {
         logger.error('Error loading schedule', { error: err instanceof Error ? err.message : String(err) });
         setError('Failed to load season schedule');
       } finally {
         setLoading(false);
       }
-    };
-
-    fetchData();
   }, [leagueId, seasonId]);
+
+  useEffect(() => {
+    loadSchedule();
+  }, [loadSchedule]);
 
   /**
    * Extract week number from week name (e.g., "Week 5" -> 5)
@@ -204,162 +214,153 @@ export const SeasonScheduleManager: React.FC = () => {
   };
 
   /**
-   * Check if a week can be edited (must be in the future)
+   * Apply a re-flow action (add/remove a skip) to the database, then reload the
+   * fresh schedule. Each toggle commits immediately — there is no staged "Save".
+   * Matches are never touched; only week dates shift (see scheduleReflowApply.ts).
    */
-  const canEditWeek = (weekIndex: number): boolean => {
-    const week = schedule[weekIndex];
-    const today = formatLocalDate(new Date());
+  /**
+   * Capture the current schedule as a revertable snapshot (play rows by id, plus
+   * skip rows and the season end date). Taken from in-memory state BEFORE the first
+   * change applies.
+   */
+  const buildSnapshot = (): ScheduleSnapshot | null => {
+    if (!season) return null;
+    return {
+      weeks: schedule
+        .filter((w) => w.dbId && w.dbWeekType)
+        .map((w) => ({
+          id: w.dbId as string,
+          date: w.date,
+          weekType: w.dbWeekType as ScheduleSnapshot['weeks'][number]['weekType'],
+          weekName: w.weekName,
+        })),
+      endDate: season.end_date,
+    };
+  };
 
-    // Cannot edit if week is in the past or already completed
-    return week.date >= today && !week.weekCompleted;
+  const applyReflow = async (action: ReflowAction) => {
+    if (!seasonId || processing) return;
+    // Capture the starting point once, before the very first change applies.
+    const pending = snapshot ?? buildSnapshot();
+    setProcessing(true);
+    setError(null);
+
+    const result = await applyBlackoutReflow(seasonId, action);
+    if (result.success) {
+      if (!snapshot && pending) setSnapshot(pending);
+      toast.success('Schedule updated');
+      await loadSchedule();
+    } else {
+      toast.error(result.error ?? 'Could not update the schedule. Please try again.');
+    }
+    setProcessing(false);
   };
 
   /**
-   * Handle toggle week-off button click
+   * Revert every change back to the snapshot captured on the first edit.
    */
-  const handleToggleWeekOff = (index: number) => {
-    if (!canEditWeek(index)) {
-      toast.error('Cannot edit past weeks or completed weeks');
-      return;
+  const handleRevert = async () => {
+    if (!seasonId || !snapshot || processing) return;
+    setProcessing(true);
+    setError(null);
+
+    const result = await restoreScheduleSnapshot(seasonId, snapshot);
+    if (result.success) {
+      setSnapshot(null);
+      toast.success('Reverted to the starting schedule');
+      await loadSchedule();
+    } else {
+      toast.error(result.error ?? 'Could not revert. Please try again.');
+    }
+    setProcessing(false);
+  };
+
+  /**
+   * Finalize: changes are already saved, so this just clears the snapshot (drops the
+   * ability to revert) and returns to the league.
+   */
+  const handleDone = () => {
+    setSnapshot(null);
+    toast.success('Schedule saved');
+    navigate(`/league/${leagueId}`);
+  };
+
+  /**
+   * Handle a week-off toggle from a schedule row.
+   *
+   * Dates are advisory (players can play any match any time), so editing a past or
+   * already-played week is WARNED but ALLOWED, never blocked. A skip week (blackout
+   * or season-end break) is removed; a play week is turned into a skip — playoffs get
+   * a season-end break, regular weeks open the reason modal for a blackout.
+   */
+  const handleToggleWeekOff = async (index: number) => {
+    if (processing) return;
+    const week = schedule[index];
+    if (!week?.dbId) return;
+
+    // One-time heads-up before the very first edit of this session.
+    if (!infoShown) {
+      const ok = await confirm({
+        title: 'Changes save automatically',
+        message:
+          'Each adjustment you make to the schedule saves automatically. If you ' +
+          'navigate away from this page for any reason, you\'ll lose the ability to ' +
+          'revert back to the schedule you started with. (You can always re-edit the ' +
+          'schedule back to where it was.)',
+        confirmText: 'Got it',
+      });
+      if (!ok) return;
+      setInfoShown(true);
     }
 
-    const week = schedule[index];
+    const toggleWeek = {
+      date: week.date,
+      weekCompleted: week.weekCompleted === true,
+      dbWeekType: week.dbWeekType,
+    };
 
-    // If it's already a week-off, remove it (convert back to regular)
-    if (week.type === 'week-off') {
-      removeBlackoutWeek(index);
+    // Warn-but-allow for past / already-played weeks (dates are advisory).
+    const today = formatLocalDate(new Date());
+    if (isPastOrPlayed(toggleWeek, today)) {
+      const ok = await confirm({
+        title: 'Edit a past week?',
+        message:
+          'This week is in the past or already played. Players may have already used ' +
+          'these dates. You can still re-flow the schedule — just double-check the result.',
+        confirmText: 'Re-flow anyway',
+      });
+      if (!ok) return;
+    }
+
+    const decision = decideToggle(toggleWeek);
+    if (decision.action === 'remove') {
+      await applyReflow({ kind: 'remove', date: week.date });
+    } else if (decision.action === 'add') {
+      await applyReflow({
+        kind: 'add',
+        date: week.date,
+        reason: decision.reason,
+        skipType: decision.skipType,
+      });
     } else {
-      // It's a regular week - show modal to add blackout reason
+      // prompt-blackout: a regular week needs an operator reason first.
       setSelectedWeekIndex(index);
       setShowWeekOffModal(true);
     }
   };
 
   /**
-   * Add a blackout week with a reason
+   * Confirm handler for the blackout-reason modal: add a blackout on the selected
+   * play week with the operator's reason as its label.
    */
-  const addBlackoutWeek = (reason: string) => {
-    if (selectedWeekIndex === null) return;
-
-    const updatedSchedule = [...schedule];
-    const week = updatedSchedule[selectedWeekIndex];
-
-    // Convert regular week to blackout
-    week.type = 'week-off';
-    week.weekName = reason;
-    week.isModified = true; // Mark as modified for saving
-
-    setSchedule(updatedSchedule);
+  const handleAddBlackout = async (reason: string) => {
     setShowWeekOffModal(false);
+    const index = selectedWeekIndex;
     setSelectedWeekIndex(null);
-  };
-
-  /**
-   * Remove a blackout week (convert back to regular)
-   */
-  const removeBlackoutWeek = (index: number) => {
-    const updatedSchedule = [...schedule];
-    const week = updatedSchedule[index];
-
-    // Find what the week number should be by counting previous regular weeks
-    let weekNumber = 1;
-    for (let i = 0; i < index; i++) {
-      if (updatedSchedule[i].type === 'regular') {
-        weekNumber++;
-      }
-    }
-
-    // Convert blackout back to regular
-    week.type = 'regular';
-    week.weekName = `Week ${weekNumber}`;
-    week.weekNumber = weekNumber;
-    week.isModified = true; // Mark as modified for saving
-
-    // Renumber all subsequent regular weeks
-    let nextWeekNumber = weekNumber + 1;
-    for (let i = index + 1; i < updatedSchedule.length; i++) {
-      if (updatedSchedule[i].type === 'regular') {
-        updatedSchedule[i].weekNumber = nextWeekNumber;
-        updatedSchedule[i].weekName = `Week ${nextWeekNumber}`;
-        updatedSchedule[i].isModified = true;
-        nextWeekNumber++;
-      }
-    }
-
-    setSchedule(updatedSchedule);
-  };
-
-  /**
-   * Check if there are unsaved changes
-   */
-  const hasChanges = (): boolean => {
-    return JSON.stringify(schedule) !== JSON.stringify(originalSchedule);
-  };
-
-  /**
-   * Save changes to database
-   */
-  const handleSaveChanges = async () => {
-    if (!seasonId) return;
-
-    setSaving(true);
-    setError(null);
-
-    try {
-      // Find all modified weeks
-      const modifiedWeeks = schedule.filter(week => week.isModified);
-
-      // Update each modified week
-      for (const week of modifiedWeeks) {
-        if (!week.dbId) continue; // Skip if no DB ID (shouldn't happen)
-
-        // Map UI type back to database week_type
-        let dbWeekType: 'regular' | 'blackout' | 'playoffs' | 'season_end_break' = 'regular';
-        if (week.type === 'playoffs') {
-          dbWeekType = 'playoffs';
-        } else if (week.type === 'week-off') {
-          // Determine if it's blackout or season_end_break based on name
-          dbWeekType = week.weekName === 'Season End Break' ? 'season_end_break' : 'blackout';
-        }
-
-        const { error: updateError } = await supabase
-          .from('season_weeks')
-          .update({
-            week_name: week.weekName,
-            week_type: dbWeekType,
-          })
-          .eq('id', week.dbId);
-
-        if (updateError) throw updateError;
-      }
-
-      // Update original schedule to match current (reset "modified" state)
-      setOriginalSchedule(JSON.parse(JSON.stringify(schedule)));
-
-      // Navigate back to league detail
-      navigate(`/league/${leagueId}`);
-    } catch (err) {
-      logger.error('Error saving schedule changes', { error: err instanceof Error ? err.message : String(err) });
-      setError('Failed to save changes. Please try again.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  /**
-   * Cancel and go back without saving
-   */
-  const handleCancel = async () => {
-    if (hasChanges()) {
-      const confirmed = await confirm({
-        title: 'Unsaved Changes',
-        message: 'You have unsaved changes. Are you sure you want to leave?',
-        confirmText: 'Leave',
-        confirmVariant: 'destructive',
-      });
-      if (!confirmed) return;
-    }
-    navigate(`/league/${leagueId}`);
+    if (index === null) return;
+    const week = schedule[index];
+    if (!week?.dbId) return;
+    await applyReflow({ kind: 'add', date: week.date, reason, skipType: 'blackout' });
   };
 
   // Loading state
@@ -391,7 +392,7 @@ export const SeasonScheduleManager: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-muted pb-24">
+    <div className={`min-h-screen bg-muted ${snapshot ? 'pb-24' : 'pb-8'}`}>
       <PageHeader
         backTo={`/league/${leagueId}`}
         backLabel="Back To League"
@@ -399,40 +400,41 @@ export const SeasonScheduleManager: React.FC = () => {
         subtitle={`${season?.season_name} • ${league?.division || 'League'}`}
       />
       {/*
-        Save / Cancel pair lives in a fixed bottom bar (R6a) so it stays in
-        the thumb zone and does not scroll out of view on long schedule edits.
-        Wrapper above adds pb-24 to keep the last row of content above the bar.
+        Revert / Save pair appears in a fixed bottom bar only once the operator has
+        made a change (snapshot captured). Save just clears the snapshot; Revert
+        restores the starting schedule. Leaving without either keeps the changes
+        (they apply as you go) but drops the ability to revert.
       */}
-      <div className="fixed bottom-0 inset-x-0 z-30 border-t bg-card p-3 shadow-lg">
-        <div className="mx-auto grid max-w-6xl grid-cols-2 gap-2">
-          <Button
-            variant="outline"
-            onClick={handleCancel}
-            className="w-full"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSaveChanges}
-            disabled={!hasChanges() || saving}
-            isLoading={saving}
-            loadingText="Saving..."
-            className="flex items-center gap-2 w-full"
-          >
-            <Save className="h-4 w-4" />
-            Save Changes
-          </Button>
+      {snapshot && (
+        <div className="fixed bottom-0 inset-x-0 z-30 border-t bg-card p-3 shadow-lg">
+          <div className="mx-auto grid max-w-6xl grid-cols-2 gap-2">
+            <Button
+              variant="outline"
+              onClick={handleRevert}
+              disabled={processing}
+              isLoading={processing}
+              loadingText="Reverting..."
+              className="w-full"
+            >
+              Revert Changes
+            </Button>
+            <Button onClick={handleDone} disabled={processing} loadingText="none" className="w-full">
+              Save
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
       <div className="container mx-auto px-4 max-w-6xl">
         {/* Instructions Info Button */}
         <div className="my-4">
           <InfoButton title="Instructions" label="Instructions">
             <ul className="list-disc list-inside space-y-1 text-sm">
-              <li>Click "Insert Week-Off" to add a blackout week (holiday, break, etc.)</li>
-              <li>Click "Remove Week-Off" to convert a blackout week back to a regular week</li>
-              <li>You can only edit future weeks (past weeks are locked)</li>
-              <li>Week numbers will automatically adjust when you add/remove blackout weeks</li>
+              <li>Click "Insert Week Off" to skip a week (holiday, break, etc.) — every change saves right away.</li>
+              <li>Click "Remove Week Off" to turn a skipped week back into a play week.</li>
+              <li>The rest of the season shifts automatically; the matchups stay with their weeks (only the dates move).</li>
+              <li>Holiday/championship flags stay on their real calendar date — they don't follow a week as it shifts.</li>
+              <li>Changed your mind? Hit "Revert Changes" to snap back to how the schedule started. "Save" keeps your changes.</li>
+              <li>Past or already-played weeks can still be edited — you'll just get a heads-up first.</li>
             </ul>
           </InfoButton>
         </div>
@@ -509,6 +511,7 @@ export const SeasonScheduleManager: React.FC = () => {
             schedule={schedule}
             onToggleWeekOff={handleToggleWeekOff}
             currentPlayWeek={getCurrentPlayWeek()}
+            allowLockedToggle
           />
         </div>
 
@@ -520,7 +523,7 @@ export const SeasonScheduleManager: React.FC = () => {
               setShowWeekOffModal(false);
               setSelectedWeekIndex(null);
             }}
-            onConfirm={addBlackoutWeek}
+            onConfirm={handleAddBlackout}
           />
         </Suspense>
         {ConfirmDialogComponent}

@@ -1157,6 +1157,9 @@ Lineup-page workhorse hooks. Extracted from the monolithic `useMatchLineup` so e
 #### Schedule & Matchup
 - `scheduleGenerator.ts` - Schedule generation logic
 - `scheduleUtils.ts` - Schedule utilities
+- `scheduleReflow.ts` - Pure blackout re-flow logic (re-date play weeks around skips, no match changes)
+- `scheduleReflowApply.ts` - Persists a re-flow plan to the DB (edit-page blackout add/remove)
+- `scheduleToggle.ts` - Pure week-off toggle decisions (remove/add/prompt, past-or-played warn)
 - `scheduleDisplayUtils.ts` - Schedule display helpers
 - `matchupTables.ts` - Matchup table utilities
 - `conflictDetectionUtils.ts` - Schedule conflict detection
