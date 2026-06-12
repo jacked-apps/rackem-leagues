@@ -9,10 +9,14 @@ origin: docs/brainstorms/2026-06-11-lo-onboarding-approve-surface-requirements.m
 
 # feat: LO/captain shared onboarding approve surface at scale
 
-**Base branch:** stacks on **PR #212** (`fix/operator-join-requests-visible`), **not**
-`main`. #212's groundwork — the join-request feed's `league_id`, the always-visible list,
-and the rewritten `JoinRequestList`/`JoinRequestCard` — is not in `main` yet, and every
-unit here builds on it. Branch off #212's branch; if #212 merges first, rebase onto `main`.
+**Base branch:** #212 has since **merged into `main`** (v1.3.0) — its groundwork (the
+join-request feed's `league_id`, the always-visible list, the rewritten
+`JoinRequestList`/`JoinRequestCard`) is now live in `main`, so this branches straight off
+`main` (no stacking needed). The doorbell-routing slice (Unit 3) shipped **separately as
+PR #218** so it could merge first and unblock the LO from reaching the list.
+
+**Status:** Unit 1 (data) + Unit 2 (card) built on `feat/lo-onboarding-approve-surface`;
+Unit 3 (doorbell) shipped as PR #218.
 
 ## Overview
 
@@ -211,7 +215,7 @@ Doorbell "Join requests (N)"  →  operator? operator-dashboard/:orgId : /my-tea
 
 ## Implementation Units
 
-- [ ] **Unit 1: Enrich the data — captain summary in the feed + a roster RPC**
+- [x] **Unit 1: Enrich the data — captain summary in the feed + a roster RPC**
 
 **Goal:** Give the surface its information: a per-request captain summary in the feed, and
 a full per-team roster (with markers) fetched on demand.
@@ -264,7 +268,7 @@ marked rows only to authorized callers and denies others like its sibling.
 
 ---
 
-- [ ] **Unit 2: Informative, footgun-guarded request card**
+- [x] **Unit 2: Informative, footgun-guarded request card**
 
 **Goal:** Make `JoinRequestCard` summary-first and informative — team + league/season +
 captain-status chip up top, full roster on expand with placeholders as connect targets and
@@ -314,7 +318,7 @@ open.
 
 ---
 
-- [ ] **Unit 3: Doorbell routes the LO to their operator surface**
+- [x] **Unit 3: Doorbell routes the LO to their operator surface** — shipped as PR #218.
 
 **Goal:** The "Join requests (N)" badge takes an operator to their operator surface instead
 of the player page — the fix that currently leaves the LO unable to reach the list.
