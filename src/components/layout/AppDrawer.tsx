@@ -364,7 +364,9 @@ function MyMatchChip({
     ) : (
       <span
         aria-hidden="true"
-        className="flex h-4 w-4 items-center justify-center rounded-full border text-[8px] font-bold leading-none"
+        // Fixed 16px circle (h-4 w-4); only the font grows to match the count's
+        // 11px. tracking-tighter keeps "MU" inside without enlarging the circle.
+        className="flex h-4 w-4 items-center justify-center rounded-full border text-[11px] font-bold leading-none tracking-tighter"
       >
         MU
       </span>
