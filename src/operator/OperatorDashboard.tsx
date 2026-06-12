@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageSquare, Users, Settings, BookOpen, Video, MessageCircle, Phone, Flag, Wrench } from 'lucide-react';
 import { usePendingReportsCount } from '@/hooks/usePendingReportsCount';
 import { JoinRequestList } from '@/onboarding/components/JoinRequestList';
+import { isProduction } from '@/config/environment';
 
 /**
  * OperatorDashboard Component
@@ -104,14 +105,18 @@ export const OperatorDashboard: React.FC = () => {
             badgeCount={pendingReportsCount}
           />
 
-          <DashboardCard
-            icon={<Wrench className="h-6 w-6" />}
-            iconColor="text-primary"
-            title="Scoring Workshop"
-            description="Build pieces of a Scoring System — one room per module"
-            buttonText="Open Workshop"
-            linkTo="/operator/scoring-workshop"
-          />
+          {/* Scoring Workshop — still in active development; gated off in
+              production until it's ready. Visible on dev/staging. */}
+          {!isProduction && (
+            <DashboardCard
+              icon={<Wrench className="h-6 w-6" />}
+              iconColor="text-primary"
+              title="Scoring Workshop"
+              description="Build pieces of a Scoring System — one room per module"
+              buttonText="Open Workshop"
+              linkTo="/operator/scoring-workshop"
+            />
+          )}
 
           {/* Row 2 - Active Leagues (2 cols) and Sidebar (1 col) */}
           <div className="lg:col-span-2">

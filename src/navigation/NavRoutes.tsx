@@ -268,9 +268,15 @@ export const router = createBrowserRouter([
           { path: 'league-rules/:orgId', element: withOperator(LeagueRules) },
           { path: 'league/:leagueId', element: withOperator(LeagueDetail) },
           { path: 'league/:leagueId/finances', element: withOperator(LeagueFinancesPage) },
-          { path: 'operator/scoring-workshop', element: withOperator(WorkshopHomePage) },
-          { path: 'operator/scoring-workshop/per-game-allocator', element: withOperator(AllocatorRoomPage) },
-          { path: 'operator/scoring-workshop/trigger', element: withOperator(TriggerRoomPage) },
+          // Scoring Workshop — in active development; gated off in production
+          // (route + dashboard card) until it's ready. Dev/staging only.
+          ...(!isProduction
+            ? [
+                { path: 'operator/scoring-workshop', element: withOperator(WorkshopHomePage) },
+                { path: 'operator/scoring-workshop/per-game-allocator', element: withOperator(AllocatorRoomPage) },
+                { path: 'operator/scoring-workshop/trigger', element: withOperator(TriggerRoomPage) },
+              ]
+            : []),
           { path: 'league/:leagueId/settings', element: withOperator(LeagueSettings) },
           { path: 'league/:leagueId/create-season', element: withOperator(SeasonCreationWizard) },
           { path: 'operator/start-next-season/:leagueId', element: withOperator(NewSeasonFromPreviousPage) },
