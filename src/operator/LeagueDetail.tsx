@@ -24,6 +24,7 @@ import { ScheduleCard } from '@/components/operator/ScheduleCard';
 import { StatsCard } from '@/components/operator/StatsCard';
 import { PlayoffsCard } from '@/components/operator/PlayoffsCard';
 import { OnboardCaptainsList } from '@/onboarding/OnboardCaptainsList';
+import { JoinRequestList } from '@/onboarding/components/JoinRequestList';
 import { Button } from '@/components/ui/button';
 import { DashboardCard } from '@/components/operator/DashboardCard';
 import { Calendar, DollarSign, Settings, Users } from 'lucide-react';
@@ -251,6 +252,14 @@ export const LeagueDetail: React.FC = () => {
         {/* Captain-onboarding list — sits with Teams; self-clears as captains
             register. Restored after a merge (#192's restructure) dropped it. */}
         <OnboardCaptainsList leagueId={league.id} />
+
+        {/* Pending join requests for THIS league — the per-league approval
+            surface. Stays visible (empty state) so the operator can see it. */}
+        <JoinRequestList
+          title="Join requests"
+          leagueId={league.id}
+          emptyHint="No pending join requests for this league yet. When a captain or player taps their invite link and asks to join, they'll appear here to approve."
+        />
         <TeamsCard leagueId={league.id} />
         <ScheduleCard leagueId={league.id} />
         <MatchupsCard league={league} />

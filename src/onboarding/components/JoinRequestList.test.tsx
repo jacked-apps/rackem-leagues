@@ -31,6 +31,7 @@ const baseReq: ApproverJoinRequest = {
   request_id: 'r1',
   team_id: 't1',
   team_name: 'The Break Room',
+  league_id: 'lg1',
   league_name: 'Tuesday Eight-ball',
   requester_member_id: 'm1',
   requester_name: 'Jordan Quick',
@@ -48,6 +49,26 @@ beforeEach(() => {
 });
 
 describe('JoinRequestList', () => {
+  it('empty + emptyHint → stays visible with the title and hint (operator surface)', () => {
+    mockUseRequests.mockReturnValue({ data: [], isLoading: false });
+    render(<JoinRequestList title="Join requests" emptyHint="No pending join requests right now." />);
+    expect(screen.getByText('Join requests')).toBeInTheDocument();
+    expect(screen.getByText('No pending join requests right now.')).toBeInTheDocument();
+  });
+
+  it('leagueId filters the org-wide feed to that league only', () => {
+    mockUseRequests.mockReturnValue({
+      data: [
+        baseReq,
+        { ...baseReq, request_id: 'r2', requester_name: 'Pat Other', league_id: 'lg2' },
+      ],
+      isLoading: false,
+    });
+    render(<JoinRequestList leagueId="lg1" />);
+    expect(screen.getByText(/Jordan Quick accepted the invite/)).toBeInTheDocument();
+    expect(screen.queryByText(/Pat Other accepted the invite/)).not.toBeInTheDocument();
+  });
+
   it('renders nothing when the feed is empty (no emptyHint)', () => {
     mockUseRequests.mockReturnValue({ data: [], isLoading: false });
     const { container } = render(<JoinRequestList />);
