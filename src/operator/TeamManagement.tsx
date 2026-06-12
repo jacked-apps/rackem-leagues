@@ -410,19 +410,41 @@ export const TeamManagement: React.FC = () => {
       return;
     }
 
-    if ((playedCount ?? 0) > 0) {
-      toast.error(
-        'This team has already played matches. Dropping a team mid-season is a separate flow (coming soon).',
-      );
-      return;
-    }
-
     const seasonForTeam = teams.find((t) => t.id === teamId)?.season_id ?? seasonId;
     if (!seasonForTeam) {
       toast.error('Could not determine the season for this team.');
       return;
     }
 
+    // Mid-season (games already played) → withdraw the team (its past results
+    // stay on the record) and replace it with a fresh BYE for every remaining
+    // match, so its upcoming opponents get bye weeks. One atomic RPC.
+    if ((playedCount ?? 0) > 0) {
+      const confirmed = await confirm({
+        title: 'Drop this team mid-season?',
+        message:
+          "This team is withdrawn — its past results stay on the record — and a BYE replaces it for all its REMAINING matches, so its upcoming opponents get bye weeks. This cannot be undone.",
+        confirmText: 'Drop Team',
+        confirmVariant: 'destructive',
+      });
+      if (!confirmed) return;
+
+      try {
+        const { error: rpcError } = await supabase.rpc('drop_team_mid_season', {
+          p_team_id: teamId,
+          p_season_id: seasonForTeam,
+        });
+        if (rpcError) throw new Error(rpcError.message);
+        await refreshTeams();
+        toast.success('Team dropped — its remaining matches are now BYE weeks.');
+      } catch (err) {
+        logger.error('Error dropping team mid-season', { error: err instanceof Error ? err.message : String(err) });
+        toast.error(err instanceof Error ? err.message : 'Failed to drop team');
+      }
+      return;
+    }
+
+    // Pre-season (no games played) → repurpose the team's slot as the BYE.
     const confirmed = await confirm({
       title: 'Drop this team?',
       message:
