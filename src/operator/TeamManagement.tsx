@@ -456,6 +456,12 @@ export const TeamManagement: React.FC = () => {
   const isTraveling = leagueVenues.length > 1;
   const maxTeams = isInHouse ? totalCapacity * 2 : totalCapacity;
   const isAtMaxTeams = teams.length >= maxTeams && maxTeams > 0;
+  // An open BYE slot means the league is odd and already has its "next team"
+  // spot reserved in the schedule. Adding a SEPARATE team here stacks a
+  // redundant row + a stale bye (the wedged-league bug). The operator should
+  // FILL the bye instead — so gate "Add Team" whenever a bye exists. (`teams`
+  // includes the bye row; it's loaded with includeBye.)
+  const hasBye = teams.some((t) => t.status === 'bye');
 
   const isLoading = loading;
 
@@ -697,7 +703,7 @@ export const TeamManagement: React.FC = () => {
                   </Button>
                 )}
                 <Button
-                  disabled={leagueVenues.length === 0 || !seasonId || isAtMaxTeams}
+                  disabled={leagueVenues.length === 0 || !seasonId || isAtMaxTeams || hasBye}
                   onClick={() => setShowTeamEditor(true)}
                   loadingText="none"
                   title={
@@ -705,6 +711,8 @@ export const TeamManagement: React.FC = () => {
                       ? 'Assign at least one venue before adding teams'
                       : !seasonId
                       ? 'Create a season before adding teams'
+                      : hasBye
+                      ? 'You have an open BYE slot — fill it with your new team instead of adding a separate one'
                       : isAtMaxTeams
                       ? `Maximum of ${maxTeams} teams reached`
                       : ''
@@ -715,6 +723,20 @@ export const TeamManagement: React.FC = () => {
                 </Button>
               </div>
             </div>
+
+            {/* Open BYE slot → adding a separate team would wedge the league.
+                Steer the operator to fill the bye instead. */}
+            {hasBye && (
+              <div className="mb-4 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
+                <p className="font-medium">Your league has an open BYE slot</p>
+                <p className="text-muted-foreground">
+                  The BYE is your reserved spot for the next team (odd team
+                  count). To add another team, <strong>fill the BYE</strong> —
+                  give it a name + captain — instead of adding a separate team,
+                  which would leave a duplicate.
+                </p>
+              </div>
+            )}
 
             {leagueVenues.length === 0 ? (
               <div className="text-center py-8 bg-info/10 border border-info/40 rounded-lg">
