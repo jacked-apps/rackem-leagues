@@ -318,6 +318,7 @@ function TeamAccordionItem({
             gameType={team.season.league.game_type as 'eight_ball' | 'nine_ball' | 'ten_ball'}
             leagueId={team.season.league.id}
             captainId={team.team_players.find(p => p.is_captain)?.member_id}
+            rosterSize={team.roster_size}
           />
         </div>
       </AccordionContent>
