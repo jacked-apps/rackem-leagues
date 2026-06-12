@@ -33,6 +33,7 @@ import { formatPartialMemberNumber } from '@/types/member';
 import { formatGameType, formatDayOfWeek } from '@/types/league';
 import { PlayerNameLink } from '@/components/PlayerNameLink';
 import { PlayerRoster } from '@/components/PlayerRoster';
+import { VenueWithMaps } from '@/components/VenueWithMaps';
 import { PageHeader } from '@/components/PageHeader';
 import { MapPin, Users, AlertCircle, ArrowRight, Pencil, Bell } from 'lucide-react';
 import { parseLocalDate } from '@/utils/formatters';
@@ -285,15 +286,17 @@ function TeamAccordionItem({
             </div>
           )}
 
-          {/* Home Venue (Edit Team moved to the action buttons above) */}
-          <div>
-            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
-              <MapPin className="h-4 w-4" />
-              <span>Home Venue</span>
-            </div>
-            <p className="text-base text-foreground ml-6">
-              {team.venue?.name || 'No venue assigned'}
-            </p>
+          {/* Home Venue — one line, clickable → Google Maps (blue). The
+              "Home Venue -" label is dropped on mobile (icon + name only) to
+              save space. Edit Team moved to the action buttons above. */}
+          <div className="flex items-center gap-1.5 text-sm">
+            <MapPin className="h-4 w-4 shrink-0 text-blue-600" />
+            <span className="hidden sm:inline text-muted-foreground">Home Venue -</span>
+            {team.venue ? (
+              <VenueWithMaps venueId={team.venue.id} showIcon={false} />
+            ) : (
+              <span className="text-muted-foreground">No venue assigned</span>
+            )}
           </div>
 
           {/* Captain */}
