@@ -26,6 +26,7 @@ export const ScheduleWeekRow: React.FC<ScheduleWeekRowProps> = ({
   index,
   onToggleWeekOff,
   currentPlayWeek,
+  allowLockedToggle = false,
 }) => {
   const hasConflicts = week.conflicts.length > 0;
   const isWeekOff = week.type === 'week-off';
@@ -140,12 +141,18 @@ export const ScheduleWeekRow: React.FC<ScheduleWeekRowProps> = ({
 
       {/* Actions */}
       <td className="py-3 px-4">
-        {isWeekLocked ? (
+        {isWeekLocked && !allowLockedToggle ? (
           <span className="text-muted-foreground text-sm flex items-center gap-1">
             🔒 Week Completed
           </span>
         ) : (
           <>
+            {/* When the caller opts into editing locked weeks (advisory-date edit
+                page), still flag that this week is past/played so the toggle is a
+                deliberate choice — the caller warns before applying. */}
+            {isWeekLocked && allowLockedToggle && (
+              <span className="block text-xs text-muted-foreground mb-1">🔒 played</span>
+            )}
             <Button
               className="hidden lg:block"
               variant="outline"
