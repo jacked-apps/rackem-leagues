@@ -406,8 +406,10 @@ function MyMatchList({ heading, items }: { heading: string; items: MyMatchDrawer
   );
 }
 
-/** One match row — "My Team · vs Opponent · {Live | Today | Makeup (date)}".
- *  Tapping routes to the match's lineup page and closes the drawer. */
+/** One match row — leads with the date/detail, then the matchup. Long names
+ *  wrap ("vs OtherTeam" drops to the next line) rather than truncating to an
+ *  unreadable "...far... vs ...far...". Tapping routes to the lineup + closes
+ *  the drawer. */
 function MyMatchRow({ item }: { item: MyMatchDrawerItem }) {
   return (
     <SheetClose asChild>
@@ -415,13 +417,15 @@ function MyMatchRow({ item }: { item: MyMatchDrawerItem }) {
         to={item.destinationPath}
         className="flex min-h-11 items-center gap-2 rounded-md px-3 py-2 text-sm text-primary transition-colors hover:bg-primary/10"
       >
-        <span className="truncate font-medium">{item.teamName}</span>
-        <span className="truncate text-muted-foreground">vs {item.opponentName}</span>
         {item.rowDetail ? (
-          <span className="ml-auto shrink-0 text-xs font-medium text-muted-foreground">
+          <span className="shrink-0 tabular-nums text-xs font-medium text-muted-foreground">
             {item.rowDetail}
           </span>
         ) : null}
+        <span className="flex min-w-0 flex-wrap items-baseline gap-x-1">
+          <span className="font-medium">{item.teamName}</span>
+          <span className="text-muted-foreground">vs {item.opponentName}</span>
+        </span>
       </Link>
     </SheetClose>
   );
