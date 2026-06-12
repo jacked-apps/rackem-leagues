@@ -27,8 +27,12 @@ interface LineupChangeRequestModalProps {
   position: number;
   /** Name of player being replaced */
   oldPlayerName: string;
+  /** Handicap of the player being replaced (shown so the approver sees the swing). */
+  oldPlayerHandicap?: number | null;
   /** Name of replacement player */
   newPlayerName: string;
+  /** Handicap of the replacement player. */
+  newPlayerHandicap?: number | null;
   /** Handler when user approves the change */
   onApprove: () => void;
   /** Handler when user denies the change */
@@ -40,12 +44,19 @@ interface LineupChangeRequestModalProps {
 /**
  * Modal for opponent to approve/deny a lineup change request
  */
+/** Format a handicap value for display ("HC 2", "HC -1", or "HC —"). */
+function formatHandicap(value?: number | null): string {
+  return value == null ? 'HC —' : `HC ${value}`;
+}
+
 export function LineupChangeRequestModal({
   isOpen,
   requestingTeamName,
   position,
   oldPlayerName,
+  oldPlayerHandicap,
   newPlayerName,
+  newPlayerHandicap,
   onApprove,
   onDeny,
   isProcessing = false,
@@ -76,6 +87,7 @@ export function LineupChangeRequestModal({
             <div className="text-center p-3 bg-red-50 rounded-lg border border-red-200 min-w-[100px]">
               <p className="text-xs text-red-600 mb-1">Removing</p>
               <p className="font-semibold text-red-900">{oldPlayerName}</p>
+              <p className="text-xs font-medium text-red-700 mt-1">{formatHandicap(oldPlayerHandicap)}</p>
             </div>
 
             {/* Arrow */}
@@ -85,6 +97,7 @@ export function LineupChangeRequestModal({
             <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200 min-w-[100px]">
               <p className="text-xs text-green-600 mb-1">Adding</p>
               <p className="font-semibold text-green-900">{newPlayerName}</p>
+              <p className="text-xs font-medium text-green-700 mt-1">{formatHandicap(newPlayerHandicap)}</p>
             </div>
           </div>
 

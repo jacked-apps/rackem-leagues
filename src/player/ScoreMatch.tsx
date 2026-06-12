@@ -29,6 +29,8 @@ import { useCurrentMember } from '@/api/hooks';
 import { InfoButton } from '@/components/InfoButton';
 import { LineupChangeModal } from '@/components/scoring/LineupChangeModal';
 import { LineupChangeRequestModal } from '@/components/scoring/LineupChangeRequestModal';
+import { LineupSwapWaitingBanner } from '@/components/scoring/LineupSwapWaitingBanner';
+import { getPlayerFullNameById } from '@/types/member';
 import {
   requestLineupChange,
   approveLineupChange,
@@ -515,6 +517,46 @@ function ScoreMatchBody() {
   };
 
   /**
+   * Set of player IDs who have already played a completed game (assigned to a
+   * game with a winner). Mirrors the server's swap guard exactly, so the
+   * scoreboard's Swap Player gate and the RPC agree on who is swappable.
+   */
+  const playersWithCompletedGames = useMemo(() => {
+    const played = new Set<string>();
+    gameResults.forEach((game) => {
+      if (!game.winner_player_id) return;
+      if (game.home_player_id) played.add(game.home_player_id);
+      if (game.away_player_id) played.add(game.away_player_id);
+    });
+    return played;
+  }, [gameResults]);
+
+  /**
+   * Resolution toast for the swap INITIATOR. When my own lineup's pending
+   * request clears (swap_position goes from set -> null), read the outcome
+   * from swap_last_resolution and surface it. Fires only on the initiator's
+   * client — the approver's own lineup never held a pending swap. Driven by
+   * the userLineup snapshot changing (realtime tick or refetch), so it works
+   * without a dedicated realtime callback.
+   */
+  const prevUserSwapPosition = useRef<number | null>(userLineup?.swap_position ?? null);
+  useEffect(() => {
+    const prev = prevUserSwapPosition.current;
+    const curr = userLineup?.swap_position ?? null;
+    if (prev != null && curr == null) {
+      const resolution = (
+        userLineup as unknown as { swap_last_resolution?: { kind?: string } | null }
+      )?.swap_last_resolution;
+      if (resolution?.kind === 'approved') {
+        toast.success('Lineup change approved — lineup recalibrated');
+      } else if (resolution?.kind === 'denied') {
+        toast.error('Lineup change declined');
+      }
+    }
+    prevUserSwapPosition.current = curr;
+  }, [userLineup]);
+
+  /**
    * Add to confirmation queue (from useMatchScoring hook)
    */
   const addToConfirmationQueue = addToConfirmationQueueFromHook;
@@ -738,8 +780,8 @@ function ScoreMatchBody() {
    * @param position - The lineup position (1-5) of the player
    */
   const handleSwapPlayer = (playerId: string, position: number) => {
-    // Get the player name for display
-    const playerName = getPlayerDisplayName(playerId);
+    // Full name (not nickname) so the swap modal clearly identifies who's leaving.
+    const playerName = getPlayerFullNameById(playerId, players);
     setLineupChangeData({ playerId, playerName, position });
   };
 
@@ -748,7 +790,7 @@ function ScoreMatchBody() {
    * Sends request to opponent for approval
    */
   const handleLineupChangeRequest = async (newPlayerId: string) => {
-    if (!userLineup || !lineupChangeData) return;
+    if (!userLineup || !lineupChangeData || !memberId) return;
 
     // Get the new player's handicap from the cached handicaps (calculated via usePlayerHandicaps)
     // This uses TanStack Query caching - likely already calculated from lineup page
@@ -759,23 +801,26 @@ function ScoreMatchBody() {
       position: lineupChangeData.position,
       newPlayerId,
       newPlayerHandicap,
+      memberId,
     });
   };
 
   /**
-   * Handle approving opponent's lineup change request
+   * Handle approving the opponent's lineup change request.
+   * Any scorekeeper on the match may approve; memberId is recorded for audit.
    */
   const handleApproveLineupChange = () => {
-    if (!opponentLineup) return;
-    approveLineupChangeMutation.mutate(opponentLineup.id);
+    if (!opponentLineup || !memberId) return;
+    approveLineupChangeMutation.mutate({ lineupId: opponentLineup.id, memberId });
   };
 
   /**
-   * Handle denying opponent's lineup change request
+   * Handle denying the opponent's lineup change request.
+   * Any scorekeeper on the match may deny; memberId is recorded for audit.
    */
   const handleDenyLineupChange = () => {
-    if (!opponentLineup) return;
-    denyLineupChangeMutation.mutate(opponentLineup.id);
+    if (!opponentLineup || !memberId) return;
+    denyLineupChangeMutation.mutate({ lineupId: opponentLineup.id, memberId });
   };
 
   // Early returns for loading/error states.
@@ -972,6 +1017,27 @@ function ScoreMatchBody() {
         }
       />
 
+      {/* Initiator-side waiting banner — visible to the scorekeeper who opened
+          a swap while it awaits the opponent's approval. Auto-clears when the
+          request resolves (swap_position returns to null) and a resolution
+          toast fires. */}
+      {userLineup?.swap_position ? (
+        <LineupSwapWaitingBanner
+          show
+          position={userLineup.swap_position}
+          newPlayerName={
+            userLineup.swap_new_player_id
+              ? getPlayerDisplayName(userLineup.swap_new_player_id)
+              : 'a substitute'
+          }
+          opponentLabel={
+            isHomeTeam
+              ? match.away_team?.team_name || 'the opponent'
+              : match.home_team?.team_name || 'the opponent'
+          }
+        />
+      ) : null}
+
       {/* Scoreboard — Fixed at top.
           Unit 5 of the unified-scoreboard plan collapsed the prior 4-branch
           ternary (3v3 / 5v5 / 10-7 / tiebreaker) into a single dispatch:
@@ -1015,6 +1081,7 @@ function ScoreMatchBody() {
           getPlayerDisplayName={getPlayerDisplayName}
           getPlayerStats={getPlayerStats}
           onSwapPlayer={handleSwapPlayer}
+          hasPlayerPlayed={(playerId) => playersWithCompletedGames.has(playerId)}
           // Per-player points only for per-game calculators (e.g.
           // accumulated_per_game for Fargo 10-7). Aggregate calculators
           // (linear_above_threshold, accumulate_with_milestone_jumps)
@@ -1347,6 +1414,7 @@ function ScoreMatchBody() {
           } : { id: '', name: '', position: 0 }}
           lineup={userLineup}
           teamRoster={teamRoster}
+          getPlayerHandicap={(id) => rosterHandicaps.get(id)?.value ?? null}
           onSubmit={handleLineupChangeRequest}
           onCancel={() => setLineupChangeData(null)}
           isSubmitting={requestLineupChangeMutation.isPending}
@@ -1359,11 +1427,15 @@ function ScoreMatchBody() {
         requestingTeamName={isHomeTeam ? (match.away_team?.team_name || 'Opponent') : (match.home_team?.team_name || 'Opponent')}
         position={opponentLineup?.swap_position || 0}
         oldPlayerName={opponentLineup?.swap_position
-          ? getPlayerDisplayName((opponentLineup as any)[`player${opponentLineup.swap_position}_id`])
+          ? getPlayerFullNameById((opponentLineup as any)[`player${opponentLineup.swap_position}_id`], players)
           : ''}
+        oldPlayerHandicap={opponentLineup?.swap_position
+          ? ((opponentLineup as any)[`player${opponentLineup.swap_position}_handicap`] ?? null)
+          : null}
         newPlayerName={opponentLineup?.swap_new_player_id
-          ? getPlayerDisplayName(opponentLineup.swap_new_player_id)
+          ? getPlayerFullNameById(opponentLineup.swap_new_player_id, players)
           : ''}
+        newPlayerHandicap={opponentLineup?.swap_new_player_handicap ?? null}
         onApprove={handleApproveLineupChange}
         onDeny={handleDenyLineupChange}
         isProcessing={approveLineupChangeMutation.isPending || denyLineupChangeMutation.isPending}
