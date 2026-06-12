@@ -59,7 +59,7 @@ export function MyMatchPanel({
       {/* "My Match" stays left; the chip pair is grouped and centered in the
           remaining space. Both chips always render — a 0-count one is dimmed
           and disabled (Live stays put even on a no-live night). */}
-      <div className="flex items-center px-3">
+      <div className="flex items-center gap-3 px-3">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           My Match
         </h3>
