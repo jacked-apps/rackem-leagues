@@ -56,6 +56,8 @@ interface LineupChangeModalProps {
   lineup: Lineup;
   /** Full team roster */
   teamRoster: TeamPlayer[];
+  /** Look up a roster player's handicap for display (outgoing + each option). */
+  getPlayerHandicap?: (playerId: string) => number | null;
   /** Handler when user submits the swap request */
   onSubmit: (newPlayerId: string) => void;
   /** Handler when user cancels */
@@ -64,11 +66,9 @@ interface LineupChangeModalProps {
   isSubmitting?: boolean;
 }
 
-/**
- * Get display name for a player (nickname if available, otherwise first name)
- */
-function getDisplayName(player: TeamPlayer['members']): string {
-  return player.nickname || player.first_name;
+/** Format a handicap value for display ("HC 2", "HC -1", or "HC —"). */
+function formatHandicap(value?: number | null): string {
+  return value == null ? 'HC —' : `HC ${value}`;
 }
 
 /**
@@ -86,6 +86,7 @@ export function LineupChangeModal({
   currentPlayer,
   lineup,
   teamRoster,
+  getPlayerHandicap,
   onSubmit,
   onCancel,
   isSubmitting = false,
@@ -139,7 +140,12 @@ export function LineupChangeModal({
           {/* Current player being replaced */}
           <div className="p-3 bg-muted rounded-md">
             <p className="text-sm text-muted-foreground">Replacing:</p>
-            <p className="font-semibold text-foreground">{currentPlayer.name}</p>
+            <p className="font-semibold text-foreground">
+              {currentPlayer.name}{' '}
+              <span className="text-xs font-medium text-muted-foreground">
+                ({formatHandicap(getPlayerHandicap?.(currentPlayer.id))})
+              </span>
+            </p>
             <p className="text-xs text-muted-foreground">Position {currentPlayer.position}</p>
           </div>
 
@@ -161,7 +167,7 @@ export function LineupChangeModal({
                 <SelectContent>
                   {availablePlayers.map((tp) => (
                     <SelectItem key={tp.member_id} value={tp.member_id}>
-                      {getDisplayName(tp.members)} ({getFullName(tp.members)})
+                      {getFullName(tp.members)} · {formatHandicap(getPlayerHandicap?.(tp.member_id))}
                     </SelectItem>
                   ))}
                 </SelectContent>

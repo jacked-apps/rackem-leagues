@@ -18,6 +18,8 @@ interface ScheduleReviewTableProps {
   onToggleWeekOff: (index: number) => void;
   /** Current play week number (locks editing of earlier weeks) */
   currentPlayWeek?: number;
+  /** Pass-through: when true, past/completed weeks still show the toggle (caller warns). */
+  allowLockedToggle?: boolean;
 }
 
 /**
@@ -30,6 +32,7 @@ export const ScheduleReviewTable: React.FC<ScheduleReviewTableProps> = ({
   schedule,
   onToggleWeekOff,
   currentPlayWeek,
+  allowLockedToggle = false,
 }) => {
   return (
     <div className="overflow-x-auto mb-4">
@@ -64,6 +67,7 @@ export const ScheduleReviewTable: React.FC<ScheduleReviewTableProps> = ({
               index={index}
               onToggleWeekOff={onToggleWeekOff}
               currentPlayWeek={currentPlayWeek}
+              allowLockedToggle={allowLockedToggle}
             />
           ))}
         </tbody>

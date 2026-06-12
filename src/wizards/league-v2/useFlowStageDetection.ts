@@ -128,7 +128,16 @@ export function useFlowStageDetection(leagueId: string | null): StageDetectionRe
         seasonId: season?.id ?? null,
         seasonName: season?.season_name ?? null,
         seasonLength: season?.season_length ?? null,
-        seasonActive: season?.status === 'active',
+        // Setup is "done" once the matchups Finish step has finalized the season.
+        // That step sets 'active' (start date is today/past) OR 'scheduled' (start
+        // date is in the future) — both mean the wizard is complete. Only 'upcoming'
+        // is still mid-setup. ('completed' is obviously done too.) Treating only
+        // 'active' as finished made a finished, future-dated season wrongly show
+        // "Setup In Progress".
+        seasonFinalized:
+          season?.status === 'active' ||
+          season?.status === 'scheduled' ||
+          season?.status === 'completed',
         hasSchedule,
         hasTeams,
         teamCount,
@@ -180,8 +189,9 @@ export function useFlowStageDetection(leagueId: string | null): StageDetectionRe
     venueCount: data.venueCount || undefined,
   };
 
-  // Stage 4 check: season activated (matchups finished) — everything done
-  if (data.seasonActive) {
+  // Stage 4 check: season finalized (matchups finished) — everything done. Covers
+  // both 'active' (live now) and 'scheduled' (set up, going live on a future date).
+  if (data.seasonFinalized) {
     return { isLoading: false, firstIncompleteStage: 5, context: ctx };
   }
 

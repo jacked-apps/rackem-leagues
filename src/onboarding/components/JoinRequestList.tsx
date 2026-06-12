@@ -18,18 +18,25 @@ import { JoinRequestCard } from './JoinRequestCard';
 import type { ApproverJoinRequest } from '@/api/queries/teamJoin';
 
 interface JoinRequestListProps {
-  /** Optional heading shown above the list when there are requests. */
+  /** Optional heading shown above the list (and the empty state, when emptyHint is set). */
   title?: string;
   /**
-   * When set, an empty feed renders this hint (for a dedicated page). When
-   * omitted, an empty feed renders nothing — so the list embeds invisibly in
-   * MyTeams / the operator dashboard until someone actually asks to join.
+   * When set, an empty feed renders the title + this hint as a visible section —
+   * so an operator can SEE the surface even with nothing pending. When omitted, an
+   * empty feed renders nothing (embeds invisibly, e.g. a player's MyTeams page).
    */
   emptyHint?: string;
+  /**
+   * When set, only requests for this league are shown (the per-league surface).
+   * Omit for the org-wide surface (operator dashboard), which shows everything the
+   * approver can act on.
+   */
+  leagueId?: string;
 }
 
-export const JoinRequestList: React.FC<JoinRequestListProps> = ({ title, emptyHint }) => {
-  const { data: requests, isLoading } = useTeamJoinRequests();
+export const JoinRequestList: React.FC<JoinRequestListProps> = ({ title, emptyHint, leagueId }) => {
+  const { data: feed, isLoading } = useTeamJoinRequests();
+  const requests = leagueId ? feed?.filter((r) => r.league_id === leagueId) : feed;
   const approve = useApproveJoinRequest();
   const [actingId, setActingId] = useState<string | null>(null);
 
@@ -45,12 +52,18 @@ export const JoinRequestList: React.FC<JoinRequestListProps> = ({ title, emptyHi
     );
   };
 
-  // Embedded surfaces stay quiet until there's something to act on.
+  // Embedded surfaces stay quiet until there's something to act on. A surface that
+  // passes emptyHint stays VISIBLE when empty (title + hint), so an operator can
+  // confirm they're looking at the right place.
   if (isLoading) return null;
   if (!requests || requests.length === 0) {
-    return emptyHint ? (
-      <p className="text-sm text-muted-foreground">{emptyHint}</p>
-    ) : null;
+    if (!emptyHint) return null;
+    return (
+      <div className="space-y-1">
+        {title && <h2 className="text-lg font-semibold">{title}</h2>}
+        <p className="text-sm text-muted-foreground">{emptyHint}</p>
+      </div>
+    );
   }
 
   return (

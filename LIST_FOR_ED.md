@@ -4,6 +4,27 @@ Tasks and refactoring items for Ed to work on.
 
 ---
 
+## 🟡 BUG (2026-06-11) — week-off on a conflict week should pre-fill the holiday as the reason
+
+When you insert a **week-off** on a week that already has a **conflict flag** (a holiday or
+championship the conflict-detector found), the reason modal should **default to that conflict's
+name** (e.g. "Christmas", "BCA Championship") instead of opening blank. Right now the operator has
+to re-type a reason the app already knows.
+
+**Where:**
+- `src/components/modals/WeekOffReasonModal.tsx` — starts at `useState('')`, has no
+  `initialReason` prop (its own comment even says "when there's no automatic conflict").
+- The week already carries the data: `WeekEntry.conflicts: ConflictFlag[]`, and
+  `ConflictFlag.name` is the holiday/championship label (`src/types/season.ts`).
+
+**Fix:** add an optional `initialReason` to `WeekOffReasonModal`; the insert-week-off callers pass
+`week.conflicts[0]?.name` when the week has a conflict. Touches both flows: setup
+(`src/components/season/ScheduleReview.tsx`) and the edit page
+(`src/operator/SeasonScheduleManager.tsx` `handleToggleWeekOff` → reason modal). Operator can still
+override the pre-filled text.
+
+---
+
 ## 🌅 PICK UP HERE — night of 2026-06-09 (bye-team firefight + the day's fixes)
 
 **Shipped tonight — open PRs awaiting Jack's merge (verify on staging when merged):**
@@ -28,8 +49,8 @@ Tasks and refactoring items for Ed to work on.
 **VERIFY in the morning (Ed's tired-eyes flag — may be fine):**
 8. **Does a blackout on an existing schedule auto-shift the week?** e.g. week 7 plays 6/16; mark 6/16 a blackout → week 7 should move to **6/23** and everything after shifts one week. Preliminary read: blackouts **do** shift the schedule during **setup/review** (`ScheduleReview.tsx` regenerates whenever blackout weeks change). Open question is the **already-active** schedule — does editing/adding a blackout after the season's accepted re-date the weeks, or does it need a regen? Confirm the post-activation case.
 
-**BUG — ROOT CAUSE FOUND, ship the one-liner (production):**
-9. **APA championship conflict flags on the wrong dates.** Edit-schedule page (production) flags weeks 6/28, 7/12, 7/19 … 8/2 as "APA National Tournament Week N" — but APA 2026 is **8/04–8/15**. **Data is correct** (verified: one `championship_date_options` row, start 8/04 / end 8/15). **Root cause:** `parseLocalDate` (`src/utils/formatters.ts:221`) only handles `'YYYY-MM-DD'` (`isoDate.split('-').map(Number)`), but championship dates are stored as **full ISO timestamps** (`2026-08-04T04:00:00.000Z`). The day parses as `Number('04T04:00:00.000Z')` → **NaN** → invalid/garbage date, so `extractLeagueNights` (`src/utils/holidayUtils.ts:98`) walks the wrong range and stamps bogus APA "league nights." **Fix (safe one-liner):** strip the time first — `isoDate.split('T')[0]` inside `parseLocalDate` (hardens every date parse; plain `YYYY-MM-DD` unaffected). Repro locally (local DB has the `...T04:00:00Z` row), confirm, ship.
+**BUG — re-diagnosed 2026-06-10 (NOT a one-liner; last night's parseLocalDate theory was WRONG):**
+9. **APA championship conflict flags on the wrong dates** (edit-schedule page, production). Flags weeks 6/28, 7/12, 7/19 … 8/2 as "APA National Tournament Week N" — but APA 2026 is **8/04–8/15**. **Data is correct** (one `championship_date_options` row, 8/04–8/15). **REAL root cause:** the edit page `src/operator/SeasonScheduleManager.tsx:130-155` does NOT read the date table — it **reconstructs the APA range from the schedule's own existing "week-off" weeks whose name contains "apa"** (`apaWeeks[0].date` → `apaWeeks[last].date`), then flags every week across that range. Those off-weeks are **stale** (baked when the schedule was built, before the dates were corrected). The **new-season wizard does it right** (uses `championship_date_options` via `useChampionshipAutoFill`); only the **edit page** is wrong. (parseLocalDate is NOT in this path — `parseLocalDate` choking on full-ISO timestamps is a *separate, latent* bug but is NOT what causes these flags.) **Fix (moderate):** make `SeasonScheduleManager` fetch APA/BCA dates from `championship_date_options` (mirror the wizard) instead of from schedule off-weeks. NOTE: the affected schedule's actual off-weeks are also stale → a regenerate is likely needed to move them to 8/04–8/15. Not a quick win.
 
 **Paused (lower priority):**
 7. Player-picker consolidation brainstorm — parked at Site 2 of 8. Mid-walkthrough; no doc written yet.
@@ -41,6 +62,13 @@ Tasks and refactoring items for Ed to work on.
 Features merged to `main` but NOT yet live for users (see **Feature Gating
 Workflow** in `CLAUDE.md`). Reviewed on staging, then un-gated — and removed
 from this list when un-gated.
+
+- **Scoring Workshop** — still in active development; it had shipped to production
+  **un-gated** by accident. Now gated by `!isProduction` in two places:
+  the dashboard card (`src/operator/OperatorDashboard.tsx`) AND the routes
+  (`src/navigation/NavRoutes.tsx` — `operator/scoring-workshop[/...]`). Verify on
+  staging it still shows there; un-gate (remove both `!isProduction` guards) when
+  it's ready for users.
 
 - **LMS Results Sheet** — printable per-match results sheet for hand-entry into
   CSI / FargoRate LMS (no LMS import/API exists). Gated by `!isProduction` in

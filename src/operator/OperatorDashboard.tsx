@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageSquare, Users, Settings, BookOpen, Video, MessageCircle, Phone, Flag, Wrench } from 'lucide-react';
 import { usePendingReportsCount } from '@/hooks/usePendingReportsCount';
 import { JoinRequestList } from '@/onboarding/components/JoinRequestList';
+import { isProduction } from '@/config/environment';
 
 /**
  * OperatorDashboard Component
@@ -68,9 +69,13 @@ export const OperatorDashboard: React.FC = () => {
       />
       <div className="container mx-auto px-4 max-w-7xl py-8">
         {/* Onboarding cascade: pending join requests across every team in this
-            org. Renders nothing when there are none. */}
+            org. Stays visible (with an empty state) so the operator can always
+            see the surface, even when nothing is pending. */}
         <div className="mb-6">
-          <JoinRequestList title="Join requests" />
+          <JoinRequestList
+            title="Join requests"
+            emptyHint="No pending join requests right now. When someone taps a team invite link and asks to join, they'll appear here for you to approve."
+          />
         </div>
 
         {/* Main Grid - All content */}
@@ -104,14 +109,18 @@ export const OperatorDashboard: React.FC = () => {
             badgeCount={pendingReportsCount}
           />
 
-          <DashboardCard
-            icon={<Wrench className="h-6 w-6" />}
-            iconColor="text-primary"
-            title="Scoring Workshop"
-            description="Build pieces of a Scoring System — one room per module"
-            buttonText="Open Workshop"
-            linkTo="/operator/scoring-workshop"
-          />
+          {/* Scoring Workshop — still in active development; gated off in
+              production until it's ready. Visible on dev/staging. */}
+          {!isProduction && (
+            <DashboardCard
+              icon={<Wrench className="h-6 w-6" />}
+              iconColor="text-primary"
+              title="Scoring Workshop"
+              description="Build pieces of a Scoring System — one room per module"
+              buttonText="Open Workshop"
+              linkTo="/operator/scoring-workshop"
+            />
+          )}
 
           {/* Row 2 - Active Leagues (2 cols) and Sidebar (1 col) */}
           <div className="lg:col-span-2">

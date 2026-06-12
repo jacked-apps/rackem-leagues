@@ -78,6 +78,8 @@ export interface ApproverJoinRequest {
   request_id: string;
   team_id: string;
   team_name: string;
+  /** The team's league — lets the per-league approval surface filter the org-wide feed. */
+  league_id: string;
   league_name: string | null;
   requester_member_id: string | null;
   requester_name: string;

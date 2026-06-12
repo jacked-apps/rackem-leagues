@@ -53,6 +53,13 @@ export interface ScheduleWeekRowProps {
    * Weeks with weekName "Week 1", "Week 2", etc. that are <= currentPlayWeek will be locked
    */
   currentPlayWeek?: number;
+  /**
+   * When true, past/completed weeks still show the toggle (the caller warns before
+   * applying). The active-season edit page opts in — dates are advisory, so an
+   * operator may fix a past/played week. Setup leaves this off (default), keeping
+   * past weeks hard-locked.
+   */
+  allowLockedToggle?: boolean;
 }
 
 /**
