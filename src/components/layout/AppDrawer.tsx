@@ -415,7 +415,7 @@ function MyMatchRow({ item }: { item: MyMatchDrawerItem }) {
     <SheetClose asChild>
       <Link
         to={item.destinationPath}
-        className="flex min-h-11 items-center gap-2 rounded-md px-3 py-2 text-sm text-primary transition-colors hover:bg-primary/10"
+        className="flex min-h-11 items-baseline gap-2 rounded-md px-3 py-2 text-sm text-primary transition-colors hover:bg-primary/10"
       >
         {item.rowDetail ? (
           <span className="shrink-0 tabular-nums text-xs font-medium text-muted-foreground">
