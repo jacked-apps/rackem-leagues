@@ -670,7 +670,10 @@ The workshop building. One sub-folder per module room. Each room owns a list pag
 - `SeasonSchedulePage.tsx` - Season schedule page
 
 **Team & Venue Management**
-- `TeamManagement.tsx` - Team management interface
+- `TeamManagement.tsx` - Team management interface (the standalone `/manage-teams` edit page). Editing area decomposed into reusable presentational panels under `team-management/` (see below).
+- `team-management/SetupSummaryCard.tsx` - Presentational "Setup Summary" card (league type, venue/table counts, teams-vs-max) for the Manage Teams surface.
+- `team-management/VenuesPanel.tsx` - Presentational "League Venues" section (select-all, per-venue assign toggle + table-limit entry, empty/add-venue state); derives assigned/capacity/teams-at-venue from the data it's given.
+- `team-management/TeamsPanel.tsx` - Presentational "Teams" section (Add Team + its guards, Import-from-last-season, open-BYE warning, empty states, team list).
 - `TeamEditorModal.tsx` - Team editor modal
 - `VenueManagement.tsx` - Venue management
 - `VenueLimitModal.tsx` - Venue table-limits modal (chrome only; logic in useVenueTableLimits)

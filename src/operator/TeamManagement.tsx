@@ -11,7 +11,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/supabaseClient';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
-import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
 // Organization ID will come from the league data
@@ -21,9 +20,10 @@ import { VenueLimitModal } from './VenueLimitModal';
 import { TeamEditorModal } from './TeamEditorModal';
 import { VenueCreationModal } from '@/components/operator/VenueCreationModal';
 import { InfoButton } from '@/components/InfoButton';
-import { TeamCard } from '@/components/TeamCard';
-import { VenueListItem } from '@/components/VenueListItem';
 import { AllPlayersRosterCard } from '@/components/AllPlayersRosterCard';
+import { SetupSummaryCard } from './team-management/SetupSummaryCard';
+import { VenuesPanel } from './team-management/VenuesPanel';
+import { TeamsPanel } from './team-management/TeamsPanel';
 import type { Venue, LeagueVenue } from '@/types/venue';
 import type { TeamWithQueryDetails } from '@/types/team';
 import { logger } from '@/utils/logger';
@@ -428,13 +428,6 @@ export const TeamManagement: React.FC = () => {
   };
 
   /**
-   * Count teams that have a specific venue as their home
-   */
-  const getTeamsAtVenue = (venueId: string): number => {
-    return teams.filter(team => team.home_venue_id === venueId).length;
-  };
-
-  /**
    * Handle successful venue creation
    * Refreshes the venues list from the hook
    */
@@ -569,116 +562,32 @@ export const TeamManagement: React.FC = () => {
           {/* Left Column */}
           <div className="col-span-1 lg:col-span-4 space-y-3">
             {/* Status Card */}
-            <div className="bg-card rounded-xl shadow-sm p-4">
-              <h3 className="text-base font-semibold text-foreground mb-3">Setup Summary</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Type:</span>
-                  <span className="font-medium text-foreground">
-                    {isTraveling ? 'Traveling' : isInHouse ? 'In-House' : 'Not Set'}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Venues:</span>
-                  <span className="font-medium text-foreground">{leagueVenues.length}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Tables Available:</span>
-                  <span className="font-medium text-foreground">
-                    {leagueVenues.reduce((sum, lv) => sum + (lv.available_table_numbers?.length ?? 0), 0)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-muted-foreground">Teams:</span>
-                    <InfoButton title="Max Teams Explained" size="sm">
-                      {isInHouse ? (
-                        <p>In-house leagues can have 2 teams per table since both teams play at the same venue.</p>
-                      ) : (
-                        <p>Traveling leagues are limited to 1 home team per table across all venues.</p>
-                      )}
-                    </InfoButton>
-                  </div>
-                  <span className={`font-medium ${isAtMaxTeams ? 'text-warning' : 'text-foreground'}`}>
-                    {teams.length}/{maxTeams}
-                  </span>
-                </div>
-              </div>
-            </div>
+            <SetupSummaryCard
+              isTraveling={isTraveling}
+              isInHouse={isInHouse}
+              venueCount={leagueVenues.length}
+              tablesAvailable={leagueVenues.reduce(
+                (sum, lv) => sum + (lv.available_table_numbers?.length ?? 0),
+                0,
+              )}
+              teamCount={teams.length}
+              maxTeams={maxTeams}
+              isAtMaxTeams={isAtMaxTeams}
+            />
 
             {/* Venue Assignment Section */}
-            <div className="bg-card rounded-xl shadow-sm p-6">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-semibold text-foreground">League Venues</h2>
-                {venues.length > 0 && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setShowVenueCreation(true)}
-                    disabled={!organizationId}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    New
-                  </Button>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground mb-4">
-                Select venues teams can use and adjust number of tables actually available
-              </p>
-
-              {/* Select All Checkbox */}
-              {venues.length > 0 && (
-                <div className="flex items-center gap-3 p-2 bg-muted rounded mb-2">
-                  <input
-                    type="checkbox"
-                    checked={areAllVenuesAssigned()}
-                    onChange={handleSelectAll}
-                    disabled={selectingAll}
-                    className="mt-0"
-                  />
-                  <span className="text-sm font-medium text-foreground">
-                    {selectingAll ? 'Updating...' : 'Select All'}
-                  </span>
-                </div>
-              )}
-
-            {venues.length === 0 ? (
-              <div className="text-center py-6">
-                <p className="text-sm text-muted-foreground mb-3">No venues yet</p>
-                <Button
-                  size="sm"
-                  onClick={() => setShowVenueCreation(true)}
-                  disabled={!organizationId}
-                  loadingText="none"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Venue
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {venues.map((venue) => {
-                  const assigned = isVenueAssigned(venue.id);
-                  const leagueVenue = leagueVenues.find(lv => lv.venue_id === venue.id);
-                  const venueCapacity = leagueVenue?.capacity ?? leagueVenue?.available_table_numbers?.length;
-                  const teamsAtVenue = getTeamsAtVenue(venue.id);
-
-                  return (
-                    <VenueListItem
-                      key={venue.id}
-                      venue={venue}
-                      isAssigned={assigned}
-                      isToggling={assigningVenue === venue.id}
-                      capacity={venueCapacity}
-                      teamsAtVenue={teamsAtVenue}
-                      onToggle={() => handleToggleVenue(venue)}
-                      onLimitClick={() => handleOpenLimitModal(venue)}
-                    />
-                  );
-                })}
-              </div>
-            )}
-            </div>
+            <VenuesPanel
+              venues={venues}
+              leagueVenues={leagueVenues}
+              teams={teams}
+              organizationId={organizationId}
+              assigningVenueId={assigningVenue}
+              selectingAll={selectingAll}
+              onSelectAll={handleSelectAll}
+              onNewVenue={() => setShowVenueCreation(true)}
+              onToggleVenue={handleToggleVenue}
+              onOpenLimitModal={handleOpenLimitModal}
+            />
 
             {/* All Players Roster Card */}
             {teams.length > 0 && (
@@ -687,90 +596,25 @@ export const TeamManagement: React.FC = () => {
           </div>
 
           {/* Teams Section - Main Right Area */}
-          <div className="lg:col-span-8 bg-card rounded-xl shadow-sm p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-foreground">Teams</h2>
-              <div className="flex gap-2">
-                {previousSeasonId && teams.length === 0 && (
-                  <Button
-                    variant="outline"
-                    disabled={importingTeams || !seasonId}
-                    onClick={handleImportTeams}
-                    isLoading={importingTeams}
-                    loadingText="Importing..."
-                  >
-                    Import from Last Season
-                  </Button>
-                )}
-                <Button
-                  disabled={leagueVenues.length === 0 || !seasonId || isAtMaxTeams || hasBye}
-                  onClick={() => setShowTeamEditor(true)}
-                  loadingText="none"
-                  title={
-                    leagueVenues.length === 0
-                      ? 'Assign at least one venue before adding teams'
-                      : !seasonId
-                      ? 'Create a season before adding teams'
-                      : hasBye
-                      ? 'You have an open BYE slot — fill it with your new team instead of adding a separate one'
-                      : isAtMaxTeams
-                      ? `Maximum of ${maxTeams} teams reached`
-                      : ''
-                  }
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Team
-                </Button>
-              </div>
-            </div>
-
-            {/* Open BYE slot → adding a separate team would wedge the league.
-                Steer the operator to fill the bye instead. */}
-            {hasBye && (
-              <div className="mb-4 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
-                <p className="font-medium">Your league has an open BYE slot</p>
-                <p className="text-muted-foreground">
-                  The BYE is your reserved spot for the next team (odd team
-                  count). To add another team, <strong>fill the BYE</strong> —
-                  give it a name + captain — instead of adding a separate team,
-                  which would leave a duplicate.
-                </p>
-              </div>
-            )}
-
-            {leagueVenues.length === 0 ? (
-              <div className="text-center py-8 bg-info/10 border border-info/40 rounded-lg">
-                <p className="text-foreground mb-2">Assign at least one venue before adding teams</p>
-                <p className="text-sm text-info">Teams need a venue to call home</p>
-              </div>
-            ) : teams.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="text-6xl mb-4">🎱</div>
-                <h3 className="text-lg font-medium text-foreground mb-2">No Teams Yet</h3>
-                <p className="text-muted-foreground mb-6">
-                  Add your first team to get started
-                </p>
-              </div>
-            ) : (
-              <>
-                <div className="space-y-3">
-                  {teams.map((team) => (
-                    <TeamCard
-                      key={team.id}
-                      team={team}
-                      isExpanded={expandedTeams.has(team.id)}
-                      onToggleExpand={() => toggleTeamExpansion(team.id)}
-                      onEdit={() => {
-                        setEditingTeam(team);
-                        setShowTeamEditor(true);
-                      }}
-                      onDelete={() => handleDeleteTeam(team.id)}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
+          <TeamsPanel
+            teams={teams}
+            leagueVenues={leagueVenues}
+            previousSeasonId={previousSeasonId}
+            seasonId={seasonId}
+            importingTeams={importingTeams}
+            isAtMaxTeams={isAtMaxTeams}
+            hasBye={hasBye}
+            maxTeams={maxTeams}
+            expandedTeams={expandedTeams}
+            onImport={handleImportTeams}
+            onAddTeam={() => setShowTeamEditor(true)}
+            onEditTeam={(team) => {
+              setEditingTeam(team);
+              setShowTeamEditor(true);
+            }}
+            onDeleteTeam={handleDeleteTeam}
+            onToggleExpand={toggleTeamExpansion}
+          />
         </div>
 
         {/* Completion Actions - Outside cards for better visibility */}
