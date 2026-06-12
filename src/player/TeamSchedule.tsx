@@ -327,7 +327,7 @@ export function TeamSchedule() {
                   <AccordionTrigger className="px-4 py-3 hover:no-underline">
                     <div className="flex w-full items-center justify-between gap-2 pr-2 text-left">
                       <div className="min-w-0">
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-base text-muted-foreground">
                           {entry.week.week_name} · {formatShortDate(match.scheduled_date ?? entry.week.scheduled_date)}
                         </div>
                         <div className="truncate text-base font-semibold text-foreground">
