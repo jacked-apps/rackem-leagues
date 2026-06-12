@@ -133,7 +133,7 @@ function MyMatchChip({
       aria-pressed={active}
       // Accessible name stays text-based even when only the icon shows on phones.
       aria-label={count > 0 ? `${label} ${count}` : label}
-      className="h-6 gap-1 rounded-full px-2.5 text-[11px]"
+      className="h-5 gap-1 rounded-full px-2.5 text-[11px] leading-none"
     >
       <span className="flex items-center sm:hidden">{icon}</span>
       <span className="hidden sm:inline">{label}</span>
