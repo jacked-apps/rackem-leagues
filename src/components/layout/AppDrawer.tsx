@@ -287,42 +287,43 @@ function MyMatchSection({ items, isHydrating }: { items: MyMatchDrawerItem[]; is
   const liveItems = items.filter((i) => i.group === 'live');
   const makeupItems = items.filter((i) => i.group === 'makeup');
 
-  // Expanded group. `undefined` = no explicit user choice yet → fall back to
-  // auto-opening Live when there's a live/tonight match.
-  const [explicit, setExplicit] = useState<'live' | 'makeup' | null | undefined>(undefined);
+  // Radio behavior: exactly one group is always selected (no "off" state).
+  // `explicit` is the user's pick; it falls back to the default (Live first,
+  // else whatever's present) when null or when the picked group has emptied.
+  const [explicit, setExplicit] = useState<'live' | 'makeup' | null>(null);
 
   if (!isHydrating && items.length === 0) return null;
 
-  const autoOpen: 'live' | null = liveItems.length > 0 ? 'live' : null;
-  const open = explicit === undefined ? autoOpen : explicit;
-  const toggle = (group: 'live' | 'makeup') => setExplicit(open === group ? null : group);
+  const isPresent = (g: 'live' | 'makeup') =>
+    g === 'live' ? liveItems.length > 0 : makeupItems.length > 0;
+  const defaultSel: 'live' | 'makeup' | null =
+    liveItems.length > 0 ? 'live' : makeupItems.length > 0 ? 'makeup' : null;
+  const open = explicit && isPresent(explicit) ? explicit : defaultSel;
 
   return (
     <div className="mb-4 border-b pb-4">
-      <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        My Match
-      </h3>
-
-      {items.length > 0 ? (
-        <div className="flex flex-wrap gap-2 px-3">
-          {liveItems.length > 0 ? (
-            <MyMatchChip
-              label="Live"
-              count={liveItems.length}
-              active={open === 'live'}
-              onClick={() => toggle('live')}
-            />
-          ) : null}
-          {makeupItems.length > 0 ? (
-            <MyMatchChip
-              label="Makeup"
-              count={makeupItems.length}
-              active={open === 'makeup'}
-              onClick={() => toggle('makeup')}
-            />
-          ) : null}
-        </div>
-      ) : null}
+      {/* Label + chips on one line, spread across the row (space-between). */}
+      <div className="flex items-center justify-between gap-2 px-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          My Match
+        </h3>
+        {liveItems.length > 0 ? (
+          <MyMatchChip
+            label="Live"
+            count={liveItems.length}
+            active={open === 'live'}
+            onClick={() => setExplicit('live')}
+          />
+        ) : null}
+        {makeupItems.length > 0 ? (
+          <MyMatchChip
+            label="Makeup"
+            count={makeupItems.length}
+            active={open === 'makeup'}
+            onClick={() => setExplicit('makeup')}
+          />
+        ) : null}
+      </div>
 
       {open === 'live' ? <MyMatchList items={liveItems} /> : null}
       {open === 'makeup' ? <MyMatchList items={makeupItems} /> : null}
@@ -330,7 +331,8 @@ function MyMatchSection({ items, isHydrating }: { items: MyMatchDrawerItem[]; is
   );
 }
 
-/** A small filter chip — "Live 1" / "Makeup 2" — that toggles its group's list. */
+/** A small, slim filter chip — "Live 1" / "Makeup 2". Radio-style: selecting it
+ *  shows its group's list; one chip is always selected. */
 function MyMatchChip({
   label,
   count,
@@ -350,10 +352,10 @@ function MyMatchChip({
       loadingText="none"
       onClick={onClick}
       aria-pressed={active}
-      className="h-7 rounded-full px-3 text-xs"
+      className="h-6 gap-1 rounded-full px-2.5 text-[11px]"
     >
       {label}
-      <span className="ml-1 tabular-nums opacity-70">{count}</span>
+      <span className="tabular-nums opacity-70">{count}</span>
     </Button>
   );
 }

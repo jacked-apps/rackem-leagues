@@ -441,8 +441,8 @@ describe('AppDrawer', () => {
 
     renderDrawer();
 
-    // Live chip with its count, and the list auto-opened so the row is visible.
-    expect(screen.getByRole('button', { name: /Live/ })).toBeInTheDocument();
+    // Live chip is selected by default (radio), so its list shows the row.
+    expect(screen.getByRole('button', { name: /Live/ })).toHaveAttribute('aria-pressed', 'true');
     const row = screen.getByRole('link', { name: /Sharks/ });
     expect(row).toHaveAttribute('href', '/match/mx/lineup');
     expect(row).toHaveTextContent('Cues');
@@ -464,12 +464,14 @@ describe('AppDrawer', () => {
     expect(screen.getByRole('link', { name: /Sharks/ })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /Rails/ })).not.toBeInTheDocument();
 
-    // Tap the Makeup chip → the makeup row is revealed.
+    // Tap the Makeup chip → the makeup row is revealed, and (radio) the Live
+    // list is hidden.
     fireEvent.click(screen.getByRole('button', { name: /Makeup/ }));
     expect(screen.getByRole('link', { name: /Rails/ })).toHaveAttribute('href', '/match/m2/lineup');
+    expect(screen.queryByRole('link', { name: /Sharks/ })).not.toBeInTheDocument();
   });
 
-  it('leaves Makeups collapsed by default when there is no live match', () => {
+  it('shows the only group by default — one filter is always on (radio)', () => {
     configurePlayer();
     mockUseMyMatchSurfaces.mockReturnValue({
       ...emptyMyMatch(),
@@ -480,12 +482,10 @@ describe('AppDrawer', () => {
 
     renderDrawer();
 
-    // No Live chip; Makeup chip present but collapsed until tapped.
+    // No Live chip; the sole Makeup chip is selected by default, so its list
+    // shows without a tap.
     expect(screen.queryByRole('button', { name: /Live/ })).not.toBeInTheDocument();
-    const chip = screen.getByRole('button', { name: /Makeup/ });
-    expect(screen.queryByRole('link', { name: /Rails/ })).not.toBeInTheDocument();
-
-    fireEvent.click(chip);
+    expect(screen.getByRole('button', { name: /Makeup/ })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('link', { name: /Rails/ })).toBeInTheDocument();
   });
 
