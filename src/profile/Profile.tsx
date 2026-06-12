@@ -32,6 +32,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
 import { ShareAppCard } from '@/components/ShareAppCard';
+import { InstallAppCard } from '@/components/InstallAppCard';
 import { ThemeToggle } from '@/components/ThemeToggle';
 // --- Handicap Calculator entry point (dev/staging only) — remove this import + the marked block at the bottom of the page to remove the entry point ---
 import { isProduction } from '@/config/environment';
@@ -114,6 +115,10 @@ export const Profile: React.FC = () => {
         <SuccessMessage message={successMessage} />
 
         <div className="space-y-6">
+          {/* Install the app — top of settings. Renders nothing when the app is
+              already installed or the browser can't install. */}
+          <InstallAppCard />
+
           {/* Editable Sections */}
           <PersonalInfoSection
             member={member}
