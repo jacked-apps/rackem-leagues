@@ -326,7 +326,7 @@ OperatorSection (operators only — unchanged)
 
 ---
 
-- [ ] **Unit 4: AppDrawer "My Match" section (replaces existing static link)**
+- [x] **Unit 4: AppDrawer "My Match" section (replaces existing static link)**
 
 **Goal:** Add a new "My Match" section to `AppDrawer.tsx`, structurally mirroring `OperatorSection`, and **remove the existing static `<DrawerLink to="/my-match" label="My Match" />` in `PlayerSection`** (~line 177 as of 2026-06-12 — locate by the symbol, not the number). The new section uses Unit 2's `drawerItems` + `isHydrating`. Single-purpose tap per row → that match's lineup page. Section hidden entirely when no items and not hydrating.
 

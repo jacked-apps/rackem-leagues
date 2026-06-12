@@ -858,7 +858,7 @@ Shared chrome that wraps all authenticated routes. `MemberLayout` is mounted by 
 - `BottomTabBar.tsx` - Mobile fixed bottom tab bar (My Teams / My Match / Messages / Profile, + Manage for operators). Auth-aware like the sidebar. Generic tabs render via a local `TabLink`; the My Match slot renders `<MyMatchTab>`.
 - `MyMatchTab.tsx` - **✅ My Match tab (Unit 3)** — state-driven bottom-nav tab consuming `useMyMatchSurfaces`. Links to the player's current match (Tiers 1–3, accent live dot on Tier 1); dims + toasts as a non-navigating button on Tier 4 / error; neutral silent no-op while hydrating.
 - `MyMatchTab.test.tsx` - Tests for the My Match tab's five postures (live/today/makeup Link, Tier-4 toast, hydrating no-op, error toast).
-- `AppDrawer.tsx` - Slide-in drawer with secondary nav (profile, settings, operator-org switcher, sign-out). Drawer is the home for nav items that don't fit on the sidebar/tab bar.
+- `AppDrawer.tsx` - Slide-in drawer with secondary nav (profile, settings, operator-org switcher, sign-out) + a **My Match section (Unit 4)** that lists the player's current/today/makeup matches (one-tap rows to each lineup; OperatorSection-mirrored flat-when-1 / list-when-2+ / hidden-when-empty). Drawer is the home for nav items that don't fit on the sidebar/tab bar.
 - `AppDrawer.test.tsx` - Tests for the drawer's per-org operator shortcuts and auth-gated content.
 - `OperatorOrgRow.tsx` - Drawer row showing one of the user's operator orgs with quick-jump links to the dashboard. Used inside `<AppDrawer>` when the member is a league operator.
 

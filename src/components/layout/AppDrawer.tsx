@@ -32,6 +32,7 @@ import { useOrganizations } from '@/api/hooks/useOrganizations';
 import { useUnreadMessageCount } from '@/api/hooks/useMessages';
 import { usePendingJoinRequestCount } from '@/api/hooks/usePendingJoinRequestCount';
 import { useCaptainReupPrompt } from '@/hooks/useCaptainReupPrompt';
+import { useMyMatchSurfaces, type MyMatchDrawerItem } from '@/api/hooks/useMyMatchSurfaces';
 import { OperatorOrgRow } from './OperatorOrgRow';
 
 interface AppDrawerProps {
@@ -86,6 +87,8 @@ export function AppDrawer(_props: AppDrawerProps) {
   const isOperator = canAccessLeagueOperatorFeatures();
   const { organizations } = useOrganizations(member?.id);
   const { data: unreadCount = 0 } = useUnreadMessageCount(member?.id);
+  const { drawerItems: myMatchItems, isHydrating: myMatchHydrating } =
+    useMyMatchSurfaces(member?.id);
 
   // Doorbell target: operators answer the join-request door from their
   // operator surface (the org-wide list on the Operator Dashboard), not the
@@ -155,6 +158,7 @@ export function AppDrawer(_props: AppDrawerProps) {
         ) : (
           <>
             <PlayerSection unreadCount={unreadCount} joinRequestsTo={joinRequestsTo} />
+            <MyMatchSection items={myMatchItems} isHydrating={myMatchHydrating} />
             {isOperator ? <OperatorSection orgs={organizations as OperatorOrg[]} /> : null}
           </>
         )}
@@ -210,7 +214,6 @@ function PlayerSection({
       : 'Season Re-Up';
   return (
     <ul className="space-y-1">
-      <DrawerLink to="/my-match" label="My Match" />
       <DrawerLink to="/my-teams" label="My Teams" />
       {joinRequestCount > 0 && (
         <DrawerLink to={joinRequestsTo} label={`Join requests (${joinRequestCount})`} />
@@ -257,6 +260,59 @@ function OperatorSection({ orgs }: { orgs: OperatorOrg[] }) {
           </ul>
         ))}
     </div>
+  );
+}
+
+/**
+ * "My Match" drawer section — the player's current / today / past-due-makeup
+ * matches, each a one-tap row to that match's lineup page. Structurally mirrors
+ * `OperatorSection`: uppercase header, border-separated, flat-when-1 /
+ * list-when-2+ / hidden-when-empty. Replaces the old static `/my-match` link;
+ * the data comes from the shared `useMyMatchSurfaces` hook.
+ *
+ * While the surfaces are still hydrating (and there are no items yet) the header
+ * renders alone — a stable layout target that avoids a misleading flash of
+ * "nothing here" during the brief first load.
+ */
+function MyMatchSection({ items, isHydrating }: { items: MyMatchDrawerItem[]; isHydrating: boolean }) {
+  if (!isHydrating && items.length === 0) return null;
+
+  return (
+    <div className="mt-6 border-t pt-4">
+      <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        My Match
+      </h3>
+      {items.length === 0 ? null : items.length === 1 ? (
+        <MyMatchRow item={items[0]} />
+      ) : (
+        <ul className="space-y-1">
+          {items.map((item) => (
+            <li key={item.matchId}>
+              <MyMatchRow item={item} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/** One match row — "My Team · vs Opponent · {Live | Today | Makeup (date)}".
+ *  Tapping routes to the match's lineup page and closes the drawer. */
+function MyMatchRow({ item }: { item: MyMatchDrawerItem }) {
+  return (
+    <SheetClose asChild>
+      <Link
+        to={item.destinationPath}
+        className="flex min-h-11 items-center gap-2 rounded-md px-3 py-2 text-sm text-primary transition-colors hover:bg-primary/10"
+      >
+        <span className="truncate font-medium">{item.teamName}</span>
+        <span className="truncate text-muted-foreground">vs {item.opponentName}</span>
+        <span className="ml-auto shrink-0 text-xs font-medium text-muted-foreground">
+          {item.label}
+        </span>
+      </Link>
+    </SheetClose>
   );
 }
 
