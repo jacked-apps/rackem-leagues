@@ -4,6 +4,29 @@ Tasks and refactoring items for Ed to work on.
 
 ---
 
+## 🔴 FOUND LIVE (2026-06-11) — can't delete a team once it has matchups
+
+On a call: an operator tried to delete a team that had **13 matches (all unplayed)** and got
+*"This team has 13 matches and cannot be deleted. The Drop Team workflow (coming soon) is the right
+tool for mid-season departures."*
+
+**Why:** production `TeamManagement.tsx` → `handleDeleteTeam` only allows a hard delete when the team
+has **0 matches**. Once the season's matchups are generated, every team has matches, so deletion is
+blocked (the DB FK is RESTRICT; the pre-check just gives a clean message instead of an FK error). The
+"Drop Team workflow" it points to (mark team **withdrawn** + reassign its matches to a **bye** row) is
+the bye/drop work in **PRs #206 / #207 — NOT in production yet**, and the mid-season drop RPC is still
+deferred.
+
+**What Ed wants working:** remove a team that has matchups but **no _played_ matches** (these 13 are all
+unplayed). Two paths:
+- **Ship the Drop Team workflow** (#206/#207 + the deferred `drop_team` RPC) → proper mid-season removal, OR
+- A narrower **"delete team + its unplayed matchups"** for the pre-play case (team has matches but none
+  played → safe to delete the team and cascade its scheduled matches).
+
+Related: `docs/brainstorms/2026-06-09-bye-team-and-auto-forfeit-requirements.md` (bye/drop design).
+
+---
+
 ## 🌅 PICK UP HERE — night of 2026-06-09 (bye-team firefight + the day's fixes)
 
 **Shipped tonight — open PRs awaiting Jack's merge (verify on staging when merged):**
