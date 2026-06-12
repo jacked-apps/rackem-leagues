@@ -180,24 +180,18 @@ describe('AppDrawer', () => {
     renderDrawer();
 
     expect(screen.getByText('Operator')).toBeInTheDocument();
-    // Only the org-scoped operator Dashboard exists now — the player section no
-    // longer renders a "/dashboard" link.
+    // Dashboard is the only operator nav action for now.
     expect(screen.getByRole('link', { name: 'Dashboard' })).toHaveAttribute(
       'href',
       '/operator-dashboard/org-a',
     );
-    expect(screen.getByRole('link', { name: 'Create League' })).toHaveAttribute(
-      'href',
-      '/create-league/org-a',
-    );
-    expect(screen.getByRole('link', { name: 'Reports' })).toHaveAttribute(
-      'href',
-      '/operator-reports/org-a',
-    );
+    // Create League + Reports were removed from the nav.
+    expect(screen.queryByRole('link', { name: 'Create League' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Reports/ })).not.toBeInTheDocument();
   });
 
   // Happy path — multi-org operator
-  it('renders multi-org operator section with collapsed-by-default groups', async () => {
+  it('renders multi-org operator section as org-name links to each dashboard', () => {
     mockUseUserProfile.mockReturnValue({
       member: { id: 'm1', first_name: 'Op', last_name: 'Multi' },
       canAccessLeagueOperatorFeatures: () => true,
@@ -217,18 +211,16 @@ describe('AppDrawer', () => {
     renderDrawer();
 
     expect(screen.getByText('Operator')).toBeInTheDocument();
-    // Both org names show as collapsible group headers.
-    expect(screen.getByText('Triple B Pool')).toBeInTheDocument();
-    expect(screen.getByText('Riverside League')).toBeInTheDocument();
-
-    // Owners are listed before staff. Triple B Pool (owner) comes before Riverside (admin).
-    const orgHeaders = screen.getAllByRole('group');
-    expect(orgHeaders[0]).toHaveTextContent('Triple B Pool');
-    expect(orgHeaders[1]).toHaveTextContent('Riverside League');
-
-    // Sub-items are not visible until the group is expanded (collapsed by default).
-    const tripleBSummary = screen.getByText('Triple B Pool').closest('summary')!;
-    expect(tripleBSummary.parentElement).not.toHaveAttribute('open');
+    // With Dashboard the only action, each org name links straight to its
+    // dashboard (owner first, then staff).
+    expect(screen.getByRole('link', { name: 'Triple B Pool' })).toHaveAttribute(
+      'href',
+      '/operator-dashboard/org-a',
+    );
+    expect(screen.getByRole('link', { name: 'Riverside League' })).toHaveAttribute(
+      'href',
+      '/operator-dashboard/org-b',
+    );
   });
 
   // Edge case — unread messages badge
@@ -249,26 +241,6 @@ describe('AppDrawer', () => {
 
     expect(screen.getByRole('link', { name: 'Messages' })).toBeInTheDocument();
     expect(screen.queryByText(/Messages \(/)).not.toBeInTheDocument();
-  });
-
-  // Edge case — pending reports badge
-  it('shows "(N)" suffix on Reports when pending > 0', () => {
-    mockUseUserProfile.mockReturnValue({
-      member: { id: 'm1', first_name: 'Op', last_name: 'X' },
-      canAccessLeagueOperatorFeatures: () => true,
-      loading: false,
-    });
-    mockUseOrganizations.mockReturnValue({
-      organizations: [{ id: 'org-a', organization_name: 'TripleB', position: 'owner' }],
-      loading: false,
-      error: null,
-    });
-    mockUseUnreadMessageCount.mockReturnValue({ data: 0 });
-    mockUsePendingReportsCount.mockReturnValue({ count: 3, loading: false });
-
-    renderDrawer();
-
-    expect(screen.getByRole('link', { name: 'Reports (3)' })).toBeInTheDocument();
   });
 
   // Edge case — overflow with cap-at-4
