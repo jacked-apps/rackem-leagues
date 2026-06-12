@@ -302,26 +302,31 @@ function MyMatchSection({ items, isHydrating }: { items: MyMatchDrawerItem[]; is
 
   return (
     <div className="mb-4 border-b pb-4">
-      {/* Label + chips on one line, spread across the row (space-between). */}
-      <div className="flex items-center justify-between gap-2 px-3">
+      {/* "My Match" stays left; the chip pair is grouped and centered in the
+          remaining space. */}
+      <div className="flex items-center px-3">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           My Match
         </h3>
-        {liveItems.length > 0 ? (
-          <MyMatchChip
-            label="Live"
-            count={liveItems.length}
-            active={open === 'live'}
-            onClick={() => setExplicit('live')}
-          />
-        ) : null}
-        {makeupItems.length > 0 ? (
-          <MyMatchChip
-            label="Makeup"
-            count={makeupItems.length}
-            active={open === 'makeup'}
-            onClick={() => setExplicit('makeup')}
-          />
+        {items.length > 0 ? (
+          <div className="flex flex-1 items-center justify-center gap-1.5">
+            {liveItems.length > 0 ? (
+              <MyMatchChip
+                label="Live"
+                count={liveItems.length}
+                active={open === 'live'}
+                onClick={() => setExplicit('live')}
+              />
+            ) : null}
+            {makeupItems.length > 0 ? (
+              <MyMatchChip
+                label="Makeup"
+                count={makeupItems.length}
+                active={open === 'makeup'}
+                onClick={() => setExplicit('makeup')}
+              />
+            ) : null}
+          </div>
         ) : null}
       </div>
 
