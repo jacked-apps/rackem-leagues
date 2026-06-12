@@ -90,10 +90,11 @@ const STATE_META: Record<WeekEntryKind, StateMeta> = {
   playoffTbd: { label: 'TBD', Icon: Trophy, badge: 'text-highlight', card: 'bg-highlight/10 border-highlight/40' },
 };
 
-/** "Oct 12" or "Date TBD". */
+/** Compact numeric month/day, e.g. "6/11" (or "Date TBD"). */
 function formatShortDate(iso: string | null | undefined): string {
   if (!iso) return 'Date TBD';
-  return parseLocalDate(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const d = parseLocalDate(iso);
+  return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
 /** A non-playable week (blackout / bye / playoff-TBD) — a static, no-expand row. */
