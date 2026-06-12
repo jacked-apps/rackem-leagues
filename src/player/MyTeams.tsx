@@ -29,7 +29,6 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 // import { Link } from 'react-router-dom';
-import { formatPartialMemberNumber } from '@/types/member';
 import { formatGameType, formatDayOfWeek } from '@/types/league';
 import { PlayerNameLink } from '@/components/PlayerNameLink';
 import { PlayerRoster } from '@/components/PlayerRoster';
@@ -299,26 +298,16 @@ function TeamAccordionItem({
             )}
           </div>
 
-          {/* Captain */}
-          <div>
-            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
-              <Users className="h-4 w-4" />
-              <span>Captain</span>
-            </div>
-            <div
-              className={`text-base ml-6 ${
-                team.captain.id === memberId
-                  ? 'font-semibold text-primary'
-                  : 'text-foreground'
-              }`}
-            >
-              <PlayerNameLink
-                playerId={team.captain.id}
-                playerName={`${team.captain.first_name} ${team.captain.last_name}`}
-                className={team.captain.id === memberId ? 'font-semibold' : ''}
-              />{' '}
-              {formatPartialMemberNumber(team.captain)}
-            </div>
+          {/* Captain — one row. Desktop: "Captain -" label; mobile: the blue
+              (C) marker used in the roster. Player number dropped. */}
+          <div className="flex items-center gap-1.5 text-sm">
+            <span className="hidden sm:inline text-muted-foreground">Captain -</span>
+            <span className="sm:hidden font-bold text-blue-600">(C)</span>
+            <PlayerNameLink
+              playerId={team.captain.id}
+              playerName={`${team.captain.first_name} ${team.captain.last_name}`}
+              className={team.captain.id === memberId ? 'font-semibold text-primary' : ''}
+            />
           </div>
 
           {/* Roster */}
