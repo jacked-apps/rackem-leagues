@@ -4,27 +4,6 @@ Tasks and refactoring items for Ed to work on.
 
 ---
 
-## 🟡 BUG (2026-06-11) — week-off on a conflict week should pre-fill the holiday as the reason
-
-When you insert a **week-off** on a week that already has a **conflict flag** (a holiday or
-championship the conflict-detector found), the reason modal should **default to that conflict's
-name** (e.g. "Christmas", "BCA Championship") instead of opening blank. Right now the operator has
-to re-type a reason the app already knows.
-
-**Where:**
-- `src/components/modals/WeekOffReasonModal.tsx` — starts at `useState('')`, has no
-  `initialReason` prop (its own comment even says "when there's no automatic conflict").
-- The week already carries the data: `WeekEntry.conflicts: ConflictFlag[]`, and
-  `ConflictFlag.name` is the holiday/championship label (`src/types/season.ts`).
-
-**Fix:** add an optional `initialReason` to `WeekOffReasonModal`; the insert-week-off callers pass
-`week.conflicts[0]?.name` when the week has a conflict. Touches both flows: setup
-(`src/components/season/ScheduleReview.tsx`) and the edit page
-(`src/operator/SeasonScheduleManager.tsx` `handleToggleWeekOff` → reason modal). Operator can still
-override the pre-filled text.
-
----
-
 ## 🌅 PICK UP HERE — night of 2026-06-09 (bye-team firefight + the day's fixes)
 
 **Shipped tonight — open PRs awaiting Jack's merge (verify on staging when merged):**
