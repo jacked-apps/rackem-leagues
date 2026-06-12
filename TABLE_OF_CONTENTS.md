@@ -670,10 +670,15 @@ The workshop building. One sub-folder per module room. Each room owns a list pag
 - `SeasonSchedulePage.tsx` - Season schedule page
 
 **Team & Venue Management**
-- `TeamManagement.tsx` - Team management interface (the standalone `/manage-teams` edit page). Editing area decomposed into reusable presentational panels under `team-management/` (see below).
-- `team-management/SetupSummaryCard.tsx` - Presentational "Setup Summary" card (league type, venue/table counts, teams-vs-max) for the Manage Teams surface.
-- `team-management/VenuesPanel.tsx` - Presentational "League Venues" section (select-all, per-venue assign toggle + table-limit entry, empty/add-venue state); derives assigned/capacity/teams-at-venue from the data it's given.
+- `TeamManagement.tsx` - The standalone `/manage-teams` edit page — now a ~100-line thin wrapper: page chrome (header + footer) around `TeamManagementContent`. (Decomposed from an 860-line god-component; advances LIST_FOR_ED #5.)
+- `TeamManagementContent.tsx` - The reusable Manage Teams editing area with NO page chrome — wires the data hook + the focused logic hooks + derived stats into the panels + modals, and exposes a `renderFooter` slot so each wrapper (edit page vs season-setup step) supplies its own exit. Shared by both contexts.
+- `team-management/SetupSummaryCard.tsx` - Presentational "Setup Summary" card (league type, venue/table counts, teams-vs-max).
+- `team-management/VenuesPanel.tsx` - Presentational "League Venues" section (select-all, per-venue assign toggle + table-limit entry, empty/add-venue state); derives assigned/capacity/teams-at-venue from its props.
 - `team-management/TeamsPanel.tsx` - Presentational "Teams" section (Add Team + its guards, Import-from-last-season, open-BYE warning, empty states, team list).
+- `team-management/teamSetupStats.ts` - Pure `computeTeamSetupStats` — league type, table capacity, max-teams ceiling, and open-BYE derivation.
+- `team-management/useVenueAssignment.ts` - Venue-side logic hook (assign/unassign, select-all, table-limit modal, venue creation) + its state.
+- `team-management/useTeamActions.ts` - Team-side logic hook (editor modal state, delete with match-count guard, row expansion, default name).
+- `team-management/useTeamImport.ts` - "Import from Last Season" hook (confirm + read prev-season data; copy still stubbed).
 - `TeamEditorModal.tsx` - Team editor modal
 - `VenueManagement.tsx` - Venue management
 - `VenueLimitModal.tsx` - Venue table-limits modal (chrome only; logic in useVenueTableLimits)

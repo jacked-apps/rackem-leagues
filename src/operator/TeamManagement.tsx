@@ -1,499 +1,31 @@
 /**
- * @fileoverview Team Management Page
+ * @fileoverview TeamManagement — the standalone "Manage Teams" page reached from
+ * the league dashboard (`/league/:leagueId/manage-teams`). It is now a thin
+ * wrapper: page chrome (header + footer) around the reusable
+ * {@link TeamManagementContent}. All editing UI + logic lives in the content +
+ * its panels/hooks.
  *
- * Central hub for managing teams in a league:
- * 1. Assign venues to the league (from operator's venues)
- * 2. Create and manage teams
- * 3. Assign captains and build rosters
+ * NOTE: the footer still carries "Save & Continue → Playoff Setup" because the
+ * season-setup chain currently routes here; that button moves out (and this
+ * becomes a clean "Done → league" edit page) once the setup chain points at its
+ * own setup-teams page. See
+ * docs/plans/2026-06-12-001-refactor-teams-standalone-vs-setup-plan.md.
  */
-import React, { useState } from 'react';
+
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/supabaseClient';
-import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
-// Organization ID will come from the league data
-import { useTeamManagement } from '@/hooks/useTeamManagement';
-import { queryKeys } from '@/api/queryKeys';
-import { VenueLimitModal } from './VenueLimitModal';
-import { TeamEditorModal } from './TeamEditorModal';
-import { VenueCreationModal } from '@/components/operator/VenueCreationModal';
 import { InfoButton } from '@/components/InfoButton';
-import { AllPlayersRosterCard } from '@/components/AllPlayersRosterCard';
-import { SetupSummaryCard } from './team-management/SetupSummaryCard';
-import { VenuesPanel } from './team-management/VenuesPanel';
-import { TeamsPanel } from './team-management/TeamsPanel';
-import type { Venue, LeagueVenue } from '@/types/venue';
-import type { TeamWithQueryDetails } from '@/types/team';
-import { logger } from '@/utils/logger';
-import { toast } from 'sonner';
-import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { TeamManagementContent } from './TeamManagementContent';
 
-/**
- * TeamManagement Component
- *
- * Two-phase approach:
- * Phase 1: Assign venues to league (what venues can teams use?)
- * Phase 2: Create teams and assign captains
- */
 export const TeamManagement: React.FC = () => {
   const { leagueId } = useParams<{ leagueId: string }>();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const { confirm, ConfirmDialogComponent } = useConfirmDialog();
-
-  // Use custom hook for all data fetching
-  // NOTE: organizationId will be fetched from the league inside useTeamManagement
-  const {
-    league,
-    venues,
-    leagueVenues,
-    teams,
-    members,
-    seasonId,
-    previousSeasonId,
-    loading,
-    error,
-    refreshTeams,
-  } = useTeamManagement(null, leagueId);
-
-  // Resolved preferences — lazy-migrates legacy leagues on first access
-  const { data: leaguePrefs } = useResolvedLeaguePrefs(leagueId);
-  const maxRosterSize: number = leaguePrefs?.max_roster_size ?? 8;
-  // Active-lineup size — drives the default number of roster slots
-  // rendered in TeamEditorModal (LIST_FOR_ED #16 — incremental slots
-  // pattern: lineup_size shown initially, "+ Add Player" for the rest).
-  const lineupSize: number = leaguePrefs?.lineup_size ?? 5;
-
-  // Get organization ID from the league once it's loaded
-  const organizationId = league?.organization_id || null;
-
-  // UI state
-  const [assigningVenue, setAssigningVenue] = useState<string | null>(null);
-  const [selectingAll, setSelectingAll] = useState(false);
-  const [limitModalVenue, setLimitModalVenue] = useState<{ venue: Venue; leagueVenue: LeagueVenue } | null>(null);
-  const [showTeamEditor, setShowTeamEditor] = useState(false);
-  const [editingTeam, setEditingTeam] = useState<TeamWithQueryDetails | null>(null);
-  const [importingTeams, setImportingTeams] = useState(false);
-  const [expandedTeams, setExpandedTeams] = useState<Set<string>>(new Set());
-  const [showVenueCreation, setShowVenueCreation] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
 
-  /**
-   * Check if all venues are assigned
-   */
-  const areAllVenuesAssigned = (): boolean => {
-    if (venues.length === 0) return false;
-    return venues.every(venue => isVenueAssigned(venue.id));
-  };
-
-  /**
-   * Select or deselect all venues
-   */
-  const handleSelectAll = async () => {
-    if (!leagueId || venues.length === 0) return;
-
-    setSelectingAll(true);
-
-    try {
-      const allAssigned = areAllVenuesAssigned();
-
-      if (allAssigned) {
-        // Unassign all venues
-        const { error: deleteError } = await supabase
-          .from('league_venues')
-          .delete()
-          .eq('league_id', leagueId);
-
-        if (deleteError) throw deleteError;
-      } else {
-        // Assign all venues
-        const unassignedVenues = venues.filter(venue => !isVenueAssigned(venue.id));
-
-        const newLeagueVenues = unassignedVenues.map(venue => {
-          // Combine all table numbers from the venue into a single array
-          const allTableNumbers = [
-            ...(venue.bar_box_table_numbers ?? []),
-            ...(venue.eight_foot_table_numbers ?? []),
-            ...(venue.regulation_table_numbers ?? []),
-          ].sort((a, b) => a - b);
-
-          return {
-            league_id: leagueId,
-            venue_id: venue.id,
-            available_table_numbers: allTableNumbers,
-            capacity: allTableNumbers.length,
-          };
-        });
-
-        const { error: insertError } = await supabase
-          .from('league_venues')
-          .insert(newLeagueVenues)
-          .select();
-
-        if (insertError) throw insertError;
-      }
-
-      // Invalidate TanStack Query cache to automatically refetch updated data
-      await queryClient.invalidateQueries({
-        queryKey: [...queryKeys.leagues.detail(leagueId), 'venues']
-      });
-    } catch (err) {
-      logger.error('Error selecting all venues', { error: err instanceof Error ? err.message : String(err) });
-      toast.error('Failed to update venues. Please try again.');
-    } finally {
-      setSelectingAll(false);
-    }
-  };
-
-  /**
-   * Check if a venue is assigned to the league
-   */
-  const isVenueAssigned = (venueId: string): boolean => {
-    return leagueVenues.some(lv => lv.venue_id === venueId);
-  };
-
-  /**
-   * Toggle venue assignment (assign or unassign)
-   */
-  const handleToggleVenue = async (venue: Venue) => {
-    if (!leagueId) return;
-
-    setAssigningVenue(venue.id);
-
-    try {
-      const isAssigned = isVenueAssigned(venue.id);
-
-      if (isAssigned) {
-        // Unassign: Delete from league_venues
-        const leagueVenue = leagueVenues.find(lv => lv.venue_id === venue.id);
-        if (!leagueVenue) return;
-
-        const { error: deleteError } = await supabase
-          .from('league_venues')
-          .delete()
-          .eq('id', leagueVenue.id);
-
-        if (deleteError) throw deleteError;
-      } else {
-        // Assign: Insert into league_venues with all tables available by default
-        // Combine all table numbers from the venue into a single array
-        const allTableNumbers = [
-          ...(venue.bar_box_table_numbers ?? []),
-          ...(venue.eight_foot_table_numbers ?? []),
-          ...(venue.regulation_table_numbers ?? []),
-        ].sort((a, b) => a - b);
-
-        const { error: insertError } = await supabase
-          .from('league_venues')
-          .insert([{
-            league_id: leagueId,
-            venue_id: venue.id,
-            available_table_numbers: allTableNumbers,
-            capacity: allTableNumbers.length,
-          }])
-          .select()
-          .single();
-
-        if (insertError) throw insertError;
-      }
-
-      // Invalidate TanStack Query cache to automatically refetch updated data
-      await queryClient.invalidateQueries({
-        queryKey: [...queryKeys.leagues.detail(leagueId), 'venues']
-      });
-    } catch (err: any) {
-      logger.error('Error toggling venue', { error: err instanceof Error ? err.message : String(err) });
-      toast.error(`Failed to update venue assignment: ${err.message || 'Please try again.'}`);
-    } finally {
-      setAssigningVenue(null);
-    }
-  };
-
-  /**
-   * Open limit modal for a specific venue
-   */
-  const handleOpenLimitModal = (venue: Venue) => {
-    const leagueVenue = leagueVenues.find(lv => lv.venue_id === venue.id);
-    if (!leagueVenue) return;
-
-    setLimitModalVenue({ venue, leagueVenue });
-  };
-
-  /**
-   * Handle successful limit update
-   */
-  const handleLimitUpdateSuccess = async (_updatedLeagueVenue: LeagueVenue) => {
-    // Invalidate cache to refetch updated venue data
-    if (leagueId) {
-      await queryClient.invalidateQueries({
-        queryKey: [...queryKeys.leagues.detail(leagueId), 'venues']
-      });
-    }
-    setLimitModalVenue(null);
-  };
-
-  /**
-   * Import teams from previous season
-   * Copies teams, league venues, and rosters from the most recent completed season
-   */
-  const handleImportTeams = async () => {
-    if (!previousSeasonId || !seasonId || !leagueId) return;
-
-    const confirmImport = await confirm({
-      title: 'Import Teams?',
-      message: 'Import teams from last season? This will copy:\n• All team names and captains\n• Home venue assignments\n• Full rosters\n• League venue assignments',
-      confirmText: 'Import',
-      confirmVariant: 'default',
-    });
-
-    if (!confirmImport) return;
-
-    setImportingTeams(true);
-
-    try {
-      // Fetch previous season's teams with rosters — active only,
-      // so import doesn't pull bye/withdrawn rows from last season.
-      const { data: prevTeams, error: teamsError } = await supabase
-        .from('teams')
-        .select('*')
-        .eq('season_id', previousSeasonId)
-        .eq('status', 'active');
-
-      if (teamsError) throw teamsError;
-
-      // Fetch previous season's team_players (rosters)
-      const { data: prevRosters, error: rostersError } = await supabase
-        .from('team_players')
-        .select('*')
-        .eq('season_id', previousSeasonId);
-
-      if (rostersError) throw rostersError;
-
-      // Fetch previous season's league venues
-      const { data: prevLeagueVenues, error: leagueVenuesError } = await supabase
-        .from('league_venues')
-        .select('*')
-        .eq('league_id', leagueId);
-
-      if (leagueVenuesError) throw leagueVenuesError;
-
-      // Prepare new teams data
-      prevTeams?.map(team => ({
-        season_id: seasonId,
-        league_id: leagueId,
-        captain_id: team.captain_id,
-        home_venue_id: team.home_venue_id,
-        team_name: team.team_name,
-        roster_size: team.roster_size,
-      })) || [];
-
-      // Prepare league venues (if not already assigned)
-      prevLeagueVenues?.filter(lv =>
-        !leagueVenues.some(existing => existing.venue_id === lv.venue_id)
-      ).map(lv => ({
-        league_id: leagueId,
-        venue_id: lv.venue_id,
-        available_bar_box_tables: lv.available_bar_box_tables,
-        available_regulation_tables: lv.available_regulation_tables,
-        available_total_tables: lv.available_total_tables,
-      })) || [];
-
-      // Create mapping of old team IDs to prepare roster data
-      const rostersByOldTeamId: Record<string, typeof prevRosters> = {};
-      prevRosters?.forEach(roster => {
-        if (!rostersByOldTeamId[roster.team_id]) {
-          rostersByOldTeamId[roster.team_id] = [];
-        }
-        rostersByOldTeamId[roster.team_id].push(roster);
-      });
-
-      // Prepare roster data (will need to map to new team IDs after creation)
-      prevTeams?.map((oldTeam, index) => {
-        const oldRosters = rostersByOldTeamId[oldTeam.id] || [];
-        return {
-          teamIndex: index,
-          rosters: oldRosters.map(roster => ({
-            member_id: roster.member_id,
-            season_id: seasonId,
-            is_captain: roster.is_captain,
-          }))
-        };
-      }) || [];
-
-      // Simulate success
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      toast.success(`Successfully imported ${prevTeams?.length || 0} teams from last season!`);
-
-      // Refresh the page data (in real implementation, this would refetch from DB)
-      // For now, just show success message
-    } catch (err) {
-      logger.error('Error importing teams', { error: err instanceof Error ? err.message : String(err) });
-      toast.error(err instanceof Error ? err.message : 'Failed to import teams');
-    } finally {
-      setImportingTeams(false);
-    }
-  };
-
-  /**
-   * Handle successful team creation/update
-   */
-  const handleTeamCreateSuccess = async () => {
-    setShowTeamEditor(false);
-    setEditingTeam(null);
-
-    // Refresh teams list using hook function
-    await refreshTeams();
-  };
-
-  /**
-   * Handle team deletion.
-   *
-   * Hard delete is allowed only when the team has zero matches (typo /
-   * pre-schedule cleanup). When matches exist, the operator is told the
-   * Drop workflow is the right tool — the database FK is RESTRICT, so the
-   * raw DELETE would fail anyway, but the pre-flight check gives a clean
-   * message instead of letting an FK error surface.
-   *
-   * The Drop workflow (mark team withdrawn + reassign matches to a bye row)
-   * ships in PR 2; until then, operators with mid-season drops should
-   * contact dev support.
-   */
-  const handleDeleteTeam = async (teamId: string) => {
-    const { count: matchCount, error: countError } = await supabase
-      .from('matches')
-      .select('id', { count: 'exact', head: true })
-      .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`);
-
-    if (countError) {
-      logger.error('Error counting team matches', { error: countError.message });
-      toast.error('Could not check team matches. Please try again.');
-      return;
-    }
-
-    if ((matchCount ?? 0) > 0) {
-      toast.error(
-        `This team has ${matchCount} match${matchCount === 1 ? '' : 'es'} and cannot be deleted. The Drop Team workflow (coming soon) is the right tool for mid-season departures.`
-      );
-      return;
-    }
-
-    const confirmed = await confirm({
-      title: 'Delete Team?',
-      message: 'This team has no matches yet. Deleting it will permanently remove the team and its roster. This cannot be undone.',
-      confirmText: 'Delete Team',
-      confirmVariant: 'destructive',
-    });
-
-    if (!confirmed) return;
-
-    try {
-      const { error: deleteError } = await supabase
-        .from('teams')
-        .delete()
-        .eq('id', teamId);
-
-      if (deleteError) throw deleteError;
-
-      await refreshTeams();
-    } catch (err) {
-      logger.error('Error deleting team', { error: err instanceof Error ? err.message : String(err) });
-      toast.error(err instanceof Error ? err.message : 'Failed to delete team');
-    }
-  };
-
-  /**
-   * Toggle team expansion
-   */
-  const toggleTeamExpansion = (teamId: string) => {
-    setExpandedTeams(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(teamId)) {
-        newSet.delete(teamId);
-      } else {
-        newSet.add(teamId);
-      }
-      return newSet;
-    });
-  };
-
-  /**
-   * Generate default team name
-   */
-  const generateDefaultTeamName = (): string => {
-    const teamNumber = teams.length + 1;
-    return `Team ${teamNumber}`;
-  };
-
-  /**
-   * Handle successful venue creation
-   * Refreshes the venues list from the hook
-   */
-  const handleVenueCreated = () => {
-    setShowVenueCreation(false);
-    // The useTeamManagement hook will automatically refresh venues
-    // when the component re-renders
-    window.location.reload(); // Simple refresh for now
-  };
-
-  // Calculate max teams based on league type
-  // In-house (1 venue): 2 teams per table (both teams play at same venue)
-  // Traveling (multiple venues): 1 home team per table
-  const totalCapacity = leagueVenues.reduce(
-    (sum, lv) => sum + (lv.capacity ?? lv.available_table_numbers?.length ?? 0),
-    0
-  );
-  const isInHouse = leagueVenues.length === 1;
-  const isTraveling = leagueVenues.length > 1;
-  const maxTeams = isInHouse ? totalCapacity * 2 : totalCapacity;
-  const isAtMaxTeams = teams.length >= maxTeams && maxTeams > 0;
-  // An open BYE slot means the league is odd and already has its "next team"
-  // spot reserved in the schedule. Adding a SEPARATE team here stacks a
-  // redundant row + a stale bye (the wedged-league bug). The operator should
-  // FILL the bye instead — so gate "Add Team" whenever a bye exists. (`teams`
-  // includes the bye row; it's loaded with includeBye.)
-  const hasBye = teams.some((t) => t.status === 'bye');
-
-  const isLoading = loading;
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-muted py-8">
-        <div className="container mx-auto px-4 max-w-7xl">
-          <div className="text-center text-muted-foreground">Loading...</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !league) {
-    return (
-      <div className="min-h-screen bg-muted py-8">
-        <div className="container mx-auto px-4 max-w-7xl">
-          <div className="bg-card rounded-xl shadow-sm p-6">
-            <h3 className="text-destructive text-lg font-semibold mb-4">Error</h3>
-            <p className="text-foreground mb-4">{error || 'League not found'}</p>
-            <Button
-              onClick={() => {
-                setIsNavigating(true);
-                navigate(organizationId ? `/operator-dashboard/${organizationId}` : '/my-teams');
-              }}
-              disabled={isNavigating}
-              isLoading={isNavigating}
-              loadingText="Loading..."
-            >
-              Back to Dashboard
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className={`min-h-screen bg-muted ${teams.length > 0 && seasonId ? 'pb-24' : ''}`}>
+    <div className="min-h-screen bg-muted pb-24">
       <PageHeader
         backTo={`/league/${leagueId}`}
         backLabel="Back to League"
@@ -504,8 +36,8 @@ export const TeamManagement: React.FC = () => {
           <InfoButton title="Quick Tip" label="Team Management Tips">
             <div className="space-y-3">
               <p className="text-sm text-foreground">
-                All you have to do is pick a captain for each team.
-                After that, the captain can fill in the rest—team name, venue, and players.
+                All you have to do is pick a captain for each team. After that, the captain can
+                fill in the rest—team name, venue, and players.
               </p>
               <p className="text-sm text-foreground">
                 Feel free to add more info if you have it, but it's optional.
@@ -517,186 +49,45 @@ export const TeamManagement: React.FC = () => {
           </InfoButton>
         </div>
       </PageHeader>
-      {/*
-        Save & Exit / Save & Continue pair lives in a fixed bottom bar (R6a)
-        so it stays in the thumb zone and does not scroll out of view. Only
-        rendered when there are teams to save and a seasonId is in scope.
-      */}
-      {teams.length > 0 && seasonId && (
-        <div className="fixed bottom-0 inset-x-0 z-30 border-t bg-card p-3 shadow-lg">
-          <div className="mx-auto grid max-w-4xl grid-cols-2 gap-2">
-            <Button
-              className="w-full"
-              size="lg"
-              variant="outline"
-              onClick={() => {
-                setIsNavigating(true);
-                navigate(`/league/${leagueId}`);
-              }}
-              disabled={isNavigating}
-              isLoading={isNavigating}
-              loadingText="Loading..."
-            >
-              Save & Exit
-            </Button>
-            <Button
-              className="w-full"
-              size="lg"
-              onClick={() => {
-                setIsNavigating(true);
-                navigate(`/league/${leagueId}/season/${seasonId}/playoffs-setup`);
-              }}
-              disabled={isNavigating}
-              isLoading={isNavigating}
-              loadingText="Loading..."
-            >
-              Save & Continue →
-            </Button>
-          </div>
-        </div>
-      )}
 
-      <div className="container mx-auto px-4 max-w-7xl py-3 lg:py-8">
-        {/* Layout: Venues (left) and Teams (right) */}
-        <div className="w-full grid grid-cols-1 gap-2 lg:grid-cols-12 lg:gap-6">
-          {/* Left Column */}
-          <div className="col-span-1 lg:col-span-4 space-y-3">
-            {/* Status Card */}
-            <SetupSummaryCard
-              isTraveling={isTraveling}
-              isInHouse={isInHouse}
-              venueCount={leagueVenues.length}
-              tablesAvailable={leagueVenues.reduce(
-                (sum, lv) => sum + (lv.available_table_numbers?.length ?? 0),
-                0,
-              )}
-              teamCount={teams.length}
-              maxTeams={maxTeams}
-              isAtMaxTeams={isAtMaxTeams}
-            />
-
-            {/* Venue Assignment Section */}
-            <VenuesPanel
-              venues={venues}
-              leagueVenues={leagueVenues}
-              teams={teams}
-              organizationId={organizationId}
-              assigningVenueId={assigningVenue}
-              selectingAll={selectingAll}
-              onSelectAll={handleSelectAll}
-              onNewVenue={() => setShowVenueCreation(true)}
-              onToggleVenue={handleToggleVenue}
-              onOpenLimitModal={handleOpenLimitModal}
-            />
-
-            {/* All Players Roster Card */}
-            {teams.length > 0 && (
-              <AllPlayersRosterCard teams={teams} />
-            )}
-          </div>
-
-          {/* Teams Section - Main Right Area */}
-          <TeamsPanel
-            teams={teams}
-            leagueVenues={leagueVenues}
-            previousSeasonId={previousSeasonId}
-            seasonId={seasonId}
-            importingTeams={importingTeams}
-            isAtMaxTeams={isAtMaxTeams}
-            hasBye={hasBye}
-            maxTeams={maxTeams}
-            expandedTeams={expandedTeams}
-            onImport={handleImportTeams}
-            onAddTeam={() => setShowTeamEditor(true)}
-            onEditTeam={(team) => {
-              setEditingTeam(team);
-              setShowTeamEditor(true);
-            }}
-            onDeleteTeam={handleDeleteTeam}
-            onToggleExpand={toggleTeamExpansion}
-          />
-        </div>
-
-        {/* Completion Actions - Outside cards for better visibility */}
-        {teams.length > 0 && seasonId && (
-          <div className="flex justify-center gap-4 mt-6">
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={() => {
-                setIsNavigating(true);
-                navigate(`/league/${leagueId}`);
-              }}
-              disabled={isNavigating}
-              isLoading={isNavigating}
-              loadingText="Loading..."
-            >
-              Save & Exit
-            </Button>
-            <Button
-              size="lg"
-              onClick={() => {
-                setIsNavigating(true);
-                navigate(`/league/${leagueId}/season/${seasonId}/playoffs-setup`);
-              }}
-              disabled={isNavigating}
-              isLoading={isNavigating}
-              loadingText="Loading..."
-            >
-              Save & Continue →
-            </Button>
-          </div>
-        )}
-
-        {/* Venue Limit Modal */}
-        {limitModalVenue && (
-          <VenueLimitModal
-            venue={limitModalVenue.venue}
-            leagueVenue={limitModalVenue.leagueVenue}
-            allLeagueVenues={leagueVenues}
-            onSuccess={handleLimitUpdateSuccess}
-            onCancel={() => setLimitModalVenue(null)}
-          />
-        )}
-
-        {/* Team Editor Modal */}
-        {showTeamEditor && league && seasonId && (
-          <TeamEditorModal
-            leagueId={leagueId!}
-            seasonId={seasonId}
-            rosterSize={maxRosterSize}
-            lineupSize={lineupSize}
-            venues={venues}
-            leagueVenues={leagueVenues}
-            members={members}
-            allTeams={teams}
-            defaultTeamName={generateDefaultTeamName()}
-            existingTeam={editingTeam ? {
-              id: editingTeam.id,
-              team_name: editingTeam.team_name,
-              captain_id: editingTeam.captain_id,
-              home_venue_id: editingTeam.home_venue_id,
-              roster_size: editingTeam.roster_size,
-              status: editingTeam.status,
-            } : null}
-            onSuccess={handleTeamCreateSuccess}
-            onCancel={() => {
-              setShowTeamEditor(false);
-              setEditingTeam(null);
-            }}
-          />
-        )}
-
-        {/* Venue Creation Modal */}
-        {showVenueCreation && organizationId && (
-          <VenueCreationModal
-            organizationId={organizationId}
-            onSuccess={handleVenueCreated}
-            onCancel={() => setShowVenueCreation(false)}
-          />
-        )}
-        {ConfirmDialogComponent}
-      </div>
+      <TeamManagementContent
+        leagueId={leagueId!}
+        renderFooter={({ seasonId, hasTeams }) =>
+          hasTeams && seasonId ? (
+            <div className="fixed bottom-0 inset-x-0 z-30 border-t bg-card p-3 shadow-lg">
+              <div className="mx-auto grid max-w-4xl grid-cols-2 gap-2">
+                <Button
+                  className="w-full"
+                  size="lg"
+                  variant="outline"
+                  onClick={() => {
+                    setIsNavigating(true);
+                    navigate(`/league/${leagueId}`);
+                  }}
+                  disabled={isNavigating}
+                  isLoading={isNavigating}
+                  loadingText="Loading..."
+                >
+                  Save & Exit
+                </Button>
+                <Button
+                  className="w-full"
+                  size="lg"
+                  onClick={() => {
+                    setIsNavigating(true);
+                    navigate(`/league/${leagueId}/season/${seasonId}/playoffs-setup`);
+                  }}
+                  disabled={isNavigating}
+                  isLoading={isNavigating}
+                  loadingText="Loading..."
+                >
+                  Save & Continue →
+                </Button>
+              </div>
+            </div>
+          ) : null
+        }
+      />
     </div>
   );
 };

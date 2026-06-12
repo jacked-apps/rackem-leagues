@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- test fixtures use minimal `as any` shapes */
 /**
  * @fileoverview Tests for TeamsPanel — the main Teams section. The heavy TeamCard
  * child is mocked so we test the panel's own logic (Add Team guards, the bye

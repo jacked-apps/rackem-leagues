@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- test fixtures use minimal `as any` shapes */
 /**
  * @fileoverview Tests for VenuesPanel — the "League Venues" assignment section.
  * The heavy VenueListItem child is mocked so we test the panel's own logic
