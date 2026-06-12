@@ -122,6 +122,9 @@ function ScheduleStaticRow({ entry }: { entry: WeekEntry }) {
 export function TeamSchedule() {
   const { teamId } = useParams<{ teamId: string }>();
   const [hideCompleted, setHideCompleted] = useState(false);
+  // Second filter: hide the weeks you don't play (blackouts + byes) to show
+  // only playing dates.
+  const [hideOffWeeks, setHideOffWeeks] = useState(false);
 
   const { data: team, isLoading: teamLoading, error: teamError } = useTeamDetails(teamId);
   const { data: matches = [], isLoading: matchesLoading, error: matchesError } = useMatchesByTeam(teamId);
@@ -233,7 +236,11 @@ export function TeamSchedule() {
     }
   }
 
-  const displayedEntries = hideCompleted ? entries.filter((e) => e.kind !== 'completed') : entries;
+  const displayedEntries = entries.filter((e) => {
+    if (hideCompleted && e.kind === 'completed') return false;
+    if (hideOffWeeks && (e.kind === 'blackout' || e.kind === 'bye')) return false;
+    return true;
+  });
 
   return (
     <div className="min-h-screen bg-muted">
@@ -243,7 +250,7 @@ export function TeamSchedule() {
         title={team.team_name}
         subtitle={dayOfWeek ? `${dayOfWeek}s` : undefined}
       >
-        <div className="mt-3">
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row">
           <Button
             variant="outline"
             size="sm"
@@ -260,6 +267,25 @@ export function TeamSchedule() {
               <>
                 <EyeOff className="h-4 w-4 mr-2" />
                 Hide Completed
+              </>
+            )}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setHideOffWeeks(!hideOffWeeks)}
+            className="w-full sm:w-auto"
+            loadingText="none"
+          >
+            {hideOffWeeks ? (
+              <>
+                <Calendar className="h-4 w-4 mr-2" />
+                Show Off Weeks
+              </>
+            ) : (
+              <>
+                <CalendarOff className="h-4 w-4 mr-2" />
+                Hide Off Weeks
               </>
             )}
           </Button>
