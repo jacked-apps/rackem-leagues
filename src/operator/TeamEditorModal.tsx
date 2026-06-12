@@ -64,6 +64,8 @@ interface TeamEditorModalProps {
     captain_id: string | null;
     home_venue_id: string | null;
     roster_size: number;
+    /** Current status — when 'bye', saving with a captain fills it (→ 'active'). */
+    status?: import('@/types/team').TeamStatus;
   } | null;
   /** Called when team is successfully created/updated */
   onSuccess: () => void;
@@ -320,7 +322,9 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
       const rosterPlayers = getAllPlayerIds();
 
       if (isEditing && existingTeam) {
-        // UPDATE existing team
+        // UPDATE existing team. Filling a bye: a save here always has a captain
+        // (validation requires one), so a 'bye' row being saved is becoming a
+        // real team → promote it to 'active'. Normal edits leave status alone.
         await updateTeamMutation.mutateAsync({
           teamId: existingTeam.id,
           seasonId,
@@ -329,6 +333,7 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
           homeVenueId: homeVenueId || null,
           rosterPlayerIds: rosterPlayers,
           isCaptainVariant,
+          status: existingTeam.status === 'bye' ? 'active' : undefined,
         });
 
       } else {
