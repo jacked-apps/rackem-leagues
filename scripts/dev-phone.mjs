@@ -96,6 +96,10 @@ const isWindows = process.platform === 'win32';
 const cmd = isWindows ? 'pnpm.cmd' : 'pnpm';
 const child = spawn(cmd, ['exec', 'vite'], {
   stdio: 'inherit',
+  // Node 18.20+/20.12+/22 refuse to spawn .cmd/.bat on Windows without
+  // shell:true (CVE-2024-27980 hardening). Without it, spawning pnpm.cmd
+  // throws `spawn EINVAL`.
+  shell: true,
   env: { ...process.env, VITE_SUPABASE_URL: supabaseUrl },
 });
 
