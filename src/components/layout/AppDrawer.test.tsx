@@ -435,7 +435,7 @@ describe('AppDrawer', () => {
     mockUseMyMatchSurfaces.mockReturnValue({
       ...emptyMyMatch(),
       drawerItems: [
-        { matchId: 'mx', teamName: 'Sharks', opponentName: 'Cues', label: 'Live', group: 'live', destinationPath: '/match/mx/lineup' },
+        { matchId: 'mx', teamName: 'Sharks', opponentName: 'Cues', rowDetail: '', group: 'live', destinationPath: '/match/mx/lineup' },
       ],
     });
 
@@ -455,8 +455,8 @@ describe('AppDrawer', () => {
     mockUseMyMatchSurfaces.mockReturnValue({
       ...emptyMyMatch(),
       drawerItems: [
-        { matchId: 'm1', teamName: 'Sharks', opponentName: 'Cues', label: 'Live', group: 'live', destinationPath: '/match/m1/lineup' },
-        { matchId: 'm2', teamName: 'Rails', opponentName: 'Felt', label: 'Makeup (Apr 7)', group: 'makeup', destinationPath: '/match/m2/lineup' },
+        { matchId: 'm1', teamName: 'Sharks', opponentName: 'Cues', rowDetail: '', group: 'live', destinationPath: '/match/m1/lineup' },
+        { matchId: 'm2', teamName: 'Rails', opponentName: 'Felt', rowDetail: '6/11', group: 'makeup', destinationPath: '/match/m2/lineup' },
       ],
     });
 
@@ -478,7 +478,7 @@ describe('AppDrawer', () => {
     mockUseMyMatchSurfaces.mockReturnValue({
       ...emptyMyMatch(),
       drawerItems: [
-        { matchId: 'm2', teamName: 'Rails', opponentName: 'Felt', label: 'Makeup (Apr 7)', group: 'makeup', destinationPath: '/match/m2/lineup' },
+        { matchId: 'm2', teamName: 'Rails', opponentName: 'Felt', rowDetail: '6/11', group: 'makeup', destinationPath: '/match/m2/lineup' },
       ],
     });
 

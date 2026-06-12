@@ -331,8 +331,8 @@ function MyMatchSection({ items, isHydrating }: { items: MyMatchDrawerItem[]; is
         ) : null}
       </div>
 
-      {open === 'live' ? <MyMatchList items={liveItems} /> : null}
-      {open === 'makeup' ? <MyMatchList items={makeupItems} /> : null}
+      {open === 'live' ? <MyMatchList heading="Live" items={liveItems} /> : null}
+      {open === 'makeup' ? <MyMatchList heading="Makeup" items={makeupItems} /> : null}
     </div>
   );
 }
@@ -387,16 +387,22 @@ function MyMatchChip({
   );
 }
 
-/** The revealed list of match rows for the open chip. */
-function MyMatchList({ items }: { items: MyMatchDrawerItem[] }) {
+/** The revealed list of match rows for the open chip, under a small heading
+ *  (the heading names the group, since the phone chip is just an icon). */
+function MyMatchList({ heading, items }: { heading: string; items: MyMatchDrawerItem[] }) {
   return (
-    <ul className="mt-2 space-y-1">
-      {items.map((item) => (
-        <li key={item.matchId}>
-          <MyMatchRow item={item} />
-        </li>
-      ))}
-    </ul>
+    <div className="mt-3">
+      <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        {heading}
+      </p>
+      <ul className="space-y-1">
+        {items.map((item) => (
+          <li key={item.matchId}>
+            <MyMatchRow item={item} />
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -411,9 +417,11 @@ function MyMatchRow({ item }: { item: MyMatchDrawerItem }) {
       >
         <span className="truncate font-medium">{item.teamName}</span>
         <span className="truncate text-muted-foreground">vs {item.opponentName}</span>
-        <span className="ml-auto shrink-0 text-xs font-medium text-muted-foreground">
-          {item.label}
-        </span>
+        {item.rowDetail ? (
+          <span className="ml-auto shrink-0 text-xs font-medium text-muted-foreground">
+            {item.rowDetail}
+          </span>
+        ) : null}
       </Link>
     </SheetClose>
   );

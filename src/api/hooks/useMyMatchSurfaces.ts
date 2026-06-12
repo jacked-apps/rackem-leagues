@@ -54,8 +54,9 @@ export interface MyMatchDrawerItem {
   teamName: string;
   /** The other team — disambiguates when two of the member's teams play tonight. */
   opponentName: string;
-  /** `'Live'` | `'Today'` | `'Makeup (Apr 7)'`. */
-  label: string;
+  /** Per-row detail shown at the row end: `''` (live), `'Today'`, or a numeric
+   *  date like `'6/11'` (makeup). The list's heading names the group. */
+  rowDetail: string;
   /** Drawer chip grouping: in_progress/today → `'live'`, past-due → `'makeup'`. */
   group: 'live' | 'makeup';
   destinationPath: string;
@@ -163,13 +164,11 @@ export function resolveMyMatchNavState(matches: MyMatchRow[], today: string): My
   return EMPTY_NAV;
 }
 
-/** Human label for the date a makeup was originally scheduled (e.g. "Apr 7"). */
-function formatMakeupDate(isoDate: string | null | undefined): string {
+/** Compact numeric month/day for a match date, e.g. "6/11" (no leading zeros). */
+function formatMatchDate(isoDate: string | null | undefined): string {
   if (!isoDate) return '';
-  return parseLocalDate(isoDate).toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-  });
+  const d = parseLocalDate(isoDate);
+  return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
 /** Turn one classified match into a drawer row from the member's perspective. */
@@ -181,13 +180,15 @@ function toDrawerItem(
   const homeIsMine = match.home_team_id != null && teamIdSet.has(match.home_team_id);
   const myTeam = homeIsMine ? match.home_team : match.away_team;
   const opponent = homeIsMine ? match.away_team : match.home_team;
-  const label =
-    tier === 1 ? 'Live' : tier === 2 ? 'Today' : `Makeup (${formatMakeupDate(match.scheduled_date)})`;
+  // in_progress needs no per-row detail (the "Live" heading covers it); today
+  // is tagged; a makeup shows its (past) date.
+  const rowDetail =
+    tier === 1 ? '' : tier === 2 ? 'Today' : formatMatchDate(match.scheduled_date);
   return {
     matchId: match.id,
     teamName: myTeam?.team_name ?? 'My team',
     opponentName: opponent?.team_name ?? 'BYE',
-    label,
+    rowDetail,
     // Live + Today both live under the "Live" chip; past-due is "Makeup".
     group: tier === 3 ? 'makeup' : 'live',
     destinationPath: `/match/${match.id}/lineup`,

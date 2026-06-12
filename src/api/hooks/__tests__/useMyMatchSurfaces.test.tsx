@@ -193,7 +193,12 @@ describe('buildMyMatchDrawerItems', () => {
       TODAY,
     );
     expect(items.map((i) => i.matchId)).toEqual(['live', 'today', 'makeup']);
-    expect(items.map((i) => i.label)).toEqual(['Live', 'Today', expect.stringMatching(/^Makeup \(/)]);
+    // in_progress has no per-row detail; today is tagged; makeup shows a date.
+    expect(items.map((i) => i.rowDetail)).toEqual([
+      '',
+      'Today',
+      expect.stringMatching(/^\d{1,2}\/\d{1,2}$/),
+    ]);
   });
 
   it('tags each item with its drawer chip group (live | makeup)', () => {
@@ -224,17 +229,14 @@ describe('buildMyMatchDrawerItems', () => {
     expect(item.opponentName).toBe('Sharks');
   });
 
-  it('formats the makeup label with the original scheduled date', () => {
+  it('shows the makeup row date as a numeric month/day', () => {
     const [item] = buildMyMatchDrawerItems(
       [row({ id: 'm', status: 'scheduled', scheduled_date: YESTERDAY })],
       ['t1'],
       TODAY,
     );
-    const expected = parseLocalDate(YESTERDAY).toLocaleDateString(undefined, {
-      month: 'short',
-      day: 'numeric',
-    });
-    expect(item.label).toBe(`Makeup (${expected})`);
+    const d = parseLocalDate(YESTERDAY);
+    expect(item.rowDetail).toBe(`${d.getMonth() + 1}/${d.getDate()}`);
   });
 });
 
