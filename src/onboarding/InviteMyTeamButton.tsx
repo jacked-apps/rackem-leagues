@@ -94,16 +94,20 @@ export const InviteMyTeamButton: React.FC<InviteMyTeamButtonProps> = ({
       )}
 
       <Dialog>
-        <div className="flex items-center gap-1">
+        {/* Full-width trigger so it lines up with the sibling buttons in the
+            team card's action grid; the help (?) is tucked into the corner so
+            it stays available without shrinking the button. */}
+        <div className="relative">
           <DialogTrigger asChild>
-            <Button variant="outline" loadingText="none">
+            <Button variant="outline" loadingText="none" className="w-full">
               Invite my team
             </Button>
           </DialogTrigger>
-          {/* In-place help: how to share the link + approve players. */}
-          <InfoButton title="How to invite your team">
-            <InviteHelpContent />
-          </InfoButton>
+          <span className="absolute right-1 top-1/2 -translate-y-1/2">
+            <InfoButton title="How to invite your team">
+              <InviteHelpContent />
+            </InfoButton>
+          </span>
         </div>
         <DialogContent>
           <DialogHeader>
