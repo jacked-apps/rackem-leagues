@@ -9,6 +9,7 @@
 import { useMembersByIds } from '@/api/hooks/useCurrentMember';
 import { usePlayerHandicaps } from '@/api/hooks/usePlayerHandicaps';
 import { PlayerNameLink } from '@/components/PlayerNameLink';
+import { formatPlayerNumber } from '@/utils/messageFormatters';
 import type { HandicapVariant, GameType } from '@/types/league';
 
 interface PlayerRosterProps {
@@ -149,8 +150,8 @@ export function PlayerRoster({
                 </span>
               )}
               {!hidePlayerNumber && (
-                <span className="text-muted-foreground">
-                  {player.system_player_number}
+                <span className="text-muted-foreground text-xs">
+                  {`#${formatPlayerNumber(player.system_player_number)}`}
                 </span>
               )}
             </div>
