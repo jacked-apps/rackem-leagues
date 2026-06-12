@@ -357,11 +357,12 @@ function ActionCard({
     );
   }
 
-  // Nothing to do: the league is fully set up and a season is in session, with
-  // no next-season prompt due. Don't render the 🚀 "Ready to Begin?" CTA — it's
-  // setup-phase noise once the league is just running. (Continue-Setup and
+  // Nothing to do: the league is fully set up and a season is in session OR
+  // queued (active now, or scheduled to go live on a future date), with no
+  // next-season prompt due. Don't render the 🚀 "Ready to Begin?" CTA — it's
+  // setup-phase noise once setup is finished. (Continue-Setup and
   // Create-Next-Season above still render in their states.)
-  if (!showContinueSetup && flowComplete && activeSeason) {
+  if (!showContinueSetup && flowComplete && (activeSeason || scheduledSeason)) {
     return null;
   }
 
