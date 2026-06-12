@@ -335,3 +335,107 @@ export async function deleteTeam(params: DeleteTeamParams): Promise<Team> {
 
   return withdrawnTeam;
 }
+
+/**
+ * Parameters for converting a real team into the bye.
+ */
+export interface ConvertTeamToByeParams {
+  teamId: string;
+  /** Season the team belongs to — used to enforce one bye per season. */
+  seasonId: string;
+}
+
+/**
+ * Convert a real (active) team into THE bye — the pre-season "drop a team"
+ * path for a league whose schedule is already generated.
+ *
+ * When an even league loses a team, the slot count must stay even for the
+ * round-robin. Rather than delete the row (which would force a regenerate),
+ * we repurpose the dropping team's slot as the bye: it already owns its
+ * rotation position, so every "Opponent vs <team>" matchup instantly becomes a
+ * bye week — zero match rewiring, no reschedule. This is the exact inverse of
+ * fill-the-bye (PR #207).
+ *
+ * Pre-season ONLY. Guards (all enforced here so the UI and DB agree):
+ *   1. The team is currently 'active'.
+ *   2. The season has no OTHER bye already (a league holds at most one).
+ *   3. None of the team's matches have been played — a mid-season drop must
+ *      reconcile real results and is a separate, future flow.
+ *
+ * Effects: reshape the row to the canonical bye shape (matches createByeTeam —
+ * status='bye', captain_id=null, team_name='BYE', home_venue_id=null) and
+ * release the roster (the bye has no players). Matches are left untouched.
+ *
+ * @param params - { teamId, seasonId }
+ * @returns The team, now reshaped as the bye
+ * @throws Error if a guard fails or a write fails
+ */
+export async function convertTeamToBye(params: ConvertTeamToByeParams): Promise<Team> {
+  const { teamId, seasonId } = params;
+
+  // Guard 1: only an active team can be dropped to a bye.
+  const { data: team, error: teamErr } = await supabase
+    .from('teams')
+    .select('id, status')
+    .eq('id', teamId)
+    .single();
+  if (teamErr || !team) {
+    throw new Error(`Failed to load team: ${teamErr?.message ?? 'not found'}`);
+  }
+  if (team.status !== 'active') {
+    throw new Error('Only an active team can be dropped to a BYE.');
+  }
+
+  // Guard 2: at most one bye per season.
+  const { count: byeCount, error: byeErr } = await supabase
+    .from('teams')
+    .select('id', { count: 'exact', head: true })
+    .eq('season_id', seasonId)
+    .eq('status', 'bye');
+  if (byeErr) {
+    throw new Error(`Failed to check existing byes: ${byeErr.message}`);
+  }
+  if ((byeCount ?? 0) > 0) {
+    throw new Error(
+      'This season already has a BYE. Remove the existing BYE first, or regenerate the schedule for an even team count.',
+    );
+  }
+
+  // Guard 3: pre-season only — refuse if any of the team's matches have been
+  // played (started, finished, forfeited, or has a recorded winner).
+  const { count: playedCount, error: playedErr } = await supabase
+    .from('matches')
+    .select('id', { count: 'exact', head: true })
+    .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
+    .or('winner_team_id.not.is.null,status.in.(in_progress,awaiting_verification,completed,forfeited)');
+  if (playedErr) {
+    throw new Error(`Failed to check played matches: ${playedErr.message}`);
+  }
+  if ((playedCount ?? 0) > 0) {
+    throw new Error(
+      'This team has already played matches. Dropping a team mid-season is a separate flow (coming soon) — it must reconcile those results first.',
+    );
+  }
+
+  // Reshape the row to the canonical bye shape.
+  const { data: byeTeam, error: updateErr } = await supabase
+    .from('teams')
+    .update({ status: 'bye', captain_id: null, team_name: 'BYE', home_venue_id: null })
+    .eq('id', teamId)
+    .select()
+    .single();
+  if (updateErr) {
+    throw new Error(`Failed to convert team to BYE: ${updateErr.message}`);
+  }
+
+  // Release the roster — the bye has no players (they become free agents).
+  const { error: rosterErr } = await supabase
+    .from('team_players')
+    .delete()
+    .eq('team_id', teamId);
+  if (rosterErr) {
+    throw new Error(`Team converted to BYE but clearing its roster failed: ${rosterErr.message}`);
+  }
+
+  return byeTeam;
+}
