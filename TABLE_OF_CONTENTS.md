@@ -1307,6 +1307,7 @@ High-level business logic services
 - `venueDuplicates.ts` - Detects duplicate venues during creation flows.
 - `venues.ts` - Venue list/detail reads.
 - `__tests__/thresholdLookup.test.ts` - Tests for the threshold-chart lookup.
+- `__tests__/matches.test.ts` - Tests for `getMyMatchMatches` (My Match team-scoped detection query — team/status scoping + client-side date threshold).
 
 #### Mutations (`/mutations/`) - Write Operations
 *Create/Update/Delete operations with automatic cache invalidation*

@@ -167,7 +167,7 @@ OperatorSection (operators only — unchanged)
 
 ## Implementation Units
 
-- [ ] **Unit 1: Team-scoped detection query**
+- [x] **Unit 1: Team-scoped detection query**
 
 **Goal:** Add `getMyMatchMatches(memberId)` to the queries layer — returns every match where the user is on `team_players` of the home or away team, filtered to the two actionable statuses (`in_progress` regardless of date, `scheduled` with `season_weeks.scheduled_date <= today`). Excludes future-scheduled matches and all `completed`/`forfeited`/`updating`/`postponed` matches. (2026-06-12 note: the auto-forfeit sweep, `supabase/migrations/20260611000000_auto_forfeit_sweep.sql`, flips past-due captainless/BYE matches to `forfeited` daily — so the Tier-3 past-due-`scheduled` population is naturally limited to genuinely-playable makeups that haven't been swept. No code change needed; just be aware Tier 3 is sparser than the raw "scheduled in the past" set.)
 

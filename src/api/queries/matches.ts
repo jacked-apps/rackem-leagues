@@ -10,6 +10,7 @@
 
 import { supabase } from '@/supabaseClient';
 import type { MatchWithLeagueSettings, MatchWithDetails } from '@/types';
+import { formatLocalDate } from '@/utils/formatters';
 
 /**
  * Season week with schedule info
@@ -295,6 +296,116 @@ export async function getLiveMatchesForMember(memberId: string): Promise<MatchWi
     ...match,
     scheduled_date: match.season_week?.scheduled_date || null,
   }));
+
+  return matches as MatchWithDetails[];
+}
+
+/**
+ * Fetch the matches that matter "right now" for a specific member — the data
+ * source for the "My Match" nav shortcut (bottom-nav tab + drawer section +
+ * desktop sidebar entry).
+ *
+ * Unlike {@link getLiveMatchesForMember} (which is *league*-scoped and powers
+ * the cross-league spectator page), this is *team*-scoped: it only returns
+ * matches the member is actually rostered to play in — i.e. matches where the
+ * member sits on `team_players` of the home OR the away team. That's the
+ * detection rule the brainstorm settled on ("My Match" = your match, not every
+ * live match in your league).
+ *
+ * Returned set = the member's matches that are either:
+ *   - `in_progress` (a live match — surfaces regardless of date), OR
+ *   - `scheduled` AND scheduled on/before today (today's match, plus any
+ *     past-due makeup that hasn't been played yet).
+ *
+ * Deliberately excluded: future-`scheduled` matches (not actionable yet) and
+ * every terminal/non-player status — `completed`, `forfeited`, `postponed`,
+ * and `updating` (the operator-is-hand-entering-scores state, which players
+ * must not score). The `status IN ('in_progress','scheduled')` filter handles
+ * the status side; the date threshold handles the future-vs-today/past side.
+ *
+ * This function intentionally does NOT sort, classify into tiers, or pick a
+ * "most important" match — it returns the raw eligible set. Tier resolution
+ * and the multi-live tiebreak live in one place, the `useMyMatchSurfaces`
+ * hook, so there's a single source of that logic.
+ *
+ * @param memberId - The current user's `members.id`. Null/empty → returns `[]`
+ *   without hitting the database (logged-out / pre-profile-hydration callers).
+ * @returns Array of the member's eligible matches, each with home/away team
+ *   names, venue, season week, and a hoisted top-level `scheduled_date`.
+ *   Unsorted.
+ * @throws Error if either query step fails at the database.
+ *
+ * @example
+ * const mine = await getMyMatchMatches(member.id);
+ * // → [{ status: 'in_progress', home_team: { team_name: 'Sharks' }, ... }]
+ */
+export async function getMyMatchMatches(memberId: string): Promise<MatchWithDetails[]> {
+  // Logged-out or pre-hydration: no member, nothing to detect. Short-circuit
+  // before touching the DB so consumers can render the no-match posture.
+  if (!memberId) return [];
+
+  // Step 1: resolve the member's team IDs. We need the team set to detect
+  // matches where they're on either side; PostgREST can't filter the matches
+  // query on a sub-select, so we gather the IDs first (same two-step shape as
+  // getLiveMatchesForMember, but we keep team_id rather than rolling up to
+  // league_id).
+  const { data: teamRows, error: teamErr } = await supabase
+    .from('team_players')
+    .select('team_id')
+    .eq('member_id', memberId);
+
+  if (teamErr) {
+    throw new Error(`Failed to resolve member's teams: ${teamErr.message}`);
+  }
+
+  const teamIds = Array.from(
+    new Set((teamRows ?? []).map((r: any) => r.team_id).filter(Boolean)),
+  );
+
+  if (teamIds.length === 0) return [];
+
+  // Step 2: fetch the member's matches in the two actionable statuses. The
+  // OR matches rows where the member's team is either home or away. We do the
+  // date threshold client-side (Step 3) rather than in this query: combining
+  // "status = 'in_progress' OR season_week.scheduled_date <= today" in a single
+  // PostgREST filter would mix a parent-table column with an embedded-resource
+  // column inside one OR, which PostgREST doesn't express cleanly. The status +
+  // team-membership join (the expensive part) stays at the DB; the date check
+  // is a trivial string compare on ISO dates.
+  const idList = teamIds.join(',');
+  const { data, error } = await supabase
+    .from('matches')
+    .select(`
+      *,
+      home_team:teams!matches_home_team_id_fkey(id, team_name, captain_id, status),
+      away_team:teams!matches_away_team_id_fkey(id, team_name, captain_id, status),
+      scheduled_venue:venues!matches_scheduled_venue_id_fkey(id, name, city, state),
+      season_week:season_weeks(id, week_name, scheduled_date, week_type),
+      season:seasons!inner(id, league_id, league:leagues(id, game_type, day_of_week, division))
+    `)
+    .or(`home_team_id.in.(${idList}),away_team_id.in.(${idList})`)
+    .in('status', ['in_progress', 'scheduled']);
+
+  if (error) {
+    throw new Error(`Failed to fetch member's matches: ${error.message}`);
+  }
+
+  // Step 3: hoist scheduled_date (mirrors getLiveMatchesForMember's shape so
+  // downstream consumers read a flat `scheduled_date`), then apply the date
+  // threshold: keep every live match, but keep `scheduled` matches only if
+  // they're on or before today. This drops future-scheduled matches and lets
+  // both today's match and past-due makeups through.
+  const today = formatLocalDate(new Date());
+  const matches = (data || [])
+    .map((match: any) => ({
+      ...match,
+      scheduled_date: match.season_week?.scheduled_date || null,
+    }))
+    .filter(
+      (match: any) =>
+        match.status === 'in_progress' ||
+        (match.scheduled_date !== null && match.scheduled_date <= today),
+    );
 
   return matches as MatchWithDetails[];
 }
