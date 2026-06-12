@@ -1356,6 +1356,8 @@ High-level business logic services
 - `useUserProfile.ts` - **✅ User profile hook** (full member data + role utilities)
 - `useOperatorId.ts` - **✅ Operator ID hook** (operator lookup with caching)
 - `useMatchPhase.ts` - **✅ Match-phase status query** (minimal id/status/started_at slice; staleTime: 0; foreground 7s polling while status='scheduled' as Defense 7 backstop for dropped realtime). Distinct cache key from `useMatchById` — see file header for rationale.
+- `useMyMatchSurfaces.ts` - **✅ My Match aggregate hook (Unit 2)** — single contract for the bottom-nav tab + drawer section + sidebar entry. Owns the team-scoped detection query + a status-change-guarded `matches` realtime channel; exports pure resolvers (four-tier ladder, multi-live tiebreak, drawer labeling). Returns `{tier, destinationMatchId, showLiveDot, drawerItems, isHydrating, isError}`.
+- `__tests__/useMyMatchSurfaces.test.tsx` - Tests for the My Match pure resolvers (tiers/tiebreak/drawer labels) + hook wiring (no-member posture, live resolution, no-teams short-circuit, error fallback).
 - `useAnnouncementMutations.ts` - Announcement-channel mutation hooks.
 - `useCaptainTeamsMissingChat.ts` - Detects captain teams that don't have an auto-managed team chat yet; drives the `CreateTeamChatPrompt` banner.
 - `useChampionshipDateMutations.ts` - Championship-date CRUD hooks.

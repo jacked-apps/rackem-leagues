@@ -301,6 +301,36 @@ export async function getLiveMatchesForMember(memberId: string): Promise<MatchWi
 }
 
 /**
+ * Resolve the set of team IDs a member is rostered on (via `team_players`).
+ *
+ * Small, reusable building block: the "My Match" detection query needs it to
+ * scope matches to the member's teams, and the nav hook needs it again to work
+ * out which side of each match is "my team" (vs the opponent). Exported so both
+ * share one definition of "the member's teams" rather than re-deriving it.
+ *
+ * @param memberId - The current user's `members.id`. Null/empty → `[]` (no DB
+ *   call).
+ * @returns De-duplicated array of the member's `team_id`s (empty if none).
+ * @throws Error if the database read fails.
+ */
+export async function getMemberTeamIds(memberId: string): Promise<string[]> {
+  if (!memberId) return [];
+
+  const { data: teamRows, error } = await supabase
+    .from('team_players')
+    .select('team_id')
+    .eq('member_id', memberId);
+
+  if (error) {
+    throw new Error(`Failed to resolve member's teams: ${error.message}`);
+  }
+
+  return Array.from(
+    new Set((teamRows ?? []).map((r: any) => r.team_id).filter(Boolean)),
+  ) as string[];
+}
+
+/**
  * Fetch the matches that matter "right now" for a specific member — the data
  * source for the "My Match" nav shortcut (bottom-nav tab + drawer section +
  * desktop sidebar entry).
@@ -339,30 +369,20 @@ export async function getLiveMatchesForMember(memberId: string): Promise<MatchWi
  * const mine = await getMyMatchMatches(member.id);
  * // → [{ status: 'in_progress', home_team: { team_name: 'Sharks' }, ... }]
  */
-export async function getMyMatchMatches(memberId: string): Promise<MatchWithDetails[]> {
+export async function getMyMatchMatches(
+  memberId: string,
+  teamIds?: string[],
+): Promise<MatchWithDetails[]> {
   // Logged-out or pre-hydration: no member, nothing to detect. Short-circuit
   // before touching the DB so consumers can render the no-match posture.
   if (!memberId) return [];
 
-  // Step 1: resolve the member's team IDs. We need the team set to detect
-  // matches where they're on either side; PostgREST can't filter the matches
-  // query on a sub-select, so we gather the IDs first (same two-step shape as
-  // getLiveMatchesForMember, but we keep team_id rather than rolling up to
-  // league_id).
-  const { data: teamRows, error: teamErr } = await supabase
-    .from('team_players')
-    .select('team_id')
-    .eq('member_id', memberId);
-
-  if (teamErr) {
-    throw new Error(`Failed to resolve member's teams: ${teamErr.message}`);
-  }
-
-  const teamIds = Array.from(
-    new Set((teamRows ?? []).map((r: any) => r.team_id).filter(Boolean)),
-  );
-
-  if (teamIds.length === 0) return [];
+  // Resolve the member's team set (the IDs let us detect matches where they're
+  // on either side). Callers that already hold the team IDs — e.g. the
+  // useMyMatchSurfaces hook, which needs them anyway to label "my team vs
+  // opponent" — pass them in to avoid a second team_players read.
+  const ids = teamIds ?? (await getMemberTeamIds(memberId));
+  if (ids.length === 0) return [];
 
   // Step 2: fetch the member's matches in the two actionable statuses. The
   // OR matches rows where the member's team is either home or away. We do the
@@ -372,7 +392,7 @@ export async function getMyMatchMatches(memberId: string): Promise<MatchWithDeta
   // column inside one OR, which PostgREST doesn't express cleanly. The status +
   // team-membership join (the expensive part) stays at the DB; the date check
   // is a trivial string compare on ISO dates.
-  const idList = teamIds.join(',');
+  const idList = ids.join(',');
   const { data, error } = await supabase
     .from('matches')
     .select(`

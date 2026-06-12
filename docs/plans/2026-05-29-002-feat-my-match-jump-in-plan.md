@@ -213,7 +213,7 @@ OperatorSection (operators only — unchanged)
 
 ---
 
-- [ ] **Unit 2: Aggregate hook `useMyMatchSurfaces`**
+- [x] **Unit 2: Aggregate hook `useMyMatchSurfaces`**
 
 **Goal:** New aggregate hook that wraps Unit 1's query, owns the realtime subscription with a status-change guard, and resolves both:
 - **Bottom-nav state**: `{tier: 1 | 2 | 3 | 4, destinationMatchId: string | null, showLiveDot: boolean, isHydrating: boolean, isError: boolean}`.
