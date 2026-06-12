@@ -3,9 +3,15 @@
  * and firing it once.
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useInstallApp } from './useInstallApp';
+import { useInstallApp, __resetInstallCaptureForTests } from './useInstallApp';
+
+beforeEach(() => {
+  // The capture state lives at module scope (so an early-firing prompt isn't
+  // missed) — reset it so each case starts clean.
+  __resetInstallCaptureForTests();
+});
 
 /** Dispatch a fake `beforeinstallprompt` with a stubbed prompt()/userChoice. */
 function fireBeforeInstallPrompt(outcome: 'accepted' | 'dismissed' = 'accepted') {
