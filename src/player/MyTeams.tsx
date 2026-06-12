@@ -15,7 +15,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { UserContext } from '@/context/UserContext';
 import { useMemberId } from '@/api/hooks';
-import { usePlayerTeams, useCaptainTeamEditData, useMatchesByTeam } from '@/api/hooks';
+import { usePlayerTeams, useCaptainTeamEditData } from '@/api/hooks';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { useCaptainReupPrompt } from '@/hooks/useCaptainReupPrompt';
 import { queryKeys } from '@/api/queryKeys';
@@ -114,51 +114,6 @@ function TeamAccordionItem({
   const { data: leaguePrefs } = useResolvedLeaguePrefs(leagueId);
   const handicapType = leaguePrefs?.handicap_type ?? 'points';
 
-  // Fetch all matches to find makeups and upcoming
-  const { data: allMatches = [] } = useMatchesByTeam(team.id);
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  // Find makeup matches (past date, not completed)
-  const makeupMatches = allMatches
-    .filter(match => {
-      if (match.status === 'completed') return false;
-      if (!match.scheduled_date) return false;
-
-      const [year, month, day] = match.scheduled_date.split('-').map(Number);
-      const scheduledDate = new Date(year, month - 1, day);
-      scheduledDate.setHours(0, 0, 0, 0);
-
-      return scheduledDate < today;
-    })
-    .sort((a, b) => a.scheduled_date!.localeCompare(b.scheduled_date!)) // Oldest first
-    .slice(0, 1); // Show only the oldest makeup — keeps the list clean
-
-  // Find upcoming matches (in_progress or future scheduled)
-  const upcomingMatches = allMatches
-    .filter(match => {
-      if (match.status === 'completed') return false;
-      if (match.status === 'in_progress') return true;
-      if (!match.scheduled_date) return false;
-
-      const [year, month, day] = match.scheduled_date.split('-').map(Number);
-      const scheduledDate = new Date(year, month - 1, day);
-      scheduledDate.setHours(0, 0, 0, 0);
-
-      return scheduledDate >= today;
-    })
-    .sort((a, b) => {
-      // in_progress first, then by date
-      if (a.status === 'in_progress' && b.status !== 'in_progress') return -1;
-      if (a.status !== 'in_progress' && b.status === 'in_progress') return 1;
-      return a.scheduled_date!.localeCompare(b.scheduled_date!);
-    })
-    .slice(0, 1); // Only show next upcoming
-
-  // Combine: upcoming always first, then oldest makeup (max 2 buttons total)
-  const actionableMatches = [...upcomingMatches, ...makeupMatches];
-
   // Calculate team readiness
   const minRoster = team.roster_size === 5 ? 3 : 5;
   const hasVenue = team.venue !== null;
@@ -245,39 +200,15 @@ function TeamAccordionItem({
             </button>
           )}
 
-          {/* Rows 3+: glance info only. Scoring lives in My Match now, so the
-              old per-match "Quick Score" buttons are gone — these rows are just
-              the setup state or the next-match line(s). */}
-          {!isReady ? (
+          {/* Captain glance: flag an incomplete setup. (The old match lines
+              here were labels for the Quick Score buttons — both are gone now;
+              My Match owns the path to scoring, View Schedule the rest.) */}
+          {!isReady && (
             <div className="flex items-center justify-end w-full">
               <span className="text-xs font-bold px-2 py-0.5 rounded text-warning bg-warning/15">
                 SETUP INCOMPLETE
               </span>
             </div>
-          ) : actionableMatches.length > 0 ? (
-            actionableMatches.map((match) => {
-              const isMakeup = makeupMatches.some(m => m.id === match.id);
-              const isInProgress = match.status === 'in_progress';
-              const tagText = isMakeup ? 'MAKEUP' : isInProgress ? 'IN PROGRESS' : 'UPCOMING';
-              const tagColor = isMakeup ? 'text-warning bg-warning/15' : 'text-info bg-info/15';
-
-              return (
-                <div key={match.id} className="flex items-center justify-between w-full">
-                  <span className="text-base text-foreground">
-                    {match.season_week?.week_name || 'Week ?'} -{' '}
-                    {parseLocalDate(match.scheduled_date!).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                    })}
-                  </span>
-                  <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${tagColor}`}>
-                    {tagText}
-                  </span>
-                </div>
-              );
-            })
-          ) : (
-            <div className="text-xs text-muted-foreground italic">No upcoming matches</div>
           )}
         </div>
       </AccordionTrigger>
