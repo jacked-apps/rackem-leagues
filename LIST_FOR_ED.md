@@ -40,17 +40,11 @@ override the pre-filled text.
 3. Show the bye **everywhere a team shows EXCEPT standings/stats**; replace leftover `team_id === null` bye-detection with `status === 'bye'` (`SeasonSchedulePage.tsx`, `wizards/matchups-v2/steps/ReviewStep.tsx`).
 4. **Remove-the-bye** action (delete → regenerate at even count).
 
-**NEEDS A REAL PLAN (not a quick fix):**
-5. **Auto-forfeit sweep** — once-daily `pg_cron`, all past-due + unfinished matches, captainless side forfeits (bye weeks fall out of it automatically). Full design + decisions in `docs/brainstorms/2026-06-09-bye-team-and-auto-forfeit-requirements.md`. Deferred sub-items: forfeit scoring (points for the win), exact timing ("6am" was a placeholder), neither-captained edge, and the **8 captainless `active` teams / 0 `bye` rows** data anomaly to understand.
-
 **Verified clean tonight (NO action):**
 6. Schedule vs matchups separation is correct in code — `matchupTables.ts` owns week pairings (by position, no dates), `season_weeks` owns the dates, `generateSchedule` marries them.
 
 **VERIFY in the morning (Ed's tired-eyes flag — may be fine):**
 8. **Does a blackout on an existing schedule auto-shift the week?** e.g. week 7 plays 6/16; mark 6/16 a blackout → week 7 should move to **6/23** and everything after shifts one week. Preliminary read: blackouts **do** shift the schedule during **setup/review** (`ScheduleReview.tsx` regenerates whenever blackout weeks change). Open question is the **already-active** schedule — does editing/adding a blackout after the season's accepted re-date the weeks, or does it need a regen? Confirm the post-activation case.
-
-**BUG — re-diagnosed 2026-06-10 (NOT a one-liner; last night's parseLocalDate theory was WRONG):**
-9. **APA championship conflict flags on the wrong dates** (edit-schedule page, production). Flags weeks 6/28, 7/12, 7/19 … 8/2 as "APA National Tournament Week N" — but APA 2026 is **8/04–8/15**. **Data is correct** (one `championship_date_options` row, 8/04–8/15). **REAL root cause:** the edit page `src/operator/SeasonScheduleManager.tsx:130-155` does NOT read the date table — it **reconstructs the APA range from the schedule's own existing "week-off" weeks whose name contains "apa"** (`apaWeeks[0].date` → `apaWeeks[last].date`), then flags every week across that range. Those off-weeks are **stale** (baked when the schedule was built, before the dates were corrected). The **new-season wizard does it right** (uses `championship_date_options` via `useChampionshipAutoFill`); only the **edit page** is wrong. (parseLocalDate is NOT in this path — `parseLocalDate` choking on full-ISO timestamps is a *separate, latent* bug but is NOT what causes these flags.) **Fix (moderate):** make `SeasonScheduleManager` fetch APA/BCA dates from `championship_date_options` (mirror the wizard) instead of from schedule off-weeks. NOTE: the affected schedule's actual off-weeks are also stale → a regenerate is likely needed to move them to 8/04–8/15. Not a quick win.
 
 **Paused (lower priority):**
 7. Player-picker consolidation brainstorm — parked at Site 2 of 8. Mid-walkthrough; no doc written yet.
