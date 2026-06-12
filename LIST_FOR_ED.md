@@ -63,6 +63,13 @@ Features merged to `main` but NOT yet live for users (see **Feature Gating
 Workflow** in `CLAUDE.md`). Reviewed on staging, then un-gated — and removed
 from this list when un-gated.
 
+- **Scoring Workshop** — still in active development; it had shipped to production
+  **un-gated** by accident. Now gated by `!isProduction` in two places:
+  the dashboard card (`src/operator/OperatorDashboard.tsx`) AND the routes
+  (`src/navigation/NavRoutes.tsx` — `operator/scoring-workshop[/...]`). Verify on
+  staging it still shows there; un-gate (remove both `!isProduction` guards) when
+  it's ready for users.
+
 - **LMS Results Sheet** — printable per-match results sheet for hand-entry into
   CSI / FargoRate LMS (no LMS import/API exists). Gated by `!isProduction` in
   `src/navigation/NavRoutes.tsx` (route `league/:leagueId/match/:matchId/lms-sheet`);
