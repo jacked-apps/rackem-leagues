@@ -20,7 +20,7 @@
 
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LogIn, Radio } from 'lucide-react';
+import { LogIn, Radio, History } from 'lucide-react';
 import {
   SheetClose,
   SheetHeader,
@@ -362,14 +362,9 @@ function MyMatchChip({
     kind === 'live' ? (
       <Radio className="h-3.5 w-3.5" aria-hidden="true" />
     ) : (
-      <span
-        aria-hidden="true"
-        // Fixed 16px circle (h-4 w-4); only the font grows to match the count's
-        // 11px. tracking-tighter keeps "MU" inside without enlarging the circle.
-        className="flex h-4 w-4 items-center justify-center rounded-full border text-[11px] font-bold leading-none tracking-tighter"
-      >
-        MU
-      </span>
+      // History (clock + counter-clockwise arrow) — "catching up on an earlier
+      // date" reads as a makeup match.
+      <History className="h-3.5 w-3.5" aria-hidden="true" />
     );
 
   return (
