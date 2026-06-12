@@ -20,7 +20,7 @@ import { useOrganizations } from '@/api/hooks/useOrganizations';
 import { useUnreadMessageCount } from '@/api/hooks/useMessages';
 import { usePendingJoinRequestCount } from '@/api/hooks/usePendingJoinRequestCount';
 import { useMyMatchSurfaces } from '@/api/hooks/useMyMatchSurfaces';
-import { toast } from 'sonner';
+import { MyMatchPanel } from './MyMatchPanel';
 import { OperatorOrgRow } from './OperatorOrgRow';
 
 /** Cap on visible orgs — matches AppDrawer. */
@@ -67,6 +67,8 @@ export function AppSidebar() {
   const isOperator = canAccessLeagueOperatorFeatures();
   const { organizations } = useOrganizations(member?.id);
   const { data: unreadCount = 0 } = useUnreadMessageCount(member?.id);
+  const { drawerItems: myMatchItems, isHydrating: myMatchHydrating } =
+    useMyMatchSurfaces(member?.id);
 
   // Doorbell target: operators → their primary org's Operator Dashboard (where
   // the org-wide join-request list lives); everyone else → My Teams. See
@@ -124,11 +126,9 @@ export function AppSidebar() {
       <nav aria-label="Sidebar navigation" className="flex-1 overflow-y-auto p-4">
         {isLoggedIn ? (
           <>
-            <SidebarPlayerSection
-              unreadCount={unreadCount}
-              memberId={member?.id}
-              joinRequestsTo={joinRequestsTo}
-            />
+            {/* My Match at the top — mirrors the drawer's chips + lists. */}
+            <MyMatchPanel items={myMatchItems} isHydrating={myMatchHydrating} />
+            <SidebarPlayerSection unreadCount={unreadCount} joinRequestsTo={joinRequestsTo} />
             {isOperator ? (
               <SidebarOperatorSection orgs={organizations as OperatorOrg[]} />
             ) : null}
@@ -143,11 +143,9 @@ export function AppSidebar() {
 
 function SidebarPlayerSection({
   unreadCount,
-  memberId,
   joinRequestsTo,
 }: {
   unreadCount: number;
-  memberId: string | null | undefined;
   /** Where the doorbell leads — operator surface for LOs, My Teams otherwise. */
   joinRequestsTo: string;
 }) {
@@ -156,7 +154,6 @@ function SidebarPlayerSection({
   const joinRequestCount = usePendingJoinRequestCount();
   return (
     <ul className="space-y-1">
-      <MyMatchSidebarEntry memberId={memberId} />
       <SidebarLink to="/my-teams" label="My Teams" />
       {joinRequestCount > 0 && (
         <SidebarLink to={joinRequestsTo} label={`Join requests (${joinRequestCount})`} />
@@ -201,84 +198,6 @@ function SidebarOperatorSection({ orgs }: { orgs: OperatorOrg[] }) {
           </ul>
         ))}
     </div>
-  );
-}
-
-/** Shared row styling for sidebar nav items (link or button). */
-const SIDEBAR_ROW_BASE =
-  'flex min-h-11 w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-primary transition-colors hover:bg-primary/10';
-
-/** Routes that highlight the My Match entry as active. */
-const MY_MATCH_ACTIVE_PATTERNS = [
-  /^\/my-match/,
-  /^\/match\/[^/]+\/lineup/,
-  /^\/match\/[^/]+\/score/,
-];
-
-/**
- * Desktop counterpart of the bottom-nav My Match tab. Follows the same
- * four-tier ladder + hydrating posture (NOT the drawer's match-list behavior —
- * the sidebar is the desktop-shaped version of the single-destination tab):
- *   - Tiers 1–3 → a SidebarLink to the resolved match's lineup page; Tier 1
- *     adds an accent live dot + sr-only label.
- *   - Tier 4 / error → a non-navigating <button> (so Enter can't navigate a
- *     disabled link) that dims + toasts.
- *   - Hydrating → neutral (no dim, no dot), tap is a silent no-op.
- * Keeps the "My Match" label across all postures (desktop has the room).
- */
-function MyMatchSidebarEntry({ memberId }: { memberId: string | null | undefined }) {
-  const location = useLocation();
-  const { destinationMatchId, showLiveDot, isHydrating, isError } =
-    useMyMatchSurfaces(memberId);
-  const isActive = MY_MATCH_ACTIVE_PATTERNS.some((p) => p.test(location.pathname));
-
-  const labelContent = (
-    <>
-      <span>My Match</span>
-      {showLiveDot ? (
-        <>
-          <span className="h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />
-          <span className="sr-only">live match in progress</span>
-        </>
-      ) : null}
-    </>
-  );
-
-  // Actionable: a Link to the match's lineup page (forwards to scoring when
-  // locked via MatchPhaseGuard).
-  if (destinationMatchId) {
-    return (
-      <li>
-        <Link
-          to={`/match/${destinationMatchId}/lineup`}
-          aria-current={isActive ? 'page' : undefined}
-          className={`${SIDEBAR_ROW_BASE} ${isActive ? 'bg-primary/15 font-semibold' : ''}`}
-        >
-          {labelContent}
-        </Link>
-      </li>
-    );
-  }
-
-  // Not actionable. Hydrating → neutral, silent no-op. Tier 4 / error → dim +
-  // toast.
-  const handleClick = () => {
-    if (isHydrating) return;
-    if (isError) toast.error("Couldn't check your matches.");
-    else toast('No current matches');
-  };
-
-  return (
-    <li>
-      <button
-        type="button"
-        onClick={handleClick}
-        aria-disabled={isHydrating ? undefined : 'true'}
-        className={`${SIDEBAR_ROW_BASE} ${isHydrating ? '' : 'opacity-60'}`}
-      >
-        My Match
-      </button>
-    </li>
   );
 }
 

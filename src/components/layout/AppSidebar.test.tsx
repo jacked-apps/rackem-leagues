@@ -74,69 +74,48 @@ beforeEach(() => {
   mockUseMyMatchSurfaces.mockReturnValue(surfaces());
 });
 
-describe('AppSidebar — My Match entry', () => {
-  it('renders the player nav with My Match as a button (no static /my-match link) at Tier 4', () => {
+describe('AppSidebar — My Match panel', () => {
+  // The sidebar now mirrors the drawer via the shared MyMatchPanel. Detailed
+  // chip/list behavior is covered by AppDrawer.test; here we just confirm the
+  // panel is wired into the sidebar (and the old single link is gone).
+
+  it('renders the My Match panel with chips + matchup for a live match', () => {
+    mockUseMyMatchSurfaces.mockReturnValue(
+      surfaces({
+        drawerItems: [
+          { matchId: 'm1', teamName: 'Sharks', opponentName: 'Cues', rowDetail: '', group: 'live', destinationPath: '/match/m1/lineup' },
+        ],
+      }),
+    );
+
     renderSidebar();
 
-    expect(screen.getByRole('link', { name: 'My Teams' })).toBeInTheDocument();
+    expect(screen.getByText('My Match')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Live/ })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('link', { name: /Sharks/ })).toHaveAttribute('href', '/match/m1/lineup');
+  });
+
+  it('switches to the Makeup list when its chip is tapped', () => {
+    mockUseMyMatchSurfaces.mockReturnValue(
+      surfaces({
+        drawerItems: [
+          { matchId: 'm1', teamName: 'Sharks', opponentName: 'Cues', rowDetail: '', group: 'live', destinationPath: '/match/m1/lineup' },
+          { matchId: 'm2', teamName: 'Rails', opponentName: 'Felt', rowDetail: '6/11', group: 'makeup', destinationPath: '/match/m2/lineup' },
+        ],
+      }),
+    );
+
+    renderSidebar();
+
+    expect(screen.queryByRole('link', { name: /Rails/ })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Makeup/ }));
+    expect(screen.getByRole('link', { name: /Rails/ })).toHaveAttribute('href', '/match/m2/lineup');
+  });
+
+  it('hides the My Match panel entirely when there are no matches', () => {
+    renderSidebar(); // default: no drawerItems
+    expect(screen.queryByText('My Match')).not.toBeInTheDocument();
+    // The old static /my-match nav link is gone.
     expect(screen.queryByRole('link', { name: 'My Match' })).not.toBeInTheDocument();
-    const btn = screen.getByRole('button', { name: 'My Match' });
-    expect(btn).toHaveAttribute('aria-disabled', 'true');
-  });
-
-  it('Tier 1: links to the match lineup, marks active, shows the live indicator', () => {
-    mockUseMyMatchSurfaces.mockReturnValue(
-      surfaces({ tier: 1, destinationMatchId: 'm1', showLiveDot: true }),
-    );
-
-    renderSidebar('/match/m1/lineup');
-
-    const link = screen.getByRole('link', { name: /my match/i });
-    expect(link).toHaveAttribute('href', '/match/m1/lineup');
-    expect(link).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByText('live match in progress')).toBeInTheDocument();
-  });
-
-  it('Tier 2/3: links to the lineup with no live indicator', () => {
-    mockUseMyMatchSurfaces.mockReturnValue(
-      surfaces({ tier: 2, destinationMatchId: 'm2', showLiveDot: false }),
-    );
-
-    renderSidebar();
-
-    const link = screen.getByRole('link', { name: 'My Match' });
-    expect(link).toHaveAttribute('href', '/match/m2/lineup');
-    expect(screen.queryByText('live match in progress')).not.toBeInTheDocument();
-  });
-
-  it('Tier 4: dim button that toasts on tap, no navigation', () => {
-    renderSidebar();
-
-    const btn = screen.getByRole('button', { name: 'My Match' });
-    fireEvent.click(btn);
-    expect(toastMock).toHaveBeenCalledWith('No current matches');
-  });
-
-  it('Hydrating: neutral button, NOT aria-disabled, tap is a silent no-op', () => {
-    mockUseMyMatchSurfaces.mockReturnValue(surfaces({ isHydrating: true }));
-
-    renderSidebar();
-
-    const btn = screen.getByRole('button', { name: 'My Match' });
-    expect(btn.getAttribute('aria-disabled')).toBeNull();
-    fireEvent.click(btn);
-    expect(toastMock).not.toHaveBeenCalled();
-    expect(toastMock.error).not.toHaveBeenCalled();
-  });
-
-  it('Error: dim button that fires an error toast on tap', () => {
-    mockUseMyMatchSurfaces.mockReturnValue(surfaces({ isError: true }));
-
-    renderSidebar();
-
-    const btn = screen.getByRole('button', { name: 'My Match' });
-    expect(btn).toHaveAttribute('aria-disabled', 'true');
-    fireEvent.click(btn);
-    expect(toastMock.error).toHaveBeenCalledTimes(1);
   });
 });
