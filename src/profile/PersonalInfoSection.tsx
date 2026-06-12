@@ -47,7 +47,7 @@ export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
             variant="outline"
             size="sm"
             onClick={handlers.startEdit}
-            className="text-blue-600 border-blue-600 hover:bg-blue-50"
+            className="text-info border-info hover:bg-info/10"
             loadingText="none"
           >
             Edit
@@ -80,10 +80,10 @@ export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
                 type="text"
                 value={form.formData.first_name}
                 onChange={(e) => handlers.updateForm('first_name', e.target.value)}
-                className={form.errors.first_name ? 'border-red-500' : ''}
+                className={form.errors.first_name ? 'border-destructive' : ''}
               />
               {form.errors.first_name && (
-                <p className="text-red-500 text-sm mt-1">{form.errors.first_name}</p>
+                <p className="text-destructive text-sm mt-1">{form.errors.first_name}</p>
               )}
             </div>
 
@@ -95,10 +95,10 @@ export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
                 type="text"
                 value={form.formData.last_name}
                 onChange={(e) => handlers.updateForm('last_name', e.target.value)}
-                className={form.errors.last_name ? 'border-red-500' : ''}
+                className={form.errors.last_name ? 'border-destructive' : ''}
               />
               {form.errors.last_name && (
-                <p className="text-red-500 text-sm mt-1">{form.errors.last_name}</p>
+                <p className="text-destructive text-sm mt-1">{form.errors.last_name}</p>
               )}
             </div>
           </div>
@@ -118,10 +118,10 @@ export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
               onChange={(e) => handlers.updateForm('nickname', e.target.value)}
               placeholder="Enter nickname (max 12 characters)"
               maxLength={12}
-              className={form.errors.nickname ? 'border-red-500' : ''}
+              className={form.errors.nickname ? 'border-destructive' : ''}
             />
             {form.errors.nickname && (
-              <p className="text-red-500 text-sm mt-1">{form.errors.nickname}</p>
+              <p className="text-destructive text-sm mt-1">{form.errors.nickname}</p>
             )}
           </div>
 
@@ -133,10 +133,10 @@ export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
               type="date"
               value={form.formData.date_of_birth}
               onChange={(e) => handlers.updateForm('date_of_birth', e.target.value)}
-              className={form.errors.date_of_birth ? 'border-red-500' : ''}
+              className={form.errors.date_of_birth ? 'border-destructive' : ''}
             />
             {form.errors.date_of_birth && (
-              <p className="text-red-500 text-sm mt-1">{form.errors.date_of_birth}</p>
+              <p className="text-destructive text-sm mt-1">{form.errors.date_of_birth}</p>
             )}
           </div>
 

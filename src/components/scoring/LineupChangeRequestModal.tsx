@@ -84,20 +84,20 @@ export function LineupChangeRequestModal({
           {/* Swap visualization */}
           <div className="flex items-center justify-center gap-4 py-4">
             {/* Old player */}
-            <div className="text-center p-3 bg-red-50 rounded-lg border border-red-200 min-w-[100px]">
-              <p className="text-xs text-red-600 mb-1">Removing</p>
-              <p className="font-semibold text-red-900">{oldPlayerName}</p>
-              <p className="text-xs font-medium text-red-700 mt-1">{formatHandicap(oldPlayerHandicap)}</p>
+            <div className="text-center p-3 bg-destructive/10 rounded-lg border border-destructive/40 min-w-[100px]">
+              <p className="text-xs text-destructive mb-1">Removing</p>
+              <p className="font-semibold text-foreground">{oldPlayerName}</p>
+              <p className="text-xs font-medium text-destructive mt-1">{formatHandicap(oldPlayerHandicap)}</p>
             </div>
 
             {/* Arrow */}
             <ArrowRight className="h-6 w-6 text-muted-foreground flex-shrink-0" />
 
             {/* New player */}
-            <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200 min-w-[100px]">
-              <p className="text-xs text-green-600 mb-1">Adding</p>
-              <p className="font-semibold text-green-900">{newPlayerName}</p>
-              <p className="text-xs font-medium text-green-700 mt-1">{formatHandicap(newPlayerHandicap)}</p>
+            <div className="text-center p-3 bg-success/10 rounded-lg border border-success/40 min-w-[100px]">
+              <p className="text-xs text-success mb-1">Adding</p>
+              <p className="font-semibold text-foreground">{newPlayerName}</p>
+              <p className="text-xs font-medium text-success mt-1">{formatHandicap(newPlayerHandicap)}</p>
             </div>
           </div>
 
@@ -110,7 +110,7 @@ export function LineupChangeRequestModal({
         <DialogFooter className="flex flex-row justify-around gap-4">
           <Button
             variant="outline"
-            className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
+            className="flex-1 border-destructive/40 text-destructive hover:bg-destructive/10"
             onClick={onDeny}
             disabled={isProcessing}
           >

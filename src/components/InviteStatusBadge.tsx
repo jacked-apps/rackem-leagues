@@ -52,7 +52,7 @@ export const InviteStatusBadge: React.FC<InviteStatusBadgeProps> = ({
     return (
       <Badge
         variant="outline"
-        className={`bg-amber-50 text-amber-700 border-amber-200 text-[10px] px-1.5 py-0 ${className || ''}`}
+        className={`bg-warning/10 text-warning border-warning/40 text-[10px] px-1.5 py-0 ${className || ''}`}
       >
         <Clock className="h-3 w-3" />
         Expired
@@ -64,7 +64,7 @@ export const InviteStatusBadge: React.FC<InviteStatusBadgeProps> = ({
   return (
     <Badge
       variant="outline"
-      className={`bg-green-50 text-green-700 border-green-200 text-[10px] px-1.5 py-0 ${className || ''}`}
+      className={`bg-success/10 text-success border-success/40 text-[10px] px-1.5 py-0 ${className || ''}`}
     >
       <Mail className="h-3 w-3" />
       Invited

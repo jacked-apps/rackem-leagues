@@ -46,9 +46,9 @@ export const PlaceholderRow: React.FC<{
           ? // Unused = anomaly. Full red treatment: border all around,
             // light-red background. Visually loud because it shouldn't
             // be there.
-            'border border-red-300 bg-red-50 rounded-md px-3 my-1'
+            'border border-destructive/40 bg-destructive/10 rounded-md px-3 my-1'
           : p.has_stats
-            ? 'border-l-4 border-l-amber-400 pl-3 -ml-3'
+            ? 'border-l-4 border-l-warning pl-3 -ml-3'
             : ''
       }`}
     >
@@ -61,7 +61,7 @@ export const PlaceholderRow: React.FC<{
             {compactName}
           </span>
           {p.has_stats ? (
-            <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 shrink-0">
+            <span className="inline-flex items-center rounded-full bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning shrink-0">
               Has stats
             </span>
           ) : isUnused ? (
@@ -74,7 +74,7 @@ export const PlaceholderRow: React.FC<{
             </span>
           )}
           {p.has_pending_invite && (
-            <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-800 shrink-0">
+            <span className="inline-flex items-center rounded-full bg-success/10 px-2 py-0.5 text-xs text-success shrink-0">
               Invite pending
             </span>
           )}
@@ -156,7 +156,7 @@ export const PlaceholderRow: React.FC<{
               size="sm"
               className={
                 isUnused
-                  ? 'text-red-700 hover:text-red-800 hover:bg-red-50 border-red-200'
+                  ? 'text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/40'
                   : ''
               }
               onClick={() => setShowRemove(true)}

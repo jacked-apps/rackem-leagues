@@ -140,7 +140,7 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
               {/* Title is bigger than row names (row nicknames are text-lg;
                   title is text-xl) — hierarchy is legible at a glance. */}
               <CardTitle className="flex items-center gap-2 text-left text-xl">
-                <Users className="h-5 w-5 text-blue-600" />
+                <Users className="h-5 w-5 text-info" />
                 Placeholders
                 {/* Inline help. onClick stop-propagates so the question-mark
                     doesn't toggle the parent accordion when the LO just
@@ -186,7 +186,7 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
                     LO cares about at the section level. Breakdown lives
                     inside once they open the section. */}
                 {!isLoading && totalCount > 0 && (
-                  <span className="ml-auto inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-sm font-medium text-blue-800">
+                  <span className="ml-auto inline-flex items-center rounded-full bg-info/10 px-2.5 py-0.5 text-sm font-medium text-info">
                     {totalCount} total
                   </span>
                 )}
@@ -201,13 +201,13 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
                   first in the chip row (and in solid red) because those
                   are the ones that shouldn't exist at all. */}
               {!isLoading && totalCount > 0 && (
-                <div className="flex flex-wrap gap-2 pb-3 mb-3 border-b border-gray-100">
+                <div className="flex flex-wrap gap-2 pb-3 mb-3 border-b border-border">
                   {unusedCount > 0 && (
                     <span className="inline-flex items-center rounded-full bg-red-600 px-2.5 py-0.5 text-xs font-semibold text-white">
                       {unusedCount} unused (no team)
                     </span>
                   )}
-                  <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                  <span className="inline-flex items-center rounded-full bg-warning/10 px-2.5 py-0.5 text-xs font-medium text-warning">
                     {activeWithStatsCount} playing
                   </span>
                   <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground">
@@ -219,7 +219,7 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
               {isLoading ? (
                 <p className="text-sm text-muted-foreground">Loading placeholders…</p>
               ) : error ? (
-                <div className="flex items-start gap-2 text-sm text-red-700">
+                <div className="flex items-start gap-2 text-sm text-destructive">
                   <AlertCircle className="h-4 w-4 mt-0.5" />
                   <span>Could not load placeholders. Refresh to retry.</span>
                 </div>
@@ -230,7 +230,7 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
               ) : (
                 // Inner accordion: one AccordionItem per row. Each row stays
                 // compact until the LO clicks to expand it for full detail.
-                <Accordion type="multiple" className="divide-y divide-gray-100">
+                <Accordion type="multiple" className="divide-y divide-border">
                   {sortedPlaceholders.map((p) => (
                     <PlaceholderRow
                       key={p.member_id}
@@ -260,7 +260,7 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
                         </div>
                       </AccordionTrigger>
                       <AccordionContent>
-                        <Accordion type="multiple" className="divide-y divide-gray-100 mt-1">
+                        <Accordion type="multiple" className="divide-y divide-border mt-1">
                           {archived.map((p) => (
                             <ArchivedRow
                               key={p.member_id}
@@ -284,7 +284,7 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
                   (player lookup → review with synopsis → confirm).
                   Only renders when there are placeholders to manage. */}
               {totalCount > 0 && (
-                <div className="mt-6 pt-3 border-t border-gray-100 flex justify-end">
+                <div className="mt-6 pt-3 border-t border-border flex justify-end">
                   <Button
                     variant="outline"
                     size="sm"

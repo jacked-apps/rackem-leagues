@@ -151,26 +151,32 @@
 - **Integration**: When user claims, badge count decrements
 - **Related**: Pairs with login modal notification (implemented separately)
 
-## 18. Dark Mode — Hardcoded-Color Readability Audit (ONE pass, multiple surfaces)
+## 18. Dark Mode — Hardcoded-Color Readability Audit ✅ SWEEP DONE (2026-06-12) — design polish + 2 surfaces remain for you
 
-**Surfaced piecemeal 2026-05-04 → 2026-06-07 (Ed, across smoke tests). Consolidated 2026-06-07** — these are all the SAME root cause, so fix them in one sweep rather than one-off items.
+**Surfaced piecemeal 2026-05-04 → 2026-06-07 (Ed). Global tokenization sweep landed 2026-06-12** on branch `fix/dark-mode-tokenize-colors` — ~125 files. Rather than fix only the 5 listed surfaces, Ed asked to fix the root cause everywhere.
 
-**Severity:** Low/Medium — each is functional but visually broken / unreadable in dark mode.
+**What the sweep did:** replaced hardcoded light-only Tailwind colors with theme-aware tokens so everything is *readable* in both modes:
+- Gray text → `text-foreground` / `text-muted-foreground`; gray/white surfaces → `bg-card` / `bg-muted` / `bg-popover`; gray borders → `border-border` / `border-input`.
+- Light tinted callout boxes (`bg-orange-50`, `bg-blue-50`, etc.) → the app's semantic tokens by meaning: **warning** (orange/amber/yellow), **info** (blue/sky/indigo), **success** (green/emerald/teal), **destructive** (red/rose), **accent** (purple/decorative) — using the existing `bg-{token}/10 border-{token}/40 text-{token}` convention.
+- Solid status badges/circles/brand buttons (e.g. `bg-green-600` win, `bg-blue-600` team) and already-`dark:`-paired blocks were deliberately LEFT (they read fine in both modes).
 
-**Shared root cause:** components use hardcoded light values (e.g. `text-gray-900`, a light bg) or inherit a light color with no dark variant, so text/background contrast collapses in dark mode. **Fix = switch to theme-aware tokens** (`text-foreground` / `text-muted-foreground` / `bg-card` / `bg-muted`) and verify contrast in BOTH modes. Many of these likely share a couple of primitives (Calendar, Input, Dialog, Badge) — fixing the primitive may knock out several at once.
+**👉 This is where you come in (the "make it actually look good" part):** the goal of the sweep was *readability + central tunability*, NOT final aesthetics — Ed is colorblind and explicitly wants you to own the look. **Every tinted box now points at a handful of color definitions in ONE file: `src/index.css`** (the `--warning` / `--info` / `--success` / `--destructive` / `--accent` / `--muted` etc. oklch values, with separate `:root` light + `.dark` dark blocks). Tune those few values and the entire app's tinted-box palette updates at once — no hunting through 250 sites.
 
-**Surfaces to audit + fix (open each in light + dark side-by-side):**
-- **Calendar / date picker** — day numbers invisible in dark; only the selected date shows. `src/components/ui/calendar.tsx` (shadcn Calendar) + any wrapper.
-- **Unified scoreboard player drawer** — away-team names invisible in dark, home-team invisible in light (Ed 2026-05-04). Hardcoded per-side name color that doesn't flip per theme.
-- **Messaging composer input** — typed text muddy / low-contrast in dark. `src/components/messages/MessageInput.tsx` `<Input>` + sibling inputs (conversation search, announcement composer).
-- **Scoring confirm/vacate modal** — text/contrast collapses in dark. `src/components/scoring/ConfirmationDialog.tsx` + the dialog primitives it uses.
-- **Manage Players placeholder dropdown** — placeholder entries unreadable in dark. `src/components/PlayerCombobox.tsx` + `src/components/PlaceholderBadge.tsx`. (Player pickers are being consolidated on `fix/player-picker-smarter` — coordinate; may get swept up there.)
+**Listed surfaces — status:**
+- **Calendar / date picker** ✅ tokenized (`calendar.tsx`).
+- **Messaging composer input** ✅ tokenized (`MessageInput.tsx` + conversation/announcement bars: `bg-gray-300` → `bg-muted`).
+- **Scoring confirm/vacate modal** ✅ tokenized (`ConfirmationDialog.tsx`).
+- **Manage Players placeholder dropdown** ✅ `PlaceholderBadge.tsx` already tokenized (`bg-accent text-foreground`).
+
+**⚠️ STILL NEEDS YOUR DESIGN DECISION (deliberately left — the color carries meaning, no clean token):**
+- **Unified scoreboard per-side team colors** — home=blue / away=orange panels (`TiebreakerScoreboard.tsx` `bg-blue-100`/`bg-orange-100`, `MatchEndVerification.tsx` winner rows). These are *identity* colors, not status, so there's no semantic token to map them to; the score/name text on them (`text-foreground`) can read poorly on a fixed-light panel in dark mode. Needs a deliberate home/away dark-mode color scheme — this is the original "away-team names invisible in dark" item.
+- **Scoring game-result status fills** — won=green / pending=yellow cell fills in `GamesList.tsx` + `GameButtonRow.tsx` (`bg-green-200` / `bg-yellow-100`). Light fills; want a fixed dark-on-light pair or a dark-variant so the result text stays readable in dark mode.
 
 **Going forward:** add any new dark-mode readability bug to THIS list, not a new item.
 
 ---
 
-*Last Updated: 2026-06-07*
+*Last Updated: 2026-06-12*
 
 ## 17. PageHeader — Profile-Avatar Position Inconsistent Across Pages
 

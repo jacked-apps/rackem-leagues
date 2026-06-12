@@ -58,7 +58,7 @@ export function HandicapSummary({
                     Lower handicap = fewer games needed to win
                   </p>
                 </div>
-                <div className="bg-blue-50 p-2 rounded">
+                <div className="bg-info/10 p-2 rounded">
                   <p className="font-semibold mb-1">Examples:</p>
                   <p className="text-xs">
                     5 matches ahead → <strong>-2 modifier</strong> (advantage)
@@ -90,7 +90,7 @@ export function HandicapSummary({
         <span className="font-semibold text-foreground">
           Team Total Handicap:
         </span>
-        <span className="text-2xl font-bold text-blue-600">
+        <span className="text-2xl font-bold text-info">
           {formatHandicap(teamTotal, showPercentage)}
         </span>
       </div>

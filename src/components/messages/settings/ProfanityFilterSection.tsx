@@ -77,7 +77,7 @@ export function ProfanityFilterSection({ userId, onSuccess, onError }: Profanity
             <span className="text-xs text-muted-foreground font-medium">Status:</span>
             <span
               className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                shouldFilter ? 'bg-green-100 text-green-800' : 'bg-muted text-foreground'
+                shouldFilter ? 'bg-success/10 text-success' : 'bg-muted text-foreground'
               }`}
             >
               {shouldFilter ? 'Enabled' : 'Disabled'}
@@ -88,7 +88,7 @@ export function ProfanityFilterSection({ userId, onSuccess, onError }: Profanity
             <p className="text-xs text-foreground">
               {shouldFilter ? (
                 <>
-                  <strong className="text-green-700">Enabled:</strong> Profanity in messages you
+                  <strong className="text-success">Enabled:</strong> Profanity in messages you
                   receive will be replaced with asterisks (****). Other users see messages based on
                   their own filter settings.
                 </>
@@ -104,7 +104,7 @@ export function ProfanityFilterSection({ userId, onSuccess, onError }: Profanity
         </div>
 
         {!canToggle && (
-          <div className="p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
+          <div className="p-2 bg-info/10 border border-info/40 rounded text-xs text-info">
             <strong>Note:</strong> This filter is required for users under 18 and cannot be
             disabled.
           </div>

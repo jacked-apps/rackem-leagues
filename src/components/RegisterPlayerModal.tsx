@@ -302,9 +302,9 @@ export function RegisterPlayerModal({
 
                 {/* Environment Warning */}
                 {isLocal && (
-                  <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                    <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
-                    <div className="text-xs text-amber-800">
+                  <div className="flex items-start gap-2 p-3 bg-warning/10 border border-warning/40 rounded-lg">
+                    <AlertTriangle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
+                    <div className="text-xs text-warning">
                       <p className="font-medium">Local Development</p>
                       <p>Registration links won't work in local environment. Test on staging or production.</p>
                     </div>
@@ -312,9 +312,9 @@ export function RegisterPlayerModal({
                 )}
 
                 {isStaging && (
-                  <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <AlertTriangle className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
-                    <div className="text-xs text-blue-800">
+                  <div className="flex items-start gap-2 p-3 bg-info/10 border border-info/40 rounded-lg">
+                    <AlertTriangle className="h-4 w-4 text-info mt-0.5 shrink-0" />
+                    <div className="text-xs text-info">
                       <p className="font-medium">Staging Environment</p>
                       <p>This link points to the staging site, not production.</p>
                     </div>
@@ -337,14 +337,14 @@ export function RegisterPlayerModal({
                     title={isLocal ? 'Links do not work in local development' : 'Copy link'}
                   >
                     {copied ? (
-                      <Check className="h-4 w-4 text-green-600" />
+                      <Check className="h-4 w-4 text-success" />
                     ) : (
                       <Copy className="h-4 w-4" />
                     )}
                   </Button>
                 </div>
                 {copied && (
-                  <p className="text-xs text-green-600">Link copied to clipboard!</p>
+                  <p className="text-xs text-success">Link copied to clipboard!</p>
                 )}
               </div>
 
@@ -389,7 +389,7 @@ export function RegisterPlayerModal({
                       />
                     </div>
                     {isLocal && (
-                      <p className="text-xs text-amber-600 text-center">
+                      <p className="text-xs text-warning text-center">
                         QR code points to localhost and won't work on other devices.
                       </p>
                     )}
@@ -429,8 +429,8 @@ export function RegisterPlayerModal({
 
             <form onSubmit={handleHandoffSubmit} className="space-y-4 py-4">
               {/* Instructions for the person registering */}
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-800">
+              <div className="p-3 bg-info/10 border border-info/40 rounded-lg">
+                <p className="text-sm text-info">
                   <span className="font-medium">Hi {playerName.split(' ')[0]}!</span> Enter your email and create a password to claim your player profile.
                 </p>
               </div>
@@ -480,8 +480,8 @@ export function RegisterPlayerModal({
 
               {/* Error message */}
               {error && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-sm text-red-800">{error}</p>
+                <div className="p-3 bg-destructive/10 border border-destructive/40 rounded-lg">
+                  <p className="text-sm text-destructive">{error}</p>
                 </div>
               )}
 
@@ -520,8 +520,8 @@ export function RegisterPlayerModal({
             <div className="space-y-4 py-4">
               {/* Success icon */}
               <div className="flex justify-center">
-                <div className="p-4 bg-green-100 rounded-full">
-                  <Mail className="h-8 w-8 text-green-600" />
+                <div className="p-4 bg-success/10 rounded-full">
+                  <Mail className="h-8 w-8 text-success" />
                 </div>
               </div>
 
@@ -537,8 +537,8 @@ export function RegisterPlayerModal({
               </div>
 
               {/* Important note */}
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                <p className="text-xs text-amber-800">
+              <div className="p-3 bg-warning/10 border border-warning/40 rounded-lg">
+                <p className="text-xs text-warning">
                   <span className="font-medium">Important:</span> Please hand the device back to the league operator now.
                   Your session is safe and you are not logged in as {playerName.split(' ')[0]}.
                 </p>

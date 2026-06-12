@@ -104,11 +104,11 @@ export function PWAInstallPrompt() {
   }
 
   return (
-    <Card className="border-blue-200 bg-blue-50">
+    <Card className="border-info/40 bg-info/10">
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
-          <div className="p-2 bg-blue-100 rounded-lg shrink-0">
-            <Smartphone className="h-5 w-5 text-blue-600" />
+          <div className="p-2 bg-info/10 rounded-lg shrink-0">
+            <Smartphone className="h-5 w-5 text-info" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">

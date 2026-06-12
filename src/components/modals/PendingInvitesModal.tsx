@@ -165,22 +165,22 @@ export const PendingInvitesModal: React.FC<PendingInvitesModalProps> = ({
           {validInvites.map((invite) => (
             <div
               key={invite.member_id}
-              className="border rounded-lg p-3 bg-blue-50 border-blue-200"
+              className="border rounded-lg p-3 bg-info/10 border-info/40"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0 space-y-1.5">
                   {/* Fixed call-to-action headline so the card's purpose
                       is instantly clear regardless of which fields are
                       populated. Team name gets its own labeled row below. */}
-                  <p className="font-medium text-blue-900">
+                  <p className="font-medium text-info">
                     You've been invited
                   </p>
 
                   {/* Team — labeled so users recognize it as a team, not
                       mistake it for a headline. Falls back to "No team yet"
                       for auto-invites without team context. */}
-                  <p className="text-sm text-blue-700">
-                    <span className="text-blue-600">Team:</span>{' '}
+                  <p className="text-sm text-foreground">
+                    <span className="text-info">Team:</span>{' '}
                     <span className="font-medium">
                       {invite.team_name ?? 'No team yet'}
                     </span>
@@ -188,16 +188,16 @@ export const PendingInvitesModal: React.FC<PendingInvitesModalProps> = ({
 
                   {/* Organization */}
                   {invite.organization_name && (
-                    <p className="text-sm text-blue-700">
-                      <span className="text-blue-600">Organization:</span>{' '}
+                    <p className="text-sm text-foreground">
+                      <span className="text-info">Organization:</span>{' '}
                       <span className="font-medium">{invite.organization_name}</span>
                     </p>
                   )}
 
                   {/* Attribution — captain who explicitly invited, else creator. */}
                   {(invite.captain_name || invite.creator_name) && (
-                    <p className="text-sm text-blue-700">
-                      <span className="text-blue-600">
+                    <p className="text-sm text-foreground">
+                      <span className="text-info">
                         {invite.captain_name ? 'Invited by:' : 'Created by:'}
                       </span>{' '}
                       <span className="font-medium">
@@ -207,7 +207,7 @@ export const PendingInvitesModal: React.FC<PendingInvitesModalProps> = ({
                   )}
 
                   {/* Profile identity line — name + nickname if set */}
-                  <p className="text-xs text-blue-600 pt-0.5">
+                  <p className="text-xs text-muted-foreground pt-0.5">
                     Profile: {invite.placeholder_first_name}
                     {invite.placeholder_nickname
                       ? ` "${invite.placeholder_nickname}"`
@@ -220,14 +220,14 @@ export const PendingInvitesModal: React.FC<PendingInvitesModalProps> = ({
                   {(invite.game_count !== null || invite.starting_handicap_5v5 !== null) && (
                     <div className="flex flex-wrap gap-1 pt-1">
                       {invite.game_count !== null && (
-                        <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-800">
+                        <span className="inline-flex items-center rounded-full bg-info/10 px-2 py-0.5 text-xs text-info">
                           {invite.game_count === 0
                             ? 'No games played yet'
                             : `${invite.game_count} game${invite.game_count === 1 ? '' : 's'} played`}
                         </span>
                       )}
                       {invite.starting_handicap_5v5 !== null && (
-                        <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-800">
+                        <span className="inline-flex items-center rounded-full bg-info/10 px-2 py-0.5 text-xs text-info">
                           Handicap {invite.starting_handicap_5v5}
                         </span>
                       )}
@@ -237,7 +237,7 @@ export const PendingInvitesModal: React.FC<PendingInvitesModalProps> = ({
                   {/* Org-owner line for trust — "run by X" so the invited
                       user knows whose organization they're joining. */}
                   {invite.organization_owner_name && (
-                    <p className="text-xs text-blue-600 pt-0.5 italic">
+                    <p className="text-xs text-muted-foreground pt-0.5 italic">
                       Run by {invite.organization_owner_name}
                     </p>
                   )}
@@ -269,18 +269,18 @@ export const PendingInvitesModal: React.FC<PendingInvitesModalProps> = ({
               {expiredInvites.map((invite) => (
                 <div
                   key={invite.member_id}
-                  className="border rounded-lg p-3 bg-amber-50 border-amber-200"
+                  className="border rounded-lg p-3 bg-warning/10 border-warning/40"
                 >
                   <div className="flex items-start gap-3">
-                    <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
+                    <AlertTriangle className="h-5 w-5 text-warning mt-0.5 shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-amber-900 truncate">
+                      <p className="font-medium text-warning truncate">
                         {invite.team_name ?? 'Pending player claim'}
                       </p>
-                      <p className="text-sm text-amber-700">
+                      <p className="text-sm text-foreground">
                         Invite expired {formatDate(invite.expires_at)}
                       </p>
-                      <p className="text-xs text-amber-600 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         Ask{' '}
                         {invite.captain_name ? (
                           <strong>{invite.captain_name}</strong>

@@ -217,15 +217,15 @@ export const VenueCreationModal: React.FC<VenueCreationModalProps> = ({
         <div className="p-6 space-y-6">
           {/* Error message */}
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-red-800 text-sm">{error}</p>
+            <div className="bg-destructive/10 border border-destructive/40 rounded-lg p-4">
+              <p className="text-foreground text-sm">{error}</p>
             </div>
           )}
 
           {/* Venue Name */}
           <div>
             <Label>
-              Venue Name <span className="text-red-500">*</span>
+              Venue Name <span className="text-destructive">*</span>
             </Label>
             <Input
               type="text"
@@ -239,7 +239,7 @@ export const VenueCreationModal: React.FC<VenueCreationModalProps> = ({
           <div className="grid md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
               <Label>
-                Street Address <span className="text-red-500">*</span>
+                Street Address <span className="text-destructive">*</span>
               </Label>
               <Input
                 type="text"
@@ -251,7 +251,7 @@ export const VenueCreationModal: React.FC<VenueCreationModalProps> = ({
 
             <div>
               <Label>
-                City <span className="text-red-500">*</span>
+                City <span className="text-destructive">*</span>
               </Label>
               <Input
                 type="text"
@@ -264,7 +264,7 @@ export const VenueCreationModal: React.FC<VenueCreationModalProps> = ({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>
-                  State <span className="text-red-500">*</span>
+                  State <span className="text-destructive">*</span>
                 </Label>
                 <Select value={formData.state} onValueChange={(value) => updateField('state', value)}>
                   <SelectTrigger className="w-full">
@@ -282,7 +282,7 @@ export const VenueCreationModal: React.FC<VenueCreationModalProps> = ({
 
               <div>
                 <Label>
-                  Zip Code <span className="text-red-500">*</span>
+                  Zip Code <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   type="text"
@@ -297,7 +297,7 @@ export const VenueCreationModal: React.FC<VenueCreationModalProps> = ({
           {/* Phone */}
           <div>
             <Label>
-              Phone Number <span className="text-red-500">*</span>
+              Phone Number <span className="text-destructive">*</span>
             </Label>
             <Input
               type="tel"

@@ -110,7 +110,7 @@ export function ConfirmationDialog({
         <DialogHeader>
           {isVacateRequest ? (
             <>
-              <DialogTitle className="text-orange-600">
+              <DialogTitle className="text-warning">
                 ⚠️ Confirm Vacate Winner
               </DialogTitle>
               <DialogDescription>
@@ -134,10 +134,10 @@ export function ConfirmationDialog({
               <p className="text-center text-foreground font-semibold">
                 Game {game.gameNumber}
               </p>
-              <div className="text-center text-lg font-semibold text-orange-600">
+              <div className="text-center text-lg font-semibold text-warning">
                 Current winner: {game.winnerPlayerName}
               </div>
-              <div className="bg-orange-50 border border-orange-200 rounded p-3 mt-4">
+              <div className="bg-warning/10 border border-warning/40 rounded p-3 mt-4">
                 <p className="text-center text-sm text-foreground">
                   Agreeing will{' '}
                   <span className="font-semibold">vacate this winner</span> and
@@ -162,17 +162,17 @@ export function ConfirmationDialog({
                   dumb and does not filter by league. */}
               <div className="text-center space-y-1 text-sm">
                 {game.breakAndRun && (
-                  <div className="text-blue-600 font-semibold">
+                  <div className="text-info font-semibold">
                     Break &amp; Run
                   </div>
                 )}
                 {game.goldenBreak && (
-                  <div className="text-green-600 font-semibold">
+                  <div className="text-success font-semibold">
                     {getGoldenBreakLabel()}
                   </div>
                 )}
                 {game.runout && (
-                  <div className="text-purple-600 font-semibold">
+                  <div className="text-foreground font-semibold">
                     Runout after opponent&apos;s break
                   </div>
                 )}
@@ -180,7 +180,7 @@ export function ConfirmationDialog({
                   <div className="text-foreground">Won by forfeit</div>
                 )}
                 {game.breakFouled && (
-                  <div className="text-amber-700">
+                  <div className="text-warning">
                     Break was fouled (re-rack with opposite breaker)
                   </div>
                 )}

@@ -98,16 +98,16 @@ export function ReportUserModal({
       isOpen={true}
       onClose={onClose}
       title="Report User"
-      icon={<AlertTriangle className="h-5 w-5 text-orange-600" />}
+      icon={<AlertTriangle className="h-5 w-5 text-warning" />}
     >
       <form onSubmit={handleSubmit} className="flex flex-col h-full">
         <Modal.Body className="space-y-4">
           {/* Reporting */}
-          <div className="p-3 bg-orange-50 border border-orange-200 rounded-md">
-            <p className="text-sm text-orange-800">
+          <div className="p-3 bg-warning/10 border border-warning/40 rounded-md">
+            <p className="text-sm text-warning">
               <strong>You are reporting:</strong> {reportedUserName}
             </p>
-            <p className="text-xs text-orange-700 mt-1">
+            <p className="text-xs text-warning mt-1">
               Reports are reviewed by league operators. False reports may result in penalties.
             </p>
           </div>
@@ -150,16 +150,16 @@ export function ReportUserModal({
           </div>
 
           {/* Privacy Notice */}
-          <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
-            <p className="text-xs text-blue-800">
+          <div className="p-3 bg-info/10 border border-info/40 rounded-md">
+            <p className="text-xs text-info">
               <strong>Privacy:</strong> Your identity will be kept confidential. The reported user will not see who filed this report.
             </p>
           </div>
 
           {/* Error Message */}
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-sm text-red-700">{error}</p>
+            <div className="p-3 bg-destructive/10 border border-destructive/40 rounded-md">
+              <p className="text-sm text-destructive">{error}</p>
             </div>
           )}
         </Modal.Body>

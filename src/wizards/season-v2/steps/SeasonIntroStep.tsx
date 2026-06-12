@@ -78,7 +78,7 @@ function FirstSeasonIntro({
         about getting it perfect the first time.
       </p>
       {startDate && (
-        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="p-4 bg-info/10 border border-info/40 rounded-lg">
           <p className="text-foreground">
             Your start date:{' '}
             <strong>{getDayOfWeekName(startDate)}, {formatDate(startDate)}</strong>
@@ -90,7 +90,7 @@ function FirstSeasonIntro({
           <Button
             variant="ghost"
             onClick={handleStartOver}
-            className="mt-2 text-sm text-red-600 hover:text-red-800 p-0 h-auto"
+            className="mt-2 text-sm text-destructive hover:text-destructive/80 p-0 h-auto"
           >
             Start over with a different date
           </Button>

@@ -155,9 +155,9 @@ export const PlayoffsCard: React.FC<PlayoffsCardProps> = ({ leagueId, seasonId }
       body = (
         <div className="space-y-3">
           {resolvedConfig && (
-            <div className="rounded-lg bg-purple-50 p-3">
-              <div className="text-sm font-medium text-purple-800">{resolvedConfig.name}</div>
-              <div className="text-xs text-purple-600">{getConfigSourceLabel()} Default</div>
+            <div className="rounded-lg bg-accent p-3">
+              <div className="text-sm font-medium text-foreground">{resolvedConfig.name}</div>
+              <div className="text-xs text-muted-foreground">{getConfigSourceLabel()} Default</div>
             </div>
           )}
 
@@ -178,13 +178,13 @@ export const PlayoffsCard: React.FC<PlayoffsCardProps> = ({ leagueId, seasonId }
               <div className="flex items-center gap-2 text-sm">
                 {seasonStatus.isComplete ? (
                   <>
-                    <Check className="h-4 w-4 text-green-600" />
-                    <span className="text-green-700">Regular season complete</span>
+                    <Check className="h-4 w-4 text-success" />
+                    <span className="text-success">Regular season complete</span>
                   </>
                 ) : (
                   <>
-                    <AlertCircle className="h-4 w-4 text-yellow-600" />
-                    <span className="text-yellow-700">
+                    <AlertCircle className="h-4 w-4 text-warning" />
+                    <span className="text-warning">
                       {seasonStatus.completedMatches}/{seasonStatus.totalMatches} matches completed
                     </span>
                   </>
@@ -195,8 +195,8 @@ export const PlayoffsCard: React.FC<PlayoffsCardProps> = ({ leagueId, seasonId }
             <div className="flex items-center gap-2 text-sm">
               {playoffMatchesExist ? (
                 <>
-                  <Check className="h-4 w-4 text-green-600" />
-                  <span className="text-green-700">Playoff matches created</span>
+                  <Check className="h-4 w-4 text-success" />
+                  <span className="text-success">Playoff matches created</span>
                 </>
               ) : (
                 <>

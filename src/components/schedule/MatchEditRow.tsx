@@ -96,7 +96,7 @@ export const MatchEditRow: React.FC<MatchEditRowProps> = ({
       className={`grid grid-cols-12 gap-3 items-center p-3 rounded-lg border ${
         isEditable
           ? 'border-border bg-card'
-          : 'border-gray-100 bg-muted'
+          : 'border-border bg-muted'
       }`}
     >
       {/* Match number */}
@@ -159,7 +159,7 @@ export const MatchEditRow: React.FC<MatchEditRowProps> = ({
           type="button"
           variant="ghost"
           size="sm"
-          className={`p-2 h-9 w-9 ${venueOverride ? 'text-orange-600' : 'text-blue-600'}`}
+          className={`p-2 h-9 w-9 ${venueOverride ? 'text-warning' : 'text-info'}`}
           onClick={onVenueOverrideToggle}
           disabled={!isEditable}
           title={venueOverride
@@ -195,7 +195,7 @@ export const MatchEditRow: React.FC<MatchEditRowProps> = ({
       {/* Non-editable indicator */}
       {!isEditable && (
         <div className="col-span-12 mt-1">
-          <span className="text-xs text-amber-600">
+          <span className="text-xs text-warning">
             This match cannot be edited (already started or completed)
           </span>
         </div>

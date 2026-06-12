@@ -67,7 +67,7 @@ const TIEBREAKER_OPTIONS: SelectableCardOption<string>[] = [
             scores stand as the official scoreboard; the manual entry
             decides the match outcome.
           </p>
-          <p className="text-xs text-gray-600">
+          <p className="text-xs text-muted-foreground">
             Graceful fallback for leagues whose specific tiebreaker rule
             isn't pre-codified yet. Always available — your league
             never gets stuck on a tie.

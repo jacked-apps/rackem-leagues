@@ -23,7 +23,7 @@ export function TestModeToggle({
   disabled = false,
 }: TestModeToggleProps) {
   return (
-    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+    <div className="bg-warning/10 border border-warning/40 rounded-lg p-3">
       <label className="flex items-center gap-2 cursor-pointer">
         <input
           type="checkbox"
@@ -32,11 +32,11 @@ export function TestModeToggle({
           disabled={disabled}
           className="w-4 h-4"
         />
-        <span className="text-sm font-medium text-yellow-800">
+        <span className="text-sm font-medium text-warning">
           Test Mode - Override Handicaps
         </span>
       </label>
-      <p className="text-xs text-yellow-700 mt-1 ml-6">
+      <p className="text-xs text-muted-foreground mt-1 ml-6">
         Enable to manually set handicaps for testing match scenarios
       </p>
     </div>

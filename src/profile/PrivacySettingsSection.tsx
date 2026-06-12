@@ -55,14 +55,14 @@ export const PrivacySettingsSection: React.FC = () => {
       </h3>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-          <p className="text-sm text-red-700">{error}</p>
+        <div className="mb-4 p-3 bg-destructive/10 border border-destructive/40 rounded-md">
+          <p className="text-sm text-destructive">{error}</p>
         </div>
       )}
 
       {success && (
-        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
-          <p className="text-sm text-green-700">Privacy settings updated successfully!</p>
+        <div className="mb-4 p-3 bg-success/10 border border-success/40 rounded-md">
+          <p className="text-sm text-success">Privacy settings updated successfully!</p>
         </div>
       )}
 
@@ -86,7 +86,7 @@ export const PrivacySettingsSection: React.FC = () => {
             <div className="mt-2">
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                 shouldFilter
-                  ? 'bg-green-100 text-green-800'
+                  ? 'bg-success/10 text-success'
                   : 'bg-muted text-foreground'
               }`}>
                 {shouldFilter ? 'Enabled' : 'Disabled'}
@@ -108,8 +108,8 @@ export const PrivacySettingsSection: React.FC = () => {
         </div>
 
         {!canToggle && (
-          <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
-            <p className="text-sm text-blue-700">
+          <div className="p-3 bg-info/10 border border-info/40 rounded-md">
+            <p className="text-sm text-info">
               <strong>Note:</strong> This setting will become available when you turn 18.
             </p>
           </div>

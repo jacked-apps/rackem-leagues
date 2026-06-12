@@ -58,7 +58,7 @@ export function ConfirmationModal({
         <DialogHeader>
           {isVacateRequest ? (
             <>
-              <DialogTitle className="text-orange-600">⚠️ Confirm Vacate Winner</DialogTitle>
+              <DialogTitle className="text-warning">⚠️ Confirm Vacate Winner</DialogTitle>
               <DialogDescription>
                 Your opponent wants to vacate the winner and clear this game result.
               </DialogDescription>
@@ -80,10 +80,10 @@ export function ConfirmationModal({
               <p className="text-center text-foreground font-semibold">
                 Game {gameNumber}
               </p>
-              <div className="text-center text-lg font-semibold text-orange-600">
+              <div className="text-center text-lg font-semibold text-warning">
                 Current winner: {winnerPlayerName}
               </div>
-              <div className="bg-orange-50 border border-orange-200 rounded p-3 mt-4">
+              <div className="bg-warning/10 border border-warning/40 rounded p-3 mt-4">
                 <p className="text-center text-sm text-foreground">
                   Agreeing will <span className="font-semibold">vacate this winner</span> and allow both teams to score this game again.
                 </p>
@@ -98,11 +98,11 @@ export function ConfirmationModal({
               {/* Dynamic result message based on what was selected */}
               <div className="text-center text-lg font-semibold">
                 {breakAndRun ? (
-                  <div className="text-blue-600">
+                  <div className="text-info">
                     {winnerPlayerName} had a Break & Run!
                   </div>
                 ) : goldenBreak ? (
-                  <div className="text-green-600">
+                  <div className="text-success">
                     {winnerPlayerName} had {getGoldenBreakLabel()}
                   </div>
                 ) : (

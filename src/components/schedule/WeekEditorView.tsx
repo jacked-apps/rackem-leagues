@@ -185,8 +185,8 @@ export const WeekEditorView: React.FC<WeekEditorViewProps> = ({
   };
 
   return (
-    <Card className="border-blue-200 bg-blue-50/30">
-      <CardHeader className="bg-blue-100/50 rounded-t-xl -my-6 py-3">
+    <Card className="border-info/40 bg-info/10">
+      <CardHeader className="bg-info/10 rounded-t-xl -my-6 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <CardTitle className="text-lg">
@@ -254,15 +254,15 @@ export const WeekEditorView: React.FC<WeekEditorViewProps> = ({
 
         {/* Error message */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-            <p className="text-red-800 text-sm">{error}</p>
+          <div className="bg-destructive/10 border border-destructive/40 rounded-lg p-3 mb-4">
+            <p className="text-destructive text-sm">{error}</p>
           </div>
         )}
 
         {/* No editable matches warning */}
         {!hasEditableMatches && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
-            <p className="text-amber-800 text-sm">
+          <div className="bg-warning/10 border border-warning/40 rounded-lg p-3 mb-4">
+            <p className="text-warning text-sm">
               All matches in this week have already started or completed and cannot be edited.
             </p>
           </div>

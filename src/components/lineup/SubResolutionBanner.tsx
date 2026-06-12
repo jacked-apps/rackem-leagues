@@ -37,10 +37,10 @@ export function SubResolutionBanner({
     // pick — their player handicaps could still change before lock. Just
     // tell me what's happening.
     return (
-      <Card className="border-blue-300 bg-blue-50">
+      <Card className="border-info/40 bg-info/10">
         <CardContent className="flex items-center gap-3 py-3">
-          <Info className="h-5 w-5 shrink-0 text-blue-700" aria-hidden />
-          <div className="text-sm text-blue-900">
+          <Info className="h-5 w-5 shrink-0 text-info" aria-hidden />
+          <div className="text-sm text-foreground">
             <strong>{opponentTeamLabel}</strong> picked Double Duty for one of
             their slots. Once they lock their lineup, you'll be asked to pick
             which of their players plays in two positions.
@@ -52,11 +52,11 @@ export function SubResolutionBanner({
 
   // Opponent is locked with DD; modal was dismissed. Re-open it.
   return (
-    <Card className="border-blue-300 bg-blue-50">
+    <Card className="border-info/40 bg-info/10">
       <CardContent className="flex items-center justify-between gap-3 py-3">
         <div className="flex items-center gap-3">
-          <UserPlus className="h-5 w-5 shrink-0 text-blue-700" aria-hidden />
-          <div className="text-sm text-blue-900">
+          <UserPlus className="h-5 w-5 shrink-0 text-info" aria-hidden />
+          <div className="text-sm text-foreground">
             <strong>{opponentTeamLabel}</strong> needs a double-duty player picked.
           </div>
         </div>

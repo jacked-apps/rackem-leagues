@@ -71,7 +71,7 @@ export const ScheduleWeekRow: React.FC<ScheduleWeekRowProps> = ({
         isWeekOff
           ? 'bg-muted'
           : hasConflicts
-          ? 'bg-orange-50'
+          ? 'bg-warning/10'
           : 'hover:bg-muted'
       }`}
     >
@@ -97,33 +97,33 @@ export const ScheduleWeekRow: React.FC<ScheduleWeekRowProps> = ({
           <div className="w-full flex justify-center">
             {highestSeverity === 'critical' && (
               <>
-                <span className="hidden lg:block text-red-600 font-medium">🔴 Critical</span>
-                <span className="lg:hidden text-red-600 font-medium">🔴</span>
+                <span className="hidden lg:block text-destructive font-medium">🔴 Critical</span>
+                <span className="lg:hidden text-destructive font-medium">🔴</span>
               </>
             )}
             {highestSeverity === 'high' && (
               <>
-                <span className="hidden lg:block text-orange-600 font-medium">🟠 High</span>
-                <span className="lg:hidden text-orange-600 font-medium">🟠</span>
+                <span className="hidden lg:block text-warning font-medium">🟠 High</span>
+                <span className="lg:hidden text-warning font-medium">🟠</span>
               </>
             )}
             {highestSeverity === 'medium' && (
               <>
-                <span className="hidden lg:block text-yellow-600 font-medium">🟡 Medium</span>
-                <span className="lg:hidden text-yellow-600 font-medium">🟡</span>
+                <span className="hidden lg:block text-warning font-medium">🟡 Medium</span>
+                <span className="lg:hidden text-warning font-medium">🟡</span>
               </>
             )}
             {highestSeverity === 'low' && (
               <>
-                <span className="hidden lg:block text-blue-600 font-medium">🔵 Low</span>
-                <span className="lg:hidden text-blue-600 font-medium">🔵</span>
+                <span className="hidden lg:block text-info font-medium">🔵 Low</span>
+                <span className="lg:hidden text-info font-medium">🔵</span>
               </>
             )}
           </div>
         ) : (
           <div className="w-full flex justify-center">
-            <span className="hidden lg:block text-green-600 font-medium">✓ Play</span>
-            <span className="lg:hidden text-green-600 font-medium">✓</span>
+            <span className="hidden lg:block text-success font-medium">✓ Play</span>
+            <span className="lg:hidden text-success font-medium">✓</span>
           </div>
         )}
       </td>

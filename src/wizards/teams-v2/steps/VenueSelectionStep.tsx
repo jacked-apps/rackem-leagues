@@ -83,7 +83,7 @@ export function VenueSelectionStep({
                 id={`venue-${venue.id}`}
                 checked={selected.includes(venue.id)}
                 onCheckedChange={() => toggleVenue(venue.id)}
-                className="size-5 border-2 border-gray-400"
+                className="size-5 border-2 border-input"
               />
               <Label htmlFor={`venue-${venue.id}`} className="flex-1 cursor-pointer">
                 <span className="font-medium">{venue.name}</span>

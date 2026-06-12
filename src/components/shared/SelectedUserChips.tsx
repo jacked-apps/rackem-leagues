@@ -23,10 +23,10 @@ export function SelectedUserChips({ items, onRemove, title = 'Selected' }: Selec
   if (items.length === 0) return null;
 
   return (
-    <div className="px-6 pt-4 border-b bg-blue-50">
+    <div className="px-6 pt-4 border-b bg-info/10">
       <div className="flex items-center gap-2 mb-2">
-        <Users className="h-4 w-4 text-blue-600" />
-        <span className="text-sm font-medium text-blue-900">
+        <Users className="h-4 w-4 text-info" />
+        <span className="text-sm font-medium text-foreground">
           {title} ({items.length})
         </span>
       </div>
@@ -34,7 +34,7 @@ export function SelectedUserChips({ items, onRemove, title = 'Selected' }: Selec
         {items.map((item) => (
           <div
             key={item.id}
-            className="bg-card border border-blue-300 rounded-full px-3 py-1 text-sm flex items-center gap-2"
+            className="bg-card border border-info/40 rounded-full px-3 py-1 text-sm flex items-center gap-2"
           >
             <span>
               {item.name}

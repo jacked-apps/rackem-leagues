@@ -23,7 +23,7 @@ export function HolidayFilterToggle({ showAll, onChange }: HolidayFilterTogglePr
         id="show-all-holidays"
         checked={showAll}
         onCheckedChange={(checked) => onChange(checked === true)}
-        className="size-5 border-2 border-gray-400"
+        className="size-5 border-2 border-input"
       />
       <div className="flex items-center gap-1">
         <Label htmlFor="show-all-holidays" className="text-sm">

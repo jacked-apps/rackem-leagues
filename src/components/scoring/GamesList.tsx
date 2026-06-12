@@ -211,7 +211,7 @@ export function GamesList({
                     <Button
                       variant="outline"
                       size="sm"
-                      className={`text-xs px-1 ${iRequestedVacate ? 'bg-orange-50 border-orange-300 text-orange-700' : 'bg-red-50 border-red-300 text-red-700 hover:bg-red-100'}`}
+                      className={`text-xs px-1 ${iRequestedVacate ? 'bg-warning/10 border-warning/40 text-warning' : 'bg-destructive/10 border-destructive/40 text-destructive hover:bg-destructive/20'}`}
                       disabled={iRequestedVacate}
                       onClick={() => {
                         if (!iRequestedVacate && onVacateRequestClick) {

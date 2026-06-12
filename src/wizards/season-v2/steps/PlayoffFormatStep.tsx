@@ -215,7 +215,7 @@ function WildcardToggle({
         onCheckedChange={(checked) =>
           onChange({ ...current, wildcard: checked === true })
         }
-        className="size-5 border-2 border-gray-400"
+        className="size-5 border-2 border-input"
       />
       <div className="flex items-center gap-1">
         <Label htmlFor="wildcard">Use wildcard spot</Label>

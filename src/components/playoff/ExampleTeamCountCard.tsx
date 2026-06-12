@@ -53,7 +53,7 @@ export const ExampleTeamCountCard: React.FC<ExampleTeamCountCardProps> = ({
   const teamCountOptions = Array.from({ length: 37 }, (_, i) => i + 4);
 
   return (
-    <div className="p-4 bg-blue-50 rounded-lg space-y-3">
+    <div className="p-4 bg-info/10 rounded-lg space-y-3">
       {/* Summary Row */}
       <div className="flex items-center gap-3">
         {/* Circle indicator with team count */}
@@ -63,10 +63,10 @@ export const ExampleTeamCountCard: React.FC<ExampleTeamCountCardProps> = ({
 
         {/* Description */}
         <div className="flex-1">
-          <div className="font-medium text-blue-900">
+          <div className="font-medium text-foreground">
             Showing Example of {exampleTeamCount} Teams
           </div>
-          <div className="text-sm text-blue-700 mt-1">
+          <div className="text-sm text-info mt-1">
             Preview how playoffs would work with this league size
           </div>
         </div>
@@ -76,7 +76,7 @@ export const ExampleTeamCountCard: React.FC<ExampleTeamCountCardProps> = ({
           variant="ghost"
           size="sm"
           onClick={() => setShowEdit(!showEdit)}
-          className="text-blue-700 hover:text-blue-900 hover:bg-blue-100"
+          className="text-info hover:text-info hover:bg-info/20"
         >
           {showEdit ? (
             <ChevronUp className="h-4 w-4" />
@@ -88,11 +88,11 @@ export const ExampleTeamCountCard: React.FC<ExampleTeamCountCardProps> = ({
 
       {/* Collapsible Edit Section */}
       {showEdit && (
-        <div className="pt-3 border-t border-blue-200 space-y-3">
+        <div className="pt-3 border-t border-info/40 space-y-3">
           {/* Team Count Selector */}
           <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-blue-600" />
-            <span className="text-sm font-medium text-blue-800">Number of teams</span>
+            <Users className="h-4 w-4 text-info" />
+            <span className="text-sm font-medium text-info">Number of teams</span>
             <Select
               value={exampleTeamCount.toString()}
               onValueChange={(value) =>
@@ -113,7 +113,7 @@ export const ExampleTeamCountCard: React.FC<ExampleTeamCountCardProps> = ({
           </div>
 
           {/* Explanation */}
-          <div className="text-xs text-blue-600 bg-blue-100 p-2 rounded">
+          <div className="text-xs text-info bg-info/20 p-2 rounded">
             Change this to see how your playoff settings would apply to leagues of different sizes.
             This is for preview only and does not affect actual league settings.
           </div>

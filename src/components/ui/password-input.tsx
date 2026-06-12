@@ -27,7 +27,7 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
       <button
         type="button"
         onClick={togglePasswordVisibility}
-        className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700"
+        className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
       >
         {showPassword ? (
           <EyeOff className="h-4 w-4" />
