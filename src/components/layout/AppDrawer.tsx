@@ -20,7 +20,7 @@
 
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LogIn } from 'lucide-react';
+import { LogIn, Radio } from 'lucide-react';
 import {
   SheetClose,
   SheetHeader,
@@ -303,29 +303,30 @@ function MyMatchSection({ items, isHydrating }: { items: MyMatchDrawerItem[]; is
   return (
     <div className="mb-4 border-b pb-4">
       {/* "My Match" stays left; the chip pair is grouped and centered in the
-          remaining space. */}
+          remaining space. Both chips always render — a 0-count one is dimmed
+          and disabled (Live stays put even on a no-live night). */}
       <div className="flex items-center px-3">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           My Match
         </h3>
         {items.length > 0 ? (
           <div className="flex flex-1 items-center justify-center gap-1.5">
-            {liveItems.length > 0 ? (
-              <MyMatchChip
-                label="Live"
-                count={liveItems.length}
-                active={open === 'live'}
-                onClick={() => setExplicit('live')}
-              />
-            ) : null}
-            {makeupItems.length > 0 ? (
-              <MyMatchChip
-                label="Makeup"
-                count={makeupItems.length}
-                active={open === 'makeup'}
-                onClick={() => setExplicit('makeup')}
-              />
-            ) : null}
+            <MyMatchChip
+              kind="live"
+              label="Live"
+              count={liveItems.length}
+              active={open === 'live'}
+              disabled={liveItems.length === 0}
+              onClick={() => setExplicit('live')}
+            />
+            <MyMatchChip
+              kind="makeup"
+              label="Makeup"
+              count={makeupItems.length}
+              active={open === 'makeup'}
+              disabled={makeupItems.length === 0}
+              onClick={() => setExplicit('makeup')}
+            />
           </div>
         ) : null}
       </div>
@@ -336,31 +337,55 @@ function MyMatchSection({ items, isHydrating }: { items: MyMatchDrawerItem[]; is
   );
 }
 
-/** A small, slim filter chip — "Live 1" / "Makeup 2". Radio-style: selecting it
- *  shows its group's list; one chip is always selected. */
+/**
+ * A small, slim filter chip. Radio-style: selecting it shows its group's list;
+ * one chip is always selected. On phones (`< sm`) it collapses to an icon to
+ * save room — the Radio "live" glyph for Live, an "MU" circle for Makeup — and
+ * from `sm` up it shows the text label. A 0-count chip is disabled.
+ */
 function MyMatchChip({
+  kind,
   label,
   count,
   active,
+  disabled,
   onClick,
 }: {
+  kind: 'live' | 'makeup';
   label: string;
   count: number;
   active: boolean;
+  disabled: boolean;
   onClick: () => void;
 }) {
+  const icon =
+    kind === 'live' ? (
+      <Radio className="h-3.5 w-3.5" aria-hidden="true" />
+    ) : (
+      <span
+        aria-hidden="true"
+        className="flex h-4 w-4 items-center justify-center rounded-full border text-[8px] font-bold leading-none"
+      >
+        MU
+      </span>
+    );
+
   return (
     <Button
       type="button"
       variant={active ? 'default' : 'outline'}
       size="sm"
       loadingText="none"
+      disabled={disabled}
       onClick={onClick}
       aria-pressed={active}
+      // Accessible name stays text-based even when only the icon shows on phones.
+      aria-label={count > 0 ? `${label} ${count}` : label}
       className="h-6 gap-1 rounded-full px-2.5 text-[11px]"
     >
-      {label}
-      <span className="tabular-nums opacity-70">{count}</span>
+      <span className="flex items-center sm:hidden">{icon}</span>
+      <span className="hidden sm:inline">{label}</span>
+      {count > 0 ? <span className="tabular-nums opacity-70">{count}</span> : null}
     </Button>
   );
 }

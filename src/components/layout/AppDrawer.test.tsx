@@ -443,6 +443,8 @@ describe('AppDrawer', () => {
 
     // Live chip is selected by default (radio), so its list shows the row.
     expect(screen.getByRole('button', { name: /Live/ })).toHaveAttribute('aria-pressed', 'true');
+    // Both chips always render; with no makeups, the Makeup chip is disabled.
+    expect(screen.getByRole('button', { name: /Makeup/ })).toBeDisabled();
     const row = screen.getByRole('link', { name: /Sharks/ });
     expect(row).toHaveAttribute('href', '/match/mx/lineup');
     expect(row).toHaveTextContent('Cues');
@@ -471,7 +473,7 @@ describe('AppDrawer', () => {
     expect(screen.queryByRole('link', { name: /Sharks/ })).not.toBeInTheDocument();
   });
 
-  it('shows the only group by default — one filter is always on (radio)', () => {
+  it('keeps the Live chip visible (disabled) and defaults to Makeup when there is no live match', () => {
     configurePlayer();
     mockUseMyMatchSurfaces.mockReturnValue({
       ...emptyMyMatch(),
@@ -482,9 +484,9 @@ describe('AppDrawer', () => {
 
     renderDrawer();
 
-    // No Live chip; the sole Makeup chip is selected by default, so its list
-    // shows without a tap.
-    expect(screen.queryByRole('button', { name: /Live/ })).not.toBeInTheDocument();
+    // Live chip always shows, but is disabled with no live matches; Makeup is
+    // selected by default so its list shows without a tap.
+    expect(screen.getByRole('button', { name: /Live/ })).toBeDisabled();
     expect(screen.getByRole('button', { name: /Makeup/ })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('link', { name: /Rails/ })).toBeInTheDocument();
   });
