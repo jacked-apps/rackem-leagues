@@ -18,6 +18,7 @@
  * counts) only fire when the user actually opens the menu.
  */
 
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LogIn } from 'lucide-react';
 import {
@@ -26,6 +27,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
 import { useUser } from '@/context/useUser';
 import { useUserProfile } from '@/api/hooks/useUserProfile';
 import { useOrganizations } from '@/api/hooks/useOrganizations';
@@ -157,8 +159,10 @@ export function AppDrawer(_props: AppDrawerProps) {
           <PublicSection />
         ) : (
           <>
-            <PlayerSection unreadCount={unreadCount} joinRequestsTo={joinRequestsTo} />
+            {/* My Match sits at the TOP — it's the most-used action, and this
+                matches the desktop sidebar's placement. */}
             <MyMatchSection items={myMatchItems} isHydrating={myMatchHydrating} />
+            <PlayerSection unreadCount={unreadCount} joinRequestsTo={joinRequestsTo} />
             {isOperator ? <OperatorSection orgs={organizations as OperatorOrg[]} /> : null}
           </>
         )}
@@ -264,36 +268,106 @@ function OperatorSection({ orgs }: { orgs: OperatorOrg[] }) {
 }
 
 /**
- * "My Match" drawer section — the player's current / today / past-due-makeup
- * matches, each a one-tap row to that match's lineup page. Structurally mirrors
- * `OperatorSection`: uppercase header, border-separated, flat-when-1 /
- * list-when-2+ / hidden-when-empty. Replaces the old static `/my-match` link;
- * the data comes from the shared `useMyMatchSurfaces` hook.
+ * "My Match" drawer section — sits at the top of the nav. Instead of listing
+ * every match at once, it shows small **filter chips** with counts ("Live 1",
+ * "Makeup 2"); tapping a chip reveals that group's list. This keeps the drawer
+ * glanceable: you read the counts without the rows always eating the space.
  *
- * While the surfaces are still hydrating (and there are no items yet) the header
- * renders alone — a stable layout target that avoids a misleading flash of
- * "nothing here" during the brief first load.
+ * Defaults: when there's a live/tonight match, the Live list auto-opens (you
+ * see your match immediately); otherwise everything stays collapsed to just
+ * chips, so a long makeup list never dumps itself. One list shows at a time.
+ *
+ * Data comes from the shared `useMyMatchSurfaces` hook. While still hydrating
+ * (and no items yet) the header renders alone — a stable layout target.
+ *
+ * Future scope: a third "Future"/"Upcoming" chip can slot in here once the
+ * detection query is extended; deliberately omitted for now.
  */
 function MyMatchSection({ items, isHydrating }: { items: MyMatchDrawerItem[]; isHydrating: boolean }) {
+  const liveItems = items.filter((i) => i.group === 'live');
+  const makeupItems = items.filter((i) => i.group === 'makeup');
+
+  // Expanded group. `undefined` = no explicit user choice yet → fall back to
+  // auto-opening Live when there's a live/tonight match.
+  const [explicit, setExplicit] = useState<'live' | 'makeup' | null | undefined>(undefined);
+
   if (!isHydrating && items.length === 0) return null;
 
+  const autoOpen: 'live' | null = liveItems.length > 0 ? 'live' : null;
+  const open = explicit === undefined ? autoOpen : explicit;
+  const toggle = (group: 'live' | 'makeup') => setExplicit(open === group ? null : group);
+
   return (
-    <div className="mt-6 border-t pt-4">
+    <div className="mb-4 border-b pb-4">
       <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         My Match
       </h3>
-      {items.length === 0 ? null : items.length === 1 ? (
-        <MyMatchRow item={items[0]} />
-      ) : (
-        <ul className="space-y-1">
-          {items.map((item) => (
-            <li key={item.matchId}>
-              <MyMatchRow item={item} />
-            </li>
-          ))}
-        </ul>
-      )}
+
+      {items.length > 0 ? (
+        <div className="flex flex-wrap gap-2 px-3">
+          {liveItems.length > 0 ? (
+            <MyMatchChip
+              label="Live"
+              count={liveItems.length}
+              active={open === 'live'}
+              onClick={() => toggle('live')}
+            />
+          ) : null}
+          {makeupItems.length > 0 ? (
+            <MyMatchChip
+              label="Makeup"
+              count={makeupItems.length}
+              active={open === 'makeup'}
+              onClick={() => toggle('makeup')}
+            />
+          ) : null}
+        </div>
+      ) : null}
+
+      {open === 'live' ? <MyMatchList items={liveItems} /> : null}
+      {open === 'makeup' ? <MyMatchList items={makeupItems} /> : null}
     </div>
+  );
+}
+
+/** A small filter chip — "Live 1" / "Makeup 2" — that toggles its group's list. */
+function MyMatchChip({
+  label,
+  count,
+  active,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <Button
+      type="button"
+      variant={active ? 'default' : 'outline'}
+      size="sm"
+      loadingText="none"
+      onClick={onClick}
+      aria-pressed={active}
+      className="h-7 rounded-full px-3 text-xs"
+    >
+      {label}
+      <span className="ml-1 tabular-nums opacity-70">{count}</span>
+    </Button>
+  );
+}
+
+/** The revealed list of match rows for the open chip. */
+function MyMatchList({ items }: { items: MyMatchDrawerItem[] }) {
+  return (
+    <ul className="mt-2 space-y-1">
+      {items.map((item) => (
+        <li key={item.matchId}>
+          <MyMatchRow item={item} />
+        </li>
+      ))}
+    </ul>
   );
 }
 

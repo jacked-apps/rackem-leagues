@@ -196,6 +196,21 @@ describe('buildMyMatchDrawerItems', () => {
     expect(items.map((i) => i.label)).toEqual(['Live', 'Today', expect.stringMatching(/^Makeup \(/)]);
   });
 
+  it('tags each item with its drawer chip group (live | makeup)', () => {
+    const items = buildMyMatchDrawerItems(
+      [
+        row({ id: 'live', status: 'in_progress' }),
+        row({ id: 'today', status: 'scheduled', scheduled_date: TODAY }),
+        row({ id: 'makeup', status: 'scheduled', scheduled_date: YESTERDAY }),
+      ],
+      ['t1'],
+      TODAY,
+    );
+    const groupById = Object.fromEntries(items.map((i) => [i.matchId, i.group]));
+    // in_progress and today both live under the "Live" chip; past-due is "Makeup".
+    expect(groupById).toEqual({ live: 'live', today: 'live', makeup: 'makeup' });
+  });
+
   it('labels "my team vs opponent" when the member is on the home team', () => {
     const [item] = buildMyMatchDrawerItems([row({ id: 'm', status: 'in_progress' })], ['t1'], TODAY);
     expect(item.teamName).toBe('Sharks');

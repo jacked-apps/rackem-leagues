@@ -10,7 +10,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
-import { renderWithProviders, screen, within } from '@/test/utils';
+import { renderWithProviders, screen, within, fireEvent } from '@/test/utils';
 
 // Mock the data-fetching hooks used by AppDrawer. The drawer's role/auth
 // branching is driven by these return values; controlling them per test lets
@@ -429,40 +429,64 @@ describe('AppDrawer', () => {
     expect(screen.queryByRole('link', { name: /Join requests/ })).not.toBeInTheDocument();
   });
 
-  // My Match section — driven by useMyMatchSurfaces.drawerItems
-  it('renders a single My Match row linking to the match lineup', () => {
+  // My Match section — chips + reveal, driven by useMyMatchSurfaces.drawerItems
+  it('auto-opens the Live list and shows the match row when a live match exists', () => {
     configurePlayer();
     mockUseMyMatchSurfaces.mockReturnValue({
       ...emptyMyMatch(),
       drawerItems: [
-        { matchId: 'mx', teamName: 'Sharks', opponentName: 'Cues', label: 'Live', destinationPath: '/match/mx/lineup' },
+        { matchId: 'mx', teamName: 'Sharks', opponentName: 'Cues', label: 'Live', group: 'live', destinationPath: '/match/mx/lineup' },
       ],
     });
 
     renderDrawer();
 
-    expect(screen.getByText('My Match')).toBeInTheDocument();
+    // Live chip with its count, and the list auto-opened so the row is visible.
+    expect(screen.getByRole('button', { name: /Live/ })).toBeInTheDocument();
     const row = screen.getByRole('link', { name: /Sharks/ });
     expect(row).toHaveAttribute('href', '/match/mx/lineup');
     expect(row).toHaveTextContent('Cues');
-    expect(row).toHaveTextContent('Live');
   });
 
-  it('lists multiple My Match rows when the player is on more than one team', () => {
+  it('keeps Makeups behind their chip until tapped', () => {
     configurePlayer();
     mockUseMyMatchSurfaces.mockReturnValue({
       ...emptyMyMatch(),
       drawerItems: [
-        { matchId: 'm1', teamName: 'Sharks', opponentName: 'Cues', label: 'Live', destinationPath: '/match/m1/lineup' },
-        { matchId: 'm2', teamName: 'Rails', opponentName: 'Felt', label: 'Makeup (Apr 7)', destinationPath: '/match/m2/lineup' },
+        { matchId: 'm1', teamName: 'Sharks', opponentName: 'Cues', label: 'Live', group: 'live', destinationPath: '/match/m1/lineup' },
+        { matchId: 'm2', teamName: 'Rails', opponentName: 'Felt', label: 'Makeup (Apr 7)', group: 'makeup', destinationPath: '/match/m2/lineup' },
       ],
     });
 
     renderDrawer();
 
-    expect(screen.getByRole('link', { name: /Sharks/ })).toHaveAttribute('href', '/match/m1/lineup');
+    // Live auto-opens → Sharks visible; Makeup collapsed → Rails hidden.
+    expect(screen.getByRole('link', { name: /Sharks/ })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Rails/ })).not.toBeInTheDocument();
+
+    // Tap the Makeup chip → the makeup row is revealed.
+    fireEvent.click(screen.getByRole('button', { name: /Makeup/ }));
     expect(screen.getByRole('link', { name: /Rails/ })).toHaveAttribute('href', '/match/m2/lineup');
-    expect(screen.getByText(/Makeup \(Apr 7\)/)).toBeInTheDocument();
+  });
+
+  it('leaves Makeups collapsed by default when there is no live match', () => {
+    configurePlayer();
+    mockUseMyMatchSurfaces.mockReturnValue({
+      ...emptyMyMatch(),
+      drawerItems: [
+        { matchId: 'm2', teamName: 'Rails', opponentName: 'Felt', label: 'Makeup (Apr 7)', group: 'makeup', destinationPath: '/match/m2/lineup' },
+      ],
+    });
+
+    renderDrawer();
+
+    // No Live chip; Makeup chip present but collapsed until tapped.
+    expect(screen.queryByRole('button', { name: /Live/ })).not.toBeInTheDocument();
+    const chip = screen.getByRole('button', { name: /Makeup/ });
+    expect(screen.queryByRole('link', { name: /Rails/ })).not.toBeInTheDocument();
+
+    fireEvent.click(chip);
+    expect(screen.getByRole('link', { name: /Rails/ })).toBeInTheDocument();
   });
 
   it('hides the My Match section entirely when there are no matches', () => {
@@ -473,14 +497,14 @@ describe('AppDrawer', () => {
     expect(screen.queryByText('My Match')).not.toBeInTheDocument();
   });
 
-  it('shows the My Match header alone (no rows) while hydrating', () => {
+  it('shows the My Match header alone (no chips) while hydrating', () => {
     configurePlayer();
     mockUseMyMatchSurfaces.mockReturnValue({ ...emptyMyMatch(), isHydrating: true });
 
     renderDrawer();
 
     expect(screen.getByText('My Match')).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /vs/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Live|Makeup/ })).not.toBeInTheDocument();
   });
 
   // Sign Out is no longer in the drawer — it moved to the bottom of the Profile

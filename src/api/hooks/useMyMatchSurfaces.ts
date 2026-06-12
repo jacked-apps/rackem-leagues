@@ -56,6 +56,8 @@ export interface MyMatchDrawerItem {
   opponentName: string;
   /** `'Live'` | `'Today'` | `'Makeup (Apr 7)'`. */
   label: string;
+  /** Drawer chip grouping: in_progress/today → `'live'`, past-due → `'makeup'`. */
+  group: 'live' | 'makeup';
   destinationPath: string;
 }
 
@@ -186,6 +188,8 @@ function toDrawerItem(
     teamName: myTeam?.team_name ?? 'My team',
     opponentName: opponent?.team_name ?? 'BYE',
     label,
+    // Live + Today both live under the "Live" chip; past-due is "Makeup".
+    group: tier === 3 ? 'makeup' : 'live',
     destinationPath: `/match/${match.id}/lineup`,
   };
 }
