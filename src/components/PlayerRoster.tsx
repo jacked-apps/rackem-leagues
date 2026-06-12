@@ -24,6 +24,8 @@ interface PlayerRosterProps {
   hideNickname?: boolean;
   hideHandicap?: boolean;
   captainId?: string; // ID of the team captain to display with (C) badge
+  /** Team's max roster size. When provided, the header reads "X of Y players". */
+  rosterSize?: number;
 }
 
 /**
@@ -44,6 +46,7 @@ export function PlayerRoster({
   hideNickname = false,
   hideHandicap = false,
   captainId,
+  rosterSize,
 }: PlayerRosterProps) {
   const { data: players = [], isLoading: loadingPlayers } = useMembersByIds(playerIds);
   const { handicaps, isLoading: loadingHandicaps } = usePlayerHandicaps({
@@ -97,7 +100,7 @@ export function PlayerRoster({
   return (
     <div>
       <p className="text-sm font-medium text-muted-foreground mb-2">
-        Roster ({players.length} players)
+        Roster ({rosterSize ? `${players.length} of ${rosterSize}` : players.length} players)
       </p>
 
       {/* Header Row */}
