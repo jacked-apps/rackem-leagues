@@ -81,7 +81,7 @@ export const ScheduleSetupPage: React.FC = () => {
    */
   const handleCancel = () => {
     setIsNavigating(true);
-    navigate(`/league/${leagueId}/manage-teams`);
+    navigate(`/league/${leagueId}/season/${seasonId}/setup-teams`);
   };
 
   if (loading) {
@@ -116,7 +116,7 @@ export const ScheduleSetupPage: React.FC = () => {
                 variant="outline"
                 onClick={() => {
                   setIsNavigating(true);
-                  navigate(`/league/${leagueId}/manage-teams`);
+                  navigate(`/league/${leagueId}/season/${seasonId}/setup-teams`);
                 }}
                 disabled={isNavigating}
                 loadingText="Loading..."
@@ -133,7 +133,7 @@ export const ScheduleSetupPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-muted">
       <PageHeader
-        backTo={`/league/${leagueId}/manage-teams`}
+        backTo={`/league/${leagueId}/season/${seasonId}/setup-teams`}
         backLabel="Back to Team Management"
         title="Generate Schedule"
         subtitle="Assign schedule positions and generate matchups for your season"
