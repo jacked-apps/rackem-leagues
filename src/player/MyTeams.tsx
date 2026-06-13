@@ -44,6 +44,9 @@ import { JoinRequestList } from '@/onboarding/components/JoinRequestList';
 import { InviteMyTeamButton } from '@/onboarding/InviteMyTeamButton';
 import { defaultOpenTeamId } from '@/onboarding/landingTeam';
 
+/** Per-device flag for the one-time captain "fill your roster" tip. */
+const INVITE_TIP_KEY = 'onboarding-invite-tip-dismissed';
+
 interface TeamData {
   team_id: string;
   teams: {
@@ -346,6 +349,12 @@ export function MyTeams() {
   // Team editing modal state
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
 
+  // One-time "fill your roster" tip — shown once at the top of the page for
+  // captains (replaces the old per-card tip). Dismissal persists per device.
+  const [inviteTipDismissed, setInviteTipDismissed] = useState(
+    () => localStorage.getItem(INVITE_TIP_KEY) === '1',
+  );
+
   // Fetch edit data when team is selected for editing
   const { data: editData, isLoading: loadingEditData } = useCaptainTeamEditData(editingTeamId);
 
@@ -397,6 +406,9 @@ export function MyTeams() {
     );
   }
 
+  // Captains get one top-of-page invite tip (replaces the old per-card tip).
+  const isCaptainOfAnyTeam = teams.some((t) => t.teams.captain_id === memberId);
+
   return (
     <div className="min-h-screen bg-muted">
       <PageHeader
@@ -408,6 +420,30 @@ export function MyTeams() {
         {/* Onboarding cascade: pending join requests for teams this captain
             approves. Renders nothing when there are none. */}
         <JoinRequestList title="Join requests" />
+
+        {/* One-time "fill your roster" nudge for captains — a single card here
+            instead of one on every captain team card. */}
+        {isCaptainOfAnyTeam && !inviteTipDismissed && (
+          <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
+            <p className="font-medium">Fill your roster the easy way</p>
+            <p className="text-muted-foreground">
+              Tap <span className="font-medium">Invite</span> on any team you captain to
+              share one link with your players. As each signs up you'll get a request to
+              approve — tap Add and they're on the team.
+            </p>
+            <Button
+              variant="link"
+              loadingText="none"
+              className="h-auto px-0"
+              onClick={() => {
+                localStorage.setItem(INVITE_TIP_KEY, '1');
+                setInviteTipDismissed(true);
+              }}
+            >
+              Got it
+            </Button>
+          </div>
+        )}
 
         {teams.length === 0 ? (
           <Card>
