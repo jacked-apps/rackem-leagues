@@ -13,9 +13,12 @@ import { useNavigate } from 'react-router-dom';
 import { AlertCircle, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SectionCard, SectionCardLoading, SectionCardEmpty } from './SectionCard';
-import { supabase } from '@/supabaseClient';
 import { useResolvedPlayoffConfig } from '@/api/hooks/usePlayoffConfigurations';
-import { checkRegularSeasonComplete, getPlayoffWeek } from '@/utils/playoffGenerator';
+import {
+  checkRegularSeasonComplete,
+  getPlayoffWeek,
+  arePlayoffMatchupsPopulated,
+} from '@/utils/playoffGenerator';
 import { parseLocalDate } from '@/utils/formatters';
 
 interface PlayoffsCardProps {
@@ -70,13 +73,10 @@ export const PlayoffsCard: React.FC<PlayoffsCardProps> = ({ leagueId, seasonId }
           const status = await checkRegularSeasonComplete(seasonId);
           setSeasonStatus(status);
 
-          // Check if playoff matches already exist
-          const { count } = await supabase
-            .from('matches')
-            .select('*', { count: 'exact', head: true })
-            .eq('season_week_id', week.id);
-
-          setPlayoffMatchesExist((count || 0) > 0);
+          // Whether the matchups have actually been populated (teams filled in) —
+          // a raw row count is true all season because placeholder rows exist, so
+          // use the trustworthy non-null-team-IDs signal instead.
+          setPlayoffMatchesExist(await arePlayoffMatchupsPopulated(week.id));
         }
       } catch {
         // Silently handle errors - card will show default state
