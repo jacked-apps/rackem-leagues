@@ -346,8 +346,8 @@ export function TeamSchedule() {
                       <div className="min-w-0 truncate text-base text-muted-foreground">
                         {entry.week.week_name} · {formatShortDate(match.scheduled_date ?? entry.week.scheduled_date)}
                       </div>
-                      <span className={`flex shrink-0 items-center gap-1 text-base font-medium ${meta.badge}`}>
-                        <Icon className="h-4 w-4" />
+                      <span className={`flex shrink-0 items-center gap-1 text-xs font-medium ${meta.badge}`}>
+                        <Icon className="h-3.5 w-3.5" />
                         {meta.label}
                       </span>
                     </div>
@@ -393,10 +393,10 @@ export function TeamSchedule() {
                           <Button
                             variant="link"
                             loadingText="none"
-                            className="h-auto gap-0.5 p-0 text-base text-blue-600 hover:text-blue-800"
+                            className="h-auto gap-0.5 p-0 text-sm text-blue-600 hover:text-blue-800"
                           >
                             {scoreLinkLabel(entry.kind)}
-                            <ArrowRight className="h-4 w-4" />
+                            <ArrowRight className="h-3.5 w-3.5" />
                           </Button>
                         </Link>
                       )}
