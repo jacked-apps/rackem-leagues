@@ -266,45 +266,32 @@ export function TeamSchedule() {
       />
 
       <main className="px-4 py-6 max-w-2xl mx-auto">
-        {/* Filters — in the card column so they center over the cards. */}
-        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
+        {/* Filter chips — tap to hide a category. Filled (+ "off" icon) = that
+            category is hidden; the icon carries the state without relying on color. */}
+        <div className="mb-4 flex justify-center gap-2">
           <Button
-            variant="outline"
+            type="button"
+            variant={hideCompleted ? 'default' : 'outline'}
             size="sm"
-            onClick={() => setHideCompleted(!hideCompleted)}
-            className="w-full sm:w-auto"
             loadingText="none"
+            onClick={() => setHideCompleted(!hideCompleted)}
+            aria-pressed={hideCompleted}
+            className="h-7 gap-1 rounded-full px-3 text-xs"
           >
-            {hideCompleted ? (
-              <>
-                <Eye className="h-4 w-4 mr-2" />
-                Show Completed
-              </>
-            ) : (
-              <>
-                <EyeOff className="h-4 w-4 mr-2" />
-                Hide Completed
-              </>
-            )}
+            {hideCompleted ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+            Completed
           </Button>
           <Button
-            variant="outline"
+            type="button"
+            variant={hideOffWeeks ? 'default' : 'outline'}
             size="sm"
-            onClick={() => setHideOffWeeks(!hideOffWeeks)}
-            className="w-full sm:w-auto"
             loadingText="none"
+            onClick={() => setHideOffWeeks(!hideOffWeeks)}
+            aria-pressed={hideOffWeeks}
+            className="h-7 gap-1 rounded-full px-3 text-xs"
           >
-            {hideOffWeeks ? (
-              <>
-                <Calendar className="h-4 w-4 mr-2" />
-                Show Off Weeks
-              </>
-            ) : (
-              <>
-                <CalendarOff className="h-4 w-4 mr-2" />
-                Hide Off Weeks
-              </>
-            )}
+            {hideOffWeeks ? <CalendarOff className="h-3.5 w-3.5" /> : <Calendar className="h-3.5 w-3.5" />}
+            Off weeks
           </Button>
         </div>
 
