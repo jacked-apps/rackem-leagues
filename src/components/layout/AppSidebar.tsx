@@ -19,6 +19,8 @@ import { useUserProfile } from '@/api/hooks/useUserProfile';
 import { useOrganizations } from '@/api/hooks/useOrganizations';
 import { useUnreadMessageCount } from '@/api/hooks/useMessages';
 import { usePendingJoinRequestCount } from '@/api/hooks/usePendingJoinRequestCount';
+import { useMyMatchSurfaces } from '@/api/hooks/useMyMatchSurfaces';
+import { MyMatchPanel } from './MyMatchPanel';
 import { OperatorOrgRow } from './OperatorOrgRow';
 
 /** Cap on visible orgs — matches AppDrawer. */
@@ -40,12 +42,38 @@ function pickVisibleOrgs(orgs: OperatorOrg[], cap: number): OperatorOrg[] {
   return [...owned, ...staff].slice(0, cap);
 }
 
+/**
+ * Resolve where the "Join requests (N)" doorbell should lead — mirrors AppDrawer.
+ *
+ * Operators manage incoming join requests from the org-wide list on their
+ * Operator Dashboard, so they route to their primary org (owned orgs first,
+ * matching `pickVisibleOrgs` ordering). The one-org LO lands precisely on the
+ * surface that shows their requests; players/captains keep the My Teams route.
+ *
+ * @param isOperator Whether the user can access operator features.
+ * @param orgs The user's organizations (may be empty while loading).
+ * @returns The route the doorbell link should point at.
+ */
+function resolveJoinRequestsTo(isOperator: boolean, orgs: OperatorOrg[]): string {
+  if (isOperator && orgs?.length) {
+    return `/operator-dashboard/${pickVisibleOrgs(orgs, 1)[0].id}`;
+  }
+  return '/my-teams';
+}
+
 export function AppSidebar() {
   const { isLoggedIn } = useUser();
   const { member, canAccessLeagueOperatorFeatures } = useUserProfile();
   const isOperator = canAccessLeagueOperatorFeatures();
   const { organizations } = useOrganizations(member?.id);
   const { data: unreadCount = 0 } = useUnreadMessageCount(member?.id);
+  const { drawerItems: myMatchItems, isHydrating: myMatchHydrating } =
+    useMyMatchSurfaces(member?.id);
+
+  // Doorbell target: operators → their primary org's Operator Dashboard (where
+  // the org-wide join-request list lives); everyone else → My Teams. See
+  // resolveJoinRequestsTo for the why.
+  const joinRequestsTo = resolveJoinRequestsTo(isOperator, organizations as OperatorOrg[]);
 
   const displayName = (() => {
     if (member?.first_name || member?.last_name) {
@@ -98,7 +126,9 @@ export function AppSidebar() {
       <nav aria-label="Sidebar navigation" className="flex-1 overflow-y-auto p-4">
         {isLoggedIn ? (
           <>
-            <SidebarPlayerSection unreadCount={unreadCount} />
+            {/* My Match at the top — mirrors the drawer's chips + lists. */}
+            <MyMatchPanel items={myMatchItems} isHydrating={myMatchHydrating} />
+            <SidebarPlayerSection unreadCount={unreadCount} joinRequestsTo={joinRequestsTo} />
             {isOperator ? (
               <SidebarOperatorSection orgs={organizations as OperatorOrg[]} />
             ) : null}
@@ -111,16 +141,22 @@ export function AppSidebar() {
 }
 
 
-function SidebarPlayerSection({ unreadCount }: { unreadCount: number }) {
+function SidebarPlayerSection({
+  unreadCount,
+  joinRequestsTo,
+}: {
+  unreadCount: number;
+  /** Where the doorbell leads — operator surface for LOs, My Teams otherwise. */
+  joinRequestsTo: string;
+}) {
   const messagesLabel = unreadCount > 0 ? `Messages (${unreadCount})` : 'Messages';
   // Doorbell: pending join requests for teams this user can approve.
   const joinRequestCount = usePendingJoinRequestCount();
   return (
     <ul className="space-y-1">
-      <SidebarLink to="/my-match" label="My Match" />
       <SidebarLink to="/my-teams" label="My Teams" />
       {joinRequestCount > 0 && (
-        <SidebarLink to="/my-teams" label={`Join requests (${joinRequestCount})`} />
+        <SidebarLink to={joinRequestsTo} label={`Join requests (${joinRequestCount})`} />
       )}
       <SidebarLink to="/stats" label="Stats" />
       <SidebarLink to="/rules" label="Rules" />

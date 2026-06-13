@@ -19,11 +19,11 @@ export const SuccessMessage: React.FC<SuccessMessageProps> = ({ message }) => {
   if (!message.visible) return null;
 
   return (
-    <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
+    <div className="mb-6 bg-success/10 border border-success/40 rounded-lg p-4">
       <div className="flex">
         <div className="flex-shrink-0">
           <svg
-            className="h-5 w-5 text-green-400"
+            className="h-5 w-5 text-success"
             fill="currentColor"
             viewBox="0 0 20 20"
           >
@@ -35,11 +35,11 @@ export const SuccessMessage: React.FC<SuccessMessageProps> = ({ message }) => {
           </svg>
         </div>
         <div className="ml-3">
-          <h3 className="text-sm font-medium text-green-800">
+          <h3 className="text-sm font-medium text-success">
             {message.type} Updated Successfully
           </h3>
           {message.changes.length > 0 && (
-            <div className="mt-2 text-sm text-green-700">
+            <div className="mt-2 text-sm text-foreground">
               <p className="font-medium">Changes made:</p>
               <ul className="mt-1 list-disc list-inside space-y-1">
                 {message.changes.map((change, index) => (

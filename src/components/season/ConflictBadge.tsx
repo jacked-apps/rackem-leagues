@@ -19,10 +19,10 @@ import type { ConflictBadgeProps } from '@/types/scheduleReview';
 export const ConflictBadge: React.FC<ConflictBadgeProps> = ({ conflict }) => {
   // Determine colors based on severity
   const severityStyles = {
-    critical: 'bg-red-100 text-red-800 border-red-200',
-    high: 'bg-orange-100 text-orange-800 border-orange-200',
-    medium: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    low: 'bg-blue-100 text-blue-800 border-blue-200',
+    critical: 'bg-destructive/10 text-destructive border-destructive/40',
+    high: 'bg-warning/10 text-warning border-warning/40',
+    medium: 'bg-warning/10 text-warning border-warning/40',
+    low: 'bg-info/10 text-info border-info/40',
   };
 
   const severityEmoji = {

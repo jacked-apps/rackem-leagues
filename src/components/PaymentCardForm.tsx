@@ -151,15 +151,15 @@ export const PaymentCardForm: React.FC<PaymentCardFormProps> = ({
   // Show success state if verification completed
   if (showSuccess && cardData) {
     return (
-      <div className="bg-green-50 border border-green-200 rounded-lg p-4 animate-in slide-in-from-top-2 duration-300">
+      <div className="bg-success/10 border border-success/40 rounded-lg p-4 animate-in slide-in-from-top-2 duration-300">
         <div className="flex items-center space-x-3">
-          <span className="text-green-600 text-xl">✅</span>
+          <span className="text-success text-xl">✅</span>
           <div>
-            <h4 className="font-semibold text-green-800">Card Verified Successfully!</h4>
-            <p className="text-green-700 text-sm">
+            <h4 className="font-semibold text-success">Card Verified Successfully!</h4>
+            <p className="text-success text-sm">
               Card ending in {cardData.cardLast4} • {cardData.cardBrand?.toUpperCase()}
             </p>
-            <p className="text-green-600 text-xs mt-1">
+            <p className="text-success text-xs mt-1">
               Ready to proceed - no charges have been made.
             </p>
           </div>
@@ -171,17 +171,17 @@ export const PaymentCardForm: React.FC<PaymentCardFormProps> = ({
   return (
     <div className="space-y-6">
       {/* Security Notice */}
-      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+      <div className="bg-success/10 border border-success/40 rounded-lg p-4">
         <div className="flex items-start space-x-3">
-          <span className="text-green-600 text-lg">🔒</span>
+          <span className="text-success text-lg">🔒</span>
           <div>
-            <h4 className="font-semibold text-green-800 mb-2">
+            <h4 className="font-semibold text-success mb-2">
               Secure Payment Setup
             </h4>
-            <p className="text-green-700 text-sm mb-2">
+            <p className="text-success text-sm mb-2">
               We use bank-level encryption to protect your payment information.
             </p>
-            <p className="text-green-700 text-sm font-medium">
+            <p className="text-success text-sm font-medium">
               No charges will be made at this time - we're just verifying your card.
             </p>
           </div>
@@ -201,7 +201,7 @@ export const PaymentCardForm: React.FC<PaymentCardFormProps> = ({
                 placeholder="1234 5678 9012 3456"
                 value={formData.cardNumber}
                 onChange={handleCardNumberChange}
-                className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-ring focus:border-transparent"
                 maxLength={19}
                 disabled={loading || isVerifying}
               />
@@ -221,7 +221,7 @@ export const PaymentCardForm: React.FC<PaymentCardFormProps> = ({
                 placeholder="MM/YY"
                 value={formData.expiryDate}
                 onChange={handleExpiryChange}
-                className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-ring focus:border-transparent"
                 maxLength={5}
                 disabled={loading || isVerifying}
               />
@@ -235,7 +235,7 @@ export const PaymentCardForm: React.FC<PaymentCardFormProps> = ({
                 placeholder="123"
                 value={formData.cvv}
                 onChange={handleCvvChange}
-                className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-ring focus:border-transparent"
                 maxLength={4}
                 disabled={loading || isVerifying}
               />
@@ -251,7 +251,7 @@ export const PaymentCardForm: React.FC<PaymentCardFormProps> = ({
               placeholder="12345"
               value={formData.billingZip}
               onChange={handleBillingZipChange}
-              className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-ring focus:border-transparent"
               maxLength={10}
               disabled={loading || isVerifying}
             />

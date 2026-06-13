@@ -286,7 +286,7 @@ export const LeagueDetail: React.FC = () => {
         <div className="mb-6">
           <DashboardCard
             icon={<DollarSign className="h-6 w-6" />}
-            iconColor="text-emerald-600"
+            iconColor="text-success"
             title="Finances"
             description="Track expenses, dropped teams, projected income, and calculate end-of-season payouts."
             buttonText="Open Finances"
@@ -340,7 +340,7 @@ function ActionCard({
   if (showStartNextSeason) {
     const hasActive = !!activeSeason;
     return (
-      <div className="lg:bg-card lg:rounded-xl lg:shadow-sm p-6 flex flex-col items-center justify-center border-2 border-blue-200 bg-blue-50">
+      <div className="lg:bg-card lg:rounded-xl lg:shadow-sm p-6 flex flex-col items-center justify-center border-2 border-info/40 bg-info/10">
         <div className="text-6xl mb-4">📅</div>
         <h3 className="text-lg font-semibold text-foreground mb-2 text-center">
           Create Next Season

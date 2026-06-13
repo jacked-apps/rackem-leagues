@@ -1,20 +1,21 @@
 /**
- * @fileoverview OperatorOrgRow — per-organization sub-component for the
- * AppDrawer's Operator section.
+ * @fileoverview OperatorOrgRow — per-organization entry in the Operator nav
+ * section (shared by AppDrawer's OperatorSection + AppSidebar's
+ * SidebarOperatorSection).
  *
- * Each operator org gets one instance of this component, which owns the
- * `usePendingReportsCount(orgId)` hook for that org. Extracting the hook
- * into a per-org component keeps the React Rules of Hooks satisfied — the
- * number of hook calls per render of any given component is fixed by the
- * component shape, not by the number of orgs.
+ * Each operator org exposes two actions: its **Dashboard** and **Reports**
+ * (Reports carries the pending-reports doorbell badge — "Reports (N)" — so the
+ * operator gets nudged when reports are waiting). Create League was removed
+ * from the nav (its page/route still exists; may return later).
+ *
+ * Owns `usePendingReportsCount(orgId)` for its org — extracting the hook into a
+ * per-org component keeps the Rules of Hooks satisfied (a fixed hook count per
+ * render regardless of how many orgs exist).
  *
  * Two render modes:
- * - `flat` — used when the operator has exactly one org. Renders the three
- *   links (Dashboard / Create League / Reports) inline with no disclosure
- *   widget.
- * - `collapsible` — used when the operator has multiple orgs. Renders a
- *   native <details>/<summary> disclosure with the org name as the header,
- *   collapsed by default. Independent of any other org's open state.
+ * - `flat` — single-org operator: the links inline, no disclosure widget.
+ * - `collapsible` — multi-org operator: a native <details>/<summary> with the
+ *   org name as the header, collapsed by default and independent per org.
  */
 
 import { Link } from 'react-router-dom';
@@ -30,38 +31,26 @@ interface OperatorOrgRowProps {
   mode: 'flat' | 'collapsible';
 }
 
+const LINK_CLASS =
+  'flex min-h-11 items-center rounded-md px-3 py-2 text-sm text-primary transition-colors hover:bg-primary/10';
+
 /**
- * Renders the three org-scoped operator shortcuts for one organization.
+ * Renders the org-scoped operator shortcuts (Dashboard + Reports) for one org.
  * Owns its own `usePendingReportsCount` so the hook count per render is fixed.
  */
 export function OperatorOrgRow({ orgId, orgName, mode }: OperatorOrgRowProps) {
   const { count: pendingReports } = usePendingReportsCount(orgId);
-
   const reportsLabel = pendingReports > 0 ? `Reports (${pendingReports})` : 'Reports';
 
   const links = (
     <ul className="space-y-0.5">
       <li>
-        <Link
-          to={`/operator-dashboard/${orgId}`}
-          className="flex min-h-11 items-center rounded-md px-3 py-2 text-sm text-primary transition-colors hover:bg-primary/10"
-        >
+        <Link to={`/operator-dashboard/${orgId}`} className={LINK_CLASS}>
           Dashboard
         </Link>
       </li>
       <li>
-        <Link
-          to={`/create-league/${orgId}`}
-          className="flex min-h-11 items-center rounded-md px-3 py-2 text-sm text-primary transition-colors hover:bg-primary/10"
-        >
-          Create League
-        </Link>
-      </li>
-      <li>
-        <Link
-          to={`/operator-reports/${orgId}`}
-          className="flex min-h-11 items-center rounded-md px-3 py-2 text-sm text-primary transition-colors hover:bg-primary/10"
-        >
+        <Link to={`/operator-reports/${orgId}`} className={LINK_CLASS}>
           {reportsLabel}
         </Link>
       </li>

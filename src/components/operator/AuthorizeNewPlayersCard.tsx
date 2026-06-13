@@ -269,8 +269,8 @@ export const AuthorizeNewPlayersCard: React.FC<AuthorizeNewPlayersCardProps> = (
             className="flex items-center justify-between w-full text-left cursor-pointer"
           >
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-amber-100 rounded-lg">
-                <AlertCircle className="h-5 w-5 text-amber-600" />
+              <div className="p-2 bg-warning/10 rounded-lg">
+                <AlertCircle className="h-5 w-5 text-warning" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
@@ -315,7 +315,7 @@ export const AuthorizeNewPlayersCard: React.FC<AuthorizeNewPlayersCardProps> = (
                 <p className="text-sm">Loading...</p>
               </div>
             ) : unauthorizedPlayers.length === 0 ? (
-              <div className="flex items-center justify-center gap-2 py-4 text-green-600">
+              <div className="flex items-center justify-center gap-2 py-4 text-success">
                 <UserCheck className="h-5 w-5" />
                 <p className="text-sm font-medium">All players are authorized!</p>
               </div>
@@ -338,7 +338,7 @@ export const AuthorizeNewPlayersCard: React.FC<AuthorizeNewPlayersCardProps> = (
                 </Button>
               </div>
             ) : displayPlayers.length === 0 ? (
-              <div className="flex items-center justify-center gap-2 py-4 text-green-600">
+              <div className="flex items-center justify-center gap-2 py-4 text-success">
                 <UserCheck className="h-5 w-5" />
                 <p className="text-sm font-medium">All players are authorized!</p>
               </div>
@@ -386,7 +386,7 @@ export const AuthorizeNewPlayersCard: React.FC<AuthorizeNewPlayersCardProps> = (
                         #{player.system_player_number?.toString().padStart(5, '0')}
                         {player.bca_member_number && ` • BCA: ${player.bca_member_number}`}
                         <span
-                          className={`ml-2 ${player.gameCount >= 15 ? 'text-green-600 font-medium' : ''}`}
+                          className={`ml-2 ${player.gameCount >= 15 ? 'text-success font-medium' : ''}`}
                         >
                           • {player.gameCount} game{player.gameCount !== 1 ? 's' : ''}
                           {player.gameCount >= 15 && ' ✓'}

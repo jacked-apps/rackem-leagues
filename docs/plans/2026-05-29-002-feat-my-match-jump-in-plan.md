@@ -3,13 +3,15 @@ title: 'feat: Live-match jump-in ("My Match" shortcut)'
 type: feat
 status: active
 date: 2026-05-29
-deepened: 2026-05-29
+deepened: 2026-06-12
 origin: docs/brainstorms/2026-05-29-live-match-jumpin-requirements.md
 ---
 
 # feat: Live-match jump-in ("My Match" shortcut)
 
 > **Revision note (2026-05-29):** This plan was rewritten the same day after a multi-persona review caught five schema/code-fact errors and several mechanism gaps. The structure is unchanged; the corrections (real column names, real route shape, real toast library, realtime strategy, existing static-link removal, hydrating posture, explicit status non-goals) are folded inline. See the bottom of this file for the diff summary.
+
+> **Drift reconciliation (2026-06-12):** Re-verified against current `main` (this plan predates the BYE-team + auto-forfeit work that has since merged). Corrections folded inline — see "Drift reconciliation" at the bottom for the full list. Headlines: (1) the `matches` status `awaiting_verification` was **renamed to `updating`** (operator hand-entering scores — players must not score it; still correctly excluded from detection); (2) `forfeited` is **now actively written** by the 2026-06-11 auto-forfeit sweep, which shrinks the Tier-3 past-due-makeup population (swept matches drop out as `forfeited`); (3) cited line numbers have shifted — symbol/path references remain authoritative; (4) current `MatchPhaseGuard` **passes terminal statuses through to the lineup body's own post-match surface** rather than redirecting to `/live`, which simplifies the stale-destination risk; (5) added the OrgSwitcher-style bottom switcher as a second candidate host for the deferred multi-live swap (see origin doc R4).
 
 ## Overview
 
@@ -39,17 +41,17 @@ The "most used button in the game" doesn't exist yet — players walk a multi-st
 - No changes to the `/my-match` route's current placeholder file (`src/player/MyMatch.tsx`) — it stays a placeholder until the future Upcoming Matches brainstorm rebuilds it.
 - No Dashboard card, sticky banner, or other competing always-visible chrome — bottom-nav + drawer are the only surfaces.
 - No new visual chrome for the **future captain-doorbell indicator** that will also live on the bottom-bar (see `project_onboarding_cold_start_brainstorm`) — coordinate visual language only.
-- **Status coverage is explicitly limited to `scheduled` + `in_progress`.** The schema defines four other statuses (`awaiting_verification`, `forfeited`, `postponed`, `completed`); none are actively written by current app code paths (verified by grep — only `scheduled`, `in_progress`, `completed` appear in `src/`). `completed` matches are filtered out of detection. `awaiting_verification`, `forfeited`, `postponed` are out of scope and will simply not surface in either nav until a follow-up brainstorm decides how they should — the brainstorm-mandated `feedback_forfeit_is_consequential` deserves its own UI treatment, not a passive nav-list slot.
+- **Status coverage is explicitly limited to `scheduled` + `in_progress`.** The schema defines six statuses (`MatchStatus` in `src/api/queries/matches.ts`: `scheduled | updating | in_progress | completed | forfeited | postponed`). `completed` matches are filtered out of detection. `updating` (operator hand-entering scores — players must NOT score it), `forfeited`, and `postponed` are out of scope and simply do not surface in either nav until a follow-up brainstorm decides how they should — the brainstorm-mandated `feedback_forfeit_is_consequential` deserves its own UI treatment, not a passive nav-list slot. (2026-06-12: `awaiting_verification` from the original plan was renamed to `updating`; `forfeited` is now actively written by the auto-forfeit sweep — both are excluded by the `status IN ('in_progress','scheduled')` filter, so detection behaves correctly without change.)
 - **Existing page-local "quick jump to" buttons on Teams + Schedule pages** stay where they are at v1. The brainstorm called them "fall short" — the new always-visible chrome is the strict improvement; the page-local buttons can be removed in a follow-up cleanup once the new chrome is in production and proven.
 
 ### Deferred to Separate Tasks
 
 - **`/my-match` page redesign** → future "Upcoming Matches" brainstorm (cross-team week-at-a-glance).
-- **Multi-live swap UI** → PR #157's scoring gear workstream (the natural "I'm on the wrong one, switch me" host).
+- **Multi-live swap UI** → the bottom-nav auto-picks; a dedicated swap surface is where the user switches between two live matches. Two candidate hosts, to be chosen when that follow-up is built (see origin doc R4): (a) an **OrgSwitcher-style bottom switcher** on the scoreboard (the scoring page has no header, so it lives at the bottom and navigates between each live match's `/match/:matchId/score` route — URL stays the single source of truth, mirroring `src/components/OrgSwitcher.tsx`), or (b) **PR #157's scoring gear** workstream. Both consume the same `getMyMatchMatches` query this plan adds; nothing here precludes either.
 - **Captain-not-rostered detection** → revisit if real use shows it bites.
 - **Captain-doorbell indicator** → onboarding cascade workstream; coordinated visually but not built here.
 - **Page-local quick-jump cleanup on Teams/Schedule pages** → small follow-up after the new chrome is proven.
-- **`forfeited` / `awaiting_verification` / `postponed` status handling** → separate brainstorm when those statuses go live in app code.
+- **`updating` / `forfeited` / `postponed` status handling** → separate brainstorm for how (if at all) they should surface in My Match. (`forfeited` is now live via the 2026-06-11 auto-forfeit sweep; `updating` is the operator score-entry state. Both are intentionally excluded from detection here.)
 - **Pre-launch RLS pass** → the realtime broad-subscribe strategy (see Unit 2) must be tightened or replaced with per-team_id channels as part of the pre-launch RLS scope (`PRE_LAUNCH_CHECKLIST.md`).
 
 ## Context & Research
@@ -165,9 +167,9 @@ OperatorSection (operators only — unchanged)
 
 ## Implementation Units
 
-- [ ] **Unit 1: Team-scoped detection query**
+- [x] **Unit 1: Team-scoped detection query**
 
-**Goal:** Add `getMyMatchMatches(memberId)` to the queries layer — returns every match where the user is on `team_players` of the home or away team, filtered to the three actionable statuses (`in_progress` regardless of date, `scheduled` with `season_weeks.scheduled_date <= today`). Excludes future-scheduled matches and `completed`/`forfeited`/`awaiting_verification`/`postponed` matches.
+**Goal:** Add `getMyMatchMatches(memberId)` to the queries layer — returns every match where the user is on `team_players` of the home or away team, filtered to the two actionable statuses (`in_progress` regardless of date, `scheduled` with `season_weeks.scheduled_date <= today`). Excludes future-scheduled matches and all `completed`/`forfeited`/`updating`/`postponed` matches. (2026-06-12 note: the auto-forfeit sweep, `supabase/migrations/20260611000000_auto_forfeit_sweep.sql`, flips past-due captainless/BYE matches to `forfeited` daily — so the Tier-3 past-due-`scheduled` population is naturally limited to genuinely-playable makeups that haven't been swept. No code change needed; just be aware Tier 3 is sparser than the raw "scheduled in the past" set.)
 
 **Requirements:** R5.
 
@@ -200,7 +202,7 @@ OperatorSection (operators only — unchanged)
 - *Edge:* match where user is rostered on NEITHER team → excluded.
 - *Edge:* `status = 'completed'` with `scheduled_date = today` → excluded.
 - *Edge:* `status = 'scheduled'` with `scheduled_date > today` (future) → excluded.
-- *Edge:* `status = 'awaiting_verification'`, `'forfeited'`, `'postponed'` → all excluded (out of scope per Scope Boundaries).
+- *Edge:* `status = 'updating'`, `'forfeited'`, `'postponed'` → all excluded (out of scope per Scope Boundaries).
 - *Edge:* member with no `team_players` rows → returns empty.
 - *Edge:* user on BOTH teams of the same match (theoretical double-duty) → returned once, not duplicated.
 - *Error:* `memberId` is null/empty → returns empty without throwing.
@@ -211,7 +213,7 @@ OperatorSection (operators only — unchanged)
 
 ---
 
-- [ ] **Unit 2: Aggregate hook `useMyMatchSurfaces`**
+- [x] **Unit 2: Aggregate hook `useMyMatchSurfaces`**
 
 **Goal:** New aggregate hook that wraps Unit 1's query, owns the realtime subscription with a status-change guard, and resolves both:
 - **Bottom-nav state**: `{tier: 1 | 2 | 3 | 4, destinationMatchId: string | null, showLiveDot: boolean, isHydrating: boolean, isError: boolean}`.
@@ -276,7 +278,7 @@ OperatorSection (operators only — unchanged)
 
 ---
 
-- [ ] **Unit 3: Repurpose BottomTabBar Live tab → My Match**
+- [x] **Unit 3: Repurpose BottomTabBar Live tab → My Match**
 
 **Goal:** Rename the existing Live tab to "My Match," point its destination at the resolved match's lineup route, add the accent-dot live indicator (Tier 1 only), wire the hydrating posture, and dim + toast on Tier 4.
 
@@ -324,9 +326,9 @@ OperatorSection (operators only — unchanged)
 
 ---
 
-- [ ] **Unit 4: AppDrawer "My Match" section (replaces existing static link)**
+- [x] **Unit 4: AppDrawer "My Match" section (replaces existing static link)**
 
-**Goal:** Add a new "My Match" section to `AppDrawer.tsx`, structurally mirroring `OperatorSection`, and **remove the existing static `<DrawerLink to="/my-match" label="My Match" />` in `PlayerSection`** (line 163). The new section uses Unit 2's `drawerItems` + `isHydrating`. Single-purpose tap per row → that match's lineup page. Section hidden entirely when no items and not hydrating.
+**Goal:** Add a new "My Match" section to `AppDrawer.tsx`, structurally mirroring `OperatorSection`, and **remove the existing static `<DrawerLink to="/my-match" label="My Match" />` in `PlayerSection`** (~line 177 as of 2026-06-12 — locate by the symbol, not the number). The new section uses Unit 2's `drawerItems` + `isHydrating`. Single-purpose tap per row → that match's lineup page. Section hidden entirely when no items and not hydrating.
 
 **Requirements:** R2, R4 (drawer half), R6.
 
@@ -337,7 +339,7 @@ OperatorSection (operators only — unchanged)
 - Test: `src/components/layout/AppDrawer.test.tsx` (exists).
 
 **Approach:**
-- **Remove** the existing line in `PlayerSection`: `<DrawerLink to="/my-match" label="My Match" />` (currently at line 163). The new section subsumes it.
+- **Remove** the existing line in `PlayerSection`: `<DrawerLink to="/my-match" label="My Match" />` (currently ~line 177 — locate by symbol). The new section subsumes it.
 - Add a new `MyMatchSection({ items, isHydrating }: { items: DrawerItem[]; isHydrating: boolean })` component co-located in the same file, structurally cloned from `OperatorSection`:
   - `if (!isHydrating && items.length === 0) return null;` (hidden when empty and not loading).
   - If `isHydrating` and `items.length === 0`: render the section header alone with no rows (gives a stable layout target during the brief loading window without a misleading "no matches" message).
@@ -372,9 +374,9 @@ OperatorSection (operators only — unchanged)
 
 ---
 
-- [ ] **Unit 5: AppSidebar parity (desktop) — replaces existing static link**
+- [x] **Unit 5: AppSidebar parity (desktop) — replaces existing static link**
 
-**Goal:** Replace the existing static `<SidebarLink to="/my-match" label="My Match" />` in `SidebarPlayerSection` (line 117) with a state-driven entry that follows the same four-tier ladder + hydrating posture as the bottom-nav (not the drawer's listing behavior — the sidebar is the desktop-shaped version of the tab, not of the section).
+**Goal:** Replace the existing static `<SidebarLink to="/my-match" label="My Match" />` in `SidebarPlayerSection` (~line 120 as of 2026-06-12 — locate by symbol) with a state-driven entry that follows the same four-tier ladder + hydrating posture as the bottom-nav (not the drawer's listing behavior — the sidebar is the desktop-shaped version of the tab, not of the section).
 
 **Requirements:** R3, R6.
 
@@ -385,7 +387,7 @@ OperatorSection (operators only — unchanged)
 - Test: `src/components/layout/AppSidebar.test.tsx` (co-located, new).
 
 **Approach:**
-- In `SidebarPlayerSection` (the function that renders the player nav `<ul>`), **replace** the static `<SidebarLink to="/my-match" label="My Match" />` at line 117 with a new `<MyMatchSidebarEntry />` component (co-located in the same file).
+- In `SidebarPlayerSection` (the function that renders the player nav `<ul>`), **replace** the static `<SidebarLink to="/my-match" label="My Match" />` (~line 120 — locate by symbol) with a new `<MyMatchSidebarEntry />` component (co-located in the same file).
 - `MyMatchSidebarEntry` consumes `useMyMatchSurfaces(member?.id)` from the parent or pulls it via context; behavior:
   - **Hydrating**: render neutral (same visual as a regular `SidebarLink`), no dot, no `aria-disabled`. Click is a silent no-op.
   - **Tier 1**: state-driven `SidebarLink` with `to={`/match/${destinationMatchId}/lineup`}`; accent dot on; `sr-only` augment.
@@ -428,7 +430,7 @@ OperatorSection (operators only — unchanged)
 | Pre-launch RLS-off + broad realtime subscription = client receives status-change events for matches across ALL orgs/leagues | Acceptable pre-launch (client-side filter restricts what actually triggers invalidation; server-side query is correctly team-scoped). **Add to `PRE_LAUNCH_CHECKLIST.md`: tighten realtime channel scope or replace with per-team_id channels as part of the RLS pass.** |
 | Visual collision with the future captain-doorbell indicator (planned for the same bottom-bar) | Coordinate the accent-dot palette + slot now: the My Match dot lives on the My Match tab's icon; the doorbell will live on a different tab. Document the slot allocation in code comments when implementing Unit 3. Revisit when the cascade ships. |
 | Member team membership changes mid-session (added to a new team's roster) are not auto-detected | Documented limitation: the query key is `memberId`-only; `team_players` changes do not invalidate. Surface on next realtime invalidation or page reload. Revisit only if real-world use shows it bites. |
-| Tap-during-tier-transition lands on a `completed` match's lineup page | `MatchLineup`/`MatchPhaseGuard` should detect `completed` status and redirect to `/live` (existing fallback). Verify at integration test time. Not a new problem this plan introduces. |
+| Tap-during-tier-transition lands on a just-`completed`/`forfeited` match's lineup page | **Simplified (verified 2026-06-12):** the current `MatchPhaseGuard` treats `completed`/`forfeited`/`postponed` as KNOWN terminal statuses and **passes them through to the lineup body's own post-match surface** — it does not bounce to `/live`. So a jump-in is safe for any status; the user lands on a coherent post-match view, not a broken/blank page. No new redirect logic required. Verify the pass-through at integration test time. |
 | Multi-tab same-user realtime: two tabs each open a channel; UPDATE events fire twice per tab; tabs may briefly disagree on destination during transitions | Document as a known limitation. Each tab's hook is independently correct on next realtime tick. Singleton-by-context is a follow-up if it bites. |
 | Static My Match link removal (Units 4 + 5) could break user muscle memory | The new section/state-driven entry is in the same drawer/sidebar position, with the same label. Visual disruption is minimal; the new behavior is strictly more useful (tap goes to your actual match). |
 
@@ -495,4 +497,16 @@ Mechanism gaps closed:
 Verified by codebase greps (not assumed):
 - `prep_match` RPC writes `status = 'in_progress'` to the DB row.
 - No reschedule mechanism currently exists in the codebase (no `rescheduled_from`, no reschedule UI); the simple makeup predicate is correct for v1.
-- Active statuses in `src/`: `scheduled`, `in_progress`, `completed`. The other three are schema-defined but not actively used by app code.
+- Active statuses in `src/` (as of 2026-05-29): `scheduled`, `in_progress`, `completed`. *(See the 2026-06-12 reconciliation below — this has since changed.)*
+
+---
+
+## Drift reconciliation (2026-06-12)
+
+Re-verified against current `main`. The plan predates the merged BYE-team + auto-forfeit work; corrections folded inline above. Nothing about the 5-unit structure or core approach changed — only stale facts.
+
+1. **Status enum renamed + expanded.** `awaiting_verification` → **`updating`** (migration `20260605000000_matches_updating_status.sql`). Current `MatchStatus` (`src/api/queries/matches.ts`): `scheduled | updating | in_progress | completed | forfeited | postponed`. `updating` = operator hand-entering scores; players must not score it. Detection's `status IN ('in_progress','scheduled')` filter already excludes it — no logic change, only prose (Scope Boundaries, Unit 1 goal + test scenario, Deferred tasks).
+2. **`forfeited` is now actively written.** The 2026-06-11 auto-forfeit sweep (`supabase/migrations/20260611000000_auto_forfeit_sweep.sql`) flips past-due captainless/BYE matches to `forfeited` daily. Consequence: the **Tier-3 past-due-makeup population is sparser** than the raw "scheduled in the past" set (swept matches drop out as `forfeited`, which detection excludes). Correct behavior; noted in Unit 1 so test fixtures reflect it.
+3. **Stale-destination risk simplified.** Current `MatchPhaseGuard` passes `completed`/`forfeited`/`postponed` **through to the lineup body's own post-match surface** instead of redirecting to `/live`. A jump-in is therefore safe for any status with no new redirect logic. Risk row updated.
+4. **Line numbers drifted.** AppDrawer `OperatorSection` ~lines 192–225 (was 173–206); `PlayerSection` static My Match link ~line 177 (was 163); AppSidebar static link ~line 120 (was 117); `getLiveMatchesForMember` ~line 250 (was 249); lineup route in `NavRoutes.tsx` ~line 245 (was 219). Symbol/path references remain authoritative — locate by symbol, not number.
+5. **Multi-live swap host — second candidate added.** Origin doc R4 now records an **OrgSwitcher-style bottom switcher** on the scoreboard (`src/components/OrgSwitcher.tsx` mechanics: list + mark-current + navigate between each live match's `/score` route; sits at the bottom since the scoring page has no header) as an alternative to PR #157's scoring gear. Either host consumes this plan's `getMyMatchMatches`; the plan precludes neither. Deferred-tasks + multi-live-swap lines updated.

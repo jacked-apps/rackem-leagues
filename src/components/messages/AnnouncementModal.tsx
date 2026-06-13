@@ -187,15 +187,15 @@ export function AnnouncementModal({
       isOpen={true}
       onClose={onClose}
       title="Create Announcement"
-      icon={<Megaphone className="h-5 w-5 text-blue-600" />}
+      icon={<Megaphone className="h-5 w-5 text-info" />}
       maxWidth="2xl"
     >
       <Modal.Body className="p-0">
         {/* Selected Targets */}
         {selectedTargetIds.length > 0 && (
-          <div className="px-6 pt-4 border-b bg-blue-50">
+          <div className="px-6 pt-4 border-b bg-info/10">
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-sm font-medium text-blue-900">
+              <span className="text-sm font-medium text-info">
                 Selected ({selectedTargetIds.length})
               </span>
             </div>
@@ -203,7 +203,7 @@ export function AnnouncementModal({
               {selectedTargets.map((target) => (
                 <div
                   key={target.id}
-                  className="bg-card border border-blue-300 rounded-full px-3 py-1 text-sm flex items-center gap-2"
+                  className="bg-card border border-info/40 rounded-full px-3 py-1 text-sm flex items-center gap-2"
                 >
                   <span>
                     {target.name}
@@ -244,7 +244,7 @@ export function AnnouncementModal({
                   className={cn(
                     'w-full p-4 rounded-lg border-2 transition-all text-left',
                     selectedTargetIds.includes(target.id)
-                      ? 'border-blue-600 bg-blue-50'
+                      ? 'border-info bg-info/10'
                       : 'border-border hover:border-border hover:bg-muted'
                   )}
                 >

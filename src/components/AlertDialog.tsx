@@ -47,27 +47,27 @@ export const AlertDialog: React.FC<AlertDialogProps> = ({
     switch (type) {
       case 'success':
         return {
-          titleColor: 'text-green-900',
-          bgColor: 'bg-green-50',
-          borderColor: 'border-green-200',
+          titleColor: 'text-success',
+          bgColor: 'bg-success/10',
+          borderColor: 'border-success/40',
         };
       case 'warning':
         return {
-          titleColor: 'text-yellow-900',
-          bgColor: 'bg-yellow-50',
-          borderColor: 'border-yellow-200',
+          titleColor: 'text-warning',
+          bgColor: 'bg-warning/10',
+          borderColor: 'border-warning/40',
         };
       case 'error':
         return {
-          titleColor: 'text-red-900',
-          bgColor: 'bg-red-50',
-          borderColor: 'border-red-200',
+          titleColor: 'text-destructive',
+          bgColor: 'bg-destructive/10',
+          borderColor: 'border-destructive/40',
         };
       default: // info
         return {
-          titleColor: 'text-blue-900',
-          bgColor: 'bg-blue-50',
-          borderColor: 'border-blue-200',
+          titleColor: 'text-info',
+          bgColor: 'bg-info/10',
+          borderColor: 'border-info/40',
         };
     }
   };

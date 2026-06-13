@@ -210,17 +210,17 @@ export const LeagueStatusCard: React.FC<LeagueStatusCardProps> = ({
       case 'in_session':
         return {
           label: 'In Session',
-          classes: 'bg-blue-100 text-blue-800'
+          classes: 'bg-info/10 text-info'
         };
       case 'ready':
         return {
           label: 'Ready to Play',
-          classes: 'bg-green-100 text-green-800'
+          classes: 'bg-success/10 text-success'
         };
       case 'setup':
         return {
           label: 'Setup Needed',
-          classes: 'bg-orange-100 text-orange-800'
+          classes: 'bg-warning/10 text-warning'
         };
     }
   };
@@ -309,9 +309,9 @@ export const LeagueStatusCard: React.FC<LeagueStatusCardProps> = ({
           captains chat, playoffs are already configured), so no "season
           management" to-do list is shown — just the status + progress above. */}
       {!activeSeason && (
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="font-semibold text-blue-900 mb-2">Next Steps</h3>
-          <ol className="list-decimal list-inside text-blue-800 space-y-1">
+        <div className="mt-6 bg-info/10 border border-info/40 rounded-lg p-4">
+          <h3 className="font-semibold text-info mb-2">Next Steps</h3>
+          <ol className="list-decimal list-inside text-foreground space-y-1">
             {SETUP_STEP_LABELS.map((label, i) => {
               const done = setup.stepsDone[i];
               const current = i === setup.firstIncompleteIndex;
@@ -324,7 +324,7 @@ export const LeagueStatusCard: React.FC<LeagueStatusCardProps> = ({
                 <li key={label} className={className}>
                   {label}
                   {current && (
-                    <span className="ml-2 text-xs font-normal text-blue-700">
+                    <span className="ml-2 text-xs font-normal text-info">
                       ← do this next
                     </span>
                   )}

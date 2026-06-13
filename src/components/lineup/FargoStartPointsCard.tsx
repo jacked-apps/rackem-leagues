@@ -89,7 +89,7 @@ export function FargoStartPointsCard({
   };
 
   return (
-    <Card className="border-blue-300 bg-blue-50">
+    <Card className="border-info/40 bg-info/10">
       <CardHeader>
         <CardTitle className="text-lg">Confirm Start Points</CardTitle>
       </CardHeader>
@@ -136,7 +136,7 @@ export function FargoStartPointsCard({
             )}
 
             {!computedMatchesCurrent && computedDefault !== null && (
-              <p className="text-xs text-amber-700">
+              <p className="text-xs text-warning">
                 Note: current proposal differs from the computed default (
                 {computedDefault}).
               </p>

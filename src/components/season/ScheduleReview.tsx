@@ -11,7 +11,7 @@ import { InfoButton } from '../InfoButton';
 
 const WeekOffReasonModal = lazy(() => import('@/components/modals/WeekOffReasonModal').then(m => ({ default: m.WeekOffReasonModal })));
 import { generateSchedule } from '@/utils/scheduleUtils';
-import { detectScheduleConflicts } from '@/utils/conflictDetectionUtils';
+import { detectScheduleConflicts, extractHolidayName } from '@/utils/conflictDetectionUtils';
 import { parseLocalDate } from '@/utils/formatters';
 import { STORAGE_KEYS } from '@/constants/scheduleConflicts';
 import type { ScheduleReviewProps } from '@/types/scheduleReview';
@@ -134,15 +134,6 @@ export const ScheduleReview: React.FC<ScheduleReviewProps> = ({
     );
 
     setSchedule(scheduleWithConflicts);
-  };
-
-  /**
-   * Extracts holiday name from conflict name by removing timing description
-   * Example: "Christmas (Saturday 2 days before)" -> "Christmas"
-   */
-  const extractHolidayName = (conflictName: string): string => {
-    const parenIndex = conflictName.indexOf(' (');
-    return parenIndex !== -1 ? conflictName.substring(0, parenIndex) : conflictName;
   };
 
   /**
@@ -333,12 +324,12 @@ export const ScheduleReview: React.FC<ScheduleReviewProps> = ({
 
           {/* Conflict Summary */}
           {totalConflicts > 0 && (
-            <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-              <p className="text-orange-800 font-medium">
+            <div className="mb-6 p-4 bg-warning/10 border border-warning/40 rounded-lg">
+              <p className="text-warning font-medium">
                 ⚠️ {totalConflicts} conflict{totalConflicts > 1 ? 's' : ''}{' '}
                 detected
               </p>
-              <p className="text-orange-700 text-sm mt-1">
+              <p className="text-warning text-sm mt-1">
                 Review the conflicts below and either skip the week or ignore
                 the conflict.
               </p>
@@ -377,8 +368,7 @@ export const ScheduleReview: React.FC<ScheduleReviewProps> = ({
               <Button
                 type="button"
                 onClick={() => onConfirm('teams')}
-                className="flex-1"
-                style={{ backgroundColor: '#2563eb', color: 'white' }}
+                className="flex-1 bg-primary text-primary-foreground"
                 loadingText="Saving..."
               >
                 Save & Continue →

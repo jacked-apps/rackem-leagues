@@ -46,7 +46,7 @@ const POINTS_CALCULATOR_OPTIONS: SelectableCardOption<string>[] = [
             <li><strong>Tie band:</strong> tie_threshold ≤ games_won ≤ win_threshold → 0 (always)</li>
             <li><strong>Below-tie:</strong> games_won &lt; tie_threshold → (games_won − tie_threshold) × multiplier</li>
           </ul>
-          <p className="text-xs text-gray-600">
+          <p className="text-xs text-muted-foreground">
             Default multiplier = 1. The tie band always returns 0 regardless of multiplier — locked invariant.
           </p>
         </div>
@@ -68,7 +68,7 @@ const POINTS_CALCULATOR_OPTIONS: SelectableCardOption<string>[] = [
             <li>At 70% of win threshold: jumps to 1.5 points, then 0.1 per additional game</li>
             <li>At win threshold: jumps to 3.0 points, then 0.1 per additional game</li>
           </ul>
-          <p className="text-xs text-gray-600">
+          <p className="text-xs text-muted-foreground">
             Monotonic — points only go up. Suited for win-threshold leagues that reward incremental progress.
           </p>
         </div>
@@ -89,7 +89,7 @@ const POINTS_CALCULATOR_OPTIONS: SelectableCardOption<string>[] = [
             <li><strong>Winner:</strong> default 10 points (configurable, fixed)</li>
             <li><strong>Loser:</strong> default counter, balls pocketed by loser (0–7 for 8-ball)</li>
           </ul>
-          <p className="text-xs text-gray-600">
+          <p className="text-xs text-muted-foreground">
             Each game's contribution is summed into the team total. Margin within a game matters.
           </p>
         </div>
@@ -138,7 +138,7 @@ export function PointsCalculatorStep({
               same modular pipeline runs every league regardless of
               which formula they pick.
             </p>
-            <p className="text-xs text-gray-600">
+            <p className="text-xs text-muted-foreground">
               Custom params (multiplier values, milestone percentages,
               winner/loser scoring) use Tested Preset defaults today.
               Per-league param editing arrives in a follow-up.

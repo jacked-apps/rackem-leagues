@@ -54,10 +54,10 @@ export const VenueTableSummaryCard: React.FC<VenueTableSummaryCardProps> = ({
     .sort((a, b) => a.number - b.number);
 
   return (
-    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+    <div className="bg-info/10 border border-info/40 rounded-lg p-4 space-y-3">
       {/* Header with total and configure button */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-blue-800">
+        <p className="text-sm text-foreground">
           <strong>Total Tables:</strong> {totalTables}
         </p>
         {totalTables > 0 && onConfigure && (
@@ -65,7 +65,7 @@ export const VenueTableSummaryCard: React.FC<VenueTableSummaryCardProps> = ({
             variant="ghost"
             size="sm"
             onClick={onConfigure}
-            className="h-7 px-2 text-blue-700 hover:text-blue-900 hover:bg-blue-100"
+            className="h-7 px-2 text-info hover:text-info hover:bg-info/10"
           >
             <Settings2 className="h-4 w-4 mr-1" />
             Configure
@@ -78,10 +78,10 @@ export const VenueTableSummaryCard: React.FC<VenueTableSummaryCardProps> = ({
         <div className="flex flex-wrap gap-2">
           {allTables.map((table, index) => (
             <div key={`${table.sizeLabel}-${table.number}-${index}`} className="flex flex-col items-center">
-              <span className="inline-flex items-center justify-center w-8 h-8 text-sm font-medium bg-card text-blue-700 rounded border border-blue-300">
+              <span className="inline-flex items-center justify-center w-8 h-8 text-sm font-medium bg-card text-info rounded border border-info/40">
                 {table.number}
               </span>
-              <span className="text-[10px] text-blue-600 mt-0.5">
+              <span className="text-[10px] text-info mt-0.5">
                 {table.sizeLabel}
               </span>
             </div>
@@ -91,7 +91,7 @@ export const VenueTableSummaryCard: React.FC<VenueTableSummaryCardProps> = ({
 
       {/* Capacity */}
       {totalTables > 0 && (
-        <p className="text-xs text-blue-600 pt-2 border-t border-blue-200">
+        <p className="text-xs text-info pt-2 border-t border-info/40">
           Capacity: {totalTables} travel teams / {totalTables * 2} in-house teams
         </p>
       )}

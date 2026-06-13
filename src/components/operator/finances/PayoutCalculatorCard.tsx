@@ -142,7 +142,7 @@ export function PayoutCalculatorCard({
     <Card className="border-blue-200 dark:border-blue-900">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
-          <Calculator className="h-5 w-5 text-blue-600" />
+          <Calculator className="h-5 w-5 text-info" />
           Payout Calculator
         </CardTitle>
       </CardHeader>

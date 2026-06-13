@@ -405,7 +405,7 @@ export function InvitePlayerModal({
                     {/* Show different message based on invite status */}
                     {hasExistingInvite ? (
                       <div className="space-y-1">
-                        <p className="text-xs text-amber-600 flex items-center gap-1">
+                        <p className="text-xs text-warning flex items-center gap-1">
                           <AlertTriangle className="h-3 w-3" />
                           Email locked. League Operator must cancel invite to change email.
                         </p>
@@ -416,7 +416,7 @@ export function InvitePlayerModal({
                         )}
                       </div>
                     ) : (
-                      <p className="text-xs text-green-600 flex items-center gap-1">
+                      <p className="text-xs text-success flex items-center gap-1">
                         <Check className="h-3 w-3" />
                         Email on file - ready to send invite
                       </p>
@@ -498,21 +498,21 @@ export function InvitePlayerModal({
 
                 {/* Show existing invite status if applicable */}
                 {hasTeamContext && (hasExistingInvite || hasExpiredInvite) && existingInvite && (
-                  <div className={`p-3 rounded-lg border ${hasExpiredInvite ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200'}`}>
+                  <div className={`p-3 rounded-lg border ${hasExpiredInvite ? 'bg-warning/10 border-warning/40' : 'bg-success/10 border-success/40'}`}>
                     <div className="flex items-center gap-2 text-sm">
                       {hasExpiredInvite ? (
-                        <AlertTriangle className="h-4 w-4 text-amber-600" />
+                        <AlertTriangle className="h-4 w-4 text-warning" />
                       ) : (
-                        <Mail className="h-4 w-4 text-green-600" />
+                        <Mail className="h-4 w-4 text-success" />
                       )}
-                      <span className={hasExpiredInvite ? 'text-amber-800' : 'text-green-800'}>
+                      <span className={hasExpiredInvite ? 'text-warning' : 'text-success'}>
                         {hasExpiredInvite
                           ? 'Previous invite has expired'
                           : `Invite sent ${new Date(existingInvite.createdAt).toLocaleDateString()}`}
                       </span>
                     </div>
                     {hasExistingInvite && (
-                      <p className="text-xs text-green-700 mt-1">
+                      <p className="text-xs text-success mt-1">
                         Expires {new Date(existingInvite.expiresAt || '').toLocaleDateString()}
                       </p>
                     )}
@@ -576,7 +576,7 @@ export function InvitePlayerModal({
                 </p>
 
                 {!email.trim() && (
-                  <p className="text-xs text-amber-600">Enter and save an email above to enable these options.</p>
+                  <p className="text-xs text-warning">Enter and save an email above to enable these options.</p>
                 )}
               </div>
 

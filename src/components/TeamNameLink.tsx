@@ -92,7 +92,7 @@ export function TeamNameLink({
     return (
       <span
         className={cn(
-          'text-blue-600 font-medium',
+          'text-info font-medium',
           className
         )}
       >
@@ -106,7 +106,7 @@ export function TeamNameLink({
       <PopoverTrigger asChild>
         <button
           className={cn(
-            'text-blue-600 hover:text-blue-800 hover:underline cursor-pointer font-medium transition-colors',
+            'text-info hover:text-info hover:underline cursor-pointer font-medium transition-colors',
             className
           )}
         >
@@ -141,7 +141,7 @@ export function TeamNameLink({
                     </span>
                   </div>
                   {player.is_captain && (
-                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                    <span className="text-xs bg-info/10 text-info px-2 py-0.5 rounded">
                       Captain
                     </span>
                   )}

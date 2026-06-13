@@ -91,7 +91,7 @@ export const SimpleRadioChoice: React.FC<SimpleRadioChoiceProps> = ({
             {selectedValue === choice.value ? (
               // Selected: Show as card with blue background
               <Card
-                className="border-blue-500 bg-blue-50 cursor-pointer transition-all duration-200"
+                className="border-info/40 bg-info/10 cursor-pointer transition-all duration-200"
                 onClick={() => onSelect(choice.value)}
                 role="radio"
                 aria-checked={true}
@@ -121,7 +121,7 @@ export const SimpleRadioChoice: React.FC<SimpleRadioChoiceProps> = ({
                     <div className="flex items-center space-x-2 flex-1">
                       <span className="text-foreground font-medium">{choice.label}</span>
                       {choice.subtitle && (
-                        <span className="text-sm text-blue-600 font-medium">
+                        <span className="text-sm text-info font-medium">
                           {choice.subtitle}
                         </span>
                       )}
@@ -130,15 +130,15 @@ export const SimpleRadioChoice: React.FC<SimpleRadioChoiceProps> = ({
 
                   {/* Explanation appears inside the selected card */}
                   {(choice.description || choice.warning) && (
-                    <div className="mt-3 pt-3 border-t border-blue-200">
+                    <div className="mt-3 pt-3 border-t border-info/40">
                       {choice.description && (
-                        <p className="text-blue-800 text-sm mb-2">
+                        <p className="text-foreground text-sm mb-2">
                           {choice.description}
                         </p>
                       )}
                       {choice.warning && (
-                        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-2">
-                          <p className="text-yellow-800 text-sm font-medium">
+                        <div className="bg-warning/10 border border-warning/40 rounded-md p-2">
+                          <p className="text-warning text-sm font-medium">
                             ⚠️ {choice.warning}
                           </p>
                         </div>
@@ -178,7 +178,7 @@ export const SimpleRadioChoice: React.FC<SimpleRadioChoiceProps> = ({
                   <div className="flex items-center space-x-2 flex-1">
                     <span className="text-foreground font-medium">{choice.label}</span>
                     {choice.subtitle && (
-                      <span className="text-sm text-blue-600 font-medium">
+                      <span className="text-sm text-info font-medium">
                         {choice.subtitle}
                       </span>
                     )}

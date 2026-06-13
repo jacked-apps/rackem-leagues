@@ -24,7 +24,7 @@ import type { WeekEntry, ChampionshipEvent } from '@/types/season';
 import type { League } from '@/types/league';
 import { formatLocalDate, parseLocalDate } from '@/utils/formatters';
 import { fetchHolidaysForSeason } from '@/utils/holidayUtils';
-import { detectScheduleConflicts } from '@/utils/conflictDetectionUtils';
+import { detectScheduleConflicts, extractHolidayName } from '@/utils/conflictDetectionUtils';
 import { fetchChampionshipDateOptions, type ChampionshipDateOption } from '@/utils/tournamentUtils';
 
 interface SeasonData {
@@ -60,6 +60,9 @@ export const SeasonScheduleManager: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showWeekOffModal, setShowWeekOffModal] = useState(false);
   const [selectedWeekIndex, setSelectedWeekIndex] = useState<number | null>(null);
+  // Pre-filled reason for the week-off modal — the conflict's name when the
+  // selected week already carries a conflict flag, else blank.
+  const [weekOffInitialReason, setWeekOffInitialReason] = useState('');
   // Pre-edit snapshot, captured on the first change. Non-null === the operator has
   // unsaved changes they can revert. Save just clears it; Revert restores it.
   const [snapshot, setSnapshot] = useState<ScheduleSnapshot | null>(null);
@@ -343,7 +346,13 @@ export const SeasonScheduleManager: React.FC = () => {
         skipType: decision.skipType,
       });
     } else {
-      // prompt-blackout: a regular week needs an operator reason first.
+      // prompt-blackout: a regular week needs an operator reason first. If the
+      // week already carries a conflict flag (e.g. a holiday), seed the modal with
+      // that name so the operator isn't retyping what the app already knows.
+      // Capped at 20 chars to satisfy the modal's limit; the operator can edit it.
+      setWeekOffInitialReason(
+        week.conflicts?.[0] ? extractHolidayName(week.conflicts[0].name).slice(0, 20) : '',
+      );
       setSelectedWeekIndex(index);
       setShowWeekOffModal(true);
     }
@@ -357,6 +366,7 @@ export const SeasonScheduleManager: React.FC = () => {
     setShowWeekOffModal(false);
     const index = selectedWeekIndex;
     setSelectedWeekIndex(null);
+    setWeekOffInitialReason('');
     if (index === null) return;
     const week = schedule[index];
     if (!week?.dbId) return;
@@ -519,9 +529,11 @@ export const SeasonScheduleManager: React.FC = () => {
         <Suspense fallback={null}>
           <WeekOffReasonModal
             isOpen={showWeekOffModal}
+            initialReason={weekOffInitialReason}
             onCancel={() => {
               setShowWeekOffModal(false);
               setSelectedWeekIndex(null);
+              setWeekOffInitialReason('');
             }}
             onConfirm={handleAddBlackout}
           />

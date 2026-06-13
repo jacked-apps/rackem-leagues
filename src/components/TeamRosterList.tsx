@@ -54,7 +54,7 @@ export const TeamRosterList: React.FC<TeamRosterListProps> = ({
               playerName={`${member.first_name} ${member.last_name} ${formatPartialMemberNumber(member)}`}
             />
             {tp.is_captain && (
-              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+              <span className="text-xs bg-info/10 text-info px-2 py-0.5 rounded">
                 Captain
               </span>
             )}

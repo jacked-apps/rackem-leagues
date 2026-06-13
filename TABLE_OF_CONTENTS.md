@@ -106,6 +106,7 @@
 | `docs/brainstorms/2026-06-04-scoring-system-workshop-building-requirements.md` | Foundational framing: Scoring System Workshop is a BUILDING with one work room per module type; build room-by-room starting with the per-game point allocator; two non-negotiables (lineup/scoring page renders + per-game W/L recording survives any variation failure) | Foundation for all subsequent Scoring System workshop plans; branch `feat/per-game-allocator-workshop` |
 | `docs/brainstorms/lo-manual-match-scoring-requirements.md` | Requirements for LO manual match scoring (enter a played-on-paper match from blank) | Two-phase Setup→Entry page; reuses engine/recompute/scoreboard/modal + thin LO dual-slot write+finalize; v1 enter-from-blank only; based on many-eyes stack (PR #157) |
 | `docs/brainstorms/lo-match-review-and-correction-requirements.md` | Requirements for LO view/edit of an ALREADY-scored match (take-over/adjust; dispute adjudication) | Operator-authoritative; per-game confirmer-audit (official + "+N others"); solo vacate-and-rescore appends operator override row + optional reason; explicit completed→reopen→re-finalize lifecycle; roster-identity fixes → v3; stacks on v1 (PR #167) |
+| `docs/brainstorms/2026-06-12-team-page-schedule-refinement-sketch.md` | SKETCH (not full requirements) — team-page declutter (split glance/play from Manage Team; captain overload) + schedule refinement, done "with click-through in mind" | Deliberately deferred until "My Match" ships (My Match lifts the fast-path duty off these pages); full `/ce:brainstorm` after that. Sibling to the 2026-05-29 My Match doc |
 | `/docs/plans/` | **CE implementation plans** | Output of `/compound-engineering:ce-plan` |
 | `docs/archive/plans/2026-04-17-001-feat-official-rulebook-reader-plan.md` | Implementation plan for the Official Rulebook Reader | 6 units, active branch `feature/official-rulebook-reader` |
 | `docs/archive/plans/2026-04-27-001-feat-global-header-nav-rework-plan.md` | Implementation plan for the global header & navigation rework | 9 units in 3 phases, active branch `fix/header-mobile-rework` |
@@ -550,6 +551,7 @@ how to add a new test, demo recording, cleanup model).
 - `request-team-join.test.ts` - **Onboarding cascade / Unit 3** — exercises the `request_team_join` RPC guard matrix (not_authenticated / invalid_token / no_member / already_member / full / invalid_claim / spot_taken) + happy self-add, happy claim, idempotent already_pending. Each case runs under a tx-scoped JWT and rolls back. 11 tests.
 - `approve-join-request.test.ts` - **Onboarding cascade / Unit 4** — exercises `approve_join_request`: not_authenticated / invalid_action / not_found / already_handled / not_authorized + Decline, Add, Replace (real merge), no_placeholder, nullable-captain→staff path. Tx-scoped JWT, rolls back. 11 tests.
 - `join-requests-for-approver.test.ts` - **Onboarding cascade / Unit 5 (read)** — exercises `get_join_requests_for_approver`: anonymous/no-member → []; captain sees labeled pending request; excludes non-pending + expired; non-approver sees nothing; de-dup when captain is also staff. Tx-scoped JWT. 6 tests.
+- `approve-surface-roster.test.ts` - **Approve surface / richer cards (Unit 1)** — exercises `get_team_roster_for_approver` (captain row flagged + registered/claimable consistent; captain always present even when only in `teams.captain_id`; non-approver/anon → []) + the feed's new captain summary (`captain_is_placeholder` true on a placeholder-captain team, false on a registered-captain team). Tx-scoped JWT. 7 tests.
 - `my-approved-join-requests.test.ts` - **Onboarding cascade / Unit 3 (notify)** — exercises `get_my_approved_join_requests` + `acknowledge_join_request`: anonymous → []; owner sees approved-unacknowledged with labels; pending excluded; acknowledge removes it; can't ack someone else's. Tx-scoped JWT. 6 tests.
 - `join-link-distribution.test.ts` - **Onboarding cascade / Unit 7** — exercises `rotate_team_join_token` (captain/staff rotates; non-approver can't) + `get_org_teams_for_onboarding` (staff sees team+captain+token; non-staff → []). Tx-scoped JWT. 5 tests.
 - `per-game-allocator-schema.test.ts` - **Scoring System Workshop — Per-Game Allocator Room Unit 1** — schema verification for the `per_game_allocators` table + cascade. 15 tests: 5 seeded officials (Percent 5-Man, 10-Point, 17-Point, 17-Point (Single Formula), Empty Starter) present with author_id IS NULL; 10-Point loser side is a labeled range; both 17-Points use `evaluate_expression` with the expected expression tree shape; CHECK rejects scope outside ('official','user'); CHECK rejects scope=user with NULL author_id; CHECK rejects scope=official with non-NULL author_id; tamper trigger blocks UPDATE on officials; tamper trigger blocks DELETE on officials; `preferences.per_game_allocator_id` is a nullable UUID; FK is ON DELETE RESTRICT to `per_game_allocators(id)`; resolved view exposes the new column. 2 tests skipped pending seeded auth.users fixture (user-row insert + FK RESTRICT-while-in-use).
@@ -670,7 +672,16 @@ The workshop building. One sub-folder per module room. Each room owns a list pag
 - `SeasonSchedulePage.tsx` - Season schedule page
 
 **Team & Venue Management**
-- `TeamManagement.tsx` - Team management interface
+- `TeamManagement.tsx` - The standalone `/manage-teams` edit page — now a ~100-line thin wrapper: page chrome (header + footer) around `TeamManagementContent`. (Decomposed from an 860-line god-component; advances LIST_FOR_ED #5.)
+- `TeamManagementContent.tsx` - The reusable Manage Teams editing area with NO page chrome — wires the data hook + the focused logic hooks + derived stats into the panels + modals, and exposes a `renderFooter` slot so each wrapper (edit page vs season-setup step) supplies its own exit. Shared by both contexts.
+- `SetupTeamsPage.tsx` - The season-setup chain's Teams step (`/league/:leagueId/season/:seasonId/setup-teams`): same `TeamManagementContent` as the edit page, but footer = "Save & Exit → league" + "Continue → Playoffs." The setup chain (`SeasonCreationWizard` → here → `PlayoffsSetupWizard` → `ScheduleSetupPage`) points here, so the standalone edit page stays free of playoffs knowledge. See `docs/conventions/standalone-vs-flow-pages.md`.
+- `team-management/SetupSummaryCard.tsx` - Presentational "Setup Summary" card (league type, venue/table counts, teams-vs-max).
+- `team-management/VenuesPanel.tsx` - Presentational "League Venues" section (select-all, per-venue assign toggle + table-limit entry, empty/add-venue state); derives assigned/capacity/teams-at-venue from its props.
+- `team-management/TeamsPanel.tsx` - Presentational "Teams" section (Add Team + its guards, Import-from-last-season, open-BYE warning, empty states, team list).
+- `team-management/teamSetupStats.ts` - Pure `computeTeamSetupStats` — league type, table capacity, max-teams ceiling, and open-BYE derivation.
+- `team-management/useVenueAssignment.ts` - Venue-side logic hook (assign/unassign, select-all, table-limit modal, venue creation) + its state.
+- `team-management/useTeamActions.ts` - Team-side logic hook (editor modal state, delete with match-count guard, row expansion, default name).
+- `team-management/useTeamImport.ts` - "Import from Last Season" hook (confirm + read prev-season data; copy still stubbed).
 - `TeamEditorModal.tsx` - Team editor modal
 - `VenueManagement.tsx` - Venue management
 - `VenueLimitModal.tsx` - Venue table-limits modal (chrome only; logic in useVenueTableLimits)
@@ -714,7 +725,7 @@ The workshop building. One sub-folder per module room. Each room owns a list pag
 - `components/JoinSubmitStep.tsx` - **Unit 3.** Signed-in member's "ask to join" step. The generic team link carries no identity, so there's **no name-picker** — the joiner just asks to join as himself and the captain makes the match at the gate (see `JoinRequestCard`). Always self-adds (no claimed_member_id); maps guard reasons (full / already_member) to inline copy.
 - `components/JoinStatusCard.tsx` - **Unit 3.** Presentational centered status card reused by every join state.
 - `components/JoinRequestList.tsx` - **Unit 5.** The approve surface (one component, two scopes): owns the approve mutation + a short lead-in, and renders each request as a `JoinRequestCard`. Mounted in MyTeams (captain) + OperatorDashboard (LO); renders nothing when empty.
-- `components/JoinRequestCard.tsx` - **Unit 5.** One self-guiding request card: "{name} accepted the invite", then — when the team has placeholders — an inline "is this one of your players?" name list (tap a name → confirm → merge/replace) + a "just add them" fallback; no placeholders → single "Add to the team". Tap-a-name confirm splits on the record flag: has-record → "same person?" merge copy (notes an operator can unmerge); no-record → plain "add to team". Decline always confirms.
+- `components/JoinRequestCard.tsx` - **Unit 5 + Approve-surface richer cards.** A scannable collapsed summary — "{name} accepted the invite", team · league, and a "Captain spot still open" chip when `captain_is_placeholder` — that expands to the team's FULL roster via `useTeamRosterForApprover`: claimable placeholder spots as tap-to-connect targets (captain flagged + first; tap → confirm → merge/replace, "Make captain" copy for the captain spot), registered members as non-tappable "Already on the team" context. No open spot → single "Add to the team". **Footgun guard:** when the team has any open spot the incomer might fill (placeholder OR still-placeholder captain), "just add as new" is a deliberate confirmed action; the guard keys off the feed flags so a failed roster fetch can't silently re-open it. Decline always confirms. Roster fetched per-card, only on expand.
 - `components/JoinRequestList.test.tsx` - Approve-surface flow (8 cases): guided card, inline merge confirm (record vs no-record copy), just-add fallback, decline. Requests/approve/placeholder hooks mocked.
 - `landingTeam.ts` + `landingTeam.test.ts` - **Unit 8.** `defaultOpenTeamId(teamIds)` — pure helper deciding which team accordion to auto-expand on MyTeams (single team → open it so its existing Quick Score card is front-and-center; several → leave collapsed). Reuse, not rebuild: no parallel match hook, no MyMatch.
 - `InviteMyTeamButton.tsx` - **Unit 7.** Captain's "Invite my team": shares the /join/:token link via ShareLinkSection (now also passing a ready-to-send `shareMessage` naming the captain), a "generate new link" rotate affordance, a dismissible first-run tip (localStorage), and a `?` InfoButton (`InviteHelpContent`). Mounted per captained team in MyTeams.
@@ -852,11 +863,15 @@ LO-authored rules layered on top of the CSI rulebook. Org-wide rules cascade int
 Shared chrome that wraps all authenticated routes. `MemberLayout` is mounted by `NavRoutes.tsx` as a parent route; child routes render into its `<Outlet/>`.
 
 - `MemberLayout.tsx` - Persistent layout shell. Desktop: left sidebar (`<AppSidebar>`). Mobile: bottom tab bar (`<BottomTabBar>`). Also hosts global features previously on the Dashboard (e.g., pending-invites modal). Pages still own their own `<PageHeader>`.
-- `AppSidebar.tsx` - Desktop persistent sidebar — brand, primary nav, theme toggle, drawer trigger. Auth-aware: minimal chrome for public visitors, full nav for logged-in users.
-- `BottomTabBar.tsx` - Mobile fixed bottom tab bar (Home / Teams / Messages / Stats / Drawer). Auth-aware like the sidebar.
-- `AppDrawer.tsx` - Slide-in drawer with secondary nav (profile, settings, operator-org switcher, sign-out). Drawer is the home for nav items that don't fit on the sidebar/tab bar.
+- `AppSidebar.tsx` - Desktop persistent sidebar — brand, primary nav, theme toggle, drawer trigger. Auth-aware: minimal chrome for public visitors, full nav for logged-in users. Renders the shared **`MyMatchPanel`** at the top (mirrors the drawer's Live/Makeup chips + lists), replacing the old static `/my-match` link.
+- `AppSidebar.test.tsx` - Tests that the sidebar wires in the My Match panel (chips + matchup, chip switching, hidden-when-empty).
+- `MyMatchPanel.tsx` - **✅ Shared My Match panel** used by BOTH the drawer and the desktop sidebar (so they can't drift). Live/Makeup filter chips (icons on phones, text on `sm+`), radio-select with a 0-count chip dimmed/disabled; revealed list under a small heading; rows lead with date + matchup that wraps instead of truncating. `inSheet` wraps rows in `SheetClose` for the drawer.
+- `BottomTabBar.tsx` - Mobile fixed bottom tab bar (My Teams / My Match / Messages / Profile, + Manage for operators). Auth-aware like the sidebar. Generic tabs render via a local `TabLink`; the My Match slot renders `<MyMatchTab>`.
+- `MyMatchTab.tsx` - **✅ My Match tab (Unit 3)** — state-driven bottom-nav tab consuming `useMyMatchSurfaces`. Links to the player's current match (Tiers 1–3, accent live dot on Tier 1); dims + toasts as a non-navigating button on Tier 4 / error; neutral silent no-op while hydrating.
+- `MyMatchTab.test.tsx` - Tests for the My Match tab's five postures (live/today/makeup Link, Tier-4 toast, hydrating no-op, error toast).
+- `AppDrawer.tsx` - Slide-in drawer with secondary nav (profile, settings, operator-org switcher, sign-out) + the shared **`MyMatchPanel`** pinned at the TOP (`inSheet`). Drawer is the home for nav items that don't fit on the sidebar/tab bar.
 - `AppDrawer.test.tsx` - Tests for the drawer's per-org operator shortcuts and auth-gated content.
-- `OperatorOrgRow.tsx` - Drawer row showing one of the user's operator orgs with quick-jump links to the dashboard. Used inside `<AppDrawer>` when the member is a league operator.
+- `OperatorOrgRow.tsx` - Per-org entry in the Operator nav section (shared by `<AppDrawer>` + `<AppSidebar>`). Exposes **Dashboard** + **Reports** per org (Reports carries the pending-reports doorbell badge); **Create League removed** from nav (page still routable). Owns `usePendingReportsCount(orgId)`. Flat mode = inline links (single-org); collapsible `<details>` group (multi-org).
 
 #### Form Components (`/components/forms/`)
 
@@ -1049,7 +1064,7 @@ Reusable section components composed by `PreferencesCard.tsx`. Same components d
 - `ApprovedJoinModal.tsx` - **Onboarding cascade (Unit 3 notify)** — "you're on the team!" popup mounted app-wide in MemberLayout; tells a joiner the moment they're approved (even if they closed the tab) and routes to their team, stamping acknowledged so it shows once.
 - `SecurityDisclaimerModal.tsx` - Security disclaimer
 - `SetupGuideModal.tsx` - Setup guide
-- `WeekOffReasonModal.tsx` - Week off reason
+- `WeekOffReasonModal.tsx` - Week off reason — prompts for a custom week-off label; takes an optional `initialReason` to pre-fill the holiday/championship name when the week already has a conflict flag (re-seeded each open; operator can override). Tested in `WeekOffReasonModal.test.tsx`.
 
 #### Preview Components (`/components/previews/`)
 - `ApplicationPreview.tsx` - Application preview
@@ -1066,6 +1081,7 @@ Reusable section components composed by `PreferencesCard.tsx`. Same components d
 - `AlertDialog.tsx` - Alert/info dialog with OK button (success/warning/error/info)
 - `ConfirmDialog.tsx` - Confirmation dialog with Cancel/Confirm buttons
 - `InfoButton.tsx` - Info button with tooltip
+- `InstallAppCard.tsx` - **Install the app** — platform-adaptive PWA install entry: Android/desktop fire the native install prompt; iPhone (Safari) + Android-without-a-captured-prompt open a step-by-step add-to-home-screen instructions modal. Renders nothing when already installed or unsupported. Self-contained (drop-in); used at the top of Player Settings. Tested in `InstallAppCard.test.tsx`.
 - `InvitePlayerModal.tsx` - **✅ Phase 8** Captain invite modal for placeholder players
 - `InviteStatusBadge.tsx` - **✅ Phase 9** Badge showing invite status on PP cards
 - `MatchCard.tsx` - Match card
@@ -1163,7 +1179,7 @@ Lineup-page workhorse hooks. Extracted from the monolithic `useMatchLineup` so e
 - `scheduleToggle.ts` - Pure week-off toggle decisions (remove/add/prompt, past-or-played warn)
 - `scheduleDisplayUtils.ts` - Schedule display helpers
 - `matchupTables.ts` - Matchup table utilities
-- `conflictDetectionUtils.ts` - Schedule conflict detection
+- `conflictDetectionUtils.ts` - Schedule conflict detection; also exports `extractHolidayName` (strips a conflict name's " (...)" timing suffix → bare label, for seeding a week-off reason). Tested in `conflictDetectionUtils.extractHolidayName.test.ts`.
 
 #### Match Running Totals (`/utils/match/`)
 - `composeMatchThresholds.ts` - **System-agnostic match threshold composer** (lineup-swap recalibration, Unit 2). Given resolved prefs + both (post-swap) lineups, returns the six `*_to_win/tie/lose` columns. Builds a SystemModule via `buildSystemFromPreferences` and dispatches on the resolved `handicapMechanism.kind` — NEVER on `handicap_type`. Extended-finish (`extra_games`) delegates to `calculateHandicapThresholds` for byte-identical parity with match prep; head-start (Fargo start-points) recomputes the weaker team's credit fresh from ratings into `*_to_tie`. Replaces the deleted `recalculateMatchThresholds` handicap-type heuristic in `matchLineups.ts`. Tested in `src/__tests__/unit/composeMatchThresholds.test.ts` (percentage/points/fargo/none parity + modularity-invariant source grep).
@@ -1304,6 +1320,7 @@ High-level business logic services
 - `venueDuplicates.ts` - Detects duplicate venues during creation flows.
 - `venues.ts` - Venue list/detail reads.
 - `__tests__/thresholdLookup.test.ts` - Tests for the threshold-chart lookup.
+- `__tests__/matches.test.ts` - Tests for `getMyMatchMatches` (My Match team-scoped detection query — team/status scoping + client-side date threshold).
 
 #### Mutations (`/mutations/`) - Write Operations
 *Create/Update/Delete operations with automatic cache invalidation*
@@ -1338,6 +1355,7 @@ High-level business logic services
 *React-specific wrappers combining queries with useQuery/useMutation*
 
 - `useCurrentMember.ts` - **✅ Current member hook** (replaces old version, 30min cache)
+- `useInstallApp.ts` - **PWA install capability** — captures the Android/desktop-Chrome `beforeinstallprompt` at **module scope** via `startInstallCapture()` (called from `main.tsx` at boot, since the event fires early + is single-use), detects iOS + already-installed (standalone), and exposes `{ isStandalone, canPromptInstall, platform, promptInstall }` via a subscribe/re-render. Backs `InstallAppCard`. Tested in `useInstallApp.test.ts`.
 - `usePendingInvites.ts` - **✅ Pending invites hook** (fetches placeholder player invites via get_my_pending_invites RPC)
 - `useInviteStatuses.ts` - **✅ Invite statuses hook** (batch fetch invite statuses for PP cards in TeamEditorModal)
 - `useTeamJoinView.ts` - **Onboarding cascade (Unit 2)** — TanStack hook backing `/join/:token`; loads the public join view (team + spots + caller's request state) via `getTeamJoinView`. Disabled until a token is present; 30s staleTime.
@@ -1351,6 +1369,8 @@ High-level business logic services
 - `useUserProfile.ts` - **✅ User profile hook** (full member data + role utilities)
 - `useOperatorId.ts` - **✅ Operator ID hook** (operator lookup with caching)
 - `useMatchPhase.ts` - **✅ Match-phase status query** (minimal id/status/started_at slice; staleTime: 0; foreground 7s polling while status='scheduled' as Defense 7 backstop for dropped realtime). Distinct cache key from `useMatchById` — see file header for rationale.
+- `useMyMatchSurfaces.ts` - **✅ My Match aggregate hook (Unit 2)** — single contract for the bottom-nav tab + drawer section + sidebar entry. Owns the team-scoped detection query + a status-change-guarded `matches` realtime channel; exports pure resolvers (four-tier ladder, multi-live tiebreak, drawer labeling). Returns `{tier, destinationMatchId, showLiveDot, drawerItems, isHydrating, isError}`.
+- `__tests__/useMyMatchSurfaces.test.tsx` - Tests for the My Match pure resolvers (tiers/tiebreak/drawer labels) + hook wiring (no-member posture, live resolution, no-teams short-circuit, error fallback).
 - `useAnnouncementMutations.ts` - Announcement-channel mutation hooks.
 - `useCaptainTeamsMissingChat.ts` - Detects captain teams that don't have an auto-managed team chat yet; drives the `CreateTeamChatPrompt` banner.
 - `useChampionshipDateMutations.ts` - Championship-date CRUD hooks.
@@ -1784,6 +1804,7 @@ Supabase local configuration and migrations
 | `supabase/migrations/20260526000000_game_confirmations_is_initiator.sql` | **Many-eyes Layer-2 / Phase 2 Amendment A** — adds `is_initiator boolean NOT NULL DEFAULT false` to `game_confirmations`. Distinguishes rows from `handleConfirmScore` (filled details from scratch = `true`) vs `confirmOpponentScore` (just tapped Confirm = `false`). **NO unique index** — multiple initiators per `(game_id, side)` are deliberately allowed (agreement = stronger confirmation, disagreement = the dispute path that auto-clears the game). |
 | `supabase/migrations/20260528000000_game_confirmations_auto_confirmed.sql` | **Scoring participation modes / Unit A** — adds `auto_confirmed boolean NOT NULL DEFAULT false` to `game_confirmations`. `true` only when the vouch came from the confirmer's Auto-Confirm mode (no modal — scan-fired); `false` for a manual tap, an initiator entry, or a vacate marker. Integrity metric only (auto-vouches are weaker evidence than manual); never affects officiality or counting. |
 | `supabase/migrations/20260609193503_drop_redundant_before_delete_match_lineups_trigger.sql` | **Bugfix** — drops the redundant `trigger_auto_delete_match_lineups` (BEFORE DELETE on `matches`) + its function. It deleted a match's lineups, but `match_lineups.match_id` (NOT NULL) already CASCADEs on match delete, so it was redundant — and as a BEFORE trigger mutating rows in the same multi-row delete (via `matches.home/away_lineup_id → match_lineups SET NULL`) it broke bulk match deletes (`clearSchedule` / regenerate matchups) with Postgres error **27000**, surfaced as HTTP **400**. Verified on a 54-match season: delete now succeeds, zero orphaned lineups. |
+| `supabase/migrations/20260612000000_approve_surface_roster.sql` | **Approve surface — richer cards (Unit 1).** Extends `get_join_requests_for_approver()` with a captain summary (`captain_name` + `captain_is_placeholder`) and adds `get_team_roster_for_approver(team_id)` — a team's full roster (registered + claimable placeholders), each marked `is_captain`/`is_registered`/`claimable`/`has_stats`, captain first. Captain is unioned in from `teams.captain_id` so the "seat the captain" target always appears even when the captain isn't a `team_players` row. Captain-OR-org-staff gated (mirrors `get_team_placeholders_for_claim`). Additive. |
 | `supabase/migrations/20260611000000_auto_forfeit_sweep.sql` | **Auto-forfeit sweep — first pg_cron job.** `create extension pg_cron` + `sweep_auto_forfeits()` (SECURITY DEFINER) + a daily `cron.schedule` at 06:00 UTC. One set-based query over ALL leagues: for every `scheduled`, unplayed, **past-due** match (its week's `scheduled_date < CURRENT_DATE`) where **exactly one team is captainless**, declares the captained team the winner (`winner_team_id` + `status='completed'` — how standings already count a win). Both-captained → ignored; neither-captained → skipped (deferred). This is what makes BYE weeks + dropped-team weeks auto-resolve. Forfeit SCORING (points) deferred. Self-healing. Test: `src/__tests__/database/autoForfeitSweep.db.test.ts`. |
 | `supabase/seed.sql` | Full local dev DB dump — auto-applied on `supabase db reset`. **Local only, never runs against production.** |
 | `supabase/seed_test_users.sql` | 4 synthetic test auth users (player/operator/captain/owner, password `test-password-123`). **Dev-only — run manually via `docker exec ... psql`.** |

@@ -4,7 +4,7 @@
  * Modal dialog for entering a custom reason when inserting a week-off
  * without an associated conflict (e.g., local tournament, hurricane, facility closed)
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 
 /**
@@ -17,6 +17,12 @@ interface WeekOffReasonModalProps {
   onConfirm: (reason: string) => void;
   /** Callback when user cancels */
   onCancel: () => void;
+  /**
+   * Optional reason to pre-fill when the modal opens — e.g. the holiday name
+   * when the week being marked off already carries a conflict flag. The operator
+   * can still edit or clear it. Re-applied each time the modal opens.
+   */
+  initialReason?: string;
 }
 
 /**
@@ -31,9 +37,21 @@ export const WeekOffReasonModal: React.FC<WeekOffReasonModalProps> = ({
   isOpen,
   onConfirm,
   onCancel,
+  initialReason = '',
 }) => {
-  const [reason, setReason] = useState('');
+  const [reason, setReason] = useState(initialReason);
   const [error, setError] = useState('');
+
+  // The modal stays mounted (it just returns null while closed), so seed the
+  // reason each time it OPENS — with the conflict's name when there is one,
+  // otherwise blank. Keyed on isOpen so it doesn't clobber the operator's typing
+  // while the modal is already open.
+  useEffect(() => {
+    if (isOpen) {
+      setReason(initialReason);
+      setError('');
+    }
+  }, [isOpen, initialReason]);
 
   if (!isOpen) return null;
 

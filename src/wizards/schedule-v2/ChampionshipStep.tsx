@@ -91,7 +91,7 @@ export function ChampionshipStep({
             onCheckedChange={(checked) =>
               onChange({ ...current, trackBca: checked === true })
             }
-            className="size-5 border-2 border-gray-400"
+            className="size-5 border-2 border-input"
           />
           <Label htmlFor="track-bca">
             Track BCA National Championship conflicts
@@ -105,7 +105,7 @@ export function ChampionshipStep({
             onCheckedChange={(checked) =>
               onChange({ ...current, trackApa: checked === true })
             }
-            className="size-5 border-2 border-gray-400"
+            className="size-5 border-2 border-input"
           />
           <Label htmlFor="track-apa">
             Track APA National Championship conflicts
@@ -246,7 +246,7 @@ export function ChampionshipEditStep({
             onCheckedChange={(checked) =>
               onChange({ ...current, trackBca: checked === true })
             }
-            className="size-5 border-2 border-gray-400"
+            className="size-5 border-2 border-input"
           />
           <Label htmlFor="track-bca-edit">
             Track BCA National Championship conflicts
@@ -265,7 +265,7 @@ export function ChampionshipEditStep({
             onCheckedChange={(checked) =>
               onChange({ ...current, trackApa: checked === true })
             }
-            className="size-5 border-2 border-gray-400"
+            className="size-5 border-2 border-input"
           />
           <Label htmlFor="track-apa-edit">
             Track APA National Championship conflicts

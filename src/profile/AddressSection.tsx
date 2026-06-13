@@ -47,7 +47,7 @@ export const AddressSection: React.FC<AddressSectionProps> = ({
             variant="outline"
             size="sm"
             onClick={handlers.startEdit}
-            className="text-blue-600 border-blue-600 hover:bg-blue-50"
+            className="text-info border-info hover:bg-info/10"
             loadingText="none"
           >
             Edit
@@ -67,10 +67,10 @@ export const AddressSection: React.FC<AddressSectionProps> = ({
               value={form.formData.address}
               onChange={(e) => handlers.updateForm('address', e.target.value)}
               placeholder="123 Main Street"
-              className={form.errors.address ? 'border-red-500' : ''}
+              className={form.errors.address ? 'border-destructive' : ''}
             />
             {form.errors.address && (
-              <p className="text-red-500 text-sm mt-1">{form.errors.address}</p>
+              <p className="text-destructive text-sm mt-1">{form.errors.address}</p>
             )}
           </div>
 
@@ -84,10 +84,10 @@ export const AddressSection: React.FC<AddressSectionProps> = ({
                 value={form.formData.city}
                 onChange={(e) => handlers.updateForm('city', e.target.value)}
                 placeholder="Springfield"
-                className={form.errors.city ? 'border-red-500' : ''}
+                className={form.errors.city ? 'border-destructive' : ''}
               />
               {form.errors.city && (
-                <p className="text-red-500 text-sm mt-1">{form.errors.city}</p>
+                <p className="text-destructive text-sm mt-1">{form.errors.city}</p>
               )}
             </div>
 
@@ -98,7 +98,7 @@ export const AddressSection: React.FC<AddressSectionProps> = ({
                 value={form.formData.state}
                 onValueChange={(value) => handlers.updateForm('state', value)}
               >
-                <SelectTrigger className={form.errors.state ? 'border-red-500' : ''}>
+                <SelectTrigger className={form.errors.state ? 'border-destructive' : ''}>
                   <SelectValue placeholder="Select state" />
                 </SelectTrigger>
                 <SelectContent>
@@ -110,7 +110,7 @@ export const AddressSection: React.FC<AddressSectionProps> = ({
                 </SelectContent>
               </Select>
               {form.errors.state && (
-                <p className="text-red-500 text-sm mt-1">{form.errors.state}</p>
+                <p className="text-destructive text-sm mt-1">{form.errors.state}</p>
               )}
             </div>
 
@@ -123,10 +123,10 @@ export const AddressSection: React.FC<AddressSectionProps> = ({
                 value={form.formData.zip_code}
                 onChange={(e) => handlers.updateForm('zip_code', e.target.value)}
                 placeholder="12345"
-                className={form.errors.zip_code ? 'border-red-500' : ''}
+                className={form.errors.zip_code ? 'border-destructive' : ''}
               />
               {form.errors.zip_code && (
-                <p className="text-red-500 text-sm mt-1">{form.errors.zip_code}</p>
+                <p className="text-destructive text-sm mt-1">{form.errors.zip_code}</p>
               )}
             </div>
           </div>

@@ -73,7 +73,7 @@ export function MatchDetailCard({ matchId }: MatchDetailCardProps) {
   if (error || !match) {
     return (
       <Card className="overflow-hidden">
-        <div className="p-8 text-center text-red-600">
+        <div className="p-8 text-center text-destructive">
           Error loading match: {error ? (error as Error).message : 'Match not found'}
         </div>
       </Card>
@@ -119,9 +119,9 @@ export function MatchDetailCard({ matchId }: MatchDetailCardProps) {
       <div className="p-4">
         <div className="grid md:grid-cols-2 gap-6">
           {/* Home Team Column */}
-          <div className={`space-y-2 ${winner === 'home' ? 'bg-green-50 p-3 rounded-lg border-2 border-green-200' : ''}`}>
+          <div className={`space-y-2 ${winner === 'home' ? 'bg-success/10 p-3 rounded-lg border-2 border-success/40' : ''}`}>
             <div className="flex items-center justify-between mb-2">
-              <h3 className={`font-bold text-lg ${winner === 'home' ? 'text-green-800' : 'text-foreground'}`}>
+              <h3 className={`font-bold text-lg ${winner === 'home' ? 'text-success' : 'text-foreground'}`}>
                 🏠 {match.home_team?.team_name || 'Home TBD'}
               </h3>
               {winner === 'home' && (
@@ -136,7 +136,7 @@ export function MatchDetailCard({ matchId }: MatchDetailCardProps) {
               </div>
               <div>
                 <span className="text-muted-foreground">Points Earned:</span>
-                <div className="font-bold text-xl text-blue-600">
+                <div className="font-bold text-xl text-info">
                   {match.home_points_earned ?? '-'}
                 </div>
               </div>
@@ -165,9 +165,9 @@ export function MatchDetailCard({ matchId }: MatchDetailCardProps) {
           </div>
 
           {/* Away Team Column */}
-          <div className={`space-y-2 ${winner === 'away' ? 'bg-blue-50 p-3 rounded-lg border-2 border-blue-200' : ''}`}>
+          <div className={`space-y-2 ${winner === 'away' ? 'bg-info/10 p-3 rounded-lg border-2 border-info/40' : ''}`}>
             <div className="flex items-center justify-between mb-2">
-              <h3 className={`font-bold text-lg ${winner === 'away' ? 'text-blue-800' : 'text-foreground'}`}>
+              <h3 className={`font-bold text-lg ${winner === 'away' ? 'text-info' : 'text-foreground'}`}>
                 ✈️ {match.away_team?.team_name || 'Away TBD'}
               </h3>
               {winner === 'away' && (
@@ -182,7 +182,7 @@ export function MatchDetailCard({ matchId }: MatchDetailCardProps) {
               </div>
               <div>
                 <span className="text-muted-foreground">Points Earned:</span>
-                <div className="font-bold text-xl text-blue-600">
+                <div className="font-bold text-xl text-info">
                   {match.away_points_earned ?? '-'}
                 </div>
               </div>

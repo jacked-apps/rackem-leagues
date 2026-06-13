@@ -76,26 +76,26 @@ const getVisibilityColors = (level: ContactVisibilityLevel) => {
   switch (level) {
     case 'in_app_only':
       return {
-        bg: 'bg-green-50',
-        border: 'border-green-200',
-        text: 'text-green-800',
-        accent: 'text-green-600'
+        bg: 'bg-success/10',
+        border: 'border-success/40',
+        text: 'text-foreground',
+        accent: 'text-success'
       };
     case 'my_team_captains':
     case 'my_teams':
     case 'my_organization':
       return {
-        bg: 'bg-yellow-50',
-        border: 'border-yellow-200',
-        text: 'text-yellow-800',
-        accent: 'text-yellow-600'
+        bg: 'bg-warning/10',
+        border: 'border-warning/40',
+        text: 'text-foreground',
+        accent: 'text-warning'
       };
     case 'anyone':
       return {
-        bg: 'bg-red-50',
-        border: 'border-red-200',
-        text: 'text-red-800',
-        accent: 'text-red-600'
+        bg: 'bg-destructive/10',
+        border: 'border-destructive/40',
+        text: 'text-foreground',
+        accent: 'text-destructive'
       };
     default:
       return {
@@ -176,7 +176,7 @@ export const ContactInfoExposure: React.FC<ContactInfoExposureProps> = ({
       <div>
         <h3 className="text-lg font-semibold text-foreground mb-1">
           {displayTitle}
-          {required && <span className="text-red-500 ml-1">*</span>}
+          {required && <span className="text-destructive ml-1">*</span>}
         </h3>
         {helpText && (
           <p className="text-sm text-muted-foreground">{helpText}</p>
@@ -199,16 +199,16 @@ export const ContactInfoExposure: React.FC<ContactInfoExposureProps> = ({
 
       {/* Error Message */}
       {error && (
-        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-3">
+        <div className="text-sm text-destructive bg-destructive/10 border border-destructive/40 rounded-md p-3">
           {error}
         </div>
       )}
 
       {/* Additional Info */}
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+      <div className="bg-warning/10 border border-warning/40 rounded-lg p-4">
         <div className="flex items-start space-x-2">
-          <span className="text-amber-600 text-sm">ℹ️</span>
-          <div className="text-sm text-amber-800">
+          <span className="text-warning text-sm">ℹ️</span>
+          <div className="text-sm text-foreground">
             <p className="font-medium mb-1">Privacy Note:</p>
             <p>
               You can change this setting anytime. More restrictive settings protect

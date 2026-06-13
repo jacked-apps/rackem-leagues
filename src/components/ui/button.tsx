@@ -36,7 +36,7 @@ const buttonVariants = cva(
         outline:
           'border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50',
         secondary:
-          'bg-secondary border border-gray-700 text-secondary-foreground hover:bg-secondary/80',
+          'bg-secondary border border-border text-secondary-foreground hover:bg-secondary/80',
         ghost:
           'hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50',
         link: 'text-primary underline-offset-4 hover:underline',
@@ -133,7 +133,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({ className, va
           children
         )}
       </Comp>
-      {message && <p className="text-sm text-red-500">{message}</p>}
+      {message && <p className="text-sm text-destructive">{message}</p>}
     </div>
   );
 });

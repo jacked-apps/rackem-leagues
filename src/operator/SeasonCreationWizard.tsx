@@ -497,8 +497,8 @@ export const SeasonCreationWizard: React.FC = () => {
 
       // Navigate based on user's choice
       if (destination === 'teams' && seasonId) {
-        // Navigate to team management page for the new season
-        navigate(`/league/${leagueId}/manage-teams?seasonId=${seasonId}`);
+        // Navigate to the season-setup Teams step for the new season
+        navigate(`/league/${leagueId}/season/${seasonId}/setup-teams`);
       } else {
         // Navigate back to league detail page (dashboard view)
         navigate(`/league/${leagueId}`);

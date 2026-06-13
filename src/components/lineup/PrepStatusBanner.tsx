@@ -31,10 +31,10 @@ export function PrepStatusBanner({ show, locked, opponentLabel }: PrepStatusBann
     // waiting on the opponent yet — once they lock, the opponent will be
     // pinged to pick the double-duty player.
     return (
-      <Card className="border-blue-300 bg-blue-50">
+      <Card className="border-info/40 bg-info/10">
         <CardContent className="flex items-center gap-3 py-3">
-          <Info className="h-5 w-5 shrink-0 text-blue-700" aria-hidden />
-          <div className="text-sm text-blue-900">
+          <Info className="h-5 w-5 shrink-0 text-info" aria-hidden />
+          <div className="text-sm text-foreground">
             You picked Double Duty for one of your slots. After you lock your
             lineup, a request will be sent to <strong>{opponentLabel}</strong> to
             choose which of your players plays in two positions.
@@ -46,10 +46,10 @@ export function PrepStatusBanner({ show, locked, opponentLabel }: PrepStatusBann
 
   // Post-lock: we're actually waiting on opponent action now.
   return (
-    <Card className="border-amber-300 bg-amber-50">
+    <Card className="border-warning/40 bg-warning/10">
       <CardContent className="flex items-center gap-3 py-3">
-        <Hourglass className="h-5 w-5 shrink-0 text-amber-700" aria-hidden />
-        <div className="text-sm text-amber-900">
+        <Hourglass className="h-5 w-5 shrink-0 text-warning" aria-hidden />
+        <div className="text-sm text-foreground">
           Waiting for <strong>{opponentLabel}</strong> to pick your double-duty player.
         </div>
       </CardContent>

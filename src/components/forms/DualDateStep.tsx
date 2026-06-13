@@ -133,8 +133,8 @@ export const DualDateStep: React.FC<DualDateStepProps> = ({
 
           {/* Error Message */}
           {displayError && (
-            <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-700 text-sm">{displayError}</p>
+            <div className="mb-6 p-3 bg-destructive/10 border border-destructive/40 rounded-lg">
+              <p className="text-destructive text-sm">{displayError}</p>
             </div>
           )}
 
