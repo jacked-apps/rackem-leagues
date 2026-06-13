@@ -75,10 +75,11 @@ type StateMeta = {
  */
 const STATE_META: Record<WeekEntryKind, StateMeta> = {
   completed: { label: 'Final', Icon: Trophy, badge: 'text-success', card: 'bg-success/10 border-success/40' },
-  live: { label: 'Live', Icon: Trophy, badge: 'text-info', card: 'bg-info/10 border-info/40' },
+  // Live + Next up moved OFF blue — blue is reserved for clickable links.
+  live: { label: 'Live', Icon: Trophy, badge: 'text-destructive', card: 'bg-destructive/10 border-destructive/40' },
   updating: { label: 'Updating', Icon: AlertCircle, badge: 'text-warning', card: 'bg-warning/10 border-warning/40' },
   makeup: { label: 'Makeup', Icon: AlertCircle, badge: 'text-warning', card: 'bg-warning/10 border-warning/40' },
-  upcoming: { label: 'Next up', Icon: ArrowRight, badge: 'text-info', card: 'bg-info/10 border-info/40' },
+  upcoming: { label: 'Next up', Icon: ArrowRight, badge: 'text-foreground', card: 'bg-foreground/5 border-foreground/20' },
   future: { label: 'Scheduled', Icon: Calendar, badge: 'text-muted-foreground', card: 'bg-card' },
   bye: { label: 'Bye — off', Icon: CalendarOff, badge: 'text-muted-foreground', card: 'bg-muted/60 border-border' },
   blackout: { label: 'No matches', Icon: CalendarOff, badge: 'text-muted-foreground', card: 'bg-muted/60 border-border' },
@@ -339,7 +340,7 @@ export function TeamSchedule() {
 
               return (
                 <Card key={match.id} className={`shadow-sm ${meta.card}`}>
-                  <CardContent className="px-4 py-2.5">
+                  <CardContent className="px-4 py-2">
                     <div className="flex items-start justify-between gap-3">
                       {/* Left: week·date + matchup (+ table). Home/away is
                           implied by the venue, so it's dropped. */}
@@ -403,7 +404,11 @@ export function TeamSchedule() {
                         </span>
                         {scoreLinkLabel(entry.kind) && (
                           <Link to={`/match/${match.id}/lineup`}>
-                            <Button variant="link" loadingText="none" className="h-auto gap-0.5 p-0 text-sm">
+                            <Button
+                              variant="link"
+                              loadingText="none"
+                              className="h-auto gap-0.5 p-0 text-sm text-blue-600 hover:text-blue-800"
+                            >
                               {scoreLinkLabel(entry.kind)}
                               <ArrowRight className="h-3.5 w-3.5" />
                             </Button>
