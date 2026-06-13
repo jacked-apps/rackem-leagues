@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { parseLocalDate } from '@/utils/formatters';
 import { MatchDetailCard } from '@/components/MatchDetailCard';
+import { TeamNameLink } from '@/components/TeamNameLink';
 import { PageHeader } from '@/components/PageHeader';
 
 /** Every state a schedule row can be in. */
@@ -312,17 +313,55 @@ export function TeamSchedule() {
               const role = getTeamRole(match);
               const opponent = role === 'home' ? match.away_team : match.home_team;
 
+              const venue = match.actual_venue || match.scheduled_venue;
+              const mapsUrl = venue
+                ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                    `${venue.name}, ${venue.street_address || ''}, ${venue.city}, ${venue.state}`,
+                  )}`
+                : null;
+
               return (
                 <Card key={match.id} className={`shadow-sm ${meta.card}`}>
-                  <CardContent className="space-y-3 p-4">
+                  <CardContent className="space-y-2 p-4">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <div className="text-base text-muted-foreground">
                           {entry.week.week_name} · {formatShortDate(match.scheduled_date ?? entry.week.scheduled_date)}
                         </div>
-                        <div className="truncate text-base font-semibold text-foreground">
-                          vs {opponent?.team_name ?? 'Opponent'}
-                        </div>
+                        {match.status === 'completed' ? (
+                          // Completed cards left as-is for now (handled later).
+                          <div className="truncate text-base font-semibold text-foreground">
+                            vs {opponent?.team_name ?? 'Opponent'}
+                          </div>
+                        ) : (
+                          // Unplayed: "vs {team} at 📍{venue}" — both clickable.
+                          <div className="flex flex-wrap items-center gap-x-1.5 text-base font-semibold text-foreground">
+                            <span>vs</span>
+                            {opponent ? (
+                              <TeamNameLink
+                                teamId={opponent.id}
+                                teamName={opponent.team_name}
+                                className="text-base font-semibold"
+                              />
+                            ) : (
+                              <span>Opponent</span>
+                            )}
+                            {venue && mapsUrl && (
+                              <>
+                                <span className="font-normal text-muted-foreground">at</span>
+                                <a
+                                  href={mapsUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-0.5 font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+                                >
+                                  <MapPin className="h-4 w-4" />
+                                  {venue.name}
+                                </a>
+                              </>
+                            )}
+                          </div>
+                        )}
                       </div>
                       <span className={`flex shrink-0 items-center gap-1 text-xs font-medium ${meta.badge}`}>
                         <Icon className="h-3.5 w-3.5" />
@@ -333,51 +372,14 @@ export function TeamSchedule() {
                     {match.status === 'completed' ? (
                       <MatchDetailCard matchId={match.id} />
                     ) : (
-                      <div className="space-y-4">
+                      <>
                         <div className="text-sm text-muted-foreground">
-                          <span className="font-medium">{role === 'home' ? 'Home Game' : 'Away Game'}</span>
+                          <span className="font-medium">{role === 'home' ? 'Home' : 'Away'}</span>
+                          {match.assigned_table_number ? <span> · Table {match.assigned_table_number}</span> : null}
+                          {match.actual_venue ? <span className="text-warning"> · overflow venue</span> : null}
                         </div>
-
-                        {/* Venue — clickable to Google Maps. Uses actual_venue
-                            (overflow) if set, else scheduled_venue. */}
-                        {(() => {
-                          const venue = match.actual_venue || match.scheduled_venue;
-                          const isOverflow = !!match.actual_venue;
-                          if (!venue) return null;
-                          return (
-                            <a
-                              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                                `${venue.name}, ${venue.street_address || ''}, ${venue.city}, ${venue.state}`,
-                              )}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="block hover:bg-muted rounded-lg p-2 -m-2 transition-colors"
-                            >
-                              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
-                                <MapPin className="h-4 w-4 text-primary" />
-                                <span>Venue</span>
-                                {isOverflow && <span className="text-xs text-warning font-medium">(overflow)</span>}
-                                <span className="text-xs text-primary">(tap for directions)</span>
-                              </div>
-                              <div className="ml-6">
-                                <p className="text-base text-foreground">
-                                  {venue.name}
-                                  {match.assigned_table_number && (
-                                    <span className="ml-2 text-sm font-medium text-primary">
-                                      Table {match.assigned_table_number}
-                                    </span>
-                                  )}
-                                </p>
-                                <p className="text-sm text-muted-foreground">
-                                  {venue.city}, {venue.state}
-                                </p>
-                              </div>
-                            </a>
-                          );
-                        })()}
-
                         {match.status === 'scheduled' && (
-                          <Link to={`/match/${match.id}/lineup`} className="block pt-2">
+                          <Link to={`/match/${match.id}/lineup`} className="block pt-1">
                             <Button className="w-full" loadingText="none">
                               <Trophy className="h-4 w-4 mr-2" />
                               Score Match
@@ -385,14 +387,14 @@ export function TeamSchedule() {
                           </Link>
                         )}
                         {match.status === 'in_progress' && (
-                          <Link to={`/match/${match.id}/lineup`} className="block pt-2">
+                          <Link to={`/match/${match.id}/lineup`} className="block pt-1">
                             <Button className="w-full" loadingText="none">
                               <Trophy className="h-4 w-4 mr-2" />
                               Continue Scoring
                             </Button>
                           </Link>
                         )}
-                      </div>
+                      </>
                     )}
                   </CardContent>
                 </Card>
