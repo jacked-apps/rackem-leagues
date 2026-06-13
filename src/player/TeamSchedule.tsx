@@ -322,9 +322,11 @@ export function TeamSchedule() {
 
               return (
                 <Card key={match.id} className={`shadow-sm ${meta.card}`}>
-                  <CardContent className="space-y-2 p-4">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      {/* Left: week·date + matchup (+ table). Home/away is
+                          implied by the venue, so it's dropped. */}
+                      <div className="min-w-0 space-y-0.5">
                         <div className="text-base text-muted-foreground">
                           {entry.week.week_name} · {formatShortDate(match.scheduled_date ?? entry.week.scheduled_date)}
                         </div>
@@ -334,67 +336,77 @@ export function TeamSchedule() {
                             vs {opponent?.team_name ?? 'Opponent'}
                           </div>
                         ) : (
-                          // Unplayed: "vs {team} at 📍{venue}" — both clickable.
-                          <div className="flex flex-wrap items-center gap-x-1.5 text-base font-semibold text-foreground">
-                            <span>vs</span>
-                            {opponent ? (
-                              <TeamNameLink
-                                teamId={opponent.id}
-                                teamName={opponent.team_name}
-                                className="text-base font-semibold"
-                              />
-                            ) : (
-                              <span>Opponent</span>
+                          <>
+                            {/* "vs {team} at 📍{venue}" — both clickable. */}
+                            <div className="flex flex-wrap items-center gap-x-1.5 text-base font-semibold text-foreground">
+                              <span>vs</span>
+                              {opponent ? (
+                                <TeamNameLink
+                                  teamId={opponent.id}
+                                  teamName={opponent.team_name}
+                                  className="text-base font-semibold"
+                                />
+                              ) : (
+                                <span>Opponent</span>
+                              )}
+                              {venue && mapsUrl && (
+                                <>
+                                  <span className="font-normal text-muted-foreground">at</span>
+                                  <a
+                                    href={mapsUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-0.5 font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+                                  >
+                                    <MapPin className="h-4 w-4" />
+                                    {venue.name}
+                                  </a>
+                                </>
+                              )}
+                            </div>
+                            {(match.assigned_table_number || match.actual_venue) && (
+                              <div className="text-sm text-muted-foreground">
+                                {match.assigned_table_number ? `Table ${match.assigned_table_number}` : null}
+                                {match.actual_venue ? (
+                                  <span className="text-warning">
+                                    {match.assigned_table_number ? ' · ' : ''}overflow venue
+                                  </span>
+                                ) : null}
+                              </div>
                             )}
-                            {venue && mapsUrl && (
-                              <>
-                                <span className="font-normal text-muted-foreground">at</span>
-                                <a
-                                  href={mapsUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-0.5 font-semibold text-blue-600 hover:text-blue-800 hover:underline"
-                                >
-                                  <MapPin className="h-4 w-4" />
-                                  {venue.name}
-                                </a>
-                              </>
-                            )}
-                          </div>
+                          </>
                         )}
                       </div>
-                      <span className={`flex shrink-0 items-center gap-1 text-xs font-medium ${meta.badge}`}>
-                        <Icon className="h-3.5 w-3.5" />
-                        {meta.label}
-                      </span>
-                    </div>
 
-                    {match.status === 'completed' ? (
-                      <MatchDetailCard matchId={match.id} />
-                    ) : (
-                      <>
-                        <div className="text-sm text-muted-foreground">
-                          <span className="font-medium">{role === 'home' ? 'Home' : 'Away'}</span>
-                          {match.assigned_table_number ? <span> · Table {match.assigned_table_number}</span> : null}
-                          {match.actual_venue ? <span className="text-warning"> · overflow venue</span> : null}
-                        </div>
+                      {/* Right: status tag, with a small score button beneath. */}
+                      <div className="flex shrink-0 flex-col items-end gap-1.5">
+                        <span className={`flex items-center gap-1 text-xs font-medium ${meta.badge}`}>
+                          <Icon className="h-3.5 w-3.5" />
+                          {meta.label}
+                        </span>
                         {match.status === 'scheduled' && (
-                          <Link to={`/match/${match.id}/lineup`} className="block pt-1">
-                            <Button className="w-full" loadingText="none">
-                              <Trophy className="h-4 w-4 mr-2" />
-                              Score Match
+                          <Link to={`/match/${match.id}/lineup`}>
+                            <Button size="sm" loadingText="none">
+                              <Trophy className="h-3.5 w-3.5 mr-1" />
+                              Score
                             </Button>
                           </Link>
                         )}
                         {match.status === 'in_progress' && (
-                          <Link to={`/match/${match.id}/lineup`} className="block pt-1">
-                            <Button className="w-full" loadingText="none">
-                              <Trophy className="h-4 w-4 mr-2" />
-                              Continue Scoring
+                          <Link to={`/match/${match.id}/lineup`}>
+                            <Button size="sm" loadingText="none">
+                              <Trophy className="h-3.5 w-3.5 mr-1" />
+                              Continue
                             </Button>
                           </Link>
                         )}
-                      </>
+                      </div>
+                    </div>
+
+                    {match.status === 'completed' && (
+                      <div className="mt-3">
+                        <MatchDetailCard matchId={match.id} />
+                      </div>
                     )}
                   </CardContent>
                 </Card>
