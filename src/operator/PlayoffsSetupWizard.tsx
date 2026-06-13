@@ -275,7 +275,7 @@ export const PlayoffsSetupWizard: React.FC = () => {
     return (
       <div className="min-h-screen bg-muted">
         <PageHeader
-          backTo={`/league/${leagueId}/manage-teams?seasonId=${seasonId}`}
+          backTo={`/league/${leagueId}/season/${seasonId}/setup-teams`}
           backLabel="Back to Teams"
           title="Playoff Setup"
           subtitle="Loading..."
@@ -300,7 +300,7 @@ export const PlayoffsSetupWizard: React.FC = () => {
   return (
     <div className="min-h-screen bg-muted">
       <PageHeader
-        backTo={`/league/${leagueId}/manage-teams?seasonId=${seasonId}`}
+        backTo={`/league/${leagueId}/season/${seasonId}/setup-teams`}
         backLabel="Back to Teams"
         title={
           <span className="inline-flex items-center gap-2">
@@ -442,7 +442,7 @@ export const PlayoffsSetupWizard: React.FC = () => {
         <div className="hidden lg:flex justify-end gap-3">
           <Button
             variant="outline"
-            onClick={() => navigate(`/league/${leagueId}/manage-teams?seasonId=${seasonId}`)}
+            onClick={() => navigate(`/league/${leagueId}/season/${seasonId}/setup-teams`)}
             loadingText="none"
           >
             Back to Teams

@@ -1,14 +1,12 @@
 /**
- * @fileoverview TeamManagement — the standalone "Manage Teams" page reached from
- * the league dashboard (`/league/:leagueId/manage-teams`). It is now a thin
- * wrapper: page chrome (header + footer) around the reusable
- * {@link TeamManagementContent}. All editing UI + logic lives in the content +
- * its panels/hooks.
+ * @fileoverview SetupTeamsPage — the Teams step of the season-setup chain
+ * (`/league/:leagueId/season/:seasonId/setup-teams`). Same reusable
+ * {@link TeamManagementContent} as the standalone edit page, but with the
+ * setup-flow footer: "Save & Exit → league" + "Continue → Playoffs." This is the
+ * page the season-setup chain points at, so the standalone edit page can stay
+ * free of any "next is playoffs" knowledge.
  *
- * This is purely an EDIT surface — its only exit is "Done → back to the league".
- * It knows nothing about playoffs or any setup step; the season-setup chain uses
- * its own `SetupTeamsPage` (with "Continue → Playoffs"). See
- * docs/plans/2026-06-12-001-refactor-teams-standalone-vs-setup-plan.md.
+ * See docs/plans/2026-06-12-001-refactor-teams-standalone-vs-setup-plan.md.
  */
 
 import { useState } from 'react';
@@ -18,8 +16,8 @@ import { PageHeader } from '@/components/PageHeader';
 import { InfoButton } from '@/components/InfoButton';
 import { TeamManagementContent } from './TeamManagementContent';
 
-export const TeamManagement: React.FC = () => {
-  const { leagueId } = useParams<{ leagueId: string }>();
+export const SetupTeamsPage: React.FC = () => {
+  const { leagueId, seasonId } = useParams<{ leagueId: string; seasonId: string }>();
   const navigate = useNavigate();
   const [isNavigating, setIsNavigating] = useState(false);
 
@@ -28,11 +26,11 @@ export const TeamManagement: React.FC = () => {
       <PageHeader
         backTo={`/league/${leagueId}`}
         backLabel="Back to League"
-        title="Manage Teams"
-        subtitle="Assign venues and create teams for your league"
+        title="Set Up Teams"
+        subtitle="Assign venues and create teams, then continue to playoffs"
       >
         <div className="mt-2">
-          <InfoButton title="Quick Tip" label="Team Management Tips">
+          <InfoButton title="Quick Tip" label="Team Setup Tips">
             <div className="space-y-3">
               <p className="text-sm text-foreground">
                 All you have to do is pick a captain for each team. After that, the captain can
@@ -54,9 +52,11 @@ export const TeamManagement: React.FC = () => {
         renderFooter={({ hasTeams }) =>
           hasTeams ? (
             <div className="fixed bottom-0 inset-x-0 z-30 border-t bg-card p-3 shadow-lg">
-              <div className="mx-auto flex max-w-4xl justify-end">
+              <div className="mx-auto grid max-w-4xl grid-cols-2 gap-2">
                 <Button
+                  className="w-full"
                   size="lg"
+                  variant="outline"
                   onClick={() => {
                     setIsNavigating(true);
                     navigate(`/league/${leagueId}`);
@@ -65,7 +65,20 @@ export const TeamManagement: React.FC = () => {
                   isLoading={isNavigating}
                   loadingText="Loading..."
                 >
-                  Done
+                  Save & Exit
+                </Button>
+                <Button
+                  className="w-full"
+                  size="lg"
+                  onClick={() => {
+                    setIsNavigating(true);
+                    navigate(`/league/${leagueId}/season/${seasonId}/playoffs-setup`);
+                  }}
+                  disabled={isNavigating}
+                  isLoading={isNavigating}
+                  loadingText="Loading..."
+                >
+                  Continue to Playoffs →
                 </Button>
               </div>
             </div>
@@ -76,4 +89,4 @@ export const TeamManagement: React.FC = () => {
   );
 };
 
-export default TeamManagement;
+export default SetupTeamsPage;

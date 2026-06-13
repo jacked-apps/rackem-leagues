@@ -34,7 +34,7 @@ import {
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-interface ConfirmOptions {
+export interface ConfirmOptions {
   /** Dialog title */
   title: string;
   /** Confirmation message */
