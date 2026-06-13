@@ -118,8 +118,8 @@ function ScheduleStaticRow({ entry }: { entry: WeekEntry }) {
   // "Week 5" for a bye, the playoff week name for TBD. The badge says what it is.
 
   return (
-    <Card className={meta.card}>
-      <CardContent className="flex items-center justify-between gap-2 p-3">
+    <Card className={`gap-0 py-0 ${meta.card}`}>
+      <CardContent className="flex items-center justify-between gap-2 px-3 py-2">
         <div className="min-w-0">
           <div className="text-xs text-muted-foreground">{formatShortDate(entry.week.scheduled_date)}</div>
           <div className="truncate text-base font-semibold text-foreground">{entry.week.week_name}</div>
@@ -339,8 +339,8 @@ export function TeamSchedule() {
                 : null;
 
               return (
-                <Card key={match.id} className={`shadow-sm ${meta.card}`}>
-                  <CardContent className="p-0">
+                <Card key={match.id} className={`gap-0 py-0 shadow-sm ${meta.card}`}>
+                  <CardContent className="px-3 py-2">
                     <div className="flex items-start justify-between gap-3">
                       {/* Left: week·date + matchup (+ table). Home/away is
                           implied by the venue, so it's dropped. */}
