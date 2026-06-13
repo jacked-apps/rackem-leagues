@@ -263,8 +263,11 @@ export function TeamSchedule() {
         backLabel="Back to My Teams"
         title={team.team_name}
         subtitle={dayOfWeek ? `${dayOfWeek}s` : undefined}
-      >
-        <div className="mt-3 mx-auto flex w-full max-w-2xl flex-col gap-2 px-4 sm:flex-row sm:justify-center">
+      />
+
+      <main className="px-4 py-6 max-w-2xl mx-auto">
+        {/* Filters — in the card column so they center over the cards. */}
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
           <Button
             variant="outline"
             size="sm"
@@ -304,9 +307,7 @@ export function TeamSchedule() {
             )}
           </Button>
         </div>
-      </PageHeader>
 
-      <main className="px-4 py-6 max-w-2xl mx-auto">
         {displayedEntries.length === 0 ? (
           <Card>
             <CardContent className="p-12 text-center">
