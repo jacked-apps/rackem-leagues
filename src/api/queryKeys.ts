@@ -88,6 +88,10 @@ export const queryKeys = {
     placeholders: (teamId: string) =>
       [...queryKeys.teamJoin.all, 'placeholders', teamId] as const,
 
+    /** A team's full roster (registered + placeholders) for the expanded approve card */
+    roster: (teamId: string) =>
+      [...queryKeys.teamJoin.all, 'roster', teamId] as const,
+
     /** The caller's approved-but-unacknowledged joins — the "you're in" feed (Unit 3) */
     approved: () => [...queryKeys.teamJoin.all, 'approved'] as const,
 

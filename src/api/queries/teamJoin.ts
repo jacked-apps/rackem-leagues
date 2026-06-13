@@ -86,6 +86,13 @@ export interface ApproverJoinRequest {
   /** The placeholder spot being claimed, if this was a claim request. */
   claimed_member_id: string | null;
   claimed_name: string | null;
+  /** The team's captain's display name (always resolves — a team always has one). */
+  captain_name: string;
+  /**
+   * True while the team's captain is still an unregistered placeholder — the
+   * "seat the captain" signal surfaced on the collapsed card.
+   */
+  captain_is_placeholder: boolean;
   /** Whether the team has any unclaimed placeholder (drives Replace + Add guard). */
   has_open_placeholders: boolean;
   created_at: string;
@@ -127,6 +134,43 @@ export async function getTeamPlaceholdersForClaim(
   });
   if (error) throw error;
   return (data as unknown as ClaimablePlaceholder[]) ?? [];
+}
+
+/**
+ * One member on a team's roster, as shown in the expanded approve card.
+ * Registered members are recognition context; claimable placeholders are the
+ * tap-to-connect replacement targets (the captain one flagged via is_captain).
+ */
+export interface TeamRosterMember {
+  member_id: string;
+  display_name: string;
+  /** This member holds the team's captain spot. */
+  is_captain: boolean;
+  /** This member has a user account (recognition context, not a connect target). */
+  is_registered: boolean;
+  /** Unclaimed placeholder — a valid target to connect the incoming person to. */
+  claimable: boolean;
+  /** Carries a match record, so connecting into it moves stats (weighty merge). */
+  has_stats: boolean;
+}
+
+/**
+ * Load a team's full roster (registered members + claimable placeholders, each
+ * marked) for the expanded approve card. Captain/org-staff gated server-side; a
+ * non-approver gets an empty list. Captain row sorts first, then other open
+ * placeholders, then registered members.
+ *
+ * @param teamId - the team whose roster to show.
+ * @throws on an unexpected RPC/network error.
+ */
+export async function getTeamRosterForApprover(
+  teamId: string
+): Promise<TeamRosterMember[]> {
+  const { data, error } = await supabase.rpc('get_team_roster_for_approver', {
+    p_team_id: teamId,
+  });
+  if (error) throw error;
+  return (data as unknown as TeamRosterMember[]) ?? [];
 }
 
 /** An approved-but-unacknowledged join the caller should be told about. */
