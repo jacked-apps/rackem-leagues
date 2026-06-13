@@ -126,10 +126,10 @@ export const SeasonCard: React.FC<SeasonCardProps> = ({ league }) => {
     if (isSeasonComplete()) {
       return {
         text: currentSeason?.status === 'active' ? 'Active' : 'Complete',
-        classes: 'bg-green-100 text-green-800',
+        classes: 'bg-success/10 text-success',
       };
     }
-    return { text: 'Incomplete', classes: 'bg-orange-100 text-orange-800' };
+    return { text: 'Incomplete', classes: 'bg-warning/10 text-warning' };
   };
 
   /** Which edit options apply, based on season state. */
@@ -262,7 +262,7 @@ export const SeasonCard: React.FC<SeasonCardProps> = ({ league }) => {
             <Button
               size="sm"
               variant="outline"
-              className="text-red-600 hover:bg-red-50 hover:text-red-700"
+              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
               onClick={() => setShowDeleteModal(true)}
             >
               Delete Season

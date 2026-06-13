@@ -153,8 +153,8 @@ export const DeviceHandoffForm: React.FC<DeviceHandoffFormProps> = ({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Instructions for the person registering */}
-      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-        <p className="text-sm text-blue-800">
+      <div className="p-3 bg-info/10 border border-info/40 rounded-lg">
+        <p className="text-sm text-foreground">
           <span className="font-medium">Hi {firstName}!</span> Enter your email and create a password to claim your player profile.
         </p>
       </div>
@@ -204,8 +204,8 @@ export const DeviceHandoffForm: React.FC<DeviceHandoffFormProps> = ({
 
       {/* Error message */}
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-800">{error}</p>
+        <div className="p-3 bg-destructive/10 border border-destructive/40 rounded-lg">
+          <p className="text-sm text-destructive">{error}</p>
         </div>
       )}
 

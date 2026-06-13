@@ -125,7 +125,7 @@ export const AllPlayersRosterCard: React.FC<AllPlayersRosterCardProps> = ({ team
               />
               {player.isCaptain && (
                 <span
-                  className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded cursor-help"
+                  className="text-xs bg-info/10 text-info px-1.5 py-0.5 rounded cursor-help"
                   title="Captain"
                 >
                   C
@@ -134,7 +134,7 @@ export const AllPlayersRosterCard: React.FC<AllPlayersRosterCardProps> = ({ team
               {player.isPlaceholder && (
                 <>
                   <span
-                    className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded cursor-help"
+                    className="text-xs bg-warning/10 text-warning px-1.5 py-0.5 rounded cursor-help"
                     title="Unregistered"
                   >
                     U

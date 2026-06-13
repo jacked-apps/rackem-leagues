@@ -59,7 +59,7 @@ export function TargetSelector({
             className={cn(
               'w-full p-4 rounded-lg border-2 transition-all text-left',
               selectedTargetIds.includes(target.id)
-                ? 'border-blue-600 bg-blue-50'
+                ? 'border-info bg-info/10'
                 : 'border-border hover:border-border hover:bg-muted'
             )}
           >

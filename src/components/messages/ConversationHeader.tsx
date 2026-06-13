@@ -29,7 +29,7 @@ interface ConversationHeaderProps {
 
 export function ConversationHeader({ title, onBack, onLeave, onBlock, canLeave = true, canBlock = false }: ConversationHeaderProps) {
   return (
-    <div className="border-b bg-gray-300 px-3 md:px-6 py-3 md:py-4 flex items-center gap-2 md:gap-3 justify-between">
+    <div className="border-b bg-muted px-3 md:px-6 py-3 md:py-4 flex items-center gap-2 md:gap-3 justify-between">
       <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
         {/* Back button - only visible on mobile */}
         {onBack && (
@@ -57,7 +57,7 @@ export function ConversationHeader({ title, onBack, onLeave, onBlock, canLeave =
           <DropdownMenuContent align="end">
             {canBlock && onBlock && (
               <>
-                <DropdownMenuItem onClick={onBlock} className="text-orange-600 focus:text-orange-600">
+                <DropdownMenuItem onClick={onBlock} className="text-warning focus:text-warning">
                   <UserX className="h-4 w-4 mr-2" />
                   Block User
                 </DropdownMenuItem>
@@ -65,7 +65,7 @@ export function ConversationHeader({ title, onBack, onLeave, onBlock, canLeave =
               </>
             )}
             {canLeave && onLeave && (
-              <DropdownMenuItem onClick={onLeave} className="text-red-600 focus:text-red-600">
+              <DropdownMenuItem onClick={onLeave} className="text-destructive focus:text-destructive">
                 <LogOut className="h-4 w-4 mr-2" />
                 Leave Conversation
               </DropdownMenuItem>

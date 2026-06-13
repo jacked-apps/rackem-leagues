@@ -66,7 +66,7 @@ export const DateField: React.FC<DateFieldProps> = ({
       {/* Label */}
       <label className="block text-sm font-medium text-foreground">
         {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
+        {required && <span className="text-destructive ml-1">*</span>}
       </label>
 
       {/* Calendar Input */}
@@ -81,14 +81,14 @@ export const DateField: React.FC<DateFieldProps> = ({
 
       {/* Selected Date Display */}
       {value && !error && (
-        <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-md p-2">
+        <p className="text-sm text-success bg-success/10 border border-success/40 rounded-md p-2">
           Selected: {formatDateForDisplay(value, 'long')}
         </p>
       )}
 
       {/* Error Message */}
       {error && (
-        <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md p-2">
+        <p className="text-sm text-destructive bg-destructive/10 border border-destructive/40 rounded-md p-2">
           {error}
         </p>
       )}

@@ -207,7 +207,7 @@ export const PlayoffTemplateSelector: React.FC<PlayoffTemplateSelectorProps> = (
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
-            <Trophy className="h-5 w-5 text-purple-600" />
+            <Trophy className="h-5 w-5 text-accent-foreground" />
             {displayTitle}
           </CardTitle>
           <Select
@@ -262,7 +262,7 @@ export const PlayoffTemplateSelector: React.FC<PlayoffTemplateSelectorProps> = (
         {isModified ? (
           // Modified state: show editable name/description and save button
           <>
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+            <div className="p-3 bg-warning/10 border border-warning/40 rounded-lg text-sm text-warning">
               {context === 'league'
                 ? 'Settings have been modified. Enter a name and save to create this league\'s custom configuration.'
                 : 'Settings have been modified. Enter a name and save to create your organization\'s custom configuration.'}
@@ -276,10 +276,10 @@ export const PlayoffTemplateSelector: React.FC<PlayoffTemplateSelectorProps> = (
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => onNameChange(e.target.value)}
                   placeholder="e.g., My League Playoffs"
                   maxLength={100}
-                  className={nameMatchesGlobalTemplate ? 'border-red-500' : ''}
+                  className={nameMatchesGlobalTemplate ? 'border-destructive' : ''}
                 />
                 {nameMatchesGlobalTemplate && (
-                  <div className="flex items-center gap-1 text-sm text-red-600">
+                  <div className="flex items-center gap-1 text-sm text-destructive">
                     <AlertCircle className="h-4 w-4" />
                     <span>This name is reserved. Please choose a different name.</span>
                   </div>

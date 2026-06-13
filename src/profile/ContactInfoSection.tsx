@@ -50,7 +50,7 @@ export const ContactInfoSection: React.FC<ContactInfoSectionProps> = ({
             variant="outline"
             size="sm"
             onClick={handlers.startEdit}
-            className="text-blue-600 border-blue-600 hover:bg-blue-50"
+            className="text-info border-info hover:bg-info/10"
             loadingText="none"
           >
             Edit
@@ -70,10 +70,10 @@ export const ContactInfoSection: React.FC<ContactInfoSectionProps> = ({
               value={form.formData.email}
               onChange={(e) => handlers.updateForm('email', e.target.value)}
               placeholder="your.email@example.com"
-              className={form.errors.email ? 'border-red-500' : ''}
+              className={form.errors.email ? 'border-destructive' : ''}
             />
             {form.errors.email && (
-              <p className="text-red-500 text-sm mt-1">{form.errors.email}</p>
+              <p className="text-destructive text-sm mt-1">{form.errors.email}</p>
             )}
           </div>
 
@@ -86,10 +86,10 @@ export const ContactInfoSection: React.FC<ContactInfoSectionProps> = ({
               value={form.formData.phone}
               onChange={(e) => handlePhoneChange(e.target.value)}
               placeholder="(555) 123-4567"
-              className={form.errors.phone ? 'border-red-500' : ''}
+              className={form.errors.phone ? 'border-destructive' : ''}
             />
             {form.errors.phone && (
-              <p className="text-red-500 text-sm mt-1">{form.errors.phone}</p>
+              <p className="text-destructive text-sm mt-1">{form.errors.phone}</p>
             )}
             <p className="text-xs text-muted-foreground mt-1">
               Phone number will be formatted automatically as you type

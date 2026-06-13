@@ -256,11 +256,11 @@ export const getQuestionDefinitions = (
       'How do you want players to contact you about joining your leagues?',
     content: (
       <div className="space-y-4 text-sm">
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-          <h4 className="font-semibold text-amber-800 mb-2">
+        <div className="bg-warning/10 border border-warning/40 rounded-lg p-4">
+          <h4 className="font-semibold text-warning mb-2">
             ⚠️ Security Warning
           </h4>
-          <p className="text-amber-700 mb-3">
+          <p className="text-foreground mb-3">
             Any contact information you provide as a League Operator will be made publicly available
             to players searching for leagues. This information will be visible
             on your league listings.
@@ -268,24 +268,24 @@ export const getQuestionDefinitions = (
           <div className="flex gap-3">
             <button
               onClick={() => setShowSecurityDisclaimer(true)}
-              className="text-xs bg-amber-100 hover:bg-amber-200 text-amber-800 px-3 py-1 rounded-md transition-colors"
+              className="text-xs bg-warning/10 hover:bg-warning/20 text-warning px-3 py-1 rounded-md transition-colors"
             >
               Security Disclaimer
             </button>
           </div>
         </div>
 
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h4 className="font-semibold text-blue-800 mb-2">
+        <div className="bg-info/10 border border-info/40 rounded-lg p-4">
+          <h4 className="font-semibold text-info mb-2">
             💡 Professional Setup Recommendations
           </h4>
-          <p className="text-blue-700 mb-3">
+          <p className="text-foreground mb-3">
             Please read these insider tips that successful league operators use to build thriving, professional leagues and protect their privacy.
           </p>
           <div className="flex gap-3">
             <button
               onClick={() => setShowSetupGuide(true)}
-              className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-1 rounded-md transition-colors"
+              className="text-xs bg-info/10 hover:bg-info/20 text-info px-3 py-1 rounded-md transition-colors"
             >
               Setup Guide
             </button>
@@ -387,7 +387,7 @@ export const getQuestionDefinitions = (
                           leagueEmailSchema.parse(state.leagueEmail);
                           return 'border-border';
                         } catch {
-                          return 'border-red-300 bg-red-50';
+                          return 'border-destructive/40 bg-destructive/10';
                         }
                       })()
                     }`}
@@ -399,7 +399,7 @@ export const getQuestionDefinitions = (
                       return null;
                     } catch (error) {
                       return (
-                        <p className="mt-1 text-sm text-red-600">
+                        <p className="mt-1 text-sm text-destructive">
                           Please enter a valid email address
                         </p>
                       );
@@ -528,7 +528,7 @@ export const getQuestionDefinitions = (
                           leaguePhoneSchema.parse(state.leaguePhone);
                           return 'border-border';
                         } catch {
-                          return 'border-red-300 bg-red-50';
+                          return 'border-destructive/40 bg-destructive/10';
                         }
                       })()
                     }`}
@@ -540,7 +540,7 @@ export const getQuestionDefinitions = (
                       return null;
                     } catch (error) {
                       return (
-                        <p className="mt-1 text-sm text-red-600">
+                        <p className="mt-1 text-sm text-destructive">
                           Please enter a valid phone number
                         </p>
                       );

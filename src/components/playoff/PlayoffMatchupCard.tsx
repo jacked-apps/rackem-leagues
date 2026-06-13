@@ -121,10 +121,10 @@ export const PlayoffMatchupCard: React.FC<PlayoffMatchupCardProps> = ({
       return {
         icon: <Shuffle className="h-4 w-4" />,
         label: 'Random Team',
-        bgColor: 'bg-purple-50',
+        bgColor: 'bg-accent',
         circleBg: 'bg-purple-600',
-        textColor: 'text-purple-700',
-        badgeColor: isHome ? 'text-purple-600' : 'text-purple-500',
+        textColor: 'text-foreground',
+        badgeColor: isHome ? 'text-accent-foreground' : 'text-accent-foreground',
       };
     }
 
@@ -135,10 +135,10 @@ export const PlayoffMatchupCard: React.FC<PlayoffMatchupCardProps> = ({
         return {
           icon: <JokerIcon className="h-6 w-6" size={24} />,
           label: 'Remaining Loser',
-          bgColor: 'bg-amber-50',
+          bgColor: 'bg-warning/10',
           circleBg: 'bg-amber-600',
-          textColor: 'text-amber-700',
-          badgeColor: isHome ? 'text-amber-600' : 'text-amber-500',
+          textColor: 'text-warning',
+          badgeColor: isHome ? 'text-warning' : 'text-warning',
         };
       }
 
@@ -149,7 +149,7 @@ export const PlayoffMatchupCard: React.FC<PlayoffMatchupCardProps> = ({
           icon: <ThumbsDown className="h-4 w-4" />,
           label: `Loser Match ${matchRef}`,
           bgColor: 'bg-muted',
-          circleBg: 'bg-muted0',
+          circleBg: 'bg-muted-foreground',
           textColor: 'text-muted-foreground',
           badgeColor: isHome ? 'text-muted-foreground' : 'text-muted-foreground',
         };
@@ -160,10 +160,10 @@ export const PlayoffMatchupCard: React.FC<PlayoffMatchupCardProps> = ({
       return {
         icon: <Trophy className="h-4 w-4" />,
         label: `Winner Match ${matchRef}`,
-        bgColor: 'bg-indigo-50',
+        bgColor: 'bg-info/10',
         circleBg: 'bg-indigo-600',
-        textColor: 'text-indigo-700',
-        badgeColor: isHome ? 'text-indigo-600' : 'text-indigo-500',
+        textColor: 'text-info',
+        badgeColor: isHome ? 'text-info' : 'text-info',
       };
     }
 
@@ -172,10 +172,10 @@ export const PlayoffMatchupCard: React.FC<PlayoffMatchupCardProps> = ({
       return {
         icon: <JokerIcon className="h-6 w-6" size={24} />,
         label: 'Wildcard',
-        bgColor: 'bg-amber-50',
+        bgColor: 'bg-warning/10',
         circleBg: 'bg-amber-600',
-        textColor: 'text-amber-700',
-        badgeColor: isHome ? 'text-amber-600' : 'text-amber-500',
+        textColor: 'text-warning',
+        badgeColor: isHome ? 'text-warning' : 'text-warning',
       };
     }
 
@@ -183,10 +183,10 @@ export const PlayoffMatchupCard: React.FC<PlayoffMatchupCardProps> = ({
     return {
       icon: seed,
       label: `${getOrdinal(seed)} Place Team`,
-      bgColor: isHome ? 'bg-blue-50' : 'bg-muted',
+      bgColor: isHome ? 'bg-info/10' : 'bg-muted',
       circleBg: isHome ? 'bg-blue-600' : 'bg-gray-600',
       textColor: 'text-muted-foreground',
-      badgeColor: isHome ? 'text-blue-600' : 'text-muted-foreground',
+      badgeColor: isHome ? 'text-info' : 'text-muted-foreground',
     };
   };
 

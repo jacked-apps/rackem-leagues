@@ -45,7 +45,7 @@ export function WizardShell<TFormData>(props: WizardShellProps<TFormData>) {
   } = useWizardShell(props);
 
   if (!currentStep) {
-    return <div className="p-4 text-sm text-red-600">No steps configured.</div>;
+    return <div className="p-4 text-sm text-destructive">No steps configured.</div>;
   }
 
   const StepComponent = currentStep.component;
@@ -73,7 +73,7 @@ export function WizardShell<TFormData>(props: WizardShellProps<TFormData>) {
         <StepComponent {...stepProps} />
 
         {errors.length > 0 && (
-          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+          <div className="mt-4 p-3 bg-destructive/10 border border-destructive/40 rounded text-sm text-destructive">
             {errors.map((err, i) => (
               <p key={i}>{err}</p>
             ))}

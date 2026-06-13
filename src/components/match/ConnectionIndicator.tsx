@@ -66,7 +66,7 @@ export function ConnectionIndicator({
       <div
         role="status"
         aria-live="polite"
-        className="flex items-center gap-1.5 rounded-md bg-amber-50 px-2 py-1 text-xs text-amber-700"
+        className="flex items-center gap-1.5 rounded-md bg-warning/10 px-2 py-1 text-xs text-warning"
       >
         <WifiOff className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         <span>Trouble connecting — your scores are safe and will sync automatically.</span>

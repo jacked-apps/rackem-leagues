@@ -29,8 +29,8 @@ export function UserListItem({
       className={cn(
         'w-full p-2 rounded-lg border transition-colors text-left flex items-center justify-between',
         isSelected
-          ? 'bg-blue-100 border-blue-500 hover:bg-blue-150'
-          : 'hover:bg-blue-50 hover:border-blue-300'
+          ? 'bg-info/10 border-info/40 hover:bg-info/20'
+          : 'hover:bg-info/10 hover:border-info/40'
       )}
     >
       <div className="flex items-center justify-between flex-1">
@@ -41,7 +41,7 @@ export function UserListItem({
       </div>
       {isSelected && (
         <div className="ml-2 flex-shrink-0">
-          <Check className="h-5 w-5 text-blue-600" />
+          <Check className="h-5 w-5 text-info" />
         </div>
       )}
     </button>

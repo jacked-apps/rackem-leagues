@@ -40,7 +40,7 @@ const WIN_CONDITION_OPTIONS: SelectableCardOption<string>[] = [
             land in the tie band (between the win and tie thresholds),
             the match goes to the tiebreaker step you configure later.
           </p>
-          <p className="text-xs text-gray-600">
+          <p className="text-xs text-muted-foreground">
             Used by all classic BCA formats (3v3, 5v5, etc.). Pairs
             naturally with Linear Above Threshold or Accumulate with
             Milestone Jumps points calculators.
@@ -64,7 +64,7 @@ const WIN_CONDITION_OPTIONS: SelectableCardOption<string>[] = [
             structure of points-mode calculators means exact ties are
             functionally impossible.
           </p>
-          <p className="text-xs text-gray-600">
+          <p className="text-xs text-muted-foreground">
             Used by Fargo 10-7. Requires a points calculator that's NOT
             "None — don't track points." Otherwise this option will be
             blocked at the review step.

@@ -59,16 +59,16 @@ export function MessageSettingsModal({ onClose, onUnblocked }: MessageSettingsMo
     <Modal isOpen={true} onClose={onClose} title="Message Settings">
       <Modal.Body className="space-y-4">
         {success && (
-          <div className="p-3 bg-green-50 border border-green-200 rounded-md">
-            <p className="text-sm text-green-700 font-medium">
+          <div className="p-3 bg-success/10 border border-success/40 rounded-md">
+            <p className="text-sm text-success font-medium">
               Settings saved successfully!
             </p>
           </div>
         )}
 
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-sm text-red-700">{error}</p>
+          <div className="p-3 bg-destructive/10 border border-destructive/40 rounded-md">
+            <p className="text-sm text-destructive">{error}</p>
           </div>
         )}
 
@@ -78,7 +78,7 @@ export function MessageSettingsModal({ onClose, onUnblocked }: MessageSettingsMo
             <AccordionItem value="privacy" className="border rounded-lg">
               <AccordionTrigger className="px-4 hover:no-underline hover:bg-muted">
                 <div className="flex items-center gap-3">
-                  <Shield className="h-5 w-5 text-purple-600" />
+                  <Shield className="h-5 w-5 text-accent-foreground" />
                   <div className="text-left">
                     <div className="font-semibold">Privacy & Safety</div>
                     <div className="text-sm text-muted-foreground font-normal">
@@ -130,7 +130,7 @@ export function MessageSettingsModal({ onClose, onUnblocked }: MessageSettingsMo
                           <span className="text-xs text-muted-foreground font-medium">Status:</span>
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                             shouldFilter
-                              ? 'bg-green-100 text-green-800'
+                              ? 'bg-success/10 text-success'
                               : 'bg-muted text-foreground'
                           }`}>
                             {shouldFilter ? 'Enabled' : 'Disabled'}
@@ -141,7 +141,7 @@ export function MessageSettingsModal({ onClose, onUnblocked }: MessageSettingsMo
                           <p className="text-xs text-foreground">
                             {shouldFilter ? (
                               <>
-                                <strong className="text-green-700">Enabled:</strong> Profanity in messages you receive will be replaced with asterisks (****). Other users see messages based on their own filter settings.
+                                <strong className="text-success">Enabled:</strong> Profanity in messages you receive will be replaced with asterisks (****). Other users see messages based on their own filter settings.
                               </>
                             ) : (
                               <>
@@ -153,7 +153,7 @@ export function MessageSettingsModal({ onClose, onUnblocked }: MessageSettingsMo
                       </div>
 
                       {!canToggle && (
-                        <div className="p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
+                        <div className="p-2 bg-info/10 border border-info/40 rounded text-xs text-info">
                           <strong>Note:</strong> This filter is required for users under 18 and cannot be disabled.
                         </div>
                       )}

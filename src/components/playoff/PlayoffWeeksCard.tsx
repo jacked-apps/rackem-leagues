@@ -82,7 +82,7 @@ export const PlayoffWeeksCard: React.FC<PlayoffWeeksCardProps> = ({
 
   return (
     <>
-      <div className="p-4 bg-purple-50 rounded-lg space-y-3">
+      <div className="p-4 bg-accent rounded-lg space-y-3">
         {/* Summary Row */}
         <div className="flex items-center gap-3">
           {/* Week Count Circle */}
@@ -92,10 +92,10 @@ export const PlayoffWeeksCard: React.FC<PlayoffWeeksCardProps> = ({
 
           {/* Description */}
           <div className="flex-1">
-            <div className="font-medium text-purple-900">
+            <div className="font-medium text-foreground">
               {playoffWeeks} Playoff Week{playoffWeeks !== 1 ? 's' : ''}
             </div>
-            <div className="text-sm text-purple-700 mt-1">
+            <div className="text-sm text-accent-foreground mt-1">
               {playoffWeeks === 1 && 'Single round of play'}
               {playoffWeeks === 2 && 'Semi-final bracket'}
               {playoffWeeks === 3 && 'Quarter-final bracket'}
@@ -108,7 +108,7 @@ export const PlayoffWeeksCard: React.FC<PlayoffWeeksCardProps> = ({
             variant="ghost"
             size="sm"
             onClick={() => setShowEdit(!showEdit)}
-            className="text-purple-700 hover:text-purple-900 hover:bg-purple-100"
+            className="text-accent-foreground hover:text-accent-foreground hover:bg-accent"
             loadingText="none"
           >
             {showEdit ? (
@@ -121,11 +121,11 @@ export const PlayoffWeeksCard: React.FC<PlayoffWeeksCardProps> = ({
 
         {/* Collapsible Edit Section */}
         {showEdit && (
-          <div className="pt-3 border-t border-purple-200 space-y-3">
+          <div className="pt-3 border-t border-accent space-y-3">
             {/* Weeks Selector */}
             <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-purple-600" />
-              <span className="text-sm font-medium text-purple-800">Number of weeks</span>
+              <Calendar className="h-4 w-4 text-accent-foreground" />
+              <span className="text-sm font-medium text-accent-foreground">Number of weeks</span>
               <Select
                 value={playoffWeeks.toString()}
                 onValueChange={(value) => {
@@ -200,7 +200,7 @@ export const PlayoffWeeksCard: React.FC<PlayoffWeeksCardProps> = ({
               <div className="border-t pt-2 mt-2">
                 <div className="flex justify-between">
                   <span className="font-medium text-foreground">Example total:</span>
-                  <span className="font-bold text-purple-600">
+                  <span className="font-bold text-accent-foreground">
                     ${(exampleTeamCount * weeksToAdd * 2).toFixed(2)}
                   </span>
                 </div>

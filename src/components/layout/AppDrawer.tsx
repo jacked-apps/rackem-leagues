@@ -60,12 +60,41 @@ function pickVisibleOrgs(orgs: OperatorOrg[], cap: number): OperatorOrg[] {
   return [...owned, ...staff].slice(0, cap);
 }
 
+/**
+ * Resolve where the "Join requests (N)" doorbell should lead.
+ *
+ * Operators manage incoming join requests from the org-wide list on their
+ * Operator Dashboard, so they route there — to their primary org (owned orgs
+ * first, matching `pickVisibleOrgs` ordering). The one-org LO, which is the
+ * common case, lands precisely on the surface that shows their requests.
+ * Everyone else (players, captains) keeps the My Teams route.
+ *
+ * @param isOperator Whether the user can access operator features.
+ * @param orgs The user's organizations (may be empty while loading).
+ * @returns The route the doorbell link should point at.
+ */
+function resolveJoinRequestsTo(isOperator: boolean, orgs: OperatorOrg[]): string {
+  if (isOperator && orgs?.length) {
+    return `/operator-dashboard/${pickVisibleOrgs(orgs, 1)[0].id}`;
+  }
+  return '/my-teams';
+}
+
 export function AppDrawer(_props: AppDrawerProps) {
   const { isLoggedIn } = useUser();
   const { member, canAccessLeagueOperatorFeatures } = useUserProfile();
   const isOperator = canAccessLeagueOperatorFeatures();
   const { organizations } = useOrganizations(member?.id);
   const { data: unreadCount = 0 } = useUnreadMessageCount(member?.id);
+
+  // Doorbell target: operators answer the join-request door from their
+  // operator surface (the org-wide list on the Operator Dashboard), not the
+  // player's My Teams page. We send them to their *primary* org — owned orgs
+  // first via the same ordering the Operator section uses — so a one-org LO
+  // (the common case) lands exactly where their requests live. Non-operators
+  // keep the player route. ('/dashboard' is only a redirect to /my-teams, so
+  // it's no use as a multi-org target — the primary org's dashboard is.)
+  const joinRequestsTo = resolveJoinRequestsTo(isOperator, organizations as OperatorOrg[]);
 
   const displayName = (() => {
     if (member?.first_name || member?.last_name) {
@@ -125,7 +154,7 @@ export function AppDrawer(_props: AppDrawerProps) {
           <PublicSection />
         ) : (
           <>
-            <PlayerSection unreadCount={unreadCount} />
+            <PlayerSection unreadCount={unreadCount} joinRequestsTo={joinRequestsTo} />
             {isOperator ? <OperatorSection orgs={organizations as OperatorOrg[]} /> : null}
           </>
         )}
@@ -158,7 +187,14 @@ function PublicSection() {
 }
 
 /** Mirrors SidebarPlayerSection. */
-function PlayerSection({ unreadCount }: { unreadCount: number }) {
+function PlayerSection({
+  unreadCount,
+  joinRequestsTo,
+}: {
+  unreadCount: number;
+  /** Where the doorbell leads — operator surface for LOs, My Teams otherwise. */
+  joinRequestsTo: string;
+}) {
   const messagesLabel = unreadCount > 0 ? `Messages (${unreadCount})` : 'Messages';
   // Doorbell: pending join requests for teams this user can approve. The link
   // appears only while requests are waiting and clears when handled.
@@ -177,7 +213,7 @@ function PlayerSection({ unreadCount }: { unreadCount: number }) {
       <DrawerLink to="/my-match" label="My Match" />
       <DrawerLink to="/my-teams" label="My Teams" />
       {joinRequestCount > 0 && (
-        <DrawerLink to="/my-teams" label={`Join requests (${joinRequestCount})`} />
+        <DrawerLink to={joinRequestsTo} label={`Join requests (${joinRequestCount})`} />
       )}
       {reupTeams.length > 0 && <DrawerLink to="/reup" label={reupLabel} />}
       <DrawerLink to="/stats" label="Stats" />

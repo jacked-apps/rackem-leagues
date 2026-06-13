@@ -57,9 +57,9 @@ export const VenueCard: React.FC<VenueCardProps> = ({ venue, onEdit }) => {
           <span className="text-muted-foreground">Regulation Tables:</span>
           <span className="font-semibold text-foreground">{venue.regulation_tables}</span>
         </div>
-        <div className="flex items-center justify-between text-sm mt-2 pt-2 border-t border-gray-100">
+        <div className="flex items-center justify-between text-sm mt-2 pt-2 border-t border-border">
           <span className="text-muted-foreground">Total Tables:</span>
-          <span className="font-bold text-blue-600">{venue.total_tables}</span>
+          <span className="font-bold text-info">{venue.total_tables}</span>
         </div>
       </div>
 

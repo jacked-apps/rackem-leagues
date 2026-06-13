@@ -360,7 +360,7 @@ export const TableConfigureModal: React.FC<TableConfigureModalProps> = ({
                 <button
                   key={num}
                   onClick={() => removeSkipNumber(num)}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-sm hover:bg-orange-200 transition-colors"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 bg-warning/10 text-warning rounded-full text-sm hover:bg-warning/20 transition-colors"
                   title="Click to remove"
                 >
                   {num}
@@ -390,10 +390,10 @@ export const TableConfigureModal: React.FC<TableConfigureModalProps> = ({
                   {/* Skip button - click to add this number to skip list */}
                   <button
                     onClick={() => handleGripClick(table.number)}
-                    className="p-1 -m-1 rounded hover:bg-orange-100 transition-colors"
+                    className="p-1 -m-1 rounded hover:bg-warning/10 transition-colors"
                     title={`Skip table #${table.number}`}
                   >
-                    <SkipForward className="h-4 w-4 text-muted-foreground hover:text-orange-600" />
+                    <SkipForward className="h-4 w-4 text-muted-foreground hover:text-warning" />
                   </button>
 
                   {/* Editable table number */}
@@ -403,8 +403,8 @@ export const TableConfigureModal: React.FC<TableConfigureModalProps> = ({
                     pattern="[0-9]*"
                     className={`w-14 text-center font-bold ${
                       duplicateNumbers.has(table.number)
-                        ? 'text-red-700 bg-red-50 border-red-300'
-                        : 'text-blue-700 bg-blue-50 border-blue-200'
+                        ? 'text-destructive bg-destructive/10 border-destructive/40'
+                        : 'text-info bg-info/10 border-info/40'
                     }`}
                     value={table.number}
                     onFocus={handleInputFocus}
@@ -461,7 +461,7 @@ export const TableConfigureModal: React.FC<TableConfigureModalProps> = ({
         {/* Footer */}
         <div className="flex items-center justify-between gap-3 p-4 border-t border-border bg-muted rounded-b-xl">
           {hasDuplicates ? (
-            <p className="text-sm text-red-600">
+            <p className="text-sm text-destructive">
               Duplicate table numbers must be resolved before saving.
             </p>
           ) : (

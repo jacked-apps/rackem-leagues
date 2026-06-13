@@ -206,7 +206,7 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-card rounded-lg p-6 max-w-md w-full">
-          <h3 className="text-lg font-semibold text-red-600 mb-4">Error</h3>
+          <h3 className="text-lg font-semibold text-destructive mb-4">Error</h3>
           <p className="text-foreground mb-4">{error}</p>
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={onCancel}>
@@ -224,26 +224,26 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-card rounded-lg p-6 max-w-lg w-full">
           <div className="flex items-start gap-3 mb-4">
-            <XCircle className="h-6 w-6 text-red-600 flex-shrink-0 mt-1" />
+            <XCircle className="h-6 w-6 text-destructive flex-shrink-0 mt-1" />
             <div>
-              <h3 className="text-lg font-semibold text-red-600">Cannot Delete League</h3>
+              <h3 className="text-lg font-semibold text-destructive">Cannot Delete League</h3>
             </div>
           </div>
 
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-            <p className="text-red-800 font-medium mb-2">
+          <div className="bg-destructive/10 border border-destructive/40 rounded-lg p-4 mb-4">
+            <p className="text-destructive font-medium mb-2">
               This league has completed seasons and cannot be deleted.
             </p>
-            <p className="text-red-700 text-sm mb-3">
+            <p className="text-foreground text-sm mb-3">
               Deleting completed seasons would erase historical player statistics, standings, and match records that are essential for:
             </p>
-            <ul className="list-disc list-inside text-red-700 text-sm space-y-1 mb-3">
+            <ul className="list-disc list-inside text-foreground text-sm space-y-1 mb-3">
               <li>Player lifetime statistics and handicaps</li>
               <li>Season-over-season performance tracking</li>
               <li>Historical league records and achievements</li>
               <li>Playoff qualification verification</li>
             </ul>
-            <p className="text-red-700 text-sm font-medium">
+            <p className="text-foreground text-sm font-medium">
               If you no longer want this league active, change its status to "Abandoned" instead of deleting it.
             </p>
           </div>
@@ -278,20 +278,20 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-card rounded-lg p-6 max-w-lg w-full">
           <div className="flex items-start gap-3 mb-4">
-            <AlertTriangle className="h-6 w-6 text-orange-600 flex-shrink-0 mt-1" />
+            <AlertTriangle className="h-6 w-6 text-warning flex-shrink-0 mt-1" />
             <div>
-              <h3 className="text-lg font-semibold text-orange-600">⚠️ Danger: Active League With Played Matches</h3>
+              <h3 className="text-lg font-semibold text-warning">⚠️ Danger: Active League With Played Matches</h3>
             </div>
           </div>
 
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
-            <p className="text-orange-800 font-medium mb-2">
+          <div className="bg-warning/10 border border-warning/40 rounded-lg p-4 mb-4">
+            <p className="text-warning font-medium mb-2">
               This league has {stats.playedMatches} match{stats.playedMatches !== 1 ? 'es' : ''} that have been played!
             </p>
-            <p className="text-orange-700 text-sm mb-3">
+            <p className="text-foreground text-sm mb-3">
               Deleting this league will permanently erase:
             </p>
-            <ul className="list-disc list-inside text-orange-700 text-sm space-y-1">
+            <ul className="list-disc list-inside text-foreground text-sm space-y-1">
               <li>{stats.totalSeasons} season{stats.totalSeasons !== 1 ? 's' : ''}</li>
               <li>{stats.totalTeams} team{stats.totalTeams !== 1 ? 's' : ''}</li>
               <li>{stats.totalMatches} match{stats.totalMatches !== 1 ? 'es' : ''} ({stats.playedMatches} already played)</li>
@@ -324,8 +324,8 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-              <p className="text-red-800 text-sm">{error}</p>
+            <div className="bg-destructive/10 border border-destructive/40 rounded-lg p-3 mb-4">
+              <p className="text-destructive text-sm">{error}</p>
             </div>
           )}
 
@@ -354,17 +354,17 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-card rounded-lg p-6 max-w-lg w-full">
           <div className="flex items-start gap-3 mb-4">
-            <AlertTriangle className="h-6 w-6 text-yellow-600 flex-shrink-0 mt-1" />
+            <AlertTriangle className="h-6 w-6 text-warning flex-shrink-0 mt-1" />
             <div>
-              <h3 className="text-lg font-semibold text-yellow-600">Delete League?</h3>
+              <h3 className="text-lg font-semibold text-warning">Delete League?</h3>
             </div>
           </div>
 
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-            <p className="text-yellow-800 text-sm mb-2">
+          <div className="bg-warning/10 border border-warning/40 rounded-lg p-4 mb-4">
+            <p className="text-warning text-sm mb-2">
               This league has setup data that will be deleted:
             </p>
-            <ul className="list-disc list-inside text-yellow-700 text-sm space-y-1">
+            <ul className="list-disc list-inside text-foreground text-sm space-y-1">
               {stats.totalSeasons > 0 && <li>{stats.totalSeasons} season{stats.totalSeasons !== 1 ? 's' : ''}</li>}
               {stats.totalTeams > 0 && <li>{stats.totalTeams} team{stats.totalTeams !== 1 ? 's' : ''}</li>}
               {stats.totalMatches > 0 && <li>{stats.totalMatches} scheduled match{stats.totalMatches !== 1 ? 'es' : ''} (none played yet)</li>}
@@ -378,8 +378,8 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-              <p className="text-red-800 text-sm">{error}</p>
+            <div className="bg-destructive/10 border border-destructive/40 rounded-lg p-3 mb-4">
+              <p className="text-destructive text-sm">{error}</p>
             </div>
           )}
 
@@ -407,7 +407,7 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-card rounded-lg p-6 max-w-md w-full">
         <div className="flex items-start gap-3 mb-4">
-          <Info className="h-6 w-6 text-blue-600 flex-shrink-0 mt-1" />
+          <Info className="h-6 w-6 text-info flex-shrink-0 mt-1" />
           <div>
             <h3 className="text-lg font-semibold text-foreground">Delete Empty League?</h3>
           </div>
@@ -417,15 +417,15 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
           Are you sure you want to delete <strong>{leagueName}</strong>?
         </p>
 
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-          <p className="text-blue-800 text-sm">
+        <div className="bg-info/10 border border-info/40 rounded-lg p-3 mb-4">
+          <p className="text-info text-sm">
             This league has no seasons or data. It's safe to delete.
           </p>
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-            <p className="text-red-800 text-sm">{error}</p>
+          <div className="bg-destructive/10 border border-destructive/40 rounded-lg p-3 mb-4">
+            <p className="text-destructive text-sm">{error}</p>
           </div>
         )}
 

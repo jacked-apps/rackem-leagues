@@ -56,7 +56,7 @@ export function MessageInput({ onSend, disabled = false, maxLength = 2000 }: Mes
   };
 
   return (
-    <div className="border-t bg-gray-300 p-3 md:p-4">
+    <div className="border-t bg-muted p-3 md:p-4">
       <div className="flex gap-2">
         <Input
           type="text"

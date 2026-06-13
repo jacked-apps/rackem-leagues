@@ -103,7 +103,7 @@ export const ParticipationSettingsCard: React.FC<ParticipationSettingsCardProps>
   };
 
   return (
-    <div className="p-4 bg-green-50 rounded-lg space-y-3">
+    <div className="p-4 bg-success/10 rounded-lg space-y-3">
       {/* Summary Row */}
       <div className="flex items-center gap-3">
         {/* Circle indicator */}
@@ -113,10 +113,10 @@ export const ParticipationSettingsCard: React.FC<ParticipationSettingsCardProps>
 
         {/* Description */}
         <div className="flex-1">
-          <div className="font-medium text-green-900">
+          <div className="font-medium text-foreground">
             {titleText}
           </div>
-          <div className="text-sm text-green-700 mt-1">
+          <div className="text-sm text-success mt-1">
             {getDescriptionText()}
           </div>
         </div>
@@ -126,7 +126,7 @@ export const ParticipationSettingsCard: React.FC<ParticipationSettingsCardProps>
           variant="ghost"
           size="sm"
           onClick={() => setShowQualificationEdit(!showQualificationEdit)}
-          className="text-green-700 hover:text-green-900 hover:bg-green-100"
+          className="text-success hover:text-success hover:bg-success/20"
         >
           {showQualificationEdit ? (
             <ChevronUp className="h-4 w-4" />
@@ -138,10 +138,10 @@ export const ParticipationSettingsCard: React.FC<ParticipationSettingsCardProps>
 
       {/* Collapsible Qualification Settings */}
       {showQualificationEdit && (
-        <div className="pt-3 border-t border-green-200 space-y-3">
+        <div className="pt-3 border-t border-success/40 space-y-3">
           {/* Qualification Type Selector */}
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-green-800">Teams qualifying</span>
+            <span className="text-sm font-medium text-success">Teams qualifying</span>
             <Select
               value={qualificationType}
               onValueChange={(value) =>
@@ -162,7 +162,7 @@ export const ParticipationSettingsCard: React.FC<ParticipationSettingsCardProps>
           {/* Fixed team count input */}
           {qualificationType === 'fixed' && (
             <div className="flex items-center gap-2 ml-4">
-              <span className="text-sm text-green-700">Top</span>
+              <span className="text-sm text-success">Top</span>
               <Input
                 type="number"
                 min={2}
@@ -173,7 +173,7 @@ export const ParticipationSettingsCard: React.FC<ParticipationSettingsCardProps>
                 }
                 className="w-20 bg-card"
               />
-              <span className="text-sm text-green-700">teams</span>
+              <span className="text-sm text-success">teams</span>
             </div>
           )}
 
@@ -182,7 +182,7 @@ export const ParticipationSettingsCard: React.FC<ParticipationSettingsCardProps>
             <div className="space-y-2 ml-4">
               {/* Percentage selector */}
               <div className="flex items-center gap-2">
-                <span className="text-sm text-green-700">Top</span>
+                <span className="text-sm text-success">Top</span>
                 <Select
                   value={qualifyingPercentage.toString()}
                   onValueChange={(value) =>
@@ -200,12 +200,12 @@ export const ParticipationSettingsCard: React.FC<ParticipationSettingsCardProps>
                     <SelectItem value="75">75%</SelectItem>
                   </SelectContent>
                 </Select>
-                <span className="text-sm text-green-700">of teams</span>
+                <span className="text-sm text-success">of teams</span>
               </div>
 
               {/* Minimum input */}
               <div className="flex items-center gap-2">
-                <span className="text-sm text-green-700">Minimum</span>
+                <span className="text-sm text-success">Minimum</span>
                 <Input
                   type="number"
                   min={2}
@@ -216,12 +216,12 @@ export const ParticipationSettingsCard: React.FC<ParticipationSettingsCardProps>
                   }
                   className="w-20 bg-card"
                 />
-                <span className="text-sm text-green-700">teams</span>
+                <span className="text-sm text-success">teams</span>
               </div>
 
               {/* Maximum input */}
               <div className="flex items-center gap-2">
-                <span className="text-sm text-green-700">Maximum</span>
+                <span className="text-sm text-success">Maximum</span>
                 <Input
                   type="number"
                   min={2}
@@ -234,7 +234,7 @@ export const ParticipationSettingsCard: React.FC<ParticipationSettingsCardProps>
                   }}
                   className="w-20 bg-card"
                 />
-                <span className="text-sm text-green-700">teams (leave empty for no max)</span>
+                <span className="text-sm text-success">teams (leave empty for no max)</span>
               </div>
             </div>
           )}

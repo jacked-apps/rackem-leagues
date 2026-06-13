@@ -109,7 +109,7 @@ export const ActiveLeagues: React.FC<ActiveLeaguesProps> = ({ operatorId }) => {
         </h3>
         <div className="text-center py-12">
           <div className="text-4xl mb-4">⚠️</div>
-          <p className="text-red-600 mb-4">{error}</p>
+          <p className="text-destructive mb-4">{error}</p>
           <Button loadingText="none" onClick={() => window.location.reload()} variant="outline">
             Try Again
           </Button>
@@ -190,15 +190,15 @@ export const ActiveLeagues: React.FC<ActiveLeaguesProps> = ({ operatorId }) => {
           return (
             <div
               key={league.id}
-              className="border-2 border-orange-300 rounded-lg hover:border-orange-400 hover:shadow-md transition-all bg-orange-50/30 overflow-hidden"
+              className="border-2 border-warning/40 rounded-lg hover:border-warning/60 hover:shadow-md transition-all bg-warning/10 overflow-hidden"
             >
               <div className="flex justify-between items-start p-4 pb-0">
                 <Link to={`/league/${league.id}`} className="flex-1">
-                  <h4 className="font-semibold text-foreground text-lg hover:text-orange-600 transition-colors flex items-center gap-2 flex-wrap">
+                  <h4 className="font-semibold text-foreground text-lg hover:text-warning transition-colors flex items-center gap-2 flex-wrap">
                     {getLeagueName(league)}
                     {seasonRipe && (
                       <span
-                        className="text-xs font-medium bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full"
+                        className="text-xs font-medium bg-info/10 text-info px-2 py-0.5 rounded-full"
                         data-testid="next-season-ripe-badge"
                       >
                         📅 Plan next season
@@ -220,7 +220,7 @@ export const ActiveLeagues: React.FC<ActiveLeaguesProps> = ({ operatorId }) => {
                   size="sm"
                   variant="outline"
                   onClick={(e) => handleDeleteClick(e, league)}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-300"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/40"
                 >
                   Delete
                 </Button>

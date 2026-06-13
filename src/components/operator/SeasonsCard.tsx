@@ -110,43 +110,43 @@ export const SeasonsCard: React.FC<SeasonsCardProps> = ({ leagueId, onCreateSeas
 
       {/* Current Active Season */}
       {currentSeason ? (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+        <div className="bg-success/10 border border-success/40 rounded-lg p-4 mb-4">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold text-green-900">{currentSeason.season_name}</h3>
-            <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+            <h3 className="font-semibold text-success">{currentSeason.season_name}</h3>
+            <span className="px-3 py-1 bg-success/10 text-success text-xs font-medium rounded-full">
               Active
             </span>
           </div>
           <div className="grid md:grid-cols-2 gap-3 text-sm">
             <div>
-              <span className="text-green-700">Start Date:</span>{' '}
-              <span className="text-green-900 font-medium">
+              <span className="text-muted-foreground">Start Date:</span>{' '}
+              <span className="text-foreground font-medium">
                 {new Date(currentSeason.start_date).toLocaleDateString()}
               </span>
             </div>
             <div>
-              <span className="text-green-700">End Date:</span>{' '}
-              <span className="text-green-900 font-medium">
+              <span className="text-muted-foreground">End Date:</span>{' '}
+              <span className="text-foreground font-medium">
                 {new Date(currentSeason.end_date).toLocaleDateString()}
               </span>
             </div>
             {currentSeason.team_count !== undefined && (
               <div>
-                <span className="text-green-700">Teams:</span>{' '}
-                <span className="text-green-900 font-medium">{currentSeason.team_count}</span>
+                <span className="text-muted-foreground">Teams:</span>{' '}
+                <span className="text-foreground font-medium">{currentSeason.team_count}</span>
               </div>
             )}
             {currentSeason.week_count !== undefined && (
               <div>
-                <span className="text-green-700">Weeks:</span>{' '}
-                <span className="text-green-900 font-medium">{currentSeason.week_count}</span>
+                <span className="text-muted-foreground">Weeks:</span>{' '}
+                <span className="text-foreground font-medium">{currentSeason.week_count}</span>
               </div>
             )}
           </div>
         </div>
       ) : (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-          <p className="text-blue-800 text-sm">
+        <div className="bg-info/10 border border-info/40 rounded-lg p-4 mb-4">
+          <p className="text-info text-sm">
             No active season. <button onClick={onCreateSeason} className="underline font-medium">Create a new season</button> to get started.
           </p>
         </div>

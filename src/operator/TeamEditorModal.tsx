@@ -450,14 +450,14 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
                         key={venue.id}
                         value={venue.id}
                         disabled={!canSelect}
-                        className={atCapacity && canSelect ? 'text-orange-600' : ''}
+                        className={atCapacity && canSelect ? 'text-warning' : ''}
                       >
                         {venue.name}
-                        <span className={`ml-2 text-xs ${atCapacity ? 'text-orange-600' : 'text-muted-foreground'}`}>
+                        <span className={`ml-2 text-xs ${atCapacity ? 'text-warning' : 'text-muted-foreground'}`}>
                           ({teamsAtVenue}/{capacity} teams)
                         </span>
                         {atCapacity && !canSelect && (
-                          <span className="ml-1 text-xs text-red-500">- Full</span>
+                          <span className="ml-1 text-xs text-destructive">- Full</span>
                         )}
                       </SelectItem>
                     );
@@ -553,7 +553,7 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
                             variant="ghost"
                             size="sm"
                             onClick={() => handlePlayerChange(index, '')}
-                            className="h-6 w-6 p-0 text-muted-foreground hover:text-red-600"
+                            className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
                             aria-label={`Remove ${getPlayerDisplayName(currentMember)}`}
                           >
                             <X className="h-4 w-4" />
@@ -590,8 +590,8 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
         <div className="p-6 border-t border-border bg-muted">
           {/* Error message */}
           {(error || rosterError) && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-              <p className="text-red-800 text-sm font-medium">{error || rosterError}</p>
+            <div className="bg-destructive/10 border border-destructive/40 rounded-lg p-4 mb-4">
+              <p className="text-destructive text-sm font-medium">{error || rosterError}</p>
             </div>
           )}
 

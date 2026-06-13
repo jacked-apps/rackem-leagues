@@ -145,7 +145,7 @@ export const PlayoffBracketPreviewCard: React.FC<PlayoffBracketPreviewCardProps>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
-            <Trophy className="h-5 w-5 text-purple-600" />
+            <Trophy className="h-5 w-5 text-accent-foreground" />
             Example Bracket - Week {weekNum}
           </CardTitle>
           {/* Matchup Style Dropdown */}
@@ -192,13 +192,13 @@ export const PlayoffBracketPreviewCard: React.FC<PlayoffBracketPreviewCardProps>
       <CardContent>
         {/* Qualification info banner */}
         {qualificationMessage && (
-          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
+          <div className="mb-4 p-3 bg-warning/10 border border-warning/40 rounded-lg text-sm text-warning">
             {qualificationMessage}
           </div>
         )}
         {/* Wildcard info banner */}
         {wildcardMessage && (
-          <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+          <div className="mb-4 p-3 bg-warning/10 border border-warning/40 rounded-lg text-sm text-warning">
             {wildcardMessage}
           </div>
         )}

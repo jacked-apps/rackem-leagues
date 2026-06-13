@@ -160,9 +160,9 @@ export const VenueTableInputs: React.FC<VenueTableInputsProps> = ({
         </div>
 
         {/* Right column: Info card */}
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 w-[160px] self-start">
-          <p className="text-xs font-semibold text-amber-900 mb-1">Table Setup</p>
-          <p className="text-xs text-amber-800">
+        <div className="bg-warning/10 border border-warning/40 rounded-lg p-2 w-[160px] self-start">
+          <p className="text-xs font-semibold text-warning mb-1">Table Setup</p>
+          <p className="text-xs text-foreground">
             This should match ALL pool tables (and their numbers) in this venue entirely. You will choose which tables are used at the league level.
           </p>
         </div>

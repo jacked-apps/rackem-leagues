@@ -124,10 +124,10 @@ export function NewMessageModal({
       <Modal.Body className="p-0">
         {/* Selected Users */}
         {selectedUserIds.length > 0 && (
-          <div className="px-6 pt-4 border-b bg-blue-50">
+          <div className="px-6 pt-4 border-b bg-info/10">
             <div className="flex items-center gap-2 mb-2">
-              <Users className="h-4 w-4 text-blue-600" />
-              <span className="text-sm font-medium text-blue-900">
+              <Users className="h-4 w-4 text-info" />
+              <span className="text-sm font-medium text-info">
                 Selected ({selectedUserIds.length})
               </span>
             </div>
@@ -135,7 +135,7 @@ export function NewMessageModal({
               {selectedMembers.map((member) => (
                 <div
                   key={member.id}
-                  className="bg-card border border-blue-300 rounded-full px-3 py-1 text-sm flex items-center gap-2"
+                  className="bg-card border border-info/40 rounded-full px-3 py-1 text-sm flex items-center gap-2"
                 >
                   <span>
                     {member.first_name} {member.last_name}

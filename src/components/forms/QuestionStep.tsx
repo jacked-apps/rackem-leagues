@@ -124,7 +124,7 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                 minDate={new Date().toISOString().split('T')[0]} // Today or future
               />
               {error && (
-                <p className="text-red-500 text-sm mt-2">{error}</p>
+                <p className="text-destructive text-sm mt-2">{error}</p>
               )}
             </div>
           ) : inputType === 'text' ? (
@@ -146,12 +146,12 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                 onChange={(e) => onChange(e.target.value)}
                 onKeyDown={onKeyDown}
                 placeholder={placeholder}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg ${
-                  error ? 'border-red-500' : 'border-border'
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-lg ${
+                  error ? 'border-destructive' : 'border-border'
                 }`}
               />
               {error && (
-                <p className="text-red-500 text-sm mt-2">{error}</p>
+                <p className="text-destructive text-sm mt-2">{error}</p>
               )}
             </div>
           )}
@@ -170,7 +170,7 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                   <Button
                     variant="outline"
                     onClick={onCancel}
-                    className="text-red-600 border-red-300 hover:bg-red-50"
+                    className="text-destructive border-destructive/40 hover:bg-destructive/10"
                   >
                     Cancel
                   </Button>

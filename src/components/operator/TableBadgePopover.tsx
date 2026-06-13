@@ -131,8 +131,8 @@ export function TableBadgePopover({
               className={cn(
                 'inline-flex items-center justify-center w-8 h-8 text-sm font-medium bg-card rounded border transition-colors',
                 isAvailable
-                  ? 'text-blue-700 border-blue-300 group-hover:border-blue-500'
-                  : 'text-red-700 border-red-300 group-hover:border-red-500'
+                  ? 'text-info border-info/40 group-hover:border-info/60'
+                  : 'text-destructive border-destructive/40 group-hover:border-destructive/60'
               )}
             >
               {tableNumber}
@@ -140,7 +140,7 @@ export function TableBadgePopover({
             <span
               className={cn(
                 'text-[10px] mt-0.5',
-                isAvailable ? 'text-blue-600' : 'text-red-600'
+                isAvailable ? 'text-info' : 'text-destructive'
               )}
             >
               {sizeLabel}
@@ -173,7 +173,7 @@ export function TableBadgePopover({
                   className={cn(
                     'flex items-center gap-3 px-4 py-3 text-sm transition-colors text-left',
                     isFirst
-                      ? 'text-gray-300 cursor-not-allowed'
+                      ? 'text-muted-foreground cursor-not-allowed'
                       : 'text-foreground hover:bg-muted'
                   )}
                 >
@@ -186,7 +186,7 @@ export function TableBadgePopover({
                   className={cn(
                     'flex items-center gap-3 px-4 py-3 text-sm transition-colors text-left',
                     isLast
-                      ? 'text-gray-300 cursor-not-allowed'
+                      ? 'text-muted-foreground cursor-not-allowed'
                       : 'text-foreground hover:bg-muted'
                   )}
                 >
@@ -202,7 +202,7 @@ export function TableBadgePopover({
               onClick={handleToggle}
               className={cn(
                 'flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted transition-colors text-left',
-                isAvailable ? 'text-red-600' : 'text-green-600'
+                isAvailable ? 'text-destructive' : 'text-success'
               )}
             >
               {isAvailable ? (
@@ -220,8 +220,8 @@ export function TableBadgePopover({
 
             {/* Warning if size is disabled */}
             {!isAvailable && isSizeDisabled && (
-              <div className="px-4 py-2 bg-amber-50 border-t border-amber-200">
-                <div className="flex items-center gap-2 text-xs text-amber-700">
+              <div className="px-4 py-2 bg-warning/10 border-t border-warning/40">
+                <div className="flex items-center gap-2 text-xs text-warning">
                   <AlertTriangle className="h-3 w-3 flex-shrink-0" />
                   <span>{sizeLabel} tables are disabled</span>
                 </div>

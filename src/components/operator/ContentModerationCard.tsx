@@ -52,14 +52,14 @@ export const ContentModerationCard: React.FC<ContentModerationCardProps> = ({
     <Card>
       <CardHeader>
         <div className="flex items-center gap-3">
-          <Shield className="h-6 w-6 text-purple-600" />
+          <Shield className="h-6 w-6 text-foreground" />
           <CardTitle>Content Moderation</CardTitle>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {success && (
-          <div className="p-3 bg-green-50 border border-green-200 rounded-md">
-            <p className="text-sm text-green-700 font-medium">
+          <div className="p-3 bg-success/10 border border-success/40 rounded-md">
+            <p className="text-sm text-success font-medium">
               Profanity filter settings updated successfully!
             </p>
           </div>
@@ -81,7 +81,7 @@ export const ContentModerationCard: React.FC<ContentModerationCardProps> = ({
               <div className="mt-2">
                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                   profanityFilterEnabled
-                    ? 'bg-green-100 text-green-800'
+                    ? 'bg-success/10 text-success'
                     : 'bg-muted text-foreground'
                 }`}>
                   {profanityFilterEnabled ? 'Enabled' : 'Disabled'}
@@ -102,8 +102,8 @@ export const ContentModerationCard: React.FC<ContentModerationCardProps> = ({
         </div>
 
         {profanityFilterEnabled && (
-          <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
-            <p className="text-sm text-blue-700">
+          <div className="p-3 bg-info/10 border border-info/40 rounded-md">
+            <p className="text-sm text-info">
               <strong>Note:</strong> This setting validates team names and organization-wide content only. Individual messages are filtered based on each user's personal preferences.
             </p>
           </div>

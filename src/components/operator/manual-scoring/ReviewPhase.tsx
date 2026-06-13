@@ -279,8 +279,8 @@ export function ReviewPhase(props: ReviewPhaseProps) {
   return (
     <div className="space-y-3 p-4">
       {isReopened && (
-        <Card className="border-amber-500 bg-amber-50" data-testid="correction-banner">
-          <CardContent className="p-3 text-sm text-amber-900">
+        <Card className="border-warning/40 bg-warning/10" data-testid="correction-banner">
+          <CardContent className="p-3 text-sm text-foreground">
             Correction in progress — changes aren't committed until you re-finalize.
           </CardContent>
         </Card>

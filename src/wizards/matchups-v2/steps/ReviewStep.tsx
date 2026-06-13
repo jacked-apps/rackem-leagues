@@ -109,9 +109,9 @@ export function ReviewStep({ formData, onBack }: WizardStepProps<unknown, Matchu
     [schedule],
   );
 
-  if (!seasonId || !leagueId) return <p className="text-red-600">Missing league/season ID from flow context.</p>;
+  if (!seasonId || !leagueId) return <p className="text-destructive">Missing league/season ID from flow context.</p>;
   if (generateMutation.isPending) return <p className="text-sm text-muted-foreground">Generating schedule...</p>;
-  if (genError) return <p className="text-red-600">Error generating schedule: {genError}</p>;
+  if (genError) return <p className="text-destructive">Error generating schedule: {genError}</p>;
   if (scheduleLoading) return <p className="text-sm text-muted-foreground">Loading schedule...</p>;
 
   const regularWeeks = schedule.filter(({ week }) => week.week_type === 'regular');
@@ -142,8 +142,8 @@ export function ReviewStep({ formData, onBack }: WizardStepProps<unknown, Matchu
   return (
     <div className="space-y-4">
       {regularWeeks.length > 0 && (
-        <div className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
-          <div className="text-sm text-amber-900">
+        <div className="flex items-center justify-between rounded-lg border border-warning/40 bg-warning/10 px-4 py-3">
+          <div className="text-sm text-foreground">
             <strong>Not happy with the matchups?</strong>{' '}
             Reset to wipe and redo. You can also edit individual weeks below.
           </div>
@@ -214,7 +214,7 @@ export function ReviewStep({ formData, onBack }: WizardStepProps<unknown, Matchu
       )}
 
       {regularWeeks.length > 0 && (
-        <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+        <div className="rounded-lg border border-info/40 bg-info/10 px-4 py-3 text-sm text-foreground">
           <strong>Ready to activate?</strong>{' '}
           Click <strong>Finish</strong> below to accept this schedule and move the
           season from "upcoming" to "active" — captains can now build out their

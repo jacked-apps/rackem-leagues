@@ -368,7 +368,7 @@ export const PreferencesCard: React.FC<PreferencesCardProps> = ({
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <Settings className="h-6 w-6 text-indigo-600" />
+            <Settings className="h-6 w-6 text-foreground" />
             <CardTitle>{cardTitle}</CardTitle>
           </div>
         </CardHeader>
@@ -384,12 +384,12 @@ export const PreferencesCard: React.FC<PreferencesCardProps> = ({
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <Settings className="h-6 w-6 text-indigo-600" />
+            <Settings className="h-6 w-6 text-foreground" />
             <CardTitle>{cardTitle}</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-red-600">
+          <p className="text-sm text-destructive">
             {error || 'No preferences found. Please contact support.'}
           </p>
         </CardContent>
@@ -410,8 +410,8 @@ export const PreferencesCard: React.FC<PreferencesCardProps> = ({
       </CardHeader>
       <CardContent className="space-y-6">
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-sm text-red-600">{error}</p>
+          <div className="p-3 bg-destructive/10 border border-destructive/40 rounded-md">
+            <p className="text-sm text-destructive">{error}</p>
           </div>
         )}
 
@@ -511,8 +511,8 @@ export const PreferencesCard: React.FC<PreferencesCardProps> = ({
         />
 
         {!isLeague && (
-          <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
-            <p className="text-sm text-blue-700">
+          <div className="p-3 bg-info/10 border border-info/40 rounded-md">
+            <p className="text-sm text-info">
               <strong>Note:</strong> These are organization-level defaults. Individual leagues can override these settings.
             </p>
           </div>

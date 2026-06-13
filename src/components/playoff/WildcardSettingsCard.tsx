@@ -65,7 +65,7 @@ export const WildcardSettingsCard: React.FC<WildcardSettingsCardProps> = ({
     : `Last ${wildcardSpots} spot${wildcardSpots > 1 ? 's' : ''} randomly selected from remaining teams`;
 
   return (
-    <div className="p-4 bg-amber-50 rounded-lg space-y-3">
+    <div className="p-4 bg-warning/10 rounded-lg space-y-3">
       {/* Summary Row */}
       <div className="flex items-center gap-3">
         {/* Circle indicator */}
@@ -75,10 +75,10 @@ export const WildcardSettingsCard: React.FC<WildcardSettingsCardProps> = ({
 
         {/* Description */}
         <div className="flex-1">
-          <div className="font-medium text-amber-900">
+          <div className="font-medium text-foreground">
             {titleText}
           </div>
-          <div className="text-sm text-amber-700 mt-1">
+          <div className="text-sm text-warning mt-1">
             {descriptionText}
           </div>
         </div>
@@ -88,7 +88,7 @@ export const WildcardSettingsCard: React.FC<WildcardSettingsCardProps> = ({
           variant="ghost"
           size="sm"
           onClick={() => setShowEdit(!showEdit)}
-          className="text-amber-700 hover:text-amber-900 hover:bg-amber-100"
+          className="text-warning hover:text-warning hover:bg-warning/20"
         >
           {showEdit ? (
             <ChevronUp className="h-4 w-4" />
@@ -100,11 +100,11 @@ export const WildcardSettingsCard: React.FC<WildcardSettingsCardProps> = ({
 
       {/* Collapsible Edit Section */}
       {showEdit && (
-        <div className="pt-3 border-t border-amber-200 space-y-3">
+        <div className="pt-3 border-t border-warning/40 space-y-3">
           {/* Wildcard Spots Input */}
           <div className="flex items-center gap-2">
-            <Shuffle className="h-4 w-4 text-amber-600" />
-            <span className="text-sm font-medium text-amber-800">Wildcard spots</span>
+            <Shuffle className="h-4 w-4 text-warning" />
+            <span className="text-sm font-medium text-warning">Wildcard spots</span>
             <Input
               type="number"
               min={0}
@@ -115,11 +115,11 @@ export const WildcardSettingsCard: React.FC<WildcardSettingsCardProps> = ({
               }
               className="w-20 bg-card"
             />
-            <span className="text-sm text-amber-700">(0 = disabled)</span>
+            <span className="text-sm text-warning">(0 = disabled)</span>
           </div>
 
           {/* Explanation */}
-          <div className="text-xs text-amber-600 bg-amber-100 p-2 rounded">
+          <div className="text-xs text-warning bg-warning/20 p-2 rounded">
             Wildcard spots replace the last positions in the bracket. Teams that didn&apos;t
             automatically qualify compete for these spots through random selection.
           </div>

@@ -36,11 +36,11 @@ export function WizardSummary({ title = 'Summary', items }: WizardSummaryProps) 
   const detailItems = answered.filter((i) => i !== headlineItem);
 
   return (
-    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-      <h3 className="text-sm font-medium text-blue-900 mb-2">{title}</h3>
+    <div className="bg-info/10 border border-info/40 rounded-lg p-4">
+      <h3 className="text-sm font-medium text-foreground mb-2">{title}</h3>
 
       {headlineItem?.value && (
-        <p className="text-lg font-bold text-blue-900 mb-3 capitalize">
+        <p className="text-lg font-bold text-foreground mb-3 capitalize">
           {headlineItem.value}
         </p>
       )}
@@ -48,11 +48,11 @@ export function WizardSummary({ title = 'Summary', items }: WizardSummaryProps) 
       <div className="space-y-1">
         {detailItems.map((item) => (
           <div key={item.label} className="flex justify-between text-sm">
-            <span className="font-medium text-blue-800">{item.label}</span>
-            {/* Pin value color to dark blue — the panel's bg-blue-50 stays
-                light in both themes, but `text-foreground` flips white in
-                dark mode and disappears against it. */}
-            <span className="text-blue-900">{item.value}</span>
+            <span className="font-medium text-muted-foreground">{item.label}</span>
+            {/* Value uses the theme `foreground` token so it stays readable
+                against the theme-aware `bg-info/10` panel in both light and
+                dark mode. */}
+            <span className="text-foreground">{item.value}</span>
           </div>
         ))}
       </div>

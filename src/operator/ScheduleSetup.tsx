@@ -317,11 +317,11 @@ export const ScheduleSetup: React.FC<ScheduleSetupProps> = ({
         <h2 className="text-xl font-semibold text-foreground mb-4">
           Team Positions Locked
         </h2>
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-          <p className="text-yellow-800 font-medium mb-2">
+        <div className="bg-warning/10 border border-warning/40 rounded-lg p-4 mb-4">
+          <p className="text-warning font-medium mb-2">
             ⚠️ Team positions cannot be changed
           </p>
-          <p className="text-yellow-700 text-sm">
+          <p className="text-warning text-sm">
             Team schedule positions are locked because matches have already been played. Changing positions would corrupt the entire season schedule and matchups.
           </p>
         </div>
@@ -340,8 +340,8 @@ export const ScheduleSetup: React.FC<ScheduleSetupProps> = ({
         <h2 className="text-xl font-semibold text-foreground mb-4">
           Schedule Generation Not Available
         </h2>
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-          <p className="text-yellow-800 text-sm">
+        <div className="bg-warning/10 border border-warning/40 rounded-lg p-4 mb-4">
+          <p className="text-warning text-sm">
             No matchup table is available for {effectiveTeamCount} teams.
             Schedule generation requires a pre-defined round-robin matchup table.
           </p>
@@ -434,8 +434,8 @@ export const ScheduleSetup: React.FC<ScheduleSetupProps> = ({
 
       {/* Error Display */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-          <p className="text-red-800 text-sm font-medium">{error}</p>
+        <div className="bg-destructive/10 border border-destructive/40 rounded-lg p-4 mb-4">
+          <p className="text-destructive text-sm font-medium">{error}</p>
         </div>
       )}
 
