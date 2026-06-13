@@ -18,12 +18,6 @@ import { useState } from 'react';
 import { useMatchesByTeam, useTeamDetails, useSeasonWeeks } from '@/api/hooks';
 import type { MatchWithDetails } from '@/types';
 import type { SeasonWeek } from '@/api/queries/matches';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -304,14 +298,14 @@ export function TeamSchedule() {
             </CardContent>
           </Card>
         ) : (
-          <Accordion type="single" collapsible className="space-y-3">
+          <div className="space-y-3">
             {displayedEntries.map((entry) => {
-              // Static (no-expand) rows: blackout, bye, playoff-TBD.
+              // Static rows: blackout, bye, playoff-TBD.
               if (!entry.expandable) {
                 return <ScheduleStaticRow key={entry.week.id} entry={entry} />;
               }
 
-              // Expandable match rows.
+              // Match rows — flat cards (no accordion); everything visible.
               const match = entry.match!;
               const meta = STATE_META[entry.kind];
               const { Icon } = meta;
@@ -319,13 +313,9 @@ export function TeamSchedule() {
               const opponent = role === 'home' ? match.away_team : match.home_team;
 
               return (
-                <AccordionItem
-                  key={match.id}
-                  value={match.id}
-                  className={`border rounded-lg shadow-sm ${meta.card}`}
-                >
-                  <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                    <div className="flex w-full items-center justify-between gap-2 pr-2 text-left">
+                <Card key={match.id} className={`shadow-sm ${meta.card}`}>
+                  <CardContent className="space-y-3 p-4">
+                    <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <div className="text-base text-muted-foreground">
                           {entry.week.week_name} · {formatShortDate(match.scheduled_date ?? entry.week.scheduled_date)}
@@ -339,15 +329,11 @@ export function TeamSchedule() {
                         {meta.label}
                       </span>
                     </div>
-                  </AccordionTrigger>
 
-                  <AccordionContent className="px-4 pb-4">
                     {match.status === 'completed' ? (
-                      <div className="pt-2">
-                        <MatchDetailCard matchId={match.id} />
-                      </div>
+                      <MatchDetailCard matchId={match.id} />
                     ) : (
-                      <div className="space-y-4 pt-2">
+                      <div className="space-y-4">
                         <div className="text-sm text-muted-foreground">
                           <span className="font-medium">{role === 'home' ? 'Home Game' : 'Away Game'}</span>
                         </div>
@@ -408,11 +394,11 @@ export function TeamSchedule() {
                         )}
                       </div>
                     )}
-                  </AccordionContent>
-                </AccordionItem>
+                  </CardContent>
+                </Card>
               );
             })}
-          </Accordion>
+          </div>
         )}
       </main>
     </div>
