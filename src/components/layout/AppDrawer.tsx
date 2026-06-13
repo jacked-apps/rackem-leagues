@@ -32,6 +32,8 @@ import { useOrganizations } from '@/api/hooks/useOrganizations';
 import { useUnreadMessageCount } from '@/api/hooks/useMessages';
 import { usePendingJoinRequestCount } from '@/api/hooks/usePendingJoinRequestCount';
 import { useCaptainReupPrompt } from '@/hooks/useCaptainReupPrompt';
+import { useMyMatchSurfaces } from '@/api/hooks/useMyMatchSurfaces';
+import { MyMatchPanel } from './MyMatchPanel';
 import { OperatorOrgRow } from './OperatorOrgRow';
 
 interface AppDrawerProps {
@@ -86,6 +88,8 @@ export function AppDrawer(_props: AppDrawerProps) {
   const isOperator = canAccessLeagueOperatorFeatures();
   const { organizations } = useOrganizations(member?.id);
   const { data: unreadCount = 0 } = useUnreadMessageCount(member?.id);
+  const { drawerItems: myMatchItems, isHydrating: myMatchHydrating } =
+    useMyMatchSurfaces(member?.id);
 
   // Doorbell target: operators answer the join-request door from their
   // operator surface (the org-wide list on the Operator Dashboard), not the
@@ -154,6 +158,9 @@ export function AppDrawer(_props: AppDrawerProps) {
           <PublicSection />
         ) : (
           <>
+            {/* My Match sits at the TOP — it's the most-used action, and this
+                matches the desktop sidebar's placement. */}
+            <MyMatchPanel items={myMatchItems} isHydrating={myMatchHydrating} inSheet />
             <PlayerSection unreadCount={unreadCount} joinRequestsTo={joinRequestsTo} />
             {isOperator ? <OperatorSection orgs={organizations as OperatorOrg[]} /> : null}
           </>
@@ -210,7 +217,6 @@ function PlayerSection({
       : 'Season Re-Up';
   return (
     <ul className="space-y-1">
-      <DrawerLink to="/my-match" label="My Match" />
       <DrawerLink to="/my-teams" label="My Teams" />
       {joinRequestCount > 0 && (
         <DrawerLink to={joinRequestsTo} label={`Join requests (${joinRequestCount})`} />

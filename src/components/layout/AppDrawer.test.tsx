@@ -10,7 +10,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
-import { renderWithProviders, screen, within } from '@/test/utils';
+import { renderWithProviders, screen, within, fireEvent } from '@/test/utils';
 
 // Mock the data-fetching hooks used by AppDrawer. The drawer's role/auth
 // branching is driven by these return values; controlling them per test lets
@@ -20,6 +20,7 @@ const mockUseOrganizations = vi.fn();
 const mockUseUnreadMessageCount = vi.fn();
 const mockUsePendingReportsCount = vi.fn();
 const mockUsePendingJoinRequestCount = vi.fn();
+const mockUseMyMatchSurfaces = vi.fn();
 
 vi.mock('@/api/hooks/useUserProfile', () => ({
   useUserProfile: () => mockUseUserProfile(),
@@ -40,6 +41,25 @@ vi.mock('@/hooks/usePendingReportsCount', () => ({
 vi.mock('@/api/hooks/usePendingJoinRequestCount', () => ({
   usePendingJoinRequestCount: () => mockUsePendingJoinRequestCount(),
 }));
+
+// The drawer now consumes the My Match aggregate hook for its match section.
+// Mock it so existing tests don't hit the real query/realtime, and so the
+// section can be driven per test.
+vi.mock('@/api/hooks/useMyMatchSurfaces', () => ({
+  useMyMatchSurfaces: (id?: string) => mockUseMyMatchSurfaces(id),
+}));
+
+/** Default My Match surfaces: nothing to show (section hidden). */
+function emptyMyMatch() {
+  return {
+    tier: 4,
+    destinationMatchId: null,
+    showLiveDot: false,
+    drawerItems: [],
+    isHydrating: false,
+    isError: false,
+  };
+}
 
 import { AppDrawer } from './AppDrawer';
 
@@ -93,6 +113,7 @@ describe('AppDrawer', () => {
     // when the count is > 0, so most tests want it absent. Routing tests
     // override this per-case.
     mockUsePendingJoinRequestCount.mockReturnValue(0);
+    mockUseMyMatchSurfaces.mockReturnValue(emptyMyMatch());
   });
 
   // Happy path — logged out
@@ -123,11 +144,12 @@ describe('AppDrawer', () => {
     renderDrawer();
 
     const nav = screen.getByRole('navigation', { name: /main navigation/i });
-    // Post 2026-05 nav overhaul: the player section is My Match / My
-    // Teams / Stats / Rules / Messages / Profile. "Dashboard" moved
-    // into the per-org Operator section (only for operators); Sign
-    // out moved out of the drawer entirely.
-    expect(within(nav).getByRole('link', { name: 'My Match' })).toBeInTheDocument();
+    // The player section is My Teams / Stats / Rules / Messages / Profile.
+    // "My Match" is no longer a static link — it's now a dedicated section
+    // that appears only when the player has a current/today/makeup match
+    // (covered by the "My Match section" tests). With no matches (default
+    // mock), it's hidden, so there is no standalone "My Match" link.
+    expect(within(nav).queryByRole('link', { name: 'My Match' })).not.toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'My Teams' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Stats' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Rules' })).toBeInTheDocument();
@@ -158,24 +180,20 @@ describe('AppDrawer', () => {
     renderDrawer();
 
     expect(screen.getByText('Operator')).toBeInTheDocument();
-    // Only the org-scoped operator Dashboard exists now — the player section no
-    // longer renders a "/dashboard" link.
+    // Dashboard + Reports are the operator nav actions; Create League was removed.
     expect(screen.getByRole('link', { name: 'Dashboard' })).toHaveAttribute(
       'href',
       '/operator-dashboard/org-a',
-    );
-    expect(screen.getByRole('link', { name: 'Create League' })).toHaveAttribute(
-      'href',
-      '/create-league/org-a',
     );
     expect(screen.getByRole('link', { name: 'Reports' })).toHaveAttribute(
       'href',
       '/operator-reports/org-a',
     );
+    expect(screen.queryByRole('link', { name: 'Create League' })).not.toBeInTheDocument();
   });
 
   // Happy path — multi-org operator
-  it('renders multi-org operator section with collapsed-by-default groups', async () => {
+  it('renders multi-org operator section with collapsed-by-default groups', () => {
     mockUseUserProfile.mockReturnValue({
       member: { id: 'm1', first_name: 'Op', last_name: 'Multi' },
       canAccessLeagueOperatorFeatures: () => true,
@@ -195,11 +213,7 @@ describe('AppDrawer', () => {
     renderDrawer();
 
     expect(screen.getByText('Operator')).toBeInTheDocument();
-    // Both org names show as collapsible group headers.
-    expect(screen.getByText('Triple B Pool')).toBeInTheDocument();
-    expect(screen.getByText('Riverside League')).toBeInTheDocument();
-
-    // Owners are listed before staff. Triple B Pool (owner) comes before Riverside (admin).
+    // Both org names show as collapsible group headers (owner before staff).
     const orgHeaders = screen.getAllByRole('group');
     expect(orgHeaders[0]).toHaveTextContent('Triple B Pool');
     expect(orgHeaders[1]).toHaveTextContent('Riverside League');
@@ -229,7 +243,7 @@ describe('AppDrawer', () => {
     expect(screen.queryByText(/Messages \(/)).not.toBeInTheDocument();
   });
 
-  // Edge case — pending reports badge
+  // Edge case — pending reports badge (the Reports doorbell)
   it('shows "(N)" suffix on Reports when pending > 0', () => {
     mockUseUserProfile.mockReturnValue({
       member: { id: 'm1', first_name: 'Op', last_name: 'X' },
@@ -405,6 +419,86 @@ describe('AppDrawer', () => {
     renderDrawer();
 
     expect(screen.queryByRole('link', { name: /Join requests/ })).not.toBeInTheDocument();
+  });
+
+  // My Match section — chips + reveal, driven by useMyMatchSurfaces.drawerItems
+  it('auto-opens the Live list and shows the match row when a live match exists', () => {
+    configurePlayer();
+    mockUseMyMatchSurfaces.mockReturnValue({
+      ...emptyMyMatch(),
+      drawerItems: [
+        { matchId: 'mx', teamName: 'Sharks', opponentName: 'Cues', rowDetail: '', group: 'live', destinationPath: '/match/mx/lineup' },
+      ],
+    });
+
+    renderDrawer();
+
+    // Live chip is selected by default (radio), so its list shows the row.
+    expect(screen.getByRole('button', { name: /Live/ })).toHaveAttribute('aria-pressed', 'true');
+    // Both chips always render; with no makeups, the Makeup chip is disabled.
+    expect(screen.getByRole('button', { name: /Makeup/ })).toBeDisabled();
+    const row = screen.getByRole('link', { name: /Sharks/ });
+    expect(row).toHaveAttribute('href', '/match/mx/lineup');
+    expect(row).toHaveTextContent('Cues');
+  });
+
+  it('keeps Makeups behind their chip until tapped', () => {
+    configurePlayer();
+    mockUseMyMatchSurfaces.mockReturnValue({
+      ...emptyMyMatch(),
+      drawerItems: [
+        { matchId: 'm1', teamName: 'Sharks', opponentName: 'Cues', rowDetail: '', group: 'live', destinationPath: '/match/m1/lineup' },
+        { matchId: 'm2', teamName: 'Rails', opponentName: 'Felt', rowDetail: '6/11', group: 'makeup', destinationPath: '/match/m2/lineup' },
+      ],
+    });
+
+    renderDrawer();
+
+    // Live auto-opens → Sharks visible; Makeup collapsed → Rails hidden.
+    expect(screen.getByRole('link', { name: /Sharks/ })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Rails/ })).not.toBeInTheDocument();
+
+    // Tap the Makeup chip → the makeup row is revealed, and (radio) the Live
+    // list is hidden.
+    fireEvent.click(screen.getByRole('button', { name: /Makeup/ }));
+    expect(screen.getByRole('link', { name: /Rails/ })).toHaveAttribute('href', '/match/m2/lineup');
+    expect(screen.queryByRole('link', { name: /Sharks/ })).not.toBeInTheDocument();
+  });
+
+  it('keeps the Live chip visible (disabled) and defaults to Makeup when there is no live match', () => {
+    configurePlayer();
+    mockUseMyMatchSurfaces.mockReturnValue({
+      ...emptyMyMatch(),
+      drawerItems: [
+        { matchId: 'm2', teamName: 'Rails', opponentName: 'Felt', rowDetail: '6/11', group: 'makeup', destinationPath: '/match/m2/lineup' },
+      ],
+    });
+
+    renderDrawer();
+
+    // Live chip always shows, but is disabled with no live matches; Makeup is
+    // selected by default so its list shows without a tap.
+    expect(screen.getByRole('button', { name: /Live/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Makeup/ })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('link', { name: /Rails/ })).toBeInTheDocument();
+  });
+
+  it('hides the My Match section entirely when there are no matches', () => {
+    configurePlayer();
+    // Default mock = empty + not hydrating.
+    renderDrawer();
+
+    expect(screen.queryByText('My Match')).not.toBeInTheDocument();
+  });
+
+  it('shows the My Match header alone (no chips) while hydrating', () => {
+    configurePlayer();
+    mockUseMyMatchSurfaces.mockReturnValue({ ...emptyMyMatch(), isHydrating: true });
+
+    renderDrawer();
+
+    expect(screen.getByText('My Match')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Live|Makeup/ })).not.toBeInTheDocument();
   });
 
   // Sign Out is no longer in the drawer — it moved to the bottom of the Profile

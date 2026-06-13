@@ -19,21 +19,61 @@ import { networkInterfaces } from 'node:os';
 import { spawn } from 'node:child_process';
 
 /**
- * Find the first non-internal IPv4 address. Walks all network interfaces
- * (Wi-Fi, Ethernet, etc.) and returns the first usable LAN address.
+ * Interface names that are virtual / VPN / container adapters, NOT the real
+ * Wi-Fi or Ethernet a phone can reach. These routinely sort ahead of the real
+ * adapter in `networkInterfaces()`, so a naive "first IPv4" pick lands on an
+ * address the phone can't reach (e.g. a NordVPN `10.x` or WSL `172.x`).
+ */
+const VIRTUAL_IFACE = /wsl|hyper-?v|vethernet|virtualbox|vmware|nord|openvpn|\bvpn\b|tailscale|zerotier|tap|tun|loopback|docker|bridge/i;
+
+/**
+ * Rank a candidate address so real home/office LAN ranges win. Higher is
+ * better. `192.168.x` (typical home Wi-Fi) beats a real `10.x` LAN, and the
+ * `172.16–31.x` range (Docker/WSL/Hyper-V) is deprioritized.
  *
- * @returns {string | null} The detected IP, or null if none is available.
+ * @param {string} ip
+ * @returns {number}
+ */
+function rankAddress(ip) {
+  if (ip.startsWith('192.168.')) return 3;
+  if (ip.startsWith('10.')) return 2;
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(ip)) return 1;
+  return 0;
+}
+
+/**
+ * Find the best LAN IPv4 a phone on the same network can actually reach.
+ * Skips virtual/VPN/container interfaces by name, then prefers the most
+ * "real-LAN-looking" address. A `DEV_PHONE_IP` env var overrides everything.
+ *
+ * @returns {string | null} The chosen IP, or null if none is available.
  */
 function findLanIp() {
+  if (process.env.DEV_PHONE_IP) return process.env.DEV_PHONE_IP;
+
   const interfaces = networkInterfaces();
-  for (const list of Object.values(interfaces)) {
+  const candidates = [];
+  for (const [name, list] of Object.entries(interfaces)) {
     for (const addr of list ?? []) {
-      if (addr.family === 'IPv4' && !addr.internal) {
-        return addr.address;
-      }
+      if (addr.family !== 'IPv4' || addr.internal) continue;
+      candidates.push({ name, address: addr.address, virtual: VIRTUAL_IFACE.test(name) });
     }
   }
-  return null;
+  if (candidates.length === 0) return null;
+
+  // Prefer non-virtual interfaces; within each, prefer the best LAN range.
+  candidates.sort((a, b) => {
+    if (a.virtual !== b.virtual) return a.virtual ? 1 : -1;
+    return rankAddress(b.address) - rankAddress(a.address);
+  });
+
+  if (candidates[0].virtual) {
+    console.warn(
+      'Warning: only virtual/VPN interfaces found; your phone may not reach this.\n' +
+        'If it fails, pause your VPN or set DEV_PHONE_IP=<your Wi-Fi IP>.',
+    );
+  }
+  return candidates[0].address;
 }
 
 const ip = findLanIp();
@@ -56,6 +96,10 @@ const isWindows = process.platform === 'win32';
 const cmd = isWindows ? 'pnpm.cmd' : 'pnpm';
 const child = spawn(cmd, ['exec', 'vite'], {
   stdio: 'inherit',
+  // Node 18.20+/20.12+/22 refuse to spawn .cmd/.bat on Windows without
+  // shell:true (CVE-2024-27980 hardening). Without it, spawning pnpm.cmd
+  // throws `spawn EINVAL`.
+  shell: true,
   env: { ...process.env, VITE_SUPABASE_URL: supabaseUrl },
 });
 

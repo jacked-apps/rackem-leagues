@@ -19,6 +19,8 @@ import { useUserProfile } from '@/api/hooks/useUserProfile';
 import { useOrganizations } from '@/api/hooks/useOrganizations';
 import { useUnreadMessageCount } from '@/api/hooks/useMessages';
 import { usePendingJoinRequestCount } from '@/api/hooks/usePendingJoinRequestCount';
+import { useMyMatchSurfaces } from '@/api/hooks/useMyMatchSurfaces';
+import { MyMatchPanel } from './MyMatchPanel';
 import { OperatorOrgRow } from './OperatorOrgRow';
 
 /** Cap on visible orgs — matches AppDrawer. */
@@ -65,6 +67,8 @@ export function AppSidebar() {
   const isOperator = canAccessLeagueOperatorFeatures();
   const { organizations } = useOrganizations(member?.id);
   const { data: unreadCount = 0 } = useUnreadMessageCount(member?.id);
+  const { drawerItems: myMatchItems, isHydrating: myMatchHydrating } =
+    useMyMatchSurfaces(member?.id);
 
   // Doorbell target: operators → their primary org's Operator Dashboard (where
   // the org-wide join-request list lives); everyone else → My Teams. See
@@ -122,6 +126,8 @@ export function AppSidebar() {
       <nav aria-label="Sidebar navigation" className="flex-1 overflow-y-auto p-4">
         {isLoggedIn ? (
           <>
+            {/* My Match at the top — mirrors the drawer's chips + lists. */}
+            <MyMatchPanel items={myMatchItems} isHydrating={myMatchHydrating} />
             <SidebarPlayerSection unreadCount={unreadCount} joinRequestsTo={joinRequestsTo} />
             {isOperator ? (
               <SidebarOperatorSection orgs={organizations as OperatorOrg[]} />
@@ -148,7 +154,6 @@ function SidebarPlayerSection({
   const joinRequestCount = usePendingJoinRequestCount();
   return (
     <ul className="space-y-1">
-      <SidebarLink to="/my-match" label="My Match" />
       <SidebarLink to="/my-teams" label="My Teams" />
       {joinRequestCount > 0 && (
         <SidebarLink to={joinRequestsTo} label={`Join requests (${joinRequestCount})`} />

@@ -54,8 +54,10 @@ Mirrors the **OperatorSection** pattern in `src/components/layout/AppDrawer.tsx`
 
 Both surfaces handle multi-live naturally and **without a special "makeups" code path**:
 
-- **Bottom-nav:** auto-picks the most-important match (R1's heuristic). Swap-to-the-other-live-match is deferred to the **scoring gear** added in PR #157 — natural host for "I'm on the wrong one, switch me."
+- **Bottom-nav:** auto-picks the most-important match (R1's heuristic). Swap-to-the-other-live-match is deferred to the **swap surface** below — natural host for "I'm on the wrong one, switch me."
 - **Drawer:** lists all live + today rows; user taps the one they want.
+
+**Candidate swap mechanism (Ed, 2026-06-12): reuse the OrgSwitcher pattern as a bottom switcher.** The scoring page has no hamburger/header, so the org-switcher's *mechanics* — list items, mark the current one, switch by **navigating to a URL** (`src/components/OrgSwitcher.tsx`) — transplant cleanly: "switch match" = navigate to the other live match's `/match/:matchId/score` route, and the scoreboard re-renders for the new match (URL stays the single source of truth, no extra state). Because there's no header on the scoring page, the control lives at the **bottom** of the scoreboard, appearing only when 2+ live matches exist (one match → no switcher). This is a concrete answer to the deferred-swap open question and an alternative host to the PR #157 scoring gear; pick between "bottom switcher" vs. "gear menu item" at plan time.
 
 A makeup, when being played, is just an `in_progress` match like any other — it surfaces for free.
 
@@ -89,7 +91,7 @@ Bottom-nav state + drawer list update as matches transition (`scheduled → in_p
 
 ### Deferred to separate brainstorms / future work
 - **`/my-match` PAGE** → becomes the future **Upcoming Matches** view (week-at-a-glance across all the player's teams, makeups included). Its own brainstorm. For this feature, the route is left at its current placeholder and not invoked by either surface.
-- **Multi-live SWAP UI** → folded into the scoring gear (#157) workstream. The bottom-nav auto-picks; the gear is where the user switches.
+- **Multi-live SWAP UI** → the bottom-nav auto-picks; a dedicated swap surface is where the user switches. Two candidate hosts to choose between at plan time: (a) **OrgSwitcher-style bottom switcher** on the scoreboard (Ed, 2026-06-12 — see R4), or (b) the scoring gear (#157) workstream.
 - *(Past-due makeups are now IN scope — Tier 3 of the bottom-nav ladder + a `Makeup (date)` row in the drawer.)*
 - **Dashboard card / sticky header banner** → killed. The bottom-nav tab is the always-visible re-entry; a second surface is redundant.
 - **Captain-not-rostered detection** → revisit if real use shows it matters.
