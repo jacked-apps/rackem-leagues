@@ -19,6 +19,7 @@ const mockUseUserProfile = vi.fn();
 const mockUseOrganizations = vi.fn();
 const mockUseUnreadMessageCount = vi.fn();
 const mockUsePendingReportsCount = vi.fn();
+const mockUsePendingJoinRequestCount = vi.fn();
 
 vi.mock('@/api/hooks/useUserProfile', () => ({
   useUserProfile: () => mockUseUserProfile(),
@@ -34,6 +35,10 @@ vi.mock('@/api/hooks/useMessages', () => ({
 
 vi.mock('@/hooks/usePendingReportsCount', () => ({
   usePendingReportsCount: (orgId?: string) => mockUsePendingReportsCount(orgId),
+}));
+
+vi.mock('@/api/hooks/usePendingJoinRequestCount', () => ({
+  usePendingJoinRequestCount: () => mockUsePendingJoinRequestCount(),
 }));
 
 import { AppDrawer } from './AppDrawer';
@@ -84,6 +89,10 @@ function configureLoggedOut() {
 describe('AppDrawer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // No pending join requests by default — the doorbell link only renders
+    // when the count is > 0, so most tests want it absent. Routing tests
+    // override this per-case.
+    mockUsePendingJoinRequestCount.mockReturnValue(0);
   });
 
   // Happy path — logged out
@@ -321,6 +330,81 @@ describe('AppDrawer', () => {
     // Player section still renders; Operator heading is absent until orgs load.
     expect(screen.getByRole('link', { name: 'My Teams' })).toBeInTheDocument();
     expect(screen.queryByText('Operator')).not.toBeInTheDocument();
+  });
+
+  // Doorbell ("Join requests (N)") routing — operators answer the join-request
+  // door from their Operator Dashboard (where the org-wide list lives); players
+  // and captains keep the My Teams route. The link only renders when count > 0.
+  it('points the doorbell at My Teams for a non-operator with pending requests', () => {
+    configurePlayer();
+    mockUsePendingJoinRequestCount.mockReturnValue(2);
+
+    renderDrawer();
+
+    expect(screen.getByRole('link', { name: 'Join requests (2)' })).toHaveAttribute(
+      'href',
+      '/my-teams',
+    );
+  });
+
+  it("points the doorbell at the operator's org dashboard for a single-org operator", () => {
+    mockUseUserProfile.mockReturnValue({
+      member: { id: 'm1', first_name: 'Op', last_name: 'Solo' },
+      canAccessLeagueOperatorFeatures: () => true,
+      loading: false,
+    });
+    mockUseOrganizations.mockReturnValue({
+      organizations: [{ id: 'org-a', organization_name: 'Triple B Pool', position: 'owner' }],
+      loading: false,
+      error: null,
+    });
+    mockUseUnreadMessageCount.mockReturnValue({ data: 0 });
+    mockUsePendingReportsCount.mockReturnValue({ count: 0, loading: false });
+    mockUsePendingJoinRequestCount.mockReturnValue(3);
+
+    renderDrawer();
+
+    expect(screen.getByRole('link', { name: 'Join requests (3)' })).toHaveAttribute(
+      'href',
+      '/operator-dashboard/org-a',
+    );
+  });
+
+  it("routes a multi-org operator's doorbell to their primary (owned-first) org", () => {
+    mockUseUserProfile.mockReturnValue({
+      member: { id: 'm1', first_name: 'Op', last_name: 'Multi' },
+      canAccessLeagueOperatorFeatures: () => true,
+      loading: false,
+    });
+    // org-b is staff (admin); org-a is owner — owned orgs sort first, so the
+    // doorbell should target org-a even though it's listed second.
+    mockUseOrganizations.mockReturnValue({
+      organizations: [
+        { id: 'org-b', organization_name: 'Riverside League', position: 'admin' },
+        { id: 'org-a', organization_name: 'Triple B Pool', position: 'owner' },
+      ],
+      loading: false,
+      error: null,
+    });
+    mockUseUnreadMessageCount.mockReturnValue({ data: 0 });
+    mockUsePendingReportsCount.mockReturnValue({ count: 0, loading: false });
+    mockUsePendingJoinRequestCount.mockReturnValue(5);
+
+    renderDrawer();
+
+    expect(screen.getByRole('link', { name: 'Join requests (5)' })).toHaveAttribute(
+      'href',
+      '/operator-dashboard/org-a',
+    );
+  });
+
+  it('omits the doorbell entirely when there are no pending requests', () => {
+    configurePlayer();
+    mockUsePendingJoinRequestCount.mockReturnValue(0);
+
+    renderDrawer();
+
+    expect(screen.queryByRole('link', { name: /Join requests/ })).not.toBeInTheDocument();
   });
 
   // Sign Out is no longer in the drawer — it moved to the bottom of the Profile
