@@ -340,7 +340,7 @@ export function TeamSchedule() {
 
               return (
                 <Card key={match.id} className={`shadow-sm ${meta.card}`}>
-                  <CardContent className="px-4 py-2">
+                  <CardContent className="p-0">
                     <div className="flex items-start justify-between gap-3">
                       {/* Left: week·date + matchup (+ table). Home/away is
                           implied by the venue, so it's dropped. */}
