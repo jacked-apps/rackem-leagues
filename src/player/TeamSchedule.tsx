@@ -343,7 +343,7 @@ export function TeamSchedule() {
                   <CardContent className="px-3 py-2">
                     {/* Row 1: week·date  ───  status tag (same axis). */}
                     <div className="flex items-center justify-between gap-2">
-                      <div className="min-w-0 truncate text-base text-muted-foreground">
+                      <div className="min-w-0 truncate text-base font-bold text-foreground">
                         {entry.week.week_name} · {formatShortDate(match.scheduled_date ?? entry.week.scheduled_date)}
                       </div>
                       <span className={`flex shrink-0 items-center gap-1 text-xs font-medium ${meta.badge}`}>
@@ -354,7 +354,7 @@ export function TeamSchedule() {
 
                     {/* Row 2: matchup  ───  score link (same axis, same size). */}
                     <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0 text-base font-semibold text-foreground">
+                      <div className="min-w-0 text-base font-semibold text-muted-foreground">
                         {match.status === 'completed' ? (
                           // Completed cards left as-is for now (handled later).
                           <span>vs {opponent?.team_name ?? 'Opponent'}</span>
