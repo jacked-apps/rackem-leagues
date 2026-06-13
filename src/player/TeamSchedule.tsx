@@ -341,81 +341,79 @@ export function TeamSchedule() {
               return (
                 <Card key={match.id} className={`gap-0 py-0 shadow-sm ${meta.card}`}>
                   <CardContent className="px-3 py-2">
-                    <div className="flex items-start justify-between gap-3">
-                      {/* Left: week·date + matchup (+ table). Home/away is
-                          implied by the venue, so it's dropped. */}
-                      <div className="min-w-0 space-y-0.5">
-                        <div className="text-base text-muted-foreground">
-                          {entry.week.week_name} · {formatShortDate(match.scheduled_date ?? entry.week.scheduled_date)}
-                        </div>
+                    {/* Row 1: week·date  ───  status tag (same axis). */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0 truncate text-base text-muted-foreground">
+                        {entry.week.week_name} · {formatShortDate(match.scheduled_date ?? entry.week.scheduled_date)}
+                      </div>
+                      <span className={`flex shrink-0 items-center gap-1 text-base font-medium ${meta.badge}`}>
+                        <Icon className="h-4 w-4" />
+                        {meta.label}
+                      </span>
+                    </div>
+
+                    {/* Row 2: matchup  ───  score link (same axis, same size). */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 text-base font-semibold text-foreground">
                         {match.status === 'completed' ? (
                           // Completed cards left as-is for now (handled later).
-                          <div className="truncate text-base font-semibold text-foreground">
-                            vs {opponent?.team_name ?? 'Opponent'}
-                          </div>
+                          <span>vs {opponent?.team_name ?? 'Opponent'}</span>
                         ) : (
-                          <>
-                            {/* "vs {team} at 📍{venue}" — both clickable. */}
-                            <div className="flex flex-wrap items-center gap-x-1.5 text-base font-semibold text-foreground">
-                              <span>vs</span>
-                              {opponent ? (
-                                <TeamNameLink
-                                  teamId={opponent.id}
-                                  teamName={opponent.team_name}
-                                  className="text-base font-semibold"
-                                />
-                              ) : (
-                                <span>Opponent</span>
-                              )}
-                              {venue && mapsUrl && (
-                                <>
-                                  <span className="font-normal text-muted-foreground">at</span>
-                                  <a
-                                    href={mapsUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-0.5 font-semibold text-blue-600 hover:text-blue-800 hover:underline"
-                                  >
-                                    <MapPin className="h-4 w-4" />
-                                    {venue.name}
-                                  </a>
-                                </>
-                              )}
-                            </div>
-                            {(match.assigned_table_number || match.actual_venue) && (
-                              <div className="text-sm text-muted-foreground">
-                                {match.assigned_table_number ? `Table ${match.assigned_table_number}` : null}
-                                {match.actual_venue ? (
-                                  <span className="text-warning">
-                                    {match.assigned_table_number ? ' · ' : ''}overflow venue
-                                  </span>
-                                ) : null}
-                              </div>
+                          // "vs {team} at 📍{venue}" — both clickable.
+                          <span className="flex flex-wrap items-center gap-x-1.5">
+                            <span>vs</span>
+                            {opponent ? (
+                              <TeamNameLink
+                                teamId={opponent.id}
+                                teamName={opponent.team_name}
+                                className="text-base font-semibold"
+                              />
+                            ) : (
+                              <span>Opponent</span>
                             )}
-                          </>
+                            {venue && mapsUrl && (
+                              <>
+                                <span className="font-normal text-muted-foreground">at</span>
+                                <a
+                                  href={mapsUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-0.5 font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+                                >
+                                  <MapPin className="h-4 w-4" />
+                                  {venue.name}
+                                </a>
+                              </>
+                            )}
+                          </span>
                         )}
                       </div>
-
-                      {/* Right: status tag, with a contextual score LINK beneath. */}
-                      <div className="flex shrink-0 flex-col items-end gap-0.5 text-right">
-                        <span className={`flex items-center gap-1 text-xs font-medium ${meta.badge}`}>
-                          <Icon className="h-3.5 w-3.5" />
-                          {meta.label}
-                        </span>
-                        {scoreLinkLabel(entry.kind) && (
-                          <Link to={`/match/${match.id}/lineup`}>
-                            <Button
-                              variant="link"
-                              loadingText="none"
-                              className="h-auto gap-0.5 p-0 text-sm text-blue-600 hover:text-blue-800"
-                            >
-                              {scoreLinkLabel(entry.kind)}
-                              <ArrowRight className="h-3.5 w-3.5" />
-                            </Button>
-                          </Link>
-                        )}
-                      </div>
+                      {scoreLinkLabel(entry.kind) && (
+                        <Link to={`/match/${match.id}/lineup`} className="shrink-0">
+                          <Button
+                            variant="link"
+                            loadingText="none"
+                            className="h-auto gap-0.5 p-0 text-base text-blue-600 hover:text-blue-800"
+                          >
+                            {scoreLinkLabel(entry.kind)}
+                            <ArrowRight className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                      )}
                     </div>
+
+                    {/* Table / overflow (unplayed only). */}
+                    {match.status !== 'completed' &&
+                      (match.assigned_table_number || match.actual_venue) && (
+                        <div className="text-sm text-muted-foreground">
+                          {match.assigned_table_number ? `Table ${match.assigned_table_number}` : null}
+                          {match.actual_venue ? (
+                            <span className="text-warning">
+                              {match.assigned_table_number ? ' · ' : ''}overflow venue
+                            </span>
+                          ) : null}
+                        </div>
+                      )}
 
                     {match.status === 'completed' && (
                       <div className="mt-3">
