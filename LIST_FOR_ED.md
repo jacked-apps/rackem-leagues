@@ -321,42 +321,23 @@ const mutation = useMutation({
 
 ---
 
-## 37. PWA "Install this app" Button / Instructions (small-device menu)
+## 37b. Push notifications to captains (NOT committed — Ed deciding)
 
-**Branch needed:** `feat/pwa-install-prompt`
+> ✅ **The PWA install button + iPhone instructions are DONE** — built as
+> `InstallAppCard` (Android/desktop fire the native prompt; iPhone Safari +
+> Android-menu get a step-by-step instructions modal; hides when already
+> installed/unsupported) and placed at the top of **Player Settings**. Surfacing
+> it in the **nav drawer** too is a one-liner — folded into the in-flight drawer
+> rework (the component is drop-in). The old Android-only `PWAInstallPrompt.tsx`
+> banner is superseded (still unused; safe to delete).
+
 **Discovered:** 2026-06-07 (while discussing captain onboarding + notifications)
 
-**Goal:** Help players get the app onto their home screen (an *installed PWA*),
-so it feels like a real app — and, down the line, so it can receive push
-notifications (which on iPhone **only** work for installed PWAs; see note
-below).
-
-**Where:** the small-device menu (we already branch UI on small vs large
-device). Add an **"Install this app"** entry that only appears when the app is
-**not** already running installed.
-
-**Detection (reliable):**
-- Running as installed PWA right now → `window.matchMedia('(display-mode:
-  standalone)').matches` is `true` (iOS legacy: `navigator.standalone`). If
-  true, **hide** the install entry.
-
-**The catch — one button, two behaviors by platform:**
-- **Android / desktop Chrome/Edge:** capture the `beforeinstallprompt` event,
-  stash it, and fire it from our button → real **one-tap install**.
-- **iPhone (Safari):** Apple blocks programmatic install — **instructions only**
-  ("tap Share → *Add to Home Screen*", with a little graphic). Must be Safari;
-  iOS Chrome/Firefox can't add to home screen → tell them to open in Safari.
-
-**Scope note:** small, but it's really two mini-features sharing a slot (Android
-prompt vs. iOS instructions) + a couple of edge cases. Don't nag on load — menu
-entry only.
-
-**Related (NOT committed — Ed deciding):** push notifications to captains when a
-join request lands. Hesitant until users ask; Ed will poll his LO buddies. PWA
-web-push is solid on Android/desktop, **install-gated on iPhone** (hence this
-install button matters first). SMS (Twilio) is the more reliable "buzz them
-outside the app" channel but costs per-text. Decide push only after the install
-question is answered.
+Push notifications to captains when a join request lands — hesitant until users
+ask; Ed will poll his LO buddies. PWA web-push is solid on Android/desktop, but
+**install-gated on iPhone** (the install button above is the prerequisite there).
+SMS (Twilio) is the more reliable "buzz them outside the app" channel but costs
+per-text. Decide push only after the install question is answered.
 
 ---
 
