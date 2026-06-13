@@ -219,6 +219,21 @@ export function formatTimingDescription(
 }
 
 /**
+ * Strip the timing description from a conflict's name, leaving the bare label.
+ *
+ * Conflict names carry a parenthetical timing suffix (see `buildConflictList`):
+ * e.g. "Christmas (Saturday 2 days before)" → "Christmas". Used to seed a
+ * human-friendly week-off reason from a conflict flag.
+ *
+ * @param conflictName - the full ConflictFlag.name (may or may not have a suffix).
+ * @returns the label with any " (...)" timing suffix removed.
+ */
+export function extractHolidayName(conflictName: string): string {
+  const parenIndex = conflictName.indexOf(' (');
+  return parenIndex !== -1 ? conflictName.substring(0, parenIndex) : conflictName;
+}
+
+/**
  * Get the highest severity conflict from an array of conflicts
  *
  * Used to determine what severity badge to show when multiple conflicts exist

@@ -11,7 +11,7 @@ import { InfoButton } from '../InfoButton';
 
 const WeekOffReasonModal = lazy(() => import('@/components/modals/WeekOffReasonModal').then(m => ({ default: m.WeekOffReasonModal })));
 import { generateSchedule } from '@/utils/scheduleUtils';
-import { detectScheduleConflicts } from '@/utils/conflictDetectionUtils';
+import { detectScheduleConflicts, extractHolidayName } from '@/utils/conflictDetectionUtils';
 import { parseLocalDate } from '@/utils/formatters';
 import { STORAGE_KEYS } from '@/constants/scheduleConflicts';
 import type { ScheduleReviewProps } from '@/types/scheduleReview';
@@ -134,15 +134,6 @@ export const ScheduleReview: React.FC<ScheduleReviewProps> = ({
     );
 
     setSchedule(scheduleWithConflicts);
-  };
-
-  /**
-   * Extracts holiday name from conflict name by removing timing description
-   * Example: "Christmas (Saturday 2 days before)" -> "Christmas"
-   */
-  const extractHolidayName = (conflictName: string): string => {
-    const parenIndex = conflictName.indexOf(' (');
-    return parenIndex !== -1 ? conflictName.substring(0, parenIndex) : conflictName;
   };
 
   /**
