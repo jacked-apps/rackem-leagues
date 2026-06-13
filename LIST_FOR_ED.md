@@ -25,35 +25,23 @@ override the pre-filled text.
 
 ---
 
-## 🌅 PICK UP HERE — night of 2026-06-09 (bye-team firefight + the day's fixes)
+## 🧹 Bye-team cleanup — remaining bits
 
-**Shipped tonight — open PRs awaiting Jack's merge (verify on staging when merged):**
-- #198 hide broken email-invite button · #199 captain invite UX (copy message + `?` help + guided approve card) · #200 CI Node-24 action bumps · #201 player number on profile · #202 iPhone bottom-nav padding · #203 matchup-redo **400 crash** fix (dropped a bad trigger) · #204 **bye now visible** in Manage Teams
+Most of the 2026-06-09 bye-team firefight shipped: auto-forfeit sweep, the
+"Add Team" gate when a bye exists, the "populate the bye" fill action
+(`TeamEditorModal` flips bye→active; `TeamCard` shows a **Fill** button), and
+blackout auto-shift on already-active schedules (`scheduleReflowApply.ts`). Still open:
 
-**FIX FIRST — the bye / add-team mess:**
-1. **Recover the wedged league** (10 real + 1 bye = 11 rows): once **#203** is in your test env → **redo the matchups** → you get a clean **10-team** schedule, **no 2nd bye** (verified: the setup screen counts only the 10 active teams, 10 is even, so it adds none). Then **SQL-delete the orphan bye row** (after the redo it has no matches → deletes clean). Ask Claude for the one-liner.
-2. **Build the "can't happen again" rule** (Ed's spec):
-   - **A)** Gate **"Add Team"** when a bye exists → message *"fill the BYE slot instead."* (small — detect `teams.some(t => t.status==='bye')`, #204 already loads it)
-   - **B)** **"Populate the bye"** = fill action: convert the bye row into a real team (name + captain + roster, flip `status` bye→active). Its "vs BYE" matches become real games — **no reschedule**. The meat. Pre-season clean; mid-season needs un-awarding banked bye wins (deferred).
+1. **Finish the bye-detection migration** — two spots still detect a bye via
+   `home_team_id === null || away_team_id === null` instead of `status === 'bye'`:
+   `src/operator/SeasonSchedulePage.tsx` (~line 147) and
+   `src/wizards/matchups-v2/steps/ReviewStep.tsx` (~line 107). Migrate both.
+2. **Remove-the-bye action** — there's a **Fill** button on a bye row but no
+   **Remove**. Add a delete affordance (delete → regenerate matchups at the new
+   even count).
 
-**Finish the half-done bye-as-real-team migration:**
-3. Show the bye **everywhere a team shows EXCEPT standings/stats**; replace leftover `team_id === null` bye-detection with `status === 'bye'` (`SeasonSchedulePage.tsx`, `wizards/matchups-v2/steps/ReviewStep.tsx`).
-4. **Remove-the-bye** action (delete → regenerate at even count).
-
-**NEEDS A REAL PLAN (not a quick fix):**
-5. **Auto-forfeit sweep** — once-daily `pg_cron`, all past-due + unfinished matches, captainless side forfeits (bye weeks fall out of it automatically). Full design + decisions in `docs/brainstorms/2026-06-09-bye-team-and-auto-forfeit-requirements.md`. Deferred sub-items: forfeit scoring (points for the win), exact timing ("6am" was a placeholder), neither-captained edge, and the **8 captainless `active` teams / 0 `bye` rows** data anomaly to understand.
-
-**Verified clean tonight (NO action):**
-6. Schedule vs matchups separation is correct in code — `matchupTables.ts` owns week pairings (by position, no dates), `season_weeks` owns the dates, `generateSchedule` marries them.
-
-**VERIFY in the morning (Ed's tired-eyes flag — may be fine):**
-8. **Does a blackout on an existing schedule auto-shift the week?** e.g. week 7 plays 6/16; mark 6/16 a blackout → week 7 should move to **6/23** and everything after shifts one week. Preliminary read: blackouts **do** shift the schedule during **setup/review** (`ScheduleReview.tsx` regenerates whenever blackout weeks change). Open question is the **already-active** schedule — does editing/adding a blackout after the season's accepted re-date the weeks, or does it need a regen? Confirm the post-activation case.
-
-**BUG — re-diagnosed 2026-06-10 (NOT a one-liner; last night's parseLocalDate theory was WRONG):**
-9. **APA championship conflict flags on the wrong dates** (edit-schedule page, production). Flags weeks 6/28, 7/12, 7/19 … 8/2 as "APA National Tournament Week N" — but APA 2026 is **8/04–8/15**. **Data is correct** (one `championship_date_options` row, 8/04–8/15). **REAL root cause:** the edit page `src/operator/SeasonScheduleManager.tsx:130-155` does NOT read the date table — it **reconstructs the APA range from the schedule's own existing "week-off" weeks whose name contains "apa"** (`apaWeeks[0].date` → `apaWeeks[last].date`), then flags every week across that range. Those off-weeks are **stale** (baked when the schedule was built, before the dates were corrected). The **new-season wizard does it right** (uses `championship_date_options` via `useChampionshipAutoFill`); only the **edit page** is wrong. (parseLocalDate is NOT in this path — `parseLocalDate` choking on full-ISO timestamps is a *separate, latent* bug but is NOT what causes these flags.) **Fix (moderate):** make `SeasonScheduleManager` fetch APA/BCA dates from `championship_date_options` (mirror the wizard) instead of from schedule off-weeks. NOTE: the affected schedule's actual off-weeks are also stale → a regenerate is likely needed to move them to 8/04–8/15. Not a quick win.
-
-**Paused (lower priority):**
-7. Player-picker consolidation brainstorm — parked at Site 2 of 8. Mid-walkthrough; no doc written yet.
+**Paused (separate):** Player-picker consolidation brainstorm — parked at Site 2 of 8;
+mid-walkthrough, no doc written yet.
 
 ---
 
@@ -131,11 +119,16 @@ So:
 
 ---
 
-## 🚨 2026-04-21 STAGING TEST — Multiple Critical Failures
+## 🚨 2026-04-21 STAGING TEST — remaining failure (staging email)
 
 **Discovered:** 2026-04-21 during first real-player staging test at the league event
-**Severity:** HIGH — these blocked the test on the night and several are show-stoppers for real launch
-**Branches needed:** multiple (see each item)
+
+> **Update 2026-06-12:** Issues 2–4 are **fixed** and removed — Fargo 5v5 now routes to the
+> real 5v5 games creator (all 5 players, single round robin; `src/systems/fargo5v5.ts` + pairings
+> tests), double-duty is guarded/resolved before prep, and Fargo start-points are computed from
+> frozen ratings (`computeMatchPrepPayload.ts`, tested). Only **Issue 1 (staging has no outbound
+> email)** remains — and it's an environment/config matter, not app code (the `send-invite` edge
+> function uses Resend and degrades gracefully when `RESEND_API_KEY` is unset).
 
 Context: first night with real players touching the staging app. Lineup
 preparation, invite flows, Fargo scoring, and double-duty all failed in
@@ -165,100 +158,6 @@ invite/auth test gap.
 **Until fixed:** captains cannot use the email-invite option on staging at
 all. Every test has to use in-person invite methods, which does not match
 the real production flow and leaves a whole code path untested.
-
-### Issue 2 — Fargo 5v5 is routing through the 3v3 games creator
-
-**Branch needed:** `fix-fargo-5v5-games-creation`
-
-**The problem:** when a Fargo 5v5 match reaches game-creation, it's using
-the 3v3 games creator path. Only players 1, 2, and 3 are used from each
-lineup; players 4 and 5 are dropped. The resulting game list is also laid
-out as a double round robin (3v3 pattern) instead of the Fargo 5v5
-schedule. Players 4 and 5 never appear in any game.
-
-**Why this matters:** Fargo 5v5 is the whole point of the modular
-handicap/scoring refactor that just shipped. If dispatch is picking the
-wrong creator, either the routing logic has a bug, the Fargo-5v5 creator
-is missing/not wired up, or the league preference is being read wrong.
-
-**Fix direction:**
-- Confirm which creator module is actually being invoked for this league
-  (log the dispatched creator key during match prep).
-- Verify `leagues.handicap_type` / scoring system config is what we think
-  it is for the test league.
-- Check the registration/dispatch map for the 5v5 Fargo creator — it may
-  be missing a case or falling through to the 3v3 default.
-- Add a regression test that runs match prep for a Fargo 5v5 league and
-  asserts all five players appear in the resulting match_games and the
-  schedule matches the 5v5 pattern, not 3v3.
-
-**Files likely involved:** the modular handicap/scoring dispatch added in
-PR #72 (Fargo 5v5 end-to-end), anything that calls into a games creator
-from match prep, and the 5v5 scoring registration.
-
-### Issue 3 — Double duty did not work
-
-**Branch needed:** `fix-double-duty`
-
-**The problem:** "double duty" — a single player filling two roster slots
-/ playing two games in the same match — did not function tonight. The
-exact failure mode needs reproduction (was it lineup validation refusing
-the duplicate player, was it the games creator generating bad games, was
-it scoring refusing to accept, was it something else?).
-
-**Fix direction:**
-- Reproduce with a test lineup that has one player listed in two slots.
-- Trace through lineup save → lock → games creation → scoring to see
-  where the flow breaks.
-- Add a test covering the double-duty case for at least one scoring
-  system so the regression can be caught automatically.
-
-**Why this matters:** double duty is a real league scenario when a team
-is short. Without it, short-handed teams can't even enter a legal lineup
-in the app.
-
-### Issue 4 — Fargo start-points (beginning handicap) did not work
-
-**Branch needed:** `fix-fargo-start-points`
-
-**The problem:** the Fargo start-points value — the negotiated
-beginning-games handicap for the weaker team — did not apply correctly
-during scoring. This is the feature that was just added in the
-`fargo_start_points` columns migration (captains propose/confirm a
-number, then it copies to the weaker team's `home_games_to_win` or
-`away_games_to_win` when both captains confirm).
-
-**Possible failure modes to check:**
-- Both-confirms detection not firing match-prep as expected.
-- Start-points value not actually being copied to the correct team's
-  `games_to_win` column.
-- Scoring UI reading from the wrong column or ignoring the value.
-- Interaction with Issue 2 — if the wrong games creator ran, start-points
-  may never have been applied at all.
-
-**Fix direction:**
-- Pull the actual match row from staging (match id
-  `44455346-f33f-4362-9f52-bcc1341b2c0c` — see
-  `docs/events/2026-04-21-staging-test/unlock-match-lineups.sql`) and
-  inspect the Fargo columns and games_to_win values.
-- Trace match prep to confirm the copy from `fargo_start_points` to
-  `home_games_to_win` / `away_games_to_win` actually happened.
-- If it did copy, trace scoring to confirm the value is read at match
-  end.
-
-**Why this matters:** Fargo without start-points is not Fargo. This
-blocks any meaningful Fargo league use.
-
-### Cross-cutting follow-ups
-
-- Consider a pre-launch checklist that asserts each scoring system can
-  run a full happy-path match (lineup → prep → score → complete) in a
-  smoke test environment before any real-player test.
-- Write up each failure in `docs/solutions/` once root-caused so the
-  learnings compound instead of evaporating.
-- Staging needs real observability for nights like this — logs are
-  easier to read after the fact than to debug in real time while
-  players are waiting.
 
 ---
 
@@ -1402,116 +1301,6 @@ drift now means they'll start *actually testing* what they claim to
 as soon as the RLS-enablement project (LIST_FOR_ED #29) gets picked
 up. This work and the RLS enablement are independent — either can
 ship first.
-
----
-
-## 2026-05-26 — Relax `match_games` position CHECK constraint for 6v6+
-
-**Branch needed:** small migration PR — e.g. `chore/relax-match-games-position-check`
-
-**Discovered:** 2026-05-26 during the Pairings Generator (Module #8)
-v1 extraction. The new Module itself is lineupSize-agnostic — it
-accepts any positive integer + either round-robin mode and produces
-the correct slot list. Cross-combo tests confirm 6v6 SRR (36 games)
-and 6v6 DRR (72 games) generate cleanly.
-
-**The problem:** the DATABASE blocks 6v6+ even though the Module
-allows it. `match_games.home_position` and `match_games.away_position`
-have CHECK constraints capping the value at 5:
-
-```
-CONSTRAINT match_games_home_position_check
-  CHECK ((home_position >= 1) AND (home_position <= 5))
-CONSTRAINT match_games_away_position_check
-  CHECK ((away_position >= 1) AND (away_position <= 5))
-```
-
-So if a league ever configures `lineup_size = 6` (or larger), the
-prep_match RPC would fail at insert time with a constraint violation
-the moment it tries to write the first row with `home_position = 6`.
-
-**Fix direction:** one tiny migration that drops the two CHECK
-constraints and replaces them with looser ones (e.g. `>= 1 AND <=
-20`, matching the `preferences_max_roster_size_check` ceiling that
-already exists). No data backfill needed; this only widens what's
-acceptable for future writes.
-
-**Status:** no plan exists yet. Not blocking anything today since no
-shipping system uses 6v6+. Just sitting on the bottleneck so the
-Module's lineupSize-agnosticism is realized end-to-end when an LO
-eventually wants a larger lineup.
-
-**See also:**
-- `docs/plans/2026-05-25-001-refactor-pairings-generator-extraction-plan.md`
-  Scope Boundaries section ("No `match_games` schema change") — this
-  ticket is the explicit follow-on noted there.
-- `src/systems/pairings/__tests__/pairings.test.ts` — the Module
-  tests that prove 6v6 already works at the Module level.
-
----
-
-## 2026-05-26 — Substitution system broken at lineup-lock (duplicate-players error)
-
-**Branch needed:** investigation branch — e.g. `fix/lineup-sub-duplicate-players`
-
-**Discovered:** 2026-05-26 during the Pairings Generator (Module #8)
-smoke test. Trying to enter an **anonymous sub** in a lineup and lock
-it now throws an error referencing "duplicate players not allowed."
-
-**Likely NOT caused by the Pairings Generator extraction** — that
-change only affected the per-row mapping at prep_match time. The
-lineup-assembly path (`myLineup` build-up) and sentinel handling for
-anonymous subs were left untouched. More likely fallout from an
-earlier modular change (suspect: a recent DB constraint addition or
-prep_match RPC change). Verification needed: try anonymous sub on an
-older commit (before this branch) to confirm the bug pre-exists.
-
-**Reproduction:**
-- Open a match (any league)
-- Try to lock a lineup that includes an anonymous sub placeholder
-- Error appears mentioning duplicate players
-
-**Untested as of this note:**
-- The **double-duty** sub path — needs to be re-checked separately;
-  unknown if it's broken too or if only the anonymous-sub path is
-  affected. Recommend retesting both before opening a fix branch so
-  the scope is clear.
-
-**Severity:** HIGH if confirmed — sub workflows are core to match-night
-operations. Captains MUST be able to use anonymous subs (and
-double-duty) without errors.
-
-**Fix direction (once root cause is identified):**
-- Find the source of the "duplicate players not allowed" check —
-  could be a UNIQUE constraint added in a recent migration, an
-  app-level guard, or a CHECK constraint on `match_games`.
-- Decide whether sentinel values should bypass the duplicate check,
-  or whether the sentinel scheme itself needs to change to produce
-  unique per-row sentinels.
-- Verify the fix on both anonymous-sub and double-duty paths.
-
-## 33. LO Team-Edit Nav — Don't Force Matchups Page After
-
-**Discovered:** 2026-05-26 while setting up multi-confirmer test logins
-for many-eyes Phase 2 manual testing.
-
-**The issue:** When an LO edits a team (adding/removing players, swapping
-roster), the app navigates them into the season's matchups page after
-the save. That's an unnecessary forced detour — LOs editing rosters
-don't need to land on matchups; they may want to return to the team
-list, the org dashboard, or just stay on the team page they were on.
-
-**Fix:** Either (a) stay on the team-edit page (or the team-list page) on
-save, or (b) navigate back to wherever the user came FROM (the previous
-route in history) — the latter is the more general "respect where the
-user was" fix.
-
-**Where to look:** the team-edit save handler / mutation. Likely in
-`src/operator/TeamManagement.tsx` or similar — wherever the post-save
-`navigate(...)` call lives that ends up at the matchups route.
-
-**Severity:** LOW — UX papercut, no data risk. Just annoying when doing
-roster work that doesn't need matchups context.
 
 ---
 
