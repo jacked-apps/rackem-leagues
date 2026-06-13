@@ -343,8 +343,11 @@ export function TeamSchedule() {
                   <CardContent className="px-3 py-2">
                     {/* Row 1: week·date  ───  status tag (same axis). */}
                     <div className="flex items-center justify-between gap-2">
-                      <div className="min-w-0 truncate text-base font-bold text-foreground">
-                        {entry.week.week_name} · {formatShortDate(match.scheduled_date ?? entry.week.scheduled_date)}
+                      <div className="min-w-0 truncate text-base text-foreground">
+                        {entry.week.week_name} ·{' '}
+                        <span className="font-bold">
+                          {formatShortDate(match.scheduled_date ?? entry.week.scheduled_date)}
+                        </span>
                       </div>
                       <span className={`flex shrink-0 items-center gap-1 text-xs font-medium ${meta.badge}`}>
                         <Icon className="h-3.5 w-3.5" />
