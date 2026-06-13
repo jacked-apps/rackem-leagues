@@ -4,9 +4,8 @@
  * Shares the team's persistent /join/:token link (the "address") via the
  * existing ShareLinkSection (copy + QR). Includes a "Generate new link" rotate
  * affordance for a leaked link (submitted requests are unaffected — they key on
- * team_id), and a dismissible first-run tip that explains the get-link → share
- * → approve loop. The tip's dismissal is a per-device localStorage flag (a
- * one-time nudge doesn't warrant a members migration).
+ * team_id). The first-run "fill your roster" tip now lives once at the top of
+ * the My Teams page rather than on every captain card.
  *
  * See docs/plans/2026-05-29-001-feat-onboarding-cascade-plan.md (Unit 7).
  */
@@ -28,8 +27,6 @@ import {
   useRotateTeamJoinToken,
 } from '@/api/hooks/useTeamJoinDistribution';
 import { useMemberFirstName } from '@/api/hooks/useCurrentMember';
-
-const TIP_KEY = 'onboarding-invite-tip-dismissed';
 
 /**
  * Build the player-facing invite message a captain pastes into a text/email.
@@ -66,44 +63,26 @@ export const InviteMyTeamButton: React.FC<InviteMyTeamButtonProps> = ({
   const rotate = useRotateTeamJoinToken(teamId);
   // The captain sharing the link is the current user — name them in the message.
   const captainName = useMemberFirstName();
-  const [tipDismissed, setTipDismissed] = useState(
-    () => localStorage.getItem(TIP_KEY) === '1'
-  );
   const [confirmRotate, setConfirmRotate] = useState(false);
-
-  const dismissTip = () => {
-    localStorage.setItem(TIP_KEY, '1');
-    setTipDismissed(true);
-  };
 
   const joinUrl = token ? `${window.location.origin}/join/${token}` : '';
 
   return (
-    <div className="space-y-2">
-      {!tipDismissed && (
-        <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
-          <p className="font-medium">Fill your roster the easy way</p>
-          <p className="text-muted-foreground">
-            Share one link with your players. As each signs up you'll get a request
-            to approve — tap Add and they're on the team.
-          </p>
-          <Button variant="link" loadingText="none" className="px-0 h-auto" onClick={dismissTip}>
-            Got it
-          </Button>
-        </div>
-      )}
-
       <Dialog>
-        <div className="flex items-center gap-1">
+        {/* Full-width trigger so it lines up with the sibling buttons in the
+            team card's action grid; the help (?) is tucked into the corner so
+            it stays available without shrinking the button. */}
+        <div className="relative">
           <DialogTrigger asChild>
-            <Button variant="outline" loadingText="none">
+            <Button variant="outline" loadingText="none" className="w-full">
               Invite my team
             </Button>
           </DialogTrigger>
-          {/* In-place help: how to share the link + approve players. */}
-          <InfoButton title="How to invite your team">
-            <InviteHelpContent />
-          </InfoButton>
+          <span className="absolute right-1 top-1/2 -translate-y-1/2">
+            <InfoButton title="How to invite your team">
+              <InviteHelpContent />
+            </InfoButton>
+          </span>
         </div>
         <DialogContent>
           <DialogHeader>
@@ -149,6 +128,5 @@ export const InviteMyTeamButton: React.FC<InviteMyTeamButtonProps> = ({
           </div>
         </DialogContent>
       </Dialog>
-    </div>
   );
 };
