@@ -264,7 +264,7 @@ export function TeamSchedule() {
         title={team.team_name}
         subtitle={dayOfWeek ? `${dayOfWeek}s` : undefined}
       >
-        <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-center">
           <Button
             variant="outline"
             size="sm"
