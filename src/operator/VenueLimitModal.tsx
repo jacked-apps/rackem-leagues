@@ -104,8 +104,8 @@ export const VenueLimitModal: React.FC<VenueLimitModalProps> = ({
         <div className="p-6 space-y-6">
           {/* Error message */}
           {saveError && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <p className="text-red-800 text-sm">
+            <div className="bg-destructive/10 border border-destructive/40 rounded-lg p-3">
+              <p className="text-destructive text-sm">
                 {saveError instanceof Error
                   ? saveError.message
                   : 'Failed to update limits'}
@@ -190,9 +190,9 @@ export const VenueLimitModal: React.FC<VenueLimitModalProps> = ({
           </div>
 
           {/* Available Tables - clickable to remove */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+          <div className="bg-info/10 border border-info/40 rounded-lg p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-blue-800">
+              <p className="text-sm text-info">
                 <strong>Available Tables:</strong> {availableTables.length}
               </p>
             </div>
@@ -215,13 +215,13 @@ export const VenueLimitModal: React.FC<VenueLimitModalProps> = ({
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-blue-600 italic">No tables selected</p>
+              <p className="text-sm text-muted-foreground italic">No tables selected</p>
             )}
 
             {availableTables.length > 0 && (
-              <div className="pt-2 border-t border-blue-200 space-y-2">
+              <div className="pt-2 border-t border-info/40 space-y-2">
                 <div className="flex items-center gap-2">
-                  <label htmlFor="capacity" className="text-xs text-blue-700 font-medium whitespace-nowrap">
+                  <label htmlFor="capacity" className="text-xs text-info font-medium whitespace-nowrap">
                     Max Home Teams:
                   </label>
                   <NumberInput
@@ -234,7 +234,7 @@ export const VenueLimitModal: React.FC<VenueLimitModalProps> = ({
                   />
                 </div>
                 <div className="flex items-center gap-1">
-                  <p className="text-xs text-blue-600">
+                  <p className="text-xs text-muted-foreground">
                     {isInHouse
                       ? `In-house max: ${maxCapacityForThisVenue} (${availableTables.length} tables × 2 + 1 bye)`
                       : `Traveling max: ${maxCapacityForThisVenue} (includes all venues)`
@@ -248,8 +248,8 @@ export const VenueLimitModal: React.FC<VenueLimitModalProps> = ({
                   </InfoButton>
                 </div>
                 {capacity > availableTables.length && (
-                  <div className="bg-orange-50 border border-orange-200 rounded p-2 mt-2">
-                    <p className="text-xs text-orange-700">
+                  <div className="bg-warning/10 border border-warning/40 rounded p-2 mt-2">
+                    <p className="text-xs text-warning">
                       <strong>Warning:</strong> Capacity exceeds this venue's tables ({capacity} teams &gt; {availableTables.length} tables).
                       If all tables are occupied during scheduling, home matches may be assigned to a different venue with availability.
                     </p>
@@ -261,8 +261,8 @@ export const VenueLimitModal: React.FC<VenueLimitModalProps> = ({
 
           {/* Unavailable Tables - clickable to restore */}
           {unavailableTables.length > 0 && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-3">
-              <p className="text-sm text-red-800">
+            <div className="bg-destructive/10 border border-destructive/40 rounded-lg p-4 space-y-3">
+              <p className="text-sm text-destructive">
                 <strong>Unavailable Tables:</strong> {unavailableTables.length}
               </p>
 

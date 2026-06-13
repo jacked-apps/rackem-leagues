@@ -111,12 +111,12 @@ export function TableNumberBar({ matchId, tableNumber, spectatorLeagueId, leftSl
           link so Ed can pick which he prefers. The whole row is a flex layout
           with the table-number button absolutely centered so spectator icons
           don't push it off-center. */}
-      <div className="w-full bg-blue-50 border-b border-blue-100 relative">
+      <div className="w-full bg-info/10 border-b border-info/40 relative">
         <button
           onClick={handleOpen}
-          className="w-full px-4 py-2 text-center hover:bg-blue-100 transition-colors"
+          className="w-full px-4 py-2 text-center hover:bg-info/20 transition-colors"
         >
-          <span className="text-sm font-medium text-blue-800">
+          <span className="text-sm font-medium text-info">
             {tableNumber ? `Table ${tableNumber}` : 'Set Table Number'}
           </span>
         </button>
@@ -138,7 +138,7 @@ export function TableNumberBar({ matchId, tableNumber, spectatorLeagueId, leftSl
             <button
               aria-label="Watch other live matches in this league"
               onClick={openSpectator}
-              className="pointer-events-auto flex items-center gap-1.5 p-1.5 rounded hover:bg-blue-200 transition-colors text-blue-800"
+              className="pointer-events-auto flex items-center gap-1.5 p-1.5 rounded hover:bg-info/20 transition-colors text-info"
             >
               <Tv className="h-5 w-5" />
               <span className="hidden sm:inline text-sm font-medium">Live</span>

@@ -162,7 +162,7 @@ export const MemberCombobox: React.FC<MemberComboboxProps> = ({
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="w-full justify-start text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                  className="w-full justify-start text-info hover:text-info hover:bg-info/10"
                   onClick={() => {
                     setOpen(false);
                     setShowPlaceholderModal(true);

@@ -87,7 +87,7 @@ function describeSource(source: SourceClass): SourceDescription {
     case 'tested_preset_3v3':
       return {
         badge: 'Calibrated',
-        badgeClass: 'bg-green-100 text-green-800 border-green-300',
+        badgeClass: 'bg-success/10 text-success border-success/40',
         title: 'Rackem League 3v3 Points Chart',
         body:
           'This combo uses the seeded Tested Preset chart. Threshold values are calibrated against the standard Rackem 3v3 handicap table. No action needed.',
@@ -95,7 +95,7 @@ function describeSource(source: SourceClass): SourceDescription {
     case 'tested_preset_5v5':
       return {
         badge: 'Calibrated',
-        badgeClass: 'bg-green-100 text-green-800 border-green-300',
+        badgeClass: 'bg-success/10 text-success border-success/40',
         title: 'Rackem League 5v5 Percentage Chart',
         body:
           'This combo uses the seeded Tested Preset chart. Threshold values are calibrated against the standard BCA 5v5 percentage handicap table. No action needed.',
@@ -103,7 +103,7 @@ function describeSource(source: SourceClass): SourceDescription {
     case 'fargo_start_points':
       return {
         badge: 'Calibrated',
-        badgeClass: 'bg-green-100 text-green-800 border-green-300',
+        badgeClass: 'bg-success/10 text-success border-success/40',
         title: 'FargoRate start-points formula',
         body:
           'Captains negotiate the agreed start-points credit at lineup lock based on each team\'s lineup ratings. Formula derived from FargoRate\'s published primitives — captains can override if their league uses different conventions.',
@@ -111,7 +111,7 @@ function describeSource(source: SourceClass): SourceDescription {
     case 'fargo_games_won':
       return {
         badge: 'Calibrated',
-        badgeClass: 'bg-green-100 text-green-800 border-green-300',
+        badgeClass: 'bg-success/10 text-success border-success/40',
         title: 'Fargo games-to-win formula',
         body:
           'Per-team thresholds are computed from the lineup ratings using the FargoRate base formula (T = 2^(rating/100)). Validated against FargoRate\'s published HOT race chart for individual matchups (96-pt gap on 10-game race → 7-4 race, exact match). Captains can override at lineup lock if your league has agreed on different thresholds.',
@@ -119,7 +119,7 @@ function describeSource(source: SourceClass): SourceDescription {
     case 'manual_entry':
       return {
         badge: 'Manual entry',
-        badgeClass: 'bg-amber-100 text-amber-900 border-amber-300',
+        badgeClass: 'bg-warning/10 text-warning border-warning/40',
         title: 'No calibrated chart for this combo',
         body:
           'This handicap combination doesn\'t have a built-in calibrated chart. Captains will enter the agreed thresholds at lineup lock time — same workflow as captains overriding the calibrated defaults in other systems. Or, if your league plays without handicaps, toggle the option below.',
@@ -150,12 +150,12 @@ export function ThresholdSourceStep({
           </div>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-gray-700">{desc.body}</p>
+          <p className="text-sm text-muted-foreground">{desc.body}</p>
         </CardContent>
       </Card>
 
       {showUnhandicappedOption && (
-        <div className="flex items-start gap-3 p-3 border border-gray-200 rounded">
+        <div className="flex items-start gap-3 p-3 border border-border rounded">
           <Checkbox
             id="threshold-unhandicapped"
             checked={value === 'unhandicapped'}
@@ -167,7 +167,7 @@ export function ThresholdSourceStep({
             <Label htmlFor="threshold-unhandicapped" className="font-medium">
               Play this league unhandicapped
             </Label>
-            <p className="text-xs text-gray-600">
+            <p className="text-xs text-muted-foreground">
               Skips handicap thresholds entirely — every player needs the same
               number of game wins regardless of rating. Sets the league\'s
               handicap mechanism to <code>none</code>.

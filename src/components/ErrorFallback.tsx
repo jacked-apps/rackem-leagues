@@ -40,8 +40,8 @@ export const ErrorFallback: React.FC<ErrorFallbackProps> = ({ error, onReset }) 
     <div className="min-h-screen bg-muted flex items-center justify-center p-4">
       <Card className="max-w-lg w-full">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-red-100 flex items-center justify-center">
-            <AlertTriangle className="h-8 w-8 text-red-600" />
+          <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center">
+            <AlertTriangle className="h-8 w-8 text-destructive" />
           </div>
           <CardTitle className="text-xl text-foreground">
             Something went wrong
@@ -56,7 +56,7 @@ export const ErrorFallback: React.FC<ErrorFallbackProps> = ({ error, onReset }) 
           {/* Show error details in development */}
           {isDev && error && (
             <div className="mt-4 p-3 bg-muted rounded-lg overflow-auto">
-              <p className="text-sm font-mono text-red-600 break-all">
+              <p className="text-sm font-mono text-destructive break-all">
                 {error.message}
               </p>
               {error.stack && (

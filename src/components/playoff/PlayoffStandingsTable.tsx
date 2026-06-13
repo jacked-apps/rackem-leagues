@@ -96,8 +96,8 @@ export const PlayoffStandingsTable: React.FC<PlayoffStandingsTableProps> = ({
    */
   const getRowClass = (team: PlaceholderTeam): string => {
     if (team.isAutoQualified) return 'hover:bg-muted';
-    if (team.isWildcardEligible) return 'bg-amber-50';
-    return 'bg-red-50 opacity-60';
+    if (team.isWildcardEligible) return 'bg-warning/10';
+    return 'bg-destructive/10 opacity-60';
   };
 
   /**
@@ -105,8 +105,8 @@ export const PlayoffStandingsTable: React.FC<PlayoffStandingsTableProps> = ({
    */
   const getSeedClass = (team: PlaceholderTeam): string => {
     if (team.isAutoQualified) return 'bg-accent text-foreground';
-    if (team.isWildcardEligible) return 'bg-amber-200 text-amber-700';
-    return 'bg-red-200 text-red-700';
+    if (team.isWildcardEligible) return 'bg-warning/20 text-warning';
+    return 'bg-destructive/20 text-destructive';
   };
 
   /**
@@ -115,9 +115,9 @@ export const PlayoffStandingsTable: React.FC<PlayoffStandingsTableProps> = ({
   const getStatusLabel = (team: PlaceholderTeam): React.ReactNode => {
     if (team.isAutoQualified) return null;
     if (team.isWildcardEligible) {
-      return <span className="ml-2 text-xs text-amber-600">(Wildcard Eligible)</span>;
+      return <span className="ml-2 text-xs text-warning">(Wildcard Eligible)</span>;
     }
-    return <span className="ml-2 text-xs text-red-600">(Not in playoffs)</span>;
+    return <span className="ml-2 text-xs text-destructive">(Not in playoffs)</span>;
   };
 
   return (

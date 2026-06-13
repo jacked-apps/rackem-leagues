@@ -158,7 +158,7 @@ export const UnmergePlayerDialog: React.FC<UnmergePlayerDialogProps> = ({
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-red-600" />
+                <AlertTriangle className="h-5 w-5 text-destructive" />
                 Confirm unmerge
               </DialogTitle>
               <DialogDescription>
@@ -171,11 +171,11 @@ export const UnmergePlayerDialog: React.FC<UnmergePlayerDialogProps> = ({
             </DialogHeader>
 
             <div className="space-y-3 py-2 text-sm">
-              <div className="rounded-md bg-amber-50 border border-amber-200 p-3">
-                <p className="text-xs text-amber-700 font-medium">
+              <div className="rounded-md bg-warning/10 border border-warning/40 p-3">
+                <p className="text-xs text-warning font-medium">
                   Placeholder being restored
                 </p>
-                <p className="font-semibold text-amber-900">
+                <p className="font-semibold text-foreground">
                   {confirmingMerge.placeholder_first_name}{' '}
                   {confirmingMerge.placeholder_last_name}
                   {confirmingMerge.placeholder_nickname && (
@@ -184,15 +184,15 @@ export const UnmergePlayerDialog: React.FC<UnmergePlayerDialogProps> = ({
                     </span>
                   )}
                 </p>
-                <p className="text-xs text-amber-700 mt-1">
+                <p className="text-xs text-warning mt-1">
                   Originally merged{' '}
                   {new Date(confirmingMerge.created_at).toLocaleString()}
                   {confirmingMerge.actor_name && <> by {confirmingMerge.actor_name}</>}
                 </p>
               </div>
 
-              <div className="rounded-md bg-red-50 border border-red-200 p-3">
-                <p className="text-xs text-red-700 font-medium">
+              <div className="rounded-md bg-destructive/10 border border-destructive/40 p-3">
+                <p className="text-xs text-destructive font-medium">
                   Will be stripped from {selectedTarget?.first_name}'s account
                 </p>
                 <Synopsis synopsis={confirmingMerge.synopsis} />
@@ -269,7 +269,7 @@ export const UnmergePlayerDialog: React.FC<UnmergePlayerDialogProps> = ({
                       been undone or expired.
                     </p>
                   ) : (
-                    <ul className="divide-y divide-gray-100 border rounded-md">
+                    <ul className="divide-y divide-border border rounded-md">
                       {merges.map((m) => {
                         const placeholderLabel =
                           m.placeholder_nickname?.trim() ||
@@ -290,7 +290,7 @@ export const UnmergePlayerDialog: React.FC<UnmergePlayerDialogProps> = ({
                                   {new Date(m.created_at).toLocaleString()}
                                   {m.actor_name && <> · by {m.actor_name}</>}
                                   {m.actor_role === 'invite_accept' && (
-                                    <span className="text-blue-700"> · self-claim</span>
+                                    <span className="text-info"> · self-claim</span>
                                   )}
                                 </p>
                                 <div className="mt-1 text-xs text-muted-foreground">
@@ -371,7 +371,7 @@ const Synopsis: React.FC<{
     return <span>{items.join(' · ')}</span>;
   }
   return (
-    <ul className="list-disc list-inside text-red-900 space-y-0.5 mt-1">
+    <ul className="list-disc list-inside text-destructive space-y-0.5 mt-1">
       {items.map((item, i) => (
         <li key={i}>{item}</li>
       ))}

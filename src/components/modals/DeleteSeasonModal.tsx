@@ -46,8 +46,8 @@ export const DeleteSeasonModal: React.FC<DeleteSeasonModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="bg-card rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
         {/* Warning Icon */}
-        <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full">
-          <AlertTriangle className="w-6 h-6 text-red-600" />
+        <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-destructive/10 rounded-full">
+          <AlertTriangle className="w-6 h-6 text-destructive" />
         </div>
 
         {/* Title */}
@@ -61,9 +61,9 @@ export const DeleteSeasonModal: React.FC<DeleteSeasonModalProps> = ({
             You are about to permanently delete <strong>{seasonName}</strong>.
           </p>
 
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-900 font-semibold mb-2">This action will delete:</p>
-            <ul className="list-disc list-inside text-red-800 space-y-1 text-sm">
+          <div className="bg-destructive/10 border border-destructive/40 rounded-lg p-4">
+            <p className="text-destructive font-semibold mb-2">This action will delete:</p>
+            <ul className="list-disc list-inside text-foreground space-y-1 text-sm">
               <li>Season dates and schedule configuration</li>
               {hasSchedule && <li>All season weeks (regular weeks, blackouts, playoffs)</li>}
               {hasTeams && <li>All team enrollments for this season</li>}

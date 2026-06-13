@@ -394,7 +394,7 @@ export const FiveManFormatDetails: React.FC = () => {
                   <div className="flex justify-center">
                     <table className="text-sm border-collapse">
                       <thead>
-                        <tr className="border-b-2 border-gray-400">
+                        <tr className="border-b-2 border-border">
                           <th className="text-center py-2 px-1 bg-accent">H/C</th>
                           <th className="text-center py-2 px-1 bg-success/15">Win</th>
                           <th className="text-center py-2 px-1 bg-warning/15">Tie</th>
@@ -551,14 +551,14 @@ export const FiveManFormatDetails: React.FC = () => {
               <h4 className="font-semibold text-foreground mb-3">Example Standings (After 10 Weeks):</h4>
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b-2 border-gray-400">
+                  <tr className="border-b-2 border-border">
                     <th className="text-left py-2">Team</th>
                     <th className="text-center py-2">Match W-L</th>
                     <th className="text-center py-2">Team Points</th>
                     <th className="text-center py-2">Total Games</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-300">
+                <tbody className="divide-y divide-border">
                   <tr>
                     <td className="py-2 font-medium">Team A</td>
                     <td className="py-2 text-center">8-2</td>
@@ -583,7 +583,7 @@ export const FiveManFormatDetails: React.FC = () => {
                     <td className="py-2 text-center">-2</td>
                     <td className="py-2 text-center">87</td>
                   </tr>
-                  <tr className="border-t-2 border-gray-500">
+                  <tr className="border-t-2 border-border">
                     <td className="py-2 text-center text-muted-foreground italic" colSpan={4}>
                       ... additional teams below ...
                     </td>

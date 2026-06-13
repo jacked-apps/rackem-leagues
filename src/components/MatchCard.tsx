@@ -51,12 +51,12 @@ export const MatchCard: React.FC<MatchCardProps> = ({
   // Status badge styling
   const statusColors = {
     scheduled: 'bg-muted text-foreground',
-    updating: 'bg-amber-100 text-amber-700',
-    in_progress: 'bg-blue-100 text-blue-700',
-    awaiting_verification: 'bg-purple-100 text-purple-700',
-    completed: 'bg-green-100 text-green-700',
-    forfeited: 'bg-red-100 text-red-700',
-    postponed: 'bg-yellow-100 text-yellow-700',
+    updating: 'bg-warning/10 text-warning',
+    in_progress: 'bg-info/10 text-info',
+    awaiting_verification: 'bg-accent text-foreground',
+    completed: 'bg-success/10 text-success',
+    forfeited: 'bg-destructive/10 text-destructive',
+    postponed: 'bg-warning/10 text-warning',
   };
 
   const statusColor = statusColors[match.status] || statusColors.scheduled;
@@ -90,7 +90,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
               <p
                 className={`font-semibold ${
                   highlightTeamId === homeTeam?.id
-                    ? 'text-blue-600'
+                    ? 'text-info'
                     : 'text-foreground'
                 }`}
               >
@@ -115,7 +115,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
               <p
                 className={`font-semibold ${
                   highlightTeamId === awayTeam?.id
-                    ? 'text-blue-600'
+                    ? 'text-info'
                     : 'text-foreground'
                 }`}
               >
@@ -127,11 +127,11 @@ export const MatchCard: React.FC<MatchCardProps> = ({
 
           {/* Venue */}
           {venue && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2 border-t border-gray-100">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2 border-t border-border">
               <MapPin className="h-4 w-4" />
               <span>{venue.name}</span>
               {match.actual_venue_id && (
-                <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">
+                <span className="text-xs bg-warning/10 text-warning px-2 py-0.5 rounded">
                   Venue Changed
                 </span>
               )}

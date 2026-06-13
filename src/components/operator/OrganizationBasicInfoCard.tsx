@@ -118,8 +118,8 @@ export const OrganizationBasicInfoCard: React.FC<OrganizationBasicInfoCardProps>
       </CardHeader>
       <CardContent className="space-y-6">
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-sm text-red-700">{error}</p>
+          <div className="p-3 bg-destructive/10 border border-destructive/40 rounded-md">
+            <p className="text-sm text-foreground">{error}</p>
           </div>
         )}
 

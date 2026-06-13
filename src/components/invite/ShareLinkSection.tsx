@@ -139,9 +139,9 @@ export const ShareLinkSection: React.FC<ShareLinkSectionProps> = ({
 
         {/* Environment Warning - staging only */}
         {isStaging && (
-          <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <AlertTriangle className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
-            <div className="text-xs text-blue-800">
+          <div className="flex items-start gap-2 p-3 bg-info/10 border border-info/40 rounded-lg">
+            <AlertTriangle className="h-4 w-4 text-info mt-0.5 shrink-0" />
+            <div className="text-xs text-info">
               <p className="font-medium">Staging Environment</p>
               <p>This link points to the staging site, not production.</p>
             </div>
@@ -163,14 +163,14 @@ export const ShareLinkSection: React.FC<ShareLinkSectionProps> = ({
             title="Copy link"
           >
             {copied ? (
-              <Check className="h-4 w-4 text-green-600" />
+              <Check className="h-4 w-4 text-success" />
             ) : (
               <Copy className="h-4 w-4" />
             )}
           </Button>
         </div>
         {copied && (
-          <p className="text-xs text-green-600">Link copied to clipboard!</p>
+          <p className="text-xs text-success">Link copied to clipboard!</p>
         )}
       </div>
 

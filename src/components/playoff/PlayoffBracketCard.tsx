@@ -164,7 +164,7 @@ const MatchupDisplay: React.FC<MatchupDisplayProps> = ({
       </div>
       <div className="space-y-3">
         {/* Home team (higher seed) */}
-        <div className="flex items-center justify-between bg-blue-50 rounded-lg p-3">
+        <div className="flex items-center justify-between bg-info/10 rounded-lg p-3">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm">
               {homeSeed > 0 && homeSeed < 100 ? homeSeed : '?'}
@@ -184,7 +184,7 @@ const MatchupDisplay: React.FC<MatchupDisplayProps> = ({
               )}
             </div>
           </div>
-          <div className="text-xs text-blue-600 font-medium">HOME</div>
+          <div className="text-xs text-info font-medium">HOME</div>
         </div>
 
         <div className="text-center text-muted-foreground text-sm font-semibold">vs</div>
@@ -280,7 +280,7 @@ export const PlayoffBracketCard: React.FC<PlayoffBracketCardProps> = ({
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
-            <Trophy className="h-5 w-5 text-purple-600" />
+            <Trophy className="h-5 w-5 text-accent-foreground" />
             Bracket Week {weekNum} ({bracketSize} Teams)
           </CardTitle>
           {/* Matchup Style Dropdown */}
@@ -336,7 +336,7 @@ export const PlayoffBracketCard: React.FC<PlayoffBracketCardProps> = ({
         </p>
         {/* Note about standings when season is incomplete */}
         {!isSeasonComplete && (
-          <p className="text-xs text-amber-600 mt-1">
+          <p className="text-xs text-warning mt-1">
             Team positions may change as more regular season matches are played.
           </p>
         )}

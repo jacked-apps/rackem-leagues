@@ -71,14 +71,14 @@ export function EditGameDialog({
               Current winner: {game.winnerPlayerName}
             </p>
             {hasRequested ? (
-              <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
+              <div className="bg-warning/10 border border-warning/40 rounded p-3">
                 <p className="text-sm text-foreground">
                   You have already requested to vacate this winner. Waiting for
                   opponent confirmation.
                 </p>
               </div>
             ) : (
-              <div className="bg-orange-50 border border-orange-200 rounded p-3">
+              <div className="bg-warning/10 border border-warning/40 rounded p-3">
                 <p className="text-sm text-foreground">
                   Requesting to vacate will notify your opponent. Both teams
                   must agree before the winner can be cleared and re-scored.

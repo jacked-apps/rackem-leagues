@@ -134,19 +134,19 @@ export function TeamCard({
 
         {/* Team Readiness Indicator */}
         {showEditButton && (
-          <div className={`mt-4 p-3 rounded-lg border ${isReady ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
+          <div className={`mt-4 p-3 rounded-lg border ${isReady ? 'bg-success/10 border-success/40' : 'bg-warning/10 border-warning/40'}`}>
             <div className="flex items-start gap-2">
               {isReady ? (
-                <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                <CheckCircle className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
               ) : (
-                <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                <AlertCircle className="h-5 w-5 text-warning mt-0.5 flex-shrink-0" />
               )}
               <div className="flex-1">
-                <p className={`text-sm font-semibold ${isReady ? 'text-green-900' : 'text-yellow-900'}`}>
+                <p className={`text-sm font-semibold ${isReady ? 'text-success' : 'text-warning'}`}>
                   {isReady ? 'Team Ready for Play' : 'Team Setup Incomplete'}
                 </p>
                 {!isReady && (
-                  <ul className="text-sm text-yellow-800 mt-1 space-y-1">
+                  <ul className="text-sm text-warning mt-1 space-y-1">
                     {!hasVenue && <li>• Home venue required</li>}
                     {!hasMinRoster && <li>• Minimum {minRoster} players required ({players.length}/{rosterSize} currently)</li>}
                   </ul>

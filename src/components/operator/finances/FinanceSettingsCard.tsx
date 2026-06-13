@@ -74,11 +74,11 @@ export function FinanceSettingsCard({ leagueId, finances }: FinanceSettingsCardP
       <CardHeader>
         <CardTitle className="flex items-center justify-between text-lg">
           <span className="flex items-center gap-2">
-            <Settings className="h-5 w-5 text-blue-600" />
+            <Settings className="h-5 w-5 text-info" />
             Finance Settings
           </span>
           {isOverriding ? (
-            <span className="text-xs font-normal bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+            <span className="text-xs font-normal bg-info/10 text-info px-2 py-0.5 rounded-full">
               League override active
             </span>
           ) : (

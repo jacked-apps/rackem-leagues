@@ -126,7 +126,7 @@ export function TiebreakerScoreboard({
 
             {/* VS Separator */}
             <div className="text-center">
-              <div className="text-3xl font-bold text-gray-300">
+              <div className="text-3xl font-bold text-muted-foreground">
                 vs
               </div>
             </div>

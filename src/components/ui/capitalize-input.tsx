@@ -170,12 +170,12 @@ export const CapitalizeInput = React.forwardRef<
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         disabled={disabled}
-        className={error ? 'border-red-500' : ''}
+        className={error ? 'border-destructive' : ''}
         maxLength={maxLength}
       />
 
       {errorMessage && error && (
-        <p className="text-red-500 text-sm mt-2">{errorMessage}</p>
+        <p className="text-destructive text-sm mt-2">{errorMessage}</p>
       )}
 
       {/* Auto-Capitalize Toggle - hide if hideCheckbox is true */}
@@ -186,12 +186,12 @@ export const CapitalizeInput = React.forwardRef<
             id={`${id}-autocap`}
             checked={autoCapitalize}
             onChange={(e) => setAutoCapitalize(e.target.checked)}
-            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+            className="w-4 h-4 text-blue-600 bg-muted border-input rounded focus:ring-ring focus:ring-2"
             disabled={disabled}
           />
           <label
             htmlFor={`${id}-autocap`}
-            className="text-sm text-gray-700 select-none cursor-pointer"
+            className="text-sm text-muted-foreground select-none cursor-pointer"
           >
             {autoCapitalize
               ? "Auto-capitalize enabled (formatting applied when saved)"

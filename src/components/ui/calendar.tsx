@@ -167,7 +167,7 @@ export const Calendar: React.FC<CalendarProps> = ({
           disabled={disabled}
           min={minDate}
           max={maxDate}
-          className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-inner-spin-button]:hidden"
+          className="w-full px-4 py-3 pr-12 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-lg [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-inner-spin-button]:hidden"
         />
         {/* Calendar Popup Button */}
         <Button
@@ -176,7 +176,7 @@ export const Calendar: React.FC<CalendarProps> = ({
           size="sm"
           onClick={() => !disabled && setIsOpen(!isOpen)}
           disabled={disabled}
-          className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0 hover:bg-gray-100"
+          className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0 hover:bg-muted"
         >
           📅
         </Button>
@@ -184,7 +184,7 @@ export const Calendar: React.FC<CalendarProps> = ({
 
       {/* Calendar Popup */}
       {isOpen && (
-        <Card className="absolute top-full left-0 z-50 mt-2 p-4 shadow-lg bg-white border">
+        <Card className="absolute top-full left-0 z-50 mt-2 p-4 shadow-lg bg-popover border">
           <div className="w-64">
             {/* Month Navigation */}
             <div className="flex items-center justify-between mb-4">
@@ -196,7 +196,7 @@ export const Calendar: React.FC<CalendarProps> = ({
               >
                 ←
               </Button>
-              <h3 className="font-semibold text-gray-900">{monthYear}</h3>
+              <h3 className="font-semibold text-foreground">{monthYear}</h3>
               <Button
                 type="button"
                 variant="ghost"
@@ -210,7 +210,7 @@ export const Calendar: React.FC<CalendarProps> = ({
             {/* Day Labels */}
             <div className="grid grid-cols-7 gap-1 mb-2">
               {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
-                <div key={day} className="text-xs font-medium text-gray-500 p-2 text-center">
+                <div key={day} className="text-xs font-medium text-muted-foreground p-2 text-center">
                   {day}
                 </div>
               ))}
@@ -231,8 +231,8 @@ export const Calendar: React.FC<CalendarProps> = ({
                         isSelected(day)
                           ? 'bg-blue-600 text-white hover:bg-blue-700'
                           : isToday(day)
-                          ? 'bg-blue-100 text-blue-600 hover:bg-blue-200'
-                          : 'hover:bg-gray-100'
+                          ? 'bg-info/10 text-info hover:bg-info/20'
+                          : 'hover:bg-muted'
                       }`}
                     >
                       {day}

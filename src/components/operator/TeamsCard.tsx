@@ -157,7 +157,7 @@ export const TeamsCard: React.FC<TeamsCardProps> = ({ leagueId }) => {
                 <tr
                   key={team.id}
                   onClick={() => team.captain && toggleTeam(team.id)}
-                  className={`border-b border-gray-100 last:border-0 ${team.captain ? 'cursor-pointer hover:bg-muted' : ''}`}
+                  className={`border-b border-border last:border-0 ${team.captain ? 'cursor-pointer hover:bg-muted' : ''}`}
                 >
                   <td className="py-3 text-sm font-medium text-foreground">
                     <div className="flex items-center gap-2">
@@ -179,14 +179,14 @@ export const TeamsCard: React.FC<TeamsCardProps> = ({ leagueId }) => {
                           <div className="mt-1 text-xs text-muted-foreground space-y-0.5">
                             {team.captain.phone && (
                               <div>
-                                <a href={`tel:${team.captain.phone}`} className="hover:text-blue-600">
+                                <a href={`tel:${team.captain.phone}`} className="hover:text-info">
                                   {formatPhoneNumber(team.captain.phone)}
                                 </a>
                               </div>
                             )}
                             {team.captain.email && (
                               <div>
-                                <a href={`mailto:${team.captain.email}`} className="hover:text-blue-600">
+                                <a href={`mailto:${team.captain.email}`} className="hover:text-info">
                                   {team.captain.email}
                                 </a>
                               </div>
@@ -205,7 +205,7 @@ export const TeamsCard: React.FC<TeamsCardProps> = ({ leagueId }) => {
                         <div className="mt-1 text-xs text-muted-foreground space-y-0.5">
                           {team.venue.phone && (
                             <div>
-                              <a href={`tel:${team.venue.phone}`} className="hover:text-blue-600">
+                              <a href={`tel:${team.venue.phone}`} className="hover:text-info">
                                 {formatPhoneNumber(team.venue.phone)}
                               </a>
                             </div>

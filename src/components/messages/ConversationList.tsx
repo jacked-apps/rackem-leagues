@@ -96,11 +96,11 @@ export function ConversationList({
     <div className="flex flex-col h-full">
       {/* Announcements Button - Only for captains/operators/admins */}
       {showAnnouncements && (
-        <div className="px-3 pb-2 pt-0 md:px-4 md:pb-3 bg-gray-300">
+        <div className="px-3 pb-2 pt-0 md:px-4 md:pb-3 bg-muted">
           <Button
             onClick={onAnnouncements}
             variant="outline"
-            className="w-full bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100 hover:text-blue-800"
+            className="w-full bg-info/10 border-info/40 text-info hover:bg-info/20 hover:text-info"
           >
             <Megaphone className="h-4 w-4 mr-2" />
             Send Announcement
@@ -109,7 +109,7 @@ export function ConversationList({
       )}
 
       {/* Menu Bar */}
-      <div className="px-3 pb-3 pt-0 md:px-4 md:pb-4 md:pt-0 border-b bg-gray-300">
+      <div className="px-3 pb-3 pt-0 md:px-4 md:pb-4 md:pt-0 border-b bg-muted">
         <div className="flex gap-2 justify-around bg-muted rounded-lg p-2 shadow-sm border border-border">
           {/* New Message */}
           <Button
@@ -128,7 +128,7 @@ export function ConversationList({
             onClick={() => setShowSearch(!showSearch)}
             className={cn(
               'flex-1 flex flex-col items-center gap-1 h-auto py-2',
-              showSearch && 'bg-blue-100 text-blue-600 hover:bg-blue-100'
+              showSearch && 'bg-info/10 text-info hover:bg-info/10'
             )}
             aria-label="Toggle search"
           >
@@ -197,7 +197,7 @@ export function ConversationList({
                   className={cn(
                     'w-full p-4 md:p-3 text-left border-b border-border hover:bg-muted active:bg-accent transition-colors',
                     'min-h-[60px] md:min-h-[56px]',
-                    selectedConversationId === conversation.id && 'bg-blue-50 hover:bg-blue-100',
+                    selectedConversationId === conversation.id && 'bg-info/10 hover:bg-info/20',
                     // Past-member rows render muted so they read as "history I
                     // can still browse" rather than as live chats.
                     conversation.isPastMember && 'opacity-60',
@@ -207,7 +207,7 @@ export function ConversationList({
                     <span className="font-semibold text-sm md:text-base flex items-center gap-2">
                       {displayTitle}
                       {isAnnouncement && (
-                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                        <span className="text-xs bg-info/10 text-info px-2 py-0.5 rounded">
                           Announcement
                         </span>
                       )}
@@ -253,7 +253,7 @@ export function ConversationList({
 
       {/* Footer - Exit button (mobile only) */}
       {onExit && (
-        <div className="md:hidden border-t bg-gray-300 px-4 py-4 flex justify-end flex-shrink-0">
+        <div className="md:hidden border-t bg-muted px-4 py-4 flex justify-end flex-shrink-0">
           <Button loadingText="none" onClick={onExit}>
             Exit to My Teams
           </Button>

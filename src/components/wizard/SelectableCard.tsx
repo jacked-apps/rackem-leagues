@@ -54,11 +54,11 @@ export function SelectableCard<T>({
       onClick={handleClick}
       className={[
         'w-full text-left rounded-lg border-2 p-4 transition-all',
-        'focus:outline-none focus:ring-2 focus:ring-blue-400',
+        'focus:outline-none focus:ring-2 focus:ring-ring',
         option.disabled
           ? 'opacity-50 cursor-not-allowed border-border bg-muted'
           : isSelected
-            ? 'border-blue-500 bg-blue-50 shadow-sm'
+            ? 'border-info bg-info/10 shadow-sm'
             : 'border-border bg-card hover:border-border hover:shadow-sm',
       ].join(' ')}
     >

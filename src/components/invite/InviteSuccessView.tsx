@@ -41,8 +41,8 @@ export const InviteSuccessView: React.FC<InviteSuccessViewProps> = ({
     <div className="space-y-4">
       {/* Success icon */}
       <div className="flex justify-center">
-        <div className="p-4 bg-green-100 rounded-full">
-          <Mail className="h-8 w-8 text-green-600" />
+        <div className="p-4 bg-success/10 rounded-full">
+          <Mail className="h-8 w-8 text-success" />
         </div>
       </div>
 
@@ -58,8 +58,8 @@ export const InviteSuccessView: React.FC<InviteSuccessViewProps> = ({
       </div>
 
       {/* Important note */}
-      <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-        <p className="text-xs text-amber-800">
+      <div className="p-3 bg-warning/10 border border-warning/40 rounded-lg">
+        <p className="text-xs text-foreground">
           <span className="font-medium">Important:</span> Please hand the device back to the league operator now.
           Your session is safe and you are not logged in as {firstName}.
         </p>

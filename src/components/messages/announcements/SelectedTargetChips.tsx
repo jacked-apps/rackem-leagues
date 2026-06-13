@@ -24,9 +24,9 @@ export function SelectedTargetChips({ selectedTargets, onRemove }: SelectedTarge
   if (selectedTargets.length === 0) return null;
 
   return (
-    <div className="px-6 pt-4 border-b bg-blue-50">
+    <div className="px-6 pt-4 border-b bg-info/10">
       <div className="flex items-center gap-2 mb-2">
-        <span className="text-sm font-medium text-blue-900">
+        <span className="text-sm font-medium text-info">
           Selected ({selectedTargets.length})
         </span>
       </div>
@@ -34,7 +34,7 @@ export function SelectedTargetChips({ selectedTargets, onRemove }: SelectedTarge
         {selectedTargets.map((target) => (
           <div
             key={target.id}
-            className="bg-card border border-blue-300 rounded-full px-3 py-1 text-sm flex items-center gap-2"
+            className="bg-card border border-info/40 rounded-full px-3 py-1 text-sm flex items-center gap-2"
           >
             <span>
               {target.name}
