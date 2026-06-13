@@ -92,6 +92,23 @@ function formatShortDate(iso: string | null | undefined): string {
   return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
+/** Contextual "score this match" link text per state, or null when there's no
+ *  player-scoreable action (updating / completed). */
+function scoreLinkLabel(kind: WeekEntryKind): string | null {
+  switch (kind) {
+    case 'live':
+      return 'Score match in progress';
+    case 'makeup':
+      return 'Score Makeup match';
+    case 'upcoming':
+      return 'Score Match';
+    case 'future':
+      return 'Score Match Early';
+    default:
+      return null;
+  }
+}
+
 /** A non-playable week (blackout / bye / playoff-TBD) — a static, no-expand row. */
 function ScheduleStaticRow({ entry }: { entry: WeekEntry }) {
   const meta = STATE_META[entry.kind];
@@ -322,7 +339,7 @@ export function TeamSchedule() {
 
               return (
                 <Card key={match.id} className={`shadow-sm ${meta.card}`}>
-                  <CardContent className="p-4">
+                  <CardContent className="px-4 py-2.5">
                     <div className="flex items-start justify-between gap-3">
                       {/* Left: week·date + matchup (+ table). Home/away is
                           implied by the venue, so it's dropped. */}
@@ -378,25 +395,17 @@ export function TeamSchedule() {
                         )}
                       </div>
 
-                      {/* Right: status tag, with a small score button beneath. */}
-                      <div className="flex shrink-0 flex-col items-end gap-1.5">
+                      {/* Right: status tag, with a contextual score LINK beneath. */}
+                      <div className="flex shrink-0 flex-col items-end gap-0.5 text-right">
                         <span className={`flex items-center gap-1 text-xs font-medium ${meta.badge}`}>
                           <Icon className="h-3.5 w-3.5" />
                           {meta.label}
                         </span>
-                        {match.status === 'scheduled' && (
+                        {scoreLinkLabel(entry.kind) && (
                           <Link to={`/match/${match.id}/lineup`}>
-                            <Button size="sm" loadingText="none">
-                              <Trophy className="h-3.5 w-3.5 mr-1" />
-                              Score
-                            </Button>
-                          </Link>
-                        )}
-                        {match.status === 'in_progress' && (
-                          <Link to={`/match/${match.id}/lineup`}>
-                            <Button size="sm" loadingText="none">
-                              <Trophy className="h-3.5 w-3.5 mr-1" />
-                              Continue
+                            <Button variant="link" loadingText="none" className="h-auto gap-0.5 p-0 text-sm">
+                              {scoreLinkLabel(entry.kind)}
+                              <ArrowRight className="h-3.5 w-3.5" />
                             </Button>
                           </Link>
                         )}
