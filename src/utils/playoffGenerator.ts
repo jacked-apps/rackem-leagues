@@ -16,6 +16,7 @@ import { supabase } from '@/supabaseClient';
 import { fetchSeasonStandings, type TeamStanding } from '@/api/queries/standings';
 import { sortStandings } from '@/utils/standings/sortStandings';
 import { logger } from '@/utils/logger';
+import type { MatchupStyle } from '@/hooks/playoff/usePlayoffSettingsReducer';
 import type {
   SeededTeam,
   PlayoffMatchup,
@@ -61,29 +62,69 @@ function standingsToSeededTeams(standings: TeamStanding[]): SeededTeam[] {
 }
 
 /**
- * Generate playoff matchup pairs based on team count
+ * Generate the REAL playoff seed-pairing for a given matchup style.
  *
- * Pairs top seeds with bottom seeds:
- * - 4 teams: [[1,4], [2,3]]
- * - 6 teams: [[1,6], [2,5], [3,4]]
- * - 8 teams: [[1,8], [2,7], [3,6], [4,5]]
+ * Honors the configured place-based pairing rule (set in the season-creation
+ * wizard / playoff config) so the actual playoff matches fill in the way the LO
+ * set up — instead of always using seeded. Returns `[homeSeed, awaySeed]` pairs
+ * over an EVEN bracket size (seeds `1..bracketSize`).
  *
- * For odd team counts, uses next lower even number.
+ * Unlike `generateMatchupPairs` (a PREVIEW helper that returns placeholder /
+ * encoded pairs for random/bracket), this returns real, usable seed pairs that
+ * drive the actual playoff matches.
  *
- * @param teamCount - Total number of teams
- * @returns Array of [homeSeed, awaySeed] pairs
+ * - `'seeded'` → 1 vs last, 2 vs 2nd-last, … (rewards regular-season finish)
+ * - `'ranked'` → adjacent: 1v2, 3v4, …
+ * - `'random'` → fair shuffle, then pair (resolved ONCE here, at populate time;
+ *   a populated bracket never re-shuffles)
+ * - `'bracket'` / unknown / undefined → falls back to `'seeded'` (never throws).
+ *   (`'bracket'` is a multi-week progression style, out of scope for the initial
+ *   single-week fill-in.)
+ *
+ * @param bracketSize - Even number of teams in the bracket
+ * @param style - Configured matchup style (optional; defaults to seeded)
+ * @returns Array of `[homeSeed, awaySeed]` pairs (lower seed number = home)
  */
-export function generatePlayoffPairs(teamCount: number): [number, number][] {
-  // For odd teams, use one less (last place sits out)
-  const bracketSize = teamCount % 2 === 0 ? teamCount : teamCount - 1;
-  const pairs: [number, number][] = [];
-
-  // Pair 1 with last, 2 with second-to-last, etc.
-  for (let i = 1; i <= bracketSize / 2; i++) {
-    pairs.push([i, bracketSize - i + 1]);
+export function realPairsForStyle(
+  bracketSize: number,
+  style?: MatchupStyle
+): [number, number][] {
+  if (bracketSize < 2 || bracketSize % 2 !== 0) {
+    return [];
   }
 
-  return pairs;
+  const half = bracketSize / 2;
+
+  switch (style) {
+    case 'ranked':
+      // Adjacent pairs: 1v2, 3v4, … (lower seed number is home)
+      return Array.from({ length: half }, (_, i) => [i * 2 + 1, i * 2 + 2]);
+
+    case 'random': {
+      // Fair Fisher-Yates shuffle of seeds 1..bracketSize, then pair
+      // consecutively. Resolved once here (at populate time).
+      const seeds = Array.from({ length: bracketSize }, (_, i) => i + 1);
+      for (let i = seeds.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [seeds[i], seeds[j]] = [seeds[j], seeds[i]];
+      }
+      const pairs: [number, number][] = [];
+      for (let i = 0; i < bracketSize; i += 2) {
+        const a = seeds[i];
+        const b = seeds[i + 1];
+        // Lower seed number is home for a stable home/away convention.
+        pairs.push(a < b ? [a, b] : [b, a]);
+      }
+      return pairs;
+    }
+
+    case 'seeded':
+    case 'bracket':
+    default:
+      // Seeded (1 vs last, …) is the default and the safe fallback for
+      // 'bracket'/unknown/undefined — never throws.
+      return Array.from({ length: half }, (_, i) => [i + 1, bracketSize - i]);
+  }
 }
 
 /**
@@ -95,7 +136,8 @@ export function generatePlayoffPairs(teamCount: number): [number, number][] {
  */
 export async function generatePlayoffBracket(
   seasonId: string,
-  playoffWeekId: string
+  playoffWeekId: string,
+  style?: MatchupStyle
 ): Promise<GeneratePlayoffResult> {
   try {
     // Fetch standings for the season
@@ -129,8 +171,9 @@ export async function generatePlayoffBracket(
       });
     }
 
-    // Generate matchup pairs
-    const pairs = generatePlayoffPairs(teamCount);
+    // Generate matchup pairs honoring the configured place-based style
+    // (defaults to seeded; 'bracket'/unknown fall back to seeded).
+    const pairs = realPairsForStyle(bracketSize, style);
 
     // Create matchup objects with full team data
     const matchups: PlayoffMatchup[] = pairs.map((pair, index) => {
@@ -499,6 +542,87 @@ export async function clearPlayoffMatches(
     return {
       success: false,
       matchesDeleted: 0,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * Whether the playoff week's matchups have actually been populated with teams.
+ *
+ * The trustworthy "matchups set" signal. Playoff matches are created as empty
+ * placeholder rows (null team IDs) at schedule-generation time, so a raw row
+ * count is `> 0` for the entire season and is NOT a reliable signal (this is the
+ * bug that made the dashboard card say "Bracket created" all season). This checks
+ * the real condition: at least one match on the playoff week has a non-null
+ * `home_team_id` — i.e. teams have been filled in.
+ *
+ * Mirrors the inverse of `populatePlayoffMatches`'s placeholder filter
+ * (`.is('home_team_id', null)`).
+ *
+ * @param playoffWeekId - The `season_week` id of the playoffs week
+ * @returns true if matchups are populated; false (never throws) on error/empty
+ */
+export async function arePlayoffMatchupsPopulated(
+  playoffWeekId: string
+): Promise<boolean> {
+  const { count, error } = await supabase
+    .from('matches')
+    .select('*', { count: 'exact', head: true })
+    .eq('season_week_id', playoffWeekId)
+    .not('home_team_id', 'is', null);
+
+  if (error) {
+    logger.warn('arePlayoffMatchupsPopulated lookup error', {
+      playoffWeekId,
+      error: error.message,
+    });
+    return false;
+  }
+
+  return (count || 0) > 0;
+}
+
+/**
+ * Reset (un-populate) the playoff week's matchups WITHOUT deleting the rows.
+ *
+ * Nulls the team IDs (and venue) on the playoff-week matches so the placeholder
+ * rows survive and `populatePlayoffMatches` can re-fill them. This is the safe
+ * "reset matchups" unlock path.
+ *
+ * Do NOT use `clearPlayoffMatches` to unlock — it DELETEs the rows, and then
+ * `populatePlayoffMatches` (which UPDATEs existing placeholders) fails with
+ * "No placeholder matches found", breaking the reset → re-populate loop.
+ *
+ * @param seasonId - Season ID
+ * @param playoffWeekId - Playoff week ID
+ * @returns Result with count of matches reset
+ */
+export async function resetPlayoffMatchups(
+  seasonId: string,
+  playoffWeekId: string
+): Promise<{ success: boolean; matchesReset: number; error?: string }> {
+  try {
+    const { data, error } = await supabase
+      .from('matches')
+      .update({
+        home_team_id: null,
+        away_team_id: null,
+        scheduled_venue_id: null,
+      })
+      .eq('season_id', seasonId)
+      .eq('season_week_id', playoffWeekId)
+      .select('id');
+
+    if (error) {
+      return { success: false, matchesReset: 0, error: error.message };
+    }
+
+    return { success: true, matchesReset: data?.length ?? 0 };
+  } catch (error) {
+    return {
+      success: false,
+      matchesReset: 0,
       error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
