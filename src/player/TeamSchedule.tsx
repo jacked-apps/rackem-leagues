@@ -271,11 +271,11 @@ export function TeamSchedule() {
         <div className="mb-4 flex justify-center gap-2">
           <Button
             type="button"
-            variant={hideCompleted ? 'default' : 'outline'}
+            variant={hideCompleted ? 'outline' : 'default'}
             size="sm"
             loadingText="none"
             onClick={() => setHideCompleted(!hideCompleted)}
-            aria-pressed={hideCompleted}
+            aria-pressed={!hideCompleted}
             className="h-7 gap-1 rounded-full px-3 text-xs"
           >
             {hideCompleted ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
@@ -283,11 +283,11 @@ export function TeamSchedule() {
           </Button>
           <Button
             type="button"
-            variant={hideOffWeeks ? 'default' : 'outline'}
+            variant={hideOffWeeks ? 'outline' : 'default'}
             size="sm"
             loadingText="none"
             onClick={() => setHideOffWeeks(!hideOffWeeks)}
-            aria-pressed={hideOffWeeks}
+            aria-pressed={!hideOffWeeks}
             className="h-7 gap-1 rounded-full px-3 text-xs"
           >
             {hideOffWeeks ? <CalendarOff className="h-3.5 w-3.5" /> : <Calendar className="h-3.5 w-3.5" />}
