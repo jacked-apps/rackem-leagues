@@ -133,6 +133,35 @@ function buildTeamPositionMap(teams: TeamWithPosition[]): Map<number, TeamWithPo
 }
 
 /**
+ * Persist each team's schedule position onto its `teams` row.
+ *
+ * Written once at matchup creation so the position→team mapping survives beyond the
+ * wizard's memory. The "Change Season Length" feature reads this back to append new
+ * weeks (continuing the rotation) without reverse-engineering it from matches.
+ *
+ * `teams` here is `teamsForGeneration` — real UUIDs (the bye sentinel already swapped
+ * for its real `status='bye'` row), each carrying its `schedule_position`.
+ *
+ * @param teams - Teams with real ids + positions.
+ * @returns An error message if any write fails, otherwise undefined.
+ */
+async function persistSchedulePositions(
+  teams: TeamWithPosition[]
+): Promise<string | undefined> {
+  for (const team of teams) {
+    const { error } = await supabase
+      .from('teams')
+      .update({ schedule_position: team.schedule_position })
+      .eq('id', team.id);
+
+    if (error) {
+      return `Failed to persist schedule position for team ${team.id}: ${error.message}`;
+    }
+  }
+  return undefined;
+}
+
+/**
  * Generate match records for a single week
  *
  * @param seasonWeekId - ID of the season week
@@ -141,7 +170,7 @@ function buildTeamPositionMap(teams: TeamWithPosition[]): Map<number, TeamWithPo
  * @param seasonId - Season ID
  * @returns Array of match insert data
  */
-function generateWeekMatches(
+export function generateWeekMatches(
   seasonWeekId: string,
   weeklyMatchups: [number, number][],
   teamsByPosition: Map<number, TeamWithPosition>,
@@ -433,6 +462,14 @@ export async function generateSchedule({
       teamsForGeneration = teams.map((t) =>
         t.id === 'BYE' ? { ...t, id: byeTeam.id } : t,
       );
+    }
+
+    // Step 1.6: Persist each team's schedule position (real UUIDs, incl. the bye)
+    // so it's available later when changing the season length. Additive — does not
+    // affect match generation.
+    const positionError = await persistSchedulePositions(teamsForGeneration);
+    if (positionError) {
+      return { success: false, matchesCreated: 0, error: positionError };
     }
 
     // Step 2: Fetch regular season weeks
