@@ -80,11 +80,19 @@
 
 body {
   margin: 0;
+  /* `100vh` first as a fallback; `100dvh` (dynamic viewport height) where
+     supported so the layout tracks iOS Safari's collapsing toolbar instead of
+     the tall "large viewport". On iPhone, `100vh` is the height with the toolbar
+     HIDDEN, so the page is taller than what's visible — which makes the fixed
+     bottom tab bar drift as the toolbar shows/hides. `100dvh` matches the
+     visible area and keeps it put. No-op on desktop; older browsers use `100vh`. */
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 #root {
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 @theme inline {
