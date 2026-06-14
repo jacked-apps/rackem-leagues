@@ -28,10 +28,13 @@ import {
   CircleCheck,
   AlertCircle,
   ArrowRight,
+  ChevronDown,
+  ChevronUp,
   EyeOff,
   Eye,
 } from 'lucide-react';
 import { parseLocalDate } from '@/utils/formatters';
+import { MatchDetailCard } from '@/components/MatchDetailCard';
 import { TeamNameLink } from '@/components/TeamNameLink';
 import { PageHeader } from '@/components/PageHeader';
 
@@ -114,22 +117,21 @@ function scoreLinkLabel(kind: WeekEntryKind): string | null {
 }
 
 /**
- * Win/Loss/Tie outcome for a completed match, oriented to THIS team (our score
- * first). The word — "Won" / "Lost" / "Tied" — carries the meaning so it reads
- * without color (Ed is colorblind); color is a bonus layer. Prefers the
+ * Win/Loss/Tie outcome for THIS team in a completed match. Just the word —
+ * "Win" / "Loss" / "Tie" — which is the only result detail that's meaningful
+ * across ALL scoring systems (the actual score lives in the dropdown, where it
+ * can be shown in that system's own units). The word carries the meaning so it
+ * reads without color (Ed is colorblind); color is a bonus layer. Prefers the
  * authoritative `match_result` column, falling back to a games-won comparison
- * for legacy rows that predate it. Returns null if scores aren't in yet.
+ * for legacy rows. Returns null if the result isn't in yet.
  */
 function completedOutcome(
   match: MatchWithDetails,
   role: 'home' | 'away' | null,
-): { label: string; tone: string } | null {
+): { word: string; tone: string } | null {
   const home = match.home_games_won;
   const away = match.away_games_won;
   if (home == null || away == null || !role) return null;
-
-  const ours = role === 'home' ? home : away;
-  const theirs = role === 'home' ? away : home;
 
   const result =
     match.match_result ?? (home > away ? 'home_win' : away > home ? 'away_win' : 'tie');
@@ -137,9 +139,9 @@ function completedOutcome(
   const weWon =
     (result === 'home_win' && role === 'home') || (result === 'away_win' && role === 'away');
 
-  const word = tie ? 'Tied' : weWon ? 'Won' : 'Lost';
+  const word = tie ? 'Tie' : weWon ? 'Win' : 'Loss';
   const tone = tie ? 'text-muted-foreground' : weWon ? 'text-success' : 'text-destructive';
-  return { label: `${word} ${ours}–${theirs}`, tone };
+  return { word, tone };
 }
 
 /** A non-playable week (blackout / bye / playoff-TBD) — a static, no-expand row. */
@@ -171,6 +173,10 @@ export function TeamSchedule() {
   // Second filter: hide the weeks you don't play (blackouts + byes) to show
   // only playing dates.
   const [hideOffWeeks, setHideOffWeeks] = useState(false);
+  // Which completed match (if any) has its full box score expanded. The list
+  // stays compact by default; tapping a result opens the scorecard in place so
+  // no information is lost — only deferred until asked for.
+  const [expandedMatchId, setExpandedMatchId] = useState<string | null>(null);
 
   const { data: team, isLoading: teamLoading, error: teamError } = useTeamDetails(teamId);
   const { data: matches = [], isLoading: matchesLoading, error: matchesError } = useMatchesByTeam(teamId);
@@ -353,6 +359,7 @@ export function TeamSchedule() {
               // Final result (our score first) for completed cards; null otherwise.
               const outcome =
                 match.status === 'completed' ? completedOutcome(match, role) : null;
+              const isExpanded = expandedMatchId === match.id;
 
               const venue = match.actual_venue || match.scheduled_venue;
               const mapsUrl = venue
@@ -364,7 +371,11 @@ export function TeamSchedule() {
               return (
                 <Card key={match.id} className={`gap-0 py-0 shadow-sm ${meta.card}`}>
                   <CardContent className="px-3 py-2">
-                    {/* Row 1: week·date  ───  status tag (same axis). */}
+                    {/* Row 1: week·date  ───  status tag, OR (completed) the big
+                        Win/Loss/Tie result that toggles the box-score dropdown.
+                        A finished match needs no "Final" tag — the result word
+                        says it's done; the score lives in the dropdown (the only
+                        place it can be shown in each system's own units). */}
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0 truncate text-base text-foreground">
                         {entry.week.week_name} ·{' '}
@@ -372,10 +383,31 @@ export function TeamSchedule() {
                           {formatShortDate(match.scheduled_date ?? entry.week.scheduled_date)}
                         </span>
                       </div>
-                      <span className={`flex shrink-0 items-center gap-1 text-xs font-medium ${meta.badge}`}>
-                        <Icon className="h-3.5 w-3.5" />
-                        {meta.label}
-                      </span>
+                      {entry.kind === 'completed'
+                        ? outcome && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              loadingText="none"
+                              onClick={() => setExpandedMatchId(isExpanded ? null : match.id)}
+                              aria-expanded={isExpanded}
+                              aria-label={`${outcome.word} — ${isExpanded ? 'hide' : 'show'} box score`}
+                              className={`h-auto shrink-0 items-center gap-2 p-0 text-lg font-bold hover:bg-transparent ${outcome.tone}`}
+                            >
+                              {outcome.word}
+                              {isExpanded ? (
+                                <ChevronUp className="h-5 w-5" />
+                              ) : (
+                                <ChevronDown className="h-5 w-5" />
+                              )}
+                            </Button>
+                          )
+                        : (
+                          <span className={`flex shrink-0 items-center gap-1 text-xs font-medium ${meta.badge}`}>
+                            <Icon className="h-3.5 w-3.5" />
+                            {meta.label}
+                          </span>
+                        )}
                     </div>
 
                     {/* Row 2: matchup  ───  result / score link (same axis). */}
@@ -411,25 +443,20 @@ export function TeamSchedule() {
                         </span>
                       </div>
 
-                      {/* Right: completed → Won/Lost/Tied + score; else → score link. */}
-                      {match.status === 'completed'
-                        ? outcome && (
-                            <span className={`shrink-0 text-sm font-semibold ${outcome.tone}`}>
-                              {outcome.label}
-                            </span>
-                          )
-                        : scoreLinkLabel(entry.kind) && (
-                            <Link to={`/match/${match.id}/lineup`} className="shrink-0">
-                              <Button
-                                variant="link"
-                                loadingText="none"
-                                className="h-auto gap-0.5 p-0 text-sm text-blue-600 hover:text-blue-800"
-                              >
-                                {scoreLinkLabel(entry.kind)}
-                                <ArrowRight className="h-3.5 w-3.5" />
-                              </Button>
-                            </Link>
-                          )}
+                      {/* Right: score link for unplayed states. A completed
+                          match's result lives on Row 1, so nothing here. */}
+                      {match.status !== 'completed' && scoreLinkLabel(entry.kind) && (
+                        <Link to={`/match/${match.id}/lineup`} className="shrink-0">
+                          <Button
+                            variant="link"
+                            loadingText="none"
+                            className="h-auto gap-0.5 p-0 text-sm text-blue-600 hover:text-blue-800"
+                          >
+                            {scoreLinkLabel(entry.kind)}
+                            <ArrowRight className="h-3.5 w-3.5" />
+                          </Button>
+                        </Link>
+                      )}
                     </div>
 
                     {/* Table / overflow (unplayed only). */}
@@ -444,6 +471,15 @@ export function TeamSchedule() {
                           ) : null}
                         </div>
                       )}
+
+                    {/* Full box score — revealed on tap so the list stays compact
+                        but every detail (games, points, thresholds, verification)
+                        is still here, not gone. */}
+                    {match.status === 'completed' && isExpanded && (
+                      <div className="mt-3">
+                        <MatchDetailCard matchId={match.id} playerView />
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               );

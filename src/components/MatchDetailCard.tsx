@@ -15,6 +15,14 @@ import { Badge } from '@/components/ui/badge';
 interface MatchDetailCardProps {
   /** Match ID to display */
   matchId: string;
+  /**
+   * Player-facing trim. When true, hides operational/debug chrome that only
+   * matters to operators — the match number, the status chip, and the
+   * home/away verification ticks. The schedule's completed-match dropdown sets
+   * this; the debug MatchDataViewer leaves it off to keep the full picture.
+   * The winner chip and all score/threshold data stay either way.
+   */
+  playerView?: boolean;
 }
 
 /**
@@ -34,7 +42,7 @@ interface MatchDetailCardProps {
  * @example
  * <MatchDetailCard matchId="match-uuid-here" />
  */
-export function MatchDetailCard({ matchId }: MatchDetailCardProps) {
+export function MatchDetailCard({ matchId, playerView = false }: MatchDetailCardProps) {
   const { data: match, isLoading, error } = useMatchById(matchId);
 
   // Helper: Determine match winner
@@ -84,10 +92,12 @@ export function MatchDetailCard({ matchId }: MatchDetailCardProps) {
   const hasScores = match.home_games_won !== null && match.away_games_won !== null;
 
   return (
-    <Card className="overflow-hidden">
-      {/* Header Row - Match Info */}
+    <Card className="overflow-hidden py-0 gap-0">
+      {/* Header Row - Match Info — flush to the top edge (py-0/gap-0 on the Card
+          root) so the muted bar's top corners follow the card's rounded curve. */}
       <div className="bg-muted px-4 py-2 border-b flex flex-wrap items-center gap-4 text-sm">
-        <div className="font-semibold">Match #{match.match_number}</div>
+        {/* Match number — operator/debug only. */}
+        {!playerView && <div className="font-semibold">Match #{match.match_number}</div>}
         <div className="text-muted-foreground">
           {match.season_week?.week_name || 'Week ?'}
         </div>
@@ -97,29 +107,36 @@ export function MatchDetailCard({ matchId }: MatchDetailCardProps) {
             : 'Date TBD'
           }
         </div>
-        <Badge className={getStatusColor(match.status)}>
-          {match.status.replace(/_/g, ' ')}
-        </Badge>
+        {/* Status chip — operator/debug only; in the player schedule the row's
+            own "Final" tag already says this. */}
+        {!playerView && (
+          <Badge className={getStatusColor(match.status)}>
+            {match.status.replace(/_/g, ' ')}
+          </Badge>
+        )}
         {hasScores && winner && (
           <Badge className={winner === 'home' ? 'bg-green-600' : winner === 'away' ? 'bg-blue-600' : 'bg-gray-600'}>
             {winner === 'home' ? 'Home Win' : winner === 'away' ? 'Away Win' : 'Tie'}
           </Badge>
         )}
-        <div className="ml-auto flex gap-2">
-          {(match as any).home_team_verified_by && (
-            <Badge variant="outline" className="text-xs">Home ✓</Badge>
-          )}
-          {(match as any).away_team_verified_by && (
-            <Badge variant="outline" className="text-xs">Away ✓</Badge>
-          )}
-        </div>
+        {/* Verification ticks — operator/debug only. */}
+        {!playerView && (
+          <div className="ml-auto flex gap-2">
+            {(match as any).home_team_verified_by && (
+              <Badge variant="outline" className="text-xs">Home ✓</Badge>
+            )}
+            {(match as any).away_team_verified_by && (
+              <Badge variant="outline" className="text-xs">Away ✓</Badge>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Match Details - Two-column mobile-responsive grid */}
-      <div className="p-4">
-        <div className="grid md:grid-cols-2 gap-6">
+      <div className="p-2">
+        <div className="grid md:grid-cols-2 gap-3">
           {/* Home Team Column */}
-          <div className={`space-y-2 ${winner === 'home' ? 'bg-success/10 p-3 rounded-lg border-2 border-success/40' : ''}`}>
+          <div className={`space-y-2 p-1.5 rounded-lg border-2 ${winner === 'home' ? 'bg-success/10 border-success/40' : 'border-border'}`}>
             <div className="flex items-center justify-between mb-2">
               <h3 className={`font-bold text-lg ${winner === 'home' ? 'text-success' : 'text-foreground'}`}>
                 🏠 {match.home_team?.team_name || 'Home TBD'}
@@ -142,30 +159,33 @@ export function MatchDetailCard({ matchId }: MatchDetailCardProps) {
               </div>
             </div>
 
-            {/* Handicap Thresholds */}
-            <div className="mt-3 pt-3 border-t border-border text-xs text-muted-foreground">
-              <div className="font-semibold mb-1">Thresholds (Handicapped):</div>
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <span className="text-muted-foreground">To Win:</span>
-                  <div className="font-medium">{match.home_to_win ?? '-'}</div>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">To Tie:</span>
-                  <div className="font-medium">{match.home_to_tie ?? '-'}</div>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">To Lose:</span>
-                  <div className="font-medium">
-                    {match.away_to_win ? `< ${match.away_to_win}` : '-'}
+            {/* Handicap Thresholds — games-mode concept; meaningless under a
+                points system. Operator/debug only. */}
+            {!playerView && (
+              <div className="mt-3 pt-3 border-t border-border text-xs text-muted-foreground">
+                <div className="font-semibold mb-1">Thresholds (Handicapped):</div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <span className="text-muted-foreground">To Win:</span>
+                    <div className="font-medium">{match.home_to_win ?? '-'}</div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">To Tie:</span>
+                    <div className="font-medium">{match.home_to_tie ?? '-'}</div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">To Lose:</span>
+                    <div className="font-medium">
+                      {match.away_to_win ? `< ${match.away_to_win}` : '-'}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Away Team Column */}
-          <div className={`space-y-2 ${winner === 'away' ? 'bg-info/10 p-3 rounded-lg border-2 border-info/40' : ''}`}>
+          <div className={`space-y-2 p-1.5 rounded-lg border-2 ${winner === 'away' ? 'bg-info/10 border-info/40' : 'border-border'}`}>
             <div className="flex items-center justify-between mb-2">
               <h3 className={`font-bold text-lg ${winner === 'away' ? 'text-info' : 'text-foreground'}`}>
                 ✈️ {match.away_team?.team_name || 'Away TBD'}
@@ -188,31 +208,34 @@ export function MatchDetailCard({ matchId }: MatchDetailCardProps) {
               </div>
             </div>
 
-            {/* Handicap Thresholds */}
-            <div className="mt-3 pt-3 border-t border-border text-xs text-muted-foreground">
-              <div className="font-semibold mb-1">Thresholds (Handicapped):</div>
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <span className="text-muted-foreground">To Win:</span>
-                  <div className="font-medium">{match.away_to_win ?? '-'}</div>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">To Tie:</span>
-                  <div className="font-medium">{match.away_to_tie ?? '-'}</div>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">To Lose:</span>
-                  <div className="font-medium">
-                    {match.home_to_win ? `< ${match.home_to_win}` : '-'}
+            {/* Handicap Thresholds — operator/debug only (see home column). */}
+            {!playerView && (
+              <div className="mt-3 pt-3 border-t border-border text-xs text-muted-foreground">
+                <div className="font-semibold mb-1">Thresholds (Handicapped):</div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <span className="text-muted-foreground">To Win:</span>
+                    <div className="font-medium">{match.away_to_win ?? '-'}</div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">To Tie:</span>
+                    <div className="font-medium">{match.away_to_tie ?? '-'}</div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">To Lose:</span>
+                    <div className="font-medium">
+                      {match.home_to_win ? `< ${match.home_to_win}` : '-'}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
-        {/* Match Summary Row */}
-        {hasScores && (
+        {/* Match Summary Row — the per-team "Games Won" already shows this same
+            score, so it's redundant in the player view. Operator/debug only. */}
+        {!playerView && hasScores && (
           <div className="mt-4 pt-4 border-t border-border text-center">
             <div className="text-sm text-muted-foreground">Final Score</div>
             <div className="text-3xl font-bold font-mono mt-1">
