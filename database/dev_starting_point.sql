@@ -741,14 +741,16 @@ BEGIN
     );
   END LOOP;
 
-  -- Playoffs: 2 matches in week 17 (index 17 in array, since we appended).
-  -- Simple semis: Team 1 vs Team 4, Team 2 vs Team 3.
+  -- Playoffs: 2 EMPTY placeholder matches in week 17 (index 17 in array).
+  -- Teams are NULL until the season ends — the playoff automation fills them
+  -- from final standings, exactly like real schedule generation. A real
+  -- in-session season has unset playoff matchups, so do NOT pre-assign teams.
   INSERT INTO matches (
     season_id, season_week_id, home_team_id, away_team_id,
     match_number, status
   ) VALUES (
     v_season_id, v_week_ids[17],
-    v_team_ids[1], v_team_ids[4],
+    NULL, NULL,
     1, 'scheduled'
   );
 
@@ -757,7 +759,7 @@ BEGIN
     match_number, status
   ) VALUES (
     v_season_id, v_week_ids[17],
-    v_team_ids[2], v_team_ids[3],
+    NULL, NULL,
     2, 'scheduled'
   );
 END $$;
@@ -1010,13 +1012,14 @@ BEGIN
       );
     END LOOP;
 
-    -- Playoffs: 2 semis (T1 vs T4, T2 vs T3).
+    -- Playoffs: 2 EMPTY placeholder matches (teams NULL until season-end, so the
+    -- playoff automation fills them from final standings — like a real season).
     INSERT INTO matches (
       season_id, season_week_id, home_team_id, away_team_id,
       match_number, status
     ) VALUES (
       v_season_ids[v_l], v_week_ids[17],
-      v_team_ids[1], v_team_ids[4],
+      NULL, NULL,
       1, 'scheduled'
     );
     INSERT INTO matches (
@@ -1024,7 +1027,7 @@ BEGIN
       match_number, status
     ) VALUES (
       v_season_ids[v_l], v_week_ids[17],
-      v_team_ids[2], v_team_ids[3],
+      NULL, NULL,
       2, 'scheduled'
     );
   END LOOP;
