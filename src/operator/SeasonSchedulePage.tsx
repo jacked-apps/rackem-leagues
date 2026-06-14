@@ -1,12 +1,16 @@
 /**
- * @fileoverview Season Schedule Page
+ * @fileoverview Matchups Page (route `/league/:leagueId/season/:seasonId/matchups`)
  *
- * Displays the complete season schedule with all matches organized by week.
- * Shows matchups, venues, dates, and match status.
+ * This is the **Matchups** page — who plays who each week. (The file keeps its
+ * `SeasonSchedulePage` name for now; the user-facing title + URL are "Matchups".)
+ * Displays the complete week-by-week matchups with venues, dates, and status.
  * Accessible to both operators and players.
  *
  * Operators can edit weeks to rearrange team matchups and change venues.
  * Edit mode allows one week at a time to be edited, with save/cancel/revert.
+ *
+ * (Date/blackout management lives separately on `SeasonScheduleManager` — the
+ * "Schedule" page.)
  */
 
 import React, { useState, useMemo } from 'react';
@@ -299,7 +303,7 @@ export const SeasonSchedulePage: React.FC = () => {
       <PageHeader
         backTo={`/league/${leagueId}`}
         backLabel="Back"
-        title="Season Schedule"
+        title="Matchups"
         subtitle={seasonName}
       >
         {/* Action buttons for operators during setup (season status = 'upcoming') */}

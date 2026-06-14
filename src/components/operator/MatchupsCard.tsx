@@ -1,15 +1,13 @@
 /**
  * @fileoverview MatchupsCard — the "Matchups" part of a league.
  *
- * The fourth league part (Season / Teams / Schedule / Matchups). Unlike the
- * others, matchups has no standalone page — setting/editing matchups (team
- * positions + round-robin) lives as the final stage of the create-league
- * wizard. So this card is a header-only entry: it shows whether matchups are
- * set and launches the wizard to set or edit them.
+ * The "who plays who each week" league part. This card is a header-only entry
+ * that shows whether matchups are set and opens the right page:
+ *   - matchups set    → the season schedule page (view/edit who-plays-who)
+ *   - not set yet      → schedule setup (generate the matchups)
  *
- * Follow-up (see LIST_FOR_ED): split matchups editing out of the full wizard
- * so an operator can edit unfinished matches directly once matchups are set,
- * without re-running creation.
+ * (Previously this dumped the operator back into the whole create-league wizard
+ * just to touch matchups; now it goes straight to the matchups page.)
  */
 
 import React, { useState, useEffect } from 'react';
@@ -29,6 +27,7 @@ export const MatchupsCard: React.FC<MatchupsCardProps> = ({ league }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [hasSeason, setHasSeason] = useState(false);
+  const [seasonId, setSeasonId] = useState<string | null>(null);
   const [hasMatchups, setHasMatchups] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
 
@@ -45,6 +44,7 @@ export const MatchupsCard: React.FC<MatchupsCardProps> = ({ league }) => {
           .maybeSingle();
 
         setHasSeason(!!season);
+        setSeasonId(season?.id ?? null);
         if (season) {
           const { count } = await supabase
             .from('matches')
@@ -74,10 +74,17 @@ export const MatchupsCard: React.FC<MatchupsCardProps> = ({ league }) => {
       size="sm"
       variant={hasMatchups ? 'outline' : undefined}
       loadingText="none"
-      disabled={isNavigating || !hasSeason}
+      disabled={isNavigating || !hasSeason || !seasonId}
       onClick={() => {
+        if (!seasonId) return;
         setIsNavigating(true);
-        navigate(`/create-league/${league.organization_id}?leagueId=${league.id}`);
+        // Matchups exist → view/edit who-plays-who (the Matchups page).
+        // Not set yet → generate them (ScheduleSetupPage).
+        navigate(
+          hasMatchups
+            ? `/league/${league.id}/season/${seasonId}/matchups`
+            : `/league/${league.id}/season/${seasonId}/schedule-setup`,
+        );
       }}
     >
       {isNavigating ? 'Loading...' : hasMatchups ? 'Edit Matchups' : 'Set Matchups'}

@@ -168,20 +168,6 @@ export const SeasonCard: React.FC<SeasonCardProps> = ({ league }) => {
       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${badge.classes}`}>
         {badge.text}
       </span>
-      {editOptions.showManageSchedule && (
-        <Button
-          size="sm"
-          variant="outline"
-          loadingText="none"
-          disabled={isNavigating}
-          onClick={() => {
-            setIsNavigating(true);
-            navigate(`/league/${league.id}/season/${currentSeason.id}/manage-schedule`);
-          }}
-        >
-          {isNavigating ? 'Loading...' : 'Manage Season'}
-        </Button>
-      )}
     </>
   ) : (
     <Button

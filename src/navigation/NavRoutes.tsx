@@ -286,7 +286,7 @@ export const router = createBrowserRouter([
           { path: 'league/:leagueId/season/:seasonId/setup-teams', element: withOperator(SetupTeamsPage) },
           { path: 'league/:leagueId/season/:seasonId/playoffs-setup', element: withOperator(PlayoffsSetupWizard) },
           { path: 'league/:leagueId/season/:seasonId/schedule-setup', element: withOperator(ScheduleSetupPage) },
-          { path: 'league/:leagueId/season/:seasonId/schedule', element: withOperator(SeasonSchedulePage) },
+          { path: 'league/:leagueId/season/:seasonId/matchups', element: withOperator(SeasonSchedulePage) },
           { path: 'league/:leagueId/season/:seasonId/playoffs', element: withOperator(PlayoffSetup) },
           { path: 'operator/league/:leagueId/playoffs/:orgId', element: withOperator(LeaguePlayoffSettings) },
           { path: 'venues/:orgId', element: withOperator(VenueManagement) },

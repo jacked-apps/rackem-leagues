@@ -124,18 +124,19 @@ export const PlayoffsCard: React.FC<PlayoffsCardProps> = ({ leagueId, seasonId }
           ? 'Bracket created'
           : 'Ready to set up';
 
-  // Header action: Setup (solid) when not yet created, View Bracket (outline)
-  // once it is. Only when there's a season + a scheduled playoff week.
+  // Header action: a muted "View Playoffs" (outline) matching the other league
+  // cards. Playoffs are review-first and auto-fill at season end, so there's no
+  // manual "setup" CTA. Only when there's a season + a scheduled playoff week.
   const actions =
     seasonId && !isLoading && playoffWeek ? (
       <Button
         onClick={handleNavigate}
         disabled={isNavigating}
         size="sm"
-        variant={playoffMatchesExist ? 'outline' : 'default'}
+        variant="outline"
         loadingText="none"
       >
-        {isNavigating ? 'Loading...' : playoffMatchesExist ? 'View Bracket' : 'Setup Playoffs'}
+        {isNavigating ? 'Loading...' : 'View Playoffs'}
       </Button>
     ) : undefined;
 
