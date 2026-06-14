@@ -2,9 +2,12 @@
  * @fileoverview MyTeams Page
  *
  * Mobile-first accordion view of all teams the logged-in user is on.
- * Each team expands to show full details including roster, venue, and actions.
+ * Each card shows glance info + always-visible actions (Schedule, Stats, and
+ * for captains Edit + Invite); the expand reveals details (venue, captain,
+ * roster). Scoring now lives in the "My Match" shortcut, so the old per-match
+ * Quick Score buttons were removed from here.
  *
- * Flow: Dashboard → My Teams (accordion list) → Expand to see details
+ * Flow: My Teams (card list) → tap a card to expand roster/details
  */
 
 import { useContext, useState } from 'react';
@@ -12,7 +15,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { UserContext } from '@/context/UserContext';
 import { useMemberId } from '@/api/hooks';
-import { usePlayerTeams, useCaptainTeamEditData, useMatchesByTeam } from '@/api/hooks';
+import { usePlayerTeams, useCaptainTeamEditData } from '@/api/hooks';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { useCaptainReupPrompt } from '@/hooks/useCaptainReupPrompt';
 import { queryKeys } from '@/api/queryKeys';
@@ -26,10 +29,10 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 // import { Link } from 'react-router-dom';
-import { formatPartialMemberNumber } from '@/types/member';
 import { formatGameType, formatDayOfWeek } from '@/types/league';
 import { PlayerNameLink } from '@/components/PlayerNameLink';
 import { PlayerRoster } from '@/components/PlayerRoster';
+import { VenueWithMaps } from '@/components/VenueWithMaps';
 import { PageHeader } from '@/components/PageHeader';
 import { MapPin, Users, AlertCircle, ArrowRight, Pencil, Bell } from 'lucide-react';
 import { parseLocalDate } from '@/utils/formatters';
@@ -40,6 +43,9 @@ import { EightBallIcon } from '@/components/icons/EightBallIcon';
 import { JoinRequestList } from '@/onboarding/components/JoinRequestList';
 import { InviteMyTeamButton } from '@/onboarding/InviteMyTeamButton';
 import { defaultOpenTeamId } from '@/onboarding/landingTeam';
+
+/** Per-device flag for the one-time captain "fill your roster" tip. */
+const INVITE_TIP_KEY = 'onboarding-invite-tip-dismissed';
 
 interface TeamData {
   team_id: string;
@@ -110,51 +116,6 @@ function TeamAccordionItem({
   // Resolved preferences — lazy-migrates legacy leagues on first access
   const { data: leaguePrefs } = useResolvedLeaguePrefs(leagueId);
   const handicapType = leaguePrefs?.handicap_type ?? 'points';
-
-  // Fetch all matches to find makeups and upcoming
-  const { data: allMatches = [] } = useMatchesByTeam(team.id);
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  // Find makeup matches (past date, not completed)
-  const makeupMatches = allMatches
-    .filter(match => {
-      if (match.status === 'completed') return false;
-      if (!match.scheduled_date) return false;
-
-      const [year, month, day] = match.scheduled_date.split('-').map(Number);
-      const scheduledDate = new Date(year, month - 1, day);
-      scheduledDate.setHours(0, 0, 0, 0);
-
-      return scheduledDate < today;
-    })
-    .sort((a, b) => a.scheduled_date!.localeCompare(b.scheduled_date!)) // Oldest first
-    .slice(0, 1); // Show only the oldest makeup — keeps the list clean
-
-  // Find upcoming matches (in_progress or future scheduled)
-  const upcomingMatches = allMatches
-    .filter(match => {
-      if (match.status === 'completed') return false;
-      if (match.status === 'in_progress') return true;
-      if (!match.scheduled_date) return false;
-
-      const [year, month, day] = match.scheduled_date.split('-').map(Number);
-      const scheduledDate = new Date(year, month - 1, day);
-      scheduledDate.setHours(0, 0, 0, 0);
-
-      return scheduledDate >= today;
-    })
-    .sort((a, b) => {
-      // in_progress first, then by date
-      if (a.status === 'in_progress' && b.status !== 'in_progress') return -1;
-      if (a.status !== 'in_progress' && b.status === 'in_progress') return 1;
-      return a.scheduled_date!.localeCompare(b.scheduled_date!);
-    })
-    .slice(0, 1); // Only show next upcoming
-
-  // Combine: upcoming always first, then oldest makeup (max 2 buttons total)
-  const actionableMatches = [...upcomingMatches, ...makeupMatches];
 
   // Calculate team readiness
   const minRoster = team.roster_size === 5 ? 3 : 5;
@@ -242,93 +203,69 @@ function TeamAccordionItem({
             </button>
           )}
 
-          {/* Rows 3+: Actionable matches or setup incomplete warning */}
-          {!isReady && actionableMatches.length > 0 ? (
-            // Show single setup incomplete flag if team not ready
+          {/* Captain glance: flag an incomplete setup. (The old match lines
+              here were labels for the Quick Score buttons — both are gone now;
+              My Match owns the path to scoring, View Schedule the rest.) */}
+          {!isReady && (
             <div className="flex items-center justify-end w-full">
               <span className="text-xs font-bold px-2 py-0.5 rounded text-warning bg-warning/15">
                 SETUP INCOMPLETE
               </span>
             </div>
-          ) : actionableMatches.length > 0 ? (
-            // Show matches with Quick Score buttons if team is ready
-            actionableMatches.map((match) => {
-              const isMakeup = makeupMatches.some(m => m.id === match.id);
-              const isInProgress = match.status === 'in_progress';
-              const tagText = isMakeup ? 'MAKEUP' : isInProgress ? 'IN PROGRESS' : 'UPCOMING';
-              const tagColor = isMakeup ? 'text-warning bg-warning/15' : 'text-info bg-info/15';
-
-              return (
-                <div key={match.id} className="flex items-center justify-between w-full">
-                  <div className="flex items-center gap-2 text-base text-foreground">
-                    <span>
-                      {match.season_week?.week_name || 'Week ?'} -{' '}
-                      {parseLocalDate(match.scheduled_date!).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                      })}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 ml-auto">
-                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${tagColor}`}>
-                      {tagText}
-                    </span>
-                    <div
-                      role="button"
-                      tabIndex={0}
-                      className={`inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors cursor-pointer px-2 h-7 ${
-                        isMakeup
-                          ? 'text-warning hover:bg-warning/10'
-                          : 'text-info hover:bg-info/10'
-                      }`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        window.location.href = `/match/${match.id}/lineup`;
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.stopPropagation();
-                          window.location.href = `/match/${match.id}/lineup`;
-                        }
-                      }}
-                    >
-                      Quick Score <ArrowRight className="h-3 w-3 ml-1" />
-                    </div>
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="text-xs text-muted-foreground italic">No upcoming matches</div>
           )}
         </div>
       </AccordionTrigger>
 
-      <AccordionContent className="px-4 pb-4">
-        <div className="space-y-4 pt-2">
-          {/* View Schedule Button */}
-          <div>
+      {/* Always-visible actions (NOT behind the expand). Schedule + Stats for
+          everyone; captains get a paired second row (Edit + Invite). */}
+      <div className="px-4 pb-3 space-y-2">
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            variant="default"
+            className="w-full"
+            disabled={!isReady}
+            onClick={() => {
+              if (isReady) {
+                window.location.href = `/team/${team.id}/schedule`;
+              }
+            }}
+            loadingText="none"
+          >
+            View Schedule
+          </Button>
+          <Button
+            variant="default"
+            className="w-full"
+            onClick={() => {
+              window.location.href = `/league/${team.season.league.id}/season/${team.season.id}/standings`;
+            }}
+            loadingText="none"
+          >
+            Stats &amp; Standings
+          </Button>
+        </div>
+
+        {/* Captain-only paired row: Edit + Invite. */}
+        {isCaptain && (
+          <div className="grid grid-cols-2 gap-2">
             <Button
-              variant="default"
-              className="w-full"
-              disabled={!isReady}
-              onClick={() => {
-                if (isReady) {
-                  window.location.href = `/team/${team.id}/schedule`;
-                }
-              }}
+              variant="outline"
+              className="w-full gap-1.5"
+              onClick={() => onEditTeam(team.id)}
               loadingText="none"
             >
-              View Schedule
+              <Pencil className="h-3.5 w-3.5" />
+              Edit Team
             </Button>
-          </div>
-
-          {/* Invite players (Captains Only) — onboarding cascade Unit 7 */}
-          {isCaptain && (
             <InviteMyTeamButton teamId={team.id} teamName={team.team_name} />
-          )}
+          </div>
+        )}
+      </div>
 
-          {/* Team Readiness Warning (Captains Only) */}
+      <AccordionContent className="px-4 pb-4">
+        <div className="space-y-4 pt-2">
+          {/* Team Readiness Warning (Captains Only) — details for the
+              "SETUP INCOMPLETE" glance pill above. */}
           {isCaptain && !isReady && (
             <div className="p-3 bg-warning/10 border border-warning/40 rounded-lg">
               <div className="flex items-start gap-2">
@@ -351,50 +288,29 @@ function TeamAccordionItem({
             </div>
           )}
 
-          {/* Home Venue with Edit Team Button (Captains Only) */}
-          <div>
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <MapPin className="h-4 w-4" />
-                <span>Home Venue</span>
-              </div>
-              {isCaptain && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-sm h-8 gap-1.5"
-                  onClick={() => onEditTeam(team.id)}
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                  Edit Team
-                </Button>
-              )}
-            </div>
-            <p className="text-base text-foreground ml-6">
-              {team.venue?.name || 'No venue assigned'}
-            </p>
+          {/* Home Venue — one line, clickable → Google Maps (blue). The
+              "Home Venue -" label is dropped on mobile (icon + name only) to
+              save space. Edit Team moved to the action buttons above. */}
+          <div className="flex items-center gap-1.5 text-sm">
+            <MapPin className="h-4 w-4 shrink-0 text-blue-600" />
+            <span className="hidden sm:inline text-muted-foreground">Home Venue -</span>
+            {team.venue ? (
+              <VenueWithMaps venueId={team.venue.id} showIcon={false} />
+            ) : (
+              <span className="text-muted-foreground">No venue assigned</span>
+            )}
           </div>
 
-          {/* Captain */}
-          <div>
-            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
-              <Users className="h-4 w-4" />
-              <span>Captain</span>
-            </div>
-            <div
-              className={`text-base ml-6 ${
-                team.captain.id === memberId
-                  ? 'font-semibold text-primary'
-                  : 'text-foreground'
-              }`}
-            >
-              <PlayerNameLink
-                playerId={team.captain.id}
-                playerName={`${team.captain.first_name} ${team.captain.last_name}`}
-                className={team.captain.id === memberId ? 'font-semibold' : ''}
-              />{' '}
-              {formatPartialMemberNumber(team.captain)}
-            </div>
+          {/* Captain — one row. Desktop: "Captain -" label; mobile: the blue
+              (C) marker used in the roster. Player number dropped. */}
+          <div className="flex items-center gap-1.5 text-sm">
+            <span className="hidden sm:inline text-muted-foreground">Captain -</span>
+            <span className="sm:hidden font-bold text-blue-600">(C)</span>
+            <PlayerNameLink
+              playerId={team.captain.id}
+              playerName={`${team.captain.first_name} ${team.captain.last_name}`}
+              className={team.captain.id === memberId ? 'font-semibold text-primary' : ''}
+            />
           </div>
 
           {/* Roster */}
@@ -405,21 +321,8 @@ function TeamAccordionItem({
             gameType={team.season.league.game_type as 'eight_ball' | 'nine_ball' | 'ten_ball'}
             leagueId={team.season.league.id}
             captainId={team.team_players.find(p => p.is_captain)?.member_id}
+            rosterSize={team.roster_size}
           />
-
-          {/* Action Buttons */}
-          <div className="pt-2 flex justify-center">
-            <Button
-              variant="default"
-              className="px-8"
-              onClick={() => {
-                window.location.href = `/league/${team.season.league.id}/season/${team.season.id}/standings`;
-              }}
-              loadingText="none"
-            >
-              Stats & Standings
-            </Button>
-          </div>
         </div>
       </AccordionContent>
     </AccordionItem>
@@ -445,6 +348,12 @@ export function MyTeams() {
 
   // Team editing modal state
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
+
+  // One-time "fill your roster" tip — shown once at the top of the page for
+  // captains (replaces the old per-card tip). Dismissal persists per device.
+  const [inviteTipDismissed, setInviteTipDismissed] = useState(
+    () => localStorage.getItem(INVITE_TIP_KEY) === '1',
+  );
 
   // Fetch edit data when team is selected for editing
   const { data: editData, isLoading: loadingEditData } = useCaptainTeamEditData(editingTeamId);
@@ -497,6 +406,9 @@ export function MyTeams() {
     );
   }
 
+  // Captains get one top-of-page invite tip (replaces the old per-card tip).
+  const isCaptainOfAnyTeam = teams.some((t) => t.teams.captain_id === memberId);
+
   return (
     <div className="min-h-screen bg-muted">
       <PageHeader
@@ -508,6 +420,30 @@ export function MyTeams() {
         {/* Onboarding cascade: pending join requests for teams this captain
             approves. Renders nothing when there are none. */}
         <JoinRequestList title="Join requests" />
+
+        {/* One-time "fill your roster" nudge for captains — a single card here
+            instead of one on every captain team card. */}
+        {isCaptainOfAnyTeam && !inviteTipDismissed && (
+          <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
+            <p className="font-medium">Fill your roster the easy way</p>
+            <p className="text-muted-foreground">
+              Tap <span className="font-medium">Invite</span> on any team you captain to
+              share one link with your players. As each signs up you'll get a request to
+              approve — tap Add and they're on the team.
+            </p>
+            <Button
+              variant="link"
+              loadingText="none"
+              className="h-auto px-0"
+              onClick={() => {
+                localStorage.setItem(INVITE_TIP_KEY, '1');
+                setInviteTipDismissed(true);
+              }}
+            >
+              Got it
+            </Button>
+          </div>
+        )}
 
         {teams.length === 0 ? (
           <Card>
@@ -521,9 +457,9 @@ export function MyTeams() {
             type="single"
             collapsible
             className="space-y-4"
-            // Land-on-tonight's-match (Unit 8): a player on exactly one team
-            // lands with it open, so an in-progress/today match's Quick Score
-            // card is front-and-center. With several teams we don't guess which.
+            // A player on exactly one team lands with it open, so their roster
+            // + details are visible without a tap. With several teams we don't
+            // guess which to open.
             defaultValue={defaultOpenTeamId(teams.map((t) => t.teams.id))}
           >
             {teams.map((teamData) => (

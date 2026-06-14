@@ -9,6 +9,7 @@
 import { useMembersByIds } from '@/api/hooks/useCurrentMember';
 import { usePlayerHandicaps } from '@/api/hooks/usePlayerHandicaps';
 import { PlayerNameLink } from '@/components/PlayerNameLink';
+import { formatPlayerNumber } from '@/utils/messageFormatters';
 import type { HandicapVariant, GameType } from '@/types/league';
 
 interface PlayerRosterProps {
@@ -24,6 +25,8 @@ interface PlayerRosterProps {
   hideNickname?: boolean;
   hideHandicap?: boolean;
   captainId?: string; // ID of the team captain to display with (C) badge
+  /** Team's max roster size. When provided, the header reads "X of Y players". */
+  rosterSize?: number;
 }
 
 /**
@@ -44,6 +47,7 @@ export function PlayerRoster({
   hideNickname = false,
   hideHandicap = false,
   captainId,
+  rosterSize,
 }: PlayerRosterProps) {
   const { data: players = [], isLoading: loadingPlayers } = useMembersByIds(playerIds);
   const { handicaps, isLoading: loadingHandicaps } = usePlayerHandicaps({
@@ -97,7 +101,7 @@ export function PlayerRoster({
   return (
     <div>
       <p className="text-sm font-medium text-muted-foreground mb-2">
-        Roster ({players.length} players)
+        Roster ({rosterSize ? `${players.length} of ${rosterSize}` : players.length} players)
       </p>
 
       {/* Header Row */}
@@ -146,8 +150,8 @@ export function PlayerRoster({
                 </span>
               )}
               {!hidePlayerNumber && (
-                <span className="text-muted-foreground">
-                  {player.system_player_number}
+                <span className="text-muted-foreground text-xs">
+                  {`#${formatPlayerNumber(player.system_player_number)}`}
                 </span>
               )}
             </div>
