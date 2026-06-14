@@ -168,12 +168,13 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({ leagueId }) => {
   };
 
   /**
-   * Navigate to schedule view/edit page
+   * Navigate to the schedule (dates) page — manage blackout weeks / holidays.
+   * The who-plays-who view lives on the Matchups card, not here.
    */
   const handleViewSchedule = () => {
     if (activeSeason) {
       setIsNavigating(true);
-      navigate(`/league/${leagueId}/season/${activeSeason.id}/schedule`);
+      navigate(`/league/${leagueId}/season/${activeSeason.id}/manage-schedule`);
     }
   };
 

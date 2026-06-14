@@ -260,12 +260,12 @@ export const LeagueDetail: React.FC = () => {
           leagueId={league.id}
           emptyHint="No pending join requests for this league yet. When a captain or player taps their invite link and asks to join, they'll appear here to approve."
         />
-        <TeamsCard leagueId={league.id} />
+        {/* Order: Schedule (dates) → Playoffs (finals) → Teams → Matchups
+            (who-plays-who). Each card opens its own page. */}
         <ScheduleCard leagueId={league.id} />
-        <MatchupsCard league={league} />
-
-        {/* Playoffs Section */}
         <PlayoffsCard leagueId={league.id} seasonId={activeSeason?.id || null} />
+        <TeamsCard leagueId={league.id} />
+        <MatchupsCard league={league} />
 
         {/* Admin links live at the bottom — League Settings, then Finances. */}
         <div className="mb-6">
