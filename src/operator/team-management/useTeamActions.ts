@@ -12,6 +12,7 @@ import { useState } from 'react';
 import { supabase } from '@/supabaseClient';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
+import { convertTeamToBye } from '@/api/mutations/teams';
 import type { TeamWithQueryDetails } from '@/types/team';
 import type { ConfirmOptions } from '@/hooks/useConfirmDialog';
 
@@ -46,10 +47,18 @@ export function useTeamActions(
   };
 
   /**
-   * Delete a team. Allowed only when the team has zero matches (typo /
-   * pre-schedule cleanup). With matches present, the operator is steered to the
-   * Drop workflow — the DB FK is RESTRICT, so a raw delete would fail anyway;
-   * the pre-flight count gives a clean message instead of an FK error.
+   * Delete or DROP a team, depending on its schedule state:
+   *
+   * - No matches yet → genuine hard delete (typo / pre-schedule cleanup).
+   * - Schedule exists, no games played (pre-season) → repurpose the team's slot
+   *   as the BYE (`convertTeamToBye`), keeping the round-robin even with NO
+   *   reschedule.
+   * - Schedule exists, games played (mid-season) → withdraw the team (its past
+   *   results stay on the record) and replace it with a fresh BYE for every
+   *   remaining match, via the atomic `drop_team_mid_season` RPC.
+   *
+   * The DB FK is RESTRICT, so a raw delete of a team with matches would fail —
+   * the drop paths are the supported way to remove a scheduled team.
    */
   const handleDeleteTeam = async (teamId: string) => {
     const { count: matchCount, error: countError } = await supabase
@@ -63,31 +72,99 @@ export function useTeamActions(
       return;
     }
 
-    if ((matchCount ?? 0) > 0) {
-      toast.error(
-        `This team has ${matchCount} match${matchCount === 1 ? '' : 'es'} and cannot be deleted. The Drop Team workflow (coming soon) is the right tool for mid-season departures.`,
-      );
+    // No schedule yet → genuine hard delete (typo / pre-schedule cleanup).
+    if ((matchCount ?? 0) === 0) {
+      const confirmed = await confirm({
+        title: 'Delete Team?',
+        message:
+          'This team has no matches yet. Deleting it will permanently remove the team and its roster. This cannot be undone.',
+        confirmText: 'Delete Team',
+        confirmVariant: 'destructive',
+      });
+      if (!confirmed) return;
+
+      try {
+        const { error } = await supabase.from('teams').delete().eq('id', teamId);
+        if (error) throw error;
+        await refreshTeams();
+      } catch (err) {
+        logger.error('Error deleting team', {
+          error: err instanceof Error ? err.message : String(err),
+        });
+        toast.error(err instanceof Error ? err.message : 'Failed to delete team');
+      }
       return;
     }
 
+    // Schedule exists → this is a "drop", not a delete. Split on whether any
+    // game has been played: pre-season repurposes the slot as a bye; mid-season
+    // withdraws + replaces remaining matches.
+    const { count: playedCount, error: playedError } = await supabase
+      .from('matches')
+      .select('id', { count: 'exact', head: true })
+      .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
+      .or('winner_team_id.not.is.null,status.in.(in_progress,awaiting_verification,completed,forfeited)');
+
+    if (playedError) {
+      logger.error('Error checking played matches', { error: playedError.message });
+      toast.error("Could not check the team's matches. Please try again.");
+      return;
+    }
+
+    const seasonForTeam = teams.find((t) => t.id === teamId)?.season_id;
+    if (!seasonForTeam) {
+      toast.error('Could not determine the season for this team.');
+      return;
+    }
+
+    // Mid-season (games already played) → withdraw the team (past results stay)
+    // and replace it with a fresh BYE for every remaining match. One atomic RPC.
+    if ((playedCount ?? 0) > 0) {
+      const confirmed = await confirm({
+        title: 'Drop this team mid-season?',
+        message:
+          'This team is withdrawn — its past results stay on the record — and a BYE replaces it for all its REMAINING matches, so its upcoming opponents get bye weeks. This cannot be undone.',
+        confirmText: 'Drop Team',
+        confirmVariant: 'destructive',
+      });
+      if (!confirmed) return;
+
+      try {
+        const { error: rpcError } = await supabase.rpc('drop_team_mid_season', {
+          p_team_id: teamId,
+          p_season_id: seasonForTeam,
+        });
+        if (rpcError) throw new Error(rpcError.message);
+        await refreshTeams();
+        toast.success('Team dropped — its remaining matches are now BYE weeks.');
+      } catch (err) {
+        logger.error('Error dropping team mid-season', {
+          error: err instanceof Error ? err.message : String(err),
+        });
+        toast.error(err instanceof Error ? err.message : 'Failed to drop team');
+      }
+      return;
+    }
+
+    // Pre-season (no games played) → repurpose the team's slot as the BYE.
     const confirmed = await confirm({
-      title: 'Delete Team?',
+      title: 'Drop this team?',
       message:
-        'This team has no matches yet. Deleting it will permanently remove the team and its roster. This cannot be undone.',
-      confirmText: 'Delete Team',
+        'This team becomes the BYE: its name and roster are cleared, its players are freed, and every team scheduled against it gets a bye week that week. The schedule is NOT regenerated. This cannot be undone.',
+      confirmText: 'Drop to BYE',
       confirmVariant: 'destructive',
     });
     if (!confirmed) return;
 
     try {
-      const { error } = await supabase.from('teams').delete().eq('id', teamId);
-      if (error) throw error;
+      await convertTeamToBye({ teamId, seasonId: seasonForTeam });
       await refreshTeams();
+      toast.success('Team dropped — its schedule slot is now a BYE.');
     } catch (err) {
-      logger.error('Error deleting team', {
+      logger.error('Error converting team to bye', {
         error: err instanceof Error ? err.message : String(err),
       });
-      toast.error(err instanceof Error ? err.message : 'Failed to delete team');
+      toast.error(err instanceof Error ? err.message : 'Failed to drop team');
     }
   };
 
