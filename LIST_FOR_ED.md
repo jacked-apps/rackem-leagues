@@ -4,6 +4,59 @@ Tasks and refactoring items for Ed to work on.
 
 ---
 
+## 📋 2026-06-13 — league-page wiring + playoff/seed session follow-ups
+
+Shipped this session (PRs awaiting Jack): #229 playoff review page (merged),
+#233 league-page card order + button wiring + "Matchups" title/URL rename,
+#234 seed makes playoff matchups start empty. Lingering:
+
+1. **Rename the dates page to "Schedule" (DEFERRED — do after season-length lands).**
+   `SeasonScheduleManager` is the dates/blackouts page but is still titled
+   **"Manage Schedule"** at **`/manage-schedule`**. It should be **"Schedule"** at
+   **`/schedule`** (now free — the matchups page moved to `/matchups`). Held back
+   because the **season-length recovery is editing that exact file**
+   (`SeasonScheduleManager.tsx`) — renaming now would collide. Once it lands: rename
+   the route in `NavRoutes.tsx`, the regex in `BottomTabBar.tsx:27`, the nav in
+   `ScheduleCard.tsx:177`, and the page title (`SeasonScheduleManager.tsx:409`).
+
+2. **Re-land the Change Season Length feature (#211 got stranded).** PR #211 was
+   stacked on `fix/blackout-reflow` and merged into *that* branch — but it had
+   already gone to main (via #209) first, so #211 never reached main. The feature
+   is fully built on commit `b0741a87` (dialog `ChangeSeasonLengthDialog.tsx` +
+   gated early-season button on `SeasonScheduleManager` + plan/brainstorm docs).
+   Needs cherry-picking onto a fresh branch off main + conflict resolution + a clean
+   PR. *(Other computer was on this.)* Once in, its button is reachable via the
+   Schedule card → dates page.
+
+3. **Stale `supabase/seed.sql` (709KB).** `config.toml`'s `sql_paths` points at it,
+   but it references the dropped `team_format` column → won't load (seeding is
+   disabled, so `db reset` skips it anyway). You restore from
+   `database/dev_starting_point.sql` instead, which is current. Either regenerate
+   `seed.sql` from a migrated DB (`supabase db dump --local --data-only`) or delete
+   it, and decide whether seeding stays disabled.
+
+4. **Seed gaps (optional).** Clean-DB tests reveal: (a) the seed has **no scored
+   games** (`match_games` = 0) → `appendConfirmation` + `gameConfirmations.schema`
+   tests can't find a fixture; (b) **no finished-season fixture** → can't actually
+   watch the playoff auto-populate (all seed seasons are 1/16 weeks). Add a played
+   match with games + a complete-season fixture if you want those green / to test
+   the playoff automation end-to-end.
+
+5. **Onboarding self-add join-request bug (REAL — likely what Jack saw, not
+   playoffs).** On a clean DB, `request-team-join` + `approve-surface-roster` DB
+   tests fail: `null value in column "team_id" of relation "team_join_requests"
+   violates not-null constraint`. A league-scoped "self-add" request inserts no
+   `team_id`, but the column is NOT NULL. Schema-vs-code mismatch in the onboarding
+   cascade — needs whoever owns onboarding. Either make `team_id` nullable or have
+   the RPC not write a team-less row.
+
+6. **Optional label sweep.** The "View Schedule" buttons on `PlayerProfile` and the
+   `LeagueDetail` next-season panel now open the **Matchups** page (URL updated, they
+   work). I left those labels — some are player-facing where "schedule" reads fine.
+   Sweep to "Matchups" if you want full consistency.
+
+---
+
 ## 🌅 PICK UP HERE — night of 2026-06-09 (bye-team firefight + the day's fixes)
 
 Most of the 2026-06-09 bye-team firefight shipped: auto-forfeit sweep, the
@@ -1311,7 +1364,15 @@ both are "consistent player-info display across the app" cleanups.
 
 ---
 
-## 36. Split Matchups Editing Out of the Creation Wizard
+## 36. Split Matchups Editing Out of the Creation Wizard ✅ RESOLVED 2026-06-13 (#233)
+
+**Resolved (#233):** `MatchupsCard` now opens the **Matchups page** directly —
+the existing `SeasonSchedulePage` (which already shows the week-by-week matchups
+and lets operators edit unfinished matches in place), renamed to title **"Matchups"**
+at route **`/league/:leagueId/season/:seasonId/matchups`**. "Set Matchups" (when
+none exist) still goes to schedule-setup to generate them; "Edit Matchups" goes
+straight to the matchups page — no more re-running the creation wizard. Original
+entry below for context.
 
 **Discovered:** 2026-06-06 while standardizing the league-detail cards
 into the four parts (Season / Teams / Schedule / Matchups). Built a
