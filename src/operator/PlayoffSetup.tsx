@@ -317,15 +317,15 @@ export const PlayoffSetup: React.FC = () => {
             <CardContent className="space-y-4">
               <p className="text-sm text-foreground">
                 The playoff matchups have been filled in from the final standings and
-                are visible to teams. View them on the schedule.
+                are visible to teams. View them on the matchups page.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Button
                   variant="default"
                   loadingText="none"
-                  onClick={() => navigate(`/league/${leagueId}/season/${seasonId}/schedule`)}
+                  onClick={() => navigate(`/league/${leagueId}/season/${seasonId}/matchups`)}
                 >
-                  View on the schedule
+                  View matchups
                 </Button>
                 <Button variant="outline" onClick={handleReset}>
                   Reset matchups

@@ -78,11 +78,11 @@ export const MatchupsCard: React.FC<MatchupsCardProps> = ({ league }) => {
       onClick={() => {
         if (!seasonId) return;
         setIsNavigating(true);
-        // Matchups exist → view/edit who-plays-who (SeasonSchedulePage).
+        // Matchups exist → view/edit who-plays-who (the Matchups page).
         // Not set yet → generate them (ScheduleSetupPage).
         navigate(
           hasMatchups
-            ? `/league/${league.id}/season/${seasonId}/schedule`
+            ? `/league/${league.id}/season/${seasonId}/matchups`
             : `/league/${league.id}/season/${seasonId}/schedule-setup`,
         );
       }}

@@ -231,7 +231,7 @@ export function PlayerProfile() {
                       </p>
                     </div>
                     <Link
-                      to={`/league/${teamData.season.league.id}/season/${teamData.season.id}/schedule`}
+                      to={`/league/${teamData.season.league.id}/season/${teamData.season.id}/matchups`}
                     >
                       <Button variant="outline" size="sm">
                         View Schedule

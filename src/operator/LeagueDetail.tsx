@@ -510,7 +510,7 @@ function NextSeasonBanner({
               variant="outline"
               loadingText="none"
               onClick={() =>
-                navigate(`/league/${leagueId}/season/${season.id}/schedule`)
+                navigate(`/league/${leagueId}/season/${season.id}/matchups`)
               }
             >
               <Calendar className="size-4" />

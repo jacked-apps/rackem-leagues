@@ -71,9 +71,9 @@ export const ScheduleSetupPage: React.FC = () => {
    * Handle successful schedule generation
    */
   const handleSuccess = () => {
-    // Navigate to schedule view page
+    // Navigate to the matchups page (the generated who-plays-who view)
     setIsNavigating(true);
-    navigate(`/league/${leagueId}/season/${seasonId}/schedule`);
+    navigate(`/league/${leagueId}/season/${seasonId}/matchups`);
   };
 
   /**
