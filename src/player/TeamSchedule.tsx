@@ -25,13 +25,13 @@ import {
   CalendarOff,
   MapPin,
   Trophy,
+  CircleCheck,
   AlertCircle,
   ArrowRight,
   EyeOff,
   Eye,
 } from 'lucide-react';
 import { parseLocalDate } from '@/utils/formatters';
-import { MatchDetailCard } from '@/components/MatchDetailCard';
 import { TeamNameLink } from '@/components/TeamNameLink';
 import { PageHeader } from '@/components/PageHeader';
 
@@ -74,7 +74,10 @@ type StateMeta = {
  * the muted "you're off" treatment.
  */
 const STATE_META: Record<WeekEntryKind, StateMeta> = {
-  completed: { label: 'Final', Icon: Trophy, badge: 'text-success', card: 'bg-success/10 border-success/40' },
+  // Neutral tint + check icon — a completed match can be a win OR a loss, so
+  // the card itself stays neutral and the Won/Lost/Tied outcome (with the word,
+  // colorblind-safe) carries the result. Trophy is reserved for live/playoff.
+  completed: { label: 'Final', Icon: CircleCheck, badge: 'text-muted-foreground', card: 'bg-card' },
   // Live + Next up moved OFF blue — blue is reserved for clickable links.
   live: { label: 'Live', Icon: Trophy, badge: 'text-destructive', card: 'bg-destructive/10 border-destructive/40' },
   updating: { label: 'Updating', Icon: AlertCircle, badge: 'text-warning', card: 'bg-warning/10 border-warning/40' },
@@ -108,6 +111,35 @@ function scoreLinkLabel(kind: WeekEntryKind): string | null {
     default:
       return null;
   }
+}
+
+/**
+ * Win/Loss/Tie outcome for a completed match, oriented to THIS team (our score
+ * first). The word — "Won" / "Lost" / "Tied" — carries the meaning so it reads
+ * without color (Ed is colorblind); color is a bonus layer. Prefers the
+ * authoritative `match_result` column, falling back to a games-won comparison
+ * for legacy rows that predate it. Returns null if scores aren't in yet.
+ */
+function completedOutcome(
+  match: MatchWithDetails,
+  role: 'home' | 'away' | null,
+): { label: string; tone: string } | null {
+  const home = match.home_games_won;
+  const away = match.away_games_won;
+  if (home == null || away == null || !role) return null;
+
+  const ours = role === 'home' ? home : away;
+  const theirs = role === 'home' ? away : home;
+
+  const result =
+    match.match_result ?? (home > away ? 'home_win' : away > home ? 'away_win' : 'tie');
+  const tie = result === 'tie';
+  const weWon =
+    (result === 'home_win' && role === 'home') || (result === 'away_win' && role === 'away');
+
+  const word = tie ? 'Tied' : weWon ? 'Won' : 'Lost';
+  const tone = tie ? 'text-muted-foreground' : weWon ? 'text-success' : 'text-destructive';
+  return { label: `${word} ${ours}–${theirs}`, tone };
 }
 
 /** A non-playable week (blackout / bye / playoff-TBD) — a static, no-expand row. */
@@ -318,6 +350,9 @@ export function TeamSchedule() {
               const { Icon } = meta;
               const role = getTeamRole(match);
               const opponent = role === 'home' ? match.away_team : match.home_team;
+              // Final result (our score first) for completed cards; null otherwise.
+              const outcome =
+                match.status === 'completed' ? completedOutcome(match, role) : null;
 
               const venue = match.actual_venue || match.scheduled_venue;
               const mapsUrl = venue
@@ -343,54 +378,58 @@ export function TeamSchedule() {
                       </span>
                     </div>
 
-                    {/* Row 2: matchup  ───  score link (same axis, same size). */}
+                    {/* Row 2: matchup  ───  result / score link (same axis). */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 text-base font-semibold text-muted-foreground">
-                        {match.status === 'completed' ? (
-                          // Completed cards left as-is for now (handled later).
-                          <span>vs {opponent?.team_name ?? 'Opponent'}</span>
-                        ) : (
-                          // "vs {team} at 📍{venue}" — both clickable.
-                          <span className="flex flex-wrap items-center gap-x-1.5">
-                            <span>vs</span>
-                            {opponent ? (
-                              <TeamNameLink
-                                teamId={opponent.id}
-                                teamName={opponent.team_name}
-                                className="text-base font-semibold"
-                              />
-                            ) : (
-                              <span>Opponent</span>
-                            )}
-                            {venue && mapsUrl && (
-                              <>
-                                <span className="font-normal text-muted-foreground">at</span>
-                                <a
-                                  href={mapsUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-0.5 font-semibold text-blue-600 hover:text-blue-800 hover:underline"
-                                >
-                                  <MapPin className="h-4 w-4" />
-                                  {venue.name}
-                                </a>
-                              </>
-                            )}
-                          </span>
-                        )}
+                        {/* "vs {team}" — clickable. Played matches stop there;
+                            unplayed ones append "at 📍{venue}" for directions. */}
+                        <span className="flex flex-wrap items-center gap-x-1.5">
+                          <span>vs</span>
+                          {opponent ? (
+                            <TeamNameLink
+                              teamId={opponent.id}
+                              teamName={opponent.team_name}
+                              className="text-base font-semibold"
+                            />
+                          ) : (
+                            <span>Opponent</span>
+                          )}
+                          {match.status !== 'completed' && venue && mapsUrl && (
+                            <>
+                              <span className="font-normal text-muted-foreground">at</span>
+                              <a
+                                href={mapsUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-0.5 font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+                              >
+                                <MapPin className="h-4 w-4" />
+                                {venue.name}
+                              </a>
+                            </>
+                          )}
+                        </span>
                       </div>
-                      {scoreLinkLabel(entry.kind) && (
-                        <Link to={`/match/${match.id}/lineup`} className="shrink-0">
-                          <Button
-                            variant="link"
-                            loadingText="none"
-                            className="h-auto gap-0.5 p-0 text-sm text-blue-600 hover:text-blue-800"
-                          >
-                            {scoreLinkLabel(entry.kind)}
-                            <ArrowRight className="h-3.5 w-3.5" />
-                          </Button>
-                        </Link>
-                      )}
+
+                      {/* Right: completed → Won/Lost/Tied + score; else → score link. */}
+                      {match.status === 'completed'
+                        ? outcome && (
+                            <span className={`shrink-0 text-sm font-semibold ${outcome.tone}`}>
+                              {outcome.label}
+                            </span>
+                          )
+                        : scoreLinkLabel(entry.kind) && (
+                            <Link to={`/match/${match.id}/lineup`} className="shrink-0">
+                              <Button
+                                variant="link"
+                                loadingText="none"
+                                className="h-auto gap-0.5 p-0 text-sm text-blue-600 hover:text-blue-800"
+                              >
+                                {scoreLinkLabel(entry.kind)}
+                                <ArrowRight className="h-3.5 w-3.5" />
+                              </Button>
+                            </Link>
+                          )}
                     </div>
 
                     {/* Table / overflow (unplayed only). */}
@@ -405,12 +444,6 @@ export function TeamSchedule() {
                           ) : null}
                         </div>
                       )}
-
-                    {match.status === 'completed' && (
-                      <div className="mt-3">
-                        <MatchDetailCard matchId={match.id} />
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
               );

@@ -123,6 +123,10 @@ export type MatchInsertData = Omit<Match,
  */
 export interface MatchWithDetails extends Match {
   scheduled_date?: string;  // Denormalized from season_week for easier access
+  // Authoritative completed-match outcome (column on `matches`, written at
+  // completion). Selected via `*`; typed here so display layers can show
+  // W/L/T without re-deriving from games_won (which lies under points-mode).
+  match_result?: 'home_win' | 'away_win' | 'tie' | null;
   home_team?: {
     id: string;
     team_name: string;
