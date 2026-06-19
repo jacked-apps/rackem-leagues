@@ -53,6 +53,21 @@ definition so the guards can't drift apart.
 - **Success:** navigating to a bye match's lineup URL shows the bye state,
   never the lineup builder, and never errors on the missing roster.
 
+### 3. A bye matchup must not appear in the "My Match" nav surfaces
+
+- **Current:** `getMyMatchMatches` feeds the bottom-nav tab, sidebar, and drawer
+  (`useMyMatchSurfaces`) with the member's `scheduled`/`in_progress` matches and
+  applies no bye filter. So a bye matchup that's **today** — or past-due in the
+  window before the daily auto-forfeit sweep settles it — surfaces as "my team
+  vs BYE" linking straight to the lineup page.
+- **Desired:** a bye matchup is never an actionable nav destination or drawer
+  row. (Found during #2 review — 2026-06-15.)
+- **Reuse:** `classifyTier` returns null for an `isByeMatch` row, which excludes
+  it from both the auto-routed destination and the drawer list (both run through
+  `groupByTier` → `classifyTier`).
+- **Success:** a today/past-due bye matchup shows in neither the nav shortcut
+  nor the drawer.
+
 ## UX decisions
 
 - **Lineup page (bye side):** **stay on the page** and show a friendly bye
