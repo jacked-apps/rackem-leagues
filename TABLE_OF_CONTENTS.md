@@ -677,6 +677,8 @@ The workshop building. One sub-folder per module room. Each room owns a list pag
 - `../utils/seasonLengthEdit.ts` - Pure season-length eligibility (week-5 lock) + [10,52] bounds/classification
 - `../utils/applySeasonLengthChange.ts` - Lengthen (append weeks + generate matches) / shorten (guarded tail delete) for an existing season
 - `SeasonSchedulePage.tsx` - Season schedule page
+- `../pages/SeasonOverview.tsx` - **Season Overview** — read-only at-a-glance schedule for players AND the LO at `/league/:leagueId/season/:seasonId/overview` (`withMember`). One compact block per playing night: derived week # · date · matchups (home vs away) · venue. Reuses `getSeasonSchedule` + `deriveWeekLabels` (no new data plumbing). First consumer of the derive-don't-store week-label model.
+- `../utils/scheduleDisplayUtils.ts` → `deriveWeekLabels(weeks)` - Derives every week's display label ("Week N" by regular-week position, blackout→its label, playoffs→"Playoffs[ Week k]") from a loaded week list; the single source of truth for week numbers, replacing stored `week_name`. Tested in `src/__tests__/unit/deriveWeekLabels.test.ts`.
 
 **Team & Venue Management**
 - `TeamManagement.tsx` - The standalone `/manage-teams` edit page — now a ~100-line thin wrapper: page chrome (header + footer) around `TeamManagementContent`. (Decomposed from an 860-line god-component; advances LIST_FOR_ED #5.)

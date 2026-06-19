@@ -46,6 +46,7 @@ import { PlayerProfile } from '../pages/PlayerProfile';
 import { AdminReports } from '../pages/AdminReports';
 import { MatchDataViewer } from '../pages/MatchDataViewer';
 import { Standings } from '../pages/Standings';
+import { SeasonOverview } from '../pages/SeasonOverview';
 import { TopShooters } from '../pages/TopShooters';
 import { TeamStats } from '../pages/TeamStats';
 import { FeatsOfExcellence } from '../pages/FeatsOfExcellence';
@@ -248,6 +249,7 @@ export const router = createBrowserRouter([
           { path: 'league/:leagueId/live', element: withMember(<SpectateLiveMatches />) },
           { path: 'live', element: withMember(<SpectateMyLiveMatches />) },
           // Stats & Standings pages (accessible to all members)
+          { path: 'league/:leagueId/season/:seasonId/overview', element: withMember(<SeasonOverview />) },
           { path: 'league/:leagueId/season/:seasonId/standings', element: withMember(<Standings />) },
           { path: 'league/:leagueId/season/:seasonId/top-shooters', element: withMember(<TopShooters />) },
           { path: 'league/:leagueId/season/:seasonId/team-stats', element: withMember(<TeamStats />) },

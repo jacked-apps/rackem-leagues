@@ -6,7 +6,18 @@
  */
 
 import type { MatchWithDetails } from '@/types';
-import type { SeasonWeek } from '@/types/season';
+
+/**
+ * The minimal week shape {@link deriveWeekLabels} reads. Any `SeasonWeek`-like row
+ * satisfies it structurally, so the helper isn't coupled to one specific week type.
+ */
+type WeekForLabel = {
+  id: string;
+  week_type: string;
+  scheduled_date: string;
+  week_name: string;
+  notes?: string | null;
+};
 
 /**
  * Week type styling configuration
@@ -141,12 +152,12 @@ export function calculateTableNumbers(matches: MatchWithDetails[]): Map<string, 
  * const labels = deriveWeekLabels(seasonWeeks);
  * const label = labels.get(week.id); // "Week 3"
  */
-export function deriveWeekLabels(weeks: SeasonWeek[]): Map<string, string> {
+export function deriveWeekLabels(weeks: WeekForLabel[]): Map<string, string> {
   const labels = new Map<string, string>();
 
   // ISO date strings (YYYY-MM-DD) sort correctly as plain strings, so no Date parsing
   // is needed — this also sidesteps timezone off-by-one bugs.
-  const byDate = (a: SeasonWeek, b: SeasonWeek) =>
+  const byDate = (a: WeekForLabel, b: WeekForLabel) =>
     a.scheduled_date < b.scheduled_date ? -1 : a.scheduled_date > b.scheduled_date ? 1 : 0;
 
   // Regular weeks → "Week N" by 1-based position among regular weeks.
