@@ -118,7 +118,7 @@ export function SeasonOverview() {
                   </div>
                 </CardHeader>
                 <CardContent className="px-4 pt-0 pb-2">
-                  <p className="text-center text-sm text-muted-foreground">
+                  <p className="text-center text-lg font-bold text-primary">
                     {weekLabels.get(week.id)}
                   </p>
                 </CardContent>
