@@ -16,7 +16,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, MapPin } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { getSeasonSchedule } from '@/api/queries/matches';
 import type { WeekSchedule } from '@/api/queries/matches';
 import { deriveWeekLabels } from '@/utils/scheduleDisplayUtils';
@@ -142,19 +142,13 @@ export function SeasonOverview() {
                     {[...matches]
                       .sort((a, b) => a.match_number - b.match_number)
                       .map((match) => (
-                        <li
-                          key={match.id}
-                          className="flex items-center justify-between gap-3 py-1.5 text-sm"
-                        >
-                          <span>
-                            {match.home_team?.team_name ?? 'TBD'}
-                            <span className="text-muted-foreground"> vs </span>
-                            {match.away_team?.team_name ?? 'TBD'}
-                          </span>
+                        <li key={match.id} className="py-1.5 text-sm">
+                          {match.home_team?.team_name ?? 'TBD'}
+                          <span className="text-muted-foreground"> vs </span>
+                          {match.away_team?.team_name ?? 'TBD'}
                           {match.scheduled_venue?.name && (
-                            <span className="flex items-center gap-1 text-muted-foreground whitespace-nowrap">
-                              <MapPin className="h-3.5 w-3.5" />
-                              {match.scheduled_venue.name}
+                            <span className="text-muted-foreground">
+                              {' '}@ {match.scheduled_venue.name}
                             </span>
                           )}
                         </li>
