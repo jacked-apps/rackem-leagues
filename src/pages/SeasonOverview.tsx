@@ -68,9 +68,16 @@ export function SeasonOverview() {
     load();
   }, [seasonId]);
 
-  // Only the playing nights: weeks that actually have matches (regular + playoffs).
-  // Blackout / off weeks have no matches and are skipped from this glance view.
-  const playNights = schedule.filter((w) => w.matches.length > 0);
+  // A blackout / season-end-break is an "off week" — shown as a slim two-line block
+  // (no matchups), with its reason centered underneath.
+  const isOffWeek = (weekType: string) =>
+    weekType === 'blackout' || weekType === 'season_end_break';
+
+  // Every night worth showing: the off weeks, plus play weeks that actually have
+  // matchups (regular + playoffs).
+  const nights = schedule.filter(
+    (w) => isOffWeek(w.week.week_type) || w.matches.length > 0
+  );
 
   if (loading) {
     return (
@@ -95,47 +102,68 @@ export function SeasonOverview() {
         Who's playing whom, and where, on every night of the season.
       </p>
 
-      {playNights.length === 0 ? (
-        <p className="text-muted-foreground">No matchups scheduled yet.</p>
+      {nights.length === 0 ? (
+        <p className="text-muted-foreground">No schedule yet.</p>
       ) : (
-        <div className="space-y-4">
-          {playNights.map(({ week, matches }) => (
-            <Card key={week.id} className="gap-0 py-0">
-              <CardHeader className="px-4 py-2">
-                <div className="flex items-center justify-between gap-3">
-                  <CardTitle className="text-base">{weekLabels.get(week.id)}</CardTitle>
-                  <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                    <Calendar className="h-4 w-4" />
-                    {formatNight(week.scheduled_date)}
-                  </span>
-                </div>
-              </CardHeader>
-              <CardContent className="px-4 pt-0 pb-2">
-                <ul className="divide-y">
-                  {[...matches]
-                    .sort((a, b) => a.match_number - b.match_number)
-                    .map((match) => (
-                      <li
-                        key={match.id}
-                        className="flex items-center justify-between gap-3 py-1.5 text-sm"
-                      >
-                        <span>
-                          {match.home_team?.team_name ?? 'TBD'}
-                          <span className="text-muted-foreground"> vs </span>
-                          {match.away_team?.team_name ?? 'TBD'}
-                        </span>
-                        {match.scheduled_venue?.name && (
-                          <span className="flex items-center gap-1 text-muted-foreground whitespace-nowrap">
-                            <MapPin className="h-3.5 w-3.5" />
-                            {match.scheduled_venue.name}
+        <div className="space-y-3">
+          {nights.map(({ week, matches }) =>
+            isOffWeek(week.week_type) ? (
+              // Off week: "Week Off · date", reason centered underneath.
+              <Card key={week.id} className="gap-0 py-0">
+                <CardHeader className="px-4 py-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <CardTitle className="text-base text-muted-foreground">Week Off</CardTitle>
+                    <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <Calendar className="h-4 w-4" />
+                      {formatNight(week.scheduled_date)}
+                    </span>
+                  </div>
+                </CardHeader>
+                <CardContent className="px-4 pt-0 pb-2">
+                  <p className="text-center text-sm text-muted-foreground">
+                    {weekLabels.get(week.id)}
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              // Play night: "Week N · date", then one line per matchup.
+              <Card key={week.id} className="gap-0 py-0">
+                <CardHeader className="px-4 py-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <CardTitle className="text-base">{weekLabels.get(week.id)}</CardTitle>
+                    <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <Calendar className="h-4 w-4" />
+                      {formatNight(week.scheduled_date)}
+                    </span>
+                  </div>
+                </CardHeader>
+                <CardContent className="px-4 pt-0 pb-2">
+                  <ul className="divide-y">
+                    {[...matches]
+                      .sort((a, b) => a.match_number - b.match_number)
+                      .map((match) => (
+                        <li
+                          key={match.id}
+                          className="flex items-center justify-between gap-3 py-1.5 text-sm"
+                        >
+                          <span>
+                            {match.home_team?.team_name ?? 'TBD'}
+                            <span className="text-muted-foreground"> vs </span>
+                            {match.away_team?.team_name ?? 'TBD'}
                           </span>
-                        )}
-                      </li>
-                    ))}
-                </ul>
-              </CardContent>
-            </Card>
-          ))}
+                          {match.scheduled_venue?.name && (
+                            <span className="flex items-center gap-1 text-muted-foreground whitespace-nowrap">
+                              <MapPin className="h-3.5 w-3.5" />
+                              {match.scheduled_venue.name}
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )
+          )}
         </div>
       )}
     </div>
