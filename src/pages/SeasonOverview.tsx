@@ -14,8 +14,9 @@
  */
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PageHeader } from '@/components/PageHeader';
 import { Calendar } from 'lucide-react';
 import { getSeasonSchedule } from '@/api/queries/matches';
 import type { WeekSchedule } from '@/api/queries/matches';
@@ -37,6 +38,7 @@ function formatNight(isoDate: string): string {
 
 export function SeasonOverview() {
   const { seasonId } = useParams<{ leagueId: string; seasonId: string }>();
+  const navigate = useNavigate();
   const [schedule, setSchedule] = useState<WeekSchedule[]>([]);
   const [weekLabels, setWeekLabels] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -79,33 +81,24 @@ export function SeasonOverview() {
     (w) => isOffWeek(w.week.week_type) || w.matches.length > 0
   );
 
-  if (loading) {
-    return (
-      <div className="container mx-auto p-6">
-        <p className="text-center text-muted-foreground">Loading season overview...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="container mx-auto p-6">
-        <p className="text-center text-destructive">{error}</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="container mx-auto p-6 max-w-3xl">
-      <h1 className="text-2xl font-bold mb-1">Season Overview</h1>
-      <p className="text-sm text-muted-foreground mb-6">
-        Who's playing whom, and where, on every night of the season.
-      </p>
+    <div className="min-h-screen bg-muted">
+      <PageHeader
+        onBackClick={() => navigate(-1)}
+        backLabel="Back"
+        title="Season Overview"
+        subtitle="Who's playing whom, and where, on every night of the season."
+      />
 
-      {nights.length === 0 ? (
-        <p className="text-muted-foreground">No schedule yet.</p>
-      ) : (
-        <div className="space-y-3">
+      <main className="px-4 py-6 max-w-3xl mx-auto">
+        {loading ? (
+          <p className="text-center text-muted-foreground">Loading season overview...</p>
+        ) : error ? (
+          <p className="text-center text-destructive">{error}</p>
+        ) : nights.length === 0 ? (
+          <p className="text-muted-foreground">No schedule yet.</p>
+        ) : (
+          <div className="space-y-3">
           {nights.map(({ week, matches }) =>
             isOffWeek(week.week_type) ? (
               // Off week: "Week Off · date", reason centered underneath.
@@ -158,8 +151,9 @@ export function SeasonOverview() {
               </Card>
             )
           )}
-        </div>
-      )}
+          </div>
+        )}
+      </main>
     </div>
   );
 }
