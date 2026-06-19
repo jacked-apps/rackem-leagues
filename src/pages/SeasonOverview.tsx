@@ -100,8 +100,8 @@ export function SeasonOverview() {
       ) : (
         <div className="space-y-4">
           {playNights.map(({ week, matches }) => (
-            <Card key={week.id}>
-              <CardHeader className="py-3">
+            <Card key={week.id} className="gap-0 py-0">
+              <CardHeader className="px-4 py-2">
                 <div className="flex items-center justify-between gap-3">
                   <CardTitle className="text-base">{weekLabels.get(week.id)}</CardTitle>
                   <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -110,7 +110,7 @@ export function SeasonOverview() {
                   </span>
                 </div>
               </CardHeader>
-              <CardContent className="pt-0 pb-3">
+              <CardContent className="px-4 pt-0 pb-2">
                 <ul className="divide-y">
                   {[...matches]
                     .sort((a, b) => a.match_number - b.match_number)
