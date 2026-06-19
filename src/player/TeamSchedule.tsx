@@ -22,6 +22,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
   Calendar,
+  CalendarRange,
   CalendarOff,
   MapPin,
   Trophy,
@@ -304,6 +305,26 @@ export function TeamSchedule() {
       />
 
       <main className="px-4 py-6 max-w-2xl mx-auto">
+        {/* Jump to the whole-season at-a-glance view (who plays whom, where, every
+            night) — players can't reach the league pages, so the entry lives here. */}
+        {team.season?.league?.id && team.season?.id && (
+          <div className="mb-4 flex justify-center">
+            <Link
+              to={`/league/${team.season.league.id}/season/${team.season.id}/overview`}
+            >
+              <Button
+                variant="outline"
+                size="sm"
+                loadingText="none"
+                className="h-8 gap-1.5 rounded-full px-4 text-xs"
+              >
+                <CalendarRange className="h-4 w-4" />
+                Season Overview
+              </Button>
+            </Link>
+          </div>
+        )}
+
         {/* Filter chips — tap to hide a category. Filled (+ "off" icon) = that
             category is hidden; the icon carries the state without relying on color. */}
         <div className="mb-4 flex justify-center gap-2">
