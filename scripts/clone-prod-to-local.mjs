@@ -1,132 +1,149 @@
 /**
- * @fileoverview Clone PRODUCTION public-schema data into your LOCAL Supabase DB.
+ * @fileoverview Clone PRODUCTION public-schema data into your LOCAL Supabase DB,
+ * over the API — no database password required.
  *
- * Why: production just started taking real users. This pulls a copy of that real
- * data into your local database so you can experiment on realistic data without
- * any risk to production.
+ * Why over the API: Supabase's Postgres password is write-only (you'd have to
+ * reset it, breaking the deploy + other connections). The `service_role` API key
+ * IS viewable in the dashboard and can read every row (it bypasses RLS), so we
+ * read prod through it instead of a pg_dump.
  *
  * Direction is ONE-WAY and safe by construction:
- *   - It only READS prod (a `--data-only` dump is read-only).
- *   - It only WRITES to your LOCAL Supabase Docker container (the load target is
- *     discovered from the running `supabase_db_*` container — it can never reach
- *     production).
+ *   - Prod is touched READ-ONLY (SELECTs via the service_role key).
+ *   - Writes go ONLY to your LOCAL Supabase Postgres (127.0.0.1:54322) — the
+ *     connection is hardcoded to localhost, so it can never reach production.
  *
  * Scope: PUBLIC schema only. There are no `public → auth` foreign keys, so the
- * copy loads cleanly without auth data; you keep logging in locally as usual
+ * copy loads cleanly without auth data; keep logging in locally as usual
  * (e.g. dev@test.com). Prod auth users / OAuth are intentionally NOT copied.
  *
  * Requires:
  *   1. Local Supabase running:  pnpm db:start
- *   2. Your PROD database password in the env var PROD_DB_PASSWORD (get it from
- *      the Supabase dashboard → Settings → Database). Never hardcode/commit it.
+ *   2. Your prod SERVICE_ROLE key in env PROD_SERVICE_ROLE_KEY (Supabase
+ *      dashboard → Settings → API → `service_role`). It's a powerful secret —
+ *      never hardcode/commit it; this clears it from your shell after.
  *
  * Run (PowerShell):
- *   $env:PROD_DB_PASSWORD = "<your prod db password>"; pnpm clone-prod
+ *   $env:PROD_SERVICE_ROLE_KEY = "<service_role key>"; pnpm clone-prod
  * Run (bash):
- *   PROD_DB_PASSWORD="<your prod db password>" pnpm clone-prod
- *
- * The dump is written to ./prod_data.sql (gitignored — it holds real user data).
- *
- * NOTE: this links your repo to the PROD project (so the dump can find it). While
- * linked, do NOT run `supabase db push` — that targets production. `supabase db
- * reset` and this script only ever touch LOCAL, so they stay safe.
+ *   PROD_SERVICE_ROLE_KEY="<service_role key>" pnpm clone-prod
  */
 
-import { spawnSync, spawn } from 'node:child_process';
-import { readFileSync, existsSync } from 'node:fs';
+import pg from 'pg';
+import { createClient } from '@supabase/supabase-js';
 
-const PROD_REF = 'cibboozjixxyypzchtvr';
-const DUMP_FILE = 'prod_data.sql';
+const PROD_URL = 'https://cibboozjixxyypzchtvr.supabase.co';
+const PAGE = 1000; // service_role read page size
 
-const password = process.env.PROD_DB_PASSWORD;
-if (!password) {
+const key = process.env.PROD_SERVICE_ROLE_KEY;
+if (!key) {
   console.error(
-    '\nPROD_DB_PASSWORD is not set.\n' +
-      'Get your prod DB password from the Supabase dashboard (Settings → Database), then:\n' +
-      '  PowerShell:  $env:PROD_DB_PASSWORD = "<password>"; pnpm clone-prod\n' +
-      '  bash:        PROD_DB_PASSWORD="<password>" pnpm clone-prod\n',
+    '\nPROD_SERVICE_ROLE_KEY is not set.\n' +
+      'Get it from the Supabase dashboard → Settings → API → `service_role`, then:\n' +
+      '  PowerShell:  $env:PROD_SERVICE_ROLE_KEY = "<key>"; pnpm clone-prod\n' +
+      '  bash:        PROD_SERVICE_ROLE_KEY="<key>" pnpm clone-prod\n',
   );
   process.exit(1);
 }
 
-/** Run a command inheriting stdio; abort the script if it fails. */
-function run(cmd, args, opts = {}) {
-  console.log(`\n$ ${cmd} ${args.join(' ')}`);
-  const res = spawnSync(cmd, args, { stdio: 'inherit', ...opts });
-  if (res.error) {
-    console.error(`\nCould not run "${cmd}". Is it installed and on your PATH?`);
-    process.exit(1);
+const prod = createClient(PROD_URL, key, { auth: { persistSession: false } });
+// LOCAL ONLY — hardcoded so a write can never reach prod.
+const local = new pg.Pool({ host: '127.0.0.1', port: 54322, database: 'postgres', user: 'postgres', password: 'postgres' });
+
+/** Public base tables + each column's type and whether it's generated. */
+async function localSchema() {
+  const tables = (
+    await local.query(
+      `select tablename from pg_tables where schemaname='public' order by tablename`,
+    )
+  ).rows.map((r) => r.tablename);
+
+  const cols = {};
+  for (const t of tables) {
+    const r = await local.query(
+      `select column_name, udt_name, is_generated
+         from information_schema.columns
+        where table_schema='public' and table_name=$1
+        order by ordinal_position`,
+      [t],
+    );
+    // Skip generated columns — Postgres computes them; inserting them errors.
+    cols[t] = r.rows.filter((c) => c.is_generated === 'NEVER');
   }
-  if (res.status !== 0) {
-    console.error(`\nStep failed: ${cmd} ${args.join(' ')}`);
-    process.exit(res.status ?? 1);
+  return { tables, cols };
+}
+
+/** Read every row of a prod table via the service_role key (paged). */
+async function readProd(table) {
+  const rows = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await prod.from(table).select('*').range(from, from + PAGE - 1);
+    if (error) {
+      // A table that exists locally but not in prod's API (or is empty) — skip.
+      if (/relation|not found|does not exist/i.test(error.message)) return rows;
+      throw new Error(`prod read ${table}: ${error.message}`);
+    }
+    rows.push(...data);
+    if (data.length < PAGE) break;
+  }
+  return rows;
+}
+
+/** jsonb/json values must be stringified for the pg driver; arrays pass through. */
+function coerce(value, udt) {
+  if (value === null || value === undefined) return null;
+  if (udt === 'json' || udt === 'jsonb') return JSON.stringify(value);
+  return value;
+}
+
+async function insertRows(table, columns, rows) {
+  const names = columns.map((c) => c.column_name);
+  const colList = names.map((n) => `"${n}"`).join(', ');
+  // Batch so we stay well under the 65535-param cap.
+  const perBatch = Math.max(1, Math.floor(60000 / names.length));
+  for (let i = 0; i < rows.length; i += perBatch) {
+    const batch = rows.slice(i, i + perBatch);
+    const params = [];
+    const tuples = batch.map((row) => {
+      const ph = columns.map((c) => {
+        params.push(coerce(row[c.column_name], c.udt_name));
+        return `$${params.length}`;
+      });
+      return `(${ph.join(', ')})`;
+    });
+    await local.query(
+      `insert into public."${table}" (${colList}) values ${tuples.join(', ')}`,
+      params,
+    );
   }
 }
 
-// Supabase CLI reads the DB password from SUPABASE_DB_PASSWORD — pass it through
-// so `link` / `db dump` run non-interactively.
-const childEnv = { ...process.env, SUPABASE_DB_PASSWORD: password };
+async function main() {
+  const { tables, cols } = await localSchema();
+  console.log(`Cloning ${tables.length} public tables from prod → local…\n`);
 
-// 1. Link to prod so `db dump` can resolve the connection (no host/region to
-//    hand-enter). See the footgun note in the header.
-run('supabase', ['link', '--project-ref', PROD_REF], { env: childEnv });
-
-// 2. Read-only dump of prod public DATA only.
-run('supabase', ['db', 'dump', '--data-only', '-f', DUMP_FILE], { env: childEnv });
-if (!existsSync(DUMP_FILE)) {
-  console.error(`\nExpected ${DUMP_FILE} but it was not created. Aborting before touching local.`);
-  process.exit(1);
-}
-
-// 3. Find the running LOCAL Supabase Postgres container — this is the only thing
-//    we write to, so the load can never reach production.
-const ps = spawnSync(
-  'docker',
-  ['ps', '--filter', 'name=supabase_db_', '--format', '{{.Names}}'],
-  { encoding: 'utf8' },
-);
-const container = (ps.stdout || '').trim().split(/\r?\n/).filter(Boolean)[0];
-if (!container) {
-  console.error(
-    '\nNo running "supabase_db_*" Docker container found. Start local Supabase first: pnpm db:start',
-  );
-  process.exit(1);
-}
-console.log(`\nLoading into LOCAL container: ${container}`);
-
-// 4. One SQL stream into the local container's psql:
-//    - session_replication_role=replica turns off FK checks + triggers, so the
-//      truncate and the (unordered) data load don't trip on dependency order.
-//    - truncate every public table so prod data REPLACES seed data (not stacks).
-//    - then the prod dump, then restore normal replication behavior.
-const preamble =
-  'SET session_replication_role = replica;\n' +
-  'DO $$ DECLARE r record; BEGIN\n' +
-  "  FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname='public') LOOP\n" +
-  "    EXECUTE 'TRUNCATE TABLE public.' || quote_ident(r.tablename) || ' CASCADE';\n" +
-  '  END LOOP;\n' +
-  'END $$;\n';
-const epilogue = '\nSET session_replication_role = default;\n';
-const sql = preamble + readFileSync(DUMP_FILE, 'utf8') + epilogue;
-
-const psql = spawn(
-  'docker',
-  ['exec', '-i', container, 'psql', '-U', 'postgres', '-d', 'postgres', '-v', 'ON_ERROR_STOP=1'],
-  { stdio: ['pipe', 'inherit', 'inherit'] },
-);
-psql.on('error', () => {
-  console.error('\nCould not exec into the container. Is Docker running?');
-  process.exit(1);
-});
-psql.stdin.write(sql);
-psql.stdin.end();
-psql.on('close', (code) => {
-  if (code !== 0) {
-    console.error(`\nLoad failed (psql exit ${code}). Local DB may be partially loaded — re-run after fixing.`);
-    process.exit(code ?? 1);
+  // FK checks + triggers off so insert order is irrelevant and triggers (e.g.
+  // auto-create-lineups) don't fire during the copy. Truncate so prod REPLACES
+  // local seed data rather than stacking on it.
+  await local.query('set session_replication_role = replica');
+  try {
+    for (const t of tables) {
+      await local.query(`truncate table public."${t}" cascade`);
+    }
+    let total = 0;
+    for (const t of tables) {
+      const rows = await readProd(t);
+      if (rows.length) await insertRows(t, cols[t], rows);
+      total += rows.length;
+      console.log(`  ${t}: ${rows.length}`);
+    }
+    console.log(`\n✅ Loaded ${total} rows into local. Refresh your browser.`);
+  } finally {
+    await local.query('set session_replication_role = default');
+    await local.end();
   }
-  console.log('\n✅ Local DB now holds a copy of prod public data. Refresh your browser.');
-  console.log(
-    '⚠️  Your repo is still LINKED TO PROD. Do NOT run `supabase db push` until you re-link, or it targets production.',
-  );
+}
+
+main().catch((e) => {
+  console.error(`\nClone failed: ${e.message}`);
+  local.end().finally(() => process.exit(1));
 });

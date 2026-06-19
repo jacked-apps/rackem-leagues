@@ -12,9 +12,6 @@ lerna-debug.log*
 .env.local
 .env.*.local
 
-# Local prod-data clone (real user data — never commit; see scripts/clone-prod-to-local.mjs)
-prod_data.sql
-
 node_modules
 dist
 dist-ssr
