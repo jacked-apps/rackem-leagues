@@ -92,6 +92,17 @@ describe('classifyTier', () => {
   it('does not classify a terminal status (defensive)', () => {
     expect(classifyTier(row({ id: 'm', status: 'completed' as any }), TODAY)).toBeNull();
   });
+  it('does not classify a BYE matchup, even today or past-due', () => {
+    const bye = { id: 't2', team_name: 'BYE', captain_id: null, status: 'bye' as const };
+    expect(
+      classifyTier(row({ id: 'm', status: 'scheduled', scheduled_date: TODAY, away_team: bye }), TODAY),
+    ).toBeNull();
+    expect(
+      classifyTier(row({ id: 'm', status: 'scheduled', scheduled_date: YESTERDAY, away_team: bye }), TODAY),
+    ).toBeNull();
+    // even a (degenerate) in_progress bye never surfaces
+    expect(classifyTier(row({ id: 'm', status: 'in_progress', away_team: bye }), TODAY)).toBeNull();
+  });
 });
 
 describe('compareWithinTier (Tier 1 tiebreak)', () => {
