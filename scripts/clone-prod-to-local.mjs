@@ -18,18 +18,35 @@
  *
  * Requires:
  *   1. Local Supabase running:  pnpm db:start
- *   2. Your prod SERVICE_ROLE key in env PROD_SERVICE_ROLE_KEY (Supabase
- *      dashboard → Settings → API → `service_role`). It's a powerful secret —
- *      never hardcode/commit it; this clears it from your shell after.
+ *   2. Your prod secret key (Supabase dashboard → Settings → API keys → the
+ *      "secret key", formerly `service_role`) supplied as PROD_SERVICE_ROLE_KEY.
+ *      It's a full-access key (bypasses RLS) — never commit or share it.
  *
- * Run (PowerShell):
- *   $env:PROD_SERVICE_ROLE_KEY = "<service_role key>"; pnpm clone-prod
- * Run (bash):
- *   PROD_SERVICE_ROLE_KEY="<service_role key>" pnpm clone-prod
+ * Supply the key either way:
+ *   - Persistent: add a line to .env.local (gitignored), then `pnpm clone-prod`:
+ *       PROD_SERVICE_ROLE_KEY=<secret key>
+ *     Keep it UN-prefixed (no VITE_) so Vite never bundles it into the app.
+ *   - One-off (PowerShell): $env:PROD_SERVICE_ROLE_KEY = "<secret key>"; pnpm clone-prod
+ *   - One-off (bash):       PROD_SERVICE_ROLE_KEY="<secret key>" pnpm clone-prod
  */
 
+import { existsSync } from 'node:fs';
 import pg from 'pg';
 import { createClient } from '@supabase/supabase-js';
+
+// Convenience: load .env.local so you can keep PROD_SERVICE_ROLE_KEY there and
+// just run `pnpm clone-prod`. .env.local is gitignored; keep the var UN-prefixed
+// (no VITE_) so Vite never bundles this full-access key into the app.
+// Shell-set vars still win over the file.
+if (existsSync('.env.local') && typeof process.loadEnvFile === 'function') {
+  const fromShell = process.env.PROD_SERVICE_ROLE_KEY;
+  try {
+    process.loadEnvFile('.env.local');
+  } catch {
+    /* malformed file — ignore and fall back to the shell env */
+  }
+  if (fromShell) process.env.PROD_SERVICE_ROLE_KEY = fromShell;
+}
 
 const PROD_URL = 'https://cibboozjixxyypzchtvr.supabase.co';
 const PAGE = 1000; // service_role read page size
@@ -38,9 +55,10 @@ const key = process.env.PROD_SERVICE_ROLE_KEY;
 if (!key) {
   console.error(
     '\nPROD_SERVICE_ROLE_KEY is not set.\n' +
-      'Get it from the Supabase dashboard → Settings → API → `service_role`, then:\n' +
-      '  PowerShell:  $env:PROD_SERVICE_ROLE_KEY = "<key>"; pnpm clone-prod\n' +
-      '  bash:        PROD_SERVICE_ROLE_KEY="<key>" pnpm clone-prod\n',
+      'Get the "secret key" from the Supabase dashboard → Settings → API keys\n' +
+      '(formerly the `service_role` key — NOT the publishable/anon one), then either:\n' +
+      '  - add to .env.local (gitignored):  PROD_SERVICE_ROLE_KEY=<secret key>\n' +
+      '  - or one-off (PowerShell):  $env:PROD_SERVICE_ROLE_KEY = "<secret key>"; pnpm clone-prod\n',
   );
   process.exit(1);
 }
