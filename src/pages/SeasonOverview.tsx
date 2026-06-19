@@ -14,7 +14,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader } from '@/components/PageHeader';
 import { Calendar } from 'lucide-react';
@@ -39,6 +39,10 @@ function formatNight(isoDate: string): string {
 export function SeasonOverview() {
   const { seasonId } = useParams<{ leagueId: string; seasonId: string }>();
   const navigate = useNavigate();
+  // The page that linked here can pass where "back" should go + its label (e.g. the
+  // player's team schedule). Falls back to plain browser-back when opened directly.
+  const location = useLocation();
+  const back = (location.state ?? {}) as { backTo?: string; backLabel?: string };
   const [schedule, setSchedule] = useState<WeekSchedule[]>([]);
   const [weekLabels, setWeekLabels] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -84,8 +88,9 @@ export function SeasonOverview() {
   return (
     <div className="min-h-screen bg-muted">
       <PageHeader
-        onBackClick={() => navigate(-1)}
-        backLabel="Back"
+        backTo={back.backTo}
+        onBackClick={back.backTo ? undefined : () => navigate(-1)}
+        backLabel={back.backLabel ?? 'Back'}
         title="Season Overview"
         subtitle="Who's playing whom, and where, on every night of the season."
       />

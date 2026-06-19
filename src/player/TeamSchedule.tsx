@@ -311,6 +311,7 @@ export function TeamSchedule() {
           <div className="mb-4 flex justify-center">
             <Link
               to={`/league/${team.season.league.id}/season/${team.season.id}/overview`}
+              state={{ backTo: `/team/${teamId}/schedule`, backLabel: 'Back to Schedule' }}
             >
               <Button
                 variant="outline"
