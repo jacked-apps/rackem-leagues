@@ -68,6 +68,22 @@ definition so the guards can't drift apart.
 - **Success:** a today/past-due bye matchup shows in neither the nav shortcut
   nor the drawer.
 
+### 4. A bye must not appear in the standings
+
+- **Current:** `fetchSeasonStandings` (`src/api/queries/standings.ts`) fetches
+  team names with `status='active'` (byes excluded — correct), but builds the
+  stats map from every completed match's team ids (bye included) and then emits
+  a row for every id in that map. The bye's id has no name in the active-only
+  map, so it rendered as **"Unknown Team"** in the table. (Found 2026-06-15.)
+- **Desired:** a bye (and any non-active team — withdrawn/forfeited) gets **no
+  standings row**. Its matches still count toward the active opponent's record.
+- **Fix:** in the row-building loop, skip any team id not present in the
+  active-only name map (the intent the existing comment already stated, just
+  never enforced).
+- **Bonus:** the same function feeds playoff seeding (`playoffGenerator.ts`),
+  so this also prevents a bye from being seeded into the playoff bracket.
+- **Success:** standings show only real teams; no "Unknown Team" row.
+
 ## UX decisions
 
 - **Lineup page (bye side):** **stay on the page** and show a friendly bye
