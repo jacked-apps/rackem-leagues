@@ -6,6 +6,7 @@
  */
 
 import type { MatchWithDetails } from '@/types';
+import type { SeasonWeek } from '@/types/season';
 
 /**
  * Week type styling configuration
@@ -110,4 +111,63 @@ export function calculateTableNumbers(matches: MatchWithDetails[]): Map<string, 
   }
 
   return tableNumbers;
+}
+
+/**
+ * Derive every week's display label from the season's weeks — WITHOUT reading any
+ * stored week number.
+ *
+ * This is the single source of truth for "Week N" labels. The number is NOT stored
+ * anywhere; it is the week's position among the season's *play* weeks of its kind,
+ * counted by date. Blackouts (and the legacy `season_end_break` skip) are never
+ * numbered — they show their own label.
+ *
+ * Why derive instead of store: a stored number is written by several code paths that
+ * disagree about how to count around blackouts, so it drifts (e.g. a season labeled
+ * "Week 1, Week 3, Week 4…" that skips "Week 2", or a duplicate "Week 14" after a
+ * length change). Counting from position can never drift or collide.
+ *
+ * Counting rule (the load-bearing invariant): regular weeks sorted by `scheduled_date`
+ * ascending are in chart-round order, so the Nth-earliest regular week IS round N. The
+ * UNIQUE(season_id, scheduled_date) DB constraint guarantees that order is total.
+ *
+ * Build this map ONCE per loaded set of weeks, then look up by week id — never call a
+ * per-row deriver in a render loop (that would re-scan the whole season for each row).
+ *
+ * @param weeks - All `season_weeks` rows for one season (any order; this sorts a copy)
+ * @returns Map of week id → display label ("Week 3", "Playoffs Week 2", "Christmas")
+ *
+ * @example
+ * const labels = deriveWeekLabels(seasonWeeks);
+ * const label = labels.get(week.id); // "Week 3"
+ */
+export function deriveWeekLabels(weeks: SeasonWeek[]): Map<string, string> {
+  const labels = new Map<string, string>();
+
+  // ISO date strings (YYYY-MM-DD) sort correctly as plain strings, so no Date parsing
+  // is needed — this also sidesteps timezone off-by-one bugs.
+  const byDate = (a: SeasonWeek, b: SeasonWeek) =>
+    a.scheduled_date < b.scheduled_date ? -1 : a.scheduled_date > b.scheduled_date ? 1 : 0;
+
+  // Regular weeks → "Week N" by 1-based position among regular weeks.
+  const regular = weeks.filter(w => w.week_type === 'regular').sort(byDate);
+  regular.forEach((week, i) => labels.set(week.id, `Week ${i + 1}`));
+
+  // Playoff weeks → "Playoffs" (single) or "Playoffs Week k" (multi).
+  const playoffs = weeks.filter(w => w.week_type === 'playoffs').sort(byDate);
+  playoffs.forEach((week, i) =>
+    labels.set(week.id, playoffs.length > 1 ? `Playoffs Week ${i + 1}` : 'Playoffs')
+  );
+
+  // Skip weeks (blackout, plus the legacy season_end_break during the transition) show
+  // their own label. The label lives in `notes` going forward; fall back to `week_name`
+  // until the data migration backfills it (this fallback is removed once week_name is
+  // dropped).
+  for (const week of weeks) {
+    if (week.week_type === 'blackout' || week.week_type === 'season_end_break') {
+      labels.set(week.id, week.notes ?? week.week_name);
+    }
+  }
+
+  return labels;
 }
