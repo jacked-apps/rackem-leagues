@@ -310,7 +310,7 @@ export const SeasonSchedulePage: React.FC = () => {
     const data = buildLmsSchedule(schedule);
     const bytes = lmsScheduleToXlsx(data);
     const slug = seasonName.replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '').toLowerCase();
-    downloadBytes(`lms_schedule_${slug || 'season'}.xlsx`, bytes, XLSX_MIME);
+    downloadBytes(`schedule_${slug || 'season'}.xlsx`, bytes, XLSX_MIME);
   };
 
   if (loading) {
@@ -331,13 +331,13 @@ export const SeasonSchedulePage: React.FC = () => {
         title="Matchups"
         subtitle={seasonName}
       >
-        {/* Export for LMS — operator-only, available whenever a schedule exists
-            (upcoming or active) so its CSI/FargoRate LMS schedule can mirror ours. */}
+        {/* Export Schedule — operator-only, available whenever a schedule exists
+            (upcoming or active). Downloads the .xlsx an operator imports elsewhere. */}
         {isOperator && hasExportableSchedule && (
           <div className="mt-2">
             <Button variant="outline" onClick={handleExportLms}>
               <Download className="h-4 w-4 mr-2" />
-              Export for LMS
+              Export Schedule
             </Button>
           </div>
         )}
