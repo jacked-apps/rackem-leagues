@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/supabaseClient';
 import { Button } from '@/components/ui/button';
 import { SectionCard, SectionCardLoading, SectionCardEmpty } from './SectionCard';
+import { deriveWeekLabels } from '@/utils/scheduleDisplayUtils';
 import { logger } from '@/utils/logger';
 
 interface ScheduleCardProps {
@@ -91,6 +92,10 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({ leagueId }) => {
         if (allWeeks && allWeeks.length > 0) {
           const weekIds = allWeeks.map(w => w.id);
 
+          // Week numbers are DERIVED from position, never read from the stored
+          // week_name (which can drift/collide — e.g. a duplicate "Week 14").
+          const weekLabels = deriveWeekLabels(allWeeks);
+
           // Get all matches to determine which weeks are complete
           const { data: matches } = await supabase
             .from('matches')
@@ -128,7 +133,7 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({ leagueId }) => {
             .slice(0, 3);
 
           setUpcomingWeeks(incompleteRegularWeeks.map(week => ({
-            name: week.week_name,
+            name: weekLabels.get(week.id) ?? week.week_name,
             date: week.scheduled_date,
             type: week.week_type
           })));

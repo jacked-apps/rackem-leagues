@@ -11,6 +11,7 @@ import { MatchCard } from '@/components/MatchCard';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import type { MatchWithDetails } from '@/types';
+import { deriveWeekLabels } from '@/utils/scheduleDisplayUtils';
 import { logger } from '@/utils/logger';
 
 interface ScheduleViewProps {
@@ -26,7 +27,9 @@ interface ScheduleViewProps {
 
 interface WeekGroup {
   weekId: string;
-  weekName: string;
+  /** Derived display label ("Week 3", "Playoffs") — never the stored week_name. */
+  weekLabel: string;
+  weekType: string;
   scheduledDate: string;
   matches: MatchWithDetails[];
 }
@@ -87,7 +90,9 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
           if (!grouped.has(weekId)) {
             grouped.set(weekId, {
               weekId,
-              weekName: match.season_week.week_name,
+              // Filled in after grouping, once we can derive numbers by position.
+              weekLabel: '',
+              weekType: match.season_week.week_type,
               scheduledDate: match.season_week.scheduled_date,
               matches: [],
             });
@@ -102,6 +107,20 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
             new Date(a.scheduledDate).getTime() -
             new Date(b.scheduledDate).getTime()
         );
+
+        // Week numbers are DERIVED from each week's position by date — never the
+        // stored week_name (which can drift/collide, e.g. a duplicate "Week 14").
+        // Every regular week has matches, so they're all present here and the
+        // position count is complete.
+        const labels = deriveWeekLabels(
+          sortedGroups.map((g) => ({
+            id: g.weekId,
+            week_type: g.weekType,
+            scheduled_date: g.scheduledDate,
+            week_name: '',
+          })),
+        );
+        for (const g of sortedGroups) g.weekLabel = labels.get(g.weekId) ?? '';
 
         setWeekGroups(sortedGroups);
       } catch (err) {
@@ -200,7 +219,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
               {/* Week Header */}
               <div className="mb-4 pb-3 border-b border-border">
                 <h2 className="text-xl font-semibold text-foreground">
-                  {weekGroup.weekName}
+                  {weekGroup.weekLabel}
                 </h2>
                 <p className="text-sm text-muted-foreground">
                   {new Date(weekGroup.scheduledDate).toLocaleDateString('en-US', {

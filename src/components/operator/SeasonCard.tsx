@@ -96,7 +96,7 @@ export const SeasonCard: React.FC<SeasonCardProps> = ({ league }) => {
           const today = formatLocalDate(new Date());
           const { data: blackout } = await supabase
             .from('season_weeks')
-            .select('week_name, scheduled_date')
+            .select('week_name, notes, scheduled_date')
             .eq('season_id', data.id)
             .eq('week_type', 'blackout')
             .gte('scheduled_date', today)
@@ -104,7 +104,9 @@ export const SeasonCard: React.FC<SeasonCardProps> = ({ league }) => {
             .limit(1)
             .maybeSingle();
           setNextHoliday(
-            blackout ? { name: blackout.week_name, date: blackout.scheduled_date } : null,
+            // A blackout's label lives in `notes` (falls back to week_name until
+            // the column is dropped) — never a derived "Week N".
+            blackout ? { name: blackout.notes ?? blackout.week_name, date: blackout.scheduled_date } : null,
           );
         }
       } catch (err) {
