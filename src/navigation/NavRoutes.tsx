@@ -291,17 +291,16 @@ export const router = createBrowserRouter([
           { path: 'operator/league/:leagueId/playoffs/:orgId', element: withOperator(LeaguePlayoffSettings) },
           { path: 'venues/:orgId', element: withOperator(VenueManagement) },
 
-          // --- LO Manual Scoring (dev/staging only until Units 5–6 land) ---
-          ...(!isProduction
-            ? [
-                { path: 'league/:leagueId/manual-scoring', element: withOperator(ManualScoringMatchPicker) },
-                { path: 'league/:leagueId/manual-scoring/:matchId', element: withOperator(ManualScoringPage) },
-                // v2 review/correct: same host page, dispatches on match status.
-                { path: 'league/:leagueId/match-review/:matchId', element: withOperator(ManualScoringPage) },
-                // Printable LMS results sheet (CSI / FargoRate hand-entry helper).
-                { path: 'league/:leagueId/match/:matchId/lms-sheet', element: withOperator(LmsResultsSheet) },
-              ]
-            : []),
+          // --- LO Manual Scoring (LIVE in production as of 2026-06-21) ---
+          // Un-gated together as one block: the picker links to match-review and
+          // the lms-sheet (printer icon), so all four must be live or the
+          // ungated buttons would 404 — the half-gated trap this replaced.
+          { path: 'league/:leagueId/manual-scoring', element: withOperator(ManualScoringMatchPicker) },
+          { path: 'league/:leagueId/manual-scoring/:matchId', element: withOperator(ManualScoringPage) },
+          // v2 review/correct: same host page, dispatches on match status.
+          { path: 'league/:leagueId/match-review/:matchId', element: withOperator(ManualScoringPage) },
+          // Printable LMS results sheet (CSI / FargoRate hand-entry helper).
+          { path: 'league/:leagueId/match/:matchId/lms-sheet', element: withOperator(LmsResultsSheet) },
 
           // --- Developer Routes (require developer role) ---
           { path: 'admin-reports', element: withDeveloper(<AdminReports />) },
