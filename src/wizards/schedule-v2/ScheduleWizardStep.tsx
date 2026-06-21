@@ -114,7 +114,6 @@ export function ScheduleWizardStep({
         seasonStartDate={startDate}
         holidays={filteredHolidays}
         playoffWeeks={playoffWeeks}
-        currentPlayWeek={0}
         onScheduleChange={onChange}
         onConfirm={handleConfirm}
         onBack={() => navigate(-1)}

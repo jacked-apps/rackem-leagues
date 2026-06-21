@@ -33,7 +33,6 @@ export const ScheduleReview: React.FC<ScheduleReviewProps> = ({
   holidays,
   bcaChampionship,
   apaChampionship,
-  currentPlayWeek = 0,
   playoffWeeks = 1,
   onScheduleChange,
   onConfirm,
@@ -336,11 +335,10 @@ export const ScheduleReview: React.FC<ScheduleReviewProps> = ({
             </div>
           )}
 
-          {/* Schedule Table */}
+          {/* Schedule Table — setup wizard never locks weeks (no lockBeforeDate) */}
           <ScheduleReviewTable
             schedule={displaySchedule}
             onToggleWeekOff={handleToggleWeekOff}
-            currentPlayWeek={currentPlayWeek}
           />
 
           {/* Navigation Buttons */}

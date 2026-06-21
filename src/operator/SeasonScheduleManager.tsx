@@ -129,7 +129,9 @@ export const SeasonScheduleManager: React.FC = () => {
           }
 
           return {
-            weekNumber: week.week_type === 'regular' ? extractWeekNumber(week.week_name) : 0,
+            // weekNumber is unused on this page now (display uses the derived
+            // label, locking uses date) — see ScheduleReviewTable/isPlayWeekLocked.
+            weekNumber: 0,
             weekName: week.week_name,
             date: week.scheduled_date,
             type,
@@ -194,31 +196,6 @@ export const SeasonScheduleManager: React.FC = () => {
   useEffect(() => {
     loadSchedule();
   }, [loadSchedule]);
-
-  /**
-   * Extract week number from week name (e.g., "Week 5" -> 5)
-   */
-  const extractWeekNumber = (weekName: string): number => {
-    const match = weekName.match(/Week (\d+)/);
-    return match ? parseInt(match[1], 10) : 0;
-  };
-
-  /**
-   * Get current week number (weeks that have been completed)
-   * Used to prevent editing past weeks
-   */
-  const getCurrentPlayWeek = (): number => {
-    const today = formatLocalDate(new Date());
-    let currentWeek = 0;
-
-    for (const week of schedule) {
-      if (week.type === 'regular' && week.date < today) {
-        currentWeek = Math.max(currentWeek, week.weekNumber);
-      }
-    }
-
-    return currentWeek;
-  };
 
   /**
    * Apply a re-flow action (add/remove a skip) to the database, then reload the
@@ -551,7 +528,7 @@ export const SeasonScheduleManager: React.FC = () => {
           <ScheduleReviewTable
             schedule={schedule}
             onToggleWeekOff={handleToggleWeekOff}
-            currentPlayWeek={getCurrentPlayWeek()}
+            lockBeforeDate={formatLocalDate(new Date())}
             allowLockedToggle
           />
         </div>

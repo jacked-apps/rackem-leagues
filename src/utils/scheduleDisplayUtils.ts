@@ -192,6 +192,42 @@ export function deriveWeekLabels(weeks: WeekForLabel[]): Map<string, string> {
  * @param weeks - Week rows from any number of seasons, each carrying its season_id
  * @returns Map of week id → display label, correct per the week's own season
  */
+/**
+ * Whether a schedule week renders as "locked" (already played) in the operator
+ * edit table. A week is locked iff it is a REGULAR week whose date is before
+ * `lockBeforeDate` (normally today).
+ *
+ * This is the position/number-free equivalent of the old lock test, which parsed
+ * "Week N" from week_name and compared it to the "current play week" (itself the
+ * highest *past* regular week by date). Because regular weeks are ordered by date,
+ * "parsed number ≤ current play week" reduces exactly to "regular week in the
+ * past" — so this yields the IDENTICAL locked set on a correctly-numbered season,
+ * and the CORRECT one on a mis-numbered season (e.g. a duplicate "Week 14"),
+ * with no week_name parsing.
+ *
+ * Dates compare as plain strings (ISO YYYY-MM-DD sorts correctly).
+ *
+ * @param week - a row carrying its type + date (UI `type`/`date` or DB shape)
+ * @param lockBeforeDate - cutoff ISO date; regular weeks strictly before it lock
+ */
+export function isPlayWeekLocked(
+  week: { type?: string; week_type?: string; date?: string; scheduled_date?: string },
+  lockBeforeDate: string,
+): boolean {
+  const type = week.type ?? week.week_type;
+  const date = week.date ?? week.scheduled_date;
+  return type === 'regular' && !!date && date < lockBeforeDate;
+}
+
+/**
+ * Derive week labels across rows that may belong to DIFFERENT seasons (e.g. a
+ * cross-league live-match feed). Week numbers are per-season — a week's position
+ * is counted only against its own season's weeks — so this groups by `season_id`,
+ * runs {@link deriveWeekLabels} per group, and merges into one weekId → label map.
+ *
+ * @param weeks - Week rows from any number of seasons, each carrying its season_id
+ * @returns Map of week id → display label, correct per the week's own season
+ */
 export function deriveWeekLabelsBySeason(
   weeks: (WeekForLabel & { season_id: string })[],
 ): Map<string, string> {
