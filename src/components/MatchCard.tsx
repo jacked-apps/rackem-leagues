@@ -14,6 +14,13 @@ interface MatchCardProps {
   match: MatchWithDetails;
   /** Optional: Show week information */
   showWeek?: boolean;
+  /**
+   * Optional: derived week label ("Week 5") to show when showWeek is set. A single
+   * match can't derive its own number (that needs the season's full week list), so
+   * the parent passes it in. Falls back to the stored week_name during the
+   * transition (removed once week_name is dropped).
+   */
+  weekLabel?: string;
   /** Optional: Highlight a specific team */
   highlightTeamId?: string;
 }
@@ -38,6 +45,7 @@ interface MatchCardProps {
 export const MatchCard: React.FC<MatchCardProps> = ({
   match,
   showWeek = false,
+  weekLabel,
   highlightTeamId,
 }) => {
   const homeTeam = match.home_team;
@@ -67,7 +75,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
       {showWeek && match.season_week && (
         <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
           <Calendar className="h-3 w-3" />
-          <span>{match.season_week.week_name}</span>
+          <span>{weekLabel ?? match.season_week.week_name}</span>
           <span className="text-muted-foreground">•</span>
           <span>
             {new Date(match.season_week.scheduled_date).toLocaleDateString()}

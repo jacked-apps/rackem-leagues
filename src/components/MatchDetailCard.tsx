@@ -23,6 +23,12 @@ interface MatchDetailCardProps {
    * The winner chip and all score/threshold data stay either way.
    */
   playerView?: boolean;
+  /**
+   * Derived week label ("Week 5") from the parent, which has the season's full
+   * week list. A self-contained single-match card can't derive its own number;
+   * falls back to the stored week_name until that column is dropped.
+   */
+  weekLabel?: string;
 }
 
 /**
@@ -42,7 +48,7 @@ interface MatchDetailCardProps {
  * @example
  * <MatchDetailCard matchId="match-uuid-here" />
  */
-export function MatchDetailCard({ matchId, playerView = false }: MatchDetailCardProps) {
+export function MatchDetailCard({ matchId, playerView = false, weekLabel }: MatchDetailCardProps) {
   const { data: match, isLoading, error } = useMatchById(matchId);
 
   // Helper: Determine match winner
@@ -99,7 +105,7 @@ export function MatchDetailCard({ matchId, playerView = false }: MatchDetailCard
         {/* Match number — operator/debug only. */}
         {!playerView && <div className="font-semibold">Match #{match.match_number}</div>}
         <div className="text-muted-foreground">
-          {match.season_week?.week_name || 'Week ?'}
+          {weekLabel ?? match.season_week?.week_name ?? 'Week ?'}
         </div>
         <div className="text-muted-foreground">
           {match.season_week?.scheduled_date

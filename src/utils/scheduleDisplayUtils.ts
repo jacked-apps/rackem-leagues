@@ -182,3 +182,29 @@ export function deriveWeekLabels(weeks: WeekForLabel[]): Map<string, string> {
 
   return labels;
 }
+
+/**
+ * Derive week labels across rows that may belong to DIFFERENT seasons (e.g. a
+ * cross-league live-match feed). Week numbers are per-season — a week's position
+ * is counted only against its own season's weeks — so this groups by `season_id`,
+ * runs {@link deriveWeekLabels} per group, and merges into one weekId → label map.
+ *
+ * @param weeks - Week rows from any number of seasons, each carrying its season_id
+ * @returns Map of week id → display label, correct per the week's own season
+ */
+export function deriveWeekLabelsBySeason(
+  weeks: (WeekForLabel & { season_id: string })[],
+): Map<string, string> {
+  const bySeason = new Map<string, (WeekForLabel & { season_id: string })[]>();
+  for (const week of weeks) {
+    const group = bySeason.get(week.season_id) ?? [];
+    group.push(week);
+    bySeason.set(week.season_id, group);
+  }
+
+  const labels = new Map<string, string>();
+  for (const group of bySeason.values()) {
+    for (const [id, label] of deriveWeekLabels(group)) labels.set(id, label);
+  }
+  return labels;
+}

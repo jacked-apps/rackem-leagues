@@ -33,6 +33,7 @@ import type { MatchWithDetails } from '@/types';
 import { logger } from '@/utils/logger';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { WeekEditorView } from '@/components/schedule/WeekEditorView';
+import { deriveWeekLabels } from '@/utils/scheduleDisplayUtils';
 import type { MatchEditState, TeamVenueMap } from '@/components/schedule/useWeekEditor';
 import type { TeamOption } from '@/components/schedule/TeamSelect';
 import type { VenueOption } from '@/components/schedule/VenueSelect';
@@ -145,6 +146,13 @@ export const SeasonSchedulePage: React.FC = () => {
   // Check if season has a BYE team (any REGULAR week match has null home or away team)
   // This happens when there's an odd number of teams
   // Note: Playoff matches also have null team IDs (TBD), so we exclude those
+  // Week numbers are DERIVED from each week's position by date — never the stored
+  // week_name (which can drift/collide, e.g. a duplicate "Week 14").
+  const weekLabels = useMemo(
+    () => deriveWeekLabels(schedule.map(({ week }) => week)),
+    [schedule],
+  );
+
   const hasByeTeam = useMemo(() => {
     return schedule.some(({ week, matches }) =>
       week.week_type === 'regular' &&
@@ -344,6 +352,7 @@ export const SeasonSchedulePage: React.FC = () => {
                 <WeekEditorView
                   key={week.id}
                   week={week}
+                  weekLabel={weekLabels.get(week.id)}
                   initialMatches={convertMatchesToEditState(matches)}
                   teams={teamOptions}
                   venues={venueOptions}
@@ -367,7 +376,7 @@ export const SeasonSchedulePage: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <CardTitle className="text-lg">
-                        {week.week_type === 'blackout' ? week.week_name : week.week_name}
+                        {weekLabels.get(week.id) ?? week.week_name}
                       </CardTitle>
                       {weekStyle.badge && (
                         <span className={`text-xs font-semibold px-2 py-1 rounded ${weekStyle.badgeColor}`}>
