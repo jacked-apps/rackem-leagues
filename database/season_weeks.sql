@@ -9,15 +9,19 @@ CREATE TABLE IF NOT EXISTS season_weeks (
 
   -- Date and name
   scheduled_date DATE NOT NULL,
-  week_name TEXT NOT NULL, -- "Week 1", "Thanksgiving", "Playoffs", "Season End Break"
+  week_name TEXT NOT NULL, -- legacy display label; numbers are now DERIVED from
+                           -- position (see deriveWeekLabels). Dropped in Phase C.
 
-  -- Week type determines how this date is treated
-  week_type VARCHAR(20) NOT NULL CHECK (week_type IN ('regular', 'blackout', 'playoffs', 'season_end_break')),
+  -- Week type determines how this date is treated. A season-end break is a
+  -- blackout labelled "Week Off" (the season_end_break type was collapsed into
+  -- blackout in migration 20260621000000).
+  week_type VARCHAR(20) NOT NULL CHECK (week_type IN ('regular', 'blackout', 'playoffs')),
 
   -- Completion tracking (prevents editing past weeks)
   week_completed BOOLEAN NOT NULL DEFAULT false,
 
-  -- Optional notes for operators
+  -- A blackout's display label (holiday name / "Week Off"). Regular & playoff
+  -- labels are derived, not stored.
   notes TEXT,
 
   -- Metadata
@@ -122,6 +126,6 @@ CREATE POLICY "Public can view active season weeks"
 COMMENT ON TABLE season_weeks IS 'Unified calendar for season - includes play weeks, blackout dates, season-end breaks, and playoffs';
 COMMENT ON COLUMN season_weeks.scheduled_date IS 'The date for this calendar entry - use this for sorting';
 COMMENT ON COLUMN season_weeks.week_name IS 'Display name: "Week 1", "Thanksgiving", "Playoffs", etc.';
-COMMENT ON COLUMN season_weeks.week_type IS 'Type: regular (league play), blackout (date skipped), playoffs, or season_end_break';
+COMMENT ON COLUMN season_weeks.week_type IS 'Type: regular (league play), blackout (date skipped — incl. season-end "Week Off"), or playoffs';
 COMMENT ON COLUMN season_weeks.week_completed IS 'True when all matches scored and week is locked from editing';
 COMMENT ON COLUMN season_weeks.notes IS 'Optional notes for operators (e.g., venue changes, special events)';

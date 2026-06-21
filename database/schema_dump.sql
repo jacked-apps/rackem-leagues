@@ -1755,7 +1755,7 @@ CREATE TABLE IF NOT EXISTS "public"."season_weeks" (
     "notes" "text",
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
-    CONSTRAINT "season_weeks_week_type_check" CHECK ((("week_type")::"text" = ANY (ARRAY[('regular'::character varying)::"text", ('blackout'::character varying)::"text", ('playoffs'::character varying)::"text", ('season_end_break'::character varying)::"text"])))
+    CONSTRAINT "season_weeks_week_type_check" CHECK ((("week_type")::"text" = ANY (ARRAY[('regular'::character varying)::"text", ('blackout'::character varying)::"text", ('playoffs'::character varying)::"text"])))
 );
 
 
