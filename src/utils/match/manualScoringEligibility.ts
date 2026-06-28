@@ -12,6 +12,7 @@
  */
 
 import type { MatchWithDetails } from '@/types/schedule';
+import { isByeMatch } from '@/utils/match/isByeMatch';
 
 /**
  * Can this match be opened in the manual-scoring (enter/continue) surface?
@@ -45,13 +46,12 @@ export function isMatchEligibleForReview(match: MatchWithDetails): boolean {
   return (finished || reopenedForCorrection) && hasTwoRealTeams(match);
 }
 
-/** Both sides are real teams (not a BYE). */
+/** Both sides are present AND neither is the BYE (the one shared definition). */
 function hasTwoRealTeams(match: MatchWithDetails): boolean {
   return (
     !!match.home_team &&
-    match.home_team.status !== 'bye' &&
     !!match.away_team &&
-    match.away_team.status !== 'bye'
+    !isByeMatch(match.home_team, match.away_team)
   );
 }
 

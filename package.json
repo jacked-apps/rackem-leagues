@@ -17,6 +17,7 @@
     "db:types": "supabase gen types typescript --local > src/types/database.types.ts",
     "db:start": "supabase start",
     "db:stop": "supabase stop",
+    "clone-prod": "node scripts/clone-prod-to-local.mjs",
     "icons:generate-env": "node scripts/generate-env-icons.mjs",
     "e2e:setup": "node scripts/e2e-setup.mjs",
     "e2e:verify-auth": "node scripts/e2e-verify-auth.mjs",
