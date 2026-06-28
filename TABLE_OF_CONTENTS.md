@@ -204,6 +204,7 @@ Node-only tooling the operator runs manually (not part of the app bundle).
 | `scripts/clean-rulebook/writeModules.ts` | Emit the `index.ts` + per-game `.ts` modules |
 | `scripts/clean-rulebook/verifyRulebook.ts` | Pre-commit sanity checks on the cleaned data |
 | `scripts/clean-rulebook/games.ts` | Canonical list of games (slug, display name, section number) |
+| `scripts/clone-prod-to-local.mjs` | **Clone prod public data → local DB over the API** (`pnpm clone-prod`, needs `PROD_SERVICE_ROLE_KEY`). Reads prod via the `service_role` key (no DB password — Supabase's is write-only) and writes ONLY to local Postgres (`127.0.0.1:54322`, hardcoded). Introspects local schema (skips generated cols), truncates each public table, then copies rows with FK checks + triggers off (`session_replication_role=replica`). Public-only (no `public→auth` FKs); local logins keep working. Read-only on prod; no prod changes. |
 | `scripts/e2e-setup.mjs` | E2E foundation seed runner. Wired to `pnpm e2e:setup`. Validates `E2E_LOCAL_OK=true`, then pipes `database/e2e_seed.sql` into local Supabase via the `pg` client. |
 | `scripts/e2e-verify-auth.mjs` | E2E bcrypt-hash verification gate. Wired to `pnpm e2e:verify-auth`. Confirms the committed hash matches `E2E_PW` via Postgres `crypt()`. |
 | `scripts/e2e-verify-factories.ts` | E2E factory smoke-check. Wired to `pnpm e2e:verify-factories`. Calls each factory and asserts the resulting DB rows. |
