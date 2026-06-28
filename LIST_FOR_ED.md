@@ -90,22 +90,11 @@ from this list when un-gated.
   staging it still shows there; un-gate (remove both `!isProduction` guards) when
   it's ready for users.
 
-- **LMS Results Sheet** — printable per-match results sheet for hand-entry into
-  CSI / FargoRate LMS (no LMS import/API exists). Gated by `!isProduction` in
-  `src/navigation/NavRoutes.tsx` (route `league/:leagueId/match/:matchId/lms-sheet`);
-  reached via the **printer icon** on a completed match in the "Score a Match"
-  picker. MVP layout (games in order, full names + winner) — **format will be
-  refined after the first LO (Ben) says what's easiest for LMS entry**, so treat
-  the current layout as a draft.
-Workflow** in `CLAUDE.md`). Each gets reviewed on staging, then un-gated — and
-removed from this list when un-gated.
-
-- **LO Manual Scoring + Match Review/Correction** — gated by `!isProduction` in
-  `src/navigation/NavRoutes.tsx` (the `manual-scoring` / `match-review` routes).
-  Two flows: enter a played-on-paper match from blank, and review/correct an
-  already-scored match (vacate-and-rescore). Reached via the **"Score a Match"**
-  button on a league's Schedule card. **Verify on staging:** score a match from
-  scratch, then open a completed match and correct a game → re-finalize.
+_(LO Manual Scoring + Match Review/Correction and the LMS Results Sheet were
+un-gated and went LIVE in production 2026-06-21 — see `feat`/`fix` un-gate
+commit. The half-gated bug that prompted it: the "Score a Match" button +
+printer icon were ungated while their routes were `!isProduction`, so they
+404'd in production.)_
 
 ---
 
