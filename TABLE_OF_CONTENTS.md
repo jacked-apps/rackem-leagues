@@ -679,7 +679,7 @@ The workshop building. One sub-folder per module room. Each room owns a list pag
 - `components/ChangeSeasonLengthDialog.tsx` - Operator dialog to lengthen/shorten an existing season (before the week-5 lock); calls `applySeasonLengthChange`
 - `../utils/seasonLengthEdit.ts` - Pure season-length eligibility (week-5 lock) + [10,52] bounds/classification
 - `../utils/applySeasonLengthChange.ts` - Lengthen (append weeks + generate matches) / shorten (guarded tail delete) for an existing season
-- `SeasonSchedulePage.tsx` - Season schedule page
+- `SeasonSchedulePage.tsx` - Season matchups page. Operator-only **"Export for LMS"** button downloads the schedule as a two-sheet .xlsx matching CSI/FargoRate LMS's import (see `/utils/lmsExport/`).
 
 **Team & Venue Management**
 - `TeamManagement.tsx` - The standalone `/manage-teams` edit page — now a ~100-line thin wrapper: page chrome (header + footer) around `TeamManagementContent`. (Decomposed from an 860-line god-component; advances LIST_FOR_ED #5.)
@@ -1191,6 +1191,12 @@ Lineup-page workhorse hooks. Extracted from the monolithic `useMatchLineup` so e
 - `scheduleDisplayUtils.ts` - Schedule display helpers
 - `matchupTables.ts` - Matchup table utilities
 - `conflictDetectionUtils.ts` - Schedule conflict detection; also exports `extractHolidayName` (strips a conflict name's " (...)" timing suffix → bare label, for seeding a week-off reason). Tested in `conflictDetectionUtils.extractHolidayName.test.ts`.
+
+#### LMS Schedule Export (`/utils/lmsExport/`, `/utils/xlsx/`, `/utils/download.ts`)
+- `lmsExport/buildLmsSchedule.ts` - **Pure LMS export resolver.** Turns a season schedule into LMS's shape: teams numbered 1..N by case-insensitive alphabetical name (bye included, normalized to "Bye Team" — matches LMS's own numbering), a play-week grid (`away @ home` per match; blackout/break/playoff-TBD + NULL-team matches skipped), and a verification stats block (home/away counts + opponent frequency) mirroring LMS "View Statistics". Minimal structural input (not tied to either `WeekSchedule` type). Tested in `__tests__/buildLmsSchedule.test.ts` (5).
+- `lmsExport/lmsScheduleToXlsx.ts` - Serializes the export to LMS's exact two-sheet .xlsx (Schedule grid + Teams legend, no headers, Schedule-then-Teams order), decoded from a real LMS export sample. Stats deliberately NOT written (LMS computes its own). Tested via unzip round-trip in `__tests__/lmsScheduleToXlsx.test.ts` (3).
+- `xlsx/writeXlsx.ts` - **Minimal generic .xlsx writer.** Cell matrices → multi-sheet workbook `Uint8Array`; numbers as numeric cells, strings as inline strings (no shared-strings/styles). Hand-written OpenXML parts + `fflate` zip (few-KB bundle cost vs a full Excel lib). Reusable.
+- `download.ts` - Browser download helpers: `downloadTextFile` (CSV/text) + `downloadBytes` (binary, e.g. generated .xlsx). Object-URL + hidden-anchor, no network.
 
 #### Match Running Totals (`/utils/match/`)
 - `isByeMatch.ts` - **The one "this matchup is a BYE, not a real match" predicate.** `isByeMatch(home, away)` → true when either side is `status='bye'`. Single source of truth every match-machinery guard keys on (table assignment, lineup entry, manual-scoring eligibility) so they can't drift. `manualScoringEligibility.hasTwoRealTeams` and the lineup page both route through it. Tested in `__tests__/isByeMatch.test.ts` (6 cases).
