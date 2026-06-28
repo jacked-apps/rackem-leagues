@@ -13,6 +13,8 @@ import { useParams, Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/api/queryKeys';
 import { MatchPhaseGuard } from '@/components/match/MatchPhaseGuard';
+import { ByeWeekNotice } from '@/components/lineup/ByeWeekNotice';
+import { isByeMatch } from '@/utils/match/isByeMatch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Users } from 'lucide-react';
 import {
@@ -914,6 +916,14 @@ function MatchLineupBody() {
   // After renderState check, all data is guaranteed to be defined
   // TypeScript doesn't infer this, so we assert non-null
   const match = matchData!;
+
+  // A bye matchup is not a real match — one side is the system BYE team, so
+  // there's no opponent to play and no lineup to build. Show the bye notice
+  // instead of the lineup builder (and never render a lineup against the
+  // roster-less bye). Keys on the shared isByeMatch definition.
+  if (isByeMatch(match.home_team, match.away_team)) {
+    return <ByeWeekNotice userTeamId={userTeamId} />;
+  }
 
   // Get my lineup (for tiebreaker mode player source)
   const myLineup = isHomeTeam

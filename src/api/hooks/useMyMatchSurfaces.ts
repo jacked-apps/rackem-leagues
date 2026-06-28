@@ -25,6 +25,7 @@ import { REALTIME_SUBSCRIBE_STATES } from '@supabase/supabase-js';
 import { supabase } from '@/supabaseClient';
 import { getMemberTeamIds, getMyMatchMatches } from '@/api/queries/matches';
 import { formatLocalDate, parseLocalDate } from '@/utils/formatters';
+import { isByeMatch } from '@/utils/match/isByeMatch';
 import type { MatchWithDetails } from '@/types';
 
 /**
@@ -84,6 +85,11 @@ const EMPTY_NAV: MyMatchNavState = {
  *   1 = live (`in_progress`), 2 = today's `scheduled`, 3 = past-due `scheduled`.
  */
 export function classifyTier(match: MyMatchRow, today: string): 1 | 2 | 3 | null {
+  // A BYE matchup is not a real match — never surface it as an actionable "My
+  // Match" nav destination or drawer row, even if it's today or past-due (the
+  // window before the daily auto-forfeit sweep settles it). Keys on the shared
+  // isByeMatch definition.
+  if (isByeMatch(match.home_team, match.away_team)) return null;
   if (match.status === 'in_progress') return 1;
   if (match.status === 'scheduled') {
     const date = match.scheduled_date ?? null;

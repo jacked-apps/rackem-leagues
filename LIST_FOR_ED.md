@@ -1405,3 +1405,70 @@ re-point).
 data risk, but "edit one matchup = redo the wizard" is rough. Its own
 branch + a small plan.
 
+---
+
+## 38. "Verify Scores" Button Is Available to Every Scoreboard Viewer (should be the two match teams only)
+
+**Discovered:** 2026-06-14 (Ed, reviewing the live scoring page)
+**Severity:** MEDIUM — wrong-actor can finalize a match's verification; no
+data corruption, but it lets a non-participant verify scores they have no
+standing to verify.
+
+**The problem:** At the end of a match the live scoring page swaps its header
+for `MatchEndVerification.tsx`, which renders a **"Verify Scores"** button.
+That button is `disabled={userTeamVerified || isVerifying}`
+(`src/components/scoring/MatchEndVerification.tsx:715-728`) — it is **never
+gated on whether the current user is actually on one of the two teams in this
+match.** So any player who can open the live scoreboard (spectator, a player
+from a different match/league, a guest) sees a live, clickable Verify button.
+The component's own docstring claims *"Verify Scores button (enabled only for
+user's team)"* (line 11) — so the intent was always to gate it; the code just
+never did.
+
+**Why it reads as "part of the scoreboard":** the verify UI lives *inside*
+the scoreboard/end-of-match header component, so it inherits the scoreboard's
+audience. The fix is to gate the actor, not necessarily to relocate the UI.
+
+**Fix direction:** add a "is the current user a participant in THIS match"
+check (on one of the two teams' rosters / captains) and only render or enable
+Verify for them. Consistent with [[feedback_gate_ui_relax_rls]] — gate the
+button in the UI; don't add server-side identity guards. Note the nuance:
+"anyone on the scoring page is a scorekeeper" still holds for *entering
+scores*; **verification** is the narrower act that should belong to the two
+teams playing.
+
+**Files:** `src/components/scoring/MatchEndVerification.tsx` (button + the
+`userTeamVerified` / `onVerify` wiring), and wherever it's mounted
+(`src/player/ScoreMatch.tsx`).
+
+---
+
+## 39. Dark-Mode Button Contrast on the Scoring Page (text barely visible)
+
+**Discovered:** 2026-06-14 (Ed, reviewing the live scoring page)
+**Severity:** MEDIUM — accessibility/readability; some scoring-page buttons
+have text that's barely legible in dark mode. Ed did an earlier contrast pass
+but some spots were missed.
+
+**The problem:** On the scoring page, certain buttons render with poor
+text-on-background contrast in dark mode (text nearly invisible). Likely the
+same class of bug as [[feedback_dark_mode_fixed_bg_text_colors]] — a
+fixed-color background paired with a theme-variable text color (or vice
+versa), so the pairing inverts and washes out under the dark theme.
+
+**Fix direction:** sweep every button on the scoring surface and check its
+foreground/background pairing in **both** light and dark mode. Anywhere a
+fixed background (e.g. `bg-*-50`, a status color) is used, pair it with a
+**fixed** readable text color rather than `text-foreground` /
+`text-muted-foreground` (which flip with the theme). Keep
+[[user_colorblind]] in mind — state must not be conveyed by color alone, so
+while fixing contrast, confirm any color-coded button also carries a
+text/icon label.
+
+**Files likely involved (scoring surface):**
+`src/components/scoring/UnifiedScoreboard.tsx`,
+`src/components/scoring/ThreeVThreeScoreboard.tsx`,
+`src/components/scoring/GamesList.tsx`,
+`src/components/scoring/MatchEndVerification.tsx`,
+`src/player/ScoreMatch.tsx` — plus any shared scoring button helpers.
+
