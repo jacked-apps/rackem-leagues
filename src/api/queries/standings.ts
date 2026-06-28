@@ -143,12 +143,18 @@ export async function fetchSeasonStandings(seasonId: string): Promise<TeamStandi
     }
   });
 
-  // Convert to array and add team names
+  // Convert to array and add team names. Only ACTIVE teams get a standings row:
+  // the name map above is active-only, so a teamId missing from it is a
+  // bye / withdrawn / forfeited team — its matches are still counted toward the
+  // active opponent's record above, but it must not appear as a row of its own
+  // (that was surfacing as "Unknown Team").
   const standings: TeamStanding[] = [];
   teamStatsMap.forEach((stats, teamId) => {
+    const teamName = teamNames.get(teamId);
+    if (!teamName) return; // non-active team (bye/withdrawn/forfeited) — no row
     standings.push({
       teamId,
-      teamName: teamNames.get(teamId) || 'Unknown Team',
+      teamName,
       matchWins: stats.wins,
       matchLosses: stats.losses,
       points: stats.points,
