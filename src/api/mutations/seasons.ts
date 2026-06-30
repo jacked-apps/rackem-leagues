@@ -161,12 +161,15 @@ export async function createSeason(params: CreateSeasonParams): Promise<Season> 
 
     createdSeasonId = newSeason.id;
 
-    // Step 2: Prepare week records
+    // Step 2: Prepare week records. Off weeks (holidays + season-end break) are
+    // all `blackout`; their human label lives in `notes`. Regular/playoff labels
+    // are DERIVED from position (deriveWeekLabels), never stored. week_name is a
+    // transitional NOT-NULL value, dropped in Phase C.
     const allWeeks = params.schedule.map(week => {
-      let weekType: 'regular' | 'playoffs' | 'blackout' | 'season_end_break';
+      let weekType: 'regular' | 'playoffs' | 'blackout';
 
       if (week.type === 'week-off') {
-        weekType = week.weekName === 'Season End Break' ? 'season_end_break' : 'blackout';
+        weekType = 'blackout';
       } else if (week.type === 'playoffs') {
         weekType = 'playoffs';
       } else {
@@ -179,7 +182,7 @@ export async function createSeason(params: CreateSeasonParams): Promise<Season> 
         week_name: week.weekName,
         week_type: weekType,
         week_completed: false,
-        notes: null,
+        notes: weekType === 'blackout' ? week.weekName : null,
       };
     });
 

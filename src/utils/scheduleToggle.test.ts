@@ -30,14 +30,13 @@ describe('decideToggle', () => {
     expect(decideToggle(week({ dbWeekType: 'blackout' }))).toEqual({ action: 'remove' });
   });
 
-  it('removes a season-end break (also a skip)', () => {
-    expect(decideToggle(week({ dbWeekType: 'season_end_break' }))).toEqual({ action: 'remove' });
-  });
+  // A season-end break is now just a blackout (collapsed type), so removing one
+  // is covered by 'removes a blackout skip' above.
 
-  it('inserts a season-end break on a playoff week (no reason needed)', () => {
+  it('inserts a season-end break (a labelled blackout) on a playoff week (no reason needed)', () => {
     expect(decideToggle(week({ dbWeekType: 'playoffs' }))).toEqual({
       action: 'add',
-      skipType: 'season_end_break',
+      skipType: 'blackout',
       reason: 'Season End Break',
     });
   });

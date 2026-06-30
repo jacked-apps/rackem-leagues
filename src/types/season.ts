@@ -163,7 +163,8 @@ export interface WeekEntry {
   dbId?: string;           // Database ID (for editing existing weeks)
   weekCompleted?: boolean; // Whether this week has been completed
   isModified?: boolean;    // Whether this week has been modified in the UI
-  dbWeekType?: 'regular' | 'blackout' | 'playoffs' | 'season_end_break'; // Original DB week_type
+  dbWeekType?: 'regular' | 'blackout' | 'playoffs'; // Original DB week_type
+  notes?: string | null; // A blackout's label (holiday name / "Season End Break")
 }
 
 /**

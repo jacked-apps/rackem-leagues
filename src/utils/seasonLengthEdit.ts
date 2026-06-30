@@ -19,7 +19,7 @@ export const MAX_SEASON_LENGTH = 52;
 export interface LengthEditWeek {
   /** scheduled_date, YYYY-MM-DD. */
   date: string;
-  /** DB week_type ('regular' | 'blackout' | 'playoffs' | 'season_end_break'). */
+  /** DB week_type ('regular' | 'blackout' | 'playoffs'). */
   weekType: string;
 }
 

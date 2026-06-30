@@ -144,8 +144,9 @@ export const ScheduleReview: React.FC<ScheduleReviewProps> = ({
     // Clear the saved data flag to ensure regeneration happens
     setHasLoadedSavedData(false);
 
-    // Special handling for Season End Break - decrement count
-    if (week.weekName === 'Season End Break') {
+    // Special handling for Season End Break - decrement count (label in notes,
+    // falls back to weekName for fresh in-memory weeks)
+    if ((week.notes ?? week.weekName) === 'Season End Break') {
       setAddSeasonEndBreak(Math.max(0, addSeasonEndBreak - 1));
       return;
     }

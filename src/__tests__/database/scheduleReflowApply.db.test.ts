@@ -120,7 +120,7 @@ beforeAll(async () => {
     [ids.w1, '2026-07-01', 'Week 1', 'regular'],
     [ids.w2, '2026-07-08', 'Week 2', 'regular'],
     [ids.w3, '2026-07-15', 'Week 3', 'regular'],
-    [ids.wBreak, '2026-07-22', 'Season End Break', 'season_end_break'],
+    [ids.wBreak, '2026-07-22', 'Season End Break', 'blackout'],
     [ids.wPlayoff, '2026-07-29', 'Playoffs', 'playoffs'],
   ];
   for (const [id, date, name, type] of weekRows) {
@@ -172,7 +172,7 @@ describe('applyBlackoutReflow — DB round-trip', () => {
       { date: '2026-07-01', type: 'regular' }, // Week 1 unchanged
       { date: '2026-07-08', type: 'blackout' }, // new skip
       { date: '2026-07-15', type: 'regular' }, // Week 2
-      { date: '2026-07-22', type: 'season_end_break' }, // fixed skip
+      { date: '2026-07-22', type: 'blackout' }, // fixed skip (season-end break = blackout)
       { date: '2026-07-29', type: 'regular' }, // Week 3 (flowed around the break)
       { date: '2026-08-05', type: 'playoffs' }, // Playoffs
     ]);
@@ -203,7 +203,7 @@ describe('applyBlackoutReflow — DB round-trip', () => {
       { date: '2026-07-01', type: 'regular' },
       { date: '2026-07-08', type: 'regular' },
       { date: '2026-07-15', type: 'regular' },
-      { date: '2026-07-22', type: 'season_end_break' },
+      { date: '2026-07-22', type: 'blackout' },
       { date: '2026-07-29', type: 'playoffs' },
     ]);
 

@@ -33,7 +33,9 @@ export const ScheduleWeekRow: React.FC<ScheduleWeekRowProps> = ({
   const hasConflicts = week.conflicts.length > 0;
   const isWeekOff = week.type === 'week-off';
   const isPlayoffs = week.type === 'playoffs';
-  const isSeasonEndBreak = week.weekName === 'Season End Break';
+  // A season-end break is a blackout labelled "Season End Break" (label lives in
+  // notes; falls back to weekName for fresh in-memory wizard weeks).
+  const isSeasonEndBreak = (week.notes ?? week.weekName) === 'Season End Break';
 
   // Locked = a regular week already in the past. Position/number-free (no
   // week_name parsing) — see isPlayWeekLocked. No cutoff (setup wizard) = nothing

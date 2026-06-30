@@ -650,7 +650,7 @@ BEGIN
     v_season_id,
     CURRENT_DATE + (16 * INTERVAL '7 days'),
     'Season End Break',
-    'season_end_break'
+    'blackout'
   );
 
   -- Playoffs (week 18 by date — 2 matches).
@@ -926,7 +926,7 @@ BEGIN
       v_season_ids[v_l],
       v_start_date + (16 * INTERVAL '7 days'),
       'Season End Break',
-      'season_end_break'
+      'blackout'
     );
 
     INSERT INTO season_weeks (season_id, scheduled_date, week_name, week_type)

@@ -37,7 +37,7 @@ interface WeekRow {
   id: string;
   scheduled_date: string;
   week_name: string;
-  week_type: 'regular' | 'blackout' | 'playoffs' | 'season_end_break';
+  week_type: 'regular' | 'blackout' | 'playoffs';
 }
 
 const byDate = (a: { scheduled_date: string }, b: { scheduled_date: string }) =>
@@ -170,13 +170,22 @@ async function lengthen(
     positioned.map((t) => [t.schedule_position, t]),
   );
 
-  const blackoutDates = new Set(weeks.filter((w) => w.week_type === 'blackout').map((w) => w.scheduled_date));
-  const trailing = weeks
-    .filter((w) => w.week_type === 'season_end_break' || w.week_type === 'playoffs')
-    .sort(byDate);
+  // The "trailing" tail (season-end break + playoffs) is identified by POSITION —
+  // everything dated after the last regular week — not by week_type. (The
+  // season-end break is now a `blackout`, indistinguishable from a mid-season
+  // holiday by type; its date is what marks it as the tail.) Mid-season blackouts
+  // are the skip dates, i.e. blackouts NOT in the trailing region.
+  const lastRegularDate = regulars[regulars.length - 1].scheduled_date;
+  const trailing = weeks.filter((w) => w.scheduled_date > lastRegularDate).sort(byDate);
+  const trailingDateSet = new Set(trailing.map((w) => w.scheduled_date));
+  const blackoutDates = new Set(
+    weeks
+      .filter((w) => w.week_type === 'blackout' && !trailingDateSet.has(w.scheduled_date))
+      .map((w) => w.scheduled_date),
+  );
 
   // Walk forward from the last regular week: new regular weeks, then break/playoff.
-  let cursor = regulars[regulars.length - 1].scheduled_date;
+  let cursor = lastRegularDate;
   const newRegularDates: string[] = [];
   for (let j = 0; j < delta; j++) {
     cursor = nextPlayableNight(cursor, blackoutDates);
@@ -194,13 +203,16 @@ async function lengthen(
 
   // 2. Insert each new regular week + its matches (continuing the rotation).
   for (let j = 0; j < delta; j++) {
-    const weekNumber = regulars.length + j + 1;
     const { data: newWeek, error: insErr } = await supabase
       .from('season_weeks')
       .insert({
         season_id: seasonId,
         scheduled_date: newRegularDates[j],
-        week_name: `Week ${weekNumber}`,
+        // Transitional placeholder: the week NUMBER is derived from position
+        // (deriveWeekLabels), never stored. This used to write `Week ${count+j+1}`,
+        // the formula that collided into a duplicate "Week 14". Column dropped in
+        // Phase C.
+        week_name: 'Week',
         week_type: 'regular',
         week_completed: false,
       })
@@ -263,11 +275,17 @@ async function shorten(
   const { error: delWeekErr } = await supabase.from('season_weeks').delete().in('id', removeIds);
   if (delWeekErr) return failPartial(seasonId, delWeekErr.message);
 
-  // Pull break/playoff in, dated from the new last regular week.
-  const blackoutDates = new Set(weeks.filter((w) => w.week_type === 'blackout').map((w) => w.scheduled_date));
-  const trailing = weeks
-    .filter((w) => w.week_type === 'season_end_break' || w.week_type === 'playoffs')
-    .sort(byDate);
+  // Pull break/playoff in, dated from the new last regular week. The tail is
+  // identified by POSITION (dated after the original last regular week), not by
+  // week_type — the season-end break is now a `blackout` (see lengthen()).
+  const lastRegularDate = regulars[regulars.length - 1].scheduled_date;
+  const trailing = weeks.filter((w) => w.scheduled_date > lastRegularDate).sort(byDate);
+  const trailingDateSet = new Set(trailing.map((w) => w.scheduled_date));
+  const blackoutDates = new Set(
+    weeks
+      .filter((w) => w.week_type === 'blackout' && !trailingDateSet.has(w.scheduled_date))
+      .map((w) => w.scheduled_date),
+  );
 
   let cursor = regulars[regulars.length - delta - 1].scheduled_date;
   const trailingDates: string[] = [];
