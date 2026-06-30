@@ -4,6 +4,35 @@ Tasks and refactoring items for Ed to work on.
 
 ---
 
+## 🧪 2026-06-30 — Schedule ⇄ Matchup decoupling: TEST A+B, then Phase C
+
+**The two-"Week 14" bug is fixed** on branch `feat/schedule-matchup-decoupling`
+(the duplicate came from *storing* the week number, written by several code
+paths that disagreed). The refactor stops storing it and **derives "Week N" from
+each week's date position**. Plan:
+`docs/plans/2026-06-14-001-refactor-schedule-matchup-decoupling-plan.md`.
+
+**Done + in the PR (Phases A + B):**
+- A — every display surface + the operator edit-lock derive Week N from position.
+- B — migration `20260621000000`: blackout labels moved to the `notes` column,
+  the redundant `season_end_break` week type collapsed into `blackout`; all
+  writers + the reflow/toggle chain aligned.
+
+**👉 YOU NEED TO DO: verify A+B on staging.** Log in, open a league's schedule
+(operator schedule page, the manage/dates page, and a team's schedule) and
+confirm: weeks read **consecutive Week 1…N with no duplicate**, blackouts show
+their label, the season-length lengthen/shorten still works. The Lucky Cue
+9-ball Summer 2026 season is the one that had two "Week 14"s.
+
+**HELD for a follow-up PR — Phase C (drop the `week_name` column).** This is the
+final cleanup (remove the now-dead column + its ~110 references). The plan
+**deliberately sequences it AFTER A+B are staging-verified** — once the column
+is gone there's no fallback if a reader was missed. So: **once you've verified
+A+B above, tell Claude to do Phase C.** Until then the column stays (harmless —
+nothing reads it).
+
+---
+
 ## 📋 2026-06-13 — league-page wiring + playoff/seed session follow-ups
 
 Shipped this session (PRs awaiting Jack): #229 playoff review page (merged),
