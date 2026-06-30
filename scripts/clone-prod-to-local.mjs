@@ -12,9 +12,13 @@
  *   - Writes go ONLY to your LOCAL Supabase Postgres (127.0.0.1:54322) — the
  *     connection is hardcoded to localhost, so it can never reach production.
  *
- * Scope: PUBLIC schema only. There are no `public → auth` foreign keys, so the
- * copy loads cleanly without auth data; keep logging in locally as usual
- * (e.g. dev@test.com). Prod auth users / OAuth are intentionally NOT copied.
+ * Scope: PUBLIC schema only. Prod auth users / OAuth are intentionally NOT
+ * copied. Because the copy overwrites `members.user_id` with prod's login ids,
+ * the script finishes by RE-LINKING each member to the LOCAL auth login that
+ * owns the same email (your local login survives the clone), so you can keep
+ * acting as yourself (LO/admin) immediately. Members with no local login by
+ * email stay unlinked until you sign up + re-run (or run
+ * database/dev_relink_lo_login.sql).
  *
  * Requires:
  *   1. Local Supabase running:  pnpm db:start
@@ -135,6 +139,29 @@ async function insertRows(table, columns, rows) {
   }
 }
 
+/**
+ * Re-point each cloned member at the LOCAL auth login that owns the same email.
+ *
+ * The clone copies the PUBLIC schema only — prod `auth` users are never brought
+ * over, and the load just overwrote `members.user_id` with prod's login ids. The
+ * app resolves "who am I" by `members.user_id = auth.uid()`, so without this step
+ * you can't act as yourself (LO/admin) after a clone. Your LOCAL login survives
+ * the clone (the `auth` schema isn't truncated), so this matches by email and
+ * repoints. Idempotent. Same logic as database/dev_relink_lo_login.sql.
+ *
+ * @returns number of member rows repointed.
+ */
+async function relinkAuth() {
+  const res = await local.query(
+    `update public.members m
+        set user_id = u.id
+       from auth.users u
+      where lower(m.email) = lower(u.email)
+        and m.user_id is distinct from u.id`,
+  );
+  return res.rowCount;
+}
+
 async function main() {
   const { tables, cols } = await localSchema();
   console.log(`Cloning ${tables.length} public tables from prod → local…\n`);
@@ -154,7 +181,17 @@ async function main() {
       total += rows.length;
       console.log(`  ${t}: ${rows.length}`);
     }
-    console.log(`\n✅ Loaded ${total} rows into local. Refresh your browser.`);
+    console.log(`\n✅ Loaded ${total} rows into local.`);
+
+    // Auth isn't cloned, so re-point each member at its matching LOCAL login.
+    const relinked = await relinkAuth();
+    console.log(
+      relinked > 0
+        ? `🔗 Relinked ${relinked} member(s) to your local login(s) by email.`
+        : '🔗 No members matched a local login by email — sign up locally, then\n' +
+            '   re-run, or run database/dev_relink_lo_login.sql once you have.',
+    );
+    console.log('\nRefresh your browser.');
   } finally {
     await local.query('set session_replication_role = default');
     await local.end();
