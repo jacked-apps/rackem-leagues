@@ -15,6 +15,22 @@
 --   Supabase SQL editor means only a developer with service access can do it.
 --   There is nothing to deploy — paste + run against the target database.
 --
+-- WHEN YOU CAN USE THIS (the real requirements):
+--   * The two accounts are the SAME PERSON, verified by the LO. This is the
+--     whole premise — everything else follows from it.
+--   * The two accounts are NOT both entered in the SAME match. That is the ONLY
+--     thing that blocks a clean merge (it would put one person in a match
+--     twice). STEP 1's `same_match_conflict` column detects it; if it fires,
+--     fix that one match by hand first, then re-run.
+--
+--   They do NOT have to be on the same team, and do NOT have to be in the same
+--   org/league. The merge moves ALL of the discard account's data (every
+--   match, roster spot, stat, and FK reference) into the keep account no matter
+--   where it lived. The org value the script resolves is only bookkeeping for
+--   the audit/undo record; it even auto-attributes a "ghost" discard account
+--   (one that's in a match lineup but no longer on any roster) to the keep
+--   account's org so the merge can proceed.
+--
 -- HOW IT WORKS:
 --   We reuse the SAME battle-tested RPC the placeholder flow uses
 --   (merge_placeholder_into_member_v2). It moves EVERYTHING from the discard
@@ -117,8 +133,16 @@ BEGIN
   IF v_discard IS NULL  THEN RAISE EXCEPTION 'Discard account % not found (or has no member row)', v_discard_email; END IF;
   IF v_keep = v_discard THEN RAISE EXCEPTION 'Both emails resolve to the same member row'; END IF;
 
-  -- Resolve org: prefer the discard account's team chain, fall back to its
-  -- direct attribution column. The RPC re-validates this org scope.
+  -- Resolve org, trying in order:
+  --   1. discard's team chain (its roster row's league -> org)
+  --   2. discard's direct attribution column
+  --   3. keep account's team chain / attribution column
+  -- Path 3 covers the "ghost" case: the discard account is in a match lineup
+  -- but its roster row (team_players) was already removed — e.g. the player
+  -- was swapped off the team and the keep account took the spot. It then has
+  -- no org of its own, but it belongs to the SAME org as the keep account it's
+  -- being merged into. The RPC re-validates org scope, so once we know the org
+  -- we attribute the discard account to it (below) before merging.
   SELECT l.organization_id INTO v_org
     FROM team_players tp
     JOIN teams   t ON t.id = tp.team_id
@@ -129,7 +153,26 @@ BEGIN
   IF v_org IS NULL THEN
     SELECT organization_id INTO v_org FROM members WHERE id = v_discard;
   END IF;
-  IF v_org IS NULL THEN RAISE EXCEPTION 'Could not resolve an organization for the discard account'; END IF;
+  IF v_org IS NULL THEN
+    -- Ghost discard account: fall back to the keep account's org.
+    SELECT l.organization_id INTO v_org
+      FROM team_players tp
+      JOIN teams   t ON t.id = tp.team_id
+      JOIN seasons s ON s.id = t.season_id
+      JOIN leagues l ON l.id = s.league_id
+      WHERE tp.member_id = v_keep
+      LIMIT 1;
+    IF v_org IS NULL THEN
+      SELECT organization_id INTO v_org FROM members WHERE id = v_keep;
+    END IF;
+  END IF;
+  IF v_org IS NULL THEN RAISE EXCEPTION 'Could not resolve an organization for either account'; END IF;
+
+  -- Attribute the discard account to the resolved org so the RPC's org-scope
+  -- check passes. This is a no-op when the discard already belongs to the org;
+  -- it only matters for the ghost case above. Rolls back with the txn on error.
+  UPDATE members SET organization_id = v_org
+    WHERE id = v_discard AND organization_id IS DISTINCT FROM v_org;
 
   -- Same-match collision guard (the RPC checks this too; we fail early with a
   -- clearer message so nothing is mutated).
