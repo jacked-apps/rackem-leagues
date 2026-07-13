@@ -21,7 +21,7 @@ import { DuesRosterList } from '@/components/operator/DuesRosterList';
 import { fetchLeagueDuesRoster } from '@/api/queries/duesRoster';
 import { getDuesYearStatus } from '@/utils/membershipUtils';
 
-type DuesFilter = 'all' | 'unpaid';
+type DuesFilter = 'all' | 'paid' | 'unpaid';
 
 /** Operator-facing dues roster for one league. */
 export const LeagueDuesPage: React.FC = () => {
@@ -43,9 +43,11 @@ export const LeagueDuesPage: React.FC = () => {
       paidCount: paid,
       unpaidCount: roster.length - paid,
       visible:
-        filter === 'unpaid'
-          ? roster.filter((p) => !isPaid(p.membership_paid_date))
-          : roster,
+        filter === 'paid'
+          ? roster.filter((p) => isPaid(p.membership_paid_date))
+          : filter === 'unpaid'
+            ? roster.filter((p) => !isPaid(p.membership_paid_date))
+            : roster,
     };
   }, [players, filter]);
 
@@ -54,8 +56,8 @@ export const LeagueDuesPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-muted">
       <PageHeader
-        backTo={`/league/${leagueId}/finances`}
-        backLabel="Back to Finances"
+        backTo={`/league/${leagueId}`}
+        backLabel="Back to League"
         title="Dues Roster"
         subtitle="Annual membership dues by league"
       />
@@ -81,11 +83,18 @@ export const LeagueDuesPage: React.FC = () => {
                   All
                 </Button>
                 <Button
+                  variant={filter === 'paid' ? 'secondary' : 'outline'}
+                  size="sm"
+                  onClick={() => setFilter('paid')}
+                >
+                  Paid
+                </Button>
+                <Button
                   variant={filter === 'unpaid' ? 'secondary' : 'outline'}
                   size="sm"
                   onClick={() => setFilter('unpaid')}
                 >
-                  Unpaid only
+                  Unpaid
                 </Button>
               </div>
             </div>
@@ -98,7 +107,11 @@ export const LeagueDuesPage: React.FC = () => {
               </p>
             ) : visible.length === 0 ? (
               <p className="py-8 text-center text-muted-foreground">
-                Everyone in this league is paid up for {new Date().getFullYear()}. 🎉
+                {filter === 'unpaid'
+                  ? `Everyone in this league is paid up for ${new Date().getFullYear()}. 🎉`
+                  : filter === 'paid'
+                    ? 'No one in this league has paid yet.'
+                    : 'No players to show.'}
               </p>
             ) : (
               <DuesRosterList players={visible} />
