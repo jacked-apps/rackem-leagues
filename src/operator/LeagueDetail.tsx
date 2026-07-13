@@ -27,7 +27,8 @@ import { OnboardCaptainsList } from '@/onboarding/OnboardCaptainsList';
 import { JoinRequestList } from '@/onboarding/components/JoinRequestList';
 import { Button } from '@/components/ui/button';
 import { DashboardCard } from '@/components/operator/DashboardCard';
-import { Calendar, DollarSign, Settings, Users } from 'lucide-react';
+import { FinancesCard } from '@/components/operator/FinancesCard';
+import { Calendar, Settings, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { useIsWizard2League, useFlowStageDetection } from '@/api/hooks';
 import { useDeleteSeason } from '@/api/hooks/useSeasonMutations';
@@ -279,20 +280,10 @@ export const LeagueDetail: React.FC = () => {
           />
         </div>
 
-        {/* Finances entry — lives on its own page so the league
-            detail stays focused on season-running bits. Not every
-            operator uses payouts/expenses, so we hide the cards
-            behind a single link rather than render them inline. */}
-        <div className="mb-6">
-          <DashboardCard
-            icon={<DollarSign className="h-6 w-6" />}
-            iconColor="text-success"
-            title="Finances"
-            description="Track expenses, dropped teams, projected income, and calculate end-of-season payouts."
-            buttonText="Open Finances"
-            linkTo={`/league/${league.id}/finances`}
-          />
-        </div>
+        {/* Finances entry — two distinct tools (Dues roster + Payout
+            Calculator), each on its own page so the league detail stays
+            focused on season-running bits. */}
+        <FinancesCard leagueId={league.id} />
       </div>
     </div>
   );

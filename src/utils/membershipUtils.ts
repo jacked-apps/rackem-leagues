@@ -3,6 +3,52 @@
  * Handles BCA annual dues calculations and status checking
  */
 
+import { parseLocalDate } from '@/utils/formatters';
+
+/**
+ * Calendar-year dues status.
+ *
+ * BCA annual dues are sanctioned per calendar year (Jan 1 – Dec 31): a payment
+ * counts only for the year it was made, and everyone "expires" on Jan 1. This
+ * is the rule the operator-facing surfaces already display ("Paid 2026" flips
+ * to "Expired 2025" at year-end) — as opposed to `getMembershipStatus` below,
+ * which measures a rolling 365 days. The dues roster and any paid/unpaid
+ * summary should use THIS helper so those surfaces agree.
+ */
+export type DuesYearStatusKind = 'paid' | 'expired' | 'never';
+
+export interface DuesYearStatus {
+  /** True only when the recorded payment is in the current calendar year. */
+  readonly isPaid: boolean;
+  /** Which bucket the player falls in — drives icon + label choice. */
+  readonly kind: DuesYearStatusKind;
+  /** Human label: "Paid 2026" | "Expired 2024" | "Never Paid". */
+  readonly label: string;
+}
+
+/**
+ * Resolve a player's dues status for the CURRENT calendar year.
+ *
+ * Uses `parseLocalDate` (not `new Date(iso)`) so a Jan-1 payment isn't shifted
+ * into the previous year by a UTC-negative timezone.
+ *
+ * @param membershipPaidDate - ISO date the dues were last recorded, or null
+ * @example getDuesYearStatus('2026-03-04') // { isPaid: true, kind: 'paid', label: 'Paid 2026' }
+ */
+export const getDuesYearStatus = (
+  membershipPaidDate: string | null | undefined,
+): DuesYearStatus => {
+  if (!membershipPaidDate) {
+    return { isPaid: false, kind: 'never', label: 'Never Paid' };
+  }
+  const paidYear = parseLocalDate(membershipPaidDate).getFullYear();
+  const currentYear = new Date().getFullYear();
+  if (paidYear === currentYear) {
+    return { isPaid: true, kind: 'paid', label: `Paid ${paidYear}` };
+  }
+  return { isPaid: false, kind: 'expired', label: `Expired ${paidYear}` };
+};
+
 /**
  * Calculates membership dues status based on last payment date
  *
