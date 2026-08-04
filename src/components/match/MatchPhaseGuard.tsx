@@ -93,6 +93,46 @@ export function deriveReasonFromError(error: unknown): RecoveryReason {
 }
 
 /**
+ * Pure redirect decision for a match-scoped page. Returns the phase the user
+ * should be on (`'lineup'` | `'score'`) when the current path disagrees with the
+ * match state, or `null` when they're already in the right place.
+ *
+ * Rules:
+ *   - `scheduled` / `updating` (lineup phase / operator hand-entry): a user on
+ *     `/score` belongs on `/lineup`.
+ *   - `in_progress` (scoring phase): a user on `/lineup` belongs on `/score` —
+ *     EXCEPT during the tiebreaker window (`match_result === 'tie'`), when a
+ *     games-tied match stays `in_progress` while captains re-pick + lock their
+ *     tiebreak lineups on `/lineup` before scoring the tiebreaker. Forcing them
+ *     to `/score` there lands on the scoring page with unlocked lineups ("Both
+ *     team lineups must be locked before scoring can begin"). The lineup page's
+ *     own prepare-and-navigate moves them to `/score` once both sides re-lock.
+ *
+ * Exported so the dispatch table is unit-testable without mounting the guard.
+ *
+ * @param status - `matches.status`.
+ * @param matchResult - `matches.match_result` (null in normal play, `'tie'` in
+ *   the tiebreaker window).
+ * @param pathname - The current route path.
+ * @returns `'lineup'` | `'score'` to redirect, or `null` to stay put.
+ */
+export function computePhaseRedirect(
+  status: string | undefined,
+  matchResult: string | null | undefined,
+  pathname: string,
+): 'lineup' | 'score' | null {
+  if (!status) return null;
+  const onLineup = pathname.endsWith('/lineup');
+  const onScore = pathname.endsWith('/score');
+  const operatorEditing = status === 'scheduled' || status === 'updating';
+  const inTiebreakerLineup = matchResult === 'tie';
+
+  if (operatorEditing && onScore) return 'lineup';
+  if (status === 'in_progress' && onLineup && !inTiebreakerLineup) return 'score';
+  return null;
+}
+
+/**
  * Wrapper component that gates rendering of its children on
  * `matches.status` for the current `:matchId` URL param.
  */
@@ -135,22 +175,18 @@ export function MatchPhaseGuard({ children }: MatchPhaseGuardProps) {
   // so this effect re-runs only when status actually changes.
   useEffect(() => {
     if (!matchId || !phase.data) return;
-    const onLineup = location.pathname.endsWith('/lineup');
-    const onScore = location.pathname.endsWith('/score');
-    // 'updating' = an operator is hand-entering this match (LO manual scoring).
-    // Players must never score it, so treat it like 'scheduled' here: bounce any
-    // player who lands on /score (e.g. via a stale link) back to the read-only
-    // lineup view. The operator's own entry happens on a separate operator route,
-    // not through this guard.
-    const operatorEditing =
-      phase.data.status === 'scheduled' || phase.data.status === 'updating';
-    if (operatorEditing && onScore) {
-      navigate(`/match/${matchId}/lineup`, { replace: true });
-    } else if (phase.data.status === 'in_progress' && onLineup) {
-      navigate(`/match/${matchId}/score`, { replace: true });
+    // Single source of truth for the lineup ⇄ scoring redirect (incl. the
+    // tiebreaker-window exception) — see computePhaseRedirect.
+    const target = computePhaseRedirect(
+      phase.data.status,
+      phase.data.match_result,
+      location.pathname,
+    );
+    if (target) {
+      navigate(`/match/${matchId}/${target}`, { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase.data?.status, location.pathname, matchId, navigate]);
+  }, [phase.data?.status, phase.data?.match_result, location.pathname, matchId, navigate]);
 
   // Soft retry: refetch the status query without remounting the
   // subtree. The wrapped lineup/scoring body keeps its in-progress
@@ -236,11 +272,12 @@ export function MatchPhaseGuard({ children }: MatchPhaseGuardProps) {
   // While a redirect is queued in useEffect, render the spinner this
   // frame instead of the children (children would briefly render at
   // the wrong route otherwise).
-  const onLineup = location.pathname.endsWith('/lineup');
-  const onScore = location.pathname.endsWith('/score');
   const willRedirect =
-    (phase.data?.status === 'scheduled' && onScore) ||
-    (phase.data?.status === 'in_progress' && onLineup);
+    computePhaseRedirect(
+      phase.data?.status,
+      phase.data?.match_result,
+      location.pathname,
+    ) !== null;
   if (willRedirect) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
