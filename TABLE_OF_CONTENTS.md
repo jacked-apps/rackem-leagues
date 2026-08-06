@@ -453,6 +453,15 @@ Node-only tooling the operator runs manually (not part of the app bundle).
 | `migration_matches_add_round_number.sql` | Round number migration |
 | `matches_unfinished_update1.sql` | Match schema update |
 
+### Database Maintenance Scripts (`/database/maintenance/`)
+
+Developer-only, hand-run scripts for rare data-surgery tasks. Not deployed, not in the app UI — run manually from the Supabase SQL editor by someone with service access.
+
+| File | Purpose |
+|------|---------|
+| `database/maintenance/README.md` | What lives here and the rules for adding scripts |
+| `database/maintenance/mergeRegisteredPlayers.sql` | Merge two REAL registered accounts belonging to the same person (dup-signup). Reuses `merge_placeholder_into_member_v2`; preview + one-transaction merge + dead-login cleanup steps |
+
 ---
 
 ## 🎭 End-to-End Testing (`/tests/e2e/`)
