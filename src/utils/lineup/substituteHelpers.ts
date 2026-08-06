@@ -21,6 +21,20 @@ export const SUB_AWAY_DD_ID = '00000000-0000-0000-0000-000000000012';
 export const SUB_HOME_ID = SUB_HOME_ANON_ID;
 export const SUB_AWAY_ID = SUB_AWAY_ANON_ID;
 
+/**
+ * All four substitute sentinel member IDs. These are fictional system
+ * placeholders (not real players), so they must be excluded from any
+ * individual-player leaderboard or stat ranking (Top Shooters, Feats, etc.).
+ * A game against a sentinel still counts for the *real* opponent — only the
+ * sentinel's own row is dropped.
+ */
+export const SUB_SENTINEL_IDS: readonly string[] = [
+  SUB_HOME_ANON_ID,
+  SUB_AWAY_ANON_ID,
+  SUB_HOME_DD_ID,
+  SUB_AWAY_DD_ID,
+];
+
 export function isAnonSubSentinel(playerId: string | null | undefined): boolean {
   return playerId === SUB_HOME_ANON_ID || playerId === SUB_AWAY_ANON_ID;
 }

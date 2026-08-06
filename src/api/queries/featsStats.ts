@@ -8,6 +8,7 @@
  */
 
 import { supabase } from '@/supabaseClient';
+import { SUB_SENTINEL_IDS } from '@/utils/lineup/substituteHelpers';
 
 /**
  * Player feat ranking
@@ -173,6 +174,15 @@ export async function fetchFeatsStats(seasonId: string): Promise<FeatsStats> {
       const count = flawlessNightCounts.get(playerId) || 0;
       flawlessNightCounts.set(playerId, count + 1);
     }
+  });
+
+  // Drop the substitute sentinels from every feat ranking — they're fictional
+  // system placeholders, not real players, so a break-and-run / golden break /
+  // flawless night credited to a sentinel must not surface on any leaderboard.
+  SUB_SENTINEL_IDS.forEach((id) => {
+    breakAndRunCounts.delete(id);
+    goldenBreakCounts.delete(id);
+    flawlessNightCounts.delete(id);
   });
 
   // Step 6: Get all unique player IDs

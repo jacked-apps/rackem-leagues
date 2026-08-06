@@ -7,6 +7,7 @@
  */
 
 import { supabase } from '@/supabaseClient';
+import { SUB_SENTINEL_IDS } from '@/utils/lineup/substituteHelpers';
 
 /**
  * Player season stats from match games
@@ -132,6 +133,12 @@ export async function fetchSeasonPlayerStats(seasonId: string): Promise<PlayerSe
       playerStatsMap.set(awayPlayerId, stats);
     }
   });
+
+  // Drop the substitute sentinels — they're fictional system placeholders,
+  // not real players, so they must never appear on the Top Shooters board.
+  // Real opponents' wins/losses were tallied independently above, so removing
+  // the sentinel's own entry leaves everyone else's record intact.
+  SUB_SENTINEL_IDS.forEach((id) => playerStatsMap.delete(id));
 
   // Convert to array and add player names
   const playerStats: PlayerSeasonStats[] = [];
