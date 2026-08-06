@@ -77,6 +77,7 @@ const LeagueWizardV2Page = lazy(() => import('../wizards/league-v2/LeagueWizardV
 const LeagueRules = lazy(() => import('../operator/LeagueRules'));
 const LeagueDetail = lazy(() => import('../operator/LeagueDetail'));
 const LeagueFinancesPage = lazy(() => import('../operator/LeagueFinancesPage'));
+const LeagueDuesPage = lazy(() => import('../operator/LeagueDuesPage'));
 const AllocatorRoomPage = lazy(
   () => import('../operator/scoring-workshop/per-game-allocator/AllocatorRoomPage'),
 );
@@ -269,6 +270,7 @@ export const router = createBrowserRouter([
           { path: 'league-rules/:orgId', element: withOperator(LeagueRules) },
           { path: 'league/:leagueId', element: withOperator(LeagueDetail) },
           { path: 'league/:leagueId/finances', element: withOperator(LeagueFinancesPage) },
+          { path: 'league/:leagueId/dues', element: withOperator(LeagueDuesPage) },
           // Scoring Workshop — in active development; gated off in production
           // (route + dashboard card) until it's ready. Dev/staging only.
           ...(!isProduction
