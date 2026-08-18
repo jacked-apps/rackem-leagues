@@ -16,7 +16,6 @@ import { InfoButton } from '@/components/InfoButton';
 import { LeagueStatusCard } from '@/components/operator/LeagueStatusCard';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { logger } from '@/utils/logger';
-import { SeasonCard } from '@/components/operator/SeasonCard';
 import { MatchupsCard } from '@/components/operator/MatchupsCard';
 import { LeagueReupStatusCard } from '@/components/operator/LeagueReupStatusCard';
 import { TeamsCard } from '@/components/operator/TeamsCard';
@@ -249,7 +248,6 @@ export const LeagueDetail: React.FC = () => {
         <StatsCard leagueId={league.id} seasonId={activeSeason?.id || null} />
 
         {/* The four league parts, grouped in setup order. */}
-        <SeasonCard league={league} />
         {/* Captain-onboarding list — sits with Teams; self-clears as captains
             register. Restored after a merge (#192's restructure) dropped it. */}
         <OnboardCaptainsList leagueId={league.id} />
