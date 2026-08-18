@@ -4,26 +4,6 @@ Tasks and refactoring items for Ed to work on.
 
 ---
 
-## 🧪 2026-08-04 — VERIFY: tiebreaker scoring fix (PR #249)
-
-**Bug (live):** the first match to end in a games **tie** couldn't be scored —
-captains confirmed the tie, then got "Both team lineups must be locked before
-scoring can begin" and were kicked to My Teams. Cause: on a tie the app unlocks
-both lineups and sends captains to the tiebreak **lineup** page, but the route
-guard (`MatchPhaseGuard`) saw `status='in_progress'` and force-redirected them to
-the **scoring** page, which demands locked lineups. Fix teaches the guard the
-"tiebreaker window" via `matches.match_result='tie'` so it stops bouncing them.
-Branch `fix/tiebreaker-scoring-lineup-lock`, **PR #249**.
-
-**👉 YOU (or whoever can reproduce a tie) NEED TO DO: verify on staging.** Play a
-match to a real games tie, confirm the tie on both teams, and check you land on
-the **tiebreak lineup page** (not the error card). Enter + lock both tiebreak
-lineups → you should reach the tiebreak scoring page → score games 19–21 →
-match completes with a winner. Unit-tested at the routing layer, but a live
-2-device tie was NOT run — this is the confidence check.
-
----
-
 ## 🚧 2026-08-18 — Schedule decoupling: Phase C is UNBLOCKED, do it next
 
 **A+B verified on staging ✅** (Ed confirmed 2026-08-18: numbering reads clean).
