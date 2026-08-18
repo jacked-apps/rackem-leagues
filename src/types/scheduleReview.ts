@@ -22,12 +22,6 @@ export interface ScheduleReviewProps {
   bcaChampionship?: ChampionshipEvent;
   /** APA championship dates */
   apaChampionship?: ChampionshipEvent;
-  /**
-   * Current play week number (locks editing of earlier weeks)
-   * TODO: Will be fetched from database in future (e.g., SELECT MAX(week_number) FROM match_results)
-   * For new seasons, pass 0 to allow all weeks to be edited
-   */
-  currentPlayWeek?: number;
   /** Number of playoff weeks to generate (0-4, default 1) */
   playoffWeeks?: number;
   /** Callback when schedule is modified */
@@ -46,13 +40,19 @@ export interface ScheduleWeekRowProps {
   week: WeekEntry;
   /** Index in schedule array */
   index: number;
+  /**
+   * Derived display label ("Week 5", "Christmas", "Playoffs") — never the stored
+   * week_name. Built once by the parent from the full week list.
+   */
+  weekLabel?: string;
   /** Callback when insert/remove week-off is clicked */
   onToggleWeekOff: (index: number) => void;
   /**
-   * Current play week number (locks editing of earlier weeks)
-   * Weeks with weekName "Week 1", "Week 2", etc. that are <= currentPlayWeek will be locked
+   * Cutoff ISO date (normally today): regular weeks strictly before it render as
+   * locked/played. Omitted (e.g. in the setup wizard) means nothing locks.
+   * Replaces the old parsed-week-number comparison — see isPlayWeekLocked.
    */
-  currentPlayWeek?: number;
+  lockBeforeDate?: string;
   /**
    * When true, past/completed weeks still show the toggle (the caller warns before
    * applying). The active-season edit page opts in — dates are advisory, so an

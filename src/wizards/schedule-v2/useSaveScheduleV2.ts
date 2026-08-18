@@ -18,11 +18,10 @@ interface SaveScheduleArgs {
   schedule: WeekEntry[];
 }
 
-/** Map UI week type to DB week type (same logic as createSeason) */
-function toDbWeekType(week: WeekEntry): 'regular' | 'playoffs' | 'blackout' | 'season_end_break' {
-  if (week.type === 'week-off') {
-    return week.weekName === 'Season End Break' ? 'season_end_break' : 'blackout';
-  }
+/** Map UI week type to DB week type (same logic as createSeason). Off weeks
+ *  (incl. the season-end break) are all `blackout`; the label lives in notes. */
+function toDbWeekType(week: WeekEntry): 'regular' | 'playoffs' | 'blackout' {
+  if (week.type === 'week-off') return 'blackout';
   if (week.type === 'playoffs') return 'playoffs';
   return 'regular';
 }
@@ -39,14 +38,19 @@ export function useSaveScheduleV2() {
         .eq('season_id', seasonId);
       if (delErr) throw new Error(`Failed to clear existing weeks: ${delErr.message}`);
 
-      const rows = schedule.map((week) => ({
-        season_id: seasonId,
-        scheduled_date: week.date,
-        week_name: week.weekName,
-        week_type: toDbWeekType(week),
-        week_completed: false,
-        notes: null,
-      }));
+      const rows = schedule.map((week) => {
+        const weekType = toDbWeekType(week);
+        return {
+          season_id: seasonId,
+          scheduled_date: week.date,
+          // Transitional NOT-NULL value; numbers derive from position, dropped in Phase C.
+          week_name: week.weekName,
+          week_type: weekType,
+          week_completed: false,
+          // A blackout's label lives in notes; regular/playoff labels are derived.
+          notes: weekType === 'blackout' ? week.weekName : null,
+        };
+      });
 
       const { error } = await supabase.from('season_weeks').insert(rows);
       if (error) throw new Error(`Failed to save schedule: ${error.message}`);

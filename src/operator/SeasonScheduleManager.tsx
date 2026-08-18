@@ -129,7 +129,9 @@ export const SeasonScheduleManager: React.FC = () => {
           }
 
           return {
-            weekNumber: week.week_type === 'regular' ? extractWeekNumber(week.week_name) : 0,
+            // weekNumber is unused on this page now (display uses the derived
+            // label, locking uses date) — see ScheduleReviewTable/isPlayWeekLocked.
+            weekNumber: 0,
             weekName: week.week_name,
             date: week.scheduled_date,
             type,
@@ -137,6 +139,7 @@ export const SeasonScheduleManager: React.FC = () => {
             dbId: week.id, // Store DB ID for updates/deletes
             weekCompleted: week.week_completed,
             dbWeekType: week.week_type, // Store original DB week_type
+            notes: week.notes, // Blackout label (holiday / "Season End Break")
           };
         });
 
@@ -196,31 +199,6 @@ export const SeasonScheduleManager: React.FC = () => {
   }, [loadSchedule]);
 
   /**
-   * Extract week number from week name (e.g., "Week 5" -> 5)
-   */
-  const extractWeekNumber = (weekName: string): number => {
-    const match = weekName.match(/Week (\d+)/);
-    return match ? parseInt(match[1], 10) : 0;
-  };
-
-  /**
-   * Get current week number (weeks that have been completed)
-   * Used to prevent editing past weeks
-   */
-  const getCurrentPlayWeek = (): number => {
-    const today = formatLocalDate(new Date());
-    let currentWeek = 0;
-
-    for (const week of schedule) {
-      if (week.type === 'regular' && week.date < today) {
-        currentWeek = Math.max(currentWeek, week.weekNumber);
-      }
-    }
-
-    return currentWeek;
-  };
-
-  /**
    * Apply a re-flow action (add/remove a skip) to the database, then reload the
    * fresh schedule. Each toggle commits immediately — there is no staged "Save".
    * Matches are never touched; only week dates shift (see scheduleReflowApply.ts).
@@ -240,6 +218,7 @@ export const SeasonScheduleManager: React.FC = () => {
           date: w.date,
           weekType: w.dbWeekType as ScheduleSnapshot['weeks'][number]['weekType'],
           weekName: w.weekName,
+          notes: w.notes ?? null,
         })),
       endDate: season.end_date,
     };
@@ -505,10 +484,13 @@ export const SeasonScheduleManager: React.FC = () => {
                 <span className="font-semibold text-info">BCA Championship:</span>
                 <span className="ml-2 text-foreground">
                   {(() => {
-                    const bcaWeeks = schedule.filter(w =>
-                      w.type === 'week-off' &&
-                      (w.weekName.toLowerCase().includes('bca') || w.weekName.toLowerCase().includes('championship'))
-                    );
+                    // Championship detection stays a label substring heuristic, but
+                    // reads the label from notes (where a blackout's label now lives;
+                    // falls back to week_name during the transition).
+                    const bcaWeeks = schedule.filter(w => {
+                      const label = (w.notes ?? w.weekName).toLowerCase();
+                      return w.type === 'week-off' && (label.includes('bca') || label.includes('championship'));
+                    });
                     if (bcaWeeks.length === 0) return 'Not scheduled';
                     const start = bcaWeeks[0]?.date;
                     const end = bcaWeeks[bcaWeeks.length - 1]?.date;
@@ -523,7 +505,7 @@ export const SeasonScheduleManager: React.FC = () => {
                 <span className="ml-2 text-foreground">
                   {(() => {
                     const apaWeeks = schedule.filter(w =>
-                      w.type === 'week-off' && w.weekName.toLowerCase().includes('apa')
+                      w.type === 'week-off' && (w.notes ?? w.weekName).toLowerCase().includes('apa')
                     );
                     if (apaWeeks.length === 0) return 'Not scheduled';
                     const start = apaWeeks[0]?.date;
@@ -551,7 +533,7 @@ export const SeasonScheduleManager: React.FC = () => {
           <ScheduleReviewTable
             schedule={schedule}
             onToggleWeekOff={handleToggleWeekOff}
-            currentPlayWeek={getCurrentPlayWeek()}
+            lockBeforeDate={formatLocalDate(new Date())}
             allowLockedToggle
           />
         </div>

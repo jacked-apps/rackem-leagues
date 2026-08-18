@@ -628,7 +628,6 @@ export const SeasonCreationWizard: React.FC = () => {
             holidays={state.holidays}
             bcaChampionship={state.bcaChampionship}
             apaChampionship={state.apaChampionship}
-            currentPlayWeek={0} // New season hasn't started yet - all weeks are editable. TODO: For existing seasons, fetch from database
             onScheduleChange={handleScheduleChange}
             onConfirm={handleCreateSeason}
             onBack={handleBack}

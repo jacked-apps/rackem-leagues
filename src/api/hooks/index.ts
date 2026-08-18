@@ -182,6 +182,9 @@ export {
   useCompleteMatch,
 } from './useMatches';
 
+// Derived week labels (single-match feeds)
+export { useWeekLabelsForSeasons } from './useWeekLabels';
+
 // Venue queries
 export {
   useVenuesByOperator,

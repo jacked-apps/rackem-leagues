@@ -36,8 +36,8 @@ export function isPastOrPlayed(week: ToggleWeek, today: string): boolean {
  * What a week-off toggle should do for a given week:
  * - `remove`: the week is a skip (blackout or season-end break) → drop it (re-flow
  *   pulls later play weeks in).
- * - `add`: ready-to-apply skip insert. Playoffs become a season-end break — no reason
- *   needed.
+ * - `add`: ready-to-apply skip insert. Playoffs become a season-end break (a
+ *   blackout labelled "Season End Break") — no reason needed.
  * - `prompt-blackout`: a regular play week → capture an operator reason (modal) before
  *   inserting the blackout.
  */
@@ -53,11 +53,12 @@ export type ToggleDecision =
  * @returns The toggle decision the handler should carry out.
  */
 export function decideToggle(week: ToggleWeek): ToggleDecision {
-  if (week.dbWeekType === 'blackout' || week.dbWeekType === 'season_end_break') {
+  if (week.dbWeekType === 'blackout') {
     return { action: 'remove' };
   }
   if (week.dbWeekType === 'playoffs') {
-    return { action: 'add', skipType: 'season_end_break', reason: 'Season End Break' };
+    // A season-end break is a blackout labelled "Season End Break".
+    return { action: 'add', skipType: 'blackout', reason: 'Season End Break' };
   }
   return { action: 'prompt-blackout' };
 }

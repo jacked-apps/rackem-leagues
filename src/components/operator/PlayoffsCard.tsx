@@ -163,7 +163,9 @@ export const PlayoffsCard: React.FC<PlayoffsCardProps> = ({ leagueId, seasonId }
           )}
 
           <div className="rounded-lg bg-muted p-3">
-            <div className="text-sm font-medium text-foreground">{playoffWeek.week_name}</div>
+            {/* getPlayoffWeek returns the single playoffs week, so the derived
+                label is always "Playoffs" (never read the stored week_name). */}
+            <div className="text-sm font-medium text-foreground">Playoffs</div>
             <div className="text-xs text-muted-foreground">
               {parseLocalDate(playoffWeek.scheduled_date).toLocaleDateString('en-US', {
                 weekday: 'long',

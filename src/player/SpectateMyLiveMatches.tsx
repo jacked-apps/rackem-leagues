@@ -18,6 +18,7 @@ import { Loader2 } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { useUserProfile } from '@/api/hooks';
 import { useLiveMatchesForMember } from '@/api/hooks/useMatches';
+import { useWeekLabelsForSeasons } from '@/api/hooks/useWeekLabels';
 import { formatGameType, formatDayOfWeek } from '@/types/league';
 import type { GameType, DayOfWeek } from '@/types/league';
 import type { MatchWithDetails } from '@/types';
@@ -44,6 +45,12 @@ interface LeagueGroup {
 export function SpectateMyLiveMatches() {
   const { member } = useUserProfile();
   const { data: matches = [], isLoading, error } = useLiveMatchesForMember(member?.id);
+
+  // Week numbers are DERIVED per season from position, never the stored week_name.
+  // This feed spans multiple leagues/seasons, so the hook builds a per-season map.
+  const weekLabels = useWeekLabelsForSeasons(
+    matches.map((m) => (m as any).season_id),
+  );
 
   // Group matches by league. If a member is on teams in multiple leagues
   // running matches tonight, each league renders as its own titled section.
@@ -123,7 +130,10 @@ export function SpectateMyLiveMatches() {
                 {g.label}
               </h2>
               {g.matches.map((m) => {
-                const weekName = (m as any).season_week?.week_name || '';
+                const weekName =
+                  weekLabels.get((m as any).season_week?.id) ||
+                  (m as any).season_week?.week_name ||
+                  '';
                 const weekDate = (m as any).season_week?.scheduled_date || '';
                 const subLabel = [weekName, weekDate].filter(Boolean).join(' — ');
                 return (

@@ -13,8 +13,8 @@
  *    once skips are removed from the calendar walk.
  *  - PLAY weeks = `regular` + `playoffs` (playoffs are "an extra regular play week
  *    with a different label" — they shift with the season).
- *  - SKIP weeks = `blackout` + `season_end_break` (a "week off" is a blackout with a
- *    different title — fixed calendar nights the walk flows around).
+ *  - SKIP weeks = `blackout` (a "week off" / season-end break is a blackout with a
+ *    label — fixed calendar nights the walk flows around).
  *  - Re-flow RE-DATES play rows in place and NEVER touches matches: a play week keeps
  *    its row id (and its bound matches/results) and simply slides to the next open
  *    night, so the stranded-games bug is structurally impossible.
@@ -27,8 +27,7 @@ import { parseLocalDate, formatLocalDate } from '@/utils/formatters';
 export type ReflowWeekType =
   | 'regular'
   | 'blackout'
-  | 'playoffs'
-  | 'season_end_break';
+  | 'playoffs';
 
 /**
  * Minimal projection of a `season_weeks` row the re-flow needs. Kept decoupled from
@@ -44,9 +43,10 @@ export interface ReflowWeek {
   weekCompleted: boolean;
 }
 
-/** Skip kinds the re-flow can insert. Both are "a skip night with a label" — a
- *  blackout (holiday) and a season-end break behave identically to the walk. */
-export type SkipType = 'blackout' | 'season_end_break';
+/** Skip kind the re-flow inserts: a skip night with a label. A holiday and a
+ *  season-end break are both `blackout` now (distinguished only by their label /
+ *  notes), so there is a single skip type. */
+export type SkipType = 'blackout';
 
 /**
  * The edit-page action driving the re-flow.

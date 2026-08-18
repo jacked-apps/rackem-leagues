@@ -22,6 +22,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
   Calendar,
+  CalendarRange,
   CalendarOff,
   MapPin,
   Trophy,
@@ -34,6 +35,7 @@ import {
   Eye,
 } from 'lucide-react';
 import { parseLocalDate } from '@/utils/formatters';
+import { deriveWeekLabels } from '@/utils/scheduleDisplayUtils';
 import { MatchDetailCard } from '@/components/MatchDetailCard';
 import { TeamNameLink } from '@/components/TeamNameLink';
 import { PageHeader } from '@/components/PageHeader';
@@ -53,6 +55,8 @@ type WeekEntryKind =
 /** One row in the season calendar — a week, plus the team's match if any. */
 interface WeekEntry {
   week: SeasonWeek;
+  /** Derived display label ("Week 5", "Christmas", "Playoffs") — never week_name. */
+  label: string;
   match: MatchWithDetails | null;
   kind: WeekEntryKind;
   /** Match rows expand (venue / scorecard); off-weeks are static. */
@@ -156,7 +160,7 @@ function ScheduleStaticRow({ entry }: { entry: WeekEntry }) {
       <CardContent className="flex items-center justify-between gap-2 px-3 py-2">
         <div className="min-w-0">
           <div className="text-xs text-muted-foreground">{formatShortDate(entry.week.scheduled_date)}</div>
-          <div className="truncate text-base font-semibold text-foreground">{entry.week.week_name}</div>
+          <div className="truncate text-base font-semibold text-foreground">{entry.label}</div>
         </div>
         <span className={`flex shrink-0 items-center gap-1 text-xs font-medium ${meta.badge}`}>
           <Icon className="h-3.5 w-3.5" />
@@ -249,13 +253,18 @@ export function TeamSchedule() {
     if (weekId) matchByWeekId.set(weekId, m);
   });
 
+  // Week numbers are DERIVED from each week's position by date (never the stored
+  // week_name, which can drift/collide — e.g. a duplicate "Week 14").
+  const weekLabels = deriveWeekLabels(seasonWeeks);
+
   // Build the unified, date-ordered calendar (seasonWeeks is already ordered).
   const entries: WeekEntry[] = [];
   for (const week of seasonWeeks) {
     const match = matchByWeekId.get(week.id) ?? null;
+    const label = weekLabels.get(week.id) ?? week.week_name;
 
     if (week.week_type === 'blackout') {
-      entries.push({ week, match: null, kind: 'blackout', expandable: false });
+      entries.push({ week, label, match: null, kind: 'blackout', expandable: false });
       continue;
     }
 
@@ -277,14 +286,14 @@ export function TeamSchedule() {
       else if (match.id === upcomingMatchId) kind = 'upcoming';
       else kind = 'future';
 
-      entries.push({ week, match, kind, expandable });
+      entries.push({ week, label, match, kind, expandable });
       continue;
     }
 
     // No match yet: playoff weeks show as TBD; a regular week with no match for
     // this team is a data gap — skip it rather than show a phantom row.
     if (week.week_type === 'playoffs') {
-      entries.push({ week, match: null, kind: 'playoffTbd', expandable: false });
+      entries.push({ week, label, match: null, kind: 'playoffTbd', expandable: false });
     }
   }
 
@@ -304,6 +313,27 @@ export function TeamSchedule() {
       />
 
       <main className="px-4 py-6 max-w-2xl mx-auto">
+        {/* Jump to the whole-season at-a-glance view (who plays whom, where, every
+            night) — players can't reach the league pages, so the entry lives here. */}
+        {team.season?.league?.id && team.season?.id && (
+          <div className="mb-4 flex justify-center">
+            <Link
+              to={`/league/${team.season.league.id}/season/${team.season.id}/overview`}
+              state={{ backTo: `/team/${teamId}/schedule`, backLabel: 'Back to Schedule' }}
+            >
+              <Button
+                variant="outline"
+                size="sm"
+                loadingText="none"
+                className="h-8 gap-1.5 rounded-full px-4 text-xs"
+              >
+                <CalendarRange className="h-4 w-4" />
+                Season Overview
+              </Button>
+            </Link>
+          </div>
+        )}
+
         {/* Filter chips — tap to hide a category. Filled (+ "off" icon) = that
             category is hidden; the icon carries the state without relying on color. */}
         <div className="mb-4 flex justify-center gap-2">
@@ -378,7 +408,7 @@ export function TeamSchedule() {
                         place it can be shown in each system's own units). */}
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0 truncate text-base text-foreground">
-                        {entry.week.week_name} ·{' '}
+                        {entry.label} ·{' '}
                         <span className="font-bold">
                           {formatShortDate(match.scheduled_date ?? entry.week.scheduled_date)}
                         </span>
@@ -477,7 +507,7 @@ export function TeamSchedule() {
                         is still here, not gone. */}
                     {match.status === 'completed' && isExpanded && (
                       <div className="mt-3">
-                        <MatchDetailCard matchId={match.id} playerView />
+                        <MatchDetailCard matchId={match.id} playerView weekLabel={entry.label} />
                       </div>
                     )}
                   </CardContent>

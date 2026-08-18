@@ -6,6 +6,7 @@
  */
 import React from 'react';
 import { ScheduleWeekRow } from './ScheduleWeekRow';
+import { deriveWeekLabels } from '@/utils/scheduleDisplayUtils';
 import type { WeekEntry } from '@/types/season';
 
 /**
@@ -16,8 +17,11 @@ interface ScheduleReviewTableProps {
   schedule: WeekEntry[];
   /** Callback when insert/remove week-off is clicked */
   onToggleWeekOff: (index: number) => void;
-  /** Current play week number (locks editing of earlier weeks) */
-  currentPlayWeek?: number;
+  /**
+   * Cutoff ISO date (normally today): regular weeks before it render as locked.
+   * Omitted in the setup wizard (nothing locks).
+   */
+  lockBeforeDate?: string;
   /** Pass-through: when true, past/completed weeks still show the toggle (caller warns). */
   allowLockedToggle?: boolean;
 }
@@ -31,9 +35,20 @@ interface ScheduleReviewTableProps {
 export const ScheduleReviewTable: React.FC<ScheduleReviewTableProps> = ({
   schedule,
   onToggleWeekOff,
-  currentPlayWeek,
+  lockBeforeDate,
   allowLockedToggle = false,
 }) => {
+  // Week numbers are DERIVED from position by date — never the stored week_name
+  // (which can drift/collide, e.g. a duplicate "Week 14"). Built once here from
+  // the full week list; rows render the looked-up label.
+  const weekLabels = deriveWeekLabels(
+    schedule.map((w) => ({
+      id: w.dbId ?? `${w.date}`,
+      week_type: w.dbWeekType ?? (w.type === 'week-off' ? 'blackout' : w.type),
+      scheduled_date: w.date,
+      week_name: w.weekName,
+    })),
+  );
   return (
     <div className="overflow-x-auto mb-4">
       <table className="min-w-full bg-card border border-border rounded-lg">
@@ -62,11 +77,12 @@ export const ScheduleReviewTable: React.FC<ScheduleReviewTableProps> = ({
         <tbody>
           {schedule.map((week, index) => (
             <ScheduleWeekRow
-              key={`week-${week.weekName}-${week.date}`}
+              key={`week-${week.dbId ?? week.date}-${index}`}
               week={week}
               index={index}
+              weekLabel={weekLabels.get(week.dbId ?? `${week.date}`)}
               onToggleWeekOff={onToggleWeekOff}
-              currentPlayWeek={currentPlayWeek}
+              lockBeforeDate={lockBeforeDate}
               allowLockedToggle={allowLockedToggle}
             />
           ))}

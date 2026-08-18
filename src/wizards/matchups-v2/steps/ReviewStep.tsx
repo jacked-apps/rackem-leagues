@@ -16,6 +16,7 @@ import { Calendar, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { parseLocalDate } from '@/utils/formatters';
+import { deriveWeekLabels } from '@/utils/scheduleDisplayUtils';
 import { generateSchedule, clearSchedule } from '@/utils/scheduleGenerator';
 import { useSeasonSchedule, useTeamsBySeason, useLeagueVenuesWithDetails } from '@/api/hooks';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
@@ -109,6 +110,14 @@ export function ReviewStep({ formData, onBack }: WizardStepProps<unknown, Matchu
     [schedule],
   );
 
+  // Week numbers are DERIVED from position by date (across all weeks), never the
+  // stored week_name which can drift/collide (e.g. a duplicate "Week 14").
+  // Declared before the early returns below so the hook order stays stable.
+  const weekLabels = useMemo(
+    () => deriveWeekLabels(schedule.map(({ week }) => week)),
+    [schedule],
+  );
+
   if (!seasonId || !leagueId) return <p className="text-destructive">Missing league/season ID from flow context.</p>;
   if (generateMutation.isPending) return <p className="text-sm text-muted-foreground">Generating schedule...</p>;
   if (genError) return <p className="text-destructive">Error generating schedule: {genError}</p>;
@@ -166,6 +175,7 @@ export function ReviewStep({ formData, onBack }: WizardStepProps<unknown, Matchu
             <WeekEditorView
               key={week.id}
               week={week}
+              weekLabel={weekLabels.get(week.id)}
               initialMatches={toEditState(matches)}
               teams={teamOptions}
               venues={venueOptions}
@@ -181,7 +191,7 @@ export function ReviewStep({ formData, onBack }: WizardStepProps<unknown, Matchu
           <Card key={week.id}>
             <CardHeader className="bg-muted rounded-t-xl -my-6 py-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">{week.week_name}</CardTitle>
+                <CardTitle className="text-lg">{weekLabels.get(week.id) ?? week.week_name}</CardTitle>
                 <div className="flex items-center gap-3">
                   <Button variant="outline" size="sm" onClick={() => setEditingWeekId(week.id)}>
                     <Pencil className="h-4 w-4 mr-1" />

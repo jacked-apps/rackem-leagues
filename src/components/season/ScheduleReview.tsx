@@ -33,7 +33,6 @@ export const ScheduleReview: React.FC<ScheduleReviewProps> = ({
   holidays,
   bcaChampionship,
   apaChampionship,
-  currentPlayWeek = 0,
   playoffWeeks = 1,
   onScheduleChange,
   onConfirm,
@@ -145,8 +144,9 @@ export const ScheduleReview: React.FC<ScheduleReviewProps> = ({
     // Clear the saved data flag to ensure regeneration happens
     setHasLoadedSavedData(false);
 
-    // Special handling for Season End Break - decrement count
-    if (week.weekName === 'Season End Break') {
+    // Special handling for Season End Break - decrement count (label in notes,
+    // falls back to weekName for fresh in-memory weeks)
+    if ((week.notes ?? week.weekName) === 'Season End Break') {
       setAddSeasonEndBreak(Math.max(0, addSeasonEndBreak - 1));
       return;
     }
@@ -336,11 +336,10 @@ export const ScheduleReview: React.FC<ScheduleReviewProps> = ({
             </div>
           )}
 
-          {/* Schedule Table */}
+          {/* Schedule Table — setup wizard never locks weeks (no lockBeforeDate) */}
           <ScheduleReviewTable
             schedule={displaySchedule}
             onToggleWeekOff={handleToggleWeekOff}
-            currentPlayWeek={currentPlayWeek}
           />
 
           {/* Navigation Buttons */}

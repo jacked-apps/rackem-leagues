@@ -13,6 +13,7 @@ import { useLocation, useParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { useLiveMatchesForLeague } from '@/api/hooks/useMatches';
+import { useWeekLabelsForSeasons } from '@/api/hooks/useWeekLabels';
 import { formatGameType, formatDayOfWeek } from '@/types/league';
 import type { GameType, DayOfWeek } from '@/types/league';
 import { SpectateMatchCard } from './SpectateMatchCard';
@@ -38,6 +39,13 @@ export function SpectateLiveMatches() {
   const { leagueId } = useParams<{ leagueId: string }>();
   const location = useLocation();
   const { data: matches = [], isLoading, error } = useLiveMatchesForLeague(leagueId);
+
+  // Week numbers are DERIVED per season from position, never the stored week_name
+  // (which can drift/collide). A single live match can't derive its own number,
+  // so fetch the season's weeks and build a weekId → label map.
+  const weekLabels = useWeekLabelsForSeasons(
+    matches.map((m) => (m as any).season_id),
+  );
 
   // If the user came from a specific page (e.g., their scoring page), the
   // opening navigation passed { from, fromLabel } in route state so the back
@@ -107,7 +115,10 @@ export function SpectateLiveMatches() {
           matches.map((m) => {
             // Per-card week label. Makeup matches can have different weeks on
             // the same night, so each card labels its week for clarity.
-            const weekName = (m as any).season_week?.week_name || '';
+            const weekName =
+              weekLabels.get((m as any).season_week?.id) ||
+              (m as any).season_week?.week_name ||
+              '';
             const weekDate = (m as any).season_week?.scheduled_date || '';
             const subLabel = [weekName, weekDate].filter(Boolean).join(' — ');
 

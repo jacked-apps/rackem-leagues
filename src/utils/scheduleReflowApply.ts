@@ -108,7 +108,8 @@ export async function applyBlackoutReflow(
       week_name: s.weekName,
       week_type: s.weekType,
       week_completed: false,
-      notes: null,
+      // A blackout's label (holiday name / "Season End Break") lives in notes.
+      notes: s.weekName,
     }));
     const { error } = await supabase.from('season_weeks').insert(rows);
     if (error) {
@@ -136,6 +137,8 @@ export interface SnapshotWeek {
   date: string;
   weekType: ReflowWeekType;
   weekName: string;
+  /** A blackout's label, so a revert restores it (regular/playoff = null). */
+  notes: string | null;
 }
 
 /** A captured pre-edit schedule the operator can revert to. */
@@ -188,12 +191,12 @@ export async function restoreScheduleSnapshot(
     if (error) return fail('park play rows', 'Could not revert the schedule. Please try again.', error.message);
   }
 
-  // 2. Delete all current skip rows (blackout + season-end break carry no matches).
+  // 2. Delete all current skip rows (blackouts carry no matches).
   const { error: delError } = await supabase
     .from('season_weeks')
     .delete()
     .eq('season_id', seasonId)
-    .in('week_type', ['blackout', 'season_end_break']);
+    .in('week_type', ['blackout']);
   if (delError) return fail('delete skips', 'Could not revert the schedule. Please try again.', delError.message);
 
   // 3. Move play rows back to their snapshot dates / names / types.
@@ -213,7 +216,8 @@ export async function restoreScheduleSnapshot(
       week_name: s.weekName,
       week_type: s.weekType,
       week_completed: false,
-      notes: null,
+      // Restore the blackout label captured in the snapshot.
+      notes: s.notes ?? s.weekName,
     }));
     const { error } = await supabase.from('season_weeks').insert(rows);
     if (error) return fail('reinsert skips', 'Could not revert the schedule. Please try again.', error.message);

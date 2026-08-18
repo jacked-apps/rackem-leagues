@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { ConflictBadge } from './ConflictBadge';
 import { getHighestSeverity } from '@/utils/conflictDetectionUtils';
 import { parseLocalDate } from '@/utils/formatters';
+import { isPlayWeekLocked } from '@/utils/scheduleDisplayUtils';
 import type { ScheduleWeekRowProps } from '@/types/scheduleReview';
 
 /**
@@ -24,30 +25,22 @@ import type { ScheduleWeekRowProps } from '@/types/scheduleReview';
 export const ScheduleWeekRow: React.FC<ScheduleWeekRowProps> = ({
   week,
   index,
+  weekLabel,
   onToggleWeekOff,
-  currentPlayWeek,
+  lockBeforeDate,
   allowLockedToggle = false,
 }) => {
   const hasConflicts = week.conflicts.length > 0;
   const isWeekOff = week.type === 'week-off';
   const isPlayoffs = week.type === 'playoffs';
-  const isSeasonEndBreak = week.weekName === 'Season End Break';
+  // A season-end break is a blackout labelled "Season End Break" (label lives in
+  // notes; falls back to weekName for fresh in-memory wizard weeks).
+  const isSeasonEndBreak = (week.notes ?? week.weekName) === 'Season End Break';
 
-  /**
-   * Helper function to extract play week number from weekName
-   * E.g., "Week 3" -> 3, "Christmas" -> null
-   */
-  const getPlayWeekNumber = (weekName: string): number | null => {
-    const match = weekName.match(/^Week (\d+)$/);
-    return match ? parseInt(match[1], 10) : null;
-  };
-
-  // Determine if this week is locked (already played)
-  const playWeekNumber = getPlayWeekNumber(week.weekName);
-  const isWeekLocked =
-    playWeekNumber !== null &&
-    currentPlayWeek !== undefined &&
-    playWeekNumber <= currentPlayWeek;
+  // Locked = a regular week already in the past. Position/number-free (no
+  // week_name parsing) — see isPlayWeekLocked. No cutoff (setup wizard) = nothing
+  // locks.
+  const isWeekLocked = lockBeforeDate ? isPlayWeekLocked(week, lockBeforeDate) : false;
 
   // Determine highest severity conflict
   const highestSeverity = getHighestSeverity(week.conflicts);
@@ -75,9 +68,9 @@ export const ScheduleWeekRow: React.FC<ScheduleWeekRowProps> = ({
           : 'hover:bg-muted'
       }`}
     >
-      {/* Week Name */}
+      {/* Week Name — derived label (falls back to stored week_name in transition) */}
       <td className="py-3 px-4 text-sm lg:text-md">
-        {week.weekName}
+        {weekLabel ?? week.weekName}
       </td>
 
       {/* Date */}

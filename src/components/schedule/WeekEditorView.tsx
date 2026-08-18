@@ -43,6 +43,8 @@ interface WeekData {
 interface WeekEditorViewProps {
   /** Week information */
   week: WeekData;
+  /** Derived display label ("Week 5") — never the stored week_name. */
+  weekLabel?: string;
   /** Initial match states for this week */
   initialMatches: MatchEditState[];
   /** All teams in the season (for dropdowns) */
@@ -80,6 +82,7 @@ interface WeekEditorViewProps {
  */
 export const WeekEditorView: React.FC<WeekEditorViewProps> = ({
   week,
+  weekLabel,
   initialMatches,
   teams,
   venues,
@@ -190,7 +193,7 @@ export const WeekEditorView: React.FC<WeekEditorViewProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <CardTitle className="text-lg">
-              Edit {week.week_name}
+              Edit {weekLabel ?? week.week_name}
             </CardTitle>
             <span className="text-xs font-semibold px-2 py-1 rounded bg-blue-600 text-white">
               EDITING

@@ -235,7 +235,7 @@ BEGIN
     v_week_ids := array_append(v_week_ids, v_week_id);
   END LOOP;
   INSERT INTO season_weeks (season_id, scheduled_date, week_name, week_type)
-  VALUES (v_season_id, v_start + (12 * 7), 'Season End Break', 'season_end_break');
+  VALUES (v_season_id, v_start + (12 * 7), 'Season End Break', 'blackout');
 
   -- 8. League 1 captains — pull the first 4 members from the pool.
   --    Pool indexes [1..4] = captains for teams 1..4 respectively.
@@ -323,7 +323,7 @@ BEGIN
     v_week2_ids := array_append(v_week2_ids, v_week2_id);
   END LOOP;
   INSERT INTO season_weeks (season_id, scheduled_date, week_name, week_type)
-  VALUES (v_season2_id, v_start2 + (12 * 7), 'Season End Break', 'season_end_break');
+  VALUES (v_season2_id, v_start2 + (12 * 7), 'Season End Break', 'blackout');
 
   -- 15. League 2 captains — pool indexes [29..32].
   FOR v_i IN 1..4 LOOP

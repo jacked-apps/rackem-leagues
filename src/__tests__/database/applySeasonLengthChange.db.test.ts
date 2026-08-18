@@ -57,7 +57,9 @@ async function buildSeason(realTeamCount: number, regularWeeks: number): Promise
     await executeSql(`INSERT INTO season_weeks (id, season_id, scheduled_date, week_name, week_type) VALUES ($1,$2,$3,$4,'regular')`,
       [randomUUID(), seasonId, wed(i), `Week ${i + 1}`]);
   }
-  await executeSql(`INSERT INTO season_weeks (id, season_id, scheduled_date, week_name, week_type) VALUES ($1,$2,$3,'Season End Break','season_end_break')`, [randomUUID(), seasonId, wed(regularWeeks)]);
+  // A season-end break is a blackout labelled "Season End Break" (notes), placed
+  // after the last regular week — identified as the schedule tail by position.
+  await executeSql(`INSERT INTO season_weeks (id, season_id, scheduled_date, week_name, week_type, notes) VALUES ($1,$2,$3,'Season End Break','blackout','Season End Break')`, [randomUUID(), seasonId, wed(regularWeeks)]);
   await executeSql(`INSERT INTO season_weeks (id, season_id, scheduled_date, week_name, week_type) VALUES ($1,$2,$3,'Playoffs','playoffs')`, [randomUUID(), seasonId, wed(regularWeeks + 1)]);
 
   const teamIds: string[] = [];
@@ -127,7 +129,7 @@ describe('applySeasonLengthChange', () => {
     // New regular weeks land BEFORE the break/playoff (ordering by date).
     const types = weeksAfter.map((w) => w.type);
     expect(types.slice(0, 14).every((t) => t === 'regular')).toBe(true);
-    expect(types.slice(14)).toEqual(['season_end_break', 'playoffs']);
+    expect(types.slice(14)).toEqual(['blackout', 'playoffs']);
 
     // Every pre-existing match is byte-identical (same id → same row).
     const afterById = new Map((await readMatches(seasonId)).map((m) => [m.id as string, m]));
@@ -170,7 +172,7 @@ describe('applySeasonLengthChange', () => {
 
     const weeksAfter = await readWeeks(seasonId);
     expect(weeksAfter.filter((w) => w.type === 'regular')).toHaveLength(10);
-    expect(weeksAfter.map((w) => w.type).slice(10)).toEqual(['season_end_break', 'playoffs']);
+    expect(weeksAfter.map((w) => w.type).slice(10)).toEqual(['blackout', 'playoffs']);
     // Playoffs pulled in to right after the new last regular (week 10 = wed(9)).
     expect(weeksAfter.find((w) => w.type === 'playoffs')!.date).toBe(wed(11));
 
