@@ -103,6 +103,21 @@ describe('ManualScoringMatchPicker', () => {
     expect(screen.getByText('REVIEW PAGE')).toBeInTheDocument();
   });
 
+  it('exposes the LMS print sheet as a real new-tab link (middle-click / long-press friendly)', () => {
+    // Requested by an operator: open the print sheet in a new tab so the picker
+    // list stays put. Rendering it as an <a target="_blank"> (not a click handler)
+    // is what gives the native middle-click / cmd-ctrl-click / mobile long-press
+    // affordances — assert the element is genuinely a link, not a button.
+    mockSchedule([mkMatch('m1', 'completed')]);
+    renderPicker();
+
+    const sheet = screen.getByTestId('lms-sheet');
+    expect(sheet.tagName).toBe('A');
+    expect(sheet).toHaveAttribute('href', '/league/L1/match/m1/lms-sheet');
+    expect(sheet).toHaveAttribute('target', '_blank');
+    expect(sheet).toHaveAttribute('rel', expect.stringContaining('noopener'));
+  });
+
   it('shows the empty note when no match is scorable or reviewable', () => {
     mockSchedule([mkMatch('m1', 'forfeited'), mkMatch('m2', 'in_progress')]);
     renderPicker();

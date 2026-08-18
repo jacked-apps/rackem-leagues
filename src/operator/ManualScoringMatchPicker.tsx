@@ -56,12 +56,18 @@ function MatchRow({
   match,
   onScore,
   onReview,
-  onLmsSheet,
+  lmsSheetHref,
 }: {
   match: MatchWithDetails;
   onScore: () => void;
   onReview: () => void;
-  onLmsSheet: () => void;
+  /**
+   * URL of the printable LMS results sheet. Rendered as a real link (opening a
+   * new tab) rather than a click handler, so the operator gets the native
+   * open-in-new-tab affordances they asked for — middle-click / cmd-ctrl-click
+   * (desktop) and long-press (mobile) — plus it can't be popup-blocked.
+   */
+  lmsSheetHref: string;
 }) {
   const label = `${match.home_team?.team_name ?? 'BYE'} vs ${match.away_team?.team_name ?? 'BYE'}`;
 
@@ -91,15 +97,16 @@ function MatchRow({
           <span>{label}</span>
           <Badge variant="outline">Review · {manualScoringStatusLabel(match.status)}</Badge>
         </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="shrink-0"
-          onClick={onLmsSheet}
-          title="Print results for CSI / FargoRate LMS"
-          data-testid="lms-sheet"
-        >
-          <Printer className="h-4 w-4" />
+        <Button asChild variant="ghost" size="sm" className="shrink-0">
+          <a
+            href={lmsSheetHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Print results for CSI / FargoRate LMS (opens in a new tab)"
+            data-testid="lms-sheet"
+          >
+            <Printer className="h-4 w-4" />
+          </a>
         </Button>
       </div>
     );
@@ -209,9 +216,7 @@ export default function ManualScoringMatchPicker() {
                         onReview={() =>
                           navigate(`/league/${leagueId}/match-review/${match.id}`)
                         }
-                        onLmsSheet={() =>
-                          navigate(`/league/${leagueId}/match/${match.id}/lms-sheet`)
-                        }
+                        lmsSheetHref={`/league/${leagueId}/match/${match.id}/lms-sheet`}
                       />
                     ))}
                   </div>
