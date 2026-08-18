@@ -24,32 +24,33 @@ match completes with a winner. Unit-tested at the routing layer, but a live
 
 ---
 
-## 🧪 2026-06-30 — Schedule ⇄ Matchup decoupling: TEST A+B, then Phase C
+## 🚧 2026-08-18 — Schedule decoupling: Phase C is UNBLOCKED, do it next
 
-**The two-"Week 14" bug is fixed** on branch `feat/schedule-matchup-decoupling`
-(the duplicate came from *storing* the week number, written by several code
-paths that disagreed). The refactor stops storing it and **derives "Week N" from
-each week's date position**. Plan:
+**A+B verified on staging ✅** (Ed confirmed 2026-08-18: numbering reads clean).
+A+B shipped via **PR #244** (merged to main). Plan:
 `docs/plans/2026-06-14-001-refactor-schedule-matchup-decoupling-plan.md`.
 
-**Done + in the PR (Phases A + B):**
-- A — every display surface + the operator edit-lock derive Week N from position.
-- B — migration `20260621000000`: blackout labels moved to the `notes` column,
-  the redundant `season_end_break` week type collapsed into `blackout`; all
-  writers + the reflow/toggle chain aligned.
+**👉 NEXT: do Phase C — drop the now-dead `week_name` column.** It's the final,
+irreversible cleanup. Sequencing + gotchas (from the grep-gate run on
+2026-08-18):
+- **Do it AFTER PRs #252 + #253 merge.** Both touch schedule/season files that
+  Phase C also edits (e.g. #252 *deletes* `SeasonCard.tsx`, which has a
+  `week_name` select) → doing C first means a modify/delete conflict. Let them
+  land, then do C on a settled main.
+- **Scale: ~192 refs across ~57 files.** ~10 are DB `select` clauses that still
+  pull `week_name` — those are the danger: a missed *reader* fails **silently**
+  (returns `undefined`, no crash). So the **grep-gate + full test run is the
+  safety net, not just tsc.**
+- Also strip: writers (inserts/updates), `SeasonWeek.week_name` type + the
+  `?? week_name` fallbacks, the vestigial `week_name` in
+  `src/utils/lmsExport/buildLmsSchedule.ts`, dev seeds, schema mirrors; regen
+  `database.types.ts`. Unit D: retire stale `memory-bank/scheduleReviewSystem.md`,
+  delete the `migration_matches_add_round_number.sql` draft, update TOC.
+- A throwaway branch `refactor/schedule-decouple-phase-c` was cut off main +
+  the grep run, but nothing committed — recut off fresh main when starting.
 
-**👉 YOU NEED TO DO: verify A+B on staging.** Log in, open a league's schedule
-(operator schedule page, the manage/dates page, and a team's schedule) and
-confirm: weeks read **consecutive Week 1…N with no duplicate**, blackouts show
-their label, the season-length lengthen/shorten still works. The Lucky Cue
-9-ball Summer 2026 season is the one that had two "Week 14"s.
-
-**HELD for a follow-up PR — Phase C (drop the `week_name` column).** This is the
-final cleanup (remove the now-dead column + its ~110 references). The plan
-**deliberately sequences it AFTER A+B are staging-verified** — once the column
-is gone there's no fallback if a reader was missed. So: **once you've verified
-A+B above, tell Claude to do Phase C.** Until then the column stays (harmless —
-nothing reads it).
+**To resume:** in a fresh session say "do Phase C of the schedule decoupling"
+(once #252/#253 are merged).
 
 ---
 
