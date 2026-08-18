@@ -660,6 +660,25 @@ function ScoreMatchBody() {
     return deriveDisputes(gamesForDispute, gameConfirmations);
   }, [gameResults, gameConfirmations]);
 
+  // Has MY side already verified the match end? If so, my team has finalized
+  // its acceptance of the result and there is nothing left for me to vouch on.
+  // Used to suppress the per-game confirmation backlog for someone opening an
+  // already-finalized match — e.g. a rostered player who joins after the match
+  // is over would otherwise be marched through a confirm prompt for every game
+  // they never witnessed (Ed's 18-game case: his side had confirmed the match
+  // end; only the opposing team's match-end confirmation was still outstanding).
+  // Reads both the regular and tiebreaker verified_by columns. This fires only
+  // at the very end of a match, so the mid-match self-healing prompt (a refresh
+  // during live scoring) is unaffected — verified_by is still null then.
+  const iAmHome = !!match && userTeamId === match.home_team_id;
+  const mySideVerifiedMatchEnd =
+    !!match &&
+    (iAmHome
+      ? !!(match as any).home_team_verified_by ||
+        !!(match as any).home_tiebreaker_verified_by
+      : !!(match as any).away_team_verified_by ||
+        !!(match as any).away_tiebreaker_verified_by);
+
   // ── State-derived confirmation + vacate handoff ─────────────────────────
   // Neither prompt may depend on catching a live realtime message. On every
   // games change (initial load, realtime tick, catch-up refetch, or the
@@ -707,6 +726,11 @@ function ScoreMatchBody() {
       if (myVacateRequests.current.has(game.game_number)) return; // my own action
       if (handledConfirmations.current.has(game.game_number)) return; // just acted
       if (dismissedConfirmations.current.has(game.game_number)) return; // dismissed this session
+      // My team has already verified the match end → don't surface the confirm
+      // backlog (I may not have witnessed these games; my side has signed off).
+      // Vacate is deliberately still allowed through — an opponent-initiated
+      // undo is a live correction, not a stale prompt.
+      if (mySideVerifiedMatchEnd && action !== 'vacate') return;
 
       if (action === 'vacate') {
         // Vacating is destructive — always a human decision, never auto.
@@ -734,6 +758,7 @@ function ScoreMatchBody() {
     gameResults,
     userTeamId,
     match,
+    mySideVerifiedMatchEnd,
     confirmationGame,
     confirmationQueue,
     editingGame,

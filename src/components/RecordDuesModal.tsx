@@ -79,6 +79,7 @@ export function RecordDuesModal({
       queryClient.invalidateQueries({ queryKey: queryKeys.members.detail(playerId) });
       queryClient.invalidateQueries({ queryKey: ['playerDetails'] });
       queryClient.invalidateQueries({ queryKey: ['unauthorizedPlayers'] });
+      queryClient.invalidateQueries({ queryKey: ['leagueDuesRoster'] });
       toast.success(`${playerName}'s membership marked as paid!`);
       onOpenChange(false);
       onSuccess?.();
@@ -99,6 +100,7 @@ export function RecordDuesModal({
       queryClient.invalidateQueries({ queryKey: queryKeys.members.detail(playerId) });
       queryClient.invalidateQueries({ queryKey: ['playerDetails'] });
       queryClient.invalidateQueries({ queryKey: ['unauthorizedPlayers'] });
+      queryClient.invalidateQueries({ queryKey: ['leagueDuesRoster'] });
       toast.success(`${playerName}'s membership reversed!`);
       onOpenChange(false);
       onSuccess?.();

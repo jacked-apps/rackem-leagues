@@ -132,7 +132,7 @@ export function useMatchPreparation(params: MatchPreparationParams) {
       (old) =>
         old
           ? { ...old, status: 'in_progress', started_at: old.started_at ?? new Date().toISOString() }
-          : { id, status: 'in_progress', started_at: new Date().toISOString() }
+          : { id, status: 'in_progress', started_at: new Date().toISOString(), match_result: null }
     );
   };
 

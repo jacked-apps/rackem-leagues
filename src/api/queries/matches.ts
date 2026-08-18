@@ -57,12 +57,19 @@ export interface MatchPhase {
   id: string;
   status: MatchStatus;
   started_at: string | null;
+  /**
+   * The match's decided result, or null while still in play. `'tie'` marks the
+   * tiebreaker window (a games-tied match that stays `in_progress` while captains
+   * re-pick + score the tiebreaker). The route guard reads this so it doesn't
+   * bounce captains off the tiebreak lineup page — see MatchPhaseGuard.
+   */
+  match_result: 'home_win' | 'away_win' | 'tie' | null;
 }
 
 export async function getMatchPhase(matchId: string): Promise<MatchPhase> {
   const { data, error } = await supabase
     .from('matches')
-    .select('id, status, started_at')
+    .select('id, status, started_at, match_result')
     .eq('id', matchId)
     .single();
 
@@ -589,8 +596,8 @@ export async function getMatchWithLeagueSettings(matchId: string): Promise<Match
       status,
       system_snapshot,
       assigned_table_number,
-      home_team:teams!matches_home_team_id_fkey(id, team_name),
-      away_team:teams!matches_away_team_id_fkey(id, team_name),
+      home_team:teams!matches_home_team_id_fkey(id, team_name, status),
+      away_team:teams!matches_away_team_id_fkey(id, team_name, status),
       scheduled_venue:venues!matches_scheduled_venue_id_fkey(id, name, city, state),
       actual_venue:venues!matches_actual_venue_id_fkey(id, name, city, state),
       season_week:season_weeks(scheduled_date),

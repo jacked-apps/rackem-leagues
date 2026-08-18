@@ -16,12 +16,15 @@
 import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/supabaseClient';
-import { Calendar, MapPin, Trash2, Pencil } from 'lucide-react';
+import { Calendar, MapPin, Trash2, Pencil, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { parseLocalDate } from '@/utils/formatters';
 import { clearSchedule } from '@/utils/scheduleGenerator';
+import { buildLmsSchedule } from '@/utils/lmsExport/buildLmsSchedule';
+import { lmsScheduleToXlsx, XLSX_MIME } from '@/utils/lmsExport/lmsScheduleToXlsx';
+import { downloadBytes } from '@/utils/download';
 import {
   useIsOperator,
   useSeasonById,
@@ -157,6 +160,15 @@ export const SeasonSchedulePage: React.FC = () => {
     return schedule.some(({ week, matches }) =>
       week.week_type === 'regular' &&
       matches.some(m => m.home_team_id === null || m.away_team_id === null)
+    );
+  }, [schedule]);
+
+  // Whether there's anything to export to LMS: at least one regular-week match
+  // with both teams present (the round-robin matchups LMS imports).
+  const hasExportableSchedule = useMemo(() => {
+    return schedule.some(({ week, matches }) =>
+      week.week_type === 'regular' &&
+      matches.some(m => m.home_team_id !== null && m.away_team_id !== null)
     );
   }, [schedule]);
 
@@ -296,6 +308,19 @@ export const SeasonSchedulePage: React.FC = () => {
     }
   };
 
+  /**
+   * Export the schedule as an LMS-importable .xlsx — a two-sheet workbook
+   * (Schedule grid of `away @ home` + Teams legend, teams numbered
+   * alphabetically) matching CSI/FargoRate LMS's own export, so an operator can
+   * import it there and LMS's schedule mirrors ours.
+   */
+  const handleExportLms = () => {
+    const data = buildLmsSchedule(schedule);
+    const bytes = lmsScheduleToXlsx(data);
+    const slug = seasonName.replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '').toLowerCase();
+    downloadBytes(`schedule_${slug || 'season'}.xlsx`, bytes, XLSX_MIME);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-muted py-8">
@@ -314,6 +339,17 @@ export const SeasonSchedulePage: React.FC = () => {
         title="Matchups"
         subtitle={seasonName}
       >
+        {/* Export Schedule — operator-only, available whenever a schedule exists
+            (upcoming or active). Downloads the .xlsx an operator imports elsewhere. */}
+        {isOperator && hasExportableSchedule && (
+          <div className="mt-2">
+            <Button variant="outline" onClick={handleExportLms}>
+              <Download className="h-4 w-4 mr-2" />
+              Export Schedule
+            </Button>
+          </div>
+        )}
+
         {/* Action buttons for operators during setup (season status = 'upcoming') */}
         {isOperator && seasonStatus === 'upcoming' && schedule.length > 0 && (
           <div className="mt-2 flex gap-3">

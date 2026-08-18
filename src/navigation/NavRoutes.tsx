@@ -78,6 +78,7 @@ const LeagueWizardV2Page = lazy(() => import('../wizards/league-v2/LeagueWizardV
 const LeagueRules = lazy(() => import('../operator/LeagueRules'));
 const LeagueDetail = lazy(() => import('../operator/LeagueDetail'));
 const LeagueFinancesPage = lazy(() => import('../operator/LeagueFinancesPage'));
+const LeagueDuesPage = lazy(() => import('../operator/LeagueDuesPage'));
 const AllocatorRoomPage = lazy(
   () => import('../operator/scoring-workshop/per-game-allocator/AllocatorRoomPage'),
 );
@@ -271,6 +272,7 @@ export const router = createBrowserRouter([
           { path: 'league-rules/:orgId', element: withOperator(LeagueRules) },
           { path: 'league/:leagueId', element: withOperator(LeagueDetail) },
           { path: 'league/:leagueId/finances', element: withOperator(LeagueFinancesPage) },
+          { path: 'league/:leagueId/dues', element: withOperator(LeagueDuesPage) },
           // Scoring Workshop — in active development; gated off in production
           // (route + dashboard card) until it's ready. Dev/staging only.
           ...(!isProduction
@@ -293,17 +295,16 @@ export const router = createBrowserRouter([
           { path: 'operator/league/:leagueId/playoffs/:orgId', element: withOperator(LeaguePlayoffSettings) },
           { path: 'venues/:orgId', element: withOperator(VenueManagement) },
 
-          // --- LO Manual Scoring (dev/staging only until Units 5–6 land) ---
-          ...(!isProduction
-            ? [
-                { path: 'league/:leagueId/manual-scoring', element: withOperator(ManualScoringMatchPicker) },
-                { path: 'league/:leagueId/manual-scoring/:matchId', element: withOperator(ManualScoringPage) },
-                // v2 review/correct: same host page, dispatches on match status.
-                { path: 'league/:leagueId/match-review/:matchId', element: withOperator(ManualScoringPage) },
-                // Printable LMS results sheet (CSI / FargoRate hand-entry helper).
-                { path: 'league/:leagueId/match/:matchId/lms-sheet', element: withOperator(LmsResultsSheet) },
-              ]
-            : []),
+          // --- LO Manual Scoring (LIVE in production as of 2026-06-21) ---
+          // Un-gated together as one block: the picker links to match-review and
+          // the lms-sheet (printer icon), so all four must be live or the
+          // ungated buttons would 404 — the half-gated trap this replaced.
+          { path: 'league/:leagueId/manual-scoring', element: withOperator(ManualScoringMatchPicker) },
+          { path: 'league/:leagueId/manual-scoring/:matchId', element: withOperator(ManualScoringPage) },
+          // v2 review/correct: same host page, dispatches on match status.
+          { path: 'league/:leagueId/match-review/:matchId', element: withOperator(ManualScoringPage) },
+          // Printable LMS results sheet (CSI / FargoRate hand-entry helper).
+          { path: 'league/:leagueId/match/:matchId/lms-sheet', element: withOperator(LmsResultsSheet) },
 
           // --- Developer Routes (require developer role) ---
           { path: 'admin-reports', element: withDeveloper(<AdminReports />) },

@@ -355,3 +355,35 @@ s3_region = "env(S3_REGION)"
 s3_access_key = "env(S3_ACCESS_KEY)"
 # Configures AWS_SECRET_ACCESS_KEY for S3 bucket
 s3_secret_key = "env(S3_SECRET_KEY)"
+
+# ============================================================================
+# Edge Functions — JWT verification MUST be off (each does its own auth)
+# ============================================================================
+# Every function below is called from the browser and validates the caller's
+# Bearer token INTERNALLY (auth.getUser + org-staff checks). Platform JWT
+# verification (the default) rejects the CORS preflight OPTIONS request — which
+# carries no Authorization header — with a 401 BEFORE the handler runs, so the
+# browser reports "preflight doesn't have OK status" and blocks the call.
+# verify_jwt = false lets the preflight through; auth is still enforced
+# in-function. Applied on `supabase functions deploy <name>`.
+#
+# (Bit us 2026-06-21: lo-merge-placeholder was deployed with verify_jwt ON —
+# "attach placeholder to player" failed CORS in production while its identical
+# siblings worked.)
+[functions.claim-placeholder]
+verify_jwt = false
+
+[functions.lo-merge-placeholder]
+verify_jwt = false
+
+[functions.lo-undo-merge]
+verify_jwt = false
+
+[functions.reject-invite]
+verify_jwt = false
+
+[functions.send-invite]
+verify_jwt = false
+
+[functions.send-test-email]
+verify_jwt = false

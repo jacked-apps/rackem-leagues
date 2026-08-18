@@ -4,6 +4,26 @@ Tasks and refactoring items for Ed to work on.
 
 ---
 
+## 🧪 2026-08-04 — VERIFY: tiebreaker scoring fix (PR #249)
+
+**Bug (live):** the first match to end in a games **tie** couldn't be scored —
+captains confirmed the tie, then got "Both team lineups must be locked before
+scoring can begin" and were kicked to My Teams. Cause: on a tie the app unlocks
+both lineups and sends captains to the tiebreak **lineup** page, but the route
+guard (`MatchPhaseGuard`) saw `status='in_progress'` and force-redirected them to
+the **scoring** page, which demands locked lineups. Fix teaches the guard the
+"tiebreaker window" via `matches.match_result='tie'` so it stops bouncing them.
+Branch `fix/tiebreaker-scoring-lineup-lock`, **PR #249**.
+
+**👉 YOU (or whoever can reproduce a tie) NEED TO DO: verify on staging.** Play a
+match to a real games tie, confirm the tie on both teams, and check you land on
+the **tiebreak lineup page** (not the error card). Enter + lock both tiebreak
+lineups → you should reach the tiebreak scoring page → score games 19–21 →
+match completes with a winner. Unit-tested at the routing layer, but a live
+2-device tie was NOT run — this is the confidence check.
+
+---
+
 ## 🧪 2026-06-30 — Schedule ⇄ Matchup decoupling: TEST A+B, then Phase C
 
 **The two-"Week 14" bug is fixed** on branch `feat/schedule-matchup-decoupling`
@@ -119,22 +139,11 @@ from this list when un-gated.
   staging it still shows there; un-gate (remove both `!isProduction` guards) when
   it's ready for users.
 
-- **LMS Results Sheet** — printable per-match results sheet for hand-entry into
-  CSI / FargoRate LMS (no LMS import/API exists). Gated by `!isProduction` in
-  `src/navigation/NavRoutes.tsx` (route `league/:leagueId/match/:matchId/lms-sheet`);
-  reached via the **printer icon** on a completed match in the "Score a Match"
-  picker. MVP layout (games in order, full names + winner) — **format will be
-  refined after the first LO (Ben) says what's easiest for LMS entry**, so treat
-  the current layout as a draft.
-Workflow** in `CLAUDE.md`). Each gets reviewed on staging, then un-gated — and
-removed from this list when un-gated.
-
-- **LO Manual Scoring + Match Review/Correction** — gated by `!isProduction` in
-  `src/navigation/NavRoutes.tsx` (the `manual-scoring` / `match-review` routes).
-  Two flows: enter a played-on-paper match from blank, and review/correct an
-  already-scored match (vacate-and-rescore). Reached via the **"Score a Match"**
-  button on a league's Schedule card. **Verify on staging:** score a match from
-  scratch, then open a completed match and correct a game → re-finalize.
+_(LO Manual Scoring + Match Review/Correction and the LMS Results Sheet were
+un-gated and went LIVE in production 2026-06-21 — see `feat`/`fix` un-gate
+commit. The half-gated bug that prompted it: the "Score a Match" button +
+printer icon were ungated while their routes were `!isProduction`, so they
+404'd in production.)_
 
 ---
 
@@ -1433,4 +1442,71 @@ re-point).
 **Severity:** MEDIUM — real workflow gap once a season is live; not a
 data risk, but "edit one matchup = redo the wizard" is rough. Its own
 branch + a small plan.
+
+---
+
+## 38. "Verify Scores" Button Is Available to Every Scoreboard Viewer (should be the two match teams only)
+
+**Discovered:** 2026-06-14 (Ed, reviewing the live scoring page)
+**Severity:** MEDIUM — wrong-actor can finalize a match's verification; no
+data corruption, but it lets a non-participant verify scores they have no
+standing to verify.
+
+**The problem:** At the end of a match the live scoring page swaps its header
+for `MatchEndVerification.tsx`, which renders a **"Verify Scores"** button.
+That button is `disabled={userTeamVerified || isVerifying}`
+(`src/components/scoring/MatchEndVerification.tsx:715-728`) — it is **never
+gated on whether the current user is actually on one of the two teams in this
+match.** So any player who can open the live scoreboard (spectator, a player
+from a different match/league, a guest) sees a live, clickable Verify button.
+The component's own docstring claims *"Verify Scores button (enabled only for
+user's team)"* (line 11) — so the intent was always to gate it; the code just
+never did.
+
+**Why it reads as "part of the scoreboard":** the verify UI lives *inside*
+the scoreboard/end-of-match header component, so it inherits the scoreboard's
+audience. The fix is to gate the actor, not necessarily to relocate the UI.
+
+**Fix direction:** add a "is the current user a participant in THIS match"
+check (on one of the two teams' rosters / captains) and only render or enable
+Verify for them. Consistent with [[feedback_gate_ui_relax_rls]] — gate the
+button in the UI; don't add server-side identity guards. Note the nuance:
+"anyone on the scoring page is a scorekeeper" still holds for *entering
+scores*; **verification** is the narrower act that should belong to the two
+teams playing.
+
+**Files:** `src/components/scoring/MatchEndVerification.tsx` (button + the
+`userTeamVerified` / `onVerify` wiring), and wherever it's mounted
+(`src/player/ScoreMatch.tsx`).
+
+---
+
+## 39. Dark-Mode Button Contrast on the Scoring Page (text barely visible)
+
+**Discovered:** 2026-06-14 (Ed, reviewing the live scoring page)
+**Severity:** MEDIUM — accessibility/readability; some scoring-page buttons
+have text that's barely legible in dark mode. Ed did an earlier contrast pass
+but some spots were missed.
+
+**The problem:** On the scoring page, certain buttons render with poor
+text-on-background contrast in dark mode (text nearly invisible). Likely the
+same class of bug as [[feedback_dark_mode_fixed_bg_text_colors]] — a
+fixed-color background paired with a theme-variable text color (or vice
+versa), so the pairing inverts and washes out under the dark theme.
+
+**Fix direction:** sweep every button on the scoring surface and check its
+foreground/background pairing in **both** light and dark mode. Anywhere a
+fixed background (e.g. `bg-*-50`, a status color) is used, pair it with a
+**fixed** readable text color rather than `text-foreground` /
+`text-muted-foreground` (which flip with the theme). Keep
+[[user_colorblind]] in mind — state must not be conveyed by color alone, so
+while fixing contrast, confirm any color-coded button also carries a
+text/icon label.
+
+**Files likely involved (scoring surface):**
+`src/components/scoring/UnifiedScoreboard.tsx`,
+`src/components/scoring/ThreeVThreeScoreboard.tsx`,
+`src/components/scoring/GamesList.tsx`,
+`src/components/scoring/MatchEndVerification.tsx`,
+`src/player/ScoreMatch.tsx` — plus any shared scoring button helpers.
 

@@ -98,6 +98,15 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
 
+      # Deploy edge functions on every release so they never drift out of sync
+      # with main (they were previously deploy-by-hand and never reached prod —
+      # "attach placeholder to player" 404'd). Runs AFTER migrations so the RPCs
+      # the functions call already exist. verify_jwt=false comes from config.toml.
+      - name: Deploy Edge Functions
+        run: supabase functions deploy --project-ref cibboozjixxyypzchtvr
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
         with:
