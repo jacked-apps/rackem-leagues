@@ -1224,6 +1224,7 @@ export type Database = {
           phone: string | null
           profanity_filter_enabled: boolean | null
           profanity_onboarding_completed_at: string | null
+          push_enabled: boolean | null
           role: Database["public"]["Enums"]["user_role"] | null
           starting_handicap_3v3: number | null
           starting_handicap_5v5: number | null
@@ -1253,6 +1254,7 @@ export type Database = {
           phone?: string | null
           profanity_filter_enabled?: boolean | null
           profanity_onboarding_completed_at?: string | null
+          push_enabled?: boolean | null
           role?: Database["public"]["Enums"]["user_role"] | null
           starting_handicap_3v3?: number | null
           starting_handicap_5v5?: number | null
@@ -1282,6 +1284,7 @@ export type Database = {
           phone?: string | null
           profanity_filter_enabled?: boolean | null
           profanity_onboarding_completed_at?: string | null
+          push_enabled?: boolean | null
           role?: Database["public"]["Enums"]["user_role"] | null
           starting_handicap_3v3?: number | null
           starting_handicap_5v5?: number | null
@@ -1876,6 +1879,62 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          last_seen_at: string | null
+          member_id: string
+          p256dh: string
+          user_agent: string | null
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          last_seen_at?: string | null
+          member_id: string
+          p256dh: string
+          user_agent?: string | null
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          last_seen_at?: string | null
+          member_id?: string
+          p256dh?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_type_policy: {
+        Row: {
+          conversation_kind: string
+          push_enabled: boolean
+        }
+        Insert: {
+          conversation_kind: string
+          push_enabled?: boolean
+        }
+        Update: {
+          conversation_kind?: string
+          push_enabled?: boolean
+        }
+        Relationships: []
       }
       rating_edit_audit_log: {
         Row: {
