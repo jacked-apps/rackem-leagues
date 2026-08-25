@@ -148,13 +148,17 @@ from this list when un-gated.
   the first-run onboarding prompt (`src/pages/Messages.tsx` → `showPushOnboarding`)
   AND the Settings toggle (`src/components/messages/MessageSettingsModal.tsx` →
   Notifications section; falls back to "Coming soon" when off).
-  **To review on staging:** set `VITE_PUSH_NOTIFICATIONS=true` in the staging build,
-  open Messages → you should get the "Turn on notifications?" prompt and a working
-  toggle under Settings → Notifications; enabling should create a `push_subscriptions`
-  row (you won't receive an actual push until Units 7–8 land).
-  **Do NOT un-gate production** until the dispatcher+trigger ship and a real
-  end-to-end push is verified — then flip both the flag and set the Supabase secrets
-  (see `docs/ops/push-notifications-secrets.md`).
+  Units 7–8 (dispatcher + trigger) are done too — PR #255, stacked on this one.
+  **Staging is auto-enabled on merge:** `deploy-staging.yml` now sets
+  `VITE_PUSH_NOTIFICATIONS=true`, bakes in the public key, and deploys the edge
+  function. The only manual staging step is the **one-time secret setup** (GitHub
+  `staging` env `VITE_VAPID_PUBLIC_KEY`; Supabase function secrets; one
+  `push_dispatch_config` SQL UPDATE) — see the "Staging setup (one-time)" section
+  in `docs/ops/push-notifications-secrets.md`. After that, test on a phone via the
+  staging HTTPS URL (iOS: Add to Home Screen first).
+  **Do NOT un-gate production** until a real end-to-end push is verified on staging —
+  then set `VITE_PUSH_NOTIFICATIONS=true` for the production build + the prod Supabase
+  secrets + `push_dispatch_config`, and remove this entry.
 
 _(LO Manual Scoring + Match Review/Correction and the LMS Results Sheet were
 un-gated and went LIVE in production 2026-06-21 — see `feat`/`fix` un-gate

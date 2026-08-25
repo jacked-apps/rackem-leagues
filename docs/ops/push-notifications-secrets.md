@@ -80,6 +80,37 @@ openssl rand -hex 32
 > keypair + one shared secret reused across environments is fine and simplest.
 > Split per-env later if desired — no code change, just different secret values.
 
+## Staging setup (one-time) — makes a merge to `main` work on staging
+
+The staging deploy workflow (`.github/workflows/deploy-staging.yml`) already
+handles the rest on every push to `main`: it un-gates the UI (`VITE_PUSH_NOTIFICATIONS=true`),
+bakes in the public key, runs migrations, and deploys the edge function. Three
+secret steps remain — they hold real secrets, so they can't live in the repo and
+are done once (they persist across deploys):
+
+1. **GitHub → `staging` Environment secret** (for the client build):
+   - `VITE_VAPID_PUBLIC_KEY` = the VAPID **public** key.
+2. **Supabase function secrets** (for the dispatcher) — run once:
+   ```
+   supabase secrets set \
+     VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... \
+     VAPID_SUBJECT=mailto:you@example.com DISPATCH_SHARED_SECRET=... \
+     --project-ref eahlgydddmjebcfiskmz
+   ```
+3. **Staging DB** (Supabase SQL editor) — point the trigger at the staging function
+   with the same secret:
+   ```sql
+   UPDATE public.push_dispatch_config
+      SET function_url  = 'https://eahlgydddmjebcfiskmz.supabase.co/functions/v1/dispatch-push-notifications',
+          shared_secret = '<same DISPATCH_SHARED_SECRET as step 2>',
+          enabled       = true;
+   ```
+
+Use the same keypair + secret as local (simplest) or fresh values — just keep the
+function's `DISPATCH_SHARED_SECRET` and the DB's `shared_secret` identical, and the
+`VITE_VAPID_PUBLIC_KEY` matched to `VAPID_PRIVATE_KEY`. After that, open the staging
+URL on a phone → (iOS) Add to Home Screen → open it → enable notifications → test.
+
 ## Rotation runbook (VAPID keys)
 
 Rotating the VAPID keypair **invalidates every existing push subscription** (they
