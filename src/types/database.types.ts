@@ -3311,6 +3311,19 @@ export type Database = {
           team_count: number
         }[]
       }
+      get_push_recipients: {
+        Args: { p_message_id: string }
+        Returns: {
+          auth: string
+          conversation_id: string
+          endpoint: string
+          member_id: string
+          message_content: string
+          p256dh: string
+          profanity_filter_enabled: boolean
+          sender_name: string
+        }[]
+      }
       get_team_join_view: { Args: { p_token: string }; Returns: Json }
       get_team_placeholders_for_claim: {
         Args: { p_team_id: string }

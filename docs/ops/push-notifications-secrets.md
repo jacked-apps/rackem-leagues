@@ -54,11 +54,14 @@ openssl rand -hex 32
 - **`VITE_VAPID_PUBLIC_KEY`** — set in each environment's **CI build env** (it is
   baked into the client bundle at build time). A missing build-time value makes
   the subscribe button fail silently with no server error, so treat it as required.
-- **`VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `DISPATCH_SHARED_SECRET`** — set as
-  Supabase secrets, per environment:
+- **`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `DISPATCH_SHARED_SECRET`** —
+  set as Supabase secrets, per environment. The dispatcher uses `npm:web-push`,
+  which needs **both** VAPID keys (public + private), so the public key is set as a
+  function secret here in addition to being a client build var:
   ```
-  supabase secrets set VAPID_PRIVATE_KEY=... VAPID_SUBJECT=mailto:you@example.com DISPATCH_SHARED_SECRET=... --project-ref <ref>
+  supabase secrets set VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... VAPID_SUBJECT=mailto:you@example.com DISPATCH_SHARED_SECRET=... --project-ref <ref>
   ```
+  (Locally these live in `supabase/functions/.env`.)
 - **`DISPATCH_SHARED_SECRET` also goes in the DB** — Unit 8 seeds it (plus the
   dispatcher's function URL) into the `push_dispatch_config` table so the trigger
   can send it. Keep the value identical on both sides or the dispatcher 401s.
