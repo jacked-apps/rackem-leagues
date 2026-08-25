@@ -8,7 +8,7 @@
  */
 
 import { useState } from 'react';
-import { Shield, Lock, UserX, Flag, ChevronRight } from 'lucide-react';
+import { Shield, Lock, UserX, Flag, ChevronRight, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -16,7 +16,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { useProfanityFilter } from '@/hooks/useProfanityFilter';
 import { useUpdateProfanityFilter } from '@/api/hooks';
 import { useUser } from '@/context/useUser';
-import { useMemberId } from '@/api/hooks';
+import { useMemberId, useCurrentMember, usePushSubscription } from '@/api/hooks';
+import { PushNotificationSetting } from './PushNotificationSetting';
 import { BlockedUsersModal } from './BlockedUsersModal';
 import { Modal } from '@/components/shared';
 
@@ -28,6 +29,11 @@ interface MessageSettingsModalProps {
 export function MessageSettingsModal({ onClose, onUnblocked }: MessageSettingsModalProps) {
   const { user } = useUser();
   const memberId = useMemberId();
+  const { data: member } = useCurrentMember();
+  const push = usePushSubscription({
+    memberId: member?.id,
+    pushEnabled: member?.push_enabled,
+  });
   const { shouldFilter, canToggle, isLoading } = useProfanityFilter();
   const updateMutation = useUpdateProfanityFilter();
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +56,7 @@ export function MessageSettingsModal({ onClose, onUnblocked }: MessageSettingsMo
       setTimeout(() => {
         setSuccess(false);
       }, 3000);
-    } catch (err) {
+    } catch {
       setError('Failed to update profanity filter. Please try again.');
     }
   };
@@ -192,19 +198,28 @@ export function MessageSettingsModal({ onClose, onUnblocked }: MessageSettingsMo
               </AccordionContent>
             </AccordionItem>
 
-            {/* Notifications Section - Coming Soon */}
-            <AccordionItem value="notifications" className="border rounded-lg opacity-50">
-              <AccordionTrigger className="px-4 hover:no-underline cursor-not-allowed" disabled>
+            {/* Notifications Section */}
+            <AccordionItem value="notifications" className="border rounded-lg">
+              <AccordionTrigger className="px-4 hover:no-underline hover:bg-muted">
                 <div className="flex items-center gap-3">
-                  <div className="h-5 w-5 flex items-center justify-center text-muted-foreground">🔔</div>
+                  <Bell className="h-5 w-5 text-accent-foreground" />
                   <div className="text-left">
                     <div className="font-semibold">Notifications</div>
                     <div className="text-sm text-muted-foreground font-normal">
-                      Coming soon
+                      Push notifications for new messages
                     </div>
                   </div>
                 </div>
               </AccordionTrigger>
+              <AccordionContent className="px-4 pb-4">
+                <PushNotificationSetting
+                  capability={push.capability}
+                  isSubscribed={push.isSubscribed}
+                  isBusy={push.isBusy}
+                  onEnable={push.subscribe}
+                  onDisable={push.unsubscribe}
+                />
+              </AccordionContent>
             </AccordionItem>
 
             {/* Preferences Section - Coming Soon */}
