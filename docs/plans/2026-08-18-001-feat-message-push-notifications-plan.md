@@ -416,7 +416,7 @@ iOS-not-installed shows the install path instead of erroring.
 
 ---
 
-- [ ] **Unit 6: Permission UI — onboarding prompt, settings toggle, iOS nudge**
+- [x] **Unit 6: Permission UI — onboarding prompt, settings toggle, iOS nudge**
 
 **Goal:** Give users a clear place to turn push on/off and guide iPhone users to install first.
 

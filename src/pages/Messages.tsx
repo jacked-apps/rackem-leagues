@@ -27,6 +27,7 @@ import { NewMessageModal } from '@/components/messages/NewMessageModal';
 import { AnnouncementModal } from '@/components/messages/AnnouncementModal';
 import { MessageSettingsModal } from '@/components/messages/MessageSettingsModal';
 import { ProfanityOnboardingModal } from '@/components/onboarding/ProfanityOnboardingModal';
+import { PushOnboardingPrompt } from '@/components/messages/PushOnboardingPrompt';
 import {
   useCurrentMember,
   useUserProfile,
@@ -76,6 +77,18 @@ export function Messages() {
     !!member?.user_id &&
     member.profanity_onboarding_completed_at == null &&
     !onboardingResolved;
+
+  // Push-notification onboarding (Unit 6). A separate three-way prompt shown on
+  // Messages open once profanity is out of the way and the member hasn't
+  // answered the push question (push_enabled IS NULL). "Not now" leaves it NULL
+  // so it re-asks next visit; the local flag only hides it for this mount.
+  const [pushPromptResolved, setPushPromptResolved] = useState(false);
+  const showPushOnboarding =
+    !!member?.user_id &&
+    !!memberId &&
+    member.push_enabled == null &&
+    !showProfanityOnboarding &&
+    !pushPromptResolved;
 
   // Mutation hooks
   const createOrOpenConversationMutation = useCreateOrOpenConversation();
@@ -315,6 +328,15 @@ export function Messages() {
         <ProfanityOnboardingModal
           userId={member.user_id}
           onResolved={() => setOnboardingResolved(true)}
+        />
+      )}
+
+      {/* Push notification onboarding — three-way, re-asks until answered (Unit 6) */}
+      {showPushOnboarding && member?.user_id && memberId && (
+        <PushOnboardingPrompt
+          userId={member.user_id}
+          memberId={memberId}
+          onResolved={() => setPushPromptResolved(true)}
         />
       )}
     </div>
