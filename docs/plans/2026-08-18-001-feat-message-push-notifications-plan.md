@@ -267,7 +267,7 @@ makes phase rollout a data flip.
 
 ---
 
-- [ ] **Unit 2: VAPID keys + dispatch shared secret + secrets docs**
+- [x] **Unit 2: VAPID keys + dispatch shared secret + secrets docs**
 
 **Goal:** Establish the VAPID keypair and the dispatch shared secret, and wire public/private material.
 
