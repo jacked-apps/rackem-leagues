@@ -231,61 +231,6 @@ the real production flow and leaves a whole code path untested.
 
 ---
 
-## 1. Refactor PlayerNameLink Component
-
-**Branch needed:** `refactor-player-name-link`
-
-**Problem:** The component has a messy prop interface - passing separate pieces (`playerId`, `playerName`) while also fetching data internally. This is the worst of both worlds.
-
-**Current props:**
-- `playerId` - required
-- `playerName` - required (but also fetched internally)
-- `className` - optional styling
-- `onSendMessage` - never used
-- `onReportUser` - never used
-- `onBlockUser` - never used
-- `customActions` - extension point
-
-**Solution:** Pass the whole player record instead of pieces.
-
-**New interface:**
-```tsx
-interface PlayerNameLinkProps {
-  player: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    user_id: string | null;  // null = placeholder
-    email?: string | null;
-    membership_paid_date?: string | null;
-    starting_handicap_3v3?: number | null;
-    starting_handicap_5v5?: number | null;
-  };
-  className?: string;
-  customActions?: CustomAction[];
-}
-```
-
-**Changes needed:**
-1. Update `PlayerNameLink` to accept `player` prop instead of `playerId`/`playerName`
-2. Remove unused callback props (`onSendMessage`, `onReportUser`, `onBlockUser`)
-3. Remove internal fetch for `playerBasicData` (already have it from prop)
-4. Remove internal fetch for `playerOperatorData` (already have it from prop)
-5. Keep `isBlocked` fetch (that's user-specific, not player data)
-6. Update all call sites to pass `player={player}` instead of `playerId={player.id} playerName={...}`
-
-**Note on existing hooks:**
-- `useMemberById(playerId)` already exists in `src/api/hooks/useCurrentMember.ts:166`
-- It uses `queryKeys.members.detail(memberId)` and fetches the full member record
-- Currently the component has TWO custom inline fetches (lines 93-108 and 118-131) that should just use the existing hook
-- But if we pass the whole player record, we don't need ANY fetch - the parent already has the data
-
-**Files to update:**
-- `src/components/PlayerNameLink.tsx` - main component
-- All files that use `<PlayerNameLink>` (search for usages)
-
----
-
 ## 2. Consolidate ALL Queries - Return Full Records
 
 **Branch needed:** `consolidate-queries`
@@ -412,26 +357,6 @@ const mutation = useMutation({
 
 ---
 
-## 37b. Push notifications to captains (NOT committed — Ed deciding)
-
-> ✅ **The PWA install button + iPhone instructions are DONE** — built as
-> `InstallAppCard` (Android/desktop fire the native prompt; iPhone Safari +
-> Android-menu get a step-by-step instructions modal; hides when already
-> installed/unsupported) and placed at the top of **Player Settings**. Surfacing
-> it in the **nav drawer** too is a one-liner — folded into the in-flight drawer
-> rework (the component is drop-in). The old Android-only `PWAInstallPrompt.tsx`
-> banner is superseded (still unused; safe to delete).
-
-**Discovered:** 2026-06-07 (while discussing captain onboarding + notifications)
-
-Push notifications to captains when a join request lands — hesitant until users
-ask; Ed will poll his LO buddies. PWA web-push is solid on Android/desktop, but
-**install-gated on iPhone** (the install button above is the prerequisite there).
-SMS (Twilio) is the more reliable "buzz them outside the app" channel but costs
-per-text. Decide push only after the install question is answered.
-
----
-
 ## 3. Automated Championship Date Reminders
 
 **Branch needed:** `championship-date-reminders`
@@ -462,30 +387,6 @@ upcoming year's dates are missing and sends reminder emails to devs.
 
 **Reference:** See `memory-bank/plans/TODO-championship-date-reminders.md`
 for full details.
-
----
-
-## 5. Refactor TeamManagement.tsx (too big)
-
-**Branch needed:** `refactor-team-management`
-**Discovered:** 2026-04-16
-
-**Problem:** `src/operator/TeamManagement.tsx` is ~800 lines. Hard to navigate,
-hard to test, violates the project's "under 100 lines" preference. Does a lot:
-venue assignment, team creation/editing, roster management, team importing,
-bulk actions, table number assignments.
-
-**Goal:** Break it down into smaller, focused components.
-
-**Suggested splits:**
-- `VenueAssignmentSection.tsx` — assigning venues to the league
-- `TeamList.tsx` — displaying teams, expansion state
-- `TeamEditorModal.tsx` — already exists, keep
-- `TeamImportSection.tsx` — copy from previous season
-- `useTeamManagementActions.ts` — extract handlers into a hook
-- `TeamManagement.tsx` — orchestrator, under 100 lines
-
-**Effort:** Medium. Mostly extraction, no logic changes.
 
 ---
 
@@ -861,38 +762,6 @@ dashboard. Match data is already correct on the server.
 
 ---
 
-## 21. Match-Prep Failure Routes to "Back to Schedule" Instead of Try-Again
-
-**Discovered:** 2026-05-04 during unified-scoreboard smoke-testing,
-multi-device captain scenario.
-**Severity:** Medium (recoverable but confusing UX; user can't tell
-what went wrong)
-**Owner:** unassigned
-
-**Symptom:** With a third captain logged in on a phone alongside the
-two team captains on other devices, the phone's prep_match attempt
-landed at a "go back to schedule" error UX instead of the usual
-"try again / back to lineup" recovery options. The phone never left
-the lineup screen. The opposing team's captain entered scoring
-normally on their device.
-
-**Notes:**
-- Likely a pre-existing edge case in the prep_match error handler,
-  not a regression from the unified-scoreboard branch (the
-  fire-and-forget seed-running-totals call runs *after* prep_match
-  succeeds; this failure happened before that point).
-- Three concurrent captain devices on the same match prep flow may
-  exercise a captain-confirmation race the normal two-captain flow
-  doesn't hit.
-
-**Investigation start point:** the prep_match RPC error branch in
-`src/hooks/lineup/useMatchPreparation.ts` — figure out which error
-classifications route to "back to schedule" vs "try again", and
-whether a successful opponent-side prep can leave the loser side in
-an unrecoverable state.
-
----
-
 ## 25. Inline LO-Edit Mode in Scoring Modal (Branch B Architecture Requirement)
 
 **Discovered:** 2026-05-09 (during Branch A modal verification).
@@ -1249,112 +1118,6 @@ pass + merge).
 this entry from `LIST_FOR_ED.md` when the plan doc is written and
 committed. The plan doc + its branch will then be the working record.
 
-## 32. Pre-existing DB-Test Drift — 5 RLS Test Files Reference Dead Columns / Stale Embeds
-
-**Discovered:** 2026-05-15 during Phase 1 end-to-end test pass
-**Severity:** MEDIUM — tests are silently broken on main; nothing in
-production is wrong, but the test suite gives a false sense of
-coverage on the affected tables until fixed.
-
-**Branch suggested:** `fix-drifted-rls-tests` (a small, scoped branch
-— probably 30–60 min of mechanical edits).
-
-**Context:** When the Phase 1 messaging-overhaul work cleaned up the
-vitest config to stop sweeping `.worktrees/` (commit `41c4038`), the
-full `pnpm test:run` got a real signal for the first time in a while
-— and surfaced 15 failures spread across 4 non-messaging test files.
-None are new failures from messaging work; all are pre-existing main
-bugs where a migration renamed/dropped a column (or restructured a
-relationship) and the corresponding test file was never updated. The
-failures were hidden previously because the worktree noise drowned
-the signal.
-
-The messaging-side equivalent of this drift was fixed inline on the
-messaging branch (commit `61794ca`, file `messaging.rls.test.ts`).
-The 4 files below are non-messaging and were left for a separate fix
-branch per scope.
-
-**Files + drift:**
-
-1. `src/__tests__/database/matchLineups.rls.test.ts` (**7 failures**)
-   References `lineup_position` and `player_id` on `match_lineups`,
-   which were renamed by the Phase 2 modular-system rename family
-   (look at the `home_to_win` / `home_to_tie` rename migration
-   `20260502000002_prep_match_rpc_renamed_columns.sql` and related
-   commits — the lineup column names changed in that family).
-   Fix: read the current `match_lineups` schema in
-   `20251130010824_baseline.sql` (+ any later ALTERs), update the
-   test's `.select` / `.update` / `.insert` column names to match.
-
-2. `src/__tests__/database/operator.rls.test.ts` (**6 failures**)
-   PostgREST ambiguous-embedding error:
-   `PGRST201 — Could not embed because more than one relationship
-   was found for 'organizations' and 'members'`. Two FKs now connect
-   the tables: `members.organization_id` (placeholder org
-   attribution) AND `organizations.created_by` → `members.id` (LO
-   creator). PostgREST refuses to auto-pick.
-   Fix: in any `.select(\`*, members(...)\`)` style embed in the
-   test, disambiguate with the explicit FK syntax PostgREST
-   suggests: `members!members_organization_id_fkey(...)` or
-   `members!organizations_created_by_fkey(...)` depending on
-   which side the test means.
-
-3. `src/__tests__/database/matches.rls.test.ts` (**1 failure**)
-   References `match_date` column on `matches`, which doesn't exist
-   (the actual column is likely `scheduled_at` or similar — check
-   the baseline migration).
-   Fix: one-line rename in the INSERT around test file line 216.
-
-4. `src/__tests__/database/venues.rls.test.ts` (**1 failure**)
-   References `venues.address` column, which doesn't exist on the
-   current `venues` table (the venue-table-configuration migrations
-   restructured this).
-   Fix: read the current `venues` columns and update the test's
-   embed/select.
-
-5. `src/__tests__/database/matchGames.rls.test.ts` (**4 failures**)
-   *(Added 2026-05-25 during many-eyes Phase 1 — a 5th drifted file
-   beyond the original 4.)* Two drifts: (a) it `update({confirmed_by_home:
-   true, confirmed_by_away: true})`, but those columns are `uuid` (the
-   confirmer's member id) in the baseline — Postgres rejects `"true"` as
-   a uuid; (b) the break_and_run / golden_break tests share one
-   `testGameId` and don't reset it, so setting `golden_break=true` after
-   `break_and_run=true` trips the `NOT(break_and_run AND golden_break)`
-   CHECK. Fix: set `confirmed_by_*` to a real member uuid (or drop those
-   asserts), and reset the game row between the B&R / golden-break cases.
-   **Proven pre-existing** (fails identically at base commit `073c7d2`,
-   before any many-eyes work).
-
-**Why these were invisible until now (2026-05-25):** the `db` vitest
-project couldn't even boot locally — `jsdom` was declared in
-`package.json` + the lockfile but never materialized into `node_modules`,
-so `pnpm test:run` errored the whole `db` project ("Cannot find package
-'jsdom'") instead of running it. A plain `pnpm install` materialized it,
-which unmasked all of these pre-existing failures (and let the new
-many-eyes db-tests run). If `pnpm test:run` was "green" before, it was
-because the db project was silently not executing.
-
-**How to verify a fix:**
-
-```
-pnpm db:reset
-# paste database/dev_starting_point.sql in Studio SQL editor → Run
-pnpm test:run > test-output.log 2>&1
-```
-
-Expected after fix: zero failures across all 5 files.
-
-**Note on RLS posture:** Per project memory
-`project_rls_disabled_in_dev`, RLS is currently DISABLED on most
-tables in dev. So these files are functioning as schema-CRUD smoke
-tests today, not actual RLS enforcement tests. Fixing the column
-drift now means they'll start *actually testing* what they claim to
-as soon as the RLS-enablement project (LIST_FOR_ED #29) gets picked
-up. This work and the RLS enablement are independent — either can
-ship first.
-
----
-
 ## 34. Tappable PlayerName Component — Reveal Full Name on Tap
 
 **Discovered:** 2026-05-27 while polishing the many-eyes Phase 2 dispute
@@ -1399,49 +1162,6 @@ consistently.
 both are "consistent player-info display across the app" cleanups.
 
 ---
-
----
-
-## 36. Split Matchups Editing Out of the Creation Wizard ✅ RESOLVED 2026-06-13 (#233)
-
-**Resolved (#233):** `MatchupsCard` now opens the **Matchups page** directly —
-the existing `SeasonSchedulePage` (which already shows the week-by-week matchups
-and lets operators edit unfinished matches in place), renamed to title **"Matchups"**
-at route **`/league/:leagueId/season/:seasonId/matchups`**. "Set Matchups" (when
-none exist) still goes to schedule-setup to generate them; "Edit Matchups" goes
-straight to the matchups page — no more re-running the creation wizard. Original
-entry below for context.
-
-**Discovered:** 2026-06-06 while standardizing the league-detail cards
-into the four parts (Season / Teams / Schedule / Matchups). Built a
-`MatchupsCard` whose "Set / Edit Matchups" button launches the
-create-league wizard (`/create-league/:orgId?leagueId=:id`) — because
-that's the *only* place matchups (team positions + round-robin) can be
-set or edited today. There is no standalone matchups page or route.
-
-**The need:** Once matchups are set, an operator should be able to go
-straight to **editing unfinished matches** (fix a pairing, adjust an
-un-played match) without re-running the whole creation wizard. Today
-editing matchups means re-entering the full wizard flow, which is heavy
-and confusing for a small edit on a live season.
-
-**Suggested direction:** Pull the matchups stage
-(`src/wizards/matchups-v2/`) into its own surface — a real
-`/league/:leagueId/season/:seasonId/matchups` route — that (a) shows the
-positions + round-robin grid and (b) lets the LO edit *unfinished*
-matches in place (played/confirmed matches stay locked). Then point
-`MatchupsCard`'s button at that route instead of the creation wizard.
-Relates to #33 (don't force the matchups page after team edits) — both
-are about matchups deserving a focused, non-wizard home.
-
-**Where to look:** `src/wizards/matchups-v2/` (the stage config + steps),
-`src/flows/createNewLeagueFlow.ts` (where it's the final stage),
-`src/components/operator/MatchupsCard.tsx` (the launch button to
-re-point).
-
-**Severity:** MEDIUM — real workflow gap once a season is live; not a
-data risk, but "edit one matchup = redo the wizard" is rough. Its own
-branch + a small plan.
 
 ---
 
