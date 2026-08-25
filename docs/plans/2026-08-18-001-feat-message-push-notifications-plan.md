@@ -509,7 +509,7 @@ prunes a stale endpoint, and logs counts; a POST **without** the secret returns 
 
 ---
 
-- [ ] **Unit 8: DB trigger + `pg_net` wiring + `push_dispatch_config`**
+- [x] **Unit 8: DB trigger + `pg_net` wiring + `push_dispatch_config`**
 
 **Goal:** Automatically and safely invoke the dispatcher on every real message insert.
 

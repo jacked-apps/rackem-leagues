@@ -62,9 +62,19 @@ openssl rand -hex 32
   supabase secrets set VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... VAPID_SUBJECT=mailto:you@example.com DISPATCH_SHARED_SECRET=... --project-ref <ref>
   ```
   (Locally these live in `supabase/functions/.env`.)
-- **`DISPATCH_SHARED_SECRET` also goes in the DB** — Unit 8 seeds it (plus the
-  dispatcher's function URL) into the `push_dispatch_config` table so the trigger
-  can send it. Keep the value identical on both sides or the dispatcher 401s.
+- **`DISPATCH_SHARED_SECRET` also goes in the DB** — the message-insert trigger
+  reads it from the single-row `push_dispatch_config` table. The Unit 8 migration
+  seeds `function_url` + `enabled` but leaves `shared_secret` **empty** (an empty
+  secret makes the trigger skip, so it isn't committed). Set it per environment:
+  ```sql
+  UPDATE public.push_dispatch_config
+     SET shared_secret = '<same value as the function''s DISPATCH_SHARED_SECRET>',
+         function_url  = 'https://<ref>.supabase.co/functions/v1/dispatch-push-notifications',
+         enabled       = true;
+  ```
+  Keep the secret identical to the function's or the dispatcher 401s. (Locally,
+  `function_url` is seeded to the `host.docker.internal` endpoint; only the secret
+  needs setting.)
 
 > **One keypair or per-env?** For the current single-league pre-launch phase, one
 > keypair + one shared secret reused across environments is fine and simplest.

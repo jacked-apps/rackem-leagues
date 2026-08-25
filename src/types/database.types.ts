@@ -1880,6 +1880,27 @@ export type Database = {
           },
         ]
       }
+      push_dispatch_config: {
+        Row: {
+          enabled: boolean
+          function_url: string
+          id: boolean
+          shared_secret: string
+        }
+        Insert: {
+          enabled?: boolean
+          function_url: string
+          id?: boolean
+          shared_secret?: string
+        }
+        Update: {
+          enabled?: boolean
+          function_url?: string
+          id?: boolean
+          shared_secret?: string
+        }
+        Relationships: []
+      }
       push_subscriptions: {
         Row: {
           auth: string
