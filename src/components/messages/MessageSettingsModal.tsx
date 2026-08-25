@@ -18,6 +18,7 @@ import { useUpdateProfanityFilter } from '@/api/hooks';
 import { useUser } from '@/context/useUser';
 import { useMemberId, useCurrentMember, usePushSubscription } from '@/api/hooks';
 import { PushNotificationSetting } from './PushNotificationSetting';
+import { PUSH_NOTIFICATIONS_ENABLED } from '@/config/featureFlags';
 import { BlockedUsersModal } from './BlockedUsersModal';
 import { Modal } from '@/components/shared';
 
@@ -198,29 +199,47 @@ export function MessageSettingsModal({ onClose, onUnblocked }: MessageSettingsMo
               </AccordionContent>
             </AccordionItem>
 
-            {/* Notifications Section */}
-            <AccordionItem value="notifications" className="border rounded-lg">
-              <AccordionTrigger className="px-4 hover:no-underline hover:bg-muted">
-                <div className="flex items-center gap-3">
-                  <Bell className="h-5 w-5 text-accent-foreground" />
-                  <div className="text-left">
-                    <div className="font-semibold">Notifications</div>
-                    <div className="text-sm text-muted-foreground font-normal">
-                      Push notifications for new messages
+            {/* Notifications Section — gated until the sender (Units 7–8) ships.
+                In production the flag is off, so this stays a "coming soon"
+                placeholder rather than a toggle that subscribes to a dead channel. */}
+            {PUSH_NOTIFICATIONS_ENABLED ? (
+              <AccordionItem value="notifications" className="border rounded-lg">
+                <AccordionTrigger className="px-4 hover:no-underline hover:bg-muted">
+                  <div className="flex items-center gap-3">
+                    <Bell className="h-5 w-5 text-accent-foreground" />
+                    <div className="text-left">
+                      <div className="font-semibold">Notifications</div>
+                      <div className="text-sm text-muted-foreground font-normal">
+                        Push notifications for new messages
+                      </div>
                     </div>
                   </div>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="px-4 pb-4">
-                <PushNotificationSetting
-                  capability={push.capability}
-                  isSubscribed={push.isSubscribed}
-                  isBusy={push.isBusy}
-                  onEnable={push.subscribe}
-                  onDisable={push.unsubscribe}
-                />
-              </AccordionContent>
-            </AccordionItem>
+                </AccordionTrigger>
+                <AccordionContent className="px-4 pb-4">
+                  <PushNotificationSetting
+                    capability={push.capability}
+                    isSubscribed={push.isSubscribed}
+                    isBusy={push.isBusy}
+                    onEnable={push.subscribe}
+                    onDisable={push.unsubscribe}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+            ) : (
+              <AccordionItem value="notifications" className="border rounded-lg opacity-50">
+                <AccordionTrigger className="px-4 hover:no-underline cursor-not-allowed" disabled>
+                  <div className="flex items-center gap-3">
+                    <div className="h-5 w-5 flex items-center justify-center text-muted-foreground">🔔</div>
+                    <div className="text-left">
+                      <div className="font-semibold">Notifications</div>
+                      <div className="text-sm text-muted-foreground font-normal">
+                        Coming soon
+                      </div>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+              </AccordionItem>
+            )}
 
             {/* Preferences Section - Coming Soon */}
             <AccordionItem value="preferences" className="border rounded-lg opacity-50">

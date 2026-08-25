@@ -38,3 +38,18 @@ export const PASSWORDLESS_SIGN_IN_ENABLED =
  * manual share-link) — those don't send email and work fine.
  */
 export const EMAIL_INVITES_ENABLED = import.meta.env.VITE_EMAIL_INVITES === 'true';
+
+/**
+ * Message push notifications (Web Push).
+ *
+ * LAUNCH GATE: enabled by default in local dev (`import.meta.env.DEV`); OFF in a
+ * production build unless `VITE_PUSH_NOTIFICATIONS === 'true'`. The client side
+ * (subscribe flow + UI) is complete, but nothing SENDS a push until the
+ * dispatcher edge function + trigger ship (Units 7–8). Until then the two
+ * user-facing entry points — the first-run onboarding prompt and the Settings
+ * toggle — are hidden in production so users can't subscribe to a channel that
+ * can't deliver. Set `VITE_PUSH_NOTIFICATIONS=true` on staging to review it, and
+ * flip production on once end-to-end delivery is verified. See LIST_FOR_ED.md.
+ */
+export const PUSH_NOTIFICATIONS_ENABLED =
+  import.meta.env.VITE_PUSH_NOTIFICATIONS === 'true' || import.meta.env.DEV;
