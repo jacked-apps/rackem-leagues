@@ -16,7 +16,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
 import { ConversationList } from '@/components/messages/ConversationList';
@@ -31,11 +31,13 @@ import {
   useCurrentMember,
   useUserProfile,
   useIsCaptain,
+  useConversations,
   useCreateOrOpenConversation,
   useCreateGroupConversation,
   useCreateLeagueAnnouncement,
   useCreateOrganizationAnnouncement,
 } from '@/api/hooks';
+import { resolveDeepLinkTarget } from '@/utils/messages/resolveDeepLinkTarget';
 import { cn } from '@/lib/utils';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
@@ -47,9 +49,17 @@ export function Messages() {
   const memberId = member?.id;
   const firstName = member?.first_name;
   const { canAccessLeagueOperatorFeatures } = useUserProfile();
+  // Deep link: /messages/:conversationId opens that thread even on a cold load
+  // (push feature Unit 3). We validate the id against the user's own
+  // conversations so an unknown/forbidden id falls back to the list.
+  const { conversationId: routeConversationId } = useParams<{
+    conversationId?: string;
+  }>();
+  const { data: conversations = [], isLoading: conversationsLoading } =
+    useConversations(memberId);
   const [selectedConversationId, setSelectedConversationId] = useState<
     string | null
-  >(null);
+  >(routeConversationId ?? null);
   const [showNewMessageModal, setShowNewMessageModal] = useState(false);
   const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -82,6 +92,23 @@ export function Messages() {
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location.state, location.pathname, navigate]);
+
+  // Deep link (/messages/:conversationId): open the target thread. While the
+  // conversation list is still loading we open optimistically; once loaded, an
+  // unknown/forbidden id resets to null and the list shows instead. We only act
+  // when a param is present, so in-app selection on bare /messages is untouched.
+  useEffect(() => {
+    if (!routeConversationId) return;
+    const conversationIds = (conversations as Array<{ id: string }>).map(
+      (c) => c.id
+    );
+    const { conversationId } = resolveDeepLinkTarget({
+      routeConversationId,
+      conversationIds,
+      isLoading: conversationsLoading,
+    });
+    setSelectedConversationId(conversationId);
+  }, [routeConversationId, conversationsLoading, conversations]);
 
   const handleNewMessage = () => {
     setShowNewMessageModal(true);

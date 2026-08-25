@@ -298,7 +298,7 @@ makes phase rollout a data flip.
 
 ---
 
-- [ ] **Unit 3: Deep-linkable conversation route**
+- [x] **Unit 3: Deep-linkable conversation route**
 
 **Goal:** Make a single conversation openable by URL so tap-to-open (R2) and iOS `navigate` have a target.
 
