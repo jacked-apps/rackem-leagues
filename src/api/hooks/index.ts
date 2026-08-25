@@ -109,6 +109,10 @@ export {
   useConversationMessagesRealtime,
 } from './useMessagingRealtime';
 
+// Push notifications — device subscribe/unsubscribe + capability (Unit 5)
+export { usePushSubscription } from './usePushSubscription';
+export type { UsePushSubscriptionResult } from './usePushSubscription';
+
 // Report mutations
 export {
   useCreateUserReport,

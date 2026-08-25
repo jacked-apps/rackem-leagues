@@ -374,7 +374,7 @@ a manually-sent test push shows a notification and tap opens the right route.
 
 ---
 
-- [ ] **Unit 5: Client subscription + permission logic (+ heal-stale-on-mount)**
+- [x] **Unit 5: Client subscription + permission logic (+ heal-stale-on-mount)**
 
 **Goal:** Subscribe a device, persist it, classify every permission/capability state, and self-heal stale subs.
 
