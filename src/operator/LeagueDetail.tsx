@@ -16,7 +16,6 @@ import { InfoButton } from '@/components/InfoButton';
 import { LeagueStatusCard } from '@/components/operator/LeagueStatusCard';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { logger } from '@/utils/logger';
-import { SeasonCard } from '@/components/operator/SeasonCard';
 import { MatchupsCard } from '@/components/operator/MatchupsCard';
 import { LeagueReupStatusCard } from '@/components/operator/LeagueReupStatusCard';
 import { TeamsCard } from '@/components/operator/TeamsCard';
@@ -248,7 +247,6 @@ export const LeagueDetail: React.FC = () => {
         <StatsCard leagueId={league.id} seasonId={activeSeason?.id || null} />
 
         {/* The four league parts, grouped in setup order. */}
-        <SeasonCard league={league} />
         {/* Onboarding — captains still needing their join link + pending join
             requests, in one collapsible card that's loud when there's work and
             muted (collapsed) when everyone's onboarded. */}
