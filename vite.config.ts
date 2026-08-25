@@ -67,6 +67,12 @@ export default defineConfig({
     tailwindcss(),
     react(),
     VitePWA({
+      // injectManifest: we author the service worker (src/sw.ts) so it can
+      // handle Web Push + tap-to-open. Registration is unchanged (PWAUpdatePrompt
+      // via virtual:pwa-register); update posture stays 'prompt'.
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
       registerType: 'prompt',
       includeAssets: [
         'favicon*.svg',
@@ -87,24 +93,11 @@ export default defineConfig({
         start_url: '/',
         icons: pwaIcons,
       },
-      workbox: {
+      // Runtime caching now lives in src/sw.ts (ported 1:1 from the old
+      // workbox.runtimeCaching). This block only controls what gets precached
+      // into self.__WB_MANIFEST.
+      injectManifest: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'supabase-api-cache',
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24, // 24 hours
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
-        ],
       },
     }),
   ],

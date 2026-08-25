@@ -327,7 +327,7 @@ makes phase rollout a data flip.
 
 ---
 
-- [ ] **Unit 4: Custom service worker — migrate `generateSW` → `injectManifest`**
+- [x] **Unit 4: Custom service worker — migrate `generateSW` → `injectManifest`**
 
 **Goal:** Own the SW to handle push + tap-to-open without regressing offline caching; land as its own checkpoint.
 
