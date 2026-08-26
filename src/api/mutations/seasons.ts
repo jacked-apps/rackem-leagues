@@ -299,3 +299,73 @@ export async function deleteSeason(params: DeleteSeasonParams): Promise<Season> 
 
   return cancelledSeason;
 }
+
+/** Match statuses that count as "played" — a season with any of these can't be hard-deleted. */
+const PLAYED_MATCH_STATUSES = ['completed', 'verified'];
+
+/** Outcome of {@link removeSeason}: which path ran, so the UI can message it. */
+export interface RemoveSeasonResult {
+  /** 'deleted' = hard-deleted (cascade); 'archived' = kept but pulled out of circulation. */
+  action: 'deleted' | 'archived';
+  /** How many played matches were found (0 for a delete). */
+  completedMatches: number;
+}
+
+/**
+ * Remove a season the operator wants gone — safely.
+ *
+ * A season gets a full batch of matches (+ lineup rows) the moment its schedule
+ * is generated, so "has matches" is NOT the safety test. The test is whether any
+ * have been PLAYED (status 'completed'/'verified'):
+ *
+ *   - **0 played** → HARD delete. The `ON DELETE CASCADE` FKs remove the season's
+ *     teams, rosters (team_players), matches, lineups, match_games, and weeks.
+ *     Teams are season-bound (teams.season_id NOT NULL) and get recreated per
+ *     season, so this is intended — nothing worth keeping is lost.
+ *   - **≥1 played** → do NOT delete (real results exist). ARCHIVE instead: set
+ *     status='archived'. Archived seasons are excluded from the active-season
+ *     views (which filter status='active') AND from the completed-seasons count
+ *     (which filters status='completed'), while all their data is preserved for a
+ *     future "past seasons" surface. (`seasons.status` has no CHECK constraint, so
+ *     'archived' needs no migration.)
+ *
+ * @param params - the season to remove
+ * @returns which path ran + the played-match count
+ * @throws Error on a DB failure
+ */
+export async function removeSeason(params: DeleteSeasonParams): Promise<RemoveSeasonResult> {
+  // 1. Count PLAYED matches — the guard between delete and archive.
+  const { count, error: countErr } = await supabase
+    .from('matches')
+    .select('*', { count: 'exact', head: true })
+    .eq('season_id', params.seasonId)
+    .in('status', PLAYED_MATCH_STATUSES);
+
+  if (countErr) {
+    throw new Error(`Failed to check the season's matches: ${countErr.message}`);
+  }
+
+  const completedMatches = count ?? 0;
+
+  // 2a. Real results exist → archive (never destroy played data).
+  if (completedMatches > 0) {
+    const { error: archiveErr } = await supabase
+      .from('seasons')
+      .update({ status: 'archived' })
+      .eq('id', params.seasonId);
+    if (archiveErr) {
+      throw new Error(`Failed to archive the season: ${archiveErr.message}`);
+    }
+    return { action: 'archived', completedMatches };
+  }
+
+  // 2b. Nothing played → hard delete; cascade removes everything attached.
+  const { error: deleteErr } = await supabase
+    .from('seasons')
+    .delete()
+    .eq('id', params.seasonId);
+  if (deleteErr) {
+    throw new Error(`Failed to delete the season: ${deleteErr.message}`);
+  }
+  return { action: 'deleted', completedMatches: 0 };
+}
