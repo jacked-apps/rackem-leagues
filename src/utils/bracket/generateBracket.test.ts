@@ -146,8 +146,78 @@ describe('generateBracket', () => {
     expect(() => generateBracket(1, { format: 'single_elimination' })).toThrow();
     expect(() => generateBracket(0, { format: 'single_elimination' })).toThrow();
   });
+});
 
-  it('double-elimination is not yet implemented (Unit 2b)', () => {
-    expect(() => generateBracket(8, { format: 'double_elimination' })).toThrow();
+describe('generateDoubleElim', () => {
+  const de = (n: number, reset = false) =>
+    generateBracket(n, { format: 'double_elimination', grandFinalReset: reset });
+
+  it('8 players → 14 matches (2N-2): WB + LB + one grand final, no reset', () => {
+    const m = de(8);
+    assertValidTree(m, { count: 14, terminals: 1 });
+    expect(m.filter((x) => x.side === 'winners').length).toBe(7); // N-1 WB
+    expect(m.filter((x) => x.side === 'losers').length).toBe(6); // LB
+    expect(m.filter((x) => x.side === 'grand_final').length).toBe(1);
+    // Round-1 WB is standard-seeded.
+    const w1 = m.filter((x) => x.side === 'winners' && x.round === 1);
+    expect(w1[0].homeSeed).toBe(1);
+    expect(w1[0].awaySeed).toBe(8);
+    // Every WB match drops its loser somewhere.
+    expect(m.filter((x) => x.side === 'winners').every((x) => x.loserNextMatchKey !== null)).toBe(true);
+  });
+
+  it('reset flag adds a conditional grand-final decider (2N-1 rows)', () => {
+    const m = de(8, true);
+    expect(m.length).toBe(15);
+    const reset = m.filter((x) => x.isResetMatch);
+    expect(reset.length).toBe(1);
+    expect(reset[0].side).toBe('grand_final');
+    // The reset node has no incoming pointer (runtime-activated only).
+    const pointsToReset = m.some(
+      (x) => x.nextMatchKey === reset[0].key || x.loserNextMatchKey === reset[0].key
+    );
+    expect(pointsToReset).toBe(false);
+  });
+
+  it('drop routing: WB round r loser → LB round 2r-2 (final loser → LB final)', () => {
+    const m = de(8);
+    const byKey = new Map(m.map((x) => [x.key, x]));
+    const lbFinalRound = 2 * 3 - 2; // d=3 → LB round 4
+    const wbFinal = m.find((x) => x.side === 'winners' && x.round === 3)!;
+    const dropTarget = byKey.get(wbFinal.loserNextMatchKey!)!;
+    expect(dropTarget.side).toBe('losers');
+    expect(dropTarget.round).toBe(lbFinalRound);
+    // A WB round-2 loser drops into an LB round-2 match.
+    const wb2 = m.find((x) => x.side === 'winners' && x.round === 2)!;
+    expect(byKey.get(wb2.loserNextMatchKey!)!.round).toBe(2);
+  });
+
+  it('4 players → 6 matches (the smallest normal double-elim)', () => {
+    assertValidTree(de(4), { count: 6, terminals: 1 });
+  });
+
+  it('2 players → WB final + grand final (degenerate, 2 matches)', () => {
+    const m = de(2);
+    assertValidTree(m, { count: 2, terminals: 1 });
+    expect(m.filter((x) => x.side === 'losers').length).toBe(0);
+  });
+
+  it('non-power-of-two fields stay valid with exactly 2N-2 matches', () => {
+    for (const n of [3, 5, 6, 7, 11, 13]) {
+      const m = de(n);
+      assertValidTree(m, { count: 2 * n - 2, terminals: 1 });
+      // Byes never leave a match with two empty slots waiting on nothing.
+      expect(m.every((x) => x.homeSeed !== null || x.awaySeed !== null || x.status === 'pending')).toBe(true);
+    }
+  });
+
+  it('match count is exactly 2N-2 across a range of fields', () => {
+    for (const n of [2, 3, 4, 5, 8, 13, 16, 32]) {
+      expect(de(n).length).toBe(2 * n - 2);
+    }
+  });
+
+  it('is deterministic — same field yields an identical tree', () => {
+    expect(de(13)).toEqual(de(13));
   });
 });

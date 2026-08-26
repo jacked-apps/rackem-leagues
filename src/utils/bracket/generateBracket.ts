@@ -22,6 +22,7 @@ import type {
   MatchSlot,
 } from '@/types/bracket';
 import { nextPow2, roundOnePairs } from './seeding';
+import { generateDoubleElim } from './doubleElim';
 
 /** Integer log2 of a power of two. */
 function log2(size: number): number {
@@ -153,6 +154,5 @@ export function generateBracket(
   if (options.format === 'single_elimination') {
     return generateSingleElim(participantCount);
   }
-  // Double-elimination lands in Unit 2b (./doubleElim).
-  throw new Error('Double-elimination generation is not yet implemented.');
+  return generateDoubleElim(participantCount, options.grandFinalReset ?? false);
 }
