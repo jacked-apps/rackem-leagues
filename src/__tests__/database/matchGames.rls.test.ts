@@ -121,15 +121,35 @@ describe('Match Games Table - RLS Tests', () => {
         return;
       }
 
+      // confirmed_by_home / confirmed_by_away are uuid columns holding the
+      // confirming member's id (not booleans). Use the game's own players as
+      // the confirmers, then restore the original values.
+      const { data: game } = await client
+        .from('match_games')
+        .select('home_player_id, away_player_id, confirmed_by_home, confirmed_by_away')
+        .eq('id', testGameId)
+        .single();
+
+      if (!game) return;
+
       const { error } = await client
         .from('match_games')
         .update({
-          confirmed_by_home: true,
-          confirmed_by_away: true,
+          confirmed_by_home: game.home_player_id,
+          confirmed_by_away: game.away_player_id,
         })
         .eq('id', testGameId);
 
       expect(error).toBeNull();
+
+      // Restore original confirmation state
+      await client
+        .from('match_games')
+        .update({
+          confirmed_by_home: game.confirmed_by_home,
+          confirmed_by_away: game.confirmed_by_away,
+        })
+        .eq('id', testGameId);
     });
 
     it('should allow updating game actions (break/rack)', async () => {
@@ -161,6 +181,13 @@ describe('Match Games Table - RLS Tests', () => {
         .eq('id', testGameId);
 
       expect(error).toBeNull();
+
+      // Reset: break_and_run and golden_break are mutually exclusive via a
+      // CHECK constraint, so clear this flag before the golden-break test runs.
+      await client
+        .from('match_games')
+        .update({ break_and_run: false })
+        .eq('id', testGameId);
     });
 
     it('should allow marking golden break', async () => {
@@ -175,6 +202,12 @@ describe('Match Games Table - RLS Tests', () => {
         .eq('id', testGameId);
 
       expect(error).toBeNull();
+
+      // Reset to keep the shared test game row clean for later assertions.
+      await client
+        .from('match_games')
+        .update({ golden_break: false })
+        .eq('id', testGameId);
     });
 
     it('should allow requesting vacate', async () => {
@@ -217,8 +250,6 @@ describe('Match Games Table - RLS Tests', () => {
           away_action: 'racks',
           break_and_run: false,
           golden_break: false,
-          confirmed_by_home: false,
-          confirmed_by_away: false,
           is_tiebreaker: true,
           game_type: 'nine_ball',
         })
