@@ -1191,6 +1191,11 @@ Lineup-page workhorse hooks. Extracted from the monolithic `useMatchLineup` so e
 
 ### 🛠️ Utilities (`/utils/`)
 
+#### Tournament Bracket Engine (`/utils/bracket/`)
+
+- `seeding.ts` - **Bracket seed placement + byes (Unit 2).** `nextPow2`, `seedSlots` (standard recursive spread ordering so seeds 1 & 2 can only meet in the final), and `roundOnePairs` (pads to the next power of two, assigns byes to the top seeds — a seed above the field size is a bye/null). Pure; does NOT use the league `playoffGenerator` (power-of-two-only, no byes).
+- `generateBracket.ts` - **Bracket generation engine (Unit 2).** `generateBracket(participantCount, {format, grandFinalReset})` → the in-memory match tree (`GeneratedMatch[]`). `generateSingleElim` builds the winners tree as exactly N−1 matches (a bye is NOT a match — the top seed starts in round 2) with `next_match` pointer wiring. Pure + deterministic (works on seed positions only; seeding-mode order is resolved upstream once). Double-elim dispatched here (implemented in `doubleElim.ts`). Tests: `generateBracket.test.ts`. Types: `src/types/bracket.ts`.
+
 #### Date & Time
 
 > **CRITICAL**: Always use `formatters.ts` for timezone-safe date handling
