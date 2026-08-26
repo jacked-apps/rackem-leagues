@@ -22,8 +22,7 @@ import { TeamsCard } from '@/components/operator/TeamsCard';
 import { ScheduleCard } from '@/components/operator/ScheduleCard';
 import { StatsCard } from '@/components/operator/StatsCard';
 import { PlayoffsCard } from '@/components/operator/PlayoffsCard';
-import { OnboardCaptainsList } from '@/onboarding/OnboardCaptainsList';
-import { JoinRequestList } from '@/onboarding/components/JoinRequestList';
+import { OnboardingAttentionCard } from '@/onboarding/OnboardingAttentionCard';
 import { Button } from '@/components/ui/button';
 import { DashboardCard } from '@/components/operator/DashboardCard';
 import { FinancesCard } from '@/components/operator/FinancesCard';
@@ -248,17 +247,10 @@ export const LeagueDetail: React.FC = () => {
         <StatsCard leagueId={league.id} seasonId={activeSeason?.id || null} />
 
         {/* The four league parts, grouped in setup order. */}
-        {/* Captain-onboarding list — sits with Teams; self-clears as captains
-            register. Restored after a merge (#192's restructure) dropped it. */}
-        <OnboardCaptainsList leagueId={league.id} />
-
-        {/* Pending join requests for THIS league — the per-league approval
-            surface. Stays visible (empty state) so the operator can see it. */}
-        <JoinRequestList
-          title="Join requests"
-          leagueId={league.id}
-          emptyHint="No pending join requests for this league yet. When a captain or player taps their invite link and asks to join, they'll appear here to approve."
-        />
+        {/* Onboarding — captains still needing their join link + pending join
+            requests, in one collapsible card that's loud when there's work and
+            muted (collapsed) when everyone's onboarded. */}
+        <OnboardingAttentionCard leagueId={league.id} />
         {/* Order: Schedule (dates) → Playoffs (finals) → Teams → Matchups
             (who-plays-who). Each card opens its own page. */}
         <ScheduleCard leagueId={league.id} />
