@@ -139,6 +139,23 @@ from this list when un-gated.
   staging it still shows there; un-gate (remove both `!isProduction` guards) when
   it's ready for users.
 
+- **Message Push Notifications (client side, Units 1–6)** — branch
+  `feat/message-push-notifications`. The subscribe flow + UI are done, but nothing
+  SENDS a push yet (the dispatcher edge function + DB trigger are Units 7–8, a
+  separate follow-up PR). Gated by the `PUSH_NOTIFICATIONS_ENABLED` flag in
+  `src/config/featureFlags.ts` (on in dev, OFF in production unless
+  `VITE_PUSH_NOTIFICATIONS=true`). Both user-facing entry points are gated with it:
+  the first-run onboarding prompt (`src/pages/Messages.tsx` → `showPushOnboarding`)
+  AND the Settings toggle (`src/components/messages/MessageSettingsModal.tsx` →
+  Notifications section; falls back to "Coming soon" when off).
+  **To review on staging:** set `VITE_PUSH_NOTIFICATIONS=true` in the staging build,
+  open Messages → you should get the "Turn on notifications?" prompt and a working
+  toggle under Settings → Notifications; enabling should create a `push_subscriptions`
+  row (you won't receive an actual push until Units 7–8 land).
+  **Do NOT un-gate production** until the dispatcher+trigger ship and a real
+  end-to-end push is verified — then flip both the flag and set the Supabase secrets
+  (see `docs/ops/push-notifications-secrets.md`).
+
 _(LO Manual Scoring + Match Review/Correction and the LMS Results Sheet were
 un-gated and went LIVE in production 2026-06-21 — see `feat`/`fix` un-gate
 commit. The half-gated bug that prompted it: the "Score a Match" button +

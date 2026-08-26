@@ -205,6 +205,10 @@ export const router = createBrowserRouter([
           { path: 'dashboard', element: <Navigate to="/my-teams" replace /> },
           { path: 'profile', element: withMember(<Profile />) },
           { path: 'messages', element: withMember(<Messages />) },
+          // Deep-linkable single conversation — a tapped push notification opens
+          // /messages/:conversationId and lands on that thread even on a cold
+          // load (push feature Unit 3). Same page; it reads the param.
+          { path: 'messages/:conversationId', element: withMember(<Messages />) },
           { path: 'player/:playerId', element: withMember(<PlayerProfile />) },
           { path: 'my-teams', element: withMember(<MyTeams />) },
           { path: 'reup', element: withMember(<CaptainReupPage />) },

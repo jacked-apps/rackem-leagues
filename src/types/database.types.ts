@@ -1224,6 +1224,7 @@ export type Database = {
           phone: string | null
           profanity_filter_enabled: boolean | null
           profanity_onboarding_completed_at: string | null
+          push_enabled: boolean | null
           role: Database["public"]["Enums"]["user_role"] | null
           starting_handicap_3v3: number | null
           starting_handicap_5v5: number | null
@@ -1253,6 +1254,7 @@ export type Database = {
           phone?: string | null
           profanity_filter_enabled?: boolean | null
           profanity_onboarding_completed_at?: string | null
+          push_enabled?: boolean | null
           role?: Database["public"]["Enums"]["user_role"] | null
           starting_handicap_3v3?: number | null
           starting_handicap_5v5?: number | null
@@ -1282,6 +1284,7 @@ export type Database = {
           phone?: string | null
           profanity_filter_enabled?: boolean | null
           profanity_onboarding_completed_at?: string | null
+          push_enabled?: boolean | null
           role?: Database["public"]["Enums"]["user_role"] | null
           starting_handicap_3v3?: number | null
           starting_handicap_5v5?: number | null
@@ -1876,6 +1879,62 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          last_seen_at: string | null
+          member_id: string
+          p256dh: string
+          user_agent: string | null
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          last_seen_at?: string | null
+          member_id: string
+          p256dh: string
+          user_agent?: string | null
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          last_seen_at?: string | null
+          member_id?: string
+          p256dh?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_type_policy: {
+        Row: {
+          conversation_kind: string
+          push_enabled: boolean
+        }
+        Insert: {
+          conversation_kind: string
+          push_enabled?: boolean
+        }
+        Update: {
+          conversation_kind?: string
+          push_enabled?: boolean
+        }
+        Relationships: []
       }
       rating_edit_audit_log: {
         Row: {
@@ -2512,6 +2571,7 @@ export type Database = {
           losses: number | null
           points: number | null
           roster_size: number
+          schedule_position: number | null
           season_id: string
           status: string | null
           team_name: string
@@ -2531,6 +2591,7 @@ export type Database = {
           losses?: number | null
           points?: number | null
           roster_size: number
+          schedule_position?: number | null
           season_id: string
           status?: string | null
           team_name: string
@@ -2550,6 +2611,7 @@ export type Database = {
           losses?: number | null
           points?: number | null
           roster_size?: number
+          schedule_position?: number | null
           season_id?: string
           status?: string | null
           team_name?: string
@@ -3141,10 +3203,7 @@ export type Database = {
         }
         Returns: string
       }
-      daitch_mokotoff: {
-        Args: { "": string }
-        Returns: string[]
-      }
+      daitch_mokotoff: { Args: { "": string }; Returns: string[] }
       delete_unused_placeholder: {
         Args: {
           p_actor_member_id: string
@@ -3156,18 +3215,13 @@ export type Database = {
           success: boolean
         }[]
       }
-      dmetaphone: {
-        Args: { "": string }
+      dmetaphone: { Args: { "": string }; Returns: string }
+      dmetaphone_alt: { Args: { "": string }; Returns: string }
+      drop_team_mid_season: {
+        Args: { p_season_id: string; p_team_id: string }
         Returns: string
       }
-      dmetaphone_alt: {
-        Args: { "": string }
-        Returns: string
-      }
-      get_current_member_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      get_current_member_id: { Args: never; Returns: string }
       get_invite_details: {
         Args: { p_token: string }
         Returns: {
@@ -3181,10 +3235,7 @@ export type Database = {
           team_name: string
         }[]
       }
-      get_join_requests_for_approver: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      get_join_requests_for_approver: { Args: never; Returns: Json }
       get_league_teams_for_onboarding: {
         Args: { p_league_id: string }
         Returns: Json
@@ -3204,12 +3255,9 @@ export type Database = {
           synopsis: Json
         }[]
       }
-      get_my_approved_join_requests: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      get_my_approved_join_requests: { Args: never; Returns: Json }
       get_my_pending_invites: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           captain_name: string
           creator_name: string
@@ -3228,18 +3276,9 @@ export type Database = {
           token: string
         }[]
       }
-      get_operator_placeholders: {
-        Args: { p_org_id: string }
-        Returns: Json
-      }
-      get_operator_player_stats: {
-        Args: { p_org_id: string }
-        Returns: Json
-      }
-      get_operator_stats: {
-        Args: { operator_id_param: string }
-        Returns: Json
-      }
+      get_operator_placeholders: { Args: { p_org_id: string }; Returns: Json }
+      get_operator_player_stats: { Args: { p_org_id: string }; Returns: Json }
+      get_operator_stats: { Args: { operator_id_param: string }; Returns: Json }
       get_org_placeholders_for_merge: {
         Args: { p_include_archived?: boolean; p_org_id: string }
         Returns: {
@@ -3272,11 +3311,12 @@ export type Database = {
           team_count: number
         }[]
       }
-      get_team_join_view: {
-        Args: { p_token: string }
+      get_team_join_view: { Args: { p_token: string }; Returns: Json }
+      get_team_placeholders_for_claim: {
+        Args: { p_team_id: string }
         Returns: Json
       }
-      get_team_placeholders_for_claim: {
+      get_team_roster_for_approver: {
         Args: { p_team_id: string }
         Returns: Json
       }
@@ -3287,34 +3327,11 @@ export type Database = {
           team_name: string
         }[]
       }
-      gtrgm_compress: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      gtrgm_decompress: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      gtrgm_in: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      gtrgm_options: {
-        Args: { "": unknown }
-        Returns: undefined
-      }
-      gtrgm_out: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
       is_conversation_participant: {
         Args: { conv_id: string; uid: string }
         Returns: boolean
       }
-      league_display_name: {
-        Args: { p_league_id: string }
-        Returns: string
-      }
+      league_display_name: { Args: { p_league_id: string }; Returns: string }
       lookup_placeholder_by_system_number: {
         Args: { p_system_number: number }
         Returns: {
@@ -3336,10 +3353,7 @@ export type Database = {
           was_swapped: boolean
         }[]
       }
-      member_display_name: {
-        Args: { p_member_id: string }
-        Returns: string
-      }
+      member_display_name: { Args: { p_member_id: string }; Returns: string }
       merge_placeholder_into_member: {
         Args: { p_placeholder_member_id: string; p_target_member_id: string }
         Returns: {
@@ -3365,10 +3379,7 @@ export type Database = {
           total_rows_updated: number
         }[]
       }
-      placeholder_has_stats: {
-        Args: { p_member_id: string }
-        Returns: boolean
-      }
+      placeholder_has_stats: { Args: { p_member_id: string }; Returns: boolean }
       prep_match: {
         Args: { p_game_rows: Json; p_match_id: string; p_thresholds: Json }
         Returns: undefined
@@ -3405,10 +3416,7 @@ export type Database = {
           success: boolean
         }[]
       }
-      rotate_team_join_token: {
-        Args: { p_team_id: string }
-        Returns: Json
-      }
+      rotate_team_join_token: { Args: { p_team_id: string }; Returns: Json }
       search_placeholder_matches: {
         Args: {
           p_city?: string
@@ -3470,10 +3478,6 @@ export type Database = {
           total_score: number
         }[]
       }
-      set_limit: {
-        Args: { "": number }
-        Returns: number
-      }
       set_match_lineup_rating: {
         Args: {
           p_match_lineup_id: string
@@ -3492,26 +3496,15 @@ export type Database = {
         }
         Returns: string
       }
-      show_limit: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      show_trgm: {
-        Args: { "": string }
-        Returns: string[]
-      }
-      soundex: {
-        Args: { "": string }
-        Returns: string
-      }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
+      soundex: { Args: { "": string }; Returns: string }
       swap_player_in_lineup: {
         Args: { p_lineup_id: string; p_resolution: Json; p_thresholds: Json }
         Returns: undefined
       }
-      text_soundex: {
-        Args: { "": string }
-        Returns: string
-      }
+      sweep_auto_forfeits: { Args: never; Returns: number }
+      text_soundex: { Args: { "": string }; Returns: string }
       undo_merge_placeholder: {
         Args: {
           p_actor_member_id: string
