@@ -77,13 +77,6 @@ Shipped this session (PRs awaiting Jack): #229 playoff review page (merged),
    PR. *(Other computer was on this.)* Once in, its button is reachable via the
    Schedule card → dates page.
 
-3. **Stale `supabase/seed.sql` (709KB).** `config.toml`'s `sql_paths` points at it,
-   but it references the dropped `team_format` column → won't load (seeding is
-   disabled, so `db reset` skips it anyway). You restore from
-   `database/dev_starting_point.sql` instead, which is current. Either regenerate
-   `seed.sql` from a migrated DB (`supabase db dump --local --data-only`) or delete
-   it, and decide whether seeding stays disabled.
-
 4. **Seed gaps (optional).** Clean-DB tests reveal: (a) the seed has **no scored
    games** (`match_games` = 0) → `appendConfirmation` + `gameConfirmations.schema`
    tests can't find a fixture; (b) **no finished-season fixture** → can't actually

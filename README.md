@@ -137,7 +137,6 @@ src/                    React app (TypeScript)
 
 supabase/
   migrations/           Database migrations (timestamped, ordered)
-  seed.sql              Auto-loaded by `pnpm db:reset` (large baseline data)
   seed_test_users.sql   Older RLS-test users (separate from dev seed below)
 
 database/
