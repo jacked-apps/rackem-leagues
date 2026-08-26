@@ -5,13 +5,40 @@
  * Displays status badge, progress bar, and next action steps.
  * Used on both Operator Dashboard and League Detail pages to ensure consistency.
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/supabaseClient';
+import { Button } from '@/components/ui/button';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { LeagueProgressBar } from './LeagueProgressBar';
 import { deriveSetupProgress } from './leagueSetupProgress';
+import { useRemoveSeason } from '@/api/hooks/useSeasonMutations';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { toast } from 'sonner';
 import type { League } from '@/types/league';
 import type { Season } from '@/types/season';
 import { logger } from '@/utils/logger';
+
+/** The season being managed (the most-recent one) + its delete-vs-archive guard. */
+interface ManageSeason {
+  id: string;
+  season_name: string;
+  start_date: string;
+  end_date: string;
+  status: string;
+  /** Matches with a played result — >0 means Delete becomes Archive. */
+  playedMatches: number;
+}
+
+const fmtDate = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+/** Format a date `days` away from an ISO date (used for next-season projections). */
+const shiftDate = (iso: string, days: number) => {
+  const d = new Date(iso);
+  d.setDate(d.getDate() + days);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
 
 interface LeagueStatusCardProps {
   /** League to display status for */
@@ -53,6 +80,10 @@ export const LeagueStatusCard: React.FC<LeagueStatusCardProps> = ({
   league,
   variant = 'section'
 }) => {
+  const navigate = useNavigate();
+  const { confirm, ConfirmDialogComponent } = useConfirmDialog();
+  const removeSeason = useRemoveSeason();
+
   const [loading, setLoading] = useState(true);
   const [seasonCount, setSeasonCount] = useState(0);
   const [teamCount, setTeamCount] = useState(0);
@@ -61,12 +92,14 @@ export const LeagueStatusCard: React.FC<LeagueStatusCardProps> = ({
   const [activeSeason, setActiveSeason] = useState<Season | null>(null);
   const [completedWeeksCount, setCompletedWeeksCount] = useState(0);
   const [totalWeeksCount, setTotalWeeksCount] = useState(0);
+  // Season-management (the "Manage season" reveal): the season to manage + toggle.
+  const [manageSeason, setManageSeason] = useState<ManageSeason | null>(null);
+  const [manageOpen, setManageOpen] = useState(false);
 
   /**
    * Fetch all league status data
    */
-  useEffect(() => {
-    const fetchStatusData = async () => {
+  const load = useCallback(async () => {
       setLoading(true);
       try {
         // Fetch season count
@@ -105,6 +138,21 @@ export const LeagueStatusCard: React.FC<LeagueStatusCardProps> = ({
           setTeamCount(teamRes.count || 0);
           setScheduleExists((scheduleRes.count || 0) > 0);
           setMatchupsExist((matchRes.count || 0) > 0);
+
+          // Season to manage (delete/archive) — capture id/dates + played count.
+          const { count: playedCount } = await supabase
+            .from('matches')
+            .select('*', { count: 'exact', head: true })
+            .eq('season_id', mostRecentSeason.id)
+            .in('status', ['completed', 'verified']);
+          setManageSeason({
+            id: mostRecentSeason.id,
+            season_name: mostRecentSeason.season_name,
+            start_date: mostRecentSeason.start_date,
+            end_date: mostRecentSeason.end_date,
+            status: mostRecentSeason.status,
+            playedMatches: playedCount ?? 0,
+          });
 
           // Week-completion stats only meaningful once season is active
           if (mostRecentSeason.status === 'active') {
@@ -155,16 +203,39 @@ export const LeagueStatusCard: React.FC<LeagueStatusCardProps> = ({
           setMatchupsExist(false);
           setTotalWeeksCount(0);
           setCompletedWeeksCount(0);
+          setManageSeason(null);
         }
       } catch (error) {
         logger.error('Error fetching league status', { error: error instanceof Error ? error.message : String(error) });
       } finally {
         setLoading(false);
       }
-    };
-
-    fetchStatusData();
   }, [league.id]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  /** Delete (nothing played) or archive (played matches exist), then refresh. */
+  const handleRemoveSeason = async () => {
+    if (!manageSeason) return;
+    const willArchive = manageSeason.playedMatches > 0;
+    const ok = await confirm({
+      title: willArchive ? 'Archive this season?' : 'Delete this season?',
+      message: willArchive
+        ? `"${manageSeason.season_name}" has ${manageSeason.playedMatches} played match(es), so it can't be deleted — it'll be archived instead (hidden from your active seasons, data kept).`
+        : `Permanently delete "${manageSeason.season_name}" and everything in it (teams, matchups, schedule)? This can't be undone.`,
+      confirmText: willArchive ? 'Archive' : 'Delete',
+    });
+    if (!ok) return;
+    try {
+      const result = await removeSeason.mutateAsync({ seasonId: manageSeason.id });
+      toast.success(result.action === 'archived' ? 'Season archived.' : 'Season deleted.');
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not remove the season.');
+    }
+  };
 
   /**
    * Determine current status.
@@ -334,6 +405,75 @@ export const LeagueStatusCard: React.FC<LeagueStatusCardProps> = ({
           </ol>
         </div>
       )}
+
+      {/* Manage season — a bottom, centered reveal. Collapsed by default so the
+          card stays a status-at-a-glance; expands to the season's dates, the
+          guarded delete/archive, and the next-season action. */}
+      {manageSeason && (
+        <div className="mt-4 border-t border-border pt-3">
+          <div className="flex justify-center">
+            <Button
+              size="sm"
+              variant="ghost"
+              loadingText="none"
+              onClick={() => setManageOpen((v) => !v)}
+            >
+              {manageOpen ? 'Less' : 'Manage season'}
+              {manageOpen ? <ChevronUp className="ml-1 h-4 w-4" /> : <ChevronDown className="ml-1 h-4 w-4" />}
+            </Button>
+          </div>
+
+          {manageOpen && (
+            <div className="mt-3 space-y-4">
+              {/* CURRENT */}
+              <div className="space-y-1">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Current</div>
+                <div className="font-semibold text-foreground">{manageSeason.season_name}</div>
+                <div className="text-sm text-muted-foreground">
+                  {fmtDate(manageSeason.start_date)} – {fmtDate(manageSeason.end_date)}
+                </div>
+                <div className="pt-1">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    onClick={handleRemoveSeason}
+                    isLoading={removeSeason.isPending}
+                    loadingText="Removing..."
+                  >
+                    {manageSeason.playedMatches > 0 ? 'Archive season' : 'Delete season'}
+                  </Button>
+                </div>
+              </div>
+
+              {/* NEXT */}
+              <div className="space-y-1 border-t border-border pt-3">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Next</div>
+                <div className="text-sm text-muted-foreground">
+                  Projected start: <span className="text-foreground">{shiftDate(manageSeason.end_date, 7)}</span>
+                  {' '}(week after this season ends)
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Recommended: create by <span className="text-foreground">{shiftDate(manageSeason.end_date, -14)}</span>
+                  {' '}(~2 weeks before it ends)
+                </div>
+                <div className="pt-1">
+                  <Button
+                    size="sm"
+                    variant="default"
+                    loadingText="none"
+                    onClick={() => navigate(`/operator/start-next-season/${league.id}`)}
+                  >
+                    Create next season now
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {ConfirmDialogComponent}
     </div>
   );
 };
