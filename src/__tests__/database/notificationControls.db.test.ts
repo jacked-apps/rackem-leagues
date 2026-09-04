@@ -24,6 +24,8 @@ const SENDER = '00000000-0000-4000-8000-00000000f001';
 const RECIPIENT = '00000000-0000-4000-8000-00000000f002';
 const DM_CONV = '00000000-0000-4000-8000-00000000f101';
 const TEAM_CONV = '00000000-0000-4000-8000-00000000f102';
+/** Arbitrary scope id — conversations.scope_id has no FK, it just must be set. */
+const TEAM_SCOPE = '00000000-0000-4000-8000-00000000f103';
 
 /** Insert a message and return who would be pushed for it. */
 async function recipientsFor(conversationId: string, messageId: string) {
@@ -45,13 +47,16 @@ const nextMessageId = () =>
 beforeAll(async () => {
   // Two members, a DM and a team chat, both with the recipient subscribed.
   await executeSql(`
-    INSERT INTO members (id, first_name, last_name, push_enabled)
-    VALUES ('${SENDER}', 'Send', 'Er', true),
-           ('${RECIPIENT}', 'Recip', 'Ient', true)
+    INSERT INTO members (id, first_name, last_name, city, state, push_enabled)
+    VALUES ('${SENDER}', 'Send', 'Er', 'Testville', 'FL', true),
+           ('${RECIPIENT}', 'Recip', 'Ient', 'Testville', 'FL', true)
     ON CONFLICT (id) DO UPDATE SET push_enabled = true;
 
-    INSERT INTO conversations (id, conversation_type)
-    VALUES ('${DM_CONV}', NULL), ('${TEAM_CONV}', 'team_chat')
+    -- The valid_auto_managed CHECK ties these together: a typed conversation
+    -- must be auto_managed with a scope, and an untyped one (a DM) must not be.
+    INSERT INTO conversations (id, conversation_type, auto_managed, scope_type, scope_id)
+    VALUES ('${DM_CONV}',   NULL,        false, 'none', NULL),
+           ('${TEAM_CONV}', 'team_chat', true,  'team', '${TEAM_SCOPE}')
     ON CONFLICT (id) DO NOTHING;
 
     INSERT INTO conversation_participants (conversation_id, user_id, notification_mode)
@@ -63,7 +68,7 @@ beforeAll(async () => {
 
     INSERT INTO push_subscriptions (member_id, endpoint, p256dh, auth)
     VALUES ('${RECIPIENT}', 'https://example.test/endpoint', 'p', 'a')
-    ON CONFLICT (member_id, endpoint) DO NOTHING;
+    ON CONFLICT (endpoint) DO NOTHING;
 
     -- team_chat is off by default in push_type_policy; the veto tests below
     -- need it on so we're testing the member levels, not level 0.
