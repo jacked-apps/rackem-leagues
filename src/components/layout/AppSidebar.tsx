@@ -160,13 +160,14 @@ function SidebarPlayerSection({
         <SidebarLink to={joinRequestsTo} label={`Join requests (${joinRequestCount})`} />
       )}
       <SidebarLink to="/stats" label="Stats" />
-      {/* Gated on BRACKETS_ENABLED — same flag as the /brackets routes, so the
-          door and the room turn on together (no prod 404). */}
-      {BRACKETS_ENABLED && <SidebarLink to="/brackets" label="Brackets" />}
       <SidebarLink to="/rules" label="Rules" />
       <SidebarLink to="/learn" label="Learn" />
       <SidebarLink to="/messages" label={messagesLabel} />
-      <SidebarLink to="/profile" label="Profile" />
+      {/* No "Profile" link — the name/avatar above already opens /profile.
+          The reclaimed slot holds the Tournaments side tool, gated on
+          BRACKETS_ENABLED (same flag as the /brackets routes → door + room
+          flip together, no prod 404). */}
+      {BRACKETS_ENABLED && <SidebarLink to="/brackets" label="Tournaments" />}
     </ul>
   );
 }

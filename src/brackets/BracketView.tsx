@@ -52,8 +52,8 @@ export function BracketView() {
   );
   const champion = view ? championName(view) : null;
 
-  if (isLoading) return <Centered>Loading bracket…</Centered>;
-  if (isError || !data || !view) return <Centered>Bracket not found.</Centered>;
+  if (isLoading) return <Centered>Loading tournament…</Centered>;
+  if (isError || !data || !view) return <Centered>Tournament not found.</Centered>;
 
   const { bracket } = data;
 
@@ -80,7 +80,7 @@ export function BracketView() {
     setConfirmingClose(false);
     try {
       await closeBracket.mutateAsync(bracketId);
-      toast.success('Bracket closed.');
+      toast.success('Tournament closed.');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Could not close the bracket.');
     }
@@ -107,7 +107,7 @@ export function BracketView() {
                 loadingText="none"
                 onClick={() => setConfirmingClose(true)}
               >
-                Close bracket
+                Close tournament
               </Button>
             )}
           </div>
@@ -153,15 +153,15 @@ export function BracketView() {
       <AlertDialog open={confirmingClose} onOpenChange={setConfirmingClose}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Close this bracket?</AlertDialogTitle>
+            <AlertDialogTitle>Close this tournament?</AlertDialogTitle>
             <AlertDialogDescription>
               The shared link keeps showing the final results for a while, then
-              the bracket is removed automatically. This can't be undone.
+              the tournament is removed automatically. This can't be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleClose}>Close bracket</AlertDialogAction>
+            <AlertDialogAction onClick={handleClose}>Close tournament</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

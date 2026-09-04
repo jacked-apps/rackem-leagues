@@ -46,7 +46,7 @@ export function PublicBracketPage() {
   if (isLoading) {
     return (
       <Shell>
-        <p className="text-center text-muted-foreground">Loading bracket…</p>
+        <p className="text-center text-muted-foreground">Loading tournament…</p>
       </Shell>
     );
   }
@@ -57,14 +57,14 @@ export function PublicBracketPage() {
       <Shell>
         <Card>
           <CardHeader>
-            <CardTitle>This bracket has ended</CardTitle>
+            <CardTitle>This tournament has ended</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              The link may be old, or the organizer has closed the bracket.
+              The link may be old, or the organizer has closed the tournament.
             </p>
             <Button asChild loadingText="none">
-              <Link to="/brackets/new">Create your own bracket</Link>
+              <Link to="/brackets/new">Create your own tournament</Link>
             </Button>
           </CardContent>
         </Card>

@@ -224,12 +224,13 @@ function PlayerSection({
       )}
       {reupTeams.length > 0 && <DrawerLink to="/reup" label={reupLabel} />}
       <DrawerLink to="/stats" label="Stats" />
-      {/* Gated on BRACKETS_ENABLED — same flag as the /brackets routes. */}
-      {BRACKETS_ENABLED && <DrawerLink to="/brackets" label="Brackets" />}
       <DrawerLink to="/rules" label="Rules" />
       <DrawerLink to="/learn" label="Learn" />
       <DrawerLink to="/messages" label={messagesLabel} />
-      <DrawerLink to="/profile" label="Profile" />
+      {/* No "Profile" link — the name/avatar at the top of the drawer already
+          opens /profile. The reclaimed slot holds the Tournaments side tool,
+          gated on BRACKETS_ENABLED (same flag as the /brackets routes). */}
+      {BRACKETS_ENABLED && <DrawerLink to="/brackets" label="Tournaments" />}
     </ul>
   );
 }

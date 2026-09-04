@@ -48,9 +48,9 @@ describe('BracketsIndexPage', () => {
     mockUseBracketsByCreator.mockReturnValue({ data: [], isLoading: false });
     renderWithProviders(<BracketsIndexPage />);
 
-    expect(screen.getByText(/no brackets yet/i)).toBeInTheDocument();
+    expect(screen.getByText(/no tournaments yet/i)).toBeInTheDocument();
     expect(
-      screen.getByRole('link', { name: /create your first bracket/i })
+      screen.getByRole('link', { name: /create your first tournament/i })
     ).toBeInTheDocument();
   });
 

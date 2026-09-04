@@ -154,7 +154,11 @@ describe('AppDrawer', () => {
     expect(within(nav).getByRole('link', { name: 'Stats' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Rules' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: /^Messages/ })).toBeInTheDocument();
-    expect(within(nav).getByRole('link', { name: 'Profile' })).toBeInTheDocument();
+    // No standalone "Profile" nav link — the name/avatar at the top of the
+    // drawer opens /profile. The reclaimed slot holds the gated "Tournaments"
+    // side tool (BRACKETS_ENABLED is on in dev/test).
+    expect(within(nav).queryByRole('link', { name: 'Profile' })).not.toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Tournaments' })).toBeInTheDocument();
     // No "Dashboard" link and no Sign Out in the drawer — the player nav dropped
     // Dashboard, and Sign Out moved to the bottom of the Profile page (nav
     // redesign, PR #124/#131).

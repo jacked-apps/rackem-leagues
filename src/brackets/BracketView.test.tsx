@@ -107,7 +107,7 @@ describe('BracketView', () => {
     renderWithProviders(<BracketView />);
 
     expect(screen.getByText(/Ann wins/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /close bracket/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /close tournament/i })).toBeInTheDocument();
   });
 
   it('close requires confirmation before calling closeBracket', async () => {
@@ -122,13 +122,13 @@ describe('BracketView', () => {
     renderWithProviders(<BracketView />);
 
     // The header button just opens the confirm — no close yet.
-    await user.click(screen.getByRole('button', { name: /close bracket/i }));
+    await user.click(screen.getByRole('button', { name: /close tournament/i }));
     expect(mockClose).not.toHaveBeenCalled();
-    expect(screen.getByText(/close this bracket\?/i)).toBeInTheDocument();
+    expect(screen.getByText(/close this tournament\?/i)).toBeInTheDocument();
 
     // Confirm inside the dialog fires the mutation.
     const dialog = screen.getByRole('alertdialog');
-    await user.click(within(dialog).getByRole('button', { name: /close bracket/i }));
+    await user.click(within(dialog).getByRole('button', { name: /close tournament/i }));
     expect(mockClose).toHaveBeenCalledWith('b1');
   });
 

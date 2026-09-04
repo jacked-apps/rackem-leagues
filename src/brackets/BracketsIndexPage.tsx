@@ -29,9 +29,9 @@ export function BracketsIndexPage() {
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Brackets</h1>
+        <h1 className="text-2xl font-semibold">Tournaments</h1>
         <Button asChild loadingText="none">
-          <Link to="/brackets/new">New bracket</Link>
+          <Link to="/brackets/new">New tournament</Link>
         </Button>
       </div>
 
@@ -69,15 +69,15 @@ function EmptyState() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>No brackets yet</CardTitle>
+        <CardTitle>No tournaments yet</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Run a single- or double-elimination bracket for your next event — just
-          add names and tap winners.
+          Run a single- or double-elimination tournament for your next event —
+          just add names and tap winners.
         </p>
         <Button asChild loadingText="none">
-          <Link to="/brackets/new">Create your first bracket</Link>
+          <Link to="/brackets/new">Create your first tournament</Link>
         </Button>
       </CardContent>
     </Card>

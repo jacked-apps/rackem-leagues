@@ -81,15 +81,15 @@ describe('PublicBracketPage', () => {
     });
     renderWithProviders(<PublicBracketPage />);
 
-    expect(screen.getByText(/this bracket has ended/i)).toBeInTheDocument();
+    expect(screen.getByText(/this tournament has ended/i)).toBeInTheDocument();
     expect(
-      screen.getByRole('link', { name: /create your own bracket/i })
+      screen.getByRole('link', { name: /create your own tournament/i })
     ).toBeInTheDocument();
   });
 
   it('shows a loading state while fetching', () => {
     mockUseBracketShare.mockReturnValue({ data: undefined, isLoading: true });
     renderWithProviders(<PublicBracketPage />);
-    expect(screen.getByText(/loading bracket/i)).toBeInTheDocument();
+    expect(screen.getByText(/loading tournament/i)).toBeInTheDocument();
   });
 });

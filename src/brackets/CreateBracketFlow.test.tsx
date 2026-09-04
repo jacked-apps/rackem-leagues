@@ -38,7 +38,7 @@ import { CreateBracketFlow } from './CreateBracketFlow';
 
 /** Advance from the details step with a valid name. */
 async function fillDetailsAndAdvance(user: ReturnType<typeof userEvent.setup>) {
-  await user.type(screen.getByLabelText('Bracket name'), 'Friday 9-Ball');
+  await user.type(screen.getByLabelText('Tournament name'), 'Friday 9-Ball');
   await user.click(screen.getByRole('button', { name: 'Next' }));
 }
 
@@ -67,7 +67,7 @@ describe('CreateBracketFlow', () => {
     await fillDetailsAndAdvance(user);
     await addPlayers(user, ['Ann', 'Bo', 'Cy', 'Di']);
     await user.click(screen.getByRole('button', { name: 'Next' })); // → review
-    await user.click(screen.getByRole('button', { name: 'Start bracket' }));
+    await user.click(screen.getByRole('button', { name: 'Start tournament' }));
 
     expect(mockCreate).toHaveBeenCalledWith(
       expect.objectContaining({

@@ -25,7 +25,7 @@ import { ParticipantsStep } from './steps/ParticipantsStep';
 import { ReviewStep } from './steps/ReviewStep';
 
 const STEP_TITLES = {
-  details: 'Bracket details',
+  details: 'Tournament details',
   participants: 'Add players',
   review: 'Seeding & review',
 } as const;
@@ -167,7 +167,7 @@ function FlowNav({
           disabled={!canSubmit}
           onClick={onSubmit}
         >
-          Start bracket
+          Start tournament
         </Button>
       ) : (
         <Button type="button" loadingText="none" disabled={!canAdvance} onClick={onNext}>

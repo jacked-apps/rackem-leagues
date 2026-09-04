@@ -31,7 +31,7 @@ export function DetailsStep({
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="bracket-name">Bracket name</Label>
+        <Label htmlFor="bracket-name">Tournament name</Label>
         <Input
           id="bracket-name"
           value={name}
