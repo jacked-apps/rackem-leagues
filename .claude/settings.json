@@ -2,11 +2,23 @@
   "permissions": {
     "allow": [
       "Bash(pnpm test:run *)",
+      "Bash(pnpm test:unit)",
+      "Bash(pnpm test:unit *)",
+      "Bash(npx vitest run *)",
       "Bash(pnpm build)",
+      "Bash(pnpm run build)",
       "Bash(pnpm typecheck)",
+      "Bash(pnpm run typecheck)",
       "Bash(pnpm lint)",
+      "Bash(pnpm run lint)",
       "Bash(npx tsc *)",
-      "Bash(npx eslint *)"
+      "Bash(npx eslint *)",
+      "Bash(gh pr view *)",
+      "Bash(gh pr list *)",
+      "Bash(gh pr checks *)",
+      "Bash(gh pr diff *)",
+      "Bash(gh run list *)",
+      "Bash(gh run view *)"
     ]
   }
 }
