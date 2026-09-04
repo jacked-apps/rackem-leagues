@@ -75,6 +75,18 @@ jobs:
       # that stands up a database service).
       - name: Run unit tests
         run: pnpm test:unit
+        env:
+          # Placeholders, NOT credentials. `src/supabaseClient.ts` reads these at
+          # import time; with them unset the client is constructed with an
+          # undefined URL, which resolves against happy-dom's default page origin
+          # (http://localhost:3000) and every test file that transitively imports
+          # the client dies at COLLECTION time with ECONNREFUSED — ~30 files, none
+          # of which are really failing. Locally this is masked by a .env, which
+          # is exactly why these tests passed on a developer machine and not here.
+          # The tests mock supabase-js, so no request is ever made; the client
+          # just needs a syntactically valid URL and a non-empty key to construct.
+          VITE_SUPABASE_URL: https://placeholder.supabase.co
+          VITE_SUPABASE_ANON_KEY: placeholder-anon-key-for-tests
 
   typecheck:
     name: Typecheck + build
