@@ -451,7 +451,7 @@ shows the install nudge, not a broken toggle.
 
 ---
 
-- [ ] **Unit 7: Edge Function — `dispatch-push-notifications`**
+- [x] **Unit 7: Edge Function — `dispatch-push-notifications`**
 
 **Goal:** Given a `message_id` (from an authenticated trigger), fan out encrypted Web Push to recipients' devices.
 
@@ -509,7 +509,7 @@ prunes a stale endpoint, and logs counts; a POST **without** the secret returns 
 
 ---
 
-- [ ] **Unit 8: DB trigger + `pg_net` wiring + `push_dispatch_config`**
+- [x] **Unit 8: DB trigger + `pg_net` wiring + `push_dispatch_config`**
 
 **Goal:** Automatically and safely invoke the dispatcher on every real message insert.
 

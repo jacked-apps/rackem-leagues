@@ -54,18 +54,62 @@ openssl rand -hex 32
 - **`VITE_VAPID_PUBLIC_KEY`** — set in each environment's **CI build env** (it is
   baked into the client bundle at build time). A missing build-time value makes
   the subscribe button fail silently with no server error, so treat it as required.
-- **`VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `DISPATCH_SHARED_SECRET`** — set as
-  Supabase secrets, per environment:
+- **`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `DISPATCH_SHARED_SECRET`** —
+  set as Supabase secrets, per environment. The dispatcher uses `npm:web-push`,
+  which needs **both** VAPID keys (public + private), so the public key is set as a
+  function secret here in addition to being a client build var:
   ```
-  supabase secrets set VAPID_PRIVATE_KEY=... VAPID_SUBJECT=mailto:you@example.com DISPATCH_SHARED_SECRET=... --project-ref <ref>
+  supabase secrets set VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... VAPID_SUBJECT=mailto:you@example.com DISPATCH_SHARED_SECRET=... --project-ref <ref>
   ```
-- **`DISPATCH_SHARED_SECRET` also goes in the DB** — Unit 8 seeds it (plus the
-  dispatcher's function URL) into the `push_dispatch_config` table so the trigger
-  can send it. Keep the value identical on both sides or the dispatcher 401s.
+  (Locally these live in `supabase/functions/.env`.)
+- **`DISPATCH_SHARED_SECRET` also goes in the DB** — the message-insert trigger
+  reads it from the single-row `push_dispatch_config` table. The Unit 8 migration
+  seeds `function_url` + `enabled` but leaves `shared_secret` **empty** (an empty
+  secret makes the trigger skip, so it isn't committed). Set it per environment:
+  ```sql
+  UPDATE public.push_dispatch_config
+     SET shared_secret = '<same value as the function''s DISPATCH_SHARED_SECRET>',
+         function_url  = 'https://<ref>.supabase.co/functions/v1/dispatch-push-notifications',
+         enabled       = true;
+  ```
+  Keep the secret identical to the function's or the dispatcher 401s. (Locally,
+  `function_url` is seeded to the `host.docker.internal` endpoint; only the secret
+  needs setting.)
 
 > **One keypair or per-env?** For the current single-league pre-launch phase, one
 > keypair + one shared secret reused across environments is fine and simplest.
 > Split per-env later if desired — no code change, just different secret values.
+
+## Staging setup (one-time) — makes a merge to `main` work on staging
+
+The staging deploy workflow (`.github/workflows/deploy-staging.yml`) already
+handles the rest on every push to `main`: it un-gates the UI (`VITE_PUSH_NOTIFICATIONS=true`),
+bakes in the public key, runs migrations, and deploys the edge function. Three
+secret steps remain — they hold real secrets, so they can't live in the repo and
+are done once (they persist across deploys):
+
+1. **GitHub → `staging` Environment secret** (for the client build):
+   - `VITE_VAPID_PUBLIC_KEY` = the VAPID **public** key.
+2. **Supabase function secrets** (for the dispatcher) — run once:
+   ```
+   supabase secrets set \
+     VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... \
+     VAPID_SUBJECT=mailto:you@example.com DISPATCH_SHARED_SECRET=... \
+     --project-ref eahlgydddmjebcfiskmz
+   ```
+3. **Staging DB** (Supabase SQL editor) — point the trigger at the staging function
+   with the same secret:
+   ```sql
+   UPDATE public.push_dispatch_config
+      SET function_url  = 'https://eahlgydddmjebcfiskmz.supabase.co/functions/v1/dispatch-push-notifications',
+          shared_secret = '<same DISPATCH_SHARED_SECRET as step 2>',
+          enabled       = true;
+   ```
+
+Use the same keypair + secret as local (simplest) or fresh values — just keep the
+function's `DISPATCH_SHARED_SECRET` and the DB's `shared_secret` identical, and the
+`VITE_VAPID_PUBLIC_KEY` matched to `VAPID_PRIVATE_KEY`. After that, open the staging
+URL on a phone → (iOS) Add to Home Screen → open it → enable notifications → test.
 
 ## Rotation runbook (VAPID keys)
 

@@ -1880,6 +1880,27 @@ export type Database = {
           },
         ]
       }
+      push_dispatch_config: {
+        Row: {
+          enabled: boolean
+          function_url: string
+          id: boolean
+          shared_secret: string
+        }
+        Insert: {
+          enabled?: boolean
+          function_url: string
+          id?: boolean
+          shared_secret?: string
+        }
+        Update: {
+          enabled?: boolean
+          function_url?: string
+          id?: boolean
+          shared_secret?: string
+        }
+        Relationships: []
+      }
       push_subscriptions: {
         Row: {
           auth: string
@@ -3309,6 +3330,19 @@ export type Database = {
           is_placeholder: boolean
           nickname: string
           team_count: number
+        }[]
+      }
+      get_push_recipients: {
+        Args: { p_message_id: string }
+        Returns: {
+          auth: string
+          conversation_id: string
+          endpoint: string
+          member_id: string
+          message_content: string
+          p256dh: string
+          profanity_filter_enabled: boolean
+          sender_name: string
         }[]
       }
       get_team_join_view: { Args: { p_token: string }; Returns: Json }

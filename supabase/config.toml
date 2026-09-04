@@ -387,3 +387,9 @@ verify_jwt = false
 
 [functions.send-test-email]
 verify_jwt = false
+
+# Server-invoked by the message-insert trigger via pg_net. verify_jwt is off
+# because there's no user JWT; the function authenticates the caller itself with
+# the X-Dispatch-Secret header (see the function).
+[functions.dispatch-push-notifications]
+verify_jwt = false
