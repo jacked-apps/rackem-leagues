@@ -158,11 +158,12 @@ describe('PlayoffSetup (place-only review page)', () => {
     expect(gen.populatePlayoffMatches).toHaveBeenCalledTimes(1);
   });
 
-  it('locked (populated) → "matchups are set", view-on-schedule + reset, no team names', async () => {
+  it('locked (populated) → "matchups are set", view-matchups + reset, no team names', async () => {
     gen.arePlayoffMatchupsPopulated.mockResolvedValue(true);
     render(<PlayoffSetup />);
     expect(await screen.findByText(/matchups are set/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /view on the schedule/i })).toBeInTheDocument();
+    // Locked sends the operator to the matchups page to see the filled bracket.
+    expect(screen.getByRole('button', { name: /view matchups/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /reset matchups/i })).toBeInTheDocument();
     // Locked never shows the editable place preview or format controls.
     expect(screen.queryByTestId('place-preview')).not.toBeInTheDocument();

@@ -12,6 +12,7 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
+    "test:unit": "vitest run --project unit",
     "test:coverage": "vitest run --coverage",
     "db:reset": "supabase db reset && pnpm run db:types",
     "db:types": "supabase gen types typescript --local > src/types/database.types.ts",
