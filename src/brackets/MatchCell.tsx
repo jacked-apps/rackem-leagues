@@ -21,7 +21,7 @@ interface MatchCellProps {
 
 export function MatchCell({ match, readOnly, onPick }: MatchCellProps) {
   return (
-    <Card className="w-44 shrink-0 divide-y p-0 text-sm">
+    <Card className="w-44 shrink-0 divide-y gap-0 p-0 text-sm">
       <SlotRow
         slot={match.home}
         pickable={!readOnly && isSlotPickable(match, 'home')}
