@@ -90,6 +90,13 @@ jobs:
         with:
           version: latest
 
+      # Guard: a duplicate migration version aborts the migration step below with
+      # an opaque Postgres duplicate-key error, AFTER the build but BEFORE the S3
+      # upload — leaving this environment silently serving its previous bundle.
+      # Fail here instead, with a message that names the offending files.
+      - name: Check for duplicate migration versions
+        run: bash scripts/check-migration-versions.sh
+
       - name: Run Supabase migrations
         run: |
           supabase link --project-ref cibboozjixxyypzchtvr
