@@ -163,6 +163,10 @@ false. The "loud phone" problem is not live; it begins when a row is flipped.
   next to the control ("Your default is 15 min — this chat can only be quieter").
   Same applies to the on/off: a chat toggled ON while its type is OFF still gets
   nothing, and must say so rather than showing a cheerful enabled switch.
+  **Ed 2026-09-04:** when a per-chat change is overruled by a higher level, show
+  a toast pointing at the setting that actually governs it — e.g. "Team chats
+  are muted in your notification settings. Change it there to hear this chat."
+  Better than hiding the control: the person learns WHY, and where to go.
 - **Rate limiting suppresses the NOTIFICATION, never the message.** Messages
   always land and always count toward the unread badge. Muting means "don't
   buzz me", not "hide it" — the badge is how a muted chat still gets noticed.
