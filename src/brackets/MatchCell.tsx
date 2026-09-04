@@ -17,16 +17,8 @@ import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import type { MatchView, SlotView } from './bracketViewModel';
 import { isSlotPickable } from './bracketViewModel';
+import { MATCH_STATE_STYLE, matchStateKey } from './matchStateStyles';
 import type { MatchSlot } from '@/types/bracket';
-
-/** Thick, color-coded outer border by state (see file header). */
-function borderClass(match: MatchView): string {
-  if (match.status === 'complete') return 'border-2 border-emerald-500';
-  if (match.status === 'ready') {
-    return match.inProgress ? 'border-2 border-primary' : 'border-2 border-amber-500';
-  }
-  return 'border-2 border-dashed border-muted-foreground/30';
-}
 
 interface MatchCellProps {
   match: MatchView;
@@ -50,7 +42,12 @@ export function MatchCell({
   const isComplete = match.status === 'complete';
 
   return (
-    <Card className={cn('w-44 shrink-0 divide-y gap-0 p-0 text-sm', borderClass(match))}>
+    <Card
+      className={cn(
+        'w-44 shrink-0 divide-y gap-0 p-0 text-sm',
+        MATCH_STATE_STYLE[matchStateKey(match)]
+      )}
+    >
       <SlotRow
         slot={match.home}
         pickable={!readOnly && isSlotPickable(match, 'home')}
