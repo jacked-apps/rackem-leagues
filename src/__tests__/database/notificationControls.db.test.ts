@@ -248,6 +248,30 @@ describe('rate limiting', () => {
   });
 });
 
+describe('the dispatcher round-trip', () => {
+  it('select → stamp → select suppresses the second message', async () => {
+    // This is exactly what the edge function does, and the sequence that was
+    // broken until it was wired up: without the stamp, last_notified_at stays
+    // NULL forever and the window check always passes, so rate limiting looks
+    // implemented while doing nothing.
+    await executeSql(`
+      INSERT INTO member_notification_prefs (member_id, conversation_kind, interval_minutes)
+      VALUES ('${RECIPIENT}', 'team_chat', 15);
+    `);
+
+    const first = await recipientsFor(TEAM_CONV, nextMessageId());
+    expect(first.map((r) => r.member_id)).toContain(RECIPIENT);
+
+    // The dispatcher stamps only the members it actually reached.
+    await executeSql(
+      `SELECT mark_push_notified('${TEAM_CONV}', ARRAY['${RECIPIENT}']::uuid[]);`
+    );
+
+    const second = await recipientsFor(TEAM_CONV, nextMessageId());
+    expect(second).toHaveLength(0);
+  });
+});
+
 describe('mark_push_notified', () => {
   it('stamps only the members passed to it', async () => {
     await executeSql(
