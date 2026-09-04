@@ -119,13 +119,15 @@ false. The "loud phone" problem is not live; it begins when a row is flipped.
   chat_allows`. This is the decision that shapes everything else, and it's
   worth stating in the SQL as a comment — the next person to read
   `get_push_recipients` will otherwise try to "fix" it into an override model.
-- **`notification_mode` must become nullable to express "not set".** It's
-  currently `NOT NULL DEFAULT 'all'`, so every row asserts a value. Under the
-  veto model NULL means "this chat adds no restriction of its own" — the
-  type-level answer stands. Existing `'all'` rows are backfilled to NULL so
-  today's rows don't silently pin themselves. **This is the one genuinely
-  delicate schema change in the plan** — done wrong, every existing participant
-  becomes pinned and the per-type settings do nothing.
+- **`notification_mode` needs NO schema change.** An earlier revision of this
+  plan called making it nullable "the one genuinely delicate change." That was
+  wrong, and the veto rule is why: under an OVERRIDE model you must distinguish
+  "explicitly all" from "unset", because either could win. Under a VETO model a
+  chat can only subtract, so `'all'` and "unset" are the same thing — neither
+  restricts. The check is simply `notification_mode <> 'none'`, which is
+  effectively what `get_push_recipients` already does. No nullable migration, no
+  backfill, no risk. (`'mentions'` also correctly blocks for now: with no
+  @mention routing it can never fire, so treating it as a veto is honest.)
 - **Per-type defaults get their own table**, not a JSONB blob on `members`:
   `member_notification_prefs(member_id, conversation_kind, push_enabled,
   interval_minutes)`. Mirrors `push_type_policy`'s shape, is queryable from
