@@ -46,6 +46,7 @@ Quiet hours            inside the window → nothing notifies     (Settings)
 Per-type setting       "team chats: off"  → no team chat buzzes (Settings)
    ↓ then
 Per-conversation       "this chat: off"   → this one stays quiet (in the chat)
+                       "this chat: 20min" → quieter than the default, never louder
 ```
 
 Ed, 2026-09-04, on why it works this way and not as overrides:
@@ -74,7 +75,7 @@ conversation, so they're global and absolute. No per-chat exception.
 | Push on/off for this device | Global | Settings → Notifications *(shipped)* |
 | Quiet hours | Global | Settings → Notifications |
 | Per-type default: on/off + interval | Per conversation kind | Settings → Notifications |
-| This chat: off (or a longer interval) | One conversation | The conversation's own menu |
+| This chat: off, or a LONGER interval | One conversation | The conversation's own menu |
 
 ### A note on `push_type_policy`
 
@@ -134,6 +135,22 @@ false. The "loud phone" problem is not live; it begins when a row is flipped.
   place that decides who gets a push; splitting the decision between SQL and the
   edge function would make "why was I not notified" unanswerable. With the
   veto model the whole thing is one boolean chain, which keeps it readable.
+- **The interval resolves as `MAX(type_interval, chat_interval)`.** The veto
+  rule applies to the number too: a chat can make itself quieter, never louder.
+  Set 5 minutes against a 15-minute default and the effective value is still 15;
+  set 20 and it's 20. Confirmed by Ed 2026-09-04: *"if the main is set for 15
+  mins, if i set an individual to 5 it would still be 15 mins… if i changed it
+  to 20 then it would be quieter longer."*
+- **Default interval: 5 minutes** for group kinds (Ed, 2026-09-04), not the
+  brainstorm's 15. Stored per kind in `member_notification_prefs`, so it's
+  tunable per person without a deploy.
+- **The UI must not offer an interval below the current master.** This follows
+  from the MAX rule and is the most likely place to look broken: pick "5 min" on
+  a chat while your default is 15, nothing changes, and the app appears to have
+  ignored you. Either hide the below-master options or state the effective value
+  next to the control ("Your default is 15 min — this chat can only be quieter").
+  Same applies to the on/off: a chat toggled ON while its type is OFF still gets
+  nothing, and must say so rather than showing a cheerful enabled switch.
 - **Rate limiting suppresses the NOTIFICATION, never the message.** Messages
   always land and always count toward the unread badge. Muting means "don't
   buzz me", not "hide it" — the badge is how a muted chat still gets noticed.
@@ -144,18 +161,10 @@ false. The "loud phone" problem is not live; it begins when a row is flipped.
 
 ## Open Questions
 
-- **Can a single chat buzz MORE often than its type default?** The veto rule is
-  unambiguous for on/off, but the interval is a number, and "more restrictive"
-  means *longer*. Strictly applied, a chat could lengthen its interval but never
-  shorten it — so "quiet for most team chats, but my own team every message"
-  would be impossible. That may be a real want. Two options: keep the strict
-  rule (intervals only ever lengthen), or treat the interval as the one value a
-  chat may set freely while on/off stays a hard veto. **Needs Ed's call — it's
-  the one place the veto model might be too strict.**
-- **Default interval per kind.** The brainstorm says 15 minutes; Ed's example
-  also says 15 for group chats. Untested against a real league night. Should
-  DMs have an interval at all, or always buzz? A DM is a person talking directly
-  to you — suggest DMs default to no interval, group kinds to 15 minutes.
+- **Should DMs have an interval at all?** Group kinds clearly should. A DM is
+  one person talking directly to you, where a 5-minute gap may read as the app
+  swallowing messages. Suggest DMs default to no interval (every message buzzes)
+  and group kinds to 5 minutes — but this is a guess, not a decision.
 - **Quiet hours needs a timezone.** Storing "22:00–07:00" is meaningless without
   knowing whose clock. Simplest: a per-member IANA timezone captured from the
   browser. The venue/org timezone columns the brainstorm mentions are Phase 3
