@@ -2,14 +2,14 @@
  * @fileoverview The bracket tree renderer (Unit 5).
  *
  * Lays out a bracket as horizontally-scrolling round columns. For double
- * elimination the three sides (winners / losers / grand final) are shown on a
- * tabbed surface — the v1 mobile-friendly layout (both trees need not be
- * visible at once). Single elimination shows just the winners tree. Pure
- * presentation driven by the view-model; the same component backs the
- * organizer view (interactive) and the public share view (read-only).
+ * elimination the winners / losers / grand-final sides are STACKED on one page
+ * (labeled sections, losers below winners) rather than hidden behind tabs — so
+ * an on-deck pair in the losers bracket is never out of sight. Single
+ * elimination shows just the winners tree. Pure presentation driven by the
+ * view-model; the same component backs the organizer view (interactive) and the
+ * public share view (read-only).
  */
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MatchCell } from './MatchCell';
 import type { BracketView, MatchView } from './bracketViewModel';
 
@@ -28,35 +28,40 @@ export function BracketTree({
   onReopen,
   onToggleInProgress,
 }: BracketTreeProps) {
-  // Single elimination: one tree, no tabs.
+  const shared = { readOnly, onPick, onReopen, onToggleInProgress };
+
+  // Single elimination: one tree, no section headings.
   if (!view.hasLosers && view.grandFinal.length === 0) {
-    return <RoundColumns rounds={view.winners} readOnly={readOnly} onPick={onPick} onReopen={onReopen} onToggleInProgress={onToggleInProgress} />;
+    return <RoundColumns rounds={view.winners} {...shared} />;
   }
 
+  // Double elimination: stack the sides so everything stays visible at once.
   return (
-    <Tabs defaultValue="winners" className="w-full">
-      <TabsList>
-        <TabsTrigger value="winners">Winners</TabsTrigger>
-        {view.hasLosers && <TabsTrigger value="losers">Losers</TabsTrigger>}
-        {view.grandFinal.length > 0 && (
-          <TabsTrigger value="grand_final">Grand Final</TabsTrigger>
-        )}
-      </TabsList>
-
-      <TabsContent value="winners">
-        <RoundColumns rounds={view.winners} readOnly={readOnly} onPick={onPick} onReopen={onReopen} onToggleInProgress={onToggleInProgress} />
-      </TabsContent>
+    <div className="space-y-6">
+      <Section title="Winners bracket">
+        <RoundColumns rounds={view.winners} {...shared} />
+      </Section>
       {view.hasLosers && (
-        <TabsContent value="losers">
-          <RoundColumns rounds={view.losers} readOnly={readOnly} onPick={onPick} onReopen={onReopen} onToggleInProgress={onToggleInProgress} />
-        </TabsContent>
+        <Section title="Losers bracket">
+          <RoundColumns rounds={view.losers} {...shared} />
+        </Section>
       )}
       {view.grandFinal.length > 0 && (
-        <TabsContent value="grand_final">
-          <RoundColumns rounds={[view.grandFinal]} readOnly={readOnly} onPick={onPick} onReopen={onReopen} onToggleInProgress={onToggleInProgress} />
-        </TabsContent>
+        <Section title="Grand Final">
+          <RoundColumns rounds={[view.grandFinal]} {...shared} />
+        </Section>
       )}
-    </Tabs>
+    </div>
+  );
+}
+
+/** A labeled, horizontally-scrollable bracket section. */
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h3 className="mb-2 text-sm font-semibold">{title}</h3>
+      {children}
+    </div>
   );
 }
 
