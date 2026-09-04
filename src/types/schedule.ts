@@ -72,6 +72,11 @@ export interface Match {
   // being corrected" vs a fresh manual entry (`updating`, completed_at null).
   completed_at: string | null;
 
+  // When this match's results were hand-entered into CSI / FargoRate LMS.
+  // NULL = still on the operator's to-enter list. Operators work this in
+  // batches (a few weeks at a time), so the marker has to survive sessions.
+  lms_entered_at: string | null;
+
   created_at: string;
   updated_at: string;
 }
@@ -96,6 +101,7 @@ export type MatchInsertData = Omit<Match,
   | 'away_to_tie'            // Set at match prep
   | 'away_to_lose'           // Set at match prep
   | 'completed_at'           // Set when the match completes
+  | 'lms_entered_at'         // Set by the operator after typing results into LMS
   | 'created_at'             // Auto-generated timestamp
   | 'updated_at'             // Auto-generated timestamp
 >;

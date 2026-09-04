@@ -4,6 +4,71 @@ Tasks and refactoring items for Ed to work on.
 
 ---
 
+## 🐞 2026-09-04 — FIX: push chimes even when you're already in the conversation
+
+**Confirmed on staging** during the first end-to-end push test (Android). Push
+works: app fully closed → message sent → phone chimes. But sitting *inside* a
+conversation and receiving a message in it **also** chimes, which isn't the
+intent ("as close to a text message as possible" — quiet for the thread you're
+staring at).
+
+**Cause — found, not suspected.** `src/sw.ts`'s push handler calls
+`isViewingConversation(client.url, conversationId)`, which only matches the
+deep-link URL form `/messages/:id`. But `src/pages/Messages.tsx` keeps the open
+thread in React state (`selectedConversationId`) and **never updates the URL** —
+tapping a conversation in the list leaves the address at `/messages`. So the
+service worker cannot tell which thread is on screen and shows the
+notification. This is documented as an accepted v1 limitation in
+`notificationPayload.ts`; it just doesn't match what we actually want.
+
+Arriving via a **notification tap** already suppresses correctly, because that
+path sets the URL to `/messages/:id`. Only list-selection is broken.
+
+**Fix:** when a conversation is opened, `navigate()` to `/messages/<id>` instead
+of only setting state (and back to `/messages` on close). The route already
+exists — Unit 3 added it for deep links. Contained to `Messages.tsx`. Bonus: the
+back button starts behaving correctly on mobile.
+
+**iOS caveat:** this cannot be fixed on iPhone. iOS uses declarative push that
+renders the notification before our service-worker code runs, so it will always
+buzz. Android + desktop only.
+
+---
+
+## 🐞 2026-09-04 — FIX: "Update Available" prompt gives no feedback, sometimes doesn't update
+
+**Reported by Ed** while updating staging to pick up the push-notification
+bundle. Two symptoms in `src/components/PWAUpdatePrompt.tsx`:
+
+1. **Pressing "Update Now" shows nothing.** No spinner, no disabled state, no
+   acknowledgement. The button looks ignored, so you press it again.
+2. **Sometimes it doesn't actually update.** The prompt dismisses (or sits
+   there) and the app is still running the old bundle.
+
+**Suspected cause (code-read, NOT yet verified):**
+
+- The button is `onClick={() => updateServiceWorker(true)}`. That arrow is
+  sync and **discards the promise** `updateServiceWorker` returns, so the
+  `loadingText="Updating..."` prop on our `Button` has nothing to await — it
+  can never enter its loading state. Returning the promise is likely the whole
+  of symptom 1.
+- Symptom 2 is probably the harder half. `updateServiceWorker(true)` sends
+  `SKIP_WAITING` and reloads on the `controllerchange` event. If there is no
+  worker in `waiting` at that moment — a race with registration, an already-
+  activated worker, or the tab having been backgrounded — no `controllerchange`
+  ever fires and the reload never happens. Wants a timeout fallback that forces
+  `location.reload()` rather than waiting forever on an event that won't come.
+
+**Also worth doing while in there:** the component's only error handling is
+`console.log` in `onRegisterError`. A registration failure is invisible to both
+the user and us.
+
+**Priority:** do this AFTER push notifications are verified working on staging —
+Ed's call, 2026-09-04. It's the mechanism users rely on to receive every future
+fix, so a broken updater quietly caps how fast anything else reaches them.
+
+---
+
 ## 🧪 2026-08-04 — VERIFY: tiebreaker scoring fix (PR #249)
 
 **Bug (live):** the first match to end in a games **tie** couldn't be scored —
