@@ -81,15 +81,7 @@ function RoundColumns({
   onReopen?: (matchId: string) => void;
   onToggleInProgress?: (matchId: string, inProgress: boolean) => void;
 }) {
-  // Rounds the user has manually expanded (overrides the default collapse).
-  const [expanded, setExpanded] = useState<Set<number>>(new Set());
-  const toggle = (i: number) =>
-    setExpanded((s) => {
-      const n = new Set(s);
-      if (n.has(i)) n.delete(i);
-      else n.add(i);
-      return n;
-    });
+  const [showFinished, setShowFinished] = useState(false);
 
   if (rounds.length === 0) {
     return <p className="text-sm text-muted-foreground">No matches yet.</p>;
@@ -99,25 +91,35 @@ function RoundColumns({
   const isComplete = (matches: MatchView[]) =>
     matches.length > 0 && matches.every((m) => m.status === 'complete');
 
+  // Finished rounds are a leading prefix (a later round can't finish first).
+  // Collapse them all under ONE strip — but always keep the last round (the
+  // payoff) visible, so a fully-finished bracket still shows its final.
+  let completePrefix = 0;
+  while (completePrefix < rounds.length && isComplete(rounds[completePrefix])) {
+    completePrefix++;
+  }
+  const collapseCount = Math.min(completePrefix, lastIndex);
+  const firstVisible = showFinished ? 0 : collapseCount;
+
   return (
     <div className="flex gap-6 overflow-x-auto pb-4">
+      {collapseCount > 0 && !showFinished && (
+        <CollapsedRounds count={collapseCount} onExpand={() => setShowFinished(true)} />
+      )}
       {rounds.map((matches, i) => {
-        // A finished round collapses to a thin strip so the active rounds stay
-        // in view on a phone — but never the last round (that's the payoff).
-        const collapsible = isComplete(matches) && i < lastIndex;
-        if (collapsible && !expanded.has(i)) {
-          return <CollapsedRound key={i} index={i} onExpand={() => toggle(i)} />;
-        }
+        if (i < firstVisible) return null; // inside the collapsed group
+        // The one collapse control lives on the first finished round's header.
+        const showCollapse = showFinished && collapseCount > 0 && i === 0;
         return (
           <div key={i} className="flex flex-col justify-around gap-4">
             <div className="sticky top-0 flex items-center gap-1 text-xs font-medium text-muted-foreground">
               Round {i + 1}
-              {collapsible && (
+              {showCollapse && (
                 <button
                   type="button"
-                  onClick={() => toggle(i)}
+                  onClick={() => setShowFinished(false)}
                   className="hover:text-foreground"
-                  title="Collapse round"
+                  title="Hide finished rounds"
                 >
                   <ChevronLeft className="h-3.5 w-3.5" />
                 </button>
@@ -133,17 +135,18 @@ function RoundColumns({
   );
 }
 
-/** A finished round shown as a narrow, tap-to-expand strip. */
-function CollapsedRound({ index, onExpand }: { index: number; onExpand: () => void }) {
+/** All finished rounds folded into one narrow, tap-to-expand strip. */
+function CollapsedRounds({ count, onExpand }: { count: number; onExpand: () => void }) {
+  const label = count === 1 ? 'Round 1 ✓' : `Rounds 1–${count} ✓`;
   return (
     <button
       type="button"
       onClick={onExpand}
-      title={`Expand round ${index + 1}`}
+      title="Show finished rounds"
       className="flex shrink-0 flex-col items-center justify-center gap-2 self-stretch rounded-md border border-dashed px-1 py-3 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
     >
       <ChevronRight className="h-4 w-4" />
-      <span className="[writing-mode:vertical-rl]">Round {index + 1} ✓</span>
+      <span className="[writing-mode:vertical-rl]">{label}</span>
     </button>
   );
 }
