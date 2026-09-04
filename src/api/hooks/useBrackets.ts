@@ -15,6 +15,7 @@ import {
   setParticipants,
   startBracket,
   advanceWinner,
+  reopenMatch,
   closeBracket,
   type CreateBracketParams,
   type NewParticipant,
@@ -109,6 +110,17 @@ export function useAdvanceWinner(bracketId: string) {
   return useMutation({
     mutationFn: (vars: { matchId: string; winnerParticipantId: string }) =>
       advanceWinner(vars.matchId, vars.winnerParticipantId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.brackets.detail(bracketId) });
+    },
+  });
+}
+
+/** Reopen a decided match (undo). */
+export function useReopenMatch(bracketId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (matchId: string) => reopenMatch(matchId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.brackets.detail(bracketId) });
     },

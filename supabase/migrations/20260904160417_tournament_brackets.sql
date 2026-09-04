@@ -474,3 +474,100 @@ GRANT EXECUTE ON FUNCTION "public"."sweep_stale_brackets"(integer) TO "authentic
 
 COMMENT ON FUNCTION "public"."sweep_stale_brackets"(integer) IS
   'Bracket: hard-delete (cascade) closed or idle (>p_idle_days) brackets. Called opportunistically at createBracket time — the ephemeral tool''s janitor, no cron. See docs/plans/2026-08-26-001.';
+
+
+-- ============================================================================
+-- 6. reopen_bracket_match — undo a decided match (fix a mis-tap)
+-- ============================================================================
+-- Clears a completed match's winner (back to 'ready'), pulls the advanced
+-- player back out of the next match, and pulls the loser back out of the
+-- losers-bracket drop. GUARDED: refuses if a match this one feeds has already
+-- been played (reopen that later match first) — so a reopen can never corrupt a
+-- downstream result. Restores the conditional grand-final reset to its
+-- pre-decision state. Returns true if it reopened. authenticated-only.
+CREATE OR REPLACE FUNCTION "public"."reopen_bracket_match"("p_match_id" "uuid")
+RETURNS boolean
+LANGUAGE "plpgsql"
+SECURITY DEFINER
+SET "search_path" = "public"
+AS $$
+DECLARE
+  m bracket_matches%ROWTYPE;
+  v_reset_flag boolean;
+  v_reset_exists boolean;
+BEGIN
+  SELECT * INTO m FROM bracket_matches WHERE id = p_match_id FOR UPDATE;
+  IF NOT FOUND OR m.status <> 'complete' THEN
+    RETURN false;
+  END IF;
+
+  -- Guard: can't reopen if a match this one feeds has already been played.
+  IF m.next_match_id IS NOT NULL
+     AND (SELECT status FROM bracket_matches WHERE id = m.next_match_id) = 'complete' THEN
+    RAISE EXCEPTION 'A later match has already been played — reopen it first.';
+  END IF;
+  IF m.loser_next_match_id IS NOT NULL
+     AND (SELECT status FROM bracket_matches WHERE id = m.loser_next_match_id) = 'complete' THEN
+    RAISE EXCEPTION 'A later match has already been played — reopen it first.';
+  END IF;
+  -- Grand final (non-reset): block if the deciding reset match was already played.
+  IF m.side = 'grand_final' AND NOT m.is_reset_match
+     AND EXISTS (SELECT 1 FROM bracket_matches
+                 WHERE bracket_id = m.bracket_id AND is_reset_match = true AND status = 'complete') THEN
+    RAISE EXCEPTION 'The deciding match has already been played — reopen it first.';
+  END IF;
+
+  -- Clear this match back to playable.
+  UPDATE bracket_matches SET winner_participant_id = NULL, status = 'ready' WHERE id = m.id;
+
+  -- Pull the winner back out of the next match.
+  IF m.next_match_id IS NOT NULL THEN
+    IF m.next_match_slot = 'home' THEN
+      UPDATE bracket_matches SET home_participant_id = NULL WHERE id = m.next_match_id;
+    ELSE
+      UPDATE bracket_matches SET away_participant_id = NULL WHERE id = m.next_match_id;
+    END IF;
+    UPDATE bracket_matches SET status = 'pending' WHERE id = m.next_match_id AND status = 'ready';
+  END IF;
+
+  -- Pull the loser back out of the losers-bracket drop.
+  IF m.loser_next_match_id IS NOT NULL THEN
+    IF m.loser_next_match_slot = 'home' THEN
+      UPDATE bracket_matches SET home_participant_id = NULL WHERE id = m.loser_next_match_id;
+    ELSE
+      UPDATE bracket_matches SET away_participant_id = NULL WHERE id = m.loser_next_match_id;
+    END IF;
+    UPDATE bracket_matches SET status = 'pending' WHERE id = m.loser_next_match_id AND status = 'ready';
+  END IF;
+
+  -- Restore the conditional grand-final reset to its pre-decision state.
+  IF m.side = 'grand_final' AND NOT m.is_reset_match THEN
+    SELECT grand_final_reset INTO v_reset_flag FROM brackets WHERE id = m.bracket_id;
+    IF v_reset_flag THEN
+      SELECT EXISTS (SELECT 1 FROM bracket_matches
+                     WHERE bracket_id = m.bracket_id AND is_reset_match = true)
+        INTO v_reset_exists;
+      IF v_reset_exists THEN
+        -- Reset had been activated (LB champ won): empty it back to pending.
+        UPDATE bracket_matches
+          SET home_participant_id = NULL, away_participant_id = NULL, status = 'pending'
+          WHERE bracket_id = m.bracket_id AND is_reset_match = true;
+      ELSE
+        -- Reset had been removed (WB champ won): recreate the empty decider.
+        INSERT INTO bracket_matches (bracket_id, round, side, slot, status, is_reset_match)
+        VALUES (m.bracket_id, 2, 'grand_final', 0, 'pending', true);
+      END IF;
+    END IF;
+  END IF;
+
+  -- The bracket is live again.
+  UPDATE brackets SET status = 'live', last_activity_at = now() WHERE id = m.bracket_id;
+  RETURN true;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION "public"."reopen_bracket_match"("uuid") FROM PUBLIC, "anon";
+GRANT EXECUTE ON FUNCTION "public"."reopen_bracket_match"("uuid") TO "authenticated";
+
+COMMENT ON FUNCTION "public"."reopen_bracket_match"("uuid") IS
+  'Bracket: undo a decided match — clear the winner, pull the advanced player/loser back out of the next matches, restore the conditional grand-final reset. Refuses if a downstream match was already played. authenticated-only. See docs/plans/2026-08-26-001.';

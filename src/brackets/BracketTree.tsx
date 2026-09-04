@@ -17,12 +17,13 @@ interface BracketTreeProps {
   view: BracketView;
   readOnly: boolean;
   onPick?: (matchId: string, participantId: string) => void;
+  onReopen?: (matchId: string) => void;
 }
 
-export function BracketTree({ view, readOnly, onPick }: BracketTreeProps) {
+export function BracketTree({ view, readOnly, onPick, onReopen }: BracketTreeProps) {
   // Single elimination: one tree, no tabs.
   if (!view.hasLosers && view.grandFinal.length === 0) {
-    return <RoundColumns rounds={view.winners} readOnly={readOnly} onPick={onPick} />;
+    return <RoundColumns rounds={view.winners} readOnly={readOnly} onPick={onPick} onReopen={onReopen} />;
   }
 
   return (
@@ -36,16 +37,16 @@ export function BracketTree({ view, readOnly, onPick }: BracketTreeProps) {
       </TabsList>
 
       <TabsContent value="winners">
-        <RoundColumns rounds={view.winners} readOnly={readOnly} onPick={onPick} />
+        <RoundColumns rounds={view.winners} readOnly={readOnly} onPick={onPick} onReopen={onReopen} />
       </TabsContent>
       {view.hasLosers && (
         <TabsContent value="losers">
-          <RoundColumns rounds={view.losers} readOnly={readOnly} onPick={onPick} />
+          <RoundColumns rounds={view.losers} readOnly={readOnly} onPick={onPick} onReopen={onReopen} />
         </TabsContent>
       )}
       {view.grandFinal.length > 0 && (
         <TabsContent value="grand_final">
-          <RoundColumns rounds={[view.grandFinal]} readOnly={readOnly} onPick={onPick} />
+          <RoundColumns rounds={[view.grandFinal]} readOnly={readOnly} onPick={onPick} onReopen={onReopen} />
         </TabsContent>
       )}
     </Tabs>
@@ -57,10 +58,12 @@ function RoundColumns({
   rounds,
   readOnly,
   onPick,
+  onReopen,
 }: {
   rounds: MatchView[][];
   readOnly: boolean;
   onPick?: (matchId: string, participantId: string) => void;
+  onReopen?: (matchId: string) => void;
 }) {
   if (rounds.length === 0) {
     return <p className="text-sm text-muted-foreground">No matches yet.</p>;
@@ -73,7 +76,7 @@ function RoundColumns({
             Round {i + 1}
           </div>
           {matches.map((m) => (
-            <MatchCell key={m.id} match={m} readOnly={readOnly} onPick={onPick} />
+            <MatchCell key={m.id} match={m} readOnly={readOnly} onPick={onPick} onReopen={onReopen} />
           ))}
         </div>
       ))}

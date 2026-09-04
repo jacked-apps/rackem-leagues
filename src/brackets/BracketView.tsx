@@ -24,7 +24,12 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { queryKeys } from '@/api/queryKeys';
-import { useBracket, useAdvanceWinner, useCloseBracket } from '@/api/hooks/useBrackets';
+import {
+  useBracket,
+  useAdvanceWinner,
+  useReopenMatch,
+  useCloseBracket,
+} from '@/api/hooks/useBrackets';
 import { buildBracketView, championName } from './bracketViewModel';
 import { BracketTree } from './BracketTree';
 import { useBracketRealtime } from './useBracketRealtime';
@@ -40,8 +45,10 @@ export function BracketView() {
   const { bracketId } = useParams<{ bracketId: string }>();
   const { data, isLoading, isError } = useBracket(bracketId);
   const advance = useAdvanceWinner(bracketId ?? '');
+  const reopen = useReopenMatch(bracketId ?? '');
   const closeBracket = useCloseBracket();
   const [pending, setPending] = useState<PendingPick | null>(null);
+  const [reopenId, setReopenId] = useState<string | null>(null);
   const [confirmingClose, setConfirmingClose] = useState(false);
 
   useBracketRealtime(bracketId, queryKeys.brackets.detail(bracketId ?? ''));
@@ -72,6 +79,19 @@ export function BracketView() {
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Could not record the winner.');
+    }
+  };
+
+  /** Undo the confirmed reopen. */
+  const confirmReopen = async () => {
+    if (!reopenId) return;
+    const id = reopenId;
+    setReopenId(null);
+    try {
+      await reopen.mutateAsync(id);
+    } catch (err) {
+      // The guard message (e.g. "reopen a later match first") is user-facing.
+      toast.error(err instanceof Error ? err.message : 'Could not reopen the match.');
     }
   };
 
@@ -137,6 +157,7 @@ export function BracketView() {
                 name: resolveName(view, matchId, participantId) ?? 'this player',
               })
             }
+            onReopen={(matchId) => setReopenId(matchId)}
           />
         </CardContent>
       </Card>
@@ -152,6 +173,23 @@ export function BracketView() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmPick}>Advance</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={reopenId !== null} onOpenChange={(o) => !o && setReopenId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reopen this match?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This clears the recorded winner and puts the match back to
+              unplayed so you can re-enter it. (If a later match has already
+              been played, reopen that one first.)
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmReopen}>Reopen</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

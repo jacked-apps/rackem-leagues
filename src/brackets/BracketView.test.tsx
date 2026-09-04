@@ -14,6 +14,7 @@ import type { BracketDetail } from '@/api/queries/brackets';
 
 const mockUseBracket = vi.fn();
 const mockAdvance = vi.fn();
+const mockReopen = vi.fn();
 const mockClose = vi.fn();
 
 vi.mock('react-router-dom', async (orig) => ({
@@ -24,6 +25,7 @@ vi.mock('react-router-dom', async (orig) => ({
 vi.mock('@/api/hooks/useBrackets', () => ({
   useBracket: () => mockUseBracket(),
   useAdvanceWinner: () => ({ mutateAsync: mockAdvance }),
+  useReopenMatch: () => ({ mutateAsync: mockReopen }),
   useCloseBracket: () => ({ mutateAsync: mockClose }),
 }));
 
@@ -76,6 +78,7 @@ function liveDetail(): BracketDetail {
 beforeEach(() => {
   vi.clearAllMocks();
   mockAdvance.mockResolvedValue(true);
+  mockReopen.mockResolvedValue(true);
 });
 
 describe('BracketView', () => {

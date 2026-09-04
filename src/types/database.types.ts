@@ -3529,6 +3529,7 @@ export type Database = {
         Args: { p_member_id: string; p_org_id: string; p_team_id: string }
         Returns: Json
       }
+      reopen_bracket_match: { Args: { p_match_id: string }; Returns: boolean }
       request_team_join: {
         Args: { p_claimed_member_id?: string; p_token: string }
         Returns: Json

@@ -143,6 +143,20 @@ export async function advanceWinner(
 }
 
 /**
+ * Reopen a decided match (undo a mis-tapped winner). Clears the winner and
+ * pulls the advanced player/loser back out of the next matches. Throws with a
+ * user-facing message if a downstream match was already played (reopen that
+ * one first). Returns true if it reopened, false if the match wasn't complete.
+ */
+export async function reopenMatch(matchId: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('reopen_bracket_match', {
+    p_match_id: matchId,
+  });
+  if (error) throw new Error(error.message);
+  return data === true;
+}
+
+/**
  * Close a bracket — a `status='closed'` tombstone (NOT a hard delete). The
  * shared link keeps resolving until the inactivity sweep (Unit 7) removes it.
  */
