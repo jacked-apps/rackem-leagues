@@ -1,7 +1,7 @@
 ---
 title: "feat: Notification controls — a master switch, quiet hours, and per-type/per-chat vetoes"
 type: feat
-status: not started
+status: ready to build
 date: 2026-09-04
 origin: docs/brainstorms/2026-04-21-messaging-system-overhaul-requirements.md (Phase 2 — Notification subsystem)
 ---
@@ -141,6 +141,18 @@ false. The "loud phone" problem is not live; it begins when a row is flipped.
   set 20 and it's 20. Confirmed by Ed 2026-09-04: *"if the main is set for 15
   mins, if i set an individual to 5 it would still be 15 mins… if i changed it
   to 20 then it would be quieter longer."*
+- **Intervals apply to GROUP chats only. A DM always buzzes.** (Ed, 2026-09-04:
+  *"time out times should only apply to group chats."*) A DM is one person
+  talking directly to you — holding those back would read as the app swallowing
+  messages, not as restraint. The noise problem being solved here is many people
+  in one room, which is a group-chat property.
+  - `member_notification_prefs.interval_minutes` is NULL for `direct`, meaning
+    no rate limiting, and the resolver skips the window check entirely for it.
+  - The interval control is **not rendered** for a DM — neither in Settings nor
+    in the conversation menu. An always-disabled input invites "why can't I set
+    this?"; absence doesn't.
+  - Everything else still applies to DMs: the master switch, quiet hours, and
+    per-chat on/off all veto a DM normally.
 - **Default interval: 5 minutes** for group kinds (Ed, 2026-09-04), not the
   brainstorm's 15. Stored per kind in `member_notification_prefs`, so it's
   tunable per person without a deploy.
@@ -161,10 +173,8 @@ false. The "loud phone" problem is not live; it begins when a row is flipped.
 
 ## Open Questions
 
-- **Should DMs have an interval at all?** Group kinds clearly should. A DM is
-  one person talking directly to you, where a 5-minute gap may read as the app
-  swallowing messages. Suggest DMs default to no interval (every message buzzes)
-  and group kinds to 5 minutes — but this is a guess, not a decision.
+*(None outstanding. The remaining unknowns are things to learn from a real
+league night — see Unit 4 — not decisions to make up front.)*
 - **Quiet hours needs a timezone.** Storing "22:00–07:00" is meaningless without
   knowing whose clock. Simplest: a per-member IANA timezone captured from the
   browser. The venue/org timezone columns the brainstorm mentions are Phase 3
@@ -194,8 +204,9 @@ false. The "loud phone" problem is not live; it begins when a row is flipped.
   send doesn't open a quiet period.
 - Drop legacy `is_muted` / `notifications_enabled` once nothing reads them.
 
-**Tests (DB, `src/__tests__/database/`):** each cascade level wins over the one
-above it; NULL means inherit; first message notifies and a second inside the
+**Tests (DB, `src/__tests__/database/`):** every level vetoes independently; a
+lower level can never re-enable a higher one; the interval resolves as MAX; a
+DM is never rate-limited; first message notifies and a second inside the
 window doesn't; the window is per conversation; quiet hours suppress; the
 message and unread count are unaffected in every case.
 
