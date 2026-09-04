@@ -9,7 +9,7 @@
  */
 
 import { useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -45,6 +45,7 @@ interface PendingPick {
 
 export function BracketView() {
   const { bracketId } = useParams<{ bracketId: string }>();
+  const navigate = useNavigate();
   const { data, isLoading, isError } = useBracket(bracketId);
   const advance = useAdvanceWinner(bracketId ?? '');
   const setInProgress = useSetMatchInProgress(bracketId ?? '');
@@ -104,6 +105,9 @@ export function BracketView() {
     try {
       await closeBracket.mutateAsync(bracketId);
       toast.success('Tournament closed.');
+      // Closing is terminal — return to the tournaments list rather than sit on
+      // a now-dead page that will be swept.
+      navigate('/brackets');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Could not close the bracket.');
     }
