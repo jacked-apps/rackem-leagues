@@ -4,7 +4,7 @@
  * Subscribes to changes on this bracket's matches (and the bracket row itself)
  * and invalidates the corresponding TanStack Query cache, so a winner tapped on
  * one device shows up live on every viewer. Filtered by bracket_id — the tables
- * carry REPLICA IDENTITY FULL (migration 20260826000000) so filtered UPDATE
+ * carry REPLICA IDENTITY FULL (migration 20260904160417) so filtered UPDATE
  * events include bracket_id. Mirrors useMessagingRealtime.
  *
  * State is data-derived (the renderer recomputes from the fetched rows), so a
