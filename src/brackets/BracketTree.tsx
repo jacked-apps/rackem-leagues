@@ -55,11 +55,11 @@ export function BracketTree({
   );
 }
 
-/** A labeled, horizontally-scrollable bracket section. */
+/** A labeled, horizontally-scrollable bracket section (title + divider rule). */
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h3 className="mb-2 text-sm font-semibold">{title}</h3>
+      <h3 className="mb-3 border-b pb-1 text-lg font-semibold">{title}</h3>
       {children}
     </div>
   );
