@@ -43,19 +43,24 @@ beforeEach(() => {
 });
 
 describe('PlayoffsCard status signal', () => {
-  it('placeholder-only week → "Ready to set up" / "Setup Playoffs"', async () => {
+  // The action is the SAME button in both states — playoffs became review-first
+  // (they auto-fill at season end), so there is no manual "setup" CTA any more.
+  // What changes between these two cases is the status line, which is the whole
+  // point of this suite.
+  it('placeholder-only week → "Ready to set up"', async () => {
     gen.arePlayoffMatchupsPopulated.mockResolvedValue(false);
     render(<PlayoffsCard leagueId="L1" seasonId="S1" />);
     expect(await screen.findByText('Ready to set up')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /setup playoffs/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /view playoffs/i })).toBeInTheDocument();
     expect(screen.queryByText('Bracket created')).not.toBeInTheDocument();
   });
 
-  it('populated week → "Bracket created" / "View Bracket"', async () => {
+  it('populated week → "Bracket created"', async () => {
     gen.arePlayoffMatchupsPopulated.mockResolvedValue(true);
     render(<PlayoffsCard leagueId="L1" seasonId="S1" />);
     expect(await screen.findByText('Bracket created')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /view bracket/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /view playoffs/i })).toBeInTheDocument();
+    expect(screen.queryByText('Ready to set up')).not.toBeInTheDocument();
   });
 
   it('no playoff week → "No playoff week scheduled"', async () => {
