@@ -35,6 +35,7 @@ import { useCaptainReupPrompt } from '@/hooks/useCaptainReupPrompt';
 import { useMyMatchSurfaces } from '@/api/hooks/useMyMatchSurfaces';
 import { MyMatchPanel } from './MyMatchPanel';
 import { OperatorOrgRow } from './OperatorOrgRow';
+import { BRACKETS_ENABLED } from '@/config/featureFlags';
 
 interface AppDrawerProps {
   /** Whether the parent Sheet is open. */
@@ -223,6 +224,8 @@ function PlayerSection({
       )}
       {reupTeams.length > 0 && <DrawerLink to="/reup" label={reupLabel} />}
       <DrawerLink to="/stats" label="Stats" />
+      {/* Gated on BRACKETS_ENABLED — same flag as the /brackets routes. */}
+      {BRACKETS_ENABLED && <DrawerLink to="/brackets" label="Brackets" />}
       <DrawerLink to="/rules" label="Rules" />
       <DrawerLink to="/learn" label="Learn" />
       <DrawerLink to="/messages" label={messagesLabel} />

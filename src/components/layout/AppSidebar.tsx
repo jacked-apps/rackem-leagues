@@ -22,6 +22,7 @@ import { usePendingJoinRequestCount } from '@/api/hooks/usePendingJoinRequestCou
 import { useMyMatchSurfaces } from '@/api/hooks/useMyMatchSurfaces';
 import { MyMatchPanel } from './MyMatchPanel';
 import { OperatorOrgRow } from './OperatorOrgRow';
+import { BRACKETS_ENABLED } from '@/config/featureFlags';
 
 /** Cap on visible orgs — matches AppDrawer. */
 const OPERATOR_ORG_CAP = 4;
@@ -159,6 +160,9 @@ function SidebarPlayerSection({
         <SidebarLink to={joinRequestsTo} label={`Join requests (${joinRequestCount})`} />
       )}
       <SidebarLink to="/stats" label="Stats" />
+      {/* Gated on BRACKETS_ENABLED — same flag as the /brackets routes, so the
+          door and the room turn on together (no prod 404). */}
+      {BRACKETS_ENABLED && <SidebarLink to="/brackets" label="Brackets" />}
       <SidebarLink to="/rules" label="Rules" />
       <SidebarLink to="/learn" label="Learn" />
       <SidebarLink to="/messages" label={messagesLabel} />

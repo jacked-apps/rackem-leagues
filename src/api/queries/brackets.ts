@@ -50,6 +50,22 @@ export async function getBracket(bracketId: string): Promise<BracketDetail> {
   };
 }
 
+/**
+ * List a member's own brackets (newest first), excluding closed tombstones
+ * (those are effectively ended and get swept). Backs the brackets index page.
+ */
+export async function getBracketsByCreator(memberId: string): Promise<BracketRow[]> {
+  const { data, error } = await supabase
+    .from('brackets')
+    .select('*')
+    .eq('created_by', memberId)
+    .neq('status', 'closed')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data ?? [];
+}
+
 /** One participant in the public share payload (names only — no member_id). */
 export interface BracketShareParticipant {
   id: string;

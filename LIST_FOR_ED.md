@@ -139,6 +139,22 @@ from this list when un-gated.
   staging it still shows there; un-gate (remove both `!isProduction` guards) when
   it's ready for users.
 
+- **Tournament Bracket tool (Free Tier v1)** — a standalone single/double-elim
+  bracket any logged-in user can run (add names → tap winners) and share via a
+  public read-only link. Gated by the `BRACKETS_ENABLED` flag
+  (`src/config/featureFlags.ts` — ON in dev, OFF in prod unless `VITE_BRACKETS=true`).
+  The flag gates **all** doors together:
+  - the routes — `brackets`, `brackets/new`, `brackets/:bracketId`, and the public
+    `brackets/share/:shareToken` (`src/navigation/NavRoutes.tsx`);
+  - the nav entry — the "Brackets" link in `src/components/layout/AppSidebar.tsx`
+    AND `src/components/layout/AppDrawer.tsx`.
+  **Verify on staging:** create a bracket (try 5–6 players for byes, and a
+  double-elim for the Winners/Losers/Grand-Final tabs), tap it to a winner, use
+  "Copy share link" and open the share URL logged-out (should show names only,
+  live). To un-gate: set `VITE_BRACKETS=true` in prod (or drop the `import.meta.env.DEV`
+  default), then remove this entry. **Before real users:** see the bracket RLS
+  item in `PRE_LAUNCH_CHECKLIST.md`.
+
 _(LO Manual Scoring + Match Review/Correction and the LMS Results Sheet were
 un-gated and went LIVE in production 2026-06-21 — see `feat`/`fix` un-gate
 commit. The half-gated bug that prompted it: the "Score a Match" button +

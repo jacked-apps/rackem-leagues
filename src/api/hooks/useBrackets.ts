@@ -9,7 +9,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../queryKeys';
-import { getBracket, getBracketShare } from '../queries/brackets';
+import { getBracket, getBracketShare, getBracketsByCreator } from '../queries/brackets';
 import {
   createBracket,
   setParticipants,
@@ -48,6 +48,15 @@ export function useBracketShare(shareToken: string | undefined) {
     staleTime: 0,
     refetchInterval: (query) =>
       query.state.data?.bracket?.status === 'live' ? 15_000 : false,
+  });
+}
+
+/** The current member's own brackets (for the index page). */
+export function useBracketsByCreator(memberId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.brackets.byCreator(memberId ?? ''),
+    queryFn: () => getBracketsByCreator(memberId!),
+    enabled: !!memberId,
   });
 }
 

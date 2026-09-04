@@ -16,6 +16,7 @@ import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 import { isProduction } from '@/config/environment';
 import { BRACKETS_ENABLED } from '@/config/featureFlags';
 import { MemberLayout } from '../components/layout/MemberLayout';
+import { BracketsIndexPage } from '../brackets/BracketsIndexPage';
 import { CreateBracketFlow } from '../brackets/CreateBracketFlow';
 import { BracketView } from '../brackets/BracketView';
 import { PublicBracketPage } from '../brackets/PublicBracketPage';
@@ -225,6 +226,7 @@ export const router = createBrowserRouter([
           // production never shows a door to a not-yet-live room.
           ...(BRACKETS_ENABLED
             ? [
+                { path: 'brackets', element: withMember(<BracketsIndexPage />) },
                 { path: 'brackets/new', element: withMember(<CreateBracketFlow />) },
                 { path: 'brackets/:bracketId', element: withMember(<BracketView />) },
               ]

@@ -27,6 +27,23 @@
     `rotate_team_join_token` + `get_org_teams_for_onboarding` (captain-or-staff),
     `get_my_approved_join_requests` + `acknowledge_join_request` (own row only).
     Verify direct table reads/writes match what these RPCs enforce.
+  - **Tournament Bracket tool (`feat/tournament-bracket-free-tier`):** the three
+    tables (`brackets`, `bracket_participants`, `bracket_matches`) need policies.
+    Concrete spec for what to enforce:
+    - **Writes** must require `created_by = the calling member` — not merely
+      "authenticated". Today, with RLS off, ANY logged-in user can advance/close
+      ANY bracket. The write RPCs (`start_bracket`, `advance_bracket_winner`,
+      `sweep_stale_brackets`) are already `SECURITY DEFINER` + `authenticated`-only
+      (anon revoked), but they do NOT yet check ownership — add that check (in the
+      RPC or via RLS) so only the organizer mutates their bracket. (`sweep_stale_brackets`
+      is a global janitor by design — decide whether to keep it global or scope it.)
+    - **Public read** stays a names-only projection: `get_bracket_share` is
+      `SECURITY DEFINER` granted to `anon`, returns display names + structure only
+      (no `created_by`, no `member_id`). Keep direct table SELECT locked so the
+      RPC remains the only anon read path.
+    - `share_token` has no independent TTL — a failed close/sweep leaves a bracket
+      readable at its URL until the next sweep. Acceptable for disposable v1;
+      revisit if brackets ever carry PII (paid tier).
 
 - [ ] **Auth: email confirmations ON.** Verify the **production** Supabase project
   has *Authentication → Providers → Email → "Confirm email"* **enabled**. This is
