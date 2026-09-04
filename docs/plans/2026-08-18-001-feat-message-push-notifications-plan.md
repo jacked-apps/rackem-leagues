@@ -237,7 +237,7 @@ makes phase rollout a data flip.
 **Dependencies:** None
 
 **Files:**
-- Create: `supabase/migrations/20260818000000_push_subscriptions.sql`
+- Create: `supabase/migrations/20260817000000_push_subscriptions.sql`
 - Modify: `src/types/database.types.ts` (`pnpm db:types`)
 - Test: `src/__tests__/database/pushSubscriptions.db.test.ts`
 
