@@ -1,5 +1,5 @@
 ---
-title: "feat: Notification controls — per-chat mute + rate limiting (the gate on turning team chats on)"
+title: "feat: Notification controls — global rules, per-type defaults, per-chat overrides"
 type: feat
 status: not started
 date: 2026-09-04
@@ -12,162 +12,176 @@ origin: docs/brainstorms/2026-04-21-messaging-system-overhaul-requirements.md (P
 
 Web Push works end to end as of 2026-09-04: a message reaches a closed phone,
 and a message in the conversation you're reading stays quiet. What's missing is
-**restraint** — any way for a person to say "not this chat" or "not ten times in
-a row."
+**restraint** — any way for a person to say "not this chat", "not ten times in
+a row", or "not at 2am."
 
 Ed's gate, stated 2026-09-04: *"i dont want notifications going thru until we
-have some individual settings."* This plan is that gate.
+have some individual settings."*
 
-## Problem Frame
+Ed's shape for those settings, same day: *"there needs to be like an overall set
+of rules (perhaps in settings) then a per chat type… quiet times needs to be an
+overall thing not necessarily a per chat thing. and some should be default
+settings. like group chats i get notified once for that conversation and then
+not again for 15 minutes. then they can change that time in each chat to a
+different number of minutes or turn them on or off."*
 
-The v1 pipeline is deliberately all-or-nothing per person: a member either
-receives every push the policy allows, or turns push off entirely on that
-device. There is no middle setting. That's tolerable while only DMs push, and
-becomes the "loud phone" problem the moment a group conversation does.
+That is a **three-level cascade**, and the app already has one: the
+`resolved_league_preferences` view resolves league → org → system default. This
+plan applies the same pattern to notifications rather than inventing a second
+one.
 
-**Two mechanisms, and they solve different halves:**
+## The model
 
-- **Mute is opt-out.** It protects the person who thinks to go and set it, on
-  the chat they already know is noisy. It does nothing for a first-time
-  experience.
-- **Rate limiting is default-on.** It protects everyone, including the player
-  who never opens settings, on the very first busy night. A ten-message burst
-  becomes one buzz.
+```
+System default              "group chats: on, 15 min between buzzes"
+   ↓ overridden by
+Member's per-type default   "MY team chats: on, 30 min"       (Settings)
+   ↓ overridden by
+Per-conversation override   "THIS chat: off"                   (in the chat)
+```
 
-Both matter, but rate limiting is what actually makes a team chat safe to turn
-on. Mute is what makes it *tolerable to the individual who disagrees with the
-default*.
+Plus one rule that deliberately does **not** cascade:
+
+```
+Quiet hours                 global only — one setting, applies to everything
+```
+
+Quiet hours are a property of the person's day, not of any conversation, so
+offering them per-chat would be a worse product and more state to reason about.
+
+### Where each control lives
+
+| Setting | Level | Lives in |
+|---|---|---|
+| Push on/off for this device | Global | Settings → Notifications *(shipped)* |
+| Quiet hours | Global | Settings → Notifications |
+| Per-type default: on/off + interval | Per conversation kind | Settings → Notifications |
+| Override: on/off + interval | One conversation | The conversation's own menu |
+
+### A note on `push_type_policy`
+
+There is already a `push_type_policy` table keyed by conversation kind. It is
+**not** a user setting — it's the system-level phase switch deciding whether a
+channel is live at all (today only `direct` is true). It sits ABOVE everything
+in this plan: if the kind is off there, nobody gets a push regardless of their
+preferences. Keep the two clearly separate; don't let member preferences write
+to it.
 
 ## Current State (verified against the staging DB, 2026-09-04)
 
-This section exists because the origin brainstorm predates the implementation
-and describes several things as "to build" that are already done.
+The origin brainstorm predates the implementation and lists as "to build"
+several things that are done. Verified state:
 
 **Working today:**
 
-| Capability | Where | State |
-|---|---|---|
-| Global on/off per device | `PushNotificationSetting` → `members.push_enabled` | Shipped |
-| Per-conversation-kind switch | `push_type_policy` table | Shipped — a row flip, no code |
-| Suppress-if-viewing | `sw.ts` + URL sync | Shipped 2026-09-04 (PR #261) |
-| Block-aware fan-out | `get_push_recipients` | Shipped |
-| System messages excluded | `get_push_recipients` | Shipped |
-| Profanity-safe previews | dispatcher | Shipped |
-
-**`push_type_policy` right now — only DMs push at all:**
-
-| `conversation_kind` | `push_enabled` |
+| Capability | Where |
 |---|---|
-| `direct` | **true** |
-| `team_chat` | false |
-| `captains_chat` | false |
-| `announcements` | false |
-| `match_chat` | false |
+| Global on/off per device | `members.push_enabled` + Settings toggle |
+| System per-kind switch | `push_type_policy` |
+| Suppress-if-viewing | `sw.ts` + URL sync (PR #261) |
+| Block-aware fan-out, system messages excluded, profanity-safe previews | `get_push_recipients` + dispatcher |
 
-**The important find:** `get_push_recipients` already filters on
-`cp.notification_mode = 'all'`. The tri-state column exists on every
-participant row and the dispatcher already honours it. **Per-chat mute is
-UI-only work** — no migration, no dispatcher change. Setting a participant to
-`'none'` today would already stop their pushes; nothing can set it.
+**`push_type_policy` — only DMs push at all right now:**
+`direct` = true; `team_chat`, `captains_chat`, `announcements`, `match_chat` =
+false. The "loud phone" problem is not live; it begins when a row is flipped.
 
-## Scope
-
-**In:**
-1. Per-chat mute UI (two-state)
-2. Server-side rate limiting
-
-**Out (each its own later unit):**
-- The "Mentions only" third state — meaningless until `@mention` routing exists
-- Global pause with a duration picker (`notifications_paused_until`, no column yet)
-- Quiet hours 10pm–7am — needs the timezone columns deferred to Phase 3
-- Permission-denial UX (denied / unsupported / iOS-needs-install banner)
-- Actually flipping `team_chat` on — a decision, not code, and the point of this work
+**`conversation_participants` today:**
+- `notification_mode varchar NOT NULL DEFAULT 'all'` — CHECK `('all','mentions','none')`
+- `get_push_recipients` **already filters on `notification_mode = 'all'`**
+- Legacy `is_muted` / `notifications_enabled` columns still present; the Phase 1
+  plan says drop them in a Phase 2 cleanup once nothing reads them — that's this
+  work.
 
 ## Key Decisions
 
-- **Two-state, not tri-state, for now.** The column is
-  `('all','mentions','none')` and stays that way; the UI offers On / Mute and
-  writes `'all'` / `'none'`. Shipping a "Mentions only" option that silently
-  behaves like Mute would be worse than not offering it. See
-  [[feedback-dont-promise-unshipped]].
-- **Rate limit is server-side, in the dispatcher.** It has to hold for a person
-  who never opens the app; a client-side window can't do that.
-- **Rate limiting suppresses the NOTIFICATION, never the message.** The message
-  always lands in the conversation and always counts toward the unread badge.
-- **Unread badges are unaffected by mute.** Muting a chat means "don't buzz me",
-  not "hide it". The badge is how a muted chat still gets noticed.
+- **`notification_mode` must become nullable to express "inherit".** It's
+  currently `NOT NULL DEFAULT 'all'`, so every row asserts a value and there is
+  no way to say "follow my default for this kind." Migration makes it nullable
+  with NULL = inherit; existing `'all'` rows are backfilled to NULL so today's
+  rows don't silently become permanent overrides. **This is the one genuinely
+  delicate schema change in the plan** — done wrong, every existing participant
+  becomes pinned to "always notify" and the new per-type defaults do nothing.
+- **Per-type defaults get their own table**, not a JSONB blob on `members`:
+  `member_notification_prefs(member_id, conversation_kind, push_enabled,
+  interval_minutes)`. Mirrors `push_type_policy`'s shape, is queryable from
+  `get_push_recipients` with a join, and adding a kind later is a row not a
+  migration.
+- **Resolution happens in SQL, in `get_push_recipients`.** It's already the one
+  place that decides who gets a push; splitting the decision between SQL and the
+  edge function would make "why didn't I get notified" unanswerable.
+- **Rate limiting suppresses the NOTIFICATION, never the message.** Messages
+  always land and always count toward the unread badge. Muting means "don't
+  buzz me", not "hide it" — the badge is how a muted chat still gets noticed.
+- **Two-state, not tri-state, for now.** The column keeps
+  `('all','mentions','none')`; the UI offers On / Off. "Mentions only" stays
+  unoffered until `@mention` routing exists — an option that silently behaves
+  like Off is worse than no option.
 
 ## Open Questions
 
-- **Rate-limit window length.** The brainstorm says 15 minutes idle. Untested
-  against a real league night — a 15-minute window on a match-night chat might
-  be so aggressive that important messages go unannounced. Suggest shipping 15
-  and treating it as tunable (a config row, not a constant).
-- **Does the first message after a quiet period always notify?** Assumed yes —
-  the window is "idle since last notification", so the first message after 15
-  quiet minutes buzzes. Worth confirming that's the felt behaviour.
-- **Where does per-chat mute live in the UI?** Inside the conversation (a
-  header menu item) is the natural place — you mute the chat you're annoyed by,
-  while you're in it. The Messages settings modal is the alternative but puts
-  the control far from the thing it controls.
+- **Default interval per kind.** The brainstorm says 15 minutes; Ed's example
+  also says 15 for group chats. Untested against a real league night. Should
+  DMs have an interval at all, or always buzz? A DM is a person talking directly
+  to you — suggest DMs default to no interval, group kinds to 15 minutes.
+- **Quiet hours needs a timezone.** Storing "22:00–07:00" is meaningless without
+  knowing whose clock. Simplest: a per-member IANA timezone captured from the
+  browser. The venue/org timezone columns the brainstorm mentions are Phase 3
+  and are the wrong unit here anyway — quiet hours belong to the person.
+- **Does a quiet-hours message notify later, or never?** Suggest never — it's
+  already in the app with an unread badge when they wake up. A queue that fires
+  at 7am is a second system to build and a nasty surprise.
+- **Interval granularity in the UI.** A free-text minutes box invites "1" and
+  "9999". Suggest a small preset list (Every message / 15 min / 30 min / 1 hr /
+  Off) with the stored value still an integer, so a custom value remains
+  possible later without a migration.
 
 ## Implementation Units
 
-### Unit 1 — Per-chat mute UI
+### Unit 1 — Schema + resolver
 
-**Goal:** a member can silence one conversation, from inside it.
+**Goal:** the cascade exists and the dispatcher honours it. No UI yet.
 
-- Read the current `notification_mode` for `(conversation, me)`.
-- A control in `ConversationHeader`'s existing menu (it already hosts Leave /
-  Block) — "Mute notifications" / "Unmute", writing `'none'` / `'all'`.
-- Muted state must be visible in the conversation list too, so a muted chat is
-  identifiable without opening it. Icon **plus** text or a label — never colour
-  alone ([[user-colorblind]]).
-- Optimistic, like `LmsEnteredCheckbox`: flip immediately, roll back on failure.
-  A mute that appears not to have worked will be tapped repeatedly.
+- Migration: `member_notification_prefs` table; `notification_mode` → nullable
+  with the backfill described above; `notification_interval_minutes` (nullable)
+  on `conversation_participants`; `last_notified_at` on
+  `conversation_participants`; quiet-hours + timezone columns on `members`.
+- Rewrite `get_push_recipients` to resolve conversation override → member type
+  default → system default, apply the interval window, and drop anyone inside
+  quiet hours.
+- Dispatcher stamps `last_notified_at` after a **successful** send, so a failed
+  send doesn't open a quiet period.
+- Drop legacy `is_muted` / `notifications_enabled` once nothing reads them.
 
-**No migration.** Column and dispatcher filter already exist.
-
-**Tests:** mute writes `'none'`; unmute writes `'all'`; the list reflects muted
-state; rollback on failure; a muted conversation still increments unread.
-
-**Verify on staging:** mute a DM on the phone, have the other account send —
-message arrives, no buzz. Unmute, send again — buzz returns.
-
-### Unit 2 — Rate limiting
-
-**Goal:** a burst of messages in one conversation produces one notification.
-
-- Track `last_notified_at` per `(conversation_id, member_id)`. Natural home is a
-  column on `conversation_participants` — the row already exists for every
-  member of every conversation, so no new table and no lifecycle to manage.
-- `get_push_recipients` gains the window check: exclude a recipient whose
-  `last_notified_at` is within the window.
-- The dispatcher stamps `last_notified_at` for the recipients it actually sent
-  to — after a successful send, so a failed send doesn't start a quiet period.
-- Window length in a config row, not a constant, so it's tunable without a
-  deploy (mirrors `push_dispatch_config`).
-
-**Migration:** additive column + the recipient-function change.
-
-**Tests (DB, `src/__tests__/database/`):** first message notifies; a second
-inside the window does not; one after the window does; the window is per
-conversation (a DM still notifies while a team chat is inside its window); the
+**Tests (DB, `src/__tests__/database/`):** each cascade level wins over the one
+above it; NULL means inherit; first message notifies and a second inside the
+window doesn't; the window is per conversation; quiet hours suppress; the
 message and unread count are unaffected in every case.
 
-**Verify on staging:** send five messages in ten seconds to a phone with the app
-closed — one buzz, five messages visible on open.
+### Unit 2 — Global settings UI
 
-### Unit 3 — Turn on `team_chat` (decision, not code)
+Settings → Notifications gains quiet hours (on/off + a start/end time) and a
+per-kind default list (on/off + interval preset per conversation kind). Only
+kinds live in `push_type_policy` are shown — no point offering a default for a
+channel that can't push.
 
-Once 1 and 2 are on staging and verified, flip `push_type_policy.team_chat` to
-`true` **on staging only** and live with it for a real league night before
-touching production. This is the actual test of whether the restraint is enough.
+### Unit 3 — Per-chat override UI
+
+A control in the conversation's own menu (alongside Leave / Block) — notify
+on/off plus an interval, defaulting to "Use my default (30 min)" so the
+inherited value is visible rather than implied. Muted state must also be visible
+in the conversation list, by icon **plus** text, never colour alone
+([[user-colorblind]]). Optimistic like `LmsEnteredCheckbox` — a mute that looks
+like it didn't work gets tapped repeatedly.
+
+### Unit 4 — Turn on `team_chat` (decision, not code)
+
+With 1–3 on staging, flip `push_type_policy.team_chat` to `true` **on staging
+only** and live through a real league night before touching production. That is
+the actual test of whether the restraint is enough.
 
 ## Follow-ups (not in this plan)
 
 - "Mentions only" + `@mention` routing
-- Global pause with duration picker
-- Quiet hours
-- Permission-denial UX
+- Global pause with a duration picker (`notifications_paused_until`)
+- Permission-denial UX (denied / unsupported / iOS-needs-install banner)
 - `push_subscriptions` RLS — currently open; see `PRE_LAUNCH_CHECKLIST.md`
