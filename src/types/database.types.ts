@@ -1413,6 +1413,7 @@ export type Database = {
           phone: string | null
           profanity_filter_enabled: boolean | null
           profanity_onboarding_completed_at: string | null
+          push_enabled: boolean | null
           role: Database["public"]["Enums"]["user_role"] | null
           starting_handicap_3v3: number | null
           starting_handicap_5v5: number | null
@@ -1442,6 +1443,7 @@ export type Database = {
           phone?: string | null
           profanity_filter_enabled?: boolean | null
           profanity_onboarding_completed_at?: string | null
+          push_enabled?: boolean | null
           role?: Database["public"]["Enums"]["user_role"] | null
           starting_handicap_3v3?: number | null
           starting_handicap_5v5?: number | null
@@ -1471,6 +1473,7 @@ export type Database = {
           phone?: string | null
           profanity_filter_enabled?: boolean | null
           profanity_onboarding_completed_at?: string | null
+          push_enabled?: boolean | null
           role?: Database["public"]["Enums"]["user_role"] | null
           starting_handicap_3v3?: number | null
           starting_handicap_5v5?: number | null
@@ -2065,6 +2068,83 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      push_dispatch_config: {
+        Row: {
+          enabled: boolean
+          function_url: string
+          id: boolean
+          shared_secret: string
+        }
+        Insert: {
+          enabled?: boolean
+          function_url: string
+          id?: boolean
+          shared_secret?: string
+        }
+        Update: {
+          enabled?: boolean
+          function_url?: string
+          id?: boolean
+          shared_secret?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          last_seen_at: string | null
+          member_id: string
+          p256dh: string
+          user_agent: string | null
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          last_seen_at?: string | null
+          member_id: string
+          p256dh: string
+          user_agent?: string | null
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          last_seen_at?: string | null
+          member_id?: string
+          p256dh?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_type_policy: {
+        Row: {
+          conversation_kind: string
+          push_enabled: boolean
+        }
+        Insert: {
+          conversation_kind: string
+          push_enabled?: boolean
+        }
+        Update: {
+          conversation_kind?: string
+          push_enabled?: boolean
+        }
+        Relationships: []
       }
       rating_edit_audit_log: {
         Row: {
@@ -3444,6 +3524,19 @@ export type Database = {
           is_placeholder: boolean
           nickname: string
           team_count: number
+        }[]
+      }
+      get_push_recipients: {
+        Args: { p_message_id: string }
+        Returns: {
+          auth: string
+          conversation_id: string
+          endpoint: string
+          member_id: string
+          message_content: string
+          p256dh: string
+          profanity_filter_enabled: boolean
+          sender_name: string
         }[]
       }
       get_team_join_view: { Args: { p_token: string }; Returns: Json }

@@ -1,0 +1,126 @@
+# =====================================================================
+# Pre-merge checks.
+#
+# The repo previously had NO pull_request-triggered workflow — the only
+# automation was the two deploy workflows, which run after a merge to main.
+# That meant a whole class of mistake could only be discovered by breaking a
+# deployed environment.
+#
+# This workflow is the place for cheap, fast checks that should block a merge
+# rather than a deploy. Add to it as more are found worth guarding.
+#
+# Jobs run in parallel and are independent:
+#   migration-versions : duplicate migration version guard
+#   unit-tests         : the vitest `unit` project (NOT `db`, which needs Postgres)
+#   typecheck          : `pnpm run build` = tsc -b + vite build
+# =====================================================================
+name: Checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  migration-versions:
+    name: Migration versions are unique
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Two migrations sharing a version number merge cleanly in git (the
+      # filenames differ) but can never both apply — schema_migrations is keyed
+      # on the version alone. Caught here it is a renamed file; caught at deploy
+      # it is a failed migration step that aborts the deploy before the S3
+      # upload, silently leaving the environment on its previous bundle.
+      - name: Check for duplicate migration versions
+        run: bash scripts/check-migration-versions.sh
+
+  unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The `unit` project ONLY. `pnpm test:run` would also run the `db`
+      # project, which talks to a real local Postgres on 127.0.0.1:54322 —
+      # there isn't one here, so those belong to local runs (and, later, a job
+      # that stands up a database service).
+      - name: Run unit tests
+        run: pnpm test:unit
+        env:
+          # Placeholders, NOT credentials. `src/supabaseClient.ts` reads these at
+          # import time; with them unset the client is constructed with an
+          # undefined URL, which resolves against happy-dom's default page origin
+          # (http://localhost:3000) and every test file that transitively imports
+          # the client dies at COLLECTION time with ECONNREFUSED — ~30 files, none
+          # of which are really failing. Locally this is masked by a .env, which
+          # is exactly why these tests passed on a developer machine and not here.
+          # The tests mock supabase-js, so no request is ever made; the client
+          # just needs a syntactically valid URL and a non-empty key to construct.
+          VITE_SUPABASE_URL: https://placeholder.supabase.co
+          VITE_SUPABASE_ANON_KEY: placeholder-anon-key-for-tests
+
+  typecheck:
+    name: Typecheck + build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # `build` is `tsc -b && vite build`, so this is the authoritative
+      # typecheck as well as proof the bundle (and the service worker) still
+      # compile. Deliberately catches type errors BEFORE a deploy tries to.
+      - name: Build
+        run: pnpm run build

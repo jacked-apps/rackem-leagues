@@ -40,6 +40,9 @@ export interface Member {
   // (either Yes or No). NULL value triggers the modal at app first-load.
   // "Decide later" leaves this NULL; only an explicit Yes/No writes a timestamp.
   profanity_onboarding_completed_at?: string | null;
+  // Global push-notification switch (message push notifications, Unit 1).
+  // NULL = never prompted; true = on; false = globally off.
+  push_enabled?: boolean | null;
   fargo_rating: number | null; // FargoRate rating (100-850). NULL = not set.
   organization_id: string | null; // Placeholder-only: org the placeholder belongs to. NULL for registered members (they span orgs).
   archived_at: string | null; // Placeholder-only: when the LO archived this row. NULL means active.

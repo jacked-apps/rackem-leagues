@@ -13,7 +13,7 @@
  *   place-rule (editable) + a status line. When the season completes, the
  *   matchups fill in automatically (one-shot); a manual override is available.
  * - **locked** — matchups populated (teams filled in). Read-only place-rule +
- *   "view on the schedule" + a deliberate Reset.
+ *   "view matchups" + a deliberate Reset.
  *
  * The actual filled-in matchups (with real teams) live on the schedule, not here.
  *
@@ -305,7 +305,7 @@ export const PlayoffSetup: React.FC = () => {
           </Card>
         )}
 
-        {/* Locked — matchups are set. Read-only place-rule + view on schedule. */}
+        {/* Locked — matchups are set. Read-only place-rule + view on the matchups page. */}
         {playoffState === 'locked' && (
           <Card>
             <CardHeader className="pb-3">

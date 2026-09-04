@@ -64,11 +64,23 @@ jobs:
           VITE_APP_ENV: staging
           VITE_SUPABASE_URL: https://eahlgydddmjebcfiskmz.supabase.co
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          # Un-gate message push notifications on staging (off in production until
+          # verified). VAPID public key is baked into the client bundle so the
+          # subscribe flow works; set it in the `staging` GitHub Environment secrets.
+          VITE_PUSH_NOTIFICATIONS: 'true'
+          VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v2
         with:
           version: latest
+
+      # Guard: a duplicate migration version aborts the migration step below with
+      # an opaque Postgres duplicate-key error, AFTER the build but BEFORE the S3
+      # upload — leaving this environment silently serving its previous bundle.
+      # Fail here instead, with a message that names the offending files.
+      - name: Check for duplicate migration versions
+        run: bash scripts/check-migration-versions.sh
 
       - name: Run Supabase migrations
         run: |
@@ -77,6 +89,11 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+
+      - name: Deploy Edge Functions
+        run: supabase functions deploy --project-ref eahlgydddmjebcfiskmz
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
