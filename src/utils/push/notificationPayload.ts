@@ -29,6 +29,18 @@ export interface BuiltNotification {
   options: {
     body: string;
     tag: string;
+    /**
+     * Re-alert (sound + vibration) even though this notification REPLACES an
+     * earlier one with the same tag.
+     *
+     * Without this, tagging silently costs us the chime on every message after
+     * the first: per the Notifications spec a replacing notification updates the
+     * banner but does not re-alert. In practice that read as "the first message
+     * rings, the rest arrive silently", which defeats the point — a chat you're
+     * not watching needs to be audible on the second message as much as the
+     * first. `renotify` is only meaningful alongside `tag`, which we always set.
+     */
+    renotify: boolean;
     data: { url: string; conversationId?: string };
   };
 }
@@ -58,6 +70,9 @@ export function buildNotification(raw: unknown): BuiltNotification {
       // One notification per conversation: collapses rapid-fire messages and
       // prevents the iOS declarative render and this handler from double-showing.
       tag: conversationId ? `conversation:${conversationId}` : 'rackem-message',
+      // Always paired with the tag above — see the field docs. Without it, only
+      // the first message in a conversation makes a sound.
+      renotify: true,
       data: { url: deepLinkPath(conversationId), conversationId },
     },
   };
