@@ -226,7 +226,7 @@ export function MessageView({ conversationId, currentUserId, onBack, onLeaveConv
       {/* Messages — list rendering, loading, empty state, auto-scroll,
           system-message variant, and per-bubble profanity filter all live
           in <MessageList>. */}
-      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-3 md:space-y-4 bg-muted">
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 space-y-3 md:space-y-4 bg-muted">
         <MessageList
           messages={messages}
           currentUserId={currentUserId}
@@ -234,6 +234,7 @@ export function MessageView({ conversationId, currentUserId, onBack, onLeaveConv
           loading={loading}
           outgoingMessages={outgoing}
           onRetryOutgoing={handleRetryOutgoing}
+          isDM={isDM}
         />
       </div>
 

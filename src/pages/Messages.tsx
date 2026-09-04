@@ -254,7 +254,7 @@ export function Messages() {
   };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className="h-dvh flex flex-col overflow-hidden">
       {/* Header - Shows when viewing conversation list, hidden on mobile when conversation selected */}
       <div
         className={cn(
