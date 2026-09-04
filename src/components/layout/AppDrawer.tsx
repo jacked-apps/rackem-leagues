@@ -35,7 +35,6 @@ import { useCaptainReupPrompt } from '@/hooks/useCaptainReupPrompt';
 import { useMyMatchSurfaces } from '@/api/hooks/useMyMatchSurfaces';
 import { MyMatchPanel } from './MyMatchPanel';
 import { OperatorOrgRow } from './OperatorOrgRow';
-import { BRACKETS_ENABLED } from '@/config/featureFlags';
 
 interface AppDrawerProps {
   /** Whether the parent Sheet is open. */
@@ -228,9 +227,8 @@ function PlayerSection({
       <DrawerLink to="/learn" label="Learn" />
       <DrawerLink to="/messages" label={messagesLabel} />
       {/* No "Profile" link — the name/avatar at the top of the drawer already
-          opens /profile. The reclaimed slot holds the Tournaments side tool,
-          gated on BRACKETS_ENABLED (same flag as the /brackets routes). */}
-      {BRACKETS_ENABLED && <DrawerLink to="/brackets" label="Tournaments" />}
+          opens /profile. The reclaimed slot holds the Tournaments side tool. */}
+      <DrawerLink to="/brackets" label="Tournaments" />
     </ul>
   );
 }

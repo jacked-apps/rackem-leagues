@@ -14,7 +14,6 @@
 import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 import { isProduction } from '@/config/environment';
-import { BRACKETS_ENABLED } from '@/config/featureFlags';
 import { MemberLayout } from '../components/layout/MemberLayout';
 import { BracketsIndexPage } from '../brackets/BracketsIndexPage';
 import { CreateBracketFlow } from '../brackets/CreateBracketFlow';
@@ -184,11 +183,8 @@ export const router = createBrowserRouter([
       { path: 'claim-player', element: <ClaimPlayer /> },
       { path: 'join/:token', element: <TeamJoinPage /> },
       // Public, read-only bracket share (names only via the get_bracket_share
-      // RPC). Gated on the same BRACKETS_ENABLED flag as the authed routes so
-      // the whole feature turns on/off together.
-      ...(BRACKETS_ENABLED
-        ? [{ path: 'brackets/share/:shareToken', element: <PublicBracketPage /> }]
-        : []),
+      // RPC) — the anon boundary is the RPC itself, not the route.
+      { path: 'brackets/share/:shareToken', element: <PublicBracketPage /> },
       { path: 'forgot-password', element: <ForgotPassword /> },
       { path: 'reset-password', element: <ResetPassword /> },
       { path: 'confirm', element: <EmailConfirmation /> },
@@ -225,16 +221,11 @@ export const router = createBrowserRouter([
           { path: 'reup', element: withMember(<CaptainReupPage />) },
           { path: 'my-match', element: withMember(<MyMatch />) },
           { path: 'stats', element: withMember(<PlayerStats />) },
-          // --- Tournament bracket tool (Free Tier v1) — gated on BRACKETS_ENABLED.
-          // Gate the routes AND the dashboard entry point (Unit 8) together so
-          // production never shows a door to a not-yet-live room.
-          ...(BRACKETS_ENABLED
-            ? [
-                { path: 'brackets', element: withMember(<BracketsIndexPage />) },
-                { path: 'brackets/new', element: withMember(<CreateBracketFlow />) },
-                { path: 'brackets/:bracketId', element: withMember(<BracketView />) },
-              ]
-            : []),
+          // --- Tournament bracket tool (Free Tier v1). Live in every
+          // environment; the nav entries in AppDrawer/AppSidebar are the doors.
+          { path: 'brackets', element: withMember(<BracketsIndexPage />) },
+          { path: 'brackets/new', element: withMember(<CreateBracketFlow />) },
+          { path: 'brackets/:bracketId', element: withMember(<BracketView />) },
           // Rules pages — public (no auth wrapper) but rendered inside
           // MemberLayout so logged-in users keep their sidebar/tab bar.
           // AppSidebar and BottomTabBar both auth-gate their nav content,

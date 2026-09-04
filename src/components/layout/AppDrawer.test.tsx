@@ -156,7 +156,7 @@ describe('AppDrawer', () => {
     expect(within(nav).getByRole('link', { name: /^Messages/ })).toBeInTheDocument();
     // No standalone "Profile" nav link — the name/avatar at the top of the
     // drawer opens /profile. The reclaimed slot holds the gated "Tournaments"
-    // side tool (BRACKETS_ENABLED is on in dev/test).
+    // side tool (un-gated — live in every environment).
     expect(within(nav).queryByRole('link', { name: 'Profile' })).not.toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Tournaments' })).toBeInTheDocument();
     // No "Dashboard" link and no Sign Out in the drawer — the player nav dropped

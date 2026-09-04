@@ -54,16 +54,10 @@ export const EMAIL_INVITES_ENABLED = import.meta.env.VITE_EMAIL_INVITES === 'tru
 export const PUSH_NOTIFICATIONS_ENABLED =
   import.meta.env.VITE_PUSH_NOTIFICATIONS === 'true' || import.meta.env.DEV;
 
-/**
- * Tournament bracket tool (Free Tier v1) — the standalone single/double-elim
- * bracket a logged-in user can run and share.
- *
- * LAUNCH GATE: enabled by default only in local dev (`import.meta.env.DEV`);
- * OFF in a production build unless `VITE_BRACKETS === 'true'`. The route AND
- * every entry point (dashboard card) are gated on this same flag together, so
- * production never shows a door to a not-yet-live room. See LIST_FOR_ED.md and
- * PRE_LAUNCH_CHECKLIST.md (RLS pass: bracket writes must require created_by =
- * calling member; the public share view stays a names-only RPC read).
- */
-export const BRACKETS_ENABLED =
-  import.meta.env.VITE_BRACKETS === 'true' || import.meta.env.DEV;
+// The tournament bracket tool (Free Tier v1) shipped un-gated: it's the free
+// product, complete and tested, so it's live in every environment. Its old
+// `BRACKETS_ENABLED` launch gate is gone rather than left permanently true —
+// a flag that must be ON everywhere is only a way to lose the feature when an
+// env var is forgotten. Still tracked in PRE_LAUNCH_CHECKLIST.md for the RLS
+// pass (bracket writes must require created_by = calling member; the public
+// share view stays a names-only RPC read).

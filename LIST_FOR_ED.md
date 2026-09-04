@@ -139,28 +139,6 @@ from this list when un-gated.
   staging it still shows there; un-gate (remove both `!isProduction` guards) when
   it's ready for users.
 
-- **Tournaments — the bracket side tool (Free Tier v1)** — a standalone
-  single/double-elim tournament any logged-in user can run (add names → tap
-  winners) and share via a public read-only link. User-facing label is
-  **"Tournaments"**; internal code + routes stay `bracket*` (the app already uses
-  "Tournament" for the BCA championship-date concept, so the code name avoids a
-  collision). Gated by the `BRACKETS_ENABLED` flag (`src/config/featureFlags.ts`
-  — ON in dev, OFF in prod unless `VITE_BRACKETS=true`). The flag gates **all**
-  doors together:
-  - the routes — `brackets`, `brackets/new`, `brackets/:bracketId`, and the public
-    `brackets/share/:shareToken` (`src/navigation/NavRoutes.tsx`);
-  - the nav entry — the "Tournaments" link in `src/components/layout/AppSidebar.tsx`
-    AND `src/components/layout/AppDrawer.tsx` (it took the slot of the removed
-    "Profile" nav link — the name/avatar at the top already opens /profile).
-  **Verify on staging:** open **Tournaments** in the drawer → create one (try 5–6
-  players for byes, and a double-elim for the Winners/Losers/Grand-Final tabs),
-  tap it to a winner, use "Copy share link" and open the share URL logged-out
-  (should show names only, live). Also confirm tapping your name still opens
-  Profile (its standalone nav link was removed). To un-gate: set
-  `VITE_BRACKETS=true` in prod (or drop the `import.meta.env.DEV` default), then
-  remove this entry. **Before real users:** see the bracket RLS item in
-  `PRE_LAUNCH_CHECKLIST.md`.
-
 - **Message Push Notifications (client side, Units 1–6)** — branch
   `feat/message-push-notifications`. The subscribe flow + UI are done, but nothing
   SENDS a push yet (the dispatcher edge function + DB trigger are Units 7–8, a
