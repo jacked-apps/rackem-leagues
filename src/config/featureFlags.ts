@@ -38,3 +38,17 @@ export const PASSWORDLESS_SIGN_IN_ENABLED =
  * manual share-link) — those don't send email and work fine.
  */
 export const EMAIL_INVITES_ENABLED = import.meta.env.VITE_EMAIL_INVITES === 'true';
+
+/**
+ * Tournament bracket tool (Free Tier v1) — the standalone single/double-elim
+ * bracket a logged-in user can run and share.
+ *
+ * LAUNCH GATE: enabled by default only in local dev (`import.meta.env.DEV`);
+ * OFF in a production build unless `VITE_BRACKETS === 'true'`. The route AND
+ * every entry point (dashboard card) are gated on this same flag together, so
+ * production never shows a door to a not-yet-live room. See LIST_FOR_ED.md and
+ * PRE_LAUNCH_CHECKLIST.md (RLS pass: bracket writes must require created_by =
+ * calling member; the public share view stays a names-only RPC read).
+ */
+export const BRACKETS_ENABLED =
+  import.meta.env.VITE_BRACKETS === 'true' || import.meta.env.DEV;

@@ -14,7 +14,10 @@
 import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 import { isProduction } from '@/config/environment';
+import { BRACKETS_ENABLED } from '@/config/featureFlags';
 import { MemberLayout } from '../components/layout/MemberLayout';
+import { CreateBracketFlow } from '../brackets/CreateBracketFlow';
+import { BracketView } from '../brackets/BracketView';
 import { Home } from '../home/Home';
 import { RulesSkeleton } from '../rules/RulesSkeleton';
 import { RulesErrorBoundary } from '../rules/RulesErrorBoundary';
@@ -210,6 +213,15 @@ export const router = createBrowserRouter([
           { path: 'reup', element: withMember(<CaptainReupPage />) },
           { path: 'my-match', element: withMember(<MyMatch />) },
           { path: 'stats', element: withMember(<PlayerStats />) },
+          // --- Tournament bracket tool (Free Tier v1) — gated on BRACKETS_ENABLED.
+          // Gate the routes AND the dashboard entry point (Unit 8) together so
+          // production never shows a door to a not-yet-live room.
+          ...(BRACKETS_ENABLED
+            ? [
+                { path: 'brackets/new', element: withMember(<CreateBracketFlow />) },
+                { path: 'brackets/:bracketId', element: withMember(<BracketView />) },
+              ]
+            : []),
           // Rules pages — public (no auth wrapper) but rendered inside
           // MemberLayout so logged-in users keep their sidebar/tab bar.
           // AppSidebar and BottomTabBar both auth-gate their nav content,
