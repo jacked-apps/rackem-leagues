@@ -30,7 +30,7 @@ export const MIN_PARTICIPANTS = 2;
 const INITIAL: CreateBracketFormState = {
   step: 'details',
   name: '',
-  format: 'single_elimination',
+  format: 'double_elimination',
   // Default ON — the "true" double-elim finals (the unbeaten finalist can't be
   // knocked out on a single loss). Only surfaces for double elimination.
   grandFinalReset: true,

@@ -72,7 +72,7 @@ describe('CreateBracketFlow', () => {
     expect(mockCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         name: 'Friday 9-Ball',
-        format: 'single_elimination',
+        format: 'double_elimination', // the default
         seedingMode: 'seeded',
         createdBy: 'member-1',
       })
