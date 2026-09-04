@@ -3258,6 +3258,10 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: Json
       }
+      advance_bracket_winner: {
+        Args: { p_match_id: string; p_winner_participant_id: string }
+        Returns: boolean
+      }
       approve_join_request: {
         Args: {
           p_action: string
@@ -3627,6 +3631,10 @@ export type Database = {
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       soundex: { Args: { "": string }; Returns: string }
+      start_bracket: {
+        Args: { p_bracket_id: string; p_matches: Json }
+        Returns: undefined
+      }
       swap_player_in_lineup: {
         Args: { p_lineup_id: string; p_resolution: Json; p_thresholds: Json }
         Returns: undefined

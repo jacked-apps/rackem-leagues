@@ -271,6 +271,26 @@ export const queryKeys = {
   },
 
   /**
+   * Tournament bracket tool query keys (Free Tier v1).
+   * NOTE: distinct from `tournaments` below, which is the BCA/APA
+   * championship-date lookup — a different concept.
+   */
+  brackets: {
+    /** Base key for all bracket queries */
+    all: ['brackets'] as const,
+
+    /** A bracket's full organizer view (bracket + participants + matches) */
+    detail: (id: string) => [...queryKeys.brackets.all, id] as const,
+
+    /** The public share view for a share token */
+    share: (shareToken: string) => [...queryKeys.brackets.all, 'share', shareToken] as const,
+
+    /** The current organizer's list of brackets */
+    byCreator: (memberId: string) =>
+      [...queryKeys.brackets.all, 'creator', memberId] as const,
+  },
+
+  /**
    * Tournament-related query keys
    */
   tournaments: {
