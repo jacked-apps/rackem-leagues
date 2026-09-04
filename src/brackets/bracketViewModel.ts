@@ -28,6 +28,7 @@ export interface ViewMatch {
   away_participant_id: string | null;
   winner_participant_id: string | null;
   status: string;
+  in_progress: boolean;
   is_reset_match: boolean;
 }
 
@@ -46,6 +47,8 @@ export interface MatchView {
   side: MatchSide;
   slot: number;
   status: MatchStatus;
+  /** Organizer marked this ready match as being played now (vs. on deck). */
+  inProgress: boolean;
   isResetMatch: boolean;
   home: SlotView;
   away: SlotView;
@@ -85,6 +88,7 @@ export function toMatchView(m: ViewMatch, names: Map<string, string>): MatchView
     side: m.side as MatchSide,
     slot: m.slot,
     status: m.status as MatchStatus,
+    inProgress: m.in_progress,
     isResetMatch: m.is_reset_match,
     home: slot(m.home_participant_id, m.winner_participant_id, names),
     away: slot(m.away_participant_id, m.winner_participant_id, names),

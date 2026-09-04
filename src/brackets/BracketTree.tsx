@@ -18,12 +18,19 @@ interface BracketTreeProps {
   readOnly: boolean;
   onPick?: (matchId: string, participantId: string) => void;
   onReopen?: (matchId: string) => void;
+  onToggleInProgress?: (matchId: string, inProgress: boolean) => void;
 }
 
-export function BracketTree({ view, readOnly, onPick, onReopen }: BracketTreeProps) {
+export function BracketTree({
+  view,
+  readOnly,
+  onPick,
+  onReopen,
+  onToggleInProgress,
+}: BracketTreeProps) {
   // Single elimination: one tree, no tabs.
   if (!view.hasLosers && view.grandFinal.length === 0) {
-    return <RoundColumns rounds={view.winners} readOnly={readOnly} onPick={onPick} onReopen={onReopen} />;
+    return <RoundColumns rounds={view.winners} readOnly={readOnly} onPick={onPick} onReopen={onReopen} onToggleInProgress={onToggleInProgress} />;
   }
 
   return (
@@ -37,16 +44,16 @@ export function BracketTree({ view, readOnly, onPick, onReopen }: BracketTreePro
       </TabsList>
 
       <TabsContent value="winners">
-        <RoundColumns rounds={view.winners} readOnly={readOnly} onPick={onPick} onReopen={onReopen} />
+        <RoundColumns rounds={view.winners} readOnly={readOnly} onPick={onPick} onReopen={onReopen} onToggleInProgress={onToggleInProgress} />
       </TabsContent>
       {view.hasLosers && (
         <TabsContent value="losers">
-          <RoundColumns rounds={view.losers} readOnly={readOnly} onPick={onPick} onReopen={onReopen} />
+          <RoundColumns rounds={view.losers} readOnly={readOnly} onPick={onPick} onReopen={onReopen} onToggleInProgress={onToggleInProgress} />
         </TabsContent>
       )}
       {view.grandFinal.length > 0 && (
         <TabsContent value="grand_final">
-          <RoundColumns rounds={[view.grandFinal]} readOnly={readOnly} onPick={onPick} onReopen={onReopen} />
+          <RoundColumns rounds={[view.grandFinal]} readOnly={readOnly} onPick={onPick} onReopen={onReopen} onToggleInProgress={onToggleInProgress} />
         </TabsContent>
       )}
     </Tabs>
@@ -59,11 +66,13 @@ function RoundColumns({
   readOnly,
   onPick,
   onReopen,
+  onToggleInProgress,
 }: {
   rounds: MatchView[][];
   readOnly: boolean;
   onPick?: (matchId: string, participantId: string) => void;
   onReopen?: (matchId: string) => void;
+  onToggleInProgress?: (matchId: string, inProgress: boolean) => void;
 }) {
   if (rounds.length === 0) {
     return <p className="text-sm text-muted-foreground">No matches yet.</p>;
@@ -76,7 +85,7 @@ function RoundColumns({
             Round {i + 1}
           </div>
           {matches.map((m) => (
-            <MatchCell key={m.id} match={m} readOnly={readOnly} onPick={onPick} onReopen={onReopen} />
+            <MatchCell key={m.id} match={m} readOnly={readOnly} onPick={onPick} onReopen={onReopen} onToggleInProgress={onToggleInProgress} />
           ))}
         </div>
       ))}

@@ -25,6 +25,7 @@ vi.mock('react-router-dom', async (orig) => ({
 vi.mock('@/api/hooks/useBrackets', () => ({
   useBracket: () => mockUseBracket(),
   useAdvanceWinner: () => ({ mutateAsync: mockAdvance }),
+  useSetMatchInProgress: () => ({ mutate: vi.fn(), mutateAsync: vi.fn() }),
   useReopenMatch: () => ({ mutateAsync: mockReopen }),
   useCloseBracket: () => ({ mutateAsync: mockClose }),
 }));

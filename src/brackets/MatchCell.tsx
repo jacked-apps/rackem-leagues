@@ -1,51 +1,56 @@
 /**
  * @fileoverview One match cell in the bracket tree (Unit 5).
  *
- * Renders the two slots (home/away) of a match. A filled slot shows its name;
- * an empty slot shows "—" (TBD, waiting on a feeder). In organizer mode a ready
- * match's slots are tappable to record the winner. A decided match reads as
- * done — the winner is bold, the loser is dimmed — and (organizer mode) shows a
- * small "Reopen" control to undo a mis-tap.
+ * Renders the two slots (home/away) of a match with a thick, color-coded outer
+ * border that reads the state at a glance:
+ *   - pending  → dashed grey   (waiting on players; a feeder isn't done)
+ *   - on deck  → amber         (ready, not yet started)
+ *   - playing  → blue accent   (organizer marked it being played now)
+ *   - complete → green         (finished)
+ * The winner is bold, the loser dimmed. In organizer mode a ready match's slots
+ * are tappable to record the winner, a footer toggles playing/on-deck, and a
+ * decided match shows "Reset" to undo a mis-tap.
  */
 
-import { RotateCcw } from 'lucide-react';
+import { Play, RotateCcw } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import type { MatchView, SlotView } from './bracketViewModel';
 import { isSlotPickable } from './bracketViewModel';
-import type { MatchSlot, MatchStatus } from '@/types/bracket';
+import type { MatchSlot } from '@/types/bracket';
 
-/**
- * Thick, color-coded outer border by state so a match reads at a glance:
- * - pending: dashed muted — waiting on players (not playable).
- * - ready:   solid accent — playable now / in progress.
- * - complete: solid green — finished/decided.
- */
-const STATUS_BORDER: Record<MatchStatus, string> = {
-  pending: 'border-2 border-dashed border-muted-foreground/30',
-  ready: 'border-2 border-primary',
-  complete: 'border-2 border-emerald-500',
-};
+/** Thick, color-coded outer border by state (see file header). */
+function borderClass(match: MatchView): string {
+  if (match.status === 'complete') return 'border-2 border-emerald-500';
+  if (match.status === 'ready') {
+    return match.inProgress ? 'border-2 border-primary' : 'border-2 border-amber-500';
+  }
+  return 'border-2 border-dashed border-muted-foreground/30';
+}
 
 interface MatchCellProps {
   match: MatchView;
   readOnly: boolean;
   /** Called with the picked participant id when a slot is tapped. */
   onPick?: (matchId: string, participantId: string) => void;
-  /** Called to undo a decided match (organizer mode). */
+  /** Toggle a ready match's "playing now" flag. */
+  onToggleInProgress?: (matchId: string, inProgress: boolean) => void;
+  /** Undo a decided match (organizer mode). */
   onReopen?: (matchId: string) => void;
 }
 
-export function MatchCell({ match, readOnly, onPick, onReopen }: MatchCellProps) {
+export function MatchCell({
+  match,
+  readOnly,
+  onPick,
+  onToggleInProgress,
+  onReopen,
+}: MatchCellProps) {
+  const isReady = match.status === 'ready';
   const isComplete = match.status === 'complete';
 
   return (
-    <Card
-      className={cn(
-        'w-44 shrink-0 divide-y gap-0 p-0 text-sm',
-        STATUS_BORDER[match.status]
-      )}
-    >
+    <Card className={cn('w-44 shrink-0 divide-y gap-0 p-0 text-sm', borderClass(match))}>
       <SlotRow
         slot={match.home}
         pickable={!readOnly && isSlotPickable(match, 'home')}
@@ -58,15 +63,22 @@ export function MatchCell({ match, readOnly, onPick, onReopen }: MatchCellProps)
         dimmed={isComplete && !match.away.isWinner}
         onPick={() => pick('away')}
       />
-      {!readOnly && isComplete && onReopen && (
-        <button
-          type="button"
-          onClick={() => onReopen(match.id)}
-          className="flex w-full items-center justify-center gap-1 px-3 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+
+      {!readOnly && isReady && onToggleInProgress && (
+        <FooterButton
+          onClick={() => onToggleInProgress(match.id, !match.inProgress)}
+          className={match.inProgress ? 'text-primary' : ''}
         >
+          <Play className="h-3 w-3" />
+          {match.inProgress ? 'Playing' : 'Start'}
+        </FooterButton>
+      )}
+
+      {!readOnly && isComplete && onReopen && (
+        <FooterButton onClick={() => onReopen(match.id)}>
           <RotateCcw className="h-3 w-3" />
-          Reopen
-        </button>
+          Reset
+        </FooterButton>
       )}
     </Card>
   );
@@ -75,6 +87,30 @@ export function MatchCell({ match, readOnly, onPick, onReopen }: MatchCellProps)
     const s = which === 'home' ? match.home : match.away;
     if (s.participantId && onPick) onPick(match.id, s.participantId);
   }
+}
+
+/** Small ghost action row at the bottom of a cell. */
+function FooterButton({
+  onClick,
+  className,
+  children,
+}: {
+  onClick: () => void;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'flex w-full items-center justify-center gap-1 px-3 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground',
+        className
+      )}
+    >
+      {children}
+    </button>
+  );
 }
 
 function SlotRow({

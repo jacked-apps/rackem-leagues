@@ -15,6 +15,7 @@ import {
   setParticipants,
   startBracket,
   advanceWinner,
+  setMatchInProgress,
   reopenMatch,
   closeBracket,
   type CreateBracketParams,
@@ -110,6 +111,18 @@ export function useAdvanceWinner(bracketId: string) {
   return useMutation({
     mutationFn: (vars: { matchId: string; winnerParticipantId: string }) =>
       advanceWinner(vars.matchId, vars.winnerParticipantId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.brackets.detail(bracketId) });
+    },
+  });
+}
+
+/** Toggle a ready match's "playing now" flag (organizer aid). */
+export function useSetMatchInProgress(bracketId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { matchId: string; inProgress: boolean }) =>
+      setMatchInProgress(vars.matchId, vars.inProgress),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.brackets.detail(bracketId) });
     },

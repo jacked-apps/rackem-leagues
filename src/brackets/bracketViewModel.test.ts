@@ -29,6 +29,7 @@ function m(over: Partial<ViewMatch> & Pick<ViewMatch, 'id' | 'round' | 'side' | 
     away_participant_id: null,
     winner_participant_id: null,
     status: 'pending',
+    in_progress: false,
     is_reset_match: false,
     ...over,
   };

@@ -143,6 +143,21 @@ export async function advanceWinner(
 }
 
 /**
+ * Mark a ready match as being played now (or back to on-deck). Organizer aid
+ * only — informational, does not gate scoring. A simple flag update.
+ */
+export async function setMatchInProgress(
+  matchId: string,
+  inProgress: boolean
+): Promise<void> {
+  const { error } = await supabase
+    .from('bracket_matches')
+    .update({ in_progress: inProgress })
+    .eq('id', matchId);
+  if (error) throw new Error(`Failed to update match: ${error.message}`);
+}
+
+/**
  * Reopen a decided match (undo a mis-tapped winner). Clears the winner and
  * pulls the advanced player/loser back out of the next matches. Throws with a
  * user-facing message if a downstream match was already played (reopen that

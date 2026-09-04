@@ -98,6 +98,9 @@ CREATE TABLE IF NOT EXISTS "public"."bracket_matches" (
     "loser_next_match_id" "uuid",
     "loser_next_match_slot" "text",
     "status" "text" DEFAULT 'pending'::"text" NOT NULL,
+    -- Organizer aid: a 'ready' match the organizer has marked as being played
+    -- right now (vs. "on deck"). Purely informational — does not gate scoring.
+    "in_progress" boolean DEFAULT false NOT NULL,
     -- The conditional grand-final decider (only "played" if the LB champ wins G1).
     "is_reset_match" boolean DEFAULT false NOT NULL,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
@@ -211,6 +214,7 @@ BEGIN
              'loser_next_match_id', mch.loser_next_match_id,
              'loser_next_match_slot', mch.loser_next_match_slot,
              'status', mch.status,
+             'in_progress', mch.in_progress,
              'is_reset_match', mch.is_reset_match
            ) ORDER BY mch.side, mch.round, mch.slot
          )

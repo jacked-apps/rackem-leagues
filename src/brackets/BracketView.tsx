@@ -27,11 +27,13 @@ import { queryKeys } from '@/api/queryKeys';
 import {
   useBracket,
   useAdvanceWinner,
+  useSetMatchInProgress,
   useReopenMatch,
   useCloseBracket,
 } from '@/api/hooks/useBrackets';
 import { buildBracketView, championName } from './bracketViewModel';
 import { BracketTree } from './BracketTree';
+import { BracketLegend } from './BracketLegend';
 import { useBracketRealtime } from './useBracketRealtime';
 
 /** A slot the organizer tapped, awaiting confirmation. */
@@ -45,6 +47,7 @@ export function BracketView() {
   const { bracketId } = useParams<{ bracketId: string }>();
   const { data, isLoading, isError } = useBracket(bracketId);
   const advance = useAdvanceWinner(bracketId ?? '');
+  const setInProgress = useSetMatchInProgress(bracketId ?? '');
   const reopen = useReopenMatch(bracketId ?? '');
   const closeBracket = useCloseBracket();
   const [pending, setPending] = useState<PendingPick | null>(null);
@@ -147,6 +150,7 @@ export function BracketView() {
           {bracket.status === 'closed' && (
             <p className="text-sm text-muted-foreground">This bracket has been closed.</p>
           )}
+          {bracket.status === 'live' && <BracketLegend />}
           <BracketTree
             view={view}
             readOnly={bracket.status !== 'live'}
@@ -158,6 +162,9 @@ export function BracketView() {
               })
             }
             onReopen={(matchId) => setReopenId(matchId)}
+            onToggleInProgress={(matchId, inProgress) =>
+              setInProgress.mutate({ matchId, inProgress })
+            }
           />
         </CardContent>
       </Card>
@@ -180,16 +187,16 @@ export function BracketView() {
       <AlertDialog open={reopenId !== null} onOpenChange={(o) => !o && setReopenId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Reopen this match?</AlertDialogTitle>
+            <AlertDialogTitle>Reset this match?</AlertDialogTitle>
             <AlertDialogDescription>
               This clears the recorded winner and puts the match back to
               unplayed so you can re-enter it. (If a later match has already
-              been played, reopen that one first.)
+              been played, reset that one first.)
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmReopen}>Reopen</AlertDialogAction>
+            <AlertDialogAction onClick={confirmReopen}>Reset</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

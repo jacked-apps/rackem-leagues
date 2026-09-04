@@ -87,6 +87,7 @@ export interface BracketShareMatch {
   loser_next_match_id: string | null;
   loser_next_match_slot: 'home' | 'away' | null;
   status: 'pending' | 'ready' | 'complete';
+  in_progress: boolean;
   is_reset_match: boolean;
 }
 

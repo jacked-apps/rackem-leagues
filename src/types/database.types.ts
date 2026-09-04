@@ -164,6 +164,7 @@ export type Database = {
           created_at: string
           home_participant_id: string | null
           id: string
+          in_progress: boolean
           is_reset_match: boolean
           loser_next_match_id: string | null
           loser_next_match_slot: string | null
@@ -181,6 +182,7 @@ export type Database = {
           created_at?: string
           home_participant_id?: string | null
           id?: string
+          in_progress?: boolean
           is_reset_match?: boolean
           loser_next_match_id?: string | null
           loser_next_match_slot?: string | null
@@ -198,6 +200,7 @@ export type Database = {
           created_at?: string
           home_participant_id?: string | null
           id?: string
+          in_progress?: boolean
           is_reset_match?: boolean
           loser_next_match_id?: string | null
           loser_next_match_slot?: string | null

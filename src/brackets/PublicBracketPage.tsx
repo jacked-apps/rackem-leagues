@@ -20,6 +20,7 @@ import { queryKeys } from '@/api/queryKeys';
 import { useBracketShare } from '@/api/hooks/useBrackets';
 import { buildBracketView, championName } from './bracketViewModel';
 import { BracketTree } from './BracketTree';
+import { BracketLegend } from './BracketLegend';
 import { useBracketRealtime } from './useBracketRealtime';
 
 function Shell({ children }: { children: React.ReactNode }) {
@@ -84,6 +85,7 @@ export function PublicBracketPage() {
               🏆 {champion} wins!
             </div>
           )}
+          {data.bracket.status === 'live' && <BracketLegend />}
           <BracketTree view={view} readOnly />
         </CardContent>
       </Card>
