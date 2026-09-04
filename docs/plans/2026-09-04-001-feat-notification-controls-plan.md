@@ -1,5 +1,5 @@
 ---
-title: "feat: Notification controls — global rules, per-type defaults, per-chat overrides"
+title: "feat: Notification controls — a master switch, quiet hours, and per-type/per-chat vetoes"
 type: feat
 status: not started
 date: 2026-09-04
@@ -25,29 +25,47 @@ settings. like group chats i get notified once for that conversation and then
 not again for 15 minutes. then they can change that time in each chat to a
 different number of minutes or turn them on or off."*
 
-That is a **three-level cascade**, and the app already has one: the
-`resolved_league_preferences` view resolves league → org → system default. This
-plan applies the same pattern to notifications rather than inventing a second
-one.
+Note this is **not** the same shape as the app's existing
+`resolved_league_preferences` cascade, despite looking similar. That one is an
+**override** cascade — a league setting replaces the org's, which replaces the
+system default, and a lower level can set a value the level above didn't want.
+Notifications work the opposite way: see "The model" below. Don't reach for the
+resolved-preferences view as a template.
 
 ## The model
 
-```
-System default              "group chats: on, 15 min between buzzes"
-   ↓ overridden by
-Member's per-type default   "MY team chats: on, 30 min"       (Settings)
-   ↓ overridden by
-Per-conversation override   "THIS chat: off"                   (in the chat)
-```
-
-Plus one rule that deliberately does **not** cascade:
+**Each level can only restrict further. No level can re-enable what one above
+it turned off.** A notification is sent only when *every* level allows it —
+they AND together.
 
 ```
-Quiet hours                 global only — one setting, applies to everything
+Master switch          off → NOTHING notifies, full stop        (Settings)
+   ↓ then
+Quiet hours            inside the window → nothing notifies     (Settings)
+   ↓ then
+Per-type setting       "team chats: off"  → no team chat buzzes (Settings)
+   ↓ then
+Per-conversation       "this chat: off"   → this one stays quiet (in the chat)
 ```
 
-Quiet hours are a property of the person's day, not of any conversation, so
-offering them per-chat would be a worse product and more state to reason about.
+Ed, 2026-09-04, on why it works this way and not as overrides:
+
+> *"the overall one is the master. if i turn off notifications set up quiet
+> hours or whatever that means ALL of the messages do that. if i want to turn
+> off notifications for all of them except one i can't use that and override the
+> main — i have to turn the main on and turn the rest off. to me that is the
+> only real way of doing this."*
+
+So **"all off except one" is expressed as: master ON, then turn the others
+off.** There is deliberately no way for a single chat to shout through a master
+switch that is off, or through quiet hours.
+
+The payoff is that "why didn't I get notified?" always has one answer: something
+above it said no. An override model can't promise that — a master switch that
+some chats ignore isn't a master switch.
+
+Quiet hours in particular are a property of the person's day, not of any
+conversation, so they're global and absolute. No per-chat exception.
 
 ### Where each control lives
 
@@ -56,7 +74,7 @@ offering them per-chat would be a worse product and more state to reason about.
 | Push on/off for this device | Global | Settings → Notifications *(shipped)* |
 | Quiet hours | Global | Settings → Notifications |
 | Per-type default: on/off + interval | Per conversation kind | Settings → Notifications |
-| Override: on/off + interval | One conversation | The conversation's own menu |
+| This chat: off (or a longer interval) | One conversation | The conversation's own menu |
 
 ### A note on `push_type_policy`
 
@@ -94,21 +112,28 @@ false. The "loud phone" problem is not live; it begins when a row is flipped.
 
 ## Key Decisions
 
-- **`notification_mode` must become nullable to express "inherit".** It's
-  currently `NOT NULL DEFAULT 'all'`, so every row asserts a value and there is
-  no way to say "follow my default for this kind." Migration makes it nullable
-  with NULL = inherit; existing `'all'` rows are backfilled to NULL so today's
-  rows don't silently become permanent overrides. **This is the one genuinely
+- **Each level is a veto, not an override.** The resolver ANDs the levels
+  together; it never lets a lower level re-enable something a higher one turned
+  off. Concretely: `push_enabled AND NOT in_quiet_hours AND type_allows AND
+  chat_allows`. This is the decision that shapes everything else, and it's
+  worth stating in the SQL as a comment — the next person to read
+  `get_push_recipients` will otherwise try to "fix" it into an override model.
+- **`notification_mode` must become nullable to express "not set".** It's
+  currently `NOT NULL DEFAULT 'all'`, so every row asserts a value. Under the
+  veto model NULL means "this chat adds no restriction of its own" — the
+  type-level answer stands. Existing `'all'` rows are backfilled to NULL so
+  today's rows don't silently pin themselves. **This is the one genuinely
   delicate schema change in the plan** — done wrong, every existing participant
-  becomes pinned to "always notify" and the new per-type defaults do nothing.
+  becomes pinned and the per-type settings do nothing.
 - **Per-type defaults get their own table**, not a JSONB blob on `members`:
   `member_notification_prefs(member_id, conversation_kind, push_enabled,
   interval_minutes)`. Mirrors `push_type_policy`'s shape, is queryable from
   `get_push_recipients` with a join, and adding a kind later is a row not a
   migration.
-- **Resolution happens in SQL, in `get_push_recipients`.** It's already the one
+- **Resolution happens in SQL, in `get_push_recipients`.** It is already the one
   place that decides who gets a push; splitting the decision between SQL and the
-  edge function would make "why didn't I get notified" unanswerable.
+  edge function would make "why was I not notified" unanswerable. With the
+  veto model the whole thing is one boolean chain, which keeps it readable.
 - **Rate limiting suppresses the NOTIFICATION, never the message.** Messages
   always land and always count toward the unread badge. Muting means "don't
   buzz me", not "hide it" — the badge is how a muted chat still gets noticed.
@@ -119,6 +144,14 @@ false. The "loud phone" problem is not live; it begins when a row is flipped.
 
 ## Open Questions
 
+- **Can a single chat buzz MORE often than its type default?** The veto rule is
+  unambiguous for on/off, but the interval is a number, and "more restrictive"
+  means *longer*. Strictly applied, a chat could lengthen its interval but never
+  shorten it — so "quiet for most team chats, but my own team every message"
+  would be impossible. That may be a real want. Two options: keep the strict
+  rule (intervals only ever lengthen), or treat the interval as the one value a
+  chat may set freely while on/off stays a hard veto. **Needs Ed's call — it's
+  the one place the veto model might be too strict.**
 - **Default interval per kind.** The brainstorm says 15 minutes; Ed's example
   also says 15 for group chats. Untested against a real league night. Should
   DMs have an interval at all, or always buzz? A DM is a person talking directly
