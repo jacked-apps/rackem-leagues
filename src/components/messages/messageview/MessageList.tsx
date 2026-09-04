@@ -49,6 +49,15 @@ interface MessageListProps {
   outgoingMessages?: OutgoingMessage[];
   /** Click handler for the Retry button on a failed outgoing message. */
   onRetryOutgoing?: (clientId: string, content: string) => void;
+  /**
+   * True for a 1:1 direct message.
+   *
+   * In a DM there is exactly one other person and their name is already in the
+   * header, so repeating it above every incoming bubble is noise — it reads as
+   * if you might be talking to someone else. Group chats still need it to tell
+   * speakers apart.
+   */
+  isDM?: boolean;
 }
 
 export function MessageList({
@@ -58,6 +67,7 @@ export function MessageList({
   loading,
   outgoingMessages = [],
   onRetryOutgoing,
+  isDM = false,
 }: MessageListProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -123,8 +133,10 @@ export function MessageList({
             createdAt={message.created_at}
             isEdited={message.is_edited}
             isCurrentUser={isCurrentUser}
-            senderName={!isCurrentUser ? senderName : undefined}
-            senderId={!isCurrentUser ? message.sender.id : undefined}
+            // In a DM the header already names the other person; only group
+            // chats need a name over each incoming bubble.
+            senderName={!isCurrentUser && !isDM ? senderName : undefined}
+            senderId={!isCurrentUser && !isDM ? message.sender.id : undefined}
             recipientLastRead={recipientLastRead}
           />
         );
