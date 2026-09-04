@@ -63,8 +63,9 @@ export function DetailsStep({
           <div className="space-y-1">
             <Label htmlFor="reset-toggle">Grand Finals</Label>
             <p className="text-sm text-muted-foreground">
-              The losers-side finalist must beat the champion twice to win the
-              title.
+              {grandFinalReset
+                ? 'The losers-side finalist must beat the champion twice to win the title.'
+                : 'The final is decided by a single matchup.'}
             </p>
           </div>
           <Switch
