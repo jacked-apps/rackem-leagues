@@ -19,6 +19,7 @@ describe('Matches Table - RLS Tests', () => {
   let client: SupabaseClient<Database>;
   let testMatchId: string;
   let testSeasonId: string;
+  let testSeasonWeekId: string;
 
   beforeAll(async () => {
     client = createTestClient();
@@ -26,13 +27,14 @@ describe('Matches Table - RLS Tests', () => {
     // Get a test match from the database
     const { data: match } = await client
       .from('matches')
-      .select('id, season_id')
+      .select('id, season_id, season_week_id')
       .limit(1)
       .single();
 
     if (match) {
       testMatchId = match.id;
       testSeasonId = match.season_id;
+      testSeasonWeekId = match.season_week_id;
     }
   });
 
@@ -205,10 +207,10 @@ describe('Matches Table - RLS Tests', () => {
         .from('matches')
         .insert({
           season_id: testSeasonId,
+          season_week_id: testSeasonWeekId,
           home_team_id: teams[0].id,
           away_team_id: teams[1].id,
-          match_date: new Date().toISOString().split('T')[0],
-          week_number: 999,
+          match_number: 999,
           status: 'scheduled',
         })
         .select()

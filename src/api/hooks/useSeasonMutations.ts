@@ -14,6 +14,7 @@ import {
   updateSeason,
   activateSeason,
   deleteSeason,
+  removeSeason,
 } from '../mutations/seasons';
 
 /**
@@ -196,6 +197,25 @@ export function useDeleteSeason() {
         queryKeys.seasons.detail(cancelledSeason.id),
         cancelledSeason
       );
+    },
+  });
+}
+
+/**
+ * Hook to remove a season the operator wants gone — hard-deletes it when nothing
+ * has been played, or archives it (preserving data) when it has played matches.
+ * See `removeSeason` for the guard rationale. Invalidates season queries so the
+ * league page's cards refresh.
+ *
+ * @returns TanStack mutation whose result is `{ action: 'deleted' | 'archived', completedMatches }`.
+ */
+export function useRemoveSeason() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: removeSeason,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.seasons.all });
     },
   });
 }

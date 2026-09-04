@@ -88,43 +88,63 @@ describe('Match Lineups Table - RLS Tests', () => {
         return;
       }
 
-      // Create test lineup
-      const { data: match } = await client
+      // match_lineups has a UNIQUE (match_id, team_id), NOT-NULL handicaps, and
+      // rows are auto-created by a trigger — so a synthetic lineup can't be
+      // inserted onto an existing match. Instead spin up a throwaway match (its
+      // INSERT trigger auto-creates one lineup per team), delete one of those
+      // lineups, then delete the match to clean up whatever remains.
+      const { data: seedMatch } = await client
         .from('matches')
-        .select('home_team_id')
+        .select('season_id, season_week_id, home_team_id, away_team_id')
         .eq('id', testMatchId)
         .single();
 
-      if (!match) return;
+      if (!seedMatch?.home_team_id || !seedMatch?.away_team_id) return;
 
-      const { data: testLineup } = await client
-        .from('match_lineups')
+      const { data: throwawayMatch } = await client
+        .from('matches')
         .insert({
-          match_id: testMatchId,
-          team_id: match.home_team_id,
-          lineup_position: 999,
+          season_id: seedMatch.season_id,
+          season_week_id: seedMatch.season_week_id,
+          home_team_id: seedMatch.home_team_id,
+          away_team_id: seedMatch.away_team_id,
+          match_number: 999,
+          status: 'scheduled',
         })
-        .select()
+        .select('id')
         .single();
 
-      if (!testLineup) return;
+      if (!throwawayMatch) return;
 
-      // Delete it
-      const { error } = await client
+      // The insert trigger auto-created a lineup per team; grab one to delete.
+      const { data: lineup } = await client
         .from('match_lineups')
-        .delete()
-        .eq('id', testLineup.id);
-
-      expect(error).toBeNull();
-
-      // Verify deletion
-      const { data: deleted } = await client
-        .from('match_lineups')
-        .select('*')
-        .eq('id', testLineup.id)
+        .select('id')
+        .eq('match_id', throwawayMatch.id)
+        .limit(1)
         .single();
 
-      expect(deleted).toBeNull();
+      if (lineup) {
+        const { error } = await client
+          .from('match_lineups')
+          .delete()
+          .eq('id', lineup.id);
+
+        expect(error).toBeNull();
+
+        // Verify deletion
+        const { data: deleted } = await client
+          .from('match_lineups')
+          .select('*')
+          .eq('id', lineup.id)
+          .maybeSingle();
+
+        expect(deleted).toBeNull();
+      }
+
+      // Clean up the throwaway match (its delete trigger removes any remaining
+      // auto-created lineups).
+      await client.from('matches').delete().eq('id', throwawayMatch.id);
     });
   });
 });

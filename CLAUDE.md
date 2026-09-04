@@ -269,6 +269,45 @@ The following commands can be run without explicit user permission:
 - `pnpm run lint` (code quality checks)
 - Any read-only analysis commands (grep, glob, read files)
 
+### Migration Filenames — use a REAL timestamp
+**Every new file in `supabase/migrations/` gets a true UTC timestamp down to
+the second** — `YYYYMMDDHHMMSS`, e.g. `20260904154852_add_thing.sql`. Prefer
+`supabase migration new <name>`, which stamps it correctly. Writing one by
+hand? Use the actual current UTC time.
+
+**Never** use the legacy all-zeros form (`20260904000000`) that most existing
+files carry. That convention zeroes the time half and relies on someone
+hand-bumping a counter (`...000000`, `...000001`, `...000002`) for same-day
+files — which fails the moment two migrations are authored on the same day on
+**different branches**, because neither branch can see the other's file.
+
+The resulting collision is invisible until it hits a live database:
+
+- Git merges both cleanly — the *filenames* differ, so there's no conflict.
+- Nothing in review or CI compares version numbers.
+- Postgres is the first thing that actually compares them, because
+  `supabase_migrations.schema_migrations` is keyed on **version alone**,
+  ignoring the name. The second migration dies with
+  `duplicate key value violates unique constraint "schema_migrations_pkey"`.
+- The migration step runs **before** the S3 upload in the deploy workflows, so
+  the whole deploy aborts and the environment silently keeps serving the old
+  bundle.
+
+This cost 8 days of dead staging in Sept 2026 (`20260818000000` was used twice)
+and made a fully-built, merged feature look like it had never been written.
+
+**Before committing a migration,** confirm this comes back empty:
+
+```
+ls supabase/migrations | sed 's/_.*//' | sort | uniq -d
+```
+
+If a collision is already merged, renumber the file that has **never been
+applied in any environment** (verify against the live DB first — never renumber
+one whose version is already recorded in `schema_migrations`). Renumber *down*
+when later migrations depend on it, so dependent files keep their order and
+don't need touching.
+
 ### Testing Conventions
 **Where you put a test file determines how vitest schedules it.** The
 `vitest.config.ts` has two projects (`unit` + `db`) that auto-route
