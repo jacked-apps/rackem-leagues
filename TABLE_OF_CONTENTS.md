@@ -219,7 +219,7 @@ Node-only tooling the operator runs manually (not part of the app bundle).
 
 | File | Purpose |
 |------|---------|
-| `.github/workflows/checks.yml` | **Pre-merge checks (`pull_request` + push to `main`).** The repo's first PR-triggered workflow — before it, the only automation was the deploy workflows, so a whole class of mistake could only be found by breaking a deployed environment. Currently runs the duplicate-migration-version guard. |
+| `.github/workflows/checks.yml` | **Pre-merge checks (`pull_request` + push to `main`).** The repo's first PR-triggered workflow — before it, the only automation was the deploy workflows, so a whole class of mistake could only be found by breaking a deployed environment. Three parallel jobs: the duplicate-migration-version guard, the vitest `unit` project (NOT `db`, which needs a local Postgres), and `pnpm run build` (`tsc -b` + vite build) as the authoritative typecheck. |
 | `.github/workflows/deploy-staging.yml` | Build + migrate + deploy to staging on push to `main`. Sets `VITE_PUSH_NOTIFICATIONS=true` (push is un-gated on staging). |
 | `.github/workflows/deploy-production.yml` | Build + migrate + deploy edge functions + deploy to production, on release. |
 
