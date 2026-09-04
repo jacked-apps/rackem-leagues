@@ -20,8 +20,9 @@ This is roadmap item #1 — the identity foundation the other paid features
 - **Real identity** on participants (the already-present but unused
   `bracket_participants.member_id` hook), with a first-class **kind** (registered
   vs placeholder) that later features branch on.
-- **Player-owned placeholders** for walk-ups (generalizing the league's org-scoped
-  placeholder machinery to a player owner).
+- **Tournament-scoped walk-up entrants** — registered players link to their real
+  account; walk-ups are disposable tournament records that never touch the league
+  placeholder/merge system (see Resolved Decision).
 - An **organizer roster** of "past players" that pre-fills a **hopper**; three
   ways in (search / share link / QR); a tap-name **manage menu** (eject / set
   paid / add unpaid) that admits players to the **official list**.
@@ -34,27 +35,36 @@ This is roadmap item #1 — the identity foundation the other paid features
 bracket layer, and the `BRACKETS_ENABLED` flag. Implementation should branch off
 that work (or off `main` once #264 merges), not off this docs branch.
 
-## Resolved Decision — Walk-up identity = full app placeholders (path A)
+## Resolved Decision — Walk-up identity splits by actor (Ed, 2026-09-04)
 
-A 7-persona document review (2026-09-04) reopened the brainstorm's "walk-ups
-become **full app placeholders**" choice on a suspected **cross-org leakage**
-concern. **Resolved with Ed (2026-09-04): stay with full placeholders (path A).**
-The leakage concern is **moot**, verified against the code:
+The brainstorm's "full app placeholders" line conflated two different organizers.
+Resolved:
 
-- Self-add requires the **link/QR** — no random hopper additions.
-- Search-add is disambiguated by **state + player number**
-  (`enhanced_placeholder_search` uses state as a ranking signal and returns the
-  player number); the **new tournament search-add (C2) makes state a hard scope**
-  and always shows the player number.
-- The league **merge tool is org-scoped** (`get_org_placeholders_for_merge`
-  filters on `organization_id`), so a no-org tournament walk-up **never appears**
-  in other operators' merge lists.
+- **LO running a tournament** → already has merge powers and an org, so a walk-up
+  can become a real, permanent, mergeable **league placeholder** through the tools
+  the LO **already has**. The tournament flow builds **nothing new** for this;
+  it simply doesn't prevent it.
+- **Normal user (non-LO) running a tournament** → walk-ups are **tournament-scoped
+  entrant records** — disposable, invisible to league operations, **never merged**.
+  If that person registers later, they become a **brand-new player** with no link
+  back. When an entrant leaves the hopper, it's **gone**.
 
-The remaining work is **implementation care, not a product risk**: letting a
-no-org player own a placeholder means carefully editing the shared merge code —
-**dedup** so a merge can't unique-violate on tournament rows, and keep
-**undo/audit/list** working for a NULL-org placeholder. Unit B1 specifies this,
-with characterization tests first so league merges are provably unchanged.
+**Why this is the model:** normal users never merge, so **the foundation never
+touches the shared league merge code** — the single riskiest piece of the earlier
+draft (NULL-org owner, `merge_placeholder_into_member_v2` surgery, undo/audit
+gymnastics) is **eliminated**. LOs use the merge machinery they already own;
+normal users get a lightweight record that never enters it.
+
+**Mechanism (Claude's call, Ed to veto):** a walk-up is **not** a protected global
+placeholder (those carry a never-hard-delete / BCA-findability guardrail, which
+contradicts "just gone"). It's a **tournament-scoped entrant** on the hopper
+(`member_id` NULL + `display_name`). Registered players link to their real
+`members` row via `member_id`. Result: kind is derived from `member_id` presence,
+not from a placeholder join.
+
+**Deferred (Ed: "a problem for the future"):** what happens to a disposed
+entrant's **game records** (orphaned when the entrant is gone). Parked, not solved
+here — see Scope Boundaries → Deferred.
 
 ## Other review outcomes (applied to this plan)
 
@@ -71,10 +81,11 @@ with characterization tests first so league merges are provably unchanged.
   `created_by`), not a client `.select()` on PII with RLS off; the join link uses a
   **distinct `join_token`**, not the public `share_token`.
 - **Verified technical gaps folded in:** `start_bracket` seed-assignment +
-  `participantCount` source is specified (C1); the no-org placeholder trigger
-  **already tolerates NULL org** (so B1's real change is merge-side only); A1/A3/D1
-  use **sibling migrations** with fresh timestamps (never edit a merged one); a
-  `tier ⇔ premium_features` **invariant** is enforced, not just documented.
+  `participantCount` source is specified (C1); walk-ups are tournament-scoped so
+  **no league merge-code work at all** (Resolved Decision eliminated the earlier
+  draft's biggest risk); A1/A3/D1 use **sibling migrations** with fresh timestamps
+  (never edit a merged one); a `tier ⇔ premium_features` **invariant** is enforced,
+  not just documented.
 - **Design states to specify (deferred to implementation, listed so they aren't
   invented):** the unauthenticated **cold-scanner** join flow (headline adoption
   moment — depends on the passwordless branch; sequence it), closed/started-
@@ -104,8 +115,11 @@ Traces to the origin doc's `PF*` requirements.
   charge-at-start); flag on the tournament; per-feature dependencies deferred.
 - **Player-run + pricing:** model #0b/#0c — any player runs one (no org);
   per-tournament pricing, first run free; "own the setup" = it's saved for reuse.
-- **Identity:** PF1–PF4, PF3a — `member_id` link; kind (registered vs
-  placeholder); walk-up = full app placeholder, **player-owned**.
+- **Identity:** PF1, PF2, PF4 — registered players link to their `members` row
+  (`member_id`); kind (`registered` vs `walkup`) derived from `member_id` presence.
+  **PF3/PF3a revised** (Resolved Decision): normal-user walk-ups are
+  **tournament-scoped disposable entrants**, not full app placeholders; LOs use
+  their existing placeholder/merge tools separately.
 - **Roster:** PF5–PF7 — organizer roster of past players pre-fills the hopper;
   no consent gate for your own past players; no global-stranger reach.
 - **Hopper/official list + self-add:** PF8–PF13 — hopper vs official list; three
@@ -140,6 +154,13 @@ Traces to the origin doc's `PF*` requirements.
   this plan builds only the paid/unpaid *flag* structure + the admit actions.
 - **Transferable setups + starter templates** → later (PF15).
 - **Persistent "ban from all my tournaments"** → later nicety (PF11a).
+- **Orphaned game records of disposed walk-ups** (a walk-up entrant removed/gone
+  leaves its game rows dangling) → explicitly **future** (Ed: "a problem for the
+  future"); not solved here.
+- **Cross-tournament walk-up name reuse** (walk-ups in the sticky roster) → future
+  refinement; v1 walk-ups are tournament-local.
+- **LO merge from within the tournament flow** → out; LOs use existing placeholder
+  tools separately.
 
 ## Context & Research
 
@@ -203,9 +224,11 @@ Traces to the origin doc's `PF*` requirements.
 - **Migrations use real UTC `YYYYMMDDHHMMSS` timestamps**; run
   `ls supabase/migrations | sed 's/_.*//' | sort | uniq -d` before commit (project
   CLAUDE.md — the Sept-2026 8-day dead-staging incident).
-- **Ed's product decisions this session:** full placeholders (supersedes the
-  free-tier R9 "distinct entrant" idea, deliberately); tournaments are player-run;
-  per-tournament pricing, first free; roster grows on admission, sticky.
+- **Ed's product decisions this session:** walk-ups are **tournament-scoped
+  disposable entrants** (not app placeholders — this refines the brainstorm's
+  "full placeholders" line; see Resolved Decision); tournaments are player-run;
+  per-tournament pricing, first free; roster grows on admission, sticky
+  (registered players).
 
 ### External References
 
@@ -214,17 +237,15 @@ external integration.
 
 ## Key Technical Decisions
 
-- **`kind` is derived, not a new column.** A participant's kind (registered vs
-  placeholder) comes from the linked `members.user_id` being non-null vs null.
-  PF2's "first-class kind" is a derived/typed helper, not schema. *(Corrects the
-  doc's implication of a stored kind.)*
-- **Player-owned placeholders reuse `created_by_member_id` as the owner.** Today
-  a placeholder's only owner column is `organization_id`, trigger-populated from
-  the creator's org — and `resolve_member_primary_org` returns NULL for a pure
-  player. Rather than invent a parallel ownership table, treat
-  `created_by_member_id` as the player-owner for tournament placeholders, make the
-  org trigger tolerate a no-org creator (NULL org, not an error), and add a
-  **player-owner branch** to `merge_placeholder_into_member_v2`'s scope check.
+- **`kind` is derived, not a new column.** A participant's kind (`registered` vs
+  `walkup`) comes from whether a `member_id` is present on the entry. PF2's
+  "first-class kind" is a derived/typed helper, not schema.
+- **Walk-ups are tournament-scoped, not app placeholders** (Resolved Decision).
+  A walk-up is a hopper row (`member_id` NULL + `display_name`) — disposable,
+  invisible to league operations, never merged. This **eliminates** all
+  shared-merge-code work: `merge_placeholder_into_member_v2`, the org trigger, and
+  the undo/audit/list RPCs are untouched. LOs who want a real, mergeable league
+  placeholder use their existing tools, outside the tournament flow.
 - **Tier is an explicit `brackets.tier` column, with `premium_features` as the
   à-la-carte set.** In v1 the checklist has ~no feature rows yet (all deferred),
   so "any box checked ⇒ paid" can't be the sole signal. Entering paid mode
@@ -254,9 +275,10 @@ external integration.
 
 ### Resolved During Planning
 
-- *How is participant kind stored?* → Derived from `members.user_id`; no column.
-- *How does a player own a placeholder without an org?* → `created_by_member_id`
-  as owner + no-org-tolerant trigger + a player-owner merge branch.
+- *How is participant kind stored?* → Derived from `member_id` presence; no column.
+- *How do walk-ups avoid entangling the league placeholder/merge system?* →
+  They're tournament-scoped hopper records (`member_id` NULL + `display_name`),
+  never merged (Resolved Decision) — no merge-code changes at all.
 - *Hopper vs official list shape?* → One `bracket_hopper` table, `status` flips;
   `start_bracket` seeds `official` rows into `bracket_participants`.
 - *What makes a v1 tournament "paid" with no feature rows?* → explicit
@@ -264,9 +286,10 @@ external integration.
 
 ### Deferred to Implementation
 
-- **Exact merge-RPC generalization shape** (new player-owner branch vs a small
-  companion list RPC for player-owned placeholders) — settle against the live
-  `merge_placeholder_into_member_v2` body when editing it.
+- **Walk-up entrant persistence detail** — whether a walk-up is purely a hopper
+  row (`member_id` NULL + `display_name`) or gets a light per-tournament entrant id
+  for within-tournament references; settle when wiring C1/C3. (No merge-RPC work —
+  walk-ups never merge.)
 - **Whether the join link reuses `brackets.share_token` or gets a distinct
   `join_token`** — decide when wiring the self-add route (the view-only share
   route already consumes `share_token`; a separate token avoids overloading it).
@@ -300,7 +323,7 @@ flowchart TD
 flowchart LR
     A1["A1 schema:<br/>tier/premium/game_type/<br/>payment/sweep"] --> A2["A2 checkout gate UI"]
     A1 --> A3["A3 charge-at-start"]
-    B1["B1 player-owned<br/>placeholder (DB)"] --> B2["B2 kind + member link"]
+    B1["B1 entrant identity<br/>(registered link / walk-up)"] --> B2["B2 derived kind"]
     A1 --> C1["C1 hopper+roster schema"]
     B2 --> C1
     C1 --> C2["C2 self-add / search-add"]
@@ -468,111 +491,83 @@ style of `sweepStaleBrackets`.
 **Verification:** starting a paid tournament writes a $0 charge and goes live; the
 amount lives in one swappable function; no charge without a successful start.
 
-### Phase B — Real identity + player-owned placeholders
+### Phase B — Real identity (registered link + tournament-scoped walk-ups)
 
-- [ ] **Unit B1: Generalize placeholder ownership to a player owner (DB)**
+> **Reshaped by the Resolved Decision (top of doc).** No shared-merge-code
+> surgery, no player-owner generalization, no NULL-org undo/audit work. Registered
+> players link to their real `members` row; walk-ups are disposable
+> tournament-scoped entrants that never enter the league merge system.
 
-**Goal:** Let a tournament organizer (a plain player, possibly no org) create and
-own a placeholder, and merge it later — without breaking league org-scoping.
+- [ ] **Unit B1: Tournament entrant identity (registered link + walk-up record)**
 
-**Requirements:** PF3, PF3a.
+**Goal:** Represent a tournament participant as either a **registered member**
+(linked to a real account) or a **tournament-scoped walk-up entrant** (disposable,
+never merged, invisible to league operations).
 
-**Dependencies:** none (member/placeholder machinery exists).
+**Requirements:** PF1, PF3 (revised — see Resolved Decision), PF4.
+
+**Dependencies:** none new (registered link uses existing `members`; walk-up is a
+tournament-scoped record defined with the hopper schema in C1).
 
 **Files:**
-- Create: `supabase/migrations/<real-utc-ts>_placeholder_player_owner.sql`
-- Modify (via CREATE OR REPLACE): `set_placeholder_organization_id()` trigger,
-  `merge_placeholder_into_member_v2(...)`, and the placeholder list/undo RPCs as
-  needed
-- Create: `src/__tests__/database/placeholder.player_owner.db.test.ts`
+- (Schema for the walk-up entrant lives with the hopper in C1 — a hopper row with
+  `member_id` NULL + `display_name` is the walk-up; no separate migration here.)
+- Create: `src/brackets/paid/participantIdentity.ts` (the registered-vs-walk-up
+  model + helpers)
+- Modify: `src/api/queries/brackets.ts` (registered rows join `members` for
+  `nickname`, `system_player_number`, `city`/`state`; walk-ups read
+  `display_name` off the hopper row)
+- Create: `src/brackets/paid/participantIdentity.test.ts`
 
-> **Decision resolved: path A (full placeholders)** — see "Resolved Decision" at
-> the top. Proceed as below, with the merge-safety work (dedup + NULL-org
-> undo/audit) done carefully and characterization-tested.
-
-**Approach (path A):**
-- The no-org trigger **already tolerates** a NULL org (verified:
-  `20260422000012_fix_placeholder_trigger_split.sql` assigns whatever
-  `resolve_member_primary_org` returns, and `members.organization_id` is nullable)
-  — so **no trigger change is needed**; the real work is merge-side.
-- Add a **player-owner branch** to `merge_placeholder_into_member_v2` — but this
-  is more than a scope check:
-  - **Define its `actor_role` + call path + grant.** Today the RPC is
-    `service_role`-only behind an org-verifying Edge Function; a player-owner path
-    needs its own `actor_role` value and either a new Edge Function that verifies
-    `auth.uid()` resolves to `created_by_member_id`, or an explicit
-    `authenticated` grant with the check inside. Don't let it default open.
-  - **Dedup, don't blind-UPDATE.** The generic FK loop does
-    `UPDATE <t> SET member_id=target WHERE member_id=placeholder`; on
-    `bracket_hopper (UNIQUE(bracket_id,member_id))` or `bracket_participants` this
-    **unique-violates** if both identities share a bracket. Mirror the
-    `team_players` copy-then-check-exists dedup for these tables.
-  - **Fix the NULL-org lifecycle.** `undo_merge_placeholder`,
-    `get_org_placeholders_for_merge`, and the audit log all gate on
-    `organization_id`; a NULL-org merge is currently **un-undoable, invisible, and
-    org-blank**. Give the player-owner path an owner-keyed undo/list/audit route.
-- `created_by_member_id` means "creator," not "owner" — confirm it's the right
-  authorization principal (a captain who created the row would otherwise become
-  the merge-authorized owner) or introduce an explicit owner column.
-- Keep any new member-referencing FK **declared** so the dynamic merge loop
-  auto-enrolls it (learnings pitfall) — but only alongside the dedup above.
-
-**Execution note:** characterization-first — add db tests capturing the *current*
-org-scoped create/merge behavior before modifying these shared functions, so the
-league paths are provably unchanged.
+**Approach:**
+- **Registered player** → `member_id` set, real account, identity travels.
+- **Walk-up** → `member_id` NULL + `display_name` on the tournament record.
+  **Not** a global `members`/placeholder row (so it dodges the never-hard-delete
+  guardrail and the merge system entirely) — disposable by design.
+- **LOs are unchanged:** an LO who wants a walk-up to become a real, mergeable
+  league placeholder does that through their **existing** placeholder tools,
+  outside the tournament flow. This plan neither builds nor blocks that.
+- **No merge-code changes at all.** `merge_placeholder_into_member_v2`, the org
+  trigger, undo/audit/list RPCs are **untouched**.
 
 **Test scenarios:**
-- Happy path: a no-org player creates a placeholder → row inserts with
-  `created_by_member_id` = creator, `organization_id` NULL, no error.
-- Happy path: the owning player merges their placeholder into a registered member
-  → succeeds via the player-owner branch.
-- Edge case (regression): an org operator's existing create + merge flow still
-  works unchanged (org path).
-- Error path: a non-owner, non-org actor cannot merge a player-owned placeholder.
-- Integration: the merge still rewrites all declared member-FK references
-  (including any new tournament tables from Phase C).
+- Happy path: a registered participant resolves to their `members` row
+  (`nickname`, number, home).
+- Happy path: a walk-up participant carries a `display_name` and no `member_id`.
+- Edge case: a missing/absent linked member is guarded (never throws — live
+  scoring safety ethos).
 
-**Verification:** player-owned create + merge pass; all existing placeholder/merge
-db tests stay green.
+**Verification:** both identity kinds represent + render correctly; no change to
+any league placeholder/merge behavior (existing merge db tests untouched + green).
 
 ---
 
-- [ ] **Unit B2: Participant identity — member link + derived kind**
+- [ ] **Unit B2: Derived participant kind**
 
-**Goal:** Attach real members to tournament entries and expose a typed `kind`
-(registered vs placeholder) derived from `members.user_id`.
+**Goal:** A typed `kind` (`registered` vs `walkup`) derived from whether a
+`member_id` is present — the branch point every later feature reads.
 
-**Requirements:** PF1, PF2, PF4.
+**Requirements:** PF2.
 
-**Dependencies:** B1 (walk-up placeholders), and Phase C schema for where the
-link is stored (hopper) — B2 covers the identity typing/helpers used by C.
+**Dependencies:** B1.
 
 **Files:**
-- Create: `src/brackets/paid/participantKind.ts` (derive kind from a member row;
-  `registered` when `user_id` set, else `placeholder`)
-- Modify: `src/api/queries/brackets.ts` / paid queries (join `members` to expose
-  `user_id`, `nickname`, `system_player_number`, `city`/`state` for display +
-  kind)
-- Modify: `src/api/mutations/members.ts` usage — walk-up creation calls
-  `createPlaceholderMember` (now player-owned via B1)
+- Create: `src/brackets/paid/participantKind.ts` (derive kind from a hopper/entry
+  row: `member_id` present → `registered`, else `walkup`)
 - Create: `src/brackets/paid/participantKind.test.ts`
 
 **Approach:**
-- No stored kind column — a single helper maps a member row to a kind. Every
-  later feature imports this helper.
-- Walk-up entrants are created as player-owned placeholders (B1) and linked by
-  `member_id`; registered players link directly.
+- No stored kind column — one helper maps an entry to a kind; later features
+  (scoring, alerts, races) import it. (When a future feature needs to distinguish
+  a *registered placeholder-origin* player, that's still a `members` question, not
+  a tournament one.)
 
 **Test scenarios:**
-- Happy path: a member with `user_id` → `registered`; with `user_id` NULL →
-  `placeholder`.
-- Edge case: a member row missing/absent → treated as unknown/guarded (never
-  throws — live scoring safety ethos).
-- Integration: a walk-up added in the paid flow creates a player-owned placeholder
-  and links by `member_id`.
+- Happy path: an entry with `member_id` → `registered`; without → `walkup`.
+- Edge case: guard an entry with neither a member nor a display name (never
+  throws).
 
-**Verification:** kind is correctly derived across registered + placeholder
-members; walk-up creation produces a linked, player-owned placeholder.
+**Verification:** kind is correctly derived across both entry types.
 
 ### Phase C — Roster, hopper/official list, self-add
 
@@ -594,15 +589,25 @@ a sticky organizer roster, and start-time conversion into seeded participants.
 
 **Approach:**
 - `bracket_hopper`: `id`, `bracket_id` (FK), `member_id` (FK → `members(id)`,
-  **declared**), `display_name`, `status text` CHECK (`hopper`|`official`),
-  `paid_status text` CHECK (`paid`|`unpaid`) NULL, `added_via text` CHECK
-  (`search`|`link`|`qr`), `created_at`; `UNIQUE(bracket_id, member_id)`
-  (one identity at most once — PF9).
-- `bracket_roster`: `id`, `organizer_member_id` (FK), `player_member_id` (FK),
-  `first_seen_at`; `UNIQUE(organizer_member_id, player_member_id)`. **Add on
-  admission** (status→official), **never removed on eject** (sticky).
+  **declared, NULLABLE**), `display_name` (always set; the whole identity for a
+  walk-up), `status text` CHECK (`hopper`|`official`), `paid_status text` CHECK
+  (`paid`|`unpaid`) NULL, `added_via text` CHECK (`search`|`link`|`qr`),
+  `created_at`.
+  - **Registered player** → `member_id` set; **walk-up** → `member_id` NULL +
+    `display_name` (a disposable tournament-scoped entrant, per the Resolved
+    Decision — never a global placeholder).
+  - `UNIQUE(bracket_id, member_id)` enforces "one registered identity at most
+    once" (PF9); NULLs are exempt, so multiple walk-ups are allowed (walk-up
+    de-dup is the organizer's judgment, not a DB constraint).
+- `bracket_roster` (registered players only): `id`, `organizer_member_id` (FK),
+  `player_member_id` (FK), `first_seen_at`;
+  `UNIQUE(organizer_member_id, player_member_id)`. **Add on admission**
+  (status→official), **never removed on eject** (sticky). Walk-ups are **not** in
+  the sticky roster (they're disposable/tournament-scoped) — cross-tournament
+  walk-up name reuse is a **future** refinement, consistent with "just gone."
 - `start_bracket` change: convert `status='official'` hopper rows into seeded
-  `bracket_participants` (carry `member_id`), then build the tree.
+  `bracket_participants` (carry `member_id` **and** `display_name` — walk-ups have
+  only the name), then build the tree.
   **Specify the seam** (the existing free flow generates the tree client-side from
   a participant count + seeded rows *before* the RPC): decide where seeds are
   assigned to official rows and how `participantCount` is derived. Cleanest: an
@@ -669,9 +674,12 @@ official list correctly; sticky-roster holds after eject.
   passwordless sign-in work (`feat/passwordless-sign-in`) — **sequence it
   explicitly**; specify what `JoinHopperPage` renders pre-auth and for a
   closed/started tournament.
-- Search-add reuses the existing member-search RPC; organizer picks a result and
-  inserts a hopper row (`added_via='search'`).
-- Roster pre-fill lists the organizer's `bracket_roster` players for one-tap add.
+- Search-add reuses the existing member-search RPC to find **registered** players;
+  organizer picks a result and inserts a hopper row (`added_via='search'`,
+  `member_id` set). **Typing a new name** creates a **walk-up** hopper row
+  (`member_id` NULL + `display_name`) — no global member/placeholder row created.
+- Roster pre-fill lists the organizer's `bracket_roster` (registered past players)
+  for one-tap add.
 
 **Patterns to follow:** free-tier write-RPC posture (`REVOKE ... FROM PUBLIC,
 anon; GRANT ... TO authenticated`), `enhanced_placeholder_search` shape,
@@ -809,15 +817,17 @@ API is deferred to #5**, which will shape the query to its own needs.
   match resolves to real `member_id`s + `game_type` (organizer via
   `brackets.created_by`, tournament via `bracket_id`, opponents/result via
   `bracket_matches`) and that nothing purges it.
-- **`bracket_participants.member_id` is `ON DELETE SET NULL`** — flag that
-  hard-deleting a player-owned placeholder would null out historical result links;
-  the result-persistence promise needs those member rows preserved (ties to the
-  Open Decision's identity model).
+- **Handicap feedback only applies to registered players** (walk-ups have no
+  account/handicap). A walk-up's result carries its `display_name` (copied into
+  `bracket_participants` at start), so it reads back even with no `member_id`. The
+  **orphaned-records** question (a disposed walk-up's rows) is **deferred** (see
+  Scope → Deferred). `bracket_participants.member_id` stays `ON DELETE SET NULL`.
 
 **Test scenarios:**
-- Happy path: a completed paid tournament's matches join to both `member_id`s,
-  winner, and `game_type` (shape is expressible).
-- Edge case: a placeholder participant's result still resolves to its member row.
+- Happy path: a registered participant's completed matches join to their
+  `member_id` + winner + `game_type` (the shape #5 will read).
+- Edge case: a walk-up participant's result reads back via `display_name` with a
+  NULL `member_id` (never throws).
 - Integration: results survive a `sweep_stale_brackets` run (paid excluded).
 
 **Verification:** paid results persist and are joinable + tagged; the sweep never
@@ -826,11 +836,10 @@ removes them; no premature read API is built.
 ## System-Wide Impact
 
 - **Interaction graph:** `sweep_stale_brackets` (now tier-aware),
-  `start_bracket` (now seeds from `bracket_hopper`), `merge_placeholder_into_member_v2`
-  (new player-owner branch — shared with the league placeholder flow),
-  `set_placeholder_organization_id` trigger (no-org tolerance), the bracket data
-  layer (`src/api/*/brackets.ts`), nav routes + `AppDrawer`/`AppSidebar` (join
-  route gating).
+  `start_bracket` (now seeds from `bracket_hopper`), the bracket data layer
+  (`src/api/*/brackets.ts`), nav routes + `AppDrawer`/`AppSidebar` (join route
+  gating). **The league placeholder/merge machinery is deliberately NOT touched**
+  (walk-ups are tournament-scoped, never merged — Resolved Decision).
 - **Error propagation:** write RPCs authenticated-only; live/scoring paths never
   throw (guard unknown members). Charge-at-start isolates failures so a failed
   charge blocks start rather than corrupting state.
@@ -840,21 +849,20 @@ removes them; no premature read API is built.
 - **API surface parity:** any public/participant read must stay a column-projected
   SECURITY DEFINER RPC (like `get_bracket_share`); the self-add join mirrors the
   free-tier write-RPC revoke-anon posture.
-- **Integration coverage:** merge auto-enrolls new declared member-FK tables
-  (`bracket_hopper.member_id`); realtime needs publication + `REPLICA IDENTITY
-  FULL` + a `supabase stop && start`.
-- **Unchanged invariants:** the free tier (plain names, purge-on-close) and all
-  existing league placeholder/merge/org-scoping behavior must be provably
-  unchanged (B1 characterization tests; A1 free-bracket regression).
+- **Integration coverage:** realtime needs publication + `REPLICA IDENTITY FULL`
+  + a `supabase stop && start`; `bracket_hopper.member_id` is a declared FK for
+  referential integrity (not for merge enrollment — walk-ups aren't merged).
+- **Unchanged invariants:** the free tier (plain names, purge-on-close) and **all
+  league placeholder/merge/org-scoping code** are untouched **by design** (walk-ups
+  are tournament-scoped, never enter the merge system) — the strongest form of
+  "provably unchanged." A1 free-bracket regression still applies.
 
 ## Risks & Dependencies
 
 | Risk | Mitigation |
 |------|------------|
-| Modifying shared `merge_placeholder_into_member_v2` / org trigger breaks league flows | Characterization tests first (B1 execution note); add the player-owner path as a *branch*, preserve all org paths; regression-test operator create+merge |
-| Full placeholders + walk-ups in the member pool | **Resolved moot** (see Resolved Decision): self-add needs link/QR; tournament search-add is state-scoped + shows player number; the league merge tool is org-scoped so no-org walk-ups don't appear there |
-| NULL-org player-owned placeholder is un-undoable / invisible / org-blank (undo, list, audit all gate on `organization_id`) | Give the player-owner path an owner-keyed undo/list/audit route (B1) |
-| Merge FK loop blind-UPDATEs unique-violate on `bracket_hopper`/`bracket_participants` | Mirror `team_players` copy-then-dedup for the new tables (B1) |
+| Touching shared league merge/placeholder code (the earlier draft's biggest risk) | **Eliminated by the Resolved Decision** — walk-ups are tournament-scoped and never merged; the league merge machinery is not modified at all |
+| Walk-up game records orphaned when the entrant is disposed | **Deferred** (Ed: "a problem for the future") — parked, not solved in v1 |
 | `start_bracket` hopper→participant conversion collides with the client-side tree-generation seed map | Assign seeds at admit/finalize so the client generates the tree as today; `start_bracket` only materializes (C1) |
 | `tier` and `premium_features` drift (two write paths) | A1 invariant (CHECK/trigger): features non-empty ⇒ paid |
 | Payment token persisted in localStorage (if the `questionDefinitions.tsx` pattern is copied) | Write token straight to the row; keep only display fields client-side (A2) |
