@@ -29,7 +29,7 @@ interface ConversationHeaderProps {
 
 export function ConversationHeader({ title, onBack, onLeave, onBlock, canLeave = true, canBlock = false }: ConversationHeaderProps) {
   return (
-    <div className="border-b bg-muted px-3 md:px-6 py-3 md:py-4 flex items-center gap-2 md:gap-3 justify-between">
+    <div className="flex-shrink-0 border-b bg-muted px-3 md:px-6 py-3 md:py-4 flex items-center gap-2 md:gap-3 justify-between">
       <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
         {/* Back button - only visible on mobile */}
         {onBack && (
