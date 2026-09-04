@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS "public"."brackets" (
     CONSTRAINT "brackets_share_token_key" UNIQUE ("share_token"),
     CONSTRAINT "brackets_format_check" CHECK (("format" = ANY (ARRAY['single_elimination'::"text", 'double_elimination'::"text"]))),
     CONSTRAINT "brackets_status_check" CHECK (("status" = ANY (ARRAY['setup'::"text", 'live'::"text", 'complete'::"text", 'closed'::"text"]))),
-    CONSTRAINT "brackets_seeding_mode_check" CHECK (("seeding_mode" = ANY (ARRAY['seeded'::"text", 'ranked'::"text", 'random'::"text"]))),
+    CONSTRAINT "brackets_seeding_mode_check" CHECK (("seeding_mode" = ANY (ARRAY['seeded'::"text", 'random'::"text"]))),
     CONSTRAINT "brackets_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."members"("id") ON DELETE CASCADE
 );
 

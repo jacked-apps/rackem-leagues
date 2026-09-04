@@ -74,7 +74,7 @@ export async function createBracket(params: CreateBracketParams): Promise<Bracke
  * Resolve the listed participants into a seed order per the bracket's seeding
  * mode, then persist them (seed 1..N). Replaces any existing participants.
  *
- * - seeded / ranked: keep the organizer's listed order (seed = position).
+ * - seeded: keep the organizer's listed order (seed = position).
  * - random: Fisher–Yates shuffle, frozen here so it's never re-derived.
  *
  * @param shuffle injectable RNG-order for deterministic tests; defaults to a

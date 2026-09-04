@@ -6,14 +6,14 @@
  * by SEED number (1..N) and reference each other by a local string `key`; the
  * data layer (Unit 3) maps seeds → participant uuids and keys → match uuids on
  * insert. Keeping the engine free of uuids/DB concerns makes it pure and
- * deterministic (seeded/ranked generation is identical across runs).
+ * deterministic (seeded generation is identical across runs).
  */
 
 /** Elimination format. Mirrors the `brackets.format` CHECK values. */
 export type BracketFormat = 'single_elimination' | 'double_elimination';
 
 /** How the initial seed order is derived. Mirrors `brackets.seeding_mode`. */
-export type SeedingMode = 'seeded' | 'ranked' | 'random';
+export type SeedingMode = 'seeded' | 'random';
 
 /** Which tree a match belongs to. Mirrors `bracket_matches.side`. */
 export type MatchSide = 'winners' | 'losers' | 'grand_final';

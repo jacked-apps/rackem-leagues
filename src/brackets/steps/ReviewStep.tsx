@@ -19,8 +19,7 @@ interface ReviewStepProps {
 }
 
 const SEEDING_LABELS: Record<SeedingMode, string> = {
-  seeded: 'Seeded — top of the list plays the bottom (order = seed)',
-  ranked: 'Ranked — adjacent players in the list meet first',
+  seeded: 'Seeded — your list order is the seed; top players are kept apart',
   random: 'Random — pairings drawn when you start',
 };
 
