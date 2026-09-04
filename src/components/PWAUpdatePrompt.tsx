@@ -4,10 +4,31 @@
  * Displays a prompt to users when a new version of the app is available.
  * Uses the vite-plugin-pwa's useRegisterSW hook to detect and apply updates.
  * The prompt appears as a toast-like notification at the bottom of the screen.
+ *
+ * This is the mechanism every future fix reaches users through, so it has to be
+ * both honest (pressing the button visibly does something) and reliable (it
+ * actually lands on the new build). Both of those needed fixing — see
+ * `handleUpdate` for why the reload can't be left to the service worker alone.
  */
 
+import { useState, useRef, useEffect } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { Button } from '@/components/ui/button';
+import { logger } from '@/utils/logger';
+
+/**
+ * How long to wait for the new service worker to take control before reloading
+ * the page ourselves.
+ *
+ * `updateServiceWorker(true)` posts SKIP_WAITING and then waits for a
+ * `controllerchange` event to reload. That event never fires if there is no
+ * worker actually in `waiting` at that moment — a race with registration, a
+ * worker that already activated, or a tab that was backgrounded while the
+ * update was detected. In those cases the old code just sat there looking
+ * broken. Long enough that a normal activation wins the race and this never
+ * runs; short enough that a stuck update doesn't feel ignored.
+ */
+const UPDATE_RELOAD_TIMEOUT_MS = 3000;
 
 /**
  * PWAUpdatePrompt Component
@@ -24,12 +45,66 @@ export function PWAUpdatePrompt() {
     updateServiceWorker,
   } = useRegisterSW({
     onRegistered(registration) {
-      console.log('SW Registered:', registration);
+      logger.info('Service worker registered', {
+        scope: registration?.scope,
+      });
     },
     onRegisterError(error) {
-      console.log('SW registration error:', error);
+      // Previously a console.log, so a registration failure was invisible to
+      // us and to the user. If this fires, the app cannot receive updates at
+      // all, which is worth being able to see in the logs.
+      logger.error('Service worker registration failed', {
+        error: error instanceof Error ? error.message : String(error),
+      });
     },
   });
+
+  const [isUpdating, setIsUpdating] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // The reload usually tears this component down, but not on the paths where
+  // it doesn't — don't leave a timer running into an unmounted component.
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
+  /**
+   * Apply the waiting update.
+   *
+   * Two things go wrong if you just call `updateServiceWorker(true)` in an
+   * onClick and walk away, and both were happening:
+   *
+   * 1. Nothing appears to happen. `updateServiceWorker` returns a promise, but
+   *    the Button needs an explicit `isLoading` — it can't observe a promise on
+   *    its own. Pressing the button gave no spinner, no disabled state, no
+   *    acknowledgement, so it read as ignored and people pressed it again.
+   * 2. Sometimes it never updates. The reload is driven by `controllerchange`,
+   *    which doesn't fire when there is no worker in `waiting` (see
+   *    UPDATE_RELOAD_TIMEOUT_MS). Then the prompt just sits there.
+   *
+   * So: show the in-flight state, and guarantee the reload ourselves rather
+   * than trusting an event that may never arrive.
+   */
+  const handleUpdate = async () => {
+    setIsUpdating(true);
+
+    // Whatever happens below, land on the new build. If the service worker
+    // takes control normally it reloads first and this never runs.
+    timeoutRef.current = setTimeout(() => {
+      window.location.reload();
+    }, UPDATE_RELOAD_TIMEOUT_MS);
+
+    try {
+      await updateServiceWorker(true);
+    } catch (error) {
+      logger.error('Service worker update failed; forcing reload', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      window.location.reload();
+    }
+  };
 
   /**
    * Closes the update prompt without applying the update
@@ -52,10 +127,15 @@ export function PWAUpdatePrompt() {
           </p>
         </div>
         <div className="flex gap-2 justify-end">
-          <Button variant="outline" size="sm" onClick={close}>
+          <Button variant="outline" size="sm" onClick={close} disabled={isUpdating}>
             Later
           </Button>
-          <Button size="sm" onClick={() => updateServiceWorker(true)} loadingText="Updating...">
+          <Button
+            size="sm"
+            onClick={handleUpdate}
+            isLoading={isUpdating}
+            loadingText="Updating..."
+          >
             Update Now
           </Button>
         </div>
