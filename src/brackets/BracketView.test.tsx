@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderWithProviders, screen, userEvent } from '@/test/utils';
+import { renderWithProviders, screen, userEvent, within } from '@/test/utils';
 import type { BracketDetail } from '@/api/queries/brackets';
 
 const mockUseBracket = vi.fn();
@@ -108,6 +108,28 @@ describe('BracketView', () => {
 
     expect(screen.getByText(/Ann wins/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /close bracket/i })).toBeInTheDocument();
+  });
+
+  it('close requires confirmation before calling closeBracket', async () => {
+    const user = userEvent.setup();
+    const detail = liveDetail();
+    detail.bracket.status = 'complete';
+    detail.matches[0].status = 'complete';
+    detail.matches[0].winner_participant_id = 'p1';
+    mockUseBracket.mockReturnValue({ data: detail, isLoading: false, isError: false });
+    mockClose.mockResolvedValue(undefined);
+
+    renderWithProviders(<BracketView />);
+
+    // The header button just opens the confirm — no close yet.
+    await user.click(screen.getByRole('button', { name: /close bracket/i }));
+    expect(mockClose).not.toHaveBeenCalled();
+    expect(screen.getByText(/close this bracket\?/i)).toBeInTheDocument();
+
+    // Confirm inside the dialog fires the mutation.
+    const dialog = screen.getByRole('alertdialog');
+    await user.click(within(dialog).getByRole('button', { name: /close bracket/i }));
+    expect(mockClose).toHaveBeenCalledWith('b1');
   });
 
   it('a completed (non-live) bracket renders read-only — no tappable slot', () => {

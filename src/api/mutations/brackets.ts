@@ -32,10 +32,28 @@ export interface CreateBracketParams {
 }
 
 /**
+ * Opportunistic janitor: hard-delete (cascade) closed or long-idle brackets so
+ * the ephemeral tool never accumulates rows. Best-effort — a sweep failure must
+ * not block creating a bracket, so errors are swallowed.
+ */
+export async function sweepStaleBrackets(): Promise<void> {
+  try {
+    await supabase.rpc('sweep_stale_brackets', { p_idle_days: 7 });
+  } catch {
+    // Non-fatal: cleanup is opportunistic, creation proceeds regardless.
+  }
+}
+
+/**
  * Create a bracket in `setup` status. Participants + tree come later (via
  * setParticipants → startBracket). share_token is DB-generated.
+ *
+ * Sweeps stale brackets first (cleanup-on-create) — the ephemeral tool's
+ * janitor, so nothing lingers without any scheduled job.
  */
 export async function createBracket(params: CreateBracketParams): Promise<BracketRow> {
+  await sweepStaleBrackets();
+
   const { data, error } = await supabase
     .from('brackets')
     .insert({

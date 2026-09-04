@@ -42,6 +42,7 @@ export function BracketView() {
   const advance = useAdvanceWinner(bracketId ?? '');
   const closeBracket = useCloseBracket();
   const [pending, setPending] = useState<PendingPick | null>(null);
+  const [confirmingClose, setConfirmingClose] = useState(false);
 
   useBracketRealtime(bracketId, queryKeys.brackets.detail(bracketId ?? ''));
 
@@ -76,6 +77,7 @@ export function BracketView() {
 
   const handleClose = async () => {
     if (!bracketId) return;
+    setConfirmingClose(false);
     try {
       await closeBracket.mutateAsync(bracketId);
       toast.success('Bracket closed.');
@@ -100,7 +102,11 @@ export function BracketView() {
               </Button>
             )}
             {bracket.status === 'complete' && (
-              <Button variant="destructive" loadingText="Closing…" onClick={handleClose}>
+              <Button
+                variant="destructive"
+                loadingText="none"
+                onClick={() => setConfirmingClose(true)}
+              >
                 Close bracket
               </Button>
             )}
@@ -140,6 +146,22 @@ export function BracketView() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmPick}>Advance</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmingClose} onOpenChange={setConfirmingClose}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Close this bracket?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The shared link keeps showing the final results for a while, then
+              the bracket is removed automatically. This can't be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleClose}>Close bracket</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

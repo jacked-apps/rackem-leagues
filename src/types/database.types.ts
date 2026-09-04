@@ -3640,6 +3640,7 @@ export type Database = {
         Returns: undefined
       }
       sweep_auto_forfeits: { Args: never; Returns: number }
+      sweep_stale_brackets: { Args: { p_idle_days?: number }; Returns: number }
       text_soundex: { Args: { "": string }; Returns: string }
       undo_merge_placeholder: {
         Args: {
