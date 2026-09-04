@@ -89,11 +89,22 @@ export function BracketView() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>{bracket.name}</CardTitle>
-          {bracket.status === 'complete' && (
-            <Button variant="destructive" loadingText="Closing…" onClick={handleClose}>
-              Close bracket
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {bracket.status !== 'closed' && (
+              <Button
+                variant="outline"
+                loadingText="none"
+                onClick={() => copyShareLink(bracket.share_token)}
+              >
+                Copy share link
+              </Button>
+            )}
+            {bracket.status === 'complete' && (
+              <Button variant="destructive" loadingText="Closing…" onClick={handleClose}>
+                Close bracket
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {champion && (
@@ -134,6 +145,17 @@ export function BracketView() {
       </AlertDialog>
     </div>
   );
+}
+
+/** Copy the public share link for this bracket to the clipboard. */
+async function copyShareLink(shareToken: string): Promise<void> {
+  const url = `${window.location.origin}/brackets/share/${shareToken}`;
+  try {
+    await navigator.clipboard.writeText(url);
+    toast.success('Share link copied.');
+  } catch {
+    toast.error('Could not copy — link: ' + url);
+  }
 }
 
 /** Look up the tapped participant's display name across all sides. */

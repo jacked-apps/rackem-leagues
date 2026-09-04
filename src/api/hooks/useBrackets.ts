@@ -32,13 +32,22 @@ export function useBracket(bracketId: string | undefined) {
   });
 }
 
-/** Public, read-only share view for a share token (no auth). */
+/**
+ * Public, read-only share view for a share token (no auth).
+ *
+ * Realtime (useBracketRealtime) is the fast path, but postgres_changes delivery
+ * to the anon role is unproven for this app, so a live bracket also polls every
+ * ~15s as a fallback — data-derived state makes both safe (a missed event only
+ * delays). Polling stops once the bracket is complete/closed.
+ */
 export function useBracketShare(shareToken: string | undefined) {
   return useQuery({
     queryKey: queryKeys.brackets.share(shareToken ?? ''),
     queryFn: () => getBracketShare(shareToken!),
     enabled: !!shareToken,
     staleTime: 0,
+    refetchInterval: (query) =>
+      query.state.data?.bracket?.status === 'live' ? 15_000 : false,
   });
 }
 

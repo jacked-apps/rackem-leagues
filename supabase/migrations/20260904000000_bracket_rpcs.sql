@@ -98,6 +98,11 @@ BEGIN
 END;
 $$;
 
+-- EXECUTE is granted to PUBLIC (Postgres default) AND to anon (Supabase's
+-- ALTER DEFAULT PRIVILEGES). Revoke both so a write RPC is NOT anon-callable —
+-- the public share route is a real anon surface. Only authenticated organizers
+-- persist a bracket.
+REVOKE EXECUTE ON FUNCTION "public"."start_bracket"("uuid", "jsonb") FROM PUBLIC, "anon";
 GRANT EXECUTE ON FUNCTION "public"."start_bracket"("uuid", "jsonb") TO "authenticated";
 
 COMMENT ON FUNCTION "public"."start_bracket"("uuid", "jsonb") IS
@@ -209,6 +214,8 @@ BEGIN
 END;
 $$;
 
+-- Not anon-callable (see start_bracket note): revoke PUBLIC + anon defaults.
+REVOKE EXECUTE ON FUNCTION "public"."advance_bracket_winner"("uuid", "uuid") FROM PUBLIC, "anon";
 GRANT EXECUTE ON FUNCTION "public"."advance_bracket_winner"("uuid", "uuid") TO "authenticated";
 
 COMMENT ON FUNCTION "public"."advance_bracket_winner"("uuid", "uuid") IS

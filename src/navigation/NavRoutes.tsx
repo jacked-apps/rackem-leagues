@@ -18,6 +18,7 @@ import { BRACKETS_ENABLED } from '@/config/featureFlags';
 import { MemberLayout } from '../components/layout/MemberLayout';
 import { CreateBracketFlow } from '../brackets/CreateBracketFlow';
 import { BracketView } from '../brackets/BracketView';
+import { PublicBracketPage } from '../brackets/PublicBracketPage';
 import { Home } from '../home/Home';
 import { RulesSkeleton } from '../rules/RulesSkeleton';
 import { RulesErrorBoundary } from '../rules/RulesErrorBoundary';
@@ -181,6 +182,12 @@ export const router = createBrowserRouter([
       { path: 'register', element: <Register /> },
       { path: 'claim-player', element: <ClaimPlayer /> },
       { path: 'join/:token', element: <TeamJoinPage /> },
+      // Public, read-only bracket share (names only via the get_bracket_share
+      // RPC). Gated on the same BRACKETS_ENABLED flag as the authed routes so
+      // the whole feature turns on/off together.
+      ...(BRACKETS_ENABLED
+        ? [{ path: 'brackets/share/:shareToken', element: <PublicBracketPage /> }]
+        : []),
       { path: 'forgot-password', element: <ForgotPassword /> },
       { path: 'reset-password', element: <ResetPassword /> },
       { path: 'confirm', element: <EmailConfirmation /> },
