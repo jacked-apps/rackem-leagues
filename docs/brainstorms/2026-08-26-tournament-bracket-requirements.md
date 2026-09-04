@@ -87,15 +87,25 @@ The organizer is always a logged-in user (a free account suffices); there is no 
 
 ## Paid Feature Roadmap (each its own brainstorm → plan)
 
-Rough sequence, easy → in-depth. Ordering is a starting point, not locked. Each carries the relevant requirements + the open question the review surfaced.
+> **Status (updated 2026-09-04):** the **Free Tier is BUILT** (PR #264, gated, awaiting review/merge). This section is the paid‑tier plan — the durable "don't lose the features" list. Each item is its own future `/ce:brainstorm → /ce:plan`. Order below is by dependency (foundation first), not locked.
 
-1. **Venue + numbered tables** (R15–R16) — *likely light.* Verify existing venue data fits "numbered tables." Foundation for table-based notifications.
-2. **Real-player pool + join** (R7–R9, R21–R22, R27) — *medium.* Attach real players/placeholders to a bracket; QR/link join; the global-pool **consent** question; the Bracket-vs-`Tournament` **naming** decision.
-3. **Hopper / entry fee / check-in** (R10–R14, R24–R26) — *medium.* Pending hopper → paid/unpaid → official list → start. QR security (R24); "paid = organizer flag, no in-app payment" (R25); same-name disambiguation (R26).
-4. **Winner self-confirmation** (R19, R28) — *in-depth.* New/generalized confirmation storage (FK reality); the **1v1 trust model / what advances a match** decision; organizer override.
-5. **Handicap races** (R20) — *in-depth.* Net-new **race calculators**; rating source (saved handicaps + player-entered Fargo w/ organizer confirm).
-6. **Up / on-deck / table notifications** (R17, R27) — *in-depth.* New event-dispatch path on the push pipeline; depends on the push branch reaching `main`; PWA/iOS push caveats + in-app fallback.
-7. **Payout helper** — *later.* Prize-split math on top of the hopper's paid data.
+### Decide first (not a feature — a business/product gate)
+**How does "paid" unlock?** Per‑account subscription? Per‑tournament fee? One‑time upgrade? This shapes where the paywall flag lives and gates everything below. Likely **Jack's revenue call**.
+
+### Two cross‑cutting paid principles (Ed, 2026-09-04)
+- **"Copy tournament" = saved / reusable config.** Every configurable paid feature (e.g. handicap races: max race, min race, shorter loser‑side race) must be **savable + copyable from day one** — set it up once, reuse for the next tournament. This is a first‑class "tournament template / saved settings" capability woven through every feature, NOT a per‑feature afterthought. Fits the app's "set‑once, runs itself" north star. (Free tier saves nothing; this is a paid convenience.)
+- **Handicap‑races + self‑scoring are SHARED league+tournament systems, not tournament‑only.** The league's modular scoring **already reserves** the race‑length mechanism (`race_length_adjustment` stub) and has the handicap infra + the "many‑eyes" confirmation concept. Building these for tournaments = **completing a shared capability the league side is designed to use** (the league has no such setup UI yet either). Scope items #4 and #5 as shared engines used by BOTH halves — build once, both benefit. High leverage; do NOT build a tournament‑only duplicate.
+
+### The features (build order — foundation → headline → later)
+1. **Real players + reusable pool + join (QR/link)** (R7–R9, R21–R22, R27) — *medium; THE FOUNDATION.* Real accounts instead of typed names — name/handicap travel with the player, no re‑typing, players self‑add via QR/link. Unlocks #4, #5, #6. Open Qs: global‑pool **consent**, same‑name disambiguation.
+2. **Venue + numbered tables + smart match sequencing** (R15–R16) — *medium.* Set up tables; as they free up, the tool says which pair is next on which table (the automated version of the free tier's manual Playing/On‑deck). Uses the match‑sequencing research (see the memory note — no single standard; round‑order + WB/LB alternation + player rest; do a real BCA/APA/esports research pass first). Unlocks #6.
+3. **Entry fee + check‑in "hopper"** (R10–R14, R24–R26) — *medium.* Players scan into a pending list → organizer marks each **paid** as they pay → start with the paid list. Money **tracking** only (no in‑app payment processing in v1). Unlocks #7. Open Qs: QR security, "paid = organizer flag."
+4. **Winner self‑confirmation** (R19, R28) — *in‑depth; SHARED w/ league.* Players tap to confirm who won, advancing the bracket — frees the organizer from being sole scorekeeper. Net‑new/generalized confirmation storage (league `game_confirmations` is tied to league tables); the **1v1 trust model / what advances a match** decision; organizer override. Build as a shared league+tournament flow.
+5. **Handicap races** (R20) — *in‑depth; SHARED w/ league.* Each match's race‑to‑N computed from player ratings (stronger player must win more). Net‑new **race calculators** (fills the reserved `race_length_adjustment` stub → serves leagues too); rating source = saved handicaps + player‑entered Fargo w/ organizer confirm. **Configurable + copyable** (max/min race, loser‑side shorter, etc. — see the "copy tournament" principle).
+6. **Up / on‑deck / table notifications** (R17, R27) — *in‑depth.* Phone push: "you're up on Table 4 / on deck." Needs #1 (real players) + #2 (tables). New event‑dispatch path (the push pipeline is message‑bound — see the message‑push work now on `main`); PWA/iOS push caveats + in‑app fallback.
+7. **Payout helper** — *later.* Enter the pot → auto‑split prize money across paying places. Sits on #3's paid data.
+
+**Dependency shape:** #1 unlocks 4/5/6 · #2 unlocks 6 + sequencing · #3 unlocks 7. Natural starting brainstorm = **#1 (real players)**, or the **"copy tournament" saved‑config** connective tissue.
 
 ## Scope Boundaries
 
