@@ -9,7 +9,7 @@
  */
 
 import { useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -88,6 +88,12 @@ export function BracketView() {
 
   return (
     <div className="container mx-auto max-w-5xl px-4 py-8">
+      <Link
+        to="/brackets"
+        className="mb-4 inline-block text-sm text-muted-foreground hover:text-foreground"
+      >
+        ← Tournaments
+      </Link>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>{bracket.name}</CardTitle>

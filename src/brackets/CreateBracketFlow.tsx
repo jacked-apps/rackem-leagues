@@ -123,7 +123,11 @@ export function CreateBracketFlow() {
             canSubmit={validation.canSubmit}
             submitting={submitting}
             onBack={() =>
-              form.goTo(state.step === 'review' ? 'participants' : 'details')
+              // On the first step there's no prior step — leave the flow back to
+              // the tournaments list instead of a dead disabled button.
+              state.step === 'details'
+                ? navigate('/brackets')
+                : form.goTo(state.step === 'review' ? 'participants' : 'details')
             }
             onNext={() =>
               form.goTo(state.step === 'details' ? 'participants' : 'review')
@@ -156,8 +160,8 @@ function FlowNav({
 }) {
   return (
     <div className="flex justify-between pt-2">
-      <Button type="button" variant="outline" disabled={step === 'details'} onClick={onBack}>
-        Back
+      <Button type="button" variant="outline" onClick={onBack}>
+        {step === 'details' ? 'Cancel' : 'Back'}
       </Button>
       {step === 'review' ? (
         <Button
