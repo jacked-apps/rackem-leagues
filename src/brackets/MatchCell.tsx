@@ -13,7 +13,19 @@ import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import type { MatchView, SlotView } from './bracketViewModel';
 import { isSlotPickable } from './bracketViewModel';
-import type { MatchSlot } from '@/types/bracket';
+import type { MatchSlot, MatchStatus } from '@/types/bracket';
+
+/**
+ * Thick, color-coded outer border by state so a match reads at a glance:
+ * - pending: dashed muted — waiting on players (not playable).
+ * - ready:   solid accent — playable now / in progress.
+ * - complete: solid green — finished/decided.
+ */
+const STATUS_BORDER: Record<MatchStatus, string> = {
+  pending: 'border-2 border-dashed border-muted-foreground/30',
+  ready: 'border-2 border-primary',
+  complete: 'border-2 border-emerald-500',
+};
 
 interface MatchCellProps {
   match: MatchView;
@@ -28,7 +40,12 @@ export function MatchCell({ match, readOnly, onPick, onReopen }: MatchCellProps)
   const isComplete = match.status === 'complete';
 
   return (
-    <Card className="w-44 shrink-0 divide-y gap-0 p-0 text-sm">
+    <Card
+      className={cn(
+        'w-44 shrink-0 divide-y gap-0 p-0 text-sm',
+        STATUS_BORDER[match.status]
+      )}
+    >
       <SlotRow
         slot={match.home}
         pickable={!readOnly && isSlotPickable(match, 'home')}
