@@ -59,12 +59,12 @@ export function DetailsStep({
       </div>
 
       {format === 'double_elimination' && (
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
           <div className="space-y-1">
-            <Label htmlFor="reset-toggle">Grand final reset</Label>
+            <Label htmlFor="reset-toggle">Grand Finals</Label>
             <p className="text-sm text-muted-foreground">
-              If the losers-bracket winner wins the final, play one more deciding
-              match.
+              On: the losers-side finalist must beat the champion twice to win
+              the title. Off: a single final game decides the winner.
             </p>
           </div>
           <Switch
