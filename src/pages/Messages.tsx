@@ -15,7 +15,7 @@
  * - No back button needed
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
@@ -103,10 +103,13 @@ export function Messages() {
     const state = location.state as { conversationId?: string } | null;
     if (state?.conversationId) {
       setSelectedConversationId(state.conversationId);
-      // Clear the state so refreshing doesn't re-select
-      navigate(location.pathname, { replace: true, state: {} });
+      // Move the handoff into the URL rather than just dropping it: this both
+      // clears the state (so a refresh doesn't re-select) and puts the thread
+      // in the path, which is what lets the service worker suppress a push for
+      // the conversation you're now looking at.
+      navigate(`/messages/${state.conversationId}`, { replace: true, state: {} });
     }
-  }, [location.state, location.pathname, navigate]);
+  }, [location.state, navigate]);
 
   // Deep link (/messages/:conversationId): open the target thread. While the
   // conversation list is still loading we open optimistically; once loaded, an
@@ -124,6 +127,33 @@ export function Messages() {
     });
     setSelectedConversationId(conversationId);
   }, [routeConversationId, conversationsLoading, conversations]);
+
+  /**
+   * Open (or close) a conversation, keeping the URL in step with what's on
+   * screen.
+   *
+   * The URL is not cosmetic here — it is how the service worker knows which
+   * thread you are looking at. `sw.ts` suppresses a push when an open window is
+   * already viewing that conversation, and it can only detect that by matching
+   * the window's path against `/messages/:id`. While selection lived purely in
+   * React state, opening a thread from the list left the address at
+   * `/messages`, so the check never matched and you got buzzed by the very
+   * conversation you were reading.
+   *
+   * `replace` so a session of hopping between threads doesn't stack up history
+   * entries the user has to back out of one at a time.
+   *
+   * @param conversationId - Conversation to open, or null to return to the list
+   */
+  const selectConversation = useCallback(
+    (conversationId: string | null) => {
+      setSelectedConversationId(conversationId);
+      navigate(conversationId ? `/messages/${conversationId}` : '/messages', {
+        replace: true,
+      });
+    },
+    [navigate]
+  );
 
   const handleNewMessage = () => {
     setShowNewMessageModal(true);
@@ -209,7 +239,7 @@ export function Messages() {
       }
 
       if (conversationId) {
-        setSelectedConversationId(conversationId);
+        selectConversation(conversationId);
         setShowNewMessageModal(false);
         // Cache auto-refreshed by mutations - no need for refreshKey
       }
@@ -220,7 +250,7 @@ export function Messages() {
   };
 
   const handleBackToList = () => {
-    setSelectedConversationId(null);
+    selectConversation(null);
   };
 
   return (
@@ -250,11 +280,11 @@ export function Messages() {
         >
           {memberId && (
             <>
-              <CreateTeamChatPrompt onChatCreated={setSelectedConversationId} />
+              <CreateTeamChatPrompt onChatCreated={selectConversation} />
               <ConversationList
                 userId={memberId}
                 selectedConversationId={selectedConversationId}
-                onSelectConversation={setSelectedConversationId}
+                onSelectConversation={selectConversation}
                 onNewMessage={handleNewMessage}
                 showAnnouncements={isCaptain || canAccessLeagueOperatorFeatures()}
                 onAnnouncements={handleAnnouncements}
@@ -279,7 +309,7 @@ export function Messages() {
               currentUserId={memberId}
               onBack={handleBackToList}
               onLeaveConversation={() => {
-                setSelectedConversationId(null);
+                selectConversation(null);
                 // Cache auto-refreshed by mutation
               }}
             />
