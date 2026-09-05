@@ -190,6 +190,24 @@ export async function setMatchInProgress(
 }
 
 /**
+ * Entry-fee tracker (the `payment_tracker` feature): flip a player's
+ * organizer-asserted paid/unpaid flag. Cash is collected outside the app — this
+ * is just the checklist. Bumps the bracket's activity so it isn't swept mid-use.
+ */
+export async function setEntryFeePaid(
+  participantId: string,
+  bracketId: string,
+  paid: boolean
+): Promise<void> {
+  const { error } = await supabase
+    .from('bracket_participants')
+    .update({ entry_fee_paid: paid })
+    .eq('id', participantId);
+  if (error) throw new Error(`Failed to update entry-fee status: ${error.message}`);
+  await touchBracket(bracketId);
+}
+
+/**
  * Reopen a decided match (undo a mis-tapped winner). Clears the winner and
  * pulls the advanced player/loser back out of the next matches. Throws with a
  * user-facing message if a downstream match was already played (reopen that

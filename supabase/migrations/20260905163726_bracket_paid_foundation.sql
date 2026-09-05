@@ -58,3 +58,14 @@ COMMENT ON COLUMN "public"."brackets"."charged_at" IS
   'Charge-at-checkout seam (A3): when the paid tournament''s charge ran (at Start). NULL = not charged (free, or not started). Mock $0 today; Jack''s Stripe charge slots in here.';
 COMMENT ON COLUMN "public"."brackets"."charge_amount_cents" IS
   'What was charged at Start (the premium-features total, $5 cap). Recorded for the seam; the real money is $0 today (mock).';
+
+
+-- ── Entry-fee tracker (the 'payment_tracker' premium feature) ───────────────
+-- An organizer-asserted paid/unpaid flag per player. The entry fee is CASH the
+-- organizer collects OUTSIDE the app — no money runs through us; this is just a
+-- checklist. Disposable with the tournament.
+ALTER TABLE "public"."bracket_participants"
+  ADD COLUMN IF NOT EXISTS "entry_fee_paid" boolean NOT NULL DEFAULT false;
+
+COMMENT ON COLUMN "public"."bracket_participants"."entry_fee_paid" IS
+  'Organizer-asserted: has this player paid their entry fee? Cash collected outside the app (the payment_tracker feature is a checklist only). Default false.';

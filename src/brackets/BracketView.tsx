@@ -33,6 +33,7 @@ import {
 } from '@/api/hooks/useBrackets';
 import { buildBracketView, championName } from './bracketViewModel';
 import { BracketTree } from './BracketTree';
+import { EntryFeePanel } from './paid/EntryFeePanel';
 import { BracketLegend } from './BracketLegend';
 import { useBracketRealtime } from './useBracketRealtime';
 
@@ -170,6 +171,15 @@ export function BracketView() {
               setInProgress.mutate({ matchId, inProgress })
             }
           />
+
+          {/* Entry-fee tracker — only when the tournament bought that feature. */}
+          {bracket.premium_features?.includes('payment_tracker') && (
+            <EntryFeePanel
+              bracketId={bracket.id}
+              participants={data.participants}
+              readOnly={bracket.status === 'closed'}
+            />
+          )}
         </CardContent>
       </Card>
 

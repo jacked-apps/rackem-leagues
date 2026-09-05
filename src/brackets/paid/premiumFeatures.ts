@@ -44,6 +44,13 @@ export const PREMIUM_FEATURES: readonly PremiumFeature[] = [
     priceCents: FEATURE_PRICE_CENTS,
   },
   {
+    key: 'payment_tracker',
+    label: 'Entry-fee tracker',
+    blurb:
+      'Keep a running list of who’s paid their entry fee and who hasn’t. You collect the cash — we just track it, no money runs through the app.',
+    priceCents: FEATURE_PRICE_CENTS,
+  },
+  {
     key: 'self_scoring',
     label: 'Players score their own matches',
     blurb: 'Each pair confirms their own winner from their phones — you stop being the sole scorekeeper.',

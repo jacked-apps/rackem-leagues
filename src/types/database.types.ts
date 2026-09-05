@@ -262,6 +262,7 @@ export type Database = {
           bracket_id: string
           created_at: string
           display_name: string
+          entry_fee_paid: boolean
           id: string
           member_id: string | null
           seed: number
@@ -270,6 +271,7 @@ export type Database = {
           bracket_id: string
           created_at?: string
           display_name: string
+          entry_fee_paid?: boolean
           id?: string
           member_id?: string | null
           seed: number
@@ -278,6 +280,7 @@ export type Database = {
           bracket_id?: string
           created_at?: string
           display_name?: string
+          entry_fee_paid?: boolean
           id?: string
           member_id?: string | null
           seed?: number

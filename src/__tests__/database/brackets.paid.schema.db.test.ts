@@ -95,6 +95,32 @@ describe('brackets paid-foundation schema (Unit A1)', () => {
     expect(after[0].charge_amount_cents).toBe(500);
   });
 
+  it('tracks a participant entry-fee paid flag (default false, toggleable)', async () => {
+    const b = await executeSql(
+      `INSERT INTO public.brackets (name, format, created_by, tier, premium_features)
+       VALUES ('Fees', 'single_elimination', $1, 'paid', ARRAY['payment_tracker']::text[])
+       RETURNING id`,
+      [memberId]
+    );
+    insertedBracketIds.push(b[0].id);
+    const p = await executeSql(
+      `INSERT INTO public.bracket_participants (bracket_id, display_name, seed)
+       VALUES ($1, 'Ann', 1) RETURNING id, entry_fee_paid`,
+      [b[0].id]
+    );
+    expect(p[0].entry_fee_paid).toBe(false); // organizer hasn't marked them paid yet
+
+    await executeSql(
+      `UPDATE public.bracket_participants SET entry_fee_paid = true WHERE id = $1`,
+      [p[0].id]
+    );
+    const after = await executeSql(
+      `SELECT entry_fee_paid FROM public.bracket_participants WHERE id = $1`,
+      [p[0].id]
+    );
+    expect(after[0].entry_fee_paid).toBe(true);
+  });
+
   it('rejects an unknown tier value (CHECK)', async () => {
     await expect(
       executeSql(

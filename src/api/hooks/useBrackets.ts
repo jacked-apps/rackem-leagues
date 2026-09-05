@@ -15,6 +15,7 @@ import {
   setParticipants,
   startBracket,
   chargeForStart,
+  setEntryFeePaid,
   advanceWinner,
   setMatchInProgress,
   reopenMatch,
@@ -115,6 +116,18 @@ export function useChargeForStart() {
       chargeForStart(vars.bracketId, vars.amountCents),
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: queryKeys.brackets.detail(vars.bracketId) });
+    },
+  });
+}
+
+/** Entry-fee tracker: toggle a player's paid/unpaid flag; invalidate the bracket. */
+export function useSetEntryFeePaid(bracketId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { participantId: string; paid: boolean }) =>
+      setEntryFeePaid(vars.participantId, bracketId, vars.paid),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.brackets.detail(bracketId) });
     },
   });
 }
