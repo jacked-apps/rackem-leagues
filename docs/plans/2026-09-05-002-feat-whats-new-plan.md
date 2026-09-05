@@ -109,18 +109,56 @@ version at release.
 
 ## Implementation Units
 
-### Unit 1 — Content file + page
+### Unit 1 — Content file + the two surfaces
+
+**Shape: one release per screen, plus an index.** Two surfaces because they
+answer two different questions, and one page trying to do both does neither
+well.
+
+Ed, 2026-09-05: *"a single page with all of the new shit from the last year
+would be too bulky… a date, the release number and each change, an arrow that
+clicks to the earlier one."*
+
+| Question | Surface |
+|---|---|
+| "What's new?" | `/whats-new` — the latest release only |
+| "When did that change?" | `/whats-new/all` — a compact index |
+
+**`/whats-new`** — one release: date, version, its changes. An **← Older** link
+to the previous release, and **Newer →** once you're back in history. Each
+release is also its own route (`/whats-new/1.9.0`) so it's linkable and
+bookmarkable.
+
+The common case is somebody who just updated, taps the marker, reads six lines
+and leaves. That should be one screen with nothing else on it.
+
+**`/whats-new/all`** — every release as a row: date, version, and a one-line
+summary. One scannable screen, click through to any release.
+
+This exists because paging back one release at a time is miserable when you're
+hunting for *when* something changed — ten clicks to reach something from three
+months ago. The index makes a year of history useful rather than merely stored.
+
+**Rejected: scrolling up to reveal older releases.** People expect newest at the
+top and older as they scroll DOWN. Inverting it reads as broken before it reads
+as clever, and on a phone there's no scrollbar to signal where you are.
+
+**Files:**
 
 - `src/whatsNew/releases.ts` — typed:
-  `{ version: string | 'unreleased', date: string | null, entries: { text: string, forOperators?: boolean }[], noUserFacingChanges?: string }`
-- `src/whatsNew/WhatsNewPage.tsx` at `/whats-new`, public.
-  - Newest first, one section per version, each with a stable anchor
-    (`#v1-9-0`) so a version is linkable in a support conversation.
-  - `forOperators` entries carry a small tag — a tag, not a separate view; one
-    list is one thing to maintain.
-  - Running version at the foot.
-- Tests: newest first; an empty list doesn't crash; an anchor exists per
-  version; an operator-tagged entry renders its tag.
+  `{ version: string | 'unreleased', date: string | null, summary: string, entries: { text: string, forOperators?: boolean }[], noUserFacingChanges?: string }`
+  - `summary` is the one-liner the index shows. Written with the entries, not
+    generated from them — a generated summary is either the first entry (often
+    the least important) or a count (useless).
+- `src/whatsNew/WhatsNewPage.tsx` — the single-release view, public.
+- `src/whatsNew/AllReleasesPage.tsx` — the index, public.
+- `forOperators` entries carry a small tag; a tag, not a separate view.
+- Running version at the foot of the single-release page.
+
+**Tests:** `/whats-new` shows only the newest released version; Older/Newer
+navigate correctly and are absent at each end; an unknown version in the URL
+falls back rather than crashing; the index lists every release newest first; an
+operator-tagged entry renders its tag; an empty list doesn't crash either page.
 
 ### Unit 2 — The seen-marker
 
@@ -132,8 +170,6 @@ version at release.
 - Nav entry in **both** `AppSidebar` and `AppDrawer` with the marker, per the
   door-and-room rule.
 - Opening the page writes the current version.
-- A divider on the page — "new since you last looked" — rather than a separate
-  view.
 - Marker uses shape and text, never colour alone.
 - Tests: unseen when NULL; unseen when stored version is older; seen when equal;
   `unreleased` doesn't trigger; opening clears it.
