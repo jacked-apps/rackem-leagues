@@ -5,15 +5,27 @@
 import { describe, it, expect } from 'vitest';
 import {
   PREMIUM_FEATURES,
+  PRICE_CAP_CENTS,
+  FEATURE_PRICE_CENTS,
   getPremiumFeature,
   totalPriceCents,
   formatPrice,
 } from './premiumFeatures';
 
 describe('premiumFeatures helpers', () => {
-  it('has a real_players feature as the first entry', () => {
+  it('has a real_players feature as the first entry, every feature $1', () => {
     expect(PREMIUM_FEATURES[0].key).toBe('real_players');
     expect(PREMIUM_FEATURES.every((f) => f.key && f.label && f.blurb)).toBe(true);
+    expect(PREMIUM_FEATURES.every((f) => f.priceCents === FEATURE_PRICE_CENTS)).toBe(true);
+    expect(FEATURE_PRICE_CENTS).toBe(100);
+  });
+
+  it('caps the total at $5 (turn everything on for five bucks)', () => {
+    const allKeys = PREMIUM_FEATURES.map((f) => f.key);
+    expect(PRICE_CAP_CENTS).toBe(500);
+    // 5 features × $1 = $5 = the cap; more features would still cap at $5.
+    expect(totalPriceCents(allKeys)).toBe(PRICE_CAP_CENTS);
+    expect(totalPriceCents([...allKeys, ...allKeys])).toBe(PRICE_CAP_CENTS);
   });
 
   it('getPremiumFeature finds by key and returns undefined for unknown', () => {

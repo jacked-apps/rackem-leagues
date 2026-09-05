@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label';
 import type { PaymentCardData } from '@/components/PaymentCardForm';
 import {
   PREMIUM_FEATURES,
+  PRICE_CAP_CENTS,
   formatPrice,
   totalPriceCents,
   type PremiumFeature,
@@ -62,8 +63,9 @@ export function PremiumFeaturesSection({
       <div className="space-y-1">
         <Label>Premium features</Label>
         <p className="text-sm text-muted-foreground">
-          Turn these on to run a smarter tournament. A free tournament — just names —
-          needs none of them.
+          Turn these on to run a smarter tournament — <span className="font-medium">$1 each,
+          or turn everything on for {formatPrice(PRICE_CAP_CENTS)}</span>. A free tournament —
+          just names — needs none of them.
         </p>
       </div>
 
@@ -101,7 +103,12 @@ export function PremiumFeaturesSection({
               Due when you start{' '}
               <span className="text-muted-foreground">(preview pricing)</span>
             </span>
-            <span className="font-semibold">{formatPrice(total)}</span>
+            <span className="font-semibold">
+              {formatPrice(total)}
+              {total >= PRICE_CAP_CENTS && (
+                <span className="ml-1 text-xs font-normal text-muted-foreground">(max)</span>
+              )}
+            </span>
           </div>
           {cardOnFile && (
             <p className="text-xs text-muted-foreground">

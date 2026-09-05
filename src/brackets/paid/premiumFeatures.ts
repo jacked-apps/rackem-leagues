@@ -11,9 +11,17 @@
  * (self-scoring #4, handicap races #5, venue/tables #2, alerts #6). Checking one
  * takes the (currently $0) payment; the feature starts working when it's built.
  *
- * Prices are ILLUSTRATIVE placeholders — real per-tournament pricing is Jack's
- * revenue call. The charge itself is $0 today (mock processor).
+ * Pricing (Ed, 2026-09-05): each feature is $1, and the whole tournament is
+ * capped at $5 — so an organizer can turn everything on for five bucks. Kept
+ * cheap on purpose: the goal is adoption. The charge itself is $0 today (mock
+ * processor); Jack wires the real charge later.
  */
+
+/** Every premium feature costs $1. */
+export const FEATURE_PRICE_CENTS = 100;
+
+/** A tournament is capped at $5 total, however many features are turned on. */
+export const PRICE_CAP_CENTS = 500;
 
 export interface PremiumFeature {
   /** Stable key stored in brackets.premium_features. */
@@ -22,7 +30,7 @@ export interface PremiumFeature {
   label: string;
   /** One-line "what this gives you" shown in the row + verify popup. */
   blurb: string;
-  /** Illustrative price in cents (placeholder — Jack sets real prices). */
+  /** Price in cents. Every feature is $1 (FEATURE_PRICE_CENTS). */
   priceCents: number;
 }
 
@@ -33,31 +41,31 @@ export const PREMIUM_FEATURES: readonly PremiumFeature[] = [
     label: 'Real players & sign-up',
     blurb:
       'Players join with a real account by scanning a QR code — and carry into your reusable pool, so you never re-type your regulars.',
-    priceCents: 500,
+    priceCents: FEATURE_PRICE_CENTS,
   },
   {
     key: 'self_scoring',
     label: 'Players score their own matches',
     blurb: 'Each pair confirms their own winner from their phones — you stop being the sole scorekeeper.',
-    priceCents: 300,
+    priceCents: FEATURE_PRICE_CENTS,
   },
   {
     key: 'handicap_races',
     label: 'Handicapped races',
     blurb: 'Each match gets a race-to-N from the players’ ratings, so the stronger player has to win more.',
-    priceCents: 300,
+    priceCents: FEATURE_PRICE_CENTS,
   },
   {
     key: 'venue_tables',
     label: 'Venue & tables (auto next-up)',
     blurb: 'Set your tables; as they free up the tool calls the next pair to an open table and tracks who’s on deck.',
-    priceCents: 300,
+    priceCents: FEATURE_PRICE_CENTS,
   },
   {
     key: 'notifications',
     label: 'Phone alerts',
     blurb: 'Players get a push when they’re up (“Table 4”) or on deck — no more hunting people down.',
-    priceCents: 200,
+    priceCents: FEATURE_PRICE_CENTS,
   },
 ] as const;
 
@@ -66,9 +74,16 @@ export function getPremiumFeature(key: string): PremiumFeature | undefined {
   return PREMIUM_FEATURES.find((f) => f.key === key);
 }
 
-/** Sum the illustrative price of the selected feature keys. */
+/**
+ * Total price for the selected features — $1 each, capped at $5 (PRICE_CAP_CENTS).
+ * So turning everything on never costs more than five bucks.
+ */
 export function totalPriceCents(selectedKeys: readonly string[]): number {
-  return selectedKeys.reduce((sum, key) => sum + (getPremiumFeature(key)?.priceCents ?? 0), 0);
+  const raw = selectedKeys.reduce(
+    (sum, key) => sum + (getPremiumFeature(key)?.priceCents ?? 0),
+    0
+  );
+  return Math.min(raw, PRICE_CAP_CENTS);
 }
 
 /** Format cents as a USD price string (e.g. 500 → "$5.00"). */
