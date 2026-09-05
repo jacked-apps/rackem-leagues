@@ -389,12 +389,24 @@ foundation's **durable, tagged results** (PF16–PF17) and **participant kind**
 (PF2) are the shape those shared engines will read — build them so both halves
 benefit, not as a tournament-only duplicate.
 
+## Future Idea — Tournament Series (NOT this foundation)
+
+**Captured 2026-09-05 (Ed) — do not build here; a later parent-roadmap item
+(~#8).** A **tournament series**: a number of individual tournaments run and
+aggregated as **one larger tournament** — a tour/season with stops whose results
+roll up into an overall standing / champion. Well beyond this foundation; parked
+so the idea isn't lost. Fold into
+`docs/brainstorms/2026-08-26-tournament-bracket-requirements.md`'s Paid Feature
+Roadmap when that branch is next touched.
+
 ## Next Steps
 
-→ `/ce:plan` for this foundation (tier-gate checklist + $0 checkout, real identity
-+ roster + hopper/official-list + persistent tagged results). No open product
-questions remain; the plan resolves the plan-time mechanics (placeholder
-player-owner generalization, `PaymentCardForm` reuse). Then resume
+→ `/ce:plan` **done** — see
+`docs/plans/2026-09-04-001-feat-tournament-paid-foundation-plan.md`. Several
+decisions **evolved during planning** (this section's earlier "persistent tagged
+results" / "player-owned placeholder" language is superseded): walk-ups are
+**tournament-scoped disposable entrants** (not app placeholders), and
+**tournaments themselves are disposable** — only the per-player **setup** is saved;
+results-persistence, if any, is a per-player handicap-history concern for roadmap
+#5. See the plan's "Resolved Decision" for the current shape. Then resume
 `/ce:brainstorm` per remaining paid feature in the parent roadmap.
-</content>
-</invoke>
