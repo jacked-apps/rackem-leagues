@@ -162,7 +162,9 @@ function SidebarPlayerSection({
       <SidebarLink to="/rules" label="Rules" />
       <SidebarLink to="/learn" label="Learn" />
       <SidebarLink to="/messages" label={messagesLabel} />
-      <SidebarLink to="/profile" label="Profile" />
+      {/* No "Profile" link — the name/avatar above already opens /profile.
+          The reclaimed slot holds the Tournaments side tool. */}
+      <SidebarLink to="/brackets" label="Tournaments" />
     </ul>
   );
 }

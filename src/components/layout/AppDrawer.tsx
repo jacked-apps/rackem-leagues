@@ -226,7 +226,9 @@ function PlayerSection({
       <DrawerLink to="/rules" label="Rules" />
       <DrawerLink to="/learn" label="Learn" />
       <DrawerLink to="/messages" label={messagesLabel} />
-      <DrawerLink to="/profile" label="Profile" />
+      {/* No "Profile" link — the name/avatar at the top of the drawer already
+          opens /profile. The reclaimed slot holds the Tournaments side tool. */}
+      <DrawerLink to="/brackets" label="Tournaments" />
     </ul>
   );
 }
