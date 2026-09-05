@@ -289,6 +289,11 @@ export interface MatchGame {
   break_fouled: boolean;
   runout: boolean;
   win_by_forfeit: boolean;
+  // The game ended because the LOSER pocketed the 8 early. The odd one out
+  // among these flags: every other one describes something the WINNER did, so
+  // the player it refers to is the winner's opponent, not the winner.
+  // 8-ball only (added by migration 20260905225925).
+  early_eight: boolean;
   // Calculator-driven per-game input values (renamed from loser_balls_pocketed by
   // migration 20260505000000). Each side's value meaning is determined by the
   // active calculator's scoringPopupFields() spec — could be points, ball count,
@@ -328,6 +333,7 @@ export interface ConfirmationQueueItem {
   breakFouled: boolean;
   runout: boolean;
   winByForfeit: boolean;
+  earlyEight: boolean;
   // Calculator-driven per-game input values (renamed from loserBallsPocketed
   // by Branch A). For Fargo 10-7 the loser side is 0–7 ball count; future
   // calculators may declare arbitrary ranges. NULL for BCA matches and any

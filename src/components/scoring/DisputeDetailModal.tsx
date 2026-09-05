@@ -91,6 +91,8 @@ function formatExtras(r: ResultLike): string {
   if (r.break_fouled) parts.push('Break Fouled');
   if (r.runout) parts.push('Runout');
   if (r.win_by_forfeit) parts.push('Forfeit');
+  // Phrased from the winner's side, matching every other item in this list.
+  if (r.early_eight) parts.push("Opponent's early 8");
   return parts.join(', ');
 }
 

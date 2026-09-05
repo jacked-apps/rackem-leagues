@@ -18,6 +18,7 @@ export interface EntryGame {
   break_fouled?: boolean | null;
   runout?: boolean | null;
   win_by_forfeit?: boolean | null;
+  early_eight?: boolean | null;
   winner_value?: number | null;
   loser_value?: number | null;
   is_tiebreaker?: boolean | null;

@@ -110,6 +110,17 @@ interface ScoringDialogProps {
   /** Runout state (role-conditional on winner = non-breaker). */
   runout?: boolean;
   /**
+   * Early-8 state: the game ended because the LOSER pocketed the 8 early.
+   *
+   * The odd one out among these flags. Break & Run, Golden Break and Runout
+   * all describe something the WINNER did well; this describes the loser's
+   * mistake, and the winner did nothing but watch. Labelled accordingly so a
+   * scorer can't read it as a credit to the player named above.
+   *
+   * 8-ball only — there is no early 8 in rotation games.
+   */
+  earlyEight?: boolean;
+  /**
    * Calculator-driven per-game input value for the losing side. For Fargo
    * 10-7 (accumulated_per_game), this is the number of balls the loser
    * pocketed (0–7). null = unselected. Renamed from loserBallsPocketed
@@ -145,6 +156,7 @@ interface ScoringDialogProps {
   hideForfeit?: boolean;
   /** Handler for runout toggle */
   onRunoutChange?: (checked: boolean) => void;
+  onEarlyEightChange?: (checked: boolean) => void;
   /** Handler for loser-side per-game value change */
   onLoserValueChange?: (value: number) => void;
   /** Handler for winner-side per-game value change (when calculator declares winner counter) */
@@ -175,6 +187,7 @@ export function ScoringDialog({
   winByForfeit = false,
   hideForfeit = false,
   runout = false,
+  earlyEight = false,
   loserValue = null,
   winnerValue = null,
   loserPlayerName = null,
@@ -183,6 +196,7 @@ export function ScoringDialog({
   onBreakFouledChange,
   onWinByForfeitChange,
   onRunoutChange,
+  onEarlyEightChange,
   onLoserValueChange,
   onWinnerValueChange,
   onCancel,
@@ -229,6 +243,10 @@ export function ScoringDialog({
     (winnerNeedsCounter && winnerValue === null) ||
     (loserNeedsCounter && loserValue === null);
 
+  // Early 8 only exists in 8-ball: in rotation games the 8 is just another
+  // ball. Same string the golden-break label switches on.
+  const isEightBall = gameType === '8-ball';
+
   // Get label for golden break based on game type
   const getGoldenBreakLabel = () => {
     if (gameType === '8-ball') return '8 on the Break';
@@ -266,10 +284,28 @@ export function ScoringDialog({
   const handleBreakAndRunCheck = (checked: boolean) => {
     onBreakAndRunChange(checked);
     if (checked && goldenBreak) onGoldenBreakChange(false);
+    if (checked && earlyEight) onEarlyEightChange?.(false);
   };
   const handleGoldenBreakCheck = (checked: boolean) => {
     onGoldenBreakChange(checked);
     if (checked && breakAndRun) onBreakAndRunChange(false);
+    if (checked && earlyEight) onEarlyEightChange?.(false);
+  };
+  const handleRunoutCheck = (checked: boolean) => {
+    onRunoutChange?.(checked);
+    if (checked && earlyEight) onEarlyEightChange?.(false);
+  };
+  // An early 8 means the loser ended the game — the winner cleared nothing, so
+  // every winner achievement is off the table. Mirrors the DB constraint
+  // match_games_early_eight_excludes_feats rather than relying on it: a
+  // constraint violation surfaces as a failed save, which is a poor way to
+  // learn the two are incompatible.
+  const handleEarlyEightCheck = (checked: boolean) => {
+    onEarlyEightChange?.(checked);
+    if (!checked) return;
+    if (breakAndRun) onBreakAndRunChange(false);
+    if (goldenBreak) onGoldenBreakChange(false);
+    if (runout) onRunoutChange?.(false);
   };
 
   // Wraps the forfeit Switch's onCheckedChange. When forfeit toggles ON and
@@ -291,6 +327,10 @@ export function ScoringDialog({
       if (runout) {
         onRunoutChange?.(false);
         cleared.push('Runout');
+      }
+      if (earlyEight) {
+        onEarlyEightChange?.(false);
+        cleared.push('Early 8');
       }
       if (cleared.length > 0) {
         const list = cleared.join(' and ');
@@ -365,10 +405,25 @@ export function ScoringDialog({
                 <Checkbox
                   id="runout"
                   checked={runout}
-                  onCheckedChange={(c) => onRunoutChange?.(c === true)}
+                  onCheckedChange={(c) => handleRunoutCheck(c === true)}
                 />
                 <Label htmlFor="runout" className="text-sm font-normal cursor-pointer">
                   Runout
+                </Label>
+              </div>
+            )}
+            {/* 8-ball only, and phrased as the LOSER's mistake — every other
+                control in this row credits the winner named above, so an
+                unqualified "Early 8" here would read as something they did. */}
+            {isEightBall && (
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="earlyEight"
+                  checked={earlyEight}
+                  onCheckedChange={(c) => handleEarlyEightCheck(c === true)}
+                />
+                <Label htmlFor="earlyEight" className="text-sm font-normal cursor-pointer">
+                  Won on opponent&apos;s early 8
                 </Label>
               </div>
             )}
