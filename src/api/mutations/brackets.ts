@@ -209,6 +209,79 @@ export async function setEntryFeePaid(
   await touchBracket(bracketId);
 }
 
+// ── Hopper management (Phase C) ──────────────────────────────────────────────
+
+/** Add a WALK-UP to the hopper (member_id NULL — a disposable tournament entrant). */
+export async function addWalkupToHopper(
+  bracketId: string,
+  displayName: string,
+  addedVia: 'search' | 'link' | 'qr' = 'search'
+): Promise<void> {
+  const { error } = await supabase.from('bracket_hopper').insert({
+    bracket_id: bracketId,
+    display_name: displayName.trim(),
+    added_via: addedVia,
+  });
+  if (error) throw new Error(`Failed to add walk-up: ${error.message}`);
+  await touchBracket(bracketId);
+}
+
+/** Add a REGISTERED player (a real member) to the hopper. */
+export async function addRegisteredToHopper(
+  bracketId: string,
+  memberId: string,
+  displayName: string,
+  addedVia: 'search' | 'link' | 'qr' = 'search'
+): Promise<void> {
+  const { error } = await supabase.from('bracket_hopper').insert({
+    bracket_id: bracketId,
+    member_id: memberId,
+    display_name: displayName.trim(),
+    added_via: addedVia,
+  });
+  if (error) throw new Error(`Failed to add player: ${error.message}`);
+  await touchBracket(bracketId);
+}
+
+/**
+ * Admit a hopper entry to the official list (status → 'official'), with the
+ * organizer-asserted paid/unpaid flag. The roster trigger records a registered
+ * player automatically.
+ */
+export async function admitHopperEntry(
+  entryId: string,
+  bracketId: string,
+  paidStatus: 'paid' | 'unpaid'
+): Promise<void> {
+  const { error } = await supabase
+    .from('bracket_hopper')
+    .update({ status: 'official', paid_status: paidStatus })
+    .eq('id', entryId);
+  if (error) throw new Error(`Failed to admit entry: ${error.message}`);
+  await touchBracket(bracketId);
+}
+
+/** Update just the paid/unpaid flag on a hopper entry. */
+export async function setHopperPaidStatus(
+  entryId: string,
+  bracketId: string,
+  paidStatus: 'paid' | 'unpaid'
+): Promise<void> {
+  const { error } = await supabase
+    .from('bracket_hopper')
+    .update({ paid_status: paidStatus })
+    .eq('id', entryId);
+  if (error) throw new Error(`Failed to update paid status: ${error.message}`);
+  await touchBracket(bracketId);
+}
+
+/** Eject an entry from the hopper (delete). The roster (sticky) is untouched. */
+export async function ejectHopperEntry(entryId: string, bracketId: string): Promise<void> {
+  const { error } = await supabase.from('bracket_hopper').delete().eq('id', entryId);
+  if (error) throw new Error(`Failed to eject entry: ${error.message}`);
+  await touchBracket(bracketId);
+}
+
 /**
  * Reopen a decided match (undo a mis-tapped winner). Clears the winner and
  * pulls the advanced player/loser back out of the next matches. Throws with a

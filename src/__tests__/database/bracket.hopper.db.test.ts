@@ -121,6 +121,32 @@ describe('bracket hopper + roster (Unit C1)', () => {
     expect(second[0].id).toBeTruthy();
   });
 
+  it('get_bracket_hopper returns candidates with member fields (registered) / nulls (walk-up)', async () => {
+    const bracketId = await makeBracket();
+    await executeSql(
+      `INSERT INTO public.bracket_hopper (bracket_id, member_id, display_name, added_via)
+       VALUES ($1, $2, 'Alice', 'search')`,
+      [bracketId, playerId]
+    );
+    await executeSql(
+      `INSERT INTO public.bracket_hopper (bracket_id, display_name, added_via)
+       VALUES ($1, 'Walk-up', 'search')`,
+      [bracketId]
+    );
+
+    const rows = await executeSql(`SELECT public.get_bracket_hopper($1) AS hopper`, [bracketId]);
+    const hopper = rows[0].hopper as Array<Record<string, unknown>>;
+    expect(Array.isArray(hopper)).toBe(true);
+    expect(hopper.length).toBe(2);
+
+    const registered = hopper.find((h) => h.member_id === playerId)!;
+    const walkup = hopper.find((h) => h.member_id === null)!;
+    expect(registered.display_name).toBe('Alice');
+    expect(registered.system_player_number).not.toBeNull(); // member field joined
+    expect(walkup.display_name).toBe('Walk-up');
+    expect(walkup.nickname).toBeNull(); // no member joined for a walk-up
+  });
+
   it('admitting a walk-up does NOT create a roster row (registered-only)', async () => {
     const bracketId = await makeBracket();
     const before = await executeSql(

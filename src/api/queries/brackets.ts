@@ -16,6 +16,37 @@ export type BracketRow = Tables<'brackets'>;
 export type BracketParticipantRow = Tables<'bracket_participants'>;
 export type BracketMatchRow = Tables<'bracket_matches'>;
 
+/**
+ * A hopper entry as returned by the `get_bracket_hopper` RPC — the hopper row
+ * plus (for registered players) the joined member fields for display +
+ * same-name disambiguation. Walk-ups have `member_id` NULL and null member fields.
+ */
+export interface HopperEntry {
+  id: string;
+  member_id: string | null;
+  display_name: string;
+  status: 'hopper' | 'official';
+  paid_status: 'paid' | 'unpaid' | null;
+  added_via: 'search' | 'link' | 'qr' | null;
+  seed: number | null;
+  created_at: string;
+  nickname: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  system_player_number: number | null;
+  city: string | null;
+  state: string | null;
+}
+
+/** The organizer's read of a bracket's hopper (via the projected SECURITY DEFINER RPC). */
+export async function getBracketHopper(bracketId: string): Promise<HopperEntry[]> {
+  const { data, error } = await supabase.rpc('get_bracket_hopper', {
+    p_bracket_id: bracketId,
+  });
+  if (error) throw new Error(`Failed to load hopper: ${error.message}`);
+  return (data as HopperEntry[] | null) ?? [];
+}
+
 /** The organizer's full bracket view: the bracket + its participants + matches. */
 export interface BracketDetail {
   bracket: BracketRow;
