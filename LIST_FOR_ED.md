@@ -20,6 +20,26 @@ consolidation (he owns that flow + the eventual real Stripe wiring).
 
 ---
 
+## 🧹 2026-09-05 — Before the real paywall: purge the MOCK cards on file
+
+During beta the tournament payment flow saves a **real, persistent per-player card
+on file** (`payment_methods`) so users enter a card once and it's reused across
+tournaments — but the token is a **mock** (`PaymentCardForm` returns
+`tok_mock_<ts>`; no real Stripe). These fake cards **cannot be charged**.
+
+**When Jack's real Stripe goes live**, delete the mock cards so beta users are
+prompted to enter a real one:
+
+```sql
+DELETE FROM public.payment_methods WHERE stripe_payment_method_id LIKE 'tok_mock_%';
+```
+
+(Every card created before real Stripe is a mock, so this is safe. If you want a
+belt-and-suspenders marker instead of the token prefix, add an `is_mock boolean`
+column — ask and I'll do it.)
+
+---
+
 ## 🧪 2026-08-04 — VERIFY: tiebreaker scoring fix (PR #249)
 
 **Bug (live):** the first match to end in a games **tie** couldn't be scored —
