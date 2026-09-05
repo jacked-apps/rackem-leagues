@@ -157,6 +157,195 @@ export type Database = {
           },
         ]
       }
+      bracket_matches: {
+        Row: {
+          away_participant_id: string | null
+          bracket_id: string
+          created_at: string
+          home_participant_id: string | null
+          id: string
+          in_progress: boolean
+          is_reset_match: boolean
+          loser_next_match_id: string | null
+          loser_next_match_slot: string | null
+          next_match_id: string | null
+          next_match_slot: string | null
+          round: number
+          side: string
+          slot: number
+          status: string
+          winner_participant_id: string | null
+        }
+        Insert: {
+          away_participant_id?: string | null
+          bracket_id: string
+          created_at?: string
+          home_participant_id?: string | null
+          id?: string
+          in_progress?: boolean
+          is_reset_match?: boolean
+          loser_next_match_id?: string | null
+          loser_next_match_slot?: string | null
+          next_match_id?: string | null
+          next_match_slot?: string | null
+          round: number
+          side: string
+          slot: number
+          status?: string
+          winner_participant_id?: string | null
+        }
+        Update: {
+          away_participant_id?: string | null
+          bracket_id?: string
+          created_at?: string
+          home_participant_id?: string | null
+          id?: string
+          in_progress?: boolean
+          is_reset_match?: boolean
+          loser_next_match_id?: string | null
+          loser_next_match_slot?: string | null
+          next_match_id?: string | null
+          next_match_slot?: string | null
+          round?: number
+          side?: string
+          slot?: number
+          status?: string
+          winner_participant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bracket_matches_away_fkey"
+            columns: ["away_participant_id"]
+            isOneToOne: false
+            referencedRelation: "bracket_participants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bracket_matches_bracket_id_fkey"
+            columns: ["bracket_id"]
+            isOneToOne: false
+            referencedRelation: "brackets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bracket_matches_home_fkey"
+            columns: ["home_participant_id"]
+            isOneToOne: false
+            referencedRelation: "bracket_participants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bracket_matches_loser_next_match_fkey"
+            columns: ["loser_next_match_id"]
+            isOneToOne: false
+            referencedRelation: "bracket_matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bracket_matches_next_match_fkey"
+            columns: ["next_match_id"]
+            isOneToOne: false
+            referencedRelation: "bracket_matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bracket_matches_winner_fkey"
+            columns: ["winner_participant_id"]
+            isOneToOne: false
+            referencedRelation: "bracket_participants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bracket_participants: {
+        Row: {
+          bracket_id: string
+          created_at: string
+          display_name: string
+          id: string
+          member_id: string | null
+          seed: number
+        }
+        Insert: {
+          bracket_id: string
+          created_at?: string
+          display_name: string
+          id?: string
+          member_id?: string | null
+          seed: number
+        }
+        Update: {
+          bracket_id?: string
+          created_at?: string
+          display_name?: string
+          id?: string
+          member_id?: string | null
+          seed?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bracket_participants_bracket_id_fkey"
+            columns: ["bracket_id"]
+            isOneToOne: false
+            referencedRelation: "brackets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bracket_participants_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brackets: {
+        Row: {
+          created_at: string
+          created_by: string
+          format: string
+          grand_final_reset: boolean
+          id: string
+          last_activity_at: string
+          name: string
+          seeding_mode: string
+          share_token: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          format: string
+          grand_final_reset?: boolean
+          id?: string
+          last_activity_at?: string
+          name: string
+          seeding_mode?: string
+          share_token?: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          format?: string
+          grand_final_reset?: boolean
+          id?: string
+          last_activity_at?: string
+          name?: string
+          seeding_mode?: string
+          share_token?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brackets_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       championship_date_options: {
         Row: {
           created_at: string | null
@@ -3152,6 +3341,10 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: Json
       }
+      advance_bracket_winner: {
+        Args: { p_match_id: string; p_winner_participant_id: string }
+        Returns: boolean
+      }
       approve_join_request: {
         Args: {
           p_action: string
@@ -3242,6 +3435,7 @@ export type Database = {
         Args: { p_season_id: string; p_team_id: string }
         Returns: string
       }
+      get_bracket_share: { Args: { p_share_token: string }; Returns: Json }
       get_current_member_id: { Args: never; Returns: string }
       get_invite_details: {
         Args: { p_token: string }
@@ -3431,6 +3625,7 @@ export type Database = {
         Args: { p_member_id: string; p_org_id: string; p_team_id: string }
         Returns: Json
       }
+      reopen_bracket_match: { Args: { p_match_id: string }; Returns: boolean }
       request_team_join: {
         Args: { p_claimed_member_id?: string; p_token: string }
         Returns: Json
@@ -3533,11 +3728,16 @@ export type Database = {
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       soundex: { Args: { "": string }; Returns: string }
+      start_bracket: {
+        Args: { p_bracket_id: string; p_matches: Json }
+        Returns: undefined
+      }
       swap_player_in_lineup: {
         Args: { p_lineup_id: string; p_resolution: Json; p_thresholds: Json }
         Returns: undefined
       }
       sweep_auto_forfeits: { Args: never; Returns: number }
+      sweep_stale_brackets: { Args: { p_idle_days?: number }; Returns: number }
       text_soundex: { Args: { "": string }; Returns: string }
       undo_merge_placeholder: {
         Args: {
