@@ -47,9 +47,9 @@ button so it doesn't double up a team chat'."*
 
 | Commit title (what we say to each other) | Entry (what we say to them) |
 |---|---|
-| `fix(pwa): SW had no SKIP_WAITING listener` | The app couldn't install its own updates. Tapping **Update** now actually updates it. |
+| `fix(pwa): SW had no SKIP_WAITING listener` | For about a week the app couldn't install its own updates. That's fixed — tapping **Update** now actually updates it. |
 | `fix(messages): make duplicate team chats impossible` | Tapping **Create team chat** twice made two identical chats. Now it makes one. |
-| `fix(push): don't chime for the conversation you're already reading` | Your phone no longer buzzes for the chat you're already looking at. |
+| `fix(push): don't chime for the conversation you're already reading` | Your phone was buzzing for the chat you were already looking at. It doesn't any more. |
 | `feat(notifications): per-chat and per-type controls` | You can now set quiet hours, and tell a busy team chat to notify you once instead of every message. |
 | `fix(messages): keep the conversation header in view` | In a direct message, the other person's name stays at the top instead of scrolling away. |
 | `fix(db): renumber push_subscriptions migration off a duplicate version` | *(nothing — no user-facing effect)* |
@@ -92,20 +92,29 @@ version at release.
   go hunting for a changelog. On 2026-09-05 we mistook a stale bundle for a
   broken feature twice; both times the question was "am I on the new code?"
 
-## Still open — Ed's call
+## Transparency: be candid, including about our own mistakes
 
-- **How openly do we describe something that was broken?** Three registers, using
-  the update bug:
-  1. *"Fixed an issue where the app could fail to update."* — vague
-  2. *"The app now updates properly when a new version is available."* —
-     describes the present, doesn't dwell
-  3. *"For about a week the app couldn't update itself. That's fixed."* — fully
-     candid
-  Recommendation is **2**: never claim something worked when it didn't, but
-  don't narrate the failure either. **3** builds more trust with an operator
-  evaluating the app, at the cost of inviting "how did that happen?" mid-sales
-  conversation. The examples in this doc are written at level 2 — worth a look
-  to see whether that reads right before it's set.
+Ed, 2026-09-05: *"as of now i dont care how idiotic i look by fixing something
+some dumb mistake i made. i just want a way i can ensure i am communicating
+with the players/users that i am actually working on this app."*
+
+So: **say what was wrong, plainly.** Not the vague register ("Fixed an issue
+where the app could fail to update"), which reads as hiding, and reads as
+nothing at all to someone skimming.
+
+The purpose of this page isn't a polished product image — it's evidence that
+somebody is paying attention. A fix described honestly is better evidence than
+a fix described carefully:
+
+> *"For about a week the app couldn't install its own updates. That's fixed —
+> tapping Update now actually updates it."*
+
+Two limits, which are about accuracy rather than image:
+
+- **Don't overstate the damage either.** "Nobody could use the app" when it was
+  one button on one screen is its own kind of inaccuracy.
+- **Never blame a user or a device for something that was ours.** "Some phones
+  had trouble" when the cause was our code is the worst version of this.
 
 ## Implementation Units
 
