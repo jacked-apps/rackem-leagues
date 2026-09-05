@@ -29,6 +29,7 @@ import { useCreateBracketForm } from './useCreateBracketForm';
 import { DetailsStep } from './steps/DetailsStep';
 import { ParticipantsStep } from './steps/ParticipantsStep';
 import { ReviewStep } from './steps/ReviewStep';
+import { CreateStepper } from './steps/CreateStepper';
 import { PremiumFeaturesSection } from './paid/PremiumFeaturesSection';
 import {
   PREMIUM_FEATURES,
@@ -167,7 +168,8 @@ export function CreateBracketFlow() {
   };
 
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-8">
+    <div className="container mx-auto max-w-2xl space-y-5 px-4 py-8">
+      <CreateStepper current={state.step} />
       <Card>
         <CardHeader>
           <CardTitle>{STEP_TITLES[state.step]}</CardTitle>

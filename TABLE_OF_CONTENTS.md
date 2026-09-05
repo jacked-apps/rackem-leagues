@@ -1232,9 +1232,10 @@ Lineup-page workhorse hooks. Extracted from the monolithic `useMatchLineup` so e
 - `paid/EntryFeePanel.tsx` - **PAID — entry-fee tracker** (the `payment_tracker` $1 feature). Organizer-only paid/unpaid checklist of who's paid their tournament entry fee (CASH collected outside the app — no money runs through us). Toggles `bracket_participants.entry_fee_paid` via `useSetEntryFeePaid`; shows an "X of Y paid" count. Rendered on the live tournament view (`BracketView`) only when the tournament bought the feature. Test: `EntryFeePanel.test.tsx`.
 - `paid/PaymentMethodDialog.tsx` - **PAID A2** — the GENERIC "set up a payment method" popup (not tied to a feature). Shown once when the organizer turns on their first feature with no card on file: sets up the player's reusable card via `PaymentCardForm` ($0 mock), a clear "we are NOT charging now — only at checkout when you start" note, and a "Verify card" button.
 - `useCreateBracketForm.ts` - Local form-state hook for the create flow: fields (name/format/reset/seedingMode/**gameType**/**premiumFeatures**/**cardOnFile**), participant add/remove/up-down-reorder, `togglePremiumFeature`, `setCardOnFile`, step nav, derived validation (name, 2–64 count, duplicate soft-warning). `MAX_PARTICIPANTS = 64`.
-- `steps/DetailsStep.tsx` - Step 1: name + format radio + (double-elim) grand-final-reset switch. Bare shadcn.
-- `steps/ParticipantsStep.tsx` - Step 2: add plain-text names, remove, reorder via up/down (mobile-safe). Enforces the 64 cap.
-- `steps/ReviewStep.tsx` - Step 3: seeding mode + round-1 pairing preview (byes marked; "random" shows a draw-at-start note instead of exact pairings).
+- `steps/CreateStepper.tsx` - Step indicator (Details → Players → Review) above the create card — numbered, current highlighted, done shows a check. Theme-token styled.
+- `steps/DetailsStep.tsx` - Step 1: name + game select + **format as selectable bordered rows (label + description)** + (double-elim) grand-final-reset switch.
+- `steps/ParticipantsStep.tsx` - Step 2: add plain-text names, remove, reorder via up/down (mobile-safe). Enforces the 64 cap. Empty state when none added.
+- `steps/ReviewStep.tsx` - Step 3: seeding mode **as selectable bordered rows** + round-1 pairing preview (numbered list; byes marked; "random" shows a dashed draw-at-start note).
 - `steps/pairingPreview.ts` - Pure helper mapping the engine's `roundOnePairs` seed pairs onto ordered names for the review preview. Test: `pairingPreview.test.ts`.
 
 #### Tournament Bracket Engine (`/utils/bracket/`)
