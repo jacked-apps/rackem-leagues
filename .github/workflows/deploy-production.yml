@@ -84,6 +84,16 @@ jobs:
           VITE_PASSWORDLESS_SIGN_IN: 'true'
           VITE_SUPABASE_URL: https://cibboozjixxyypzchtvr.supabase.co
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          # Message push notifications. The VAPID PUBLIC key is baked into the
+          # client bundle — it's what a device passes as `applicationServerKey`
+          # when subscribing. Not a secret (it's public by design), but it must
+          # be present at BUILD time: without it the subscribe flow fails with no
+          # server error and no console message, which reads as "notifications
+          # are broken" rather than "a build var is missing".
+          # Set it in the `production` GitHub Environment secrets, paired with
+          # the VAPID_PRIVATE_KEY held as a Supabase function secret.
+          # See docs/ops/push-notifications-secrets.md
+          VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v2
