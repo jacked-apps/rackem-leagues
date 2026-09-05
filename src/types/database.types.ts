@@ -301,40 +301,61 @@ export type Database = {
       }
       brackets: {
         Row: {
+          card_brand: string | null
+          card_last4: string | null
           created_at: string
           created_by: string
           format: string
+          game_type: string | null
           grand_final_reset: boolean
           id: string
           last_activity_at: string
           name: string
+          payment_token: string | null
+          payment_verified_at: string | null
+          premium_features: string[]
           seeding_mode: string
           share_token: string
           status: string
+          tier: string
         }
         Insert: {
+          card_brand?: string | null
+          card_last4?: string | null
           created_at?: string
           created_by: string
           format: string
+          game_type?: string | null
           grand_final_reset?: boolean
           id?: string
           last_activity_at?: string
           name: string
+          payment_token?: string | null
+          payment_verified_at?: string | null
+          premium_features?: string[]
           seeding_mode?: string
           share_token?: string
           status?: string
+          tier?: string
         }
         Update: {
+          card_brand?: string | null
+          card_last4?: string | null
           created_at?: string
           created_by?: string
           format?: string
+          game_type?: string | null
           grand_final_reset?: boolean
           id?: string
           last_activity_at?: string
           name?: string
+          payment_token?: string | null
+          payment_verified_at?: string | null
+          premium_features?: string[]
           seeding_mode?: string
           share_token?: string
           status?: string
+          tier?: string
         }
         Relationships: [
           {
@@ -386,12 +407,12 @@ export type Database = {
         Row: {
           cannot_leave: boolean
           conversation_id: string
-          is_muted: boolean
           joined_at: string
+          last_notified_at: string | null
           last_read_at: string | null
           left_at: string | null
+          notification_interval_minutes: number | null
           notification_mode: string
-          notifications_enabled: boolean
           role: string
           unread_count: number
           user_id: string
@@ -399,12 +420,12 @@ export type Database = {
         Insert: {
           cannot_leave?: boolean
           conversation_id: string
-          is_muted?: boolean
           joined_at?: string
+          last_notified_at?: string | null
           last_read_at?: string | null
           left_at?: string | null
+          notification_interval_minutes?: number | null
           notification_mode?: string
-          notifications_enabled?: boolean
           role?: string
           unread_count?: number
           user_id: string
@@ -412,12 +433,12 @@ export type Database = {
         Update: {
           cannot_leave?: boolean
           conversation_id?: string
-          is_muted?: boolean
           joined_at?: string
+          last_notified_at?: string | null
           last_read_at?: string | null
           left_at?: string | null
+          notification_interval_minutes?: number | null
           notification_mode?: string
-          notifications_enabled?: boolean
           role?: string
           unread_count?: number
           user_id?: string
@@ -1392,6 +1413,35 @@ export type Database = {
           },
         ]
       }
+      member_notification_prefs: {
+        Row: {
+          conversation_kind: string
+          interval_minutes: number | null
+          member_id: string
+          push_enabled: boolean
+        }
+        Insert: {
+          conversation_kind: string
+          interval_minutes?: number | null
+          member_id: string
+          push_enabled?: boolean
+        }
+        Update: {
+          conversation_kind?: string
+          interval_minutes?: number | null
+          member_id?: string
+          push_enabled?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_notification_prefs_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       members: {
         Row: {
           address: string | null
@@ -1414,11 +1464,14 @@ export type Database = {
           profanity_filter_enabled: boolean | null
           profanity_onboarding_completed_at: string | null
           push_enabled: boolean | null
+          quiet_hours_end: string | null
+          quiet_hours_start: string | null
           role: Database["public"]["Enums"]["user_role"] | null
           starting_handicap_3v3: number | null
           starting_handicap_5v5: number | null
           state: string
           system_player_number: number
+          timezone: string | null
           updated_at: string | null
           user_id: string | null
           zip_code: string | null
@@ -1444,11 +1497,14 @@ export type Database = {
           profanity_filter_enabled?: boolean | null
           profanity_onboarding_completed_at?: string | null
           push_enabled?: boolean | null
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
           starting_handicap_3v3?: number | null
           starting_handicap_5v5?: number | null
           state: string
           system_player_number?: number
+          timezone?: string | null
           updated_at?: string | null
           user_id?: string | null
           zip_code?: string | null
@@ -1474,11 +1530,14 @@ export type Database = {
           profanity_filter_enabled?: boolean | null
           profanity_onboarding_completed_at?: string | null
           push_enabled?: boolean | null
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
           starting_handicap_3v3?: number | null
           starting_handicap_5v5?: number | null
           state?: string
           system_player_number?: number
+          timezone?: string | null
           updated_at?: string | null
           user_id?: string | null
           zip_code?: string | null
@@ -3559,6 +3618,10 @@ export type Database = {
         Args: { conv_id: string; uid: string }
         Returns: boolean
       }
+      is_in_quiet_hours: {
+        Args: { p_end: string; p_start: string; p_tz: string }
+        Returns: boolean
+      }
       league_display_name: { Args: { p_league_id: string }; Returns: string }
       lookup_placeholder_by_system_number: {
         Args: { p_system_number: number }
@@ -3580,6 +3643,10 @@ export type Database = {
           result_3: number
           was_swapped: boolean
         }[]
+      }
+      mark_push_notified: {
+        Args: { p_conversation_id: string; p_member_ids: string[] }
+        Returns: undefined
       }
       member_display_name: { Args: { p_member_id: string }; Returns: string }
       merge_placeholder_into_member: {
