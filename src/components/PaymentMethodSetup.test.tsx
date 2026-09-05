@@ -9,14 +9,22 @@ import { render, screen } from '@testing-library/react';
 import { PaymentMethodSetup } from './PaymentMethodSetup';
 
 describe('PaymentMethodSetup', () => {
-  it('renders the no-charge reassurance with the caller-supplied charge timing', () => {
+  it('is domain-neutral by default (no tournament/feature language)', () => {
+    render(<PaymentMethodSetup onVerified={vi.fn()} />);
+    // Generic reassurance always present…
+    expect(screen.getByText(/charging your card now/i)).toBeTruthy();
+    // …and no baked-in context leaks (those come from the caller's chargeTiming).
+    expect(screen.queryByText(/premium features/i)).toBeNull();
+    expect(screen.queryByText(/tournament/i)).toBeNull();
+  });
+
+  it('appends the caller-supplied charge timing when provided', () => {
     render(
       <PaymentMethodSetup
         onVerified={vi.fn()}
-        chargeTiming="charged only at checkout, when you start the tournament"
+        chargeTiming="You're charged only at checkout, when you start the tournament."
       />
     );
-    expect(screen.getByText(/not/i)).toBeTruthy();
     expect(screen.getByText(/charged only at checkout/i)).toBeTruthy();
   });
 

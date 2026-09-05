@@ -28,9 +28,11 @@ export interface PaymentMethodSetupProps {
   /** Saving the card in flight (disables the form). */
   saving?: boolean;
   /**
-   * Completes the no-charge-now reassurance: "you're {chargeTiming}." Keep it
-   * specific so the user knows exactly when money moves (e.g. "charged only at
-   * checkout, when you start the tournament").
+   * OPTIONAL caller-specific clause appended after "We are not charging your card
+   * now." so the user knows exactly when money moves in THIS context — e.g. the
+   * tournament flow passes "You're charged only at checkout, when you start the
+   * tournament." Omit it for a purely generic setup. The component stays
+   * domain-neutral: no mention of tournaments, dues, features, etc.
    */
   chargeTiming?: string;
   /** Verify button text (default "Verify card"). */
@@ -40,16 +42,21 @@ export interface PaymentMethodSetupProps {
 export function PaymentMethodSetup({
   onVerified,
   saving = false,
-  chargeTiming = 'charged only when you complete your purchase',
+  chargeTiming,
   verifyButtonText = 'Verify card',
 }: PaymentMethodSetupProps) {
   const [nickname, setNickname] = useState('');
 
   return (
     <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Add a card to keep on file — you only enter it once, and it&apos;s reusable
+        for anything you pay for.
+      </p>
+
       <div className="rounded-md border border-success/40 bg-success/10 p-3 text-sm font-medium text-success">
-        We are <span className="underline">not</span> charging your card now — you&apos;re{' '}
-        {chargeTiming}.
+        We are <span className="underline">not</span> charging your card now.
+        {chargeTiming ? ` ${chargeTiming}` : ''}
       </div>
 
       <div className="space-y-1">

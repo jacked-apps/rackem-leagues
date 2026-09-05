@@ -42,15 +42,15 @@ export function PaymentMethodDialog({
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Set up a payment method</DialogTitle>
-          <DialogDescription>
-            Add the card you&apos;ll use for premium features. It stays on file for
-            your tournaments — you only enter it once.
+          {/* Generic a11y description; the visible generic copy lives in PaymentMethodSetup. */}
+          <DialogDescription className="sr-only">
+            Add a payment card to keep on file.
           </DialogDescription>
         </DialogHeader>
 
         <PaymentMethodSetup
           saving={saving}
-          chargeTiming="charged only at checkout, when you start the tournament"
+          chargeTiming={"You're charged only at checkout, when you start the tournament."}
           onVerified={onVerified}
         />
       </DialogContent>
