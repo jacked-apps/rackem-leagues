@@ -4,6 +4,40 @@ Tasks and refactoring items for Ed to work on.
 
 ---
 
+## 🧪 2026-09-05 — Database tests are not run by CI, and three files have rotted
+
+CI (`.github/workflows/checks.yml`) runs the vitest **unit** project only. The
+**db** project needs a live Postgres, so nothing on GitHub has ever run it —
+these failures are invisible to every PR.
+
+Ran locally on 2026-09-05, after applying two migrations the local DB was
+missing. Seven tests fail, in three files, none of them related to each other:
+
+| File | Failing | Introduced by |
+|---|---|---|
+| `request-team-join.test.ts` | 2 | PR #165 |
+| `approve-surface-roster.test.ts` + `approve-join-request.test.ts` | 4 | PR #219 |
+| `messagePushTrigger.db.test.ts` | 1 | push Unit 8 |
+
+The first two look like fixture drift — they assert against seeded rows that have
+since changed shape. Worth a look, but they are testing code that has been in
+production for months, so this is stale tests rather than a broken feature.
+
+The push one is **not** a product bug — I traced it. The trigger enqueues
+correctly. The test then reads the request back out of `net.http_request_queue`
+to check its body and headers, and the pg_net background worker drains that queue
+within milliseconds of the commit, so the row is usually gone before the test
+looks. The fix is to do that read inside an uncommitted transaction, where the
+worker cannot see the row. Not done — it needs a small transaction helper in
+`dbTestUtils`, and it did not belong in the PR I was on.
+
+**The decision worth making:** either give CI a Postgres service container so the
+db project runs on every PR, or accept that these tests only run when someone
+remembers to run them locally. The current middle ground — having them, and never
+running them — is the one option with no upside.
+
+---
+
 ## 🧪 2026-08-04 — VERIFY: tiebreaker scoring fix (PR #249)
 
 **Bug (live):** the first match to end in a games **tie** couldn't be scored —
